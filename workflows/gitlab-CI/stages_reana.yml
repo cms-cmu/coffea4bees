@@ -5,8 +5,7 @@ reana-job:
   tags:
     - k8s-cvmfs
   script:
-    - ./run_container snakemake -h
-    - pixi run bash -c "source coffea4bees/scripts/reana-job.sh $NAME"
+    - ./run_container snakemake source coffea4bees/scripts/reana-job.sh $NAME
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule"
       variables:
