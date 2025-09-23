@@ -1,17 +1,17 @@
 reana-job:
   stage: reana
-  image: gitlab-registry.cern.ch/$CONTAINER_HOST/barista:reana_latest
   tags:
     - k8s-cvmfs
   script:
-    - source coffea4bees/scripts/reana-job.sh $NAME
+    - ./run_container snakemake -h
+    - pixi run bash -c "source coffea4bees/scripts/reana-job.sh $NAME"
   rules:
-    - if: $CI_PIPELINE_SOURCE == "web"
-      variables:
-        NAME: "coffea4bees_${CI_COMMIT_SHORT_SHA}"
     - if: $CI_PIPELINE_SOURCE == "schedule"
       variables:
         NAME: "coffea4bees_scheduled_${CI_COMMIT_SHORT_SHA}"
+    - if: $RUN_REANA == "true"
+      variables:
+        NAME: "coffea4bees_manual_${CI_COMMIT_SHORT_SHA}"
     - if: $CI_PIPELINE_SOURCE == "push"
       when: never
   allow_failure: true

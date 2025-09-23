@@ -28,7 +28,7 @@ python runner.py -t -o testMixedBkg_data_3b_for_mixed.coffea -d   data_3b_for_mi
 python runner.py -t -o testMixedData.coffea -d    mixeddata  -p coffea4bees/analysis/processors/processor_HH4b.py -y 2016 2017 2018 -op $OUTPUT_DIR -m $DATASETS -c coffea4bees/analysis/metadata/HH4b_nottcheck.yml
 python runner.py -t -o testSignals.coffea -d ZH4b ZZ4b  -p coffea4bees/analysis/processors/processor_HH4b.py -y UL17 UL18 UL16_preVFP UL16_postVFP    -op $OUTPUT_DIR -m $DATASETS -c coffea4bees/analysis/metadata/HH4b_nottcheck.yml
 python runner.py -t -o testSignals_HH4b.coffea -d GluGluToHHTo4B_cHHH1  -p coffea4bees/analysis/processors/processor_HH4b.py -y UL17 UL18 UL16_preVFP UL16_postVFP    -op $OUTPUT_DIR -m $DATASETS -c coffea4bees/analysis/metadata/HH4b_signals.yml
-python coffea4bees/analysis/tools/merge_coffea_files.py -f $OUTPUT_DIR/testSignals_HH4b.coffea $OUTPUT_DIR/testSignals.coffea -o $OUTPUT_DIR/testSignal_UL.coffea
+python src/tools/merge_coffea_files.py -f $OUTPUT_DIR/testSignals_HH4b.coffea $OUTPUT_DIR/testSignals.coffea -o $OUTPUT_DIR/testSignal_UL.coffea
 ls $OUTPUT_DIR
 
 display_section_header "Hist --> JSON"
