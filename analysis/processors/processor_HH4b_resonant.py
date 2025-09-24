@@ -24,7 +24,7 @@ from python.analysis.helpers.filling_histograms import (
     filling_nominal_histograms,
     filling_syst_histograms,
 )
-from python.analysis.helpers.FriendTreeSchema import FriendTreeSchema
+from src.friendtrees.FrienddTreeSchema import FriendTreeSchema
 from python.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
 from python.analysis.helpers.processor_config import processor_config
 from python.analysis.helpers.candidates_selection_resonant import create_cand_jet_dijet_quadjet
