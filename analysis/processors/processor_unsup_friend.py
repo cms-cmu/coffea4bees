@@ -19,7 +19,7 @@ from src.hist import Collection, Fill
 from src.hist import H, Template
 from src.hist.object import LorentzVector, Jet, Muon, Elec
 
-from coffea4bees.analysis.helpers.FriendTreeSchema import FriendTreeSchema
+from src.friendtrees.FriendTreeSchema import FriendTreeSchema
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b
 from coffea4bees.analysis.helpers.topCandReconstruction import find_tops, dumpTopCandidateTestVectors, buildTop
 from coffea4bees.analysis.helpers.hist_templates import SvBHists, FvTHists, QuadJetHistsUnsup, WCandHists, TopCandHists

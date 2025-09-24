@@ -24,7 +24,7 @@ from coffea4bees.analysis.helpers.filling_histograms import (
     filling_nominal_histograms,
     filling_syst_histograms,
 )
-from coffea4bees.analysis.helpers.FriendTreeSchema import FriendTreeSchema
+from src.friendtrees.FriendTreeSchema import FriendTreeSchema
 from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
 from coffea4bees.analysis.helpers.processor_config import processor_config
 from coffea4bees.analysis.helpers.candidates_selection import create_cand_jet_dijet_quadjet
