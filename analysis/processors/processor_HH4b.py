@@ -792,6 +792,7 @@ class analysis(processor.ProcessorABC):
             self._cutFlow.fill( "SB", selev[(selev.passDiJetMass & selev["quadJet_selected"].SB)] )
             self._cutFlow.fill( "SB_woTrig", selev[(selev.passDiJetMass & selev["quadJet_selected"].SB)],
                             wOverride=selev['weight_woTrig'][selev.passSB] )
+            self._cutFlow.fill("passVBFSel", selev[selev.passVBFSel])
             if self.run_SvB:
                 self._cutFlow.fill("passSvB", selev[selev.passSvB])
                 self._cutFlow.fill("passSvB_woTrig", selev[selev.passSvB],
