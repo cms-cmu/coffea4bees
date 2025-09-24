@@ -11,8 +11,8 @@ runner:
   condor_cores: 1
   condor_memory: 4GB
   condor_transfer_input_files:
-    - src
-    - python
+    - src/
+    - coffea4bees/
   # rucio_regex_sites: 'T[123]_(US|CH|DE|UK)'
   allowlist_sites:
     - T3_US_FNALLPC
@@ -29,8 +29,8 @@ runner:
 
 config:
   # base_path: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/
-  base_path: root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_Run3_skims/
-  # base_path: /srv/output/skimmer/test/   ### local
+  # base_path: root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_Run3_skims/
+  base_path: /srv/output/skimmer/test/   ### local
   step: 100000
   loosePtForSkim: True
   skip_collections:

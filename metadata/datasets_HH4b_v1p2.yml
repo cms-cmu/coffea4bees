@@ -521,6 +521,347 @@ datasets:
         total_events: 486770000.0
     nSamples: 15
     xs: 365.7826460496
+  VBFHHTo4B_kl_10p2_cv_m0p012_c2v_0p030:
+    UL16_postVFP:
+      nanoAOD: /VBFHHTo4B_kl_10p2_cv_m0p012_c2v_0p030_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM
+      picoAOD:
+        count: 460000
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_10p2_cv_m0p012_c2v_0p030_UL16_postVFP/picoAOD.root
+        missing: {}
+        saved_events: 81120
+        sumw: 460000.0
+        sumw2: 460000.0
+        sumw2_raw: 460000.0
+        sumw_raw: 460000.0
+        total_events: 460000
+    UL16_preVFP:
+      nanoAOD: /VBFHHTo4B_kl_10p2_cv_m0p012_c2v_0p030_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v2/NANOAODSIM
+      picoAOD:
+        count: 540000
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_10p2_cv_m0p012_c2v_0p030_UL16_preVFP/picoAOD.root
+        missing: {}
+        saved_events: 90617
+        sumw: 540000.0
+        sumw2: 540000.0
+        sumw2_raw: 540000.0
+        sumw_raw: 540000.0
+        total_events: 540000
+    UL17:
+      nanoAOD: /VBFHHTo4B_kl_10p2_cv_m0p012_c2v_0p030_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v2/NANOAODSIM
+      picoAOD:
+        count: 992000
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_10p2_cv_m0p012_c2v_0p030_UL17/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_10p2_cv_m0p012_c2v_0p030_UL17/picoAOD.chunk1.root
+        missing: {}
+        saved_events: 199961
+        sumw: 992000.0
+        sumw2: 992000.0
+        sumw2_raw: 992000.0
+        sumw_raw: 992000.0
+        total_events: 992000
+    UL18:
+      nanoAOD: /VBFHHTo4B_kl_10p2_cv_m0p012_c2v_0p030_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2/NANOAODSIM
+      picoAOD:
+        count: 999000
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_10p2_cv_m0p012_c2v_0p030_UL18/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_10p2_cv_m0p012_c2v_0p030_UL18/picoAOD.chunk1.root
+        missing: {}
+        saved_events: 195661
+        sumw: 999000.0
+        sumw2: 999000.0
+        sumw2_raw: 999000.0
+        sumw_raw: 999000.0
+        total_events: 999000
+    xs: 0.0000120*0.5824**2
+  VBFHHTo4B_kl_14p4_cv_1p74_c2v_1p37:
+    UL16_postVFP:
+      nanoAOD: /VBFHHTo4B_kl_14p4_cv_1p74_c2v_1p37_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM
+      picoAOD:
+        count: 460000
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_14p4_cv_1p74_c2v_1p37_UL16_postVFP/picoAOD.root
+        missing: {}
+        saved_events: 54740
+        sumw: 460000.0
+        sumw2: 460000.0
+        sumw2_raw: 460000.0
+        sumw_raw: 460000.0
+        total_events: 460000
+    UL16_preVFP:
+      nanoAOD: /VBFHHTo4B_kl_14p4_cv_1p74_c2v_1p37_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v2/NANOAODSIM
+      picoAOD:
+        count: 540000
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_14p4_cv_1p74_c2v_1p37_UL16_preVFP/picoAOD.root
+        missing: {}
+        saved_events: 60958
+        sumw: 540000.0
+        sumw2: 540000.0
+        sumw2_raw: 540000.0
+        sumw_raw: 540000.0
+        total_events: 540000
+    UL17:
+      nanoAOD: /VBFHHTo4B_kl_14p4_cv_1p74_c2v_1p37_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v2/NANOAODSIM
+      picoAOD:
+        count: 999000
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_14p4_cv_1p74_c2v_1p37_UL17/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_14p4_cv_1p74_c2v_1p37_UL17/picoAOD.chunk1.root
+        missing: {}
+        saved_events: 145299
+        sumw: 999000.0
+        sumw2: 999000.0
+        sumw2_raw: 999000.0
+        sumw_raw: 999000.0
+        total_events: 999000
+    UL18:
+      nanoAOD: /VBFHHTo4B_kl_14p4_cv_1p74_c2v_1p37_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2/NANOAODSIM
+      picoAOD:
+        count: 999000
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_14p4_cv_1p74_c2v_1p37_UL18/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_14p4_cv_1p74_c2v_1p37_UL18/picoAOD.chunk1.root
+        missing: {}
+        saved_events: 139619
+        sumw: 999000.0
+        sumw2: 999000.0
+        sumw2_raw: 999000.0
+        sumw_raw: 999000.0
+        total_events: 999000
+    xs: 0.3777832*0.5824**2
+  VBFHHTo4B_kl_1p00_cv_1p00_c2v_0p00:
+    UL16_postVFP:
+      nanoAOD: /VBFHHTo4B_kl_1p00_cv_1p00_c2v_0p00_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM
+      picoAOD:
+        count: 460000
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_1p00_cv_1p00_c2v_0p00_UL16_postVFP/picoAOD.root
+        missing: {}
+        saved_events: 89061
+        sumw: 460000.0
+        sumw2: 460000.0
+        sumw2_raw: 460000.0
+        sumw_raw: 460000.0
+        total_events: 460000
+    UL16_preVFP:
+      nanoAOD: /VBFHHTo4B_kl_1p00_cv_1p00_c2v_0p00_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v2/NANOAODSIM
+      picoAOD:
+        count: 540000
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_1p00_cv_1p00_c2v_0p00_UL16_preVFP/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_1p00_cv_1p00_c2v_0p00_UL16_preVFP/picoAOD.chunk1.root
+        missing: {}
+        saved_events: 100034
+        sumw: 540000.0
+        sumw2: 540000.0
+        sumw2_raw: 540000.0
+        sumw_raw: 540000.0
+        total_events: 540000
+    UL17:
+      nanoAOD: /VBFHHTo4B_kl_1p00_cv_1p00_c2v_0p00_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v2/NANOAODSIM
+      picoAOD:
+        count: 1000000
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_1p00_cv_1p00_c2v_0p00_UL17/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_1p00_cv_1p00_c2v_0p00_UL17/picoAOD.chunk1.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_1p00_cv_1p00_c2v_0p00_UL17/picoAOD.chunk2.root
+        missing: {}
+        saved_events: 221546
+        sumw: 1000000.0
+        sumw2: 1000000.0
+        sumw2_raw: 1000000.0
+        sumw_raw: 1000000.0
+        total_events: 1000000
+    UL18:
+      nanoAOD: /VBFHHTo4B_kl_1p00_cv_1p00_c2v_0p00_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2/NANOAODSIM
+      picoAOD:
+        count: 1000000
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_1p00_cv_1p00_c2v_0p00_UL18/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_1p00_cv_1p00_c2v_0p00_UL18/picoAOD.chunk1.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_1p00_cv_1p00_c2v_0p00_UL18/picoAOD.chunk2.root
+        missing: {}
+        saved_events: 216326
+        sumw: 1000000.0
+        sumw2: 1000000.0
+        sumw2_raw: 1000000.0
+        sumw_raw: 1000000.0
+        total_events: 1000000
+    xs: 0.0270800*0.5824**2
+  VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00:
+    UL16_postVFP:
+      nanoAOD: /VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM
+      picoAOD:
+        count: 459068
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_UL16_postVFP/picoAOD.root
+        missing: {}
+        saved_events: 42727
+        sumw: 459068.0
+        sumw2: 459068.0
+        sumw2_raw: 459068.0
+        sumw_raw: 459068.0
+        total_events: 459068
+    UL16_preVFP:
+      nanoAOD: /VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v2/NANOAODSIM
+      picoAOD:
+        count: 540000
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_UL16_preVFP/picoAOD.root
+        missing: {}
+        saved_events: 46626
+        sumw: 540000.0
+        sumw2: 540000.0
+        sumw2_raw: 540000.0
+        sumw_raw: 540000.0
+        total_events: 540000
+    UL17:
+      nanoAOD: /VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v2/NANOAODSIM
+      picoAOD:
+        count: 998000
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_UL17/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_UL17/picoAOD.chunk1.root
+        missing: {}
+        saved_events: 111470
+        sumw: 998000.0
+        sumw2: 998000.0
+        sumw2_raw: 998000.0
+        sumw_raw: 998000.0
+        total_events: 998000
+    UL18:
+      nanoAOD: /VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2/NANOAODSIM
+      picoAOD:
+        count: 999000
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_UL18/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_UL18/picoAOD.chunk1.root
+        missing: {}
+        saved_events: 106121
+        sumw: 999000.0
+        sumw2: 999000.0
+        sumw2_raw: 999000.0
+        sumw_raw: 999000.0
+        total_events: 999000
+    xs: 0.0017260*0.5824**2
+  VBFHHTo4B_kl_m0p94_cv_m1p21_c2v_1p94:
+    UL16_postVFP:
+      nanoAOD: /VBFHHTo4B_kl_m0p94_cv_m1p21_c2v_1p94_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM
+      picoAOD:
+        count: 460000
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_m0p94_cv_m1p21_c2v_1p94_UL16_postVFP/picoAOD.root
+        missing: {}
+        saved_events: 84868
+        sumw: 460000.0
+        sumw2: 460000.0
+        sumw2_raw: 460000.0
+        sumw_raw: 460000.0
+        total_events: 460000
+    UL16_preVFP:
+      nanoAOD: /VBFHHTo4B_kl_m0p94_cv_m1p21_c2v_1p94_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v2/NANOAODSIM
+      picoAOD:
+        count: 540000
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_m0p94_cv_m1p21_c2v_1p94_UL16_preVFP/picoAOD.root
+        missing: {}
+        saved_events: 95685
+        sumw: 540000.0
+        sumw2: 540000.0
+        sumw2_raw: 540000.0
+        sumw_raw: 540000.0
+        total_events: 540000
+    UL17:
+      nanoAOD: /VBFHHTo4B_kl_m0p94_cv_m1p21_c2v_1p94_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v2/NANOAODSIM
+      picoAOD:
+        count: 1000000
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_m0p94_cv_m1p21_c2v_1p94_UL17/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_m0p94_cv_m1p21_c2v_1p94_UL17/picoAOD.chunk1.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_m0p94_cv_m1p21_c2v_1p94_UL17/picoAOD.chunk2.root
+        missing: {}
+        saved_events: 209931
+        sumw: 1000000.0
+        sumw2: 1000000.0
+        sumw2_raw: 1000000.0
+        sumw_raw: 1000000.0
+        total_events: 1000000
+    UL18:
+      nanoAOD: /VBFHHTo4B_kl_m0p94_cv_m1p21_c2v_1p94_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2/NANOAODSIM
+      picoAOD:
+        count: 1000000
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_m0p94_cv_m1p21_c2v_1p94_UL18/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_m0p94_cv_m1p21_c2v_1p94_UL18/picoAOD.chunk1.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_m0p94_cv_m1p21_c2v_1p94_UL18/picoAOD.chunk2.root
+        missing: {}
+        saved_events: 204228
+        sumw: 1000000.0
+        sumw2: 1000000.0
+        sumw2_raw: 1000000.0
+        sumw_raw: 1000000.0
+        total_events: 1000000
+    xs: 0.0033739*0.5824**2
+  VBFHHTo4B_kl_m19p3_cv_m0p758_c2v_1p44:
+    UL16_postVFP:
+      nanoAOD: /VBFHHTo4B_kl_m19p3_cv_m0p758_c2v_1p44_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM
+      picoAOD:
+        count: 460000
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_m19p3_cv_m0p758_c2v_1p44_UL16_postVFP/picoAOD.root
+        missing: {}
+        saved_events: 65996
+        sumw: 460000.0
+        sumw2: 460000.0
+        sumw2_raw: 460000.0
+        sumw_raw: 460000.0
+        total_events: 460000
+    UL16_preVFP:
+      nanoAOD: /VBFHHTo4B_kl_m19p3_cv_m0p758_c2v_1p44_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v2/NANOAODSIM
+      picoAOD:
+        count: 540000
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_m19p3_cv_m0p758_c2v_1p44_UL16_preVFP/picoAOD.root
+        missing: {}
+        saved_events: 73101
+        sumw: 540000.0
+        sumw2: 540000.0
+        sumw2_raw: 540000.0
+        sumw_raw: 540000.0
+        total_events: 540000
+    UL17:
+      nanoAOD: /VBFHHTo4B_kl_m19p3_cv_m0p758_c2v_1p44_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v2/NANOAODSIM
+      picoAOD:
+        count: 1000000
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_m19p3_cv_m0p758_c2v_1p44_UL17/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_m19p3_cv_m0p758_c2v_1p44_UL17/picoAOD.chunk1.root
+        missing: {}
+        saved_events: 170516
+        sumw: 1000000.0
+        sumw2: 1000000.0
+        sumw2_raw: 1000000.0
+        sumw_raw: 1000000.0
+        total_events: 1000000
+    UL18:
+      nanoAOD: /VBFHHTo4B_kl_m19p3_cv_m0p758_c2v_1p44_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2/NANOAODSIM
+      picoAOD:
+        count: 1000000
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_m19p3_cv_m0p758_c2v_1p44_UL18/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_m19p3_cv_m0p758_c2v_1p44_UL18/picoAOD.chunk1.root
+        missing: {}
+        saved_events: 164534
+        sumw: 1000000.0
+        sumw2: 1000000.0
+        sumw2_raw: 1000000.0
+        sumw_raw: 1000000.0
+        total_events: 1000000
+    xs: 0.3340766*0.5824**2
   ZH4b:
     UL16_postVFP:
       nanoAOD: /ZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM

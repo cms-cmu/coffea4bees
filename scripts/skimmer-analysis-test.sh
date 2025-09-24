@@ -23,7 +23,7 @@ cat $PICO_YAML; echo
 
 
 display_section_header "Modifying dataset file with skimmer ci output"
-run_command python src/utils/merge_yaml_datasets.py \
+run_command python src/tools/merge_yaml_datasets.py \
     -m $INPUT_DIR/datasets_HH4b.yml \
     -f $PICO_YAML \
     -o $OUTPUT_DIR/datasets_HH4b.yml

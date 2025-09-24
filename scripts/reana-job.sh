@@ -1,6 +1,6 @@
 export REANA_SERVER_URL=https://reana.cern.ch
 export REANA_ACCESS_TOKEN="${REANA_TOKEN}"
-export workflow_name="$1"
+export workflow_name="${1:-test}"
 reana-client ping
 echo """
 ##########################################################
@@ -16,6 +16,21 @@ if [[ "$workflow_name" == coffea4bees_* ]]; then
     hash="${workflow_name#coffea4bees_}"
 else
     hash="$(git rev-parse --short HEAD)"
+fi
+
+# Check if we're in the right directory, if not try to navigate to barista_framework
+if [ ! -f "coffea4bees/workflows/inputs_reana.yaml" ]; then
+    echo "Warning: coffea4bees/workflows/inputs_reana.yaml not found in current directory"
+    echo "Attempting to change to barista_framework directory..."
+    cd barista_framework
+    if [ ! -f "coffea4bees/workflows/inputs_reana.yaml" ]; then
+        echo "Error: coffea4bees/workflows/inputs_reana.yaml not found in barista_framework either"
+        echo "Current directory: $(pwd)"
+        echo "Available files:"
+        ls -la
+        exit 1
+    fi
+    echo "Successfully found inputs_reana.yaml in barista_framework"
 fi
 
 sed -e 's|--githash.*|--githash '${hash}'"|' -i coffea4bees/workflows/inputs_reana.yaml
