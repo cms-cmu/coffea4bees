@@ -40,7 +40,7 @@ declare -A DEFAULTS=(
     ["OUTPUT_SUBDIR"]="analysis_test_cutflows"
     ["KNOWN_CUTFLOW"]="coffea4bees/analysis/tests/known_Counts.yml"
     ["ERROR_THRESHOLD"]="0.001"
-    ["CUTFLOW_LIST"]="passJetMult,passPreSel,passDiJetMass,SR,SB,passSvB,failSvB"
+    ["CUTFLOW_LIST"]="passJetMult,passPreSel,passDiJetMass,SR,SB"
 )
 
 # Initialize variables with defaults

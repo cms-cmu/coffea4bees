@@ -12,7 +12,7 @@ reana-job:
         NAME: "coffea4bees_scheduled_${CI_COMMIT_SHORT_SHA}"
     - if: $RUN_REANA == "true"
       variables:
-        NAME: "coffea4bees_manual_${CI_COMMIT_SHORT_SHA}"
+        NAME: "coffea4bees_${CI_COMMIT_SHORT_SHA}"
     - if: $CI_PIPELINE_SOURCE == "push"
       when: never
   allow_failure: true

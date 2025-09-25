@@ -23,7 +23,7 @@ from coffea4bees.jet_clustering.declustering import compute_decluster_variables,
 
 from coffea4bees.analysis.helpers.networks import HCREnsemble
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b
-from coffea4bees.analysis.helpers.FriendTreeSchema import FriendTreeSchema
+from src.friendtrees.FriendTreeSchema import FriendTreeSchema
 
 
 from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel

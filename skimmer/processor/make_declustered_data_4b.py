@@ -6,7 +6,7 @@ from coffea.nanoevents import NanoEventsFactory
 from coffea4bees.jet_clustering.clustering   import cluster_bs
 from coffea4bees.jet_clustering.declustering import make_synthetic_event, clean_ISR
 from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_SvB
-from coffea4bees.analysis.helpers.FriendTreeSchema import FriendTreeSchema
+from src.friendtrees.FriendTreeSchema import FriendTreeSchema
 from src.math.random import Squares
 from coffea4bees.analysis.helpers.event_weights import add_btagweights
 from coffea4bees.analysis.helpers.processor_config import processor_config

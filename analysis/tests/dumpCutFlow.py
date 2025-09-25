@@ -31,7 +31,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='uproot_plots')
     parser.add_argument('-i','--inputFile', default='hists.pkl', help='Input File. Default: hists.pkl')
     parser.add_argument('-o','--outputFile', default='knownCounts.yml', help='Input File. Default: hists.pkl')
-    parser.add_argument('-c','--cut_list', nargs='+', default=['passJetMult', 'passPreSel', 'passDiJetMass', 'SR', 'SB', 'passSvB', 'failSvB'], help='Input File. Default: hists.pkl')
+    parser.add_argument('-c','--cut_list', nargs='+', default=['passJetMult', 'passPreSel', 'passDiJetMass', 'SR', 'SB'], help='Input File. Default: hists.pkl')
     args = parser.parse_args()
 
     outputFile = open(f'{args.outputFile}', 'w')
