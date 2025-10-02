@@ -119,9 +119,9 @@ rule analysis_test_mixed_job:
     container: analysis_container
     shell: "source coffea4bees/scripts/analysis-test-mixed.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
-rule analysis_systematics_test_job:
-    output: f"{output_dir}/analysis_systematics_test_job/test_systematics.coffea" 
-    log: f"{output_dir}/analysis_systematics_test_job.log"
+rule analysis_systematics_test:
+    output: f"{output_dir}/analysis_systematics_test/test_systematics.coffea" 
+    log: f"{output_dir}/analysis_systematics_test.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/analysis-systematics-test.sh --output-base {output_dir} 2>&1 | tee -a {log}"
 
@@ -162,10 +162,10 @@ rule tools_make_jcm_weights:
     container: analysis_container
     shell: "source coffea4bees/scripts/tools-make-jcm-weights.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
-rule twoStageClosure_test_job:
+rule twoStageClosure_test:
     input: f"{output_dir}/analysis_test_mixed_job/testMixedData.json"
-    output: f"{output_dir}/twoStageClosure_test_job/test_dump_twoStageClosureInputsCounts.yml"
-    log: f"{output_dir}/twoStageClosure_test_job.log"
+    output: f"{output_dir}/twoStageClosure_test/test_dump_twoStageClosureInputsCounts.yml"
+    log: f"{output_dir}/twoStageClosure_test.log"
     shell: "./run_container combine source coffea4bees/scripts/tools-twostageclosure-mixed.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
 rule analysis_plot:
@@ -232,7 +232,7 @@ rule skimmer_analysis_cutflow:
     shell: "source coffea4bees/scripts/skimmer-analysis-cutflow.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
 rule analysis_systematics_cutflow:    
-    input: f"{output_dir}/analysis_systematics_test_job/test_systematics.coffea"
+    input: f"{output_dir}/analysis_systematics_test/test_systematics.coffea"
     output: f"{output_dir}/analysis_systematics_cutflow/test_dump_systematics_cutflow.yml"
     log: f"{output_dir}/analysis_systematics_cutflow.log"
     container: analysis_container
