@@ -8,7 +8,7 @@ import numpy as np
 from src.math.random import Squares
 
 if TYPE_CHECKING:
-    from .classifier.HCR import HCREnsemble
+    from coffea4bees.analysis.helpers.classifier.HCR import HCREnsemble
 
 def setSvBVars(SvBName, event):
 
@@ -60,12 +60,45 @@ def compute_SvB(events, mask, doCheck=True, **models: HCREnsemble):
         if name in events.fields:
             events[f"old_{name}"] = events[name]
 
-        tmp_c_score, tmp_q_score = model(masked_events)
+        # Handle empty mask case - if no events pass the mask, skip model evaluation
+        if len(masked_events) == 0:
+            # Create zero arrays with proper shape for all events
+            classes = model.classes
+            tmp_c_score = np.zeros((0, len(classes)))
+            tmp_q_score = np.zeros((0, 3))
+        else:
+            # Additional checks for tensor compatibility
+            try:
+                # Check if required fields have proper structure before model evaluation
+                if hasattr(masked_events, 'canJet') and len(masked_events.canJet) == 0:
+                    logging.warning(f"Model {name}: masked_events has length {len(masked_events)} but empty canJet, using zero arrays")
+                    classes = model.classes
+                    tmp_c_score = np.zeros((0, len(classes)))
+                    tmp_q_score = np.zeros((0, 3))
+                elif hasattr(masked_events, 'notCanJet_coffea') and len(ak.flatten(masked_events.notCanJet_coffea.pt, axis=None)) == 0:
+                    logging.warning(f"Model {name}: masked_events has empty notCanJet_coffea tensors, using zero arrays")
+                    classes = model.classes
+                    tmp_c_score = np.zeros((0, len(classes)))
+                    tmp_q_score = np.zeros((0, 3))
+                else:
+                    tmp_c_score, tmp_q_score = model(masked_events)
+            except RuntimeError as e:
+                if "cannot reshape tensor" in str(e) and "0 elements" in str(e):
+                    # This happens when masked_events appears non-empty but has empty arrays internally
+                    logging.warning(f"Model {name}: Detected tensor reshape error with 0 elements, creating zero arrays instead. Error: {str(e)}")
+                    classes = model.classes
+                    tmp_c_score = np.zeros((0, len(classes)))
+                    tmp_q_score = np.zeros((0, 3))
+                else:
+                    raise e
 
         c_score = np.zeros((len(events),tmp_c_score.shape[1]))
-        c_score[mask] = tmp_c_score
         q_score = np.zeros((len(events),tmp_q_score.shape[1]))
-        q_score[mask] = tmp_q_score
+        
+        # Only assign if we have actual scores to assign
+        if tmp_c_score.shape[0] > 0:
+            c_score[mask] = tmp_c_score
+            q_score[mask] = tmp_q_score
 
         del tmp_c_score, tmp_q_score
 
