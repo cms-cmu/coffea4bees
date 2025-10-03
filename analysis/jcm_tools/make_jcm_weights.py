@@ -2,9 +2,9 @@
 """
 JCM (Jet Combinatoric Model) Weight Generator
 
-This script produces weights for the Jet Combinatoric Model (JCM) used 
+This script produces weights for the Jet Combinatoric Model (JCM) used
 in HH→4b analysis to model the combinatorial background from 3-tag events.
-It performs a fit to the jet multiplicity distribution and computes weights 
+It performs a fit to the jet multiplicity distribution and computes weights
 to apply to the 3-tag sample to model the 4-tag background.
 
 Author: Coffea4bees team
@@ -23,7 +23,9 @@ from typing import Dict, Tuple, List, Optional, Union, Any
 # Add the current directory to the path
 sys.path.insert(0, os.getcwd())
 from coffea4bees.plots.plots import load_config_4b
-import src.plotting.iPlot_config as cfg
+from src.plotting.iPlot_config import plot_config
+cfg = plot_config()
+
 from coffea4bees.analysis.jcm_tools.jcm_model import jetCombinatoricModel
 from coffea4bees.analysis.jcm_tools.helpers import (
     loadHistograms,
@@ -610,7 +612,8 @@ def main():
             cfg.plotConfig = load_config_4b(args.metadata)
             cfg.hists = load_hists(args.inputFile)
             cfg.combine_input_files = args.combine_input_files
-            cfg.axisLabels, cfg.cutList = read_axes_and_cuts(cfg.hists, cfg.plotConfig)
+            cfg.axisLabelsDict, cfg.cutListDict = read_axes_and_cuts(cfg.hists, cfg.plotConfig)
+            cfg.set_hist_key("hists")
 
         # Load histograms
         histograms = loadHistograms(
