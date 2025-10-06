@@ -16,12 +16,12 @@ rule workspace:
         echo "$LOG"
         mkdir -p $(dirname $LOG)
         echo "[$(date)] Starting workspace rule with signal {params.signallabel}" > $LOG
-        {params.container_wrapper} cd $(dirname {input}) &&\
+        {params.container_wrapper} "cd $(dirname {input}) && \
             text2workspace.py $(basename {input}) \
             -P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose \
             --PO 'map=.*/{params.signallabel}:r{params.signallabel}[1,-10,10]' \
             {params.othersignal_maps} \
-            -o $(basename {output}) 2>&1 | tee -a $(basename $LOG)
+            -o $(basename {output})" 2>&1 | tee -a $(basename $LOG)
 
         echo "[$(date)] Completed workspace rule with signal {params.signallabel}" >> $LOG
         """
@@ -44,19 +44,20 @@ rule limits:
         echo "[$(date)] Starting limits rule with signal {params.signallabel}" > $LOG
 
         echo "[$(date)] Running AsymptoticLimits" >> $LOG
-        {params.container_wrapper} "cd $(dirname {input}) &&\
+        {params.container_wrapper} "cd $(dirname {input}) && \
             combine -M AsymptoticLimits $(basename {input}) \
             --redefineSignalPOIs r{params.signallabel} \
             {params.set_parameters_zero} \
             {params.freeze_parameters} \
             -n _{params.signallabel}" \
-            2>&1 | tee -a $LOG {output.txt}
+            2>&1 | tee -a $LOG > {output.txt}
 
         echo "[$(date)] Running CollectLimits" >> $LOG
-        {params.container_wrapper} "cd $(dirname {input}) &&\
+        {params.container_wrapper} "cd $(dirname {input}) && \
             combineTool.py -M CollectLimits \
             higgsCombine_{params.signallabel}.AsymptoticLimits.mH120.root \
-            -o $(basename {output.json})" 2>&1 | tee -a $LOG
+            -o $(basename {output.json})" \
+            2>&1 | tee -a $LOG
 
         echo "[$(date)] Completed limits rule with signal {params.signallabel}" >> $LOG
         """
@@ -77,23 +78,23 @@ rule significance:
         echo "[$(date)] Starting significance rule with signal {params.signallabel}" > $LOG
 
         echo "[$(date)] Running observed significance" >> $LOG
-        {params.container_wrapper} "cd $(dirname {input}) &&\
+        {params.container_wrapper} "cd $(dirname {input}) && \
             combine -M Significance $(basename {input}) \
             {params.set_parameters_zero} \
             {params.freeze_parameters} \
             --redefineSignalPOIs r{params.signallabel} \
             -n _{params.signallabel}" \
-            2>&1 | tee -a $LOG {output}
+            2>&1 | tee -a $LOG > {output}
 
         echo "[$(date)] Running expected significance" >> $LOG
-        {params.container_wrapper} "cd $(dirname {input}) &&\
+        {params.container_wrapper} "cd $(dirname {input}) && \
             combine -M Significance $(basename {input}) \
             --redefineSignalPOIs r{params.signallabel} \
             {params.set_parameters_zero} \
             {params.freeze_parameters} \
             -n _{params.signallabel} \
             -t -1 --expectSignal=1" \
-            2>&1 | tee -a $LOG {output}
+            2>&1 | tee -a $LOG >> {output}
 
         echo "[$(date)] Completed significance rule with signal {params.signallabel}" >> $LOG
         """
@@ -115,29 +116,32 @@ rule likelihood_scan:
 
         echo "|---- Running initial fit"
         echo "[$(date)] Running initial fit" >> $LOG
-        {params.container_wrapper} "cd $(dirname {input}) &&\
+        {params.container_wrapper} "cd $(dirname {input}) && \
             combine -M MultiDimFit -d $(basename {input}) \
             -n _$(basename {input} .root)_{params.signallabel} \
             {params.set_parameters_zero} \
             {params.freeze_parameters} \
-            --saveWorkspace --robustFit 1" 2>&1 | tee -a $LOG
+            --saveWorkspace --robustFit 1" \
+            2>&1 | tee -a $LOG
 
         echo "|---- Running MultiDimFit"
         echo "[$(date)] Running MultiDimFit" >> $LOG
-        {params.container_wrapper} "cd $(dirname {input}) &&\
+        {params.container_wrapper} "cd $(dirname {input}) && \
             combine -M MultiDimFit \
             -d higgsCombine_$(basename {input} .root)_{params.signallabel}.MultiDimFit.mH120.root \
             -n _$(basename {input} .root)_{params.signallabel}_final \
             -P r{params.signallabel} \
             {params.set_parameters_zero} \
             {params.freeze_parameters} \
-            --snapshotName MultiDimFit --rMin -10 --rMax 10 --algo grid --points 50 --alignEdges 1" 2>&1 | tee -a $LOG
+            --snapshotName MultiDimFit --rMin -10 --rMax 10 --algo grid --points 50 --alignEdges 1" \
+            2>&1 | tee -a $LOG
 
         echo "|---- Plotting likelihood scan"
         echo "[$(date)] Plotting likelihood scan" >> $LOG
-        {params.container_wrapper} "cd $(dirname {input}) &&\
+        {params.container_wrapper} "cd $(dirname {input}) && \
             plot1DScan.py higgsCombine_$(basename {input} .root)_{params.signallabel}_final.MultiDimFit.mH120.root \
-            --POI r{params.signallabel} -o $(basename {output} .pdf)" 2>&1 | tee -a $LOG
+            --POI r{params.signallabel} -o $(basename {output} .pdf)" \
+            2>&1 | tee -a $LOG
 
         echo "[$(date)] Completed likelihood_scan rule with signal {params.signallabel}" >> $LOG
         """
@@ -159,37 +163,41 @@ rule impacts:
 
         echo "|---- Running initial fit"
         echo "[$(date)] Running initial fit" >> $LOG
-        {params.container_wrapper} "cd $(dirname {input}) &&\
+        {params.container_wrapper} "cd $(dirname {input}) && \
             combineTool.py -M Impacts -d $(basename {input}) \
             --doInitialFit --robustFit 1 -m 125 \
             --setParameterRanges r{params.signallabel}=-10,10{params.set_parameters_ranges} \
             {params.set_parameters_zero} \
-            -n $(basename {input} .root)" 2>&1 | tee -a $LOG
+            -n $(basename {input} .root)" \
+            2>&1 | tee -a $LOG
 
         echo "|---- Running fits per systematic"
         echo "[$(date)] Running fits per systematic" >> $LOG
-        {params.container_wrapper} "cd $(dirname {input}) &&\
+        {params.container_wrapper} "cd $(dirname {input}) && \
             combineTool.py -M Impacts -d $(basename {input}) \
             --doFits --robustFit 1 -m 125 --parallel 4 \
             --setParameterRanges r{params.signallabel}=-10,10{params.set_parameters_ranges} \
             {params.set_parameters_zero} \
-            -n $(basename {input} .root)" 2>&1 | tee -a $LOG
+            -n $(basename {input} .root)" \
+            2>&1 | tee -a $LOG
 
         echo "|---- Running merging results"
         echo "[$(date)] Running merging results" >> $LOG
-        {params.container_wrapper} "cd $(dirname {input}) &&\
+        {params.container_wrapper} "cd $(dirname {input}) && \
             combineTool.py -M Impacts \
             -m 125 -n $(basename {input} .root) \
             -d $(basename {input}) \
-            -o impacts_combine_$(basename {input} .root)_exp.json" 2>&1 | tee -a $LOG
-            
+            -o impacts_combine_$(basename {input} .root)_exp.json" \
+            2>&1 | tee -a $LOG
+
         echo "|---- Running creating pdf"
         echo "[$(date)] Running creating pdf" >> $LOG
-        {params.container_wrapper} "cd $(dirname {input}) &&\
+        {params.container_wrapper} "cd $(dirname {input}) && \
             plotImpacts.py -i impacts_combine_$(basename {input} .root)_exp.json \
             -o $(basename {output} .pdf) \
             --POI r{params.signallabel} \
-            --per-page 20 --left-margin 0.3 --height 400 --label-size 0.04" 2>&1 | tee -a $LOG
+            --per-page 20 --left-margin 0.3 --height 400 --label-size 0.04" \
+            2>&1 | tee -a $LOG
 
         echo "[$(date)] Completed impacts rule with signal {params.signallabel}" >> $LOG
         """
