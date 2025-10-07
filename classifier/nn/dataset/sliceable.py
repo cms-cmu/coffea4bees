@@ -6,7 +6,7 @@ from typing import Generator, Generic, TypeVar
 
 import numpy as np
 import torch
-from src.math.random import SeedLike, _seed
+from src.math_tools.random import SeedLike, _seed
 from torch.utils.data import Dataset
 from typing_extensions import Self
 

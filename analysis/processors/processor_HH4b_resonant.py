@@ -35,7 +35,7 @@ from python.analysis.helpers.topCandReconstruction import (
     find_tops,
     find_tops_slow,
 )
-from src.hist import Fill
+from src.hist_tools import Fill
 from src.data_formats.root import Chunk, TreeReader
 from coffea import processor
 from coffea.analysis_tools import PackedSelection

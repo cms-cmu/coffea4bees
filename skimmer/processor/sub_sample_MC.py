@@ -5,7 +5,7 @@ from src.physics.event_selection import apply_event_selection
 from coffea.nanoevents import NanoEventsFactory
 
 from coffea4bees.analysis.helpers.FriendTreeSchema import FriendTreeSchema
-from src.math.random import Squares
+from src.math_tools.random import Squares
 from coffea4bees.analysis.helpers.event_weights import add_btagweights
 from coffea4bees.analysis.helpers.processor_config import processor_config
 from src.physics.event_weights import add_weights

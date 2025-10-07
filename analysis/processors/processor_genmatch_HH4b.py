@@ -14,8 +14,8 @@ from coffea.nanoevents import NanoEventsFactory, NanoAODSchema
 from coffea import processor
 from coffea.analysis_tools import Weights, PackedSelection
 
-from src.hist import Collection, Fill
-from src.hist.object import LorentzVector, Jet
+from src.hist_tools import Collection, Fill
+from src.hist_tools.object import LorentzVector, Jet
 
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b
 from coffea4bees.analysis.helpers.FriendTreeSchema import FriendTreeSchema

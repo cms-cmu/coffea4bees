@@ -5,7 +5,7 @@ from functools import cached_property
 from typing import TYPE_CHECKING, Callable, Iterable, Literal
 
 import numpy as np
-from src.math.random import SeedLike, Squares
+from src.math_tools.random import SeedLike, Squares
 
 from ..config.setting.df import Columns
 from ..config.state.label import MultiClass

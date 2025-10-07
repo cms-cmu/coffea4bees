@@ -15,9 +15,9 @@ from coffea.nanoevents import NanoEventsFactory, NanoAODSchema
 from coffea.nanoevents.methods import vector
 from coffea import processor
 
-from src.hist import Collection, Fill
-from src.hist import H, Template
-from src.hist.object import LorentzVector, Jet, Muon, Elec
+from src.hist_tools import Collection, Fill
+from src.hist_tools import H, Template
+from src.hist_tools.object import LorentzVector, Jet, Muon, Elec
 
 from coffea4bees.analysis.helpers.FriendTreeSchema import FriendTreeSchema
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b

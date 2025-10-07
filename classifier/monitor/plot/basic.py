@@ -4,7 +4,7 @@ from itertools import chain
 from typing import TypedDict
 
 import pandas as pd
-from src.hist import Label, LabelLike
+from src.hist_tools import Label, LabelLike
 from src.utils import unique
 from bokeh.layouts import column, row
 from bokeh.models import (
