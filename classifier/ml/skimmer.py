@@ -6,7 +6,7 @@ from typing import Callable
 
 import numpy.typing as npt
 import torch
-from src.math.random import SeedLike, Squares
+from src.math_tools.random import SeedLike, Squares
 from coffea4bees.classifier.config.setting import ml as cfg
 from torch import BoolTensor
 from torch.utils.data import Dataset

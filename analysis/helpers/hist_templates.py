@@ -1,5 +1,5 @@
-from src.hist.object import LorentzVector, Jet
-from src.hist import H, Template
+from src.hist_tools.object import LorentzVector, Jet
+from src.hist_tools import H, Template
 import numpy as np
 
 class SvBHists(Template):

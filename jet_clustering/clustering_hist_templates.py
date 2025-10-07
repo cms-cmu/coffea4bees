@@ -1,6 +1,6 @@
 import awkward as ak
-from src.hist.object import LorentzVector, Jet
-from src.hist import H, Template
+from src.hist_tools.object import LorentzVector, Jet
+from src.hist_tools import H, Template
 
 class ClusterHists(Template):
     pt        = H((100,  0, 300, ('pt',    "pt [GeV]")))

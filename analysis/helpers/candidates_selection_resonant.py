@@ -1,7 +1,7 @@
 import numpy as np
 import awkward as ak
 import logging
-from src.math.random import Squares
+from src.math_tools.random import Squares
 from python.analysis.helpers.SvB_helpers import compute_SvB
 from python.analysis.helpers.FvT_helpers import compute_FvT
 from coffea.nanoevents.methods import vector

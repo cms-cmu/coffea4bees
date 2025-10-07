@@ -34,7 +34,7 @@ from coffea4bees.analysis.helpers.topCandReconstruction import (
 from coffea4bees.analysis.helpers.event_selection import apply_4b_lowpt_selection
 from src.physics.event_selection import apply_event_selection
 from src.physics.event_weights import add_weights
-from src.hist import Fill
+from src.hist_tools import Fill
 from src.data_formats.root import Chunk, TreeReader
 from coffea import processor
 from coffea.analysis_tools import PackedSelection
