@@ -1,6 +1,6 @@
 include:
   - local: workflows/gitlab-CI/stages_code.yml
-  - local: workflows/gitlab-CI/stages_classifier.yml
+  # - local: workflows/gitlab-CI/stages_classifier.yml
   - local: workflows/gitlab-CI/stages_skimmer.yml
   - local: workflows/gitlab-CI/stages_friendtree.yml
   - local: workflows/gitlab-CI/stages_analysis.yml
