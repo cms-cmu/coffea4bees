@@ -37,7 +37,7 @@ include:
   - local: workflows/gitlab-CI/stages_code.yml
   - local: workflows/gitlab-CI/stages_skimmer.yml
   - local: workflows/gitlab-CI/stages_analysis.yml
-  - local: workflows/gitlab-CI/stages_classifier.yml
+  # - local: workflows/gitlab-CI/stages_classifier.yml
   - local: workflows/gitlab-CI/stages_cutflow.yml
   - local: workflows/gitlab-CI/stages_tools.yml
   - local: workflows/gitlab-CI/stages_friendtree.yml
@@ -56,7 +56,7 @@ stages:
   - tools
   - plot
   - cutflow
-  - classifier
+  # - classifier
   - reana
 
 
@@ -130,19 +130,19 @@ setup_workspace:
     - k8s-cvmfs
   retry: 2
 
-.base_classifier:
-  needs:
-    - voms_proxy
-    - setup_workspace
-  image: registry.hub.docker.com/chuyuanliu/heptools:ml-cpu # TODO change to central repo
-  before_script:
-    - source /entrypoint.sh
-    - cd $CI_PROJECT_DIR/
-    - pwd && ls -la
-    - cd barista_framework/
-    - pwd && ls -la
-    - ls -la coffea4bees/
-  tags:
-    - k8s-cvmfs
-  artifacts:
-    expire_in: 1 day
+# .base_classifier:
+#   needs:
+#     - voms_proxy
+#     - setup_workspace
+#   image: registry.hub.docker.com/chuyuanliu/heptools:ml-cpu # TODO change to central repo
+#   before_script:
+#     - source /entrypoint.sh
+#     - cd $CI_PROJECT_DIR/
+#     - pwd && ls -la
+#     - cd barista_framework/
+#     - pwd && ls -la
+#     - ls -la coffea4bees/
+#   tags:
+#     - k8s-cvmfs
+#   artifacts:
+#     expire_in: 1 day
