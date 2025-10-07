@@ -24,7 +24,7 @@ from coffea4bees.analysis.helpers.filling_histograms import (
     filling_nominal_histograms,
     filling_syst_histograms,
 )
-from coffea4bees.analysis.helpers.FriendTreeSchema import FriendTreeSchema
+from src.friendtrees.FriendTreeSchema import FriendTreeSchema
 from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
 from coffea4bees.analysis.helpers.processor_config import processor_config
 from coffea4bees.analysis.helpers.candidates_selection import create_cand_jet_dijet_quadjet
@@ -792,6 +792,7 @@ class analysis(processor.ProcessorABC):
             self._cutFlow.fill( "SB", selev[(selev.passDiJetMass & selev["quadJet_selected"].SB)] )
             self._cutFlow.fill( "SB_woTrig", selev[(selev.passDiJetMass & selev["quadJet_selected"].SB)],
                             wOverride=selev['weight_woTrig'][selev.passSB] )
+            self._cutFlow.fill("passVBFSel", selev[selev.passVBFSel])
             if self.run_SvB:
                 self._cutFlow.fill("passSvB", selev[selev.passSvB])
                 self._cutFlow.fill("passSvB_woTrig", selev[selev.passSvB],

@@ -1,6 +1,6 @@
 export REANA_SERVER_URL=https://reana.cern.ch
 export REANA_ACCESS_TOKEN="${REANA_TOKEN}"
-export workflow_name="$1"
+export workflow_name="${1:-test}"
 reana-client ping
 echo """
 ##########################################################

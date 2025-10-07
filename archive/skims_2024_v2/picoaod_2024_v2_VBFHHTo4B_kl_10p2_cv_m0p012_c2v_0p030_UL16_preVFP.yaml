@@ -1,0 +1,74 @@
+VBFHHTo4B_kl_10p2_cv_m0p012_c2v_0p030_UL16_preVFP:
+  count: 540000
+  cutFlowFourTag:
+    all: 540000.0
+    lumimask: 540000.0
+    passHLT: 538155.0
+    passJetMult: 187366.0
+    passNoiseFilter: 538155.0
+    passPreSel: 90617.0
+  cutFlowFourTagUnitWeight:
+    all: 540000
+    lumimask: 540000
+    passHLT: 538155
+    passJetMult: 187366
+    passNoiseFilter: 538155
+    passPreSel: 90617
+  cutFlowThreeTag:
+    all: 540000.0
+    lumimask: 540000.0
+    passHLT: 538155.0
+    passJetMult: 187366.0
+    passNoiseFilter: 538155.0
+    passPreSel: 90617.0
+  cutFlowThreeTagUnitWeight:
+    all: 540000
+    lumimask: 540000
+    passHLT: 538155
+    passJetMult: 187366
+    passNoiseFilter: 538155
+    passPreSel: 90617
+  files:
+  - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_10p2_cv_m0p012_c2v_0p030_UL16_preVFP/picoAOD.root
+  missing: {}
+  reproducible:
+    args: Namespace(processor='coffea4bees/skimmer/processor/skimmer_4b.py', configs='coffea4bees/skimmer/metadata/HH4b.yml',
+      metadata='coffea4bees/metadata/datasets_HH4b_v1p2.yml', triggers='coffea4bees/metadata/triggers_HH4b.yml',
+      luminosities='coffea4bees/metadata/luminosities_HH4b.yml', output_file='picoaod_2024_v2_VBFHHTo4B_kl_10p2_cv_m0p012_c2v_0p030_UL16_preVFP.yaml',
+      output_path='output/', years=['UL16_preVFP'], datasets=['VBFHHTo4B_kl_10p2_cv_m0p012_c2v_0p030'],
+      era=['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'], skimming=True, test=False, systematics=None,
+      run_dask=True, condor=True, debug=False, check_input_files=False, githash='',
+      gitdiff='')
+    date: '2025-09-18 16:22:30'
+    diff: "diff --git a/runner.py b/runner.py\nindex 2a09154c..f1261ef4 100644\n---\
+      \ a/runner.py\n+++ b/runner.py\n@@ -336,7 +336,7 @@ def setup_condor_cluster(config_runner):\n\
+      \     logging.info('Waiting for at least one worker...')\n     client.wait_for_workers(1)\n\
+      \     logging.info('HTCondor cluster setup complete!')\n-    return client\n\
+      +    return client, cluster\n \n \n def setup_local_cluster(config_runner, args):\n\
+      @@ -351,7 +351,7 @@ def setup_local_cluster(config_runner, args):\n        \
+      \ 'dashboard_address': config_runner['dashboard_address'],\n     }\n     cluster\
+      \ = LocalCluster(**cluster_args)\n-    return Client(cluster)\n+    return Client(cluster),\
+      \ cluster\n \n \n def setup_pico_base_name(configs):\n@@ -542,6 +542,8 @@ def\
+      \ process_metadata_output(output, fileset, config_runner, args, client):\n \
+      \                metadata[ikey][\"sumw\"] = fileset[ikey][\"metadata\"][\"genEventSumw\"\
+      ]\n \n     # Save metadata file\n+    if not os.path.exists(args.output_path):\n\
+      +        os.makedirs(args.output_path)\n     output_file = ('picoaod_datasets.yml'\
+      \ if args.output_file.endswith('coffea') \n                    else args.output_file)\n\
+      \     dfile = f'{args.output_path}/{output_file}'\n@@ -917,14 +919,15 @@ if\
+      \ __name__ == '__main__':\n     logging.info(\"Setting up compute environment...\"\
+      )\n     client = None\n     pool = None\n+    cluster = None\n     \n     if\
+      \ args.condor:\n         logging.info(\"Configuring HTCondor cluster execution...\"\
+      )\n         args.run_dask = True\n-        client = setup_condor_cluster(config_runner)\n\
+      +        client, cluster = setup_condor_cluster(config_runner)\n     elif args.run_dask:\n\
+      \         logging.info(\"Configuring local Dask cluster execution...\")\n- \
+      \       client = setup_local_cluster(config_runner, args)\n+        client,\
+      \ cluster = setup_local_cluster(config_runner, args)\n     else:\n         logging.info(\"\
+      Configuring local process pool execution...\")\n         # Setup process pool\
+      \ for futures executor\n"
+    hash: 52f52e95b54a81def0aecc7632fa7b157dcbaf0b
+  saved_events: 90617
+  sumw: 540000.0
+  sumw2: 540000.0
+  sumw2_raw: 540000.0
+  sumw_raw: 540000.0
+  total_events: 540000

@@ -16,7 +16,9 @@ sys.path.insert(0, os.getcwd())
 from coffea4bees.plots.plots import load_config_4b
 from src.plotting.plots import load_hists, read_axes_and_cuts, init_arg_parser
 import src.plotting.helpers as plot_helpers
-import src.plotting.iPlot_config as cfg
+from src.plotting.iPlot_config import plot_config
+cfg = plot_config()
+
 from coffea4bees.jet_clustering.declustering import get_splitting_summary, get_splitting_name
 
 np.seterr(divide='ignore', invalid='ignore')
@@ -420,7 +422,8 @@ if __name__ == '__main__':
 
     cfg.hists = load_hists(args.inputFile)
     cfg.fileLabels = args.fileLabels
-    cfg.axisLabels, cfg.cutList = read_axes_and_cuts(cfg.hists, cfg.plotConfig)
+    cfg.axisLabelsDict, cfg.cutListDict = read_axes_and_cuts(cfg.hists, cfg.plotConfig)
+    cfg.set_hist_key("hists")
 
     #varList = [ h for h in cfg.hists[0].keys() if not h in args.skip_hists ]
 

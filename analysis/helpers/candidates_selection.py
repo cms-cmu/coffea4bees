@@ -106,6 +106,21 @@ def create_cand_jet_dijet_quadjet(
     notCanJet = notCanJet[notCanJet.selected_loose]
     notCanJet = notCanJet[ak.argsort(notCanJet.pt, axis=1, ascending=False)]
 
+    # vbf jets should be selected_loose without eta restriction
+    mask_two_notCanJets = ak.num(notCanJet) >= 2
+    vbfJets = ak.pad_none(notCanJet, 2)
+    selev["vbfJets_mjj"] = ak.where(
+        mask_two_notCanJets,
+        (vbfJets[:, 0] + vbfJets[:, 1]).mass,
+        -1.0,
+    )
+    selev["vbfJets_detajj"] = ak.where(
+        mask_two_notCanJets,
+        np.abs(vbfJets[:, 0].eta - vbfJets[:, 1].eta),
+        -1.0,
+    )
+    selev['passVBFSel'] = ( (selev.vbfJets_mjj > 400) & (selev.vbfJets_detajj > 3.5) )
+
     notCanJet["isSelJet"] = 1 * ( (notCanJet.pt >= 40) & (np.abs(notCanJet.eta) < 2.4) )
     selev["notCanJet_coffea"] = notCanJet
     selev["nNotCanJet"] = ak.num(selev.notCanJet_coffea)

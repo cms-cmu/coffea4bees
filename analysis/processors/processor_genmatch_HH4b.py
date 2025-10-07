@@ -18,7 +18,7 @@ from src.hist_tools import Collection, Fill
 from src.hist_tools.object import LorentzVector, Jet
 
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b
-from coffea4bees.analysis.helpers.FriendTreeSchema import FriendTreeSchema
+from src.friendtrees.FriendTreeSchema import FriendTreeSchema
 
 from src.physics.common import apply_btag_sf, update_events
 from coffea4bees.analysis.helpers.truth_tools import find_genpart

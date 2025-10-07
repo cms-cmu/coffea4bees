@@ -73,7 +73,7 @@ rule merging_coffea_files:
         mkdir -p $MPLCONFIGDIR
         
         echo "Merging all the coffea files" 2>&1 | tee -a {log}
-        cmd="mprof run -C -o /tmp/mprofile_merge_$(basename {log} .log).dat python coffea4bees/analysis/tools/merge_coffea_files.py -f {input} -o {output}"
+        cmd="mprof run -C -o /tmp/mprofile_merge_$(basename {log} .log).dat python src/tools/merge_coffea_files.py -f {input} -o {output}"
         echo $cmd 2>&1 | tee -a {log}
         $cmd 2>&1 | tee -a {log}
         if [ "{params.run_performance}" = "True" ]; then
