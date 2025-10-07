@@ -34,8 +34,8 @@ fi
 
 
 display_section_header "Running test processor "
-# python src/utils/merge_yaml_datasets.py -m coffea4bees/metadata/datasets_HH4b.yml -f ${OUTPUT_DIR}/picoaod_datasets_TTToHadronic_pseudodata_test_UL18.yml  -o ${OUTPUT_DIR}/datasets_TT_pseudodata_test.yml
-# python src/utils/merge_yaml_datasets.py -m coffea4bees/metadata/datasets_synthetic_seed17.yml -f ${OUTPUT_DIR}/picoaod_datasets_declustered_GluGluToHHTo4B_cHHH1_Run2_seed17.yml -o ${OUTPUT_DIR}/datasets_synthetic_seed17.yml
+# python src/tools/merge_yaml_datasets.py -m coffea4bees/metadata/datasets_HH4b.yml -f ${OUTPUT_DIR}/picoaod_datasets_TTToHadronic_pseudodata_test_UL18.yml  -o ${OUTPUT_DIR}/datasets_TT_pseudodata_test.yml
+# python src/tools/merge_yaml_datasets.py -m coffea4bees/metadata/datasets_synthetic_seed17.yml -f ${OUTPUT_DIR}/picoaod_datasets_declustered_GluGluToHHTo4B_cHHH1_Run2_seed17.yml -o ${OUTPUT_DIR}/datasets_synthetic_seed17.yml
 #cat ${OUTPUT_DIR}/datasets_synthetic_test.yml
 time python runner.py -o test_TT_pseudodata_datasets.coffea -d ps_data_TTToHadronic -p coffea4bees/analysis/processors/processor_HH4b.py -y UL18  -op ${OUTPUT_DIR} -c coffea4bees/analysis/metadata/HH4b_ps_data.yml -m coffea4bees/metadata/datasets_TT_pseudodata_test.yml
 
