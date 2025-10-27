@@ -18,8 +18,11 @@ import yaml
 import mplhep as hep  # HEP (CMS) extensions/styling on top of mpl
 
 sys.path.insert(0, os.getcwd())
-from src.plotting.plots import makePlot, make2DPlot, load_config, load_hists, read_axes_and_cuts, parse_args
-import src.plotting.iPlot_config as cfg
+from coffea4bees.plots.plots import load_config_4b
+from src.plotting.plots import makePlot, make2DPlot, load_hists, read_axes_and_cuts, parse_args
+from src.plotting.iPlot_config import plot_config
+cfg = plot_config()
+
 import src.plotting.helpers as plot_helpers
 import copy
 np.seterr(divide='ignore', invalid='ignore')
@@ -251,12 +254,12 @@ def makeEffPlot(name, data_to_plot, cuts_flow, output_dir, **kwargs):
 
 def calculate_ratios(num_data, den_data, thisSF):
     """Calculate ratios and uncertainties for efficiency plots.
-    
+
     Args:
         num_data: Numerator data
         den_data: Denominator data
         thisSF: Scale factor to apply
-        
+
     Returns:
         Tuple of (ratios, ratio_uncertainties)
     """
@@ -270,12 +273,12 @@ def calculate_ratios(num_data, den_data, thisSF):
 
 def calculate_total_ratios(num_data, den_data, thisSF):
     """Calculate total ratios and uncertainties for efficiency plots.
-    
+
     Args:
         num_data: Numerator data
         den_data: Denominator data
         thisSF: Scale factor to apply
-        
+
     Returns:
         Tuple of (ratios, ratio_uncertainties)
     """
@@ -367,7 +370,7 @@ if __name__ == '__main__':
 
     args = parse_args()
 
-    cfg.plotConfig = load_config(args.metadata)
+    cfg.plotConfig = load_config_4b(args.metadata)
     cfg.outputFolder = args.outputFolder
     cfg.combine_input_files = args.combine_input_files
     cfg.plotModifiers = yaml.safe_load(open(args.modifiers, 'r'))
@@ -378,8 +381,8 @@ if __name__ == '__main__':
 
     cfg.hists = load_hists(args.inputFile)
     cfg.fileLabels = args.fileLabels
-    cfg.axisLabels, cfg.cutList = read_axes_and_cuts(cfg.hists, cfg.plotConfig)
-
+    cfg.axisLabelsDict, cfg.cutListDict = read_axes_and_cuts(cfg.hists, cfg.plotConfig)
+    cfg.set_hist_key("hists")
 
     for y in ["UL18", "UL17","UL16_preVFP", "UL16_postVFP", "RunII"]:
     #for y in ["UL18"]:

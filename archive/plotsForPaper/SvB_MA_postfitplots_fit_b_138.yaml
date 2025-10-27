@@ -2,7 +2,7 @@ hists:
   data:
     process: data
     tag: fourTag
-    label: Four-tag data
+    label: Data
     edgecolor: k
     fillcolor: k
     name: data
@@ -862,7 +862,7 @@ ratio:
     - 0.9680851063829786
     - 0.9893617021276595
   band_dataToBkg:
-    label: Bkgd. Uncertainty
+    label: Background uncertainty
     color: k
     type: band
     hatch: \\\
@@ -1112,6 +1112,7 @@ cut: passPreSel
 region: SR
 kwargs:
   outputFolder: plotsANUnblinded/
+  CMSText: Preliminary  
   yscale: log
   norm: 0
   rebin: 1
@@ -1122,13 +1123,13 @@ kwargs:
   xlim:
   - 0
   - 1.0
-  ylabel: Events / bin
-  rlabel: Data / bkg.
+  ylabel: Events
+  rlabel: Data/Pred
   write_yaml: false
   year_str: 138 $fb^{-1}$
   do_title: false
   ratio_legend_order:
-  - Bkgd. Uncertainty
+  - Background uncertainty
   text:
     region_text:
       text: Signal Region
