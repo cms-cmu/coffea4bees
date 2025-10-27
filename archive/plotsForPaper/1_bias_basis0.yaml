@@ -1322,6 +1322,7 @@ cut: passPreSel
 region: SR
 kwargs:
   outputFolder: plotsANUnblinded/
+  CMSText: Preliminary      
   yscale: log
   norm: 0
   rebin: 1
@@ -1332,7 +1333,7 @@ kwargs:
   xlim:
   - 0
   - 1.0
-  ylabel: Events / bin
+  ylabel: Events
   rlabel: Pulls
   write_yaml: false
   year_str: 133 $fb^{-1}$

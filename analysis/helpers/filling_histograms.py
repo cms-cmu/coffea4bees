@@ -7,8 +7,8 @@ from coffea4bees.analysis.helpers.hist_templates import (
     TopCandHists,
     WCandHists,
 )
-from src.hist import Collection, Fill
-from src.hist.object import Elec, Jet, LorentzVector, Muon
+from src.hist_tools import Collection, Fill
+from src.hist_tools.object import Elec, Jet, LorentzVector, Muon
 import logging
 from memory_profiler import profile
 

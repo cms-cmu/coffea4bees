@@ -9,7 +9,9 @@ from src.plotting.plots import makePlot, load_hists, read_axes_and_cuts
 from src.plotting.helpers_make_plot_dict import get_values_variances_centers_from_dict
 import src.plotting.helpers as plot_helpers
 import sys
-import src.plotting.iPlot_config as cfg
+from src.plotting.iPlot_config import plot_config
+cfg = plot_config()
+
 import numpy as np
 from src.tests.parser import wrapper
 from unittest.mock import MagicMock
@@ -31,7 +33,8 @@ class PlotTestCase(unittest.TestCase):
 
         cfg.plotConfig = load_config_4b(metadata)
         cfg.hists = load_hists([inputFile])
-        cfg.axisLabels, cfg.cutList = read_axes_and_cuts(cfg.hists, cfg.plotConfig)
+        cfg.axisLabelsDict, cfg.cutListDict = read_axes_and_cuts(cfg.hists, cfg.plotConfig)
+        cfg.set_hist_key("hists")
 
         #  Make these numbers with:
         #  >  python     src/tests/dumpPlotCounts.py --input [inputFileName] -o [outputFielName]

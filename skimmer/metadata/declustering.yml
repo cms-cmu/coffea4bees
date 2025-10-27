@@ -13,10 +13,7 @@ runner:
   condor_memory: 4GB
   condor_transfer_input_files:
     - src
-    - coffea4bees/analysis
-    - coffea4bees/skimmer
-    - coffea4bees/jet_clustering        
-    - coffea4bees/classifier
+    - coffea4bees/
   allowlist_sites:
     - T2_US_Nebraska
     - T2_US_Purdue

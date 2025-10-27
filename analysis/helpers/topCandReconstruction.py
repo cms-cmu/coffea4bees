@@ -117,7 +117,7 @@ def find_tops_slow(events_jets):
 
 
 def find_tops_no_numba(events_jest):
-    from src.math.partition import Partition
+    from src.math_tools.partition import Partition
     sizes = ak.num(events_jest)
     combs = []
     for i in range(ak.max(sizes) + 1):

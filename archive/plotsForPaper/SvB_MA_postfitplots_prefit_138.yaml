@@ -2,7 +2,7 @@ hists:
   data:
     process: data
     tag: fourTag
-    label: Four-tag data
+    label: Data
     edgecolor: k
     fillcolor: k
     name: data
@@ -205,7 +205,7 @@ hists:
   HH4b:
     process: GluGluToHHTo4B_cHHH1
     tag: fourTag
-    label: HH4b (x100)
+    label: ggF HH$\rightarrow$4b (x100)
     edgecolor: '#e42536'
     fillcolor: '#e42536'
     histtype: step
@@ -1065,7 +1065,7 @@ ratio:
     - 0.9680851063829786
     - 0.9893617021276595
   band_dataToBkg:
-    label: Bkgd. Uncertainty
+    label: Background uncertainty
     color: k
     type: band
     hatch: \\\
@@ -1315,6 +1315,7 @@ cut: passPreSel
 region: SR
 kwargs:
   outputFolder: plotsANUnblinded/
+  CMSText: Preliminary  
   yscale: log
   norm: 0
   rebin: 1
@@ -1325,14 +1326,14 @@ kwargs:
   xlim:
   - 0
   - 1.0
-  ylabel: Events / bin
-  rlabel: Data / bkg.
+  ylabel: Events
+  rlabel: Data/Pred
   write_yaml: false
   year_str: 138 $fb^{-1}$
   do_title: false
-  legend_order: ["Four-tag data", "QCD multijet", "$t\\bar{t}$", "HH4b (x100)"]  
+  legend_order: ["Data", "QCD multijet", "$t\\bar{t}$", "ggF HH$\\rightarrow$4b (x100)"]  
   ratio_legend_order:
-   - Bkgd. Uncertainty  
+  - Background uncertainty
   text:
     region_text:
       text: Signal Region
