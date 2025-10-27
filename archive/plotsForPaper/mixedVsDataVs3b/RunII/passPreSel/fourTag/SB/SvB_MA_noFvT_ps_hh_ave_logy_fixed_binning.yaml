@@ -3,7 +3,7 @@ hists:
     process: data
     tag: fourTag
     year: RunII
-    label: Four-tag data
+    label: Data
     edgecolor: k
     fillcolor: k
     values:
@@ -206,7 +206,7 @@ hists:
     process: mix_v0
     tag: fourTag
     year: RunII
-    label: Mixed model
+    label: Synthetic data
     edgecolor: r
     fillcolor: r
     linewidth: 2
@@ -314,7 +314,7 @@ hists:
     xlim:
     - 0
     - 1
-    rlabel: Data / model
+    rlabel: Data/Model
     under_flow: 80758.73333333334
     over_flow: 0.0
 stack:
@@ -650,7 +650,7 @@ stack:
     year: RunII
     fillcolor: '#FFDF7Fff'
     edgecolor: k
-    label: QCD multijet
+    label: Uncorrected QCD multijet
     sum:
       data_3tag:
         process: data
@@ -1188,7 +1188,7 @@ stack:
     
 ratio:
   ratio_dataToBkg:
-    label: Data / QCD multijet
+    label: Data / uncorrected QCD
     numerator:
       type: hists
       key: data
@@ -1402,7 +1402,7 @@ ratio:
 #    centers: *id001
     
   ratio_mixToBkg:
-    label: Data / mixed
+    label: Data / synthetic
     numerator:
       type: hists
       key: data
@@ -1618,26 +1618,31 @@ ratio:
 
 var: SvB_MA_noFvT.ps_hh
 cut: passPreSel
-region: SB
+axis_opts:
+    region: SB
 kwargs:
   outputFolder: plotsANUnblinded/mixedVsDataVs3b
+  CMSText: Preliminary
   yscale: log
+  rlim:
+  - 0
+  - 2
   xlim:
   - 0
   - 1
-  rlabel: Data / Model
-  ylabel: Events / bin
+  rlabel: Data/Model
+  ylabel: Events
   write_yaml: true
   year_str: 133 $fb^{-1}$
   do_title: False
   ratio_legend_order:
-   - Data / QCD multijet
-   - Data / mixed
+   - Data / uncorrected QCD
+   - Data / synthetic
   ratio_legend_loc: 'lower left'   
   text:
     region_text:
-       text: Sideband
-       xpos: 0.5
-       ypos: 0.95
+       text: $CR_{4b}$
+       xpos: 0.2
+       ypos: 0.925
 
 file_name: SvB_MA_noFvT.ps_hh_ave_fixed_binning

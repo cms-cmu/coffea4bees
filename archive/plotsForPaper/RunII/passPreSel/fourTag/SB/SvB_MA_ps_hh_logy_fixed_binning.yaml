@@ -2,7 +2,7 @@ hists:
   data:
     process: data
     tag: fourTag
-    label: Four-tag data
+    label: Data
     edgecolor: k
     fillcolor: k
     name: data
@@ -846,9 +846,11 @@ ratio:
 
 var: SvB_MA.ps_hh
 cut: passPreSel
-region: SB
+axis_opts:
+    region: SB
 kwargs:
   outputFolder: plotsANUnblinded/
+  CMSText: Preliminary
   yscale: log
   norm: 0
   rebin: 1
@@ -862,8 +864,8 @@ kwargs:
   ylim:
   - 0.002
   - 15000
-  ylabel: Events / bin
-  rlabel: Data / bkg. 
+  ylabel: Events
+  rlabel: Data/Pred
   write_yaml: false
   year_str: 133 $fb^{-1}$
   do_title: False

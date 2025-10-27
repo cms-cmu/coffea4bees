@@ -2,7 +2,7 @@ hists:
   data:
     process: data
     tag: fourTag
-    label: Four-tag data
+    label: Data
     edgecolor: k
     fillcolor: k
     name: data
@@ -934,7 +934,7 @@ kwargs:
   year_str: 133 $fb^{-1}$
   do_title: false
   ratio_legend_order:
-   - Bkgd. Uncertainty
+   - Background uncertainty
   text:
     region_text:
       text: Signal Region
