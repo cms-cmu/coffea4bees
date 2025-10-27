@@ -23,7 +23,7 @@ processes:
       label: qqHH_CV_m0p758_C2V_1p44_kl_m19p3_13p0TeV_hbbhbb
       process: -6
     VBFHHTo4B_kl_m1p36_cv_m1p60_c2v_2p72:
-      label: qqHH_CV_1p60_C2V_2p72_kl_m1p36_13p0TeV_hbbhbb
+      label: qqHH_CV_m1p6_C2V_2p72_kl_m1p36_13p0TeV_hbbhbb
       process: -7
     VBFHHTo4B_kl_14p4_cv_1p74_c2v_1p37:
       label: qqHH_CV_1p74_C2V_1p37_kl_14p4_13p0TeV_hbbhbb
@@ -31,6 +31,18 @@ processes:
     VBFHHTo4B_kl_m1p43_cv_m0p962_c2v_0p959:
       label: qqHH_CV_m0p962_C2V_0p959_kl_m1p43_13p0TeV_hbbhbb
       process: -9
+    VBFHHTo4B_kl_m3p39_cv_m1p83_c2v_3p57:
+      label: qqHH_CV_m1p83_C2V_3p57_kl_m3p39_13p0TeV_hbbhbb
+      process: -10
+    VBFHHTo4B_kl_m5p96_cv_2p12_c2v_3p87:
+      label: qqHH_CV_2p12_C2V_3p87_kl_m5p96_13p0TeV_hbbhbb
+      process: -11
+    VBFHHTo4B_kl_10p2_cv_m0p012_c2v_0p030:
+      label: qqHH_CV_m0p012_C2V_0p03_kl_10p2_13p0TeV_hbbhbb
+      process: -12
+    VBFHHTo4B_kl_m0p94_cv_m1p21_c2v_1p94:
+      label: qqHH_CV_m1p21_C2V_1p94_kl_m0p94_13p0TeV_hbbhbb
+      process: -13
   background:
     multijet:
       label: 'multijet'

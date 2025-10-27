@@ -17,7 +17,7 @@ create_output_directory "$OUTPUT_DIR"
 # Modify the config file
 display_section_header "Modifying config"
 JOB_CONFIG=$OUTPUT_DIR/HH4b.yml
-sed -e "s|hist_cuts: .*|hist_cuts: [ passPreSel, passSvB, failSvB ]|" \
+sed -e "s|hist_cuts: .*|hist_cuts: [ passPreSel ]|" \
     coffea4bees/analysis/metadata/HH4b.yml > $JOB_CONFIG
 cat $JOB_CONFIG; echo
 
