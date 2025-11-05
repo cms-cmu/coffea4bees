@@ -2,7 +2,7 @@ hists:
   data:
     process: data
     tag: fourTag
-    label: Average mixed models
+    label: Average synthetic models
     edgecolor: k
     fillcolor: k
     name: data
@@ -1340,7 +1340,7 @@ kwargs:
   do_title: false
   ratio_line_value: 0  
   legend_order:
-  - Average mixed models
+  - Average synthetic models
   - Average QCD multijet
   - $t\bar{t}$
   - "Fit (1 free parameter) "
@@ -1349,7 +1349,7 @@ kwargs:
    - Post-fit  
   text:
     region_text:
-      text: Signal Region
+      text: $SR_{4b}$
       xpos: 0.35
       ypos: 0.95
     chi2_header:

@@ -2,7 +2,7 @@ hists:
   data:
     process: data
     tag: fourTag
-    label: Mixed model
+    label: Synthetic model
     edgecolor: k
     fillcolor: k
     name: data
@@ -930,7 +930,7 @@ kwargs:
   - 0
   - 1.0
   ylabel: Events
-  rlabel: Mixed model/Pred
+  rlabel: Model/Pred
   write_yaml: false
   year_str: 133 $fb^{-1}$
   do_title: false
@@ -938,7 +938,7 @@ kwargs:
    - Background uncertainty
   text:
     region_text:
-      text: Signal Region
+      text: $SR_{4b}$
       xpos: 0.35
       ypos: 0.95
     fit_text:
