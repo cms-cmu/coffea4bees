@@ -147,10 +147,10 @@ rule synthetic_dataset_analyze_Run3:
     shell: "source coffea4bees/scripts/synthetic-dataset-analyze-Run3.sh --output-base {output_dir} 2>&1 | tee -a {log}"
 
 
-rule weights_trigger_analysis_job:
+rule weights_trigger_analysis:
     input: f"{output_dir}/weights_trigger_friendtree/trigger_weights_friends.json"
-    output: f"{output_dir}/weights_trigger_analysis_job/test_trigWeight.coffea"
-    log: f"{output_dir}/weights_trigger_analysis_job.log"
+    output: f"{output_dir}/weights_trigger_analysis/test_trigWeight.coffea"
+    log: f"{output_dir}/weights_trigger_analysis.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/weights-trigger-analysis.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
@@ -261,7 +261,7 @@ rule synthetic_dataset_analyze_cutflow_Run3:
 
 
 rule weights_trigger_cutflow:
-    input: f"{output_dir}/weights_trigger_analysis_job/test_trigWeight.coffea"
+    input: f"{output_dir}/weights_trigger_analysis/test_trigWeight.coffea"
     output: f"{output_dir}/weights_trigger_cutflow/test_dump_cutflow_trigWeight.yml"
     log: f"{output_dir}/weights_trigger_cutflow.log"
     container: analysis_container
