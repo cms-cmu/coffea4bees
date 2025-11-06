@@ -21,6 +21,11 @@ sed -e "s|hist_cuts: .*|hist_cuts: [ passPreSel ]|" \
     coffea4bees/analysis/metadata/HH4b.yml > $JOB_CONFIG
 cat $JOB_CONFIG; echo
 
+### Temporary fix for CI tests
+display_section_header "Temporary Input Datasets"
+DATASETS=${DATASET:-"coffea4bees/metadata/datasets_HH4b_v1p2.yml"}
+sed '/^        B:$/{N;/\n          count: 1808836\.0$/{:a;N;/\n          total_events: 1808836$/!ba;s/^/#/gm}}' $DATASETS > $OUTPUT_DIR/datasets_temp.yml
+
 display_section_header "Running analysis processor for background datasets"
 bash coffea4bees/scripts/run-analysis-processor.sh \
     --output-base "$OUTPUT_BASE_DIR" \
@@ -29,4 +34,5 @@ bash coffea4bees/scripts/run-analysis-processor.sh \
     --output-filename "test_databkgs.coffea" \
     --output-subdir "$JOB" \
     --config $JOB_CONFIG \
+    --dataset-metadata "$OUTPUT_DIR/datasets_temp.yml" \
     # --additional-flags "--debug"

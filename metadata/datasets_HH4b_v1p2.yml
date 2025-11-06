@@ -1254,21 +1254,7 @@ datasets:
         total_events: 39650048
     xs: 15.5   *0.1512*0.1512
   data:
-    '2016':
-      lumi: 36.3e3
-      trigger:
-      - QuadJet45_TripleBTagCSV_p087
-      - DoubleJet90_Double30_TripleBTagCSV_p087
-    '2017':
-      lumi: 41.5e3
-      trigger:
-      - PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0
-    '2018':
-      lumi: 59.8e3
-      trigger:
-      - PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5
     UL16_postVFP:
-      lumi: 16.5e3
       nanoAOD:
         F: /BTagCSV/Run2016F-UL2016_MiniAODv2_NanoAODv9-v1/NANOAOD
         G: /BTagCSV/Run2016G-UL2016_MiniAODv2_NanoAODv9-v1/NANOAOD
@@ -1283,11 +1269,7 @@ datasets:
         H:
           files:
           - root://cmseos.fnal.gov//store/user/algomez/XX4b/20231115/data2016H/picoAOD.root
-      trigger:
-      - QuadJet45_TripleBTagCSV_p087
-      - DoubleJet90_Double30_TripleBTagCSV_p087
     UL16_preVFP:
-      lumi: 19.5e3
       nanoAOD:
         B: /BTagCSV/Run2016B-ver2_HIPM_UL2016_MiniAODv2_NanoAODv9-v2/NANOAOD
         C: /BTagCSV/Run2016C-HIPM_UL2016_MiniAODv2_NanoAODv9-v2/NANOAOD
@@ -1307,11 +1289,7 @@ datasets:
         E:
           files:
           - root://cmseos.fnal.gov//store/user/algomez/XX4b/20231115/data2016E/picoAOD.root
-      trigger:
-      - QuadJet45_TripleBTagCSV_p087
-      - DoubleJet90_Double30_TripleBTagCSV_p087
     UL17:
-      lumi: 41.5e3
       nanoAOD:
         B: /BTagCSV/Run2017B-UL2017_MiniAODv2_NanoAODv9-v1/NANOAOD
         C: /BTagCSV/Run2017C-UL2017_MiniAODv2_NanoAODv9-v1/NANOAOD
@@ -1341,12 +1319,7 @@ datasets:
         F:
           files:
           - root://cmseos.fnal.gov//store/user/algomez/XX4b/20231115/data2017F/picoAOD.root
-      trigger:
-      - HT300PT30_QuadJet_75_60_45_40_TripleCSV_p07
-      - HT300PT30_QuadJet_75_60_45_40_TripeCSV_p07
-      - PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0
     UL18:
-      lumi: 59.8e3
       nanoAOD:
         A: /JetHT/Run2018A-UL2018_MiniAODv2_NanoAODv9-v2/NANOAOD
         B: /JetHT/Run2018B-UL2018_MiniAODv2_NanoAODv9-v1/NANOAOD
@@ -1365,8 +1338,6 @@ datasets:
         D:
           files:
           - root://cmseos.fnal.gov//store/user/algomez/XX4b/20231115/data2018D/picoAOD.root
-      trigger:
-      - PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5
   data_3b_for_mixed:
     '2016':
       picoAOD:
