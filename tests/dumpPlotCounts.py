@@ -42,34 +42,17 @@ if __name__ == '__main__':
 
     default_args = {"doRatio":0, "rebin":4, "norm":0, "process":"Multijet"}
 
-    test_vectors = [("SvB_MA.ps", "passPreSel", "SR"),
-                    ("SvB_MA.ps", "passPreSel", "SB"),
-                    ("SvB_MA.ps", "passSvB",    "SR"),
-                    ("SvB_MA.ps", "passSvB",    "SB"),
-                    ("SvB_MA.ps", "failSvB",    "SR"),
-                    ("SvB_MA.ps", "failSvB",    "SB"),
+    test_vectors = [("SvB_MA.ps", "passPreSel", "region_SR"),
+                    ("SvB_MA.ps", "passPreSel", "region_SB"),
 
-                    ("SvB_MA.ps_hh", "passPreSel", "SR"),
-                    ("SvB_MA.ps_hh", "passPreSel", "SB"),
-                    ("SvB_MA.ps_hh", "passSvB",    "SR"),
-                    ("SvB_MA.ps_hh", "passSvB",    "SB"),
-                    ("SvB_MA.ps_hh", "failSvB",    "SR"),
-                    ("SvB_MA.ps_hh", "failSvB",    "SB"),
+                    ("SvB_MA.ps_hh", "passPreSel", "region_SR"),
+                    ("SvB_MA.ps_hh", "passPreSel", "region_SB"),
 
-                    ("SvB_MA.ps_zh", "passPreSel", "SR"),
-                    ("SvB_MA.ps_zh", "passPreSel", "SB"),
-                    ("SvB_MA.ps_zh", "passSvB",    "SR"),
-                    ("SvB_MA.ps_zh", "passSvB",    "SB"),
-                    ("SvB_MA.ps_zh", "failSvB",    "SR"),
-                    ("SvB_MA.ps_zh", "failSvB",    "SB"),
+                    ("SvB_MA.ps_zh", "passPreSel", "region_SR"),
+                    ("SvB_MA.ps_zh", "passPreSel", "region_SB"),
 
-                    ("SvB_MA.ps_zz", "passPreSel", "SR"),
-                    ("SvB_MA.ps_zz", "passPreSel", "SB"),
-                    ("SvB_MA.ps_zz", "passSvB",    "SR"),
-                    ("SvB_MA.ps_zz", "passSvB",    "SB"),
-                    ("SvB_MA.ps_zz", "failSvB",    "SR"),
-                    ("SvB_MA.ps_zz", "failSvB",    "SB"),
-
+                    ("SvB_MA.ps_zz", "passPreSel", "region_SR"),
+                    ("SvB_MA.ps_zz", "passPreSel", "region_SB"),
 
                     ]
 

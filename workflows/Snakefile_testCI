@@ -170,7 +170,7 @@ rule twoStageClosure_test:
 
 rule analysis_plot:
     input: f"{output_dir}/tools_merge_test/test.coffea"
-    output: f"{output_dir}/analysis_plot/RunII/passPreSel/fourTag/SR/SvB_MA_ps_zz.pdf"
+    output: f"{output_dir}/analysis_plot/RunII/passPreSel/region_SR/SvB_MA_ps_zz.pdf"
     log: f"{output_dir}/analysis_plot.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/analysis-plot.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
