@@ -1,7 +1,7 @@
 runner:
   condor_cores: 2
   condor_memory: 2GB
-  chunksize: 1000
+  chunksize: 10000
   write_coffea_output: false
   dashboard_address: 10200
 

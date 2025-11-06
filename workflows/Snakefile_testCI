@@ -113,9 +113,9 @@ rule analysis_unsup_test:
     container: analysis_container
     shell: "source coffea4bees/scripts/analysis-unsup-test.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
-rule analysis_test_mixed_job:
-    output: [f"{output_dir}/analysis_test_mixed_job/testMixedData.json", f"{output_dir}/analysis_test_mixed_job/testMixedData.coffea"]
-    log: f"{output_dir}/analysis_test_mixed_job.log"
+rule analysis_test_mixed:
+    output: [f"{output_dir}/analysis_test_mixed/testMixedData.json", f"{output_dir}/analysis_test_mixed/testMixedData.coffea"]
+    log: f"{output_dir}/analysis_test_mixed.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/analysis-test-mixed.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
@@ -163,7 +163,7 @@ rule tools_make_jcm_weights:
     shell: "source coffea4bees/scripts/tools-make-jcm-weights.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
 rule twoStageClosure_test:
-    input: f"{output_dir}/analysis_test_mixed_job/testMixedData.json"
+    input: f"{output_dir}/analysis_test_mixed/testMixedData.json"
     output: f"{output_dir}/twoStageClosure_test/test_dump_twoStageClosureInputsCounts.yml"
     log: f"{output_dir}/twoStageClosure_test.log"
     shell: "./run_container combine source coffea4bees/scripts/tools-twostageclosure-mixed.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
@@ -218,7 +218,7 @@ rule analysis_dilepttbar_cutflow:
     shell: "source coffea4bees/scripts/analysis-dilepttbar-cutflow.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
 rule analysis_mixed_cutflow:    
-    input: f"{output_dir}/analysis_test_mixed_job/testMixedData.coffea"
+    input: f"{output_dir}/analysis_test_mixed/testMixedData.coffea"
     output: f"{output_dir}/analysis_mixed_cutflow/test_dump_MixedData.yml"
     log: f"{output_dir}/analysis_mixed_cutflow.log"
     container: analysis_container
@@ -260,7 +260,7 @@ rule synthetic_dataset_analyze_cutflow_Run3:
     shell: "source coffea4bees/scripts/synthetic-dataset-analyze-cutflow-Run3.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
 
-rule weights_trigger_analysis_cutflow:
+rule weights_trigger_cutflow:
     input: f"{output_dir}/weights_trigger_analysis_job/test_trigWeight.coffea"
     output: f"{output_dir}/weights_trigger_cutflow/test_dump_cutflow_trigWeight.yml"
     log: f"{output_dir}/weights_trigger_cutflow.log"
