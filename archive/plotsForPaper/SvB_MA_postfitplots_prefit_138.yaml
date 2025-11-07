@@ -1336,7 +1336,7 @@ kwargs:
   - Background uncertainty
   text:
     region_text:
-      text: Signal Region
+      text: $SR_{4b}$
       xpos: 0.35
       ypos: 0.95
       

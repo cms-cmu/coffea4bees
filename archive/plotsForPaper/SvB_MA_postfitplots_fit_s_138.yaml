@@ -1445,7 +1445,7 @@ kwargs:
   legend_order: ["Data", "QCD multijet", "$t\\bar{t}$", "ggF HH$\\rightarrow$4b (x100)"]  
   text:
     region_text:
-      text: Signal Region
+      text: $SR_{4b}$
       xpos: 0.35
       ypos: 0.95
     fit_text:

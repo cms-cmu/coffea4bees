@@ -18,6 +18,7 @@ create_output_directory "$OUTPUT_DIR"
 display_section_header "Modifying config"
 JOB_CONFIG=$OUTPUT_DIR/trigger_weights_HH4b.yml
 sed -e "s|trigWeight: .*|trigWeight: $INPUT_DIR/trigger_weights_friends.json@@trigWeight|" \
+    -e "s|chunksize: 10000|chunksize: 1000|" \
     coffea4bees/analysis/metadata/HH4b_signals.yml > $JOB_CONFIG
 cat $JOB_CONFIG; echo
 

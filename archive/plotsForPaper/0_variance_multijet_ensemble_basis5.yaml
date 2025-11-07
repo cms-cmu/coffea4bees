@@ -6,7 +6,7 @@ hists:
     edgecolor: k
     fillcolor: k
     name: data
-    x_label: $P_{HH}$ + (mixed dataset index)
+    x_label: $P_{HH}$ + (Synthetic dataset index)
     under_flow: 0
     over_flow: 0
     values:
@@ -2841,7 +2841,7 @@ hists:
     edgecolor: b
     fillcolor: b
     name: data
-    x_label: $P_{HH}$ + (mixed dataset index)
+    x_label: $P_{HH}$ + (Synthetic dataset index)
     under_flow: 0
     over_flow: 0
     histtype: step
@@ -5677,7 +5677,7 @@ stack:
     fillcolor: '#FFDF7Fff'
     edgecolor: k
     label: QCD multijets
-    x_label: $P_{HH}$ + (mixed dataset index)
+    x_label: $P_{HH}$ + (Synthetic dataset index)
     under_flow: 0
     over_flow: 0
     values:
@@ -14197,7 +14197,7 @@ kwargs:
   - Fit (6 parameters)
   text:
     region_text:
-      text: Signal Region
+      text: $SR_{4b}$
       xpos: 0.475
       ypos: 0.95
       fontsize: 20

@@ -873,7 +873,7 @@ kwargs:
    - Stat. Uncertainty
   text:
     region_text:
-       text: Sideband
+       text: $CR_{3b}$
        xpos: 0.5
        ypos: 0.95
     reweight_text:

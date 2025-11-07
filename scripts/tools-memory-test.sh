@@ -20,7 +20,7 @@ DATASETS="coffea4bees/metadata/datasets_HH4b_v1p2.yml"
 echo "Using datasets file: $DATASETS"
 
 run_command python src/scripts/memory/memory_test.py \
-    --threshold 2200 \
+    --threshold 1600 \
     -o $OUTPUT_DIR/mprofile_ci_test \
     --script runner.py \
         -o test.coffea -t \

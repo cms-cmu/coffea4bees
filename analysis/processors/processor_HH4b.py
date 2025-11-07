@@ -423,7 +423,8 @@ class analysis(processor.ProcessorABC):
             friend_trigWeight=self.friends.get("trigWeight"),
             corrections_metadata=self.corrections_metadata[self.year],
             apply_trigWeight=self.apply_trigWeight,
-            isTTForMixed=self.config["isTTForMixed"]
+            isTTForMixed=self.config["isTTForMixed"],
+            run_systematics= 'others' in self.run_systematics,
         )
 
 
