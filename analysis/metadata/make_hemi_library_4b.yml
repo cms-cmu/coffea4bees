@@ -1,0 +1,8 @@
+runner:
+  workers: 4
+  condor_memory: 8GB
+
+config:
+  threeTag: false
+  subtract_ttbar_with_weights: true
+  run_SvB: true

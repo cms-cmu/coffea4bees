@@ -49,6 +49,17 @@ synthetic_dataset_cluster_coffea4bees:
     paths:
       - output/synthetic_dataset_cluster/test_synthetic_datasets.coffea
 
+mixeddata_cluster_coffea4bees:
+  stage: analysis
+  extends:
+    - .base_analysis
+  script:
+    - source coffea4bees/scripts/mixeddata-cluster.sh --output-base /builds/$CI_PROJECT_PATH/output
+  artifacts:
+    paths:
+      - output/mixeddata_cluster/test_mixed_datasets.coffea
+
+
 analysis_unsup_test_coffea4bees:   
   stage: analysis   
   extends:

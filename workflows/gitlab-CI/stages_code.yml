@@ -12,6 +12,14 @@ code_jet_clustering_coffea4bees:
   script:
     - source coffea4bees/scripts/code-jet-clustering.sh
 
+code_hemisphere_mixing_coffea4bees:
+  stage: code
+  extends:
+    - .base_analysis
+  script:
+    - source coffea4bees/scripts/code-hemisphere-mixing.sh
+
+
 code_trig_emulator_coffea4bees:
   stage: code
   extends:
