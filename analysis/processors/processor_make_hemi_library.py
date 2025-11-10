@@ -276,13 +276,35 @@ class analysis(processor.ProcessorABC):
                                     "tag": ak.num(tagJet_negHemi,   axis=1)},
                                    depth_limit=1
                                    )
+
         print("Total Jet Multiplicity ", ak.num(selev.Jet, axis=1), "\n")
         print("PosHemi ID: jet,sel,tag",hemi_mult_posHemi[:10],"\n")
         print("NegHemi ID: jet,sel,tag",hemi_mult_negHemi[:10],"\n")
 
 
-        print("selev fields", selev.fields, "\n")
-        print("jet_postHemi fields", jet_posHemi.fields, "\n")
+        #
+        #  Compute Summary variables
+        #
+        pos_hemi = ak.zip({"mult": hemi_mult_posHemi,
+                           "Jet": jet_posHemi,
+                           "Muon": muon_posHemi,
+                           "Elec": elec_posHemi
+                           },
+                          depth_limit=1
+                          )
+
+
+        neg_hemi = ak.zip({"mult": hemi_mult_negHemi,
+                           "Jet": jet_negHemi,
+                           "Muon": muon_negHemi,
+                           "Elec": elec_negHemi
+                           },
+                          depth_limit=1
+                          )
+
+        print("pos_hemi fields", pos_hemi.fields, "\n")
+        print("pos_hemi fields", pos_hemi[:10], "\n")
+
 
         selev["region"] = ak.zip({"SR": selev.fourTag})
 
