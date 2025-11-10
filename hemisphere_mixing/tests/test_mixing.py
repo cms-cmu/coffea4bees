@@ -13,7 +13,7 @@ from copy import copy
 import os
 
 sys.path.insert(0, os.getcwd())
-from coffea4bees.hemisphere_mixing.mixing_helpers   import transverse_thrust_awkward, transverse_thrust_awkward_fast, split_hemispheres
+from coffea4bees.hemisphere_mixing.mixing_helpers   import transverse_thrust_awkward, transverse_thrust_awkward_fast, split_hemispheres, compute_hemi_vars
 
 #import vector
 #vector.register_awkward()
@@ -269,10 +269,44 @@ class mixingTestCase(unittest.TestCase):
     def test_hemi_making(self):
 
         thrust = transverse_thrust_awkward_fast(self.input_jets_all, n_steps=720, refine_rounds=2)
-        aligned, anti = split_hemispheres(self.input_jets_all, thrust)
+        jet_posHemi, jet_negHemi   = split_hemispheres(self.input_jets_all, thrust)
 
-        print(ak.num(aligned, axis=1))   # number of aligned jets per event
-        print(ak.num(anti, axis=1))      # number of anti-aligned jets per event
+
+        hemi_mult_posHemi = ak.zip({"jet": ak.num(jet_posHemi,      axis=1),
+                                    },
+                                   depth_limit=1
+                                   )
+
+        pos_hemi = ak.zip({"thrust_phi": thrust.phi,
+                           "mult": hemi_mult_posHemi,
+                           "Jet": jet_posHemi,
+                           },
+                          depth_limit=1
+                          )
+
+        pos_hemi = compute_hemi_vars(pos_hemi)
+
+        print(ak.num(jet_posHemi, axis=1))   # number of aligned jets per event
+        print("sumPt_T pos hemi:",       pos_hemi["sumPt_T"][0:10])
+        print("sumPt_T_minor pos hemi:", pos_hemi["sumPt_T_minor"][0:10])
+        print("combinedMass pos hemi:",  pos_hemi["combinedMass"][0:10])
+
+        hemi_mult_negHemi = ak.zip({"jet": ak.num(jet_negHemi,      axis=1),
+                                    },
+                                   depth_limit=1
+                                   )
+
+        neg_hemi = ak.zip({"thrust_phi": thrust.phi,
+                           "mult": hemi_mult_negHemi,
+                           "Jet": jet_negHemi,
+                           },
+                          depth_limit=1
+                          )
+        neg_hemi = compute_hemi_vars(neg_hemi)
+        print(ak.num(jet_negHemi, axis=1))   # number of aligned jets per event
+        print("sumPt_T neg hemi:",       neg_hemi["sumPt_T"][0:10])
+        print("sumPt_T_minor neg hemi:", neg_hemi["sumPt_T_minor"][0:10])
+        print("combinedMass neg hemi:",  neg_hemi["combinedMass"][0:10])
 
 
 

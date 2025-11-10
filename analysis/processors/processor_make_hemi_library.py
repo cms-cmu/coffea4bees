@@ -18,7 +18,7 @@ from src.hist_tools import Collection, Fill
 from src.hist_tools.object import LorentzVector, Jet, Muon, Elec
 #from coffea4bees.analysis.helpers.hist_templates import SvBHists, FvTHists, QuadJetHists
 
-from coffea4bees.hemisphere_mixing.mixing_helpers   import transverse_thrust_awkward_fast, split_hemispheres
+from coffea4bees.hemisphere_mixing.mixing_helpers   import transverse_thrust_awkward_fast, split_hemispheres, compute_hemi_vars
 
 from coffea4bees.analysis.helpers.networks import HCREnsemble
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b
@@ -283,27 +283,34 @@ class analysis(processor.ProcessorABC):
 
 
         #
-        #  Compute Summary variables
+        #  Create hemispere objects
         #
         pos_hemi = ak.zip({"mult": hemi_mult_posHemi,
+                           "thrust_phi": thrust.phi,
                            "Jet": jet_posHemi,
                            "Muon": muon_posHemi,
                            "Elec": elec_posHemi
                            },
                           depth_limit=1
                           )
-
+        pos_hemi = compute_hemi_vars(pos_hemi)
 
         neg_hemi = ak.zip({"mult": hemi_mult_negHemi,
+                           "thrust_phi": thrust.phi,
                            "Jet": jet_negHemi,
                            "Muon": muon_negHemi,
                            "Elec": elec_negHemi
                            },
                           depth_limit=1
                           )
+        neg_hemi = compute_hemi_vars(neg_hemi)
 
-        print("pos_hemi fields", pos_hemi.fields, "\n")
-        print("pos_hemi fields", pos_hemi[:10], "\n")
+
+
+        #
+        #  Write out hemi library files
+        #
+
 
 
         selev["region"] = ak.zip({"SR": selev.fourTag})

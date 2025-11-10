@@ -9,9 +9,9 @@ import numpy as np
 
 @nb.njit(cache=True)
 def _thrust_event_numba(px_i, py_i, n_steps=720):
-    thetas = np.linspace(0.0, 2.0*np.pi, n_steps)
-    cos_t = np.cos(thetas)
-    sin_t = np.sin(thetas)
+    phis = np.linspace(0.0, 2.0*np.pi, n_steps)
+    cos_t = np.cos(phis)
+    sin_t = np.sin(phis)
 
     pTi = np.hypot(px_i, py_i)
     #denom = pTi.sum()
@@ -21,14 +21,14 @@ def _thrust_event_numba(px_i, py_i, n_steps=720):
     proj = np.abs(px_i[:, None]*cos_t[None,:] + py_i[:, None]*sin_t[None,:])
     sums = proj.sum(axis=0)
     best_idx = np.argmax(sums)
-    best_theta = thetas[best_idx]
+    best_phi = phis[best_idx]
     best_sum = sums[best_idx]
 
-    nx, ny = np.cos(best_theta), np.sin(best_theta)
+    nx, ny = np.cos(best_phi), np.sin(best_phi)
     mx, my = -ny, nx
     #T = best_sum/denom
     #T_minor = np.sum(np.abs(-px_i*ny + py_i*nx))/denom
-    return best_theta, nx, ny, mx, my
+    return best_phi, nx, ny, mx, my
 
 
 
@@ -48,21 +48,21 @@ def transverse_thrust_awkward_fast(p4, n_steps=720, refine_rounds=0, refine_fact
     px, py = p4.px, p4.py
 
     # Precompute angular grid
-    thetas = np.linspace(0.0, 2.0 * np.pi, num=n_steps, endpoint=False)
-    cos_t = np.cos(thetas)
-    sin_t = np.sin(thetas)
+    phis = np.linspace(0.0, 2.0 * np.pi, num=n_steps, endpoint=False)
+    cos_t = np.cos(phis)
+    sin_t = np.sin(phis)
 
     # loop on events
     results = []
     for px_i, py_i in zip(px, py):
         px_np, py_np = np.asarray(px_i), np.asarray(py_i)
         if len(px_np) == 0:
-            results.append(dict(theta=np.nan,
+            results.append(dict(phi=np.nan,
                                 axis=dict(nx=np.nan, ny=np.nan),
                                 minor=dict(nx=np.nan, ny=np.nan)))
             continue
         th, nx, ny, mx, my = _thrust_event_numba(px_np, py_np, n_steps)
-        results.append(dict(theta=th,
+        results.append(dict(phi=th,
                             axis=dict(nx=nx, ny=ny), minor=dict(nx=mx, ny=my)))
 
 
@@ -88,9 +88,9 @@ def transverse_thrust_awkward(p4, n_steps=720, refine_rounds=0, refine_factor=6)
     px, py = p4.px, p4.py
 
     # Precompute angular grid
-    thetas = np.linspace(0.0, 2.0 * np.pi, num=n_steps, endpoint=False)
-    cos_t = np.cos(thetas)
-    sin_t = np.sin(thetas)
+    phis = np.linspace(0.0, 2.0 * np.pi, num=n_steps, endpoint=False)
+    cos_t = np.cos(phis)
+    sin_t = np.sin(phis)
 
     # loop on events
     results = []
@@ -98,7 +98,7 @@ def transverse_thrust_awkward(p4, n_steps=720, refine_rounds=0, refine_factor=6)
         # handle empty events
         if len(px_i) == 0:
             results.append(
-                dict(T=np.nan, T_minor=np.nan, theta=np.nan,
+                dict(T=np.nan, T_minor=np.nan, phi=np.nan,
                      axis=dict(nx=np.nan, ny=np.nan),
                      minor=dict(nx=np.nan, ny=np.nan))
             )
@@ -109,7 +109,7 @@ def transverse_thrust_awkward(p4, n_steps=720, refine_rounds=0, refine_factor=6)
         #denom = np.sum(pTi)
         #if denom == 0:
         #    results.append(
-        #        dict(T=np.nan, T_minor=np.nan, theta=np.nan,
+        #        dict(T=np.nan, T_minor=np.nan, phi=np.nan,
         #             axis=dict(nx=np.nan, ny=np.nan),
         #             minor=dict(nx=np.nan, ny=np.nan))
         #    )
@@ -119,7 +119,7 @@ def transverse_thrust_awkward(p4, n_steps=720, refine_rounds=0, refine_factor=6)
         proj = np.abs(px_i[:, None] * cos_t[None, :] + py_i[:, None] * sin_t[None, :])
         sums = np.sum(proj, axis=0)
         best_idx = int(np.argmax(sums))
-        best_theta = thetas[best_idx]
+        best_phi = phis[best_idx]
         best_sum = sums[best_idx]
 
         # --- optional refinement ---
@@ -128,29 +128,29 @@ def transverse_thrust_awkward(p4, n_steps=720, refine_rounds=0, refine_factor=6)
             for _ in range(refine_rounds):
                 half_w = 0.6 * window
                 local_steps = max(24, refine_factor * 12)
-                loc_thetas = np.linspace(best_theta - half_w,
-                                         best_theta + half_w,
+                loc_phis = np.linspace(best_phi - half_w,
+                                         best_phi + half_w,
                                          num=local_steps, endpoint=True)
                 px_i = np.asarray(px_i)
                 py_i = np.asarray(py_i)
-                projL = np.abs(px_i[:, None] * np.cos(loc_thetas)[None, :]
-                               + py_i[:, None] * np.sin(loc_thetas)[None, :]).sum(axis=0)
-                best_theta = loc_thetas[int(np.argmax(projL))]
+                projL = np.abs(px_i[:, None] * np.cos(loc_phis)[None, :]
+                               + py_i[:, None] * np.sin(loc_phis)[None, :]).sum(axis=0)
+                best_phi = loc_phis[int(np.argmax(projL))]
                 best_sum = np.max(projL)
                 window *= 0.35
-            best_theta = float(np.mod(best_theta, 2.0 * np.pi))
+            best_phi = float(np.mod(best_phi, 2.0 * np.pi))
 
         # Axes
-        nx, ny = np.cos(best_theta), np.sin(best_theta)
+        nx, ny = np.cos(best_phi), np.sin(best_phi)
         mx, my = -ny, nx
 
         #T = best_sum / denom
         #T_minor = np.sum(np.abs(-px_i * ny + py_i * nx)) / denom
 
         results.append(
-            #dict(T=T, T_minor=T_minor, theta=best_theta,
+            #dict(T=T, T_minor=T_minor, phi=best_phi,
             #     axis=dict(nx=nx, ny=ny), minor=dict(nx=mx, ny=my))
-            dict(theta=best_theta,
+            dict(phi=best_phi,
                  axis=dict(nx=nx, ny=ny), minor=dict(nx=mx, ny=my))
         )
 
@@ -189,3 +189,16 @@ def split_hemispheres(p4, thrust):
     anti = p4[anti_mask]
 
     return aligned, anti
+
+
+def compute_hemi_vars(hemis):
+    hemis_sumJet = hemis.Jet.sum(axis=1)
+    hemis["pz"]  = hemis_sumJet.pz
+    hemis["combinedMass"] = hemis_sumJet.mass
+
+    cos_t = np.cos(hemis.thrust_phi)
+    sin_t = np.sin(hemis.thrust_phi)
+
+    hemis["sumPt_T"]       = ak.sum(  hemis.Jet.px * cos_t + hemis.Jet.py * sin_t, axis=1)
+    hemis["sumPt_T_minor"] = ak.sum( -hemis.Jet.px * sin_t + hemis.Jet.py * cos_t, axis=1)
+    return hemis
