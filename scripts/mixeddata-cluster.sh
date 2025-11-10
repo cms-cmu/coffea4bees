@@ -10,7 +10,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Create output directory
-JOB="synthetic_dataset_cluster"
+JOB="mixeddata_cluster"
 OUTPUT_DIR=$OUTPUT_BASE_DIR/$JOB
 create_output_directory "$OUTPUT_DIR"
 
