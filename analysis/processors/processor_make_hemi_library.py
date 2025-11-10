@@ -18,7 +18,7 @@ from src.hist_tools import Collection, Fill
 from src.hist_tools.object import LorentzVector, Jet, Muon, Elec
 #from coffea4bees.analysis.helpers.hist_templates import SvBHists, FvTHists, QuadJetHists
 
-from coffea4bees.hemisphere_mixing.mixing_helpers   import transverse_thrust_awkward_fast
+from coffea4bees.hemisphere_mixing.mixing_helpers   import transverse_thrust_awkward_fast, split_hemispheres
 
 from coffea4bees.analysis.helpers.networks import HCREnsemble
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b
@@ -245,7 +245,44 @@ class analysis(processor.ProcessorABC):
         #
         #  Get Thrust axis
         #
-        res = transverse_thrust_awkward_fast(selev.Jet, n_steps=720, refine_rounds=2)
+        thrust = transverse_thrust_awkward_fast(selev.Jet, n_steps=720, refine_rounds=2)
+
+        #
+        #  For outputs
+        #
+        jet_posHemi, jet_negHemi   = split_hemispheres(selev.Jet, thrust)
+        muon_posHemi, muon_negHemi = split_hemispheres(selev.selMuon, thrust)
+        elec_posHemi, elec_negHemi = split_hemispheres(selev.selElec, thrust)
+
+        logging.debug("Jets pos",ak.num(jet_posHemi, axis=1))   # number of aligned jets per event
+        logging.debug("Jets neg",ak.num(jet_negHemi, axis=1))      # number of anti-aligned jets per event
+
+
+        #
+        #  For mutltiplicity counting
+        #
+        tagJet_posHemi, tagJet_negHemi = split_hemispheres(selev.tagJet, thrust)
+        selJet_posHemi, selJet_negHemi = split_hemispheres(selev.selJet, thrust)
+
+
+        hemi_mult_posHemi = ak.zip({"jet": ak.num(jet_posHemi,      axis=1),
+                                    "sel": ak.num(selJet_posHemi,   axis=1),
+                                    "tag": ak.num(tagJet_posHemi,   axis=1)},
+                                    depth_limit=1
+                                   )
+
+        hemi_mult_negHemi = ak.zip({"jet": ak.num(jet_negHemi,      axis=1),
+                                    "sel": ak.num(selJet_negHemi,   axis=1),
+                                    "tag": ak.num(tagJet_negHemi,   axis=1)},
+                                   depth_limit=1
+                                   )
+        print("Total Jet Multiplicity ", ak.num(selev.Jet, axis=1), "\n")
+        print("PosHemi ID: jet,sel,tag",hemi_mult_posHemi[:10],"\n")
+        print("NegHemi ID: jet,sel,tag",hemi_mult_negHemi[:10],"\n")
+
+
+        print("selev fields", selev.fields, "\n")
+        print("jet_postHemi fields", jet_posHemi.fields, "\n")
 
         selev["region"] = ak.zip({"SR": selev.fourTag})
 
@@ -256,10 +293,6 @@ class analysis(processor.ProcessorABC):
         selev["weight"] = weights.weight()[selections.all(*allcuts)]
 
         self._cutFlow.fill("passFourTag", selev )
-        #self._cutFlow.fill("pass0OthJets",selev )
-        #self._cutFlow.fill("pass1OthJets",selev )
-        #self._cutFlow.fill("pass2OthJets",selev )
-
         self._cutFlow.addOutput(processOutput, event.metadata["dataset"])
 
         #

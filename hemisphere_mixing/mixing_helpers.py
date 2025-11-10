@@ -156,3 +156,36 @@ def transverse_thrust_awkward(p4, n_steps=720, refine_rounds=0, refine_factor=6)
 
     # pack back into an Awkward array of records
     return ak.Array(results)
+
+
+def split_hemispheres(p4, thrust):
+    """
+    Split per-event jets into 'aligned' and 'anti-aligned' hemispheres
+    based on the transverse thrust axis.
+
+    Parameters
+    ----------
+    p4 : ak.Array (Momentum4D)
+        Jagged per-event jet four-vectors.
+    thrust : ak.Array
+        Output of transverse_thrust_awkward() for the same events.
+
+    Returns
+    -------
+    aligned, anti : ak.Array, ak.Array
+        Two jagged Momentum4D arrays with jets partitioned by hemisphere.
+    """
+    px, py = p4.px, p4.py
+    nx, ny = thrust.axis.nx, thrust.axis.ny
+
+    # Compute projection of each jet pT onto the thrust axis
+    d = px * nx[:, None] + py * ny[:, None]
+
+    # Masks
+    aligned_mask = d >= 0
+    anti_mask = ~aligned_mask
+
+    aligned = p4[aligned_mask]
+    anti = p4[anti_mask]
+
+    return aligned, anti

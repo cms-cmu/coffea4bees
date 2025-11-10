@@ -13,7 +13,7 @@ from copy import copy
 import os
 
 sys.path.insert(0, os.getcwd())
-from coffea4bees.hemisphere_mixing.mixing_helpers   import transverse_thrust_awkward, transverse_thrust_awkward_fast
+from coffea4bees.hemisphere_mixing.mixing_helpers   import transverse_thrust_awkward, transverse_thrust_awkward_fast, split_hemispheres
 
 #import vector
 #vector.register_awkward()
@@ -266,6 +266,13 @@ class mixingTestCase(unittest.TestCase):
         print(ak.to_list(res))
         print(f"\nElapsed time fast no w/refine Python = {elapsed_time_matrix_python}s")
 
+    def test_hemi_making(self):
+
+        thrust = transverse_thrust_awkward_fast(self.input_jets_all, n_steps=720, refine_rounds=2)
+        aligned, anti = split_hemispheres(self.input_jets_all, thrust)
+
+        print(ak.num(aligned, axis=1))   # number of aligned jets per event
+        print(ak.num(anti, axis=1))      # number of anti-aligned jets per event
 
 
 
