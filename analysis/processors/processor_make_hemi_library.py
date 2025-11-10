@@ -19,6 +19,7 @@ from src.hist_tools.object import LorentzVector, Jet, Muon, Elec
 #from coffea4bees.analysis.helpers.hist_templates import SvBHists, FvTHists, QuadJetHists
 
 from coffea4bees.hemisphere_mixing.mixing_helpers   import transverse_thrust_awkward_fast, split_hemispheres, compute_hemi_vars
+from coffea4bees.hemisphere_mixing.hemisphere_hist_templates import HemisphereHists
 
 from coffea4bees.analysis.helpers.networks import HCREnsemble
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b
@@ -306,13 +307,12 @@ class analysis(processor.ProcessorABC):
         neg_hemi = compute_hemi_vars(neg_hemi)
 
 
+        selev["pos_hemi"] = pos_hemi
+        selev["neg_hemi"] = neg_hemi
 
         #
         #  Write out hemi library files
         #
-
-
-
         selev["region"] = ak.zip({"SR": selev.fourTag})
 
         #
@@ -341,14 +341,7 @@ class analysis(processor.ProcessorABC):
         # Jets
         #
         fill += Jet.plot(("selJets", "Selected Jets"),        "selJet",           skip=["deepjet_c"])
-        # fill += Jet.plot(("canJets", "Higgs Candidate Jets"), "canJet",           skip=["deepjet_c"])
-        # fill += Jet.plot(("othJets", "Other Jets"),           "notCanJet_coffea", skip=["deepjet_c"])
-        # fill += Jet.plot(("tagJets", "Tag Jets"),             "tagJet",           skip=["deepjet_c"])
 
-        # fill += Jet.plot(("notCanJet_sel", "Higgs Candidate Jets"), "notCanJet_sel",           skip=["deepjet_c"])
-        # if self.do_declustering:
-        #     fill += Jet.plot(("canJets_re", "Higgs Candidate Jets"), "canJet_re",           skip=["deepjet_c"])
-        #     fill += Jet.plot(("notCanJet_sel_re", "Higgs Candidate Jets"), "notCanJet_sel_re",           skip=["deepjet_c"])
 
         #
         #  Make Jet Hists
@@ -358,11 +351,13 @@ class analysis(processor.ProcessorABC):
         for iJ in range(4):
             fill += Jet.plot( (f"canJet{iJ}", f"Higgs Candidate Jets {iJ}"), f"canJet{iJ}", skip=["n", "deepjet_c"], )
 
+        fill += HemisphereHists( (f"pos_hemis", f"Hemispheres"), f"pos_hemi" )
+        fill += HemisphereHists( (f"neg_hemis", f"Hemispheres"), f"neg_hemi" )
+
 
         #
         # fill histograms
         #
-        # fill.cache(selev)
         fill(selev, hist)
 
         garbage = gc.collect()
