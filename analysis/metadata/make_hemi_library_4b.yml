@@ -6,3 +6,5 @@ config:
   threeTag: false
   subtract_ttbar_with_weights: true
   run_SvB: true
+  # base_path: root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v2
+  base_path: output/mixeddata_cluster/
