@@ -156,6 +156,7 @@ class analysis(processor.ProcessorABC):
         subtract_ttbar_with_weights: bool = False,
         apply_mixeddata_sel: bool = False,  #### apply HIG-22-011 sel for mixeddata
         friends: dict[str, str|FriendTemplate] = None,
+        return_events_for_display: bool = False,
     ):
 
         logging.debug("\nInitialize Analysis Processor")
@@ -185,6 +186,10 @@ class analysis(processor.ProcessorABC):
         self.friends = parse_friends(friends)
         self.histCuts = hist_cuts
         self.apply_mixeddata_sel = apply_mixeddata_sel
+        self.return_events_for_display = return_events_for_display
+        
+        # Track top 20 events with largest ps_hh across all chunks
+        self.top_ps_hh_events = []
         
         # Memory monitoring
         self.debug_memory = False  # Set to False to disable memory monitoring
@@ -748,6 +753,40 @@ class analysis(processor.ProcessorABC):
         # from coffea4bees.analysis.helpers.write_debug_info import add_debug_info_to_output
         # add_debug_info_to_output(event, processOutput, weights, list_weight_names, analysis_selections)
 
+        if self.return_events_for_display:
+            #
+            # Track top 20 events with largest SvB_MA.ps_hh across all chunks
+            #
+            logging.info(f"Tracking events enabled. Processing chunk with {len(selev)} events")
+            if len(selev) > 0 and hasattr(selev, 'SvB_MA') and hasattr(selev.SvB_MA, 'ps_hh'):
+                # Get SvB_MA.ps_hh values
+                ps_hh_values = ak.to_numpy(ak.fill_none(selev.SvB_MA.ps_hh, -999))
+                
+                # Get run, lumi, event numbers
+                run_numbers = ak.to_numpy(ak.fill_none(selev.run, -1))
+                lumi_numbers = ak.to_numpy(ak.fill_none(selev.luminosityBlock, -1))
+                event_numbers = ak.to_numpy(ak.fill_none(selev.event, -1))
+                
+                # Store events from this chunk in processOutput for accumulation
+                chunk_events = []
+                for i in range(len(ps_hh_values)):
+                    chunk_events.append({
+                        'ps_hh': float(ps_hh_values[i]),
+                        'run': int(run_numbers[i]),
+                        'lumi': int(lumi_numbers[i]),
+                        'event': int(event_numbers[i])
+                    })
+                
+                processOutput['top_ps_hh_events'] = chunk_events
+                logging.info(f"Stored {len(chunk_events)} events from this chunk for accumulation")
+            else:
+                if len(selev) == 0:
+                    logging.debug("No events in selev for this chunk")
+                elif not hasattr(selev, 'SvB_MA'):
+                    logging.warning("selev does not have SvB_MA attribute")
+                elif not hasattr(selev.SvB_MA, 'ps_hh'):
+                    logging.warning("selev.SvB_MA does not have ps_hh attribute")
+                processOutput['top_ps_hh_events'] = []
 
         #
         # Blind data in fourTag SR
@@ -917,4 +956,29 @@ class analysis(processor.ProcessorABC):
         return hist | processOutput | friends
 
     def postprocess(self, accumulator):
+        # Write out top 20 events with largest ps_hh if tracking was enabled
+        logging.info(f"Postprocess called. return_events_for_display={self.return_events_for_display}")
+        
+        if self.return_events_for_display and 'top_ps_hh_events' in accumulator:
+            # Aggregate all events from all chunks
+            all_events = accumulator['top_ps_hh_events']
+            logging.info(f"Found {len(all_events)} total events from all chunks")
+            
+            if len(all_events) > 0:
+                # Sort by ps_hh descending and take top 20
+                all_events.sort(key=lambda x: x['ps_hh'], reverse=True)
+                top_20_events = all_events[:20]
+                
+                output_filename = '/srv/top_20_ps_hh_events.txt'
+                with open(output_filename, 'w') as f:
+                    f.write("# Top 20 events with largest SvB_MA.ps_hh\n")
+                    f.write("# Format: run luminosityBlock event ps_hh\n")
+                    f.write("#" + "-"*60 + "\n")
+                    for evt in top_20_events:
+                        f.write(f"{evt['run']:d}:{evt['lumi']:d}:{evt['event']:d} {evt['ps_hh']:.6f}\n")
+                
+                logging.info(f"Wrote top 20 events with largest ps_hh to {output_filename}")
+            else:
+                logging.warning(f"No events were tracked across all chunks")
+        
         return accumulator

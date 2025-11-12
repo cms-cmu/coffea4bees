@@ -1,0 +1,19 @@
+runner:
+  workers: 4
+  condor_memory: 4GB
+
+config:
+  blind: false
+  apply_FvT: true
+  apply_trigWeight: false 
+  apply_btagSF: false
+  apply_boosted_veto: false
+  run_SvB: true
+  run_dilep_ttbar_crosscheck: false
+  hist_cuts: [ passPreSel ]
+  return_events_for_display: true
+  # friends:
+    # trigWeight: "coffea4bees/metadata/datasets_HH4b_2024_v1p2_trigweights.json@@trigWeight"
+    # SvB: "coffea4bees/metadata/datasets_HH4b_2024_v1p2_SvB.json@@SvB"
+    # SvB_MA: "coffea4bees/metadata/datasets_HH4b_2024_v1p2_SvB.json@@SvB_MA"
+    # top_reconstruction: "hists/local/top_reconstruction_friendtree.json"
