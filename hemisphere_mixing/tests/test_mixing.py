@@ -21,6 +21,8 @@ from coffea.nanoevents.methods.vector import ThreeVector
 import fastjet
 from src.data_formats.root import Chunk, TreeReader
 
+from scipy.spatial import cKDTree  # "c" = C-optimized
+
 
 
 class mixingTestCase(unittest.TestCase):
@@ -310,8 +312,6 @@ class mixingTestCase(unittest.TestCase):
 
 
     def test_kd_trees(self):
-        import numpy as np
-        from scipy.spatial import cKDTree  # "c" = C-optimized
 
         # Example: random 3D points
         points = np.random.rand(1000, 3)
@@ -328,15 +328,15 @@ class mixingTestCase(unittest.TestCase):
 
     def test_reading_hemisphere_library(self):
         #_filter
-        test_file = "coffea4bees/hemisphere_mixing/tests/hemisphereLib_test.root"
+        #test_file = "coffea4bees/hemisphere_mixing/tests/hemisphereLib_test.root"
         import uproot
 
-        # open a ROOT file (local or remote)
-        rfile = uproot.open(test_file)
-        print(rfile)
-
-        tree = rfile["Events"]
-        print(tree.keys())
+        ## open a ROOT file (local or remote)
+        #rfile = uproot.open(test_file)
+        #print(rfile)
+        #
+        #tree = rfile["Events"]
+        #print(tree.keys())
 
         branch_list = ["nJet", "nSelJet", "nTagJet", "sumPt_T_minor", "sumPt_T", "combinedMass", "pz"]
         #data = tree.arrays(["nJet", "nSelJet", "nTagJet", "sumPt_T_minor", "sumPt_T", "combinedMass", "pz"], library="np")
@@ -351,19 +351,73 @@ class mixingTestCase(unittest.TestCase):
         #print(arrays["nTagJet"])
         #print(arrays["combinedMass"])
 
+        combinedMass_list  = None
+        sumPt_T_list       = None
+        sumPt_T_minor_list = None
+        pz_list            = None
 
         for batch in uproot.iterate(
-            "coffea4bees/hemisphere_mixing/tests/*.root:Events",
+            #"coffea4bees/hemisphere_mixing/tests/*.root:Events",
+            "output/mixeddata_cluster/data_UL18*/*.root:Events",
             branch_list,
-            step_size=200_000,  # entries per chunk
+            step_size=800_000,  # entries per chunk
             library="np",
         ):
-            print("Chunk size:", len(batch))
             #print("Chunk size:", len(batch))
-            print(batch["nJet"])
-            print(batch["nTagJet"])
-            print(batch["combinedMass"])
-        #breakpoint()
+            #print("Chunk size:", len(batch))
+            #print(batch["nJet"])
+            #print(batch["nTagJet"])
+            #print(batch["combinedMass"])
+
+
+            nTag2Sel2Jet2 = ( (batch["nTagJet"] == 2) & (batch["nSelJet"] == 2) & (batch["nJet"] == 2) )
+
+            #print(np.unique(batch["nJet"][nTag2Sel2Jet2], return_counts=True))
+
+            if combinedMass_list is None:
+                combinedMass_list  = batch["combinedMass"][nTag2Sel2Jet2]
+                sumPt_T_list       = batch["sumPt_T"][nTag2Sel2Jet2]
+                sumPt_T_minor_list = batch["sumPt_T_minor"][nTag2Sel2Jet2]
+                pz_list            = batch["pz"][nTag2Sel2Jet2]
+            else:
+                combinedMass_list = np.concatenate( (combinedMass_list,  batch["combinedMass"] [nTag2Sel2Jet2]) )
+                sumPt_T_list      = np.concatenate( (sumPt_T_list,       batch["sumPt_T"]      [nTag2Sel2Jet2]) )
+                sumPt_T_minor_list= np.concatenate( (sumPt_T_minor_list, batch["sumPt_T_minor"][nTag2Sel2Jet2]) )
+                pz_list           = np.concatenate( (pz_list,            batch["pz"][nTag2Sel2Jet2]) )
+
+        combinedMass_mean = np.mean(combinedMass_list)
+        combinedMass_RMS  = np.sqrt(np.mean(combinedMass_list**2))
+
+        sumPt_T_mean = np.mean(sumPt_T_list)
+        sumPt_T_RMS  = np.sqrt(np.mean(sumPt_T_list**2))
+
+        sumPt_T_minor_mean = np.mean(sumPt_T_minor_list)
+        sumPt_T_minor_RMS  = np.sqrt(np.mean(sumPt_T_minor_list**2))
+
+        pz_mean = np.mean(pz_list)
+        pz_RMS  = np.sqrt(np.mean(pz_list**2))
+
+        z_combinedMass_list = (combinedMass_list - combinedMass_mean)/combinedMass_RMS
+        z_sumPt_T_list = (sumPt_T_list - sumPt_T_mean)/sumPt_T_RMS
+        z_sumPt_T_minor_list = (sumPt_T_minor_list - sumPt_T_minor_mean)/sumPt_T_minor_RMS
+        z_pz_list = (pz_list - pz_mean)/pz_RMS
+
+
+        points = np.column_stack((z_combinedMass_list,
+                                  z_sumPt_T_list,
+                                  z_sumPt_T_minor_list,
+                                  z_pz_list))
+
+        tree = cKDTree(points)
+
+
+        # Query: find nearest neighbor of a new point
+        query_point = np.array([0.5, 0.5, 0.5, 0.5])
+        dist, idx = tree.query(query_point, k=1)
+
+        print(f"Nearest neighbor index {idx}, distance {dist}")
+        print("Coordinates:", points[idx])
+
 
 if __name__ == '__main__':
     # wrapper.parse_args()
