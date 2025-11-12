@@ -1672,7 +1672,7 @@ axis_opts:
         region: SR
 kwargs:
   outputFolder: plotsANUnblinded/mixedVsDataVs3b
-  CMSText: Preliminary  
+  CMSText: Supplementary  
   yscale: log
   xlim:
   - 0

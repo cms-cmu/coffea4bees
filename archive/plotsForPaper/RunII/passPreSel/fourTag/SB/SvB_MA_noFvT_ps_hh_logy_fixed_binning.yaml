@@ -1074,7 +1074,7 @@ axis_opts:
     region: SB
 kwargs:
   outputFolder: plotsANUnblinded/
-  CMSText: Preliminary
+  CMSText: Supplementary
   yscale: log
   norm: 0
   rebin: 1
