@@ -306,9 +306,8 @@ class analysis(processor.ProcessorABC):
                            "event": selev.event,
                            "run": selev.run,
                            "luminosityBlock" : selev.luminosityBlock,
-                           "hemisphere_id": np.full(len(selev.run), +1),
+                           "hemisphereId": np.full(len(selev.run), +1),
                            "weight": selev.weight,
-                           "nJet": ak.num(jet_posHemi, axis=1),
                            "nSelJet": ak.num(selJet_posHemi, axis=1),
                            "nTagJet": ak.num(tagJet_posHemi, axis=1),
                            "Jet": jet_posHemi,
@@ -323,9 +322,8 @@ class analysis(processor.ProcessorABC):
                            "event": selev.event,
                            "run" : selev.run,
                            "luminosityBlock" : selev.luminosityBlock,
-                           "hemisphere_id": np.full(len(selev.run), -1),
+                           "hemisphereId": np.full(len(selev.run), -1),
                            "weight": selev.weight,
-                           "nJet": ak.num(jet_negHemi, axis=1),
                            "nSelJet": ak.num(selJet_negHemi, axis=1),
                            "nTagJet": ak.num(tagJet_negHemi, axis=1),
                            "Jet": jet_negHemi,
@@ -336,7 +334,6 @@ class analysis(processor.ProcessorABC):
                           )
         neg_hemi = compute_hemi_vars(neg_hemi)
 
-        hemis_all = ak.concatenate([pos_hemi, neg_hemi], axis=0)
         selev["pos_hemi"] = pos_hemi
         selev["neg_hemi"] = neg_hemi
 
@@ -398,7 +395,7 @@ class analysis(processor.ProcessorABC):
             {
                 "total_events": len(event),
                 "saved_events": len(selev),
-                "saved_hemis":  len(hemis_all.thrust_phi),
+                "saved_hemis":  len(pos_hemi.thrust_phi) + len(neg_hemi.thrust_phi),
             }
         )
 
@@ -414,9 +411,12 @@ class analysis(processor.ProcessorABC):
         garbage = gc.collect()
         # print('Garbage:',garbage)
 
+        # Not sure why the following line is needed
+        ak.concatenate([pos_hemi, neg_hemi], axis=0)
         with TreeWriter()(path) as writer:
-            hemi_data = self._transform(hemis_all)
-            writer.extend(hemi_data)
+
+            writer.extend(selev.pos_hemi).extend(selev.neg_hemi)
+
             if self._campaign is not None:
                 writer.save_metadata(self._campaign, metadata)
 
