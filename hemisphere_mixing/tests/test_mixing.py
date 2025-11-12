@@ -19,7 +19,7 @@ from coffea4bees.hemisphere_mixing.mixing_helpers   import transverse_thrust_awk
 #vector.register_awkward()
 from coffea.nanoevents.methods.vector import ThreeVector
 import fastjet
-
+from src.data_formats.root import Chunk, TreeReader
 
 
 
@@ -309,7 +309,61 @@ class mixingTestCase(unittest.TestCase):
         print("combinedMass neg hemi:",  neg_hemi["combinedMass"][0:10])
 
 
+    def test_kd_trees(self):
+        import numpy as np
+        from scipy.spatial import cKDTree  # "c" = C-optimized
 
+        # Example: random 3D points
+        points = np.random.rand(1000, 3)
+
+        # Build the KD-tree
+        tree = cKDTree(points)
+
+        # Query: find nearest neighbor of a new point
+        query_point = np.array([0.5, 0.5, 0.5])
+        dist, idx = tree.query(query_point, k=1)
+
+        print(f"Nearest neighbor index {idx}, distance {dist}")
+        print("Coordinates:", points[idx])
+
+    def test_reading_hemisphere_library(self):
+        #_filter
+        test_file = "coffea4bees/hemisphere_mixing/tests/hemisphereLib_test.root"
+        import uproot
+
+        # open a ROOT file (local or remote)
+        rfile = uproot.open(test_file)
+        print(rfile)
+
+        tree = rfile["Events"]
+        print(tree.keys())
+
+        branch_list = ["nJet", "nSelJet", "nTagJet", "sumPt_T_minor", "sumPt_T", "combinedMass", "pz"]
+        #data = tree.arrays(["nJet", "nSelJet", "nTagJet", "sumPt_T_minor", "sumPt_T", "combinedMass", "pz"], library="np")
+        #data = tree.arrays(["MET_pt", "nJet"], library="np")
+
+        #arrays = uproot.concatenate(
+        #    "coffea4bees/hemisphere_mixing/tests/*.root:Events",
+        #    filter_name= branch_list,
+        #    library="np"
+        #)
+        #print(arrays["nJet"])
+        #print(arrays["nTagJet"])
+        #print(arrays["combinedMass"])
+
+
+        for batch in uproot.iterate(
+            "coffea4bees/hemisphere_mixing/tests/*.root:Events",
+            branch_list,
+            step_size=200_000,  # entries per chunk
+            library="np",
+        ):
+            print("Chunk size:", len(batch))
+            #print("Chunk size:", len(batch))
+            print(batch["nJet"])
+            print(batch["nTagJet"])
+            print(batch["combinedMass"])
+        #breakpoint()
 
 if __name__ == '__main__':
     # wrapper.parse_args()
