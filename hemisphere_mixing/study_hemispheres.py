@@ -81,7 +81,17 @@ def get_hemi_ranges(hemi_count_data, threshold=200):
     return tagJet_ranges
 
 
-def count_combined_hemispheres_v2(hemi_ranges, hemi_data, do_print=False):
+def get_filter(data, key, val, low_edge=False, high_edge=False):
+    this_filter = (data[key] == val)
+
+    if low_edge:
+        this_filter |= (data[key] < val)
+    elif high_edge:
+        this_filter |= (data[key] > val)
+
+    return this_filter
+
+def count_combined_hemispheres(hemi_ranges, hemi_data, do_print=False):
     hemi_count_data = {}
 
     # Outer loop: tag multiplicity bins
@@ -93,11 +103,7 @@ def count_combined_hemispheres_v2(hemi_ranges, hemi_data, do_print=False):
         hemi_count_data[tag] = {}
 
         # --- tag filter ----------------------------------------------------------
-        tag_filter = (hemi_data["nTagJet"] == tag)
-        if itag == 0:
-            tag_filter |= (hemi_data["nTagJet"] < tag)
-        elif itag == len(tag_keys) - 1:
-            tag_filter |= (hemi_data["nTagJet"] > tag)
+        tag_filter = get_filter(hemi_data, "nTagJet", tag, low_edge=(itag==0), high_edge=(itag==len(tag_keys)-1))
 
         if do_print:
             print(f"\ttag_filter: == {tag}" + (" or <" if itag==0 else " or >" if itag==len(tag_keys)-1 else ""))
@@ -117,11 +123,7 @@ def count_combined_hemispheres_v2(hemi_ranges, hemi_data, do_print=False):
             hemi_count_data[tag][sel] = {}
 
             # --- sel filter ------------------------------------------------------
-            sel_filter = (hemi_data["nSelJet"] == sel)
-            if isel == 0:
-                sel_filter |= (hemi_data["nSelJet"] < sel)
-            elif isel == len(sel_keys) - 1:
-                sel_filter |= (hemi_data["nSelJet"] > sel)
+            sel_filter = get_filter(hemi_data, "nSelJet", sel, low_edge=(isel==0), high_edge=(isel==len(sel_keys)-1))
 
             if do_print:
                 print(f"\t\tsel_filter: == {sel}" + (" or <" if isel==0 else " or >" if isel==len(sel_keys)-1 else ""))
@@ -131,7 +133,6 @@ def count_combined_hemispheres_v2(hemi_ranges, hemi_data, do_print=False):
             jet_bins = hemi_ranges[tag][sel]
             if not jet_bins:
                 # special case: no jet bins defined
-                jet_filter = True
                 count = len(hemi_data["nSelJet"][tag_filter & sel_filter])
                 hemi_count_data[tag][sel][-1] = count
                 if do_print:
@@ -142,11 +143,7 @@ def count_combined_hemispheres_v2(hemi_ranges, hemi_data, do_print=False):
                 if do_print:
                     print(f"\t\t jet = {jet}  ijet = {ijet}")
 
-                jet_filter = (hemi_data["nJet"] == jet)
-                if ijet == 0:
-                    jet_filter |= (hemi_data["nJet"] < jet)
-                elif ijet == len(jet_bins) - 1:
-                    jet_filter |= (hemi_data["nJet"] > jet)
+                jet_filter = get_filter(hemi_data, "nJet", jet, low_edge=(ijet==0), high_edge=(ijet==len(jet_bins)-1))
 
                 if do_print:
                     bounds = (" or <" if ijet==0 else " or >" if ijet==len(jet_bins)-1 else "")
@@ -155,73 +152,10 @@ def count_combined_hemispheres_v2(hemi_ranges, hemi_data, do_print=False):
                 # --- final selection ---------------------------------------------
                 mask = tag_filter & sel_filter & jet_filter
                 hemi_count_data[tag][sel][jet] = len(hemi_data["nSelJet"][mask])
+
     return hemi_count_data
 
-def count_combined_hemispheres(hemi_ranges, hemi_data, do_print=False):
 
-    hemi_count_data = {}
-    for itag, tag in enumerate(hemi_ranges.keys()):
-        if do_print: print("tag =", tag, "itag =", itag)
-        hemi_count_data[tag] = {}
-
-        tag_filter = (hemi_data["nTagJet"] == tag)
-        if do_print: print("\ttag_filter: == ", tag)
-        if itag == 0:
-            tag_filter = tag_filter | (hemi_data["nTagJet"] < tag)
-            if do_print: print("\ttag_filter: == ", tag, " or < ", tag)
-
-        if itag == len(hemi_ranges.keys()) - 1:
-            tag_filter = tag_filter | (hemi_data["nTagJet"] > tag)
-            if do_print: print("\ttag_filter: == ", tag, " or > ", tag)
-
-        if len(hemi_ranges[tag]) == 0:
-            print("ERROR no sel jets for tag =", tag)
-            break
-
-        #
-        #  Sel Jets
-        #
-        for isel, sel in enumerate(hemi_ranges[tag].keys()):
-            if do_print: print("\t sel =", sel, "is =", isel)
-            hemi_count_data[tag][sel] = {}
-
-            sel_filter = (hemi_data["nSelJet"] == sel)
-            if do_print: print("\t\tsel_filter: == ", sel)
-
-            if isel == 0:
-                sel_filter = sel_filter | (hemi_data["nSelJet"] < sel)
-                if do_print: print("\t\tsel_filter: == ", sel, " or < ", sel)
-
-            if isel == len(hemi_ranges[tag].keys()) - 1:
-                sel_filter = sel_filter | (hemi_data["nSelJet"] > sel)
-                if do_print: print("\t\tsel_filter: == ", sel, " or > ", sel)
-
-            #
-            #  All Jets
-            #
-            if len(hemi_ranges[tag][sel]) == 0:
-                jet_filter = True
-                if do_print: print("\t\t\tjet_filter: == ", True)
-                hemi_count_data[tag][sel][-1] = len(hemi_data["nSelJet"][tag_filter & sel_filter & jet_filter])
-                #print(len(hemi_data["nSelJet"][tag_filter & sel_filter & jet_filter]))
-            else:
-
-                for ijet, jet in enumerate(hemi_ranges[tag][sel]):
-                    if do_print: print("\t\t jet =", jet, "ijet =", ijet)
-
-                    jet_filter = (hemi_data["nJet"] == jet) & sel_filter
-                    if do_print: print("\t\t\tjet_filter: == ", jet)
-
-                    if ijet == 0:
-                        jet_filter = jet_filter | (hemi_data["nJet"] < jet)
-                        if do_print: print("\t\t\tjet_filter: == ", jet, " or < ", jet)
-
-                    if ijet == len(hemi_ranges[tag][sel]) - 1:
-                        jet_filter = jet_filter | (hemi_data["nJet"] > jet)
-                        if do_print: print("\t\t\tjet_filter: == ", jet, " or > ", jet)
-
-                    hemi_count_data[tag][sel][jet] = len(hemi_data["nSelJet"][tag_filter & sel_filter & jet_filter])
-    return hemi_count_data
 
 
 def study_hemis(hemifiles, tree_name="Events"):
@@ -245,7 +179,7 @@ def study_hemis(hemifiles, tree_name="Events"):
     #
     hemi_ranges = get_hemi_ranges(hemi_counts, threshold=200)
 
-    combined_hemi_counts = count_combined_hemispheres_v2(hemi_ranges, hemi_data, do_print=False)
+    combined_hemi_counts = count_combined_hemispheres(hemi_ranges, hemi_data, do_print=False)
 
     total = 0
     for tag in combined_hemi_counts.keys():
@@ -263,7 +197,7 @@ def study_hemis(hemifiles, tree_name="Events"):
     #
     #  Get summary data by grouping
     #
-
+    #grouped_hemi_data = get_grouped_hemispheres_data(hemi_ranges, hemi_data, do_print=False)
     #breakpoint()
 
 
