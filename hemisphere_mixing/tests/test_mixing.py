@@ -22,7 +22,7 @@ import fastjet
 from src.data_formats.root import Chunk, TreeReader
 
 from scipy.spatial import cKDTree  # "c" = C-optimized
-
+import uproot
 
 
 class mixingTestCase(unittest.TestCase):
@@ -329,7 +329,7 @@ class mixingTestCase(unittest.TestCase):
     def test_reading_hemisphere_library(self):
         #_filter
         #test_file = "coffea4bees/hemisphere_mixing/tests/hemisphereLib_test.root"
-        import uproot
+
 
         ## open a ROOT file (local or remote)
         #rfile = uproot.open(test_file)
@@ -351,10 +351,14 @@ class mixingTestCase(unittest.TestCase):
         #print(arrays["nTagJet"])
         #print(arrays["combinedMass"])
 
-        combinedMass_list  = None
-        sumPt_T_list       = None
-        sumPt_T_minor_list = None
-        pz_list            = None
+        hemi_var_names = ["combinedMass", "sumPt_T", "sumPt_T_minor", "pz"]
+
+        hemi_vars = { var_name: [] for var_name in hemi_var_names }
+
+        #combinedMass_list  = None
+        #sumPt_T_list       = None
+        #sumPt_T_minor_list = None
+        #pz_list            = None
 
         for batch in uproot.iterate(
             #"coffea4bees/hemisphere_mixing/tests/*.root:Events",
@@ -374,39 +378,26 @@ class mixingTestCase(unittest.TestCase):
 
             #print(np.unique(batch["nJet"][nTag2Sel2Jet2], return_counts=True))
 
-            if combinedMass_list is None:
-                combinedMass_list  = batch["combinedMass"][nTag2Sel2Jet2]
-                sumPt_T_list       = batch["sumPt_T"][nTag2Sel2Jet2]
-                sumPt_T_minor_list = batch["sumPt_T_minor"][nTag2Sel2Jet2]
-                pz_list            = batch["pz"][nTag2Sel2Jet2]
+            if hemi_vars[hemi_var_names[0]] is None:
+                for var_name in hemi_var_names:
+                    hemi_vars[var_name] = batch[var_name][nTag2Sel2Jet2]
             else:
-                combinedMass_list = np.concatenate( (combinedMass_list,  batch["combinedMass"] [nTag2Sel2Jet2]) )
-                sumPt_T_list      = np.concatenate( (sumPt_T_list,       batch["sumPt_T"]      [nTag2Sel2Jet2]) )
-                sumPt_T_minor_list= np.concatenate( (sumPt_T_minor_list, batch["sumPt_T_minor"][nTag2Sel2Jet2]) )
-                pz_list           = np.concatenate( (pz_list,            batch["pz"][nTag2Sel2Jet2]) )
-
-        combinedMass_mean = np.mean(combinedMass_list)
-        combinedMass_RMS  = np.sqrt(np.mean(combinedMass_list**2))
-
-        sumPt_T_mean = np.mean(sumPt_T_list)
-        sumPt_T_RMS  = np.sqrt(np.mean(sumPt_T_list**2))
-
-        sumPt_T_minor_mean = np.mean(sumPt_T_minor_list)
-        sumPt_T_minor_RMS  = np.sqrt(np.mean(sumPt_T_minor_list**2))
-
-        pz_mean = np.mean(pz_list)
-        pz_RMS  = np.sqrt(np.mean(pz_list**2))
-
-        z_combinedMass_list = (combinedMass_list - combinedMass_mean)/combinedMass_RMS
-        z_sumPt_T_list = (sumPt_T_list - sumPt_T_mean)/sumPt_T_RMS
-        z_sumPt_T_minor_list = (sumPt_T_minor_list - sumPt_T_minor_mean)/sumPt_T_minor_RMS
-        z_pz_list = (pz_list - pz_mean)/pz_RMS
+                for var_name in hemi_var_names:
+                    hemi_vars[var_name] = np.concatenate( (hemi_vars[var_name], batch[var_name][nTag2Sel2Jet2]) )
 
 
-        points = np.column_stack((z_combinedMass_list,
-                                  z_sumPt_T_list,
-                                  z_sumPt_T_minor_list,
-                                  z_pz_list))
+        hemi_var_mean = {}
+        hemi_var_RMS = {}
+        for var_name in hemi_var_names:
+            hemi_var_mean[var_name] = np.mean(hemi_vars[var_name])
+            hemi_var_RMS[var_name]  = np.sqrt(np.mean(hemi_vars[var_name]**2))
+
+
+        hemi_var_z_score = {}
+        for var_name in hemi_var_names:
+            hemi_var_z_score[var_name] = (hemi_vars[var_name] - hemi_var_mean[var_name]) / hemi_var_RMS[var_name]
+
+        points = np.column_stack([hemi_var_z_score[name] for name in hemi_var_names])
 
         tree = cKDTree(points)
 
@@ -417,6 +408,9 @@ class mixingTestCase(unittest.TestCase):
 
         print(f"Nearest neighbor index {idx}, distance {dist}")
         print("Coordinates:", points[idx])
+
+        print(tree.query(points[10],k=2))
+        print(tree.query(points[0],k=2))
 
 
 if __name__ == '__main__':
