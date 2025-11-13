@@ -199,6 +199,6 @@ def compute_hemi_vars(hemis):
     cos_t = np.cos(hemis.thrust_phi)
     sin_t = np.sin(hemis.thrust_phi)
 
-    hemis["sumPt_T"]       = ak.sum(  hemis.Jet.px * cos_t + hemis.Jet.py * sin_t, axis=1)
-    hemis["sumPt_T_minor"] = ak.sum( -hemis.Jet.px * sin_t + hemis.Jet.py * cos_t, axis=1)
+    hemis["sumPt_T"]       = ak.sum(np.abs(  hemis.Jet.px * cos_t + hemis.Jet.py * sin_t), axis=1)
+    hemis["sumPt_T_minor"] = ak.sum(np.abs( -hemis.Jet.px * sin_t + hemis.Jet.py * cos_t), axis=1)
     return hemis

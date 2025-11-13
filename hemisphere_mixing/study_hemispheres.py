@@ -1,5 +1,10 @@
 import uproot
 import numpy as np
+import hist
+import matplotlib
+matplotlib.use("Agg")  # no GUI, renders directly to files
+import matplotlib.pyplot as plt
+
 
 
 def read_hemi_files(hemifiles, tree_name="Events", branch_list=None):
@@ -157,6 +162,59 @@ def count_combined_hemispheres(hemi_ranges, hemi_data, do_print=False):
 
 
 
+def get_grouped_hemispheres_data(hemi_ranges, hemi_data, hemi_vars):
+    grouped_hemi_data = {}
+
+    # Outer loop: tag multiplicity bins
+    tag_keys = list(hemi_ranges.keys())
+    for itag, tag in enumerate(tag_keys):
+
+        grouped_hemi_data[tag] = {}
+
+        # --- tag filter ----------------------------------------------------------
+        tag_filter = get_filter(hemi_data, "nTagJet", tag, low_edge=(itag==0), high_edge=(itag==len(tag_keys)-1))
+
+        # skip empty sub-ranges
+        if not hemi_ranges[tag]:
+            print(f"ERROR: no sel jets for tag = {tag}")
+            continue
+
+        # -------------------------------------------------------------------------
+        # Middle loop: selected-jet multiplicity bins
+        sel_keys = list(hemi_ranges[tag].keys())
+        for isel, sel in enumerate(sel_keys):
+
+            grouped_hemi_data[tag][sel] = {}
+
+            # --- sel filter ------------------------------------------------------
+            sel_filter = get_filter(hemi_data, "nSelJet", sel, low_edge=(isel==0), high_edge=(isel==len(sel_keys)-1))
+
+            # ---------------------------------------------------------------------
+            # Inner loop: total-jet multiplicity bins
+            jet_bins = hemi_ranges[tag][sel]
+            if not jet_bins:
+                # special case: no jet bins defined
+                grouped_hemi_data[tag][sel][-1] = {}
+                for var_name in hemi_vars:
+                    grouped_hemi_data[tag][sel][-1][var_name] = hemi_data[var_name][tag_filter & sel_filter]
+
+                continue
+
+            for ijet, jet in enumerate(jet_bins):
+
+                jet_filter = get_filter(hemi_data, "nJet", jet, low_edge=(ijet==0), high_edge=(ijet==len(jet_bins)-1))
+
+                # --- final selection ---------------------------------------------
+                mask = tag_filter & sel_filter & jet_filter
+                grouped_hemi_data[tag][sel][jet] = {}
+                for var_name in hemi_vars:
+                    grouped_hemi_data[tag][sel][jet][var_name] = hemi_data[var_name][tag_filter & sel_filter & jet_filter]
+
+
+    return grouped_hemi_data
+
+
+
 
 def study_hemis(hemifiles, tree_name="Events"):
 
@@ -197,9 +255,32 @@ def study_hemis(hemifiles, tree_name="Events"):
     #
     #  Get summary data by grouping
     #
-    #grouped_hemi_data = get_grouped_hemispheres_data(hemi_ranges, hemi_data, do_print=False)
-    #breakpoint()
+    hemi_vars=["sumPt_T_minor", "sumPt_T", "combinedMass", "pz"]
+    grouped_hemi_data = get_grouped_hemispheres_data(hemi_ranges, hemi_data, hemi_vars=hemi_vars)
 
+    print("making Histogrmas")
+
+    #
+    #  Make histograms
+    #
+    binning = {"sumPt_T_minor": (50, -100, 100),
+               "sumPt_T":       (50, -1000, 1000),
+               "pz":            (50, -1500, 1500),
+               "combinedMass":  (50, 0, 2000),
+               }
+
+    for tag in grouped_hemi_data.keys():
+        print(f"tag = {tag}")
+        for sel in grouped_hemi_data[tag].keys():
+            print(f"\tsel = {sel}")
+            for jet in grouped_hemi_data[tag][sel].keys():
+                for var_name in hemi_vars:
+                    this_hist = hist.Hist(hist.axis.Regular(*binning[var_name], name=var_name, label=var_name))
+                    this_hist.fill(grouped_hemi_data[tag][sel][jet][var_name])
+                    this_hist.plot()
+                    plt.savefig(f"hemi_nTag{tag}_nSel{sel}_nJet{jet}_{var_name}.pdf")
+                    plt.close()
+    #Hist(Regular(50, -100, 100, name='x', label='x variable'), storage=Double())
 
 def doStudy():
     study_hemis(hemifiles = "output/mixeddata_cluster/data_UL18*/*.root")
