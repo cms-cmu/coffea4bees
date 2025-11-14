@@ -11,10 +11,10 @@ from coffea.nanoevents.methods import vector
 import time
 from copy import copy
 import os
-import ast
+
 
 sys.path.insert(0, os.getcwd())
-from coffea4bees.hemisphere_mixing.mixing_helpers   import transverse_thrust_awkward, transverse_thrust_awkward_fast, split_hemispheres, compute_hemi_vars, read_hemi_files, get_grouped_hemispheres_data, get_filter
+from coffea4bees.hemisphere_mixing.mixing_helpers   import transverse_thrust_awkward, transverse_thrust_awkward_fast, split_hemispheres, compute_hemi_vars, read_hemi_files, get_grouped_hemispheres_data, get_filter, build_hemi_kdtrees
 
 #import vector
 #vector.register_awkward()
@@ -26,18 +26,6 @@ from scipy.spatial import cKDTree  # "c" = C-optimized
 import uproot
 
 
-def convert_yaml_dict(raw_dict):
-    output = {}
-    for k, v in raw_dict.items():
-        try:
-            key = ast.literal_eval(k) if isinstance(k, str) else k
-        except Exception:
-            key = k  # leave as string if not a tuple
-
-        #print(f"Key: {key} ({type(key)}) Value: {v} ({type(v)})")
-        output[key] = convert_yaml_dict(v) if isinstance(v, dict) else v
-
-    return output
 
 class mixingTestCase(unittest.TestCase):
 
@@ -397,41 +385,19 @@ class mixingTestCase(unittest.TestCase):
 
     def test_reading_all_hemisphere_libraries(self):
 
-
-        # Read in hemisphere library metadata
         yaml_file = 'coffea4bees/hemisphere_mixing/hemi_plots/hemi_statistics_UL18.yml'
-        with open(yaml_file, 'r') as f:
-            hemi_stats_raw = yaml.safe_load(f)
 
-        hemi_stats = convert_yaml_dict(hemi_stats_raw["hemi_summary_vars"])
-        jet_ranges = convert_yaml_dict(hemi_stats_raw["jet_mult_ranges"])
-
-
-        #
-        #  Read in Hemisphere library data
-        #
         jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_btagDeepFlavB", "Jet_bRegCorr", "Jet_jetId"]
-        branch_list = ["nJet", "nSelJet", "nTagJet", "sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ] + jet_branches
+        #branch_list = ["nJet", "nSelJet", "nTagJet", "sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ] + jet_branches
+        hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ]
         year_str = "UL18"
-        hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root"
-        hemi_data = read_hemi_files(hemifiles, branch_list=branch_list)
 
+        kd_trees, points, jet_ranges = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
+                                                          hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root",
+                                                          hemi_summary_vars = hemi_summary_vars,
+                                                          jet_branches = jet_branches,
+                                                          )
 
-        #
-        #  Group hemisphere data by jet multiplicity bins
-        #
-        hemi_vars=["sumPt_T_minor", "sumPt_T", "combinedMass", "pz"]
-        grouped_hemi_data = get_grouped_hemispheres_data(jet_ranges, hemi_data, hemi_vars= hemi_vars + jet_branches, summary_vars=hemi_stats)
-
-        #
-        #  Make the Kd-Trees
-        #
-        kd_trees = {}
-        points   = {}
-        for jet_mult_key in hemi_stats.keys():
-
-            points  [jet_mult_key] = np.column_stack([ grouped_hemi_data[jet_mult_key][name] for name in hemi_vars])
-            kd_trees[jet_mult_key] = cKDTree(points[jet_mult_key])
 
 
         # Query: find nearest neighbor of a new point

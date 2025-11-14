@@ -2,11 +2,12 @@ import numpy as np
 import awkward as ak
 from coffea.nanoevents.methods import vector as v
 import uproot
-
+import yaml
 ak.behavior.update(v.behavior)
-
+import ast
 import numba as nb
 import numpy as np
+from scipy.spatial import cKDTree  # "c" = C-optimized
 
 @nb.njit(cache=True)
 def _thrust_event_numba(px_i, py_i, n_steps=720):
@@ -268,7 +269,6 @@ def get_grouped_hemispheres_data(hemi_ranges, hemi_data, hemi_vars, summary_vars
             if not jet_bins:
 
                 jet_mult_key = (tag, sel, -1)
-
                 # special case: no jet bins defined
                 grouped_hemi_data[jet_mult_key] = {}
                 for var_name in hemi_vars:
@@ -289,6 +289,7 @@ def get_grouped_hemispheres_data(hemi_ranges, hemi_data, hemi_vars, summary_vars
                 mask = tag_filter & sel_filter & jet_filter
                 grouped_hemi_data[jet_mult_key] = {}
                 for var_name in hemi_vars:
+
                     if summary_vars and var_name in summary_vars[jet_mult_key]:
                         this_var = summary_vars[jet_mult_key][var_name]
                         grouped_hemi_data[jet_mult_key][var_name] = (hemi_data[var_name][tag_filter & sel_filter & jet_filter] - this_var["mean"]) / this_var["RMS"]
@@ -299,11 +300,47 @@ def get_grouped_hemispheres_data(hemi_ranges, hemi_data, hemi_vars, summary_vars
     return grouped_hemi_data
 
 
-def build_hemi_kdtrees(hemi_metadata_yaml, ):
+def convert_yaml_dict(raw_dict):
+    output = {}
+    for k, v in raw_dict.items():
+        try:
+            key = ast.literal_eval(k) if isinstance(k, str) else k
+        except Exception:
+            key = k  # leave as string if not a tuple
+
+        #print(f"Key: {key} ({type(key)}) Value: {v} ({type(v)})")
+        output[key] = convert_yaml_dict(v) if isinstance(v, dict) else v
+
+    return output
+
+
+def build_hemi_kdtrees(hemi_metadata_yaml, hemifiles, hemi_summary_vars, jet_branches):
 
     # Read in hemisphere library metadata
-    with open(hemisphere, 'r') as f:
-            hemi_stats_raw = yaml.safe_load(f)
+    with open(hemi_metadata_yaml, 'r') as f:
+        hemi_stats_raw = yaml.safe_load(f)
 
-        hemi_stats = convert_yaml_dict(hemi_stats_raw["hemi_summary_vars"])
-        jet_ranges = convert_yaml_dict(hemi_stats_raw["jet_mult_ranges"])
+    hemi_stats = convert_yaml_dict(hemi_stats_raw["hemi_summary_vars"])
+    jet_ranges = convert_yaml_dict(hemi_stats_raw["jet_mult_ranges"])
+
+    #
+    #  Read in Hemisphere library data
+    #
+    branch_list = ["nJet", "nSelJet", "nTagJet"] + hemi_summary_vars + jet_branches
+    hemi_data = read_hemi_files(hemifiles, branch_list=branch_list)
+
+    #
+    #  Group hemisphere data by jet multiplicity bins
+    #
+    grouped_hemi_data = get_grouped_hemispheres_data(jet_ranges, hemi_data, hemi_vars= hemi_summary_vars + jet_branches, summary_vars=hemi_stats)
+
+    #
+    #  Make the Kd-Trees
+    #
+    kd_trees = {}
+    points   = {}
+    for jet_mult_key in hemi_stats.keys():
+        points  [jet_mult_key] = np.column_stack([ grouped_hemi_data[jet_mult_key][name] for name in hemi_summary_vars])
+        kd_trees[jet_mult_key] = cKDTree(points[jet_mult_key])
+
+    return kd_trees, points, jet_ranges
