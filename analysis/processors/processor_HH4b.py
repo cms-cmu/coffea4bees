@@ -127,6 +127,27 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
     Returns:
         dict: Output containing histograms, cutflow, and optionally dumped friend trees.
+    
+    Chunk-Scoped Instance Variables:
+        These variables are set by process() for each chunk and used by helper methods.
+        They are valid for the entire processing of one chunk and should not be accessed
+        before process() has been called.
+        
+        Metadata variables (set in process()):
+            - fname (str): Full path to the input file
+            - dataset (str): Dataset name
+            - estart (int): Starting entry number for this chunk
+            - estop (int): Ending entry number for this chunk
+            - chunk (str): Formatted string identifying this chunk
+            - year (str): Data-taking year
+            - year_label (str): Year label for corrections
+            - processName (str): Process name (e.g., 'TTbar', 'HH4b')
+            - target (Chunk): Chunk object for friend tree loading
+            - path (str): Directory path containing the input file
+            - nEvent (int): Number of events in this chunk
+            - config (dict): Process/dataset dependent configuration flags
+            - gaussKernalMean (float | None): Mean for Gaussian kernel reweighting
+            - resonance_weights (np.ndarray | None): Resonance reweighting array
     """
     def __init__(
         self,
@@ -197,6 +218,32 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
     # @profile
     def process(self, event):
+        """Process one chunk of events through the full analysis workflow.
+        
+        This is the main entry point for processing events. It initializes all chunk-scoped
+        instance variables (see class docstring for list), loads friend trees, applies event
+        selection, calculates weights, and processes all systematic variations.
+        
+        Chunk-Scoped Variables Initialized:
+            This method sets all the chunk-scoped instance variables that helper methods depend on:
+            - fname, dataset, estart, estop, chunk: File and chunk identification
+            - year, year_label, processName: Analysis metadata
+            - target: Chunk object for friend tree loading
+            - path: Directory path for the input file
+            - nEvent: Number of events in chunk
+            - config: Process/dataset configuration flags
+            - gaussKernalMean, resonance_weights: Resonance reweighting (for signal)
+        
+        Args:
+            event: Coffea NanoEvents array for this chunk
+            
+        Returns:
+            dict: Accumulated output from all systematic variations containing:
+                - Histograms (if fill_histograms=True)
+                - Cutflow tables
+                - Friend tree outputs (if configured)
+                - Event counts and metadata
+        """
         logging.debug(event.metadata)
         self._log_memory("process_start")
 
@@ -346,6 +393,19 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         if self.run_dilep_ttbar_crosscheck:
             event['passDilepTtbar'] = apply_dilep_ttbar_selection(event, isRun3=self.config["isRun3"])
         
+        #
+        #  Test hT reweighting the synthetic data
+        #
+        # if self.config["isSyntheticData"] and not self.config["isPSData"]:
+        #     hT_index = np.floor_divide(event.hT_selected,30).to_numpy()
+        #     hT_index[hT_index > 48] = 48
+        #
+        #     vectorized_hT = np.vectorize(lambda i: self.hT_weights["weights"][int(i)])
+        #     weights_hT = vectorized_hT(hT_index)
+        #
+        #     weights.add( "hT_reweight", weights_hT )
+        #     list_weight_names.append(f"hT_reweight")
+
         # Build selections
         selections, allcuts = self.build_selections(event, weights)
         event['weight'] = weights.weight()  # For cutflow
@@ -363,8 +423,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             self.build_cutflow(event, selections, allcuts, weights)
         
         # Apply b-tagging scale factors
-        weights, list_weight_names = self.apply_btag_sf(event, weights, list_weight_names, 
-                                                         shift_name, selections, allcuts)
+        weights, list_weight_names = self.apply_btag_sf(
+            event, weights, list_weight_names, 
+            shift_name, selections, allcuts
+        )
 
         
         # Preselection: keep only three or four tag events
@@ -373,9 +435,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         analysis_selections = selections.all(*allcuts)
         
         if not shift_name:
-            self._cutFlow.fill("passPreSel_allTag", event[selections.all(*allcuts)], allTag=True)
-            self._cutFlow.fill("passPreSel_allTag_woTrig", event[selections.all(*allcuts)], allTag=True,
-                              wOverride=np.sum(weights.partial_weight(exclude=['CMS_bbbb_resolved_ggf_triggerEffSF'])[selections.all(*allcuts)]))
+            self.fill_cutflow_with_and_without_trig("passPreSel_allTag", event[analysis_selections], weights, analysis_selections)
         
         # Add pseudotag weights
         weights, list_weight_names = self.include_pseudotag_in_weight(event, weights, list_weight_names)
@@ -391,15 +451,13 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             selections.add('pass_ttbar_filter', pass_ttbar_filter)
             allcuts.append("pass_ttbar_filter")
             if not shift_name:
-                self._cutFlow.fill("pass_ttbar_filter", event[selections.all(*allcuts)], allTag=True)
-                self._cutFlow.fill("pass_ttbar_filter_woTrig", event[selections.all(*allcuts)], allTag=True,
-                                  wOverride=np.sum(weights.partial_weight(exclude=['CMS_bbbb_resolved_ggf_triggerEffSF'])[selections.all(*allcuts)]))
+                sel_mask = selections.all(*allcuts)
+                self.fill_cutflow_with_and_without_trig("pass_ttbar_filter", event[sel_mask], weights, sel_mask)
             analysis_selections = selections.all(*allcuts)
             selev = selev[pass_ttbar_filter_selev]
         
         # Reconstruct top candidates
-        if not shift_name:
-            self.reconstruct_tops(selev)
+        self.reconstruct_tops(selev)
         
         # Build jet/dijet/quadjet candidates
         selev = self.build_candidates(selev, weights, list_weight_names, analysis_selections, processOutput)
@@ -416,9 +474,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             selections.add('blind', blind_sel)
             allcuts.append('blind')
             if not shift_name:
-                self._cutFlow.fill("blind", event[selections.all(*allcuts)], allTag=True)
-                self._cutFlow.fill("blind_woTrig", event[selections.all(*allcuts)], allTag=True,
-                                  wOverride=np.sum(weights.partial_weight(exclude=['CMS_bbbb_resolved_ggf_triggerEffSF'])[selections.all(*allcuts)]))
+                sel_mask = selections.all(*allcuts)
+                self.fill_cutflow_with_and_without_trig("blind", event[sel_mask], weights, sel_mask)
             analysis_selections = selections.all(*allcuts)
             selev = selev[blind_flag]
         
@@ -485,7 +542,14 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         return accumulator
 
     def load_FvT(self, event):
-        """Load FvT friend tree"""
+        """Load FvT friend tree.
+        
+        Requires chunk-scoped variables: target, estart, estop, fname, config
+        Must be called after process() has initialized these variables.
+        
+        Args:
+            event: Event array
+        """
 
         if "FvT" in self.friends:
             event["FvT"] = rename_FvT_friend(self.target, self.friends["FvT"])
@@ -578,7 +642,14 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 raise ValueError("ERROR: FvT events do not match events ttree")
 
     def load_SvB(self, event):
-        """Load SvB friend tree"""
+        """Load SvB friend tree.
+        
+        Requires chunk-scoped variables: target, estart, estop, fname, path, dataset, config
+        Must be called after process() has initialized these variables.
+        
+        Args:
+            event: Event array
+        """
 
         for k in self.friends:
             if k.startswith("SvB"):
@@ -628,7 +699,14 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             setSvBVars("SvB_MA", event)
 
     def boosted_veto(self, event):
-        """Apply veto for events selected in boosted analysis. This is for Run2 UL only."""
+        """Apply veto for events selected in boosted analysis. This is for Run2 UL only.
+        
+        Requires chunk-scoped variables: dataset
+        Must be called after process() has initialized these variables.
+        
+        Args:
+            event: Event array
+        """
 
         if self.dataset.startswith("GluGluToHHTo4B_cHHH1"):
             boosted_file = load("coffea4bees/metadata/boosted_overlap_signal.coffea")['boosted']
@@ -650,6 +728,13 @@ class HH4bBaseProcessor(processor.ProcessorABC):
     def build_selections(self, event, weights):
         """Build PackedSelection object with all cuts.
         
+        Requires chunk-scoped variables: config
+        Must be called after process() has initialized these variables.
+        
+        Args:
+            event: Event array
+            weights: Weights object
+            
         Returns:
             tuple: (selections, allcuts) - PackedSelection object and list of cut names
         """
@@ -669,9 +754,33 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             event['passCleanGenWeight'] = True
             selections.add("passCleanGenWeight", event.passCleanGenWeight)
         
-        # Add signal-specific selections
+        # Add signal-specific selections (truth matching)
         if self.config["isSignal"]:
-            self.add_truth_matching(event, selections, weights)
+            event['bfromHorZ_all'] = find_genpart(event.GenPart, [5], [23, 25])
+            
+            if "status" in event.bfromHorZ_all.fields:
+                event['bfromHorZ'] = event.bfromHorZ_all[event.bfromHorZ_all.status == 23]
+            else:
+                logging.warning(f"\nStatus Missing for GenParticles in dataset {self.dataset}\n")
+                event['bfromHorZ'] = event.bfromHorZ_all
+            
+            event['GenJet', 'selectedBs'] = (np.abs(event.GenJet.partonFlavour) == 5)
+            event['selGenBJet'] = event.GenJet[event.GenJet.selectedBs]
+            event['matchedGenBJet'] = event.bfromHorZ.nearest(event.selGenBJet, threshold=10)
+            event["matchedGenBJet"] = event.matchedGenBJet[~ak.is_none(event.matchedGenBJet, axis=1)]
+            
+            event['pass4GenBJets'] = ak.num(event.matchedGenBJet) == 4
+            event["truth_v4b"] = ak.where(event.pass4GenBJets,
+                                          event.matchedGenBJet.sum(axis=1),
+                                          1e-10 * event.matchedGenBJet.sum(axis=1))
+            
+            # Apply resonance reweighting if configured
+            if self.gaussKernalMean is not None:
+                v4b_index = np.floor_divide(event.truth_v4b.mass, 12).to_numpy()
+                v4b_index[v4b_index > 98] = 98
+                vectorized_v4b = np.vectorize(lambda i: self.resonance_weights[int(i)])
+                weights_resonance = vectorized_v4b(v4b_index)
+                weights.add("resonance_reweight", weights_resonance)
         else:
             event['pass4GenBJets'] = True
         selections.add("pass4GenBJets", event.pass4GenBJets)
@@ -679,7 +788,16 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         return selections, allcuts
     
     def add_genweight_check(self, event, selections, weights):
-        """Check for outliers in event weights and add passCleanGenWeight selection."""
+        """Check for outliers in event weights and add passCleanGenWeight selection.
+        
+        Requires chunk-scoped variables: dataset
+        Must be called after process() has initialized these variables.
+        
+        Args:
+            event: Event array
+            selections: PackedSelection object to add cut to
+            weights: Weights object for accessing genWeight
+        """
         tmp_weights = weights.weight()
         mean_weights = np.mean(tmp_weights)
         std_weights = np.std(tmp_weights)
@@ -690,46 +808,21 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             logging.warning(f"Outliers in weights:{tmp_weights[~pass_outliers]}, while mean is {mean_weights} and std is {std_weights} for event {event[~pass_outliers].event} in {self.dataset}\n")
         selections.add("passCleanGenWeight", event.passCleanGenWeight)
     
-    def add_truth_matching(self, event, selections, weights):
-        """Add truth-level b-jet matching for signal MC."""
-        event['bfromHorZ_all'] = find_genpart(event.GenPart, [5], [23, 25])
+    def build_cutflow(self, event, selections, allcuts, weights):
+        """Build and fill cutflow histograms.
         
-        if "status" in event.bfromHorZ_all.fields:
-            event['bfromHorZ'] = event.bfromHorZ_all[event.bfromHorZ_all.status == 23]
-        else:
-            logging.warning(f"\nStatus Missing for GenParticles in dataset {self.dataset}\n")
-            event['bfromHorZ'] = event.bfromHorZ_all
+        Requires chunk-scoped variables: dataset, config
+        Must be called after process() has initialized these variables.
         
-        event['GenJet', 'selectedBs'] = (np.abs(event.GenJet.partonFlavour) == 5)
-        event['selGenBJet'] = event.GenJet[event.GenJet.selectedBs]
-        event['matchedGenBJet'] = event.bfromHorZ.nearest(event.selGenBJet, threshold=10)
-        event["matchedGenBJet"] = event.matchedGenBJet[~ak.is_none(event.matchedGenBJet, axis=1)]
-        
-        event['pass4GenBJets'] = ak.num(event.matchedGenBJet) == 4
-        event["truth_v4b"] = ak.where(event.pass4GenBJets,
-                                      event.matchedGenBJet.sum(axis=1),
-                                      1e-10 * event.matchedGenBJet.sum(axis=1))
-        
-        # Apply resonance reweighting if configured
-        if self.gaussKernalMean is not None:
-            v4b_index = np.floor_divide(event.truth_v4b.mass, 12).to_numpy()
-            v4b_index[v4b_index > 98] = 98
-            vectorized_v4b = np.vectorize(lambda i: self.resonance_weights[int(i)])
-            weights_resonance = vectorized_v4b(v4b_index)
-            weights.add("resonance_reweight", weights_resonance)
-    
-    def build_cutflow_selections(self, selections, allcuts):
-        """Build the ordered dictionary of cutflow selections.
-        
-        Override this in subclasses to customize the cutflow.
+        Override this in subclasses to customize the cutflow selections.
         
         Args:
-            selections: PackedSelection object with all cuts defined
-            allcuts: List of cut names to apply
-            
-        Returns:
-            OrderedDict: Dictionary mapping cut names to selection masks
+            event: Event array
+            selections: PackedSelection object
+            allcuts: List of all cut names
+            weights: Weights object
         """
+        # Build ordered dictionary of cutflow selections
         sel_dict = OrderedDict({
             'all': selections.require(lumimask=True),
             'passCleanGenWeight': selections.require(lumimask=True, passCleanGenWeight=True),
@@ -738,25 +831,65 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             'passHLT': selections.require(lumimask=True, passCleanGenWeight=True, passNoiseFilter=True, passHLT=True),
         })
         sel_dict['passJetMult'] = selections.all(*allcuts)
-        return sel_dict
-    
-    def build_cutflow(self, event, selections, allcuts, weights):
-        """Build and fill cutflow histograms.
         
-        Args:
-            event: Event array
-            selections: PackedSelection object
-            allcuts: List of all cut names
-            weights: Weights object
-        """
-        sel_dict = self.build_cutflow_selections(selections, allcuts)
-        
+        # Fill cutflow histograms
         self._cutFlow = cutflow_4b(do_truth_hists=self.config["isSignal"])
         for cut, sel in sel_dict.items():
-            self._cutFlow.fill(cut, event[sel], allTag=True)
-            self._cutFlow.fill(f"{cut}_woTrig", event[sel], allTag=True,
-                             wOverride=weights.partial_weight(exclude=['CMS_bbbb_resolved_ggf_triggerEffSF'])[sel])
+            self.fill_cutflow_with_and_without_trig(cut, event[sel], selection_mask=sel, weights=weights)
     
+    def fill_cutflow_with_and_without_trig(self, cut_name, events, weights=None, selection_mask=None, allTag=None, weight_override=None):
+        """Helper to fill cutflow with and without trigger weight.
+        
+        Supports two usage modes:
+        1. Pre-selection mode: Pass full event array, weights object, and selection_mask
+        - Used in build_cutflow, apply_btag_sf, process_shift for early cuts
+        2. Post-selection mode: Pass filtered selev with embedded 'weight' and 'weight_woTrig'
+        - Used in fill_detailed_cutflows for cuts after candidate building
+        
+        Subclasses can override this to customize trigger weight handling.
+        
+        Args:
+            cut_name: Name of the cut for cutflow
+            events: Event array (full or filtered selev)
+            weights: Weights object (required for pre-selection mode, None for post-selection)
+            selection_mask: Boolean mask for the selection (required for pre-selection mode)
+            allTag: Whether to use allTag (default: True for pre-selection, None for post-selection)
+            weight_override: Optional weight override for the main fill (not woTrig)
+        """
+        # Determine which mode we're in
+        if weights is not None and selection_mask is not None:
+            # Pre-selection mode: working with full event array
+            use_allTag = True if allTag is None else allTag
+            if weight_override is not None:
+                self._cutFlow.fill(cut_name, events, allTag=use_allTag, wOverride=weight_override)
+            else:
+                self._cutFlow.fill(cut_name, events, allTag=use_allTag)
+            
+            trig_excluded = weights.partial_weight(exclude=['CMS_bbbb_resolved_ggf_triggerEffSF'])[selection_mask]
+            self._cutFlow.fill(f"{cut_name}_woTrig", events, allTag=use_allTag, wOverride=trig_excluded)
+        
+        elif 'weight' in events.fields and 'weight_woTrig' in events.fields:
+            # Post-selection mode: selev already has embedded weights
+            # Don't use allTag for post-selection fills unless explicitly specified
+            if allTag is not None:
+                fill_kwargs = {'allTag': allTag}
+            else:
+                fill_kwargs = {}
+                
+            if weight_override is not None:
+                self._cutFlow.fill(cut_name, events, wOverride=weight_override, **fill_kwargs)
+            else:
+                self._cutFlow.fill(cut_name, events, **fill_kwargs)
+            
+            self._cutFlow.fill(f"{cut_name}_woTrig", events, wOverride=events['weight_woTrig'], **fill_kwargs)
+        
+        else:
+            raise ValueError(
+                f"Invalid arguments to fill_cutflow_with_and_without_trig for cut '{cut_name}'. "
+                "Must provide either (weights + selection_mask) for pre-selection mode, "
+                "or events with 'weight' and 'weight_woTrig' fields for post-selection mode."
+            )
+        
     def apply_btag_sf(self, event, weights, list_weight_names, shift_name, selections, allcuts):
         """Calculate and apply b-tagging scale factors.
         
@@ -787,14 +920,16 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         event["weight"] = weights.weight()
         
         if not shift_name:
-            self._cutFlow.fill("passJetMult_btagSF", event[selections.all(*allcuts)], allTag=True)
-            self._cutFlow.fill("passJetMult_btagSF_woTrig", event[selections.all(*allcuts)], allTag=True,
-                             wOverride=weights.partial_weight(exclude=['CMS_bbbb_resolved_ggf_triggerEffSF'])[selections.all(*allcuts)])
+            sel_mask = selections.all(*allcuts)
+            self.fill_cutflow_with_and_without_trig("passJetMult_btagSF", event[sel_mask], weights, sel_mask)
         
         return weights, list_weight_names
     
     def reconstruct_tops(self, selev):
         """Build top candidate reconstruction.
+        
+        Requires chunk-scoped variables: target (if using friend trees)
+        Must be called after process() has initialized these variables.
         
         Args:
             selev: Selected events array
@@ -825,6 +960,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
     def build_candidates(self, selev, weights, list_weight_names, analysis_selections, processOutput):
         """Build di-jets and quad-jets candidates.
         
+        Requires chunk-scoped variables: config (for isRun3)
+        Must be called after process() has initialized these variables.
+        
         Args:
             selev: Selected events array
             weights: Weights object
@@ -853,42 +991,42 @@ class HH4bBaseProcessor(processor.ProcessorABC):
     def fill_detailed_cutflows(self, selev):
         """Fill detailed cutflow histograms after candidate building.
         
+        Requires chunk-scoped variables: config (for isMC)
+        Must be called after process() has initialized these variables.
+        
         Args:
-            selev: Selected events array with candidates
+            selev: Selected events array with candidates (must have 'weight' and 'weight_woTrig')
         """
-        self._cutFlow.fill("passPreSel", selev)
-        self._cutFlow.fill("passPreSel_woTrig", selev, wOverride=selev['weight_woTrig'])
-        self._cutFlow.fill("passDiJetMass", selev[selev.passDiJetMass])
-        self._cutFlow.fill("passDiJetMass_woTrig", selev[selev.passDiJetMass],
-                          wOverride=selev['weight_woTrig'][selev.passDiJetMass])
-        self._cutFlow.fill("boosted_veto_passPreSel", selev[selev.notInBoostedSel])
+        # Now we can use the helper for all fills
+        self.fill_cutflow_with_and_without_trig("passPreSel", selev)
+        self.fill_cutflow_with_and_without_trig("passDiJetMass", selev[selev.passDiJetMass])
+        self.fill_cutflow_with_and_without_trig("boosted_veto_passPreSel", selev[selev.notInBoostedSel])
+        
+        # These don't have _woTrig variants, keep as-is
         self._cutFlow.fill("boosted_veto_SR", selev[selev.notInBoostedSel & selev["quadJet_selected"].SR])
         
         selev['passSR'] = selev.passDiJetMass & selev["quadJet_selected"].SR
-        self._cutFlow.fill("SR", selev[selev.passSR])
-        self._cutFlow.fill("SR_woTrig", selev[selev.passSR], wOverride=selev['weight_woTrig'][selev.passSR])
+        self.fill_cutflow_with_and_without_trig("SR", selev[selev.passSR])
         
         selev['passSB'] = selev.passDiJetMass & selev["quadJet_selected"].SB
-        self._cutFlow.fill("SB", selev[(selev.passDiJetMass & selev["quadJet_selected"].SB)])
-        self._cutFlow.fill("SB_woTrig", selev[(selev.passDiJetMass & selev["quadJet_selected"].SB)],
-                          wOverride=selev['weight_woTrig'][selev.passSB])
+        self.fill_cutflow_with_and_without_trig("SB", selev[selev.passSB])
         
         self._cutFlow.fill("passVBFSel", selev[selev.passVBFSel])
         
         if self.run_SvB:
-            self._cutFlow.fill("passSvB", selev[selev.passSvB])
-            self._cutFlow.fill("passSvB_woTrig", selev[selev.passSvB],
-                              wOverride=selev['weight_woTrig'][selev.passSvB])
-            self._cutFlow.fill("failSvB", selev[selev.failSvB])
-            self._cutFlow.fill("failSvB_woTrig", selev[selev.failSvB],
-                              wOverride=selev['weight_woTrig'][selev.failSvB])
+            self.fill_cutflow_with_and_without_trig("passSvB", selev[selev.passSvB])
+            self.fill_cutflow_with_and_without_trig("failSvB", selev[selev.failSvB])
         
         if self.run_dilep_ttbar_crosscheck:
+            # This one uses weight_noJCM_noFvT override
             self._cutFlow.fill("passDilepTtbar", selev[selev.passDilepTtbar], allTag=True,
-                              wOverride=selev['weight_noJCM_noFvT'][selev.passDilepTtbar])
-    
+                            wOverride=selev['weight_noJCM_noFvT'][selev.passDilepTtbar])
+                
     def dump_friend_trees(self, selev, analysis_selections, shift_name):
         """Dump all requested friend trees.
+        
+        Requires chunk-scoped variables: config (for isMC, isSignal)
+        Must be called after process() has initialized these variables.
         
         Args:
             selev: Selected events array
@@ -974,7 +1112,19 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             logging.warning(f"Memory monitoring failed at {stage_name}: {e}")
 
     def include_pseudotag_in_weight(self, event, weights, list_weight_names):
-        """Include pseudotag weight in the event weight"""
+        """Include pseudotag weight in the event weight.
+        
+        Requires chunk-scoped variables: year, dataset, config
+        Must be called after process() has initialized these variables.
+        
+        Args:
+            event: Event array
+            weights: Weights object
+            list_weight_names: List of weight names
+            
+        Returns:
+            Updated weights object
+        """
         return add_pseudotagweights( 
             event, 
             weights,
@@ -988,7 +1138,15 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             )
 
     def events_for_display(self, selev, processOutput):
-        """Track top 20 events with largest SvB_MA.ps_hh across all chunks"""
+        """Track top 20 events with largest SvB_MA.ps_hh across all chunks.
+        
+        Requires chunk-scoped variables: dataset, year, config
+        Must be called after process() has initialized these variables.
+        
+        Args:
+            selev: Selected events array
+            processOutput: Output dictionary to store tracked events
+        """
 
         logging.info(f"Tracking events enabled. Processing chunk with {len(selev)} events")
         if len(selev) > 0 and hasattr(selev, 'SvB_MA') and hasattr(selev.SvB_MA, 'ps_hh'):
@@ -1022,6 +1180,21 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             processOutput['top_ps_hh_events'] = []
 
     def histograms(self, event, selev, weights, analysis_selections, shift_name):
+        """Fill histograms for analysis.
+        
+        Requires chunk-scoped variables: processName, year, config
+        Must be called after process() has initialized these variables.
+        
+        Args:
+            event: Event array
+            selev: Selected events array
+            weights: Weights object
+            analysis_selections: Boolean mask for analysis selection
+            shift_name: Name of systematic shift (None for nominal)
+            
+        Returns:
+            Dictionary with histogram outputs
+        """
 
         if self.classifier_FvT: apply_FvT = True
         else: apply_FvT = self.apply_FvT
@@ -1060,5 +1233,12 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
 
 class analysis(HH4bBaseProcessor):
-    """Dummy class for backward compatibility"""
+    """
+    Backward compatibility alias for HH4bBaseProcessor.
+    
+    This class exists to maintain compatibility with existing code that uses
+    the old 'analysis' class name. New code should use HH4bBaseProcessor directly.
+    
+    Deprecated: Use HH4bBaseProcessor instead.
+    """
     pass
