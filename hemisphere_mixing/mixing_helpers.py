@@ -1,6 +1,7 @@
 import numpy as np
 import awkward as ak
 from coffea.nanoevents.methods import vector as v
+import uproot
 
 ak.behavior.update(v.behavior)
 
@@ -202,3 +203,97 @@ def compute_hemi_vars(hemis):
     hemis["sumPt_T"]       = ak.sum(np.abs(  hemis.Jet.px * cos_t + hemis.Jet.py * sin_t), axis=1)
     hemis["sumPt_T_minor"] = ak.sum(np.abs( -hemis.Jet.px * sin_t + hemis.Jet.py * cos_t), axis=1)
     return hemis
+
+
+def read_hemi_files(hemifiles, tree_name="Events", branch_list=None):
+
+    hemi_vars = { var_name: [] for var_name in branch_list }
+
+    for batch in uproot.iterate(
+            f"{hemifiles}:{tree_name}",  #"coffea4bees/hemisphere_mixing/tests/*.root:Events",
+            branch_list,
+            step_size=200_000,  # entries per chunk
+            library="np",
+    ):
+
+        #nTag2Sel2Jet2 = ( (batch["nTagJet"] == 2) & (batch["nSelJet"] == 2) & (batch["nJet"] == 2) )
+
+        if hemi_vars[branch_list[0]] is None:
+            for var_name in branch_list:
+                hemi_vars[var_name] = batch[var_name]
+        else:
+            for var_name in branch_list:
+                hemi_vars[var_name] = np.concatenate( (hemi_vars[var_name], batch[var_name]) )
+
+    return hemi_vars
+
+
+def get_filter(data, key, val, low_edge=False, high_edge=False):
+    this_filter = (data[key] == val)
+
+    if low_edge:
+        this_filter |= (data[key] < val)
+    elif high_edge:
+        this_filter |= (data[key] > val)
+
+    return this_filter
+
+
+def get_grouped_hemispheres_data(hemi_ranges, hemi_data, hemi_vars, summary_vars=None):
+    grouped_hemi_data = {}
+
+    # Outer loop: tag multiplicity bins
+    tag_keys = list(hemi_ranges.keys())
+    for itag, tag in enumerate(tag_keys):
+
+        grouped_hemi_data[tag] = {}
+
+        # --- tag filter ----------------------------------------------------------
+        tag_filter = get_filter(hemi_data, "nTagJet", tag, low_edge=(itag==0), high_edge=(itag==len(tag_keys)-1))
+
+        # skip empty sub-ranges
+        if not hemi_ranges[tag]:
+            print(f"ERROR: no sel jets for tag = {tag}")
+            continue
+
+        # -------------------------------------------------------------------------
+        # Middle loop: selected-jet multiplicity bins
+        sel_keys = list(hemi_ranges[tag].keys())
+        for isel, sel in enumerate(sel_keys):
+
+            grouped_hemi_data[tag][sel] = {}
+
+            # --- sel filter ------------------------------------------------------
+            sel_filter = get_filter(hemi_data, "nSelJet", sel, low_edge=(isel==0), high_edge=(isel==len(sel_keys)-1))
+
+            # ---------------------------------------------------------------------
+            # Inner loop: total-jet multiplicity bins
+            jet_bins = hemi_ranges[tag][sel]
+            if not jet_bins:
+                # special case: no jet bins defined
+                grouped_hemi_data[tag][sel][-1] = {}
+                for var_name in hemi_vars:
+                    if summary_vars:
+                        this_var = summary_vars[(tag,sel,-1)][var_name]
+                        grouped_hemi_data[tag][sel][-1][var_name] = (hemi_data[var_name][tag_filter & sel_filter] - this_var["mean"]) / this_var["RMS"]
+                    else:
+                        grouped_hemi_data[tag][sel][-1][var_name] = hemi_data[var_name][tag_filter & sel_filter]
+
+                continue
+
+            for ijet, jet in enumerate(jet_bins):
+
+                jet_filter = get_filter(hemi_data, "nJet", jet, low_edge=(ijet==0), high_edge=(ijet==len(jet_bins)-1))
+
+                # --- final selection ---------------------------------------------
+                mask = tag_filter & sel_filter & jet_filter
+                grouped_hemi_data[tag][sel][jet] = {}
+                for var_name in hemi_vars:
+                    if summary_vars:
+                        this_var = summary_vars[(tag,sel,jet)][var_name]
+                        grouped_hemi_data[tag][sel][jet][var_name] = (hemi_data[var_name][tag_filter & sel_filter & jet_filter] - this_var["mean"]) / this_var["RMS"]
+                    else:
+                        grouped_hemi_data[tag][sel][jet][var_name] = hemi_data[var_name][tag_filter & sel_filter & jet_filter]
+
+
+    return grouped_hemi_data

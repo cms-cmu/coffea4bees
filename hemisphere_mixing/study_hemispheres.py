@@ -6,28 +6,9 @@ matplotlib.use("Agg")  # no GUI, renders directly to files
 import matplotlib.pyplot as plt
 import os
 import yaml
-
-def read_hemi_files(hemifiles, tree_name="Events", branch_list=None):
-
-    hemi_vars = { var_name: [] for var_name in branch_list }
-
-    for batch in uproot.iterate(
-            f"{hemifiles}:{tree_name}",  #"coffea4bees/hemisphere_mixing/tests/*.root:Events",
-            branch_list,
-            step_size=200_000,  # entries per chunk
-            library="np",
-    ):
-
-        #nTag2Sel2Jet2 = ( (batch["nTagJet"] == 2) & (batch["nSelJet"] == 2) & (batch["nJet"] == 2) )
-
-        if hemi_vars[branch_list[0]] is None:
-            for var_name in branch_list:
-                hemi_vars[var_name] = batch[var_name]
-        else:
-            for var_name in branch_list:
-                hemi_vars[var_name] = np.concatenate( (hemi_vars[var_name], batch[var_name]) )
-
-    return hemi_vars
+import sys
+sys.path.insert(0, os.getcwd())
+from coffea4bees.hemisphere_mixing.mixing_helpers   import read_hemi_files, get_grouped_hemispheres_data, get_filter
 
 
 def count_all_hemispheres(hemi_data, do_print=False):
@@ -86,15 +67,6 @@ def get_hemi_ranges(hemi_count_data, threshold=300):
     return tagJet_ranges
 
 
-def get_filter(data, key, val, low_edge=False, high_edge=False):
-    this_filter = (data[key] == val)
-
-    if low_edge:
-        this_filter |= (data[key] < val)
-    elif high_edge:
-        this_filter |= (data[key] > val)
-
-    return this_filter
 
 def count_combined_hemispheres(hemi_ranges, hemi_data, do_print=False):
     hemi_count_data = {}
@@ -162,59 +134,6 @@ def count_combined_hemispheres(hemi_ranges, hemi_data, do_print=False):
 
 
 
-def get_grouped_hemispheres_data(hemi_ranges, hemi_data, hemi_vars):
-    grouped_hemi_data = {}
-
-    # Outer loop: tag multiplicity bins
-    tag_keys = list(hemi_ranges.keys())
-    for itag, tag in enumerate(tag_keys):
-
-        grouped_hemi_data[tag] = {}
-
-        # --- tag filter ----------------------------------------------------------
-        tag_filter = get_filter(hemi_data, "nTagJet", tag, low_edge=(itag==0), high_edge=(itag==len(tag_keys)-1))
-
-        # skip empty sub-ranges
-        if not hemi_ranges[tag]:
-            print(f"ERROR: no sel jets for tag = {tag}")
-            continue
-
-        # -------------------------------------------------------------------------
-        # Middle loop: selected-jet multiplicity bins
-        sel_keys = list(hemi_ranges[tag].keys())
-        for isel, sel in enumerate(sel_keys):
-
-            grouped_hemi_data[tag][sel] = {}
-
-            # --- sel filter ------------------------------------------------------
-            sel_filter = get_filter(hemi_data, "nSelJet", sel, low_edge=(isel==0), high_edge=(isel==len(sel_keys)-1))
-
-            # ---------------------------------------------------------------------
-            # Inner loop: total-jet multiplicity bins
-            jet_bins = hemi_ranges[tag][sel]
-            if not jet_bins:
-                # special case: no jet bins defined
-                grouped_hemi_data[tag][sel][-1] = {}
-                for var_name in hemi_vars:
-                    grouped_hemi_data[tag][sel][-1][var_name] = hemi_data[var_name][tag_filter & sel_filter]
-
-                continue
-
-            for ijet, jet in enumerate(jet_bins):
-
-                jet_filter = get_filter(hemi_data, "nJet", jet, low_edge=(ijet==0), high_edge=(ijet==len(jet_bins)-1))
-
-                # --- final selection ---------------------------------------------
-                mask = tag_filter & sel_filter & jet_filter
-                grouped_hemi_data[tag][sel][jet] = {}
-                for var_name in hemi_vars:
-                    grouped_hemi_data[tag][sel][jet][var_name] = hemi_data[var_name][tag_filter & sel_filter & jet_filter]
-
-
-    return grouped_hemi_data
-
-
-
 
 def study_hemis(hemifiles, tree_name="Events", year_str="UL18"):
 
@@ -229,7 +148,7 @@ def study_hemis(hemifiles, tree_name="Events", year_str="UL18"):
     #
     # Count the hemispheres by nTagJet, nSelJet, nJet
     #
-    hemi_counts = count_all_hemispheres(hemi_data, do_print=True)
+    hemi_counts = count_all_hemispheres(hemi_data, do_print=False)
 
 
     #
@@ -303,15 +222,13 @@ def study_hemis(hemifiles, tree_name="Events", year_str="UL18"):
 
                     _hemi_var_mean = np.mean(grouped_hemi_data[tag][sel][jet][var_name])
                     _hemi_var_RMS  = np.sqrt(np.mean(grouped_hemi_data[tag][sel][jet][var_name]**2))
-                    hemi_statistics["hemi_summary_vars"][(tag, sel, jet)][var_name] = {"mean": _hemi_var_mean, "RMS": _hemi_var_RMS}
+                    hemi_statistics["hemi_summary_vars"][(tag, sel, jet)][var_name] = {"mean": float(_hemi_var_mean), "RMS": float(_hemi_var_RMS)}
 
                     this_hist = hist.Hist(hist.axis.Regular(50, -3, 3, name=f"zscore {var_name}", label=var_name))
                     this_hist.fill( (grouped_hemi_data[tag][sel][jet][var_name] - _hemi_var_mean) / _hemi_var_RMS)  # for z-score, divide by RMS if needed
                     this_hist.plot()
                     plt.savefig(f"{output_dir}/zscore_{var_name}.pdf")
                     plt.close()
-
-
 
 
     # Extract all count values from hemi_statistics
@@ -332,9 +249,25 @@ def study_hemis(hemifiles, tree_name="Events", year_str="UL18"):
     plt.savefig(f"{output_path}/count_distribution.pdf")
     plt.close()
 
+    def make_yaml_safe(d):
+        #print("Making YAML safe...",d)
+        import numpy as np, awkward as ak
+        if isinstance(d, dict):
+            return {str(k) : make_yaml_safe(v) for k, v in d.items()}  # <-- cast keys to str
+        elif isinstance(d, (list, tuple)):
+            return [make_yaml_safe(v) for v in d]
+#        elif isinstance(d, np.generic):
+#            return d.item()
+#        elif isinstance(d, np.ndarray):
+#            return d.tolist()
+#        elif "awkward" in type(d).__module__:
+#            return ak.to_list(d)
+        else:
+            return d
+
     # Save hemi statistics to a YAML file
     with open(f'{output_path}/hemi_statistics_{year_str}.yml', 'w') as hemi_stats_yaml_file:
-        yaml.dump(hemi_statistics, hemi_stats_yaml_file, default_flow_style=False)
+        yaml.dump(make_yaml_safe(hemi_statistics), hemi_stats_yaml_file) #, default_flow_style=False)
 
 
 def doStudy():
