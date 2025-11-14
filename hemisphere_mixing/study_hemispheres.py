@@ -4,8 +4,8 @@ import hist
 import matplotlib
 matplotlib.use("Agg")  # no GUI, renders directly to files
 import matplotlib.pyplot as plt
-
-
+import os
+import yaml
 
 def read_hemi_files(hemifiles, tree_name="Events", branch_list=None):
 
@@ -60,7 +60,7 @@ def count_all_hemispheres(hemi_data, do_print=False):
     return hemi_count_data
 
 
-def get_hemi_ranges(hemi_count_data, threshold=200):
+def get_hemi_ranges(hemi_count_data, threshold=300):
 
     tagJet_ranges = {}
 
@@ -216,7 +216,7 @@ def get_grouped_hemispheres_data(hemi_ranges, hemi_data, hemi_vars):
 
 
 
-def study_hemis(hemifiles, tree_name="Events"):
+def study_hemis(hemifiles, tree_name="Events", year_str="UL18"):
 
     #
     #  Read in hemisphere data
@@ -235,16 +235,20 @@ def study_hemis(hemifiles, tree_name="Events"):
     #
     #  Apply thresholds to get ranges
     #
-    hemi_ranges = get_hemi_ranges(hemi_counts, threshold=200)
+    hemi_ranges = get_hemi_ranges(hemi_counts, threshold=300)
 
     combined_hemi_counts = count_combined_hemispheres(hemi_ranges, hemi_data, do_print=False)
 
     total = 0
+    nHemiLibraries = 0
     for tag in combined_hemi_counts.keys():
         this_tag = sum(v for outer in combined_hemi_counts[tag].values() for v in outer.values())
         print(f"tag={tag}, {this_tag}")
         total += this_tag
-    print("total =", total)
+        nHemiLibraries += len([v for outer in combined_hemi_counts[tag].values() for v in outer.values()])
+
+    print("total hemisphere =", total)
+    print("nHemiLibraries =", nHemiLibraries)
 
     #
     # Check we got them all!
@@ -258,32 +262,84 @@ def study_hemis(hemifiles, tree_name="Events"):
     hemi_vars=["sumPt_T_minor", "sumPt_T", "combinedMass", "pz"]
     grouped_hemi_data = get_grouped_hemispheres_data(hemi_ranges, hemi_data, hemi_vars=hemi_vars)
 
-    print("making Histogrmas")
 
     #
     #  Make histograms
     #
-    binning = {"sumPt_T_minor": (50, -100, 100),
-               "sumPt_T":       (50, -1000, 1000),
+    binning = {"sumPt_T_minor": (50, 0, 500),
+               "sumPt_T":       (50, 0, 1000),
                "pz":            (50, -1500, 1500),
                "combinedMass":  (50, 0, 2000),
                }
+
+
+    output_path = "coffea4bees/hemisphere_mixing/hemi_plots"
+    os.makedirs(output_path, exist_ok=True)
+    print(f"Saveing plots to {output_path}")
+
+    hemi_statistics = {}
+    hemi_statistics["jet_mult_ranges"] = hemi_ranges
+    hemi_statistics["hemi_summary_vars"] = {}
+
 
     for tag in grouped_hemi_data.keys():
         print(f"tag = {tag}")
         for sel in grouped_hemi_data[tag].keys():
             print(f"\tsel = {sel}")
             for jet in grouped_hemi_data[tag][sel].keys():
+
+                hemi_statistics["hemi_summary_vars"][(tag, sel, jet)] = {"count": len(grouped_hemi_data[tag][sel][jet][hemi_vars[0]])}
+
                 for var_name in hemi_vars:
+
+                    output_dir = f"{output_path}/nTag{tag}_nSel{sel}_nJet{jet}/"
+                    os.makedirs(output_dir, exist_ok=True)
                     this_hist = hist.Hist(hist.axis.Regular(*binning[var_name], name=var_name, label=var_name))
                     this_hist.fill(grouped_hemi_data[tag][sel][jet][var_name])
                     this_hist.plot()
-                    plt.savefig(f"hemi_nTag{tag}_nSel{sel}_nJet{jet}_{var_name}.pdf")
+                    plt.savefig(f"{output_dir}/{var_name}.pdf")
                     plt.close()
-    #Hist(Regular(50, -100, 100, name='x', label='x variable'), storage=Double())
+
+
+                    _hemi_var_mean = np.mean(grouped_hemi_data[tag][sel][jet][var_name])
+                    _hemi_var_RMS  = np.sqrt(np.mean(grouped_hemi_data[tag][sel][jet][var_name]**2))
+                    hemi_statistics["hemi_summary_vars"][(tag, sel, jet)][var_name] = {"mean": _hemi_var_mean, "RMS": _hemi_var_RMS}
+
+                    this_hist = hist.Hist(hist.axis.Regular(50, -3, 3, name=f"zscore {var_name}", label=var_name))
+                    this_hist.fill( (grouped_hemi_data[tag][sel][jet][var_name] - _hemi_var_mean) / _hemi_var_RMS)  # for z-score, divide by RMS if needed
+                    this_hist.plot()
+                    plt.savefig(f"{output_dir}/zscore_{var_name}.pdf")
+                    plt.close()
+
+
+
+
+    # Extract all count values from hemi_statistics
+    counts = []
+    for key, value in hemi_statistics["hemi_summary_vars"].items():
+        counts.append(value["count"])
+
+    # Sort counts from low to high
+    counts.sort()
+
+    # Create histogram of counts
+    count_hist = hist.Hist(hist.axis.Regular(100, 300, 300*100, name="count", label="Event Count"))
+    count_hist.fill(counts)
+    count_hist.plot()
+    plt.xlabel("Hemisphere Counts")
+    plt.ylabel("Number of Hemi Libraries")
+    plt.title("Distribution of Event Counts")
+    plt.savefig(f"{output_path}/count_distribution.pdf")
+    plt.close()
+
+    # Save hemi statistics to a YAML file
+    with open(f'{output_path}/hemi_statistics_{year_str}.yml', 'w') as hemi_stats_yaml_file:
+        yaml.dump(hemi_statistics, hemi_stats_yaml_file, default_flow_style=False)
+
 
 def doStudy():
-    study_hemis(hemifiles = "output/mixeddata_cluster/data_UL18*/*.root")
+    year_str = "UL18"
+    study_hemis(hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root", year_str=year_str)
 
 
 if __name__ == "__main__":
