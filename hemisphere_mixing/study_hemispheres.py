@@ -158,6 +158,9 @@ def study_hemis(hemifiles, tree_name="Events", year_str="UL18"):
 
     combined_hemi_counts = count_combined_hemispheres(hemi_ranges, hemi_data, do_print=False)
 
+    #
+    # Check we got them all!
+    #
     total = 0
     nHemiLibraries = 0
     for tag in combined_hemi_counts.keys():
@@ -168,10 +171,6 @@ def study_hemis(hemifiles, tree_name="Events", year_str="UL18"):
 
     print("total hemisphere =", total)
     print("nHemiLibraries =", nHemiLibraries)
-
-    #
-    # Check we got them all!
-    #
     print("combined counts", total, "vs total counts", sum(s[1] for s in hemi_counts["tagJet_counts"]))
 
 
@@ -191,7 +190,6 @@ def study_hemis(hemifiles, tree_name="Events", year_str="UL18"):
                "combinedMass":  (50, 0, 2000),
                }
 
-
     output_path = "coffea4bees/hemisphere_mixing/hemi_plots"
     os.makedirs(output_path, exist_ok=True)
     print(f"Saveing plots to {output_path}")
@@ -201,34 +199,32 @@ def study_hemis(hemifiles, tree_name="Events", year_str="UL18"):
     hemi_statistics["hemi_summary_vars"] = {}
 
 
-    for tag in grouped_hemi_data.keys():
-        print(f"tag = {tag}")
-        for sel in grouped_hemi_data[tag].keys():
-            print(f"\tsel = {sel}")
-            for jet in grouped_hemi_data[tag][sel].keys():
+    for jet_mult_key in grouped_hemi_data.keys():
 
-                hemi_statistics["hemi_summary_vars"][(tag, sel, jet)] = {"count": len(grouped_hemi_data[tag][sel][jet][hemi_vars[0]])}
+        tag, sel, jet = jet_mult_key
 
-                for var_name in hemi_vars:
+        hemi_statistics["hemi_summary_vars"][jet_mult_key] = {"count": len(grouped_hemi_data[jet_mult_key][hemi_vars[0]])}
 
-                    output_dir = f"{output_path}/nTag{tag}_nSel{sel}_nJet{jet}/"
-                    os.makedirs(output_dir, exist_ok=True)
-                    this_hist = hist.Hist(hist.axis.Regular(*binning[var_name], name=var_name, label=var_name))
-                    this_hist.fill(grouped_hemi_data[tag][sel][jet][var_name])
-                    this_hist.plot()
-                    plt.savefig(f"{output_dir}/{var_name}.pdf")
-                    plt.close()
+        for var_name in hemi_vars:
+
+            output_dir = f"{output_path}/nTag{tag}_nSel{sel}_nJet{jet}/"
+            os.makedirs(output_dir, exist_ok=True)
+            this_hist = hist.Hist(hist.axis.Regular(*binning[var_name], name=var_name, label=var_name))
+            this_hist.fill(grouped_hemi_data[jet_mult_key][var_name])
+            this_hist.plot()
+            plt.savefig(f"{output_dir}/{var_name}.pdf")
+            plt.close()
 
 
-                    _hemi_var_mean = np.mean(grouped_hemi_data[tag][sel][jet][var_name])
-                    _hemi_var_RMS  = np.sqrt(np.mean(grouped_hemi_data[tag][sel][jet][var_name]**2))
-                    hemi_statistics["hemi_summary_vars"][(tag, sel, jet)][var_name] = {"mean": float(_hemi_var_mean), "RMS": float(_hemi_var_RMS)}
+            _hemi_var_mean = np.mean(grouped_hemi_data[jet_mult_key][var_name])
+            _hemi_var_RMS  = np.sqrt(np.mean(grouped_hemi_data[jet_mult_key][var_name]**2))
+            hemi_statistics["hemi_summary_vars"][jet_mult_key][var_name] = {"mean": float(_hemi_var_mean), "RMS": float(_hemi_var_RMS)}
 
-                    this_hist = hist.Hist(hist.axis.Regular(50, -3, 3, name=f"zscore {var_name}", label=var_name))
-                    this_hist.fill( (grouped_hemi_data[tag][sel][jet][var_name] - _hemi_var_mean) / _hemi_var_RMS)  # for z-score, divide by RMS if needed
-                    this_hist.plot()
-                    plt.savefig(f"{output_dir}/zscore_{var_name}.pdf")
-                    plt.close()
+            this_hist = hist.Hist(hist.axis.Regular(50, -3, 3, name=f"zscore {var_name}", label=var_name))
+            this_hist.fill( (grouped_hemi_data[jet_mult_key][var_name] - _hemi_var_mean) / _hemi_var_RMS)  # for z-score, divide by RMS if needed
+            this_hist.plot()
+            plt.savefig(f"{output_dir}/zscore_{var_name}.pdf")
+            plt.close()
 
 
     # Extract all count values from hemi_statistics

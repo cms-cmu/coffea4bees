@@ -398,7 +398,7 @@ class mixingTestCase(unittest.TestCase):
     def test_reading_all_hemisphere_libraries(self):
 
 
-        # Read in hemisphere library statistics yaml
+        # Read in hemisphere library metadata
         yaml_file = 'coffea4bees/hemisphere_mixing/hemi_plots/hemi_statistics_UL18.yml'
         with open(yaml_file, 'r') as f:
             hemi_stats_raw = yaml.safe_load(f)
@@ -408,7 +408,7 @@ class mixingTestCase(unittest.TestCase):
 
 
         #
-        #  Read in Hemi data
+        #  Read in Hemisphere library data
         #
         jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_btagDeepFlavB", "Jet_bRegCorr", "Jet_jetId"]
         branch_list = ["nJet", "nSelJet", "nTagJet", "sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ] + jet_branches
@@ -418,27 +418,27 @@ class mixingTestCase(unittest.TestCase):
 
 
         #
-        #  Get summary data by grouping
+        #  Group hemisphere data by jet multiplicity bins
         #
         hemi_vars=["sumPt_T_minor", "sumPt_T", "combinedMass", "pz"]
-        grouped_hemi_data = get_grouped_hemispheres_data(jet_ranges, hemi_data, hemi_vars=hemi_vars, summary_vars=hemi_stats)
+        grouped_hemi_data = get_grouped_hemispheres_data(jet_ranges, hemi_data, hemi_vars= hemi_vars + jet_branches, summary_vars=hemi_stats)
 
-        #breakpoint()
-
+        #
+        #  Make the Kd-Trees
+        #
         kd_trees = {}
         points   = {}
-        for jet_bin in hemi_stats.keys():
+        for jet_mult_key in hemi_stats.keys():
 
-
-            points[jet_bin] = np.column_stack([ grouped_hemi_data[jet_bin[0]][jet_bin[1]][jet_bin[2]][name] for name in hemi_vars])
-            kd_trees[jet_bin] = cKDTree(points[jet_bin])
+            points  [jet_mult_key] = np.column_stack([ grouped_hemi_data[jet_mult_key][name] for name in hemi_vars])
+            kd_trees[jet_mult_key] = cKDTree(points[jet_mult_key])
 
 
         # Query: find nearest neighbor of a new point
         query_point = np.array([0.5, 0.5, 0.5, 0.5])
         #dist, idx = tree.query(query_point, k=1)
         kd_trees[(0, 1, 1)].query(points[(0, 1, 1)], k=2)
-
+        breakpoint()
 
 
 

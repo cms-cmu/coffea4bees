@@ -246,8 +246,6 @@ def get_grouped_hemispheres_data(hemi_ranges, hemi_data, hemi_vars, summary_vars
     tag_keys = list(hemi_ranges.keys())
     for itag, tag in enumerate(tag_keys):
 
-        grouped_hemi_data[tag] = {}
-
         # --- tag filter ----------------------------------------------------------
         tag_filter = get_filter(hemi_data, "nTagJet", tag, low_edge=(itag==0), high_edge=(itag==len(tag_keys)-1))
 
@@ -261,8 +259,6 @@ def get_grouped_hemispheres_data(hemi_ranges, hemi_data, hemi_vars, summary_vars
         sel_keys = list(hemi_ranges[tag].keys())
         for isel, sel in enumerate(sel_keys):
 
-            grouped_hemi_data[tag][sel] = {}
-
             # --- sel filter ------------------------------------------------------
             sel_filter = get_filter(hemi_data, "nSelJet", sel, low_edge=(isel==0), high_edge=(isel==len(sel_keys)-1))
 
@@ -270,30 +266,44 @@ def get_grouped_hemispheres_data(hemi_ranges, hemi_data, hemi_vars, summary_vars
             # Inner loop: total-jet multiplicity bins
             jet_bins = hemi_ranges[tag][sel]
             if not jet_bins:
+
+                jet_mult_key = (tag, sel, -1)
+
                 # special case: no jet bins defined
-                grouped_hemi_data[tag][sel][-1] = {}
+                grouped_hemi_data[jet_mult_key] = {}
                 for var_name in hemi_vars:
-                    if summary_vars:
-                        this_var = summary_vars[(tag,sel,-1)][var_name]
-                        grouped_hemi_data[tag][sel][-1][var_name] = (hemi_data[var_name][tag_filter & sel_filter] - this_var["mean"]) / this_var["RMS"]
+                    if summary_vars and var_name in summary_vars[jet_mult_key]:
+                        this_var = summary_vars[jet_mult_key][var_name]
+                        grouped_hemi_data[jet_mult_key][var_name] = (hemi_data[var_name][tag_filter & sel_filter] - this_var["mean"]) / this_var["RMS"]
                     else:
-                        grouped_hemi_data[tag][sel][-1][var_name] = hemi_data[var_name][tag_filter & sel_filter]
+                        grouped_hemi_data[jet_mult_key][var_name] = hemi_data[var_name][tag_filter & sel_filter]
 
                 continue
 
             for ijet, jet in enumerate(jet_bins):
 
                 jet_filter = get_filter(hemi_data, "nJet", jet, low_edge=(ijet==0), high_edge=(ijet==len(jet_bins)-1))
+                jet_mult_key = (tag, sel, jet)
 
                 # --- final selection ---------------------------------------------
                 mask = tag_filter & sel_filter & jet_filter
-                grouped_hemi_data[tag][sel][jet] = {}
+                grouped_hemi_data[jet_mult_key] = {}
                 for var_name in hemi_vars:
-                    if summary_vars:
-                        this_var = summary_vars[(tag,sel,jet)][var_name]
-                        grouped_hemi_data[tag][sel][jet][var_name] = (hemi_data[var_name][tag_filter & sel_filter & jet_filter] - this_var["mean"]) / this_var["RMS"]
+                    if summary_vars and var_name in summary_vars[jet_mult_key]:
+                        this_var = summary_vars[jet_mult_key][var_name]
+                        grouped_hemi_data[jet_mult_key][var_name] = (hemi_data[var_name][tag_filter & sel_filter & jet_filter] - this_var["mean"]) / this_var["RMS"]
                     else:
-                        grouped_hemi_data[tag][sel][jet][var_name] = hemi_data[var_name][tag_filter & sel_filter & jet_filter]
+                        grouped_hemi_data[jet_mult_key][var_name] = hemi_data[var_name][tag_filter & sel_filter & jet_filter]
 
 
     return grouped_hemi_data
+
+
+def build_hemi_kdtrees(hemi_metadata_yaml, ):
+
+    # Read in hemisphere library metadata
+    with open(hemisphere, 'r') as f:
+            hemi_stats_raw = yaml.safe_load(f)
+
+        hemi_stats = convert_yaml_dict(hemi_stats_raw["hemi_summary_vars"])
+        jet_ranges = convert_yaml_dict(hemi_stats_raw["jet_mult_ranges"])
