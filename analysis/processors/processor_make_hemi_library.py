@@ -6,13 +6,14 @@ import correctionlib
 import yaml
 import warnings
 import uproot
-
+import uuid
 
 from coffea.nanoevents import NanoEventsFactory, NanoAODSchema
 from coffea import processor
 from coffea.util import load
 from coffea.analysis_tools import Weights, PackedSelection
 from coffea4bees.analysis.helpers.processor_config import processor_config
+from src.data_formats.awkward.zip import NanoAOD
 
 from src.hist_tools import Collection, Fill
 from src.hist_tools.object import LorentzVector, Jet, Muon, Elec
@@ -24,8 +25,8 @@ from coffea4bees.hemisphere_mixing.hemisphere_hist_templates import HemisphereHi
 from coffea4bees.analysis.helpers.networks import HCREnsemble
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b
 from src.friendtrees.FriendTreeSchema import FriendTreeSchema
-
-
+from src.data_formats.root import TreeWriter, TreeReader
+from src.storage.eos import EOS, PathLike
 from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
 from src.physics.objects.jet_corrections import apply_jerc_corrections
 from src.physics.common import apply_btag_sf, update_events
@@ -45,6 +46,7 @@ from src.data_formats.root import TreeReader, Chunk
 NanoAODSchema.warn_missing_crossrefs = False
 warnings.filterwarnings("ignore")
 
+_ROOT = ".root"
 
 
 
@@ -52,6 +54,7 @@ warnings.filterwarnings("ignore")
 class analysis(processor.ProcessorABC):
     def __init__(
             self,
+            base_path: PathLike,
             *,
             SvB=None,
             SvB_MA=None,
@@ -59,9 +62,21 @@ class analysis(processor.ProcessorABC):
             corrections_metadata: dict = None,
             run_SvB=True,
             subtract_ttbar_with_weights = False,
+            campaign: str = ...,
     ):
+        logging.debug("\nInitialize  processor_make_hemi_library\n")
 
-        logging.debug("\nInitialize Analysis Processor")
+        self._base = EOS(base_path)
+
+        if campaign is ...:
+            campaign = f"mixing-{uuid.uuid4().hex[:8]}"
+        if campaign is not None:
+            logging.info(f"Using campaign name: {campaign}")
+        self._campaign = campaign
+
+        self._transform = NanoAOD(regular=False, jagged=True)
+
+
         self.corrections_metadata = corrections_metadata
         self.classifier_SvB = HCREnsemble(SvB) if SvB else None
         self.classifier_SvB_MA = HCREnsemble(SvB_MA) if SvB_MA else None
@@ -79,7 +94,7 @@ class analysis(processor.ProcessorABC):
         dataset = event.metadata['dataset']
         estart  = event.metadata['entrystart']
         estop   = event.metadata['entrystop']
-        chunk   = f'{dataset}::{estart:6d}:{estop:6d} >>> '
+        chunk_str  = f'{dataset}::{estart:6d}:{estop:6d} >>> '
         year    = event.metadata['year']
         year_label = self.corrections_metadata[year]['year_label']
         processName = event.metadata['processName']
@@ -88,32 +103,50 @@ class analysis(processor.ProcessorABC):
         kFactor = event.metadata.get('kFactor', 1.0)
         nEvent = len(event)
 
+        chunk = Chunk.from_coffea_events(event)
+        source_chunk = {str(chunk.path): [(chunk.entry_start, chunk.entry_stop)]}
+        self._hemiLib_base_name = "hemisphereLib"
+        path = (
+            self._base
+            / f"{dataset}/{self._hemiLib_base_name}_{chunk.uuid}_{chunk.entry_start}_{chunk.entry_stop}{_ROOT}"
+        )
 
+        # check if chunks is already finished
+        if self._campaign is not None:
+            reader = TreeReader()
+            try:
+                cached = Chunk(path, fetch=True)
+                metadata = reader.load_metadata(
+                    self._campaign, cached, builtin_types=True
+                )
+                return {dataset: metadata | {"files": [cached], "source": source_chunk}}
+            except Exception:
+                pass
 
 
         #
         # Set process and datset dependent flags
         #
         config = processor_config(processName, dataset, event)
-        logging.debug(f'{chunk} config={config}, for file {fname}\n')
+        logging.debug(f'{chunk_str} config={config}, for file {fname}\n')
 
         #
         # Reading SvB friend trees (for TTbar subtraction)
         #
-        path = fname.replace(fname.split("/")[-1], "")
+        svb_path = fname.replace(fname.split("/")[-1], "")
         if self.run_SvB:
             if (self.classifier_SvB is None) | (self.classifier_SvB_MA is None):
 
-                #SvB_file = f'{path}/SvB_newSBDef.root' if 'mix' in dataset else f'{fname.replace("picoAOD", "SvB_ULHH")}'
-                SvB_file = f'{path}/SvB_ULHH.root' if 'mix' in dataset else f'{fname.replace("picoAOD", "SvB_ULHH")}'
+                #SvB_file = f'{svb_path}/SvB_newSBDef.root' if 'mix' in dataset else f'{fname.replace("picoAOD", "SvB_ULHH")}'
+                SvB_file = f'{svb_path}/SvB_ULHH.root' if 'mix' in dataset else f'{fname.replace("picoAOD", "SvB_ULHH")}'
                 event["SvB"] = ( NanoEventsFactory.from_root( SvB_file,
                                                               entry_start=estart, entry_stop=estop, schemaclass=FriendTreeSchema).events().SvB )
 
                 if not ak.all(event.SvB.event == event.event):
                     raise ValueError("ERROR: SvB events do not match events ttree")
 
-                #SvB_MA_file = f'{path}/SvB_MA_newSBDef.root' if 'mix' in dataset else f'{fname.replace("picoAOD", "SvB_MA_ULHH")}'
-                SvB_MA_file = f'{path}/SvB_MA_ULHH.root' if 'mix' in dataset else f'{fname.replace("picoAOD", "SvB_MA_ULHH")}'
+                #SvB_MA_file = f'{svb_path}/SvB_MA_newSBDef.root' if 'mix' in dataset else f'{fname.replace("picoAOD", "SvB_MA_ULHH")}'
+                SvB_MA_file = f'{svb_path}/SvB_MA_ULHH.root' if 'mix' in dataset else f'{fname.replace("picoAOD", "SvB_MA_ULHH")}'
                 event["SvB_MA"] = ( NanoEventsFactory.from_root( SvB_MA_file,
                                                                  entry_start=estart, entry_stop=estop, schemaclass=FriendTreeSchema ).events().SvB_MA )
 
@@ -234,13 +267,13 @@ class analysis(processor.ProcessorABC):
         #
         dumpTestVectors = False
         if dumpTestVectors:
-            print(f'{chunk}\n\n')
-            print(f'{chunk} self.input_jet_pt  = {[jets_for_clustering[iE].pt.tolist() for iE in range(10)]}')
-            print(f'{chunk} self.input_jet_eta  = {[jets_for_clustering[iE].eta.tolist() for iE in range(10)]}')
-            print(f'{chunk} self.input_jet_phi  = {[jets_for_clustering[iE].phi.tolist() for iE in range(10)]}')
-            print(f'{chunk} self.input_jet_mass  = {[jets_for_clustering[iE].mass.tolist() for iE in range(10)]}')
-            print(f'{chunk} self.input_jet_flavor  = {[jets_for_clustering[iE].jet_flavor.tolist() for iE in range(10)]}')
-            print(f'{chunk}\n\n')
+            print(f'{chunk_str}\n\n')
+            print(f'{chunk_str} self.input_jet_pt  = {[jets_for_clustering[iE].pt.tolist() for iE in range(10)]}')
+            print(f'{chunk_str} self.input_jet_eta  = {[jets_for_clustering[iE].eta.tolist() for iE in range(10)]}')
+            print(f'{chunk_str} self.input_jet_phi  = {[jets_for_clustering[iE].phi.tolist() for iE in range(10)]}')
+            print(f'{chunk_str} self.input_jet_mass  = {[jets_for_clustering[iE].mass.tolist() for iE in range(10)]}')
+            print(f'{chunk_str} self.input_jet_flavor  = {[jets_for_clustering[iE].jet_flavor.tolist() for iE in range(10)]}')
+            print(f'{chunk_str}\n\n')
 
 
         #
@@ -266,28 +299,18 @@ class analysis(processor.ProcessorABC):
         selJet_posHemi, selJet_negHemi = split_hemispheres(selev.selJet, thrust)
 
 
-        hemi_mult_posHemi = ak.zip({"jet": ak.num(jet_posHemi,      axis=1),
-                                    "sel": ak.num(selJet_posHemi,   axis=1),
-                                    "tag": ak.num(tagJet_posHemi,   axis=1)},
-                                    depth_limit=1
-                                   )
-
-        hemi_mult_negHemi = ak.zip({"jet": ak.num(jet_negHemi,      axis=1),
-                                    "sel": ak.num(selJet_negHemi,   axis=1),
-                                    "tag": ak.num(tagJet_negHemi,   axis=1)},
-                                   depth_limit=1
-                                   )
-
-        print("Total Jet Multiplicity ", ak.num(selev.Jet, axis=1), "\n")
-        print("PosHemi ID: jet,sel,tag",hemi_mult_posHemi[:10],"\n")
-        print("NegHemi ID: jet,sel,tag",hemi_mult_negHemi[:10],"\n")
-
-
         #
         #  Create hemispere objects
         #
-        pos_hemi = ak.zip({"mult": hemi_mult_posHemi,
-                           "thrust_phi": thrust.phi,
+        pos_hemi = ak.zip({"thrust_phi": thrust.phi,
+                           "event": selev.event,
+                           "run": selev.run,
+                           "luminosityBlock" : selev.luminosityBlock,
+                           "hemisphere_id": np.full(len(selev.run), +1),
+                           "weight": selev.weight,
+                           "nJet": ak.num(jet_posHemi, axis=1),
+                           "nSelJet": ak.num(selJet_posHemi, axis=1),
+                           "nTagJet": ak.num(tagJet_posHemi, axis=1),
                            "Jet": jet_posHemi,
                            "Muon": muon_posHemi,
                            "Elec": elec_posHemi
@@ -296,8 +319,15 @@ class analysis(processor.ProcessorABC):
                           )
         pos_hemi = compute_hemi_vars(pos_hemi)
 
-        neg_hemi = ak.zip({"mult": hemi_mult_negHemi,
-                           "thrust_phi": thrust.phi,
+        neg_hemi = ak.zip({"thrust_phi": thrust.phi,
+                           "event": selev.event,
+                           "run" : selev.run,
+                           "luminosityBlock" : selev.luminosityBlock,
+                           "hemisphere_id": np.full(len(selev.run), -1),
+                           "weight": selev.weight,
+                           "nJet": ak.num(jet_negHemi, axis=1),
+                           "nSelJet": ak.num(selJet_negHemi, axis=1),
+                           "nTagJet": ak.num(tagJet_negHemi, axis=1),
                            "Jet": jet_negHemi,
                            "Muon": muon_negHemi,
                            "Elec": elec_negHemi
@@ -306,9 +336,11 @@ class analysis(processor.ProcessorABC):
                           )
         neg_hemi = compute_hemi_vars(neg_hemi)
 
-
+        hemis_all = ak.concatenate([pos_hemi, neg_hemi], axis=0)
         selev["pos_hemi"] = pos_hemi
         selev["neg_hemi"] = neg_hemi
+
+
 
         #
         #  Write out hemi library files
@@ -360,17 +392,42 @@ class analysis(processor.ProcessorABC):
         #
         fill(selev, hist)
 
+
+        # construct output
+        metadata = (
+            {
+                "total_events": len(event),
+                "saved_events": len(selev),
+                "saved_hemis":  len(hemis_all.thrust_phi),
+            }
+        )
+
+        result = {
+            dataset: metadata
+            | {
+                "files": [],
+                "source": source_chunk,
+            }
+        }
+
+
         garbage = gc.collect()
         # print('Garbage:',garbage)
 
+        with TreeWriter()(path) as writer:
+            hemi_data = self._transform(hemis_all)
+            writer.extend(hemi_data)
+            if self._campaign is not None:
+                writer.save_metadata(self._campaign, metadata)
 
+            result[dataset]["files"].append(path)
         #
         # Done
         #
         elapsed = time.time() - tstart
-        logging.debug(f"{chunk}{nEvent/elapsed:,.0f} events/s")
+        logging.debug(f"{chunk_str}{nEvent/elapsed:,.0f} events/s")
 
-        output = hist.output | processOutput
+        output = hist.output | processOutput | result
 
         return output
 
