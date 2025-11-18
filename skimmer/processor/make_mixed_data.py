@@ -1,0 +1,300 @@
+import yaml
+from src.skimmer.picoaod import PicoAOD #, fetch_metadata, resize
+from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
+from coffea.nanoevents import NanoEventsFactory
+
+
+from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_SvB
+from src.friendtrees.FriendTreeSchema import FriendTreeSchema
+from src.math_tools.random import Squares
+from coffea4bees.analysis.helpers.event_weights import add_btagweights
+from coffea4bees.analysis.helpers.processor_config import processor_config
+from src.physics.event_selection import apply_event_selection
+from src.physics.event_weights import add_weights
+
+from src.data_formats.root import Chunk, TreeReader
+from coffea4bees.analysis.helpers.cutflow import cutflow_4b
+from coffea4bees.analysis.helpers.load_friend import (
+    FriendTemplate,
+    parse_friends
+)
+
+from coffea.analysis_tools import Weights, PackedSelection
+import numpy as np
+from src.physics.objects.jet_corrections import apply_jerc_corrections
+from src.physics.common import update_events
+from copy import copy
+import logging
+import awkward as ak
+import uproot
+
+
+from coffea4bees.hemisphere_mixing.mixing_helpers   import build_hemi_kdtrees
+from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres
+
+class HemiMixer(PicoAOD):
+    def __init__(self,
+                subtract_ttbar_with_weights = False,
+                mixing_rand_seed=5,
+                friends: dict[str, str|FriendTemplate] = None,
+                corrections_metadata: dict = None,
+                *args, **kwargs):
+        kwargs["pico_base_name"] = f'picoAOD_seed{mixing_rand_seed}'
+        super().__init__(*args, **kwargs)
+
+        logging.info(f"\nRunning HemiMixer with these parameters: , subtract_ttbar_with_weights = {subtract_ttbar_with_weights}, mixing_rand_seed = {mixing_rand_seed}, args = {args}, kwargs = {kwargs}")
+
+        self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
+        self.friends = parse_friends(friends)
+        self.mixing_rand_seed = mixing_rand_seed
+        self.corrections_metadata = corrections_metadata
+        self._cutFlow = cutflow_4b()
+
+        self.skip_collections = kwargs["skip_collections"]
+        self.skip_branches    = kwargs["skip_branches"]
+
+        #
+        #  Load the hemisphere libraries
+        #
+        yaml_file = 'coffea4bees/hemisphere_mixing/hemi_plots/hemi_statistics_UL18.yml'
+        logging.info(f"\nLoading hemisphere libraries = {yaml_file}")
+
+
+        jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_btagDeepFlavB", "Jet_bRegCorr", "Jet_jetId"]
+        #branch_list = ["nJet", "nSelJet", "nTagJet", "sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ] + jet_branches
+        hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ]
+        year_str = "UL18"
+
+        kd_trees, points, jet_ranges = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
+                                                          hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root",
+                                                          hemi_summary_vars = hemi_summary_vars,
+                                                          jet_branches = jet_branches,
+                                                          )
+        query_point = np.array([0.5, 0.5, 0.5, 0.5])
+        #dist, idx = tree.query(query_point, k=1)
+        self.hemi_kd_trees = kd_trees
+        self.hemi_points   = points
+        self.hemi_jet_ranges = jet_ranges
+
+
+
+
+    def select(self, event):
+
+        year    = event.metadata['year']
+        dataset = event.metadata['dataset']
+        fname   = event.metadata['filename']
+        estart  = event.metadata['entrystart']
+        estop   = event.metadata['entrystop']
+        nEvent = len(event)
+        year_label = self.corrections_metadata[year]['year_label']
+        chunk   = f'{dataset}::{estart:6d}:{estop:6d} >>> '
+        processName = event.metadata['processName']
+
+        ### target is for new friend trees
+        target = Chunk.from_coffea_events(event)
+
+
+        #
+        # Set process and datset dependent flags
+        #
+        config = processor_config(processName, dataset, event)
+        logging.debug(f'{chunk} config={config}, for file {fname}\n')
+
+        path = fname.replace(fname.split("/")[-1], "")
+
+        if self.subtract_ttbar_with_weights:
+
+            SvB_MA_file = f'{fname.replace("picoAOD", "SvB_MA_ULHH")}'
+            event["SvB_MA"] = ( NanoEventsFactory.from_root( SvB_MA_file,
+                                                             entry_start=estart, entry_stop=estop, schemaclass=FriendTreeSchema ).events().SvB_MA )
+
+            if not ak.all(event.SvB_MA.event == event.event):
+                raise ValueError("ERROR: SvB_MA events do not match events ttree")
+
+            # defining SvB_MA
+            setSvBVars("SvB_MA", event)
+
+        event = apply_event_selection( event, self.corrections_metadata[year], cut_on_lumimask=config["cut_on_lumimask"] )
+
+
+        ## adds all the event mc weights and 1 for data
+        weights, list_weight_names = add_weights( event, config["do_MC_weights"], dataset, year_label,
+                                                  self.corrections_metadata[year],
+                                                  isTTForMixed=False,
+                                                  target=target,
+                                                  friend_trigWeight=self.friends.get("trigWeight"),
+                                                 )
+
+
+
+        #
+        # Calculate and apply Jet Energy Calibration
+        #
+        if config["do_jet_calibration"]:
+            jets = apply_jerc_corrections(event,
+                                          corrections_metadata=self.corrections_metadata[year],
+                                          isMC=config["isMC"],
+                                          dataset=dataset
+                                          )
+        else:
+            jets = event.Jet
+
+
+        event = update_events(event, {"Jet": jets})
+
+        event = apply_4b_selection( event, self.corrections_metadata[year],
+                                           dataset=dataset,
+                                           doLeptonRemoval=config["do_lepton_jet_cleaning"],
+                                           override_selected_with_flavor_bit=config["override_selected_with_flavor_bit"],
+                                           do_jet_veto_maps = config["do_jet_veto_maps"],
+                                           isRun3=config["isRun3"],
+                                           isMC=config["isMC"],
+                                           isSyntheticData=config["isSyntheticData"],
+                                           isSyntheticMC=config["isSyntheticMC"],
+                                           )
+
+
+        #
+        # Get the trigger weights
+        #
+        if config["isMC"]:
+            if "GluGlu" in dataset:
+                ### this is temporary until trigWeight is computed in new code
+                # trigWeight_file = uproot.open(f'{event.metadata["filename"].replace("picoAOD", "trigWeight")}')['Events']
+                # trigWeight = trigWeight_file.arrays(['event', 'trigWeight_Data', 'trigWeight_MC'], entry_start=estart,entry_stop=estop)
+                # if not ak.all(trigWeight.event == event.event):
+                #     raise ValueError('trigWeight events do not match events ttree')
+                trigWeight = self.friends.get("trigWeight").arrays(target)
+
+                event["trigWeight_Data"] = trigWeight.Data
+                event["trigWeight_MC"]   = trigWeight.MC
+
+
+        selections = PackedSelection()
+        selections.add( "lumimask", event.lumimask)
+        selections.add( "passNoiseFilter", event.passNoiseFilter)
+        selections.add( "passHLT", ( event.passHLT if config["cut_on_HLT_decision"] else np.full(len(event), True)  ) )
+        selections.add( 'passJetMult',   event.passJetMult )
+        selections.add( "passThreeTag", event.threeTag)
+
+        event["weight"] = weights.weight()
+
+        cumulative_cuts = ["lumimask"]
+        self._cutFlow.fill( "all",             event[selections.all(*cumulative_cuts)], allTag=True )
+
+        other_cuts = ["passNoiseFilter", "passHLT", "passJetMult", "passThreeTag"]
+
+        for cut in other_cuts:
+            cumulative_cuts.append(cut)
+            self._cutFlow.fill( cut, event[selections.all(*cumulative_cuts)], allTag=True )
+
+        #
+        # Add Btag SF
+        #
+        if config["isMC"]:
+
+            weights, list_weight_names = add_btagweights( event, weights,
+                                                          list_weight_names=list_weight_names,
+                                                          corrections_metadata=self.corrections_metadata[year]
+            )
+            logging.debug( f"Btag weight {weights.partial_weight(include=['CMS_btag'])[:10]}\n" )
+            event["weight"] = weights.weight()
+
+            self._cutFlow.fill( "passFourTag_btagSF", event[selections.all(*cumulative_cuts)], allTag=True )
+
+        selection = event.lumimask & event.passNoiseFilter & event.passJetMult & event.threeTag
+        if not config["isMC"]: selection = selection & event.passHLT
+
+        selev = event[selections.all(*cumulative_cuts)]
+
+        #
+        #  TTbar subtractions using weights
+        #
+        if self.subtract_ttbar_with_weights:
+
+            pass_ttbar_filter_selev = subtract_ttbar_with_SvB(selev, dataset, year)
+
+            pass_ttbar_filter = np.full( len(event), True)
+            pass_ttbar_filter[ selections.all(*cumulative_cuts) ] = pass_ttbar_filter_selev
+            selections.add( 'pass_ttbar_filter', pass_ttbar_filter )
+            cumulative_cuts.append("pass_ttbar_filter")
+            self._cutFlow.fill( "pass_ttbar_filter", event[selections.all(*cumulative_cuts)], allTag=True )
+
+            selection = selection & pass_ttbar_filter
+            selev = selev[pass_ttbar_filter_selev]
+
+
+
+        #
+        #  Split event into hemispheres
+        #
+        pos_hemi, neg_hemi = split_events_into_hemispheres(selev)
+
+
+        #
+        #  convert to zscores....
+        #
+
+        #
+        #  Funciton to find the corect hemisphere libraries
+        #
+        print(f"pos_hemi.nJet = {pos_hemi.nTagJet, pos_hemi.nSelJet, ak.num(pos_hemi.Jet, axis=1)}\n")
+
+        #
+        #  Find nearest neighbor hemispheres
+        #
+
+        # Hack for Now
+        print("pos_match",self.hemi_kd_trees[(0, 1, 1)].query(self.hemi_points[(0, 1, 2)], k=1),"\n")
+        print("neg_match",self.hemi_kd_trees[(0, 1, 2)].query(self.hemi_points[(0, 1, 1)], k=1),"\n")
+
+        processOutput = {}
+
+        n_jet = ak.num(selev.Jet)
+        total_jet = int(ak.sum(n_jet))
+        out_branches = {}
+
+        out_branches = {
+                # Update jets with new kinematics
+                "Jet_pt":              selev.Jet.pt, #ak.unflatten(np.full(total_jet, 7), n_jet),
+                "Jet_eta":             selev.Jet.eta,
+                "Jet_phi":             selev.Jet.phi,
+                "Jet_mass":            selev.Jet.mass,
+                "Jet_jetId":           ak.unflatten(np.full(total_jet, 7), n_jet),
+                "Jet_puId":            ak.unflatten(np.full(total_jet, 7), n_jet),
+                # create new regular branch
+                #"nClusteredJets":      selev.nClusteredJets,
+            }
+
+        if config["isMC"]:
+            out_branches["trigWeight_Data"] = selev.trigWeight_Data
+            out_branches["trigWeight_MC"]   = selev.trigWeight_MC
+            out_branches["CMSbtag"]        = weights.partial_weight(include=["CMS_btag"])[selections.all(*cumulative_cuts)]
+
+        if '202' in dataset:
+            out_branches["Jet_PNetRegPtRawCorr"]         = ak.unflatten(np.full(total_jet, 1), n_jet)
+            out_branches["Jet_PNetRegPtRawCorrNeutrino"] = ak.unflatten(np.full(total_jet, 1), n_jet)
+            out_branches["Jet_btagPNetB"]                = selev.Jet.btagPNetB
+
+        else:
+            out_branches["Jet_bRegCorr"] = ak.unflatten(np.full(total_jet, 1), n_jet)
+            out_branches["Jet_btagDeepFlavB"] = selev.Jet.btagDeepFlavB
+
+        #
+        #  Need to skip all the other jet branches to make sure they have the same number of jets
+        #
+        for f in event.Jet.fields:
+            bname = f"Jet_{f}"
+            if bname not in out_branches:
+                self.skip_branches.append(bname)
+
+        self.update_branch_filter(self.skip_collections, self.skip_branches)
+        branches = ak.Array(out_branches)
+
+        processOutput["total_jet"] = total_jet
+
+        return (selection,
+                branches,
+                processOutput,
+                )
