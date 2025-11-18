@@ -429,15 +429,14 @@ def create_plots(
     }
 
     # Create jet multiplicity plot
-    #try:
-    if True:
-        print("Creating jet multiplicity plot")
-        print("plot options:", plot_options)
+    try:
+        logging.info("Creating jet multiplicity plot")
+        logging.info("plot options:", plot_options)
         fig, ax = makePlot(
             cfg,
             var=selJets,
             cut=args.cut,
-            axis_opts={"region":args.weightRegion},
+            axis_opts={"region":args.weightRegion, "tag":"lowpt_fourTag" if args.lowpt else "fourTag"},
             **plot_options
         )
 
@@ -462,10 +461,10 @@ def create_plots(
         plt.text(6 if args.lowpt else 10, 5.15, fit_text, fontsize=15, color='black',
                 horizontalalignment='left', verticalalignment='center')
 
-        fig.savefig(os.path.join(args.outputDir, "selJets_noJCM_n.pdf"))
-        logger.info(f"Saved jet multiplicity plot to {os.path.join(args.outputDir, 'selJets_noJCM_n.pdf')}")
-#    except Exception as e:
-#        logger.error(f"Failed to create jet multiplicity plot: {e}")
+        fig.savefig(os.path.join(args.outputDir, f"{selJets}.pdf"))
+        logger.info(f"Saved jet multiplicity plot to {os.path.join(args.outputDir, f'{selJets}.pdf')}")
+    except Exception as e:
+        logger.error(f"Failed to create jet multiplicity plot: {e}")
 
     try:
         # Plot tagged jets - use the same approach as for jet multiplicity
@@ -522,12 +521,12 @@ def create_plots(
             cfg,
             var=tagJets,
             cut=args.cut,
-            axis_opts={"region":args.weightRegion},
+            axis_opts={"region":args.weightRegion, "tag":"lowpt_fourTag" if args.lowpt else "fourTag"},
             **plot_options
         )
 
-        fig.savefig(os.path.join(args.outputDir, "tagJets_noJCM_n.pdf"))
-        logger.info(f"Saved tagged jets plot to {os.path.join(args.outputDir, 'tagJets_noJCM_n.pdf')}")
+        fig.savefig(os.path.join(args.outputDir, f"{tagJets}.pdf"))
+        logger.info(f"Saved tagged jets plot to {os.path.join(args.outputDir, f'{tagJets}.pdf')}")
 
     except Exception as e:
         logger.warning(f"Failed to create tagged jets plot: {e}")
