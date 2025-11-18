@@ -1,11 +1,13 @@
 import numpy as np
 import awkward as ak
 from coffea.nanoevents.methods import vector as v
-
+import uproot
+import yaml
 ak.behavior.update(v.behavior)
-
+import ast
 import numba as nb
 import numpy as np
+from scipy.spatial import cKDTree  # "c" = C-optimized
 
 @nb.njit(cache=True)
 def _thrust_event_numba(px_i, py_i, n_steps=720):
@@ -199,6 +201,207 @@ def compute_hemi_vars(hemis):
     cos_t = np.cos(hemis.thrust_phi)
     sin_t = np.sin(hemis.thrust_phi)
 
-    hemis["sumPt_T"]       = ak.sum(  hemis.Jet.px * cos_t + hemis.Jet.py * sin_t, axis=1)
-    hemis["sumPt_T_minor"] = ak.sum( -hemis.Jet.px * sin_t + hemis.Jet.py * cos_t, axis=1)
+    hemis["sumPt_T"]       = ak.sum(np.abs(  hemis.Jet.px * cos_t + hemis.Jet.py * sin_t), axis=1)
+    hemis["sumPt_T_minor"] = ak.sum(np.abs( -hemis.Jet.px * sin_t + hemis.Jet.py * cos_t), axis=1)
     return hemis
+
+
+def split_events_into_hemispheres(event):
+
+    #
+    #  Get Thrust axis
+    #
+    thrust = transverse_thrust_awkward_fast(event.Jet, n_steps=720, refine_rounds=2)
+
+    #
+    #  For outputs
+    #
+    jet_posHemi, jet_negHemi   = split_hemispheres(event.Jet, thrust)
+    muon_posHemi, muon_negHemi = split_hemispheres(event.selMuon, thrust)
+    elec_posHemi, elec_negHemi = split_hemispheres(event.selElec, thrust)
+
+    #logging.debug("Jets pos",ak.num(jet_posHemi, axis=1))   # number of aligned jets per event
+    #logging.debug("Jets neg",ak.num(jet_negHemi, axis=1))      # number of anti-aligned jets per event
+
+    #
+    #  For mutltiplicity counting
+    #
+    tagJet_posHemi, tagJet_negHemi = split_hemispheres(event.tagJet, thrust)
+    selJet_posHemi, selJet_negHemi = split_hemispheres(event.selJet, thrust)
+
+
+    #
+    #  Create hemispere objects
+    #
+    pos_hemi = ak.zip({"thrust_phi": thrust.phi,
+                       "event": event.event,
+                       "run": event.run,
+                       "luminosityBlock" : event.luminosityBlock,
+                       "hemisphereId": np.full(len(event.run), +1),
+                       "weight": event.weight,
+                       "nSelJet": ak.num(selJet_posHemi, axis=1),
+                       "nTagJet": ak.num(tagJet_posHemi, axis=1),
+                       "Jet": jet_posHemi,
+                       "Muon": muon_posHemi,
+                       "Elec": elec_posHemi
+                       },
+                      depth_limit=1
+                      )
+    pos_hemi = compute_hemi_vars(pos_hemi)
+
+    neg_hemi = ak.zip({"thrust_phi": thrust.phi,
+                       "event": event.event,
+                       "run" : event.run,
+                       "luminosityBlock" : event.luminosityBlock,
+                       "hemisphereId": np.full(len(event.run), -1),
+                       "weight": event.weight,
+                       "nSelJet": ak.num(selJet_negHemi, axis=1),
+                       "nTagJet": ak.num(tagJet_negHemi, axis=1),
+                       "Jet": jet_negHemi,
+                       "Muon": muon_negHemi,
+                       "Elec": elec_negHemi
+                       },
+                      depth_limit=1
+                      )
+    neg_hemi = compute_hemi_vars(neg_hemi)
+
+    return pos_hemi, neg_hemi
+
+
+
+def read_hemi_files(hemifiles, tree_name="Events", branch_list=None):
+
+    hemi_vars = { var_name: [] for var_name in branch_list }
+
+    for batch in uproot.iterate(
+            f"{hemifiles}:{tree_name}",
+            branch_list,
+            step_size=200_000,  # entries per chunk
+            library="np",
+    ):
+
+        if hemi_vars[branch_list[0]] is None:
+            for var_name in branch_list:
+                hemi_vars[var_name] = batch[var_name]
+        else:
+            for var_name in branch_list:
+                hemi_vars[var_name] = np.concatenate( (hemi_vars[var_name], batch[var_name]) )
+
+    return hemi_vars
+
+
+def get_filter(data, key, val, low_edge=False, high_edge=False):
+    this_filter = (data[key] == val)
+
+    if low_edge:
+        this_filter |= (data[key] < val)
+    elif high_edge:
+        this_filter |= (data[key] > val)
+
+    return this_filter
+
+
+def get_grouped_hemispheres_data(hemi_ranges, hemi_data, hemi_vars, summary_vars=None):
+    grouped_hemi_data = {}
+
+    # Outer loop: tag multiplicity bins
+    tag_keys = list(hemi_ranges.keys())
+    for itag, tag in enumerate(tag_keys):
+
+        # --- tag filter ----------------------------------------------------------
+        tag_filter = get_filter(hemi_data, "nTagJet", tag, low_edge=(itag==0), high_edge=(itag==len(tag_keys)-1))
+
+        # skip empty sub-ranges
+        if not hemi_ranges[tag]:
+            print(f"ERROR: no sel jets for tag = {tag}")
+            continue
+
+        # -------------------------------------------------------------------------
+        # Middle loop: selected-jet multiplicity bins
+        sel_keys = list(hemi_ranges[tag].keys())
+        for isel, sel in enumerate(sel_keys):
+
+            # --- sel filter ------------------------------------------------------
+            sel_filter = get_filter(hemi_data, "nSelJet", sel, low_edge=(isel==0), high_edge=(isel==len(sel_keys)-1))
+
+            # ---------------------------------------------------------------------
+            # Inner loop: total-jet multiplicity bins
+            jet_bins = hemi_ranges[tag][sel]
+            if not jet_bins:
+
+                jet_mult_key = (tag, sel, -1)
+                # special case: no jet bins defined
+                grouped_hemi_data[jet_mult_key] = {}
+                for var_name in hemi_vars:
+                    if summary_vars and var_name in summary_vars[jet_mult_key]:
+                        this_var = summary_vars[jet_mult_key][var_name]
+                        grouped_hemi_data[jet_mult_key][var_name] = (hemi_data[var_name][tag_filter & sel_filter] - this_var["mean"]) / this_var["RMS"]
+                    else:
+                        grouped_hemi_data[jet_mult_key][var_name] = hemi_data[var_name][tag_filter & sel_filter]
+
+                continue
+
+            for ijet, jet in enumerate(jet_bins):
+
+                jet_filter = get_filter(hemi_data, "nJet", jet, low_edge=(ijet==0), high_edge=(ijet==len(jet_bins)-1))
+                jet_mult_key = (tag, sel, jet)
+
+                # --- final selection ---------------------------------------------
+                mask = tag_filter & sel_filter & jet_filter
+                grouped_hemi_data[jet_mult_key] = {}
+                for var_name in hemi_vars:
+
+                    if summary_vars and var_name in summary_vars[jet_mult_key]:
+                        this_var = summary_vars[jet_mult_key][var_name]
+                        grouped_hemi_data[jet_mult_key][var_name] = (hemi_data[var_name][tag_filter & sel_filter & jet_filter] - this_var["mean"]) / this_var["RMS"]
+                    else:
+                        grouped_hemi_data[jet_mult_key][var_name] = hemi_data[var_name][tag_filter & sel_filter & jet_filter]
+
+
+    return grouped_hemi_data
+
+
+def convert_yaml_dict(raw_dict):
+    output = {}
+    for k, v in raw_dict.items():
+        try:
+            key = ast.literal_eval(k) if isinstance(k, str) else k
+        except Exception:
+            key = k  # leave as string if not a tuple
+
+        #print(f"Key: {key} ({type(key)}) Value: {v} ({type(v)})")
+        output[key] = convert_yaml_dict(v) if isinstance(v, dict) else v
+
+    return output
+
+
+def build_hemi_kdtrees(hemi_metadata_yaml, hemifiles, hemi_summary_vars, jet_branches):
+
+    # Read in hemisphere library metadata
+    with open(hemi_metadata_yaml, 'r') as f:
+        hemi_stats_raw = yaml.safe_load(f)
+
+    hemi_stats = convert_yaml_dict(hemi_stats_raw["hemi_summary_vars"])
+    jet_ranges = convert_yaml_dict(hemi_stats_raw["jet_mult_ranges"])
+
+    #
+    #  Read in Hemisphere library data
+    #
+    branch_list = ["nJet", "nSelJet", "nTagJet"] + hemi_summary_vars + jet_branches
+    hemi_data = read_hemi_files(hemifiles, branch_list=branch_list)
+
+    #
+    #  Group hemisphere data by jet multiplicity bins
+    #
+    grouped_hemi_data = get_grouped_hemispheres_data(jet_ranges, hemi_data, hemi_vars= hemi_summary_vars + jet_branches, summary_vars=hemi_stats)
+
+    #
+    #  Make the Kd-Trees
+    #
+    kd_trees = {}
+    points   = {}
+    for jet_mult_key in hemi_stats.keys():
+        points  [jet_mult_key] = np.column_stack([ grouped_hemi_data[jet_mult_key][name] for name in hemi_summary_vars])
+        kd_trees[jet_mult_key] = cKDTree(points[jet_mult_key])
+
+    return kd_trees, points, jet_ranges
