@@ -19,7 +19,7 @@ from src.hist_tools import Collection, Fill
 from src.hist_tools.object import LorentzVector, Jet, Muon, Elec
 #from coffea4bees.analysis.helpers.hist_templates import SvBHists, FvTHists, QuadJetHists
 
-from coffea4bees.hemisphere_mixing.mixing_helpers   import transverse_thrust_awkward_fast, split_hemispheres, compute_hemi_vars
+from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres
 from coffea4bees.hemisphere_mixing.hemisphere_hist_templates import HemisphereHists
 
 from coffea4bees.analysis.helpers.networks import HCREnsemble
@@ -277,63 +277,9 @@ class analysis(processor.ProcessorABC):
 
 
         #
-        #  Get Thrust axis
+        #  Split event into hemispheres
         #
-        thrust = transverse_thrust_awkward_fast(selev.Jet, n_steps=720, refine_rounds=2)
-
-        #
-        #  For outputs
-        #
-        jet_posHemi, jet_negHemi   = split_hemispheres(selev.Jet, thrust)
-        muon_posHemi, muon_negHemi = split_hemispheres(selev.selMuon, thrust)
-        elec_posHemi, elec_negHemi = split_hemispheres(selev.selElec, thrust)
-
-        logging.debug("Jets pos",ak.num(jet_posHemi, axis=1))   # number of aligned jets per event
-        logging.debug("Jets neg",ak.num(jet_negHemi, axis=1))      # number of anti-aligned jets per event
-
-
-        #
-        #  For mutltiplicity counting
-        #
-        tagJet_posHemi, tagJet_negHemi = split_hemispheres(selev.tagJet, thrust)
-        selJet_posHemi, selJet_negHemi = split_hemispheres(selev.selJet, thrust)
-
-
-        #
-        #  Create hemispere objects
-        #
-        pos_hemi = ak.zip({"thrust_phi": thrust.phi,
-                           "event": selev.event,
-                           "run": selev.run,
-                           "luminosityBlock" : selev.luminosityBlock,
-                           "hemisphereId": np.full(len(selev.run), +1),
-                           "weight": selev.weight,
-                           "nSelJet": ak.num(selJet_posHemi, axis=1),
-                           "nTagJet": ak.num(tagJet_posHemi, axis=1),
-                           "Jet": jet_posHemi,
-                           "Muon": muon_posHemi,
-                           "Elec": elec_posHemi
-                           },
-                          depth_limit=1
-                          )
-        pos_hemi = compute_hemi_vars(pos_hemi)
-
-        neg_hemi = ak.zip({"thrust_phi": thrust.phi,
-                           "event": selev.event,
-                           "run" : selev.run,
-                           "luminosityBlock" : selev.luminosityBlock,
-                           "hemisphereId": np.full(len(selev.run), -1),
-                           "weight": selev.weight,
-                           "nSelJet": ak.num(selJet_negHemi, axis=1),
-                           "nTagJet": ak.num(tagJet_negHemi, axis=1),
-                           "Jet": jet_negHemi,
-                           "Muon": muon_negHemi,
-                           "Elec": elec_negHemi
-                           },
-                          depth_limit=1
-                          )
-        neg_hemi = compute_hemi_vars(neg_hemi)
-
+        pos_hemi, neg_hemi = split_events_into_hemispheres(selev)
         selev["pos_hemi"] = pos_hemi
         selev["neg_hemi"] = neg_hemi
 

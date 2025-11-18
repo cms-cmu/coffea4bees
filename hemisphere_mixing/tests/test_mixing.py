@@ -328,83 +328,83 @@ class mixingTestCase(unittest.TestCase):
         print(f"Nearest neighbor index {idx}, distance {dist}")
         print("Coordinates:", points[idx])
 
-    def test_reading_hemisphere_library(self):
-
-        branch_list = ["nJet", "nSelJet", "nTagJet", "sumPt_T_minor", "sumPt_T", "combinedMass", "pz"]
-        hemi_var_names = ["combinedMass", "sumPt_T", "sumPt_T_minor", "pz"]
-
-        hemi_vars = { var_name: [] for var_name in hemi_var_names }
-
-
-        for batch in uproot.iterate(
-            #"coffea4bees/hemisphere_mixing/tests/*.root:Events",
-            "output/mixeddata_cluster/data_UL18*/*.root:Events",
-            branch_list,
-            step_size=800_000,  # entries per chunk
-            library="np",
-        ):
-
-            nTag2Sel2Jet2 = ( (batch["nTagJet"] == 2) & (batch["nSelJet"] == 2) & (batch["nJet"] == 2) )
-
-
-            if hemi_vars[hemi_var_names[0]] is None:
-                for var_name in hemi_var_names:
-                    hemi_vars[var_name] = batch[var_name][nTag2Sel2Jet2]
-            else:
-                for var_name in hemi_var_names:
-                    hemi_vars[var_name] = np.concatenate( (hemi_vars[var_name], batch[var_name][nTag2Sel2Jet2]) )
-
-
-        hemi_var_mean = {}
-        hemi_var_RMS = {}
-        for var_name in hemi_var_names:
-            hemi_var_mean[var_name] = np.mean(hemi_vars[var_name])
-            hemi_var_RMS[var_name]  = np.sqrt(np.mean(hemi_vars[var_name]**2))
-
-
-        hemi_var_z_score = {}
-        for var_name in hemi_var_names:
-            hemi_var_z_score[var_name] = (hemi_vars[var_name] - hemi_var_mean[var_name]) / hemi_var_RMS[var_name]
-
-        points = np.column_stack([hemi_var_z_score[name] for name in hemi_var_names])
-
-        tree = cKDTree(points)
-
-
-        # Query: find nearest neighbor of a new point
-        query_point = np.array([0.5, 0.5, 0.5, 0.5])
-        dist, idx = tree.query(query_point, k=1)
-
-        print(f"Nearest neighbor index {idx}, distance {dist}")
-        print("Coordinates:", points[idx])
-
-        print(tree.query(points[10],k=2))
-        print(tree.query(points[0],k=2))
-
-
-
-    def test_reading_all_hemisphere_libraries(self):
-
-        yaml_file = 'coffea4bees/hemisphere_mixing/hemi_plots/hemi_statistics_UL18.yml'
-
-        jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_btagDeepFlavB", "Jet_bRegCorr", "Jet_jetId"]
-        #branch_list = ["nJet", "nSelJet", "nTagJet", "sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ] + jet_branches
-        hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ]
-        year_str = "UL18"
-
-        kd_trees, points, jet_ranges = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
-                                                          hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root",
-                                                          hemi_summary_vars = hemi_summary_vars,
-                                                          jet_branches = jet_branches,
-                                                          )
+#    def test_reading_hemisphere_library(self):
+#
+#        branch_list = ["nJet", "nSelJet", "nTagJet", "sumPt_T_minor", "sumPt_T", "combinedMass", "pz"]
+#        hemi_var_names = ["combinedMass", "sumPt_T", "sumPt_T_minor", "pz"]
+#
+#        hemi_vars = { var_name: [] for var_name in hemi_var_names }
+#
+#
+#        for batch in uproot.iterate(
+#            #"coffea4bees/hemisphere_mixing/tests/*.root:Events",
+#            "output/mixeddata_cluster/data_UL18*/*.root:Events",
+#            branch_list,
+#            step_size=800_000,  # entries per chunk
+#            library="np",
+#        ):
+#
+#            nTag2Sel2Jet2 = ( (batch["nTagJet"] == 2) & (batch["nSelJet"] == 2) & (batch["nJet"] == 2) )
+#
+#
+#            if hemi_vars[hemi_var_names[0]] is None:
+#                for var_name in hemi_var_names:
+#                    hemi_vars[var_name] = batch[var_name][nTag2Sel2Jet2]
+#            else:
+#                for var_name in hemi_var_names:
+#                    hemi_vars[var_name] = np.concatenate( (hemi_vars[var_name], batch[var_name][nTag2Sel2Jet2]) )
+#
+#
+#        hemi_var_mean = {}
+#        hemi_var_RMS = {}
+#        for var_name in hemi_var_names:
+#            hemi_var_mean[var_name] = np.mean(hemi_vars[var_name])
+#            hemi_var_RMS[var_name]  = np.sqrt(np.mean(hemi_vars[var_name]**2))
+#
+#
+#        hemi_var_z_score = {}
+#        for var_name in hemi_var_names:
+#            hemi_var_z_score[var_name] = (hemi_vars[var_name] - hemi_var_mean[var_name]) / hemi_var_RMS[var_name]
+#
+#        points = np.column_stack([hemi_var_z_score[name] for name in hemi_var_names])
+#
+#        tree = cKDTree(points)
+#
+#
+#        # Query: find nearest neighbor of a new point
+#        query_point = np.array([0.5, 0.5, 0.5, 0.5])
+#        dist, idx = tree.query(query_point, k=1)
+#
+#        print(f"Nearest neighbor index {idx}, distance {dist}")
+#        print("Coordinates:", points[idx])
+#
+#        print(tree.query(points[10],k=2))
+#        print(tree.query(points[0],k=2))
 
 
 
-        # Query: find nearest neighbor of a new point
-        query_point = np.array([0.5, 0.5, 0.5, 0.5])
-        #dist, idx = tree.query(query_point, k=1)
-        kd_trees[(0, 1, 1)].query(points[(0, 1, 1)], k=2)
-        breakpoint()
+#    def test_reading_all_hemisphere_libraries(self):
+#
+#        yaml_file = 'coffea4bees/hemisphere_mixing/hemi_plots/hemi_statistics_UL18.yml'
+#
+#        jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_btagDeepFlavB", "Jet_bRegCorr", "Jet_jetId"]
+#        #branch_list = ["nJet", "nSelJet", "nTagJet", "sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ] + jet_branches
+#        hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ]
+#        year_str = "UL18"
+#
+#        kd_trees, points, jet_ranges = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
+#                                                          hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root",
+#                                                          hemi_summary_vars = hemi_summary_vars,
+#                                                          jet_branches = jet_branches,
+#                                                          )
+#
+#
+#
+#        # Query: find nearest neighbor of a new point
+#        query_point = np.array([0.5, 0.5, 0.5, 0.5])
+#        #dist, idx = tree.query(query_point, k=1)
+#        kd_trees[(0, 1, 1)].query(points[(0, 1, 1)], k=2)
+#        #breakpoint()
 
 
 

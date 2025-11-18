@@ -206,18 +206,79 @@ def compute_hemi_vars(hemis):
     return hemis
 
 
+def split_events_into_hemispheres(event):
+
+    #
+    #  Get Thrust axis
+    #
+    thrust = transverse_thrust_awkward_fast(event.Jet, n_steps=720, refine_rounds=2)
+
+    #
+    #  For outputs
+    #
+    jet_posHemi, jet_negHemi   = split_hemispheres(event.Jet, thrust)
+    muon_posHemi, muon_negHemi = split_hemispheres(event.selMuon, thrust)
+    elec_posHemi, elec_negHemi = split_hemispheres(event.selElec, thrust)
+
+    #logging.debug("Jets pos",ak.num(jet_posHemi, axis=1))   # number of aligned jets per event
+    #logging.debug("Jets neg",ak.num(jet_negHemi, axis=1))      # number of anti-aligned jets per event
+
+    #
+    #  For mutltiplicity counting
+    #
+    tagJet_posHemi, tagJet_negHemi = split_hemispheres(event.tagJet, thrust)
+    selJet_posHemi, selJet_negHemi = split_hemispheres(event.selJet, thrust)
+
+
+    #
+    #  Create hemispere objects
+    #
+    pos_hemi = ak.zip({"thrust_phi": thrust.phi,
+                       "event": event.event,
+                       "run": event.run,
+                       "luminosityBlock" : event.luminosityBlock,
+                       "hemisphereId": np.full(len(event.run), +1),
+                       "weight": event.weight,
+                       "nSelJet": ak.num(selJet_posHemi, axis=1),
+                       "nTagJet": ak.num(tagJet_posHemi, axis=1),
+                       "Jet": jet_posHemi,
+                       "Muon": muon_posHemi,
+                       "Elec": elec_posHemi
+                       },
+                      depth_limit=1
+                      )
+    pos_hemi = compute_hemi_vars(pos_hemi)
+
+    neg_hemi = ak.zip({"thrust_phi": thrust.phi,
+                       "event": event.event,
+                       "run" : event.run,
+                       "luminosityBlock" : event.luminosityBlock,
+                       "hemisphereId": np.full(len(event.run), -1),
+                       "weight": event.weight,
+                       "nSelJet": ak.num(selJet_negHemi, axis=1),
+                       "nTagJet": ak.num(tagJet_negHemi, axis=1),
+                       "Jet": jet_negHemi,
+                       "Muon": muon_negHemi,
+                       "Elec": elec_negHemi
+                       },
+                      depth_limit=1
+                      )
+    neg_hemi = compute_hemi_vars(neg_hemi)
+
+    return pos_hemi, neg_hemi
+
+
+
 def read_hemi_files(hemifiles, tree_name="Events", branch_list=None):
 
     hemi_vars = { var_name: [] for var_name in branch_list }
 
     for batch in uproot.iterate(
-            f"{hemifiles}:{tree_name}",  #"coffea4bees/hemisphere_mixing/tests/*.root:Events",
+            f"{hemifiles}:{tree_name}",
             branch_list,
             step_size=200_000,  # entries per chunk
             library="np",
     ):
-
-        #nTag2Sel2Jet2 = ( (batch["nTagJet"] == 2) & (batch["nSelJet"] == 2) & (batch["nJet"] == 2) )
 
         if hemi_vars[branch_list[0]] is None:
             for var_name in branch_list:
