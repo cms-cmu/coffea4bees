@@ -30,7 +30,7 @@ import uproot
 
 
 from coffea4bees.hemisphere_mixing.mixing_helpers   import build_hemi_kdtrees
-from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres
+from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres, get_filter
 
 class HemiMixer(PicoAOD):
     def __init__(self,
@@ -62,19 +62,15 @@ class HemiMixer(PicoAOD):
 
         jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_btagDeepFlavB", "Jet_bRegCorr", "Jet_jetId"]
         #branch_list = ["nJet", "nSelJet", "nTagJet", "sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ] + jet_branches
-        hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ]
+        self.hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ]
         year_str = "UL18"
 
-        kd_trees, points, jet_ranges = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
-                                                          hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root",
-                                                          hemi_summary_vars = hemi_summary_vars,
-                                                          jet_branches = jet_branches,
-                                                          )
-        query_point = np.array([0.5, 0.5, 0.5, 0.5])
-        #dist, idx = tree.query(query_point, k=1)
-        self.hemi_kd_trees = kd_trees
-        self.hemi_points   = points
-        self.hemi_jet_ranges = jet_ranges
+        self.hemi_kd_trees, self.hemi_points, self.hemi_jet_ranges, self.hemi_stats, self.hemi_data = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
+                                                                                                                         hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root",
+                                                                                                                         hemi_summary_vars = self.hemi_summary_vars,
+                                                                                                                         jet_branches = jet_branches,
+                                                                                                                         )
+
 
 
 
@@ -224,7 +220,7 @@ class HemiMixer(PicoAOD):
             selection = selection & pass_ttbar_filter
             selev = selev[pass_ttbar_filter_selev]
 
-
+        print("selMuon", type(selev.selMuon), selev.selMuon.tolist(),"\n")
 
         #
         #  Split event into hemispheres
@@ -233,8 +229,69 @@ class HemiMixer(PicoAOD):
 
 
         #
-        #  convert to zscores....
+        #  Loop on hemisphere multiplcity bins
         #
+        # Outer loop: tag multiplicity bins
+        tag_keys = list(self.hemi_jet_ranges.keys())
+        for itag, tag in enumerate(tag_keys):
+            print(itag, tag, type(tag), "\n")
+            # --- tag filter ----------------------------------------------------------
+            tag_filter_pos = get_filter(pos_hemi, "nTagJet", tag, low_edge=(itag==0), high_edge=(itag==len(tag_keys)-1))
+            tag_filter_neg = get_filter(neg_hemi, "nTagJet", tag, low_edge=(itag==0), high_edge=(itag==len(tag_keys)-1))
+
+            # skip empty sub-ranges
+            if not self.hemi_jet_ranges[tag]:
+                print(f"ERROR: no sel jets for tag = {tag}")
+                continue
+
+            # -------------------------------------------------------------------------
+            # Middle loop: selected-jet multiplicity bins
+            sel_keys = list(self.hemi_jet_ranges[tag].keys())
+            for isel, sel in enumerate(sel_keys):
+
+                # --- sel filter ------------------------------------------------------
+                sel_filter_pos = get_filter(pos_hemi, "nSelJet", sel, low_edge=(isel==0), high_edge=(isel==len(sel_keys)-1))
+                sel_filter_neg = get_filter(neg_hemi, "nSelJet", sel, low_edge=(isel==0), high_edge=(isel==len(sel_keys)-1))
+
+                # ---------------------------------------------------------------------
+                # Inner loop: total-jet multiplicity bins
+                jet_bins = self.hemi_jet_ranges[tag][sel]
+                if not jet_bins:
+
+                    jet_mult_key = (tag, sel, -1)
+                    # special case: no jet bins defined
+
+                    mask_pos = tag_filter_pos & sel_filter_pos
+                    mask_neg = tag_filter_neg & sel_filter_neg
+
+                else:
+
+                    for ijet, jet in enumerate(jet_bins):
+
+                        jet_filter_pos = get_filter(pos_hemi, "nJet", jet, low_edge=(ijet==0), high_edge=(ijet==len(jet_bins)-1))
+                        jet_filter_neg = get_filter(neg_hemi, "nJet", jet, low_edge=(ijet==0), high_edge=(ijet==len(jet_bins)-1))
+                        jet_mult_key = (tag, sel, jet)
+
+                        # --- final selection ---------------------------------------------
+                        mask_pos = tag_filter_pos & sel_filter_pos & jet_filter_pos
+                        mask_neg = tag_filter_neg & sel_filter_neg & jet_filter_neg
+
+                        # print(f"HemiStats for jet mult key {jet_mult_key}: {self.hemi_stats[jet_mult_key]}\n")
+
+                        #
+                        #  convert to zscores....
+                        #
+                        pos_hemi_points = np.column_stack([ (pos_hemi[mask_pos][name] - self.hemi_stats[jet_mult_key][name]["mean"]) / self.hemi_stats[jet_mult_key][name]["RMS"] for name in self.hemi_summary_vars])
+                        neg_hemi_points = np.column_stack([ (neg_hemi[mask_pos][name] - self.hemi_stats[jet_mult_key][name]["mean"]) / self.hemi_stats[jet_mult_key][name]["RMS"] for name in self.hemi_summary_vars])
+                        #neg_hemi_points = np.column_stack([ pos_hemi[mask_pos][name] for name in self.hemi_summary_vars])
+                        #print(f"pos_hemi_points for jet mult key {jet_mult_key}:\n {pos_hemi_points}\n")
+
+                        pos_match_dist, pos_match_idx = self.hemi_kd_trees[jet_mult_key].query(pos_hemi_points, k=1)
+                        # print("pos_match",pos_match_dist,pos_match_idx,"\n")
+                        # print(self.hemi_points[jet_mult_key][pos_match_idx])
+
+                        #print("neg_match",self.hemi_kd_trees[jet_mult_key].query(neg_hemi_points, k=1),"\n")
+
 
         #
         #  Funciton to find the corect hemisphere libraries
@@ -246,8 +303,8 @@ class HemiMixer(PicoAOD):
         #
 
         # Hack for Now
-        print("pos_match",self.hemi_kd_trees[(0, 1, 1)].query(self.hemi_points[(0, 1, 2)], k=1),"\n")
-        print("neg_match",self.hemi_kd_trees[(0, 1, 2)].query(self.hemi_points[(0, 1, 1)], k=1),"\n")
+        #print("pos_match",self.hemi_kd_trees[(0, 1, 1)].query(self.hemi_points[(0, 1, 2)], k=1),"\n")
+        #print("neg_match",self.hemi_kd_trees[(0, 1, 2)].query(self.hemi_points[(0, 1, 1)], k=1),"\n")
 
         processOutput = {}
 
