@@ -11,14 +11,14 @@ datasets:
         A:
           count: 171484635.0
           files:
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18A/picoAOD_boosted.chunk0.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18A/picoAOD_boosted.chunk1.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18A/picoAOD_boosted.chunk2.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18A/picoAOD_boosted.chunk3.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18A/picoAOD_boosted.chunk4.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18A/picoAOD_boosted.chunk5.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18A/picoAOD_boosted.chunk6.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18A/picoAOD_boosted.chunk7.root
+          - /home/export/tgomezes/files/HH4b/data_UL18A/picoAOD_boosted.chunk0.root
+          - /home/export/tgomezes/files/HH4b/data_UL18A/picoAOD_boosted.chunk1.root
+          - /home/export/tgomezes/files/HH4b/data_UL18A/picoAOD_boosted.chunk2.root
+          - /home/export/tgomezes/files/HH4b/data_UL18A/picoAOD_boosted.chunk3.root
+          - /home/export/tgomezes/files/HH4b/data_UL18A/picoAOD_boosted.chunk4.root
+          - /home/export/tgomezes/files/HH4b/data_UL18A/picoAOD_boosted.chunk5.root
+          - /home/export/tgomezes/files/HH4b/data_UL18A/picoAOD_boosted.chunk6.root
+          - /home/export/tgomezes/files/HH4b/data_UL18A/picoAOD_boosted.chunk7.root
           saved_events: 794878
           sumw: 170869254
           sumw2: 170869254
@@ -27,10 +27,10 @@ datasets:
           count: 78255208.0
           files:
           # - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18B/picoAOD_boosted.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18B/picoAOD_boosted.chunk0.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18B/picoAOD_boosted.chunk1.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18B/picoAOD_boosted.chunk2.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18B/picoAOD_boosted.chunk3.root
+          - /home/export/tgomezes/files/HH4b/data_UL18B/picoAOD_boosted.chunk0.root
+          - /home/export/tgomezes/files/HH4b/data_UL18B/picoAOD_boosted.chunk1.root
+          - /home/export/tgomezes/files/HH4b/data_UL18B/picoAOD_boosted.chunk2.root
+          - /home/export/tgomezes/files/HH4b/data_UL18B/picoAOD_boosted.chunk3.root
           saved_events: 379209
           sumw: 77260188
           sumw2: 77260188
@@ -38,10 +38,10 @@ datasets:
         C:
           count: 70027804.0
           files:
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18C/picoAOD_boosted.chunk0.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18C/picoAOD_boosted.chunk1.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18C/picoAOD_boosted.chunk2.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18C/picoAOD_boosted.chunk3.root
+          - /home/export/tgomezes/files/HH4b/data_UL18C/picoAOD_boosted.chunk0.root
+          - /home/export/tgomezes/files/HH4b/data_UL18C/picoAOD_boosted.chunk1.root
+          - /home/export/tgomezes/files/HH4b/data_UL18C/picoAOD_boosted.chunk2.root
+          - /home/export/tgomezes/files/HH4b/data_UL18C/picoAOD_boosted.chunk3.root
           saved_events: 353460
           sumw: 69135730
           sumw2: 69135730
@@ -49,23 +49,23 @@ datasets:
         D:
           count: 356976276.0
           files:
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18D/picoAOD_boosted.chunk0.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18D/picoAOD_boosted.chunk1.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18D/picoAOD_boosted.chunk2.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18D/picoAOD_boosted.chunk3.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18D/picoAOD_boosted.chunk4.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18D/picoAOD_boosted.chunk5.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18D/picoAOD_boosted.chunk6.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18D/picoAOD_boosted.chunk7.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18D/picoAOD_boosted.chunk8.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18D/picoAOD_boosted.chunk9.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18D/picoAOD_boosted.chunk10.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18D/picoAOD_boosted.chunk11.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18D/picoAOD_boosted.chunk12.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18D/picoAOD_boosted.chunk13.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18D/picoAOD_boosted.chunk14.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18D/picoAOD_boosted.chunk15.root
-          - /home/export/tgomezes/files/HH4b/HH4b/data_UL18D/picoAOD_boosted.chunk16.root
+          - /home/export/tgomezes/files/HH4b/data_UL18D/picoAOD_boosted.chunk0.root
+          - /home/export/tgomezes/files/HH4b/data_UL18D/picoAOD_boosted.chunk1.root
+          - /home/export/tgomezes/files/HH4b/data_UL18D/picoAOD_boosted.chunk2.root
+          - /home/export/tgomezes/files/HH4b/data_UL18D/picoAOD_boosted.chunk3.root
+          - /home/export/tgomezes/files/HH4b/data_UL18D/picoAOD_boosted.chunk4.root
+          - /home/export/tgomezes/files/HH4b/data_UL18D/picoAOD_boosted.chunk5.root
+          - /home/export/tgomezes/files/HH4b/data_UL18D/picoAOD_boosted.chunk6.root
+          - /home/export/tgomezes/files/HH4b/data_UL18D/picoAOD_boosted.chunk7.root
+          - /home/export/tgomezes/files/HH4b/data_UL18D/picoAOD_boosted.chunk8.root
+          - /home/export/tgomezes/files/HH4b/data_UL18D/picoAOD_boosted.chunk9.root
+          - /home/export/tgomezes/files/HH4b/data_UL18D/picoAOD_boosted.chunk10.root
+          - /home/export/tgomezes/files/HH4b/data_UL18D/picoAOD_boosted.chunk11.root
+          - /home/export/tgomezes/files/HH4b/data_UL18D/picoAOD_boosted.chunk12.root
+          - /home/export/tgomezes/files/HH4b/data_UL18D/picoAOD_boosted.chunk13.root
+          - /home/export/tgomezes/files/HH4b/data_UL18D/picoAOD_boosted.chunk14.root
+          - /home/export/tgomezes/files/HH4b/data_UL18D/picoAOD_boosted.chunk15.root
+          - /home/export/tgomezes/files/HH4b/data_UL18D/picoAOD_boosted.chunk16.root
           saved_events: 1636250
           sumw: 355391030
           sumw2: 355391030
@@ -1146,9 +1146,9 @@ datasets:
       picoAOD:
         count: 1000000
         files:
-        - /home/export/tgomezes/files/HH4b/HH4b/2207F5D6-4518-F44A-8C92-68E712CAF67C.root
-        - /home/export/tgomezes/files/HH4b/HH4b/94DA5440-3B94-354B-A25B-78518A52D2D1.root
-        - /home/export/tgomezes/files/HH4b/HH4b/EE3712DC-9DAB-694E-A446-0B43C5590D58.root
+        - /home/export/tgomezes/files/HH4b/2207F5D6-4518-F44A-8C92-68E712CAF67C.root
+        - /home/export/tgomezes/files/HH4b/94DA5440-3B94-354B-A25B-78518A52D2D1.root
+        - /home/export/tgomezes/files/HH4b/EE3712DC-9DAB-694E-A446-0B43C5590D58.root
         outliers:
         - 334929
         - 529954
