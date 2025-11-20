@@ -8,7 +8,7 @@ import os
 import yaml
 import sys
 sys.path.insert(0, os.getcwd())
-from coffea4bees.hemisphere_mixing.mixing_helpers   import read_hemi_files, get_grouped_hemispheres_data, get_filter, get_grouped_hemispheres_data_V2
+from coffea4bees.hemisphere_mixing.mixing_helpers   import read_hemi_files, get_grouped_hemispheres_data, get_filter
 
 
 def count_all_hemispheres(hemi_data, do_print=False):
@@ -179,7 +179,6 @@ def study_hemis(hemifiles, tree_name="Events", year_str="UL18"):
     #
     hemi_vars=["sumPt_T_minor", "sumPt_T", "combinedMass", "pz"]
     grouped_hemi_data = get_grouped_hemispheres_data(hemi_ranges, hemi_data, hemi_vars=hemi_vars)
-    grouped_hemi_data_v2 = get_grouped_hemispheres_data_V2(hemi_ranges, hemi_data, hemi_vars=hemi_vars)
 
     #
     #  Make histograms

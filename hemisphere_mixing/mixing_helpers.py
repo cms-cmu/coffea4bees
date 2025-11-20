@@ -218,8 +218,8 @@ def split_events_into_hemispheres(event):
     #  For outputs
     #
     jet_posHemi, jet_negHemi   = split_hemispheres(event.Jet, thrust)
-    muon_posHemi, muon_negHemi = split_hemispheres(event.selMuon, thrust)
-    elec_posHemi, elec_negHemi = split_hemispheres(event.selElec, thrust)
+    # muon_posHemi, muon_negHemi = split_hemispheres(event.selMuon, thrust)
+    # elec_posHemi, elec_negHemi = split_hemispheres(event.selElec, thrust)
 
     #logging.debug("Jets pos",ak.num(jet_posHemi, axis=1))   # number of aligned jets per event
     #logging.debug("Jets neg",ak.num(jet_negHemi, axis=1))      # number of anti-aligned jets per event
@@ -244,8 +244,8 @@ def split_events_into_hemispheres(event):
                        "nTagJet": ak.num(tagJet_posHemi, axis=1),
                        "nJet" : ak.num(jet_posHemi, axis=1),
                        "Jet": jet_posHemi,
-                       "Muon": muon_posHemi,
-                       "Elec": elec_posHemi
+                       #"Muon": muon_posHemi,
+                       #"Elec": elec_posHemi
                        },
                       depth_limit=1
                       )
@@ -261,8 +261,8 @@ def split_events_into_hemispheres(event):
                        "nTagJet": ak.num(tagJet_negHemi, axis=1),
                        "nJet" : ak.num(jet_negHemi, axis=1),
                        "Jet": jet_negHemi,
-                       "Muon": muon_negHemi,
-                       "Elec": elec_negHemi
+                       #"Muon": muon_negHemi,
+                       #"Elec": elec_negHemi
                        },
                       depth_limit=1
                       )
@@ -305,64 +305,6 @@ def get_filter(data, key, val, low_edge=False, high_edge=False):
     return this_filter
 
 
-def get_grouped_hemispheres_data(hemi_ranges, hemi_data, hemi_vars, summary_vars=None):
-    grouped_hemi_data = {}
-
-    # Outer loop: tag multiplicity bins
-    tag_keys = list(hemi_ranges.keys())
-    for itag, tag in enumerate(tag_keys):
-
-        # --- tag filter ----------------------------------------------------------
-        tag_filter = get_filter(hemi_data, "nTagJet", tag, low_edge=(itag==0), high_edge=(itag==len(tag_keys)-1))
-
-        # skip empty sub-ranges
-        if not hemi_ranges[tag]:
-            print(f"ERROR: no sel jets for tag = {tag}")
-            continue
-
-        # -------------------------------------------------------------------------
-        # Middle loop: selected-jet multiplicity bins
-        sel_keys = list(hemi_ranges[tag].keys())
-        for isel, sel in enumerate(sel_keys):
-
-            # --- sel filter ------------------------------------------------------
-            sel_filter = get_filter(hemi_data, "nSelJet", sel, low_edge=(isel==0), high_edge=(isel==len(sel_keys)-1))
-
-            # ---------------------------------------------------------------------
-            # Inner loop: total-jet multiplicity bins
-            jet_bins = hemi_ranges[tag][sel]
-            if not jet_bins:
-
-                jet_mult_key = (tag, sel, -1)
-                # special case: no jet bins defined
-                grouped_hemi_data[jet_mult_key] = {}
-                for var_name in hemi_vars:
-                    if summary_vars and var_name in summary_vars[jet_mult_key]:
-                        this_var = summary_vars[jet_mult_key][var_name]
-                        grouped_hemi_data[jet_mult_key][var_name] = (hemi_data[var_name][tag_filter & sel_filter] - this_var["mean"]) / this_var["RMS"]
-                    else:
-                        grouped_hemi_data[jet_mult_key][var_name] = hemi_data[var_name][tag_filter & sel_filter]
-
-                continue
-
-            for ijet, jet in enumerate(jet_bins):
-
-                jet_filter = get_filter(hemi_data, "nJet", jet, low_edge=(ijet==0), high_edge=(ijet==len(jet_bins)-1))
-                jet_mult_key = (tag, sel, jet)
-
-                # --- final selection ---------------------------------------------
-                mask = tag_filter & sel_filter & jet_filter
-                grouped_hemi_data[jet_mult_key] = {}
-                for var_name in hemi_vars:
-
-                    if summary_vars and var_name in summary_vars[jet_mult_key]:
-                        this_var = summary_vars[jet_mult_key][var_name]
-                        grouped_hemi_data[jet_mult_key][var_name] = (hemi_data[var_name][tag_filter & sel_filter & jet_filter] - this_var["mean"]) / this_var["RMS"]
-                    else:
-                        grouped_hemi_data[jet_mult_key][var_name] = hemi_data[var_name][tag_filter & sel_filter & jet_filter]
-
-
-    return grouped_hemi_data
 
 
 def iter_hemi_filters(hemi_ranges, hemi_data):
@@ -418,7 +360,7 @@ def iter_hemi_filters(hemi_ranges, hemi_data):
 
 
 
-def get_grouped_hemispheres_data_V2(hemi_ranges, hemi_data, hemi_vars, summary_vars=None):
+def get_grouped_hemispheres_data(hemi_ranges, hemi_data, hemi_vars, summary_vars=None):
     grouped_hemi_data = {}
 
     for jet_mult_key, mask in iter_hemi_filters(hemi_ranges, hemi_data):
