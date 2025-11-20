@@ -8,7 +8,7 @@ import os
 import yaml
 import sys
 sys.path.insert(0, os.getcwd())
-from coffea4bees.hemisphere_mixing.mixing_helpers   import read_hemi_files, get_grouped_hemispheres_data, get_filter
+from coffea4bees.hemisphere_mixing.mixing_helpers   import read_hemi_files, get_grouped_hemispheres_data, get_filter, iter_hemi_filters
 
 
 def count_all_hemispheres(hemi_data, do_print=False):
@@ -71,64 +71,9 @@ def get_hemi_ranges(hemi_count_data, threshold=300):
 def count_combined_hemispheres(hemi_ranges, hemi_data, do_print=False):
     hemi_count_data = {}
 
-    # Outer loop: tag multiplicity bins
-    tag_keys = list(hemi_ranges.keys())
-    for itag, tag in enumerate(tag_keys):
-        if do_print:
-            print(f"tag = {tag}  itag = {itag}")
+    for jet_mult_key, mask in iter_hemi_filters(hemi_ranges, hemi_data):
 
-        hemi_count_data[tag] = {}
-
-        # --- tag filter ----------------------------------------------------------
-        tag_filter = get_filter(hemi_data, "nTagJet", tag, low_edge=(itag==0), high_edge=(itag==len(tag_keys)-1))
-
-        if do_print:
-            print(f"\ttag_filter: == {tag}" + (" or <" if itag==0 else " or >" if itag==len(tag_keys)-1 else ""))
-
-        # skip empty sub-ranges
-        if not hemi_ranges[tag]:
-            print(f"ERROR: no sel jets for tag = {tag}")
-            continue
-
-        # -------------------------------------------------------------------------
-        # Middle loop: selected-jet multiplicity bins
-        sel_keys = list(hemi_ranges[tag].keys())
-        for isel, sel in enumerate(sel_keys):
-            if do_print:
-                print(f"\t sel = {sel}  isel = {isel}")
-
-            hemi_count_data[tag][sel] = {}
-
-            # --- sel filter ------------------------------------------------------
-            sel_filter = get_filter(hemi_data, "nSelJet", sel, low_edge=(isel==0), high_edge=(isel==len(sel_keys)-1))
-
-            if do_print:
-                print(f"\t\tsel_filter: == {sel}" + (" or <" if isel==0 else " or >" if isel==len(sel_keys)-1 else ""))
-
-            # ---------------------------------------------------------------------
-            # Inner loop: total-jet multiplicity bins
-            jet_bins = hemi_ranges[tag][sel]
-            if not jet_bins:
-                # special case: no jet bins defined
-                count = len(hemi_data["nSelJet"][tag_filter & sel_filter])
-                hemi_count_data[tag][sel][-1] = count
-                if do_print:
-                    print("\t\t jet_filter: == True  (no jet bins)")
-                continue
-
-            for ijet, jet in enumerate(jet_bins):
-                if do_print:
-                    print(f"\t\t jet = {jet}  ijet = {ijet}")
-
-                jet_filter = get_filter(hemi_data, "nJet", jet, low_edge=(ijet==0), high_edge=(ijet==len(jet_bins)-1))
-
-                if do_print:
-                    bounds = (" or <" if ijet==0 else " or >" if ijet==len(jet_bins)-1 else "")
-                    print(f"\t\t\tjet_filter: == {jet}{bounds}")
-
-                # --- final selection ---------------------------------------------
-                mask = tag_filter & sel_filter & jet_filter
-                hemi_count_data[tag][sel][jet] = len(hemi_data["nSelJet"][mask])
+        hemi_count_data[jet_mult_key] = len(hemi_data["nSelJet"][mask])
 
     return hemi_count_data
 
@@ -150,7 +95,6 @@ def study_hemis(hemifiles, tree_name="Events", year_str="UL18"):
     #
     hemi_counts = count_all_hemispheres(hemi_data, do_print=False)
 
-
     #
     #  Apply thresholds to get ranges
     #
@@ -161,13 +105,8 @@ def study_hemis(hemifiles, tree_name="Events", year_str="UL18"):
     #
     # Check we got them all!
     #
-    total = 0
-    nHemiLibraries = 0
-    for tag in combined_hemi_counts.keys():
-        this_tag = sum(v for outer in combined_hemi_counts[tag].values() for v in outer.values())
-        print(f"tag={tag}, {this_tag}")
-        total += this_tag
-        nHemiLibraries += len([v for outer in combined_hemi_counts[tag].values() for v in outer.values()])
+    total = sum(combined_hemi_counts.values())
+    nHemiLibraries = len(combined_hemi_counts.values())
 
     print("total hemisphere =", total)
     print("nHemiLibraries =", nHemiLibraries)
