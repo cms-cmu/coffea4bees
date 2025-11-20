@@ -428,37 +428,7 @@ class mixingTestCase(unittest.TestCase):
                                                                                                                                  )
 
 
-        #muons = ak.Array(
-        #    [[] for _ in range(50)],
-        #    with_name="PtEtaPhiMCandidate",
-        #    behavior=nanoaod.behavior,
-        #)
-        offsets = ak.Array([0] * 51)  # 50 empty lists (needs N+1 offsets)
-
-        muon_content = ak.zip(
-            {
-                "pt":   ak.Array([]),
-                "eta":  ak.Array([]),
-                "phi":  ak.Array([]),
-                "mass": ak.Array([]),
-            },
-            with_name="PtEtaPhiMCandidate",
-            behavior=nanoaod.behavior,
-        )
-
-        muons = ak.Array(
-            ak.layout.ListOffsetArray64(
-                ak.layout.Index64(offsets),
-                muon_content.layout,
-            ),
-            behavior=nanoaod.behavior,
-        )
-
-
-
         selev = ak.zip({"Jet"  : self.input_jets_all,
-                        "selMuon" : muons,
-                        "selElec" : muons,
                         "event"   : ak.Array(range(len(self.input_jets_all))),
                         "run"     : ak.Array(range(len(self.input_jets_all))),
                         "luminosityBlock"     : ak.Array(range(len(self.input_jets_all))),
@@ -477,6 +447,7 @@ class mixingTestCase(unittest.TestCase):
         pos_hemi, neg_hemi = split_events_into_hemispheres(selev)
         all_hemis = ak.concatenate([pos_hemi, neg_hemi], axis=0)
         all_hemis["replaced"] = 0
+        all_hemis["match_dist"] = -1
 
 
         #
@@ -491,8 +462,8 @@ class mixingTestCase(unittest.TestCase):
             neg_hemi_points = np.column_stack([ (neg_hemi[name] - self.hemi_stats[jet_mult_key][name]["mean"]) / self.hemi_stats[jet_mult_key][name]["RMS"] for name in self.hemi_summary_vars])
 
             match_dist, match_idx = self.hemi_kd_trees[jet_mult_key].query(all_hemis_points, k=1)
-            print("match",match_dist,match_idx,"\n")
-            print(self.hemi_points[jet_mult_key][match_idx])
+            # print("match",match_dist,match_idx,"\n")
+            # print(self.hemi_points[jet_mult_key][match_idx])
 
             if np.sum(mask) < 1:
                 continue
@@ -501,6 +472,12 @@ class mixingTestCase(unittest.TestCase):
             # Rotate Jets to match thrust axis
             new_thrust = self.grouped_hemi_data[jet_mult_key]["thrust_phi"][match_idx]
             dphi = all_hemis["thrust_phi"] - new_thrust
+
+            # flip if
+            #flip_hemis = self.grouped_hemi_data[jet_mult_key]["hemishphereId"][match_idx] * all_hemis.hemishphereId
+            do_flip_hemi = (self.grouped_hemi_data[jet_mult_key]["hemisphereId"][match_idx]   * all_hemis.hemisphereId) < 0
+            dphi = ak.where(do_flip_hemi, dphi + np.pi, dphi)
+
 
             new_Jets = ak.zip(
                 {
@@ -518,88 +495,56 @@ class mixingTestCase(unittest.TestCase):
             # fill event data
 
             all_hemis_new = ak.zip({"thrust_phi": ak.Array(self.grouped_hemi_data[jet_mult_key]["thrust_phi"][match_idx]),
-                                   "event": ak.Array(self.grouped_hemi_data[jet_mult_key]["event"][match_idx]),
-                                   "run": ak.Array(self.grouped_hemi_data[jet_mult_key]["run"][match_idx]),
-                                   "luminosityBlock" : ak.Array(self.grouped_hemi_data[jet_mult_key]["luminosityBlock"][match_idx]),
-                                   "hemisphereId": ak.Array(self.grouped_hemi_data[jet_mult_key]["hemisphereId"][match_idx]),
-                                   "weight": ak.Array(self.grouped_hemi_data[jet_mult_key]["hemisphereId"][match_idx]),
-                                   "nSelJet": all_hemis["nSelJet"],
-                                   "nTagJet": all_hemis["nTagJet"],
-                                   "nJet" : all_hemis["nJet"],
-                                   "Jet": new_Jets,
-                                   },
-                                  depth_limit=1
-                                  )
+                                    "event": ak.Array(self.grouped_hemi_data[jet_mult_key]["event"][match_idx]),
+                                    "run": ak.Array(self.grouped_hemi_data[jet_mult_key]["run"][match_idx]),
+                                    "luminosityBlock" : ak.Array(self.grouped_hemi_data[jet_mult_key]["luminosityBlock"][match_idx]),
+                                    "hemisphereId": ak.Array(self.grouped_hemi_data[jet_mult_key]["hemisphereId"][match_idx]),
+                                    "weight": ak.Array(self.grouped_hemi_data[jet_mult_key]["weight"][match_idx]),
+                                    "nSelJet": all_hemis["nSelJet"],
+                                    "nTagJet": all_hemis["nTagJet"],
+                                    "nJet" : ak.num(new_Jets, axis=1),
+                                    "Jet": new_Jets,
+                                    "match_dist": ak.Array(match_dist),
+                                    },
+                                   depth_limit=1
+                                   )
             all_hemis_new["replaced"] = 1
             all_hemis_new = compute_hemi_vars(all_hemis_new)
 
             all_hemis = ak.where(mask, all_hemis_new, all_hemis)
 
+        if ak.any(all_hemis.replaced == 0):
+            print("ERROR: Some hemispheres were not replaced!!!\n")
+
         n_event = len(selev)
         pos_hemi_new = all_hemis[:n_event]
         neg_hemi_new = all_hemis[n_event:]
 
+        old_hemi_output_vars = ["thrust_phi",  "event", "run", "luminosityBlock", "weight", "hemisphereId"]
+        new_hemi_output_vars = old_hemi_output_vars + ["match_dist"]
+        output_vars = []
+
+        for var_name in old_hemi_output_vars:
+            selev[f"pos_hemi_old_{var_name}"] = pos_hemi[var_name]
+            output_vars.append(f"pos_hemi_old_{var_name}")
+
+            selev[f"neg_hemi_old_{var_name}"] = neg_hemi[var_name]
+            output_vars.append(f"neg_hemi_old_{var_name}")
+
+        for var_name in new_hemi_output_vars:
+            selev[f"pos_hemi_new_{var_name}"] = pos_hemi_new[var_name]
+            output_vars.append(f"pos_hemi_new_{var_name}")
+
+            selev[f"neg_hemi_new_{var_name}"] = neg_hemi_new[var_name]
+            output_vars.append(f"neg_hemi_new_{var_name}")
+
+
+        mixed_Jet = ak.concatenate([pos_hemi_new.Jet, neg_hemi_new.Jet], axis=1)
+        selev["Jet"] = mixed_Jet
+
         # end tag loop
         breakpoint()
 
-    def test_chatGPT(self):
-
-        import awkward as ak
-        import numpy as np
-
-        # Original
-        #pos_hemi = ak.Array([
-        #    {"event": 1, "Jet": [1,2,3]},
-        #    {"event": 2, "Jet": [4,5]},
-        #    {"event": 3, "Jet": [6]},
-        #])
-        Jet_pos = ak.zip(
-            {
-                "pt": ak.Array([[1,2,3], [4,5], [6]]),
-                "eta": ak.Array([[1,2,3], [4,5], [6]]),
-                "phi": ak.Array([[1,2,3], [4,5], [6]]),
-                "mass":ak.Array([[1,2,3], [4,5], [6]]),
-                "btagScore": ak.Array([[1,2,3], [4,5], [6]]),
-            },
-            with_name="PtEtaPhiMLorentzVector",
-            behavior=vector.behavior,
-        )
-
-        pos_hemi = ak.zip(
-            {"event": ak.Array([1,2,3]),
-             "Jet": Jet_pos}
-            )
-
-        print(pos_hemi)
-        mask = ak.Array([True, True, False])
-
-        new_Jet_pos = ak.zip(
-            {
-                "pt": ak.Array([[1,2],[10,20,30,40]]),
-                "eta": ak.Array([[1,2],[10,20,30,40]]),
-                "phi": ak.Array([[1,2],[10,20,30,40]]),
-                "mass":ak.Array([[1,2],[10,20,30,40]]),
-            },
-            with_name="PtEtaPhiMLorentzVector",
-            behavior=vector.behavior,
-        )
-
-
-        # Updated record
-        pos_hemi_updated = ak.zip(
-            {"event": ak.Array([6,7]),
-             "Jet": new_Jet_pos}
-            )
-
-        #pos_hemi_updated = ak.Array([
-        #    {"event": 1, "Jet": [1,2,3]},   # unused
-        #    {"event": 2, "Jet": [100,200,300,400]},  # longer list!
-        #    {"event": 3, "Jet": [6]},       # unused
-        #])
-        breakpoint()
-        # Replace full records
-        result = ak.where(mask, pos_hemi_updated, pos_hemi)
-        print(result)
 
 
 if __name__ == '__main__':
