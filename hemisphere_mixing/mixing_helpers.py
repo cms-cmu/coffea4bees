@@ -219,11 +219,7 @@ def split_events_into_hemispheres(event):
     #  For outputs
     #
     jet_posHemi, jet_negHemi   = split_hemispheres(event.Jet, thrust)
-    # muon_posHemi, muon_negHemi = split_hemispheres(event.selMuon, thrust)
-    # elec_posHemi, elec_negHemi = split_hemispheres(event.selElec, thrust)
 
-    #logging.debug("Jets pos",ak.num(jet_posHemi, axis=1))   # number of aligned jets per event
-    #logging.debug("Jets neg",ak.num(jet_negHemi, axis=1))      # number of anti-aligned jets per event
 
     #
     #  For mutltiplicity counting
@@ -273,19 +269,38 @@ def read_hemi_files(hemifiles, tree_name="Events", branch_list=None):
 
     hemi_vars = { var_name: [] for var_name in branch_list }
 
-    for batch in uproot.iterate(
-            f"{hemifiles}:{tree_name}",
-            branch_list,
-            step_size=200_000,  # entries per chunk
-            library="np",
-    ):
+    if isinstance(hemifiles, str):
+        for batch in uproot.iterate(
+                f"{hemifiles}:{tree_name}",
+                branch_list,
+                step_size=200_000,  # entries per chunk
+                library="np",
+        ):
 
-        if hemi_vars[branch_list[0]] is None:
-            for var_name in branch_list:
-                hemi_vars[var_name] = batch[var_name]
-        else:
-            for var_name in branch_list:
-                hemi_vars[var_name] = np.concatenate( (hemi_vars[var_name], batch[var_name]) )
+            if hemi_vars[branch_list[0]] is None:
+                for var_name in branch_list:
+                    hemi_vars[var_name] = batch[var_name]
+            else:
+                for var_name in branch_list:
+                    hemi_vars[var_name] = np.concatenate( (hemi_vars[var_name], batch[var_name]) )
+
+    elif isinstance(hemifiles, list):
+        print("Reading hemisphere files:", hemifiles)
+        file_spec = {f: tree_name for f in hemifiles}
+
+        for batch in uproot.iterate(
+                file_spec,
+                branch_list,
+                step_size=200_000,
+                library="np",
+        ):
+            if hemi_vars[branch_list[0]] is None:
+                for var_name in branch_list:
+                    hemi_vars[var_name] = batch[var_name]
+            else:
+                for var_name in branch_list:
+                    hemi_vars[var_name] = np.concatenate( (hemi_vars[var_name], batch[var_name]) )
+
 
     return hemi_vars
 

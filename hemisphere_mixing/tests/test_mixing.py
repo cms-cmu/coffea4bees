@@ -35,19 +35,6 @@ class mixingTestCase(unittest.TestCase):
     def setUpClass(self):
 
         #
-        #  Read in the pdfs
-        #
-        #  Make with ../coffea4bees/scripts/synthetic-dataset-plot-job.sh
-        # input_pdf_file_name = "analysis/plots_synthetic_datasets/clustering_pdfs.yml"
-        #input_pdf_file_name = "coffea4bees/jet_clustering/jet-splitting-PDFs-00-07-00/clustering_pdfs_vs_pT.yml"
-        input_pdf_file_name = "coffea4bees/jet_clustering/jet-splitting-PDFs-00-09-00/clustering_pdfs_vs_pT_UL18.yml"
-        #input_pdf_file_name = "coffea4bees/jet_clustering/clustering_PDFs/clustering_pdfs_vs_pT.yml"
-        with open(input_pdf_file_name, 'r') as input_file:
-            self.input_pdfs = yaml.safe_load(input_file)
-
-        #        self.inputFile = wrapper.args["inputFile"]
-
-        #
         # From 4jet events
         #   (from coffea4bees.analysis.helpers.topCandReconstruction import dumpTopCandidateTestVectors
         #
@@ -389,15 +376,17 @@ class mixingTestCase(unittest.TestCase):
 
     def test_reading_all_hemisphere_libraries(self):
 
-        yaml_file = 'coffea4bees/hemisphere_mixing/hemi_plots/hemi_statistics_UL18.yml'
+        yaml_file = 'coffea4bees/hemisphere_mixing/tests/hemisphereLib_test.yml'
 
         jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_btagDeepFlavB", "Jet_bRegCorr", "Jet_jetId"]
         #branch_list = ["nJet", "nSelJet", "nTagJet", "sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ] + jet_branches
         hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ]
-        year_str = "UL18"
+
+        #hemifiles = "output/mixeddata_cluster/data_UL18*/*.root",
+        hemifiles = "coffea4bees/hemisphere_mixing/tests/hemisphereLib_test.root"
 
         kd_trees, points, jet_ranges, stats, hemi_data = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
-                                                                            hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root",
+                                                                            hemifiles = hemifiles,
                                                                             hemi_summary_vars = hemi_summary_vars,
                                                                             jet_branches = jet_branches,
                                                                             )
@@ -407,20 +396,21 @@ class mixingTestCase(unittest.TestCase):
         # Query: find nearest neighbor of a new point
         query_point = np.array([0.5, 0.5, 0.5, 0.5])
         #dist, idx = tree.query(query_point, k=1)
-        kd_trees[(0, 1, 1)].query(points[(0, 1, 1)], k=2)
+        #breakpoint()
+        kd_trees[(2, 2, 2)].query(points[(2, 2, 2)], k=2)
         #breakpoint()
 
 
     def test_hemi_mixing(self):
-
-        yaml_file = 'coffea4bees/hemisphere_mixing/hemi_plots/hemi_statistics_UL18.yml'
+        yaml_file = 'coffea4bees/hemisphere_mixing/tests/hemisphereLib_test.yml'
+        #yaml_file = 'coffea4bees/hemisphere_mixing/hemi_plots/hemi_statistics_UL18.yml'
 
         jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_btagDeepFlavB", "Jet_bRegCorr", "Jet_jetId"]
         #branch_list = ["nJet", "nSelJet", "nTagJet", "sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ] + jet_branches
         self.hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ]
-        year_str = "UL18"
 
-        hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root"
+        #hemifiles = f"output/mixeddata_cluster/data_UL18*/*.root"
+        hemifiles = "coffea4bees/hemisphere_mixing/tests/hemisphereLib_test.root"
         #hemifiles = "output/mixeddata_cluster/data_UL18A/hemisphereLib_109efe9a-05bd-11ee-a1fc-9ebde183beef_0_100223.root"
 
         self.hemi_kd_trees, self.hemi_points, self.hemi_jet_ranges, self.hemi_stats, self.hemi_data = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
@@ -456,7 +446,8 @@ class mixingTestCase(unittest.TestCase):
 
 
         if ak.any(all_hemis.replaced == 0):
-            print("ERROR: Some hemispheres were not replaced!!!\n")
+            print("ERROR: Some hemispheres were not replaced!!! ... OK for CI\n")
+            print(all_hemis.replaced.tolist())
 
         n_event = len(selev)
         pos_hemi_new = all_hemis[:n_event]
@@ -485,7 +476,7 @@ class mixingTestCase(unittest.TestCase):
         selev["Jet"] = mixed_Jet
 
         # end tag loop
-        breakpoint()
+        #breakpoint()
 
 
 

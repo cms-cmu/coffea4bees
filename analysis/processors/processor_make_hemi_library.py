@@ -353,7 +353,7 @@ class analysis(processor.ProcessorABC):
 
 
         garbage = gc.collect()
-        # print('Garbage:',garbage)
+
 
         # Not sure why the following line is needed
         ak.concatenate([pos_hemi, neg_hemi], axis=0)
@@ -365,6 +365,7 @@ class analysis(processor.ProcessorABC):
                 writer.save_metadata(self._campaign, metadata)
 
             result[dataset]["files"].append(path)
+
         #
         # Done
         #

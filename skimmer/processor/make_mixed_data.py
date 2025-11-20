@@ -307,14 +307,6 @@ class HemiMixer(PicoAOD):
             out_branches["trigWeight_MC"]   = selev.trigWeight_MC
             out_branches["CMSbtag"]        = weights.partial_weight(include=["CMS_btag"])[selections.all(*cumulative_cuts)]
 
-        # if '202' in dataset:
-        #     out_branches["Jet_PNetRegPtRawCorr"]         = ak.unflatten(np.full(total_jet, 1), n_jet)
-        #     out_branches["Jet_PNetRegPtRawCorrNeutrino"] = ak.unflatten(np.full(total_jet, 1), n_jet)
-        #     out_branches["Jet_btagPNetB"]                = selev.Jet.btagPNetB
-        #
-        # else:
-        #     out_branches["Jet_bRegCorr"] = ak.unflatten(np.full(total_jet, 1), n_jet)
-        #     out_branches["Jet_btagDeepFlavB"] = selev.Jet.btagDeepFlavB
 
         #
         #  Need to skip all the other jet branches to make sure they have the same number of jets

@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import os
 import yaml
 import sys
+import argparse
 sys.path.insert(0, os.getcwd())
 from coffea4bees.hemisphere_mixing.mixing_helpers   import read_hemi_files, get_grouped_hemispheres_data, get_filter, iter_hemi_filters
 
@@ -80,13 +81,15 @@ def count_combined_hemispheres(hemi_ranges, hemi_data, do_print=False):
 
 
 
-def study_hemis(hemifiles, tree_name="Events", year_str="UL18"):
+def study_hemis(hemifiles, tree_name="Events", era_str="UL18", do_plots=False, output_path="coffea4bees/hemisphere_mixing/hemi_plots/", threshold=300):
+
+    print(f"Studying hemispheres from files: {hemifiles} with threshold {threshold}")
+    print(f"Output path: {output_path}")
 
     #
     #  Read in hemisphere data
     #
     branch_list = ["nJet", "nSelJet", "nTagJet", "sumPt_T_minor", "sumPt_T", "combinedMass", "pz"]
-    #branch_list = ["nJet", "nSelJet", "nTagJet"]
     hemi_data = read_hemi_files(hemifiles, tree_name=tree_name, branch_list=branch_list)
 
 
@@ -98,7 +101,7 @@ def study_hemis(hemifiles, tree_name="Events", year_str="UL18"):
     #
     #  Apply thresholds to get ranges
     #
-    hemi_ranges = get_hemi_ranges(hemi_counts, threshold=300)
+    hemi_ranges = get_hemi_ranges(hemi_counts, threshold=threshold)
 
     combined_hemi_counts = count_combined_hemispheres(hemi_ranges, hemi_data, do_print=False)
 
@@ -128,9 +131,9 @@ def study_hemis(hemifiles, tree_name="Events", year_str="UL18"):
                "combinedMass":  (50, 0, 2000),
                }
 
-    output_path = "coffea4bees/hemisphere_mixing/hemi_plots"
-    os.makedirs(output_path, exist_ok=True)
-    print(f"Saveing plots to {output_path}")
+    if do_plots:
+        os.makedirs(output_path, exist_ok=True)
+        print(f"Saveing plots to {output_path}")
 
     hemi_statistics = {}
     hemi_statistics["jet_mult_ranges"] = hemi_ranges
@@ -145,24 +148,26 @@ def study_hemis(hemifiles, tree_name="Events", year_str="UL18"):
 
         for var_name in hemi_vars:
 
-            output_dir = f"{output_path}/nTag{tag}_nSel{sel}_nJet{jet}/"
-            os.makedirs(output_dir, exist_ok=True)
-            this_hist = hist.Hist(hist.axis.Regular(*binning[var_name], name=var_name, label=var_name))
-            this_hist.fill(grouped_hemi_data[jet_mult_key][var_name])
-            this_hist.plot()
-            plt.savefig(f"{output_dir}/{var_name}.pdf")
-            plt.close()
-
-
             _hemi_var_mean = np.mean(grouped_hemi_data[jet_mult_key][var_name])
             _hemi_var_RMS  = np.sqrt(np.mean(grouped_hemi_data[jet_mult_key][var_name]**2))
             hemi_statistics["hemi_summary_vars"][jet_mult_key][var_name] = {"mean": float(_hemi_var_mean), "RMS": float(_hemi_var_RMS)}
 
-            this_hist = hist.Hist(hist.axis.Regular(50, -3, 3, name=f"zscore {var_name}", label=var_name))
-            this_hist.fill( (grouped_hemi_data[jet_mult_key][var_name] - _hemi_var_mean) / _hemi_var_RMS)  # for z-score, divide by RMS if needed
-            this_hist.plot()
-            plt.savefig(f"{output_dir}/zscore_{var_name}.pdf")
-            plt.close()
+            if do_plots:
+                output_dir = f"{output_path}/nTag{tag}_nSel{sel}_nJet{jet}/"
+                os.makedirs(output_dir, exist_ok=True)
+                this_hist = hist.Hist(hist.axis.Regular(*binning[var_name], name=var_name, label=var_name))
+                this_hist.fill(grouped_hemi_data[jet_mult_key][var_name])
+                this_hist.plot()
+                plt.savefig(f"{output_dir}/{var_name}.pdf")
+                plt.close()
+
+
+
+                this_hist = hist.Hist(hist.axis.Regular(50, -3, 3, name=f"zscore {var_name}", label=var_name))
+                this_hist.fill( (grouped_hemi_data[jet_mult_key][var_name] - _hemi_var_mean) / _hemi_var_RMS)  # for z-score, divide by RMS if needed
+                this_hist.plot()
+                plt.savefig(f"{output_dir}/zscore_{var_name}.pdf")
+                plt.close()
 
 
     # Extract all count values from hemi_statistics
@@ -174,14 +179,15 @@ def study_hemis(hemifiles, tree_name="Events", year_str="UL18"):
     counts.sort()
 
     # Create histogram of counts
-    count_hist = hist.Hist(hist.axis.Regular(100, 300, 300*100, name="count", label="Event Count"))
-    count_hist.fill(counts)
-    count_hist.plot()
-    plt.xlabel("Hemisphere Counts")
-    plt.ylabel("Number of Hemi Libraries")
-    plt.title("Distribution of Event Counts")
-    plt.savefig(f"{output_path}/count_distribution.pdf")
-    plt.close()
+    if do_plots:
+        count_hist = hist.Hist(hist.axis.Regular(100, 300, 300*100, name="count", label="Event Count"))
+        count_hist.fill(counts)
+        count_hist.plot()
+        plt.xlabel("Hemisphere Counts")
+        plt.ylabel("Number of Hemi Libraries")
+        plt.title("Distribution of Event Counts")
+        plt.savefig(f"{output_path}/count_distribution.pdf")
+        plt.close()
 
     def make_yaml_safe(d):
         #print("Making YAML safe...",d)
@@ -200,13 +206,28 @@ def study_hemis(hemifiles, tree_name="Events", year_str="UL18"):
             return d
 
     # Save hemi statistics to a YAML file
-    with open(f'{output_path}/hemi_statistics_{year_str}.yml', 'w') as hemi_stats_yaml_file:
+    print(f'writting {output_path}/hemi_statistics_{era_str}.yml')
+    with open(f'{output_path}/hemi_statistics_{era_str}.yml', 'w') as hemi_stats_yaml_file:
         yaml.dump(make_yaml_safe(hemi_statistics), hemi_stats_yaml_file) #, default_flow_style=False)
 
 
 def doStudy():
-    year_str = "UL18"
-    study_hemis(hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root", year_str=year_str)
+
+    parser = argparse.ArgumentParser(description='study_hemispheres', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--hemifiles', default="output/mixeddata_cluster/data_UL18*/*.root", nargs='+')
+    parser.add_argument('--era', default="UL18")
+    parser.add_argument('--threshold', default=300)
+    #parser.add_argument('--m4j_xmax', default=1200)
+    #parser.add_argument('--variable_binning', action="store_true")
+    parser.add_argument('--output_path', default="coffea4bees/hemisphere_mixing/hemi_plots")
+    parser.add_argument('--do_plots',   action="store_true")
+    parser.add_argument('--do_CI',   action="store_true")
+
+    args = parser.parse_args()
+    print(f"\nRunning with these parameters: {args}")
+
+    #hemifiles = "output/mixeddata_cluster/data_UL18*/*.root"
+    study_hemis(hemifiles = args.hemifiles, era_str=args.era, do_plots=args.do_plots, output_path=args.output_path, threshold=args.threshold)
 
 
 if __name__ == "__main__":
