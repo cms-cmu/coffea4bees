@@ -7,16 +7,16 @@ import sys
 
 import numpy as np
 import awkward as ak
-from coffea.nanoevents.methods import vector
+
 import time
 from copy import copy
 import os
 from coffea.nanoevents.methods import nanoaod
-
+from coffea.nanoevents.methods import vector
 
 sys.path.insert(0, os.getcwd())
 from coffea4bees.hemisphere_mixing.mixing_helpers   import transverse_thrust_awkward, transverse_thrust_awkward_fast, split_hemispheres, compute_hemi_vars, read_hemi_files, get_grouped_hemispheres_data, get_filter, build_hemi_kdtrees
-from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres, iter_hemi_filters
+from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres, iter_hemi_filters, replace_hemis
 
 #import vector
 #vector.register_awkward()
@@ -210,6 +210,8 @@ class mixingTestCase(unittest.TestCase):
                 "mass": self.input_jet_mass_4 + self.input_jet_mass_5 + self.input_jet_mass_bbj + self.input_jet_mass_6 + self.input_jet_mass_5b,
                 "jet_flavor": self.input_jet_flavor_4 + self.input_jet_flavor_5 + self.input_jet_flavor_bbj + self.input_jet_flavor_6 + self.input_jet_flavor_5b,
                 "btagScore": self.input_jet_pt_4 + self.input_jet_pt_5 + self.input_jet_pt_bbj + self.input_jet_pt_6 + self.input_jet_pt_5b, ## Hack
+                "btagDeepFlavB": self.input_jet_pt_4 + self.input_jet_pt_5 + self.input_jet_pt_bbj + self.input_jet_pt_6 + self.input_jet_pt_5b, ## Hack
+                "jetId": self.input_jet_pt_4 + self.input_jet_pt_5 + self.input_jet_pt_bbj + self.input_jet_pt_6 + self.input_jet_pt_5b, ## Hack
             },
             with_name="PtEtaPhiMLorentzVector",
             behavior=vector.behavior,
@@ -449,69 +451,9 @@ class mixingTestCase(unittest.TestCase):
         all_hemis["replaced"] = 0
         all_hemis["match_dist"] = -1
 
+        all_hemis = replace_hemis(all_hemis=all_hemis, hemi_kd_trees=self.hemi_kd_trees, hemi_jet_ranges=self.hemi_jet_ranges,
+                                  hemi_stats=self.hemi_stats, grouped_hemi_data=self.grouped_hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=jet_branches)
 
-        #
-        #  Loop on hemisphere multiplcity bins
-        #
-        for jet_mult_key, mask in iter_hemi_filters(self.hemi_jet_ranges, all_hemis):
-
-            #
-            #  convert to zscores....
-            #
-            all_hemis_points = np.column_stack([ (all_hemis[name] - self.hemi_stats[jet_mult_key][name]["mean"]) / self.hemi_stats[jet_mult_key][name]["RMS"] for name in self.hemi_summary_vars])
-            neg_hemi_points = np.column_stack([ (neg_hemi[name] - self.hemi_stats[jet_mult_key][name]["mean"]) / self.hemi_stats[jet_mult_key][name]["RMS"] for name in self.hemi_summary_vars])
-
-            match_dist, match_idx = self.hemi_kd_trees[jet_mult_key].query(all_hemis_points, k=1)
-            # print("match",match_dist,match_idx,"\n")
-            # print(self.hemi_points[jet_mult_key][match_idx])
-
-            if np.sum(mask) < 1:
-                continue
-
-
-            # Rotate Jets to match thrust axis
-            new_thrust = self.grouped_hemi_data[jet_mult_key]["thrust_phi"][match_idx]
-            dphi = all_hemis["thrust_phi"] - new_thrust
-
-            # flip if
-            #flip_hemis = self.grouped_hemi_data[jet_mult_key]["hemishphereId"][match_idx] * all_hemis.hemishphereId
-            do_flip_hemi = (self.grouped_hemi_data[jet_mult_key]["hemisphereId"][match_idx]   * all_hemis.hemisphereId) < 0
-            dphi = ak.where(do_flip_hemi, dphi + np.pi, dphi)
-
-
-            new_Jets = ak.zip(
-                {
-                    "pt": ak.Array(self.grouped_hemi_data[jet_mult_key]["Jet_pt"][match_idx]),
-                    "eta": ak.Array(self.grouped_hemi_data[jet_mult_key]["Jet_eta"][match_idx]),
-                    "phi": (ak.Array(self.grouped_hemi_data[jet_mult_key]["Jet_phi"][match_idx]) + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
-                    "mass": ak.Array(self.grouped_hemi_data[jet_mult_key]["Jet_mass"][match_idx]),
-                    "jet_flavor": ak.Array(self.grouped_hemi_data[jet_mult_key]["Jet_mass"][match_idx]),
-                    "btagScore": ak.Array(self.grouped_hemi_data[jet_mult_key]["Jet_mass"][match_idx]),
-                },
-                with_name="PtEtaPhiMLorentzVector",
-                behavior=vector.behavior,
-            )
-
-            # fill event data
-
-            all_hemis_new = ak.zip({"thrust_phi": ak.Array(self.grouped_hemi_data[jet_mult_key]["thrust_phi"][match_idx]),
-                                    "event": ak.Array(self.grouped_hemi_data[jet_mult_key]["event"][match_idx]),
-                                    "run": ak.Array(self.grouped_hemi_data[jet_mult_key]["run"][match_idx]),
-                                    "luminosityBlock" : ak.Array(self.grouped_hemi_data[jet_mult_key]["luminosityBlock"][match_idx]),
-                                    "hemisphereId": ak.Array(self.grouped_hemi_data[jet_mult_key]["hemisphereId"][match_idx]),
-                                    "weight": ak.Array(self.grouped_hemi_data[jet_mult_key]["weight"][match_idx]),
-                                    "nSelJet": all_hemis["nSelJet"],
-                                    "nTagJet": all_hemis["nTagJet"],
-                                    "nJet" : ak.num(new_Jets, axis=1),
-                                    "Jet": new_Jets,
-                                    "match_dist": ak.Array(match_dist),
-                                    },
-                                   depth_limit=1
-                                   )
-            all_hemis_new["replaced"] = 1
-            all_hemis_new = compute_hemi_vars(all_hemis_new)
-
-            all_hemis = ak.where(mask, all_hemis_new, all_hemis)
 
         if ak.any(all_hemis.replaced == 0):
             print("ERROR: Some hemispheres were not replaced!!!\n")

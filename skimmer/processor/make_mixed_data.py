@@ -62,7 +62,7 @@ class HemiMixer(PicoAOD):
         logging.info(f"\nLoading hemisphere libraries = {yaml_file}")
 
 
-        jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_btagDeepFlavB", "Jet_bRegCorr", "Jet_jetId"]
+        self.jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_btagDeepFlavB", "Jet_bRegCorr", "Jet_jetId", "Jet_puId"]
         #branch_list = ["nJet", "nSelJet", "nTagJet", "sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ] + jet_branches
         self.hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ]
         year_str = "UL18"
@@ -70,7 +70,7 @@ class HemiMixer(PicoAOD):
         self.hemi_kd_trees, self.hemi_points, self.hemi_jet_ranges, self.hemi_stats, self.hemi_data = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
                                                                                                                          hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root",
                                                                                                                          hemi_summary_vars = self.hemi_summary_vars,
-                                                                                                                         jet_branches = jet_branches,
+                                                                                                                         jet_branches = self.jet_branches,
                                                                                                                          )
 
 

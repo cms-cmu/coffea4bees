@@ -283,8 +283,6 @@ class analysis(processor.ProcessorABC):
         selev["pos_hemi"] = pos_hemi
         selev["neg_hemi"] = neg_hemi
 
-
-
         #
         #  Write out hemi library files
         #
