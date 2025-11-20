@@ -536,8 +536,8 @@ class mixingTestCase(unittest.TestCase):
             all_hemis = ak.where(mask, all_hemis_new, all_hemis)
 
         n_event = len(selev)
-        pos_hemi = all_hemis[:n_event]
-        neg_hemi = all_hemis[n_event:]
+        pos_hemi_new = all_hemis[:n_event]
+        neg_hemi_new = all_hemis[n_event:]
 
         # end tag loop
         breakpoint()

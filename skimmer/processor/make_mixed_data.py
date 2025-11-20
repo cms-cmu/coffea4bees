@@ -294,15 +294,12 @@ class HemiMixer(PicoAOD):
         #
         #print(f"pos_hemi.nJet = {pos_hemi.nTagJet, pos_hemi.nSelJet, ak.num(pos_hemi.Jet, axis=1)}\n")
 
+        n_event = len(selev)
+        pos_hemi_new = all_hemis[:n_event]
+        neg_hemi_new = all_hemis[n_event:]
 
 
-        #
-        #  Find nearest neighbor hemispheres
-        #
 
-        # Hack for Now
-        #print("pos_match",self.hemi_kd_trees[(0, 1, 1)].query(self.hemi_points[(0, 1, 2)], k=1),"\n")
-        #print("neg_match",self.hemi_kd_trees[(0, 1, 2)].query(self.hemi_points[(0, 1, 1)], k=1),"\n")
 
         processOutput = {}
 
