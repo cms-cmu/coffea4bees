@@ -15,8 +15,8 @@ from coffea.nanoevents.methods import nanoaod
 from coffea.nanoevents.methods import vector
 
 sys.path.insert(0, os.getcwd())
-from coffea4bees.hemisphere_mixing.mixing_helpers   import transverse_thrust_awkward, transverse_thrust_awkward_fast, split_hemispheres, compute_hemi_vars, read_hemi_files, get_grouped_hemispheres_data, get_filter, build_hemi_kdtrees
-from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres, iter_hemi_filters, replace_hemis
+from coffea4bees.hemisphere_mixing.mixing_helpers   import transverse_thrust_awkward, transverse_thrust_awkward_fast, split_hemispheres, compute_hemi_vars, read_hemi_files, build_hemi_kdtrees
+from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres, replace_hemis
 
 #import vector
 #vector.register_awkward()
@@ -423,11 +423,11 @@ class mixingTestCase(unittest.TestCase):
         hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root"
         #hemifiles = "output/mixeddata_cluster/data_UL18A/hemisphereLib_109efe9a-05bd-11ee-a1fc-9ebde183beef_0_100223.root"
 
-        self.hemi_kd_trees, self.hemi_points, self.hemi_jet_ranges, self.hemi_stats, self.grouped_hemi_data = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
-                                                                                                                                 hemifiles = hemifiles,
-                                                                                                                                 hemi_summary_vars = self.hemi_summary_vars,
-                                                                                                                                 jet_branches = jet_branches,
-                                                                                                                                 )
+        self.hemi_kd_trees, self.hemi_points, self.hemi_jet_ranges, self.hemi_stats, self.hemi_data = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
+                                                                                                                         hemifiles = hemifiles,
+                                                                                                                         hemi_summary_vars = self.hemi_summary_vars,
+                                                                                                                         jet_branches = jet_branches,
+                                                                                                                         )
 
 
         selev = ak.zip({"Jet"  : self.input_jets_all,
@@ -452,7 +452,7 @@ class mixingTestCase(unittest.TestCase):
         all_hemis["match_dist"] = -1
 
         all_hemis = replace_hemis(all_hemis=all_hemis, hemi_kd_trees=self.hemi_kd_trees, hemi_jet_ranges=self.hemi_jet_ranges,
-                                  hemi_stats=self.hemi_stats, grouped_hemi_data=self.grouped_hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=jet_branches)
+                                  hemi_stats=self.hemi_stats, hemi_data=self.hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=jet_branches)
 
 
         if ak.any(all_hemis.replaced == 0):
