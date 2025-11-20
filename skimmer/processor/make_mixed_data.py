@@ -228,13 +228,15 @@ class HemiMixer(PicoAOD):
         #  Split event into hemispheres
         #
         pos_hemi, neg_hemi = split_events_into_hemispheres(selev)
-        pos_hemi["replaced"] = 0
+
+        all_hemis = ak.concatenate([pos_hemi, neg_hemi], axis=0)
+        all_hemis["replaced"] = 0
 
 
         #
         #  Loop on hemisphere multiplcity bins
         #
-        for jet_mult_key, mask_pos in iter_hemi_filters(self.hemi_jet_ranges, pos_hemi):
+        for jet_mult_key, mask in iter_hemi_filters(self.hemi_jet_ranges, all_hemis):
 
             # Need to add mask_neg too
             # print(f"Processing jet mult key {jet_mult_key}\n")
@@ -242,29 +244,24 @@ class HemiMixer(PicoAOD):
             #
             #  convert to zscores....
             #
-            pos_hemi_points = np.column_stack([ (pos_hemi[name] - self.hemi_stats[jet_mult_key][name]["mean"]) / self.hemi_stats[jet_mult_key][name]["RMS"] for name in self.hemi_summary_vars])
-            #neg_hemi_points = np.column_stack([ (neg_hemi[mask_pos][name] - self.hemi_stats[jet_mult_key][name]["mean"]) / self.hemi_stats[jet_mult_key][name]["RMS"] for name in self.hemi_summary_vars])
-            #neg_hemi_points = np.column_stack([ pos_hemi[mask_pos][name] for name in self.hemi_summary_vars])
-            #print(f"pos_hemi_points for jet mult key {jet_mult_key}:\n {pos_hemi_points}\n")
+            hemi_points = np.column_stack([ (all_hemis[name] - self.hemi_stats[jet_mult_key][name]["mean"]) / self.hemi_stats[jet_mult_key][name]["RMS"] for name in self.hemi_summary_vars])
 
-            pos_match_dist, pos_match_idx = self.hemi_kd_trees[jet_mult_key].query(pos_hemi_points, k=1)
-            # print("pos_match",pos_match_dist,pos_match_idx,"\n")
-            # print(self.hemi_points[jet_mult_key][pos_match_idx])
+            match_dist, match_idx = self.hemi_kd_trees[jet_mult_key].query(hemi_points, k=1)
 
-            if np.sum(mask_pos) < 1:
+            if np.sum(mask) < 1:
                 continue
 
-            new_thrust_pos = self.hemi_data[jet_mult_key]["thrust_phi"][pos_match_idx]
-            dphi = pos_hemi["thrust_phi"] - new_thrust_pos
+            new_thrust = self.hemi_data[jet_mult_key]["thrust_phi"][match_idx]
+            dphi = all_hemis["thrust_phi"] - new_thrust
 
-            new_Jets_pos = ak.zip(
+            new_Jets = ak.zip(
                 {
-                    "pt": ak.Array(self.hemi_data[jet_mult_key]["Jet_pt"][pos_match_idx]),
-                    "eta": ak.Array(self.hemi_data[jet_mult_key]["Jet_eta"][pos_match_idx]),
-                    "phi": (ak.Array(self.hemi_data[jet_mult_key]["Jet_phi"][pos_match_idx]) + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
-                    "mass": ak.Array(self.hemi_data[jet_mult_key]["Jet_mass"][pos_match_idx]),
-                    "jet_flavor": ak.Array(self.hemi_data[jet_mult_key]["Jet_mass"][pos_match_idx]),
-                    "btagScore": ak.Array(self.hemi_data[jet_mult_key]["Jet_mass"][pos_match_idx]),
+                    "pt": ak.Array(self.hemi_data[jet_mult_key]["Jet_pt"][match_idx]),
+                    "eta": ak.Array(self.hemi_data[jet_mult_key]["Jet_eta"][match_idx]),
+                    "phi": (ak.Array(self.hemi_data[jet_mult_key]["Jet_phi"][match_idx]) + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
+                    "mass": ak.Array(self.hemi_data[jet_mult_key]["Jet_mass"][match_idx]),
+                    "jet_flavor": ak.Array(self.hemi_data[jet_mult_key]["Jet_mass"][match_idx]),
+                    "btagScore": ak.Array(self.hemi_data[jet_mult_key]["Jet_mass"][match_idx]),
                 },
                 with_name="PtEtaPhiMLorentzVector",
                 behavior=vector.behavior,
@@ -272,24 +269,24 @@ class HemiMixer(PicoAOD):
 
             # fill event data
 
-            pos_hemi_new = ak.zip({"thrust_phi": ak.Array(self.hemi_data[jet_mult_key]["thrust_phi"][pos_match_idx]),
-                                   "event": ak.Array(self.hemi_data[jet_mult_key]["event"][pos_match_idx]),
-                                   "run": ak.Array(self.hemi_data[jet_mult_key]["run"][pos_match_idx]),
-                                   "luminosityBlock" : ak.Array(self.hemi_data[jet_mult_key]["luminosityBlock"][pos_match_idx]),
-                                   "hemisphereId": ak.Array(self.hemi_data[jet_mult_key]["hemisphereId"][pos_match_idx]),
-                                   "weight": ak.Array(self.hemi_data[jet_mult_key]["hemisphereId"][pos_match_idx]),
-                                   "nSelJet": pos_hemi["nSelJet"],
-                                   "nTagJet": pos_hemi["nTagJet"],
-                                   "nJet" : pos_hemi["nJet"],
-                                   "Jet": new_Jets_pos,
+            all_hemis_new = ak.zip({"thrust_phi": ak.Array(self.hemi_data[jet_mult_key]["thrust_phi"][match_idx]),
+                                   "event": ak.Array(self.hemi_data[jet_mult_key]["event"][match_idx]),
+                                   "run": ak.Array(self.hemi_data[jet_mult_key]["run"][match_idx]),
+                                   "luminosityBlock" : ak.Array(self.hemi_data[jet_mult_key]["luminosityBlock"][match_idx]),
+                                   "hemisphereId": ak.Array(self.hemi_data[jet_mult_key]["hemisphereId"][match_idx]),
+                                   "weight": ak.Array(self.hemi_data[jet_mult_key]["hemisphereId"][match_idx]),
+                                   "nSelJet": all_hemis["nSelJet"],
+                                   "nTagJet": all_hemis["nTagJet"],
+                                   "nJet" : all_hemis["nJet"],
+                                   "Jet": new_Jets,
                                    },
                                   depth_limit=1
                                   )
-            pos_hemi_new["replaced"] = 1
-            pos_hemi_new = compute_hemi_vars(pos_hemi_new)
+            all_hemis_new["replaced"] = 1
+            all_hemis_new = compute_hemi_vars(all_hemis_new)
 
 
-            pos_hemi = ak.where(mask_pos, pos_hemi_new, pos_hemi)
+            all_hemis = ak.where(mask, all_hemis_new, all_hemis)
             #print("neg_match",self.hemi_kd_trees[jet_mult_key].query(neg_hemi_points, k=1),"\n")
 
         #
