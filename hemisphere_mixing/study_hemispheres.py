@@ -227,7 +227,7 @@ def doStudy():
     print(f"\nRunning with these parameters: {args}")
 
     #hemifiles = "output/mixeddata_cluster/data_UL18*/*.root"
-    study_hemis(hemifiles = args.hemifiles, era_str=args.era, do_plots=args.do_plots, output_path=args.output_path, threshold=args.threshold)
+    study_hemis(hemifiles = args.hemifiles, era_str=args.era, do_plots=args.do_plots, output_path=args.output_path, threshold=int(args.threshold))
 
 
 if __name__ == "__main__":

@@ -16,7 +16,7 @@ from coffea.nanoevents.methods import vector
 
 sys.path.insert(0, os.getcwd())
 from coffea4bees.hemisphere_mixing.mixing_helpers   import transverse_thrust_awkward, transverse_thrust_awkward_fast, split_hemispheres, compute_hemi_vars, read_hemi_files, build_hemi_kdtrees
-from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres, replace_hemis
+from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres, replace_hemis, replace_hemis_v2
 
 #import vector
 #vector.register_awkward()
@@ -443,13 +443,23 @@ class mixingTestCase(unittest.TestCase):
         all_hemis["replaced"] = 0
         all_hemis["match_dist"] = -1
 
-        all_hemis = replace_hemis(all_hemis=all_hemis, hemi_kd_trees=self.hemi_kd_trees, hemi_jet_ranges=self.hemi_jet_ranges,
-                                  hemi_stats=self.hemi_stats, hemi_data=self.hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=jet_branches)
+        try_v2 = True
+        if try_v2:
+            all_hemis = replace_hemis_v2(all_hemis=all_hemis, hemi_kd_trees=self.hemi_kd_trees, hemi_jet_ranges=self.hemi_jet_ranges,
+                                         hemi_stats=self.hemi_stats, hemi_data=self.hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=jet_branches)
+        else:
+            all_hemis = replace_hemis(all_hemis=all_hemis, hemi_kd_trees=self.hemi_kd_trees, hemi_jet_ranges=self.hemi_jet_ranges,
+                                      hemi_stats=self.hemi_stats, hemi_data=self.hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=jet_branches)
+
 
 
         if ak.any(all_hemis.replaced == 0):
             print("ERROR: Some hemispheres were not replaced!!! ... OK for CI\n")
             print(all_hemis.replaced.tolist())
+            error_mask = (all_hemis.replaced ==0)
+            print(f"nTagJet {ak.to_list(all_hemis.nTagJet[error_mask])}")
+            print(f"nSelJet {ak.to_list(all_hemis.nSelJet[error_mask])}")
+            print(f"nJet    {ak.to_list(all_hemis.nJet[error_mask])}")
 
         n_event = len(selev)
         pos_hemi_new = all_hemis[:n_event]
