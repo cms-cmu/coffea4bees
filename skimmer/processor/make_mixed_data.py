@@ -237,11 +237,9 @@ class HemiMixer(PicoAOD):
         all_hemis["match_dist"] = -1
 
         all_hemis = replace_hemis(all_hemis=all_hemis, hemi_kd_trees=self.hemi_kd_trees, hemi_jet_ranges=self.hemi_jet_ranges,
-                                  hemi_stats=self.hemi_stats, hemi_data=self.hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=self.jet_branches)
+                                     hemi_stats=self.hemi_stats, hemi_data=self.hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=self.jet_branches)
 
 
-        if ak.any(all_hemis.replaced == 0):
-            print("ERROR: Some hemispheres were not replaced!!!\n")
 
         n_event = len(selev)
         pos_hemi_new = all_hemis[:n_event]
@@ -277,17 +275,6 @@ class HemiMixer(PicoAOD):
         total_jet = int(ak.sum(n_jet))
         out_branches = {}
 
-        out_branches = {}
-                # Update jets with new kinematics
-                #"Jet_pt":              selev.Jet.pt, #ak.unflatten(np.full(total_jet, 7), n_jet),
-                #"Jet_eta":             selev.Jet.eta,
-                #"Jet_phi":             selev.Jet.phi,
-                #"Jet_mass":            selev.Jet.mass,
-                #"Jet_jetId":           ak.unflatten(np.full(total_jet, 7), n_jet),
-                #"Jet_puId":            ak.unflatten(np.full(total_jet, 7), n_jet),
-                # create new regular branch
-                #"nClusteredJets":      selev.nClusteredJets,
-                #}
 
         #
         #  Add Jet branches

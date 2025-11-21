@@ -307,7 +307,9 @@ def read_hemi_files(hemifiles, tree_name="Events", branch_list=None):
 
 def get_filter(data, key, val, low_edge=False, high_edge=False):
 
-    if low_edge:
+    if low_edge and high_edge:
+        this_filter = True
+    elif low_edge:
         this_filter = (data[key] <= val)
     elif high_edge:
         this_filter = (data[key] >= val)
@@ -328,6 +330,7 @@ def iter_hemi_filters(hemi_ranges, hemi_data):
     tag_keys = list(hemi_ranges.keys())
 
     for itag, tag in enumerate(tag_keys):
+
 
         # Tag selection
         tag_filter = get_filter(
@@ -367,7 +370,6 @@ def iter_hemi_filters(hemi_ranges, hemi_data):
                     high_edge=(ijet == len(jet_bins) - 1)
                 )
                 mask = tag_filter & sel_filter & jet_filter
-
                 yield ( (tag, sel, jet), mask )
 
 
@@ -445,23 +447,32 @@ def build_hemi_kdtrees(hemi_metadata_yaml, hemifiles, hemi_summary_vars, jet_bra
     return kd_trees, points, jet_ranges, hemi_stats, grouped_hemi_data
 
 
+
+
+
 def replace_hemis(*, all_hemis, hemi_kd_trees, hemi_stats, hemi_data, hemi_jet_ranges, hemi_summary_vars, jet_branches):
 
+    mixed_hemis = []
+    all_hemis["local_idx"] = ak.local_index(all_hemis, axis=0)
 
     #
     #  Loop on hemisphere multiplcity bins
     #
     for jet_mult_key, mask in iter_hemi_filters(hemi_jet_ranges, all_hemis):
 
+        # print("Processing jet mult bin:", jet_mult_key, "with", np.sum(mask), "hemispheres to replace.")
+
+        subset_hemis = all_hemis[mask]
+
         #
         #  Prepare the hemisphere summary variable points for kd-tree query
         #
-        all_hemis_points = np.column_stack([ (all_hemis[name] - hemi_stats[jet_mult_key][name]["mean"]) / hemi_stats[jet_mult_key][name]["RMS"] for name in hemi_summary_vars])
+        subset_hemis_points = np.column_stack([ (subset_hemis[name] - hemi_stats[jet_mult_key][name]["mean"]) / hemi_stats[jet_mult_key][name]["RMS"] for name in hemi_summary_vars])
 
         #
         #  Get the nearest neighbor hemisphere from the kd-tree
         #
-        match_dist, match_idx = hemi_kd_trees[jet_mult_key].query(all_hemis_points, k=1)
+        match_dist, match_idx = hemi_kd_trees[jet_mult_key].query(subset_hemis_points, k=1)
 
         if np.sum(mask) < 1:
             continue
@@ -471,10 +482,10 @@ def replace_hemis(*, all_hemis, hemi_kd_trees, hemi_stats, hemi_data, hemi_jet_r
         # Rotate Jets to match thrust axis
         #
         new_thrust = hemi_data[jet_mult_key]["thrust_phi"][match_idx]
-        dphi = all_hemis["thrust_phi"] - new_thrust
+        dphi = subset_hemis["thrust_phi"] - new_thrust
 
         # determine if we need to flip the hemispheres
-        do_flip_hemi = (hemi_data[jet_mult_key]["hemisphereId"][match_idx]   * all_hemis.hemisphereId) < 0
+        do_flip_hemi = (hemi_data[jet_mult_key]["hemisphereId"][match_idx]   * subset_hemis.hemisphereId) < 0
         dphi = ak.where(do_flip_hemi, dphi + np.pi, dphi)
 
 
@@ -500,23 +511,28 @@ def replace_hemis(*, all_hemis, hemi_kd_trees, hemi_stats, hemi_data, hemi_jet_r
             new_Jets[var_key] = ak.Array(hemi_data[jet_mult_key][var_name][match_idx])
 
         # fill event data
-        all_hemis_new = ak.zip({"thrust_phi":       ak.Array(hemi_data[jet_mult_key]["thrust_phi"]     [match_idx]),
-                                "event":            ak.Array(hemi_data[jet_mult_key]["event"]          [match_idx]),
-                                "run":              ak.Array(hemi_data[jet_mult_key]["run"]            [match_idx]),
-                                "luminosityBlock" : ak.Array(hemi_data[jet_mult_key]["luminosityBlock"][match_idx]),
-                                "hemisphereId":     ak.Array(hemi_data[jet_mult_key]["hemisphereId"]   [match_idx]),
-                                "weight":           ak.Array(hemi_data[jet_mult_key]["weight"]         [match_idx]),
-                                "nSelJet":          all_hemis["nSelJet"],
-                                "nTagJet":          all_hemis["nTagJet"],
-                                "nJet" :            ak.num(new_Jets, axis=1),
-                                "Jet":              new_Jets,
-                                "match_dist":       ak.Array(match_dist),
-                                },
-                               depth_limit=1
-                               )
-        all_hemis_new["replaced"] = 1
-        all_hemis_new = compute_hemi_vars(all_hemis_new)
+        subset_hemis_new = ak.zip({"thrust_phi":       ak.Array(hemi_data[jet_mult_key]["thrust_phi"]     [match_idx]),
+                                   "event":            ak.Array(hemi_data[jet_mult_key]["event"]          [match_idx]),
+                                   "run":              ak.Array(hemi_data[jet_mult_key]["run"]            [match_idx]),
+                                   "luminosityBlock" : ak.Array(hemi_data[jet_mult_key]["luminosityBlock"][match_idx]),
+                                   "hemisphereId":     ak.Array(hemi_data[jet_mult_key]["hemisphereId"]   [match_idx]),
+                                   "weight":           ak.Array(hemi_data[jet_mult_key]["weight"]         [match_idx]),
+                                   "nSelJet":          subset_hemis["nSelJet"],
+                                   "nTagJet":          subset_hemis["nTagJet"],
+                                   "nJet" :            ak.num(new_Jets, axis=1),
+                                   "Jet":              new_Jets,
+                                   "match_dist":       ak.Array(match_dist),
+                                   "local_idx":      subset_hemis["local_idx"],
+                                   },
+                                  depth_limit=1
+                                  )
+        #subset_hemis_new = compute_hemi_vars(all_hemis_new)
 
-        all_hemis = ak.where(mask, all_hemis_new, all_hemis)
+        mixed_hemis.append(subset_hemis_new)
+        all_hemis_new = ak.concatenate(mixed_hemis, axis=0)
+        sort_idx = ak.argsort(all_hemis_new.local_idx)
+        all_hemis_new = all_hemis_new[sort_idx]
 
-    return all_hemis
+        #all_hemis = ak.where(mask, all_hemis_new, all_hemis)
+
+    return all_hemis_new

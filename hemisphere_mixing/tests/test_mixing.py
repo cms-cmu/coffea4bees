@@ -444,12 +444,9 @@ class mixingTestCase(unittest.TestCase):
         all_hemis["match_dist"] = -1
 
         all_hemis = replace_hemis(all_hemis=all_hemis, hemi_kd_trees=self.hemi_kd_trees, hemi_jet_ranges=self.hemi_jet_ranges,
-                                  hemi_stats=self.hemi_stats, hemi_data=self.hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=jet_branches)
+                                     hemi_stats=self.hemi_stats, hemi_data=self.hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=jet_branches)
 
 
-        if ak.any(all_hemis.replaced == 0):
-            print("ERROR: Some hemispheres were not replaced!!! ... OK for CI\n")
-            print(all_hemis.replaced.tolist())
 
         n_event = len(selev)
         pos_hemi_new = all_hemis[:n_event]
