@@ -30,7 +30,7 @@ import uproot
 
 
 from coffea4bees.hemisphere_mixing.mixing_helpers   import build_hemi_kdtrees, compute_hemi_vars
-from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres, replace_hemis, replace_hemis_v2
+from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres, replace_hemis
 
 
 
@@ -236,12 +236,10 @@ class HemiMixer(PicoAOD):
         all_hemis["replaced"] = 0
         all_hemis["match_dist"] = -1
 
-        all_hemis = replace_hemis_v2(all_hemis=all_hemis, hemi_kd_trees=self.hemi_kd_trees, hemi_jet_ranges=self.hemi_jet_ranges,
+        all_hemis = replace_hemis(all_hemis=all_hemis, hemi_kd_trees=self.hemi_kd_trees, hemi_jet_ranges=self.hemi_jet_ranges,
                                      hemi_stats=self.hemi_stats, hemi_data=self.hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=self.jet_branches)
 
 
-        if ak.any(all_hemis.replaced == 0):
-            print("ERROR: Some hemispheres were not replaced!!!\n")
 
         n_event = len(selev)
         pos_hemi_new = all_hemis[:n_event]

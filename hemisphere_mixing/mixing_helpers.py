@@ -447,89 +447,10 @@ def build_hemi_kdtrees(hemi_metadata_yaml, hemifiles, hemi_summary_vars, jet_bra
     return kd_trees, points, jet_ranges, hemi_stats, grouped_hemi_data
 
 
+
+
+
 def replace_hemis(*, all_hemis, hemi_kd_trees, hemi_stats, hemi_data, hemi_jet_ranges, hemi_summary_vars, jet_branches):
-
-
-    #
-    #  Loop on hemisphere multiplcity bins
-    #
-    for jet_mult_key, mask in iter_hemi_filters(hemi_jet_ranges, all_hemis):
-
-        # print("Processing jet mult bin:", jet_mult_key, "with", np.sum(mask), "hemispheres to replace.")
-
-        #
-        #  Prepare the hemisphere summary variable points for kd-tree query
-        #
-        all_hemis_points = np.column_stack([ (all_hemis[name] - hemi_stats[jet_mult_key][name]["mean"]) / hemi_stats[jet_mult_key][name]["RMS"] for name in hemi_summary_vars])
-
-        #
-        #  Get the nearest neighbor hemisphere from the kd-tree
-        #
-        match_dist, match_idx = hemi_kd_trees[jet_mult_key].query(all_hemis_points, k=1)
-
-        if np.sum(mask) < 1:
-            continue
-
-
-        #
-        # Rotate Jets to match thrust axis
-        #
-        new_thrust = hemi_data[jet_mult_key]["thrust_phi"][match_idx]
-        dphi = all_hemis["thrust_phi"] - new_thrust
-
-        # determine if we need to flip the hemispheres
-        do_flip_hemi = (hemi_data[jet_mult_key]["hemisphereId"][match_idx]   * all_hemis.hemisphereId) < 0
-        dphi = ak.where(do_flip_hemi, dphi + np.pi, dphi)
-
-
-        #
-        #  Construct the new jets
-        #
-        new_Jets = ak.zip(
-            {
-                "pt":   ak.Array(hemi_data[jet_mult_key]["Jet_pt"]  [match_idx]),
-                "eta":  ak.Array(hemi_data[jet_mult_key]["Jet_eta"] [match_idx]),
-                "phi": (ak.Array(hemi_data[jet_mult_key]["Jet_phi"] [match_idx]) + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
-                "mass": ak.Array(hemi_data[jet_mult_key]["Jet_mass"][match_idx]),
-            },
-            with_name="PtEtaPhiMLorentzVector",
-            behavior=vector.behavior,
-        )
-
-        # fill other jet branches
-        for var_name in jet_branches:
-            var_key = var_name.replace("Jet_", "")
-            if var_key in ["pt", "eta", "phi", "mass"]:
-                continue
-            new_Jets[var_key] = ak.Array(hemi_data[jet_mult_key][var_name][match_idx])
-
-        # fill event data
-        all_hemis_new = ak.zip({"thrust_phi":       ak.Array(hemi_data[jet_mult_key]["thrust_phi"]     [match_idx]),
-                                "event":            ak.Array(hemi_data[jet_mult_key]["event"]          [match_idx]),
-                                "run":              ak.Array(hemi_data[jet_mult_key]["run"]            [match_idx]),
-                                "luminosityBlock" : ak.Array(hemi_data[jet_mult_key]["luminosityBlock"][match_idx]),
-                                "hemisphereId":     ak.Array(hemi_data[jet_mult_key]["hemisphereId"]   [match_idx]),
-                                "weight":           ak.Array(hemi_data[jet_mult_key]["weight"]         [match_idx]),
-                                "nSelJet":          all_hemis["nSelJet"],
-                                "nTagJet":          all_hemis["nTagJet"],
-                                "nJet" :            ak.num(new_Jets, axis=1),
-                                "Jet":              new_Jets,
-                                "match_dist":       ak.Array(match_dist),
-                                },
-                               depth_limit=1
-                               )
-        all_hemis_new["replaced"] = 1
-        all_hemis_new = compute_hemi_vars(all_hemis_new)
-
-
-        all_hemis = ak.where(mask, all_hemis_new, all_hemis)
-
-
-    return all_hemis
-
-
-
-def replace_hemis_v2(*, all_hemis, hemi_kd_trees, hemi_stats, hemi_data, hemi_jet_ranges, hemi_summary_vars, jet_branches):
 
     mixed_hemis = []
     all_hemis["local_idx"] = ak.local_index(all_hemis, axis=0)
