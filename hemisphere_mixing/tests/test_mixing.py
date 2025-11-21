@@ -326,10 +326,12 @@ class mixingTestCase(unittest.TestCase):
 
         hemi_vars = { var_name: [] for var_name in hemi_var_names }
 
+        #hemifiles = f"output/mixeddata_cluster/data_UL18*/*.root"
+        hemifiles = "coffea4bees/hemisphere_mixing/tests/hemisphereLib_test.root"
 
         for batch in uproot.iterate(
             #"coffea4bees/hemisphere_mixing/tests/*.root:Events",
-            "output/mixeddata_cluster/data_UL18*/*.root:Events",
+            f"{hemifiles}:Events",
             branch_list,
             step_size=800_000,  # entries per chunk
             library="np",
