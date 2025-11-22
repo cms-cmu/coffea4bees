@@ -30,7 +30,7 @@ import uproot
 
 
 from coffea4bees.hemisphere_mixing.mixing_helpers   import build_hemi_kdtrees, compute_hemi_vars
-from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres, replace_hemis
+from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres, replace_hemis, replace_hemis_load_kdTrees, init_hemi_data
 
 
 
@@ -66,11 +66,20 @@ class HemiMixer(PicoAOD):
         self.hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ]
         year_str = "UL18"
 
-        self.hemi_kd_trees, self.hemi_points, self.hemi_jet_ranges, self.hemi_stats, self.hemi_data = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
-                                                                                                                         hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root",
-                                                                                                                         hemi_summary_vars = self.hemi_summary_vars,
-                                                                                                                         jet_branches = self.jet_branches,
-                                                                                                                         )
+        self.test_load_hemi_kdTrees = True
+        if self.test_load_hemi_kdTrees:
+            self.hemi_data, self.hemi_jet_ranges, self.hemi_stats  = init_hemi_data(hemi_metadata_yaml = yaml_file,
+                                                                                    hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root",
+                                                                                    hemi_summary_vars = self.hemi_summary_vars,
+                                                                                    jet_branches = self.jet_branches,
+                                                                                    )
+
+        else:
+            self.hemi_kd_trees, _, self.hemi_jet_ranges, self.hemi_stats, self.hemi_data = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
+                                                                                                              hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root",
+                                                                                                              hemi_summary_vars = self.hemi_summary_vars,
+                                                                                                              jet_branches = self.jet_branches,
+                                                                                                              )
 
 
 
@@ -236,8 +245,14 @@ class HemiMixer(PicoAOD):
         all_hemis["replaced"] = 0
         all_hemis["match_dist"] = -1
 
-        all_hemis = replace_hemis(all_hemis=all_hemis, hemi_kd_trees=self.hemi_kd_trees, hemi_jet_ranges=self.hemi_jet_ranges,
-                                     hemi_stats=self.hemi_stats, hemi_data=self.hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=self.jet_branches)
+        if self.test_load_hemi_kdTrees:
+            all_hemis = replace_hemis_load_kdTrees(all_hemis=all_hemis, hemi_jet_ranges=self.hemi_jet_ranges,
+                                                   hemi_stats=self.hemi_stats, hemi_data=self.hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=self.jet_branches
+                                                   )
+
+        else:
+            all_hemis = replace_hemis(all_hemis=all_hemis, hemi_kd_trees=self.hemi_kd_trees, hemi_jet_ranges=self.hemi_jet_ranges,
+                                      hemi_stats=self.hemi_stats, hemi_data=self.hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=self.jet_branches)
 
 
 
