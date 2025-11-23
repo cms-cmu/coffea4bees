@@ -31,7 +31,8 @@ import uproot
 
 from coffea4bees.hemisphere_mixing.mixing_helpers   import build_hemi_kdtrees, compute_hemi_vars
 from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres, replace_hemis, replace_hemis_load_kdTrees, init_hemi_data
-
+from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
+from coffea4bees.analysis.helpers.event_weights import add_pseudotagweights
 
 
 class HemiMixer(PicoAOD):
@@ -39,12 +40,15 @@ class HemiMixer(PicoAOD):
                 subtract_ttbar_with_weights = False,
                 mixing_rand_seed=5,
                 friends: dict[str, str|FriendTemplate] = None,
+                apply_JCM: bool = True,
+                JCM_file: str = "coffea4bees/analysis/weights/JCM/AN_24_089_v3/jetCombinatoricModel_SB_6771c35.yml",
                 corrections_metadata: dict = None,
                 *args, **kwargs):
         kwargs["pico_base_name"] = f'picoAOD_seed{mixing_rand_seed}'
         super().__init__(*args, **kwargs)
 
         logging.info(f"\nRunning HemiMixer with these parameters: , subtract_ttbar_with_weights = {subtract_ttbar_with_weights}, mixing_rand_seed = {mixing_rand_seed}, args = {args}, kwargs = {kwargs}")
+        self.apply_JCM = jetCombinatoricModel(JCM_file) if apply_JCM else None
 
         self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
         self.friends = parse_friends(friends)
@@ -109,6 +113,8 @@ class HemiMixer(PicoAOD):
 
         path = fname.replace(fname.split("/")[-1], "")
 
+
+
         if self.subtract_ttbar_with_weights:
 
             SvB_MA_file = f'{fname.replace("picoAOD", "SvB_MA_ULHH")}'
@@ -162,6 +168,22 @@ class HemiMixer(PicoAOD):
 
 
         #
+        # Apply JCM
+        #
+        weights, list_weight_names = add_pseudotagweights(
+            event,
+            weights,
+            JCM=self.apply_JCM,
+            apply_FvT=False,
+            isDataForMixed=False,
+            list_weight_names=list_weight_names,
+            event_metadata=event.metadata,
+            year_label=year_label,
+            len_event=len(event),
+            )
+
+
+        #
         # Get the trigger weights
         #
         if config["isMC"]:
@@ -180,7 +202,7 @@ class HemiMixer(PicoAOD):
         selections = PackedSelection()
         selections.add( "lumimask", event.lumimask)
         selections.add( "passNoiseFilter", event.passNoiseFilter)
-        selections.add( "passHLT", ( event.passHLT if config["cut_on_HLT_decision"] else np.full(len(event), True)  ) )
+        selections.add( "passHLT", ( event.passHLT if config["cut_on_HLT_decision"] else npfull(len(event), True)  ) )
         selections.add( 'passJetMult',   event.passJetMult )
         selections.add( "passThreeTag", event.threeTag)
 

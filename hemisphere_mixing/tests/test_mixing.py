@@ -488,8 +488,9 @@ class mixingTestCase(unittest.TestCase):
         mixed_Jet = ak.concatenate([pos_hemi_new.Jet, neg_hemi_new.Jet], axis=1)
         selev["Jet"] = mixed_Jet
 
+        thrust_new = transverse_thrust_awkward_fast(selev.Jet, n_steps=720, refine_rounds=2)
         # end tag loop
-        #breakpoint()
+
 
 
 
