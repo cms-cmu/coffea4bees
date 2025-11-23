@@ -252,12 +252,19 @@ class HemiMixer(PicoAOD):
             selection = selection & pass_ttbar_filter
             selev = selev[pass_ttbar_filter_selev]
 
-        #print("selMuon", type(selev.selMuon), selev.selMuon.tolist(),"\n")
+
+        #
+        # Identify tagged and pstagged jets
+        #
+        sorted_jets      = selev.Jet[ak.argsort(selev.Jet.btagScore, ascending=False)]
+        sorted_local_idx = ak.local_index(sorted_jets)
+        selev["Jet", "tagged_or_pstagged"] = (sorted_local_idx < selev.nJet_ps_and_tag)
+        selev["tag_or_psTag_Jet"] = selev.Jet[selev.Jet.tagged_or_pstagged]
 
         #
         #  Split event into hemispheres
         #
-        pos_hemi, neg_hemi = split_events_into_hemispheres(selev)
+        pos_hemi, neg_hemi = split_events_into_hemispheres(selev, tagged_key="tag_or_psTag_Jet")
 
 
         #

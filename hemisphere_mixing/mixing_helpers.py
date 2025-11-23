@@ -208,7 +208,7 @@ def compute_hemi_vars(hemis):
     return hemis
 
 
-def split_events_into_hemispheres(event):
+def split_events_into_hemispheres(event, tagged_key="tagJet"):
 
     #
     #  Get Thrust axis
@@ -224,7 +224,7 @@ def split_events_into_hemispheres(event):
     #
     #  For mutltiplicity counting
     #
-    tagJet_posHemi, tagJet_negHemi = split_hemispheres(event.tagJet, thrust)
+    tagJet_posHemi, tagJet_negHemi = split_hemispheres(event[tagged_key], thrust)
     selJet_posHemi, selJet_negHemi = split_hemispheres(event.selJet, thrust)
 
 
