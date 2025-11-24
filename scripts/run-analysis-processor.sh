@@ -186,6 +186,9 @@ cmd=(python runner.py
     $ADDITIONAL_FLAGS
 )
 run_command "${cmd[@]}"
+if [ $? -ne 0 ]; then
+    exit 1
+fi
 
 display_section_header "Output files"
 ls -R $OUTPUT_DIR
