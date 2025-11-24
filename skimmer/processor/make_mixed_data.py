@@ -2,7 +2,7 @@ import yaml
 from src.skimmer.picoaod import PicoAOD #, fetch_metadata, resize
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
 from coffea.nanoevents import NanoEventsFactory
-
+from coffea.nanoevents.methods import vector
 
 from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_SvB
 from src.friendtrees.FriendTreeSchema import FriendTreeSchema
@@ -29,8 +29,10 @@ import awkward as ak
 import uproot
 
 
-from coffea4bees.hemisphere_mixing.mixing_helpers   import build_hemi_kdtrees
-from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres
+from coffea4bees.hemisphere_mixing.mixing_helpers   import build_hemi_kdtrees, compute_hemi_vars
+from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres, replace_hemis
+
+
 
 class HemiMixer(PicoAOD):
     def __init__(self,
@@ -60,21 +62,16 @@ class HemiMixer(PicoAOD):
         logging.info(f"\nLoading hemisphere libraries = {yaml_file}")
 
 
-        jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_btagDeepFlavB", "Jet_bRegCorr", "Jet_jetId"]
-        #branch_list = ["nJet", "nSelJet", "nTagJet", "sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ] + jet_branches
-        hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ]
+        self.jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_btagDeepFlavB", "Jet_bRegCorr", "Jet_jetId", "Jet_puId"]
+        self.hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ]
         year_str = "UL18"
 
-        kd_trees, points, jet_ranges = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
-                                                          hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root",
-                                                          hemi_summary_vars = hemi_summary_vars,
-                                                          jet_branches = jet_branches,
-                                                          )
-        query_point = np.array([0.5, 0.5, 0.5, 0.5])
-        #dist, idx = tree.query(query_point, k=1)
-        self.hemi_kd_trees = kd_trees
-        self.hemi_points   = points
-        self.hemi_jet_ranges = jet_ranges
+        self.hemi_kd_trees, self.hemi_points, self.hemi_jet_ranges, self.hemi_stats, self.hemi_data = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
+                                                                                                                         hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root",
+                                                                                                                         hemi_summary_vars = self.hemi_summary_vars,
+                                                                                                                         jet_branches = self.jet_branches,
+                                                                                                                         )
+
 
 
 
@@ -224,7 +221,7 @@ class HemiMixer(PicoAOD):
             selection = selection & pass_ttbar_filter
             selev = selev[pass_ttbar_filter_selev]
 
-
+        #print("selMuon", type(selev.selMuon), selev.selMuon.tolist(),"\n")
 
         #
         #  Split event into hemispheres
@@ -233,21 +230,44 @@ class HemiMixer(PicoAOD):
 
 
         #
-        #  convert to zscores....
+        #  Do Hemisphere replacement
         #
+        all_hemis = ak.concatenate([pos_hemi, neg_hemi], axis=0)
+        all_hemis["replaced"] = 0
+        all_hemis["match_dist"] = -1
 
-        #
-        #  Funciton to find the corect hemisphere libraries
-        #
-        print(f"pos_hemi.nJet = {pos_hemi.nTagJet, pos_hemi.nSelJet, ak.num(pos_hemi.Jet, axis=1)}\n")
+        all_hemis = replace_hemis(all_hemis=all_hemis, hemi_kd_trees=self.hemi_kd_trees, hemi_jet_ranges=self.hemi_jet_ranges,
+                                     hemi_stats=self.hemi_stats, hemi_data=self.hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=self.jet_branches)
 
-        #
-        #  Find nearest neighbor hemispheres
-        #
 
-        # Hack for Now
-        print("pos_match",self.hemi_kd_trees[(0, 1, 1)].query(self.hemi_points[(0, 1, 2)], k=1),"\n")
-        print("neg_match",self.hemi_kd_trees[(0, 1, 2)].query(self.hemi_points[(0, 1, 1)], k=1),"\n")
+
+        n_event = len(selev)
+        pos_hemi_new = all_hemis[:n_event]
+        neg_hemi_new = all_hemis[n_event:]
+
+
+        old_hemi_output_vars = ["thrust_phi",  "event", "run", "luminosityBlock", "weight", "hemisphereId"]
+        new_hemi_output_vars = old_hemi_output_vars + ["match_dist"]
+        output_vars = []
+
+        for var_name in old_hemi_output_vars:
+            selev[f"pos_hemi_old_{var_name}"] = pos_hemi[var_name]
+            output_vars.append(f"pos_hemi_old_{var_name}")
+
+            selev[f"neg_hemi_old_{var_name}"] = neg_hemi[var_name]
+            output_vars.append(f"neg_hemi_old_{var_name}")
+
+        for var_name in new_hemi_output_vars:
+            selev[f"pos_hemi_new_{var_name}"] = pos_hemi_new[var_name]
+            output_vars.append(f"pos_hemi_new_{var_name}")
+
+            selev[f"neg_hemi_new_{var_name}"] = neg_hemi_new[var_name]
+            output_vars.append(f"neg_hemi_new_{var_name}")
+
+
+        mixed_Jet = ak.concatenate([pos_hemi_new.Jet, neg_hemi_new.Jet], axis=1)
+        selev["Jet"] = mixed_Jet
+
 
         processOutput = {}
 
@@ -255,31 +275,25 @@ class HemiMixer(PicoAOD):
         total_jet = int(ak.sum(n_jet))
         out_branches = {}
 
-        out_branches = {
-                # Update jets with new kinematics
-                "Jet_pt":              selev.Jet.pt, #ak.unflatten(np.full(total_jet, 7), n_jet),
-                "Jet_eta":             selev.Jet.eta,
-                "Jet_phi":             selev.Jet.phi,
-                "Jet_mass":            selev.Jet.mass,
-                "Jet_jetId":           ak.unflatten(np.full(total_jet, 7), n_jet),
-                "Jet_puId":            ak.unflatten(np.full(total_jet, 7), n_jet),
-                # create new regular branch
-                #"nClusteredJets":      selev.nClusteredJets,
-            }
+
+        #
+        #  Add Jet branches
+        #
+        for var_name in self.jet_branches:
+            var_key = var_name.replace("Jet_", "")
+            out_branches[var_name] = selev.Jet[var_key]
+
+        #
+        #  Add hemi branches
+        #
+        for var_name in output_vars:
+            out_branches[var_name] = selev[var_name]
 
         if config["isMC"]:
             out_branches["trigWeight_Data"] = selev.trigWeight_Data
             out_branches["trigWeight_MC"]   = selev.trigWeight_MC
             out_branches["CMSbtag"]        = weights.partial_weight(include=["CMS_btag"])[selections.all(*cumulative_cuts)]
 
-        if '202' in dataset:
-            out_branches["Jet_PNetRegPtRawCorr"]         = ak.unflatten(np.full(total_jet, 1), n_jet)
-            out_branches["Jet_PNetRegPtRawCorrNeutrino"] = ak.unflatten(np.full(total_jet, 1), n_jet)
-            out_branches["Jet_btagPNetB"]                = selev.Jet.btagPNetB
-
-        else:
-            out_branches["Jet_bRegCorr"] = ak.unflatten(np.full(total_jet, 1), n_jet)
-            out_branches["Jet_btagDeepFlavB"] = selev.Jet.btagDeepFlavB
 
         #
         #  Need to skip all the other jet branches to make sure they have the same number of jets
