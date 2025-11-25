@@ -1,0 +1,95 @@
+config = {
+    # 'output_path' : 'output/ZZ_ZH_combination/wotherSOne',
+    'output_path' : 'output/ZZ_ZH_combination/wotherRegionsSOne',
+    'container_wrapper': './run_container combine',
+    'channels': {
+        'ZZ_bbbb': {
+            'datacard': 'run2/original_datacards/combine_SvB_MA.txt',
+            'remove_bins': "'zh*' 'hh*'",
+            'signallabel': 'ZZ_bbbb',
+            'othersignal': 'ZH_bbbb ggHH_kl_1_kt_1_13p0TeV_hbbhbb',
+            'workspace': ''
+        },
+        'ZH_bbbb': {
+            'datacard': 'run2/original_datacards/combine_SvB_MA.txt',
+            'signallabel': 'ZH_bbbb',
+            'remove_bins': "'zz*' 'hh*'",
+            'othersignal': 'ZZ_bbbb ggHH_kl_1_kt_1_13p0TeV_hbbhbb',
+            'workspace': ''
+        }
+    }
+}
+
+include: "helpers/common.smk"
+
+module combine:
+    snakefile: "rules/combine.smk"
+    config: config
+
+rule all:
+    input:
+        expand( f'{config["output_path"]}/run2/limits_{{signal}}.txt', signal=config['channels'].keys() ),
+        expand( f'{config["output_path"]}/run2/likelihood_scan_{{signal}}.pdf', signal=config['channels'].keys() )
+
+rule prepare_run2_datacards:
+    output:
+        f'{config['output_path']}/run2/datacard_{{signal}}_run2.txt'
+    params:
+        datacard=lambda wildcards: f"{config['output_path']}/{config['channels'][wildcards.signal]['datacard']}",
+        remove_bins=lambda wildcards: config['channels'][wildcards.signal]['remove_bins'],
+        rename_process="'ZZ=ZZ_bbbb' 'ZH=ZH_bbbb', 'HH=ggHH_kl_1_kt_1_13p0TeV_hbbhbb'",
+        output_path=config['output_path']
+    log: 
+        f'{config['output_path']}/logs/prepare_run2_datacards_{{signal}}.log'
+    shell:
+        '''
+(
+set +u
+cd ../combination/inference-devel/
+source setup.sh
+cd ../../barista/
+rm -f {params.output_path}/run2/*SvB*
+rename_processes.py {params.datacard} {params.rename_process} -d {params.output_path}/run2/
+# remove_bins.py {params.datacard} {params.remove_bins} -d none
+sed -e '/ group /d' {params.output_path}/run2/$(basename {params.datacard}) > {output}
+) 2>&1 | tee {log}
+        '''
+
+use rule workspace from combine with:
+    input: 
+        f'{config['output_path']}/run2/datacard_{{signal}}_run2.txt'
+    output:
+        f'{config["output_path"]}/run2/workspace_{{signal}}.root'
+    log:
+        f'{config["output_path"]}/logs/workspace_{{signal}}.log'
+    params:
+        signallabel = lambda wildcards: config['channels'][wildcards.signal]['signallabel'],
+        othersignal_maps = lambda wildcards: additional_poi(wildcards.signal),
+        container_wrapper = config['container_wrapper']
+
+use rule limits from combine with:
+    input:
+        f'{config["output_path"]}/run2/workspace_{{signal}}.root'
+    output:
+        txt=f'{config["output_path"]}/run2/limits_{{signal}}.txt',
+        json=f'{config["output_path"]}/run2/limits_{{signal}}.json'
+    log:
+        f'{config["output_path"]}/logs/limits_{{signal}}.log'
+    params:
+        signallabel = lambda wildcards: config['channels'][wildcards.signal]['signallabel'],
+        set_parameters_zero = lambda wildcards: set_parameters( wildcards.signal, value=1 ),
+        freeze_parameters = lambda wildcards: freeze_parameters( wildcards.signal ),
+        container_wrapper = config['container_wrapper']
+
+use rule likelihood_scan from combine with:
+    input:
+        f'{config["output_path"]}/run2/workspace_{{signal}}.root'
+    output:
+        f'{config["output_path"]}/run2/likelihood_scan_{{signal}}.pdf'
+    log:
+        f'{config["output_path"]}/logs/likelihood_scan_{{signal}}.log'
+    params:
+        signallabel = lambda wildcards: config['channels'][wildcards.signal]['signallabel'],
+        set_parameters_zero = lambda wildcards: set_parameters( wildcards.signal, value=1 ),
+        freeze_parameters = lambda wildcards: freeze_parameters( wildcards.signal ),
+        container_wrapper = config['container_wrapper']

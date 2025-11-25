@@ -24,7 +24,7 @@ EOS_OUTPUT = f"/eos/user/a/algomez/work/HH4b/reana/{datetime.now().strftime('%Y%
 OUTPUT_PATH = config['output_path']
 
 # Filter dataset_systematics by signal type
-hh4b_datasets = [d for d in config['dataset_systematics'] if d.startswith('GluGlu')]
+hh4b_datasets = [d for d in config['dataset_systematics'] if d.startswith(('GluGlu', 'VBF'))]
 zz4b_datasets = [d for d in config['dataset_systematics'] if 'ZZ4b' in d]
 zh4b_datasets = [d for d in config['dataset_systematics'] if 'ZH4b' in d]
 
@@ -542,7 +542,7 @@ use rule make_combine_inputs_HH4b as make_combine_inputs_ZH4b with:
         container_wrapper = config['container_wrapper']
     log: f"{config['output_path']}/logs/make_combine_inputs_ZH4b.log"
 
-use rule workspace from combine as workspace with:
+use rule workspace from combine with:
     input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{channel}}.txt"
     output: f"{config['output_path']}/datacards/{{channel}}/datacard__{{signallabel}}.root"
     container: config["combine_container"]
@@ -556,7 +556,7 @@ use rule workspace from combine as workspace with:
         compute_backend="kubernetes"
     log: f"{config['output_path']}/logs/workspace_{{channel}}__{{signallabel}}.log"
 
-use rule limits from combine as limits with:
+use rule limits from combine with:
     input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{signallabel}}.root"
     output: 
         txt=f"{config['output_path']}/datacards/{{channel}}/limits__{{signallabel}}.txt",
@@ -564,7 +564,7 @@ use rule limits from combine as limits with:
     container: config["combine_container"]
     params:
         signallabel="{signallabel}",
-        set_parameters_zero=lambda wildcards: set_parameters_zero(wildcards.channel),
+        set_parameters_zero=lambda wildcards: set_parameters(wildcards.channel, 0),
         freeze_parameters=lambda wildcards: freeze_parameters(wildcards.channel),
         container_wrapper=config.get("container_wrapper", "./run_container combine")
     resources:
@@ -573,13 +573,13 @@ use rule limits from combine as limits with:
         compute_backend="kubernetes"
     log: f"{config['output_path']}/logs/limits_{{channel}}__{{signallabel}}.log"
 
-use rule significance from combine as significance with:
+use rule significance from combine with:
     input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{signallabel}}.root"
     output: f"{config['output_path']}/datacards/{{channel}}/significance__{{signallabel}}.log"
     container: config["combine_container"]
     params:
         signallabel="{signallabel}",
-        set_parameters_zero=lambda wildcards: set_parameters_zero(wildcards.channel),
+        set_parameters_zero=lambda wildcards: set_parameters(wildcards.channel, 0),
         freeze_parameters=lambda wildcards: freeze_parameters(wildcards.channel),
         container_wrapper=config.get("container_wrapper", "./run_container combine")
     resources:
@@ -588,13 +588,13 @@ use rule significance from combine as significance with:
         compute_backend="kubernetes"
     log: f"{config['output_path']}/logs/significance_{{channel}}__{{signallabel}}.log"
 
-use rule impacts from combine as impacts with:
+use rule impacts from combine with:
     input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{signallabel}}.root"
     output: f"{config['output_path']}/datacards/{{channel}}/impacts__{{signallabel}}.pdf"
     container: config["combine_container"]
     params:
         signallabel="{signallabel}",
-        set_parameters_zero=lambda wildcards: set_parameters_zero(wildcards.channel),
+        set_parameters_zero=lambda wildcards: set_parameters(wildcards.channel, 0),
         set_parameters_ranges=lambda wildcards: set_parameters_ranges(wildcards.channel),
         container_wrapper=config.get("container_wrapper", "./run_container combine")
     resources:
@@ -604,13 +604,13 @@ use rule impacts from combine as impacts with:
         kubernetes_memory_limit="9.5Gi"
     log: f"{config['output_path']}/logs/impacts_{{channel}}_datacard_{{channel}}__{{signallabel}}.log"
 
-use rule likelihood_scan from combine as likelihood_scan with:
+use rule likelihood_scan from combine with:
     input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{signallabel}}.root"
     output: f"{config['output_path']}/datacards/{{channel}}/likelihood_scan__{{signallabel}}.pdf"
     container: config["combine_container"]
     params:
         signallabel="{signallabel}",
-        set_parameters_zero=lambda wildcards: set_parameters_zero(wildcards.channel),
+        set_parameters_zero=lambda wildcards: set_parameters(wildcards.channel, 0),
         freeze_parameters=lambda wildcards: freeze_parameters(wildcards.channel),
         container_wrapper=config.get("container_wrapper", "./run_container combine")
     resources:
@@ -619,13 +619,13 @@ use rule likelihood_scan from combine as likelihood_scan with:
         compute_backend="kubernetes"
     log: f"{config['output_path']}/logs/likelihood_scan_{{channel}}_datacard_{{channel}}__{{signallabel}}.log"
 
-use rule gof from combine as gof with:
+use rule gof from combine with:
     input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{signallabel}}.root"
     output: f"{config['output_path']}/datacards/{{channel}}/gof__{{signallabel}}.pdf"
     container: config["combine_container"]
     params:
         signallabel="{signallabel}",
-        set_parameters_zero=lambda wildcards: set_parameters_zero(wildcards.channel),
+        set_parameters_zero=lambda wildcards: set_parameters(wildcards.channel, 0),
         container_wrapper=config.get("container_wrapper", "./run_container combine")
     resources:
         voms_proxy=True,
@@ -634,7 +634,7 @@ use rule gof from combine as gof with:
     log: f"{config['output_path']}/logs/gof_{{channel}}_datacard_{{channel}}__{{signallabel}}.log"
 
 use rule make_syst_plots from stat_analysis as make_syst_plots_HH4b with:
-    input: f"{config['output_path']}/datacards/HH4b/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root"
+    input: f"{config['output_path']}/datacards/HH4b/datacard__HH4b.txt"
     output: f"{config['output_path']}/datacards/HH4b/systs/SvB_MA_ps_hh_nominal.pdf"
     container: config["combine_container"]
     log: f"{config['output_path']}/logs/make_syst_plots_HH4b.log"
@@ -649,27 +649,28 @@ use rule make_syst_plots from stat_analysis as make_syst_plots_HH4b with:
         compute_backend="kubernetes",
         kubernetes_memory_limit="8Gi"
 
-use rule make_syst_plots_HH4b as make_syst_plots_ZZ4b with:
-    input: f"{config['output_path']}/datacards/ZZ4b/datacard__ZZ_bbbb.root"
-    output: f"{config['output_path']}/datacards/ZZ4b/systs/SvB_MA_ps_zz_nominal.pdf"
-    params:
-        variable="SvB_MA_ps_zz",
-        output_dir=f"{config['output_path']}/datacards/ZZ4b/",
-        channel="ZZ4b",
-        signal="ZZ4b",
-        container_wrapper = config['container_wrapper']
-    log: f"{config['output_path']}/logs/make_syst_plots_ZZ4b.log"
 
 use rule make_syst_plots_HH4b as make_syst_plots_ZH4b with:
-    input: f"{config['output_path']}/datacards/ZH4b/datacard__ZH_bbbb.root"
+    input: f"{config['output_path']}/datacards/ZH4b/datacard__ZH4b.txt"
     output: f"{config['output_path']}/datacards/ZH4b/systs/SvB_MA_ps_zh_nominal.pdf"
+    log: f"{config['output_path']}/logs/make_syst_plots_ZH4b.log"
     params:
         variable="SvB_MA_ps_zh",
         output_dir=f"{config['output_path']}/datacards/ZH4b/",
         channel="ZH4b",
         signal="ZH4b",
         container_wrapper = config['container_wrapper']
-    log: f"{config['output_path']}/logs/make_syst_plots_ZH4b.log"
+
+use rule make_syst_plots_HH4b as make_syst_plots_ZZ4b with:
+    input: f"{config['output_path']}/datacards/ZZ4b/datacard__ZZ4b.txt"
+    output: f"{config['output_path']}/datacards/ZZ4b/systs/SvB_MA_ps_zz_nominal.pdf"
+    log: f"{config['output_path']}/logs/make_syst_plots_ZZ4b.log"
+    params:
+        variable="SvB_MA_ps_zz",
+        output_dir=f"{config['output_path']}/datacards/ZZ4b/",
+        channel="ZZ4b",
+        signal="ZZ4b",
+        container_wrapper = config['container_wrapper']
 
 use rule postfit from combine as postfit_HH4b with:
     input: f"{config['output_path']}/datacards/HH4b/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root"
@@ -680,8 +681,8 @@ use rule postfit from combine as postfit_HH4b with:
         signallabel="ggHH_kl_1_kt_1_13p0TeV_hbbhbb",
         channel="HH4b",
         signal="GluGluToHHTo4B_cHHH1",
-        log=True,
-        set_parameters_zero=lambda wildcards: set_parameters_zero("HH4b"),
+        ylog=True,
+        set_parameters_zero=lambda wildcards: set_parameters("HH4b",0),
         freeze_parameters=lambda wildcards: freeze_parameters("HH4b"),
         container_wrapper=config.get("container_wrapper", "./run_container combine")
     resources:
@@ -697,8 +698,8 @@ use rule postfit_HH4b as postfit_ZH4b with:
         signallabel="ZH_bbbb",
         channel="ZH4b",
         signal="ZH4b",
-        log=False,
-        set_parameters_zero=lambda wildcards: set_parameters_zero("ZH4b"),
+        ylog=False,
+        set_parameters_zero=lambda wildcards: set_parameters("ZH4b",0),
         freeze_parameters=lambda wildcards: freeze_parameters("ZH4b"),
         container_wrapper=config.get("container_wrapper", "./run_container combine")
 
@@ -710,7 +711,7 @@ use rule postfit_HH4b as postfit_ZZ4b with:
         signallabel="ZZ_bbbb",
         channel="ZZ4b",
         signal="ZZ4b",
-        log=False,
-        set_parameters_zero=lambda wildcards: set_parameters_zero("ZZ4b"),
+        ylog=False,
+        set_parameters_zero=lambda wildcards: set_parameters("ZZ4b",0),
         freeze_parameters=lambda wildcards: freeze_parameters("ZZ4b"),
         container_wrapper=config.get("container_wrapper", "./run_container combine")

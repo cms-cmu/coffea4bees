@@ -17,6 +17,16 @@ dataset_systematics:
   - GluGluToHHTo4B_cHHH0
   - GluGluToHHTo4B_cHHH2p45
   - GluGluToHHTo4B_cHHH5
+  - VBFHHTo4B_kl_1p00_cv_1p00_c2v_0p00
+  - VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00
+  - VBFHHTo4B_kl_10p2_cv_m0p012_c2v_0p03
+  - VBFHHTo4B_kl_m0p94_cv_m1p21_c2v_1p94
+  - VBFHHTo4B_kl_m19p3_cv_m0p758_c2v_1p44
+  - VBFHHTo4B_kl_m1p36_cv_m1p60_c2v_2p72
+  - VBFHHTo4B_kl_14p4_cv_1p74_c2v_1p37
+  - VBFHHTo4B_kl_m1p43_cv_m0p962_c2v_0p959
+  - VBFHHTo4B_kl_m5p96_cv_2p12_c2v_3p87
+  - VBFHHTo4B_kl_m3p39_cv_m1p83_c2v_3p5
   - ZZ4b
   - ggZH4b
   - ZH4b
@@ -43,10 +53,10 @@ channels:
     othersignal: "ggHH_kl_0_kt_1_13p0TeV_hbbhbb ggHH_kl_2p45_kt_1_13p0TeV_hbbhbb ggHH_kl_5_kt_1_13p0TeV_hbbhbb"
   ZZ4b:
     signallabel: "ZZ_bbbb"
-    othersignal: ""
+    othersignal: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb ZH_bbbb"
   ZH4b:
     signallabel: "ZH_bbbb"
-    othersignal: ""
+    othersignal: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb ZZ_bbbb"
 
 extra_arguments: "--gitdiff In_gitdiff.txt_file --githash a6e669e4"
 analysis_container: "gitlab-registry.cern.ch/cms-cmu/coffea4bees:20250714_44f08ac8"   ### actual tag for reproducibility
