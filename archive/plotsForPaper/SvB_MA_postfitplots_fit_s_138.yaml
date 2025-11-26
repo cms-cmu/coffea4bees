@@ -1424,7 +1424,7 @@ cut: passPreSel
 region: SR
 kwargs:
   outputFolder: plotsANUnblinded/
-  CMSText: Preliminary
+  CMSText: 
   yscale: log
   norm: 0
   rebin: 1
