@@ -69,8 +69,13 @@ rule merging_coffea_files:
     shell:
         """
         # Set matplotlib config directory to avoid permission issues
-        export MPLCONFIGDIR="/tmp/matplotlib"
+        mkdir -p /tmp/barista/
+        
+        # Set matplotlib and fontconfig directories to avoid permission issues
+        export MPLCONFIGDIR="/tmp/barista/matplotlib"
+        export FONTCONFIG_PATH="/tmp/barista/fontconfig"
         mkdir -p $MPLCONFIGDIR
+        mkdir -p $FONTCONFIG_PATH
         
         echo "Merging all the coffea files" 2>&1 | tee -a {log}
         cmd="mprof run -C -o /tmp/mprofile_merge_$(basename {log} .log).dat python src/tools/merge_coffea_files.py -f {input} -o {output}"

@@ -50,7 +50,7 @@ data_eras:
 channels:
   HH4b:
     signallabel: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb"
-    othersignal: "ggHH_kl_0_kt_1_13p0TeV_hbbhbb ggHH_kl_2p45_kt_1_13p0TeV_hbbhbb ggHH_kl_5_kt_1_13p0TeV_hbbhbb"
+    othersignal: "ggHH_kl_0_kt_1_13p0TeV_hbbhbb ggHH_kl_2p45_kt_1_13p0TeV_hbbhbb ggHH_kl_5_kt_1_13p0TeV_hbbhbb VBFHHTo4B_kl_1p00_cv_1p00_c2v_0p00 VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00 VBFHHTo4B_kl_10p2_cv_m0p012_c2v_0p03 VBFHHTo4B_kl_m0p94_cv_m1p21_c2v_1p94 VBFHHTo4B_kl_m19p3_cv_m0p758_c2v_1p44 VBFHHTo4B_kl_m1p36_cv_m1p60_c2v_2p72 VBFHHTo4B_kl_14p4_cv_1p74_c2v_1p37 VBFHHTo4B_kl_m1p43_cv_m0p962_c2v_0p959 VBFHHTo4B_kl_m5p96_cv_2p12_c2v_3p87 VBFHHTo4B_kl_m3p39_cv_m1p83_c2v_3p5"
   ZZ4b:
     signallabel: "ZZ_bbbb"
     othersignal: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb ZH_bbbb"
@@ -58,7 +58,7 @@ channels:
     signallabel: "ZH_bbbb"
     othersignal: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb ZZ_bbbb"
 
-extra_arguments: "--gitdiff In_gitdiff.txt_file --githash a6e669e4"
+extra_arguments: "--gitdiff In_gitdiff.txt_file --githash e3ce601d"
 analysis_container: "gitlab-registry.cern.ch/cms-cmu/coffea4bees:20250714_44f08ac8"   ### actual tag for reproducibility
 combine_container: "gitlab-registry.cern.ch/cms-analysis/general/combine-container:CMSSW_11_3_4-combine_v9.1.0-harvester_v2.1.0"
 container_wrapper: "source /cvmfs/cms.cern.ch/cmsset_default.sh && cd /home/cmsusr/CMSSW_11_3_4/ && cmsenv || true && cd - && eval"

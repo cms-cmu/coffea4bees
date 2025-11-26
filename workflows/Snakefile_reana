@@ -20,7 +20,7 @@ module combine:
 include: "helpers/common.smk"
 
 hash = config['extra_arguments'].split("--githash ")[1]
-EOS_OUTPUT = f"/eos/user/a/algomez/work/HH4b/reana/{datetime.now().strftime('%Y%m%d')}_{hash}/"
+EOS_OUTPUT = f"/eos/user/a/algomez/www/plots/HH4b/reana/{datetime.now().strftime('%Y%m%d')}_{hash}/"
 OUTPUT_PATH = config['output_path']
 
 # Filter dataset_systematics by signal type
