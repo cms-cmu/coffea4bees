@@ -4,20 +4,20 @@ config = {
     # 'output_path' : 'output/ZZ_ZH_combination/v3/wotherRegionsSOne',
     'container_wrapper': './run_container combine',
     'channels': {
-        # 'ZZ_bbbb': {
-        #     'datacard_run2': 'output/ZZ_ZH_combination/v3/original_datacards/run2/combine_SvB_MA.txt',
-        #     'remove_bins_run2': "'zh*' 'hh*'",
-        #     'remove_process_run2': "None", #"'ZH_bbbb' 'ggHH_bbbb'",   
-        #     'rename_process_run2': "'ZZ=ZZ_bbbb' 'ZH=ZH_bbbb', 'HH=ggHH_bbbb'",
-        #     'datacard_run3': 'output/ZZ_ZH_combination/v3/original_datacards/run3/datacard.txt',
-        #     'remove_bins_run3': "'ggHHbbbb_*' 'qqHHbbbb_*' 'zhHHbbbb_*'",
-        #     'rename_process_run3': "'ggHH_hbbhbb=ggHH_bbbb' 'qqHH_hbbhbb=qqHH_bbbb'",
-        #     'remove_process_run3': "None", #"'ZH_bbbb' 'ggHH_bbbb' 'qqHH_bbbb'",
-        #     'signallabel': 'ZZ_bbbb',
-        #     'othersignal': 'ZH_bbbb ggHH_bbbb qqHH_bbbb',
-        #     'label': 'ZZ',
-        #     'workspace': ''
-        # },
+        'ZZ_bbbb': {
+            'datacard_run2': 'output/ZZ_ZH_combination/v3/original_datacards/run2/combine_SvB_MA.txt',
+            'remove_bins_run2': "'zh*' 'hh*'",
+            'remove_process_run2': "None", #"'ZH_bbbb' 'ggHH_bbbb'",   
+            'rename_process_run2': "'ZZ=ZZ_bbbb' 'ZH=ZH_bbbb', 'HH=ggHH_bbbb'",
+            'datacard_run3': 'output/ZZ_ZH_combination/v3/original_datacards/run3/datacard.txt',
+            'remove_bins_run3': "'ggHHbbbb_*' 'qqHHbbbb_*' 'zhHHbbbb_*'",
+            'rename_process_run3': "'ggHH_hbbhbb=ggHH_bbbb' 'qqHH_hbbhbb=qqHH_bbbb'",
+            'remove_process_run3': "None", #"'ZH_bbbb' 'ggHH_bbbb' 'qqHH_bbbb'",
+            'signallabel': 'ZZ_bbbb',
+            'othersignal': 'ZH_bbbb ggHH_bbbb qqHH_bbbb',
+            'label': 'ZZ',
+            'workspace': ''
+        },
         'ZH_bbbb': {
             'datacard_run2': 'output/ZZ_ZH_combination/v3/original_datacards/run2/combine_SvB_MA.txt',
             'remove_bins_run2': "'zz*' 'hh*'",
