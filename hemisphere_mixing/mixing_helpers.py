@@ -208,7 +208,7 @@ def compute_hemi_vars(hemis):
     return hemis
 
 
-def split_events_into_hemispheres(event):
+def split_events_into_hemispheres(event, tagged_key="tagJet"):
 
     #
     #  Get Thrust axis
@@ -224,7 +224,7 @@ def split_events_into_hemispheres(event):
     #
     #  For mutltiplicity counting
     #
-    tagJet_posHemi, tagJet_negHemi = split_hemispheres(event.tagJet, thrust)
+    tagJet_posHemi, tagJet_negHemi = split_hemispheres(event[tagged_key], thrust)
     selJet_posHemi, selJet_negHemi = split_hemispheres(event.selJet, thrust)
 
 
@@ -373,21 +373,26 @@ def iter_hemi_filters(hemi_ranges, hemi_data):
                 yield ( (tag, sel, jet), mask )
 
 
+def get_hemispheres_data(mask, hemi_data, hemi_vars, hemi_stats=None):
+    hemi_data_jet_bin = {}
 
-def get_grouped_hemispheres_data(hemi_ranges, hemi_data, hemi_vars, summary_vars=None):
+    for var_name in hemi_vars:
+        if hemi_stats and var_name in hemi_stats:
+            this_var = hemi_stats[var_name]
+            hemi_data_jet_bin[var_name] = (hemi_data[var_name][mask] - this_var["mean"]) / this_var["RMS"]
+        else:
+            hemi_data_jet_bin[var_name] = hemi_data[var_name][mask]
+    return hemi_data_jet_bin
+
+
+def get_grouped_hemispheres_data(hemi_ranges, hemi_data, hemi_vars, hemi_stats=None):
     grouped_hemi_data = {}
 
     for jet_mult_key, mask in iter_hemi_filters(hemi_ranges, hemi_data):
 
-        grouped_hemi_data[jet_mult_key] = {}
+        _hemi_stats = hemi_stats[jet_mult_key] if hemi_stats else None
+        grouped_hemi_data[jet_mult_key] = get_hemispheres_data(mask, hemi_data, hemi_vars, hemi_stats=_hemi_stats)
 
-        for var_name in hemi_vars:
-
-            if summary_vars and var_name in summary_vars[jet_mult_key]:
-                this_var = summary_vars[jet_mult_key][var_name]
-                grouped_hemi_data[jet_mult_key][var_name] = (hemi_data[var_name][mask] - this_var["mean"]) / this_var["RMS"]
-            else:
-                grouped_hemi_data[jet_mult_key][var_name] = hemi_data[var_name][mask]
 
     return grouped_hemi_data
 
@@ -408,7 +413,7 @@ def convert_yaml_dict(raw_dict):
     return output
 
 
-def build_hemi_kdtrees(hemi_metadata_yaml, hemifiles, hemi_summary_vars, jet_branches):
+def init_hemi_data(hemi_metadata_yaml, hemifiles, hemi_summary_vars, jet_branches, event_branches=["event", "run", "luminosityBlock", "thrust_phi", "hemisphereId", "weight"]):
 
     # Read in hemisphere library metadata
     with open(hemi_metadata_yaml, 'r') as f:
@@ -420,7 +425,6 @@ def build_hemi_kdtrees(hemi_metadata_yaml, hemifiles, hemi_summary_vars, jet_bra
     #
     #  Read in Hemisphere library data
     #
-    event_branches = ["event", "run", "luminosityBlock", "thrust_phi", "hemisphereId", "weight"]
     branch_list = ["nJet", "nSelJet", "nTagJet"] + event_branches + hemi_summary_vars + jet_branches
 
     hemi_data = read_hemi_files(hemifiles, branch_list=branch_list)
@@ -429,11 +433,22 @@ def build_hemi_kdtrees(hemi_metadata_yaml, hemifiles, hemi_summary_vars, jet_bra
     #    *(Chunk(f) for f in [hemifiles]), library="np"
     #)
     #breakpoint()
+    return hemi_data, jet_ranges, hemi_stats
+
+
+def build_hemi_kdtrees(hemi_metadata_yaml, hemifiles, hemi_summary_vars, jet_branches):
+
+
+    #
+    #  Readin the hemisphere data
+    #
+    event_branches = ["event", "run", "luminosityBlock", "thrust_phi", "hemisphereId", "weight"]
+    hemi_data, jet_ranges, hemi_stats = init_hemi_data(hemi_metadata_yaml, hemifiles, hemi_summary_vars, jet_branches, event_branches)
 
     #
     #  Group hemisphere data by jet multiplicity bins
     #
-    grouped_hemi_data = get_grouped_hemispheres_data(jet_ranges, hemi_data, hemi_vars= event_branches + hemi_summary_vars + jet_branches, summary_vars=hemi_stats)
+    grouped_hemi_data = get_grouped_hemispheres_data(jet_ranges, hemi_data, hemi_vars= event_branches + hemi_summary_vars + jet_branches, hemi_stats=hemi_stats)
 
     #
     #  Make the Kd-Trees
@@ -517,6 +532,100 @@ def replace_hemis(*, all_hemis, hemi_kd_trees, hemi_stats, hemi_data, hemi_jet_r
                                    "luminosityBlock" : ak.Array(hemi_data[jet_mult_key]["luminosityBlock"][match_idx]),
                                    "hemisphereId":     ak.Array(hemi_data[jet_mult_key]["hemisphereId"]   [match_idx]),
                                    "weight":           ak.Array(hemi_data[jet_mult_key]["weight"]         [match_idx]),
+                                   "nSelJet":          subset_hemis["nSelJet"],
+                                   "nTagJet":          subset_hemis["nTagJet"],
+                                   "nJet" :            ak.num(new_Jets, axis=1),
+                                   "Jet":              new_Jets,
+                                   "match_dist":       ak.Array(match_dist),
+                                   "local_idx":      subset_hemis["local_idx"],
+                                   },
+                                  depth_limit=1
+                                  )
+        #subset_hemis_new = compute_hemi_vars(all_hemis_new)
+
+        mixed_hemis.append(subset_hemis_new)
+        all_hemis_new = ak.concatenate(mixed_hemis, axis=0)
+        sort_idx = ak.argsort(all_hemis_new.local_idx)
+        all_hemis_new = all_hemis_new[sort_idx]
+
+        #all_hemis = ak.where(mask, all_hemis_new, all_hemis)
+
+    return all_hemis_new
+
+
+
+def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ranges, hemi_summary_vars, jet_branches, event_branches=["event", "run", "luminosityBlock", "thrust_phi", "hemisphereId", "weight"]):
+
+    mixed_hemis = []
+    all_hemis["local_idx"] = ak.local_index(all_hemis, axis=0)
+
+    #
+    #  Loop on hemisphere multiplcity bins
+    #
+    for (jet_mult_key, mask_3b), (jet_mult_key_4b, mask_4b) in zip(iter_hemi_filters(hemi_jet_ranges, all_hemis),
+                                                                   iter_hemi_filters(hemi_jet_ranges, hemi_data)):
+
+
+        # print("Processing jet mult bin:", jet_mult_key, "with", np.sum(mask), "hemispheres to replace.")
+
+        subset_hemis = all_hemis[mask_3b]
+
+        #
+        #  Prepare the hemisphere summary variable points for kd-tree query
+        #
+        subset_hemis_points = np.column_stack([ (subset_hemis[name] - hemi_stats[jet_mult_key][name]["mean"]) / hemi_stats[jet_mult_key][name]["RMS"] for name in hemi_summary_vars])
+
+        #
+        #  Get the nearest neighbor hemisphere from the kd-tree
+        #
+        hemi_lib_data = get_hemispheres_data(mask_4b, hemi_data, event_branches + hemi_summary_vars + jet_branches, hemi_stats=hemi_stats[jet_mult_key])
+        hemi_lib_points = np.column_stack([ hemi_lib_data[name] for name in hemi_summary_vars])
+        kd_tree = cKDTree(hemi_lib_points)
+        match_dist, match_idx = kd_tree.query(subset_hemis_points, k=1)
+
+        if np.sum(mask_3b) < 1:
+            continue
+
+
+        #
+        # Rotate Jets to match thrust axis
+        #
+        new_thrust = hemi_lib_data["thrust_phi"][match_idx]
+        dphi = subset_hemis["thrust_phi"] - new_thrust
+
+        # determine if we need to flip the hemispheres
+        do_flip_hemi = (hemi_lib_data["hemisphereId"][match_idx]   * subset_hemis.hemisphereId) < 0
+        dphi = ak.where(do_flip_hemi, dphi + np.pi, dphi)
+
+
+        #
+        #  Construct the new jets
+        #
+        new_Jets = ak.zip(
+            {
+                "pt":   ak.Array(hemi_lib_data["Jet_pt"]  [match_idx]),
+                "eta":  ak.Array(hemi_lib_data["Jet_eta"] [match_idx]),
+                "phi": (ak.Array(hemi_lib_data["Jet_phi"] [match_idx]) + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
+                "mass": ak.Array(hemi_lib_data["Jet_mass"][match_idx]),
+            },
+            with_name="PtEtaPhiMLorentzVector",
+            behavior=vector.behavior,
+        )
+
+        # fill other jet branches
+        for var_name in jet_branches:
+            var_key = var_name.replace("Jet_", "")
+            if var_key in ["pt", "eta", "phi", "mass"]:
+                continue
+            new_Jets[var_key] = ak.Array(hemi_lib_data[var_name][match_idx])
+
+        # fill event data
+        subset_hemis_new = ak.zip({"thrust_phi":       ak.Array(hemi_lib_data["thrust_phi"]     [match_idx]),
+                                   "event":            ak.Array(hemi_lib_data["event"]          [match_idx]),
+                                   "run":              ak.Array(hemi_lib_data["run"]            [match_idx]),
+                                   "luminosityBlock" : ak.Array(hemi_lib_data["luminosityBlock"][match_idx]),
+                                   "hemisphereId":     ak.Array(hemi_lib_data["hemisphereId"]   [match_idx]),
+                                   "weight":           ak.Array(hemi_lib_data["weight"]         [match_idx]),
                                    "nSelJet":          subset_hemis["nSelJet"],
                                    "nTagJet":          subset_hemis["nTagJet"],
                                    "nJet" :            ak.num(new_Jets, axis=1),
