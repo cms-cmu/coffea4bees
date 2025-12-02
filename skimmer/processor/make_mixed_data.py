@@ -30,8 +30,9 @@ import uproot
 
 
 from coffea4bees.hemisphere_mixing.mixing_helpers   import build_hemi_kdtrees, compute_hemi_vars
-from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres, replace_hemis
-
+from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres, replace_hemis, replace_hemis_load_kdTrees, init_hemi_data
+from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
+from coffea4bees.analysis.helpers.event_weights import add_pseudotagweights
 
 
 class HemiMixer(PicoAOD):
@@ -39,12 +40,15 @@ class HemiMixer(PicoAOD):
                 subtract_ttbar_with_weights = False,
                 mixing_rand_seed=5,
                 friends: dict[str, str|FriendTemplate] = None,
+                apply_JCM: bool = True,
+                JCM_file: str = "coffea4bees/analysis/weights/JCM/AN_24_089_v3/jetCombinatoricModel_SB_6771c35.yml",
                 corrections_metadata: dict = None,
                 *args, **kwargs):
         kwargs["pico_base_name"] = f'picoAOD_seed{mixing_rand_seed}'
         super().__init__(*args, **kwargs)
 
         logging.info(f"\nRunning HemiMixer with these parameters: , subtract_ttbar_with_weights = {subtract_ttbar_with_weights}, mixing_rand_seed = {mixing_rand_seed}, args = {args}, kwargs = {kwargs}")
+        self.apply_JCM = jetCombinatoricModel(JCM_file) if apply_JCM else None
 
         self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
         self.friends = parse_friends(friends)
@@ -66,11 +70,20 @@ class HemiMixer(PicoAOD):
         self.hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ]
         year_str = "UL18"
 
-        self.hemi_kd_trees, self.hemi_points, self.hemi_jet_ranges, self.hemi_stats, self.hemi_data = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
-                                                                                                                         hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root",
-                                                                                                                         hemi_summary_vars = self.hemi_summary_vars,
-                                                                                                                         jet_branches = self.jet_branches,
-                                                                                                                         )
+        self.test_load_hemi_kdTrees = True
+        if self.test_load_hemi_kdTrees:
+            self.hemi_data, self.hemi_jet_ranges, self.hemi_stats  = init_hemi_data(hemi_metadata_yaml = yaml_file,
+                                                                                    hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root",
+                                                                                    hemi_summary_vars = self.hemi_summary_vars,
+                                                                                    jet_branches = self.jet_branches,
+                                                                                    )
+
+        else:
+            self.hemi_kd_trees, _, self.hemi_jet_ranges, self.hemi_stats, self.hemi_data = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
+                                                                                                              hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root",
+                                                                                                              hemi_summary_vars = self.hemi_summary_vars,
+                                                                                                              jet_branches = self.jet_branches,
+                                                                                                              )
 
 
 
@@ -99,6 +112,8 @@ class HemiMixer(PicoAOD):
         logging.debug(f'{chunk} config={config}, for file {fname}\n')
 
         path = fname.replace(fname.split("/")[-1], "")
+
+
 
         if self.subtract_ttbar_with_weights:
 
@@ -153,6 +168,22 @@ class HemiMixer(PicoAOD):
 
 
         #
+        # Apply JCM
+        #
+        weights, list_weight_names = add_pseudotagweights(
+            event,
+            weights,
+            JCM=self.apply_JCM,
+            apply_FvT=False,
+            isDataForMixed=False,
+            list_weight_names=list_weight_names,
+            event_metadata=event.metadata,
+            year_label=year_label,
+            len_event=len(event),
+            )
+
+
+        #
         # Get the trigger weights
         #
         if config["isMC"]:
@@ -171,7 +202,7 @@ class HemiMixer(PicoAOD):
         selections = PackedSelection()
         selections.add( "lumimask", event.lumimask)
         selections.add( "passNoiseFilter", event.passNoiseFilter)
-        selections.add( "passHLT", ( event.passHLT if config["cut_on_HLT_decision"] else np.full(len(event), True)  ) )
+        selections.add( "passHLT", ( event.passHLT if config["cut_on_HLT_decision"] else npfull(len(event), True)  ) )
         selections.add( 'passJetMult',   event.passJetMult )
         selections.add( "passThreeTag", event.threeTag)
 
@@ -221,12 +252,19 @@ class HemiMixer(PicoAOD):
             selection = selection & pass_ttbar_filter
             selev = selev[pass_ttbar_filter_selev]
 
-        #print("selMuon", type(selev.selMuon), selev.selMuon.tolist(),"\n")
+
+        #
+        # Identify tagged and pstagged jets
+        #
+        sorted_jets      = selev.Jet[ak.argsort(selev.Jet.btagScore, ascending=False)]
+        sorted_local_idx = ak.local_index(sorted_jets)
+        selev["Jet", "tagged_or_pstagged"] = (sorted_local_idx < selev.nJet_ps_and_tag)
+        selev["tag_or_psTag_Jet"] = selev.Jet[selev.Jet.tagged_or_pstagged]
 
         #
         #  Split event into hemispheres
         #
-        pos_hemi, neg_hemi = split_events_into_hemispheres(selev)
+        pos_hemi, neg_hemi = split_events_into_hemispheres(selev, tagged_key="tag_or_psTag_Jet")
 
 
         #
@@ -236,8 +274,14 @@ class HemiMixer(PicoAOD):
         all_hemis["replaced"] = 0
         all_hemis["match_dist"] = -1
 
-        all_hemis = replace_hemis(all_hemis=all_hemis, hemi_kd_trees=self.hemi_kd_trees, hemi_jet_ranges=self.hemi_jet_ranges,
-                                     hemi_stats=self.hemi_stats, hemi_data=self.hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=self.jet_branches)
+        if self.test_load_hemi_kdTrees:
+            all_hemis = replace_hemis_load_kdTrees(all_hemis=all_hemis, hemi_jet_ranges=self.hemi_jet_ranges,
+                                                   hemi_stats=self.hemi_stats, hemi_data=self.hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=self.jet_branches
+                                                   )
+
+        else:
+            all_hemis = replace_hemis(all_hemis=all_hemis, hemi_kd_trees=self.hemi_kd_trees, hemi_jet_ranges=self.hemi_jet_ranges,
+                                      hemi_stats=self.hemi_stats, hemi_data=self.hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=self.jet_branches)
 
 
 
