@@ -23,93 +23,45 @@ hash = config['extra_arguments'].split("--githash ")[1]
 EOS_OUTPUT = f"/eos/user/a/algomez/www/plots/HH4b/reana/{datetime.now().strftime('%Y%m%d')}_{hash}/"
 OUTPUT_PATH = config['output_path']
 
-# Filter dataset_systematics by signal type
-hh4b_datasets = [d for d in config['dataset_systematics'] if d.startswith(('GluGlu', 'VBF'))]
-zz4b_datasets = [d for d in config['dataset_systematics'] if 'ZZ4b' in d]
-zh4b_datasets = [d for d in config['dataset_systematics'] if 'ZH4b' in d]
+# Define output patterns at the top (after imports/config)
+CHANNELS = list(config['channels'].keys())
+SIGNALLABELS = [config['channels'][k]['signallabel'] for k in CHANNELS]
+CHANNELLABELS = [k.lower().split('4b')[0] for k in CHANNELS]
 
-output_combine = [
-    f"{config['output_path']}/datacards/{{channel}}/limits__{{signallabel}}.json",
-    f"{config['output_path']}/datacards/{{channel}}/significance__{{signallabel}}.log",
-    f"{config['output_path']}/datacards/{{channel}}/impacts__{{signallabel}}.pdf",
-    f"{config['output_path']}/datacards/{{channel}}/likelihood_scan__{{signallabel}}.pdf",
-    f"{config['output_path']}/datacards/{{channel}}/gof__{{signallabel}}.pdf",
-]
+OUTPUT_PATTERNS = {
+    "limits": f"{config['output_path']}/datacards/{{channel}}/limits__{{signallabel}}.json",
+    "significance": f"{config['output_path']}/datacards/{{channel}}/significance__{{signallabel}}.log",
+    "impacts": f"{config['output_path']}/datacards/{{channel}}/impacts__{{signallabel}}.pdf",
+    "likelihood_scan": f"{config['output_path']}/datacards/{{channel}}/likelihood_scan__{{signallabel}}.pdf",
+    "gof": f"{config['output_path']}/datacards/{{channel}}/gof__{{signallabel}}.pdf",
+    "postfit": f"{config['output_path']}/datacards/{{channel}}/plots/postfitplots__{{signallabel}}__prefit.pdf",
+}
 
-#
-# rule all sets the entire workflow. This is were you define the last output of the workflow.
-# Snakemake will go backawrds and check what rules does the workflow need to get the output.
-# #
+SYST_PLOTS = {
+    "HH4b": f"{config['output_path']}/datacards/HH4b/systs/SvB_MA_ps_hh_nominal.pdf",
+    "ZZ4b": f"{config['output_path']}/datacards/ZZ4b/systs/SvB_MA_ps_zz_nominal.pdf",
+    "ZH4b": f"{config['output_path']}/datacards/ZH4b/systs/SvB_MA_ps_zh_nominal.pdf",
+}
+
 rule final_rule:
     input:
         f"{config['output_path']}/plots/RunII/passPreSel/fourTag/SB/nPVs.pdf",
-        # expand(
-        #     f"{config['output_path']}/closureFits/3bDvTMix4bDvT/SvB_MA/rebin1/SR/{{channellabel}}/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_{{channellabel}}_rebin1.pkl", zip,
-        #     channel=list(config['channels'].keys()),
-        #     channellabel=[config['channels'][k]['channellabel'] for k in config['channels'].keys()]
-        # ),
-        [expand(pattern, zip,
-                channel=list(config['channels'].keys()),
-                signallabel=[config['channels'][k]['signallabel'] for k in config['channels'].keys()],
-                channellabel=[k.lower().split('4b')[0] for k in config['channels'].keys()])
-        for pattern in output_combine],
-        f"{config['output_path']}/datacards/ZH4b/plots/postfitplots__ZH_bbbb__prefit.pdf",
-        f"{config['output_path']}/datacards/ZZ4b/plots/postfitplots__ZZ_bbbb__prefit.pdf",
-        f"{config['output_path']}/datacards/HH4b/plots/postfitplots__ggHH_kl_1_kt_1_13p0TeV_hbbhbb__prefit.pdf",
-        f"{config['output_path']}/datacards/ZH4b/systs/SvB_MA_ps_zh_nominal.pdf",
-        f"{config['output_path']}/datacards/ZZ4b/systs/SvB_MA_ps_zz_nominal.pdf",
-        f"{config['output_path']}/datacards/HH4b/systs/SvB_MA_ps_hh_nominal.pdf"
+        [expand(pattern, zip, channel=CHANNELS, signallabel=SIGNALLABELS, channellabel=CHANNELLABELS)
+         for pattern in OUTPUT_PATTERNS.values()],
+        list(SYST_PLOTS.values()),
     container: config["analysis_container"]
     resources:
         voms_proxy=True,
         kerberos=True,
     shell: 
         """
-        rm -rf {OUTPUT_PATH}/datacards/*/higgsCombine_*
-        cp gitdiff.txt {OUTPUT_PATH}
+        rm -rf {config[output_path]}/datacards/*/higgsCombine_*
+        cp gitdiff.txt {config[output_path]}
         echo "Copying output to cernbox "
         mkdir -p {EOS_OUTPUT}
-        cp -r output/* {EOS_OUTPUT}
-        python src/plotting/pb_deploy_plots.py output/ {EOS_OUTPUT} -r -c -j 4
+        cp -r {config[output_path]}/* {EOS_OUTPUT}
+        python src/plotting/pb_deploy_plots.py {config[output_path]}/ {EOS_OUTPUT} -r -c -j 4
         """
-
-# use rule analysis_processor from analysis as analysis with:
-#     output: f"{config['output_path']}/singlefiles/histNoJCM__{sample}-{year}.coffea"
-#     params:
-#         datasets="{sample}",
-#         years="{year}",
-#         metadata="coffea4bees/analysis/metadata/HH4b_noJCM.yml",
-#         processor="coffea4bees/analysis/processors/processor_HH4b.py",
-#         datasets_file=config['dataset_location'],
-#         blind=False,
-#         run_performance=True,
-#         hash=config['hash'],
-#         diff=config['diff'],
-#         username=USERNAME
-#     resources:
-#         voms_proxy=True,
-#         kerberos=True,
-#         compute_backend="kubernetes",
-#         kubernetes_memory_limit="9.5Gi"
-#     log: f"{config['output_path']}/logs/analysis_histNoJCM__{sample}-{year}.log"
-
-# use rule merging_coffea_files from analysis as merging_coffea_files with:
-#     input: expand([f'{config["output_path"]}/singlefiles/histNoJCM__{sample}-{year}.coffea'], sample=config['dataset'], year=config['year']) 
-#     output: f"{config['output_path']}/histNoJCM.coffea"
-#     resources:
-#         kerberos=True,
-#         compute_backend="kubernetes",
-#         kubernetes_memory_limit="9.5Gi"
-#     log: f"{config['output_path']}/logs/merging_histNoJCM.log"
-
-# use rule make_JCM from analysis as make_JCM with:
-#     input: f"{config['output_path']}/histNoJCM.coffea"
-#     output: f"{config['output_path']}/JCM/jetCombinatoricModel_SB_reana.yml"
-#     resources:
-#         voms_proxy=True,
-#         kerberos=True,
-#         compute_backend="kubernetes",
-#     log: f"{config['output_path']}/logs/make_JCM.log"
 
 #######
 ### Running analysis processor
@@ -307,28 +259,28 @@ use rule analysis_databkgs as analysis_systematics_jes with:
 ### Merging histograms 
 #######
 
-use rule merging_coffea_files from analysis as merging_coffea_files_syst_HH4b with:
-    input: expand([f'{config["output_path"]}/singlefiles/histsyst_others_{{idatsyst}}-{{iyear}}.coffea'], idatsyst=hh4b_datasets, iyear=config['year']) + expand([f'{config["output_path"]}/singlefiles/histsyst_jes_{{idatsyst}}-{{iyear}}.coffea'], idatsyst=hh4b_datasets, iyear=config['year'])
-    output: f"{config['output_path']}/histAll_signals__HH4b.coffea"
+# Add helper function at top with get_channel_lower:
+def get_channel_datasets(channel):
+    """Return datasets for each channel"""
+    datasets_map = {
+        "HH4b": [d for d in config['dataset_systematics'] if d.startswith(('GluGlu', 'VBF'))],
+        "ZZ4b": [d for d in config['dataset_systematics'] if 'ZZ4b' in d],
+        "ZH4b": [d for d in config['dataset_systematics'] if 'ZH4b' in d]
+    }
+    return datasets_map.get(channel, [])
+
+use rule merging_coffea_files from analysis as merging_coffea_files_syst with:
+    input: lambda wildcards: expand([f'{config["output_path"]}/singlefiles/histsyst_others_{{idatsyst}}-{{iyear}}.coffea'], idatsyst=get_channel_datasets(wildcards.channel), iyear=config['year']) + expand([f'{config["output_path"]}/singlefiles/histsyst_jes_{{idatsyst}}-{{iyear}}.coffea'], idatsyst=get_channel_datasets(wildcards.channel), iyear=config['year'])
+    output: f"{config['output_path']}/histAll_signals__{{channel}}.coffea"
     resources:
         kerberos=True,
         compute_backend="kubernetes",
         kubernetes_memory_limit="9.5Gi"
     params:
-        run_performance=True
-    log: f"{config['output_path']}/logs/merging_signals_HH4b.log"
+        run_performance=False
+    log: f"{config['output_path']}/logs/merging_signals_{{channel}}.log"
 
-use rule merging_coffea_files_syst_HH4b as merging_coffea_files_syst_ZZ4b with:
-    input: expand([f'{config["output_path"]}/singlefiles/histsyst_others_{{idatsyst}}-{{iyear}}.coffea'], idatsyst=zz4b_datasets, iyear=config['year']) + expand([f'{config["output_path"]}/singlefiles/histsyst_jes_{{idatsyst}}-{{iyear}}.coffea'], idatsyst=zz4b_datasets, iyear=config['year'])
-    output: f"{config['output_path']}/histAll_signals__ZZ4b.coffea"
-    log: f"{config['output_path']}/logs/merging_signals_ZZ4b.log"
-
-use rule merging_coffea_files_syst_HH4b as merging_coffea_files_syst_ZH4b with:
-    input: expand([f'{config["output_path"]}/singlefiles/histsyst_others_{{idatsyst}}-{{iyear}}.coffea'], idatsyst=zh4b_datasets, iyear=config['year']) + expand([f'{config["output_path"]}/singlefiles/histsyst_jes_{{idatsyst}}-{{iyear}}.coffea'], idatsyst=zh4b_datasets, iyear=config['year'])
-    output: f"{config['output_path']}/histAll_signals__ZH4b.coffea"
-    log: f"{config['output_path']}/logs/merging_signals_ZH4b.log"
-
-use rule merging_coffea_files_syst_HH4b as merging_coffea_files_histAll with:
+use rule merging_coffea_files_syst as merging_coffea_files_histAll with:
     input: expand([f'{config["output_path"]}/singlefiles/histsignal__{{sample_signal}}-{{year}}.coffea'], sample_signal=config['dataset_signals'], year=config['year']) + expand([f'{config["output_path"]}/singlefiles/hist__{{idat}}-{{iyear}}.coffea'], idat=config['dataset_tt'], iyear=config['year']) + expand([f'{config["output_path"]}/singlefiles/histdata__data-{{iyear}}.coffea'], iyear=config['year']) + [ f'{config["output_path"]}/singlefiles/histdata__data-UL17B.coffea' ]
     output: f"{config['output_path']}/histAll.coffea"
     log: f"{config['output_path']}/logs/merging_histAll.log"
@@ -350,17 +302,14 @@ use rule make_plots from analysis as make_plots with:
 ### Converting histograms to JSON and ROOT formats
 ########
 
-use rule convert_hist_to_json from stat_analysis as convert_hist_to_json_histAll with:
-    input: f"{config['output_path']}/histAll.coffea"
-    output: f"{config['output_path']}/histAll.json"
-    log: f"{config['output_path']}/logs/convert_hist_to_json_histAll.log"
-
-use rule convert_hist_to_json_histAll as convert_hist_to_json_signals with:
-    input: f"{config['output_path']}/histAll_signals__{{channel}}.coffea"
-    output: f"{config['output_path']}/histAll_signals__{{channel}}.json"
+use rule convert_hist_to_json from stat_analysis as convert_hist_to_json with:
+    input: f"{config['output_path']}/{{histfile}}.coffea"
+    output: f"{config['output_path']}/{{histfile}}.json"
     params:
-        syst_flag="-s"
-    log: f"{config['output_path']}/logs/convert_hist_to_json_signals__{{channel}}.log"
+        syst_flag=lambda wildcards: "-s --histos SvB_MA.ps_hh SvB_MA.ps_zz SvB_MA.ps_zh" if "signals" in wildcards.histfile else ""
+    log: f"{config['output_path']}/logs/convert_hist_to_json_{{histfile}}.log"
+    resources:
+        kubernetes_memory_limit="8Gi"
 
 use rule convert_hist_to_json_closure from stat_analysis as convert_hist_to_json_mixdata3b with:
     input: f"{config['output_path']}/histMixedBkg_data_3b_for_mixed.coffea"
@@ -391,47 +340,16 @@ use rule convert_hist_to_json_mixdata3b as convert_hist_to_json_mixdata_ZZZH wit
     input: f"{config['output_path']}/histMixedData_ZZZH.coffea"
     output: f"{config['output_path']}/histMixedData_ZZZH.json"
     log: f"{config['output_path']}/logs/convert_hist_to_json_mixdata_ZZZH.log"
-
-use rule convert_json_to_root from stat_analysis as convert_json_to_root_TT with:
-    input: f"{config['output_path']}/histMixedBkg_TT.json"
-    output: f"{config['output_path']}/histMixedBkg_TT.root"
+    
+use rule convert_json_to_root from stat_analysis with:
+    input: f"{config['output_path']}/{{jsonfile}}.json"
+    output: f"{config['output_path']}/{{jsonfile}}.root"
     container: config["combine_container"]
     resources:
         compute_backend="kubernetes",
         kubernetes_memory_limit="8Gi"
-    log: f"{config['output_path']}/logs/convert_json_to_root_TT.log"
-
-use rule convert_json_to_root_TT as convert_json_to_root_mix with:
-    input: f"{config['output_path']}/histMixedData.json"
-    output: f"{config['output_path']}/histMixedData.root"
-    log: f"{config['output_path']}/logs/convert_json_to_root_mix.log"
-
-use rule convert_json_to_root_TT as convert_json_to_root_data3b with:
-    input: f"{config['output_path']}/histMixedBkg_data_3b_for_mixed.json"
-    output: f"{config['output_path']}/histMixedBkg_data_3b_for_mixed.root"
-    log: f"{config['output_path']}/logs/convert_json_to_root_data3b.log"
-
-use rule convert_json_to_root_TT as convert_json_to_root_TT_ZZZH with:
-    input: f"{config['output_path']}/histMixedBkg_ZZZH_TT.json"
-    output: f"{config['output_path']}/histMixedBkg_ZZZH_TT.root"
-    container: config["combine_container"]
-    log: f"{config['output_path']}/logs/convert_json_to_root_TT_ZZZH.log"
-
-use rule convert_json_to_root_TT as convert_json_to_root_mix_ZZZH with:
-    input: f"{config['output_path']}/histMixedData_ZZZH.json"
-    output: f"{config['output_path']}/histMixedData_ZZZH.root"
-    log: f"{config['output_path']}/logs/convert_json_to_root_mix_ZZZH.log"
-
-use rule convert_json_to_root_TT as convert_json_to_root_data3b_ZZZH with:
-    input: f"{config['output_path']}/histMixedBkg_ZZZH_data_3b_for_mixed.json"
-    output: f"{config['output_path']}/histMixedBkg_ZZZH_data_3b_for_mixed.root"
-    log: f"{config['output_path']}/logs/convert_json_to_root_data3b_ZZZH.log"
-
-
-use rule convert_json_to_root_TT as convert_json_to_root_histall with:
-    input: f"{config['output_path']}/histAll.json"
-    output: f"{config['output_path']}/histAll.root"
-    log: f"{config['output_path']}/logs/convert_json_to_root_histall.log"
+    message: "Converting {input} to {output}"
+    log: f"{config['output_path']}/logs/convert_json_to_root_{{jsonfile}}.log"
 
 #######
 ### Closure fits (background systematics)
@@ -484,63 +402,32 @@ use rule run_two_stage_closure_ZZ4b as run_two_stage_closure_ZH4b with:
 ########
 ### Making combine inputs and datacards
 ########
+def get_channel_lower(channel):
+    """Convert channel name to lowercase variant used in file paths"""
+    return channel.lower().split('4b')[0] 
 
-use rule make_combine_inputs from stat_analysis as make_combine_inputs_HH4b with:
+use rule make_combine_inputs from stat_analysis with:
     input:
         injson = f"{config['output_path']}/histAll.json",
-        injsonsyst = f"{config['output_path']}/histAll_signals__HH4b.json", 
-        bkgsyst = f"{config['output_path']}/closureFits/3bDvTMix4bDvT/SvB_MA/rebin1/SR/hh/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_hh_rebin1.pkl"
-    output: f"{config['output_path']}/datacards/HH4b/datacard__HH4b.txt"
+        injsonsyst = f"{config['output_path']}/histAll_signals__{{channel}}.json", 
+        bkgsyst = lambda wildcards: f"{config['output_path']}/closureFits/3bDvTMix4bDvT/SvB_MA/rebin1/SR/{get_channel_lower(wildcards.channel)}/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_{get_channel_lower(wildcards.channel)}_rebin1.pkl"
+    output: f"{config['output_path']}/datacards/{{channel}}/datacard__{{channel}}.txt"
     container: config["combine_container"]
     params:
-        variable= "SvB_MA.ps_hh",
+        variable= lambda wildcards: config['channels'][wildcards.channel]['variable'],
         rebin=1,
-        metadata="coffea4bees/stats_coffea4bees/analysis/metadata/HH4b.yml",
-        output_dir=f"{config['output_path']}/datacards/HH4b/",
         variable_binning="",
         stat_only="",
-        signal="HH4b",
+        metadata=lambda wildcards: f"coffea4bees/stats_coffea4bees/analysis/metadata/{wildcards.channel}.yml",
+        output_dir=f"{config['output_path']}/datacards/{{channel}}/",
+        signal="{channel}",
         container_wrapper = config['container_wrapper']
     resources:
         voms_proxy=True,
         kerberos=True,
         compute_backend="kubernetes",
         kubernetes_memory_limit="9.5Gi"
-    log: f"{config['output_path']}/logs/make_combine_inputs_HH4b.log"
-
-use rule make_combine_inputs_HH4b as make_combine_inputs_ZZ4b with:
-    input:
-        injson = f"{config['output_path']}/histAll.json",
-        injsonsyst = f"{config['output_path']}/histAll_signals__ZZ4b.json", 
-        bkgsyst = f"{config['output_path']}/closureFits/3bDvTMix4bDvT/SvB_MA/rebin1/SR/zz/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_zz_rebin1.pkl"
-    output: f"{config['output_path']}/datacards/ZZ4b/datacard__ZZ4b.txt"
-    params:
-        variable= "SvB_MA.ps_zz",
-        rebin=1,
-        metadata="coffea4bees/stats_coffea4bees/analysis/metadata/ZZ4b.yml",
-        output_dir=f"{config['output_path']}/datacards/ZZ4b/",
-        variable_binning="",
-        stat_only="",
-        signal="ZZ4b",
-        container_wrapper = config['container_wrapper']
-    log: f"{config['output_path']}/logs/make_combine_inputs_ZZ4b.log"
-
-use rule make_combine_inputs_HH4b as make_combine_inputs_ZH4b with:
-    input:
-        injson = f"{config['output_path']}/histAll.json",
-        injsonsyst = f"{config['output_path']}/histAll_signals__ZH4b.json", 
-        bkgsyst = f"{config['output_path']}/closureFits/3bDvTMix4bDvT/SvB_MA/rebin1/SR/zh/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_zh_rebin1.pkl"
-    output: f"{config['output_path']}/datacards/ZH4b/datacard__ZH4b.txt"
-    params:
-        variable= "SvB_MA.ps_zh",
-        rebin=1,
-        metadata="coffea4bees/stats_coffea4bees/analysis/metadata/ZH4b.yml",
-        output_dir=f"{config['output_path']}/datacards/ZH4b/",
-        variable_binning="",
-        stat_only="",
-        signal="ZH4b",
-        container_wrapper = config['container_wrapper']
-    log: f"{config['output_path']}/logs/make_combine_inputs_ZH4b.log"
+    log: f"{config['output_path']}/logs/make_combine_inputs_{{channel}}.log"
 
 use rule workspace from combine with:
     input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{channel}}.txt"
@@ -633,85 +520,36 @@ use rule gof from combine with:
         compute_backend="kubernetes"
     log: f"{config['output_path']}/logs/gof_{{channel}}_datacard_{{channel}}__{{signallabel}}.log"
 
-use rule make_syst_plots from stat_analysis as make_syst_plots_HH4b with:
-    input: f"{config['output_path']}/datacards/HH4b/datacard__HH4b.txt"
-    output: f"{config['output_path']}/datacards/HH4b/systs/SvB_MA_ps_hh_nominal.pdf"
+use rule make_syst_plots from stat_analysis with:
+    input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{channel}}.txt"
+    output: f"{config['output_path']}/datacards/{{channel}}/systs/SvB_MA_ps_{{channel_lower}}_nominal.pdf"
     container: config["combine_container"]
-    log: f"{config['output_path']}/logs/make_syst_plots_HH4b.log"
+    log: f"{config['output_path']}/logs/make_syst_plots_{{channel}}_{{channel_lower}}.log"
     params:
-        variable="SvB_MA_ps_hh",
-        output_dir=f"{config['output_path']}/datacards/HH4b/",
-        channel="HH4b",
-        signal="GluGluToHHTo4B_cHHH1",
+        variable=lambda wildcards: f"SvB_MA_ps_{get_channel_lower(wildcards.channel)}",
+        output_dir=f"{config['output_path']}/datacards/{{channel}}/",
+        channel="{channel}",
+        signal=lambda wildcards: config['channels'][wildcards.channel]['signal'],
         container_wrapper = config['container_wrapper']
     resources:
         kerberos=True,
         compute_backend="kubernetes",
         kubernetes_memory_limit="8Gi"
 
-
-use rule make_syst_plots_HH4b as make_syst_plots_ZH4b with:
-    input: f"{config['output_path']}/datacards/ZH4b/datacard__ZH4b.txt"
-    output: f"{config['output_path']}/datacards/ZH4b/systs/SvB_MA_ps_zh_nominal.pdf"
-    log: f"{config['output_path']}/logs/make_syst_plots_ZH4b.log"
-    params:
-        variable="SvB_MA_ps_zh",
-        output_dir=f"{config['output_path']}/datacards/ZH4b/",
-        channel="ZH4b",
-        signal="ZH4b",
-        container_wrapper = config['container_wrapper']
-
-use rule make_syst_plots_HH4b as make_syst_plots_ZZ4b with:
-    input: f"{config['output_path']}/datacards/ZZ4b/datacard__ZZ4b.txt"
-    output: f"{config['output_path']}/datacards/ZZ4b/systs/SvB_MA_ps_zz_nominal.pdf"
-    log: f"{config['output_path']}/logs/make_syst_plots_ZZ4b.log"
-    params:
-        variable="SvB_MA_ps_zz",
-        output_dir=f"{config['output_path']}/datacards/ZZ4b/",
-        channel="ZZ4b",
-        signal="ZZ4b",
-        container_wrapper = config['container_wrapper']
-
-use rule postfit from combine as postfit_HH4b with:
-    input: f"{config['output_path']}/datacards/HH4b/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root"
-    output: f"{config['output_path']}/datacards/HH4b/plots/postfitplots__ggHH_kl_1_kt_1_13p0TeV_hbbhbb__prefit.pdf"
+use rule postfit from combine as postfit with:
+    input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{signallabel}}.root"
+    output: f"{config['output_path']}/datacards/{{channel}}/plots/postfitplots__{{signallabel}}__prefit.pdf"
     container: config["combine_container"]
-    log: f"{config['output_path']}/logs/postfit__HH4b.log"
+    log: f"{config['output_path']}/logs/postfit__{{channel}}__{{signallabel}}.log"
     params:
-        signallabel="ggHH_kl_1_kt_1_13p0TeV_hbbhbb",
-        channel="HH4b",
-        signal="GluGluToHHTo4B_cHHH1",
-        ylog=True,
-        set_parameters_zero=lambda wildcards: set_parameters("HH4b",0),
-        freeze_parameters=lambda wildcards: freeze_parameters("HH4b"),
+        signallabel="{signallabel}",
+        channel="{channel}",
+        signal=lambda wildcards: config['channels'][wildcards.channel]['signal'],
+        ylog=lambda wildcards: True if wildcards.channel == "HH4b" else False,
+        set_parameters_zero=lambda wildcards: set_parameters(wildcards.channel, 0),
+        freeze_parameters=lambda wildcards: freeze_parameters(wildcards.channel),
         container_wrapper=config.get("container_wrapper", "./run_container combine")
     resources:
         voms_proxy=True,
         kerberos=True,
         compute_backend="kubernetes"
-
-use rule postfit_HH4b as postfit_ZH4b with:
-    input: f"{config['output_path']}/datacards/ZH4b/datacard__ZH_bbbb.root"
-    output: f"{config['output_path']}/datacards/ZH4b/plots/postfitplots__ZH_bbbb__prefit.pdf"
-    log: f"{config['output_path']}/logs/postfit__ZH4b.log"
-    params:
-        signallabel="ZH_bbbb",
-        channel="ZH4b",
-        signal="ZH4b",
-        ylog=False,
-        set_parameters_zero=lambda wildcards: set_parameters("ZH4b",0),
-        freeze_parameters=lambda wildcards: freeze_parameters("ZH4b"),
-        container_wrapper=config.get("container_wrapper", "./run_container combine")
-
-use rule postfit_HH4b as postfit_ZZ4b with:
-    input: f"{config['output_path']}/datacards/ZZ4b/datacard__ZZ_bbbb.root"
-    output: f"{config['output_path']}/datacards/ZZ4b/plots/postfitplots__ZZ_bbbb__prefit.pdf"
-    log: f"{config['output_path']}/logs/postfit__ZZ4b.log"
-    params:
-        signallabel="ZZ_bbbb",
-        channel="ZZ4b",
-        signal="ZZ4b",
-        ylog=False,
-        set_parameters_zero=lambda wildcards: set_parameters("ZZ4b",0),
-        freeze_parameters=lambda wildcards: freeze_parameters("ZZ4b"),
-        container_wrapper=config.get("container_wrapper", "./run_container combine")

@@ -10,7 +10,6 @@ processes:
       label: ggHH_kl_0_kt_1_13p0TeV_hbbhbb
       process: -1
     GluGluToHHTo4B_cHHH1:
-      # label: ggHH_hbbhbb
       label: ggHH_kl_1_kt_1_13p0TeV_hbbhbb
       process: 0
     VBFHHTo4B_kl_1p00_cv_1p00_c2v_0p00:
