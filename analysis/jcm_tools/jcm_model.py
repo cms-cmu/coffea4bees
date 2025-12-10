@@ -10,19 +10,14 @@ for data manipulation and model evaluation.
 Author: Coffea4bees team
 """
 
-from scipy.special import comb
 import numpy as np
-from coffea.util import load
 import logging
-from src.plotting.helpers import get_cut_dict
-import src.plotting.iPlot_config as cfg
-import hist
-from copy import copy, deepcopy
+from scipy.special import comb
 from scipy.optimize import curve_fit, minimize
 import scipy.stats
-from typing import List, Tuple, Dict, Optional, Union, Any
+from copy import copy
+from typing import List, Tuple, Dict, Optional
 
-# Set up module logger
 logger = logging.getLogger('JCMTools')
 
 
@@ -57,7 +52,7 @@ class jetCombinatoricModel:
     """
 
     def __init__(self, *, tt4b_nTagJets: np.ndarray, tt4b_nTagJets_errors: np.ndarray, 
-                 qcd3b: np.ndarray, qcd3b_errors: np.ndarray, tt4b: np.ndarray):
+                 qcd3b: np.ndarray, qcd3b_errors: np.ndarray, tt4b: np.ndarray, nbt: int = 3):
         """
         Initialize the JCM model.
         
@@ -67,61 +62,42 @@ class jetCombinatoricModel:
             qcd3b: QCD 3-tag events 
             qcd3b_errors: Errors on QCD 3-tag events
             tt4b: tt 4-tag events
+            nbt: Number of baseline b-tags (default: 3 for standard, 0 for lowpt)
         """
-        # Initialize model parameters with reasonable defaults and bounds
-        self.pseudoTagProb = {
-            "name": "pseudoTagProb", "value": None, "error": None, "percentError": None,
-            "index": 0, "lowerLimit": 0, "upperLimit": 1, "default": 0.05, "fix": None
-        }
-        self.pairEnhancement = {
-            "name": "pairEnhancement", "value": None, "error": None, "percentError": None,
-            "index": 1, "lowerLimit": 0, "upperLimit": 3, "default": 1.0, "fix": None
-        }
-        self.pairEnhancementDecay = {
-            "name": "pairEnhancementDecay", "value": None, "error": None, "percentError": None,
-            "index": 2, "lowerLimit": 0.1, "upperLimit": 100, "default": 0.7, "fix": None
-        }
-        self.threeTightTagFraction = {
-            "name": "threeTightTagFraction", "value": None, "error": None, "percentError": None,
-            "index": 3, "lowerLimit": 0, "upperLimit": 1000000, "default": 1000, "fix": None
-        }
-
-        self.parameters = [
-            self.pseudoTagProb, 
-            self.pairEnhancement, 
-            self.pairEnhancementDecay, 
-            self.threeTightTagFraction
-        ]
-
         # Store input data
         self.tt4b_nTagJets = tt4b_nTagJets
         self.tt4b_nTagJets_errors = tt4b_nTagJets_errors
         self.qcd3b = qcd3b
         self.qcd3b_errors = qcd3b_errors
         self.tt4b = tt4b
+        self.nbt = nbt
 
-        # Setup fit parameters
-        self.default_parameters = []
-        self.fit_parameters = []
-        self.parameters_lower_bounds = []
-        self.parameters_upper_bounds = []
+        # Initialize model parameters using configuration
+        param_config = [
+            ("pseudoTagProb", 0, 1, 0.05),
+            ("pairEnhancement", 0, 3, 1.0),
+            ("pairEnhancementDecay", 0.1, 100, 0.7),
+            ("threeTightTagFraction", 0, 1000000, 1000),
+        ]
         
-        for p in self.parameters:
-            self.fit_parameters.append(p)
-            self.parameters_lower_bounds.append(p["lowerLimit"])
-            self.parameters_upper_bounds.append(p["upperLimit"])
-            self.default_parameters.append(p["default"])
+        self.parameters = []
+        for i, (name, lower, upper, default) in enumerate(param_config):
+            param = {
+                "name": name, "value": None, "error": None, "percentError": None,
+                "index": i, "lowerLimit": lower, "upperLimit": upper, 
+                "default": default, "fix": None
+            }
+            self.parameters.append(param)
+            setattr(self, name, param)  # Create named attributes
 
         self.nParameters = len(self.parameters)
+        self._reset_fit_parameters()
         
         # These will be set during fitting
         self.fit_chi2 = None
         self.fit_ndf = None
         self.fit_prob = None
         self.fit_errs = None
-        
-        # Function to use in fitting - will be set when fixing parameters
-        self.bkgd_func_njet_constrained = None
 
     def dump(self) -> None:
         """Print all parameter values and their status."""
@@ -135,106 +111,64 @@ class jetCombinatoricModel:
                 logger.info(f"{parameter['name']}: Not yet fitted or fixed")
 
     def fixParameters(self, names: List[str], values: List[float]) -> None:
-        """
-        Fix parameters to specified values.
-        
-        Args:
-            names: List of parameter names to fix
-            values: List of values to fix the parameters to
-        """
-        for ip, p in enumerate(self.parameters):
-            for _iname, _name in enumerate(names):
-                if p["name"] == _name:
-                    logger.info(f"Fixing {_name} to {values[_iname]}")
-                    p["fix"] = values[_iname]
-                    p["value"] = values[_iname] # Also set the value when fixing
-                    p["error"] = 0 # Error is 0 for fixed parameters
+        """Fix parameters to specified values."""
+        for name, val in zip(names, values):
+            for p in self.parameters:
+                if p["name"] == name:
+                    p["fix"] = val
+                    p["value"] = val
+                    p["error"] = 0
+                    break
 
     def _reset_fit_parameters(self) -> None:
-        """Reset the fit parameters after fixing some parameters."""
-        self.fit_parameters = []
-        self.default_parameters = []
-        self.parameters_lower_bounds = []
-        self.parameters_upper_bounds = []
+        """Update fit parameters to only include unfixed ones."""
+        self.fit_parameters = [p for p in self.parameters if p["fix"] is None]
+        self.default_parameters = [p["default"] for p in self.fit_parameters]
+        self.parameters_lower_bounds = [p["lowerLimit"] for p in self.fit_parameters]
+        self.parameters_upper_bounds = [p["upperLimit"] for p in self.fit_parameters]
 
+    def _get_current_parameters(self) -> List[float]:
+        """Get current parameter values for model evaluation."""
+        params = []
         for p in self.parameters:
             if p["fix"] is not None:
-                continue
-            self.fit_parameters.append(p)
-            self.default_parameters.append(p["default"])
-            self.parameters_lower_bounds.append(p["lowerLimit"])
-            self.parameters_upper_bounds.append(p["upperLimit"])
+                params.append(p["fix"])
+            elif p["value"] is not None:
+                params.append(p["value"])
+            else:
+                raise ValueError(f"Parameter {p['name']} has no value. Run fit() first.")
+        return params
 
+    def _bkgd_func_njet_wrapper(self, x, *free_params, debug=False):
+        """Wrapper that combines free fit parameters with fixed parameter values."""
+        # Build the full parameter list by combining free and fixed values
+        full_params = []
+        free_idx = 0
+        for param in self.parameters:
+            if param["fix"] is not None:
+                full_params.append(param["fix"])
+            else:
+                full_params.append(free_params[free_idx])
+                free_idx += 1
+        return self.bkgd_func_njet(x, *full_params, debug=debug)
+    
     def fixParameter_combination(self, params_to_fix: Dict[str, float]) -> None:
         """
-        Fix multiple parameters at once with specific values, and set up the constrained function.
-        
-        This replaces the previous fixParameter_norm, fixParameter_d_norm, and fixParameter_e_d_norm
-        with a more general solution.
+        Fix multiple parameters at once with specific values.
         
         Args:
             params_to_fix: Dictionary of parameter names and values to fix
                            e.g. {"threeTightTagFraction": 0.5, "pairEnhancement": 0.0}
         """
-        # Extract names and values for fixParameters
-        names = list(params_to_fix.keys())
-        values = list(params_to_fix.values())
-        
         # Fix the specified parameters
-        self.fixParameters(names, values)
-        
-        # Reset fit parameters
+        self.fixParameters(list(params_to_fix.keys()), list(params_to_fix.values()))
         self._reset_fit_parameters()
         
-        # Determine which parameters are still free
-        free_params = [p for p in self.parameters if p["fix"] is None]
-        free_param_indices = [p["index"] for p in free_params]
+        # Set up the constrained function
+        self.bkgd_func_njet_constrained = self._bkgd_func_njet_wrapper
         
-        # Set up the background function with fixed parameters
-        # Start with default values for all parameters
-        f, e, d, norm = 0.05, 0.0, 1.0, 1.0
-        
-        # Update with fixed values from params_to_fix
-        if "pseudoTagProb" in params_to_fix:
-            f = params_to_fix["pseudoTagProb"]
-        if "pairEnhancement" in params_to_fix:
-            e = params_to_fix["pairEnhancement"]
-        if "pairEnhancementDecay" in params_to_fix:
-            d = params_to_fix["pairEnhancementDecay"]
-        if "threeTightTagFraction" in params_to_fix:
-            norm = params_to_fix["threeTightTagFraction"]
-        
-        # Create the appropriate lambda function based on which parameters are free
-        # This approach dynamically creates the correct function signature
-        if len(free_params) == 1 and free_params[0]["name"] == "pseudoTagProb":
-            # Only f is free
-            self.bkgd_func_njet_constrained = lambda x, f_val, debug=False: self.bkgd_func_njet(x, f_val, e, d, norm, debug)
-        elif len(free_params) == 2 and 0 in free_param_indices and 1 in free_param_indices:
-            # f and e are free
-            self.bkgd_func_njet_constrained = lambda x, f_val, e_val, debug=False: self.bkgd_func_njet(x, f_val, e_val, d, norm, debug)
-        elif len(free_params) == 3 and 0 in free_param_indices and 1 in free_param_indices and 2 in free_param_indices:
-            # f, e, and d are free
-            self.bkgd_func_njet_constrained = lambda x, f_val, e_val, d_val, debug=False: self.bkgd_func_njet(x, f_val, e_val, d_val, norm, debug)
-        else:
-            # Custom case - build a function that maps free parameters to their correct positions
-            def create_constrained_func():
-                def constrained_func(x, *args, debug=False):
-                    # Create a full parameter list with fixed values
-                    full_params = [f, e, d, norm]
-                    
-                    # Replace with the free parameters in the correct positions
-                    for i, param in enumerate(free_params):
-                        full_params[param["index"]] = args[i]
-                    
-                    # Unpack the parameters
-                    return self.bkgd_func_njet(x, *full_params, debug=debug)
-                
-                return constrained_func
-            
-            self.bkgd_func_njet_constrained = create_constrained_func()
-            
         logger.info(f"Fixed parameters: {', '.join([f'{n}={v}' for n, v in params_to_fix.items()])}")
-        logger.info(f"Free parameters: {', '.join([p['name'] for p in free_params])}")
+        logger.info(f"Free parameters: {', '.join([p['name'] for p in self.fit_parameters])}")
 
 
     def bkgd_func_njet(self, x: np.ndarray, f: float, e: float, d: float, 
@@ -292,7 +226,7 @@ class jetCombinatoricModel:
         Returns:
             Array of probabilities for each number of pseudo-tags
         """
-        nbt = 3  # Number of required b-tags
+        nbt = self.nbt  # Number of baseline b-tags
         nlt = nj - nbt  # Number of selected untagged jets ("light" jets)
         nPseudoTagProb = np.zeros(nlt + 1)
 
@@ -332,45 +266,30 @@ class jetCombinatoricModel:
         logger.info(f"Fitting with {len(self.fit_parameters)} free parameters")
             
         # Do the fit
-        if scipy_optimize:
-            # Define the objective function (sum of squared residuals)
-            def objective_function(params):
-                model_values = self.bkgd_func_njet_constrained(bin_centers, *params)
-                residuals = (bin_values - model_values) / bin_errors
-                return np.sum(residuals**2)
-            
-            # Perform the minimization
-            try:
+        try:
+            if scipy_optimize:
+                # Define the objective function (sum of squared residuals)
+                def objective_function(params):
+                    model_values = self.bkgd_func_njet_constrained(bin_centers, *params)
+                    return np.sum(((bin_values - model_values) / bin_errors)**2)
+                
                 result = minimize(
                     objective_function,
                     self.default_parameters,
                     bounds=list(zip(self.parameters_lower_bounds, self.parameters_upper_bounds)),
-                    method='L-BFGS-B',  # Change to another minimizer if needed
+                    method='L-BFGS-B',
                     options={'maxiter': 5000}
                 )
-                
-                # Extract the optimized parameters
                 popt = result.x
                 
-                # Extract the covariance matrix and compute errors
+                # Get covariance from Hessian if available
                 if hasattr(result, 'hess_inv'):
-                    try:
-                        if hasattr(result.hess_inv, 'todense'):
-                            errs = np.array(result.hess_inv.todense())
-                        else:
-                            errs = np.array(result.hess_inv)
-                    except Exception as e:
-                        logger.warning(f"Error converting Hessian: {e}")
-                        errs = np.eye(len(popt)) * 0.001  # Fallback
+                    errs = np.array(result.hess_inv.todense() if hasattr(result.hess_inv, 'todense') else result.hess_inv)
                 else:
-                    errs = np.eye(len(popt)) * 0.001  # Fallback
+                    errs = np.eye(len(popt)) * 0.001
                     logger.warning("Hessian not available, using default errors")
-            except Exception as e:
-                logger.error(f"Minimization failed: {e}")
-                raise ValueError(f"Fit failed: {str(e)}")
-        else:
-            # Use curve_fit which provides the covariance matrix directly
-            try:
+            else:
+                # Use curve_fit which provides the covariance matrix directly
                 popt, errs = curve_fit(
                     self.bkgd_func_njet_constrained,
                     bin_centers,
@@ -379,38 +298,26 @@ class jetCombinatoricModel:
                     sigma=bin_errors,
                     bounds=(self.parameters_lower_bounds, self.parameters_upper_bounds),
                 )
-            except Exception as e:
-                logger.error(f"Curve fit failed: {e}")
-                raise ValueError(f"Fit failed: {str(e)}")
+        except Exception as e:
+            logger.error(f"Fit failed: {e}")
+            raise ValueError(f"Fit failed: {str(e)}")
             
-        # Store the fit error matrix
+        # Store the fit error matrix and calculate parameter errors
         self.fit_errs = errs
-        
-        # Calculate parameter errors from the covariance matrix diagonal
-        sigma_p1 = []
-        for i in range(len(popt)):
-            try:
-                sigma_p1.append(np.sqrt(np.abs(errs[i][i])))
-            except (IndexError, ValueError) as e:
-                logger.warning(f"Error calculating parameter error: {e}")
-                sigma_p1.append(0.001)  # Default error
+        sigma_p1 = [np.sqrt(np.abs(errs[i][i])) if i < len(errs) else 0.001 for i in range(len(popt))]
 
         # Update parameter values and errors
-        for ip, parameter in enumerate(self.parameters):
+        for parameter in self.parameters:
             if parameter["fix"] is not None:
                 parameter["value"] = parameter["fix"]
                 parameter["error"] = 0
-                continue
-
-            idx = parameter["index"]
-            if idx < len(popt):
+            elif parameter["index"] < len(popt):
+                idx = parameter["index"]
                 parameter["value"] = popt[idx]
                 parameter["error"] = sigma_p1[idx]
-                # Update fit parameters for calls to other functions
-                for i, param in enumerate(self.fit_parameters):
-                    if param["index"] == idx:
-                        self.fit_parameters[i] = parameter
-                        break
+        
+        # Refresh fit_parameters list
+        self.fit_parameters = [p for p in self.parameters if p["fix"] is None]
 
         # Calculate fit quality metrics
         self.fit_chi2 = np.sum(
@@ -453,37 +360,21 @@ class jetCombinatoricModel:
         
         Args:
             n: Array of number of tags
-            par: Optional parameter values
+            par: Optional parameter values. If None, uses current fitted values.
             
         Returns:
-            Dictionary of arrays of predicted values and errors
+            Array of predicted values
         """
         if par is None:
-            param_values = [p["value"] for p in self.fit_parameters if p["value"] is not None]
-            fixed_val = [self.threeTightTagFraction["fix"]] if self.threeTightTagFraction["fix"] is not None else []
-            par = param_values + fixed_val
+            par = self._get_current_parameters()
             logger.info(f"Using parameters: {par}")
 
-        output = np.zeros(len(n))
         output = copy(self.tt4b_nTagJets)
+        f, e, d, norm = par
 
         for ibin, this_nTag in enumerate(n):
             for nj in range(this_nTag, 14):
-                # Select the right calculation mode based on number of parameters
-                if len(par) == 3:
-                    # [f, e, norm] - d fixed to 1.0
-                    nPseudoTagProb = self.getPseudoTagProbs(nj, par[0], par[1], 1.0, par[2])
-                elif len(par) == 2:
-                    # [f, norm] - e fixed to 0.0, d fixed to 1.0
-                    nPseudoTagProb = self.getPseudoTagProbs(nj, par[0], 0.0, 1.0, par[1])
-                elif len(par) == 1:
-                    # [f] - e fixed to 0.0, d fixed to 1.0, norm from instance
-                    norm_value = self.threeTightTagFraction["fix"] if self.threeTightTagFraction["fix"] is not None else 1.0
-                    nPseudoTagProb = self.getPseudoTagProbs(nj, par[0], 0.0, 1.0, norm_value)
-                else:
-                    # Full parameter set [f, e, d, norm]
-                    nPseudoTagProb = self.getPseudoTagProbs(nj, par[0], par[1], par[2], par[3])
-                
+                nPseudoTagProb = self.getPseudoTagProbs(nj, f, e, d, norm)
                 logger.debug(f"nj: {nj}, this_nTag: {this_nTag}, nPseudoTagProb: {nPseudoTagProb}")
                 output[ibin + 4] += nPseudoTagProb[this_nTag - 3] * self.qcd3b[nj]
                 output[3] += nPseudoTagProb[0] * self.qcd3b[nj]
@@ -491,29 +382,21 @@ class jetCombinatoricModel:
         logger.debug(f"output: {output}")
         return { "values": np.array(output, float), "errors": np.array(output**0.5, float) }
 
-    def getCombinatoricWeightList(self) -> List[float]:
+    def getCombinatoricWeightList(self) -> Tuple[List[float], List[float]]:
         """
         Get the list of combinatoric weights for jet multiplicities 4-15.
         
         Returns:
-            List of weights to apply to 3-tag events for each jet multiplicity
+            Tuple of (output_weights, zerotag_output_weights) for each jet multiplicity
         """
+        params = self._get_current_parameters()
         output_weights, zerotag_output_weights = [], []
-        
-        # Verify parameters have been set
-        param_values = [p["value"] for p in self.fit_parameters]
-        if None in param_values:
-            raise ValueError("One or more parameters have no value. Run fit() first.")
-            
-        fixed_val = [self.threeTightTagFraction["fix"]] if self.threeTightTagFraction["fix"] is not None else []
-        params = param_values + fixed_val
         
         # Calculate weights for jet multiplicity 4 through 15
         for nj in range(4, 16):
             nj_pseudoTagProbs = self.getPseudoTagProbs(nj, *params)
-            zerotag_output_weights.append( nj_pseudoTagProbs[0] )
-            output_weights.append( np.sum(nj_pseudoTagProbs[1:]) )
+            zerotag_output_weights.append(nj_pseudoTagProbs[0])
+            output_weights.append(np.sum(nj_pseudoTagProbs[1:]))
+        
         logger.info(f"Output weights: {output_weights}")
-
         return output_weights, zerotag_output_weights
-

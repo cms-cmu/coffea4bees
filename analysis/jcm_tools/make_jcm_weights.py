@@ -6,530 +6,28 @@ This script produces weights for the Jet Combinatoric Model (JCM) used
 in HH→4b analysis to model the combinatorial background from 3-tag events.
 It performs a fit to the jet multiplicity distribution and computes weights
 to apply to the 3-tag sample to model the 4-tag background.
-
-Author: Coffea4bees team
 """
 
 import sys
 import argparse
 import logging
-from copy import copy
-import numpy as np
 import os
+import numpy as np
 import matplotlib.pyplot as plt
-from hist import Hist  # Ensure this is imported correctly
-from typing import Dict, Tuple, List, Optional, Union, Any
 
-# Add the current directory to the path
 sys.path.insert(0, os.getcwd())
+
 from coffea4bees.plots.plots import load_config_4b
 from src.plotting.iPlot_config import plot_config
-cfg = plot_config()
+from src.plotting.plots import load_hists, read_axes_and_cuts, makePlot
+from src.plotting.helpers import get_cut_dict
 
 from coffea4bees.analysis.jcm_tools.jcm_model import jetCombinatoricModel
-from coffea4bees.analysis.jcm_tools.helpers import (
-    loadHistograms,
-    data_from_Hist,
-    prepHists
-)
-from src.plotting.plots import load_hists, read_axes_and_cuts, makePlot
+from copy import copy
 
+cfg = plot_config()
+logger = logging.getLogger('JCM')
 
-def write_to_JCM_file(text: str, value: Any, jetCombinatoricModelFile, jetCombinatoricModelFile_yml) -> None:
-    """Write a parameter and its value to both the text and YAML JCM files.
-
-    Args:
-        text: The parameter name/key
-        value: The parameter value
-        jetCombinatoricModelFile: The text file object
-        jetCombinatoricModelFile_yml: The YAML file object
-    """
-    jetCombinatoricModelFile.write(f"{text:<30} {value}\n")
-    jetCombinatoricModelFile_yml.write(f"{text}:\n")
-    jetCombinatoricModelFile_yml.write(f"        {value}\n")
-
-def process_histograms(data4b, data3b, tt4b, tt3b, qcd4b, qcd3b, data4b_nTagJets,
-                      tt4b_nTagJets, qcd3b_nTightTags, args: argparse.Namespace, logger: logging.Logger) -> Tuple:
-    """Process the histograms and extract data for fitting
-
-    Args:
-        data4b, data3b, tt4b, tt3b, qcd4b, qcd3b: Histogram objects
-        data4b_nTagJets, tt4b_nTagJets, qcd3b_nTightTags: Tag jet histograms
-        args: Command line arguments
-        logger: Logger instance
-
-    Returns:
-        Tuple of (bin_centers, bin_values, bin_errors, tt4b_nTagJets_values,
-                 tt4b_nTagJets_errors, tt4b_values, qcd3b_values, qcd3b_errors,
-                 mu_qcd, threeTightTagFraction)
-    """
-    # Prepare histograms
-    prepHists(data4b, qcd3b, tt4b, data4b_nTagJets, tt4b_nTagJets, lowpt=args.lowpt)
-
-    # Calculate QCD scale factor
-    mu_qcd = np.sum(qcd4b.values()) / np.sum(qcd3b.values())
-    threeTightTagFraction = (qcd3b.values()[4] / np.sum(qcd3b.values())) if args.lowpt else (qcd3b_nTightTags.values()[3] / np.sum(qcd3b_nTightTags.values()))
-
-    logger.info(f"QCD scale factor (mu_qcd): {mu_qcd:.6f}")
-    logger.info(f"Three tight tag fraction: {threeTightTagFraction:.6f}")
-
-    # Print event counts
-    logger.info("Event counts (Unweighted):")
-    logger.info(f"  data4b: {np.sum(data4b.values()):.1f}")
-    logger.info(f"  data3b: {np.sum(data3b.values()):.1f}")
-    logger.info(f"  tt4b:   {np.sum(tt4b.values()):.1f}")
-    logger.info(f"  tt3b:   {np.sum(tt3b.values()):.1f}")
-    logger.info(f"  qcd3b:  {np.sum(qcd3b.values()):.1f}")
-
-    # Update error calculations for better fit
-    mu_qcd_bin_by_bin = np.zeros(len(qcd4b.values()))
-    qcd3b_non_zero_filter = qcd3b.values() > 0
-    mu_qcd_bin_by_bin[qcd3b_non_zero_filter] = np.abs(
-        qcd4b.values()[qcd3b_non_zero_filter] / qcd3b.values()[qcd3b_non_zero_filter]
-    )
-    mu_qcd_bin_by_bin[mu_qcd_bin_by_bin < 0] = 0
-    data3b_error = np.sqrt(data3b.variances()) * mu_qcd_bin_by_bin
-    data3b_variances = data3b_error**2
-
-    # Set minimum Poisson errors for data
-    data4b_variance = data4b.variances()
-    data4b_variance[data4b_variance == 0] = 1.17
-
-    # Combine errors from all sources for a more robust fit
-    combined_variances = data4b.variances() + data3b_variances + tt4b.variances() + tt3b.variances()
-    combined_error = np.sqrt(combined_variances)
-    previous_error = np.sqrt(data4b.variances())
-    data4b.view().variance = combined_variances
-
-    # Log error increases for debugging
-    tt4b_error = np.sqrt(tt4b.variances())
-    tt3b_error = np.sqrt(tt3b.variances())
-
-    logger.info("Bin errors overview:")
-    logger.info("bin, x | value  | data4b_err, data3b_err, tt4b_err, tt3b_err, increase%")
-    for ibin in range(len(data4b.values()) - 1):
-        x = data4b.axes[0].centers[ibin] - 0.5
-        increase = 100 * np.sqrt(data4b.variances()[ibin]) / previous_error[ibin] if previous_error[ibin] else 100
-        logger.info(f"{ibin:2}, {x:2.0f}| {data4b.values()[ibin]:9.1f} | {previous_error[ibin]:5.1f}, {data3b_error[ibin]:5.1f}, {tt4b_error[ibin]:5.1f}, {tt3b_error[ibin]:5.1f}, {increase:5.0f}%")
-
-    # Extract data for fitting
-    bin_centers, bin_values, bin_errors = data_from_Hist(data4b)
-    _, tt4b_nTagJets_values, tt4b_nTagJets_errors = data_from_Hist(tt4b_nTagJets)
-    _, tt4b_values, _ = data_from_Hist(tt4b)
-    _, qcd3b_values, qcd3b_errors = data_from_Hist(qcd3b)
-
-    # Set minimum Poisson errors for empty bins
-    bin_errors[bin_errors == 0] = 1.17
-
-    return (bin_centers, bin_values, bin_errors, tt4b_nTagJets_values,
-            tt4b_nTagJets_errors, tt4b_values, qcd3b_values, qcd3b_errors,
-            mu_qcd, threeTightTagFraction)
-
-
-def setup_model(bin_data: Tuple, args: argparse.Namespace, logger: logging.Logger) -> jetCombinatoricModel:
-    """Set up the JCM model for fitting
-
-    Args:
-        bin_data: Tuple of data from process_histograms
-        args: Command line arguments
-        logger: Logger instance
-
-    Returns:
-        Configured JCM model ready for fitting
-    """
-    (_, _, _, tt4b_nTagJets_values, tt4b_nTagJets_errors,
-     tt4b_values, qcd3b_values, qcd3b_errors, _, threeTightTagFraction) = bin_data
-
-    # Initialize model with data
-    JCM_model = jetCombinatoricModel(
-        tt4b_nTagJets=tt4b_nTagJets_values,
-        tt4b_nTagJets_errors=tt4b_nTagJets_errors,
-        qcd3b=qcd3b_values,
-        qcd3b_errors=qcd3b_errors,
-        tt4b=tt4b_values,
-    )
-
-    # Log model setup
-    logger.debug(f"Initialized JCM_model with fit parameters names: {[p['name'] for p in JCM_model.fit_parameters]}")
-    logger.debug(f"Default parameters: {JCM_model.default_parameters}")
-    logger.debug(f"Parameter bounds: {list(zip(JCM_model.parameters_lower_bounds, JCM_model.parameters_upper_bounds))}")
-
-    # Set fixed parameters based on command-line options
-    if args.fix_e:
-        logger.info("Fixing pairEnhancement parameter to 0.0")
-        JCM_model.fixParameter_combination({
-            "threeTightTagFraction": threeTightTagFraction,
-            "pairEnhancement": 0.0,
-            "pairEnhancementDecay": 1.0
-        })
-    elif args.fix_d:
-        logger.info("Fixing pairEnhancementDecay parameter to 1.0")
-        JCM_model.fixParameter_combination({
-            "threeTightTagFraction": threeTightTagFraction,
-            "pairEnhancementDecay": 1.0
-        })
-    else:
-        logger.info(f"Fixing threeTightTagFraction to {threeTightTagFraction:.6f}")
-        JCM_model.fixParameter_combination({
-            "threeTightTagFraction": threeTightTagFraction
-        })
-
-    return JCM_model
-
-
-def perform_fit(JCM_model: jetCombinatoricModel, bin_data: Tuple,
-                args: argparse.Namespace, logger: logging.Logger) -> Tuple:
-    """Perform the JCM model fit
-
-    Args:
-        JCM_model: Configured jetCombinatoricModel instance
-        bin_data: Tuple of data from process_histograms
-        args: Command line arguments
-        logger: Logger instance
-
-    Returns:
-        Tuple of (residuals, pulls)
-    """
-    bin_centers, bin_values, bin_errors = bin_data[0:3]
-
-    # Log detailed bin information if in debug mode
-    if args.debug:
-        logger.debug("Bin information before fitting:")
-        for ibin, center in enumerate(bin_centers):
-            logger.debug(f"Bin {ibin}: center={center}, value={bin_values[ibin]}, error={bin_errors[ibin]}")
-
-    # Perform the fit
-    residuals, pulls = JCM_model.fit(bin_centers, bin_values, bin_errors,
-                                     scipy_optimize=args.scipy_optimize)
-
-    # Log fit results
-    logger.info(f"Fit results:")
-    logger.info(f"chi^2 = {JCM_model.fit_chi2:.2f}  ndf = {JCM_model.fit_ndf} " +
-                f"chi^2/ndf = {JCM_model.fit_chi2/JCM_model.fit_ndf:.2f} | " +
-                f"p-value = {JCM_model.fit_prob:.6f}")
-
-    # Print the pulls
-    logger.info("Pulls (residual/error):")
-    for iBin, res in enumerate(residuals):
-        logger.info(f"Bin {iBin:2}| {res:5.1f} / {bin_errors[iBin]:5.1f} = {pulls[iBin]:4.1f}")
-
-    # Print the fit parameters
-    logger.info("Fit parameters:")
-    JCM_model.dump()
-
-    return residuals, pulls
-
-
-def save_model_output(JCM_model: jetCombinatoricModel, bin_data: Tuple, args: argparse.Namespace,
-                     logger: logging.Logger, output_files: Tuple) -> None:
-    """Save the model output to files
-
-    Args:
-        JCM_model: Fitted jetCombinatoricModel instance
-        bin_data: Tuple of data from process_histograms
-        args: Command line arguments
-        logger: Logger instance
-        output_files: Tuple of file objects (jetCombinatoricModelFile, jetCombinatoricModelFile_yml)
-    """
-    # Extract only the mu_qcd value from bin_data to avoid unpacking errors
-    # The previous approach tried to unpack too many values
-    mu_qcd = bin_data[8] if len(bin_data) > 8 else None
-    if mu_qcd is None:
-        logger.warning("Could not extract mu_qcd from bin_data")
-        mu_qcd = 1.0  # Default fallback value
-
-    bin_centers = bin_data[0] if len(bin_data) > 0 else None
-
-    jetCombinatoricModelFile, jetCombinatoricModelFile_yml = output_files
-
-    # Write parameters to output files
-    logger.info(f"Writing model parameters to output files")
-    for parameter in JCM_model.parameters:
-        write_to_JCM_file(
-            parameter["name"] + "_" + args.cut,
-            parameter["value"],
-            jetCombinatoricModelFile,
-            jetCombinatoricModelFile_yml
-        )
-        write_to_JCM_file(
-            parameter["name"] + "_" + args.cut + "_err",
-            parameter["error"],
-            jetCombinatoricModelFile,
-            jetCombinatoricModelFile_yml
-        )
-        write_to_JCM_file(
-            parameter["name"] + "_" + args.cut + "_pererr",
-            parameter["percentError"],
-            jetCombinatoricModelFile,
-            jetCombinatoricModelFile_yml
-        )
-
-    # Write fit metrics
-    write_to_JCM_file("mu_qcd", mu_qcd, jetCombinatoricModelFile, jetCombinatoricModelFile_yml)
-    write_to_JCM_file("chi^2", JCM_model.fit_chi2, jetCombinatoricModelFile, jetCombinatoricModelFile_yml)
-    write_to_JCM_file("ndf", JCM_model.fit_ndf, jetCombinatoricModelFile, jetCombinatoricModelFile_yml)
-    write_to_JCM_file("chi^2/ndf", JCM_model.fit_chi2 / JCM_model.fit_ndf, jetCombinatoricModelFile, jetCombinatoricModelFile_yml)
-    write_to_JCM_file("p-value", JCM_model.fit_prob, jetCombinatoricModelFile, jetCombinatoricModelFile_yml)
-
-    # Add information about 5b events for validation
-    try:
-        # Instead of trying to extract from bin_data directly, access the data4b_nTagJets parameter
-        # which is now passed separately
-        data4b_nTagJets = bin_data[-1] if isinstance(bin_data[-1], Hist) else None
-
-        if data4b_nTagJets is not None and bin_centers is not None:
-            n5b_true = data4b_nTagJets.values()[5]
-            nTag_pred = JCM_model.nTagPred(bin_centers.astype(int) + 4)
-            n5b_pred = nTag_pred["values"][5]
-            n5b_pred_error = nTag_pred["errors"][5]
-
-            sigma_pull = (n5b_true-n5b_pred)/n5b_pred_error if n5b_pred_error > 0 else 0
-
-            logger.info(f"Fitted number of 5b events: {n5b_pred:5.1f} +/- {n5b_pred_error:5f}")
-            logger.info(f"Actual number of 5b events: {n5b_true:5.1f}, ({sigma_pull:3.1f} sigma pull)")
-
-            write_to_JCM_file("n5b_pred", n5b_pred, jetCombinatoricModelFile, jetCombinatoricModelFile_yml)
-            write_to_JCM_file("n5b_true", n5b_true, jetCombinatoricModelFile, jetCombinatoricModelFile_yml)
-        else:
-            logger.warning("Missing data for 5b event prediction")
-    except (IndexError, AttributeError) as e:
-        logger.warning(f"Could not compute 5b event predictions: {e}")
-
-    # Write the event weights
-    comb_weights, zerotag_comb_weights = JCM_model.getCombinatoricWeightList()
-    write_to_JCM_file("JCM_weights", comb_weights, jetCombinatoricModelFile, jetCombinatoricModelFile_yml)
-    # write_to_JCM_file("JCM_weights", zerotag_comb_weights if args.zero_pseudotag else comb_weights, jetCombinatoricModelFile, jetCombinatoricModelFile_yml)
-
-    # Consistency check using JCM_model directly
-    logger.debug(f"Combinatoric weight list: {comb_weights}")
-
-    # Close files
-    jetCombinatoricModelFile.close()
-    jetCombinatoricModelFile_yml.close()
-
-    logger.info(f"Model output saved successfully")
-
-
-def create_plots(
-    JCM_model: jetCombinatoricModel,
-    bin_data: Tuple,
-    args: argparse.Namespace,
-    mu_qcd: float,
-    selJets: str,
-    tagJets: str,
-    logger: logging.Logger
-) -> None:
-    """Create plots for the JCM model
-
-    Args:
-        JCM_model: Fitted jetCombinatoricModel instance
-        bin_data: Tuple of data from process_histograms
-        args: Command line arguments
-        mu_qcd: QCD scale factor
-        logger: Logger instance
-    """
-    if args.no_plots or args.ROOTInputs:
-        logger.info("Skipping plot creation")
-        return
-
-    logger.info("Creating plots")
-    bin_centers = bin_data[0]
-
-    # Scale QCD by mu_qcd
-    for p in ["data_3tag", "TTTo2L2Nu_3tag", "TTToSemiLeptonic_3tag", "TTToHadronic_3tag"]:
-        if p in cfg.plotConfig["stack"]["MultiJet"]["sum"]:
-            cfg.plotConfig["stack"]["MultiJet"]["sum"][p]["scalefactor"] *= mu_qcd
-
-    # Plot the jet multiplicity
-    nJet_pred = JCM_model.nJetPred_values(bin_centers.astype(int))
-
-    if args.lowpt:
-        nJet_pred[0] = 0
-        nJet_pred[1:-3] = nJet_pred[4:]
-    else:
-        nJet_pred[0:4] = 0
-
-    # Add dummy values to add the JCM process
-    dummy_data = {
-        'process': ['JCM'],
-        'year': ['UL18'], 'tag': "lowpt_fourTag" if args.lowpt else "fourTag", 'region': "SB",
-        'passPreSel': [True], 'n': [0],
-    }
-
-    # Check if we have the SvB variables and handle accordingly
-    try:
-        # First check the structure of the histogram axes
-        hist_axes = cfg.hists[0]['hists'][selJets].axes
-        axis_names = [axis.name for axis in hist_axes]
-
-        logger.debug(f"Histogram axes names: {axis_names}")
-
-        # Determine if we have SvB axes
-        has_passSvB = 'passSvB' in axis_names
-        has_failSvB = 'failSvB' in axis_names
-
-        if has_passSvB or has_failSvB:
-            dummy_data['passSvB'] = [False]
-            dummy_data['failSvB'] = [False]
-            logger.debug("SvB variables found in histogram")
-        else:
-            logger.debug("No SvB variables in histogram")
-
-        # Fill with dummy data to register the JCM process
-        cfg.hists[0]['hists'][selJets].fill(**dummy_data)
-
-    except Exception as e:
-        logger.warning(f"Error analyzing histogram structure: {e}")
-        cfg.hists[0]['hists'][selJets].fill(**dummy_data)
-        has_passSvB = False
-        has_failSvB = False
-
-    # Overwrite with predicted values
-    logger.debug("Setting predicted jet multiplicity values")
-
-    # First get the exact index structure needed for the histogram
-    try:
-        # Construct a dictionary for indexing
-        index_dict = {"process": "JCM", "year": "UL18", "tag": "lowpt_fourTag" if args.lowpt else "fourTag", "region": "SB", "passPreSel": True}
-        if has_passSvB:
-            index_dict["passSvB"] = False
-        if has_failSvB:
-            index_dict["failSvB"] = False
-
-        for iBin in range(14):
-            # Set values using a safe approach
-            index_dict["n"] = iBin
-            cfg.hists[0]['hists'][selJets][tuple(index_dict.values())] = (nJet_pred[iBin], 0)
-
-    except Exception as e:
-        logger.warning(f"Error setting histogram values, trying alternative approach: {e}")
-        # Fall back to a more direct approach if needed
-        for iBin in range(14):
-            try:
-                hist_view = cfg.hists[0]['hists'][selJets].view()
-                # Find the right indices for the JCM process
-                for idx, process in enumerate(hist_view.axes[0]):
-                    if process == "JCM":
-                        process_idx = idx
-                        break
-                # Set values directly in the view
-                if has_passSvB and has_failSvB:
-                    hist_view[process_idx, 0, 1, 1, True, False, False, iBin] = (nJet_pred[iBin], 0)
-                else:
-                    hist_view[process_idx, 0, 1, 1, True, iBin] = (nJet_pred[iBin], 0)
-            except Exception as inner_e:
-                logger.error(f"Failed to set values for bin {iBin}: {inner_e}")
-
-    # Plot options for jet multiplicity
-    plot_options = {
-        "doRatio": True,
-        "xlim": [0, 10] if args.lowpt else [4, 15],
-        "rlim": [0, 2],
-        "debug": False
-    }
-
-    # Create jet multiplicity plot
-    try:
-        logging.info("Creating jet multiplicity plot")
-        logging.info("plot options:", plot_options)
-        fig, ax = makePlot(
-            cfg,
-            var=selJets,
-            cut=args.cut,
-            axis_opts={"region":args.weightRegion, "tag":"lowpt_fourTag" if args.lowpt else "fourTag"},
-            **plot_options
-        )
-
-        # Add fit information to the plot
-        fit_text = ""
-        plot_param_name = {
-            "pseudoTagProb": "f",
-            "pairEnhancement": "e",
-            "pairEnhancementDecay": "d"
-        }
-        for parameter in JCM_model.parameters:
-            if parameter["name"] == "threeTightTagFraction":
-                continue
-            fit_text += f"  {plot_param_name[parameter['name']]} = {round(parameter['value'],2)} +/- {round(parameter['error'],3)}  ({round(parameter['percentError'],1)}%)\n"
-
-        fit_text += f"  $\chi^2$ / DoF = {round(JCM_model.fit_chi2,1)} / {JCM_model.fit_ndf} = {round(JCM_model.fit_chi2/JCM_model.fit_ndf,1)}\n"
-        fit_text += f"  p-value: {round(100*JCM_model.fit_prob)}%\n"
-
-        plt.text(6 if args.lowpt else 10, 6, "Fit Result:", fontsize=20, color='black', fontweight='bold',
-                horizontalalignment='left', verticalalignment='center')
-
-        plt.text(6 if args.lowpt else 10, 5.15, fit_text, fontsize=15, color='black',
-                horizontalalignment='left', verticalalignment='center')
-
-        fig.savefig(os.path.join(args.outputDir, f"{selJets}.pdf"))
-        logger.info(f"Saved jet multiplicity plot to {os.path.join(args.outputDir, f'{selJets}.pdf')}")
-    except Exception as e:
-        logger.error(f"Failed to create jet multiplicity plot: {e}")
-
-    try:
-        # Plot tagged jets - use the same approach as for jet multiplicity
-        cfg.hists[0]['hists'][tagJets].fill(**dummy_data)
-
-        # Get N-tag jet predictions
-        nTag_pred = JCM_model.nTagPred(bin_centers.astype(int) + 4)["values"]
-        if args.lowpt: nTag_pred[1:-3] = nTag_pred[4:]
-
-        # Set values using the same safe approach
-        try:
-            # Construct a dictionary for indexing
-            index_dict = {"process": "JCM", "year": "UL18", "tag": "lowpt_fourTag" if args.lowpt else "fourTag", "region": "SB", "passPreSel": True}
-            if has_passSvB:
-                index_dict["passSvB"] = False
-            if has_failSvB:
-                index_dict["failSvB"] = False
-
-            for iBin in range(15):
-                # Set values using a safe approach
-                index_dict["n"] = iBin
-                cfg.hists[0]['hists'][tagJets][tuple(index_dict.values())] = (nTag_pred[iBin], 0)
-
-        except Exception as e:
-            logger.warning(f"Error setting histogram values, trying alternative approach: {e}")
-            # Fall back to a more direct approach if needed
-            for iBin in range(15):
-                try:
-                    hist_view = cfg.hists[0]['hists'][tagJets].view()
-                    # Find the right indices for the JCM process
-                    for idx, process in enumerate(hist_view.axes[0]):
-                        if process == "JCM":
-                            process_idx = idx
-                            break
-                    # Set values directly in the view
-                    if has_passSvB and has_failSvB:
-                        hist_view[process_idx, 0, 1, 1, True, False, False, iBin] = (nTag_pred[iBin], 0)
-                    else:
-                        hist_view[process_idx, 0, 1, 1, True, iBin] = (nTag_pred[iBin], 0)
-                except Exception as inner_e:
-                    logger.error(f"Failed to set values for bin {iBin}: {inner_e}")
-
-        # Plot options for tagged jets
-        plot_options = {
-            "doRatio": True,
-            "xlim": [1,6] if args.lowpt else [4, 8],
-            "yscale": "log",
-            "rlim": [0.8, 1.2],
-            "ylim": [0.1, None]
-        }
-
-        # Create tagged jets plot
-        fig, ax = makePlot(
-            cfg,
-            var=tagJets,
-            cut=args.cut,
-            axis_opts={"region":args.weightRegion, "tag":"lowpt_fourTag" if args.lowpt else "fourTag"},
-            **plot_options
-        )
-
-        fig.savefig(os.path.join(args.outputDir, f"{tagJets}.pdf"))
-        logger.info(f"Saved tagged jets plot to {os.path.join(args.outputDir, f'{tagJets}.pdf')}")
-
-    except Exception as e:
-        logger.warning(f"Failed to create tagged jets plot: {e}")
 
 
 def main():
@@ -575,89 +73,303 @@ def main():
     parser.add_argument('--zero_pseudotag', dest="zero_pseudotag", action="store_true",
                         help='Compute zero pseudotag probabilities and weights in output')
     parser.add_argument('--lowpt', dest="lowpt", action="store_true",
-                        help='Use low pt selection for 4b data')
+                        help='Use low-pT jet selection for JCM weights')
     args = parser.parse_args()
 
-    # Set up logging
+    # Setup logging
     log_level = logging.DEBUG if args.debug else logging.INFO
     logging.basicConfig(
         level=log_level,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
-    logger = logging.getLogger('JCM')
     logger.info("Starting JCM weight generation")
 
-    # Create output directory if it doesn't exist
+    # Create output directory
     if args.outputDir and not os.path.isdir(args.outputDir):
         os.makedirs(args.outputDir)
         logger.info(f"Created output directory: {args.outputDir}")
 
-    # Set up output files
-    jetCombinatoricModelName = os.path.join(
-        args.outputDir,
-        f"jetCombinatoricModel_{args.weightRegion}_{args.weightSet}.txt"
-    )
-    logger.info(f"Output files: {jetCombinatoricModelName} and .yml version")
+    # Setup output files
+    output_file = os.path.join(args.outputDir, f"jetCombinatoricModel_{args.weightRegion}_{args.weightSet}.txt")
+    output_file_yml = output_file.replace(".txt", ".yml")
+    logger.info(f"Output files: {output_file} and {output_file_yml}")
 
-    jetCombinatoricModelFile = open(jetCombinatoricModelName, "w")
-    jetCombinatoricModelFile_yml = open(f'{jetCombinatoricModelName.replace(".txt",".yml")}', 'w')
+    out_txt = open(output_file, "w")
+    out_yml = open(output_file_yml, 'w')
 
-    selJets = "selJets_noJCM_lowpt.n" if args.lowpt else "selJets_noJCM.n"
-    tagJets = "tagJets_noJCM_lowpt.n" if args.lowpt else "tagJets_noJCM.n"
+    # Select histogram names based on lowpt flag
+    if args.lowpt:
+        logging.info("Using low-pT jet selection")
+        selJets = "selJets_noJCM_lowpt.n"
+        tagJets = "tagJets_noJCM_lowpt.n"
+        fourTaglabel = "lowpt_fourTag"
+        threeTaglabel = "lowpt_threeTag"
+    else:
+        selJets = "selJets_noJCM.n"
+        tagJets = "tagJets_noJCM.n"
+        fourTaglabel = "fourTag"
+        threeTaglabel = "threeTag"
 
     try:
+        # Load config and histograms
         if not args.ROOTInputs:
-            # Load configuration
             cfg.plotConfig = load_config_4b(args.metadata)
             cfg.hists = load_hists(args.inputFile)
             cfg.combine_input_files = args.combine_input_files
             cfg.axisLabelsDict, cfg.cutListDict = read_axes_and_cuts(cfg.hists, cfg.plotConfig)
             cfg.set_hist_key("hists")
 
-        # Load histograms
-        histograms = loadHistograms(
-            inputFile=args.inputFile[0],
-            format='ROOT' if args.ROOTInputs else 'coffea',
-            cfg=cfg if not args.ROOTInputs else None,
-            cut=args.cut,
-            year=args.year,
-            weightRegion=args.weightRegion,
-            data4bName=args.data4bName,
-            taglabel4b= "lowpt_fourTag" if args.lowpt else "fourTag",
-            taglabel3b= "lowpt_threeTag" if args.lowpt else "threeTag",
-            selJets=selJets,
-            tagJets=tagJets,
+        # Load histograms from coffea files
+        cutDict = get_cut_dict(args.cut, cfg.cutList)
+        year_val = sum if args.year == "RunII" else args.year
+        region_val = sum if args.weightRegion in ["sum", sum] else args.weightRegion
+
+        base_dict = {"year": year_val, "region": region_val}
+        fourTag_data_dict = {"process": args.data4bName, "tag": fourTaglabel} | base_dict | cutDict
+        threeTag_data_dict = {"process": 'data', "tag": threeTaglabel} | base_dict | cutDict
+
+        ttbar_list = ['TTTo2L2Nu', 'TTToSemiLeptonic', 'TTToHadronic']
+        fourTag_ttbar_dict = {"process": ttbar_list, "tag": fourTaglabel} | base_dict | cutDict
+        threeTag_ttbar_dict = {"process": ttbar_list, "tag": threeTaglabel} | base_dict | cutDict
+
+        hists = cfg.hists[0]['hists']
+        hists_data_4b = next((h['hists'] for h in cfg.hists 
+                              if selJets in h['hists'] and args.data4bName in h['hists'][selJets].axes["process"]), None)
+        if hists_data_4b is None:
+            raise ValueError(f"Could not find histograms for data4bName={args.data4bName}")
+
+        data4b = hists_data_4b[selJets][fourTag_data_dict]
+        data4b_nTagJets = hists_data_4b[tagJets][fourTag_data_dict]
+        data3b = hists[selJets][threeTag_data_dict]
+        data3b_nTagJets = hists[tagJets][threeTag_data_dict]
+        tt4b = hists[selJets][fourTag_ttbar_dict][sum, :]
+        tt4b_nTagJets = hists[tagJets][fourTag_ttbar_dict][sum, :]
+        tt3b = hists[selJets][threeTag_ttbar_dict][sum, :]
+        tt3b_nTagJets = hists[tagJets][threeTag_ttbar_dict][sum, :]
+
+        # Calculate QCD backgrounds (data - ttbar)
+        qcd4b = copy(data4b)
+        qcd4b.view().value = data4b.values() - tt4b.values()
+        qcd4b.view().variance = data4b.variances() + tt4b.variances()
+
+        qcd3b = copy(data3b)
+        qcd3b.view().value = data3b.values() - tt3b.values()
+        qcd3b.view().variance = data3b.variances() + tt3b.variances()
+
+        qcd3b_nTightTags = copy(data3b_nTagJets)
+        qcd3b_nTightTags.view().value = data3b_nTagJets.values() - tt3b_nTagJets.values()
+        qcd3b_nTightTags.view().variance = data3b_nTagJets.variances() + tt3b_nTagJets.variances()
+
+        # Prepare histograms - put tagged jet counts in first bins
+        if args.lowpt:
+            data4b_values, data4b_vars = np.zeros(len(data4b.values())), np.zeros(len(data4b.variances()))
+            data4b_values[0:3], data4b_values[5:14] = data4b_nTagJets.values()[1:4], data4b.values()[1:10]
+            data4b_vars[0:3], data4b_vars[5:14] = data4b_nTagJets.variances()[1:4], data4b.variances()[1:10]
+            
+            tt4b_values, tt4b_vars = np.zeros(len(tt4b.values())), np.zeros(len(tt4b.variances()))
+            tt4b_values[0:3], tt4b_values[5:14] = tt4b_nTagJets.values()[1:4], tt4b.values()[1:10]
+            tt4b_vars[0:3], tt4b_vars[5:14] = tt4b_nTagJets.variances()[1:4], tt4b.variances()[1:10]
+        else:
+            data4b_values, data4b_vars = data4b.values().copy(), data4b.variances().copy()
+            data4b_values[0:4], data4b_vars[0:4] = data4b_nTagJets.values()[4:8], data4b_nTagJets.variances()[4:8]
+            
+            tt4b_values, tt4b_vars = tt4b.values().copy(), tt4b.variances().copy()
+            tt4b_values[0:4], tt4b_vars[0:4] = tt4b_nTagJets.values()[4:8], tt4b_nTagJets.variances()[4:8]
+
+        data4b.view().value, data4b.view().variance = data4b_values, data4b_vars
+        tt4b.view().value, tt4b.view().variance = tt4b_values, tt4b_vars
+
+        # Calculate QCD scale factor and three-tag fraction
+        mu_qcd = np.sum(qcd4b.values()) / np.sum(qcd3b.values())
+        threeTightTagFraction = (qcd3b_nTightTags.values()[3] / np.sum(qcd3b_nTightTags.values()) 
+                                 if np.sum(qcd3b_nTightTags.values()) > 0 else 0.0)
+
+        logger.info(f"QCD scale factor (mu_qcd): {mu_qcd:.6f}")
+        logger.info(f"Three tight tag fraction: {threeTightTagFraction:.6f}")
+
+        # Log event counts
+        logger.info("Event counts (Unweighted):")
+        logger.info(f"  data4b: {np.sum(data4b.values()):.1f}")
+        logger.info(f"  data3b: {np.sum(data3b.values()):.1f}")
+        logger.info(f"  tt4b:   {np.sum(tt4b.values()):.1f}")
+        logger.info(f"  tt3b:   {np.sum(tt3b.values()):.1f}")
+        logger.info(f"  qcd3b:  {np.sum(qcd3b.values()):.1f}")
+
+        # Update error calculations
+        mu_qcd_bin_by_bin = np.zeros(len(qcd4b.values()))
+        qcd3b_non_zero = qcd3b.values() > 0
+        mu_qcd_bin_by_bin[qcd3b_non_zero] = np.abs(qcd4b.values()[qcd3b_non_zero] / qcd3b.values()[qcd3b_non_zero])
+        mu_qcd_bin_by_bin[mu_qcd_bin_by_bin < 0] = 0
+
+        data3b_error = np.sqrt(data3b.variances()) * mu_qcd_bin_by_bin
+        data3b_variances = data3b_error**2
+
+        data4b_variance = data4b.variances()
+        data4b_variance[data4b_variance == 0] = 1.17
+
+        combined_variances = data4b.variances() + data3b_variances + tt4b.variances() + tt3b.variances()
+        data4b.view().variance = combined_variances
+
+        # Log bin errors
+        logger.info("Bin errors overview:")
+        logger.info("bin, x | value  | data4b_err, data3b_err, tt4b_err, tt3b_err, increase%")
+        for ibin in range(len(data4b.values()) - 1):
+            x = data4b.axes[0].centers[ibin] - 0.5
+            prev_err = np.sqrt(data4b.variances()[ibin])
+            new_err = np.sqrt(combined_variances[ibin])
+            increase = 100 * new_err / prev_err if prev_err else 100
+            logger.info(f"{ibin:2}, {x:2.0f}| {data4b.values()[ibin]:9.1f} | {increase:5.0f}%")
+
+        # Extract data for fitting (first 15 bins)
+        bin_centers = data4b.axes[0].centers[:15]
+        if bin_centers[0] == 0.5:
+            bin_centers = bin_centers - 0.5
+        bin_values = data4b.values()[:15]
+        bin_errors = np.sqrt(data4b.variances()[:15])
+        bin_errors[bin_errors == 0] = 1.17
+        
+        tt4b_nTagJets_values = tt4b_nTagJets.values()[:15]
+        tt4b_nTagJets_errors = np.sqrt(tt4b_nTagJets.variances()[:15])
+        tt4b_values = tt4b.values()[:15]
+        qcd3b_values = qcd3b.values()[:15]
+        qcd3b_errors = np.sqrt(qcd3b.variances()[:15])
+
+        # Setup and fit model
+        JCM_model = jetCombinatoricModel(
+            tt4b_nTagJets=tt4b_nTagJets_values,
+            tt4b_nTagJets_errors=tt4b_nTagJets_errors,
+            qcd3b=qcd3b_values,
+            qcd3b_errors=qcd3b_errors,
+            tt4b=tt4b_values,
+            nbt=3,
         )
 
-        # Process histograms and prepare data for fitting
-        bin_data = process_histograms(*histograms, args, logger)
+        # Set fixed parameters
+        if args.fix_e:
+            logger.info("Fixing pairEnhancement to 0.0")
+            JCM_model.fixParameter_combination({
+                "threeTightTagFraction": threeTightTagFraction,
+                "pairEnhancement": 0.0,
+                "pairEnhancementDecay": 1.0
+            })
+        elif args.fix_d:
+            logger.info("Fixing pairEnhancementDecay to 1.0")
+            JCM_model.fixParameter_combination({
+                "threeTightTagFraction": threeTightTagFraction,
+                "pairEnhancementDecay": 1.0
+            })
+        else:
+            logger.info(f"Fixing threeTightTagFraction to {threeTightTagFraction:.6f}")
+            JCM_model.fixParameter_combination({"threeTightTagFraction": threeTightTagFraction})
 
-        # Set up the model
-        JCM_model = setup_model(bin_data, args, logger)
+        # Perform fit
+        residuals, pulls = JCM_model.fit(bin_centers, bin_values, bin_errors,
+                                         scipy_optimize=args.scipy_optimize)
 
-        # Perform the fit
-        residuals, pulls = perform_fit(JCM_model, bin_data[:3], args, logger)
+        logger.info(f"Fit results: chi^2/ndf = {JCM_model.fit_chi2/JCM_model.fit_ndf:.2f}, p-value = {JCM_model.fit_prob:.6f}")
+        logger.info("Fit parameters:")
+        JCM_model.dump()
 
-        # Save model output
-        save_model_output(
-            JCM_model,
-            bin_data + (histograms[6],),  # Add data4b_nTagJets for 5b calculation
-            args,
-            logger,
-            (jetCombinatoricModelFile, jetCombinatoricModelFile_yml)
-        )
+        # Write output
+        logger.info("Writing output files")
+        
+        def write_param(text, value):
+            out_txt.write(f"{text:<30} {value}\n")
+            out_yml.write(f"{text}:\n        {value}\n")
 
-        # Create plots
-        create_plots(JCM_model, bin_data, args, bin_data[8], selJets, tagJets, logger)
+        for parameter in JCM_model.parameters:
+            write_param(parameter["name"] + "_" + args.cut, parameter["value"])
+            write_param(parameter["name"] + "_" + args.cut + "_err", parameter["error"])
+            write_param(parameter["name"] + "_" + args.cut + "_pererr", parameter["percentError"])
 
-        logger.info(f"JCM weight generation completed successfully")
+        write_param("mu_qcd", mu_qcd)
+        write_param("chi^2", JCM_model.fit_chi2)
+        write_param("ndf", JCM_model.fit_ndf)
+        write_param("chi^2/ndf", JCM_model.fit_chi2 / JCM_model.fit_ndf)
+        write_param("p-value", JCM_model.fit_prob)
+
+        # Validation
+        try:
+            validation_idx = 5
+            nXb_true = data4b_nTagJets.values()[validation_idx]
+            bin_centers_limited = bin_centers[:10].astype(int)
+            nTag_pred = JCM_model.nTagPred(bin_centers_limited + 4)
+            nXb_pred = nTag_pred["values"][validation_idx]
+            nXb_pred_error = nTag_pred["errors"][validation_idx]
+            sigma_pull = (nXb_true - nXb_pred) / nXb_pred_error if nXb_pred_error > 0 else 0
+            logger.info(f"Fitted 5b events: {nXb_pred:5.1f} +/- {nXb_pred_error:5f}, Actual: {nXb_true:5.1f} ({sigma_pull:3.1f} sigma)")
+            write_param("n5b_pred", nXb_pred)
+            write_param("n5b_true", nXb_true)
+        except Exception as e:
+            logger.warning(f"Could not compute validation: {e}")
+
+        # Write weights
+        comb_weights, _ = JCM_model.getCombinatoricWeightList()
+        write_param("JCM_weights", comb_weights)
+
+        out_txt.close()
+        out_yml.close()
+        logger.info("Model output saved successfully")
+
+        # Create plots if requested
+        if not args.no_plots and not args.ROOTInputs:
+            logger.info("Creating plots")
+            
+            # Jet multiplicity plot
+            nJet_pred = JCM_model.nJetPred_values(bin_centers.astype(int))
+            nJet_pred[0:4] = 0
+            
+            try:
+                fig, ax = makePlot(
+                    cfg,
+                    var=selJets,
+                    cut=args.cut,
+                    axis_opts={"region": args.weightRegion, "tag": "fourTag"},
+                    doRatio=True,
+                    xlim=[4, 15],
+                    rlim=[0, 2],
+                    debug=False
+                )
+                fit_text = ""
+                param_names = {"pseudoTagProb": "f", "pairEnhancement": "e", "pairEnhancementDecay": "d"}
+                for param in JCM_model.parameters:
+                    if param["name"] != "threeTightTagFraction":
+                        fit_text += f"  {param_names[param['name']]} = {param['value']:.2f} +/- {param['error']:.3f}  ({param['percentError']:.1f}%)\n"
+                fit_text += f"  χ² / DoF = {JCM_model.fit_chi2:.1f} / {JCM_model.fit_ndf} = {JCM_model.fit_chi2/JCM_model.fit_ndf:.1f}\n"
+                fit_text += f"  p-value: {100*JCM_model.fit_prob:.0f}%\n"
+                plt.text(10, 6, "Fit Result:", fontsize=20, color='black', fontweight='bold', ha='left', va='center')
+                plt.text(10, 5.15, fit_text, fontsize=15, color='black', ha='left', va='center')
+                fig.savefig(os.path.join(args.outputDir, f"{selJets}.pdf"))
+                logger.info(f"Saved jet multiplicity plot")
+            except Exception as e:
+                logger.error(f"Failed to create jet multiplicity plot: {e}")
+
+            # Tagged jets plot
+            try:
+                fig, ax = makePlot(
+                    cfg,
+                    var=tagJets,
+                    cut=args.cut,
+                    axis_opts={"region": args.weightRegion, "tag": "fourTag"},
+                    doRatio=True,
+                    xlim=[4, 8],
+                    yscale="log",
+                    rlim=[0.8, 1.2],
+                    ylim=[0.1, None],
+                    debug=True
+                )
+                fig.savefig(os.path.join(args.outputDir, f"{tagJets}.pdf"))
+                logger.info(f"Saved tagged jets plot")
+            except Exception as e:
+                logger.warning(f"Failed to create tagged jets plot: {e}")
+
+        logger.info("JCM weight generation completed successfully")
         return 0
 
     except Exception as e:
         logger.error(f"Error in JCM weight generation: {e}", exc_info=True)
-        # Clean up files
-        jetCombinatoricModelFile.close()
-        jetCombinatoricModelFile_yml.close()
+        out_txt.close()
+        out_yml.close()
         return 1
 
 
