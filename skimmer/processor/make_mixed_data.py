@@ -30,7 +30,7 @@ import uproot
 
 
 from coffea4bees.hemisphere_mixing.mixing_helpers   import build_hemi_kdtrees, compute_hemi_vars
-from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres, replace_hemis, replace_hemis_load_kdTrees, init_hemi_data
+from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres, replace_hemis, replace_hemis_load_kdTrees, init_hemi_data, transverse_thrust_awkward_fast
 from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
 from coffea4bees.analysis.helpers.event_weights import add_pseudotagweights
 
@@ -44,7 +44,6 @@ class HemiMixer(PicoAOD):
                 JCM_file: str = "coffea4bees/analysis/weights/JCM/AN_24_089_v3/jetCombinatoricModel_SB_6771c35.yml",
                 corrections_metadata: dict = None,
                 *args, **kwargs):
-        kwargs["pico_base_name"] = f'picoAOD_seed{mixing_rand_seed}'
         super().__init__(*args, **kwargs)
 
         logging.info(f"\nRunning HemiMixer with these parameters: , subtract_ttbar_with_weights = {subtract_ttbar_with_weights}, mixing_rand_seed = {mixing_rand_seed}, args = {args}, kwargs = {kwargs}")
@@ -295,28 +294,38 @@ class HemiMixer(PicoAOD):
         output_vars = []
 
         for var_name in old_hemi_output_vars:
-            selev[f"pos_hemi_old_{var_name}"] = pos_hemi[var_name]
-            output_vars.append(f"pos_hemi_old_{var_name}")
+            selev[f"posHemiOld_{var_name}"] = pos_hemi[var_name]
+            output_vars.append(f"posHemiOld_{var_name}")
 
-            selev[f"neg_hemi_old_{var_name}"] = neg_hemi[var_name]
-            output_vars.append(f"neg_hemi_old_{var_name}")
+            selev[f"negHemiOld_{var_name}"] = neg_hemi[var_name]
+            output_vars.append(f"negHemiOld_{var_name}")
 
         for var_name in new_hemi_output_vars:
-            selev[f"pos_hemi_new_{var_name}"] = pos_hemi_new[var_name]
-            output_vars.append(f"pos_hemi_new_{var_name}")
+            selev[f"posHemiNew_{var_name}"] = pos_hemi_new[var_name]
+            output_vars.append(f"posHemiNew_{var_name}")
 
-            selev[f"neg_hemi_new_{var_name}"] = neg_hemi_new[var_name]
-            output_vars.append(f"neg_hemi_new_{var_name}")
+            selev[f"negHemiNew_{var_name}"] = neg_hemi_new[var_name]
+            output_vars.append(f"negHemiNew_{var_name}")
 
 
         mixed_Jet = ak.concatenate([pos_hemi_new.Jet, neg_hemi_new.Jet], axis=1)
         selev["Jet"] = mixed_Jet
 
+        #
+        #  Sanity check: compute transverse thrust of new jets
+        #
+        new_thrust = transverse_thrust_awkward_fast(selev.Jet, n_steps=720, refine_rounds=2)
+        selev["newThrustPhi"] = new_thrust.phi
+        output_vars.append("newThrustPhi")
+
+        #
+        #  Add pseudoTagWeight
+        #
+        output_vars.append("pseudoTagWeight")
 
         processOutput = {}
 
-        n_jet = ak.num(selev.Jet)
-        total_jet = int(ak.sum(n_jet))
+
         out_branches = {}
 
 
@@ -350,7 +359,6 @@ class HemiMixer(PicoAOD):
         self.update_branch_filter(self.skip_collections, self.skip_branches)
         branches = ak.Array(out_branches)
 
-        processOutput["total_jet"] = total_jet
 
         return (selection,
                 branches,
