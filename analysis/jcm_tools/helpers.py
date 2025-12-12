@@ -30,8 +30,6 @@ def loadHistograms(inputFile: str, format: str = 'coffea', cfg=None, cut: str = 
         data4b_nTagJets, tt4b_nTagJets, qcd3b_nTightTags)
     """
 
-    logger.info(f"Function arguments: {locals()}")
-
     if format == 'ROOT':
         logger.info(f"Loading histograms from ROOT file: {inputFile}")
         h = load(inputFile)["Hists"]
