@@ -32,26 +32,3 @@ python runner.py -s -p skimmer/processor/skimmer_4b.py -c skimmer/metadata/HH4b.
 ```
 
 The output file of this process will be located under `coffea4bees/skimmer/test/`.
-
-
-### Check that all events have been processed
-
-Compares processed lumi sections against those expected in json
-```
-python coffea4bees/skimmer/metadata/get_das_info.py -d coffea4bees/metadata/datasets_HH4b_Run3.yml 
-python skimmer/metadata/check_event_counts.py -y skimmer/metadata/picoaod_datasets_data_2023_BPix.yml
-```
-
-Compares processed lumi sections against those expected in json
-```
-python skimmer/metadata/check_lumi_sections.py -j base_class/data/goldenJSON/Cert_Collisions2023_366442_370790_Golden.json -y skimmer/metadata/picoaod_datasets_data_2023_BPix.yml
-```
-
-
-### Add skims to dataset 
-
-Add output of skims to input data sets
-
-```
-python src/tools/merge_yaml_datasets.py -m metadata/datasets_HH4b_Run3.yml -o metadata/datasets_HH4b_Run3_merged.yml -f metadata/archive/skims_Run3_2024_v2/picoaod_datasets_data_202*
-```

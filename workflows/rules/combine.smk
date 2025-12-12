@@ -15,15 +15,17 @@ rule workspace:
         LOG=$(pwd)/{log}
         echo "$LOG"
         mkdir -p $(dirname $LOG)
-        echo "[$(date)] Starting workspace rule with signal {params.signallabel}" > $LOG
+        (
+        echo "[$(date)] Starting workspace rule with signal {params.signallabel}"
         {params.container_wrapper} "cd $(dirname {input}) && \
             text2workspace.py $(basename {input}) \
             -P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose \
             --PO 'map=.*/{params.signallabel}:r{params.signallabel}[1,-10,10]' \
             {params.othersignal_maps} \
-            -o $(basename {output})" 2>&1 | tee -a $(basename $LOG)
+            -o $(basename {output})" 
 
-        echo "[$(date)] Completed workspace rule with signal {params.signallabel}" >> $LOG
+        echo "[$(date)] Completed workspace rule with signal {params.signallabel}"
+        ) 2>&1 | tee {log}
         """
 
 rule limits:
@@ -41,25 +43,25 @@ rule limits:
         """
         LOG=$(pwd)/{log}
         mkdir -p $(dirname $LOG)
-        echo "[$(date)] Starting limits rule with signal {params.signallabel}" > $LOG
-
-        echo "[$(date)] Running AsymptoticLimits" >> $LOG
+        (
+        echo "[$(date)] Starting limits rule with signal {params.signallabel}"
+        echo "[$(date)] Running AsymptoticLimits"
         {params.container_wrapper} "cd $(dirname {input}) && \
             combine -M AsymptoticLimits $(basename {input}) \
             --redefineSignalPOIs r{params.signallabel} \
             {params.set_parameters_zero} \
             {params.freeze_parameters} \
             -n _{params.signallabel}" \
-            2>&1 | tee -a $LOG > {output.txt}
+            > {output.txt}
 
-        echo "[$(date)] Running CollectLimits" >> $LOG
+        echo "[$(date)] Running CollectLimits"
         {params.container_wrapper} "cd $(dirname {input}) && \
             combineTool.py -M CollectLimits \
             higgsCombine_{params.signallabel}.AsymptoticLimits.mH120.root \
-            -o $(basename {output.json})" \
-            2>&1 | tee -a $LOG
+            -o $(basename {output.json})" 
 
-        echo "[$(date)] Completed limits rule with signal {params.signallabel}" >> $LOG
+        echo "[$(date)] Completed limits rule with signal {params.signallabel}" 
+        ) 2>&1 | tee {log}
         """
 
 rule significance:

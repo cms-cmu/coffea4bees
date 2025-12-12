@@ -5,9 +5,10 @@ runner:
   # condor_cores: 1
   # dashboard_address: 10201
   condor_memory: 2GB
-  condor_transfer_input_files:
-    - 'src/'
-    - 'coffea4bees/'
+  condor_transfer_input_files: 
+    - coffea4bees/analysis/
+    - coffea4bees/metadata/
+    - src/
 
 
 config:
