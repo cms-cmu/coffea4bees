@@ -20,7 +20,7 @@ from src.hist_tools import Collection, Fill
 from src.hist_tools.object import LorentzVector, Jet, Muon, Elec
 #from coffea4bees.analysis.helpers.hist_templates import SvBHists, FvTHists, QuadJetHists
 
-from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres
+from coffea4bees.hemisphere_mixing.mixing_helpers   import assign_mixed_subsamples
 from coffea4bees.hemisphere_mixing.hemisphere_hist_templates import HemisphereHists
 
 from coffea4bees.analysis.helpers.networks import HCREnsemble
@@ -261,6 +261,9 @@ class analysis(processor.ProcessorABC):
 
         selev["hemiMatchDist"] = match_dist
 
+        #
+        # Check how ofter then hemispheres from the same event are matched
+        #
         same_event = (selev.posHemiNew.event == selev.negHemiNew.event)
         nSame = ak.sum(same_event)
         nSameSB = ak.sum(same_event & selev.region.SB)
@@ -275,6 +278,19 @@ class analysis(processor.ProcessorABC):
             #print(" SR hemi run   ", hemis.run[selev.region.SR])
             #print(" SR hemi luminosityBlock   ", hemis.luminosityBlock[selev.region.SR])
             #print(" SR hemi hID   ", hemis.hemisphereId[selev.region.SR])
+
+
+        #
+        # Study the subsampling
+        #
+        n_subsamples = 16
+        assign_mixed_subsamples(selev, n_subsamples=n_subsamples)
+
+        sub_sample_counts = {}
+        for i in range(n_subsamples):
+            for j in range(i,n_subsamples):
+                sub_sample_counts[f"{i}_{j}"] = ak.sum( selev[f"pass_mixedSubSample_v{i}"] & selev[f"pass_mixedSubSample_v{j}"] )
+
 
         #
         # Hists
@@ -314,9 +330,11 @@ class analysis(processor.ProcessorABC):
         #float upperLimit = ((offset+1) * weight);
         #float lowerLimit = ( offset    * weight);
 
-        print("Event fields",   selev.fields,"\n")
-        print("Hemi old fields",selev.posHemiOld.fields,"\n")
-        print("Hemi new fields",selev.posHemiNew.fields,"\n")
+        # print("Event fields",   selev.fields,"\n")
+        # print("Hemi old fields",selev.posHemiOld.fields,"\n")
+        # print("Hemi new fields",selev.posHemiNew.fields,"\n")
+
+
 
 
         #
@@ -341,6 +359,7 @@ class analysis(processor.ProcessorABC):
                 "hemi_pair_SR_event":hemis.event[selev.region.SR].tolist(),
                 "hemi_pair_SR_run":  hemis.run[selev.region.SR].tolist(),
                 "hemi_pair_SR_hemisphereId":  hemis.hemisphereId[selev.region.SR].tolist(),
+                "subsample_counts": sub_sample_counts,
                 #"saved_hemis":  len(pos_hemi.thrust_phi) + len(neg_hemi.thrust_phi),
             }
         )

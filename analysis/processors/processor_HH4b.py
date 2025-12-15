@@ -207,7 +207,7 @@ class analysis(processor.ProcessorABC):
     def process(self, event):
         logging.debug(event.metadata)
         self._log_memory("process_start")
-        
+
         fname   = event.metadata['filename']
         self.dataset = event.metadata['dataset']
         self.estart  = event.metadata['entrystart']
@@ -265,14 +265,14 @@ class analysis(processor.ProcessorABC):
                 if self.config["isMixedData"]:
 
                     FvT_name = event.metadata["FvT_name"]
-                    event["FvT"] = getattr( 
-                        NanoEventsFactory.from_root( 
-                            f'{event.metadata["FvT_file"]}', 
-                            entry_start=self.estart, 
+                    event["FvT"] = getattr(
+                        NanoEventsFactory.from_root(
+                            f'{event.metadata["FvT_file"]}',
+                            entry_start=self.estart,
                             entry_stop=self.estop,
-                            schemaclass=FriendTreeSchema, 
+                            schemaclass=FriendTreeSchema,
                         ).events(),
-                        FvT_name 
+                        FvT_name
                     )
 
                     event["FvT", "FvT"] = getattr(event["FvT"], FvT_name)
@@ -289,14 +289,14 @@ class analysis(processor.ProcessorABC):
                     #
                     # Use the first to define the FvT weights
                     #
-                    event["FvT"] = getattr( 
-                        NanoEventsFactory.from_root( 
-                            f'{event.metadata["FvT_files"][0]}', 
-                            entry_start=self.estart, 
-                            entry_stop=self.estop, 
-                            schemaclass=FriendTreeSchema, 
+                    event["FvT"] = getattr(
+                        NanoEventsFactory.from_root(
+                            f'{event.metadata["FvT_files"][0]}',
+                            entry_start=self.estart,
+                            entry_stop=self.estop,
+                            schemaclass=FriendTreeSchema,
                         ).events(),
-                        event.metadata["FvT_names"][0], 
+                        event.metadata["FvT_names"][0],
                     )
 
                     event["FvT", "FvT"] = getattr( event["FvT"], event.metadata["FvT_names"][0] )
@@ -310,26 +310,26 @@ class analysis(processor.ProcessorABC):
 
                     for _FvT_name, _FvT_file in zip( event.metadata["FvT_names"], event.metadata["FvT_files"] ):
 
-                        event[_FvT_name] = getattr( 
-                            NanoEventsFactory.from_root( 
-                                f"{_FvT_file}", 
-                                entry_start=self.estart, 
-                                entry_stop=self.estop, 
-                                schemaclass=FriendTreeSchema, 
+                        event[_FvT_name] = getattr(
+                            NanoEventsFactory.from_root(
+                                f"{_FvT_file}",
+                                entry_start=self.estart,
+                                entry_stop=self.estop,
+                                schemaclass=FriendTreeSchema,
                             ).events(),
-                            _FvT_name, 
+                            _FvT_name,
                         )
 
                         event[_FvT_name, _FvT_name] = getattr(event[_FvT_name], _FvT_name)
 
                 else:
-                    event["FvT"] = ( 
-                        NanoEventsFactory.from_root( 
-                            f'{fname.replace("picoAOD", "FvT")}', 
-                            entry_start=self.estart, 
-                            entry_stop=self.estop, 
+                    event["FvT"] = (
+                        NanoEventsFactory.from_root(
+                            f'{fname.replace("picoAOD", "FvT")}',
+                            entry_start=self.estart,
+                            entry_stop=self.estop,
                             schemaclass=FriendTreeSchema
-                        ).events().FvT 
+                        ).events().FvT
                     )
 
                 if "std" not in event.FvT.fields:
@@ -360,13 +360,13 @@ class analysis(processor.ProcessorABC):
             if "SvB" not in self.friends and self.classifier_SvB is None:
                 # SvB_file = f'{path}/SvB_newSBDef.root' if 'mix' in self.dataset else f'{fname.replace("picoAOD", "SvB")}'
                 SvB_file = f'{path}/SvB{SvB_suffix}.root' if 'mix' in self.dataset else f'{fname.replace("picoAOD", f"SvB{SvB_suffix}")}'
-                event["SvB"] = ( 
-                    NanoEventsFactory.from_root( 
+                event["SvB"] = (
+                    NanoEventsFactory.from_root(
                         SvB_file,
-                        entry_start=self.estart, 
-                        entry_stop=self.estop, 
+                        entry_start=self.estart,
+                        entry_stop=self.estop,
                         schemaclass=FriendTreeSchema
-                    ).events().SvB 
+                    ).events().SvB
                 )
 
                 if not ak.all(event.SvB.event == event.event):
@@ -377,11 +377,11 @@ class analysis(processor.ProcessorABC):
             if "SvB_MA" not in self.friends and self.classifier_SvB_MA is None:
                 # SvB_MA_file = f'{path}/SvB_MA_newSBDef.root' if 'mix' in self.dataset else f'{fname.replace("picoAOD", "SvB_MA")}'
                 SvB_MA_file = f'{path}/SvB_MA{SvB_suffix}.root' if 'mix' in self.dataset else f'{fname.replace("picoAOD", f"SvB_MA{SvB_suffix}")}'
-                event["SvB_MA"] = ( 
-                    NanoEventsFactory.from_root( 
+                event["SvB_MA"] = (
+                    NanoEventsFactory.from_root(
                         SvB_MA_file,
-                        entry_start=self.estart, 
-                        entry_stop=self.estop, 
+                        entry_start=self.estart,
+                        entry_stop=self.estop,
                         schemaclass=FriendTreeSchema
                     ).events().SvB_MA
                 )
@@ -405,7 +405,7 @@ class analysis(processor.ProcessorABC):
         # Event selection
         #
         self._log_memory("before_event_selection")
-        event = apply_event_selection( 
+        event = apply_event_selection(
             event,
             self.corrections_metadata[self.year],
             cut_on_lumimask=self.config["cut_on_lumimask"]
@@ -415,7 +415,7 @@ class analysis(processor.ProcessorABC):
 
         ### adds all the event mc weights and 1 for data
         weights, list_weight_names = add_weights(
-            event, 
+            event,
             target=target,
             do_MC_weights=self.config["do_MC_weights"],
             dataset=self.dataset,
@@ -488,8 +488,8 @@ class analysis(processor.ProcessorABC):
         weights = copy.copy(weights)
 
         # Apply object selection (function does not remove events, adds content to objects)
-        event = apply_4b_selection( 
-            event, 
+        event = apply_4b_selection(
+            event,
             self.corrections_metadata[self.year],
             dataset=self.dataset,
             doLeptonRemoval=self.config["do_lepton_jet_cleaning"],
@@ -623,8 +623,8 @@ class analysis(processor.ProcessorABC):
         #
         if self.config["isMC"] and self.apply_btagSF:
 
-            weights, list_weight_names = add_btagweights( 
-                event, 
+            weights, list_weight_names = add_btagweights(
+                event,
                 weights,
                 list_weight_names=list_weight_names,
                 shift_name=shift_name,
@@ -651,8 +651,8 @@ class analysis(processor.ProcessorABC):
             self._cutFlow.fill( "passPreSel_allTag_woTrig", event[selections.all(*allcuts)], allTag=True,
                                 wOverride=np.sum(weights.partial_weight(exclude=['CMS_bbbb_resolved_ggf_triggerEffSF'])[selections.all(*allcuts)] ))
 
-        weights, list_weight_names = add_pseudotagweights( 
-            event, 
+        weights, list_weight_names = add_pseudotagweights(
+            event,
             weights,
             JCM=self.apply_JCM,
             apply_FvT=self.apply_FvT,
@@ -724,7 +724,7 @@ class analysis(processor.ProcessorABC):
         #
         #  Build di-jets and Quad-jets
         #
-        selev = create_cand_jet_dijet_quadjet( 
+        selev = create_cand_jet_dijet_quadjet(
             selev,
             apply_FvT=self.apply_FvT,
             classifier_FvT=self.classifier_FvT,
@@ -818,7 +818,7 @@ class analysis(processor.ProcessorABC):
             if not self.run_systematics:
                 ## this can be simplified
                 hist = filling_nominal_histograms(
-                    selev, 
+                    selev,
                     self.apply_JCM,
                     processName=self.processName,
                     year=self.year,
@@ -837,7 +837,7 @@ class analysis(processor.ProcessorABC):
             #
             else:
                 hist = filling_syst_histograms(
-                    selev, 
+                    selev,
                     weights,
                     analysis_selections,
                     shift_name=shift_name,
@@ -912,7 +912,7 @@ class analysis(processor.ProcessorABC):
         # Explicit cleanup before returning
         del selev, event, weights, analysis_selections
         gc.collect()
-        
+
         return hist | processOutput | friends
 
     def postprocess(self, accumulator):

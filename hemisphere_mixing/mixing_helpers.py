@@ -10,6 +10,8 @@ import numpy as np
 from scipy.spatial import cKDTree  # "c" = C-optimized
 from src.data_formats.root import Chunk, TreeReader
 from coffea.nanoevents.methods import vector
+from src.math_tools.random import Squares
+
 
 @nb.njit(cache=True)
 def _thrust_event_numba(px_i, py_i, n_steps=720):
@@ -537,7 +539,7 @@ def replace_hemis(*, all_hemis, hemi_kd_trees, hemi_stats, hemi_data, hemi_jet_r
                                    "nJet" :            ak.num(new_Jets, axis=1),
                                    "Jet":              new_Jets,
                                    "match_dist":       ak.Array(match_dist),
-                                   "local_idx":      subset_hemis["local_idx"],
+                                   "local_idx":        subset_hemis["local_idx"],
                                    },
                                   depth_limit=1
                                   )
@@ -645,3 +647,27 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
         #all_hemis = ak.where(mask, all_hemis_new, all_hemis)
 
     return all_hemis_new
+
+
+def assign_mixed_subsamples(event, n_subsamples=16):
+
+    # Get Random Numbers uniform 0 - 1 for each event
+    rng       = Squares("subsample_mixed_data")
+    counter   = event.event
+    rand_vals = rng.uniform(counter, low=0, high=1.0)
+
+    for mixed_sub_sample in range(n_subsamples):
+
+        # Set upper and lower limits based on pseudoTagWeight
+        upperLimit = ((mixed_sub_sample+1) * event.pseudoTagWeight)
+        lowerLimit = ( mixed_sub_sample    * event.pseudoTagWeight);
+
+        # Handle overflow cases
+        #    when overflow occurs, pick one of the samples < 9
+        overflow = upperLimit > 1.0
+        overflow_sub_sample_index = (event.event + mixed_sub_sample) % 9
+        upperLimit = ak.where( overflow, ((overflow_sub_sample_index + 1) * event.pseudoTagWeight), upperLimit )
+        lowerLimit = ak.where( overflow, ((overflow_sub_sample_index    ) * event.pseudoTagWeight), lowerLimit )
+
+        pass_subsample = ( (rand_vals > lowerLimit) & (rand_vals < upperLimit) )
+        event[f"pass_mixedSubSample_v{mixed_sub_sample}"] = pass_subsample
