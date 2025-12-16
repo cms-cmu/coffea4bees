@@ -38,20 +38,19 @@ from coffea4bees.analysis.helpers.event_weights import add_pseudotagweights
 class HemiMixer(PicoAOD):
     def __init__(self,
                 subtract_ttbar_with_weights = False,
-                mixing_rand_seed=5,
                 friends: dict[str, str|FriendTemplate] = None,
                 apply_JCM: bool = True,
                 JCM_file: str = "coffea4bees/analysis/weights/JCM/AN_24_089_v3/jetCombinatoricModel_SB_6771c35.yml",
+                hemi_library_yaml: str = None,
                 corrections_metadata: dict = None,
                 *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        logging.info(f"\nRunning HemiMixer with these parameters: , subtract_ttbar_with_weights = {subtract_ttbar_with_weights}, mixing_rand_seed = {mixing_rand_seed}, args = {args}, kwargs = {kwargs}")
+        logging.info(f"\nRunning HemiMixer with these parameters: , subtract_ttbar_with_weights = {subtract_ttbar_with_weights}, args = {args}, kwargs = {kwargs}")
         self.apply_JCM = jetCombinatoricModel(JCM_file) if apply_JCM else None
 
         self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
         self.friends = parse_friends(friends)
-        self.mixing_rand_seed = mixing_rand_seed
         self.corrections_metadata = corrections_metadata
         self._cutFlow = cutflow_4b()
 
@@ -68,18 +67,24 @@ class HemiMixer(PicoAOD):
         self.jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_btagDeepFlavB", "Jet_bRegCorr", "Jet_jetId", "Jet_puId"]
         self.hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ]
         year_str = "UL18"
+        logging.info(f"\nLoading hemisphere library file: {hemi_library_yaml} for year {year_str}")
+        with open(hemi_library_yaml, 'r') as f:
+            hemi_library_data = yaml.safe_load(f)
+            logging.debug("Keys",hemi_library_data.keys())
+            hemi_files = hemi_library_data[year_str]
+            logging.debug("Hemi files:", type(hemi_files), hemi_files)
 
         self.test_load_hemi_kdTrees = True
         if self.test_load_hemi_kdTrees:
             self.hemi_data, self.hemi_jet_ranges, self.hemi_stats  = init_hemi_data(hemi_metadata_yaml = yaml_file,
-                                                                                    hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root",
+                                                                                    hemifiles = hemi_files,
                                                                                     hemi_summary_vars = self.hemi_summary_vars,
                                                                                     jet_branches = self.jet_branches,
                                                                                     )
 
         else:
             self.hemi_kd_trees, _, self.hemi_jet_ranges, self.hemi_stats, self.hemi_data = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
-                                                                                                              hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root",
+                                                                                                              hemifiles = hemifiles,
                                                                                                               hemi_summary_vars = self.hemi_summary_vars,
                                                                                                               jet_branches = self.jet_branches,
                                                                                                               )
@@ -111,8 +116,6 @@ class HemiMixer(PicoAOD):
         logging.debug(f'{chunk} config={config}, for file {fname}\n')
 
         path = fname.replace(fname.split("/")[-1], "")
-
-
 
         if self.subtract_ttbar_with_weights:
 

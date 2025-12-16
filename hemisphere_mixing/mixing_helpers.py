@@ -287,7 +287,7 @@ def read_hemi_files(hemifiles, tree_name="Events", branch_list=None):
                     hemi_vars[var_name] = np.concatenate( (hemi_vars[var_name], batch[var_name]) )
 
     elif isinstance(hemifiles, list):
-        print("Reading hemisphere files:", hemifiles)
+        #print("Reading hemisphere files:", hemifiles)
         file_spec = {f: tree_name for f in hemifiles}
 
         for batch in uproot.iterate(
@@ -302,7 +302,7 @@ def read_hemi_files(hemifiles, tree_name="Events", branch_list=None):
             else:
                 for var_name in branch_list:
                     hemi_vars[var_name] = np.concatenate( (hemi_vars[var_name], batch[var_name]) )
-
+        print(f"\tread_hemi_files: Read n hemispheres: {len(hemi_vars[branch_list[0]])}")
 
     return hemi_vars
 

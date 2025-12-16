@@ -25,9 +25,9 @@ config:
   # base_path: skimmer/test/
   # clustering_pdfs_file: "coffea4bees/jet_clustering/jet-splitting-PDFs-00-09-00/clustering_pdfs_vs_pT_XXX.yml"
   subtract_ttbar_with_weights: True
+  hemi_library_yaml: coffea4bees/skimmer/metadata/hemisphere_library_noTT.yml
   friends:
     trigWeight: "coffea4bees/metadata/datasets_HH4b_2024_v1p1_trigweights.json@@trigWeight"
-  mixing_rand_seed: 5
   step: 100000
   skip_collections:
     - notCanJet
