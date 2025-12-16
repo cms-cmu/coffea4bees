@@ -213,11 +213,14 @@ class HemiMixer(PicoAOD):
         cumulative_cuts = ["lumimask"]
         self._cutFlow.fill( "all",             event[selections.all(*cumulative_cuts)], allTag=True )
 
-        other_cuts = ["passNoiseFilter", "passHLT", "passJetMult", "passThreeTag"]
+        other_cuts = ["passNoiseFilter", "passHLT", "passJetMult"]
 
         for cut in other_cuts:
             cumulative_cuts.append(cut)
             self._cutFlow.fill( cut, event[selections.all(*cumulative_cuts)], allTag=True )
+
+        cumulative_cuts.append( "passThreeTag")
+        self._cutFlow.fill( cut, event[selections.all(*cumulative_cuts)])
 
         #
         # Add Btag SF
@@ -258,10 +261,11 @@ class HemiMixer(PicoAOD):
         #
         # Identify tagged and pstagged jets
         #
-        sorted_jets      = selev.Jet[ak.argsort(selev.Jet.btagScore, ascending=False)]
-        sorted_local_idx = ak.local_index(sorted_jets)
-        selev["Jet", "tagged_or_pstagged"] = (sorted_local_idx < selev.nJet_ps_and_tag)
-        selev["tag_or_psTag_Jet"] = selev.Jet[selev.Jet.tagged_or_pstagged]
+        selected_jets             = selev.Jet[selev.Jet.selected]
+        sorted_selected_jets      = selected_jets[ak.argsort(selected_jets.btagScore, ascending=False)]
+        sorted_selected_local_idx = ak.local_index(sorted_selected_jets)
+        selected_jets["tagged_or_pstagged"] = (sorted_selected_local_idx < selev.nJet_ps_and_tag)
+        selev["tag_or_psTag_Jet"] = selected_jets[selected_jets.tagged_or_pstagged]
 
         #
         #  Split event into hemispheres
