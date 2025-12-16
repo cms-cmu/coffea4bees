@@ -35,3 +35,65 @@ UL18:
    - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL18D/hemisphereLib_e850b3fc-05bc-11ee-a472-0ebce183beef_888084_986760.root
    - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL18D/hemisphereLib_e850b3fc-05bc-11ee-a472-0ebce183beef_986760_1085436.root
    - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL18D/hemisphereLib_e850b3fc-05bc-11ee-a472-0ebce183beef_98676_197352.root
+
+UL17:
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL17C/hemisphereLib_04e760b0-05bd-11ee-8496-29bde183beef_0_99712.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL17C/hemisphereLib_04e760b0-05bd-11ee-8496-29bde183beef_199424_299136.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL17C/hemisphereLib_04e760b0-05bd-11ee-8496-29bde183beef_299136_398848.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL17C/hemisphereLib_04e760b0-05bd-11ee-8496-29bde183beef_398848_498557.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL17C/hemisphereLib_04e760b0-05bd-11ee-8496-29bde183beef_99712_199424.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL17D/hemisphereLib_27baffd4-05bd-11ee-b80a-3ebde183beef_0_117081.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL17D/hemisphereLib_27baffd4-05bd-11ee-b80a-3ebde183beef_117081_234161.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL17E/hemisphereLib_e833ce54-05bc-11ee-a472-0ebce183beef_0_109806.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL17E/hemisphereLib_e833ce54-05bc-11ee-a472-0ebce183beef_109806_219612.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL17E/hemisphereLib_e833ce54-05bc-11ee-a472-0ebce183beef_219612_329418.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL17E/hemisphereLib_e833ce54-05bc-11ee-a472-0ebce183beef_329418_439224.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL17E/hemisphereLib_e833ce54-05bc-11ee-a472-0ebce183beef_439224_549026.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL17F/hemisphereLib_0e62795e-05bd-11ee-9bf1-14bce183beef_0_101464.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL17F/hemisphereLib_0e62795e-05bd-11ee-9bf1-14bce183beef_101464_202928.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL17F/hemisphereLib_0e62795e-05bd-11ee-9bf1-14bce183beef_202928_304392.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL17F/hemisphereLib_0e62795e-05bd-11ee-9bf1-14bce183beef_304392_405856.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL17F/hemisphereLib_0e62795e-05bd-11ee-9bf1-14bce183beef_405856_507320.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL17F/hemisphereLib_0e62795e-05bd-11ee-9bf1-14bce183beef_507320_608784.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL17F/hemisphereLib_0e62795e-05bd-11ee-9bf1-14bce183beef_608784_710245.root
+
+
+UL16:
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_postVFPF/hemisphereLib_6c873192-05bc-11ee-b259-80bde183beef_0_103893.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_postVFPF/hemisphereLib_6c873192-05bc-11ee-b259-80bde183beef_103893_207786.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_postVFPF/hemisphereLib_6c873192-05bc-11ee-b259-80bde183beef_207786_311677.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_postVFPG/hemisphereLib_8baeb004-05bc-11ee-b86a-5bbce183beef_0_97545.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_postVFPG/hemisphereLib_8baeb004-05bc-11ee-b86a-5bbce183beef_195090_292635.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_postVFPG/hemisphereLib_8baeb004-05bc-11ee-b86a-5bbce183beef_292635_390180.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_postVFPG/hemisphereLib_8baeb004-05bc-11ee-b86a-5bbce183beef_390180_487725.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_postVFPG/hemisphereLib_8baeb004-05bc-11ee-b86a-5bbce183beef_487725_585270.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_postVFPG/hemisphereLib_8baeb004-05bc-11ee-b86a-5bbce183beef_585270_682815.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_postVFPG/hemisphereLib_8baeb004-05bc-11ee-b86a-5bbce183beef_682815_780360.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_postVFPG/hemisphereLib_8baeb004-05bc-11ee-b86a-5bbce183beef_780360_877903.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_postVFPG/hemisphereLib_8baeb004-05bc-11ee-b86a-5bbce183beef_97545_195090.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_postVFPH/hemisphereLib_90f94010-05bc-11ee-8256-13bde183beef_0_100405.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_postVFPH/hemisphereLib_90f94010-05bc-11ee-8256-13bde183beef_100405_200810.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_postVFPH/hemisphereLib_90f94010-05bc-11ee-8256-13bde183beef_200810_301215.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_postVFPH/hemisphereLib_90f94010-05bc-11ee-8256-13bde183beef_301215_401620.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_postVFPH/hemisphereLib_90f94010-05bc-11ee-8256-13bde183beef_401620_502025.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_postVFPH/hemisphereLib_90f94010-05bc-11ee-8256-13bde183beef_502025_602430.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_postVFPH/hemisphereLib_90f94010-05bc-11ee-8256-13bde183beef_602430_702835.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_postVFPH/hemisphereLib_90f94010-05bc-11ee-8256-13bde183beef_702835_803240.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_postVFPH/hemisphereLib_90f94010-05bc-11ee-8256-13bde183beef_803240_903644.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_preVFPB/hemisphereLib_5730c0e2-05bc-11ee-add8-f2bce183beef_0_99782.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_preVFPB/hemisphereLib_5730c0e2-05bc-11ee-add8-f2bce183beef_199564_299346.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_preVFPB/hemisphereLib_5730c0e2-05bc-11ee-add8-f2bce183beef_299346_399128.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_preVFPB/hemisphereLib_5730c0e2-05bc-11ee-add8-f2bce183beef_399128_498910.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_preVFPB/hemisphereLib_5730c0e2-05bc-11ee-add8-f2bce183beef_498910_598690.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_preVFPB/hemisphereLib_5730c0e2-05bc-11ee-add8-f2bce183beef_99782_199564.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_preVFPC/hemisphereLib_4fc94130-05bc-11ee-994f-4cbce183beef_0_85423.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_preVFPC/hemisphereLib_4fc94130-05bc-11ee-994f-4cbce183beef_170846_256268.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_preVFPC/hemisphereLib_4fc94130-05bc-11ee-994f-4cbce183beef_85423_170846.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_preVFPD/hemisphereLib_68a72186-05bc-11ee-9d70-80bde183beef_0_105275.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_preVFPD/hemisphereLib_68a72186-05bc-11ee-9d70-80bde183beef_105275_210550.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_preVFPD/hemisphereLib_68a72186-05bc-11ee-9d70-80bde183beef_210550_315825.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_preVFPD/hemisphereLib_68a72186-05bc-11ee-9d70-80bde183beef_315825_421098.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_preVFPE/hemisphereLib_61f82b00-05bc-11ee-8e9b-16bce183beef_0_98994.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_preVFPE/hemisphereLib_61f82b00-05bc-11ee-8e9b-16bce183beef_197988_296982.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_preVFPE/hemisphereLib_61f82b00-05bc-11ee-8e9b-16bce183beef_296982_395976.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_UL16_preVFPE/hemisphereLib_61f82b00-05bc-11ee-8e9b-16bce183beef_98994_197988.root

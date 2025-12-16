@@ -19,7 +19,7 @@ bash coffea4bees/scripts/run-analysis-processor.sh \
     --processor "coffea4bees/analysis/processors/processor_make_hemi_library.py" \
     --output-base "$OUTPUT_BASE_DIR" \
     --datasets "data" \
-    --year "UL18" \
+    --year "UL18 UL17 UL16_postVFP UL16_preVFP" \
     --output-filename "cluster_mixed_datasets.coffea" \
     --output-subdir "$JOB" \
     --config coffea4bees/analysis/metadata/make_hemi_library_4b.yml \

@@ -267,13 +267,20 @@ def split_events_into_hemispheres(event, tagged_key="tagJet"):
 
 
 
-def read_hemi_files(hemifiles, tree_name="Events", branch_list=None):
+def read_hemi_files(hemi_files_yaml, year, tree_name="Events", branch_list=None):
+
+    with open(hemi_files_yaml, 'r') as f:
+        hemi_library_data = yaml.safe_load(f)
+        print("Keys",hemi_library_data.keys())
+        hemi_files = hemi_library_data[year]
+        print("Hemi files:", type(hemi_files), hemi_files)
+
 
     hemi_vars = { var_name: [] for var_name in branch_list }
 
-    if isinstance(hemifiles, str):
+    if isinstance(hemi_files, str):
         for batch in uproot.iterate(
-                f"{hemifiles}:{tree_name}",
+                f"{hemi_files}:{tree_name}",
                 branch_list,
                 step_size=200_000,  # entries per chunk
                 library="np",
@@ -285,10 +292,11 @@ def read_hemi_files(hemifiles, tree_name="Events", branch_list=None):
             else:
                 for var_name in branch_list:
                     hemi_vars[var_name] = np.concatenate( (hemi_vars[var_name], batch[var_name]) )
+        print(f"\tread_hemi_files: Read n hemispheres: {len(hemi_vars[branch_list[0]])}")
 
-    elif isinstance(hemifiles, list):
+    elif isinstance(hemi_files, list):
         #print("Reading hemisphere files:", hemifiles)
-        file_spec = {f: tree_name for f in hemifiles}
+        file_spec = {f: tree_name for f in hemi_files}
 
         for batch in uproot.iterate(
                 file_spec,
@@ -415,7 +423,7 @@ def convert_yaml_dict(raw_dict):
     return output
 
 
-def init_hemi_data(hemi_metadata_yaml, hemifiles, hemi_summary_vars, jet_branches, event_branches=["event", "run", "luminosityBlock", "thrust_phi", "hemisphereId", "weight"]):
+def init_hemi_data(hemi_metadata_yaml, hemi_files_yaml, year, hemi_summary_vars, jet_branches, event_branches=["event", "run", "luminosityBlock", "thrust_phi", "hemisphereId", "weight"]):
 
     # Read in hemisphere library metadata
     with open(hemi_metadata_yaml, 'r') as f:
@@ -429,23 +437,19 @@ def init_hemi_data(hemi_metadata_yaml, hemifiles, hemi_summary_vars, jet_branche
     #
     branch_list = ["nJet", "nSelJet", "nTagJet"] + event_branches + hemi_summary_vars + jet_branches
 
-    hemi_data = read_hemi_files(hemifiles, branch_list=branch_list)
-    #print("hemifiles is", hemifiles)
-    #hemi_data = TreeReader(branch_filter=set(branch_list).intersection).concat(
-    #    *(Chunk(f) for f in [hemifiles]), library="np"
-    #)
-    #breakpoint()
+    hemi_data = read_hemi_files(hemi_files_yaml, year, branch_list=branch_list)
+
     return hemi_data, jet_ranges, hemi_stats
 
 
-def build_hemi_kdtrees(hemi_metadata_yaml, hemifiles, hemi_summary_vars, jet_branches):
+def build_hemi_kdtrees(hemi_metadata_yaml, hemi_files_yaml, year, hemi_summary_vars, jet_branches):
 
 
     #
     #  Readin the hemisphere data
     #
     event_branches = ["event", "run", "luminosityBlock", "thrust_phi", "hemisphereId", "weight"]
-    hemi_data, jet_ranges, hemi_stats = init_hemi_data(hemi_metadata_yaml, hemifiles, hemi_summary_vars, jet_branches, event_branches)
+    hemi_data, jet_ranges, hemi_stats = init_hemi_data(hemi_metadata_yaml, hemi_files_yaml, year, hemi_summary_vars, jet_branches, event_branches)
 
     #
     #  Group hemisphere data by jet multiplicity bins
@@ -587,7 +591,6 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
 
         if np.sum(mask_3b) < 1:
             continue
-
 
         #
         # Rotate Jets to match thrust axis

@@ -57,38 +57,31 @@ class HemiMixer(PicoAOD):
         self.skip_collections = kwargs["skip_collections"]
         self.skip_branches    = kwargs["skip_branches"]
 
-        #
-        #  Load the hemisphere libraries
-        #
-        yaml_file = 'coffea4bees/hemisphere_mixing/hemi_plots/hemi_statistics_UL18.yml'
-        logging.info(f"\nLoading hemisphere libraries = {yaml_file}")
 
 
         self.jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_btagDeepFlavB", "Jet_bRegCorr", "Jet_jetId", "Jet_puId"]
         self.hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ]
-        year_str = "UL18"
-        logging.info(f"\nLoading hemisphere library file: {hemi_library_yaml} for year {year_str}")
-        with open(hemi_library_yaml, 'r') as f:
-            hemi_library_data = yaml.safe_load(f)
-            logging.debug("Keys",hemi_library_data.keys())
-            hemi_files = hemi_library_data[year_str]
-            logging.debug("Hemi files:", type(hemi_files), hemi_files)
+        self.hemi_library_yaml = hemi_library_yaml
 
-        self.test_load_hemi_kdTrees = True
-        if self.test_load_hemi_kdTrees:
-            self.hemi_data, self.hemi_jet_ranges, self.hemi_stats  = init_hemi_data(hemi_metadata_yaml = yaml_file,
-                                                                                    hemifiles = hemi_files,
-                                                                                    hemi_summary_vars = self.hemi_summary_vars,
-                                                                                    jet_branches = self.jet_branches,
-                                                                                    )
 
-        else:
-            self.hemi_kd_trees, _, self.hemi_jet_ranges, self.hemi_stats, self.hemi_data = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
-                                                                                                              hemifiles = hemifiles,
-                                                                                                              hemi_summary_vars = self.hemi_summary_vars,
-                                                                                                              jet_branches = self.jet_branches,
-                                                                                                              )
-
+#        logging.info(f"\nLoading hemisphere library file: {hemi_library_yaml} for year {year_str}")
+#
+#        self.test_load_hemi_kdTrees = True
+#        if self.test_load_hemi_kdTrees:
+#            self.hemi_data, self.hemi_jet_ranges, self.hemi_stats  = init_hemi_data(hemi_metadata_yaml = yaml_file,
+#                                                                                    hemi_files_yaml = hemi_library_yaml,
+#                                                                                    year = year_str,
+#                                                                                    hemi_summary_vars = self.hemi_summary_vars,
+#                                                                                    jet_branches = self.jet_branches,
+#                                                                                    )
+#
+#        else:
+#            self.hemi_kd_trees, _, self.hemi_jet_ranges, self.hemi_stats, self.hemi_data = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
+#                                                                                                              hemifiles = hemifiles,
+#                                                                                                              hemi_summary_vars = self.hemi_summary_vars,
+#                                                                                                              jet_branches = self.jet_branches,
+#                                                                                                              )
+#
 
 
 
@@ -114,6 +107,35 @@ class HemiMixer(PicoAOD):
         #
         config = processor_config(processName, dataset, event)
         logging.debug(f'{chunk} config={config}, for file {fname}\n')
+
+        #
+        #  Load the hemisphere libraries
+        #
+        year_str = year.replace("_preVFP", "").replace("_postVFP", "")
+
+        yaml_file = f'coffea4bees/hemisphere_mixing/hemi_plots/hemi_statistics_{year_str}.yml'
+        logging.info(f"\nLoading hemisphere libraries = {yaml_file}")
+
+        logging.info(f"\nLoading hemisphere library file: {self.hemi_library_yaml} for year {year_str}")
+
+        test_load_hemi_kdTrees = True
+        if test_load_hemi_kdTrees:
+            hemi_data, hemi_jet_ranges, hemi_stats  = init_hemi_data(hemi_metadata_yaml = yaml_file,
+                                                                     hemi_files_yaml = self.hemi_library_yaml,
+                                                                     year = year_str,
+                                                                     hemi_summary_vars = self.hemi_summary_vars,
+                                                                     jet_branches = self.jet_branches,
+                                                                     )
+
+        else:
+            hemi_kd_trees, _, hemi_jet_ranges, hemi_stats, hemi_data = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
+                                                                                          hemi_files_yaml = self.hemi_library_yaml,
+                                                                                          year = year_str,
+                                                                                          hemi_summary_vars = self.hemi_summary_vars,
+                                                                                          jet_branches = self.jet_branches,
+                                                                                          )
+
+
 
         path = fname.replace(fname.split("/")[-1], "")
 
@@ -280,14 +302,14 @@ class HemiMixer(PicoAOD):
         all_hemis["replaced"] = 0
         all_hemis["match_dist"] = -1
 
-        if self.test_load_hemi_kdTrees:
-            all_hemis = replace_hemis_load_kdTrees(all_hemis=all_hemis, hemi_jet_ranges=self.hemi_jet_ranges,
-                                                   hemi_stats=self.hemi_stats, hemi_data=self.hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=self.jet_branches
+        if test_load_hemi_kdTrees:
+            all_hemis = replace_hemis_load_kdTrees(all_hemis=all_hemis, hemi_jet_ranges=hemi_jet_ranges,
+                                                   hemi_stats=hemi_stats, hemi_data=hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=self.jet_branches
                                                    )
 
         else:
-            all_hemis = replace_hemis(all_hemis=all_hemis, hemi_kd_trees=self.hemi_kd_trees, hemi_jet_ranges=self.hemi_jet_ranges,
-                                      hemi_stats=self.hemi_stats, hemi_data=self.hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=self.jet_branches)
+            all_hemis = replace_hemis(all_hemis=all_hemis, hemi_kd_trees=hemi_kd_trees, hemi_jet_ranges=hemi_jet_ranges,
+                                      hemi_stats=hemi_stats, hemi_data=hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=self.jet_branches)
 
 
 
