@@ -82,7 +82,7 @@ class analysis(processor.ProcessorABC):
         self.classifier_SvB_MA = HCREnsemble(SvB_MA) if SvB_MA else None
         self.run_SvB = run_SvB
         self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
-
+        logging.info(f"subtract_ttbar_with_weights = {self.subtract_ttbar_with_weights}")
 
         self.histCuts = ["passPreSel"] #, "pass0OthJets", "pass1OthJets", "pass2OthJets"]
 
@@ -245,6 +245,7 @@ class analysis(processor.ProcessorABC):
 
         allcuts.append("passFourTag")
         selev = event[selections.all(*allcuts)]
+        self._cutFlow.fill("passFourTag", selev )
 
         #
         # TTbar subtractions
@@ -257,8 +258,8 @@ class analysis(processor.ProcessorABC):
             pass_ttbar_filter[ selections.all(*allcuts) ] = pass_ttbar_filter_selev
             selections.add( 'pass_ttbar_filter', pass_ttbar_filter )
             allcuts.append("pass_ttbar_filter")
+            self._cutFlow.fill( "pass_ttbar_filter", event[selections.all(*allcuts)], allTag=True )
             selev = selev[pass_ttbar_filter_selev]
-
 
         # logging.info( f"\n {chunk} Event:  nSelJets {selev['nJet_selected']}\n")
 
@@ -294,7 +295,7 @@ class analysis(processor.ProcessorABC):
         logging.debug(f"final weight {weights.weight()[:10]}")
         selev["weight"] = weights.weight()[selections.all(*allcuts)]
 
-        self._cutFlow.fill("passFourTag", selev )
+
         self._cutFlow.addOutput(processOutput, event.metadata["dataset"])
 
         #
