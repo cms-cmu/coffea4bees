@@ -24,23 +24,32 @@ create_output_directory "$OUTPUT_DIR"
 #    -e "s|\#test.*|test_files: 1|" \
 #    -e "s|workers:.*|workers: 1|" \
 #    -e "s|chunksize:.*|chunksize: 1000|" \
+# -e "s|base_path.*|base_path: $OUTPUT_DIR|" \
+			
+for i in {0..2}; do
+  echo "Doing splitting job $i"
+
+  display_section_header "Changing metadata"
+  JOB_CONFIG="$OUTPUT_DIR/split_mixeddata_v${i}.yml"
+  sed -e "s|mixed_subsample.*|mixed_subsample: $i|" \
+      coffea4bees/skimmer/metadata/split_mixeddata.yml > $JOB_CONFIG
+  [[ $(hostname) = *runner* ]] && sed -i "s|T3_US_FNALLPC|T3_CH_PSI|" $JOB_CONFIG
+  cat $JOB_CONFIG; echo
+  display_section_header "Running test processor split_mixed_data job $i"
+
+  cmd=(python runner.py -s \
+	    -p coffea4bees/skimmer/processor/split_mixed_data.py \
+	    -c $JOB_CONFIG \
+	    -y UL18 UL17 UL16_preVFP UL16_postVFP  -d mixeddata_all  \
+	    -op $OUTPUT_DIR \
+	    -o picoaod_datasets_split_mixeddata_Run2.yml \
+	    -m $DATASETS)
+  time run_command "${cmd[@]}"
+
+  
+done
 
 
-display_section_header "Changing metadata"
-JOB_CONFIG="$OUTPUT_DIR/split_mixeddata_for_test.yml"
-sed -e "s|base_path.*|base_path: $OUTPUT_DIR|" \
-    coffea4bees/skimmer/metadata/split_mixeddata.yml > $JOB_CONFIG
-[[ $(hostname) = *runner* ]] && sed -i "s|T3_US_FNALLPC|T3_CH_PSI|" $JOB_CONFIG
-cat $JOB_CONFIG; echo
 
-display_section_header "Running test processor split_mixed_data"
-cmd=(python runner.py -s \
-    -p coffea4bees/skimmer/processor/split_mixed_data.py \
-    -c $JOB_CONFIG \
-    -y UL18  -d mixeddata_all  \
-    -op $OUTPUT_DIR \
-    -o picoaod_datasets_split_mixeddata_test_UL18.yml \
-    -m $DATASETS)
-time run_command "${cmd[@]}"
 
 ls -R $OUTPUT_DIR

@@ -190,6 +190,7 @@ class analysis(processor.ProcessorABC):
         allcuts = [ 'lumimask', 'passNoiseFilter', 'passHLT', 'passJetMult' ]
         event['weight'] = weights.weight()   ### this is for _cutflow
 
+
         #
         #  Cut Flows
         #
@@ -232,6 +233,7 @@ class analysis(processor.ProcessorABC):
 
 
 
+
         #
         #  Build di-jets and Quad-jets
         #
@@ -253,7 +255,7 @@ class analysis(processor.ProcessorABC):
         selev["weight"] = weights.weight()[selections.all(*allcuts)]
 
         self._cutFlow.fill("passFourTag", selev )
-        self._cutFlow.addOutput(processOutput, event.metadata["dataset"])
+
 
         selev["thrustDeltaPhi"] = (selev.posHemiOld.thrust_phi - selev.newThrustPhi) % (2 * np.pi) - np.pi
         match_dist = ak.concatenate( [selev.posHemiNew.match_dist[:, np.newaxis], selev.negHemiNew.match_dist[:, np.newaxis]], axis=1 )
@@ -269,7 +271,7 @@ class analysis(processor.ProcessorABC):
         nSameSB = ak.sum(same_event & selev.region.SB)
         nSameSR = ak.sum(same_event & selev.region.SR)
         if ak.any(same_event):
-            print("Found same event hemispheres!", nSame, nSameSB, nSameSR)
+            print(f"Found same event hemispheres! {nSame}, SB {nSameSB}, SR {nSameSR} out of {len(selev)}" )
             print(" SR hemi event  ",hemis.event[same_event].tolist(),"\n")
             print(" SR hemi run  ",  hemis.run[same_event].tolist(),"\n")
             print(" SR hemi luminosityBlock  ",  hemis.luminosityBlock[same_event].tolist(),"\n")
@@ -288,9 +290,11 @@ class analysis(processor.ProcessorABC):
 
         sub_sample_counts = {}
         for i in range(n_subsamples):
+            self._cutFlow.fill(f"pass_mixedSubSample_v{i}", selev[selev[f"pass_mixedSubSample_v{i}"]] )
             for j in range(i,n_subsamples):
                 sub_sample_counts[f"{i}_{j}"] = ak.sum( selev[f"pass_mixedSubSample_v{i}"] & selev[f"pass_mixedSubSample_v{j}"] )
 
+        self._cutFlow.addOutput(processOutput, event.metadata["dataset"])
 
         #
         # Hists
@@ -310,6 +314,8 @@ class analysis(processor.ProcessorABC):
         #
         fill += Jet.plot(("selJets", "Selected Jets"),        "selJet",           skip=["deepjet_c"])
 
+        fill += Jet.plot(("selJets_v0", "Selected Jets"), "selJet", weight="pass_mixedSubSample_v0", skip=["deepjet_c"])
+        fill += Jet.plot(("selJets_JCM","Selected Jets"), "selJet", weight="pseudoTagWeight",        skip=["deepjet_c"])
 
         #
         #  Make Jet Hists
@@ -326,9 +332,6 @@ class analysis(processor.ProcessorABC):
         #fill += HemisphereHists( (f"neg_hemis", f"Hemispheres"), f"neg_hemi" )
 
         #fill += HemisphereHists( (f"pos_hemis", f"Hemispheres"), f"pos_hemi" )
-
-        #float upperLimit = ((offset+1) * weight);
-        #float lowerLimit = ( offset    * weight);
 
         # print("Event fields",   selev.fields,"\n")
         # print("Hemi old fields",selev.posHemiOld.fields,"\n")

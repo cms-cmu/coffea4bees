@@ -21,9 +21,9 @@ runner:
     - T3_US_NotreDame
 
 config:
-  base_path: root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v2
+  base_path: root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata
   # base_path: skimmer/test/
-  mixed_subsample: 15
+  mixed_subsample: 0
   step: 100000
   skip_collections:
   skip_branches:

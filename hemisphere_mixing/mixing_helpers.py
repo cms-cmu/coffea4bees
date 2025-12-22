@@ -271,9 +271,9 @@ def read_hemi_files(hemi_files_yaml, year, tree_name="Events", branch_list=None)
 
     with open(hemi_files_yaml, 'r') as f:
         hemi_library_data = yaml.safe_load(f)
-        print("Keys",hemi_library_data.keys())
+        # print("Keys",hemi_library_data.keys())
         hemi_files = hemi_library_data[year]
-        print("Hemi files:", type(hemi_files), hemi_files)
+        # print("Hemi files:", type(hemi_files), hemi_files)
 
 
     hemi_vars = { var_name: [] for var_name in branch_list }

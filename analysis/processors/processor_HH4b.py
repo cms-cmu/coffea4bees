@@ -185,15 +185,15 @@ class analysis(processor.ProcessorABC):
         self.friends = parse_friends(friends)
         self.histCuts = hist_cuts
         self.apply_mixeddata_sel = apply_mixeddata_sel
-        
+
         # Memory monitoring
         self.debug_memory = False  # Set to False to disable memory monitoring
-        
+
     def _log_memory(self, stage_name):
         """Log current memory usage"""
         if not self.debug_memory:
             return
-            
+
         try:
             process = psutil.Process(os.getpid())
             memory_info = process.memory_info()
@@ -216,6 +216,11 @@ class analysis(processor.ProcessorABC):
         self.year    = event.metadata['year']
         self.year_label = self.corrections_metadata[self.year]['year_label']
         self.processName = event.metadata['processName']
+
+        if self.processName.find("mix") != -1 or self.dataset.find("syn") != -1:
+            new_processName = self.dataset.replace(f'_{self.year}','')
+            logging.info(f"Overridding processName: {self.processName} to {new_processName} for dataset {self.dataset}")
+            self.processName = new_processName
 
         ### target is for new friend trees
         target = Chunk.from_coffea_events(event)

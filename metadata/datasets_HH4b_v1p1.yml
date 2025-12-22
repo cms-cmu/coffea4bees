@@ -603,6 +603,7 @@ datasets:
         sumw2: 31992474.261828292
         total_events: 39650048.0
     xs: 17.4 *0.1512*0.1512
+    
   data:
     UL16_postVFP:
       nanoAOD:
@@ -787,6 +788,7 @@ datasets:
         files_template:
         - root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig/mixed2018_3bDvTMix4bDvT_vXXX/picoAOD_3bDvTMix4bDvT_4b_wJCM_vXXX_newSBDef.root
     nSamples: 15
+    
   synthetic_data:
     UL16_postVFP:
       picoAOD:
@@ -828,6 +830,144 @@ datasets:
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_UL18/picoAOD_PSData.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_UL18/picoAOD_PSData.root
     nSamples: 1
+
+  mixeddata_all:
+    UL16_postVFP:
+      picoAOD:
+       files:
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_postVFPF/picoAOD_mixed_all.chunk0.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_postVFPF/picoAOD_mixed_all.chunk1.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_postVFPF/picoAOD_mixed_all.chunk2.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_postVFPG/picoAOD_mixed_all.chunk0.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_postVFPG/picoAOD_mixed_all.chunk1.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_postVFPG/picoAOD_mixed_all.chunk2.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_postVFPG/picoAOD_mixed_all.chunk3.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_postVFPG/picoAOD_mixed_all.chunk4.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_postVFPG/picoAOD_mixed_all.chunk5.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_postVFPG/picoAOD_mixed_all.chunk6.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_postVFPG/picoAOD_mixed_all.chunk7.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_postVFPH/picoAOD_mixed_all.chunk0.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_postVFPH/picoAOD_mixed_all.chunk1.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_postVFPH/picoAOD_mixed_all.chunk2.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_postVFPH/picoAOD_mixed_all.chunk3.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_postVFPH/picoAOD_mixed_all.chunk4.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_postVFPH/picoAOD_mixed_all.chunk5.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_postVFPH/picoAOD_mixed_all.chunk6.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_postVFPH/picoAOD_mixed_all.chunk7.root
+
+    UL16_preVFP:
+      picoAOD:
+       files:
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_preVFPB/picoAOD_mixed_all.chunk0.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_preVFPB/picoAOD_mixed_all.chunk1.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_preVFPB/picoAOD_mixed_all.chunk2.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_preVFPB/picoAOD_mixed_all.chunk3.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_preVFPB/picoAOD_mixed_all.chunk4.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_preVFPB/picoAOD_mixed_all.chunk5.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_preVFPC/picoAOD_mixed_all.chunk0.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_preVFPC/picoAOD_mixed_all.chunk1.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_preVFPC/picoAOD_mixed_all.chunk2.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_preVFPD/picoAOD_mixed_all.chunk0.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_preVFPD/picoAOD_mixed_all.chunk1.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_preVFPD/picoAOD_mixed_all.chunk2.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_preVFPD/picoAOD_mixed_all.chunk3.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_preVFPE/picoAOD_mixed_all.chunk0.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_preVFPE/picoAOD_mixed_all.chunk1.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_preVFPE/picoAOD_mixed_all.chunk2.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL16_preVFPE/picoAOD_mixed_all.chunk3.root
+       
+    UL17:
+      picoAOD:
+       files:
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL17C/picoAOD_mixed_all.chunk0.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL17C/picoAOD_mixed_all.chunk1.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL17C/picoAOD_mixed_all.chunk2.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL17C/picoAOD_mixed_all.chunk3.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL17D/picoAOD_mixed_all.chunk0.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL17D/picoAOD_mixed_all.chunk1.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL17E/picoAOD_mixed_all.chunk0.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL17E/picoAOD_mixed_all.chunk1.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL17E/picoAOD_mixed_all.chunk2.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL17E/picoAOD_mixed_all.chunk3.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL17E/picoAOD_mixed_all.chunk4.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL17F/picoAOD_mixed_all.chunk0.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL17F/picoAOD_mixed_all.chunk1.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL17F/picoAOD_mixed_all.chunk2.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL17F/picoAOD_mixed_all.chunk3.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL17F/picoAOD_mixed_all.chunk4.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL17F/picoAOD_mixed_all.chunk5.root
+
+    UL18:
+      picoAOD:
+       files:
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18A/picoAOD_mixed_all.chunk0.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18A/picoAOD_mixed_all.chunk1.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18A/picoAOD_mixed_all.chunk2.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18A/picoAOD_mixed_all.chunk3.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18A/picoAOD_mixed_all.chunk4.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18A/picoAOD_mixed_all.chunk5.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18A/picoAOD_mixed_all.chunk6.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18A/picoAOD_mixed_all.chunk7.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18B/picoAOD_mixed_all.chunk0.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18B/picoAOD_mixed_all.chunk1.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18B/picoAOD_mixed_all.chunk2.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18B/picoAOD_mixed_all.chunk3.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18C/picoAOD_mixed_all.chunk0.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18C/picoAOD_mixed_all.chunk1.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18C/picoAOD_mixed_all.chunk2.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18C/picoAOD_mixed_all.chunk3.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18D/picoAOD_mixed_all.chunk0.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18D/picoAOD_mixed_all.chunk1.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18D/picoAOD_mixed_all.chunk10.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18D/picoAOD_mixed_all.chunk11.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18D/picoAOD_mixed_all.chunk12.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18D/picoAOD_mixed_all.chunk13.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18D/picoAOD_mixed_all.chunk14.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18D/picoAOD_mixed_all.chunk2.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18D/picoAOD_mixed_all.chunk3.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18D/picoAOD_mixed_all.chunk4.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18D/picoAOD_mixed_all.chunk5.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18D/picoAOD_mixed_all.chunk6.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18D/picoAOD_mixed_all.chunk7.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18D/picoAOD_mixed_all.chunk8.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all/data_UL18D/picoAOD_mixed_all.chunk9.root
+
+
+  mixeddata_4b:
+    UL16_postVFP:
+      picoAOD:
+        files_template:
+        - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_UL16_postVFP/picoAOD_mixed_vXXX.root
+        - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_UL16_postVFP/picoAOD_PSData.root
+        - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_UL16_postVFP/picoAOD_PSData.root
+        - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_UL16_postVFP/picoAOD_PSData.root
+    UL16_preVFP:
+      picoAOD:
+        files_template:
+        - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_UL16_preVFP/picoAOD_mixed_vXXX.root
+        - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_UL16_preVFP/picoAOD_PSData.root
+        - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_UL16_preVFP/picoAOD_PSData.root
+        - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_UL16_preVFP/picoAOD_PSData.root
+
+    UL17:
+      picoAOD:
+        files_template:
+        - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_UL17/picoAOD_mixed_vXXX.root
+        - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_UL17/picoAOD_PSData.root
+        - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_UL17/picoAOD_PSData.root
+        - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_UL17/picoAOD_PSData.root      
+    UL18:
+      picoAOD:
+        files_template:
+        - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_UL18/picoAOD_mixed_vXXX.chunk0.root
+        - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_UL18/picoAOD_mixed_vXXX.chunk1.root
+        - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_UL18/picoAOD_PSData.root
+        - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_UL18/picoAOD_PSData.root
+        - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_UL18/picoAOD_PSData.root
+    nSamples: 3
+
+
+
   ttHbb:
     UL18:
       nanoAOD: /ttHTobb_M125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv9-BPH_106X_upgrade2018_realistic_v16_L1v1-v2/NANOAODSIM
