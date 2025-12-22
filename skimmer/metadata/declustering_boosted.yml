@@ -12,11 +12,11 @@ runner:
   condor_cores: 1
   condor_memory: 4GB
   condor_transfer_input_files:
-    - base_class
-    - analysis
-    - skimmer
-    - jet_clustering        
-    - classifier
+    - src/
+    - coffea4bees/analysis/
+    - coffea4bees/skimmer/
+    - coffea4bees/jet_clustering/        
+    - coffea4bees/classifier/
   allowlist_sites:
     - T2_US_Nebraska
     - T2_US_Purdue

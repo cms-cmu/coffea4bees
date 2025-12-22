@@ -7,19 +7,25 @@ import sys
 
 import numpy as np
 import awkward as ak
-from coffea.nanoevents.methods import vector
+
 import time
 from copy import copy
 import os
+from coffea.nanoevents.methods import nanoaod
+from coffea.nanoevents.methods import vector
 
 sys.path.insert(0, os.getcwd())
-from coffea4bees.hemisphere_mixing.mixing_helpers   import transverse_thrust_awkward, transverse_thrust_awkward_fast, split_hemispheres, compute_hemi_vars
+from coffea4bees.hemisphere_mixing.mixing_helpers   import transverse_thrust_awkward, transverse_thrust_awkward_fast, split_hemispheres, compute_hemi_vars, read_hemi_files, build_hemi_kdtrees
+from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres, replace_hemis, replace_hemis_load_kdTrees, init_hemi_data
 
 #import vector
 #vector.register_awkward()
 from coffea.nanoevents.methods.vector import ThreeVector
 import fastjet
+from src.data_formats.root import Chunk, TreeReader
 
+from scipy.spatial import cKDTree  # "c" = C-optimized
+import uproot
 
 
 
@@ -27,19 +33,6 @@ class mixingTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-
-        #
-        #  Read in the pdfs
-        #
-        #  Make with ../coffea4bees/scripts/synthetic-dataset-plot-job.sh
-        # input_pdf_file_name = "analysis/plots_synthetic_datasets/clustering_pdfs.yml"
-        #input_pdf_file_name = "coffea4bees/jet_clustering/jet-splitting-PDFs-00-07-00/clustering_pdfs_vs_pT.yml"
-        input_pdf_file_name = "coffea4bees/jet_clustering/jet-splitting-PDFs-00-09-00/clustering_pdfs_vs_pT_UL18.yml"
-        #input_pdf_file_name = "coffea4bees/jet_clustering/clustering_PDFs/clustering_pdfs_vs_pT.yml"
-        with open(input_pdf_file_name, 'r') as input_file:
-            self.input_pdfs = yaml.safe_load(input_file)
-
-        #        self.inputFile = wrapper.args["inputFile"]
 
         #
         # From 4jet events
@@ -204,6 +197,8 @@ class mixingTestCase(unittest.TestCase):
                 "mass": self.input_jet_mass_4 + self.input_jet_mass_5 + self.input_jet_mass_bbj + self.input_jet_mass_6 + self.input_jet_mass_5b,
                 "jet_flavor": self.input_jet_flavor_4 + self.input_jet_flavor_5 + self.input_jet_flavor_bbj + self.input_jet_flavor_6 + self.input_jet_flavor_5b,
                 "btagScore": self.input_jet_pt_4 + self.input_jet_pt_5 + self.input_jet_pt_bbj + self.input_jet_pt_6 + self.input_jet_pt_5b, ## Hack
+                "btagDeepFlavB": self.input_jet_pt_4 + self.input_jet_pt_5 + self.input_jet_pt_bbj + self.input_jet_pt_6 + self.input_jet_pt_5b, ## Hack
+                "jetId": self.input_jet_pt_4 + self.input_jet_pt_5 + self.input_jet_pt_bbj + self.input_jet_pt_6 + self.input_jet_pt_5b, ## Hack
             },
             with_name="PtEtaPhiMLorentzVector",
             behavior=vector.behavior,
@@ -307,6 +302,194 @@ class mixingTestCase(unittest.TestCase):
         print("sumPt_T neg hemi:",       neg_hemi["sumPt_T"][0:10])
         print("sumPt_T_minor neg hemi:", neg_hemi["sumPt_T_minor"][0:10])
         print("combinedMass neg hemi:",  neg_hemi["combinedMass"][0:10])
+
+
+    def test_kd_trees(self):
+
+        # Example: random 3D points
+        points = np.random.rand(1000, 3)
+
+        # Build the KD-tree
+        tree = cKDTree(points)
+
+        # Query: find nearest neighbor of a new point
+        query_point = np.array([0.5, 0.5, 0.5])
+        dist, idx = tree.query(query_point, k=1)
+
+        print(f"Nearest neighbor index {idx}, distance {dist}")
+        print("Coordinates:", points[idx])
+
+    def test_reading_hemisphere_library(self):
+
+        branch_list = ["nJet", "nSelJet", "nTagJet", "sumPt_T_minor", "sumPt_T", "combinedMass", "pz"]
+        hemi_var_names = ["combinedMass", "sumPt_T", "sumPt_T_minor", "pz"]
+
+        hemi_vars = { var_name: [] for var_name in hemi_var_names }
+
+        #hemifiles = f"output/mixeddata_cluster/data_UL18*/*.root"
+        hemifiles = "coffea4bees/hemisphere_mixing/tests/hemisphereLib_test.root"
+
+        for batch in uproot.iterate(
+            #"coffea4bees/hemisphere_mixing/tests/*.root:Events",
+            f"{hemifiles}:Events",
+            branch_list,
+            step_size=800_000,  # entries per chunk
+            library="np",
+        ):
+
+            nTag2Sel2Jet2 = ( (batch["nTagJet"] == 2) & (batch["nSelJet"] == 2) & (batch["nJet"] == 2) )
+
+
+            if hemi_vars[hemi_var_names[0]] is None:
+                for var_name in hemi_var_names:
+                    hemi_vars[var_name] = batch[var_name][nTag2Sel2Jet2]
+            else:
+                for var_name in hemi_var_names:
+                    hemi_vars[var_name] = np.concatenate( (hemi_vars[var_name], batch[var_name][nTag2Sel2Jet2]) )
+
+
+        hemi_var_mean = {}
+        hemi_var_RMS = {}
+        for var_name in hemi_var_names:
+            hemi_var_mean[var_name] = np.mean(hemi_vars[var_name])
+            hemi_var_RMS[var_name]  = np.sqrt(np.mean(hemi_vars[var_name]**2))
+
+
+        hemi_var_z_score = {}
+        for var_name in hemi_var_names:
+            hemi_var_z_score[var_name] = (hemi_vars[var_name] - hemi_var_mean[var_name]) / hemi_var_RMS[var_name]
+
+        points = np.column_stack([hemi_var_z_score[name] for name in hemi_var_names])
+
+        tree = cKDTree(points)
+
+
+        # Query: find nearest neighbor of a new point
+        query_point = np.array([0.5, 0.5, 0.5, 0.5])
+        dist, idx = tree.query(query_point, k=1)
+
+        print(f"Nearest neighbor index {idx}, distance {dist}")
+        print("Coordinates:", points[idx])
+
+        print(tree.query(points[10],k=2))
+        print(tree.query(points[0],k=2))
+
+
+
+    def test_reading_all_hemisphere_libraries(self):
+
+        yaml_file = 'coffea4bees/hemisphere_mixing/tests/hemisphereLib_test.yml'
+
+        jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_btagDeepFlavB", "Jet_bRegCorr", "Jet_jetId"]
+        #branch_list = ["nJet", "nSelJet", "nTagJet", "sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ] + jet_branches
+        hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ]
+
+        #hemifiles = "output/mixeddata_cluster/data_UL18*/*.root",
+        hemifiles = "coffea4bees/hemisphere_mixing/tests/hemisphereLib_test.root"
+
+        kd_trees, points, jet_ranges, stats, hemi_data = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
+                                                                            hemifiles = hemifiles,
+                                                                            hemi_summary_vars = hemi_summary_vars,
+                                                                            jet_branches = jet_branches,
+                                                                            )
+
+
+
+        # Query: find nearest neighbor of a new point
+        query_point = np.array([0.5, 0.5, 0.5, 0.5])
+        #dist, idx = tree.query(query_point, k=1)
+        #breakpoint()
+        kd_trees[(2, 2, 2)].query(points[(2, 2, 2)], k=2)
+        #breakpoint()
+
+
+    def test_hemi_mixing(self):
+        yaml_file = 'coffea4bees/hemisphere_mixing/tests/hemisphereLib_test.yml'
+        #yaml_file = 'coffea4bees/hemisphere_mixing/hemi_plots/hemi_statistics_UL18.yml'
+
+        jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_btagDeepFlavB", "Jet_bRegCorr", "Jet_jetId"]
+        #branch_list = ["nJet", "nSelJet", "nTagJet", "sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ] + jet_branches
+        self.hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ]
+
+        #hemifiles = f"output/mixeddata_cluster/data_UL18*/*.root"
+        hemifiles = "coffea4bees/hemisphere_mixing/tests/hemisphereLib_test.root"
+        #hemifiles = "output/mixeddata_cluster/data_UL18A/hemisphereLib_109efe9a-05bd-11ee-a1fc-9ebde183beef_0_100223.root"
+
+        self.test_load_hemi_kdTrees = True
+        if self.test_load_hemi_kdTrees:
+            self.hemi_data, self.hemi_jet_ranges, self.hemi_stats = init_hemi_data(hemi_metadata_yaml = yaml_file,
+                                                                                   hemifiles = hemifiles,
+                                                                                   hemi_summary_vars = self.hemi_summary_vars,
+                                                                                   jet_branches = jet_branches,
+                                                                                   )
+        else:
+            self.hemi_kd_trees, _, self.hemi_jet_ranges, self.hemi_stats, self.hemi_data = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
+                                                                                                                             hemifiles = hemifiles,
+                                                                                                                             hemi_summary_vars = self.hemi_summary_vars,
+                                                                                                                             jet_branches = jet_branches,
+                                                                                                                             )
+
+
+        selev = ak.zip({"Jet"  : self.input_jets_all,
+                        "event"   : ak.Array(range(len(self.input_jets_all))),
+                        "run"     : ak.Array(range(len(self.input_jets_all))),
+                        "luminosityBlock"     : ak.Array(range(len(self.input_jets_all))),
+                        "weight"     : ak.Array(range(len(self.input_jets_all))),
+                        },
+                       depth_limit=1,
+                       )
+
+        selev["tagJet"] = selev.Jet[selev.Jet.jet_flavor == "b"]
+        selev["selJet"] = selev.Jet
+
+
+        #
+        #  Split event into hemispheres
+        #
+        pos_hemi, neg_hemi = split_events_into_hemispheres(selev)
+        all_hemis = ak.concatenate([pos_hemi, neg_hemi], axis=0)
+        all_hemis["replaced"] = 0
+        all_hemis["match_dist"] = -1
+
+        if self.test_load_hemi_kdTrees:
+            all_hemis = replace_hemis_load_kdTrees(all_hemis=all_hemis, hemi_jet_ranges=self.hemi_jet_ranges,
+                                                   hemi_stats=self.hemi_stats, hemi_data=self.hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=jet_branches
+                                                   )
+
+        else:
+            all_hemis = replace_hemis(all_hemis=all_hemis, hemi_kd_trees=self.hemi_kd_trees, hemi_jet_ranges=self.hemi_jet_ranges,
+                                      hemi_stats=self.hemi_stats, hemi_data=self.hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=jet_branches)
+
+
+
+        n_event = len(selev)
+        pos_hemi_new = all_hemis[:n_event]
+        neg_hemi_new = all_hemis[n_event:]
+
+        old_hemi_output_vars = ["thrust_phi",  "event", "run", "luminosityBlock", "weight", "hemisphereId"]
+        new_hemi_output_vars = old_hemi_output_vars + ["match_dist"]
+        output_vars = []
+
+        for var_name in old_hemi_output_vars:
+            selev[f"pos_hemi_old_{var_name}"] = pos_hemi[var_name]
+            output_vars.append(f"pos_hemi_old_{var_name}")
+
+            selev[f"neg_hemi_old_{var_name}"] = neg_hemi[var_name]
+            output_vars.append(f"neg_hemi_old_{var_name}")
+
+        for var_name in new_hemi_output_vars:
+            selev[f"pos_hemi_new_{var_name}"] = pos_hemi_new[var_name]
+            output_vars.append(f"pos_hemi_new_{var_name}")
+
+            selev[f"neg_hemi_new_{var_name}"] = neg_hemi_new[var_name]
+            output_vars.append(f"neg_hemi_new_{var_name}")
+
+
+        mixed_Jet = ak.concatenate([pos_hemi_new.Jet, neg_hemi_new.Jet], axis=1)
+        selev["Jet"] = mixed_Jet
+
+        thrust_new = transverse_thrust_awkward_fast(selev.Jet, n_steps=720, refine_rounds=2)
+        # end tag loop
 
 
 

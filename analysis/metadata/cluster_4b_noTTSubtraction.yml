@@ -3,11 +3,10 @@ runner:
   condor_memory: 8GB
   chunksize: 5_000
   condor_transfer_input_files:
-    - base_class
-    - analysis
-    - skimmer
-    - data
-    - jet_clustering    
+    - src/
+    - coffea4bees/analysis
+    - coffea4bees/skimmer
+    - coffea4bees/jet_clustering    
   
 config:
   threeTag: false

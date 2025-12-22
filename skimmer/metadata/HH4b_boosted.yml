@@ -11,10 +11,10 @@ runner:
   condor_cores: 1
   condor_memory: 3GB
   condor_transfer_input_files:
-    - base_class
-    - analysis
-    - skimmer
-    - data
+    - src
+    - coffea4bees/analysis/
+    - coffea4bees/skimmer/
+    - coffea4bees/metadata/
   # rucio_regex_sites: 'T[123]_(US|CH|DE|UK)'
   allowlist_sites:
     - T3_US_FNALLPC
