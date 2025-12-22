@@ -5,6 +5,8 @@ import argparse
 #matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from coffea.util import load
+sys.path.insert(0, os.getcwd())
+from src.plotting.plots import load_hists
 from hist.intervals import ratio_uncertainty
 import yaml
 
@@ -88,7 +90,9 @@ if __name__ == '__main__':
 
     else:
         with open(f'{args.inputFile}', 'rb') as hfile:
+            print(f"loading {args.inputFile}...")
             hists = load(hfile)
+            #load_hists(args.inputFile)
 
         cf4      = hists["cutFlowFourTag"]
         cf4_unit = hists["cutFlowFourTagUnitWeight"]
