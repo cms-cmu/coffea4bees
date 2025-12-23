@@ -263,6 +263,8 @@ class analysis(processor.ProcessorABC):
 
         selev["hemiMatchDist"] = match_dist
 
+        selev["nSelJetOld"] = (selev.posHemiNew.nSelJet + selev.negHemiNew.nSelJet)
+
         #
         # Check how ofter then hemispheres from the same event are matched
         #
@@ -317,10 +319,13 @@ class analysis(processor.ProcessorABC):
         fill += Jet.plot(("selJets_v0", "Selected Jets"), "selJet", weight="pass_mixedSubSample_v0", skip=["deepjet_c"])
         fill += Jet.plot(("selJets_JCM","Selected Jets"), "selJet", weight="pseudoTagWeight",        skip=["deepjet_c"])
 
+
         #
         #  Make Jet Hists
         #
         skip_all_but_n = ["deepjet_b", "energy", "eta", "id_jet", "id_pileup", "mass", "phi", "pt", "pz", "deepjet_c", ]
+        fill += Jet.plot(("selJets_noJCM", "Selected Jets"), "selJet", skip=skip_all_but_n)
+        fill += Jet.plot(("tagJets_noJCM", "Tag Jets"),      "tagJet", skip=skip_all_but_n)
 
         #for iJ in range(4):
         #    fill += Jet.plot( (f"canJet{iJ}", f"Higgs Candidate Jets {iJ}"), f"canJet{iJ}", skip=["n", "deepjet_c"], )
@@ -328,6 +333,8 @@ class analysis(processor.ProcessorABC):
 
         fill += hist.add("thrustDeltaPhi", (50, -np.pi, np.pi, ("thrustDeltaPhi", 'Thrust Delta Phi')))
         fill += hist.add("matchDist",     (100, 0, 4, ("hemiMatchDist", 'Match distance')))
+        fill += hist.add("selJets.nOld", (20, 0, 20, ("nSelJetOld", 'Number of selected jets before mixing')))
+
         #fill += HemisphereHists( (f"pos_hemis", f"Hemispheres"), f"pos_hemi" )
         #fill += HemisphereHists( (f"neg_hemis", f"Hemispheres"), f"neg_hemi" )
 
