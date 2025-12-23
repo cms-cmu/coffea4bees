@@ -42,7 +42,8 @@ cmd=(python runner.py -s \
     -y UL18 UL17 UL16_preVFP UL16_postVFP  -d data  \
     -op $OUTPUT_DIR \
     -o picoaod_datasets_mixeddata_Run2.yml \
-    -m $DATASETS)
+    -m $DATASETS \
+    --condor)
 time run_command "${cmd[@]}"
 
 ls -R $OUTPUT_DIR

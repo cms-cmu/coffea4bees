@@ -23,7 +23,7 @@ bash coffea4bees/scripts/run-analysis-processor.sh \
     --output-base "$OUTPUT_BASE_DIR" \
     --datasets "mixeddata_all" \
     --year "UL18 UL17 UL16_preVFP UL16_postVFP " \
-    --output-filename "test_mixed_datasets_all.coffea" \
+    --output-filename "study_mixed_datasets_all.coffea" \
     --output-subdir "$JOB" \
     --config coffea4bees/analysis/metadata/study_mixed_data.yml \
     --no-test \

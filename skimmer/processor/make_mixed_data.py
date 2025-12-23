@@ -64,25 +64,6 @@ class HemiMixer(PicoAOD):
         self.hemi_library_yaml = hemi_library_yaml
 
 
-#        logging.info(f"\nLoading hemisphere library file: {hemi_library_yaml} for year {year_str}")
-#
-#        self.test_load_hemi_kdTrees = True
-#        if self.test_load_hemi_kdTrees:
-#            self.hemi_data, self.hemi_jet_ranges, self.hemi_stats  = init_hemi_data(hemi_metadata_yaml = yaml_file,
-#                                                                                    hemi_files_yaml = hemi_library_yaml,
-#                                                                                    year = year_str,
-#                                                                                    hemi_summary_vars = self.hemi_summary_vars,
-#                                                                                    jet_branches = self.jet_branches,
-#                                                                                    )
-#
-#        else:
-#            self.hemi_kd_trees, _, self.hemi_jet_ranges, self.hemi_stats, self.hemi_data = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
-#                                                                                                              hemifiles = hemifiles,
-#                                                                                                              hemi_summary_vars = self.hemi_summary_vars,
-#                                                                                                              jet_branches = self.jet_branches,
-#                                                                                                              )
-#
-
 
 
 
@@ -319,7 +300,7 @@ class HemiMixer(PicoAOD):
 
 
         old_hemi_output_vars = ["thrust_phi",  "event", "run", "luminosityBlock", "weight", "hemisphereId"]
-        new_hemi_output_vars = old_hemi_output_vars + ["match_dist"]
+        new_hemi_output_vars = old_hemi_output_vars + ["match_dist", "nSelJet", "nTagJet", "nJet"]
         output_vars = []
 
         for var_name in old_hemi_output_vars:
@@ -339,6 +320,7 @@ class HemiMixer(PicoAOD):
 
         mixed_Jet = ak.concatenate([pos_hemi_new.Jet, neg_hemi_new.Jet], axis=1)
         selev["Jet"] = mixed_Jet
+
 
         #
         #  Sanity check: compute transverse thrust of new jets
@@ -364,6 +346,7 @@ class HemiMixer(PicoAOD):
         for var_name in self.jet_branches:
             var_key = var_name.replace("Jet_", "")
             out_branches[var_name] = selev.Jet[var_key]
+
 
         #
         #  Add hemi branches
