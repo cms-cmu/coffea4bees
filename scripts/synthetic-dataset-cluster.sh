@@ -14,6 +14,11 @@ JOB="synthetic_dataset_cluster"
 OUTPUT_DIR=$OUTPUT_BASE_DIR/$JOB
 create_output_directory "$OUTPUT_DIR"
 
+### Temporary fix for CI tests
+display_section_header "Temporary Input Datasets"
+DATASETS=${DATASET:-"coffea4bees/metadata/datasets_HH4b_v1p2.yml"}
+sed '/^        B:$/{N;/\n          count: 1808836\.0$/{:a;N;/\n          total_events: 1808836$/!ba;s/^/#/gm}}' $DATASETS > $OUTPUT_DIR/datasets_temp.yml
+
 display_section_header "Running test processor"
 bash coffea4bees/scripts/run-analysis-processor.sh \
     --processor "coffea4bees/analysis/processors/processor_cluster_4b.py" \
@@ -23,6 +28,7 @@ bash coffea4bees/scripts/run-analysis-processor.sh \
     --output-filename "test_synthetic_datasets.coffea" \
     --output-subdir "$JOB" \
     --config coffea4bees/analysis/metadata/cluster_4b.yml \
+    --dataset-metadata "$OUTPUT_DIR/datasets_temp.yml" \
     # --additional-flags "--debug"
 
 

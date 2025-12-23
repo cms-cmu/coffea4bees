@@ -10,7 +10,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Create output directory
-JOB="tools_merge_test"
+JOB="tools_make_jcm_weights"
 INPUT_DIR=$OUTPUT_BASE_DIR/tools_merge_test
 OUTPUT_DIR=$OUTPUT_BASE_DIR/$JOB
 create_output_directory "$OUTPUT_DIR"

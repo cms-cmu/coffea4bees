@@ -1112,7 +1112,7 @@ cut: passPreSel
 region: SR
 kwargs:
   outputFolder: plotsANUnblinded/
-  CMSText: Preliminary  
+  CMSText: Supplementary  
   yscale: log
   norm: 0
   rebin: 1
@@ -1132,7 +1132,7 @@ kwargs:
   - Background uncertainty
   text:
     region_text:
-      text: Signal Region
+      text: $SR_{4b}$
       xpos: 0.35
       ypos: 0.95
     fit_text:

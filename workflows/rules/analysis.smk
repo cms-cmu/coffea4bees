@@ -69,8 +69,13 @@ rule merging_coffea_files:
     shell:
         """
         # Set matplotlib config directory to avoid permission issues
-        export MPLCONFIGDIR="/tmp/matplotlib"
+        mkdir -p /tmp/barista/
+        
+        # Set matplotlib and fontconfig directories to avoid permission issues
+        export MPLCONFIGDIR="/tmp/barista/matplotlib"
+        export FONTCONFIG_PATH="/tmp/barista/fontconfig"
         mkdir -p $MPLCONFIGDIR
+        mkdir -p $FONTCONFIG_PATH
         
         echo "Merging all the coffea files" 2>&1 | tee -a {log}
         cmd="mprof run -C -o /tmp/mprofile_merge_$(basename {log} .log).dat python src/tools/merge_coffea_files.py -f {input} -o {output}"
@@ -88,6 +93,8 @@ rule make_JCM:
     output: "output/JCM/jetCombinatoricModel_SB_reana.yml"
     container: config["analysis_container"]
     params:
+        extra_arguments = "",
+        tag = "2024_v2",
         output_dir = "output/JCM/",
     log: "logs/make_JCM.log"
     shell:
@@ -97,11 +104,8 @@ rule make_JCM:
         mkdir -p $MPLCONFIGDIR
         
         echo "Computing JCM" 2>&1 | tee -a {log}
-        python coffea4bees/analysis/make_jcm_weights.py -o {params.output_dir} -c passPreSel -r SB -i {input} -w 2024_v2 2>&1 | tee -a {log}
+        python coffea4bees/analysis/jcm_tools/make_jcm_weights.py -o {params.output_dir} -c passPreSel -r SB -i {input} {params.extra_arguments} -w {params.tag} 2>&1 | tee -a {log}
         ls {params.output_dir}
-        # echo "Modifying metadata file"
-        # sed -i 's|JCM.*|JCM: ../output/JCM/jetCombinatoricModel_SB_reana.yml|' coffea4bees/analysis/metadata/HH4b.yml
-        # cat coffea4bees/analysis/metadata/HH4b.yml
         """
 
 rule make_plots:

@@ -1,6 +1,7 @@
 runner:
   schema: PFNanoAODSchema
   data_tier: nanoAOD
+  maxchunks: 10000
 
 config:
 

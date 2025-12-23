@@ -51,11 +51,6 @@ def filling_nominal_histograms(
     fill += Jet.plot(("othJets", "Other Jets"), "notCanJet_coffea", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
     fill += Jet.plot(("tagJets", "Tag Jets"), "tagJet", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
 
-    if any('lowpt' in tag for tag in tag_list):
-        fill += hist.add('lowpt_categories', (21, -0.5, 20.5, ('lowpt_categories', 'lowpt_categories')))
-        fill += Jet.plot(("selJets_lowpt", "Selected lowpt Jets"), "selJet_lowpt", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
-        fill += Jet.plot(("tagJets_lowpt", "Selected lowpt tagged Jets"), "tagJet_lowpt", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
-
     # Make quad jet hists
     fill += LorentzVector.plot_pair(("v4j", R"$HH_{4b}$"), "v4j", skip=["n", "dr", "dphi", "st"], bins={"mass": (120, 0, 1200)})
     fill += QuadJetHistsSelected(("quadJet_selected", "Selected Quad Jet"), "quadJet_selected")
@@ -138,6 +133,17 @@ def filling_nominal_histograms(
     # MC Truth
     if "truth_v4b" in selev.fields:
         fill += LorentzVector.plot_pair(("truth_v4b", R"$HH_{4b}$"), "truth_v4b", skip=["n", "dr", "dphi", "st"], bins={"mass": (120, 0, 1200)})
+
+    # low pt
+    if any('lowpt' in tag for tag in tag_list):
+        fill += hist.add('lowpt_categories', (21, -0.5, 20.5, ('lowpt_categories', 'lowpt_categories')))
+        fill += Jet.plot(("selJets_lowpt", "Selected lowpt Jets"), "selJet_lowpt", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
+        fill += Jet.plot(("tagJets_lowpt", "Selected lowpt tagged Jets"), "tagJet_lowpt", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
+        fill += Jet.plot(("selJets_noJCM_lowpt", "Selected lowpt Jets"), "selJet_lowpt", weight="weight_noJCM_noFvT", skip=skip_all_but_n)
+        fill += Jet.plot(("tagJets_noJCM_lowpt", "Tag lowpt Jets"), "tagJet_lowpt", weight="weight_noJCM_noFvT", skip=skip_all_but_n)
+        fill += Jet.plot(("tagJets_loose_noJCM_lowpt", "Loose Tag lowpt Jets"), "tagJet_loose_lowpt", weight="weight_noJCM_noFvT", skip=skip_all_but_n)
+
+
 
     # fill histograms
     fill(selev, hist)

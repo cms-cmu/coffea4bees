@@ -16,21 +16,21 @@ config = {
         "zz": {
             "datacard": "datacard_ZZ4b",
             "signallabel": "ZZ_bbbb",
-            "othersignal": "",
+            "othersignal": "ZH_bbbb",
             "workspace": "hists/coffea4bees_20250605_0dc846dc_unblinded_ext_ZZZH/datacards/ZZ4b/"
         },
         "zh": {
             "datacard": "datacard_ZH4b",
             "signallabel": "ZH_bbbb",
-            "othersignal": "",
+            "othersignal": "ZZ_bbbb",
             "workspace": "hists/coffea4bees_20250605_0dc846dc_unblinded_ext_ZZZH/datacards/ZH4b/"
         },
-        "hh": {
-            "datacard": "datacard_HH4b",
-            "signallabel": "ggHH_kl_1_kt_1_13p0TeV_hbbhbb",
-            "othersignal": "ggHH_kl_0_kt_1_13p0TeV_hbbhbb,rggHH_kl_2p45_kt_1_13p0TeV_hbbhbb,rggHH_kl_5_kt_1_13p0TeV_hbbhbb",
-            "workspace": "hists/coffea4bees_20250605_0dc846dc_unblinded_ext_ZZZH/datacards/HH4b/"
-        },
+        # "hh": {
+        #     "datacard": "datacard_HH4b",
+        #     "signallabel": "ggHH_kl_1_kt_1_13p0TeV_hbbhbb",
+        #     "othersignal": "ggHH_kl_0_kt_1_13p0TeV_hbbhbb,rggHH_kl_2p45_kt_1_13p0TeV_hbbhbb,rggHH_kl_5_kt_1_13p0TeV_hbbhbb",
+        #     "workspace": "hists/coffea4bees_20250605_0dc846dc_unblinded_ext_ZZZH/datacards/HH4b/"
+        # },
     }
 }
 

@@ -1,38 +1,43 @@
 import os
 username = os.getenv("USER")
 
-output_path = "output/JCM_2024_v2/"
-config['dataset_location'] = "metadata/datasets_HH4b_2024_v2.yml"
-config["analysis_container"] = "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest"
+config = {
+    'output_path': 'output/computeJCM/',
+    'dataset_location': "coffea4bees/metadata/datasets_HH4b_2024_v2.yml",
+    "analysis_container": "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest",
+    'dataset' : [ 'data', 'TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic'],
+    'year': 'UL18'
+}
 
-rule all:
+rule output_computeJCM:
     input:
-        f"{output_path}histAll_NoJCM.coffea",
-        f"{output_path}jetCombinatoricModel_SB_2024_v2.yml",
+        f"{config['output_path']}JCM_2024_v2/jetCombinatoricModel_SB_2024_v2.yml"
 
 ### Including modules
 module analysis:
-    snakefile: "rules/analysis"
+    snakefile: "rules/analysis.smk"
     config: config
 
-use rule analysis_all from analysis as analysis_noJCM with:
-    output: f"{output_path}histAll_NoJCM.coffea"
+use rule analysis_processor from analysis as analysis_noJCM with:
+    output: f"{config['output_path']}histAll_NoJCM.coffea"
     params:
-        isam=config['dataset'],
-        iy=config['year'],
-        output="histAll_NoJCM.coffea",
-        output_path=f"{output_path}",
-        logname="histAll_NoJCM",
-        metadata="analysis/metadata/HH4b_noJCM.yml",
-        datasets=config['dataset_location'],
-        user=username,
-        run_performance=True
-    log: f"{output_path}logs/analysis_all.log"
+        datasets = config['dataset'],
+        years = config['year'],
+        metadata = "coffea4bees/analysis/metadata/HH4b_noJCM.yml",
+        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
+        datasets_file = config['dataset_location'],
+        blind = False,
+        run_performance = False,
+        extra_arguments = "",
+        username = username
+    log: f"{config['output_path']}logs/analysis_all.log"
 
 
 use rule make_JCM from analysis as make_new_JCM with:
-    input: f"{output_path}histAll_NoJCM.coffea"
-    output: f"{output_path}jetCombinatoricModel_SB_2024_v2.yml"
+    input: f"{config['output_path']}histAll_NoJCM.coffea"
+    output: f"{config['output_path']}JCM_2024_v2/jetCombinatoricModel_SB_2024_v2.yml"
     params:
-        output_dir = f"{output_path}"
-    log: f"{output_path}logs/make_JCM.log"
+        extra_arguments = "",
+        tag = "2024_v2",
+        output_dir = f"{config['output_path']}JCM_2024_v2/"
+    log: f"{config['output_path']}logs/make_JCM.log"
