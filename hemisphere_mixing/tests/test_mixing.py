@@ -412,13 +412,14 @@ class mixingTestCase(unittest.TestCase):
         self.hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ]
 
         #hemifiles = f"output/mixeddata_cluster/data_UL18*/*.root"
-        hemifiles = "coffea4bees/hemisphere_mixing/tests/hemisphereLib_test.root"
+        hemifiles = "coffea4bees/hemisphere_mixing/tests/hemisphereLib_files_test.yml"
         #hemifiles = "output/mixeddata_cluster/data_UL18A/hemisphereLib_109efe9a-05bd-11ee-a1fc-9ebde183beef_0_100223.root"
 
         self.test_load_hemi_kdTrees = True
         if self.test_load_hemi_kdTrees:
             self.hemi_data, self.hemi_jet_ranges, self.hemi_stats = init_hemi_data(hemi_metadata_yaml = yaml_file,
-                                                                                   hemifiles = hemifiles,
+                                                                                   year = "UL18",
+                                                                                   hemi_files_yaml = hemifiles,
                                                                                    hemi_summary_vars = self.hemi_summary_vars,
                                                                                    jet_branches = jet_branches,
                                                                                    )

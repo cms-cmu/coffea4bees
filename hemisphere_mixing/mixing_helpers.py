@@ -10,6 +10,8 @@ import numpy as np
 from scipy.spatial import cKDTree  # "c" = C-optimized
 from src.data_formats.root import Chunk, TreeReader
 from coffea.nanoevents.methods import vector
+from src.math_tools.random import Squares
+
 
 @nb.njit(cache=True)
 def _thrust_event_numba(px_i, py_i, n_steps=720):
@@ -265,13 +267,20 @@ def split_events_into_hemispheres(event, tagged_key="tagJet"):
 
 
 
-def read_hemi_files(hemifiles, tree_name="Events", branch_list=None):
+def read_hemi_files(hemi_files_yaml, year, tree_name="Events", branch_list=None):
+
+    with open(hemi_files_yaml, 'r') as f:
+        hemi_library_data = yaml.safe_load(f)
+        # print("Keys",hemi_library_data.keys())
+        hemi_files = hemi_library_data[year]
+        # print("Hemi files:", type(hemi_files), hemi_files)
+
 
     hemi_vars = { var_name: [] for var_name in branch_list }
 
-    if isinstance(hemifiles, str):
+    if isinstance(hemi_files, str):
         for batch in uproot.iterate(
-                f"{hemifiles}:{tree_name}",
+                f"{hemi_files}:{tree_name}",
                 branch_list,
                 step_size=200_000,  # entries per chunk
                 library="np",
@@ -283,10 +292,11 @@ def read_hemi_files(hemifiles, tree_name="Events", branch_list=None):
             else:
                 for var_name in branch_list:
                     hemi_vars[var_name] = np.concatenate( (hemi_vars[var_name], batch[var_name]) )
+        print(f"\tread_hemi_files: Read n hemispheres: {len(hemi_vars[branch_list[0]])}")
 
-    elif isinstance(hemifiles, list):
-        print("Reading hemisphere files:", hemifiles)
-        file_spec = {f: tree_name for f in hemifiles}
+    elif isinstance(hemi_files, list):
+        #print("Reading hemisphere files:", hemifiles)
+        file_spec = {f: tree_name for f in hemi_files}
 
         for batch in uproot.iterate(
                 file_spec,
@@ -300,7 +310,7 @@ def read_hemi_files(hemifiles, tree_name="Events", branch_list=None):
             else:
                 for var_name in branch_list:
                     hemi_vars[var_name] = np.concatenate( (hemi_vars[var_name], batch[var_name]) )
-
+        print(f"\tread_hemi_files: Read n hemispheres: {len(hemi_vars[branch_list[0]])}")
 
     return hemi_vars
 
@@ -413,7 +423,7 @@ def convert_yaml_dict(raw_dict):
     return output
 
 
-def init_hemi_data(hemi_metadata_yaml, hemifiles, hemi_summary_vars, jet_branches, event_branches=["event", "run", "luminosityBlock", "thrust_phi", "hemisphereId", "weight"]):
+def init_hemi_data(hemi_metadata_yaml, hemi_files_yaml, year, hemi_summary_vars, jet_branches, event_branches=["event", "run", "luminosityBlock", "thrust_phi", "hemisphereId", "weight"]):
 
     # Read in hemisphere library metadata
     with open(hemi_metadata_yaml, 'r') as f:
@@ -427,23 +437,19 @@ def init_hemi_data(hemi_metadata_yaml, hemifiles, hemi_summary_vars, jet_branche
     #
     branch_list = ["nJet", "nSelJet", "nTagJet"] + event_branches + hemi_summary_vars + jet_branches
 
-    hemi_data = read_hemi_files(hemifiles, branch_list=branch_list)
-    #print("hemifiles is", hemifiles)
-    #hemi_data = TreeReader(branch_filter=set(branch_list).intersection).concat(
-    #    *(Chunk(f) for f in [hemifiles]), library="np"
-    #)
-    #breakpoint()
+    hemi_data = read_hemi_files(hemi_files_yaml, year, branch_list=branch_list)
+
     return hemi_data, jet_ranges, hemi_stats
 
 
-def build_hemi_kdtrees(hemi_metadata_yaml, hemifiles, hemi_summary_vars, jet_branches):
+def build_hemi_kdtrees(hemi_metadata_yaml, hemi_files_yaml, year, hemi_summary_vars, jet_branches):
 
 
     #
     #  Readin the hemisphere data
     #
     event_branches = ["event", "run", "luminosityBlock", "thrust_phi", "hemisphereId", "weight"]
-    hemi_data, jet_ranges, hemi_stats = init_hemi_data(hemi_metadata_yaml, hemifiles, hemi_summary_vars, jet_branches, event_branches)
+    hemi_data, jet_ranges, hemi_stats = init_hemi_data(hemi_metadata_yaml, hemi_files_yaml, year, hemi_summary_vars, jet_branches, event_branches)
 
     #
     #  Group hemisphere data by jet multiplicity bins
@@ -537,7 +543,7 @@ def replace_hemis(*, all_hemis, hemi_kd_trees, hemi_stats, hemi_data, hemi_jet_r
                                    "nJet" :            ak.num(new_Jets, axis=1),
                                    "Jet":              new_Jets,
                                    "match_dist":       ak.Array(match_dist),
-                                   "local_idx":      subset_hemis["local_idx"],
+                                   "local_idx":        subset_hemis["local_idx"],
                                    },
                                   depth_limit=1
                                   )
@@ -585,7 +591,6 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
 
         if np.sum(mask_3b) < 1:
             continue
-
 
         #
         # Rotate Jets to match thrust axis
@@ -645,3 +650,27 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
         #all_hemis = ak.where(mask, all_hemis_new, all_hemis)
 
     return all_hemis_new
+
+
+def assign_mixed_subsamples(event, n_subsamples=16):
+
+    # Get Random Numbers uniform 0 - 1 for each event
+    rng       = Squares("subsample_mixed_data")
+    counter   = event.event
+    rand_vals = rng.uniform(counter, low=0, high=1.0)
+
+    for mixed_sub_sample in range(n_subsamples):
+
+        # Set upper and lower limits based on pseudoTagWeight
+        upperLimit = ((mixed_sub_sample+1) * event.pseudoTagWeight)
+        lowerLimit = ( mixed_sub_sample    * event.pseudoTagWeight);
+
+        # Handle overflow cases
+        #    when overflow occurs, pick one of the samples < 9
+        overflow = upperLimit > 1.0
+        overflow_sub_sample_index = (event.event + mixed_sub_sample) % 9
+        upperLimit = ak.where( overflow, ((overflow_sub_sample_index + 1) * event.pseudoTagWeight), upperLimit )
+        lowerLimit = ak.where( overflow, ((overflow_sub_sample_index    ) * event.pseudoTagWeight), lowerLimit )
+
+        pass_subsample = ( (rand_vals > lowerLimit) & (rand_vals < upperLimit) )
+        event[f"pass_mixedSubSample_v{mixed_sub_sample}"] = pass_subsample

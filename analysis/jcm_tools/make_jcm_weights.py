@@ -14,9 +14,12 @@ import logging
 from copy import copy
 import numpy as np
 import os
+import matplotlib
+matplotlib.use("Agg")  # no GUI, renders directly to files
 import matplotlib.pyplot as plt
 from hist import Hist 
 from typing import Dict, Tuple, List, Optional, Union, Any
+import yaml
 
 # Add the current directory to the path
 sys.path.insert(0, os.getcwd())
@@ -47,7 +50,7 @@ def write_to_JCM_file(text: str, value: Any, jetCombinatoricModelFile, jetCombin
     jetCombinatoricModelFile_yml.write(f"        {value}\n")
 
 def process_histograms(data4b, data3b, tt4b, tt3b, qcd4b, qcd3b, data4b_nTagJets,
-                      tt4b_nTagJets, qcd3b_nTightTags, args: argparse.Namespace, logger: logging.Logger) -> Tuple:
+                       tt4b_nTagJets, qcd3b_nTightTags, args: argparse.Namespace, logger: logging.Logger, jcm_config : dict) -> Tuple:
     """Process the histograms and extract data for fitting
 
     Args:
@@ -55,6 +58,7 @@ def process_histograms(data4b, data3b, tt4b, tt3b, qcd4b, qcd3b, data4b_nTagJets
         data4b_nTagJets, tt4b_nTagJets, qcd3b_nTightTags: Tag jet histograms
         args: Command line arguments
         logger: Logger instance
+        jcm_config: jcm configuration dictionary
 
     Returns:
         Tuple of (bin_centers, bin_values, bin_errors, tt4b_nTagJets_values,
@@ -66,7 +70,14 @@ def process_histograms(data4b, data3b, tt4b, tt3b, qcd4b, qcd3b, data4b_nTagJets
 
     # Calculate QCD scale factor
     mu_qcd = np.sum(qcd4b.values()) / np.sum(qcd3b.values())
-    threeTightTagFraction = (qcd3b.values()[4] / np.sum(qcd3b.values())) if args.lowpt else (qcd3b_nTightTags.values()[3] / np.sum(qcd3b_nTightTags.values()))
+
+    if jcm_config.get("threeTightTagFraction", False):
+        logger.info(f"Setting QCD scale factor by hand!!!  to {jcm_config.get('threeTightTagFraction')}")
+        threeTightTagFraction = float(jcm_config.get('threeTightTagFraction'))
+    else:
+        threeTightTagFraction = (qcd3b.values()[4] / np.sum(qcd3b.values())) if args.lowpt else (qcd3b_nTightTags.values()[3] / np.sum(qcd3b_nTightTags.values()))
+
+
 
     logger.info(f"QCD scale factor (mu_qcd): {mu_qcd:.6f}")
     logger.info(f"Three tight tag fraction: {threeTightTagFraction:.6f}")
@@ -322,8 +333,7 @@ def create_plots(
     bin_data: Tuple,
     args: argparse.Namespace,
     mu_qcd: float,
-    selJets: str,
-    tagJets: str,
+    jcm_config: dict,
     logger: logging.Logger
 ) -> None:
     """Create plots for the JCM model
@@ -343,6 +353,9 @@ def create_plots(
 
     logger.info("Creating plots")
     bin_centers = bin_data[0]
+
+    selJets = jcm_config.get("selJets", "selJets_noJCM.n")
+    tagJets = jcm_config.get("tagJets", "tagJets_noJCM.n")
 
     # Scale QCD by mu_qcd
     for p in ["data_3tag", "TTTo2L2Nu_3tag", "TTToSemiLeptonic_3tag", "TTToHadronic_3tag"]:
@@ -557,8 +570,6 @@ def main():
                         help='Label for the weight set')
     parser.add_argument('-r', dest="weightRegion", default="SB",
                         help='Weight region (e.g. SB for sideband)')
-    parser.add_argument('--data4bName', default="data",
-                        help='Name of the 4b data process')
     parser.add_argument('-c', dest="cut", default="passPreSel",
                         help='Cut to apply (e.g. passPreSel)')
     parser.add_argument('-fix_e', action="store_true",
@@ -586,6 +597,7 @@ def main():
                         help='Metadata file for plots configuration')
     parser.add_argument('--no-plots', dest="no_plots", action="store_true",
                         help='Skip creating plots')
+    parser.add_argument('--jcm_config', default="coffea4bees/analysis/jcm_tools/metadata/nominal_jcm_config.yml")
     parser.add_argument('--zero_pseudotag', dest="zero_pseudotag", action="store_true",
                         help='Compute zero pseudotag probabilities and weights in output')
     parser.add_argument('--lowpt', dest="lowpt", action="store_true",
@@ -616,8 +628,11 @@ def main():
     jetCombinatoricModelFile = open(jetCombinatoricModelName, "w")
     jetCombinatoricModelFile_yml = open(f'{jetCombinatoricModelName.replace(".txt",".yml")}', 'w')
 
-    selJets = "selJets_noJCM_lowpt.n" if args.lowpt else "selJets_noJCM.n"
-    tagJets = "tagJets_noJCM_lowpt.n" if args.lowpt else "tagJets_noJCM.n"
+    jcm_config_yaml = args.jcm_config
+    with open(jcm_config_yaml, "r") as f:
+        jcm_config = yaml.safe_load(f)
+
+    print("JCM configuration:", jcm_config)
 
     try:
         if not args.ROOTInputs:
@@ -631,20 +646,16 @@ def main():
         # Load histograms
         histograms = loadHistograms(
             inputFile=args.inputFile[0],
+            jcm_config=jcm_config,
             format='ROOT' if args.ROOTInputs else 'coffea',
             cfg=cfg if not args.ROOTInputs else None,
             cut=args.cut,
             year=args.year,
             weightRegion=args.weightRegion,
-            data4bName=args.data4bName,
-            taglabel4b= "lowpt_fourTag" if args.lowpt else "fourTag",
-            taglabel3b= "lowpt_threeTag" if args.lowpt else "threeTag",
-            selJets=selJets,
-            tagJets=tagJets,
         )
 
         # Process histograms and prepare data for fitting
-        bin_data = process_histograms(*histograms, args, logger)
+        bin_data = process_histograms(*histograms, args, logger, jcm_config)
 
         # Set up the model
         JCM_model = setup_model(bin_data, args, logger)
@@ -662,7 +673,7 @@ def main():
         )
 
         # Create plots
-        create_plots(JCM_model, bin_data, args, bin_data[8], selJets, tagJets, logger)
+        create_plots(JCM_model, bin_data, args, bin_data[8], jcm_config, logger)
 
         logger.info(f"JCM weight generation completed successfully")
         return 0

@@ -9,20 +9,36 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+display_section_header "Input Datasets"
+DATASETS=${DATASET:-"coffea4bees/metadata/datasets_HH4b.yml"}
+echo "Using datasets file: $DATASETS"
+
+
+# Setup proxy if needed
+setup_proxy 
+
 # Create output directory
-JOB="mixeddata_cluster"
-OUTPUT_DIR=$OUTPUT_BASE_DIR/$JOB
+OUTPUT_DIR="$OUTPUT_BASE_DIR/mixeddata_cluster"
 create_output_directory "$OUTPUT_DIR"
 
-display_section_header "Running test processor"
-bash coffea4bees/scripts/run-analysis-processor.sh \
+
+display_section_header "Changing metadata"
+JOB_CONFIG="$OUTPUT_DIR/make_hemi_library_4b_test.yml"
+sed -e "s|base_path.*|base_path: $OUTPUT_DIR|" \
+    -e "s|subtract_ttbar.*|subtract_ttbar_with_weights: False|" \
+    coffea4bees/analysis/metadata/make_hemi_library_4b.yml > $JOB_CONFIG
+[[ $(hostname) = *runner* ]] && sed -i "s|T3_US_FNALLPC|T3_CH_PSI|" $JOB_CONFIG
+cat $JOB_CONFIG; echo
+
+display_section_header "Running test mixed data clustering"
+echo bash coffea4bees/scripts/run-analysis-processor.sh \
     --processor "coffea4bees/analysis/processors/processor_make_hemi_library.py" \
     --output-base "$OUTPUT_BASE_DIR" \
     --datasets "data" \
     --year "UL18" \
     --output-filename "test_mixed_datasets.coffea" \
     --output-subdir "$JOB" \
-    --config coffea4bees/analysis/metadata/make_hemi_library_4b.yml \
+    --config "$JOB_CONFIG" \
     # --additional-flags "--debug"
 
 #    --year "UL17 UL18 UL16_preVFP UL16_postVFP" \    
