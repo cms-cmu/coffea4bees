@@ -46,7 +46,7 @@ def loadHistograms(inputFile: str, jcm_config: dict, format: str = 'coffea', cfg
 
     if format == 'ROOT':
         logger.info(f"Loading histograms from ROOT file: {inputFile}")
-        return loadROOTHistograms()
+        return loadROOTHistograms(inputFile)
 
     elif not format == 'coffea':
         raise ValueError(f"Unsupported format: {format}")
