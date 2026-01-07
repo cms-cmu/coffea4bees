@@ -57,12 +57,13 @@ class jetCombinatoricModel:
             except KeyError:
                 logging.error(f'No {self.cut} key in JCM file. Keys are {self.data.keys()}')
 
-    def __call__(self, untagged_jets, event=None):
+    def __call__(self, num_untagged_jets, event=None):
 
-        nEvent = len(untagged_jets)
+        nEvent = len(num_untagged_jets)
         maxPseudoTags = self.maxPseudoTags
         nbt = self.nbt  # number of required b-tags
-        nlt = ak.to_numpy(ak.num(untagged_jets, axis=1))  # number of light jets
+        #nlt = ak.to_numpy(ak.num(untagged_jets, axis=1))  # number of light jets
+        nlt = ak.to_numpy(num_untagged_jets)  # number of light jets
 
         # Pre-compute pseudo-tag probability table for all possible light jet counts
         # Use np.max with default value for empty arrays

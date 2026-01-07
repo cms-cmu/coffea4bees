@@ -9,6 +9,11 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+display_section_header "Input Datasets"
+DATASETS=${DATASET:-"coffea4bees/metadata/datasets_HH4b.yml"}
+echo "Using datasets file: $DATASETS"
+
+
 # Create output directory
 JOB="mixeddata_cluster"
 OUTPUT_DIR=$OUTPUT_BASE_DIR/$JOB
@@ -26,7 +31,8 @@ bash coffea4bees/scripts/run-analysis-processor.sh \
     --output-filename "study_mixed_datasets_all.coffea" \
     --output-subdir "$JOB" \
     --config coffea4bees/analysis/metadata/study_mixed_data.yml \
-    --no-test \
+    --dataset-metadata $DATASETS \
+    --no-test 
 #    --additional-flags "--debug"
 
 
