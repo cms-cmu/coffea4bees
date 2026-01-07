@@ -58,6 +58,8 @@ class analysis(processor.ProcessorABC):
             *,
             SvB=None,
             SvB_MA=None,
+            apply_JCM: bool = True,
+            JCM_file: str = "output/mixeddata_cluster/jcm_for_subsampling/jetCombinatoricModel_SB_.txt",
             threeTag=False,
             corrections_metadata: dict = None,
             run_SvB=True,
@@ -65,6 +67,7 @@ class analysis(processor.ProcessorABC):
     ):
         logging.debug("\nInitialize  processor_make_hemi_library\n")
 
+        self.apply_JCM = jetCombinatoricModel(JCM_file) if apply_JCM else None
         self.corrections_metadata = corrections_metadata
         self.classifier_SvB = HCREnsemble(SvB) if SvB else None
         self.classifier_SvB_MA = HCREnsemble(SvB_MA) if SvB_MA else None
@@ -83,7 +86,7 @@ class analysis(processor.ProcessorABC):
         estop   = event.metadata['entrystop']
         chunk_str  = f'{dataset}::{estart:6d}:{estop:6d} >>> '
         year    = event.metadata['year']
-        year_label = self.corrections_metadata[year]['year_label']
+        self.year_label = self.corrections_metadata[year]['year_label']
         processName = event.metadata['processName']
         lumi    = event.metadata.get('lumi',    1.0)
         xs      = event.metadata.get('xs',      1.0)
@@ -98,8 +101,8 @@ class analysis(processor.ProcessorABC):
         #
         # Set process and datset dependent flags
         #
-        config = processor_config(processName, dataset, event)
-        logging.debug(f'{chunk_str} config={config}, for file {fname}\n')
+        self.config = processor_config(processName, dataset, event)
+        logging.debug(f'{chunk_str} config={self.config}, for file {fname}\n')
 
         #
         # Reading SvB friend trees (for TTbar subtraction)
@@ -132,7 +135,7 @@ class analysis(processor.ProcessorABC):
         #
         # Event selection
         #
-        event = apply_event_selection( event, self.corrections_metadata[year], cut_on_lumimask=config["cut_on_lumimask"])
+        event = apply_event_selection( event, self.corrections_metadata[year], cut_on_lumimask=self.config["cut_on_lumimask"])
 
 
         ### target is for new friend trees
@@ -140,13 +143,13 @@ class analysis(processor.ProcessorABC):
 
         ### adds all the event mc weights and 1 for data
         weights, list_weight_names = add_weights( event, target=target,
-                                                  do_MC_weights=config["do_MC_weights"],
+                                                  do_MC_weights=self.config["do_MC_weights"],
                                                   dataset=dataset,
-                                                  year_label=year_label,
+                                                  year_label=self.year_label,
                                                   friend_trigWeight=None,
                                                   corrections_metadata=self.corrections_metadata[year],
                                                   apply_trigWeight=True,
-                                                  isTTForMixed=config["isTTForMixed"]
+                                                  isTTForMixed=self.config["isTTForMixed"]
                                                  )
 
 
@@ -157,10 +160,10 @@ class analysis(processor.ProcessorABC):
         #
         # Calculate and apply Jet Energy Calibration
         #
-        if False and config["do_jet_calibration"]:
+        if False and self.config["do_jet_calibration"]:
             jets = apply_jerc_corrections(event,
                                           corrections_metadata=self.corrections_metadata[year],
-                                          isMC=config["isMC"],
+                                          isMC=self.config["isMC"],
                                           run_systematics=False,
                                           dataset=dataset
                                           )
@@ -174,18 +177,18 @@ class analysis(processor.ProcessorABC):
         event = apply_4b_selection( event,
                                     self.corrections_metadata[year],
                                     dataset=dataset,
-                                    doLeptonRemoval=config["do_lepton_jet_cleaning"],
-                                    override_selected_with_flavor_bit=config["override_selected_with_flavor_bit"],
-                                    do_jet_veto_maps=config["do_jet_veto_maps"],
-                                    isRun3=config["isRun3"],
-                                    isMC=config["isMC"], ### temporary
-                                    isSyntheticData=config["isSyntheticData"],
+                                    doLeptonRemoval=self.config["do_lepton_jet_cleaning"],
+                                    override_selected_with_flavor_bit=self.config["override_selected_with_flavor_bit"],
+                                    do_jet_veto_maps=self.config["do_jet_veto_maps"],
+                                    isRun3=self.config["isRun3"],
+                                    isMC=self.config["isMC"], ### temporary
+                                    isSyntheticData=self.config["isSyntheticData"],
                                    )
 
         selections = PackedSelection()
         selections.add( "lumimask", event.lumimask)
         selections.add( "passNoiseFilter", event.passNoiseFilter)
-        selections.add( "passHLT", ( event.passHLT if config["cut_on_HLT_decision"] else np.full(len(event), True)  ) )
+        selections.add( "passHLT", ( event.passHLT if self.config["cut_on_HLT_decision"] else np.full(len(event), True)  ) )
         selections.add( 'passJetMult', event.passJetMult )
         allcuts = [ 'lumimask', 'passNoiseFilter', 'passHLT', 'passJetMult' ]
         event['weight'] = weights.weight()   ### this is for _cutflow
@@ -199,7 +202,7 @@ class analysis(processor.ProcessorABC):
         processOutput['nEvent'] = {}
         processOutput['nEvent'][event.metadata['dataset']] = {
             'nEvent' : nEvent,
-            'genWeights': np.sum(event.genWeight) if config["isMC"] else nEvent
+            'genWeights': np.sum(event.genWeight) if self.config["isMC"] else nEvent
 
         }
 
@@ -216,7 +219,26 @@ class analysis(processor.ProcessorABC):
         selections.add("passFourTag", event.fourTag)
 
         allcuts.append("passFourTag")
+
+        #
+        # Add pseudotag weights for the mixed data
+        #   These are fourTag events, but the weight should be calculed assuming with one less btagged jet
+        #
+        print(f"{chunk_str} event.pseudoTagWeight was {event.pseudoTagWeight[:10]} \n")
+        event["Jet_untagged_loose"] = event.Jet[event.Jet.selected & ~event.Jet.tagged_loose]
+        num_tagged_loose_plus_one = ak.sum(event.Jet.tagged_loose, axis=1) + 1
+
+        fourTagEvents = event[event['fourTag']]
+        new_pseudoTagWeight = np.full(len(event), event.weight)
+        new_nJet_pseudotagged = np.zeros(len(event), dtype=int)
+
+        new_pseudoTagWeight[event['fourTag']], new_nJet_pseudotagged[event['fourTag']]  = self.apply_JCM( ak.num(fourTagEvents['Jet_untagged_loose'], axis=1) + 1, fourTagEvents.event)
+        event["nJet_pseudotagged"] = new_nJet_pseudotagged
+        event["pseudoTagWeight"] = new_pseudoTagWeight
+
+        print(f"{chunk_str} event.pseudoTagWeight is now {event.pseudoTagWeight[:10]} \n")
         selev = event[selections.all(*allcuts)]
+
 
         #
         # TTbar subtractions
@@ -239,7 +261,7 @@ class analysis(processor.ProcessorABC):
         #
         selev = create_cand_jet_dijet_quadjet(
             selev,
-            isRun3=config["isRun3"],
+            isRun3=self.config["isRun3"],
             )
 
 
