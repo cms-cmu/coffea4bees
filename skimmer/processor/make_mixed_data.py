@@ -93,7 +93,7 @@ class HemiMixer(PicoAOD):
         #
         year_str = year.replace("_preVFP", "").replace("_postVFP", "")
 
-        yaml_file = f'{hemi_stats_path}/hemi_statistics_{year_str}.yml'
+        yaml_file = f'{self.hemi_stats_path}/hemi_statistics_{year_str}.yml'
         logging.info(f"\nLoading hemisphere libraries = {yaml_file}")
 
         logging.info(f"\nLoading hemisphere library file: {self.hemi_library_yaml} for year {year_str}")
