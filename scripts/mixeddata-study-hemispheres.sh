@@ -27,3 +27,6 @@ echo "############### Running hemisphere mixing test"
 #python coffea4bees/hemisphere_mixing/tests/test_mixing.py 
 
 python coffea4bees/hemisphere_mixing/study_hemispheres.py --hemifiles $HEMI_LIB  --year UL18  --threshold 10 --output_path $OUTPUT_DIR
+
+echo "############### Checking output "
+python src/tests/check_yaml.py $OUTPUT_DIR/hemi_statistics_UL18.yml coffea4bees/analysis/tests/known_hemi_statistics_UL18.yaml 
