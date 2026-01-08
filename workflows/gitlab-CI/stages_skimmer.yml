@@ -46,6 +46,7 @@ mixeddata_split_dataset_coffea4bees:
   extends:
     - .base_analysis
   needs:
+    - setup_workspace
     - mixeddata_make_dataset_coffea4bees
   script:
     - source coffea4bees/scripts/mixeddata-split-dataset.sh --output-base /builds/$CI_PROJECT_PATH/output
