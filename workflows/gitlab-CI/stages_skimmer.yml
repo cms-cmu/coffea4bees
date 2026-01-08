@@ -41,6 +41,20 @@ synthetic_dataset_make_dataset_coffea4bees:
 
 
 
+mixeddata_split_dataset_coffea4bees:
+  stage: skimmer
+  extends:
+    - .base_analysis
+  needs:
+    - mixeddata_make_dataset_coffea4bees
+  script:
+    - source coffea4bees/scripts/mixeddata-split-dataset.sh --output-base /builds/$CI_PROJECT_PATH/output
+  artifacts:
+    paths:
+      - output/test_mixeddata_split_dataset/picoaod_datasets_split_mixeddata_UL18_v0.yml
+      - output/test_mixeddata_split_dataset/mixeddata_all_UL18/picoAOD_mixed_v0.root
+
+
 mixeddata_make_dataset_coffea4bees:
   stage: skimmer
   extends:
