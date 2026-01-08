@@ -12,6 +12,7 @@ fi
 INPUT_DIR="$OUTPUT_BASE_DIR"
 JOB="test_study_hemispheres"
 OUTPUT_DIR=$OUTPUT_BASE_DIR/$JOB
+create_output_directory "$OUTPUT_DIR"
 
 display_section_header "Changing hemisphere library metadata"
 HEMI_LIB="$OUTPUT_DIR/hemisphere_library_for_test.yml"
