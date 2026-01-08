@@ -23,7 +23,7 @@ class MixedDataSplitter(PicoAOD):
             mixed_subsample=0,
             corrections_metadata=None,
             apply_JCM: bool = True,
-            JCM_file: str = "output/mixeddata_cluster/jcm_for_subsampling/jetCombinatoricModel_SB_.txt",
+            JCM_file: str = "coffea4bees/skimmer/metadata/jetCombinatoricModel_for_mixed_splitting.txt",
             *args, **kwargs
         ):
 
