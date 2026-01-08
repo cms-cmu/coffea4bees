@@ -81,7 +81,7 @@ mixeddata_study_hemispheres:
     - setup_workspace
     - mixeddata_cluster_coffea4bees
   script:
-    - source coffea4bees/scripts/synthetic-dataset-plot.sh --output-base /builds/$CI_PROJECT_PATH/output
+    - source coffea4bees/scripts/mixeddata-study-hemispheres.sh --output-base /builds/$CI_PROJECT_PATH/output
   artifacts:
     paths:
       - output/test_study_hemispheres/hemi_statistics_UL18.yml
