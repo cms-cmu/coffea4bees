@@ -42,6 +42,7 @@ class HemiMixer(PicoAOD):
                 apply_JCM: bool = True,
                 JCM_file: str = "coffea4bees/analysis/weights/JCM/AN_24_089_v3/jetCombinatoricModel_SB_6771c35.yml",
                 hemi_library_yaml: str = None,
+                hemi_stats_path: str = None,
                 corrections_metadata: dict = None,
                 *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -62,9 +63,7 @@ class HemiMixer(PicoAOD):
         self.jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_btagDeepFlavB", "Jet_bRegCorr", "Jet_jetId", "Jet_puId"]
         self.hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ]
         self.hemi_library_yaml = hemi_library_yaml
-
-
-
+        self.hemi_stats_path = hemi_stats_path
 
 
     def select(self, event):
@@ -94,7 +93,7 @@ class HemiMixer(PicoAOD):
         #
         year_str = year.replace("_preVFP", "").replace("_postVFP", "")
 
-        yaml_file = f'coffea4bees/hemisphere_mixing/hemi_plots/hemi_statistics_{year_str}.yml'
+        yaml_file = f'{hemi_stats_path}/hemi_statistics_{year_str}.yml'
         logging.info(f"\nLoading hemisphere libraries = {yaml_file}")
 
         logging.info(f"\nLoading hemisphere library file: {self.hemi_library_yaml} for year {year_str}")
