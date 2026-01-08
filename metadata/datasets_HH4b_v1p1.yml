@@ -964,7 +964,7 @@ datasets:
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_UL18/picoAOD_PSData.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_UL18/picoAOD_PSData.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_UL18/picoAOD_PSData.root
-    nSamples: 3
+    nSamples: 5
 
 
 

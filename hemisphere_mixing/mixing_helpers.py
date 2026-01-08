@@ -674,3 +674,18 @@ def assign_mixed_subsamples(event, n_subsamples=16):
 
         pass_subsample = ( (rand_vals > lowerLimit) & (rand_vals < upperLimit) )
         event[f"pass_mixedSubSample_v{mixed_sub_sample}"] = pass_subsample
+
+
+def update_pseudoTagWeight_of_mixed_data(event, JCM):
+
+    event["Jet_untagged_loose"] = event.Jet[event.Jet.selected & ~event.Jet.tagged_loose]
+    num_tagged_loose_plus_one = ak.sum(event.Jet.tagged_loose, axis=1) + 1
+
+    fourTagFilter = event['fourTag']
+    fourTagEvents = event[fourTagFilter]
+    new_pseudoTagWeight = np.full(len(event), event.weight)
+    new_nJet_pseudotagged = np.zeros(len(event), dtype=int)
+
+    new_pseudoTagWeight[fourTagFilter], new_nJet_pseudotagged[fourTagFilter] = JCM( ak.num(fourTagEvents['Jet_untagged_loose'], axis=1) + 1, fourTagEvents.event)
+    event["nJet_pseudotagged"] = new_nJet_pseudotagged
+    event["pseudoTagWeight"] = new_pseudoTagWeight

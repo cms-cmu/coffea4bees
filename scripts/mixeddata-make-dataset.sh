@@ -17,7 +17,7 @@ echo "Using datasets file: $DATASETS"
 setup_proxy 
 
 # Create output directory
-OUTPUT_DIR="$OUTPUT_BASE_DIR/mixeddata_make_dataset"
+OUTPUT_DIR="$OUTPUT_BASE_DIR/test_mixeddata_make_dataset"
 create_output_directory "$OUTPUT_DIR"
 
 display_section_header "Changing metadata"
@@ -36,9 +36,9 @@ display_section_header "Running test processor make_mixed_data"
 cmd=(python runner.py -s \
     -p coffea4bees/skimmer/processor/make_mixed_data.py \
     -c $JOB_CONFIG \
-    -y UL18 UL17 UL16_postVFP UL16_preVFP  -d data  \
+    -y UL18   -d data  \
     -op $OUTPUT_DIR \
-    -o picoaod_datasets_mixeddata_test_Run2.yml \
+    -o picoaod_datasets_mixeddata_test_UL18.yml \
     -m $DATASETS)
 time run_command "${cmd[@]}"
 
