@@ -72,3 +72,16 @@ synthetic_dataset_plot_coffea4bees:
   artifacts:
     paths:
       - output/synthetic_dataset_plot/jet-splitting-PDFs-test/
+
+mixeddata_study_hemispheres:
+  stage: plot
+  extends:
+    - .base_analysis
+  needs:
+    - setup_workspace
+    - mixeddata_cluster_coffea4bees
+  script:
+    - source coffea4bees/scripts/synthetic-dataset-plot.sh --output-base /builds/$CI_PROJECT_PATH/output
+  artifacts:
+    paths:
+      - output/test_study_hemispheres/hemi_statistics_UL18.yml
