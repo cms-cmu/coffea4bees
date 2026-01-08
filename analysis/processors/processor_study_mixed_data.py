@@ -20,7 +20,7 @@ from src.hist_tools import Collection, Fill
 from src.hist_tools.object import LorentzVector, Jet, Muon, Elec
 #from coffea4bees.analysis.helpers.hist_templates import SvBHists, FvTHists, QuadJetHists
 
-from coffea4bees.hemisphere_mixing.mixing_helpers   import assign_mixed_subsamples
+from coffea4bees.hemisphere_mixing.mixing_helpers   import assign_mixed_subsamples, update_pseudoTagWeight_of_mixed_data
 from coffea4bees.hemisphere_mixing.hemisphere_hist_templates import HemisphereHists
 
 from coffea4bees.analysis.helpers.networks import HCREnsemble
@@ -225,18 +225,9 @@ class analysis(processor.ProcessorABC):
         #   These are fourTag events, but the weight should be calculed assuming with one less btagged jet
         #
         print(f"{chunk_str} event.pseudoTagWeight was {event.pseudoTagWeight[:10]} \n")
-        event["Jet_untagged_loose"] = event.Jet[event.Jet.selected & ~event.Jet.tagged_loose]
-        num_tagged_loose_plus_one = ak.sum(event.Jet.tagged_loose, axis=1) + 1
-
-        fourTagEvents = event[event['fourTag']]
-        new_pseudoTagWeight = np.full(len(event), event.weight)
-        new_nJet_pseudotagged = np.zeros(len(event), dtype=int)
-
-        new_pseudoTagWeight[event['fourTag']], new_nJet_pseudotagged[event['fourTag']]  = self.apply_JCM( ak.num(fourTagEvents['Jet_untagged_loose'], axis=1) + 1, fourTagEvents.event)
-        event["nJet_pseudotagged"] = new_nJet_pseudotagged
-        event["pseudoTagWeight"] = new_pseudoTagWeight
-
+        update_pseudoTagWeight_of_mixed_data( event, self.apply_JCM )
         print(f"{chunk_str} event.pseudoTagWeight is now {event.pseudoTagWeight[:10]} \n")
+
         selev = event[selections.all(*allcuts)]
 
 

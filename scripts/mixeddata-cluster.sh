@@ -31,7 +31,7 @@ sed -e "s|base_path.*|base_path: $OUTPUT_DIR|" \
 cat $JOB_CONFIG; echo
 
 display_section_header "Running test mixed data clustering"
-echo bash coffea4bees/scripts/run-analysis-processor.sh \
+bash coffea4bees/scripts/run-analysis-processor.sh \
     --processor "coffea4bees/analysis/processors/processor_make_hemi_library.py" \
     --output-base "$OUTPUT_BASE_DIR" \
     --datasets "data" \

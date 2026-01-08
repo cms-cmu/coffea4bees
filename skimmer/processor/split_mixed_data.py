@@ -8,11 +8,12 @@ from src.skimmer.mc_weight_outliers import OutlierByMedian
 from coffea4bees.analysis.helpers.processor_config import processor_config
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
 from src.physics.event_selection import apply_event_selection
+from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
 
 from coffea.analysis_tools import PackedSelection, Weights
 from src.skimmer.picoaod import PicoAOD
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b
-from coffea4bees.hemisphere_mixing.mixing_helpers   import assign_mixed_subsamples
+from coffea4bees.hemisphere_mixing.mixing_helpers   import assign_mixed_subsamples, update_pseudoTagWeight_of_mixed_data
 
 class MixedDataSplitter(PicoAOD):
     def __init__(
@@ -21,10 +22,14 @@ class MixedDataSplitter(PicoAOD):
             n_subsamples=16,
             mixed_subsample=0,
             corrections_metadata=None,
+            apply_JCM: bool = True,
+            JCM_file: str = "output/mixeddata_cluster/jcm_for_subsampling/jetCombinatoricModel_SB_.txt",
             *args, **kwargs
         ):
 
         super().__init__(*args, **kwargs)
+
+        self.apply_JCM = jetCombinatoricModel(JCM_file) if apply_JCM else None
         self.n_subsamples = n_subsamples
         self.mixed_subsample = mixed_subsample
         self.corrections_metadata = corrections_metadata if corrections_metadata is not None else {}
@@ -69,6 +74,12 @@ class MixedDataSplitter(PicoAOD):
         )
 
         weights = Weights(len(events), storeIndividual=True)
+        events["weight"] = weights.weight()
+
+        #
+        # Update pseudoTagWeight for mixed data
+        #
+        update_pseudoTagWeight_of_mixed_data( events, self.apply_JCM )
 
         #
         #  Assign mixed data subsamples
@@ -101,7 +112,7 @@ class MixedDataSplitter(PicoAOD):
 
         final_selection = selections.require(lumimask=True, passNoiseFilter=True, passHLT=True, passJetMult=True, passPreSel=True, passSubSample=True)
 
-        events["weight"] = weights.weight()
+
 
         self._cutFlow.fill("all", events, allTag=True)
         cumulative_cuts = []
