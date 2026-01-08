@@ -169,3 +169,16 @@ SvB_friendtree_analysis_coffea4bees:
   artifacts:
     paths:
       - output/SvB_friendtree_analysis/test_SvB_friend.coffea
+
+mixeddata_analyze_coffea4bees:
+  stage: analysis   
+  extends:
+    - .base_analysis
+  needs:
+    - setup_workspace
+    - mixeddata_split_dataset_coffea4bees
+  script:
+    - source coffea4bees/scripts/mixeddata-analyze.sh --output-base /builds/$CI_PROJECT_PATH/output
+  artifacts:
+    paths:
+      - output/mixeddata_analyze/test_mixeddata.coffea
