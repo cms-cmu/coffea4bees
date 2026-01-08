@@ -9,6 +9,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Setup proxy if needed
+setup_proxy 
 
 # Create output directory
 OUTPUT_DIR="$OUTPUT_BASE_DIR/test_mixeddata_split_dataset"
