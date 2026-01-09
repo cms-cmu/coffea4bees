@@ -220,14 +220,24 @@ def split_events_into_hemispheres(event, tagged_key="tagJet"):
     #
     # Thin out unneeded branches from jets
     #
-    jets = event.Jet  # JetArray
+    jets = event.Jet
     drop = {"muonIdxG", "electronIdxG","NOTTHERE",'electronIdx1G', 'electronIdx2G','muonIdx1G', 'muonIdx2G'}
     keep = [f for f in jets.fields if f not in drop]
     thinned = jets[keep]
 
-    # restore the record name + behavior so coffea can re-apply the Jet mixin
-    record_name = ak.parameters(jets).get("__record__", "Jet")
-    thinned_jets = ak.with_name(thinned, record_name, behavior=jets.behavior)
+    # the original record name, e.g. "PtEtaPhiMLorentzVector"
+    record = ak.parameters(jets).get("__record__")
+
+    # the behavior dictionary (vector mixin functions)
+    behavior = jets.behavior
+
+    # restore it
+    thinned = ak.Array(thinned.layout, behavior=behavior)
+    thinned_jets = ak.with_name(
+        thinned,
+        "PtEtaPhiMLorentzVector",
+        behavior=jets.behavior
+    )
 
     #
     #  For outputs

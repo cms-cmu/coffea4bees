@@ -32,19 +32,18 @@ sed -e "s|base_path.*|base_path: $OUTPUT_DIR|" \
 [[ $(hostname) = *runner* ]] && sed -i "s|T3_US_FNALLPC|T3_CH_PSI|" $JOB_CONFIG
 cat $JOB_CONFIG; echo
 
-YEARS="2022_EE"
-#YEARS="2022_EE 2022_preEE 2023_BPix 2023_preBPix"
+YEARS="2022_EE 2022_preEE 2023_BPix 2023_preBPix"
 
 display_section_header "Running test mixed data clustering"
 bash coffea4bees/scripts/run-analysis-processor.sh \
     --processor "coffea4bees/analysis/processors/processor_make_hemi_library.py" \
     --output-base "$OUTPUT_BASE_DIR" \
     --datasets "data" \
-    --year $YEARS \
+    --year "${YEARS}" \
     --output-filename "test_mixed_datasets_Run3.coffea" \
     --output-subdir "$JOB" \
     --config "$JOB_CONFIG" \
-    --dataset-metadata "$DATASETS" \
+    --dataset-metadata "$DATASETS"
 #    --additional-flags "--debug"
 
 #    --year "UL17 UL18 UL16_preVFP UL16_postVFP" \    
