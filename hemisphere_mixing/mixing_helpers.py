@@ -218,9 +218,21 @@ def split_events_into_hemispheres(event, tagged_key="tagJet"):
     thrust = transverse_thrust_awkward_fast(event.Jet, n_steps=720, refine_rounds=2)
 
     #
+    # Thin out unneeded branches from jets
+    #
+    jets = event.Jet  # JetArray
+    drop = {"muonIdxG", "electronIdxG","NOTTHERE",'electronIdx1G', 'electronIdx2G','muonIdx1G', 'muonIdx2G'}
+    keep = [f for f in jets.fields if f not in drop]
+    thinned = jets[keep]
+
+    # restore the record name + behavior so coffea can re-apply the Jet mixin
+    record_name = ak.parameters(jets).get("__record__", "Jet")
+    thinned_jets = ak.with_name(thinned, record_name, behavior=jets.behavior)
+
+    #
     #  For outputs
     #
-    jet_posHemi, jet_negHemi   = split_hemispheres(event.Jet, thrust)
+    jet_posHemi, jet_negHemi   = split_hemispheres(thinned_jets, thrust)
 
 
     #
