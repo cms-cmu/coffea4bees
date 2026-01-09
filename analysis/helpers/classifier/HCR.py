@@ -6,12 +6,12 @@ import fsspec
 import numpy.typing as npt
 import torch
 import torch.nn.functional as F
-from coffea4bees.classifier.config.model._kfold import _find_models
-from coffea4bees.classifier.config.setting.HCR import Input
-from coffea4bees.classifier.config.setting.ml import KFold, SplitterKeys
-from coffea4bees.classifier.ml import BatchType
-from coffea4bees.classifier.ml.skimmer import Splitter
-from coffea4bees.classifier.nn.blocks.HCR import HCR
+from src.classifier.config.model._kfold import _find_models
+from src.classifier.config.setting.HCR import Input
+from src.classifier.config.setting.ml import KFold, SplitterKeys
+from src.classifier.ml import BatchType
+from src.classifier.ml.skimmer import Splitter
+from src.classifier.nn.blocks.HCR import HCR
 
 from .. import networks
 

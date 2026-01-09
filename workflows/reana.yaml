@@ -8,7 +8,6 @@ inputs:
     - coffea4bees/plots/
     - coffea4bees/skimmer/processor/
     - coffea4bees/stats_analysis/
-    - coffea4bees/classifier/
     - coffea4bees/workflows/
   parameters:
     input: coffea4bees/workflows/inputs_reana.yaml

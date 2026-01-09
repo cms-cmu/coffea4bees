@@ -1,1 +1,0 @@
-python -m coffea4bees.classifier.test.check_configs

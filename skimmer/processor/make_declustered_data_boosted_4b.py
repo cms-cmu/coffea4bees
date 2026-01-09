@@ -7,7 +7,7 @@ from coffea4bees.analysis.helpers.cutflow import cutFlow
 from coffea4bees.jet_clustering.declustering import make_synthetic_event
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b
 
-from src.math.random import Squares
+from src.math_tools.random import Squares
 from src.physics.event_selection import apply_event_selection
 
 from src.data_formats.root import Chunk, TreeReader

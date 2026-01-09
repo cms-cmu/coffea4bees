@@ -1,7 +1,0 @@
-check-configs:
-  stage: classifier
-  extends:
-    - .base_classifier
-  script:
-    - source coffea4bees/scripts/check-configs.sh
-  allow_failure: true

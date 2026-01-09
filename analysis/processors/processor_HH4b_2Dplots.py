@@ -20,14 +20,14 @@ from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricMod
 from coffea4bees.analysis.helpers.processor_config import processor_config
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
 from src.physics.event_selection import apply_event_selection
-from src.hist import Fill
+from src.hist_tools import Fill
 from src.data_formats.root import Chunk, TreeReader
 from coffea import processor
 from coffea.analysis_tools import PackedSelection
 from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
 from memory_profiler import profile
 import hist
-from src.math.random import Squares
+from src.math_tools.random import Squares
 from src.physics.event_weights import add_weights
 
 from ..helpers.load_friend import (

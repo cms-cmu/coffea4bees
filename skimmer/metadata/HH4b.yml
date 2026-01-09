@@ -12,7 +12,9 @@ runner:
   condor_memory: 4GB
   condor_transfer_input_files:
     - src/
-    - coffea4bees/
+    - coffea4bees/skimmer/
+    - coffea4bees/metadata/
+  
   # rucio_regex_sites: 'T[123]_(US|CH|DE|UK)'
   allowlist_sites:
     - T3_US_FNALLPC

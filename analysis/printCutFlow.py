@@ -3,6 +3,7 @@ import yaml
 import hist
 import argparse
 #matplotlib.use('Agg')
+sys.path.insert(0, os.getcwd())
 import matplotlib.pyplot as plt
 from coffea.util import load
 from hist.intervals import ratio_uncertainty

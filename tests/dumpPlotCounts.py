@@ -7,7 +7,8 @@ sys.path.insert(0, os.getcwd())
 from coffea4bees.plots.plots import load_config_4b
 from src.plotting.plots import makePlot, load_hists, read_axes_and_cuts
 import src.plotting.helpers as plot_helpers
-import src.plotting.iPlot_config as cfg
+from src.plotting.iPlot_config import plot_config
+cfg = plot_config()
 import matplotlib.pyplot as plt
 
 def print_counts_yaml(var, cut, region, counts):
@@ -36,38 +37,22 @@ if __name__ == '__main__':
     metadata = "coffea4bees/plots/metadata/plotsAll.yml"
     cfg.plotConfig = load_config_4b(metadata)
     cfg.hists = load_hists([args.inputFile])
-    cfg.axisLabels, cfg.cutList = read_axes_and_cuts(cfg.hists, cfg.plotConfig)
+    cfg.axisLabelsDict, cfg.cutListDict = read_axes_and_cuts(cfg.hists, cfg.plotConfig)
+    cfg.set_hist_key("hists")
 
     default_args = {"doRatio":0, "rebin":4, "norm":0, "process":"Multijet"}
 
-    test_vectors = [("SvB_MA.ps", "passPreSel", "SR"),
-                    ("SvB_MA.ps", "passPreSel", "SB"),
-                    ("SvB_MA.ps", "passSvB",    "SR"),
-                    ("SvB_MA.ps", "passSvB",    "SB"),
-                    ("SvB_MA.ps", "failSvB",    "SR"),
-                    ("SvB_MA.ps", "failSvB",    "SB"),
+    test_vectors = [("SvB_MA.ps", "passPreSel", "region_SR"),
+                    ("SvB_MA.ps", "passPreSel", "region_SB"),
 
-                    ("SvB_MA.ps_hh", "passPreSel", "SR"),
-                    ("SvB_MA.ps_hh", "passPreSel", "SB"),
-                    ("SvB_MA.ps_hh", "passSvB",    "SR"),
-                    ("SvB_MA.ps_hh", "passSvB",    "SB"),
-                    ("SvB_MA.ps_hh", "failSvB",    "SR"),
-                    ("SvB_MA.ps_hh", "failSvB",    "SB"),
+                    ("SvB_MA.ps_hh", "passPreSel", "region_SR"),
+                    ("SvB_MA.ps_hh", "passPreSel", "region_SB"),
 
-                    ("SvB_MA.ps_zh", "passPreSel", "SR"),
-                    ("SvB_MA.ps_zh", "passPreSel", "SB"),
-                    ("SvB_MA.ps_zh", "passSvB",    "SR"),
-                    ("SvB_MA.ps_zh", "passSvB",    "SB"),
-                    ("SvB_MA.ps_zh", "failSvB",    "SR"),
-                    ("SvB_MA.ps_zh", "failSvB",    "SB"),
+                    ("SvB_MA.ps_zh", "passPreSel", "region_SR"),
+                    ("SvB_MA.ps_zh", "passPreSel", "region_SB"),
 
-                    ("SvB_MA.ps_zz", "passPreSel", "SR"),
-                    ("SvB_MA.ps_zz", "passPreSel", "SB"),
-                    ("SvB_MA.ps_zz", "passSvB",    "SR"),
-                    ("SvB_MA.ps_zz", "passSvB",    "SB"),
-                    ("SvB_MA.ps_zz", "failSvB",    "SR"),
-                    ("SvB_MA.ps_zz", "failSvB",    "SB"),
-
+                    ("SvB_MA.ps_zz", "passPreSel", "region_SR"),
+                    ("SvB_MA.ps_zz", "passPreSel", "region_SB"),
 
                     ]
 

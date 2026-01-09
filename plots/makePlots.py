@@ -13,7 +13,8 @@ import numpy as np
 sys.path.insert(0, os.getcwd())
 from coffea4bees.plots.plots import load_config_4b
 from src.plotting.plots import makePlot, make2DPlot, load_hists, read_axes_and_cuts, parse_args
-import src.plotting.iPlot_config as cfg
+from src.plotting.iPlot_config import plot_config
+cfg = plot_config()
 
 np.seterr(divide='ignore', invalid='ignore')
 
@@ -169,7 +170,8 @@ if __name__ == '__main__':
 
     cfg.hists = load_hists(args.inputFile)
     cfg.fileLabels = args.fileLabels
-    cfg.axisLabels, cfg.cutList = read_axes_and_cuts(cfg.hists, cfg.plotConfig)
+    cfg.axisLabelsDict, cfg.cutListDict = read_axes_and_cuts(cfg.hists, cfg.plotConfig)
+    cfg.set_hist_key("hists")
 
     if args.list_of_hists:
         varList = args.list_of_hists

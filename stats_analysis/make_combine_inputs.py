@@ -105,6 +105,9 @@ def create_combine_root_file( file_to_convert,
                         
                         ## renaming syst
                         if 'prefire' in ivar: namevar = ivar.replace("CMS_prefire", 'CMS_l1_ecal_prefiring')
+                        elif 'Absolute' in ivar: namevar = ivar.replace("Absolute", "Abs")
+                        elif 'Relative' in ivar: namevar = ivar.replace("Relative", "Rel")
+                        elif 'Flavor' in ivar: namevar = ivar.replace("Flavor", "Flav")
                         else: namevar = ivar
                         namevar = namevar.replace('_Up', 'Up').replace('_Down', 'Down')
 
@@ -175,6 +178,14 @@ def create_combine_root_file( file_to_convert,
                             Up_var.SetBinContent(ibin+1, nom_bin + max_diff)
                             Down_var.SetBinContent(ibin+1, nom_bin - max_diff)
                             # print( iv, ibin, up_bin, down_bin, nom_bin, max_diff)
+
+                        if max(up_bin, down_bin) > nom_bin*1.5:
+                            tmp_nom_bin = nominal.GetBinContent(ibin)
+                            tmp_up_bin = Up_var.GetBinContent(ibin)
+                            tmp_down_bin = Down_var.GetBinContent(ibin)
+
+                            Down_var.SetBinContent(ibin+1, nom_bin - (tmp_nom_bin - tmp_down_bin))
+                            Up_var.SetBinContent(ibin+1, nom_bin + (tmp_up_bin - tmp_nom_bin))
         
     if mixeddata_file:
         logging.info("\n Using multijet from mixeddata")

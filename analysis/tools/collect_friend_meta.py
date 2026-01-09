@@ -5,7 +5,7 @@ import fsspec
 from src.data_formats.root import Friend
 from src.utils.argparser import DefaultFormatter
 from src.utils.json import DefaultEncoder
-from coffea4bees.classifier.task import parse
+from src.classifier.task import parse
 
 if __name__ == "__main__":
     argparser = ArgumentParser(formatter_class=DefaultFormatter)

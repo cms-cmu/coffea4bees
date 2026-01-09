@@ -6,11 +6,11 @@ def additional_poi(analysis_key):
         return " ".join([f"--PO 'map=.*/{sig}:r{sig}[1,-10,10]'" for sig in othersignal.split()])
     return ""
 
-def set_parameters_zero(analysis_key):
+def set_parameters(analysis_key, value=0):
     """Generate string to set all othersignal POIs to zero for a given analysis"""
     othersignal = config['channels'][analysis_key]["othersignal"]
     if othersignal.strip():
-        return "--setParameters " + ",".join([f"r{sig}=0" for sig in othersignal.split()]) 
+        return "--setParameters " + ",".join([f"r{sig}={value}" for sig in othersignal.split()]) 
     return ""
 
 def set_parameters_ranges(analysis_key):

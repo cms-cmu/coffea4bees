@@ -44,7 +44,7 @@ display_config() {
 declare -A DEFAULTS=(
     ["OUTPUT_BASE"]="output/"
     ["PROCESSOR_PATH"]="coffea4bees/analysis/processors/processor_HH4b.py"
-    ["METADATA_PATH"]="${DATASET:-coffea4bees/metadata/datasets_HH4b_v1p1.yml}"
+    ["METADATA_PATH"]="${DATASET:-coffea4bees/metadata/datasets_HH4b_v1p2.yml}"
     ["CONFIG_PATH"]="coffea4bees/analysis/metadata/HH4b.yml"
     ["TRIGGERS_PATH"]="coffea4bees/metadata/triggers_HH4b.yml"
     ["LUMINOSITIES_PATH"]="coffea4bees/metadata/luminosities_HH4b.yml"
@@ -186,6 +186,9 @@ cmd=(python runner.py
     $ADDITIONAL_FLAGS
 )
 run_command "${cmd[@]}"
+if [ $? -ne 0 ]; then
+    exit 1
+fi
 
 display_section_header "Output files"
 ls -R $OUTPUT_DIR

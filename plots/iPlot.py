@@ -20,20 +20,23 @@ from src.plotting.plots import (
     makePlot, make2DPlot, load_hists,
     read_axes_and_cuts, parse_args, print_cfg
 )
-import src.plotting.iPlot_config as cfg
+from src.plotting.iPlot_config import plot_config
+cfg = plot_config()
 
 # Constants
 DEFAULT_OUTPUT_FILE = "test.pdf"
 
 
-def ls(option: str = "var", var_match: Optional[str] = None) -> None:
+
+
+def ls(option: str = "var", var_match: Optional[str] = None, hist_key: Optional[str] = 'hists') -> None:
     """List available variables in the configuration.
 
     Args:
         option: The type of labels to list (default: "var")
         var_match: Optional string to filter variables by
     """
-    for k in cfg.axisLabels[option]:
+    for k in cfg.axisLabelsDict[hist_key][option]:
         if var_match:
             if var_match in k:
                 print(k)
@@ -144,10 +147,10 @@ def handle_wildcards(var: Union[str, List[str]]) -> bool:
         True if wildcards were found and handled, False otherwise
     """
     if isinstance(var, str) and "*" in var:
-        ls(var_match=var.replace("*", ""))
+        ls(var_match=var.replace("*", ""), hist_key=cfg.hist_key)
         return True
     if isinstance(var, list) and var[0].find("*") != -1:
-        ls(var_match=var[0].replace("*", ""))
+        ls(var_match=var[0].replace("*", ""), hist_key=cfg.hist_key)
         return True
     return False
 
@@ -190,7 +193,6 @@ def plot(var: Union[str, List[str]] = 'selJets.pt', *,
 
     if len(cfg.hists) > 1:
         opts["fileLabels"] = cfg.fileLabels
-
 
     try:
         fig, ax = makePlot(cfg, **opts)
@@ -268,8 +270,8 @@ def initialize_config() -> None:
 
     cfg.hists = load_hists(args.inputFile)
     cfg.fileLabels = args.fileLabels
-    cfg.axisLabels, cfg.cutList = read_axes_and_cuts(cfg.hists, cfg.plotConfig)
-
+    cfg.axisLabelsDict, cfg.cutListDict = read_axes_and_cuts(cfg.hists, cfg.plotConfig)
+    cfg.set_hist_key("hists")
 
 if __name__ == '__main__':
     initialize_config()

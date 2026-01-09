@@ -113,15 +113,15 @@ rule analysis_unsup_test:
     container: analysis_container
     shell: "source coffea4bees/scripts/analysis-unsup-test.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
-rule analysis_test_mixed_job:
-    output: [f"{output_dir}/analysis_test_mixed_job/testMixedData.json", f"{output_dir}/analysis_test_mixed_job/testMixedData.coffea"]
-    log: f"{output_dir}/analysis_test_mixed_job.log"
+rule analysis_test_mixed:
+    output: [f"{output_dir}/analysis_test_mixed/testMixedData.json", f"{output_dir}/analysis_test_mixed/testMixedData.coffea"]
+    log: f"{output_dir}/analysis_test_mixed.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/analysis-test-mixed.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
-rule analysis_systematics_test_job:
-    output: f"{output_dir}/analysis_systematics_test_job/test_systematics.coffea" 
-    log: f"{output_dir}/analysis_systematics_test_job.log"
+rule analysis_systematics_test:
+    output: f"{output_dir}/analysis_systematics_test/test_systematics.coffea" 
+    log: f"{output_dir}/analysis_systematics_test.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/analysis-systematics-test.sh --output-base {output_dir} 2>&1 | tee -a {log}"
 
@@ -147,10 +147,10 @@ rule synthetic_dataset_analyze_Run3:
     shell: "source coffea4bees/scripts/synthetic-dataset-analyze-Run3.sh --output-base {output_dir} 2>&1 | tee -a {log}"
 
 
-rule weights_trigger_analysis_job:
+rule weights_trigger_analysis:
     input: f"{output_dir}/weights_trigger_friendtree/trigger_weights_friends.json"
-    output: f"{output_dir}/weights_trigger_analysis_job/test_trigWeight.coffea"
-    log: f"{output_dir}/weights_trigger_analysis_job.log"
+    output: f"{output_dir}/weights_trigger_analysis/test_trigWeight.coffea"
+    log: f"{output_dir}/weights_trigger_analysis.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/weights-trigger-analysis.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
@@ -162,15 +162,15 @@ rule tools_make_jcm_weights:
     container: analysis_container
     shell: "source coffea4bees/scripts/tools-make-jcm-weights.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
-rule twoStageClosure_test_job:
-    input: f"{output_dir}/analysis_test_mixed_job/testMixedData.json"
-    output: f"{output_dir}/twoStageClosure_test_job/test_dump_twoStageClosureInputsCounts.yml"
-    log: f"{output_dir}/twoStageClosure_test_job.log"
+rule twoStageClosure_test:
+    input: f"{output_dir}/analysis_test_mixed/testMixedData.json"
+    output: f"{output_dir}/twoStageClosure_test/test_dump_twoStageClosureInputsCounts.yml"
+    log: f"{output_dir}/twoStageClosure_test.log"
     shell: "./run_container combine source coffea4bees/scripts/tools-twostageclosure-mixed.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
 rule analysis_plot:
     input: f"{output_dir}/tools_merge_test/test.coffea"
-    output: f"{output_dir}/analysis_plot/RunII/passPreSel/fourTag/SR/SvB_MA_ps_zz.pdf"
+    output: f"{output_dir}/analysis_plot/RunII/passPreSel/region_SR/SvB_MA_ps_zz.pdf"
     log: f"{output_dir}/analysis_plot.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/analysis-plot.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
@@ -218,7 +218,7 @@ rule analysis_dilepttbar_cutflow:
     shell: "source coffea4bees/scripts/analysis-dilepttbar-cutflow.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
 rule analysis_mixed_cutflow:    
-    input: f"{output_dir}/analysis_test_mixed_job/testMixedData.coffea"
+    input: f"{output_dir}/analysis_test_mixed/testMixedData.coffea"
     output: f"{output_dir}/analysis_mixed_cutflow/test_dump_MixedData.yml"
     log: f"{output_dir}/analysis_mixed_cutflow.log"
     container: analysis_container
@@ -232,7 +232,7 @@ rule skimmer_analysis_cutflow:
     shell: "source coffea4bees/scripts/skimmer-analysis-cutflow.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
 rule analysis_systematics_cutflow:    
-    input: f"{output_dir}/analysis_systematics_test_job/test_systematics.coffea"
+    input: f"{output_dir}/analysis_systematics_test/test_systematics.coffea"
     output: f"{output_dir}/analysis_systematics_cutflow/test_dump_systematics_cutflow.yml"
     log: f"{output_dir}/analysis_systematics_cutflow.log"
     container: analysis_container
@@ -260,8 +260,8 @@ rule synthetic_dataset_analyze_cutflow_Run3:
     shell: "source coffea4bees/scripts/synthetic-dataset-analyze-cutflow-Run3.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
 
-rule weights_trigger_analysis_cutflow:
-    input: f"{output_dir}/weights_trigger_analysis_job/test_trigWeight.coffea"
+rule weights_trigger_cutflow:
+    input: f"{output_dir}/weights_trigger_analysis/test_trigWeight.coffea"
     output: f"{output_dir}/weights_trigger_cutflow/test_dump_cutflow_trigWeight.yml"
     log: f"{output_dir}/weights_trigger_cutflow.log"
     container: analysis_container

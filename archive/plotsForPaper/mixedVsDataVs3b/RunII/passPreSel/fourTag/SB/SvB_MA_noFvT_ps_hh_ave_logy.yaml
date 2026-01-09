@@ -2451,9 +2451,11 @@ ratio:
     - 0.96957063
     - 0.9763782649999999
     - 0.99
+    
 var: SvB_MA_noFvT.ps_hh
 cut: passPreSel
-region: SB
+axis_opts:
+	region: SB
 kwargs:
   outputFolder: plotsANUnblinded/mixedVsDataVs3b
   yscale: log

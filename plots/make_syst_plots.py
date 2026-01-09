@@ -163,7 +163,8 @@ if __name__ == '__main__':
     CMS.GetcmsCanvasHist(nominal_can.cd(2)).GetXaxis().SetTitleOffset(1.5)
     CMS.GetcmsCanvasHist(nominal_can.cd(2)).GetYaxis().SetTitleOffset(0.8)
 
-    CMS.SaveCanvas( nominal_can, f"{args.output_dir}/{args.variable}_nominal.pdf" )
+    CMS.SaveCanvas( nominal_can, f"{args.output_dir}/{args.variable}_nominal.pdf", close=False )
+    CMS.SaveCanvas( nominal_can, f"{args.output_dir}/{args.variable}_nominal.png" )
     
     if args.datacard:
         ## extract systematics from datacard
@@ -193,9 +194,9 @@ if __name__ == '__main__':
 
             if syst.endswith(('2016', '2017', '2018')):
                 tmp = syst.split('_')[-1]
-                nominal_hist = root_hists.Get(f"HHbb_{tmp}/{label_signal}")
-                up_hist.Add( root_hists.Get(f"HHbb_{tmp}/{label}_{syst}Up") )
-                down_hist.Add( root_hists.Get(f"HHbb_{tmp}/{label}_{syst}Down") )
+                nominal_hist = root_hists.Get(f"HH4b_{tmp}/{label_signal}")
+                up_hist.Add( root_hists.Get(f"HH4b_{tmp}/{label}_{syst}Up") )
+                down_hist.Add( root_hists.Get(f"HH4b_{tmp}/{label}_{syst}Down") )
 
             else:
                 for ichannel in metadata['bin']:
@@ -248,6 +249,7 @@ if __name__ == '__main__':
             CMS.GetcmsCanvasHist(syst_can.cd(2)).GetXaxis().SetTitleOffset(1.5)
             CMS.GetcmsCanvasHist(syst_can.cd(2)).GetYaxis().SetTitleOffset(0.8)
 
-            CMS.SaveCanvas( syst_can, f"{args.output_dir}/{args.variable}_{syst}.pdf" )
+            CMS.SaveCanvas( syst_can, f"{args.output_dir}/{label}_{args.variable}_{syst}.pdf", close=False )
+            CMS.SaveCanvas( syst_can, f"{args.output_dir}/{label}_{args.variable}_{syst}.png" )
 
             del syst_can, ratio_up, ratio_dn, nominal_hist, up_hist, down_hist

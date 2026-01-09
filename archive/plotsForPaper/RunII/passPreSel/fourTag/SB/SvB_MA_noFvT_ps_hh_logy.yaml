@@ -3,7 +3,7 @@ hists:
     process: data
     tag: fourTag
     year: RunII
-    label: Four-tag data
+    label: Data
     edgecolor: k
     fillcolor: k
     name: data
@@ -1594,8 +1594,8 @@ kwargs:
   xlim:
   - 0
   - 1.0
-  ylabel: Events / bin
-  rlabel: Data / bkg. 
+  ylabel: Events
+  rlabel: Data/Pred
   write_yaml: false
   year_str: 133 $fb^{-1}$
   do_title: False

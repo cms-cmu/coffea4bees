@@ -146,7 +146,7 @@ rule make_syst_plots:
             python3 coffea4bees/plots/make_syst_plots.py \
                 -i {params.output_dir}/shapes.root \
                 -o {params.output_dir}/systs/ \
-                -d {input.replace('.root', '.txt')} \
+                -d {input} \
                 -s {params.signal} \
                 -m coffea4bees/stats_analysis/metadata/{params.channel}.yml \
                 --variable {params.variable} 2>&1 | tee -a {log}

@@ -12,9 +12,9 @@ import hist
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b
 
 from src.physics.event_selection import apply_event_selection
-from src.hist import Collection, Fill
+from src.hist_tools import Collection, Fill
 from coffea4bees.jet_clustering.clustering_hist_templates import ClusterHistsBoosted
-from src.hist.object import Jet
+from src.hist_tools.object import Jet
 
 from coffea4bees.jet_clustering.declustering import compute_decluster_variables
 

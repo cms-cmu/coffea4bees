@@ -8,8 +8,7 @@ import sys
 import os
 sys.path.insert(0, os.getcwd())
 
-from coffea4bees.plots.iPlot import plot, plot2d
-import src.plotting.iPlot_config as cfg
+from coffea4bees.plots.iPlot import plot, plot2d, cfg
 from coffea4bees.plots.plots import load_config_4b
 from src.plotting.plots import load_hists, read_axes_and_cuts
 from coffea4bees.analysis.tests.parser import wrapper
@@ -121,8 +120,9 @@ class iPlotTestCase(unittest.TestCase):
         input_files = [self.inputFile]
         cfg.hists = load_hists(input_files)
 
-        cfg.axisLabels, cfg.cutList = read_axes_and_cuts(cfg.hists,
-                                                         cfg.plotConfig)
+        cfg.axisLabelsDict, cfg.cutListDict = read_axes_and_cuts(cfg.hists,
+                                                                 cfg.plotConfig)
+        cfg.set_hist_key("hists")
 
         self.do_plots()
 
@@ -137,8 +137,9 @@ class iPlotTestCase(unittest.TestCase):
         cfg.hists = load_hists(input_files)
         cfg.fileLabels = ["file1", "file2"]
 
-        cfg.axisLabels, cfg.cutList = read_axes_and_cuts(cfg.hists,
-                                                         cfg.plotConfig)
+        cfg.axisLabelsDict, cfg.cutListDict = read_axes_and_cuts(cfg.hists,
+                                                                 cfg.plotConfig)
+        cfg.set_hist_key("hists")
 
         args    = {"var": "v4j.*", "region": "SR",
                    "cut": "passPreSel", "process": "data"}
@@ -180,8 +181,9 @@ class iPlotTestCase(unittest.TestCase):
         input_files = [self.inputFile]
         cfg.hists = load_hists(input_files)
 
-        cfg.axisLabels, cfg.cutList = read_axes_and_cuts(cfg.hists,
-                                                         cfg.plotConfig)
+        cfg.axisLabelsDict, cfg.cutListDict = read_axes_and_cuts(cfg.hists,
+                                                                 cfg.plotConfig)
+        cfg.set_hist_key("hists")
 
         self.do_plots()
 
