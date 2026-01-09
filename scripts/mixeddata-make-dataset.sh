@@ -17,7 +17,7 @@ echo "Using datasets file: $DATASETS"
 setup_proxy 
 
 # Create output directory
-OUTPUT_DIR="$OUTPUT_BASE_DIR/mixeddata_make_dataset"
+OUTPUT_DIR="$OUTPUT_BASE_DIR/test_mixeddata_make_dataset"
 create_output_directory "$OUTPUT_DIR"
 
 display_section_header "Changing metadata"
@@ -27,7 +27,7 @@ sed -e "s|base_path.*|base_path: $OUTPUT_DIR|" \
     -e "s|\#test.*|test_files: 1|" \
     -e "s|workers:.*|workers: 1|" \
     -e "s|chunksize:.*|chunksize: 1000|" \
-    -e "s|subtract_ttbar.*|subtract_ttbar_with_weights: False|" \
+    -e "s|subtract_ttbar.*|subtract_ttbar_with_weights: True|" \
     coffea4bees/skimmer/metadata/mixeddata.yml > $JOB_CONFIG
 [[ $(hostname) = *runner* ]] && sed -i "s|T3_US_FNALLPC|T3_CH_PSI|" $JOB_CONFIG
 cat $JOB_CONFIG; echo
@@ -36,7 +36,7 @@ display_section_header "Running test processor make_mixed_data"
 cmd=(python runner.py -s \
     -p coffea4bees/skimmer/processor/make_mixed_data.py \
     -c $JOB_CONFIG \
-    -y UL18  -d data  \
+    -y UL18   -d data  \
     -op $OUTPUT_DIR \
     -o picoaod_datasets_mixeddata_test_UL18.yml \
     -m $DATASETS)

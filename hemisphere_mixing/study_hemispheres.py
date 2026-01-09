@@ -81,7 +81,7 @@ def count_combined_hemispheres(hemi_ranges, hemi_data, do_print=False):
 
 
 
-def study_hemis(hemifiles, tree_name="Events", era_str="UL18", do_plots=False, output_path="coffea4bees/hemisphere_mixing/hemi_plots/", threshold=300):
+def study_hemis(hemifiles, tree_name="Events", year_str="UL18", do_plots=False, output_path="coffea4bees/hemisphere_mixing/hemi_plots/", threshold=300):
 
     print(f"Studying hemispheres from files: {hemifiles} with threshold {threshold}")
     print(f"Output path: {output_path}")
@@ -90,7 +90,8 @@ def study_hemis(hemifiles, tree_name="Events", era_str="UL18", do_plots=False, o
     #  Read in hemisphere data
     #
     branch_list = ["nJet", "nSelJet", "nTagJet", "sumPt_T_minor", "sumPt_T", "combinedMass", "pz"]
-    hemi_data = read_hemi_files(hemifiles, tree_name=tree_name, branch_list=branch_list)
+
+    hemi_data = read_hemi_files(hemifiles, year=year_str, tree_name=tree_name, branch_list=branch_list)
 
 
     #
@@ -131,9 +132,11 @@ def study_hemis(hemifiles, tree_name="Events", era_str="UL18", do_plots=False, o
                "combinedMass":  (50, 0, 2000),
                }
 
+
+    os.makedirs(output_path, exist_ok=True)
+    os.makedirs(f"{output_path}/{year_str}", exist_ok=True)
     if do_plots:
-        os.makedirs(output_path, exist_ok=True)
-        print(f"Saveing plots to {output_path}")
+        print(f"Saveing plots to {output_path}/{year_str}")
 
     hemi_statistics = {}
     hemi_statistics["jet_mult_ranges"] = hemi_ranges
@@ -153,7 +156,7 @@ def study_hemis(hemifiles, tree_name="Events", era_str="UL18", do_plots=False, o
             hemi_statistics["hemi_summary_vars"][jet_mult_key][var_name] = {"mean": float(_hemi_var_mean), "RMS": float(_hemi_var_RMS)}
 
             if do_plots:
-                output_dir = f"{output_path}/nTag{tag}_nSel{sel}_nJet{jet}/"
+                output_dir = f"{output_path}/{year_str}/nTag{tag}_nSel{sel}_nJet{jet}/"
                 os.makedirs(output_dir, exist_ok=True)
                 this_hist = hist.Hist(hist.axis.Regular(*binning[var_name], name=var_name, label=var_name))
                 this_hist.fill(grouped_hemi_data[jet_mult_key][var_name])
@@ -186,7 +189,7 @@ def study_hemis(hemifiles, tree_name="Events", era_str="UL18", do_plots=False, o
         plt.xlabel("Hemisphere Counts")
         plt.ylabel("Number of Hemi Libraries")
         plt.title("Distribution of Event Counts")
-        plt.savefig(f"{output_path}/count_distribution.pdf")
+        plt.savefig(f"{output_path}/{year_str}/count_distribution.pdf")
         plt.close()
 
     def make_yaml_safe(d):
@@ -206,28 +209,28 @@ def study_hemis(hemifiles, tree_name="Events", era_str="UL18", do_plots=False, o
             return d
 
     # Save hemi statistics to a YAML file
-    print(f'writting {output_path}/hemi_statistics_{era_str}.yml')
-    with open(f'{output_path}/hemi_statistics_{era_str}.yml', 'w') as hemi_stats_yaml_file:
+    print(f'writting {output_path}/hemi_statistics_{year_str}.yml')
+    with open(f'{output_path}/hemi_statistics_{year_str}.yml', 'w') as hemi_stats_yaml_file:
         yaml.dump(make_yaml_safe(hemi_statistics), hemi_stats_yaml_file) #, default_flow_style=False)
 
 
 def doStudy():
 
     parser = argparse.ArgumentParser(description='study_hemispheres', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--hemifiles', default="output/mixeddata_cluster/data_UL18*/*.root", nargs='+')
-    parser.add_argument('--era', default="UL18")
+    parser.add_argument('--hemifiles', default="coffea4bees/skimmer/metadata/hemisphere_library_noTT.yml" )
+    parser.add_argument('--year', default="UL18", nargs='+')
     parser.add_argument('--threshold', default=300)
     #parser.add_argument('--m4j_xmax', default=1200)
     #parser.add_argument('--variable_binning', action="store_true")
     parser.add_argument('--output_path', default="coffea4bees/hemisphere_mixing/hemi_plots")
     parser.add_argument('--do_plots',   action="store_true")
-    parser.add_argument('--do_CI',   action="store_true")
 
     args = parser.parse_args()
     print(f"\nRunning with these parameters: {args}")
 
     #hemifiles = "output/mixeddata_cluster/data_UL18*/*.root"
-    study_hemis(hemifiles = args.hemifiles, era_str=args.era, do_plots=args.do_plots, output_path=args.output_path, threshold=int(args.threshold))
+    for year in args.year:
+        study_hemis(hemifiles = args.hemifiles, year_str=year, do_plots=args.do_plots, output_path=args.output_path, threshold=int(args.threshold))
 
 
 if __name__ == "__main__":
