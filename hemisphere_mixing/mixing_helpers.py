@@ -617,14 +617,9 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
         has_bad_values = np.any(~np.isfinite(hemi_lib_points))
 
         if has_bad_values:
-            print(f"Warning: Found NaN or inf values in hemi_lib_points!")
-            print(f"NaN count: {np.sum(np.isnan(hemi_lib_points))}")
-            print(f"Inf count: {np.sum(np.isinf(hemi_lib_points))}")
-            print(f"hemi_lib_points: {hemi_lib_points}")
-            print(f"summary vars: {hemi_summary_vars}")
-            print(f"hemi_lib_points[0]: {hemi_lib_points[0]}")
-            print(f"hemi_lib_data['combinedMass']: {hemi_lib_data['combinedMass']}")
-            print(f"jet_mult_key_4b: {jet_mult_key_4b} vs {jet_mult_key}: {jet_mult_key_4b == jet_mult_key}")
+            print(f"Warning: Found {np.sum(np.isnan(hemi_lib_points))} NaN and {np.sum(np.isinf(hemi_lib_points))} inf values in hemi_lib_points! filtering them out.\n")
+            hemi_lib_points = hemi_lib_points[~np.any(np.isnan(hemi_lib_points), axis=1)]
+
 
         kd_tree = cKDTree(hemi_lib_points)
         match_dist, match_idx = kd_tree.query(subset_hemis_points, k=1)
