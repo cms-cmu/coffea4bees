@@ -16,7 +16,7 @@ from coffea4bees.analysis.helpers.processor_config import processor_config
 from src.data_formats.awkward.zip import NanoAOD
 
 from src.hist_tools import Collection, Fill
-from src.hist_tools.object import LorentzVector, Jet, Muon, Elec
+from src.hist_tools.object import LorentzVector, Jet
 #from coffea4bees.analysis.helpers.hist_templates import SvBHists, FvTHists, QuadJetHists
 
 from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres
@@ -284,6 +284,11 @@ class analysis(processor.ProcessorABC):
         selev["pos_hemi"] = pos_hemi
         selev["neg_hemi"] = neg_hemi
 
+        logging.debug(f"pos_hemi Fields {pos_hemi.fields}")
+        logging.debug(f"pos_hemi.Jet Fields {selev.pos_hemi.Jet.fields}")
+
+
+
         #
         #  Write out hemi library files
         #
@@ -357,7 +362,7 @@ class analysis(processor.ProcessorABC):
 
 
         # Not sure why the following line is needed
-        ak.concatenate([pos_hemi, neg_hemi], axis=0)
+        #ak.concatenate([pos_hemi, neg_hemi], axis=0)
         with TreeWriter()(path) as writer:
 
             writer.extend(selev.pos_hemi).extend(selev.neg_hemi)
