@@ -78,9 +78,9 @@ class HemiMixer(PicoAOD):
 
         self.jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_jetId", "Jet_puId"]
         if '202' in dataset:
-            self.jet_branches += ["Jet_btagDeepFlavB", "Jet_bRegCorr"]
-        else:
             self.jet_branches += ["Jet_btagPNetB", "Jet_PNetRegPtRawCorr", "Jet_PNetRegPtRawCorrNeutrino"]
+        else:
+            self.jet_branches += ["Jet_btagDeepFlavB", "Jet_bRegCorr"]
 
 
         ### target is for new friend trees
