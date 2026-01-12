@@ -608,6 +608,24 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
         #
         hemi_lib_data = get_hemispheres_data(mask_4b, hemi_data, event_branches + hemi_summary_vars + jet_branches, hemi_stats=hemi_stats[jet_mult_key])
         hemi_lib_points = np.column_stack([ hemi_lib_data[name] for name in hemi_summary_vars])
+
+        # Check for NaN values
+        has_nan = np.any(np.isnan(hemi_lib_points))
+        # Check for inf values (positive or negative)
+        has_inf = np.any(np.isinf(hemi_lib_points))
+        # Check for both NaN and inf
+        has_bad_values = np.any(~np.isfinite(hemi_lib_points))
+
+        if has_bad_values:
+            print(f"Warning: Found NaN or inf values in hemi_lib_points!")
+            print(f"NaN count: {np.sum(np.isnan(hemi_lib_points))}")
+            print(f"Inf count: {np.sum(np.isinf(hemi_lib_points))}")
+            print(f"hemi_lib_points: {hemi_lib_points}")
+            print(f"summary vars: {hemi_summary_vars}")
+            print(f"hemi_lib_points[0]: {hemi_lib_points[0]}")
+            print(f"hemi_lib_data['combinedMass']: {hemi_lib_data['combinedMass']}")
+            print(f"jet_mult_key_4b: {jet_mult_key_4b} vs {jet_mult_key}: {jet_mult_key_4b == jet_mult_key}")
+
         kd_tree = cKDTree(hemi_lib_points)
         match_dist, match_idx = kd_tree.query(subset_hemis_points, k=1)
 

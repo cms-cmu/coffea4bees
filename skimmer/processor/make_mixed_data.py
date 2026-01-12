@@ -59,8 +59,6 @@ class HemiMixer(PicoAOD):
         self.skip_branches    = kwargs["skip_branches"]
 
 
-
-        self.jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_btagDeepFlavB", "Jet_bRegCorr", "Jet_jetId", "Jet_puId"]
         self.hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ]
         self.hemi_library_yaml = hemi_library_yaml
         self.hemi_stats_path = hemi_stats_path
@@ -77,6 +75,13 @@ class HemiMixer(PicoAOD):
         year_label = self.corrections_metadata[year]['year_label']
         chunk   = f'{dataset}::{estart:6d}:{estop:6d} >>> '
         processName = event.metadata['processName']
+
+        self.jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_jetId", "Jet_puId"]
+        if '202' in dataset:
+            self.jet_branches += ["Jet_btagDeepFlavB", "Jet_bRegCorr"]
+        else:
+            self.jet_branches += ["Jet_btagPNetB", "Jet_PNetRegPtRawCorr", "Jet_PNetRegPtRawCorrNeutrino"]
+
 
         ### target is for new friend trees
         target = Chunk.from_coffea_events(event)
@@ -174,6 +179,7 @@ class HemiMixer(PicoAOD):
         #
         # Apply JCM
         #
+        event["weight"] = weights.weight()
         weights, list_weight_names = add_pseudotagweights(
             event,
             weights,
@@ -209,8 +215,6 @@ class HemiMixer(PicoAOD):
         selections.add( "passHLT", ( event.passHLT if config["cut_on_HLT_decision"] else npfull(len(event), True)  ) )
         selections.add( 'passJetMult',   event.passJetMult )
         selections.add( "passThreeTag", event.threeTag)
-
-        event["weight"] = weights.weight()
 
         cumulative_cuts = ["lumimask"]
         self._cutFlow.fill( "all",             event[selections.all(*cumulative_cuts)], allTag=True )
@@ -264,10 +268,11 @@ class HemiMixer(PicoAOD):
         # Identify tagged and pstagged jets
         #
         selected_jets             = selev.Jet[selev.Jet.selected]
-        sorted_selected_jets      = selected_jets[ak.argsort(selected_jets.btagScore, ascending=False)]
-        sorted_selected_local_idx = ak.local_index(sorted_selected_jets)
+        sorted_selected_jets      = selected_jets[ak.argsort(selected_jets.btagScore, axis=1, ascending=False)]
+        sorted_selected_local_idx = ak.local_index(sorted_selected_jets, axis=1)
         selected_jets["tagged_or_pstagged"] = (sorted_selected_local_idx < selev.nJet_ps_and_tag)
         selev["tag_or_psTag_Jet"] = selected_jets[selected_jets.tagged_or_pstagged]
+
 
         #
         #  Split event into hemispheres
