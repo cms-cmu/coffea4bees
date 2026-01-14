@@ -225,8 +225,10 @@ class HemiMixer(PicoAOD):
             cumulative_cuts.append(cut)
             self._cutFlow.fill( cut, event[selections.all(*cumulative_cuts)], allTag=True )
 
+        event["weight"] = weights.weight()
+
         cumulative_cuts.append( "passThreeTag")
-        self._cutFlow.fill( cut, event[selections.all(*cumulative_cuts)])
+        self._cutFlow.fill( "passThreeTag", event[selections.all(*cumulative_cuts)], allTag=False  )
 
         #
         # Add Btag SF
@@ -238,9 +240,9 @@ class HemiMixer(PicoAOD):
                                                           corrections_metadata=self.corrections_metadata[year]
             )
             logging.debug( f"Btag weight {weights.partial_weight(include=['CMS_btag'])[:10]}\n" )
-            event["weight"] = weights.weight()
 
-            self._cutFlow.fill( "passFourTag_btagSF", event[selections.all(*cumulative_cuts)], allTag=True )
+
+            self._cutFlow.fill( "passNTag_btagSF", event[selections.all(*cumulative_cuts)], allTag=True )
 
         selection = event.lumimask & event.passNoiseFilter & event.passJetMult & event.threeTag
         if not config["isMC"]: selection = selection & event.passHLT
