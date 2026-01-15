@@ -28,7 +28,7 @@ class MixedDataSplitter(PicoAOD):
         ):
 
         super().__init__(*args, **kwargs)
-
+        logging.info(f"\nLoading JCM from file: {JCM_file} , apply_JCM = {apply_JCM}")
         self.apply_JCM = jetCombinatoricModel(JCM_file) if apply_JCM else None
         self.n_subsamples = n_subsamples
         self.mixed_subsample = mixed_subsample

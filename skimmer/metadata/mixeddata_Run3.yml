@@ -27,6 +27,7 @@ config:
   subtract_ttbar_with_weights: False
   hemi_library_yaml: coffea4bees/skimmer/metadata/hemisphere_library_Run3.yml
   hemi_stats_path: coffea4bees/skimmer/metadata/
+  JCM_file: coffea4bees/skimmer/metadata/jetCombinatoricModel_for_mixed_Run3.txt
   campaign:   
   friends:
     trigWeight: "coffea4bees/metadata/datasets_HH4b_2024_v1p1_trigweights.json@@trigWeight"
