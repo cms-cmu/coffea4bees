@@ -24,7 +24,19 @@ cat $JOB_CONFIG; echo
 ### Temporary fix for CI tests
 display_section_header "Temporary Input Datasets"
 DATASETS=${DATASET:-"coffea4bees/metadata/datasets_HH4b_Run2"}/data.yml
-sed '/^        B:$/{N;/\n          count: 1808836\.0$/{:a;N;/\n          total_events: 1808836$/!ba;s/^/#/gm}}' $DATASETS | sed 's/^/  /' | sed '1s/^/datasets:\n/' > $OUTPUT_DIR/datasets_temp.yml
+# 1. Add 'datasets:' at the top and indent existing lines by 2 spaces
+sed -e 's/^/  /' -e '1s/^/datasets:\n/' $DATASETS > $OUTPUT_DIR/datasets_temp.yml
+
+# 2. Comment out the B block only within UL17 -> picoAOD section
+# logic: Find lines inside UL17...UL18 range, then inside picoAOD...UL18 range,
+# then matching the B:...C: block, and comment them out (excluding the C: line)
+sed -i '/UL17:/,/UL18:/ { 
+    /picoAOD:/,/UL18:/ {
+        /^[[:space:]]*B:/,/^[[:space:]]*C:/ {
+            /^[[:space:]]*C:/! s/^/#/
+        }
+    }
+}' $OUTPUT_DIR/datasets_temp.yml
 
 display_section_header "Running analysis processor for background datasets"
 bash coffea4bees/scripts/run-analysis-processor.sh \
