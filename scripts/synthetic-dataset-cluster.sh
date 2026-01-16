@@ -16,7 +16,7 @@ create_output_directory "$OUTPUT_DIR"
 
 ### Temporary fix for CI tests
 display_section_header "Temporary Input Datasets"
-DATASETS=${DATASET:-"coffea4bees/metadata/datasets_HH4b_v1p2.yml"}
+DATASETS=${DATASET:-"coffea4bees/metadata/coffea4bees/metadata/datasets_HH4b_Run2/data.yml"}
 sed '/^        B:$/{N;/\n          count: 1808836\.0$/{:a;N;/\n          total_events: 1808836$/!ba;s/^/#/gm}}' $DATASETS > $OUTPUT_DIR/datasets_temp.yml
 
 display_section_header "Running test processor"
