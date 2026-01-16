@@ -23,7 +23,7 @@ cat $JOB_CONFIG; echo
 
 ### Temporary fix for CI tests
 display_section_header "Temporary Input Datasets"
-DATASETS=${DATASET:-"coffea4bees/metadata/datasets_HH4b_Run2/data.yml"}
+DATASETS=${DATASET:-"coffea4bees/metadata/datasets_HH4b_Run2"}/data.yml
 sed '/^        B:$/{N;/\n          count: 1808836\.0$/{:a;N;/\n          total_events: 1808836$/!ba;s/^/#/gm}}' $DATASETS > $OUTPUT_DIR/datasets_temp.yml
 
 display_section_header "Running analysis processor for background datasets"

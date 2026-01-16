@@ -172,7 +172,7 @@ OUTPUT_DIR="${OUTPUT_BASE}/${OUTPUT_SUBDIR}/"
 create_output_directory "$OUTPUT_DIR"
 
 display_section_header "Running test processor"
-cmd=(python runner.py 
+cmd=(time python runner.py 
     -p "$PROCESSOR_PATH" 
     -m "$METADATA_PATH" 
     -c "$CONFIG_PATH" 

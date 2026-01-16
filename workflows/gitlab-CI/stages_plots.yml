@@ -73,7 +73,7 @@ synthetic_dataset_plot_coffea4bees:
     paths:
       - output/synthetic_dataset_plot/jet-splitting-PDFs-test/
 
-mixeddata_study_hemispheres:
+mixeddata_study_hemispheres_coffea4bees:
   stage: plot
   extends:
     - .base_analysis
