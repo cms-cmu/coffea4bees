@@ -25,7 +25,7 @@ cat $JOB_CONFIG; echo
 display_section_header "Temporary Input Datasets"
 DATASETS=${DATASET:-"coffea4bees/metadata/datasets_HH4b_Run2"}
 # 1. Merge files, add 'datasets:' at the top and indent existing lines by 2 spaces
-cat "$DATASETS/data.yml" "$DATASETS/TT.yml" | \
+(cat "$DATASETS/data.yml"; echo; cat "$DATASETS/TT.yml") | \
 sed -e 's/^/  /' -e '1s/^/datasets:\n/' > $OUTPUT_DIR/datasets_temp.yml
 
 # 2. Comment out the B block only within UL17 -> picoAOD section
