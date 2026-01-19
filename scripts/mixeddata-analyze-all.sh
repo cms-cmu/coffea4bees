@@ -6,7 +6,7 @@ source "src/scripts/common.sh"
 setup_proxy
 
 display_section_header "Input Datasets"
-DATASETS=${DATASET:-"coffea4bees/metadata/datasets_HH4b.yml"}
+DATASETS=${DATASET:-"coffea4bees/metadata/datasets_HH4b_Run2/"}
 echo "Using datasets file: $DATASETS"
 
 OUTPUT_DIR="${1:-"output"}/analysis_mixed_new"

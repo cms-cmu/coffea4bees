@@ -43,7 +43,7 @@ cmd=(python runner.py -s \
     -o picoaod_datasets_declustered_test_2023_BPix.yml \
     -m $DATASETS)
 time run_command "${cmd[@]}"
-# time python runner.py -s -p coffea4bees/skimmer/processor/make_declustered_data_4b.py -c $OUTPUT_DIR/declustering_for_test.yml -y UL18  -d GluGluToHHTo4B_cHHH1 -op $OUTPUT_DIR -o picoaod_datasets_declustered_GluGluToHHTo4B_cHHH1_test_UL18.yml -m coffea4bees/metadata/datasets_HH4b.yml
+# time python runner.py -s -p coffea4bees/skimmer/processor/make_declustered_data_4b.py -c $OUTPUT_DIR/declustering_for_test.yml -y UL18  -d GluGluToHHTo4B_cHHH1 -op $OUTPUT_DIR -o picoaod_datasets_declustered_GluGluToHHTo4B_cHHH1_test_UL18.yml -m coffea4bees/metadata/datasets_HH4b_Run2/
 ls -R $OUTPUT_DIR
 
 
