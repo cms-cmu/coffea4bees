@@ -9,7 +9,7 @@ usage() {
     echo "Options:"
     echo "  --output-base DIR         Base output directory (default: output/)"
     echo "  --processor PATH          Path to processor file (default: coffea4bees/analysis/processors/processor_HH4b.py)"
-    echo "  --dataset-metadata PATH   Path to metadata file (default: coffea4bees/metadata/datasets_HH4b.yml)"
+    echo "  --dataset-metadata PATH   Path to metadata file (default: coffea4bees/metadata/datasets_HH4b_Run2/)"
     echo "  --config PATH             Path to config file (default: coffea4bees/analysis/metadata/HH4b.yml)"
     echo "  --triggers PATH           Path to triggers file (default: coffea4bees/metadata/triggers_HH4b.yml)"
     echo "  --luminosities PATH       Path to luminosities file (default: coffea4bees/metadata/luminosities_HH4b.yml)"

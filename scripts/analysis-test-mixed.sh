@@ -11,7 +11,7 @@ fi
 
 setup_proxy
 
-DATASETS=${DATASETS:-"coffea4bees/metadata/datasets_HH4b.yml"}
+DATASETS=${DATASETS:-"coffea4bees/metadata/datasets_HH4b_Run2/"}
 
 # Create output directory
 JOB="analysis_test_mixed"
