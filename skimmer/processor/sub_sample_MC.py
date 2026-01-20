@@ -8,7 +8,7 @@ from src.friendtrees.FriendTreeSchema import FriendTreeSchema
 from src.math_tools.random import Squares
 from coffea4bees.analysis.helpers.event_weights import add_btagweights
 from coffea4bees.analysis.helpers.processor_config import processor_config
-from src.physics.event_weights import add_weights
+from coffea4bees.analysis.helpers.event_weights import add_weights
 
 from coffea.analysis_tools import Weights, PackedSelection
 import numpy as np

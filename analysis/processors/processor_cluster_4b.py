@@ -29,7 +29,7 @@ from src.friendtrees.FriendTreeSchema import FriendTreeSchema
 from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
 from src.physics.objects.jet_corrections import apply_jerc_corrections
 from src.physics.common import apply_btag_sf, update_events
-from src.physics.event_weights import add_weights
+from coffea4bees.analysis.helpers.event_weights import add_weights
 
 from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_SvB
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
@@ -142,7 +142,7 @@ class analysis(processor.ProcessorABC):
 
 
         ### target is for new friend trees
-        target = Chunk.from_coffea_events(event)
+        target = Chunk.from_coffea_events(event)add_weights(
 
         ### adds all the event mc weights and 1 for data
         weights, list_weight_names = add_weights( event, target=target,

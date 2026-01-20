@@ -27,7 +27,7 @@ class analysis(processor.ProcessorABC):
         *,
         make_classifier_input: str = None,
         corrections_metadata: str ="src/physics/corrections.yml",
-        use_vectorized: bool = True,
+        use_vectorized: bool = False,
     ):
 
         logging.debug("\nInitialize Analysis Processor")
@@ -62,30 +62,40 @@ class analysis(processor.ProcessorABC):
         #
         # Event selection
         #
-        event = apply_event_selection( event, self.corrections_metadata[self.year], cut_on_lumimask=self.config["cut_on_lumimask"])
+        event = apply_event_selection( 
+            event, 
+            self.corrections_metadata[self.year], 
+            cut_on_lumimask=self.config["cut_on_lumimask"]
+        )
 
         #
         # Calculate and apply Jet Energy Calibration
         #
-        jets = apply_jerc_corrections(event,
-                                corrections_metadata=self.corrections_metadata[self.year],
-                                isMC=self.config["isMC"],
-                                run_systematics=False,
-                                dataset=self.dataset
-                                )
+        jets = apply_jerc_corrections(
+            event,
+            corrections_metadata=self.corrections_metadata[self.year],
+            isMC=self.config["isMC"],
+            run_systematics=False,
+            dataset=self.dataset
+        )
         event["Jet"] = jets
 
         # Apply object selection (function does not remove events, adds content to objects)
-        event = apply_4b_selection( event, self.corrections_metadata[self.year], dataset=self.dataset,
-                                           doLeptonRemoval=self.config["do_lepton_jet_cleaning"] )
+        event = apply_4b_selection( 
+            event, 
+            self.corrections_metadata[self.year], 
+            dataset=self.dataset,
+            doLeptonRemoval=self.config["do_lepton_jet_cleaning"] 
+        )
 
-        event = create_cand_jet_dijet_quadjet( event,
-                                      apply_FvT=False,
-                                      run_SvB=False,
-                                      run_systematics=False,
-                                      classifier_SvB=None,
-                                      classifier_SvB_MA=None,
-                                      )
+        event = create_cand_jet_dijet_quadjet( 
+            event,
+            apply_FvT=False,
+            run_SvB=False,
+            run_systematics=False,
+            classifier_SvB=None,
+            classifier_SvB_MA=None,
+        )
 
         year_label = self.corrections_metadata[self.year]['year_label'].replace("UL", "20").split("_")[0]
         event['trigWeight'] = {}
@@ -116,9 +126,12 @@ class analysis(processor.ProcessorABC):
 
         friends = {}
 
-        friends["friends"] = dump_trigger_weight( event, self.make_classifier_input,
-                                                 "trigWeight",
-                                                  selections.all(*allcuts))
+        friends["friends"] = dump_trigger_weight( 
+            event, 
+            self.make_classifier_input,
+            "trigWeight",
+            selections.all(*allcuts)
+        )
 
         return friends
 

@@ -5,7 +5,7 @@ import uproot
 import os
 
 #
-# Configuration from Marina_triggerHelper.py (simplified/copied)
+# Configuration from https://gitlab.cern.ch/mkolosov/hh4b_run3/-/blob/run2/python/helpers/triggerHelper.py?ref_type=heads (simplified/copied)
 #
 TRGSF_FILES = {
     "DeepJet": {
