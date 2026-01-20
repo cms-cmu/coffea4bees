@@ -75,4 +75,4 @@ container_wrapper: "source /cvmfs/cms.cern.ch/cmsset_default.sh && cd /home/cmsu
 
 output_path: "output"
 # output_path: "reana_outputs/output"
-dataset_location: "coffea4bees/metadata/datasets_HH4b_v1p2.yml"
+dataset_location: "coffea4bees/metadata/datasets_HH4b_Run2/"

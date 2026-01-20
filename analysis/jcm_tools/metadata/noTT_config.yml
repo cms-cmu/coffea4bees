@@ -1,0 +1,13 @@
+data4bName: data
+taglabel4b:   fourTag
+
+data3bName: data
+taglabel3b:   threeTag
+
+taglabel3b_tt: threeTag
+
+selJets: selJets_noJCM.n
+tagJets: tagJets_noJCM.n
+
+ignoreTT: True
+subtract3bTT: False

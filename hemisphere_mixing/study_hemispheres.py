@@ -151,8 +151,17 @@ def study_hemis(hemifiles, tree_name="Events", year_str="UL18", do_plots=False, 
 
         for var_name in hemi_vars:
 
-            _hemi_var_mean = np.mean(grouped_hemi_data[jet_mult_key][var_name])
-            _hemi_var_RMS  = np.sqrt(np.mean(grouped_hemi_data[jet_mult_key][var_name]**2))
+            _this_data = grouped_hemi_data[jet_mult_key][var_name]
+
+            if np.any(np.isnan(_this_data)):
+                #_filtered_data = grouped_hemi_data[jet_mult_key][var_name]
+                print(f"WARNING: NaN found for {jet_mult_key} count {np.sum(np.isnan(_this_data))}, filtering them out for mean/RMS calculation")
+                _filtered_data = _this_data[~np.isnan(_this_data)]
+                _this_data = _filtered_data
+
+            _hemi_var_mean = np.mean(_this_data)
+            _hemi_var_RMS  = np.sqrt(np.mean(_this_data**2))
+
             hemi_statistics["hemi_summary_vars"][jet_mult_key][var_name] = {"mean": float(_hemi_var_mean), "RMS": float(_hemi_var_RMS)}
 
             if do_plots:

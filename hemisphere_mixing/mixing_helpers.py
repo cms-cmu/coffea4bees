@@ -218,9 +218,31 @@ def split_events_into_hemispheres(event, tagged_key="tagJet"):
     thrust = transverse_thrust_awkward_fast(event.Jet, n_steps=720, refine_rounds=2)
 
     #
+    # Thin out unneeded branches from jets
+    #
+    jets = event.Jet
+    drop = {"muonIdxG", "electronIdxG","NOTTHERE",'electronIdx1G', 'electronIdx2G','muonIdx1G', 'muonIdx2G'}
+    keep = [f for f in jets.fields if f not in drop]
+    thinned = jets[keep]
+
+    # the original record name, e.g. "PtEtaPhiMLorentzVector"
+    record = ak.parameters(jets).get("__record__")
+
+    # the behavior dictionary (vector mixin functions)
+    behavior = jets.behavior
+
+    # restore it
+    thinned = ak.Array(thinned.layout, behavior=behavior)
+    thinned_jets = ak.with_name(
+        thinned,
+        "PtEtaPhiMLorentzVector",
+        behavior=jets.behavior
+    )
+
+    #
     #  For outputs
     #
-    jet_posHemi, jet_negHemi   = split_hemispheres(event.Jet, thrust)
+    jet_posHemi, jet_negHemi   = split_hemispheres(thinned_jets, thrust)
 
 
     #
@@ -586,6 +608,19 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
         #
         hemi_lib_data = get_hemispheres_data(mask_4b, hemi_data, event_branches + hemi_summary_vars + jet_branches, hemi_stats=hemi_stats[jet_mult_key])
         hemi_lib_points = np.column_stack([ hemi_lib_data[name] for name in hemi_summary_vars])
+
+        # Check for NaN values
+        has_nan = np.any(np.isnan(hemi_lib_points))
+        # Check for inf values (positive or negative)
+        has_inf = np.any(np.isinf(hemi_lib_points))
+        # Check for both NaN and inf
+        has_bad_values = np.any(~np.isfinite(hemi_lib_points))
+
+        if has_bad_values:
+            print(f"Warning: Found {np.sum(np.isnan(hemi_lib_points))} NaN and {np.sum(np.isinf(hemi_lib_points))} inf values in hemi_lib_points! filtering them out.\n")
+            hemi_lib_points = hemi_lib_points[~np.any(np.isnan(hemi_lib_points), axis=1)]
+
+
         kd_tree = cKDTree(hemi_lib_points)
         match_dist, match_idx = kd_tree.query(subset_hemis_points, k=1)
 

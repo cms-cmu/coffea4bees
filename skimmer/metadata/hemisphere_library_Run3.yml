@@ -1,0 +1,35 @@
+2022_EE:
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2022_EEE/hemisphereLib_d99d2862-269a-11f0-ab95-001a4adc39c3_0_100000.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2022_EEE/hemisphereLib_ed475a0e-269a-11f0-ab95-001a4adc39c3_0_20847.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2022_EEF/hemisphereLib_66d8da74-269a-11f0-ab95-001a4adc39c3_0_100000.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2022_EEF/hemisphereLib_7e2cf944-269a-11f0-ab95-001a4adc39c3_0_100000.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2022_EEF/hemisphereLib_939313f4-269a-11f0-ab95-001a4adc39c3_0_100000.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2022_EEF/hemisphereLib_aa752e40-269a-11f0-ab95-001a4adc39c3_0_100000.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2022_EEF/hemisphereLib_c078276a-269a-11f0-ab95-001a4adc39c3_0_78546.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2022_EEG/hemisphereLib_58073b58-269a-11f0-ab95-001a4adc39c3_0_69054.root
+
+2022_preEE:
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2022_preEEB/hemisphereLib_547ec7da-269a-11f0-ab95-001a4adc39c3_0_15694.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2022_preEEC/hemisphereLib_3e9dd83e-269a-11f0-ab95-001a4adc39c3_0_100000.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2022_preEEC/hemisphereLib_5231052e-269a-11f0-ab95-001a4adc39c3_0_7003.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2022_preEED/hemisphereLib_313351d8-269a-11f0-ab95-001a4adc39c3_0_59635.root
+
+2023_BPix:
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2023_BPixD/hemisphereLib_1198c2e0-269a-11f0-ab95-001a4adc39c3_0_100000.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2023_BPixD/hemisphereLib_29c31a5a-269a-11f0-ab95-001a4adc39c3_0_24118.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2023_BPixD/hemisphereLib_e4938ed8-2699-11f0-ab95-001a4adc39c3_0_100000.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2023_BPixD/hemisphereLib_fb7e87b0-2699-11f0-ab95-001a4adc39c3_0_100000.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2023_BPixE/hemisphereLib_d49aca78-2699-11f0-ab95-001a4adc39c3_0_68980.root
+
+2023_preBPix:
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2023_preBPixA/hemisphereLib_c595cb0e-2699-11f0-ab95-001a4adc39c3_0_81950.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2023_preBPixB/hemisphereLib_c02bd294-2699-11f0-ab95-001a4adc39c3_0_25901.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2023_preBPixC/hemisphereLib_b055bed4-2699-11f0-ab95-001a4adc39c3_0_82059.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2023_preBPixD/hemisphereLib_ab257832-2699-11f0-ab95-001a4adc39c3_0_25680.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2023_preBPixE/hemisphereLib_99adf8e0-2699-11f0-ab95-001a4adc39c3_0_72404.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2023_preBPixF/hemisphereLib_18741b60-2699-11f0-ab95-001a4adc39c3_0_100000.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2023_preBPixF/hemisphereLib_31e0e042-2699-11f0-ab95-001a4adc39c3_0_100000.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2023_preBPixF/hemisphereLib_48a911d2-2699-11f0-ab95-001a4adc39c3_0_100000.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2023_preBPixF/hemisphereLib_6268ad26-2699-11f0-ab95-001a4adc39c3_0_100000.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2023_preBPixF/hemisphereLib_7accfa84-2699-11f0-ab95-001a4adc39c3_0_100000.root
+   - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_noTT/data_2023_preBPixF/hemisphereLib_94e9f9a8-2699-11f0-ab95-001a4adc39c3_0_766.root

@@ -20,6 +20,6 @@ fi
 cat ${OUTPUT_DIR}/sub_sampling_MC_for_test.yml
 
 display_section_header "Running test processor"
-time python runner.py -s -p coffea4bees/skimmer/processor/sub_sample_MC.py -c ${OUTPUT_DIR}/sub_sampling_MC_for_test.yml -y UL18  -d TTToHadronic -op ${OUTPUT_DIR} -o picoaod_datasets_TTToHadronic_pseudodata_test_UL18.yml -m coffea4bees/metadata/datasets_HH4b.yml
+time python runner.py -s -p coffea4bees/skimmer/processor/sub_sample_MC.py -c ${OUTPUT_DIR}/sub_sampling_MC_for_test.yml -y UL18  -d TTToHadronic -op ${OUTPUT_DIR} -o picoaod_datasets_TTToHadronic_pseudodata_test_UL18.yml -m coffea4bees/metadata/datasets_HH4b_Run2/
 ls -R ${OUTPUT_DIR}
 

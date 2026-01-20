@@ -60,6 +60,7 @@ def loadHistograms(inputFile: str, jcm_config: dict, format: str = 'coffea', cfg
     data4bName = jcm_config.get("data4bName", "data")
     data3bName = jcm_config.get("data3bName", "data")
     subtract3bTT = jcm_config.get("subtract3bTT", True)
+    ignoreTT     = jcm_config.get("ignoreTT", False)
     selJets = jcm_config.get("selJets", "selJets_noJCM.n")
     tagJets = jcm_config.get("tagJets", "tagJets_noJCM.n")
 
@@ -88,7 +89,7 @@ def loadHistograms(inputFile: str, jcm_config: dict, format: str = 'coffea', cfg
 
     hists_data_4b = None
     hists_data_3b = None
-    hists_tt   = None
+    hists_tt     = None
 
     for _input_data in cfg.hists:
         if (selJets in _input_data['hists']):
@@ -110,7 +111,7 @@ def loadHistograms(inputFile: str, jcm_config: dict, format: str = 'coffea', cfg
     if hists_data_3b is None:
         raise ValueError(f"Could not find histograms for data3bName={data3bName}")
 
-    if hists_tt is None:
+    if (not ignoreTT) and (hists_tt is None):
         raise ValueError(f"Could not find histograms for TTTo2L2Nu")
 
 
@@ -118,8 +119,16 @@ def loadHistograms(inputFile: str, jcm_config: dict, format: str = 'coffea', cfg
     data4b = hists_data_4b[selJets][fourTag_data_dict]
     data4b_nTagJets = hists_data_4b[tagJets][fourTag_data_dict]
 
+    qcd4b = copy(data4b)
+
     data3b = hists_data_3b[selJets][threeTag_data_dict]
     data3b_nTagJets_tight = hists_data_3b[tagJets][threeTag_data_dict]
+
+    qcd3b = copy(data3b)
+    qcd3b_nTightTags = copy(data3b_nTagJets_tight)
+
+    if ignoreTT:
+        return data4b, data3b, None, None, qcd4b, qcd3b, data4b_nTagJets, None, qcd3b_nTightTags
 
 
     tt4b = hists_tt[selJets][fourTag_ttbar_dict][sum, :]
@@ -128,18 +137,15 @@ def loadHistograms(inputFile: str, jcm_config: dict, format: str = 'coffea', cfg
     tt3b = hists_tt[selJets][threeTag_ttbar_dict][sum, :]
     tt3b_nTagJets_tight = hists_tt[tagJets][threeTag_ttbar_dict][sum, :]
 
-    qcd4b = copy(data4b)
+
     qcd4b.view().value = data4b.values() - tt4b.values()
     qcd4b.view().variance = data4b.variances() + tt4b.variances()
 
-    qcd3b = copy(data3b)
     if subtract3bTT:
         print("subtracting tt from 3b to get qcd3b")
         qcd3b.view().value = data3b.values() - tt3b.values()
         qcd3b.view().variance = data3b.variances() + tt3b.variances()
 
-    qcd3b_nTightTags = copy(data3b_nTagJets_tight)
-    if subtract3bTT:
         qcd3b_nTightTags.view().value = data3b_nTagJets_tight.values() - tt3b_nTagJets_tight.values()
         qcd3b_nTightTags.view().variance = data3b_nTagJets_tight.variances() + tt3b_nTagJets_tight.variances()
 
@@ -196,12 +202,13 @@ def prepHists(data4b, qcd3b, tt4b, data4b_nTagJets, tt4b_nTagJets, lowpt: bool =
         data4b_new_variances[4:14] = data4b.variances()[1:11]
 
         # Do the same for tt4b
-        tt4b_new_values = np.zeros(len(tt4b.values()))
-        tt4b_new_variances = np.zeros(len(tt4b.variances()))
-        tt4b_new_values[0:4] = tt4b_nTagJets.values()[1:5]
-        tt4b_new_values[4:14] = tt4b.values()[1:11]
-        tt4b_new_variances[0:4] = tt4b_nTagJets.variances()[1:5]
-        tt4b_new_variances[4:14] = tt4b.variances()[1:11]
+        if tt4b is not None:
+            tt4b_new_values = np.zeros(len(tt4b.values()))
+            tt4b_new_variances = np.zeros(len(tt4b.variances()))
+            tt4b_new_values[0:4] = tt4b_nTagJets.values()[1:5]
+            tt4b_new_values[4:14] = tt4b.values()[1:11]
+            tt4b_new_variances[0:4] = tt4b_nTagJets.variances()[1:5]
+            tt4b_new_variances[4:14] = tt4b.variances()[1:11]
 
         qcd3b_new_values = np.zeros(len(qcd3b.values()))
         qcd3b_new_variances = np.zeros(len(qcd3b.variances()))
@@ -216,17 +223,21 @@ def prepHists(data4b, qcd3b, tt4b, data4b_nTagJets, tt4b_nTagJets, lowpt: bool =
         data4b_new_values = data4b.values()
         data4b_new_variances = data4b.variances()
 
-        tt4b_new_values = tt4b.values()
-        tt4b_new_variances = tt4b.variances()
-
         data4b_new_values[0:4] = data4b_nTagJets.values()[4:8]
         data4b_new_variances[0:4] = data4b_nTagJets.variances()[4:8]
+
+
         # Do the same for tt4b
-        tt4b_new_values[0:4] = tt4b_nTagJets.values()[4:8]
-        tt4b_new_variances[0:4] = tt4b_nTagJets.variances()[4:8]
+        if tt4b is not None:
+            tt4b_new_values = tt4b.values()
+            tt4b_new_variances = tt4b.variances()
+
+            tt4b_new_values[0:4] = tt4b_nTagJets.values()[4:8]
+            tt4b_new_variances[0:4] = tt4b_nTagJets.variances()[4:8]
 
     data4b.view().value = data4b_new_values
     data4b.view().variance = data4b_new_variances
 
-    tt4b.view().value = tt4b_new_values
-    tt4b.view().variance = tt4b_new_variances
+    if tt4b is not None:
+        tt4b.view().value = tt4b_new_values
+        tt4b.view().variance = tt4b_new_variances
