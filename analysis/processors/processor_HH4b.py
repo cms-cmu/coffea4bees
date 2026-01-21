@@ -269,6 +269,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         # Set process and datset dependent flags
         #
         self.config = processor_config(self.processName, self.dataset, event)
+        # print("HACK")
+        self.config["isSyntheticData"] = bool(self.config["isMixedData"])
         logging.debug(f'{self.chunk} config={self.config}, for file {self.fname}\n')
 
 

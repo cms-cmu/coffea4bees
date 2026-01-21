@@ -66,7 +66,7 @@ class analysis(processor.ProcessorABC):
             subtract_ttbar_with_weights = False,
     ):
         logging.debug("\nInitialize  processor_make_hemi_library\n")
-
+        logging.info(f"\nLoading JCM from file: {JCM_file} , apply_JCM = {apply_JCM}")
         self.apply_JCM = jetCombinatoricModel(JCM_file) if apply_JCM else None
         self.corrections_metadata = corrections_metadata
         self.classifier_SvB = HCREnsemble(SvB) if SvB else None
@@ -182,7 +182,7 @@ class analysis(processor.ProcessorABC):
                                     do_jet_veto_maps=self.config["do_jet_veto_maps"],
                                     isRun3=self.config["isRun3"],
                                     isMC=self.config["isMC"], ### temporary
-                                    isSyntheticData=self.config["isSyntheticData"],
+                                    isSyntheticData=True, #HACK !!! self.config["isSyntheticData"],
                                    )
 
         selections = PackedSelection()
