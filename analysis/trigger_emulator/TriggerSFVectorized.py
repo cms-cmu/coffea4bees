@@ -233,8 +233,10 @@ class TriggerSFVectorized:
 
         ht_jets = all_jets[ht_jets_mask]
         pfjetht = ak.sum(ht_jets.pt, axis=1)
+        # pfjetht = events.Jet.pfht_selected
         # Approximating calojetht as pfjetht for this vectorized example to save space
         calojetht = pfjetht 
+        # calojetht = events.Jet.ht_selected 
         
         # 2. Sort Jets for Trigger Checks
         # By b-tag (assume 'btagDeepFlavB' exists)
