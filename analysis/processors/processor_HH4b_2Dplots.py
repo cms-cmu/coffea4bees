@@ -28,7 +28,7 @@ from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
 from memory_profiler import profile
 import hist
 from src.math_tools.random import Squares
-from src.physics.event_weights import add_weights
+from coffea4bees.analysis.helpers.event_weights import add_weights
 
 from ..helpers.load_friend import (
     FriendTemplate,

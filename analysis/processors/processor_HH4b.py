@@ -18,7 +18,7 @@ from coffea4bees.analysis.helpers.event_weights import (
     add_pseudotagweights,
 )
 from src.physics.event_selection import apply_event_selection
-from src.physics.event_weights import add_weights
+from coffea4bees.analysis.helpers.event_weights import add_weights
 from coffea4bees.analysis.helpers.event_selection import apply_dilep_ttbar_selection, apply_4b_selection
 from coffea4bees.analysis.helpers.filling_histograms import (
     filling_nominal_histograms,
@@ -337,7 +337,6 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             isTTForMixed=self.config["isTTForMixed"],
             run_systematics= 'others' in self.run_systematics,
         )
-
 
         #
         # Checking boosted selection (should change in the future)
