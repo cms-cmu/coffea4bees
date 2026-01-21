@@ -304,7 +304,7 @@ class TriggerSFVectorized:
         b3 = ak.fill_none(scores_sorted[:, 2], 0.0)
         b4 = ak.fill_none(scores_sorted[:, 3], 0.0)
         
-        btagTMean = 0.0 # Placeholder for post-run2
+        btagTMean = ak.zeros_like(b1) # Placeholder for post-run2
         
         # 3. Year Specific Calculation
         if self.year == 2018:
