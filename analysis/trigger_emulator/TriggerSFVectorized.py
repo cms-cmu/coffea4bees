@@ -5,17 +5,53 @@ import uproot
 import os
 
 #
-# Configuration from https://gitlab.cern.ch/mkolosov/hh4b_run3/-/blob/run2/python/helpers/triggerHelper.py?ref_type=heads (simplified/copied)
+# Configuration from Marina_triggerHelper.py
 #
+TRGSF_FILES_EXTRA = {
+    2015: None,
+    2016: None,
+    2017: None,
+    2018: None,
+    2021: "L1T_ttbar1L_ele_Efficiency_Fit_2022_18April2025.root",
+    2022: "L1T_ttbar1L_ele_Efficiency_Fit_2022_18April2025.root",
+    2023: "L1T_ttbar1L_ele_Efficiency_Fit_2023_18April2025.root",
+    2020: "L1T_ttbar1L_ele_Efficiency_Fit_2023_18April2025.root",
+    2024: None,
+    2025: None,
+}
+
 TRGSF_FILES = {
     "DeepJet": {
-        2016: "TriggerEfficiency_Fit_2016_matched_0p5.root",
+        #2018: "2018/TriggerEfficiency_Fit_DeepJet_2018_wMatching.root", # UL trigger SFs
+        2015: "TriggerEfficiency_Fit_2016_matched_0p5.root", # pre-UL trigger SFs -> to be replaced with UL
+        2016: "TriggerEfficiency_Fit_2016_matched_0p5.root", # pre-UL trigger SFs -> to be replaced with UL
         2017: "TriggerEfficiency_Fit_2017_14Feb2024.root",
-        2018: "TriggerEfficiency_Fit_2018_matched_0p5.root",
+        2018: "TriggerEfficiency_Fit_2018_matched_0p5.root", # pre-UL trigger SFs -> to be replaced with UL
+        2021: "TriggerEfficiency_Fit_2021_18April2025.root",
         2022: "TriggerEfficiency_Fit_2022_18April2025.root",
         2023: "TriggerEfficiency_Fit_2023_18April2025.root",
+        2020: "TriggerEfficiency_Fit_2020_18April2025.root"
     },
-    # Add other taggers as needed
+    "PNet"  : {
+        2015: "TriggerEfficiency_Fit_2016_matched_0p5.root", # use the same trigger SF for the moment
+        2016: "TriggerEfficiency_Fit_2016_matched_0p5.root", # use the same trigger SF for the moment
+        2017: "TriggerEfficiency_Fit_2017_14Feb2024.root",
+        2018: "TriggerEfficiency_Fit_2018_matched_0p5.root", # use the same trigger SF for the moment
+        2021: "TriggerEfficiency_Fit_2021_18April2025.root",
+        2022: "TriggerEfficiency_Fit_2022_18April2025.root",
+        2023: "TriggerEfficiency_Fit_2023_18April2025.root",
+        2020: "TriggerEfficiency_Fit_2020_18April2025.root"
+    },
+    "ParT"   : {
+        2015: None,
+        2016: None,
+        2017: "TriggerEfficiency_Fit_2017_14Feb2024.root",
+        2018: None,
+        2021: "TriggerEfficiency_Fit_2021_18April2025.root",
+        2022: "TriggerEfficiency_Fit_2022_18April2025.root",
+        2023: "TriggerEfficiency_Fit_2023_18April2025.root",
+        2020: "TriggerEfficiency_Fit_2020_18April2025.root"
+    },
 }
 
 class TriggerSFVectorized:
@@ -24,30 +60,34 @@ class TriggerSFVectorized:
         self.map_path = map_path
         self.tagger = tagger
         
-        # Load ROOT file using uproot
-        filename = TRGSF_FILES.get(tagger, {}).get(self.year)
-        if not filename:
-             logging.warning(f"No Trigger SF file found for year {self.year}, tagger {self.tagger}")
-             self.data_lookups = {}
-             self.mc_lookups = {}
-             return
-        
+        self.data_lookups = {}
+        self.mc_lookups = {}
+
         # Ensure path is absolute if not already
         if not os.path.isabs(self.map_path) and not os.path.exists(self.map_path):
              # Try workspace relative
              if os.path.exists(os.path.join(os.getcwd(), self.map_path)):
                  self.map_path = os.path.join(os.getcwd(), self.map_path)
 
-        full_path = os.path.join(self.map_path, filename)
-        logging.info(f"Loading Trigger SFs from {full_path}")
-        self.data_lookups = {}
-        self.mc_lookups = {}
-        
+        # 1. Load Main Trigger File
+        filename = TRGSF_FILES.get(tagger, {}).get(self.year)
+        if not filename:
+            logging.warning(f"No Trigger SF file found for year {self.year}, tagger {self.tagger}")
+        else:
+            full_path = os.path.join(self.map_path, filename)
+            logging.info(f"Loading Trigger SFs from {full_path}")
+            self._load_root_file(full_path, is_l1=False)
+
+        # 2. Load L1 Extra File (Run 3 mostly)
+        l1_filename = TRGSF_FILES_EXTRA.get(self.year)
+        if l1_filename:
+            l1_full_path = os.path.join(self.map_path, l1_filename)
+            logging.info(f"Loading L1 SFs from {l1_full_path}")
+            self._load_root_file(l1_full_path, is_l1=True)
+
+    def _load_root_file(self, full_path, is_l1=False):
         try:
             with uproot.open(full_path) as f:
-                # Iterate over keys to find TGraphs/Efficiencies
-                # note: strict translation of Marina's loading logical would go here
-                # For now, we assume standard naming conventions found in the file
                 for key in f.keys():
                     name = key.split(";")[0] # remove cycle number
                     if "FitResult" in name:
@@ -103,11 +143,11 @@ class TriggerSFVectorized:
                         }
 
                     elif hasattr(obj, "to_hist"): # TEfficiency or Hist
-                         # For 2D
-                         pass
+                        # For 2D
+                        pass
 
         except FileNotFoundError:
-             logging.error(f"Could not open file {full_path}")
+            logging.error(f"Could not open file {full_path}")
 
     def _fix_in_range(self, val):
         return ak.where(val < 0.0, 0.0, ak.where(val > 1.0, 1.0, val))
@@ -216,27 +256,9 @@ class TriggerSFVectorized:
 
     def calculate_event_sf(self, events):
         # 1. Calculate HT and other event variables
-        # Filter jets for HT calculation: pt > 30, |eta| < 2.5
         all_jets = events.Jet
-        ht_jets_mask = (all_jets.pt > 30.0) & (abs(all_jets.eta) < 2.5)
-        
-        # Lepton cleaning for CaloHT (approximate based on Marina code)
-        # Marina: exclude jet if deltaR(jet, muon) < 0.4 and muon.pfRelIso04_all > 0.3??
-        # Marina code: "if mu.pfRelIso04_all > 0.3: continue" -> checks muons with SMALL iso? No, usually small iso = tight.
-        # "if mu.pfRelIso04_all > 0.3: continue" means IGNORE bad muons. 
-        # Then "if deltaR(jet, mu) < 0.4: isMuon=True". So if it matches a GOOD muon.
-        
-        # Vectorized cleaning is expensive. 
-        # For this example, I will assume CaloHT ~ PFHT calculated from jets, or strictly PFHT
-        # since implementing full deltaR matching cross-collection in vectorized way is verbose.
-        # If absolutely needed, one uses ak.cartesian + delta_r + any().
-
-        ht_jets = all_jets[ht_jets_mask]
-        pfjetht = ak.sum(ht_jets.pt, axis=1)
-        # pfjetht = events.Jet.pfht_selected
-        # Approximating calojetht as pfjetht for this vectorized example to save space
-        calojetht = pfjetht 
-        # calojetht = events.Jet.ht_selected 
+        pfjetht = ak.sum(all_jets[all_jets.pfht_selected].pt, axis=1)
+        calojetht = ak.sum(all_jets[all_jets.ht_selected].pt, axis=1)
         
         # 2. Sort Jets for Trigger Checks
         # By b-tag (assume 'btagDeepFlavB' exists)
@@ -245,8 +267,8 @@ class TriggerSFVectorized:
         b_score_name = "btagDeepFlavB" if self.year <= 2018 else "pn_b" 
         # Adjust if column name is different in your NANOAOD
         if b_score_name not in all_jets.fields:
-             # Fallback
-             b_score_name = "btagDeepFlavB"
+            # Fallback
+            b_score_name = "btagDeepFlavB"
 
         jets_by_b = all_jets[ak.argsort(all_jets[b_score_name], ascending=False)]
         
@@ -289,16 +311,16 @@ class TriggerSFVectorized:
             return self._calculate_2018(pt1, pt2, pt3, pt4, pfjetht, calojetht, b1, b2, b3, b4)
 
         elif self.year == 2017:
-             return self._calculate_2017(pt1, pt2, pt3, pt4, pfjetht, calojetht, b1, b2, b3, b4)
+            return self._calculate_2017(pt1, pt2, pt3, pt4, pfjetht, calojetht, b1, b2, b3, b4)
 
         elif self.year in [2021, 2022]: 
-             return self._calculate_2022(pt1, pt2, pt3, pt4, pfjetht, calojetht, btagTMean)
+            return self._calculate_2022(pt1, pt2, pt3, pt4, pfjetht, calojetht, btagTMean)
 
         elif self.year in [2020, 2023]:
-             if self.year == 2020:
-                 return self._calculate_2023_PostBPix(pt4, pfjetht, calojetht, btagTMean)
-             else:
-                 return self._calculate_2023_PreBPix(pt4, pfjetht, calojetht, btagTMean)
+            if self.year == 2020:
+                return self._calculate_2023_PostBPix(pt4, pfjetht, calojetht, btagTMean)
+            else:
+                return self._calculate_2023_PreBPix(pt4, pfjetht, calojetht, btagTMean)
 
         ones = ak.ones_like(pt1, dtype=float)
         return ones, ones, ones

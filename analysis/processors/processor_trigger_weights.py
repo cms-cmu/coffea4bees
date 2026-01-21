@@ -28,13 +28,15 @@ class analysis(processor.ProcessorABC):
         make_classifier_input: str = None,
         corrections_metadata: str ="src/physics/corrections.yml",
         use_vectorized: bool = False,
+        tagger: str = "DeepJet",
     ):
 
         logging.debug("\nInitialize Analysis Processor")
         self.corrections_metadata = corrections_metadata
         self.make_classifier_input = make_classifier_input
         self.use_vectorized = use_vectorized
-        self.trig_sfs_vect = {} # Cache for vectorized tool
+        self.tagger = tagger
+        self.trig_sfs_vect = {}
 
         self.cutFlowCuts = [
             "all",
@@ -100,10 +102,10 @@ class analysis(processor.ProcessorABC):
         year_label = self.corrections_metadata[self.year]['year_label'].replace("UL", "20").split("_")[0]
         event['trigWeight'] = {}
         
-        if self.use_vectorized:
+        if self.use_vectorized: 
             year_int = int(year_label)
             if year_int not in self.trig_sfs_vect:
-                self.trig_sfs_vect[year_int] = TriggerSFVectorized(year_int, map_path="coffea4bees/analysis/trigger_emulator/data/")
+                self.trig_sfs_vect[year_int] = TriggerSFVectorized(year_int, map_path="coffea4bees/analysis/trigger_emulator/data/",tagger=self.tagger)
                 
             trig_helper = self.trig_sfs_vect[year_int]
             data_eff, mc_eff, sf = trig_helper.calculate_event_sf(event)

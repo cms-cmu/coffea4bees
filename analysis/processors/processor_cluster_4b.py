@@ -142,18 +142,19 @@ class analysis(processor.ProcessorABC):
 
 
         ### target is for new friend trees
-        target = Chunk.from_coffea_events(event)add_weights(
+        target = Chunk.from_coffea_events(event)
 
         ### adds all the event mc weights and 1 for data
-        weights, list_weight_names = add_weights( event, target=target,
-                                                  do_MC_weights=config["do_MC_weights"],
-                                                  dataset=dataset,
-                                                  year_label=year_label,
-                                                  friend_trigWeight=None,
-                                                  corrections_metadata=self.corrections_metadata[year],
-                                                  apply_trigWeight=True,
-                                                  isTTForMixed=config["isTTForMixed"]
-                                                 )
+        weights, list_weight_names = add_weights( 
+            event, target=target,
+            do_MC_weights=config["do_MC_weights"],
+            dataset=dataset,
+            year_label=year_label,
+            friend_trigWeight=None,
+            corrections_metadata=self.corrections_metadata[year],
+            apply_trigWeight=True,
+            isTTForMixed=config["isTTForMixed"]
+        )
 
 
         logging.debug(f"weights event {weights.weight()[:10]}")
