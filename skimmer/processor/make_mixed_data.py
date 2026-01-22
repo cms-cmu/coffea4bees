@@ -10,7 +10,7 @@ from src.math_tools.random import Squares
 from coffea4bees.analysis.helpers.event_weights import add_btagweights
 from coffea4bees.analysis.helpers.processor_config import processor_config
 from src.physics.event_selection import apply_event_selection
-from src.physics.event_weights import add_weights
+from coffea4bees.analysis.helpers.event_weights import add_weights
 
 from src.data_formats.root import Chunk, TreeReader
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b

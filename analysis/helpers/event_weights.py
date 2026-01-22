@@ -1,9 +1,55 @@
 from src.physics.common import apply_btag_sf
+from src.physics.event_weights import add_weights as base_add_weights
 import correctionlib
 import awkward as ak
 import numpy as np
 import uproot
 import logging
+
+def add_weights(
+        event, 
+        do_MC_weights: bool = True,
+        dataset: str = None,
+        year_label: str = None,
+        corrections_metadata: dict = None,
+        apply_trigWeight: bool = True,
+        friend_trigWeight: callable = None,
+        isTTForMixed: bool = False,
+        target: callable = None,
+        run_systematics: bool = False
+    ):
+
+    weights, list_weight_names = base_add_weights(
+        event,
+        do_MC_weights=do_MC_weights,
+        dataset=dataset,
+        year_label=year_label,
+        corrections_metadata=corrections_metadata,
+        isTTForMixed=isTTForMixed,
+        run_systematics=run_systematics
+    )
+
+    if apply_trigWeight and do_MC_weights:
+
+        trigWeight = event.trigWeight if "trigWeight" in event.fields else friend_trigWeight.arrays(target) if friend_trigWeight else logging.error(f"No friend tree for trigWeight found.")
+
+        if run_systematics:
+            hlt = ak.where(event.passHLT, 1., 0.) # type: ignore
+            weights.add( 
+                "CMS_bbbb_resolved_ggf_triggerEffSF",
+                trigWeight.Data, ##* ak.where(trigWeight.MC != 0, hlt / trigWeight.MC, 1) ### uncomment for new data.
+                trigWeight.MC,
+                hlt
+            )
+        else:
+            weights.add( 
+                "CMS_bbbb_resolved_ggf_triggerEffSF", 
+                trigWeight.Data
+            )
+        list_weight_names.append('CMS_bbbb_resolved_ggf_triggerEffSF')
+        logging.debug( f"trigWeight {weights.partial_weight(include=['CMS_bbbb_resolved_ggf_triggerEffSF'])[:10]}\n" )
+
+    return weights, list_weight_names
 
 def add_pseudotagweights(
     event,
