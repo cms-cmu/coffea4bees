@@ -270,7 +270,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         #
         self.config = processor_config(self.processName, self.dataset, event)
         # print("HACK")
-        self.config["isSyntheticData"] = bool(self.config["isMixedData"])
+        self.config["isSyntheticData"] = bool(self.config["isMixedData"]) or self.config["isSyntheticData"]
         logging.debug(f'{self.chunk} config={self.config}, for file {self.fname}\n')
 
 
