@@ -16,7 +16,8 @@ create_output_directory "$OUTPUT_DIR"
 
 display_section_header "Input Datasets"
 #DATASETS=${DATASET:-"coffea4bees//metadata/datasets_HH4b_Run3_2025_Run3_skims.yml"}
-DATASETS=${DATASET:-"coffea4bees//metadata/datasets_HH4b_Run3_fourTag_2025_skims.yml"}
+#DATASETS=${DATASET:-"coffea4bees//metadata/datasets_HH4b_Run3_fourTag_2025_skims.yml"}
+DATASETS=${DATASET:-"coffea4bees//metadata/datasets_HH4b_Run3/"}
 echo "Using datasets file: $DATASETS"
 #TTToHadronic TTToSemiLeptonic TTTo2L2Nu
 

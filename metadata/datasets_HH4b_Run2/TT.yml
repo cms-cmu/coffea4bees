@@ -1,0 +1,219 @@
+TTTo2L2Nu:
+  UL16_postVFP:
+    nanoAOD: /TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v1/NANOAODSIM
+    picoAOD:
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/20231115/TTTo2L2Nu2016_preVFP/picoAOD.root
+      sumw: 2982812557.569401
+      sumw2: 218610511326.022
+      total_events: 41364000.0
+  UL16_preVFP:
+    nanoAOD: /TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v1/NANOAODSIM
+    picoAOD:
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/20231115/TTTo2L2Nu2016_postVFP/picoAOD.root
+      sumw: 3478035558.1184
+      sumw2: 254908185433.63046
+      total_events: 48232000.0
+  UL17:
+    nanoAOD: /TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v1/NANOAODSIM
+    picoAOD:
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/20231115/TTTo2L2Nu2017/picoAOD.root
+      sumw: 7610313360.429603
+      sumw2: 557772849442.1646
+      total_events: 105538000.0
+  UL18:
+    nanoAOD: /TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1/NANOAODSIM
+    picoAOD:
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/20231115/TTTo2L2Nu2018/picoAOD.root
+      sumw: 10706355119.611603
+      sumw2: 784670307914.478
+      total_events: 148470000.0
+  xs: 88.3419033256
+TTTo2L2Nu_for_mixed:
+  UL16_postVFP:
+    picoAOD:
+      FvT_file_template: root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//TTTo2L2Nu2016_postVFP_4b_noPSData_wTrigW/FvT_3bDvTMix4bDvT_vXXX_newSBDef.root
+      FvT_name_template: FvT_3bDvTMix4bDvT_vXXX_newSBDef
+      files:
+      - root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//TTTo2L2Nu2016_postVFP_4b_noPSData_wTrigW/picoAOD_4b_wJCM_newSBDef.root
+      sumw: 3478035558.1184
+      sumw2: 254908185433.63046
+      total_events: 48232000.0
+  UL16_preVFP:
+    picoAOD:
+      FvT_file_template: root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//TTTo2L2Nu2016_preVFP_4b_noPSData_wTrigW/FvT_3bDvTMix4bDvT_vXXX_newSBDef.root
+      FvT_name_template: FvT_3bDvTMix4bDvT_vXXX_newSBDef
+      files:
+      - root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//TTTo2L2Nu2016_preVFP_4b_noPSData_wTrigW/picoAOD_4b_wJCM_newSBDef.root
+      sumw: 2982812557.569401
+      sumw2: 218610511326.022
+      total_events: 41364000.0
+  UL17:
+    picoAOD:
+      FvT_file_template: root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//TTTo2L2Nu2017_4b_noPSData_wTrigW/FvT_3bDvTMix4bDvT_vXXX_newSBDef.root
+      FvT_name_template: FvT_3bDvTMix4bDvT_vXXX_newSBDef
+      files:
+      - root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//TTTo2L2Nu2017_4b_noPSData_wTrigW/picoAOD_4b_wJCM_newSBDef.root
+      sumw: 7714155902.942803
+      sumw2: 565383311107.1262
+      total_events: 106978000.0
+  UL18:
+    picoAOD:
+      FvT_file_template: root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//TTTo2L2Nu2018_4b_noPSData_wTrigW/FvT_3bDvTMix4bDvT_vXXX_newSBDef.root
+      FvT_name_template: FvT_3bDvTMix4bDvT_vXXX_newSBDef
+      files:
+      - root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//TTTo2L2Nu2018_4b_noPSData_wTrigW/picoAOD_4b_wJCM_newSBDef.root
+      sumw: 10706355119.611603
+      sumw2: 784670307914.478
+      total_events: 148470000.0
+  nSamples: 15
+  xs: 88.3419033256
+TTToHadronic:
+  UL16_postVFP:
+    nanoAOD: /TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v1/NANOAODSIM
+    picoAOD:
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/20231115/TTToHadronic2016_postVFP/picoAOD.root
+      sumw: 35343160229.5
+      sumw2: 11276170897132.355
+      total_events: 112592000.0
+  UL16_preVFP:
+    nanoAOD: /TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v1/NANOAODSIM
+    picoAOD:
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/20231115/TTToHadronic2016_preVFP/picoAOD.root
+      sumw: 30707687784.444016
+      sumw2: 9797044778227.39
+      total_events: 97823000.0
+  UL17:
+    nanoAOD: /TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v1/NANOAODSIM
+    picoAOD:
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/20231115/TTToHadronic2017/picoAOD.root
+      sumw: 78241054724.27798
+      sumw2: 24962368840523.953
+      total_events: 249247999.0
+  UL18:
+    nanoAOD: /TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1/NANOAODSIM
+    picoAOD:
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/20231115/TTToHadronic2018/picoAOD.root
+      sumw: 107993527547.176
+      sumw2: 34454655050080.375
+      total_events: 344028000.0
+  xs: 377.9607353256
+TTToHadronic_for_mixed:
+  UL16_postVFP:
+    picoAOD:
+      FvT_file_template: root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//TTToHadronic2016_postVFP_4b_noPSData_wTrigW/FvT_3bDvTMix4bDvT_vXXX_newSBDef.root
+      FvT_name_template: FvT_3bDvTMix4bDvT_vXXX_newSBDef
+      files:
+      - root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//TTToHadronic2016_postVFP_4b_noPSData_wTrigW/picoAOD_4b_wJCM_newSBDef.root
+      sumw: 35343160229.5
+      sumw2: 11276170897132.355
+      total_events: 112592000.0
+  UL16_preVFP:
+    picoAOD:
+      FvT_file_template: root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//TTToHadronic2016_preVFP_4b_noPSData_wTrigW/FvT_3bDvTMix4bDvT_vXXX_newSBDef.root
+      FvT_name_template: FvT_3bDvTMix4bDvT_vXXX_newSBDef
+      files:
+      - root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//TTToHadronic2016_preVFP_4b_noPSData_wTrigW/picoAOD_4b_wJCM_newSBDef.root
+      sumw: 30707687784.444016
+      sumw2: 9797044778227.39
+      total_events: 97823000.0
+  UL17:
+    picoAOD:
+      FvT_file_template: root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//TTToHadronic2017_4b_noPSData_wTrigW/FvT_3bDvTMix4bDvT_vXXX_newSBDef.root
+      FvT_name_template: FvT_3bDvTMix4bDvT_vXXX_newSBDef
+      files:
+      - root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//TTToHadronic2017_4b_noPSData_wTrigW/picoAOD_4b_wJCM_newSBDef.root
+      sumw: 78241054724.27798
+      sumw2: 24962368840523.953
+      total_events: 249247999.0
+  UL18:
+    picoAOD:
+      FvT_file_template: root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//TTToHadronic2018_4b_noPSData_wTrigW/FvT_3bDvTMix4bDvT_vXXX_newSBDef.root
+      FvT_name_template: FvT_3bDvTMix4bDvT_vXXX_newSBDef
+      files:
+      - root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//TTToHadronic2018_4b_noPSData_wTrigW/picoAOD_4b_wJCM_newSBDef.root
+      sumw: 107993527547.176
+      sumw2: 34454655050080.375
+      total_events: 344028000.0
+  nSamples: 15
+  xs: 377.9607353256
+TTToSemiLeptonic:
+  UL16_postVFP:
+    nanoAOD: /TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v1/NANOAODSIM
+    picoAOD:
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/20231115/TTToSemiLeptonic2016_preVFP/picoAOD.root
+      sumw: 41221960182.87602
+      sumw2: 12607204330163.357
+      total_events: 136996000.0
+  UL16_preVFP:
+    nanoAOD: /TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v1/NANOAODSIM
+    picoAOD:
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/20231115/TTToSemiLeptonic2016_postVFP/picoAOD.root
+      sumw: 47722670335.73602
+      sumw2: 14594783523153.422
+      total_events: 158594000.0
+  UL17:
+    nanoAOD: /TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v1/NANOAODSIM
+    picoAOD:
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/20231115/TTToSemiLeptonic2017/picoAOD.root
+      sumw: 107070989977.07205
+      sumw2: 32745270577131.477
+      total_events: 355826000.0
+  UL18:
+    nanoAOD: /TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1/NANOAODSIM
+    picoAOD:
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/20231115/TTToSemiLeptonic2018/picoAOD.root
+      sumw: 146472193017.084
+      sumw2: 44795533094350.31
+      total_events: 486770000.0
+  xs: 365.7826460496
+TTToSemiLeptonic_for_mixed:
+  UL16_postVFP:
+    picoAOD:
+      FvT_file_template: root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//TTToSemiLeptonic2016_postVFP_4b_noPSData_wTrigW/FvT_3bDvTMix4bDvT_vXXX_newSBDef.root
+      FvT_name_template: FvT_3bDvTMix4bDvT_vXXX_newSBDef
+      files:
+      - root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//TTToSemiLeptonic2016_postVFP_4b_noPSData_wTrigW/picoAOD_4b_wJCM_newSBDef.root
+      sumw: 47722670335.73602
+      sumw2: 14594783523153.422
+      total_events: 158594000.0
+  UL16_preVFP:
+    picoAOD:
+      FvT_file_template: root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//TTToSemiLeptonic2016_preVFP_4b_noPSData_wTrigW/FvT_3bDvTMix4bDvT_vXXX_newSBDef.root
+      FvT_name_template: FvT_3bDvTMix4bDvT_vXXX_newSBDef
+      files:
+      - root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//TTToSemiLeptonic2016_preVFP_4b_noPSData_wTrigW/picoAOD_4b_wJCM_newSBDef.root
+      sumw: 41574965146.440025
+      sumw2: 12715150917503.73
+      total_events: 138169000.0
+  UL17:
+    picoAOD:
+      FvT_file_template: root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//TTToSemiLeptonic2017_4b_noPSData_wTrigW/FvT_3bDvTMix4bDvT_vXXX_newSBDef.root
+      FvT_name_template: FvT_3bDvTMix4bDvT_vXXX_newSBDef
+      files:
+      - root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//TTToSemiLeptonic2017_4b_noPSData_wTrigW/picoAOD_4b_wJCM_newSBDef.root
+      sumw: 107070989977.07205
+      sumw2: 32745270577131.477
+      total_events: 355826000.0
+  UL18:
+    picoAOD:
+      FvT_file_template: root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//TTToSemiLeptonic2018_4b_noPSData_wTrigW/FvT_3bDvTMix4bDvT_vXXX_newSBDef.root
+      FvT_name_template: FvT_3bDvTMix4bDvT_vXXX_newSBDef
+      files:
+      - root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//TTToSemiLeptonic2018_4b_noPSData_wTrigW/picoAOD_4b_wJCM_newSBDef.root
+      sumw: 146472193017.084
+      sumw2: 44795533094350.31
+      total_events: 486770000.0
+  nSamples: 15
+  xs: 365.7826460496
