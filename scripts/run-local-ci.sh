@@ -6,7 +6,7 @@ if [ -z "$1" ]; then
 fi
 
 JOB_NAME=$1
-SNAKEFILE="coffea4bees/workflows/Snakefile_testCI"
+SNAKEFILE="coffea4bees/workflows/Snakefile_testCI.smk"
 
 # Check if JOB_NAME contains '-'
 if [[ "$JOB_NAME" == *-* ]]; then
