@@ -1,0 +1,80 @@
+NMSSM_XtoYHto4B_MX-1200_MY-125:
+  2022_EE:
+    nanoAOD: /NMSSM_XtoYHto4B_MX-1200_MY-125_TuneCP5_13p6TeV_madgraph-pythia8/Run3Summer22EENanoAODv12-130X_mcRun3_2022_realistic_postEE_v6-v2/NANOAODSIM
+  2022_preEE:
+    nanoAOD: /NMSSM_XtoYHto4B_MX-1200_MY-125_TuneCP5_13p6TeV_madgraph-pythia8/Run3Summer22NanoAODv12-130X_mcRun3_2022_realistic_v5-v2/NANOAODSIM
+  2023_BPix:
+    nanoAOD: /NMSSM_XtoYHto4B_MX-1200_MY-125_TuneCP5_13p6TeV_madgraph-pythia8/Run3Summer23BPixNanoAODv12-130X_mcRun3_2023_realistic_postBPix_v6-v2/NANOAODSIM
+  2023_preBPix:
+    nanoAOD: /NMSSM_XtoYHto4B_MX-1200_MY-125_TuneCP5_13p6TeV_madgraph-pythia8/Run3Summer23NanoAODv12-130X_mcRun3_2023_realistic_v15-v2/NANOAODSIM
+NMSSM_XtoYHto4B_MX-500_MY-100:
+  2022_EE:
+    nanoAOD: /NMSSM_XtoYHto4B_MX-500_MY-100_TuneCP5_13p6TeV_madgraph-pythia8/Run3Summer22EENanoAODv12-130X_mcRun3_2022_realistic_postEE_v6-v2/NANOAODSIM
+  2022_preEE:
+    nanoAOD: /NMSSM_XtoYHto4B_MX-500_MY-100_TuneCP5_13p6TeV_madgraph-pythia8/Run3Summer22NanoAODv12-130X_mcRun3_2022_realistic_v5-v2/NANOAODSIM
+  2023_BPix:
+    nanoAOD: /NMSSM_XtoYHto4B_MX-500_MY-100_TuneCP5_13p6TeV_madgraph-pythia8/Run3Summer23BPixNanoAODv12-130X_mcRun3_2023_realistic_postBPix_v6-v2/NANOAODSIM
+  2023_preBPix:
+    nanoAOD: /NMSSM_XtoYHto4B_MX-500_MY-100_TuneCP5_13p6TeV_madgraph-pythia8/Run3Summer23NanoAODv12-130X_mcRun3_2023_realistic_v15-v2/NANOAODSIM
+NMSSM_XtoYHto4B_MX-500_MY-125:
+  2022_EE:
+    nanoAOD: /NMSSM_XtoYHto4B_MX-500_MY-125_TuneCP5_13p6TeV_madgraph-pythia8/Run3Summer22EENanoAODv12-130X_mcRun3_2022_realistic_postEE_v6-v2/NANOAODSIM
+    picoAOD:
+      count: 78000
+      files:
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/NMSSM_XtoYHto4B_MX-500_MY-125_2022_EE/picoAOD.root
+      missing: {}
+      saved_events: 34595
+      sumw: 4991806949294080.0
+      sumw2: 3.19468461501013e+26
+      sumw2_raw: 3.194684781583371e+26
+      sumw_raw: 4991807071000000.0
+      total_events: 78000
+  2022_preEE:
+    nanoAOD: /NMSSM_XtoYHto4B_MX-500_MY-125_TuneCP5_13p6TeV_madgraph-pythia8/Run3Summer22NanoAODv12-130X_mcRun3_2022_realistic_v5-v2/NANOAODSIM
+    picoAOD:
+      count: 22000
+      files:
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/NMSSM_XtoYHto4B_MX-500_MY-125_2022_preEE/picoAOD.root
+      missing: {}
+      saved_events: 9846
+      sumw: 1407083496865792.0
+      sumw2: 8.99955584633405e+25
+      sumw2_raw: 8.999555918964598e+25
+      sumw_raw: 1407083408000000.0
+      total_events: 22000
+  2023_BPix:
+    nanoAOD: /NMSSM_XtoYHto4B_MX-500_MY-125_TuneCP5_13p6TeV_madgraph-pythia8/Run3Summer23BPixNanoAODv12-130X_mcRun3_2023_realistic_postBPix_v6-v2/NANOAODSIM
+    picoAOD:
+      count: 33000
+      files:
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/NMSSM_XtoYHto4B_MX-500_MY-125_2023_BPix/picoAOD.root
+      missing: {}
+      saved_events: 14770
+      sumw: 2112141033209856.0
+      sumw2: 1.3518619840430139e+26
+      sumw2_raw: 1.3518620225700003e+26
+      sumw_raw: 2112141000000000.0
+      total_events: 33000
+  2023_preBPix:
+    nanoAOD: /NMSSM_XtoYHto4B_MX-500_MY-125_TuneCP5_13p6TeV_madgraph-pythia8/Run3Summer23NanoAODv12-130X_mcRun3_2023_realistic_v15-v2/NANOAODSIM
+    picoAOD:
+      count: 64000
+      files:
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/NMSSM_XtoYHto4B_MX-500_MY-125_2023_preBPix/picoAOD.root
+      missing: {}
+      saved_events: 28787
+      sumw: 4095058278088704.0
+      sumw2: 2.6202365177772984e+26
+      sumw2_raw: 2.6202364656400005e+26
+      sumw_raw: 4095058000000000.5
+      total_events: 64000
+NMSSM_XtoYHto4B_MX-800_MY-125:
+  2022_EE:
+    nanoAOD: /NMSSM_XtoYHto4B_MX-800_MY-125_TuneCP5_13p6TeV_madgraph-pythia8/Run3Summer22EENanoAODv12-130X_mcRun3_2022_realistic_postEE_v6-v2/NANOAODSIM
+  2022_preEE:
+    nanoAOD: /NMSSM_XtoYHto4B_MX-800_MY-125_TuneCP5_13p6TeV_madgraph-pythia8/Run3Summer22NanoAODv12-130X_mcRun3_2022_realistic_v5-v2/NANOAODSIM
+  2023_BPix:
+    nanoAOD: /NMSSM_XtoYHto4B_MX-800_MY-125_TuneCP5_13p6TeV_madgraph-pythia8/Run3Summer23BPixNanoAODv12-130X_mcRun3_2023_realistic_postBPix_v6-v2/NANOAODSIM
+  2023_preBPix:
+    nanoAOD: /NMSSM_XtoYHto4B_MX-800_MY-125_TuneCP5_13p6TeV_madgraph-pythia8/Run3Summer23NanoAODv12-130X_mcRun3_2023_realistic_v15-v2/NANOAODSIM
