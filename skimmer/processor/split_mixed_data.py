@@ -74,7 +74,7 @@ class MixedDataSplitter(PicoAOD):
             loosePtForSkim=False,
             isRun3=config["isRun3"],
             isMC=config["isMC"],
-            isSyntheticData=True #Hack for now
+            isSyntheticData=config["isRun3"] #Hack for now
         )
 
         weights = Weights(len(events), storeIndividual=True)
