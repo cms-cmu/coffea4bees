@@ -28,7 +28,7 @@ class MixedDataSplitter(PicoAOD):
         ):
 
         super().__init__(*args, **kwargs)
-
+        logging.info(f"\nLoading JCM from file: {JCM_file} , apply_JCM = {apply_JCM}")
         self.apply_JCM = jetCombinatoricModel(JCM_file) if apply_JCM else None
         self.n_subsamples = n_subsamples
         self.mixed_subsample = mixed_subsample
@@ -41,6 +41,9 @@ class MixedDataSplitter(PicoAOD):
         year    = events.metadata['year']
         dataset = events.metadata['dataset']
         processName = events.metadata['processName']
+        estart  = events.metadata['entrystart']
+        estop   = events.metadata['entrystop']
+        chunk_str  = f'{dataset}::{estart:6d}:{estop:6d} >>> '
 
         logging.debug(f'Processing dataset: {dataset}, processName: {processName}, year: {year}\n')
 
@@ -70,7 +73,8 @@ class MixedDataSplitter(PicoAOD):
             doLeptonRemoval=config["do_lepton_jet_cleaning"],
             loosePtForSkim=False,
             isRun3=config["isRun3"],
-            isMC=config["isMC"]
+            isMC=config["isMC"],
+            isSyntheticData=config["isRun3"] #Hack for now
         )
 
         weights = Weights(len(events), storeIndividual=True)
@@ -79,7 +83,10 @@ class MixedDataSplitter(PicoAOD):
         #
         # Update pseudoTagWeight for mixed data
         #
+        print(f"{chunk_str} event.pseudoTagWeight was {events.pseudoTagWeight[:10]} \n")
         update_pseudoTagWeight_of_mixed_data( events, self.apply_JCM )
+        print(f"{chunk_str} event.pseudoTagWeight is now {events.pseudoTagWeight[:10]} \n")
+
 
         #
         #  Assign mixed data subsamples

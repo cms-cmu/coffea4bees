@@ -48,6 +48,7 @@ class HemiMixer(PicoAOD):
         super().__init__(*args, **kwargs)
 
         logging.info(f"\nRunning HemiMixer with these parameters: , subtract_ttbar_with_weights = {subtract_ttbar_with_weights}, args = {args}, kwargs = {kwargs}")
+        logging.info(f"\nLoading JCM from file: {JCM_file} , apply_JCM = {apply_JCM}")
         self.apply_JCM = jetCombinatoricModel(JCM_file) if apply_JCM else None
 
         self.subtract_ttbar_with_weights = subtract_ttbar_with_weights

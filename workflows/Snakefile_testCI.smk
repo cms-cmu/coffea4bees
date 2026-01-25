@@ -311,3 +311,34 @@ rule check_configs:
     log: f"{output_dir}/check_configs.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/check-configs.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
+
+
+rule mixeddata_make_dataset:
+    output: f"{output_dir}/test_mixeddata_make_dataset/picoaod_datasets_mixeddata_test_UL18.yml"
+    container: analysis_container
+    log: f"{output_dir}/mixeddata_make_dataset.log"
+    container: analysis_container
+    shell: "source coffea4bees/scripts/mixeddata-make-dataset.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
+
+rule mixeddata_split_dataset:
+    output: f"{output_dir}/test_mixeddata_split_dataset/picoaod_datasets_split_mixeddata_UL18_v0.yml"
+    input: f"{output_dir}/test_mixeddata_make_dataset/picoaod_datasets_mixeddata_test_UL18.yml"
+    log: f"{output_dir}/mixeddata_split_dataset.log"
+    container: analysis_container
+    shell: "source coffea4bees/scripts/mixeddata-split-dataset.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
+
+
+rule mixeddata_analyze:
+    output: f"{output_dir}/mixeddata_analyze/test_mixeddata.coffea"
+    input: f"{output_dir}/test_mixeddata_split_dataset/picoaod_datasets_split_mixeddata_UL18_v0.yml"
+    log: f"{output_dir}/mixeddata_analyze.log"
+    container: analysis_container
+    shell: "source coffea4bees/scripts/mixeddata-analyze.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
+
+
+rule mixeddata_analyze_cutflow:
+    input: f"{output_dir}/mixeddata_analyze/test_mixeddata.coffea"
+    output: f"{output_dir}/mixeddata_analyze_cutflow/test_dump_cutflow_mixeddata.yml"
+    log: f"{output_dir}/mixeddata_analyze_cutflow.log"
+    container: analysis_container
+    shell: "source coffea4bees/scripts/mixeddata-analyze-cutflow.sh --output-base {output_dir} 2>&1 | tee -a {log}"
