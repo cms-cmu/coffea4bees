@@ -64,9 +64,9 @@ class analysis(processor.ProcessorABC):
         #
         # Event selection
         #
-        event = apply_event_selection( 
-            event, 
-            self.corrections_metadata[self.year], 
+        event = apply_event_selection(
+            event,
+            self.corrections_metadata[self.year],
             cut_on_lumimask=self.config["cut_on_lumimask"]
         )
 
@@ -83,14 +83,14 @@ class analysis(processor.ProcessorABC):
         event["Jet"] = jets
 
         # Apply object selection (function does not remove events, adds content to objects)
-        event = apply_4b_selection( 
-            event, 
-            self.corrections_metadata[self.year], 
+        event = apply_4b_selection(
+            event,
+            self.corrections_metadata[self.year],
+            config=self.config,
             dataset=self.dataset,
-            doLeptonRemoval=self.config["do_lepton_jet_cleaning"] 
         )
 
-        event = create_cand_jet_dijet_quadjet( 
+        event = create_cand_jet_dijet_quadjet(
             event,
             apply_FvT=False,
             run_SvB=False,
@@ -101,17 +101,17 @@ class analysis(processor.ProcessorABC):
 
         year_label = self.corrections_metadata[self.year]['year_label'].replace("UL", "20").split("_")[0]
         event['trigWeight'] = {}
-        
-        if self.use_vectorized: 
+
+        if self.use_vectorized:
             year_int = int(year_label)
             if year_int not in self.trig_sfs_vect:
                 self.trig_sfs_vect[year_int] = TriggerSFVectorized(year_int, map_path="coffea4bees/analysis/trigger_emulator/data/",tagger=self.tagger)
-                
+
             trig_helper = self.trig_sfs_vect[year_int]
             data_eff, mc_eff, sf = trig_helper.calculate_event_sf(event)
             event['trigWeight', "Data"] = data_eff
             event['trigWeight', "MC"] = mc_eff
-            
+
         else:
             emulator_data = TrigEmulatorTool("Test", year=year_label)
             emulator_mc   = TrigEmulatorTool("Test", year=year_label, useMCTurnOns=True)
@@ -128,8 +128,8 @@ class analysis(processor.ProcessorABC):
 
         friends = {}
 
-        friends["friends"] = dump_trigger_weight( 
-            event, 
+        friends["friends"] = dump_trigger_weight(
+            event,
             self.make_classifier_input,
             "trigWeight",
             selections.all(*allcuts)

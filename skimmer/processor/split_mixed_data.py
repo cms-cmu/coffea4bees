@@ -69,12 +69,9 @@ class MixedDataSplitter(PicoAOD):
         events = apply_4b_selection(
             events,
             self.corrections_metadata[year],
+            config=config,
             dataset=dataset,
-            doLeptonRemoval=config["do_lepton_jet_cleaning"],
             loosePtForSkim=False,
-            isRun3=config["isRun3"],
-            isMC=config["isMC"],
-            isSyntheticData=config["isRun3"] #Hack for now
         )
 
         weights = Weights(len(events), storeIndividual=True)

@@ -178,7 +178,7 @@ class analysis(processor.ProcessorABC):
         self._cutFlow.fill("passHLT",  event[ event.lumimask & event.passNoiseFilter & event.passHLT], allTag=True)
 
         ### Apply object selection (function does not remove events, adds content to objects)
-        event =  apply_4b_selection( event, self.corrections_metadata[year], doLeptonRemoval=config["do_lepton_jet_cleaning"]  )
+        event =  apply_4b_selection( event, self.corrections_metadata[year], config=config )
         self._cutFlow.fill("passJetMult",  event[ event.lumimask & event.passNoiseFilter & event.passHLT & event.passJetMult ], allTag=True)
 
         ### Filtering object and event selection
@@ -355,7 +355,7 @@ class analysis(processor.ProcessorABC):
 
         hist = Collection(process = [processName],
                           year    = [year],
-                          tag     = ['threeTag', 'fourTag'], 
+                          tag     = ['threeTag', 'fourTag'],
                           region  = ['SR', 'SB', 'notSRSB', 'SB_low', 'SB_high'],
                           **dict((s, ...) for s in self.histCuts))
 

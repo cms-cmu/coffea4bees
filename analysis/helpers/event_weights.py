@@ -7,43 +7,42 @@ import uproot
 import logging
 
 def add_weights(
-        event, 
-        do_MC_weights: bool = True,
+        event,
         dataset: str = None,
         year_label: str = None,
         corrections_metadata: dict = None,
         apply_trigWeight: bool = True,
         friend_trigWeight: callable = None,
-        isTTForMixed: bool = False,
         target: callable = None,
-        run_systematics: bool = False
+        run_systematics: bool = False,
+        config : dict = {"do_MC_weights": True, "isTTForMixed": False}
     ):
 
     weights, list_weight_names = base_add_weights(
         event,
-        do_MC_weights=do_MC_weights,
+        do_MC_weights=config["do_MC_weights"],
         dataset=dataset,
         year_label=year_label,
         corrections_metadata=corrections_metadata,
-        isTTForMixed=isTTForMixed,
+        isTTForMixed=config["isTTForMixed"],
         run_systematics=run_systematics
     )
 
-    if apply_trigWeight and do_MC_weights:
+    if apply_trigWeight and config["do_MC_weights"]:
 
         trigWeight = event.trigWeight if "trigWeight" in event.fields else friend_trigWeight.arrays(target) if friend_trigWeight else logging.error(f"No friend tree for trigWeight found.")
 
         if run_systematics:
             hlt = ak.where(event.passHLT, 1., 0.) # type: ignore
-            weights.add( 
+            weights.add(
                 "CMS_bbbb_resolved_ggf_triggerEffSF",
                 trigWeight.Data, ##* ak.where(trigWeight.MC != 0, hlt / trigWeight.MC, 1) ### uncomment for new data.
                 trigWeight.MC,
                 hlt
             )
         else:
-            weights.add( 
-                "CMS_bbbb_resolved_ggf_triggerEffSF", 
+            weights.add(
+                "CMS_bbbb_resolved_ggf_triggerEffSF",
                 trigWeight.Data
             )
         list_weight_names.append('CMS_bbbb_resolved_ggf_triggerEffSF')
