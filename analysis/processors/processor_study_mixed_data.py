@@ -143,13 +143,12 @@ class analysis(processor.ProcessorABC):
 
         ### adds all the event mc weights and 1 for data
         weights, list_weight_names = add_weights( event, target=target,
-                                                  do_MC_weights=self.config["do_MC_weights"],
                                                   dataset=dataset,
                                                   year_label=self.year_label,
                                                   friend_trigWeight=None,
                                                   corrections_metadata=self.corrections_metadata[year],
                                                   apply_trigWeight=True,
-                                                  isTTForMixed=self.config["isTTForMixed"]
+                                                  config=self.config,
                                                  )
 
 
@@ -174,15 +173,11 @@ class analysis(processor.ProcessorABC):
 
 
         # Apply object selection (function does not remove events, adds content to objects)
+        self.config["isSyntheticData"] = 'True' # HACK!!!
         event = apply_4b_selection( event,
                                     self.corrections_metadata[year],
+                                    config=self.config,
                                     dataset=dataset,
-                                    doLeptonRemoval=self.config["do_lepton_jet_cleaning"],
-                                    override_selected_with_flavor_bit=self.config["override_selected_with_flavor_bit"],
-                                    do_jet_veto_maps=self.config["do_jet_veto_maps"],
-                                    isRun3=self.config["isRun3"],
-                                    isMC=self.config["isMC"], ### temporary
-                                    isSyntheticData=True, #HACK !!! self.config["isSyntheticData"],
                                    )
 
         selections = PackedSelection()

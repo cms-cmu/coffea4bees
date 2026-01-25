@@ -100,11 +100,11 @@ class DeClusterer(PicoAOD):
 
 
         ## adds all the event mc weights and 1 for data
-        weights, list_weight_names = add_weights( event, config["do_MC_weights"], dataset, year_label,
+        weights, list_weight_names = add_weights( event, dataset, year_label,
                                                   self.corrections_metadata[year],
-                                                  isTTForMixed=False,
                                                   target=target,
                                                   friend_trigWeight=self.friends.get("trigWeight"),
+                                                  config=config,
                                                  )
 
 
@@ -124,16 +124,9 @@ class DeClusterer(PicoAOD):
 
         event = update_events(event, {"Jet": jets})
 
-        event = apply_4b_selection( event, self.corrections_metadata[year],
-                                           dataset=dataset,
-                                           doLeptonRemoval=config["do_lepton_jet_cleaning"],
-                                           override_selected_with_flavor_bit=config["override_selected_with_flavor_bit"],
-                                           do_jet_veto_maps = config["do_jet_veto_maps"],
-                                           isRun3=config["isRun3"],
-                                           isMC=config["isMC"],
-                                           isSyntheticData=config["isSyntheticData"],
-                                           isSyntheticMC=config["isSyntheticMC"],
-                                           )
+        event = apply_4b_selection( event, self.corrections_metadata[year], config=config,
+                                    dataset=dataset,
+                                   )
 
 
         #
