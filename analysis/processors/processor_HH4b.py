@@ -1090,7 +1090,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         return apply_4b_selection(
             event,
             self.corrections_metadata[self.year],
-            self.config,
+            config=self.config,
             dataset=self.dataset,
             apply_mixeddata_sel=self.apply_mixeddata_sel,
         )
