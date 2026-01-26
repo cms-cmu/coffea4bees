@@ -66,12 +66,12 @@ class jetCombinatoricModel:
             except KeyError:
                 logging.error(f'No {self.cut} key in JCM file. Keys are {self.data.keys()}')
 
-    def __call__(self, jets, event=None):
+    def __call__(self, num_untagged_jets, event=None):
         """
         Apply JCM weights to events.
         
         :param jets: 
-            - Standard mode: untagged_jets (jets that aren't b-tagged)
+            - Standard mode: num_untagged_jets (jets that aren't b-tagged)
             - Lowpt mode: lowpt_jets (jets that could become lowpt tags)
         :param event: Optional event number for reproducible random generation
         :return: (w, npt) where w is the event weight and npt is number of pseudo-tags
@@ -81,14 +81,15 @@ class jetCombinatoricModel:
         - Lowpt: 3 regular tags + lowpt tags from lowpt jets
         - Enhancement applies when total tags (3 + npt) is even in both cases
         """
-        nEvent = len(jets)
+        nEvent = len(num_untagged_jets)
         maxPseudoTags = self.maxPseudoTags
         nbt = self.nbt  # number of baseline b-tags (always 3)
         
         # Number of jets that could become pseudo-tags
         # Standard mode: light jets (nlt)
         # Lowpt mode: lowpt jets (also called nlt internally)
-        nlt = ak.to_numpy(ak.num(jets, axis=1))
+        # nlt = ak.to_numpy(ak.num(jets, axis=1))
+        nlt = ak.to_numpy(num_untagged_jets)  # number of light jets
         
         # Pre-compute pseudo-tag probability table for all possible light jet counts
         # Use np.max with default value for empty arrays
