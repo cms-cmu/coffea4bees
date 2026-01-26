@@ -13,6 +13,7 @@ runner:
   condor_transfer_input_files:
     - src/
     - coffea4bees/skimmer/
+    - coffea4bees/analysis/
     - coffea4bees/metadata/
   
   # rucio_regex_sites: 'T[123]_(US|CH|DE|UK)'

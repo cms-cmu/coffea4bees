@@ -20,7 +20,7 @@ class analysis(HH4bBaseProcessor):
         # Initialize parent first, passing all kwargs
         super().__init__(**kwargs)
         
-        self.apply_JCM_lowpt = jetCombinatoricModel(JCM_lowpt_file) if apply_JCM_lowpt else None
+        self.apply_JCM_lowpt = jetCombinatoricModel(JCM_lowpt_file, lowpt_mode=True) if apply_JCM_lowpt else None
         self.run_lowpt_selection = run_lowpt_selection
 
     def apply_selection(self, event):

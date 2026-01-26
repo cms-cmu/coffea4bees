@@ -326,7 +326,6 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         )
         self._log_memory("after_event_selection")
 
-
         ### adds all the event mc weights and 1 for data
         weights, list_weight_names = add_weights(
             event,
@@ -718,6 +717,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             boosted_events = boosted_file.get(self.dataset, {}).get('event', event.event)
             boosted_events_set = set(boosted_events)
             event['notInBoostedSel'] = np.array([e not in boosted_events_set for e in event.event.to_numpy()])
+        elif self.dataset.startswith("VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00"):
+            event = apply_boosted_4b_selection(event)
+            event['notInBoostedSel'] = ~event.passBoostedSel
         elif self.dataset.startswith("data"):
             boosted_file = load("coffea4bees/metadata/boosted_overlap_data.coffea")
             mask = np.array(boosted_file['BDTcat_index']) > 0  ### > 0 is all boosted categories, 1 is most sensitive

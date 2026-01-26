@@ -128,8 +128,8 @@ def add_pseudotagweights(
                 logging.debug( f"nJet_pseudotagged_lowpt {event.nJet_pseudotagged_lowpt[:10]}\n" )
 
                 # Update number of tagged jets
-                nTagJets_lowpt = ak.num(event.tagJet_lowpt, axis=1).to_numpy()
-                nTagJets_lowpt[event[label3b]] = ak.num(event.tagJet_loose_lowpt[event[label3b]], axis=1)
+                nTagJets_lowpt = ak.num(event.Jet.tagged_lowpt, axis=1).to_numpy()
+                nTagJets_lowpt[event[label3b]] = ak.num(event.Jet.tagged_loose_lowpt[event[label3b]], axis=1)
                 event["nJet_ps_and_tag_lowpt"] = nJet_pseudotagged_lowpt + nTagJets_lowpt
 
         # Calculate weight without FvT
