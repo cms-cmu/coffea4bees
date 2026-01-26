@@ -16,7 +16,7 @@ from coffea4bees.analysis.helpers.processor_config import processor_config
 from src.data_formats.awkward.zip import NanoAOD
 
 from src.hist_tools import Collection, Fill
-from src.hist_tools.object import LorentzVector, Jet, Muon, Elec
+from src.hist_tools.object import LorentzVector, Jet
 #from coffea4bees.analysis.helpers.hist_templates import SvBHists, FvTHists, QuadJetHists
 
 from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres
@@ -30,7 +30,7 @@ from src.storage.eos import EOS, PathLike
 from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
 from src.physics.objects.jet_corrections import apply_jerc_corrections
 from src.physics.common import apply_btag_sf, update_events
-from src.physics.event_weights import add_weights
+from coffea4bees.analysis.helpers.event_weights import add_weights
 
 from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_SvB
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
@@ -82,7 +82,7 @@ class analysis(processor.ProcessorABC):
         self.classifier_SvB_MA = HCREnsemble(SvB_MA) if SvB_MA else None
         self.run_SvB = run_SvB
         self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
-
+        logging.info(f"subtract_ttbar_with_weights = {self.subtract_ttbar_with_weights}")
 
         self.histCuts = ["passPreSel"] #, "pass0OthJets", "pass1OthJets", "pass2OthJets"]
 
@@ -169,13 +169,12 @@ class analysis(processor.ProcessorABC):
 
         ### adds all the event mc weights and 1 for data
         weights, list_weight_names = add_weights( event, target=target,
-                                                  do_MC_weights=config["do_MC_weights"],
                                                   dataset=dataset,
                                                   year_label=year_label,
                                                   friend_trigWeight=None,
                                                   corrections_metadata=self.corrections_metadata[year],
                                                   apply_trigWeight=True,
-                                                  isTTForMixed=config["isTTForMixed"]
+                                                  config=config
                                                  )
 
 
@@ -202,13 +201,8 @@ class analysis(processor.ProcessorABC):
         # Apply object selection (function does not remove events, adds content to objects)
         event = apply_4b_selection( event,
                                     self.corrections_metadata[year],
+                                    config = config,
                                     dataset=dataset,
-                                    doLeptonRemoval=config["do_lepton_jet_cleaning"],
-                                    override_selected_with_flavor_bit=config["override_selected_with_flavor_bit"],
-                                    do_jet_veto_maps=config["do_jet_veto_maps"],
-                                    isRun3=config["isRun3"],
-                                    isMC=config["isMC"], ### temporary
-                                    isSyntheticData=config["isSyntheticData"],
                                    )
 
         selections = PackedSelection()
@@ -245,6 +239,7 @@ class analysis(processor.ProcessorABC):
 
         allcuts.append("passFourTag")
         selev = event[selections.all(*allcuts)]
+        self._cutFlow.fill("passFourTag", selev )
 
         #
         # TTbar subtractions
@@ -257,8 +252,8 @@ class analysis(processor.ProcessorABC):
             pass_ttbar_filter[ selections.all(*allcuts) ] = pass_ttbar_filter_selev
             selections.add( 'pass_ttbar_filter', pass_ttbar_filter )
             allcuts.append("pass_ttbar_filter")
+            self._cutFlow.fill( "pass_ttbar_filter", event[selections.all(*allcuts)], allTag=True )
             selev = selev[pass_ttbar_filter_selev]
-
 
         # logging.info( f"\n {chunk} Event:  nSelJets {selev['nJet_selected']}\n")
 
@@ -283,6 +278,11 @@ class analysis(processor.ProcessorABC):
         selev["pos_hemi"] = pos_hemi
         selev["neg_hemi"] = neg_hemi
 
+        logging.debug(f"pos_hemi Fields {pos_hemi.fields}")
+        logging.debug(f"pos_hemi.Jet Fields {selev.pos_hemi.Jet.fields}")
+
+
+
         #
         #  Write out hemi library files
         #
@@ -294,7 +294,7 @@ class analysis(processor.ProcessorABC):
         logging.debug(f"final weight {weights.weight()[:10]}")
         selev["weight"] = weights.weight()[selections.all(*allcuts)]
 
-        self._cutFlow.fill("passFourTag", selev )
+
         self._cutFlow.addOutput(processOutput, event.metadata["dataset"])
 
         #
@@ -356,7 +356,7 @@ class analysis(processor.ProcessorABC):
 
 
         # Not sure why the following line is needed
-        ak.concatenate([pos_hemi, neg_hemi], axis=0)
+        #ak.concatenate([pos_hemi, neg_hemi], axis=0)
         with TreeWriter()(path) as writer:
 
             writer.extend(selev.pos_hemi).extend(selev.neg_hemi)

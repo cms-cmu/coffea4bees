@@ -14,9 +14,12 @@ import logging
 from copy import copy
 import numpy as np
 import os
+import matplotlib
+matplotlib.use("Agg")  # no GUI, renders directly to files
 import matplotlib.pyplot as plt
-from hist import Hist 
+from hist import Hist
 from typing import Dict, Tuple, List, Optional, Union, Any
+import yaml
 
 # Add the current directory to the path
 sys.path.insert(0, os.getcwd())
@@ -47,7 +50,7 @@ def write_to_JCM_file(text: str, value: Any, jetCombinatoricModelFile, jetCombin
     jetCombinatoricModelFile_yml.write(f"        {value}\n")
 
 def process_histograms(data4b, data3b, tt4b, tt3b, qcd4b, qcd3b, data4b_nTagJets,
-                      tt4b_nTagJets, qcd3b_nTightTags, args: argparse.Namespace, logger: logging.Logger) -> Tuple:
+                       tt4b_nTagJets, qcd3b_nTightTags, args: argparse.Namespace, logger: logging.Logger, jcm_config : dict) -> Tuple:
     """Process the histograms and extract data for fitting
 
     Args:
@@ -55,6 +58,7 @@ def process_histograms(data4b, data3b, tt4b, tt3b, qcd4b, qcd3b, data4b_nTagJets
         data4b_nTagJets, tt4b_nTagJets, qcd3b_nTightTags: Tag jet histograms
         args: Command line arguments
         logger: Logger instance
+        jcm_config: jcm configuration dictionary
 
     Returns:
         Tuple of (bin_centers, bin_values, bin_errors, tt4b_nTagJets_values,
@@ -66,8 +70,15 @@ def process_histograms(data4b, data3b, tt4b, tt3b, qcd4b, qcd3b, data4b_nTagJets
 
     # Calculate QCD scale factor
     mu_qcd = np.sum(qcd4b.values()) / np.sum(qcd3b.values())
-    threeTightTagFraction = (qcd3b.values()[4] / np.sum(qcd3b.values())) if args.lowpt else (qcd3b_nTightTags.values()[3] / np.sum(qcd3b_nTightTags.values()))
 
+    if jcm_config.get("threeTightTagFraction", False):
+        logger.info(f"Setting QCD scale factor by hand!!!  to {jcm_config.get('threeTightTagFraction')}")
+        threeTightTagFraction = float(jcm_config.get('threeTightTagFraction'))
+    else:
+        threeTightTagFraction = (qcd3b.values()[4] / np.sum(qcd3b.values())) if args.lowpt else (qcd3b_nTightTags.values()[3] / np.sum(qcd3b_nTightTags.values()))
+
+    ignoreTT = jcm_config.get("ignoreTT", False)
+    logger.info(f"Ignore TT component: {ignoreTT}")
     logger.info(f"QCD scale factor (mu_qcd): {mu_qcd:.6f}")
     logger.info(f"Three tight tag fraction: {threeTightTagFraction:.6f}")
 
@@ -75,8 +86,9 @@ def process_histograms(data4b, data3b, tt4b, tt3b, qcd4b, qcd3b, data4b_nTagJets
     logger.info("Event counts (Unweighted):")
     logger.info(f"  data4b: {np.sum(data4b.values()):.1f}")
     logger.info(f"  data3b: {np.sum(data3b.values()):.1f}")
-    logger.info(f"  tt4b:   {np.sum(tt4b.values()):.1f}")
-    logger.info(f"  tt3b:   {np.sum(tt3b.values()):.1f}")
+    if not ignoreTT:
+        logger.info(f"  tt4b:   {np.sum(tt4b.values()):.1f}")
+        logger.info(f"  tt3b:   {np.sum(tt3b.values()):.1f}")
     logger.info(f"  qcd3b:  {np.sum(qcd3b.values()):.1f}")
 
     # Update error calculations for better fit
@@ -94,30 +106,47 @@ def process_histograms(data4b, data3b, tt4b, tt3b, qcd4b, qcd3b, data4b_nTagJets
     data4b_variance[data4b_variance == 0] = 1.17
 
     # Combine errors from all sources for a more robust fit
-    combined_variances = data4b.variances() + data3b_variances + tt4b.variances() + tt3b.variances()
+    if ignoreTT:
+        combined_variances = data4b.variances() + data3b_variances
+    else:
+        combined_variances = data4b.variances() + data3b_variances + tt4b.variances() + tt3b.variances()
+
     combined_error = np.sqrt(combined_variances)
     previous_error = np.sqrt(data4b.variances())
     data4b.view().variance = combined_variances
 
     # Log error increases for debugging
-    tt4b_error = np.sqrt(tt4b.variances())
-    tt3b_error = np.sqrt(tt3b.variances())
+    if not ignoreTT:
+        tt4b_error = np.sqrt(tt4b.variances())
+        tt3b_error = np.sqrt(tt3b.variances())
 
     logger.info("Bin errors overview:")
     logger.info("bin, x | value  | data4b_err, data3b_err, tt4b_err, tt3b_err, increase%")
     for ibin in range(len(data4b.values()) - 1):
         x = data4b.axes[0].centers[ibin] - 0.5
         increase = 100 * np.sqrt(data4b.variances()[ibin]) / previous_error[ibin] if previous_error[ibin] else 100
-        logger.info(f"{ibin:2}, {x:2.0f}| {data4b.values()[ibin]:9.1f} | {previous_error[ibin]:5.1f}, {data3b_error[ibin]:5.1f}, {tt4b_error[ibin]:5.1f}, {tt3b_error[ibin]:5.1f}, {increase:5.0f}%")
+        if ignoreTT:
+            logger.info(f"{ibin:2}, {x:2.0f}| {data4b.values()[ibin]:9.1f} | {previous_error[ibin]:5.1f}, {data3b_error[ibin]:5.1f},      N/A,      N/A, {increase:5.0f}%")
+        else:
+            logger.info(f"{ibin:2}, {x:2.0f}| {data4b.values()[ibin]:9.1f} | {previous_error[ibin]:5.1f}, {data3b_error[ibin]:5.1f}, {tt4b_error[ibin]:5.1f}, {tt3b_error[ibin]:5.1f}, {increase:5.0f}%")
 
     # Extract data for fitting
     bin_centers, bin_values, bin_errors = data_from_Hist(data4b)
-    _, tt4b_nTagJets_values, tt4b_nTagJets_errors = data_from_Hist(tt4b_nTagJets)
-    _, tt4b_values, _ = data_from_Hist(tt4b)
-    _, qcd3b_values, qcd3b_errors = data_from_Hist(qcd3b)
 
     # Set minimum Poisson errors for empty bins
     bin_errors[bin_errors == 0] = 1.17
+
+    _, qcd3b_values, qcd3b_errors = data_from_Hist(qcd3b)
+
+    if ignoreTT:
+        return (bin_centers, bin_values, bin_errors, None,
+                None, None, qcd3b_values, qcd3b_errors,
+                mu_qcd, threeTightTagFraction)
+
+    _, tt4b_nTagJets_values, tt4b_nTagJets_errors = data_from_Hist(tt4b_nTagJets)
+    _, tt4b_values, _ = data_from_Hist(tt4b)
+
+
 
     return (bin_centers, bin_values, bin_errors, tt4b_nTagJets_values,
             tt4b_nTagJets_errors, tt4b_values, qcd3b_values, qcd3b_errors,
@@ -278,9 +307,9 @@ def save_model_output(JCM_model: jetCombinatoricModel, bin_data: Tuple, args: ar
             # For lowpt: check 1b bin (index 1), for standard: check 5b bin (index 5)
             validation_bin = 1 if args.lowpt else 5
             validation_label = "1b" if args.lowpt else "5b"
-            
+
             n_true = data4b_nTagJets.values()[validation_bin]
-            
+
             # For lowpt: call nTagPred with [1] to get prediction for 1 lowpt tag
             # For standard: call nTagPred with bin_centers + 4
             if args.lowpt:
@@ -291,7 +320,7 @@ def save_model_output(JCM_model: jetCombinatoricModel, bin_data: Tuple, args: ar
                 nTag_pred = JCM_model.nTagPred(bin_centers.astype(int) + 4, lowpt=False)
                 n_pred = nTag_pred["values"][validation_bin]
                 n_pred_error = nTag_pred["errors"][validation_bin]
-            
+
             sigma_pull = (n_true - n_pred) / n_pred_error if n_pred_error > 0 else 0
 
             logger.info(f"Fitted number of {validation_label} events: {n_pred:5.1f} +/- {n_pred_error:5f}")
@@ -322,8 +351,7 @@ def create_plots(
     bin_data: Tuple,
     args: argparse.Namespace,
     mu_qcd: float,
-    selJets: str,
-    tagJets: str,
+    jcm_config: dict,
     logger: logging.Logger
 ) -> None:
     """Create plots for the JCM model
@@ -344,8 +372,14 @@ def create_plots(
     logger.info("Creating plots")
     bin_centers = bin_data[0]
 
+    selJets = jcm_config.get("selJets", "selJets_noJCM.n")
+    tagJets = jcm_config.get("tagJets", "tagJets_noJCM.n")
+    ignoreTT = jcm_config.get("ignoreTT", False)
+
     # Scale QCD by mu_qcd
-    for p in ["data_3tag", "TTTo2L2Nu_3tag", "TTToSemiLeptonic_3tag", "TTToHadronic_3tag"]:
+    proc_list = ["data_3tag", "TTTo2L2Nu_3tag", "TTToSemiLeptonic_3tag", "TTToHadronic_3tag"]
+    if ignoreTT: proc_list = ["data_3tag"]
+    for p in proc_list:
         if p in cfg.plotConfig["stack"]["MultiJet"]["sum"]:
             cfg.plotConfig["stack"]["MultiJet"]["sum"][p]["scalefactor"] *= mu_qcd
 
@@ -363,10 +397,10 @@ def create_plots(
     # Add dummy values to register the JCM process
     dummy_data = {
         'process': ['JCM'],
-        'year': ['UL18'], 
-        'tag': "lowpt_fourTag" if args.lowpt else "fourTag", 
+        'year': ['UL18'],
+        'tag': "lowpt_fourTag" if args.lowpt else "fourTag",
         'region': "SB",
-        'passPreSel': [True], 
+        'passPreSel': [True],
         'n': [0],
     }
 
@@ -400,10 +434,10 @@ def create_plots(
 
     try:
         index_dict = {
-            "process": "JCM", 
-            "year": "UL18", 
-            "tag": "lowpt_fourTag" if args.lowpt else "fourTag", 
-            "region": "SB", 
+            "process": "JCM",
+            "year": "UL18",
+            "tag": "lowpt_fourTag" if args.lowpt else "fourTag",
+            "region": "SB",
             "passPreSel": True
         }
         if has_passSvB:
@@ -492,10 +526,10 @@ def create_plots(
         # Set values using the same approach
         try:
             index_dict = {
-                "process": "JCM", 
-                "year": "UL18", 
-                "tag": "lowpt_fourTag" if args.lowpt else "fourTag", 
-                "region": "SB", 
+                "process": "JCM",
+                "year": "UL18",
+                "tag": "lowpt_fourTag" if args.lowpt else "fourTag",
+                "region": "SB",
                 "passPreSel": True
             }
             if has_passSvB:
@@ -557,8 +591,6 @@ def main():
                         help='Label for the weight set')
     parser.add_argument('-r', dest="weightRegion", default="SB",
                         help='Weight region (e.g. SB for sideband)')
-    parser.add_argument('--data4bName', default="data",
-                        help='Name of the 4b data process')
     parser.add_argument('-c', dest="cut", default="passPreSel",
                         help='Cut to apply (e.g. passPreSel)')
     parser.add_argument('-fix_e', action="store_true",
@@ -586,6 +618,7 @@ def main():
                         help='Metadata file for plots configuration')
     parser.add_argument('--no-plots', dest="no_plots", action="store_true",
                         help='Skip creating plots')
+    parser.add_argument('--jcm_config', default="coffea4bees/analysis/jcm_tools/metadata/nominal_jcm_config.yml")
     parser.add_argument('--zero_pseudotag', dest="zero_pseudotag", action="store_true",
                         help='Compute zero pseudotag probabilities and weights in output')
     parser.add_argument('--lowpt', dest="lowpt", action="store_true",
@@ -616,8 +649,11 @@ def main():
     jetCombinatoricModelFile = open(jetCombinatoricModelName, "w")
     jetCombinatoricModelFile_yml = open(f'{jetCombinatoricModelName.replace(".txt",".yml")}', 'w')
 
-    selJets = "selJets_noJCM_lowpt.n" if args.lowpt else "selJets_noJCM.n"
-    tagJets = "tagJets_noJCM_lowpt.n" if args.lowpt else "tagJets_noJCM.n"
+    jcm_config_yaml = args.jcm_config
+    with open(jcm_config_yaml, "r") as f:
+        jcm_config = yaml.safe_load(f)
+
+    print("JCM configuration:", jcm_config)
 
     try:
         if not args.ROOTInputs:
@@ -631,20 +667,16 @@ def main():
         # Load histograms
         histograms = loadHistograms(
             inputFile=args.inputFile[0],
+            jcm_config=jcm_config,
             format='ROOT' if args.ROOTInputs else 'coffea',
             cfg=cfg if not args.ROOTInputs else None,
             cut=args.cut,
             year=args.year,
             weightRegion=args.weightRegion,
-            data4bName=args.data4bName,
-            taglabel4b= "lowpt_fourTag" if args.lowpt else "fourTag",
-            taglabel3b= "lowpt_threeTag" if args.lowpt else "threeTag",
-            selJets=selJets,
-            tagJets=tagJets,
         )
 
         # Process histograms and prepare data for fitting
-        bin_data = process_histograms(*histograms, args, logger)
+        bin_data = process_histograms(*histograms, args, logger, jcm_config)
 
         # Set up the model
         JCM_model = setup_model(bin_data, args, logger)
@@ -662,7 +694,7 @@ def main():
         )
 
         # Create plots
-        create_plots(JCM_model, bin_data, args, bin_data[8], selJets, tagJets, logger)
+        create_plots(JCM_model, bin_data, args, bin_data[8], jcm_config, logger)
 
         logger.info(f"JCM weight generation completed successfully")
         return 0

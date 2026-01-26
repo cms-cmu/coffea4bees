@@ -1,0 +1,22 @@
+runner:
+  workers: 4
+  condor_memory: 4GB
+
+config:
+  blind: false
+  apply_FvT: false
+  apply_trigWeight: false
+  apply_btagSF: false
+  apply_boosted_veto: false
+  run_SvB: true
+  run_dilep_ttbar_crosscheck: false
+  top_reconstruction: fast
+  hist_cuts: [ passPreSel ]
+  # hist_cuts: [ passPreSel, passSvB, failSvB ]
+  SvB   : 'coffea4bees/analysis/weights/pytorch_models/2024_HHUL/SvB_HCR_8_np753_seed13_lr0.01_epochs20_offset*_epoch20.pkl'
+  SvB_MA: 'coffea4bees/analysis/weights/pytorch_models/2024_HHUL/SvB_MA_HCR+attention_8_np1061_seed13_lr0.01_epochs20_offset*_epoch20.pkl'
+  friends:
+    trigWeight: "coffea4bees/metadata/datasets_HH4b_Run2/trigweights_2024_v1p2.json@@trigWeight"
+    # SvB: "coffea4bees/metadata/datasets_HH4b_2024_v1p2_SvB.json@@SvB"
+    # SvB_MA: "coffea4bees/metadata/datasets_HH4b_2024_v1p2_SvB.json@@SvB_MA"
+    # top_reconstruction: "hists/local/top_reconstruction_friendtree.json"

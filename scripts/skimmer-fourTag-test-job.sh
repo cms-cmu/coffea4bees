@@ -21,5 +21,5 @@ fi
 cat ${OUTPUT_DIR}/tmp_fourTag.yml
 
 display_section_header "Running test processor"
-python runner.py -s -p coffea4bees/skimmer/processor/skimmer_4b.py -c ${OUTPUT_DIR}/tmp_fourTag.yml -y UL18 -d data -op ${OUTPUT_DIR} -o picoaod_datasets_fourTag_data_test_UL18.yml -m coffea4bees/metadata/datasets_HH4b.yml 
+python runner.py -s -p coffea4bees/skimmer/processor/skimmer_4b.py -c ${OUTPUT_DIR}/tmp_fourTag.yml -y UL18 -d data -op ${OUTPUT_DIR} -o picoaod_datasets_fourTag_data_test_UL18.yml -m coffea4bees/metadata/datasets_HH4b_Run2/ 
 

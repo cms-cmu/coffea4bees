@@ -49,7 +49,7 @@ display_config() {
 declare -A DEFAULTS=(
     ["OUTPUT_BASE"]="output/"
     ["PROCESSOR_PATH"]="coffea4bees/analysis/processors/processor_HH4b.py"
-    ["METADATA_PATH"]="${DATASET:-coffea4bees/metadata/datasets_HH4b_v1p2.yml}"
+    ["METADATA_PATH"]="${DATASET:-coffea4bees/metadata/datasets_HH4b_Run2/}"
     ["CONFIG_PATH"]="coffea4bees/analysis/metadata/HH4b.yml"
     ["TRIGGERS_PATH"]="coffea4bees/metadata/triggers_HH4b.yml"
     ["LUMINOSITIES_PATH"]="coffea4bees/metadata/luminosities_HH4b.yml"

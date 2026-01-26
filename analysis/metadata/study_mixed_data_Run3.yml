@@ -1,0 +1,8 @@
+runner:
+  workers: 4
+  condor_memory: 8GB
+
+config:
+  run_SvB: false
+  JCM_file: coffea4bees/skimmer/metadata/jetCombinatoricModel_for_mixed_Run3_splitting.txt
+  # base_path: root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v2

@@ -1,0 +1,20 @@
+pseudoTagProb_passPreSel       0.07948710945000605
+pseudoTagProb_passPreSel_err   0.007237786386309387
+pseudoTagProb_passPreSel_pererr 9.105610251007606
+pairEnhancement_passPreSel     0.08147528650469003
+pairEnhancement_passPreSel_err 0.12004002368236792
+pairEnhancement_passPreSel_pererr 147.33304886931322
+pairEnhancementDecay_passPreSel 0.10000000000004583
+pairEnhancementDecay_passPreSel_err 1.2781614411100946
+pairEnhancementDecay_passPreSel_pererr 1278.1614411095088
+threeTightTagFraction_passPreSel 0.4726707382464659
+threeTightTagFraction_passPreSel_err 0
+threeTightTagFraction_passPreSel_pererr 0.0
+mu_qcd                         0.07322256163627086
+chi^2                          5857.427047142596
+ndf                            12
+chi^2/ndf                      488.11892059521637
+p-value                        0.0
+n5b_pred                       15046.376944882117
+n5b_true                       14724.0
+JCM_weights                    [0.04063235749082035, 0.07741424604895959, 0.11098100236671236, 0.14167329386463462, 0.16976812072655809, 0.1955049199452111, 0.2190953557577783, 0.24072860324173412, 0.2605748176637409, 0.27878768484306315, 0.2955064262403454, 0.31085744214526123]

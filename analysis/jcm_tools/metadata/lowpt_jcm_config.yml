@@ -1,0 +1,12 @@
+data4bName: data
+taglabel4b:   lowpt_fourTag
+
+data3bName: data
+taglabel3b:   lowpt_threeTag
+
+taglabel3b_tt: lowpt_threeTag
+
+selJets: selJets_noJCM_lowpt.n
+tagJets: tagJets_noJCM_lowpt.n
+
+subtract3bTT: True

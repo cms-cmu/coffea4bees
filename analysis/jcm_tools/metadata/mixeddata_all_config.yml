@@ -1,0 +1,13 @@
+data4bName: data
+taglabel4b:   fourTag
+
+data3bName: mixeddata_all
+taglabel3b:   fourTag
+
+taglabel3b_tt: threeTag
+
+selJets: selJets_noJCM.n
+tagJets: tagJets_noJCM.n
+
+subtract3bTT: False
+threeTightTagFraction: 0.463830 

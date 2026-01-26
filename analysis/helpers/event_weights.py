@@ -1,21 +1,66 @@
 from src.physics.common import apply_btag_sf
+from src.physics.event_weights import add_weights as base_add_weights
 import correctionlib
 import awkward as ak
 import numpy as np
 import uproot
 import logging
 
+def add_weights(
+        event,
+        dataset: str = None,
+        year_label: str = None,
+        corrections_metadata: dict = None,
+        apply_trigWeight: bool = True,
+        friend_trigWeight: callable = None,
+        target: callable = None,
+        run_systematics: bool = False,
+        config : dict = {"do_MC_weights": True, "isTTForMixed": False}
+    ):
+
+    weights, list_weight_names = base_add_weights(
+        event,
+        do_MC_weights=config["do_MC_weights"],
+        dataset=dataset,
+        year_label=year_label,
+        corrections_metadata=corrections_metadata,
+        isTTForMixed=config["isTTForMixed"],
+        run_systematics=run_systematics
+    )
+
+    if apply_trigWeight and config["do_MC_weights"]:
+
+        trigWeight = event.trigWeight if "trigWeight" in event.fields else friend_trigWeight.arrays(target) if friend_trigWeight else logging.error(f"No friend tree for trigWeight found.")
+
+        if run_systematics:
+            hlt = ak.where(event.passHLT, 1., 0.) # type: ignore
+            weights.add(
+                "CMS_bbbb_resolved_ggf_triggerEffSF",
+                trigWeight.Data, ##* ak.where(trigWeight.MC != 0, hlt / trigWeight.MC, 1) ### uncomment for new data.
+                trigWeight.MC,
+                hlt
+            )
+        else:
+            weights.add(
+                "CMS_bbbb_resolved_ggf_triggerEffSF",
+                trigWeight.Data
+            )
+        list_weight_names.append('CMS_bbbb_resolved_ggf_triggerEffSF')
+        logging.debug( f"trigWeight {weights.partial_weight(include=['CMS_bbbb_resolved_ggf_triggerEffSF'])[:10]}\n" )
+
+    return weights, list_weight_names
+
 def add_pseudotagweights(
-    event, 
-    weights, 
+    event,
+    weights,
     JCM: callable = None,
-    JCM_lowpt: callable = None, 
-    apply_FvT: bool = False, 
-    isDataForMixed: bool = False, 
-    list_weight_names: list = [], 
+    JCM_lowpt: callable = None,
+    apply_FvT: bool = False,
+    isDataForMixed: bool = False,
+    list_weight_names: list = [],
     event_metadata: dict = {},
-    year_label: str = None, 
-    len_event: int = None, 
+    year_label: str = None,
+    len_event: int = None,
     label3b: str = "threeTag"
 ):
     """
@@ -50,7 +95,7 @@ def add_pseudotagweights(
         nJet_pseudotagged = np.zeros(len(event), dtype=int)
 
         pseudoTagWeight[event[label3b]], nJet_pseudotagged[event[label3b]] = JCM(
-            event[event[label3b]]['Jet_untagged_loose'], 
+            ak.num(event[event[label3b]]['Jet_untagged_loose'], axis=1),
             event.event[event[label3b]]
         )
         event["nJet_pseudotagged"] = nJet_pseudotagged
@@ -74,7 +119,7 @@ def add_pseudotagweights(
                 nJet_pseudotagged_lowpt = np.zeros(len(event), dtype=int)
 
                 pseudoTagWeight_lowpt[event[label3b]], nJet_pseudotagged_lowpt[event[label3b]] = JCM_lowpt(
-                    event[event[label3b]]['Jet_untagged_loose_lowpt'], 
+                    ak.num(event[event[label3b]]['Jet_untagged_loose_lowpt'], axis=1),
                     event.event[event[label3b]]
                 )
                 event["nJet_pseudotagged_lowpt"] = nJet_pseudotagged_lowpt
@@ -104,8 +149,8 @@ def add_pseudotagweights(
                     )
 
                 weight_JCM = np.where(
-                    event[label3b], 
-                    getattr(event, f"{event_metadata['JCM_loads'][0]}"), 
+                    event[label3b],
+                    getattr(event, f"{event_metadata['JCM_loads'][0]}"),
                     1.0
                 )
                 weights.add("JCM", weight_JCM)
@@ -113,8 +158,8 @@ def add_pseudotagweights(
                 logging.debug( f"JCM {weights.partial_weight(include=['JCM'])[:10]}\n" )
 
                 weight_FvT = np.where(
-                    event[label3b], 
-                    event.FvT.FvT, 
+                    event[label3b],
+                    event.FvT.FvT,
                     1.0
                 )
                 weights.add("FvT", weight_FvT)
@@ -123,8 +168,8 @@ def add_pseudotagweights(
 
             else:
                 weight = np.where(
-                    event[label3b], 
-                    event["pseudoTagWeight"] * event["pseudoTagWeight_lowpt"] * event.FvT.FvT, 
+                    event[label3b],
+                    event["pseudoTagWeight"] * event["pseudoTagWeight_lowpt"] * event.FvT.FvT,
                     1.0
                 )
                 weights.add("FvT", weight)
@@ -133,8 +178,8 @@ def add_pseudotagweights(
         else:
             weight_noFvT = np.copy(event.weight)
             weight_noFvT = np.where(
-                event[label3b], 
-                event["pseudoTagWeight"] * event["pseudoTagWeight_lowpt"], 
+                event[label3b],
+                event["pseudoTagWeight"] * event["pseudoTagWeight_lowpt"],
                 1.0
             )
             weights.add("no_FvT", weight_noFvT)

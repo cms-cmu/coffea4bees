@@ -28,7 +28,7 @@ from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
 from memory_profiler import profile
 import hist
 from src.math_tools.random import Squares
-from src.physics.event_weights import add_weights
+from coffea4bees.analysis.helpers.event_weights import add_weights
 
 from ..helpers.load_friend import (
     FriendTemplate,
@@ -100,17 +100,15 @@ class analysis(processor.ProcessorABC):
         ### target is for new friend trees
         target = Chunk.from_coffea_events(event)
 
-        ### adds all the event mc weights and 1 for data 
+        ### adds all the event mc weights and 1 for data
         event["passHLT"] = np.full(len(event), True)
         weights, list_weight_names = add_weights(
             event, target=target,
-            do_MC_weights=True,
             dataset=self.dataset,
             year_label=self.year_label,
             friend_trigWeight=self.friends.get("trigWeight"),
             corrections_metadata=self.corrections_metadata[self.year],
             apply_trigWeight=self.apply_trigWeight,
-            isTTForMixed=False
         )
 
         #
@@ -131,16 +129,11 @@ class analysis(processor.ProcessorABC):
                                         )
 
         # Apply object selection (function does not remove events, adds content to objects)
+        config_opts = {"do_lepton_jet_cleaning": True, "override_selected_with_flavor_bit": False, "do_jet_veto_maps": False, "isRun3": False, "isMC": True, "isSyntheticData": False, "isSyntheticMC": False},
         event = apply_4b_selection( event, self.corrections_metadata[self.year],
                                             dataset=self.dataset,
-                                            doLeptonRemoval=True,
-                                            override_selected_with_flavor_bit=False,
+                                            config = config_opts,
                                             run_lowpt_selection=False,
-                                            do_jet_veto_maps=False,
-                                            isRun3=False,
-                                            isMC=True,
-                                            isSyntheticData=False,
-                                            isSyntheticMC=False,
                                             )
 
 
@@ -166,20 +159,20 @@ class analysis(processor.ProcessorABC):
 
         selection = {
             "none" : selev["quadJet"].rank > 0,
-            "none_SBSR": (selev["quadJet"].rank > 0) & (selev["quadJet_selected"].SR | selev["quadJet_selected"].SB), 
+            "none_SBSR": (selev["quadJet"].rank > 0) & (selev["quadJet_selected"].SR | selev["quadJet_selected"].SB),
             "none_SR": (selev["quadJet"].rank > 0) & selev["quadJet_selected"].SR,
             "passDiJetMass" : (selev["quadJet"].rank > 10),
-            "passDiJetMass_SBSR": (selev["quadJet"].rank > 10) & (selev["quadJet_selected"].SR | selev["quadJet_selected"].SB), 
+            "passDiJetMass_SBSR": (selev["quadJet"].rank > 10) & (selev["quadJet_selected"].SR | selev["quadJet_selected"].SB),
             "passDiJetMass_SR": (selev["quadJet"].rank > 10) & selev["quadJet_selected"].SR,
             "passDiJetMassOneMDR" : (selev["quadJet"].rank > 11) & (selev["quadJet"].rank < 12),
-            "passDiJetMassOneMDR_SBSR": ((selev["quadJet"].rank > 11) & (selev["quadJet"].rank < 12)) & (selev["quadJet_selected"].SR | selev["quadJet_selected"].SB), 
+            "passDiJetMassOneMDR_SBSR": ((selev["quadJet"].rank > 11) & (selev["quadJet"].rank < 12)) & (selev["quadJet_selected"].SR | selev["quadJet_selected"].SB),
             "passDiJetMassOneMDR_SR": ((selev["quadJet"].rank > 11) & (selev["quadJet"].rank < 12)) & selev["quadJet_selected"].SR,
             "passDiJetMassMDR" : selev["quadJet"].rank > 12,
-            "passDiJetMassMDR_SBSR": (selev["quadJet"].rank > 12) & (selev["quadJet_selected"].SR | selev["quadJet_selected"].SB), 
+            "passDiJetMassMDR_SBSR": (selev["quadJet"].rank > 12) & (selev["quadJet_selected"].SR | selev["quadJet_selected"].SB),
             "passDiJetMassMDR_SR": (selev["quadJet"].rank > 12) & selev["quadJet_selected"].SR,
             "selected" : selev["quadJet"].rank == np.max(selev["quadJet"].rank, axis=1),
-            "selected_SBSR": (selev["quadJet"].rank == np.max(selev["quadJet"].rank, axis=1)) & (selev["quadJet_selected"].SR | selev["quadJet_selected"].SB), 
-            "selected_SR": (selev["quadJet"].rank == np.max(selev["quadJet"].rank, axis=1)) & selev["quadJet_selected"].SR 
+            "selected_SBSR": (selev["quadJet"].rank == np.max(selev["quadJet"].rank, axis=1)) & (selev["quadJet_selected"].SR | selev["quadJet_selected"].SB),
+            "selected_SR": (selev["quadJet"].rank == np.max(selev["quadJet"].rank, axis=1)) & selev["quadJet_selected"].SR
         }
 
 
@@ -206,7 +199,7 @@ class analysis(processor.ProcessorABC):
         }
 
         for isel in selection.keys():
-            
+
             num_pairs = ak.num(selev["quadJet"]["lead"][selection[isel]], axis=1)
             num_pairs_mass = ak.where( num_pairs > 0, ak.firsts(selev["quadJet"].v4jmass), -1)
             quadJet_v4jmass = ak.broadcast_arrays(selev["v4j"].mass[:, np.newaxis, np.newaxis], selev["quadJet"][selection[isel]].dr)[0]

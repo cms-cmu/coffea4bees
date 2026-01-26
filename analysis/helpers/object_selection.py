@@ -243,6 +243,7 @@ def jet_selection(
     # For trigger emulation
     event['Jet', 'muon_cleaned'] = drClean(event.Jet, event.selMuon)[1]
     event['Jet', 'ht_selected'] = (event.Jet.pt >= 30) & (np.abs(event.Jet.eta) < 2.4) & event.Jet.muon_cleaned
+    event['Jet', 'pfht_selected'] = (event.Jet.pt >= 30) & (np.abs(event.Jet.eta) < 2.4) 
 
     return event
 

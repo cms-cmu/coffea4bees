@@ -86,18 +86,12 @@ def apply_boosted_4b_selection(event: ak.Array) -> ak.Array:
     return event
 
 def apply_4b_selection(
-        event, 
-        corrections_metadata, 
+        event,
+        corrections_metadata,
         *,
+        config: dict = {"do_lepton_jet_cleaning": True, "override_selected_with_flavor_bit": False, "do_jet_veto_maps": False, "isRun3": False, "isMC": False, "isSyntheticData": False, "isSyntheticMC": False},
         dataset: str = '',
-        doLeptonRemoval: bool = True,
         loosePtForSkim: bool = False,
-        override_selected_with_flavor_bit: bool = False,
-        do_jet_veto_maps: bool = False,
-        isRun3: bool = False,
-        isMC: bool = False,  ### temporary for Run3
-        isSyntheticData: bool = False,
-        isSyntheticMC: bool = False,
         apply_mixeddata_sel: bool = False
 ) -> ak.Array:
     """
@@ -111,22 +105,8 @@ def apply_4b_selection(
         Metadata containing corrections and configuration information.
     dataset : str, optional
         The dataset name. Defaults to an empty string.
-    doLeptonRemoval : bool, optional
-        Whether to perform lepton removal. Defaults to True.
     loosePtForSkim : bool, optional
         Whether to use loose pT cuts for skimming. Defaults to False.
-    override_selected_with_flavor_bit : bool, optional
-        Whether to override selected jets with flavor bit. Defaults to False.
-    do_jet_veto_maps : bool, optional
-        Whether to apply jet veto maps. Defaults to False.
-    isRun3 : bool, optional
-        Whether to apply Run 3-specific selection criteria. Defaults to False.
-    isMC : bool, optional
-        Whether the data is Monte Carlo simulation. Defaults to False.
-    isSyntheticData : bool, optional
-        Whether the data is synthetic. Defaults to False.
-    isSyntheticMC : bool, optional
-        Whether the Monte Carlo data is synthetic. Defaults to False.
     apply_mixeddata_sel : bool, optional
         Whether to apply mixed data selection. Defaults to False.
 
@@ -136,9 +116,9 @@ def apply_4b_selection(
         The input event data with additional fields for object selection.
     """
     # Combined RunII and 3 selection
-    event = lepton_selection(event, isRun3)
-    
-    event = jet_selection(event, corrections_metadata, isRun3, isMC, isSyntheticData, isSyntheticMC, dataset, doLeptonRemoval, do_jet_veto_maps,apply_mixeddata_sel, override_selected_with_flavor_bit)
+    event = lepton_selection(event, config["isRun3"])
+
+    event = jet_selection(event, corrections_metadata, config["isRun3"], config["isMC"], config["isSyntheticData"], config["isSyntheticMC"], dataset, config["do_lepton_jet_cleaning"], config["do_jet_veto_maps"], apply_mixeddata_sel, config["override_selected_with_flavor_bit"])
 
     event['passJetMult'] = event['nJet_selected'] >= 4
 
@@ -146,11 +126,11 @@ def apply_4b_selection(
     event['threeTag'] = (event['nJet_tagged_loose'] == 3) & (event['nJet_selected'] >= 4)
     event['twoTag'] = (event['nJet_tagged_loose'] == 2) & (event['nJet_selected'] >= 4)
 
-    if isSyntheticData or isSyntheticMC:
+    if config["isSyntheticData"] or config["isSyntheticMC"]:
         event['threeTag'] = False
         event['twoTag'] = False
 
-    if isRun3:
+    if config["isRun3"]:
         event['passPreSel'] = event.twoTag | event.threeTag | event.fourTag
     else:
         event['passPreSel'] = event.threeTag | event.fourTag
@@ -263,9 +243,9 @@ def apply_4b_lowpt_selection(
     event['threeTag'] = (event['nJet_tagged_loose'] == 3) & (
         event['nJet_selected'] >= 4)
     event['lowpt_fourTag'] = (
-        (event['nJet_tagged'] == 3) & 
+        (event['nJet_tagged'] == 3) &
         (event['nJet_selected'] >= 4) &
-        (event['nJet_tagged_lowpt'] > 0) & 
+        (event['nJet_tagged_lowpt'] > 0) &
         ~event['fourTag']
     )
     event['lowpt_threeTag'] = (

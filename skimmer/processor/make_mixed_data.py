@@ -10,7 +10,7 @@ from src.math_tools.random import Squares
 from coffea4bees.analysis.helpers.event_weights import add_btagweights
 from coffea4bees.analysis.helpers.processor_config import processor_config
 from src.physics.event_selection import apply_event_selection
-from src.physics.event_weights import add_weights
+from coffea4bees.analysis.helpers.event_weights import add_weights
 
 from src.data_formats.root import Chunk, TreeReader
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b
@@ -30,7 +30,7 @@ import uproot
 
 
 from coffea4bees.hemisphere_mixing.mixing_helpers   import build_hemi_kdtrees, compute_hemi_vars
-from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres, replace_hemis, replace_hemis_load_kdTrees, init_hemi_data
+from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres, replace_hemis, replace_hemis_load_kdTrees, init_hemi_data, transverse_thrust_awkward_fast
 from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
 from coffea4bees.analysis.helpers.event_weights import add_pseudotagweights
 
@@ -38,55 +38,31 @@ from coffea4bees.analysis.helpers.event_weights import add_pseudotagweights
 class HemiMixer(PicoAOD):
     def __init__(self,
                 subtract_ttbar_with_weights = False,
-                mixing_rand_seed=5,
                 friends: dict[str, str|FriendTemplate] = None,
                 apply_JCM: bool = True,
                 JCM_file: str = "coffea4bees/analysis/weights/JCM/AN_24_089_v3/jetCombinatoricModel_SB_6771c35.yml",
+                hemi_library_yaml: str = None,
+                hemi_stats_path: str = None,
                 corrections_metadata: dict = None,
                 *args, **kwargs):
-        kwargs["pico_base_name"] = f'picoAOD_seed{mixing_rand_seed}'
         super().__init__(*args, **kwargs)
 
-        logging.info(f"\nRunning HemiMixer with these parameters: , subtract_ttbar_with_weights = {subtract_ttbar_with_weights}, mixing_rand_seed = {mixing_rand_seed}, args = {args}, kwargs = {kwargs}")
+        logging.info(f"\nRunning HemiMixer with these parameters: , subtract_ttbar_with_weights = {subtract_ttbar_with_weights}, args = {args}, kwargs = {kwargs}")
+        logging.info(f"\nLoading JCM from file: {JCM_file} , apply_JCM = {apply_JCM}")
         self.apply_JCM = jetCombinatoricModel(JCM_file) if apply_JCM else None
 
         self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
         self.friends = parse_friends(friends)
-        self.mixing_rand_seed = mixing_rand_seed
         self.corrections_metadata = corrections_metadata
         self._cutFlow = cutflow_4b()
 
         self.skip_collections = kwargs["skip_collections"]
         self.skip_branches    = kwargs["skip_branches"]
 
-        #
-        #  Load the hemisphere libraries
-        #
-        yaml_file = 'coffea4bees/hemisphere_mixing/hemi_plots/hemi_statistics_UL18.yml'
-        logging.info(f"\nLoading hemisphere libraries = {yaml_file}")
 
-
-        self.jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_btagDeepFlavB", "Jet_bRegCorr", "Jet_jetId", "Jet_puId"]
         self.hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ]
-        year_str = "UL18"
-
-        self.test_load_hemi_kdTrees = True
-        if self.test_load_hemi_kdTrees:
-            self.hemi_data, self.hemi_jet_ranges, self.hemi_stats  = init_hemi_data(hemi_metadata_yaml = yaml_file,
-                                                                                    hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root",
-                                                                                    hemi_summary_vars = self.hemi_summary_vars,
-                                                                                    jet_branches = self.jet_branches,
-                                                                                    )
-
-        else:
-            self.hemi_kd_trees, _, self.hemi_jet_ranges, self.hemi_stats, self.hemi_data = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
-                                                                                                              hemifiles = f"output/mixeddata_cluster/data_{year_str}*/*.root",
-                                                                                                              hemi_summary_vars = self.hemi_summary_vars,
-                                                                                                              jet_branches = self.jet_branches,
-                                                                                                              )
-
-
-
+        self.hemi_library_yaml = hemi_library_yaml
+        self.hemi_stats_path = hemi_stats_path
 
 
     def select(self, event):
@@ -101,6 +77,13 @@ class HemiMixer(PicoAOD):
         chunk   = f'{dataset}::{estart:6d}:{estop:6d} >>> '
         processName = event.metadata['processName']
 
+        self.jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_jetId", "Jet_puId"]
+        if '202' in dataset:
+            self.jet_branches += ["Jet_btagPNetB", "Jet_PNetRegPtRawCorr", "Jet_PNetRegPtRawCorrNeutrino"]
+        else:
+            self.jet_branches += ["Jet_btagDeepFlavB", "Jet_bRegCorr"]
+
+
         ### target is for new friend trees
         target = Chunk.from_coffea_events(event)
 
@@ -111,9 +94,36 @@ class HemiMixer(PicoAOD):
         config = processor_config(processName, dataset, event)
         logging.debug(f'{chunk} config={config}, for file {fname}\n')
 
+        #
+        #  Load the hemisphere libraries
+        #
+        year_str = year.replace("_preVFP", "").replace("_postVFP", "")
+
+        yaml_file = f'{self.hemi_stats_path}/hemi_statistics_{year_str}.yml'
+        logging.info(f"\nLoading hemisphere libraries = {yaml_file}")
+
+        logging.info(f"\nLoading hemisphere library file: {self.hemi_library_yaml} for year {year_str}")
+
+        test_load_hemi_kdTrees = True
+        if test_load_hemi_kdTrees:
+            hemi_data, hemi_jet_ranges, hemi_stats  = init_hemi_data(hemi_metadata_yaml = yaml_file,
+                                                                     hemi_files_yaml = self.hemi_library_yaml,
+                                                                     year = year_str,
+                                                                     hemi_summary_vars = self.hemi_summary_vars,
+                                                                     jet_branches = self.jet_branches,
+                                                                     )
+
+        else:
+            hemi_kd_trees, _, hemi_jet_ranges, hemi_stats, hemi_data = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
+                                                                                          hemi_files_yaml = self.hemi_library_yaml,
+                                                                                          year = year_str,
+                                                                                          hemi_summary_vars = self.hemi_summary_vars,
+                                                                                          jet_branches = self.jet_branches,
+                                                                                          )
+
+
+
         path = fname.replace(fname.split("/")[-1], "")
-
-
 
         if self.subtract_ttbar_with_weights:
 
@@ -131,11 +141,11 @@ class HemiMixer(PicoAOD):
 
 
         ## adds all the event mc weights and 1 for data
-        weights, list_weight_names = add_weights( event, config["do_MC_weights"], dataset, year_label,
+        weights, list_weight_names = add_weights( event, dataset, year_label,
                                                   self.corrections_metadata[year],
-                                                  isTTForMixed=False,
                                                   target=target,
                                                   friend_trigWeight=self.friends.get("trigWeight"),
+                                                  config=config,
                                                  )
 
 
@@ -155,21 +165,15 @@ class HemiMixer(PicoAOD):
 
         event = update_events(event, {"Jet": jets})
 
-        event = apply_4b_selection( event, self.corrections_metadata[year],
+        event = apply_4b_selection( event, self.corrections_metadata[year], config=config,
                                            dataset=dataset,
-                                           doLeptonRemoval=config["do_lepton_jet_cleaning"],
-                                           override_selected_with_flavor_bit=config["override_selected_with_flavor_bit"],
-                                           do_jet_veto_maps = config["do_jet_veto_maps"],
-                                           isRun3=config["isRun3"],
-                                           isMC=config["isMC"],
-                                           isSyntheticData=config["isSyntheticData"],
-                                           isSyntheticMC=config["isSyntheticMC"],
                                            )
 
 
         #
         # Apply JCM
         #
+        event["weight"] = weights.weight()
         weights, list_weight_names = add_pseudotagweights(
             event,
             weights,
@@ -206,16 +210,19 @@ class HemiMixer(PicoAOD):
         selections.add( 'passJetMult',   event.passJetMult )
         selections.add( "passThreeTag", event.threeTag)
 
-        event["weight"] = weights.weight()
-
         cumulative_cuts = ["lumimask"]
         self._cutFlow.fill( "all",             event[selections.all(*cumulative_cuts)], allTag=True )
 
-        other_cuts = ["passNoiseFilter", "passHLT", "passJetMult", "passThreeTag"]
+        other_cuts = ["passNoiseFilter", "passHLT", "passJetMult"]
 
         for cut in other_cuts:
             cumulative_cuts.append(cut)
             self._cutFlow.fill( cut, event[selections.all(*cumulative_cuts)], allTag=True )
+
+        event["weight"] = weights.weight()
+
+        cumulative_cuts.append( "passThreeTag")
+        self._cutFlow.fill( "passThreeTag", event[selections.all(*cumulative_cuts)], allTag=False  )
 
         #
         # Add Btag SF
@@ -227,9 +234,9 @@ class HemiMixer(PicoAOD):
                                                           corrections_metadata=self.corrections_metadata[year]
             )
             logging.debug( f"Btag weight {weights.partial_weight(include=['CMS_btag'])[:10]}\n" )
-            event["weight"] = weights.weight()
 
-            self._cutFlow.fill( "passFourTag_btagSF", event[selections.all(*cumulative_cuts)], allTag=True )
+
+            self._cutFlow.fill( "passNTag_btagSF", event[selections.all(*cumulative_cuts)], allTag=True )
 
         selection = event.lumimask & event.passNoiseFilter & event.passJetMult & event.threeTag
         if not config["isMC"]: selection = selection & event.passHLT
@@ -256,10 +263,12 @@ class HemiMixer(PicoAOD):
         #
         # Identify tagged and pstagged jets
         #
-        sorted_jets      = selev.Jet[ak.argsort(selev.Jet.btagScore, ascending=False)]
-        sorted_local_idx = ak.local_index(sorted_jets)
-        selev["Jet", "tagged_or_pstagged"] = (sorted_local_idx < selev.nJet_ps_and_tag)
-        selev["tag_or_psTag_Jet"] = selev.Jet[selev.Jet.tagged_or_pstagged]
+        selected_jets             = selev.Jet[selev.Jet.selected]
+        sorted_selected_jets      = selected_jets[ak.argsort(selected_jets.btagScore, axis=1, ascending=False)]
+        sorted_selected_local_idx = ak.local_index(sorted_selected_jets, axis=1)
+        selected_jets["tagged_or_pstagged"] = (sorted_selected_local_idx < selev.nJet_ps_and_tag)
+        selev["tag_or_psTag_Jet"] = selected_jets[selected_jets.tagged_or_pstagged]
+
 
         #
         #  Split event into hemispheres
@@ -274,14 +283,14 @@ class HemiMixer(PicoAOD):
         all_hemis["replaced"] = 0
         all_hemis["match_dist"] = -1
 
-        if self.test_load_hemi_kdTrees:
-            all_hemis = replace_hemis_load_kdTrees(all_hemis=all_hemis, hemi_jet_ranges=self.hemi_jet_ranges,
-                                                   hemi_stats=self.hemi_stats, hemi_data=self.hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=self.jet_branches
+        if test_load_hemi_kdTrees:
+            all_hemis = replace_hemis_load_kdTrees(all_hemis=all_hemis, hemi_jet_ranges=hemi_jet_ranges,
+                                                   hemi_stats=hemi_stats, hemi_data=hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=self.jet_branches
                                                    )
 
         else:
-            all_hemis = replace_hemis(all_hemis=all_hemis, hemi_kd_trees=self.hemi_kd_trees, hemi_jet_ranges=self.hemi_jet_ranges,
-                                      hemi_stats=self.hemi_stats, hemi_data=self.hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=self.jet_branches)
+            all_hemis = replace_hemis(all_hemis=all_hemis, hemi_kd_trees=hemi_kd_trees, hemi_jet_ranges=hemi_jet_ranges,
+                                      hemi_stats=hemi_stats, hemi_data=hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=self.jet_branches)
 
 
 
@@ -291,32 +300,43 @@ class HemiMixer(PicoAOD):
 
 
         old_hemi_output_vars = ["thrust_phi",  "event", "run", "luminosityBlock", "weight", "hemisphereId"]
-        new_hemi_output_vars = old_hemi_output_vars + ["match_dist"]
+        new_hemi_output_vars = old_hemi_output_vars + ["match_dist", "nSelJet", "nTagJet", "nJet"]
         output_vars = []
 
         for var_name in old_hemi_output_vars:
-            selev[f"pos_hemi_old_{var_name}"] = pos_hemi[var_name]
-            output_vars.append(f"pos_hemi_old_{var_name}")
+            selev[f"posHemiOld_{var_name}"] = pos_hemi[var_name]
+            output_vars.append(f"posHemiOld_{var_name}")
 
-            selev[f"neg_hemi_old_{var_name}"] = neg_hemi[var_name]
-            output_vars.append(f"neg_hemi_old_{var_name}")
+            selev[f"negHemiOld_{var_name}"] = neg_hemi[var_name]
+            output_vars.append(f"negHemiOld_{var_name}")
 
         for var_name in new_hemi_output_vars:
-            selev[f"pos_hemi_new_{var_name}"] = pos_hemi_new[var_name]
-            output_vars.append(f"pos_hemi_new_{var_name}")
+            selev[f"posHemiNew_{var_name}"] = pos_hemi_new[var_name]
+            output_vars.append(f"posHemiNew_{var_name}")
 
-            selev[f"neg_hemi_new_{var_name}"] = neg_hemi_new[var_name]
-            output_vars.append(f"neg_hemi_new_{var_name}")
+            selev[f"negHemiNew_{var_name}"] = neg_hemi_new[var_name]
+            output_vars.append(f"negHemiNew_{var_name}")
 
 
         mixed_Jet = ak.concatenate([pos_hemi_new.Jet, neg_hemi_new.Jet], axis=1)
         selev["Jet"] = mixed_Jet
 
 
+        #
+        #  Sanity check: compute transverse thrust of new jets
+        #
+        new_thrust = transverse_thrust_awkward_fast(selev.Jet, n_steps=720, refine_rounds=2)
+        selev["newThrustPhi"] = new_thrust.phi
+        output_vars.append("newThrustPhi")
+
+        #
+        #  Add pseudoTagWeight
+        #
+        output_vars.append("pseudoTagWeight")
+
         processOutput = {}
 
-        n_jet = ak.num(selev.Jet)
-        total_jet = int(ak.sum(n_jet))
+
         out_branches = {}
 
 
@@ -326,6 +346,7 @@ class HemiMixer(PicoAOD):
         for var_name in self.jet_branches:
             var_key = var_name.replace("Jet_", "")
             out_branches[var_name] = selev.Jet[var_key]
+
 
         #
         #  Add hemi branches
@@ -350,7 +371,6 @@ class HemiMixer(PicoAOD):
         self.update_branch_filter(self.skip_collections, self.skip_branches)
         branches = ak.Array(out_branches)
 
-        processOutput["total_jet"] = total_jet
 
         return (selection,
                 branches,

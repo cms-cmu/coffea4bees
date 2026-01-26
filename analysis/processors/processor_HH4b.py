@@ -18,7 +18,7 @@ from coffea4bees.analysis.helpers.event_weights import (
     add_pseudotagweights,
 )
 from src.physics.event_selection import apply_event_selection
-from src.physics.event_weights import add_weights
+from coffea4bees.analysis.helpers.event_weights import add_weights
 from coffea4bees.analysis.helpers.event_selection import apply_dilep_ttbar_selection, apply_4b_selection
 from coffea4bees.analysis.helpers.filling_histograms import (
     filling_nominal_histograms,
@@ -127,12 +127,12 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
     Returns:
         dict: Output containing histograms, cutflow, and optionally dumped friend trees.
-    
+
     Chunk-Scoped Instance Variables:
         These variables are set by process() for each chunk and used by helper methods.
         They are valid for the entire processing of one chunk and should not be accessed
         before process() has been called.
-        
+
         Metadata variables (set in process()):
             - fname (str): Full path to the input file
             - dataset (str): Dataset name
@@ -208,22 +208,22 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.histCuts = hist_cuts
         self.apply_mixeddata_sel = apply_mixeddata_sel
         self.return_events_for_display = return_events_for_display
-        
+
         # Track top 20 events with largest ps_hh across all chunks
         self.top_ps_hh_events = []
-        
+
         # Memory monitoring
         self.debug_memory = False  # Set to False to disable memory monitoring
-        
+
 
     # @profile
     def process(self, event):
         """Process one chunk of events through the full analysis workflow.
-        
+
         This is the main entry point for processing events. It initializes all chunk-scoped
         instance variables (see class docstring for list), loads friend trees, applies event
         selection, calculates weights, and processes all systematic variations.
-        
+
         Chunk-Scoped Variables Initialized:
             This method sets all the chunk-scoped instance variables that helper methods depend on:
             - fname, dataset, estart, estop, chunk: File and chunk identification
@@ -233,10 +233,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             - nEvent: Number of events in chunk
             - config: Process/dataset configuration flags
             - gaussKernalMean, resonance_weights: Resonance reweighting (for signal)
-        
+
         Args:
             event: Coffea NanoEvents array for this chunk
-            
+
         Returns:
             dict: Accumulated output from all systematic variations containing:
                 - Histograms (if fill_histograms=True)
@@ -256,6 +256,11 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.year_label = self.corrections_metadata[self.year]['year_label']
         self.processName = event.metadata['processName']
 
+        if self.processName.find("mix") != -1 or self.dataset.find("syn") != -1:
+            new_processName = self.dataset.replace(f'_{self.year}','')
+            logging.info(f"Overridding processName: {self.processName} to {new_processName} for dataset {self.dataset}")
+            self.processName = new_processName
+
         ### target is for new friend trees
         self.target = Chunk.from_coffea_events(event)
         self._log_memory("after_metadata_setup")
@@ -264,6 +269,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         # Set process and datset dependent flags
         #
         self.config = processor_config(self.processName, self.dataset, event)
+        # print("HACK")
+        if self.config["isRun3"]:
+            self.config["isSyntheticData"] = bool(self.config["isMixedData"]) or self.config["isSyntheticData"]
         logging.debug(f'{self.chunk} config={self.config}, for file {self.fname}\n')
 
 
@@ -294,9 +302,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         if self.apply_FvT and self.classifier_FvT is None:
             self.load_FvT(event)
 
-        if self.run_SvB: 
+        if self.run_SvB:
             self.load_SvB(event)
-            
+
         if self.config["isDataForMixed"]:
 
             #
@@ -311,7 +319,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         # Event selection
         #
         self._log_memory("before_event_selection")
-        event = apply_event_selection( 
+        event = apply_event_selection(
             event,
             self.corrections_metadata[self.year],
             cut_on_lumimask=self.config["cut_on_lumimask"]
@@ -321,18 +329,16 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         ### adds all the event mc weights and 1 for data
         weights, list_weight_names = add_weights(
-            event, 
+            event,
+            config = self.config,
             target=self.target,
-            do_MC_weights=self.config["do_MC_weights"],
             dataset=self.dataset,
             year_label=self.year_label,
             friend_trigWeight=self.friends.get("trigWeight"),
             corrections_metadata=self.corrections_metadata[self.year],
             apply_trigWeight=self.apply_trigWeight,
-            isTTForMixed=self.config["isTTForMixed"],
             run_systematics= 'others' in self.run_systematics,
         )
-
 
         #
         # Checking boosted selection (should change in the future)
@@ -374,25 +380,25 @@ class HH4bBaseProcessor(processor.ProcessorABC):
     # @profile
     def process_shift(self, event, shift_name, weights, list_weight_names):
         """Process one systematic shift (or nominal).
-        
+
         Args:
             event: Event array
             shift_name: Name of systematic shift (None for nominal)
             weights: Weights object
             list_weight_names: List of weight names
-            
+
         Returns:
             dict: Combined output containing histograms, cutflow, and friend trees
         """
         # Copy weights to avoid modifying the original
         weights = copy.copy(weights)
-        
+
         # Apply object selection
         event = self.apply_selection(event)
-        
+
         if self.run_dilep_ttbar_crosscheck:
             event['passDilepTtbar'] = apply_dilep_ttbar_selection(event, isRun3=self.config["isRun3"])
-        
+
         #
         #  Test hT reweighting the synthetic data
         #
@@ -409,7 +415,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         # Build selections
         selections, allcuts = self.build_selections(event, weights)
         event['weight'] = weights.weight()  # For cutflow
-        
+
         # Initialize output
         processOutput = {}
         if not shift_name:
@@ -421,28 +427,27 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             }
             # Build and fill cutflow
             self.build_cutflow(event, selections, allcuts, weights)
-        
+
         # Apply b-tagging scale factors
         weights, list_weight_names = self.apply_btag_sf(
-            event, weights, list_weight_names, 
+            event, weights, list_weight_names,
             shift_name, selections, allcuts
         )
 
-        
         # Preselection: keep only three or four tag events
         selections.add("passPreSel", event.passPreSel)
         allcuts.append("passPreSel")
         analysis_selections = selections.all(*allcuts)
-        
+
         if not shift_name:
             self.fill_cutflow_with_and_without_trig("passPreSel_allTag", event[analysis_selections], weights, analysis_selections)
-        
+
         # Add pseudotag weights
         weights, list_weight_names = self.include_pseudotag_in_weight(event, weights, list_weight_names)
-        
+
         # Select events passing all cuts
         selev = event[analysis_selections]
-        
+
         # Subtract ttbar using SvB if requested
         if self.subtract_ttbar_with_weights:
             pass_ttbar_filter_selev = subtract_ttbar_with_SvB(selev, self.dataset, self.year)
@@ -455,17 +460,17 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 self.fill_cutflow_with_and_without_trig("pass_ttbar_filter", event[sel_mask], weights, sel_mask)
             analysis_selections = selections.all(*allcuts)
             selev = selev[pass_ttbar_filter_selev]
-        
+
         # Reconstruct top candidates
         self.reconstruct_tops(selev)
-        
+
         # Build jet/dijet/quadjet candidates
         selev = self.build_candidates(selev, weights, list_weight_names, analysis_selections, processOutput)
-        
+
         # Track events for display if requested
         if self.return_events_for_display:
             self.events_for_display(selev, processOutput)
-        
+
         # Blind data in fourTag SR
         if not (self.config["isMC"] or "mix_v" in self.dataset) and self.blind:
             blind_flag = ~(selev["quadJet_selected"].SR & (selev["SvB_MA"].ps_hh > 0.5) & selev.fourTag)
@@ -478,24 +483,24 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 self.fill_cutflow_with_and_without_trig("blind", event[sel_mask], weights, sel_mask)
             analysis_selections = selections.all(*allcuts)
             selev = selev[blind_flag]
-        
+
         # Add weights to selected events
         logging.debug(f"final weight {weights.weight()[:10]}")
         selev["weight"] = weights.weight()[analysis_selections]
         selev["trigWeight"] = weights.partial_weight(include=['CMS_bbbb_resolved_ggf_triggerEffSF'])[analysis_selections]
         selev['weight_woTrig'] = weights.partial_weight(exclude=['CMS_bbbb_resolved_ggf_triggerEffSF'])[analysis_selections]
         selev["no_weight"] = np.ones(len(selev))
-        
+
         # Fill detailed cutflows
         if not shift_name:
             self.fill_detailed_cutflows(selev)
             self._cutFlow.addOutput(processOutput, event.metadata["dataset"])
-        
+
         # Fill histograms
         hist = {}
         if self.fill_histograms:
             hist = self.histograms(event, selev, weights, analysis_selections, shift_name)
-        
+
         # Dump friend trees
         friends = self.dump_friend_trees(selev, analysis_selections, shift_name)
 
@@ -510,23 +515,23 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         # Explicit cleanup before returning
         del selev, event, weights, analysis_selections
         gc.collect()
-        
+
         return hist | processOutput | friends
 
     def postprocess(self, accumulator):
         # Write out top 20 events with largest ps_hh if tracking was enabled
         logging.info(f"Postprocess called. return_events_for_display={self.return_events_for_display}")
-        
+
         if self.return_events_for_display and 'top_ps_hh_events' in accumulator:
             # Aggregate all events from all chunks
             all_events = accumulator['top_ps_hh_events']
             logging.info(f"Found {len(all_events)} total events from all chunks")
-            
+
             if len(all_events) > 0:
                 # Sort by ps_hh descending and take top 20
                 all_events.sort(key=lambda x: x['ps_hh'], reverse=True)
                 top_20_events = all_events[:20]
-                
+
                 output_filename = '/srv/top_20_ps_hh_events.txt'
                 with open(output_filename, 'w') as f:
                     f.write("# Top 20 events with largest SvB_MA.ps_hh\n")
@@ -534,19 +539,19 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     f.write("#" + "-"*60 + "\n")
                     for evt in top_20_events:
                         f.write(f"{evt['run']:d}:{evt['lumi']:d}:{evt['event']:d} {evt['ps_hh']:.6f}\n")
-                
+
                 logging.info(f"Wrote top 20 events with largest ps_hh to {output_filename}")
             else:
                 logging.warning(f"No events were tracked across all chunks")
-        
+
         return accumulator
 
     def load_FvT(self, event):
         """Load FvT friend tree.
-        
+
         Requires chunk-scoped variables: target, estart, estop, fname, config
         Must be called after process() has initialized these variables.
-        
+
         Args:
             event: Event array
         """
@@ -563,14 +568,14 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             if self.config["isMixedData"]:
 
                 FvT_name = event.metadata["FvT_name"]
-                event["FvT"] = getattr( 
-                    NanoEventsFactory.from_root( 
-                        f'{event.metadata["FvT_file"]}', 
-                        entry_start=self.estart, 
+                event["FvT"] = getattr(
+                    NanoEventsFactory.from_root(
+                        f'{event.metadata["FvT_file"]}',
+                        entry_start=self.estart,
                         entry_stop=self.estop,
-                        schemaclass=FriendTreeSchema, 
+                        schemaclass=FriendTreeSchema,
                     ).events(),
-                    FvT_name 
+                    FvT_name
                 )
 
                 event["FvT", "FvT"] = getattr(event["FvT"], FvT_name)
@@ -587,14 +592,14 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 #
                 # Use the first to define the FvT weights
                 #
-                event["FvT"] = getattr( 
-                    NanoEventsFactory.from_root( 
-                        f'{event.metadata["FvT_files"][0]}', 
-                        entry_start=self.estart, 
-                        entry_stop=self.estop, 
-                        schemaclass=FriendTreeSchema, 
+                event["FvT"] = getattr(
+                    NanoEventsFactory.from_root(
+                        f'{event.metadata["FvT_files"][0]}',
+                        entry_start=self.estart,
+                        entry_stop=self.estop,
+                        schemaclass=FriendTreeSchema,
                     ).events(),
-                    event.metadata["FvT_names"][0], 
+                    event.metadata["FvT_names"][0],
                 )
 
                 event["FvT", "FvT"] = getattr( event["FvT"], event.metadata["FvT_names"][0] )
@@ -608,26 +613,26 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
                 for _FvT_name, _FvT_file in zip( event.metadata["FvT_names"], event.metadata["FvT_files"] ):
 
-                    event[_FvT_name] = getattr( 
-                        NanoEventsFactory.from_root( 
-                            f"{_FvT_file}", 
-                            entry_start=self.estart, 
-                            entry_stop=self.estop, 
-                            schemaclass=FriendTreeSchema, 
+                    event[_FvT_name] = getattr(
+                        NanoEventsFactory.from_root(
+                            f"{_FvT_file}",
+                            entry_start=self.estart,
+                            entry_stop=self.estop,
+                            schemaclass=FriendTreeSchema,
                         ).events(),
-                        _FvT_name, 
+                        _FvT_name,
                     )
 
                     event[_FvT_name, _FvT_name] = getattr(event[_FvT_name], _FvT_name)
 
             else:
-                event["FvT"] = ( 
-                    NanoEventsFactory.from_root( 
-                        f'{self.fname.replace("picoAOD", "FvT")}', 
-                        entry_start=self.estart, 
-                        entry_stop=self.estop, 
+                event["FvT"] = (
+                    NanoEventsFactory.from_root(
+                        f'{self.fname.replace("picoAOD", "FvT")}',
+                        entry_start=self.estart,
+                        entry_stop=self.estop,
                         schemaclass=FriendTreeSchema
-                    ).events().FvT 
+                    ).events().FvT
                 )
 
             if "std" not in event.FvT.fields:
@@ -643,10 +648,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
     def load_SvB(self, event):
         """Load SvB friend tree.
-        
+
         Requires chunk-scoped variables: target, estart, estop, fname, path, dataset, config
         Must be called after process() has initialized these variables.
-        
+
         Args:
             event: Event array
         """
@@ -667,13 +672,13 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         if "SvB" not in self.friends and self.classifier_SvB is None:
             # SvB_file = f'{self.path}/SvB_newSBDef.root' if 'mix' in self.dataset else f'{self.fname.replace("picoAOD", "SvB")}'
             SvB_file = f'{self.path}/SvB{SvB_suffix}.root' if 'mix' in self.dataset else f'{self.fname.replace("picoAOD", f"SvB{SvB_suffix}")}'
-            event["SvB"] = ( 
-                NanoEventsFactory.from_root( 
+            event["SvB"] = (
+                NanoEventsFactory.from_root(
                     SvB_file,
-                    entry_start=self.estart, 
-                    entry_stop=self.estop, 
+                    entry_start=self.estart,
+                    entry_stop=self.estop,
                     schemaclass=FriendTreeSchema
-                ).events().SvB 
+                ).events().SvB
             )
 
             if not ak.all(event.SvB.event == event.event):
@@ -684,11 +689,11 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         if "SvB_MA" not in self.friends and self.classifier_SvB_MA is None:
             # SvB_MA_file = f'{self.path}/SvB_MA_newSBDef.root' if 'mix' in self.dataset else f'{self.fname.replace("picoAOD", "SvB_MA")}'
             SvB_MA_file = f'{self.path}/SvB_MA{SvB_suffix}.root' if 'mix' in self.dataset else f'{self.fname.replace("picoAOD", f"SvB_MA{SvB_suffix}")}'
-            event["SvB_MA"] = ( 
-                NanoEventsFactory.from_root( 
+            event["SvB_MA"] = (
+                NanoEventsFactory.from_root(
                     SvB_MA_file,
-                    entry_start=self.estart, 
-                    entry_stop=self.estop, 
+                    entry_start=self.estart,
+                    entry_stop=self.estop,
                     schemaclass=FriendTreeSchema
                 ).events().SvB_MA
             )
@@ -700,10 +705,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
     def boosted_veto(self, event):
         """Apply veto for events selected in boosted analysis. This is for Run2 UL only.
-        
+
         Requires chunk-scoped variables: dataset
         Must be called after process() has initialized these variables.
-        
+
         Args:
             event: Event array
         """
@@ -727,25 +732,25 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
     def build_selections(self, event, weights):
         """Build PackedSelection object with all cuts.
-        
+
         Requires chunk-scoped variables: config
         Must be called after process() has initialized these variables.
-        
+
         Args:
             event: Event array
             weights: Weights object
-            
+
         Returns:
             tuple: (selections, allcuts) - PackedSelection object and list of cut names
         """
         selections = PackedSelection()
         selections.add("lumimask", event.lumimask)
         selections.add("passNoiseFilter", event.passNoiseFilter)
-        selections.add("passHLT", event.passHLT if self.config["cut_on_HLT_decision"] 
+        selections.add("passHLT", event.passHLT if self.config["cut_on_HLT_decision"]
                       else np.full(len(event), True))
         selections.add('passJetMult', event.passJetMult)
         allcuts = ['lumimask', 'passNoiseFilter', 'passHLT', 'passJetMult']
-        
+
         # Add MC-specific selections
         if self.config["isMC"]:
             self.add_genweight_check(event, selections, weights)
@@ -753,27 +758,27 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         else:
             event['passCleanGenWeight'] = True
             selections.add("passCleanGenWeight", event.passCleanGenWeight)
-        
+
         # Add signal-specific selections (truth matching)
         if self.config["isSignal"]:
             event['bfromHorZ_all'] = find_genpart(event.GenPart, [5], [23, 25])
-            
+
             if "status" in event.bfromHorZ_all.fields:
                 event['bfromHorZ'] = event.bfromHorZ_all[event.bfromHorZ_all.status == 23]
             else:
                 logging.warning(f"\nStatus Missing for GenParticles in dataset {self.dataset}\n")
                 event['bfromHorZ'] = event.bfromHorZ_all
-            
+
             event['GenJet', 'selectedBs'] = (np.abs(event.GenJet.partonFlavour) == 5)
             event['selGenBJet'] = event.GenJet[event.GenJet.selectedBs]
             event['matchedGenBJet'] = event.bfromHorZ.nearest(event.selGenBJet, threshold=10)
             event["matchedGenBJet"] = event.matchedGenBJet[~ak.is_none(event.matchedGenBJet, axis=1)]
-            
+
             event['pass4GenBJets'] = ak.num(event.matchedGenBJet) == 4
             event["truth_v4b"] = ak.where(event.pass4GenBJets,
                                           event.matchedGenBJet.sum(axis=1),
                                           1e-10 * event.matchedGenBJet.sum(axis=1))
-            
+
             # Apply resonance reweighting if configured
             if self.gaussKernalMean is not None:
                 v4b_index = np.floor_divide(event.truth_v4b.mass, 12).to_numpy()
@@ -784,15 +789,15 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         else:
             event['pass4GenBJets'] = True
         selections.add("pass4GenBJets", event.pass4GenBJets)
-        
+
         return selections, allcuts
-    
+
     def add_genweight_check(self, event, selections, weights):
         """Check for outliers in event weights and add passCleanGenWeight selection.
-        
+
         Requires chunk-scoped variables: dataset
         Must be called after process() has initialized these variables.
-        
+
         Args:
             event: Event array
             selections: PackedSelection object to add cut to
@@ -807,15 +812,15 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         if np.any(~pass_outliers) and std_weights > 0:
             logging.warning(f"Outliers in weights:{tmp_weights[~pass_outliers]}, while mean is {mean_weights} and std is {std_weights} for event {event[~pass_outliers].event} in {self.dataset}\n")
         selections.add("passCleanGenWeight", event.passCleanGenWeight)
-    
+
     def build_cutflow(self, event, selections, allcuts, weights):
         """Build and fill cutflow histograms.
-        
+
         Requires chunk-scoped variables: dataset, config
         Must be called after process() has initialized these variables.
-        
+
         Override this in subclasses to customize the cutflow selections.
-        
+
         Args:
             event: Event array
             selections: PackedSelection object
@@ -831,23 +836,23 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             'passHLT': selections.require(lumimask=True, passCleanGenWeight=True, passNoiseFilter=True, passHLT=True),
         })
         sel_dict['passJetMult'] = selections.all(*allcuts)
-        
+
         # Fill cutflow histograms
         self._cutFlow = cutflow_4b(do_truth_hists=self.config["isSignal"])
         for cut, sel in sel_dict.items():
             self.fill_cutflow_with_and_without_trig(cut, event[sel], selection_mask=sel, weights=weights)
-    
+
     def fill_cutflow_with_and_without_trig(self, cut_name, events, weights=None, selection_mask=None, allTag=None, weight_override=None):
         """Helper to fill cutflow with and without trigger weight.
-        
+
         Supports two usage modes:
         1. Pre-selection mode: Pass full event array, weights object, and selection_mask
         - Used in build_cutflow, apply_btag_sf, process_shift for early cuts
         2. Post-selection mode: Pass filtered selev with embedded 'weight' and 'weight_woTrig'
         - Used in fill_detailed_cutflows for cuts after candidate building
-        
+
         Subclasses can override this to customize trigger weight handling.
-        
+
         Args:
             cut_name: Name of the cut for cutflow
             events: Event array (full or filtered selev)
@@ -864,10 +869,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 self._cutFlow.fill(cut_name, events, allTag=use_allTag, wOverride=weight_override)
             else:
                 self._cutFlow.fill(cut_name, events, allTag=use_allTag)
-            
+
             trig_excluded = weights.partial_weight(exclude=['CMS_bbbb_resolved_ggf_triggerEffSF'])[selection_mask]
             self._cutFlow.fill(f"{cut_name}_woTrig", events, allTag=use_allTag, wOverride=trig_excluded)
-        
+
         elif 'weight' in events.fields and 'weight_woTrig' in events.fields:
             # Post-selection mode: selev already has embedded weights
             # Don't use allTag for post-selection fills unless explicitly specified
@@ -875,24 +880,24 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 fill_kwargs = {'allTag': allTag}
             else:
                 fill_kwargs = {}
-                
+
             if weight_override is not None:
                 self._cutFlow.fill(cut_name, events, wOverride=weight_override, **fill_kwargs)
             else:
                 self._cutFlow.fill(cut_name, events, **fill_kwargs)
-            
+
             self._cutFlow.fill(f"{cut_name}_woTrig", events, wOverride=events['weight_woTrig'], **fill_kwargs)
-        
+
         else:
             raise ValueError(
                 f"Invalid arguments to fill_cutflow_with_and_without_trig for cut '{cut_name}'. "
                 "Must provide either (weights + selection_mask) for pre-selection mode, "
                 "or events with 'weight' and 'weight_woTrig' fields for post-selection mode."
             )
-        
+
     def apply_btag_sf(self, event, weights, list_weight_names, shift_name, selections, allcuts):
         """Calculate and apply b-tagging scale factors.
-        
+
         Args:
             event: Event array
             weights: Weights object
@@ -900,13 +905,13 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             shift_name: Name of systematic shift (None for nominal)
             selections: PackedSelection object
             allcuts: List of all cut names
-            
+
         Returns:
             tuple: (weights, list_weight_names) - Updated weights and weight name list
         """
         if not (self.config["isMC"] and self.apply_btagSF):
             return weights, list_weight_names
-        
+
         weights, list_weight_names = add_btagweights(
             event,
             weights,
@@ -918,19 +923,19 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         )
         logging.debug(f"Btag weight {weights.partial_weight(include=['CMS_btag'])[:10]}\n")
         event["weight"] = weights.weight()
-        
+
         if not shift_name:
             sel_mask = selections.all(*allcuts)
             self.fill_cutflow_with_and_without_trig("passJetMult_btagSF", event[sel_mask], weights, sel_mask)
-        
+
         return weights, list_weight_names
-    
+
     def reconstruct_tops(self, selev):
         """Build top candidate reconstruction.
-        
+
         Requires chunk-scoped variables: target (if using friend trees)
         Must be called after process() has initialized these variables.
-        
+
         Args:
             selev: Selected events array
         """
@@ -940,7 +945,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         elif self.top_reconstruction in ["slow", "fast"]:
             # Sort jets by b-tagging score
             selev.selJet = selev.selJet[ak.argsort(selev.selJet.btagScore, axis=1, ascending=False)]
-            
+
             if self.top_reconstruction == "slow":
                 top_cands = find_tops_slow(selev.selJet)
             else:
@@ -951,25 +956,25 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     logging.warning(f"{e}\n")
                     logging.warning("... Trying the slow top_reconstruction")
                     top_cands = find_tops_slow(selev.selJet)
-            
+
             selev['top_cand'], _ = buildTop(selev.selJet, top_cands)
             # With top friendtree we don't need the next two lines
             selev["xbW"] = selev.top_cand.xbW
             selev["xW"] = selev.top_cand.xW
-    
+
     def build_candidates(self, selev, weights, list_weight_names, analysis_selections, processOutput):
         """Build di-jets and quad-jets candidates.
-        
+
         Requires chunk-scoped variables: config (for isRun3)
         Must be called after process() has initialized these variables.
-        
+
         Args:
             selev: Selected events array
             weights: Weights object
             list_weight_names: List of weight names
             analysis_selections: Boolean mask for analysis selection
             processOutput: Output dictionary
-            
+
         Returns:
             Updated selev with candidate information
         """
@@ -987,13 +992,13 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             list_weight_names=list_weight_names,
             analysis_selections=analysis_selections,
         )
-    
+
     def fill_detailed_cutflows(self, selev):
         """Fill detailed cutflow histograms after candidate building.
-        
+
         Requires chunk-scoped variables: config (for isMC)
         Must be called after process() has initialized these variables.
-        
+
         Args:
             selev: Selected events array with candidates (must have 'weight' and 'weight_woTrig')
         """
@@ -1001,43 +1006,43 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.fill_cutflow_with_and_without_trig("passPreSel", selev)
         self.fill_cutflow_with_and_without_trig("passDiJetMass", selev[selev.passDiJetMass])
         self.fill_cutflow_with_and_without_trig("boosted_veto_passPreSel", selev[selev.notInBoostedSel])
-        
+
         # These don't have _woTrig variants, keep as-is
         self._cutFlow.fill("boosted_veto_SR", selev[selev.notInBoostedSel & selev["quadJet_selected"].SR])
-        
+
         selev['passSR'] = selev.passDiJetMass & selev["quadJet_selected"].SR
         self.fill_cutflow_with_and_without_trig("SR", selev[selev.passSR])
-        
+
         selev['passSB'] = selev.passDiJetMass & selev["quadJet_selected"].SB
         self.fill_cutflow_with_and_without_trig("SB", selev[selev.passSB])
-        
+
         self._cutFlow.fill("passVBFSel", selev[selev.passVBFSel])
-        
+
         if self.run_SvB:
             self.fill_cutflow_with_and_without_trig("passSvB", selev[selev.passSvB])
             self.fill_cutflow_with_and_without_trig("failSvB", selev[selev.failSvB])
-        
+
         if self.run_dilep_ttbar_crosscheck:
             # This one uses weight_noJCM_noFvT override
             self._cutFlow.fill("passDilepTtbar", selev[selev.passDilepTtbar], allTag=True,
                             wOverride=selev['weight_noJCM_noFvT'][selev.passDilepTtbar])
-                
+
     def dump_friend_trees(self, selev, analysis_selections, shift_name):
         """Dump all requested friend trees.
-        
+
         Requires chunk-scoped variables: config (for isMC, isSignal)
         Must be called after process() has initialized these variables.
-        
+
         Args:
             selev: Selected events array
             analysis_selections: Boolean mask for analysis selection
             shift_name: Name of systematic shift (None for nominal)
-            
+
         Returns:
             dict: Dictionary with 'friends' key containing friend tree data
         """
         friends = {'friends': {}}
-        
+
         if self.make_top_reconstruction is not None:
             from ..helpers.dump_friendtrees import dump_top_reconstruction
             friends["friends"] |= dump_top_reconstruction(
@@ -1046,12 +1051,12 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 f"top_reco{'_'+shift_name if shift_name else ''}",
                 analysis_selections,
             )
-        
+
         if self.make_classifier_input is not None:
             for k in ["ZZSR", "ZHSR", "HHSR", "SR", "SB"]:
                 selev[k] = selev["quadJet_selected"][k]
             selev["nSelJets"] = ak.num(selev.selJet)
-            
+
             from ..helpers.dump_friendtrees import dump_input_friend
             weight = "weight_noJCM_noFvT"
             if weight not in selev.fields:
@@ -1064,35 +1069,29 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 weight=weight,
                 NotCanJet="notCanJet_coffea",
             )
-        
+
         if self.make_friend_JCM_weight is not None:
             from ..helpers.dump_friendtrees import dump_JCM_weight
             friends["friends"] |= dump_JCM_weight(selev, self.make_friend_JCM_weight, "JCM_weight", analysis_selections)
-        
+
         if self.make_friend_FvT_weight is not None:
             from ..helpers.dump_friendtrees import dump_FvT_weight
             friends["friends"] |= dump_FvT_weight(selev, self.make_friend_FvT_weight, "FvT_weight", analysis_selections)
-        
+
         if self.make_friend_SvB is not None:
             from ..helpers.dump_friendtrees import dump_SvB
             friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB", analysis_selections)
             friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB_MA", analysis_selections)
-        
+
         return friends
 
     def apply_selection(self, event):
         """Apply selection to the events"""
-        return apply_4b_selection( 
-            event, 
+        return apply_4b_selection(
+            event,
             self.corrections_metadata[self.year],
+            config=self.config,
             dataset=self.dataset,
-            doLeptonRemoval=self.config["do_lepton_jet_cleaning"],
-            override_selected_with_flavor_bit=self.config["override_selected_with_flavor_bit"],
-            do_jet_veto_maps=self.config["do_jet_veto_maps"],
-            isRun3=self.config["isRun3"],
-            isMC=self.config["isMC"], ### temporary
-            isSyntheticData=self.config["isSyntheticData"],
-            isSyntheticMC=self.config["isSyntheticMC"],
             apply_mixeddata_sel=self.apply_mixeddata_sel,
         )
 
@@ -1101,7 +1100,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         """Log current memory usage"""
         if not self.debug_memory:
             return
-            
+
         try:
             process = psutil.Process(os.getpid())
             memory_info = process.memory_info()
@@ -1113,20 +1112,20 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
     def include_pseudotag_in_weight(self, event, weights, list_weight_names):
         """Include pseudotag weight in the event weight.
-        
+
         Requires chunk-scoped variables: year, dataset, config
         Must be called after process() has initialized these variables.
-        
+
         Args:
             event: Event array
             weights: Weights object
             list_weight_names: List of weight names
-            
+
         Returns:
             Updated weights object
         """
-        return add_pseudotagweights( 
-            event, 
+        return add_pseudotagweights(
+            event,
             weights,
             JCM=self.apply_JCM,
             apply_FvT=self.apply_FvT,
@@ -1139,10 +1138,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
     def events_for_display(self, selev, processOutput):
         """Track top 20 events with largest SvB_MA.ps_hh across all chunks.
-        
+
         Requires chunk-scoped variables: dataset, year, config
         Must be called after process() has initialized these variables.
-        
+
         Args:
             selev: Selected events array
             processOutput: Output dictionary to store tracked events
@@ -1152,12 +1151,12 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         if len(selev) > 0 and hasattr(selev, 'SvB_MA') and hasattr(selev.SvB_MA, 'ps_hh'):
             # Get SvB_MA.ps_hh values
             ps_hh_values = ak.to_numpy(ak.fill_none(selev.SvB_MA.ps_hh, -999))
-            
+
             # Get run, lumi, event numbers
             run_numbers = ak.to_numpy(ak.fill_none(selev.run, -1))
             lumi_numbers = ak.to_numpy(ak.fill_none(selev.luminosityBlock, -1))
             event_numbers = ak.to_numpy(ak.fill_none(selev.event, -1))
-            
+
             # Store events from this chunk in processOutput for accumulation
             chunk_events = []
             for i in range(len(ps_hh_values)):
@@ -1167,7 +1166,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     'lumi': int(lumi_numbers[i]),
                     'event': int(event_numbers[i])
                 })
-            
+
             processOutput['top_ps_hh_events'] = chunk_events
             logging.info(f"Stored {len(chunk_events)} events from this chunk for accumulation")
         else:
@@ -1181,17 +1180,17 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
     def histograms(self, event, selev, weights, analysis_selections, shift_name):
         """Fill histograms for analysis.
-        
+
         Requires chunk-scoped variables: processName, year, config
         Must be called after process() has initialized these variables.
-        
+
         Args:
             event: Event array
             selev: Selected events array
             weights: Weights object
             analysis_selections: Boolean mask for analysis selection
             shift_name: Name of systematic shift (None for nominal)
-            
+
         Returns:
             Dictionary with histogram outputs
         """
@@ -1202,7 +1201,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         if not self.run_systematics:
             ## this can be simplified
             return filling_nominal_histograms(
-                selev, 
+                selev,
                 self.apply_JCM,
                 processName=self.processName,
                 year=self.year,
@@ -1220,7 +1219,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         #
         else:
             return filling_syst_histograms(
-                selev, 
+                selev,
                 weights,
                 analysis_selections,
                 shift_name=shift_name,
@@ -1235,10 +1234,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 class analysis(HH4bBaseProcessor):
     """
     Backward compatibility alias for HH4bBaseProcessor.
-    
+
     This class exists to maintain compatibility with existing code that uses
     the old 'analysis' class name. New code should use HH4bBaseProcessor directly.
-    
+
     Deprecated: Use HH4bBaseProcessor instead.
     """
     pass

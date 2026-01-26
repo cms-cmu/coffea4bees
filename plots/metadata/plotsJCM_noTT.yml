@@ -1,0 +1,72 @@
+hists:
+        data:
+                process: data
+                tag: fourTag
+                year: RunII
+                label: Four-tag Data
+                edgecolor: k
+                fillcolor: k            
+
+        JCM:
+                process: JCM
+                tag: fourTag
+                year: RunII
+                label: JCM fit
+                edgecolor: r
+                fillcolor: r            
+                histtype: step
+                scalefactor: 1
+
+stack:
+        MultiJet:
+                year: RunII
+                fillcolor: "#FFDF7Fff"
+                edgecolor: k
+                label: Multijet
+                year: RunII
+                sum:
+                    data_3tag:
+                            process: data
+                            tag: threeTag
+                            scalefactor: +1            
+
+            
+
+ratios:
+        dataToBkg:
+                numerator:
+                        type: hists
+                        key: data
+                denominator:
+                        type: stack
+                uncertianty:
+                        nominal
+                color: k
+                marker: "o"
+
+        dataToJCM:
+                numerator:
+                        type: hists
+                        key: data
+                denominator:
+                        type: hists
+                        key: JCM
+                uncertianty:
+                        nominal
+                color: r
+                marker: "o"
+
+
+
+codes:
+   region:
+      SR: 2
+      SB: 1
+      other: 0
+   tag:
+      threeTag: 3
+      fourTag: 4
+      other: 0
+
+doRatio:
+    1

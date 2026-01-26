@@ -11,7 +11,7 @@ config = {
 
 # Include the base JCM computation rules with this file's config
 module computeJCM:
-    snakefile: "Snakefile_computeJCM"
+    snakefile: "Snakefile_computeJCM.smk"
     config: config
 
 use rule * from computeJCM

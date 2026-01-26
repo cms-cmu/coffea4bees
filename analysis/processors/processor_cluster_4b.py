@@ -29,7 +29,7 @@ from src.friendtrees.FriendTreeSchema import FriendTreeSchema
 from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
 from src.physics.objects.jet_corrections import apply_jerc_corrections
 from src.physics.common import apply_btag_sf, update_events
-from src.physics.event_weights import add_weights
+from coffea4bees.analysis.helpers.event_weights import add_weights
 
 from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_SvB
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
@@ -145,15 +145,15 @@ class analysis(processor.ProcessorABC):
         target = Chunk.from_coffea_events(event)
 
         ### adds all the event mc weights and 1 for data
-        weights, list_weight_names = add_weights( event, target=target,
-                                                  do_MC_weights=config["do_MC_weights"],
-                                                  dataset=dataset,
-                                                  year_label=year_label,
-                                                  friend_trigWeight=None,
-                                                  corrections_metadata=self.corrections_metadata[year],
-                                                  apply_trigWeight=True,
-                                                  isTTForMixed=config["isTTForMixed"]
-                                                 )
+        weights, list_weight_names = add_weights(
+            event, target=target,
+            dataset=dataset,
+            year_label=year_label,
+            friend_trigWeight=None,
+            corrections_metadata=self.corrections_metadata[year],
+            apply_trigWeight=True,
+            config = config
+        )
 
 
         logging.debug(f"weights event {weights.weight()[:10]}")
@@ -177,15 +177,9 @@ class analysis(processor.ProcessorABC):
 
 
         # Apply object selection (function does not remove events, adds content to objects)
-        event = apply_4b_selection( event, self.corrections_metadata[year],
-                                           dataset=dataset,
-                                           doLeptonRemoval=config["do_lepton_jet_cleaning"],
-                                           override_selected_with_flavor_bit=config["override_selected_with_flavor_bit"],
-                                           do_jet_veto_maps=config["do_jet_veto_maps"],
-                                           isRun3=config["isRun3"],
-                                           isMC=config["isMC"], ### temporary
-                                           isSyntheticData=config["isSyntheticData"],
-                                          )
+        event = apply_4b_selection( event, self.corrections_metadata[year], config=config,
+                                    dataset=dataset,
+                                   )
 
         selections = PackedSelection()
         selections.add( "lumimask", event.lumimask)
