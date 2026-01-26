@@ -42,7 +42,7 @@ use rule analysis_processor from analysis as analysis_lowpt with:
         datasets_file = config['dataset_location'],
         blind = False,
         run_performance = False,
-        extra_arguments = "--condor",
+        extra_arguments = "",
         username = username
     log: f"{config['output_path']}logs/analysis_all_{{dataset}}.log"
 
@@ -57,7 +57,7 @@ use rule make_JCM from analysis as make_new_JCM_lowpt with:
     input: f"{config['output_path']}histAll_nominalJCM_lowpt.coffea"
     output: f"{config['output_path']}JCM_2024_v2/jetCombinatoricModel_SB_2024_v2_lowpt.yml"
     params:
-        extra_arguments = "--lowpt",
-        tag = "2024_v2",
+        extra_arguments = "--lowpt -m coffea4bees/plots/metadata/plotsAll_lowpt.yml",
+        tag = "2024_v2_lowpt",
         output_dir = f"{config['output_path']}"
     log: f"{config['output_path']}logs/make_JCM_lowpt.log"
