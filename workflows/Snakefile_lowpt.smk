@@ -3,7 +3,7 @@ username = os.getenv("USER")
 
 config = {
     'output_path': "output/lowpt/",
-    'dataset_location': "coffea4bees/metadata/datasets_HH4b_2024_v2.yml",
+    'dataset_location': "coffea4bees/metadata/datasets_HH4b_Run2/",
     "analysis_container": "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest",
     'dataset' : [ 'data', 'TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic'],
     'year': 'UL18'
@@ -42,7 +42,7 @@ use rule analysis_processor from analysis as analysis_lowpt with:
         datasets_file = config['dataset_location'],
         blind = False,
         run_performance = False,
-        extra_arguments = "",
+        extra_arguments = "--condor",
         username = username
     log: f"{config['output_path']}logs/analysis_all_{{dataset}}.log"
 

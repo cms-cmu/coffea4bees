@@ -17,7 +17,7 @@ rule analysis_processor:
     log: "output/logs/analysis_processor.log"
     shell:
         """
-        mkdir -p output/logs
+        mkdir -p $(dirname {log})
         mkdir -p /tmp/{params.username}/
         
         # Set matplotlib config directory to avoid permission issues

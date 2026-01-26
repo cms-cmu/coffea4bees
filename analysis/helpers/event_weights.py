@@ -115,7 +115,7 @@ def add_pseudotagweights(
 
             if JCM_lowpt:
                 event["Jet_untagged_loose_lowpt"] = event.Jet[event.Jet.selected_lowpt & ~event.Jet.tagged_loose_lowpt]
-                pseudoTagWeight_lowpt = np.full(len(event), event.weight)  # Initialize with existing weights
+                pseudoTagWeight_lowpt = np.ones(len(event), dtype=int)
                 nJet_pseudotagged_lowpt = np.zeros(len(event), dtype=int)
 
                 pseudoTagWeight_lowpt[event[label3b]], nJet_pseudotagged_lowpt[event[label3b]] = JCM_lowpt(
