@@ -98,6 +98,9 @@ class TriggerSFVectorized:
                         logging.warning(f"Could not read key {key} from file {full_path}: {e}")
                         continue
                     
+                    # Get classname to identify object type
+                    obj_class = getattr(obj, "classname", "")
+
                     # Store logic: separate Data and MC
                     if "data" in name.lower() or "muon" in name.lower():
                         store = self.data_lookups
@@ -107,25 +110,38 @@ class TriggerSFVectorized:
                     # Parse TGraphAsymmErrors or TEfficiency
                     # simplified handling: accept both TGraph and TGraphAsymmErrors (which might not inherit from TGraph behavior)
                     # Duck typing: check for values which graphs have (histograms also have values, but we check to_hist separately or check name)
-                    if hasattr(obj, "values") and not hasattr(obj, "to_hist"):
-                        # Convert graph to lookup
+                    if "TGraph" in obj_class:
+                        # Convert graph to lookup using raw members (robust against uproot versions)
+                        # TGraph stores points in fX and fY
+                        # Explicitly cast to float to avoid object dtype which crashes ak.where later
+                        values = np.array(obj.member("fY")).astype(float)
                         
-                        values = obj.values(axis="y")
-                        if hasattr(obj, "errors"):
+                        # Handle varied error types
+                        if "AsymmErrors" in obj_class:
+                            # TGraphAsymmErrors has fEYhigh and fEYlow
                             try:
-                                # First try without 'which' argument (uproot 5 style)
-                                errors_high = obj.errors(axis="y")[1] 
-                                errors_low = obj.errors(axis="y")[0] 
-                            except TypeError:
-                                # Fallback for versions requiring 'which' (uproot 4 style)
-                                errors_high = obj.errors("high", axis="y")
-                                errors_low = obj.errors("low", axis="y")
+                                errors_high = np.array(obj.member("fEYhigh")).astype(float)
+                                errors_low = np.array(obj.member("fEYlow")).astype(float)
+                            except Exception:
+                                logging.warning(f"Could not read AsymmErrors for {name}, assuming 0")
+                                errors_high = np.zeros_like(values, dtype=float)
+                                errors_low = np.zeros_like(values, dtype=float)
+                        elif "Errors" in obj_class: 
+                            # TGraphErrors has fEY (symmetric)
+                            try:
+                                err = np.array(obj.member("fEY")).astype(float)
+                                errors_high = err
+                                errors_low = err
+                            except Exception:
+                                logging.warning(f"Could not read Errors for {name}, assuming 0")
+                                errors_high = np.zeros_like(values, dtype=float)
+                                errors_low = np.zeros_like(values, dtype=float)
                         else:
-                            # For plain TGraphs (e.g. up/down variations without stored errors), assume 0
-                            errors_high = np.zeros_like(values)
-                            errors_low = np.zeros_like(values)
+                            # Plain TGraph (no errors stored)
+                            errors_high = np.zeros_like(values, dtype=float)
+                            errors_low = np.zeros_like(values, dtype=float)
                             
-                        edges = obj.values(axis="x")
+                        edges = np.array(obj.member("fX")).astype(float)
                         
                         # We need to construct edges for lookup. 
                         # If N points, Marina code implies N intervals? No, TGraph has N points.
