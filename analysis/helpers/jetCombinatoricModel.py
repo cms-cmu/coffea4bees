@@ -159,7 +159,7 @@ class jetCombinatoricModel:
         # Check if we have JCM_weights stored and compare with calculated values
         if hasattr(self, 'JCM_weights') and self.used_stored_weights:
             # JCM_weights is a fixed list of 14 elements
-            logging.debug(f"Comparing calculated weights with stored JCM_weights (fixed length={len(self.JCM_weights)})")
+            logging.debug(f"Comparing calculated weights with stored JCM_weights for {'lowpt' if self.lowpt_mode else 'standard'} (fixed length={len(self.JCM_weights)})")
 
             # Only compare up to the minimum length or max_nlt, whichever is smaller
             compare_len = min(len(self.JCM_weights), len(total_weights[1:]))
@@ -172,6 +172,8 @@ class jetCombinatoricModel:
                         logging.warning(f"Calculated weight for {i} light jets ({total_weights[i+1]:.6f}) "
                                     f"differs from stored weight ({self.JCM_weights[i]:.6f}) "
                                     f"by {rel_diff*100:.2f}%")
+                    else:
+                        logging.debug(f"Calculated weight for {i} light jets matches stored weight within 1% for {'lowpt' if self.lowpt_mode else 'standard'}.")
 
             # Check if we need more weights than what's stored
             if max_nlt >= len(self.JCM_weights):
