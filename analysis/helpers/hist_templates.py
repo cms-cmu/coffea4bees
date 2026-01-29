@@ -123,3 +123,14 @@ class TopCandHists(Template):
 
     xW_vs_xbW  = H((24, 0,  6,   ("xW",   'X_{W}')),
                    (24, 0,  6,   ("xbW",  'X_{bW}')))
+
+class TrigEmHists(Template):
+    pfjetht      = H((50, 0, 1500, ('pfjetht',   "h_{T} [GeV]")))
+    calojetht    = H((50, 0, 1500, ('calojetht', "h_{T} [GeV]")))
+
+    pt1    = H((60, 0, 300, ('pt1', "Jet 1 p_{T} [GeV]")))
+    pt2    = H((60, 0, 300, ('pt2', "Jet 2 p_{T} [GeV]")))
+    pt3    = H((60, 0, 300, ('pt3', "Jet 3 p_{T} [GeV]")))
+    pt4    = H((60, 0, 300, ('pt4', "Jet 4 p_{T} [GeV]")))
+
+    btagTMean = H((50, 0, 1, ('btagTMean', 'mean Top 2 btagScores')))
