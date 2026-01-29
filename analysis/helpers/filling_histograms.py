@@ -159,6 +159,8 @@ def filling_nominal_histograms(
             **dict((s, ...) for s in ['passDilepTtbar'])
         )
         fill_ttbar += Jet.plot(("tagJets_dilepttbar", "Tag Jets dilep ttbar"), "tagJet", skip=skip_jet_list)
+        fill_ttbar += TrigEmHists(("trigEm_dilepttbar", "Trigger Emulation"), "trigEm")
+
         fill_ttbar(selev, hist_ttbar)
         return hist.to_dict(nonempty=True) | {"hists_ttbar": hist_ttbar.to_dict(nonempty=True)["hists"], "categories_ttbar": hist_ttbar.to_dict(nonempty=True)["categories"]}
     else:
