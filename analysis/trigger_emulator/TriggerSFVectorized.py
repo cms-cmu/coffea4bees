@@ -4,6 +4,7 @@ import numpy as np
 import uproot
 import os
 
+
 #
 # Configuration from Marina_triggerHelper.py
 #
@@ -59,7 +60,7 @@ class TriggerSFVectorized:
         self.year = int(year) if str(year).isdigit() else year
         self.map_path = map_path
         self.tagger = tagger
-        
+
         self.data_lookups = {}
         self.mc_lookups = {}
 
@@ -97,43 +98,59 @@ class TriggerSFVectorized:
                     except Exception as e:
                         logging.warning(f"Could not read key {key} from file {full_path}: {e}")
                         continue
-                    
+
+                    # Get classname to identify object type
+                    obj_class = getattr(obj, "classname", "")
+
                     # Store logic: separate Data and MC
                     if "data" in name.lower() or "muon" in name.lower():
                         store = self.data_lookups
                     else:
                         store = self.mc_lookups
-                        
+
                     # Parse TGraphAsymmErrors or TEfficiency
                     # simplified handling: accept both TGraph and TGraphAsymmErrors (which might not inherit from TGraph behavior)
                     # Duck typing: check for values which graphs have (histograms also have values, but we check to_hist separately or check name)
-                    if hasattr(obj, "values") and not hasattr(obj, "to_hist"):
-                        # Convert graph to lookup
-                        
-                        values = obj.values(axis="y")
-                        if hasattr(obj, "errors"):
+                    if "TGraph" in obj_class:
+                        # Convert graph to lookup using raw members (robust against uproot versions)
+                        # TGraph stores points in fX and fY
+                        # Explicitly cast to float to avoid object dtype which crashes ak.where later
+                        values = np.array(obj.member("fY")).astype(float)
+
+                        # Handle varied error types
+                        if "AsymmErrors" in obj_class:
+                            # TGraphAsymmErrors has fEYhigh and fEYlow
                             try:
-                                # First try without 'which' argument (uproot 5 style)
-                                errors_high = obj.errors(axis="y")[1] 
-                                errors_low = obj.errors(axis="y")[0] 
-                            except TypeError:
-                                # Fallback for versions requiring 'which' (uproot 4 style)
-                                errors_high = obj.errors("high", axis="y")
-                                errors_low = obj.errors("low", axis="y")
+                                errors_high = np.array(obj.member("fEYhigh")).astype(float)
+                                errors_low = np.array(obj.member("fEYlow")).astype(float)
+                            except Exception:
+                                logging.warning(f"Could not read AsymmErrors for {name}, assuming 0")
+                                errors_high = np.zeros_like(values, dtype=float)
+                                errors_low = np.zeros_like(values, dtype=float)
+                        elif "Errors" in obj_class:
+                            # TGraphErrors has fEY (symmetric)
+                            try:
+                                err = np.array(obj.member("fEY")).astype(float)
+                                errors_high = err
+                                errors_low = err
+                            except Exception:
+                                logging.warning(f"Could not read Errors for {name}, assuming 0")
+                                errors_high = np.zeros_like(values, dtype=float)
+                                errors_low = np.zeros_like(values, dtype=float)
                         else:
-                            # For plain TGraphs (e.g. up/down variations without stored errors), assume 0
-                            errors_high = np.zeros_like(values)
-                            errors_low = np.zeros_like(values)
-                            
-                        edges = obj.values(axis="x")
-                        
-                        # We need to construct edges for lookup. 
+                            # Plain TGraph (no errors stored)
+                            errors_high = np.zeros_like(values, dtype=float)
+                            errors_low = np.zeros_like(values, dtype=float)
+
+                        edges = np.array(obj.member("fX")).astype(float)
+
+                        # We need to construct edges for lookup.
                         # If N points, Marina code implies N intervals? No, TGraph has N points.
                         # Marina: for ix in range(0, N): xmin=PointX(ix), xmax=PointX(ix+1)
-                        # This implies the TGraph stores the EDGES as points? 
+                        # This implies the TGraph stores the EDGES as points?
                         # That is unusual. Usually TGraph stores (x,y).
                         # Let's assume standard behavior: we need a lookup function that works like Marina's
-                        
+
                         store[name] = {
                             "x": edges,
                             "y": values,
@@ -170,18 +187,18 @@ class TriggerSFVectorized:
         e2 = self._fix_in_range(e2)
         e3 = self._fix_in_range(e3)
         ine0, ine1, ine2, ine3 = 1.0-e0, 1.0-e1, 1.0-e2, 1.0-e3
-        
+
         # 1 - (fail all) - (pass 1 only)
         # fail all = ine0 * ine1 * ine2 * ine3
         # pass 1 (0 only) = e0 * ine1 * ine2 * ine3
         # ...
-        
+
         fail_all = ine0 * ine1 * ine2 * ine3
         pass_0 = e0 * ine1 * ine2 * ine3
         pass_1 = ine0 * e1 * ine2 * ine3
         pass_2 = ine0 * ine1 * e2 * ine3
         pass_3 = ine0 * ine1 * ine2 * e3
-        
+
         return 1.0 - fail_all - pass_0 - pass_1 - pass_2 - pass_3
 
     def _computeFinalEff(self, eff_list):
@@ -196,7 +213,7 @@ class TriggerSFVectorized:
         Vectorized lookup of efficiency
         """
         store = self.data_lookups if is_data else self.mc_lookups
-        
+
         # Helper to find the matching key in the store (handle simplified names)
         # Marina code splits by "Efficiency_" or "Intervals_"
         # We need flexible matching
@@ -205,7 +222,7 @@ class TriggerSFVectorized:
             if name in key and "Efficiency" in key: # Prefer efficiency maps
                 target = store[key]
                 break
-        
+
         if target is None:
             # Fallback or return 1.0
             return ak.ones_like(values, dtype=float), ak.zeros_like(values, dtype=float), ak.zeros_like(values, dtype=float)
@@ -219,7 +236,7 @@ class TriggerSFVectorized:
             # Use np.searchsorted to find bins
             # counts = len(x_vals) (assuming x_vals explains edges as per Marina code logic)
             # Actually, we need to map the 'values' array to indices in x_vals
-            
+
             # Determine if we need to restore structure
             is_jagged = False
             counts = None
@@ -230,17 +247,17 @@ class TriggerSFVectorized:
             except (ValueError, TypeError):
                 # Likely 1D array (flat) or scalar
                 is_jagged = False
-            
+
             # Use ak.flatten to get a 1D array for searchsorted
             flat_values = ak.flatten(values, axis=None)
-            
+
             indices = np.searchsorted(x_vals, ak.to_numpy(flat_values)) - 1
             indices = np.clip(indices, 0, len(y_vals) - 1)
-            
+
             eff_flat = y_vals[indices]
             err_up_flat = y_err_up[indices]
             err_down_flat = y_err_down[indices]
-            
+
             if is_jagged:
                 eff = ak.unflatten(eff_flat, counts)
                 err_up = ak.unflatten(err_up_flat, counts)
@@ -249,80 +266,30 @@ class TriggerSFVectorized:
                 eff = eff_flat
                 err_up = err_up_flat
                 err_down = err_down_flat
-            
+
             return eff, err_up, err_down
-            
+
         return ak.ones_like(values), ak.zeros_like(values), ak.zeros_like(values)
 
     def calculate_event_sf(self, events):
-        # 1. Calculate HT and other event variables
-        all_jets = events.Jet
-        pfjetht = ak.sum(all_jets[all_jets.pfht_selected].pt, axis=1)
-        calojetht = ak.sum(all_jets[all_jets.ht_selected].pt, axis=1)
-        
-        # 2. Sort Jets for Trigger Checks
-        # By b-tag (assume 'btagDeepFlavB' exists)
-        # Marina: "sorted(all_jets, key=lambda x: x.bdisc, reverse=True)"
-        # Note: Marina uses 'pn_b' for > 2018.
-        b_score_name = "btagDeepFlavB" if self.year <= 2018 else "pn_b" 
-        # Adjust if column name is different in your NANOAOD
-        if b_score_name not in all_jets.fields:
-            # Fallback
-            b_score_name = "btagDeepFlavB"
 
-        jets_by_b = all_jets[ak.argsort(all_jets[b_score_name], ascending=False)]
-        
-        # Top 4 by b-tag are selected (for <= 2018 logic in Marina), or all (for > 2018)
-        # Marina: "if self.year <= 2018: selected_jets = btag_sorted_jets[0:4] else: all_jets"
-        # Then "sort the jets in pt"
-        
-        if self.year <= 2018:
-            selected_jets = jets_by_b[:, :4] # Takes top 4
-        else:
-            selected_jets = all_jets
-            
-        jets_by_pt = selected_jets[ak.argsort(selected_jets.pt, ascending=False)]
-        
-        # We need at least 4 jets? trigger usually requires 4.
-        # Handle events with fewer than 4 jets by padding or masking?
-        # For SF calculation, usually we run on events passing selection (>=4 jets)
-        # We'll use ak.pad_none to be safe
-        jets_by_pt = ak.pad_none(jets_by_pt, 4, clip=True)
-        
-        # We need to fill None values (missing jets) with a value that yields 0 efficiency (e.g. 0.0)
-        # to ensure events with < 4 jets have 0 trigger efficiency
-        pt1 = ak.fill_none(jets_by_pt[:, 0].pt, 0.0)
-        pt2 = ak.fill_none(jets_by_pt[:, 1].pt, 0.0)
-        pt3 = ak.fill_none(jets_by_pt[:, 2].pt, 0.0)
-        pt4 = ak.fill_none(jets_by_pt[:, 3].pt, 0.0)
-
-        scores_sorted = jets_by_b[b_score_name]
-        scores_sorted = ak.pad_none(scores_sorted, 4, clip=True)
-        # Fill missing b-tag scores with -1 or 0 (assuming low score = low efficiency)
-        b1 = ak.fill_none(scores_sorted[:, 0], 0.0)
-        b2 = ak.fill_none(scores_sorted[:, 1], 0.0)
-        b3 = ak.fill_none(scores_sorted[:, 2], 0.0)
-        b4 = ak.fill_none(scores_sorted[:, 3], 0.0)
-        
-        btagTMean = ak.zeros_like(b1) # Placeholder for post-run2
-        
         # 3. Year Specific Calculation
         if self.year == 2018:
-            return self._calculate_2018(pt1, pt2, pt3, pt4, pfjetht, calojetht, b1, b2, b3, b4)
+            return self._calculate_2018(events.trigEm.pt1, events.trigEm.pt2, events.trigEm.pt3, events.trigEm.pt4, events.trigEm.pfjetht, events.trigEm.calojetht, events.trigEm.b1, events.trigEm.b2, events.trigEm.b3, events.trigEm.b4)
 
         elif self.year == 2017:
-            return self._calculate_2017(pt1, pt2, pt3, pt4, pfjetht, calojetht, b1, b2, b3, b4)
+            return self._calculate_2017(events.trigEm.pt1, events.trigEm.pt2, events.trigEm.pt3, events.trigEm.pt4, events.trigEm.pfjetht, events.trigEm.calojetht, events.trigEm.b1, events.trigEm.b2, events.trigEm.b3, events.trigEm.b4)
 
-        elif self.year in [2021, 2022]: 
-            return self._calculate_2022(pt1, pt2, pt3, pt4, pfjetht, calojetht, btagTMean)
+        elif self.year in [2021, 2022]:
+            return self._calculate_2022(events.trigEm.pt1, events.trigEm.pt2, events.trigEm.pt3, events.trigEm.pt4, events.trigEm.pfjetht, events.trigEm.calojetht, events.trigEm.btagTMean)
 
         elif self.year in [2020, 2023]:
             if self.year == 2020:
-                return self._calculate_2023_PostBPix(pt4, pfjetht, calojetht, btagTMean)
+                return self._calculate_2023_PostBPix(events.trigEm.pt4, events.trigEm.pfjetht, events.trigEm.calojetht, events.trigEm.btagTMean)
             else:
-                return self._calculate_2023_PreBPix(pt4, pfjetht, calojetht, btagTMean)
+                return self._calculate_2023_PreBPix(events.trigEm.pt4, events.trigEm.pfjetht, events.trigEm.calojetht, events.trigEm.btagTMean)
 
-        ones = ak.ones_like(pt1, dtype=float)
+        ones = ak.ones_like(events.trigEm.pt1, dtype=float)
         return ones, ones, ones
 
     def _calculate_2018(self, pt1, pt2, pt3, pt4, pfjetht, calojetht, b1, b2, b3, b4):
@@ -330,39 +297,39 @@ class TriggerSFVectorized:
         d_Attr_L1, m_Attr_L1 = "L1filterHT", "L1filterHT"
         d_L1, _, _ = self.lookup_efficiency(d_Attr_L1, calojetht, is_data=True)
         m_L1, _, _ = self.lookup_efficiency(m_Attr_L1, calojetht, is_data=False)
-        
+
         # QuadCentralJet30 (Limit on 4th jet)
         d_QCJ30, _, _ = self.lookup_efficiency("QuadCentralJet30", pt4, is_data=True)
         m_QCJ30, _, _ = self.lookup_efficiency("QuadCentralJet30", pt4, is_data=False)
-        
+
         # CaloQuadJet30HT320
         d_CaloHT, _, _ = self.lookup_efficiency("CaloQuadJet30HT320", calojetht, is_data=True)
         m_CaloHT, _, _ = self.lookup_efficiency("CaloQuadJet30HT320", calojetht, is_data=False)
-        
+
         # PFCentralJetLooseIDQuad30 (pt4)
         d_PFQuad30, _, _ = self.lookup_efficiency("PFCentralJetLooseIDQuad30", pt4, is_data=True)
         m_PFQuad30, _, _ = self.lookup_efficiency("PFCentralJetLooseIDQuad30", pt4, is_data=False)
-        
+
         # 1PFCentralJetLooseID75 (pt1)
         d_PF1_75, _, _ = self.lookup_efficiency("1PFCentralJetLooseID75", pt1, is_data=True)
         m_PF1_75, _, _ = self.lookup_efficiency("1PFCentralJetLooseID75", pt1, is_data=False)
-        
+
         # 2PFCentralJetLooseID60 (pt2)
         d_PF2_60, _, _ = self.lookup_efficiency("2PFCentralJetLooseID60", pt2, is_data=True)
         m_PF2_60, _, _ = self.lookup_efficiency("2PFCentralJetLooseID60", pt2, is_data=False)
-        
+
         # 3PFCentralJetLooseID45 (pt3)
         d_PF3_45, _, _ = self.lookup_efficiency("3PFCentralJetLooseID45", pt3, is_data=True)
         m_PF3_45, _, _ = self.lookup_efficiency("3PFCentralJetLooseID45", pt3, is_data=False)
-        
+
         # 4PFCentralJetLooseID40 (pt4) - Wait, Marina uses 4PFCentralJetLooseID40 with pt4
         d_PF4_40, _, _ = self.lookup_efficiency("4PFCentralJetLooseID40", pt4, is_data=True)
         m_PF4_40, _, _ = self.lookup_efficiency("4PFCentralJetLooseID40", pt4, is_data=False)
-        
+
         # PFCentralJetsLooseIDQuad30HT330 (pfjetht)
         d_PFHT330, _, _ = self.lookup_efficiency("PFCentralJetsLooseIDQuad30HT330", pfjetht, is_data=True)
         m_PFHT330, _, _ = self.lookup_efficiency("PFCentralJetsLooseIDQuad30HT330", pfjetht, is_data=False)
-        
+
         # BTags
         # BTagCaloDeepCSVp17Double (Double Btag)
         # We look up eff for all 4 jets
@@ -370,15 +337,15 @@ class TriggerSFVectorized:
         d_b_calo_1, _, _ = self.lookup_efficiency("BTagCaloDeepCSVp17Double", b2, is_data=True)
         d_b_calo_2, _, _ = self.lookup_efficiency("BTagCaloDeepCSVp17Double", b3, is_data=True)
         d_b_calo_3, _, _ = self.lookup_efficiency("BTagCaloDeepCSVp17Double", b4, is_data=True)
-        
+
         m_b_calo_0, _, _ = self.lookup_efficiency("BTagCaloDeepCSVp17Double", b1, is_data=False)
         m_b_calo_1, _, _ = self.lookup_efficiency("BTagCaloDeepCSVp17Double", b2, is_data=False)
         m_b_calo_2, _, _ = self.lookup_efficiency("BTagCaloDeepCSVp17Double", b3, is_data=False)
         m_b_calo_3, _, _ = self.lookup_efficiency("BTagCaloDeepCSVp17Double", b4, is_data=False)
-        
+
         d_b_double = self._get2BTagEff(d_b_calo_0, d_b_calo_1, d_b_calo_2, d_b_calo_3)
         m_b_double = self._get2BTagEff(m_b_calo_0, m_b_calo_1, m_b_calo_2, m_b_calo_3)
-        
+
         # BTagPFDeepCSV4p5Triple (Triple Btag) (?)
         d_b_pf_0, _, _ = self.lookup_efficiency("BTagPFDeepCSV4p5Triple", b1, is_data=True)
         d_b_pf_1, _, _ = self.lookup_efficiency("BTagPFDeepCSV4p5Triple", b2, is_data=True)
@@ -392,11 +359,11 @@ class TriggerSFVectorized:
 
         d_b_triple = self._get3BTagEff(d_b_pf_0, d_b_pf_1, d_b_pf_2, d_b_pf_3)
         m_b_triple = self._get3BTagEff(m_b_pf_0, m_b_pf_1, m_b_pf_2, m_b_pf_3)
-        
+
         # Final Calculation
         d_comps = [d_L1, d_QCJ30, d_CaloHT, d_PFQuad30, d_PF1_75, d_PF2_60, d_PF3_45, d_PF4_40, d_PFHT330, d_b_double, d_b_triple]
         m_comps = [m_L1, m_QCJ30, m_CaloHT, m_PFQuad30, m_PF1_75, m_PF2_60, m_PF3_45, m_PF4_40, m_PFHT330, m_b_double, m_b_triple]
-        
+
         return self._compute_sf(d_comps, m_comps)
 
     def _calculate_2017(self, pt1, pt2, pt3, pt4, pfjetht, calojetht, b1, b2, b3, b4):
@@ -448,12 +415,12 @@ class TriggerSFVectorized:
 
         d_comps = [d_L1, d_QCJ30, d_CaloHT, d_PFQuad30, d_PF1_75, d_PF2_60, d_PF3_45, d_PF4_40, d_PFHT300, d_b_double, d_b_triple]
         m_comps = [m_L1, m_QCJ30, m_CaloHT, m_PFQuad30, m_PF1_75, m_PF2_60, m_PF3_45, m_PF4_40, m_PFHT300, m_b_double, m_b_triple]
-        
+
         return self._compute_sf(d_comps, m_comps)
 
     def _calculate_2022(self, pt1, pt2, pt3, pt4, pfjetht, calojetht, btagTMean):
         trg = "HLT_QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65"
-        
+
         l1_name = "L1All_preEE" if self.year == 2021 else "L1All_postEE"
         d_L1, _, _ = self.lookup_efficiency(l1_name, calojetht, is_data=True)
         m_L1, _, _ = self.lookup_efficiency(l1_name, calojetht, is_data=False)
@@ -502,7 +469,7 @@ class TriggerSFVectorized:
     def _calculate_2023_PostBPix(self, pt4, pfjetht, calojetht, btagTMean):
         # 2020 in Marina code
         trg = "HLT_PFHT280_QuadPFJet30_PNet2BTagMean0p55"
-        
+
         d_L1, _, _ = self.lookup_efficiency("L1_HTT280er_postBPix", calojetht, is_data=True)
         m_L1, _, _ = self.lookup_efficiency("L1_HTT280er_postBPix", calojetht, is_data=False)
 
@@ -529,22 +496,22 @@ class TriggerSFVectorized:
         # 2D lookup mockup: JetLeg(x=pfjetht, y=pt4)
         d_JetLeg, _, _ = self.lookup_efficiency("JetLeg", pfjetht, is_data=True) # Needs 2D support
         m_JetLeg, _, _ = self.lookup_efficiency("JetLeg", pfjetht, is_data=False) # Needs 2D support
-        
+
         d_BJetLeg, _, _ = self.lookup_efficiency("InclusiveBTagLeg", btagTMean, is_data=True)
         m_BJetLeg, _, _ = self.lookup_efficiency("InclusiveBTagLeg", btagTMean, is_data=False)
 
         d_comps = [d_L1, d_JetLeg, d_BJetLeg]
         m_comps = [m_L1, m_JetLeg, m_BJetLeg]
         return self._compute_sf(d_comps, m_comps)
-        
+
     def _compute_sf(self, d_comps, m_comps):
         d_total = self._computeFinalEff(d_comps)
         m_total = self._computeFinalEff(m_comps)
-        
+
         # Avoid division by zero warnings by replacing 0 with 1 in the denominator
         # The result for these elements will be masked out by the ak.where condition anyway
         safe_m_total = ak.where(m_total > 0, m_total, 1.0)
         raw_sf = d_total / safe_m_total
-        
+
         sf = ak.where(m_total > 0, raw_sf, 1.0)
         return d_total, m_total, sf
