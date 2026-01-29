@@ -239,7 +239,6 @@ def jet_selection(
     event['tagJet_loose'] = event.selJet[event.selJet.tagged_loose]
     event['nJet_tagged'] = ak.num(event.tagJet)
     event['nJet_tagged_loose'] = ak.num(event.tagJet_loose)
-    print(f"JETS {event.tagJet_loose[:10]}")
 
     # For trigger emulation
     event['Jet', 'muon_cleaned'] = drClean(event.Jet, event.selMuon)[1]
@@ -394,19 +393,11 @@ def lowpt_jet_selection(
 
     # Apply bRegCorr to low-pT selected jets
     event['selJet_no_bRegCorr_lowpt'] = event.Jet[event.Jet.selected_lowpt]
-    #### bRegCorr needs to be modified for lowpt jets
-    # event['selJet_lowpt'] = apply_bRegCorr(event.selJet_lowpt_no_bRegCorr)
-    event['selJet_lowpt'] = event.Jet[event.Jet.selected_lowpt]  # Placeholder for bRegCorr application
-    event['tagJet_lowpt'] = event.Jet[event.Jet.selected_lowpt].tagged_lowpt
-    event['tagJet_loose_lowpt'] = event.Jet[event.Jet.selected_lowpt].tagged_loose_lowpt
-    print(f"previos {event.Jet[event.Jet.tagged_loose_lowpt][:10]}")
-    print(f"previos {ak.num(event.Jet[event.Jet.tagged_loose_lowpt])[:10]}")
-    print(f"tagJet_loose_lowpt: {event.tagJet_loose_lowpt[:10]}")
-    print(f"tagJet_loose_lowpt: {ak.sum(event.tagJet_loose_lowpt)[:10]}\n\n")
+    event['selJet_lowpt'] = apply_bRegCorr(event.Jet, selected_label='selected_lowpt', tagged_label='tagged_lowpt', tagged_loose_label='tagged_loose_lowpt')
+
+    event['tagJet_lowpt'] = event.selJet_lowpt[event.selJet_lowpt.tagged_lowpt]
+    event['tagJet_loose_lowpt'] = event.selJet_lowpt[event.selJet_lowpt.tagged_loose_lowpt]
     event['nJet_tagged_lowpt'] = ak.num(event.tagJet_lowpt)
     event['nJet_tagged_loose_lowpt'] = ak.num(event.tagJet_loose_lowpt)
-
-
-    # # event['selJet_lowpt_no_bRegCorr', 'selected'] = event.selJet_lowpt_no_bRegCorr.selected_lowpt
 
     return event
