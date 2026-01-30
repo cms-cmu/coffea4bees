@@ -133,4 +133,4 @@ class TrigEmHists(Template):
     pt3    = H((60, 0, 300, ('pt3', "Jet 3 p_{T} [GeV]")))
     pt4    = H((60, 0, 300, ('pt4', "Jet 4 p_{T} [GeV]")))
 
-    btagTMean = H((50, 0, 1, ('btagTMean', 'mean Top 2 btagScores')))
+    btagTMean = H((50, 0, 5, ('btagTMean', 'mean Top 2 btagScores')))
