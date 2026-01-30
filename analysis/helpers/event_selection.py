@@ -31,6 +31,21 @@ def apply_dilep_ttbar_selection(event: ak.Array, isRun3: bool = False) -> ak.Arr
     diMu_mask = nMuon_selected >= 2
     ElMu_mask = (nMuon_selected >= 1) & (nElec_selected >= 1)
 
+
+    muon_selected   = event.Muon[muon_selection]
+    lepton_selected = ak.concatenate([event.selElec, muon_selected], axis=1)
+
+
+    lep2 = ak.pad_none(lepton_selected, 2, axis=1)
+
+    l0 = lep2[:, 0]
+    l1 = lep2[:, 1]
+
+    # ll_mask should imply >=2 leptons, but this is the safe definition:
+    ll_mask = ~ak.is_none(l1)
+
+    event["mll"] = ak.where(ll_mask, (l0 + l1).mass, -1)
+
     jet_mask = event.nJet_tagged == 2
 
     # Require MET > 40 GeV

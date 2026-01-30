@@ -171,7 +171,8 @@ def filling_nominal_histograms(
         skip_elecs = ["charge"] + Elec.skip_detailed_plots
         fill_ttbar += Elec.plot(("selElecs_ll", "Selected Elecs"), "selElec", skip=skip_elecs)
 
-        fill_ttbar += hist.add("MET_ll", (100, 0, 300, ("event.MET.pt", "Missing Et")))
+        fill_ttbar += LorentzVector.plot(('MET_ll', R'MeT'), 'MET',  skip=['n','eta', 'mass', 'pz', 'energy'], bins={"pt": (60, 0, 300)})
+        fill_ttbar += hist_ttbar.add('mll_ll', (100, 0, 300, ('mll', 'mll [GeV]')))
 
         fill_ttbar(selev, hist_ttbar)
         return hist.to_dict(nonempty=True) | {"hists_ttbar": hist_ttbar.to_dict(nonempty=True)["hists"], "categories_ttbar": hist_ttbar.to_dict(nonempty=True)["categories"]}
