@@ -156,7 +156,7 @@ def filling_nominal_histograms(
         hist_ttbar = Collection(
             process=[processName],
             year=[year],
-            **dict((s, ...) for s in ['passDilepTtbar'])
+            **dict((s, ...) for s in ['passMuMu', 'passElMu'])
         )
 
         fill_ttbar += TrigEmHists(("trigEm_ll", "Trigger Emulation"), "trigEm")
@@ -169,8 +169,9 @@ def filling_nominal_histograms(
         fill_ttbar += Muon.plot(("selMuons_ll", "Selected Muons"), "selMuon", skip=skip_muons)
 
         skip_elecs = ["charge"] + Elec.skip_detailed_plots
-        fill += Elec.plot(("selElecs_ll", "Selected Elecs"), "selElec", skip=skip_elecs)
+        fill_ttbar += Elec.plot(("selElecs_ll", "Selected Elecs"), "selElec", skip=skip_elecs)
 
+        fill_ttbar += hist.add("MET_ll", (100, 0, 300, ("event.MET.pt", "Missing Et")))
 
         fill_ttbar(selev, hist_ttbar)
         return hist.to_dict(nonempty=True) | {"hists_ttbar": hist_ttbar.to_dict(nonempty=True)["hists"], "categories_ttbar": hist_ttbar.to_dict(nonempty=True)["categories"]}
