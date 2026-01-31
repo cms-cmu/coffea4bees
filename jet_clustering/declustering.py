@@ -324,6 +324,20 @@ def rotateX(particles, angle):
     )
 
 
+def build_lorentz_vector_pz0(z_fraction, combined_pt, tan_theta, mass, pz_sign=-1):
+    """Build Lorentz vector in pz0, phi0, decayPhi0 frame."""
+    px = z_fraction * combined_pt
+    py = 0
+    pz = pz_sign * z_fraction * combined_pt * tan_theta
+    E = np.sqrt(px**2 + pz**2 + mass**2)
+
+    return ak.zip(
+        {"x": px, "y": py, "z": pz, "t": E},
+        with_name="LorentzVector",
+        behavior=vector.behavior,
+    )
+
+
 def update_single_jet_mass(p, jet_flavor, rho, btag_string, counts):
     """Update mass for single jets using pt × rho."""
     jet_flavor_flat = ak.flatten(jet_flavor)
@@ -354,12 +368,12 @@ def update_single_jet_mass(p, jet_flavor, rho, btag_string, counts):
 
 def decluster_combined_jets(input_jet, debug=False):
 
-    n_jets = np.sum(ak.num(input_jet))
-
     jet_flav_flat = ak.flatten(input_jet.jet_flavor)
     simple_comb_mask = (np.char.str_len(jet_flav_flat) == 2)
 
+    #
     # Build jet_flav_child lists
+    #
     jet_flav_child_A = []
     jet_flav_child_B = []
 
@@ -375,7 +389,9 @@ def decluster_combined_jets(input_jet, debug=False):
     jet_flavor_A = ak.unflatten(jet_flav_child_A, ak.num(input_jet))
     jet_flavor_B = ak.unflatten(jet_flav_child_B, ak.num(input_jet))
 
+    #
     # Build jet_btag_string lists
+    #
     flat_jet_btag_string = ak.flatten(input_jet.btag_string)
     flat_jet_btag_string_A = []
     flat_jet_btag_string_B = []
@@ -392,43 +408,22 @@ def decluster_combined_jets(input_jet, debug=False):
     tanThetaB = input_jet.zA / (1 - input_jet.zA) * tanThetaA
 
     #
-    #  pA (in frame with pz=0 phi=0 decay_phi = 0)
+    #  pA and pB (in frame with pz=0 phi=0 decay_phi = 0)
     #
-    pA_pz0_px = input_jet.zA * combined_pt
-    pA_pz0_py = 0
-    pA_pz0_pz = - input_jet.zA * combined_pt * tanThetaA
-    # pA_mass   = input_jet.rhoA * input_jet.pt * input_jet.zA
-    pA_mass   = input_jet.mA
-    pA_pz0_E  = np.sqrt(pA_pz0_px**2 + pA_pz0_pz**2 + pA_mass**2)
+    pA_pz0_phi0_decayPhi0 = build_lorentz_vector_pz0(input_jet.zA,
+                                                     combined_pt,
+                                                     tanThetaA,
+                                                     input_jet.mA,
+                                                     pz_sign=-1
+                                                     )
 
-    pA_pz0_phi0_decayPhi0 = ak.zip(
-        {
-            "x": pA_pz0_px,
-            "y": pA_pz0_py,
-            "z": pA_pz0_pz,
-            "t": pA_pz0_E,
-        },
-        with_name="LorentzVector",
-        behavior=vector.behavior,
-    )
+    pB_pz0_phi0_decayPhi0 = build_lorentz_vector_pz0(1 - input_jet.zA,
+                                                     combined_pt,
+                                                     tanThetaB,
+                                                     input_jet.mB,
+                                                     pz_sign=1
+                                                     )
 
-    pB_pz0_px = (1 - input_jet.zA) * combined_pt
-    pB_pz0_py = 0
-    pB_pz0_pz = (1 - input_jet.zA) * combined_pt * tanThetaB
-    # pB_mass   = input_jet.rhoB * input_jet.pt * (1 - input_jet.zA)
-    pB_mass   = input_jet.mB
-    pB_pz0_E  = np.sqrt(pB_pz0_px**2 + pB_pz0_pz**2 + pB_mass**2)
-
-    pB_pz0_phi0_decayPhi0 = ak.zip(
-        {
-            "x": pB_pz0_px,
-            "y": pB_pz0_py,
-            "z": pB_pz0_pz,
-            "t": pB_pz0_E,
-        },
-        with_name="LorentzVector",
-        behavior=vector.behavior,
-    )
 
     #
     # Do Rotation of the decay plane
