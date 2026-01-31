@@ -204,87 +204,99 @@ def create_flavor_mask(jets, flavor):
 
 def compute_decluster_variables(clustered_splittings):
 
-    #
-    # z-axis
-    #
-    z_axis      = ak.zip({"x": 0, "y": 0, "z": 1}, with_name="ThreeVector", behavior=vector.behavior,)
-    boost_vec_z = ak.zip({"x": 0, "y": 0, "z": clustered_splittings.boostvec.z}, with_name="ThreeVector", behavior=vector.behavior,)
+    # Define coordinate system axes and boost vectors
+    z_axis = ak.zip(
+        {"x": 0, "y": 0, "z": 1},
+        with_name="ThreeVector",
+        behavior=vector.behavior
+    )
+
+    boost_vec_z = ak.zip(
+        {"x": 0, "y": 0, "z": clustered_splittings.boostvec.z},
+        with_name="ThreeVector",
+        behavior=vector.behavior
+    )
+
 
     #
-    #  Boost to pz0
+    # Boost to pz=0 frame
     #
-    clustered_splittings_pz0        = clustered_splittings.boost(-boost_vec_z)
-    clustered_splittings_part_A_pz0 = clustered_splittings.part_A.boost(-boost_vec_z)
-    clustered_splittings_part_B_pz0 = clustered_splittings.part_B.boost(-boost_vec_z)
+    clustered_splittings_pz0 = clustered_splittings.boost(-boost_vec_z)
+    part_A_pz0 = clustered_splittings.part_A.boost(-boost_vec_z)
+    part_B_pz0 = clustered_splittings.part_B.boost(-boost_vec_z)
 
+    # Calculate plane normals
     comb_z_plane_hat = z_axis.cross(clustered_splittings_pz0).unit
-    decay_plane_hat = clustered_splittings_part_A_pz0.cross(clustered_splittings_part_B_pz0).unit
+    decay_plane_hat = part_A_pz0.cross(part_B_pz0).unit
+
 
     #
-    #  Clustering (calc variables to histogram)
+    # Compute and store clustering variables
     #
+    thetaA = np.arccos(clustered_splittings_pz0.unit.dot(part_A_pz0.unit))
 
-    clustered_splittings["zA_num"]    = clustered_splittings_pz0.dot(clustered_splittings_part_A_pz0)
-    clustered_splittings["zA"]        = clustered_splittings_pz0.dot(clustered_splittings_part_A_pz0) / (clustered_splittings_pz0.pt**2)
-    clustered_splittings["mA"]        = clustered_splittings.part_A.mass
-    clustered_splittings["rhoA"]      = clustered_splittings.part_A.mass / clustered_splittings.part_A.pt
-    clustered_splittings["abs_eta"]   = np.abs(clustered_splittings.eta)
-
-    clustered_splittings["mB"]        = clustered_splittings.part_B.mass
-    clustered_splittings["rhoB"]      = clustered_splittings.part_B.mass / clustered_splittings.part_B.pt
-
-    clustered_splittings["thetaA"]    = np.arccos(clustered_splittings_pz0.unit.dot(clustered_splittings_part_A_pz0.unit))
-    clustered_splittings["tan_thetaA"]    = np.tan(np.arccos(clustered_splittings_pz0.unit.dot(clustered_splittings_part_A_pz0.unit)))
-    clustered_splittings["decay_phi"] = np.arccos(decay_plane_hat.dot(comb_z_plane_hat))
-    clustered_splittings["dr_AB"]     = clustered_splittings.part_A.delta_r(clustered_splittings.part_B)
-    clustered_splittings["dpt_AB"]    = clustered_splittings.part_A.pt - (clustered_splittings.pt * clustered_splittings.zA)
-    clustered_splittings["rpt_A"]    = clustered_splittings.part_A.pt / clustered_splittings.pt
-    clustered_splittings["rpt_B"]    = clustered_splittings.part_B.pt / clustered_splittings.pt
-    clustered_splittings["rpt_AB"]    = clustered_splittings.part_B.pt / clustered_splittings.part_A.pt
-    clustered_splittings["mass_AB"]     = (clustered_splittings.part_A + clustered_splittings.part_B).mass
+    clustered_splittings["zA_num"]     = clustered_splittings_pz0.dot(part_A_pz0)
+    clustered_splittings["zA"]         = clustered_splittings_pz0.dot(part_A_pz0) / (clustered_splittings_pz0.pt**2)
+    clustered_splittings["mA"]         = clustered_splittings.part_A.mass
+    clustered_splittings["rhoA"]       = clustered_splittings.part_A.mass / clustered_splittings.part_A.pt
+    clustered_splittings["mB"]         = clustered_splittings.part_B.mass
+    clustered_splittings["rhoB"]       = clustered_splittings.part_B.mass / clustered_splittings.part_B.pt
+    clustered_splittings["abs_eta"]    = np.abs(clustered_splittings.eta)
+    clustered_splittings["thetaA"]     = thetaA
+    clustered_splittings["tan_thetaA"] = np.tan(thetaA)
+    clustered_splittings["decay_phi"]  = np.arccos(decay_plane_hat.dot(comb_z_plane_hat))
+    clustered_splittings["dr_AB"]      = clustered_splittings.part_A.delta_r(clustered_splittings.part_B)
+    clustered_splittings["dpt_AB"]     = clustered_splittings.part_A.pt - (clustered_splittings.pt * clustered_splittings.zA)
+    clustered_splittings["rpt_A"]      = clustered_splittings.part_A.pt / clustered_splittings.pt
+    clustered_splittings["rpt_B"]      = clustered_splittings.part_B.pt / clustered_splittings.pt
+    clustered_splittings["rpt_AB"]     = clustered_splittings.part_B.pt / clustered_splittings.part_A.pt
+    clustered_splittings["mass_AB"]    = (clustered_splittings.part_A + clustered_splittings.part_B).mass
 
     #
     #  The rest of the code Updates the mass in the rotated rest frame
     #
 
-    #
-    #  Go to the frame hwere the combined jet is pointing along X (needed to rotate the decay plane with rotateX)
-    #
-    clustered_splittings_part_A_pz0_phi0  = rotateZ(clustered_splittings_part_A_pz0, -clustered_splittings.phi)
-    clustered_splittings_part_B_pz0_phi0  = rotateZ(clustered_splittings_part_B_pz0, -clustered_splittings.phi)
+    # Rotate to frame where combined jet points along X-axis
+    part_A_pz0_phi0, part_B_pz0_phi0 = [
+        rotateZ(p, -clustered_splittings.phi)
+        for p in [part_A_pz0, part_B_pz0]
+    ]
 
-    #
-    #    we either need to rotate back by + or - decay phi, figure out which one
-    #
-    clustered_splittings_part_A_pz0_phi0_dphi0  = rotateX(clustered_splittings_part_A_pz0_phi0, -clustered_splittings.decay_phi)
-    clustered_splittings_part_B_pz0_phi0_dphi0  = rotateX(clustered_splittings_part_B_pz0_phi0, -clustered_splittings.decay_phi)
-    #decay_plane_dphi0 = clustered_splittings_part_A_pz0_phi0_dphi0.cross(clustered_splittings_part_B_pz0_phi0_dphi0).unit
+    # Determine correct decay plane rotation (+ or - decay_phi)
+    # Rotate by both directions and check which gives y ≈ 1 in decay plane normal
+    part_A_pdphi0, part_B_pdphi0 = [
+        rotateX(p, +clustered_splittings.decay_phi)
+        for p in [part_A_pz0_phi0, part_B_pz0_phi0]
+    ]
+    part_A_dphi0, part_B_dphi0 = [
+        rotateX(p, -clustered_splittings.decay_phi)
+        for p in [part_A_pz0_phi0, part_B_pz0_phi0]
+    ]
 
-    clustered_splittings_part_A_pz0_phi0_pdphi0  = rotateX(clustered_splittings_part_A_pz0_phi0, +clustered_splittings.decay_phi)
-    clustered_splittings_part_B_pz0_phi0_pdphi0  = rotateX(clustered_splittings_part_B_pz0_phi0, +clustered_splittings.decay_phi)
-    decay_plane_pdphi0 = clustered_splittings_part_A_pz0_phi0_pdphi0.cross(clustered_splittings_part_B_pz0_phi0_pdphi0).unit
-
+    decay_plane_pdphi0 = part_A_pdphi0.cross(part_B_pdphi0).unit
     pos_decay_phi_mask = np.abs(decay_plane_pdphi0.y - 1) < 0.001
     pos_decay_phi_mask_flat = ak.flatten(pos_decay_phi_mask)
 
-    #
-    # Get the pts in the frame we will do de-clustering
-    #
+    # Get pts in the de-clustering frame (select correct rotation)
     counts = ak.num(clustered_splittings)
 
-    rotated_pt_A = ak.where(
-        pos_decay_phi_mask_flat,
-        ak.flatten(clustered_splittings_part_A_pz0_phi0_pdphi0.pt),
-        ak.flatten(clustered_splittings_part_A_pz0_phi0_dphi0.pt)
+    rotated_pt_A = ak.unflatten(
+        ak.where(
+            pos_decay_phi_mask_flat,
+            ak.flatten(part_A_pdphi0.pt),
+            ak.flatten(part_A_dphi0.pt)
+        ),
+        counts
     )
-    rotated_pt_A = ak.unflatten(rotated_pt_A, counts)
 
-    rotated_pt_B = ak.where(
-        pos_decay_phi_mask_flat,
-        ak.flatten(clustered_splittings_part_B_pz0_phi0_pdphi0.pt),
-        ak.flatten(clustered_splittings_part_B_pz0_phi0_dphi0.pt)
+    rotated_pt_B = ak.unflatten(
+        ak.where(
+            pos_decay_phi_mask_flat,
+            ak.flatten(part_B_pdphi0.pt),
+            ak.flatten(part_B_dphi0.pt)
+        ),
+        counts
     )
-    rotated_pt_B = ak.unflatten(rotated_pt_B, counts)
 
 
     #
