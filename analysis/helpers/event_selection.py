@@ -27,13 +27,21 @@ def apply_dilep_ttbar_selection(event: ak.Array, isRun3: bool = False) -> ak.Arr
     """
     muon_selection = (event.Muon.pt > 10) & (abs(event.Muon.eta) < 2.4) & (event.Muon.tightId) & (event.Muon.pfRelIso04_all < 0.05)
     nMuon_selected = ak.sum(muon_selection, axis=1)
-    nElec_selected = ak.num(event.selElec)
-    diMu_mask = nMuon_selected >= 2
-    ElMu_mask = (nMuon_selected >= 1) & (nElec_selected >= 1)
-
-
     muon_selected   = event.Muon[muon_selection]
-    lepton_selected = ak.concatenate([event.selElec, muon_selected], axis=1)
+
+
+    nElec_selected = ak.num(event.selElec)
+
+    ElMu_mask = (nMuon_selected >= 1) & (nElec_selected >= 1)
+    diMu_mask = nMuon_selected >= 2
+
+
+    # Guarantee both collections have only Lorentz-vector behavior
+    ele = ak.with_name(event.selElec, "PtEtaPhiMLorentzVector")
+    mu  = ak.with_name(muon_selected, "PtEtaPhiMLorentzVector")
+    lepton_selected = ak.concatenate([ele, mu], axis=1)
+
+    #lepton_selected = ak.concatenate([event.selElec, muon_selected], axis=1)
 
 
     lep2 = ak.pad_none(lepton_selected, 2, axis=1)
