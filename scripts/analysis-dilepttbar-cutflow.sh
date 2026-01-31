@@ -18,4 +18,4 @@ bash coffea4bees/scripts/run-cutflow.sh \
     --output-filename "test_dump_cutflow.yml" \
     --output-subdir "analysis_dileptttbar_cutflow" \
     --known-cutflow "coffea4bees/analysis/tests/known_Counts_dilepTT.yml" \
-    --cutflow-list "passDilepTtbar"
+    --cutflow-list "passMuMu,passElMu"

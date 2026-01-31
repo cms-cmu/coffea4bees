@@ -151,6 +151,8 @@ TTTo2L2Nu:
       sumw2_raw: 317071746616.9077
       sumw_raw: 3877699277.0577993
       total_events: 48203000
+  xs: 102.41
+  
 TTToHadronic:
   2022_EE:
     nanoAOD: /TTto4Q_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EENanoAODv12-130X_mcRun3_2022_realistic_postEE_v6-v2/NANOAODSIM
@@ -928,6 +930,8 @@ TTToHadronic:
       sumw2_raw: 12800568283957.69
       sumw_raw: 36259125125.020004
       total_events: 104268500
+  xs: 410.89
+  
 TTToSemiLeptonic:
   2022_EE:
     nanoAOD: /TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EENanoAODv12-130X_mcRun3_2022_realistic_postEE_v6-v2/NANOAODSIM
@@ -1715,3 +1719,4 @@ TTToSemiLeptonic:
       sumw2_raw: 17357843133894.59
       sumw_raw: 51082709849.387955
       total_events: 152797000
+  xs: 410.28

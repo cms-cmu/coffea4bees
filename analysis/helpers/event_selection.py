@@ -25,20 +25,54 @@ def apply_dilep_ttbar_selection(event: ak.Array, isRun3: bool = False) -> ak.Arr
     ak.Array
         A boolean mask indicating events passing the dilepton ttbar selection criteria.
     """
-    dimuon_selection = (event.Muon.pt > 10) & (abs(event.Muon.eta) < 2.4) & (event.Muon.tightId) & (event.Muon.pfRelIso04_all < 0.05)
-    nMuon_dimuon_selected = ak.sum(dimuon_selection, axis=1)
-    dilepton_mask = nMuon_dimuon_selected >= 2
+    muon_selection = (event.Muon.pt > 10) & (abs(event.Muon.eta) < 2.4) & (event.Muon.tightId) & (event.Muon.pfRelIso04_all < 0.05)
+    nMuon_selected = ak.sum(muon_selection, axis=1)
+    muon_selected   = event.Muon[muon_selection]
+
+
+    nElec_selected = ak.num(event.selElec)
+
+    ElMu_mask = (nMuon_selected >= 1) & (nElec_selected >= 1)
+    diMu_mask = nMuon_selected >= 2
+
+
+    # Guarantee both collections have only Lorentz-vector behavior
+    ele = ak.with_name(event.selElec, "PtEtaPhiMLorentzVector")
+    mu  = ak.with_name(muon_selected, "PtEtaPhiMLorentzVector")
+    lepton_selected = ak.concatenate([ele, mu], axis=1)
+
+    #lepton_selected = ak.concatenate([event.selElec, muon_selected], axis=1)
+
+
+    lep2 = ak.pad_none(lepton_selected, 2, axis=1)
+
+    l0 = lep2[:, 0]
+    l1 = lep2[:, 1]
+
+    # ll_mask should imply >=2 leptons, but this is the safe definition:
+    ll_mask = ~ak.is_none(l1)
+
+    event["mll"] = ak.where(ll_mask, (l0 + l1).mass, -1)
 
     jet_mask = event.nJet_tagged == 2
 
     # Require MET > 40 GeV
     met_mask = event.MET.pt > 30
 
-    # Combine all selection criteria
-    selection_mask = dilepton_mask & jet_mask & met_mask
-    logging.debug(f"Selection mask: {selection_mask}\n\n")
+    quarkonia_veto = (event.mll > 10)
+    z_veto = abs(event.mll - 91.2) > 10
 
-    return selection_mask
+    # Combine all selection criteria
+    mumu_mask = diMu_mask & jet_mask & met_mask & quarkonia_veto & quarkonia_veto & z_veto
+    logging.debug(f"MuMu Selection mask: {mumu_mask}\n\n")
+
+    elmu_mask = ElMu_mask & jet_mask & met_mask
+    logging.debug(f"ElMu Selection mask: {elmu_mask}\n\n")
+
+
+    event["passMuMu"] = mumu_mask
+    event["passElMu"] = elmu_mask
+
 
 def apply_boosted_4b_selection(event: ak.Array) -> ak.Array:
     """

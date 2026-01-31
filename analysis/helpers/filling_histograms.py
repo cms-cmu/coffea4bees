@@ -156,10 +156,23 @@ def filling_nominal_histograms(
         hist_ttbar = Collection(
             process=[processName],
             year=[year],
-            **dict((s, ...) for s in ['passDilepTtbar'])
+            **dict((s, ...) for s in ['passMuMu', 'passElMu'])
         )
-        fill_ttbar += Jet.plot(("tagJets_dilepttbar", "Tag Jets dilep ttbar"), "tagJet", skip=skip_jet_list)
-        fill_ttbar += TrigEmHists(("trigEm_dilepttbar", "Trigger Emulation"), "trigEm")
+
+        fill_ttbar += TrigEmHists(("trigEm_ll", "Trigger Emulation"), "trigEm")
+
+        fill_ttbar += Jet.plot(("selJets_ll", "Selected Jets"), "selJet", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
+        fill_ttbar += Jet.plot(("tagJets_ll", "Tag Jets dilep ttbar"), "tagJet", skip=skip_jet_list)
+
+
+        skip_muons = ["charge"] + Muon.skip_detailed_plots
+        fill_ttbar += Muon.plot(("selMuons_ll", "Selected Muons"), "selMuon", skip=skip_muons)
+
+        skip_elecs = ["charge"] + Elec.skip_detailed_plots
+        fill_ttbar += Elec.plot(("selElecs_ll", "Selected Elecs"), "selElec", skip=skip_elecs)
+
+        fill_ttbar += LorentzVector.plot(('MET_ll', R'MeT'), 'MET',  skip=['n','eta', 'mass', 'pz', 'energy'], bins={"pt": (60, 0, 300)})
+        fill_ttbar += hist_ttbar.add('mll_ll', (100, 0, 300, ('mll', 'mll [GeV]')))
 
         fill_ttbar(selev, hist_ttbar)
         return hist.to_dict(nonempty=True) | {"hists_ttbar": hist_ttbar.to_dict(nonempty=True)["hists"], "categories_ttbar": hist_ttbar.to_dict(nonempty=True)["categories"]}
