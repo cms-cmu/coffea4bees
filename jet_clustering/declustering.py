@@ -324,45 +324,18 @@ def decluster_combined_jets(input_jet, debug=False):
     jet_flav_flat = ak.flatten(input_jet.jet_flavor)
     simple_comb_mask = (np.char.str_len(jet_flav_flat) == 2)
 
-    # For some reason this dummy string has to be as long as the longest possible replacement
-    # jet_flav_child_A = np.full(n_jets, "XXXXXXXXXXXXXXX")
-    # jet_flav_child_B = np.full(n_jets, "XXXXXXXXXXXXXXX")
-    dummy_str = "XXXXXXXXXXXXXXXXXXXXXXXXX"
-    len_dummy_str = 25
-    # dummy_str = "XXX"
-    # len_dummy_str = 3
-    jet_flav_child_A = np.full(n_jets, dummy_str)
-    jet_flav_child_B = np.full(n_jets, dummy_str)
+    # Build lists directly
+    jet_flav_child_A = []
+    jet_flav_child_B = []
 
-    #
-    #  The simple combinations
-    #
-    _simple_flav_child_A = [str(s)[0] for s in jet_flav_flat[simple_comb_mask]]
-    _simple_flav_child_B = [str(s)[1] for s in jet_flav_flat[simple_comb_mask]]
-    jet_flav_child_A[simple_comb_mask] = _simple_flav_child_A
-    jet_flav_child_B[simple_comb_mask] = _simple_flav_child_B
-
-
-    #
-    #  The nested combinations
-    #   # A is always the more complex
-    _children = [children_jet_flavors(s) for s in jet_flav_flat[~simple_comb_mask]]
-    _nested_flav_child_A = [child[0] for child in _children]
-    _nested_flav_child_B = [child[1] for child in _children]
-
-    over_flow_child_A = any(len(s) > len_dummy_str for s in _nested_flav_child_A)
-    if over_flow_child_A:
-        print(f"\n ERROR: child A flavor overflow {_nested_flav_child_A} \n")
-
-    over_flow_child_B = any(len(s) > len_dummy_str for s in _nested_flav_child_B)
-    if over_flow_child_B:
-        print(f"\n ERROR: child B flavor overflow {_nested_flav_child_B} \n")
-
-    # print(f'child A {_nested_flav_child_A}')
-    # print(f'child B {_nested_flav_child_B}')
-
-    jet_flav_child_A[~simple_comb_mask] = _nested_flav_child_A
-    jet_flav_child_B[~simple_comb_mask] = _nested_flav_child_B
+    for _, (flav, is_simple) in enumerate(zip(jet_flav_flat, simple_comb_mask)):
+        if is_simple:
+            jet_flav_child_A.append(str(flav)[0])
+            jet_flav_child_B.append(str(flav)[1])
+        else:
+            child_A, child_B = children_jet_flavors(flav)
+            jet_flav_child_A.append(child_A)
+            jet_flav_child_B.append(child_B)
 
     jet_flavor_A = ak.unflatten(jet_flav_child_A, ak.num(input_jet))
     jet_flavor_B = ak.unflatten(jet_flav_child_B, ak.num(input_jet))
