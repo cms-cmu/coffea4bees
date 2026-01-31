@@ -660,11 +660,6 @@ def make_synthetic_event(input_jets, input_pdfs, declustering_rand_seed=66, *, b
             ak.num(delta_r2_matrix)
         )
 
-        # delta_r2_matrix_flat = ak.flatten(delta_r2_matrix)
-        # delta_r2_matrix_flat_flat = ak.flatten(delta_r2_matrix_flat).to_numpy()
-        # delta_r2_matrix_flat_flat[delta_r2_matrix_flat_flat == 0] = np.inf
-        # delta_r2_matrix_flat_masked = ak.unflatten(delta_r2_matrix_flat_flat, ak.num(delta_r2_matrix_flat))
-        # delta_r2_matrix_masked = ak.unflatten(delta_r2_matrix_flat_masked, ak.num(delta_r2_matrix))
 
         min_dr2 = ak.min(ak.min(delta_r2_matrix_masked, axis=1), axis=1)
 
