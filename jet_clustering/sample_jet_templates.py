@@ -92,18 +92,18 @@ def sample_PDFs_vs_pT(input_jets_decluster, input_pdfs, rand_seed, splittings, c
 
 
         # Sample the pdfs from the different splitting options
-        for splitting_name, num_samples, indicies_tuple in splittings:
+        for splitting_name, num_samples, indices_tuple in splittings:
             if debug:
-                print(f"{chunk} sample_PDFs_vs_pT {iVar} {var_name} {splitting_name} {num_samples} {len(indicies_tuple)}\n")
+                print(f"{chunk} sample_PDFs_vs_pT {iVar} {var_name} {splitting_name} {num_samples} {len(indices_tuple)}\n")
                 print(f"{chunk} len jets {np.sum(ak.num(input_jets_decluster))}\n")
                 print(f"{chunk} pt: {len(input_jets_decluster.pt)}\n")
                 print(f"{chunk} pt_flat: {len(ak.flatten(input_jets_decluster.pt))}\n")
                 print(input_jets_decluster.pt)
 
             # Get jet kinematics for random seeding
-            pts  = ak.flatten(input_jets_decluster.pt) [indicies_tuple]
-            etas = ak.flatten(input_jets_decluster.eta)[indicies_tuple]
-            phis = ak.flatten(input_jets_decluster.phi)[indicies_tuple]
+            pts  = ak.flatten(input_jets_decluster.pt) [indices_tuple]
+            etas = ak.flatten(input_jets_decluster.eta)[indices_tuple]
+            phis = ak.flatten(input_jets_decluster.phi)[indices_tuple]
 
             # Create counter for RNG seeding
             counter = np.zeros((num_samples, 3), dtype=np.uint64)
