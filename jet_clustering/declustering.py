@@ -324,6 +324,34 @@ def rotateX(particles, angle):
     )
 
 
+def update_single_jet_mass(p, jet_flavor, rho, btag_string, counts):
+    """Update mass for single jets using pt × rho."""
+    jet_flavor_flat = ak.flatten(jet_flavor)
+    single_jet_mask = (np.char.str_len(jet_flavor_flat) == 1)
+
+    pt_flat   = ak.flatten(p.pt)
+    mass_flat = ak.flatten(p.mass)
+    rho_flat  = ak.flatten(rho)
+
+    # Use mass = (pt x rho) for single jet clusters "b" or "j" use the mass for others
+    p_mass = ak.unflatten(ak.where(single_jet_mask, pt_flat * rho_flat, mass_flat),
+                          counts
+                          )
+
+    return ak.zip(
+        {
+            "pt": p.pt,
+            "eta": p.eta,
+            "phi": p.phi,
+            "mass": p_mass,
+            "jet_flavor": jet_flavor,
+            "btag_string": btag_string,
+        },
+        with_name="PtEtaPhiMLorentzVector",
+        behavior=vector.behavior,
+    )
+
+
 def decluster_combined_jets(input_jet, debug=False):
 
     n_jets = np.sum(ak.num(input_jet))
@@ -437,55 +465,9 @@ def decluster_combined_jets(input_jet, debug=False):
     #
     #  Logic to update mass of a single jet "b" or "j" with pt x rho
     #
-    jet_flavor_A_flat = ak.flatten(jet_flavor_A)
-    single_jet_mask_A = (np.char.str_len(jet_flavor_A_flat) == 1)
-    pt_A_flat = ak.flatten(pA.pt)
-    mass_A_flat = ak.flatten(pA.mass)
-    rho_A_flat = ak.flatten(input_jet.rhoA)
-    jet_mass_A_new = pt_A_flat[single_jet_mask_A] * rho_A_flat[single_jet_mask_A]
-    mass_A_flat_np  = mass_A_flat.to_numpy()
-    mass_A_flat_np[single_jet_mask_A] = jet_mass_A_new
-    pA_mass = ak.unflatten(mass_A_flat_np, ak.num(input_jet))
-
-    pA = ak.zip(
-        {
-            "pt":         pA.pt,
-            "eta":        pA.eta,
-            "phi":        pA.phi,
-            "mass":       pA_mass,
-            "jet_flavor": jet_flavor_A,
-            "btag_string": jet_btag_string_A,
-        },
-        with_name="PtEtaPhiMLorentzVector",
-        behavior=vector.behavior,
-    )
-
-    #
-    #  Logic to update mass of a single jet "b" or "j" with pt x rho
-    #
-    jet_flavor_B_flat = ak.flatten(jet_flavor_B)
-    single_jet_mask_B = (np.char.str_len(jet_flavor_B_flat) == 1)
-    pt_B_flat = ak.flatten(pB.pt)
-    mass_B_flat = ak.flatten(pB.mass)
-    rho_B_flat = ak.flatten(input_jet.rhoB)
-    jet_mass_B_new = pt_B_flat[single_jet_mask_B] * rho_B_flat[single_jet_mask_B]
-    mass_B_flat_np  = mass_B_flat.to_numpy()
-    mass_B_flat_np[single_jet_mask_B] = jet_mass_B_new
-    pB_mass = ak.unflatten(mass_B_flat_np, ak.num(input_jet))
-
-
-    pB = ak.zip(
-        {
-            "pt":         pB.pt,
-            "eta":        pB.eta,
-            "phi":        pB.phi,
-            "mass":       pB_mass,
-            "jet_flavor": jet_flavor_B,
-            "btag_string": jet_btag_string_B,
-        },
-        with_name="PtEtaPhiMLorentzVector",
-        behavior=vector.behavior,
-    )
+    counts = ak.num(input_jet)
+    pA = update_single_jet_mass(pA, jet_flavor_A, input_jet.rhoA, jet_btag_string_A, counts)
+    pB = update_single_jet_mass(pB, jet_flavor_B, input_jet.rhoB, jet_btag_string_B, counts)
 
     return pA, pB
 
