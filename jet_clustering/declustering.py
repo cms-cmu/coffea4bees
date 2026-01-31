@@ -250,7 +250,7 @@ def compute_decluster_variables(clustered_splittings):
     #
     clustered_splittings_part_A_pz0_phi0_dphi0  = rotateX(clustered_splittings_part_A_pz0_phi0, -clustered_splittings.decay_phi)
     clustered_splittings_part_B_pz0_phi0_dphi0  = rotateX(clustered_splittings_part_B_pz0_phi0, -clustered_splittings.decay_phi)
-    decay_plane_dphi0 = clustered_splittings_part_A_pz0_phi0_dphi0.cross(clustered_splittings_part_B_pz0_phi0_dphi0).unit
+    #decay_plane_dphi0 = clustered_splittings_part_A_pz0_phi0_dphi0.cross(clustered_splittings_part_B_pz0_phi0_dphi0).unit
 
     clustered_splittings_part_A_pz0_phi0_pdphi0  = rotateX(clustered_splittings_part_A_pz0_phi0, +clustered_splittings.decay_phi)
     clustered_splittings_part_B_pz0_phi0_pdphi0  = rotateX(clustered_splittings_part_B_pz0_phi0, +clustered_splittings.decay_phi)
@@ -262,15 +262,22 @@ def compute_decluster_variables(clustered_splittings):
     #
     # Get the pts in the frame we will do de-clustering
     #
-    rotated_pt_A_flat = ak.flatten(clustered_splittings_part_A_pz0_phi0_dphi0.pt).to_numpy()
-    rotated_pt_A_pos_dphi = ak.flatten(clustered_splittings_part_A_pz0_phi0_pdphi0.pt)
-    rotated_pt_A_flat[pos_decay_phi_mask_flat] = rotated_pt_A_pos_dphi[pos_decay_phi_mask_flat]
-    rotated_pt_A = ak.unflatten(rotated_pt_A_flat, ak.num(clustered_splittings))
+    counts = ak.num(clustered_splittings)
 
-    rotated_pt_B_flat = ak.flatten(clustered_splittings_part_B_pz0_phi0_dphi0.pt).to_numpy()
-    rotated_pt_B_pos_dphi = ak.flatten(clustered_splittings_part_B_pz0_phi0_pdphi0.pt)
-    rotated_pt_B_flat[pos_decay_phi_mask_flat] = rotated_pt_B_pos_dphi[pos_decay_phi_mask_flat]
-    rotated_pt_B = ak.unflatten(rotated_pt_B_flat, ak.num(clustered_splittings))
+    rotated_pt_A = ak.where(
+        pos_decay_phi_mask_flat,
+        ak.flatten(clustered_splittings_part_A_pz0_phi0_pdphi0.pt),
+        ak.flatten(clustered_splittings_part_A_pz0_phi0_dphi0.pt)
+    )
+    rotated_pt_A = ak.unflatten(rotated_pt_A, counts)
+
+    rotated_pt_B = ak.where(
+        pos_decay_phi_mask_flat,
+        ak.flatten(clustered_splittings_part_B_pz0_phi0_pdphi0.pt),
+        ak.flatten(clustered_splittings_part_B_pz0_phi0_dphi0.pt)
+    )
+    rotated_pt_B = ak.unflatten(rotated_pt_B, counts)
+
 
     #
     #  Update the mass with rho and pt from the rotated frame
@@ -317,14 +324,56 @@ def rotateX(particles, angle):
     )
 
 
-def decluster_combined_jets(input_jet, debug=False):
+def build_lorentz_vector_pz0(z_fraction, combined_pt, tan_theta, mass, pz_sign=-1):
+    """Build Lorentz vector in pz0, phi0, decayPhi0 frame."""
+    px = z_fraction * combined_pt
+    py = 0
+    pz = pz_sign * z_fraction * combined_pt * tan_theta
+    E = np.sqrt(px**2 + pz**2 + mass**2)
 
-    n_jets = np.sum(ak.num(input_jet))
+    return ak.zip(
+        {"x": px, "y": py, "z": pz, "t": E},
+        with_name="LorentzVector",
+        behavior=vector.behavior,
+    )
+
+
+def update_single_jet_mass(p, jet_flavor, rho, btag_string, counts):
+    """Update mass for single jets using pt × rho."""
+    jet_flavor_flat = ak.flatten(jet_flavor)
+    single_jet_mask = (np.char.str_len(jet_flavor_flat) == 1)
+
+    pt_flat   = ak.flatten(p.pt)
+    mass_flat = ak.flatten(p.mass)
+    rho_flat  = ak.flatten(rho)
+
+    # Use mass = (pt x rho) for single jet clusters "b" or "j" use the mass for others
+    p_mass = ak.unflatten(ak.where(single_jet_mask, pt_flat * rho_flat, mass_flat),
+                          counts
+                          )
+
+    return ak.zip(
+        {
+            "pt": p.pt,
+            "eta": p.eta,
+            "phi": p.phi,
+            "mass": p_mass,
+            "jet_flavor": jet_flavor,
+            "btag_string": btag_string,
+        },
+        with_name="PtEtaPhiMLorentzVector",
+        behavior=vector.behavior,
+    )
+
+
+def decluster_combined_jets(input_jet, debug=False):
 
     jet_flav_flat = ak.flatten(input_jet.jet_flavor)
     simple_comb_mask = (np.char.str_len(jet_flav_flat) == 2)
 
-    # Build lists directly
+    #
+    # Build jet_flav_child lists
+    #
     jet_flav_child_A = []
     jet_flav_child_B = []
 
@@ -340,10 +389,17 @@ def decluster_combined_jets(input_jet, debug=False):
     jet_flavor_A = ak.unflatten(jet_flav_child_A, ak.num(input_jet))
     jet_flavor_B = ak.unflatten(jet_flav_child_B, ak.num(input_jet))
 
+    #
+    # Build jet_btag_string lists
+    #
     flat_jet_btag_string = ak.flatten(input_jet.btag_string)
-    _btag_string_pairs = [extract_outermost_pair(str(s)) for s in flat_jet_btag_string]
-    flat_jet_btag_string_A = [p[0] for p in  _btag_string_pairs]
-    flat_jet_btag_string_B = [p[1] for p in  _btag_string_pairs]
+    flat_jet_btag_string_A = []
+    flat_jet_btag_string_B = []
+    for s in flat_jet_btag_string:
+        a, b = extract_outermost_pair(str(s))
+        flat_jet_btag_string_A.append(a)
+        flat_jet_btag_string_B.append(b)
+
     jet_btag_string_A = ak.unflatten(flat_jet_btag_string_A, ak.num(input_jet))
     jet_btag_string_B = ak.unflatten(flat_jet_btag_string_B, ak.num(input_jet))
 
@@ -352,43 +408,22 @@ def decluster_combined_jets(input_jet, debug=False):
     tanThetaB = input_jet.zA / (1 - input_jet.zA) * tanThetaA
 
     #
-    #  pA (in frame with pz=0 phi=0 decay_phi = 0)
+    #  pA and pB (in frame with pz=0 phi=0 decay_phi = 0)
     #
-    pA_pz0_px = input_jet.zA * combined_pt
-    pA_pz0_py = 0
-    pA_pz0_pz = - input_jet.zA * combined_pt * tanThetaA
-    # pA_mass   = input_jet.rhoA * input_jet.pt * input_jet.zA
-    pA_mass   = input_jet.mA
-    pA_pz0_E  = np.sqrt(pA_pz0_px**2 + pA_pz0_pz**2 + pA_mass**2)
+    pA_pz0_phi0_decayPhi0 = build_lorentz_vector_pz0(input_jet.zA,
+                                                     combined_pt,
+                                                     tanThetaA,
+                                                     input_jet.mA,
+                                                     pz_sign=-1
+                                                     )
 
-    pA_pz0_phi0_decayPhi0 = ak.zip(
-        {
-            "x": pA_pz0_px,
-            "y": pA_pz0_py,
-            "z": pA_pz0_pz,
-            "t": pA_pz0_E,
-        },
-        with_name="LorentzVector",
-        behavior=vector.behavior,
-    )
+    pB_pz0_phi0_decayPhi0 = build_lorentz_vector_pz0(1 - input_jet.zA,
+                                                     combined_pt,
+                                                     tanThetaB,
+                                                     input_jet.mB,
+                                                     pz_sign=1
+                                                     )
 
-    pB_pz0_px = (1 - input_jet.zA) * combined_pt
-    pB_pz0_py = 0
-    pB_pz0_pz = (1 - input_jet.zA) * combined_pt * tanThetaB
-    # pB_mass   = input_jet.rhoB * input_jet.pt * (1 - input_jet.zA)
-    pB_mass   = input_jet.mB
-    pB_pz0_E  = np.sqrt(pB_pz0_px**2 + pB_pz0_pz**2 + pB_mass**2)
-
-    pB_pz0_phi0_decayPhi0 = ak.zip(
-        {
-            "x": pB_pz0_px,
-            "y": pB_pz0_py,
-            "z": pB_pz0_pz,
-            "t": pB_pz0_E,
-        },
-        with_name="LorentzVector",
-        behavior=vector.behavior,
-    )
 
     #
     # Do Rotation of the decay plane
@@ -425,55 +460,9 @@ def decluster_combined_jets(input_jet, debug=False):
     #
     #  Logic to update mass of a single jet "b" or "j" with pt x rho
     #
-    jet_flavor_A_flat = ak.flatten(jet_flavor_A)
-    single_jet_mask_A = (np.char.str_len(jet_flavor_A_flat) == 1)
-    pt_A_flat = ak.flatten(pA.pt)
-    mass_A_flat = ak.flatten(pA.mass)
-    rho_A_flat = ak.flatten(input_jet.rhoA)
-    jet_mass_A_new = pt_A_flat[single_jet_mask_A] * rho_A_flat[single_jet_mask_A]
-    mass_A_flat_np  = mass_A_flat.to_numpy()
-    mass_A_flat_np[single_jet_mask_A] = jet_mass_A_new
-    pA_mass = ak.unflatten(mass_A_flat_np, ak.num(input_jet))
-
-    pA = ak.zip(
-        {
-            "pt":         pA.pt,
-            "eta":        pA.eta,
-            "phi":        pA.phi,
-            "mass":       pA_mass,
-            "jet_flavor": jet_flavor_A,
-            "btag_string": jet_btag_string_A,
-        },
-        with_name="PtEtaPhiMLorentzVector",
-        behavior=vector.behavior,
-    )
-
-    #
-    #  Logic to update mass of a single jet "b" or "j" with pt x rho
-    #
-    jet_flavor_B_flat = ak.flatten(jet_flavor_B)
-    single_jet_mask_B = (np.char.str_len(jet_flavor_B_flat) == 1)
-    pt_B_flat = ak.flatten(pB.pt)
-    mass_B_flat = ak.flatten(pB.mass)
-    rho_B_flat = ak.flatten(input_jet.rhoB)
-    jet_mass_B_new = pt_B_flat[single_jet_mask_B] * rho_B_flat[single_jet_mask_B]
-    mass_B_flat_np  = mass_B_flat.to_numpy()
-    mass_B_flat_np[single_jet_mask_B] = jet_mass_B_new
-    pB_mass = ak.unflatten(mass_B_flat_np, ak.num(input_jet))
-
-
-    pB = ak.zip(
-        {
-            "pt":         pB.pt,
-            "eta":        pB.eta,
-            "phi":        pB.phi,
-            "mass":       pB_mass,
-            "jet_flavor": jet_flavor_B,
-            "btag_string": jet_btag_string_B,
-        },
-        with_name="PtEtaPhiMLorentzVector",
-        behavior=vector.behavior,
-    )
+    counts = ak.num(input_jet)
+    pA = update_single_jet_mass(pA, jet_flavor_A, input_jet.rhoA, jet_btag_string_A, counts)
+    pB = update_single_jet_mass(pB, jet_flavor_B, input_jet.rhoB, jet_btag_string_B, counts)
 
     return pA, pB
 
