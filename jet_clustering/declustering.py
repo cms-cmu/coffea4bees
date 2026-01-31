@@ -639,19 +639,29 @@ def make_synthetic_event(input_jets, input_pdfs, declustering_rand_seed=66, *, b
         #  Check the min dr
         #
         delta_r2_matrix = declustered_events.delta_r2(declustered_events[:, None])
-        delta_r2_matrix_flat = ak.flatten(delta_r2_matrix)
-        delta_r2_matrix_flat_flat = ak.flatten(delta_r2_matrix_flat).to_numpy()
-        delta_r2_matrix_flat_flat[delta_r2_matrix_flat_flat == 0] = np.inf
-        delta_r2_matrix_flat_masked = ak.unflatten(delta_r2_matrix_flat_flat, ak.num(delta_r2_matrix_flat))
-        delta_r2_matrix_masked = ak.unflatten(delta_r2_matrix_flat_masked, ak.num(delta_r2_matrix))
+
+        # Mask out diagonal (self-distances) by setting to inf
+        delta_r2_flat = ak.flatten(ak.flatten(delta_r2_matrix)).to_numpy()
+        delta_r2_flat[delta_r2_flat == 0] = np.inf
+        delta_r2_matrix_masked = ak.unflatten(
+            ak.unflatten(delta_r2_flat, ak.num(ak.flatten(delta_r2_matrix))),
+            ak.num(delta_r2_matrix)
+        )
+
+        # delta_r2_matrix_flat = ak.flatten(delta_r2_matrix)
+        # delta_r2_matrix_flat_flat = ak.flatten(delta_r2_matrix_flat).to_numpy()
+        # delta_r2_matrix_flat_flat[delta_r2_matrix_flat_flat == 0] = np.inf
+        # delta_r2_matrix_flat_masked = ak.unflatten(delta_r2_matrix_flat_flat, ak.num(delta_r2_matrix_flat))
+        # delta_r2_matrix_masked = ak.unflatten(delta_r2_matrix_flat_masked, ak.num(delta_r2_matrix))
 
         min_dr2 = ak.min(ak.min(delta_r2_matrix_masked, axis=1), axis=1)
 
-        pass_dr2_mask_local = min_dr2 > (dr_threshold * dr_threshold)
+        pass_dr2_mask_local = min_dr2 > (dr_threshold ** 2)
 
         if num_trys > _MAX_NUM_EVENT_RETRY:
             print(f"Bailing on dR check with {np.sum(events_to_decluster_mask == True)}\n")
-            pass_dr2_mask_local = (pass_dr2_mask_local | ~pass_dr2_mask_local)  # All True
+            pass_dr2_mask_local = ak.ones_like(pass_dr2_mask_local, dtype=bool)  # All True
+
 
         sucessful_deccluster_event_indicies = np.where(pass_dr2_mask_local)
 
