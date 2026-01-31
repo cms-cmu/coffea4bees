@@ -194,6 +194,14 @@ def get_list_of_splitting_names(splittings):
     return unique_splittings_list
 
 
+# Helper function to create flavor mask
+def create_flavor_mask(jets, flavor):
+    """Create mask for jets matching a specific flavor."""
+    flavor_flat = ak.flatten(jets.jet_flavor)
+    mask_flat = flavor_flat == flavor
+    return ak.unflatten(mask_flat, ak.num(jets.jet_flavor))
+
+
 def compute_decluster_variables(clustered_splittings):
 
     #
@@ -464,9 +472,7 @@ def decluster_splitting_types(input_jets, splitting_types, input_pdfs, rand_seed
     #
     input_jets['split_mask'] = False
     for _s in splitting_types:
-        jet_flavor_flat  = ak.flatten(input_jets.jet_flavor)
-        _split_mask_flat = jet_flavor_flat == _s
-        _split_mask = ak.unflatten(_split_mask_flat, ak.num(input_jets.jet_flavor))
+        _split_mask = create_flavor_mask(input_jets, _s)
         input_jets["split_mask"] = _split_mask | input_jets.split_mask
 
     #
@@ -503,10 +509,7 @@ def decluster_splitting_types(input_jets, splitting_types, input_pdfs, rand_seed
         for _s in splitting_types:
 
             # Pre compute these to save time
-            jet_flavor_flat = ak.flatten(input_jets_to_decluster.jet_flavor)
-            _s_mask_flat = jet_flavor_flat == _s
-            _s_mask = ak.unflatten(_s_mask_flat, ak.num(input_jets_to_decluster.jet_flavor))
-
+            _s_mask = create_flavor_mask(input_jets_to_decluster, _s)
             _num_samples   = np.sum(ak.num(input_jets_to_decluster[_s_mask]))
             _indicies = np.where(ak.flatten(_s_mask))
             _indicies_tuple = (_indicies[0].to_list())
@@ -532,13 +535,8 @@ def decluster_splitting_types(input_jets, splitting_types, input_pdfs, rand_seed
         # Update to only be bjets
         fail_pt_mask    = (declustered_jets_A.pt < 20) | (declustered_jets_B.pt < 20)
 
-        declustered_jet_A_jet_flavor_flat  = ak.flatten(declustered_jets_A.jet_flavor)
-        A_is_b_mask_flat = declustered_jet_A_jet_flavor_flat == "b"
-        A_is_b_mask = ak.unflatten(A_is_b_mask_flat, ak.num(declustered_jets_A.jet_flavor))
-
-        declustered_jet_B_jet_flavor_flat  = ak.flatten(declustered_jets_B.jet_flavor)
-        B_is_b_mask_flat = declustered_jet_B_jet_flavor_flat == "b"
-        B_is_b_mask = ak.unflatten(B_is_b_mask_flat, ak.num(declustered_jets_B.jet_flavor))
+        A_is_b_mask = create_flavor_mask(declustered_jets_A, "b")
+        B_is_b_mask = create_flavor_mask(declustered_jets_B, "b")
 
         #fail_pt_b_mask  = (A_is_b_mask & (declustered_jets_A.pt < 40) )          | (B_is_b_mask & (declustered_jets_B.pt < 40))
         fail_pt_b_mask  = (A_is_b_mask & (declustered_jets_A.pt < b_pt_threshold) )          | (B_is_b_mask & (declustered_jets_B.pt < b_pt_threshold))
