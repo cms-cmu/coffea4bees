@@ -368,12 +368,11 @@ def update_single_jet_mass(p, jet_flavor, rho, btag_string, counts):
 
 def decluster_combined_jets(input_jet, debug=False):
 
-    jet_flav_flat = ak.flatten(input_jet.jet_flavor)
-    simple_comb_mask = (np.char.str_len(jet_flav_flat) == 2)
-
     #
     # Build jet_flav_child lists
     #
+    jet_flav_flat = ak.flatten(input_jet.jet_flavor)
+    simple_comb_mask = (np.char.str_len(jet_flav_flat) == 2)
     jet_flav_child_A = []
     jet_flav_child_B = []
 
@@ -403,6 +402,10 @@ def decluster_combined_jets(input_jet, debug=False):
     jet_btag_string_A = ak.unflatten(flat_jet_btag_string_A, ak.num(input_jet))
     jet_btag_string_B = ak.unflatten(flat_jet_btag_string_B, ak.num(input_jet))
 
+
+    #
+    #  Now the 4-vectors
+    #
     combined_pt = input_jet.pt
     tanThetaA = np.tan(input_jet.thetaA)
     tanThetaB = input_jet.zA / (1 - input_jet.zA) * tanThetaA
@@ -410,19 +413,11 @@ def decluster_combined_jets(input_jet, debug=False):
     #
     #  pA and pB (in frame with pz=0 phi=0 decay_phi = 0)
     #
-    pA_pz0_phi0_decayPhi0 = build_lorentz_vector_pz0(input_jet.zA,
-                                                     combined_pt,
-                                                     tanThetaA,
-                                                     input_jet.mA,
-                                                     pz_sign=-1
-                                                     )
 
-    pB_pz0_phi0_decayPhi0 = build_lorentz_vector_pz0(1 - input_jet.zA,
-                                                     combined_pt,
-                                                     tanThetaB,
-                                                     input_jet.mB,
-                                                     pz_sign=1
-                                                     )
+    # Build initial 4-vectors in pz=0, phi=0, decay_phi=0 frame
+    pA_pz0_phi0_decayPhi0 = build_lorentz_vector_pz0(     input_jet.zA, combined_pt, tanThetaA, input_jet.mA, pz_sign=-1)
+    pB_pz0_phi0_decayPhi0 = build_lorentz_vector_pz0( 1 - input_jet.zA, combined_pt, tanThetaB, input_jet.mB, pz_sign= 1)
+
 
 
     #
@@ -432,30 +427,22 @@ def decluster_combined_jets(input_jet, debug=False):
     # Pseudo-random number to decide if we rotate by phi or phi + pi
     decay_phi = input_jet.decay_phi + np.pi * ((input_jet.pt % 1) > 0.5)
 
-    pA_pz0_phi0 = rotateX(pA_pz0_phi0_decayPhi0, decay_phi)
-    pB_pz0_phi0 = rotateX(pB_pz0_phi0_decayPhi0, decay_phi)
+    pA_pz0_phi0, pB_pz0_phi0 = [rotateX(p, decay_phi) for p in [pA_pz0_phi0_decayPhi0, pB_pz0_phi0_decayPhi0]]
 
     #
     #  Boost back to jet pZ
     #
     boost_vec_z = ak.zip(
-        {
-            "x": 0,
-            "y": 0,
-            "z": input_jet.boostvec.z,
-        },
+        {"x": 0, "y": 0, "z": input_jet.boostvec.z},
         with_name="ThreeVector",
         behavior=vector.behavior,
     )
-
-    pA_phi0 = pA_pz0_phi0.boost(boost_vec_z)
-    pB_phi0 = pB_pz0_phi0.boost(boost_vec_z)
+    pA_phi0, pB_phi0 = [p.boost(boost_vec_z) for p in [pA_pz0_phi0, pB_pz0_phi0]]
 
     #
     #  Rotate to jet phi
     #
-    pA = rotateZ(pA_phi0, input_jet.phi)
-    pB = rotateZ(pB_phi0, input_jet.phi)
+    pA, pB = [rotateZ(p, input_jet.phi) for p in [pA_phi0, pB_phi0]]
 
     #
     #  Logic to update mass of a single jet "b" or "j" with pt x rho
