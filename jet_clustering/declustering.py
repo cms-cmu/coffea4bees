@@ -250,7 +250,7 @@ def compute_decluster_variables(clustered_splittings):
     #
     clustered_splittings_part_A_pz0_phi0_dphi0  = rotateX(clustered_splittings_part_A_pz0_phi0, -clustered_splittings.decay_phi)
     clustered_splittings_part_B_pz0_phi0_dphi0  = rotateX(clustered_splittings_part_B_pz0_phi0, -clustered_splittings.decay_phi)
-    decay_plane_dphi0 = clustered_splittings_part_A_pz0_phi0_dphi0.cross(clustered_splittings_part_B_pz0_phi0_dphi0).unit
+    #decay_plane_dphi0 = clustered_splittings_part_A_pz0_phi0_dphi0.cross(clustered_splittings_part_B_pz0_phi0_dphi0).unit
 
     clustered_splittings_part_A_pz0_phi0_pdphi0  = rotateX(clustered_splittings_part_A_pz0_phi0, +clustered_splittings.decay_phi)
     clustered_splittings_part_B_pz0_phi0_pdphi0  = rotateX(clustered_splittings_part_B_pz0_phi0, +clustered_splittings.decay_phi)
@@ -262,7 +262,7 @@ def compute_decluster_variables(clustered_splittings):
     #
     # Get the pts in the frame we will do de-clustering
     #
-    rotated_pt_A_flat = ak.flatten(clustered_splittings_part_A_pz0_phi0_dphi0.pt).to_numpy()
+    rotated_pt_A_flat     = ak.flatten(clustered_splittings_part_A_pz0_phi0_dphi0.pt).to_numpy()
     rotated_pt_A_pos_dphi = ak.flatten(clustered_splittings_part_A_pz0_phi0_pdphi0.pt)
     rotated_pt_A_flat[pos_decay_phi_mask_flat] = rotated_pt_A_pos_dphi[pos_decay_phi_mask_flat]
     rotated_pt_A = ak.unflatten(rotated_pt_A_flat, ak.num(clustered_splittings))
@@ -324,7 +324,7 @@ def decluster_combined_jets(input_jet, debug=False):
     jet_flav_flat = ak.flatten(input_jet.jet_flavor)
     simple_comb_mask = (np.char.str_len(jet_flav_flat) == 2)
 
-    # Build lists directly
+    # Build jet_flav_child lists
     jet_flav_child_A = []
     jet_flav_child_B = []
 
@@ -340,10 +340,15 @@ def decluster_combined_jets(input_jet, debug=False):
     jet_flavor_A = ak.unflatten(jet_flav_child_A, ak.num(input_jet))
     jet_flavor_B = ak.unflatten(jet_flav_child_B, ak.num(input_jet))
 
+    # Build jet_btag_string lists
     flat_jet_btag_string = ak.flatten(input_jet.btag_string)
-    _btag_string_pairs = [extract_outermost_pair(str(s)) for s in flat_jet_btag_string]
-    flat_jet_btag_string_A = [p[0] for p in  _btag_string_pairs]
-    flat_jet_btag_string_B = [p[1] for p in  _btag_string_pairs]
+    flat_jet_btag_string_A = []
+    flat_jet_btag_string_B = []
+    for s in flat_jet_btag_string:
+        a, b = extract_outermost_pair(str(s))
+        flat_jet_btag_string_A.append(a)
+        flat_jet_btag_string_B.append(b)
+
     jet_btag_string_A = ak.unflatten(flat_jet_btag_string_A, ak.num(input_jet))
     jet_btag_string_B = ak.unflatten(flat_jet_btag_string_B, ak.num(input_jet))
 
