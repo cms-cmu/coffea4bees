@@ -51,8 +51,11 @@ def apply_dilep_ttbar_selection(event: ak.Array, isRun3: bool = False) -> ak.Arr
     # Require MET > 40 GeV
     met_mask = event.MET.pt > 30
 
+    quarkonia_veto = (event.mll > 10)
+    z_veto = abs(event.mll - 91.2) > 10
+
     # Combine all selection criteria
-    mumu_mask = diMu_mask & jet_mask & met_mask
+    mumu_mask = diMu_mask & jet_mask & met_mask & quarkonia_veto & quarkonia_veto & z_veto
     logging.debug(f"MuMu Selection mask: {mumu_mask}\n\n")
 
     elmu_mask = ElMu_mask & jet_mask & met_mask
