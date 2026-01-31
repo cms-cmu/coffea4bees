@@ -262,15 +262,22 @@ def compute_decluster_variables(clustered_splittings):
     #
     # Get the pts in the frame we will do de-clustering
     #
-    rotated_pt_A_flat     = ak.flatten(clustered_splittings_part_A_pz0_phi0_dphi0.pt).to_numpy()
-    rotated_pt_A_pos_dphi = ak.flatten(clustered_splittings_part_A_pz0_phi0_pdphi0.pt)
-    rotated_pt_A_flat[pos_decay_phi_mask_flat] = rotated_pt_A_pos_dphi[pos_decay_phi_mask_flat]
-    rotated_pt_A = ak.unflatten(rotated_pt_A_flat, ak.num(clustered_splittings))
+    counts = ak.num(clustered_splittings)
 
-    rotated_pt_B_flat = ak.flatten(clustered_splittings_part_B_pz0_phi0_dphi0.pt).to_numpy()
-    rotated_pt_B_pos_dphi = ak.flatten(clustered_splittings_part_B_pz0_phi0_pdphi0.pt)
-    rotated_pt_B_flat[pos_decay_phi_mask_flat] = rotated_pt_B_pos_dphi[pos_decay_phi_mask_flat]
-    rotated_pt_B = ak.unflatten(rotated_pt_B_flat, ak.num(clustered_splittings))
+    rotated_pt_A = ak.where(
+        pos_decay_phi_mask_flat,
+        ak.flatten(clustered_splittings_part_A_pz0_phi0_pdphi0.pt),
+        ak.flatten(clustered_splittings_part_A_pz0_phi0_dphi0.pt)
+    )
+    rotated_pt_A = ak.unflatten(rotated_pt_A, counts)
+
+    rotated_pt_B = ak.where(
+        pos_decay_phi_mask_flat,
+        ak.flatten(clustered_splittings_part_B_pz0_phi0_pdphi0.pt),
+        ak.flatten(clustered_splittings_part_B_pz0_phi0_dphi0.pt)
+    )
+    rotated_pt_B = ak.unflatten(rotated_pt_B, counts)
+
 
     #
     #  Update the mass with rho and pt from the rotated frame
