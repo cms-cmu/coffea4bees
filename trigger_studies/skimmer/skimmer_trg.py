@@ -37,43 +37,6 @@ def jet_selection_trg(
         Metadata containing corrections and configuration information, such as b-tagging working points.
     isRun3 : bool, optional
         Whether to apply Run 3-specific selection criteria. Defaults to False.
-    isMC : bool, optional
-        Whether the data is Monte Carlo simulation. Defaults to False.
-    isSyntheticData : bool, optional
-        Whether the data is synthetic. Defaults to False.
-    isSyntheticMC : bool, optional
-        Whether the Monte Carlo data is synthetic. Defaults to False.
-    dataset : str, optional
-        The dataset name. Defaults to an empty string.
-    doLeptonRemoval : bool, optional
-        Whether to perform lepton removal. Defaults to True.
-    do_jet_veto_maps : bool, optional
-        Whether to apply jet veto maps. Defaults to False.
-    mixeddata_sel : bool, optional
-        Whether to apply mixeddata selection as in HIG-22-011. Defaults to False.
-    override_selected_with_flavor_bit : bool, optional
-        Whether to override selected jets with flavor bit. Defaults to False.
-
-    Returns:
-    --------
-    ak.Array
-        The input event data with additional fields for jet selection and tagging:
-        - `Jet['lepton_cleaned']`: Boolean mask for jets cleaned of leptons.
-        - `Jet['jet_veto_maps']`: Boolean mask for jets passing veto maps (if applied).
-        - `Jet['bRegCorr']`: Regression correction factor for jets (Run3 only).
-        - `Jet['btagScore']`: B-tagging score for jets.
-        - `Jet['pileup']`: Boolean mask for pileup jets.
-        - `Jet['selected_loose']`: Boolean mask for loosely selected jets.
-        - `Jet['selected']`: Boolean mask for selected jets.
-        - `Jet['tagged']`: Boolean mask for b-tagged jets.
-        - `Jet['tagged_loose']`: Boolean mask for loosely b-tagged jets.
-        - `nJet_selected`: Number of selected jets.
-        - `selJet_no_bRegCorr`: Jets selected without bRegCorr applied.
-        - `selJet`: Jets selected with bRegCorr applied.
-        - `tagJet`: Jets tagged as b-jets.
-        - `tagJet_loose`: Jets loosely tagged as b-jets.
-        - `nJet_tagged`: Number of b-tagged jets.
-        - `nJet_tagged_loose`: Number of loosely b-tagged jets.
     """
     # Initialize lepton-cleaned jets
     event['Jet', 'lepton_cleaned'] = np.full(len(event), True) if not doLeptonRemoval else drClean(event.Jet, event['selLepton'])[1]
@@ -110,36 +73,19 @@ def jet_selection_trg(
                 )
             )
 
-        event['Jet', 'puId'] = 10
-        event['Jet', 'pileup'] = ((event.Jet.puId < 7) & (event.Jet.pt < 50)) | ((np.abs(event.Jet.eta) > 2.4) & (event.Jet.pt < 40))
-        event['Jet', 'selected_loose'] = (event.Jet.pt >= 20) & (event.Jet.jetId >= 2) & event.Jet.lepton_cleaned & (np.abs(event.Jet.eta) <= 4.7)
-        event['Jet', 'selected'] = (event.Jet.pt >= 30) & (np.abs(event.Jet.eta) <= 2.4) & ~event.Jet.pileup & (event.Jet.jetId >= 2) & event.Jet.lepton_cleaned
+        event['Jet', 'selected_init'] = (event.Jet.pt > 40) & (np.abs(event.Jet.eta) < 4.7) & (event.Jet.puId >= 7)
+        event['nJet_selected']        = ak.sum(event.Jet.selected, axis=1)  ## Atleast 4 selected jets
+        event['Jet', 'tagged']        = (event.nJet_selected >= 4) & (event.Jet.btagScore >= corrections_metadata['btagWP']['M'])  ### DeepJet medium working point
+        event['nJet_tagged']          = ak.sum(event.Jet.tagged, axis=1)   ## Atleast 3 tagged jets
+        event['Jet', 'selected']      = event.nJet_tagged >= 3
 
-
-    # Tagging jets
-    event['Jet', 'tagged'] = event.Jet.selected & (event.Jet.btagScore >= corrections_metadata['btagWP']['M'])
-    event['Jet', 'tagged_loose'] = event.Jet.selected & (event.Jet.btagScore >= corrections_metadata['btagWP']['L'])
-
-    # Override selected jets with flavor bit if required
-    if override_selected_with_flavor_bit and "jet_flavor_bit" in event.Jet.fields:
-        event['Jet', 'selected'] = (event.Jet.selected) | (event.Jet.jet_flavor_bit == 1)
-        event['Jet', 'selected_loose'] = True
-
-    # Count selected jets
-    event['nJet_selected'] = ak.sum(event.Jet.selected, axis=1)
-
-    # Additional variables
-    event['selJet_no_bRegCorr'] = event.Jet[event.Jet.selected]
-    event['selJet'] = apply_bRegCorr(event.Jet)
-    event['tagJet'] = event.selJet[event.selJet.tagged]
-    event['tagJet_loose'] = event.selJet[event.selJet.tagged_loose]
-    event['nJet_tagged'] = ak.num(event.tagJet)
-    event['nJet_tagged_loose'] = ak.num(event.tagJet_loose)
-
-    # For trigger emulation
-    event['Jet', 'muon_cleaned'] = drClean(event.Jet, event.selMuon)[1]
-    event['Jet', 'ht_selected'] = (event.Jet.pt >= 30) & (np.abs(event.Jet.eta) < 2.4) & event.Jet.muon_cleaned
-    event['Jet', 'pfht_selected'] = (event.Jet.pt >= 30) & (np.abs(event.Jet.eta) < 2.4) 
+        # Additional variables
+        # event['selJet_no_bRegCorr'] = event.Jet[event.Jet.selected]
+        # event['selJet'] = apply_bRegCorr(event.Jet)
+        # event['tagJet'] = event.selJet[event.selJet.tagged]
+        # event['tagJet_loose'] = event.selJet[event.selJet.tagged_loose]
+        event['Jet', 'muon_cleaned'] = drClean(event.Jet, event.selMuon, cone = 0.2)[1]
+        event['Jet', 'ht_selected'] = (event.Jet.muEF < 0.5) & (np.abs(event.Jet.eta) < 2.5) & event.Jet.muon_cleaned
 
     return event
 
