@@ -497,7 +497,7 @@ class analysis(processor.ProcessorABC):
         )
 
         if self.run_dilep_ttbar_crosscheck:
-            event['passDilepTtbar'] = apply_dilep_ttbar_selection(event, isRun3=self.config["isRun3"])
+            apply_dilep_ttbar_selection(event, isRun3=self.config["isRun3"])
         #
         #  Test hT reweighting the synthetic data
         #
@@ -801,8 +801,10 @@ class analysis(processor.ProcessorABC):
                 self._cutFlow.fill("failSvB_woTrig", selev[selev.failSvB],
                                wOverride=selev['weight_woTrig'][selev.failSvB] )
             if self.run_dilep_ttbar_crosscheck:
-                self._cutFlow.fill("passDilepTtbar", selev[selev.passDilepTtbar], allTag=True,
-                               wOverride=selev['weight_noJCM_noFvT'][selev.passDilepTtbar] )
+                self._cutFlow.fill("passMuMu", selev[selev.passMuMu], allTag=True,
+                               wOverride=selev['weight_noJCM_noFvT'][selev.passMuMu] )
+                self._cutFlow.fill("passElMu", selev[selev.passMuMu], allTag=True,
+                               wOverride=selev['weight_noJCM_noFvT'][selev.passElMu] )
 
             self._cutFlow.addOutput(processOutput, event.metadata["dataset"])
 

@@ -396,7 +396,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         event = self.apply_selection(event)
 
         if self.run_dilep_ttbar_crosscheck:
-            event['passDilepTtbar'] = apply_dilep_ttbar_selection(event, isRun3=self.config["isRun3"])
+            apply_dilep_ttbar_selection(event, isRun3=self.config["isRun3"])
 
         #
         #  Test hT reweighting the synthetic data
@@ -1026,8 +1026,15 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         if self.run_dilep_ttbar_crosscheck:
             # This one uses weight_noJCM_noFvT override
-            self._cutFlow.fill("passDilepTtbar", selev[selev.passDilepTtbar], allTag=True,
-                            wOverride=selev['weight_noJCM_noFvT'][selev.passDilepTtbar])
+            self._cutFlow.fill("passMuMu", selev[selev.passMuMu], allTag=True,
+                            wOverride=selev['weight_noJCM_noFvT'][selev.passMuMu])
+            self._cutFlow.fill("passElMu", selev[selev.passElMu], allTag=True,
+                            wOverride=selev['weight_noJCM_noFvT'][selev.passElMu])
+            #self._cutFlow.fill("passElEl", selev[selev.passElEl], allTag=True,
+            #                wOverride=selev['weight_noJCM_noFvT'][selev.passElEl])
+
+
+
 
     def dump_friend_trees(self, selev, analysis_selections, shift_name):
         """Dump all requested friend trees.
