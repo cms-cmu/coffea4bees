@@ -1132,7 +1132,7 @@ kwargs:
   xlim:
   - 0
   - 1.0
-  ylabel: Events
+  ylabel: Events/0.025
   rlabel: Model/Pred
   write_yaml: false
   year_str: 133 $fb^{-1}$

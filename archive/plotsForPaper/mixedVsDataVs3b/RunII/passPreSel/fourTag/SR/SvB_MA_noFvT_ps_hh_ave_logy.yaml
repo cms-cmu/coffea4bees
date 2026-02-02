@@ -2461,7 +2461,7 @@ kwargs:
   - 0
   - 1
   rlabel: Data / Model
-  ylabel: Events / bin
+  ylabel: Events/0.025
   write_yaml: true
   ylim: [0.1,10_000]
   year_str: 133 $fb^{-1}$

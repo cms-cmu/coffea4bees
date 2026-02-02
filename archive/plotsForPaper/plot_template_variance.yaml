@@ -65,7 +65,7 @@ kwargs:
   ylim:
   - 4
   - 500_000
-  ylabel: Events / bin
+  ylabel: Events/0.025
   rlabel: Pulls
   write_yaml: false
   year_str: 133 $fb^{-1}$
