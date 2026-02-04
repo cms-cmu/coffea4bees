@@ -49,7 +49,6 @@ def setSvBVars(SvBName, event):
     event[SvBName, "phh_hh"] = this_phh_hh
 
 
-
 def compute_SvB(events, mask, doCheck=True, **models: HCREnsemble):
     masked_events = events[mask]
 
@@ -94,7 +93,7 @@ def compute_SvB(events, mask, doCheck=True, **models: HCREnsemble):
 
         c_score = np.zeros((len(events),tmp_c_score.shape[1]))
         q_score = np.zeros((len(events),tmp_q_score.shape[1]))
-        
+
         # Only assign if we have actual scores to assign
         if tmp_c_score.shape[0] > 0:
             c_score[mask] = tmp_c_score
@@ -192,3 +191,35 @@ def subtract_ttbar_with_SvB(selev, dataset, year):
     ttbar_rand = rng.uniform(counter, low=0, high=1.0).astype(np.float32)
 
     return (ttbar_rand > selev.SvB_MA.tt_vs_mj)
+
+
+def setFvTVars(FvTName, event):
+    if "std" not in event.FvT.fields:
+        event[FvTName, "std"] = np.ones(len(event))
+        event[FvTName, "pt4"] = np.ones(len(event))
+        event[FvTName, "pt3"] = np.ones(len(event))
+        event[FvTName, "pd4"] = np.ones(len(event))
+        event[FvTName, "pd3"] = np.ones(len(event))
+
+    event[FvTName, "frac_err"]   = getattr(event, FvTName).std / getattr(event, FvTName).FvT
+    event[FvTName, "tt_vs_mj_3"] = getattr(event, FvTName).pt3 / getattr(event, FvTName).pd3
+    event[FvTName, "tt_vs_mj_4"] = getattr(event, FvTName).pt4 / getattr(event, FvTName).pd4
+
+
+
+
+
+def subtract_ttbar_with_FvT(selev, dataset, year, tt_vs_mj_var="tt_vs_mj_3"):
+
+    #
+    # Get reproducible random numbers
+    #
+    rng = Squares("ttbar_subtraction", dataset, year)
+    counter = np.empty((len(selev), 2), dtype=np.uint64)
+    counter[:, 0] = np.asarray(selev.event).view(np.uint64)
+    counter[:, 1] = np.asarray(selev.run).view(np.uint32)
+    counter[:, 1] <<= 32
+    counter[:, 1] |= np.asarray(selev.luminosityBlock).view(np.uint32)
+    ttbar_rand = rng.uniform(counter, low=0, high=1.0).astype(np.float32)
+
+    return (ttbar_rand > getattr(selev.FvT, tt_vs_mj_var))
