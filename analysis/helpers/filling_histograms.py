@@ -78,6 +78,7 @@ def filling_nominal_histograms(
             FvT_skip = ["pt", "pm3", "pm4"]
 
         fill += FvTHists(("FvT", "FvT Classifier"), "FvT", skip=FvT_skip)
+        #fill += FvTHists(("FvT_noFvT_noJCM", "FvT Classifier (NoJCM, NO FVT"), "FvT", weight="weight_noJCM_noFvT", skip=FvT_skip)
         fill += hist.add("quadJet_selected.FvT_score", (100, 0, 1, ("quadJet_selected.FvT_q_score", "Selected Quad Jet Diboson FvT q score")))
         fill += hist.add("quadJet_min_dr.FvT_score", (100, 0, 1, ("quadJet_min_dr.FvT_q_score", "Min dR Quad Jet Diboson FvT q score")))
 
@@ -121,6 +122,7 @@ def filling_nominal_histograms(
         fill += SvBHists(("SvB_MA", "SvB MA Classifier"), "SvB_MA")
         fill += SvBHists(("SvB_noFvT", "SvB Classifier"), "SvB", weight="weight_noFvT")
         fill += SvBHists(("SvB_MA_noFvT", "SvB MA Classifier"), "SvB_MA", weight="weight_noFvT")
+        #fill += SvBHists(("SvB_MA_noFvT_noJCM", "SvB MA Classifier"), "SvB_MA", weight="weight_noJCM_noFvT")
         fill += hist.add("quadJet_selected.SvB_q_score", (100, 0, 1, ("quadJet_selected.SvB_q_score", "Selected Quad Jet Diboson SvB q score")))
         fill += hist.add("quadJet_min_dr.SvB_MA_q_score", (100, 0, 1, ("quadJet_min_dr.SvB_MA_q_score", "Min dR Quad Jet Diboson SvB MA q score")))
         if isDataForMixed:

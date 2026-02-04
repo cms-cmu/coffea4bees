@@ -45,6 +45,8 @@ class FvTHists(Template):
     std  = H((50, 0, 3, ("std",   'FvT Standard Deviation')))
     frac_err = H((50, 0, 5, ("frac_err",  'FvT std/FvT')))
     #'q_1234', 'q_1324', 'q_1423',
+    tt_vs_mj_3     = H((50, 0, 1, ('tt_vs_mj_3', "P(tT) | Background 3b")))
+    tt_vs_mj_4     = H((50, 0, 1, ('tt_vs_mj_4', "P(tT) | Background 4b")))
 
 class QuadJetHistsBasic(Template):
     dr              = H((50,     0, 5,   ("dr",          'Diboson Candidate $\\Delta$R(d,d)')))
