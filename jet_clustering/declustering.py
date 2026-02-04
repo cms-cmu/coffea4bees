@@ -194,83 +194,110 @@ def get_list_of_splitting_names(splittings):
     return unique_splittings_list
 
 
+# Helper function to create flavor mask
+def create_flavor_mask(jets, flavor):
+    """Create mask for jets matching a specific flavor."""
+    flavor_flat = ak.flatten(jets.jet_flavor)
+    mask_flat = flavor_flat == flavor
+    return ak.unflatten(mask_flat, ak.num(jets.jet_flavor))
+
+
 def compute_decluster_variables(clustered_splittings):
 
-    #
-    # z-axis
-    #
-    z_axis      = ak.zip({"x": 0, "y": 0, "z": 1}, with_name="ThreeVector", behavior=vector.behavior,)
-    boost_vec_z = ak.zip({"x": 0, "y": 0, "z": clustered_splittings.boostvec.z}, with_name="ThreeVector", behavior=vector.behavior,)
+    # Define coordinate system axes and boost vectors
+    z_axis = ak.zip(
+        {"x": 0, "y": 0, "z": 1},
+        with_name="ThreeVector",
+        behavior=vector.behavior
+    )
+
+    boost_vec_z = ak.zip(
+        {"x": 0, "y": 0, "z": clustered_splittings.boostvec.z},
+        with_name="ThreeVector",
+        behavior=vector.behavior
+    )
+
 
     #
-    #  Boost to pz0
+    # Boost to pz=0 frame
     #
-    clustered_splittings_pz0        = clustered_splittings.boost(-boost_vec_z)
-    clustered_splittings_part_A_pz0 = clustered_splittings.part_A.boost(-boost_vec_z)
-    clustered_splittings_part_B_pz0 = clustered_splittings.part_B.boost(-boost_vec_z)
+    clustered_splittings_pz0 = clustered_splittings.boost(-boost_vec_z)
+    part_A_pz0 = clustered_splittings.part_A.boost(-boost_vec_z)
+    part_B_pz0 = clustered_splittings.part_B.boost(-boost_vec_z)
 
+    # Calculate plane normals
     comb_z_plane_hat = z_axis.cross(clustered_splittings_pz0).unit
-    decay_plane_hat = clustered_splittings_part_A_pz0.cross(clustered_splittings_part_B_pz0).unit
+    decay_plane_hat = part_A_pz0.cross(part_B_pz0).unit
+
 
     #
-    #  Clustering (calc variables to histogram)
+    # Compute and store clustering variables
     #
+    thetaA = np.arccos(clustered_splittings_pz0.unit.dot(part_A_pz0.unit))
 
-    clustered_splittings["zA_num"]    = clustered_splittings_pz0.dot(clustered_splittings_part_A_pz0)
-    clustered_splittings["zA"]        = clustered_splittings_pz0.dot(clustered_splittings_part_A_pz0) / (clustered_splittings_pz0.pt**2)
-    clustered_splittings["mA"]        = clustered_splittings.part_A.mass
-    clustered_splittings["rhoA"]      = clustered_splittings.part_A.mass / clustered_splittings.part_A.pt
-    clustered_splittings["abs_eta"]   = np.abs(clustered_splittings.eta)
-
-    clustered_splittings["mB"]        = clustered_splittings.part_B.mass
-    clustered_splittings["rhoB"]      = clustered_splittings.part_B.mass / clustered_splittings.part_B.pt
-
-    clustered_splittings["thetaA"]    = np.arccos(clustered_splittings_pz0.unit.dot(clustered_splittings_part_A_pz0.unit))
-    clustered_splittings["tan_thetaA"]    = np.tan(np.arccos(clustered_splittings_pz0.unit.dot(clustered_splittings_part_A_pz0.unit)))
-    clustered_splittings["decay_phi"] = np.arccos(decay_plane_hat.dot(comb_z_plane_hat))
-    clustered_splittings["dr_AB"]     = clustered_splittings.part_A.delta_r(clustered_splittings.part_B)
-    clustered_splittings["dpt_AB"]    = clustered_splittings.part_A.pt - (clustered_splittings.pt * clustered_splittings.zA)
-    clustered_splittings["rpt_A"]    = clustered_splittings.part_A.pt / clustered_splittings.pt
-    clustered_splittings["rpt_B"]    = clustered_splittings.part_B.pt / clustered_splittings.pt
-    clustered_splittings["rpt_AB"]    = clustered_splittings.part_B.pt / clustered_splittings.part_A.pt
-    clustered_splittings["mass_AB"]     = (clustered_splittings.part_A + clustered_splittings.part_B).mass
+    clustered_splittings["zA_num"]     = clustered_splittings_pz0.dot(part_A_pz0)
+    clustered_splittings["zA"]         = clustered_splittings_pz0.dot(part_A_pz0) / (clustered_splittings_pz0.pt**2)
+    clustered_splittings["mA"]         = clustered_splittings.part_A.mass
+    clustered_splittings["rhoA"]       = clustered_splittings.part_A.mass / clustered_splittings.part_A.pt
+    clustered_splittings["mB"]         = clustered_splittings.part_B.mass
+    clustered_splittings["rhoB"]       = clustered_splittings.part_B.mass / clustered_splittings.part_B.pt
+    clustered_splittings["abs_eta"]    = np.abs(clustered_splittings.eta)
+    clustered_splittings["thetaA"]     = thetaA
+    clustered_splittings["tan_thetaA"] = np.tan(thetaA)
+    clustered_splittings["decay_phi"]  = np.arccos(decay_plane_hat.dot(comb_z_plane_hat))
+    clustered_splittings["dr_AB"]      = clustered_splittings.part_A.delta_r(clustered_splittings.part_B)
+    clustered_splittings["dpt_AB"]     = clustered_splittings.part_A.pt - (clustered_splittings.pt * clustered_splittings.zA)
+    clustered_splittings["rpt_A"]      = clustered_splittings.part_A.pt / clustered_splittings.pt
+    clustered_splittings["rpt_B"]      = clustered_splittings.part_B.pt / clustered_splittings.pt
+    clustered_splittings["rpt_AB"]     = clustered_splittings.part_B.pt / clustered_splittings.part_A.pt
+    clustered_splittings["mass_AB"]    = (clustered_splittings.part_A + clustered_splittings.part_B).mass
 
     #
     #  The rest of the code Updates the mass in the rotated rest frame
     #
 
-    #
-    #  Go to the frame hwere the combined jet is pointing along X (needed to rotate the decay plane with rotateX)
-    #
-    clustered_splittings_part_A_pz0_phi0  = rotateZ(clustered_splittings_part_A_pz0, -clustered_splittings.phi)
-    clustered_splittings_part_B_pz0_phi0  = rotateZ(clustered_splittings_part_B_pz0, -clustered_splittings.phi)
+    # Rotate to frame where combined jet points along X-axis
+    part_A_pz0_phi0, part_B_pz0_phi0 = [
+        rotateZ(p, -clustered_splittings.phi)
+        for p in [part_A_pz0, part_B_pz0]
+    ]
 
-    #
-    #    we either need to rotate back by + or - decay phi, figure out which one
-    #
-    clustered_splittings_part_A_pz0_phi0_dphi0  = rotateX(clustered_splittings_part_A_pz0_phi0, -clustered_splittings.decay_phi)
-    clustered_splittings_part_B_pz0_phi0_dphi0  = rotateX(clustered_splittings_part_B_pz0_phi0, -clustered_splittings.decay_phi)
-    decay_plane_dphi0 = clustered_splittings_part_A_pz0_phi0_dphi0.cross(clustered_splittings_part_B_pz0_phi0_dphi0).unit
+    # Determine correct decay plane rotation (+ or - decay_phi)
+    # Rotate by both directions and check which gives y ≈ 1 in decay plane normal
+    part_A_pdphi0, part_B_pdphi0 = [
+        rotateX(p, +clustered_splittings.decay_phi)
+        for p in [part_A_pz0_phi0, part_B_pz0_phi0]
+    ]
+    part_A_dphi0, part_B_dphi0 = [
+        rotateX(p, -clustered_splittings.decay_phi)
+        for p in [part_A_pz0_phi0, part_B_pz0_phi0]
+    ]
 
-    clustered_splittings_part_A_pz0_phi0_pdphi0  = rotateX(clustered_splittings_part_A_pz0_phi0, +clustered_splittings.decay_phi)
-    clustered_splittings_part_B_pz0_phi0_pdphi0  = rotateX(clustered_splittings_part_B_pz0_phi0, +clustered_splittings.decay_phi)
-    decay_plane_pdphi0 = clustered_splittings_part_A_pz0_phi0_pdphi0.cross(clustered_splittings_part_B_pz0_phi0_pdphi0).unit
-
+    decay_plane_pdphi0 = part_A_pdphi0.cross(part_B_pdphi0).unit
     pos_decay_phi_mask = np.abs(decay_plane_pdphi0.y - 1) < 0.001
     pos_decay_phi_mask_flat = ak.flatten(pos_decay_phi_mask)
 
-    #
-    # Get the pts in the frame we will do de-clustering
-    #
-    rotated_pt_A_flat = ak.flatten(clustered_splittings_part_A_pz0_phi0_dphi0.pt).to_numpy()
-    rotated_pt_A_pos_dphi = ak.flatten(clustered_splittings_part_A_pz0_phi0_pdphi0.pt)
-    rotated_pt_A_flat[pos_decay_phi_mask_flat] = rotated_pt_A_pos_dphi[pos_decay_phi_mask_flat]
-    rotated_pt_A = ak.unflatten(rotated_pt_A_flat, ak.num(clustered_splittings))
+    # Get pts in the de-clustering frame (select correct rotation)
+    counts = ak.num(clustered_splittings)
 
-    rotated_pt_B_flat = ak.flatten(clustered_splittings_part_B_pz0_phi0_dphi0.pt).to_numpy()
-    rotated_pt_B_pos_dphi = ak.flatten(clustered_splittings_part_B_pz0_phi0_pdphi0.pt)
-    rotated_pt_B_flat[pos_decay_phi_mask_flat] = rotated_pt_B_pos_dphi[pos_decay_phi_mask_flat]
-    rotated_pt_B = ak.unflatten(rotated_pt_B_flat, ak.num(clustered_splittings))
+    rotated_pt_A = ak.unflatten(
+        ak.where(
+            pos_decay_phi_mask_flat,
+            ak.flatten(part_A_pdphi0.pt),
+            ak.flatten(part_A_dphi0.pt)
+        ),
+        counts
+    )
+
+    rotated_pt_B = ak.unflatten(
+        ak.where(
+            pos_decay_phi_mask_flat,
+            ak.flatten(part_B_pdphi0.pt),
+            ak.flatten(part_B_dphi0.pt)
+        ),
+        counts
+    )
+
 
     #
     #  Update the mass with rho and pt from the rotated frame
@@ -317,105 +344,101 @@ def rotateX(particles, angle):
     )
 
 
+def build_lorentz_vector_pz0(z_fraction, combined_pt, tan_theta, mass, pz_sign=-1):
+    """Build Lorentz vector in pz0, phi0, decayPhi0 frame."""
+    px = z_fraction * combined_pt
+    py = 0
+    pz = pz_sign * z_fraction * combined_pt * tan_theta
+    E = np.sqrt(px**2 + pz**2 + mass**2)
+
+    return ak.zip(
+        {"x": px, "y": py, "z": pz, "t": E},
+        with_name="LorentzVector",
+        behavior=vector.behavior,
+    )
+
+
+def update_single_jet_mass(p, jet_flavor, rho, btag_string, counts):
+    """Update mass for single jets using pt × rho."""
+    jet_flavor_flat = ak.flatten(jet_flavor)
+    single_jet_mask = (np.char.str_len(jet_flavor_flat) == 1)
+
+    pt_flat   = ak.flatten(p.pt)
+    mass_flat = ak.flatten(p.mass)
+    rho_flat  = ak.flatten(rho)
+
+    # Use mass = (pt x rho) for single jet clusters "b" or "j" use the mass for others
+    p_mass = ak.unflatten(ak.where(single_jet_mask, pt_flat * rho_flat, mass_flat),
+                          counts
+                          )
+
+    return ak.zip(
+        {
+            "pt": p.pt,
+            "eta": p.eta,
+            "phi": p.phi,
+            "mass": p_mass,
+            "jet_flavor": jet_flavor,
+            "btag_string": btag_string,
+        },
+        with_name="PtEtaPhiMLorentzVector",
+        behavior=vector.behavior,
+    )
+
+
 def decluster_combined_jets(input_jet, debug=False):
 
-    n_jets = np.sum(ak.num(input_jet))
-
+    #
+    # Build jet_flav_child lists
+    #
     jet_flav_flat = ak.flatten(input_jet.jet_flavor)
     simple_comb_mask = (np.char.str_len(jet_flav_flat) == 2)
+    jet_flav_child_A = []
+    jet_flav_child_B = []
 
-    # For some reason this dummy string has to be as long as the longest possible replacement
-    # jet_flav_child_A = np.full(n_jets, "XXXXXXXXXXXXXXX")
-    # jet_flav_child_B = np.full(n_jets, "XXXXXXXXXXXXXXX")
-    dummy_str = "XXXXXXXXXXXXXXXXXXXXXXXXX"
-    len_dummy_str = 25
-    # dummy_str = "XXX"
-    # len_dummy_str = 3
-    jet_flav_child_A = np.full(n_jets, dummy_str)
-    jet_flav_child_B = np.full(n_jets, dummy_str)
-
-    #
-    #  The simple combinations
-    #
-    _simple_flav_child_A = [str(s)[0] for s in jet_flav_flat[simple_comb_mask]]
-    _simple_flav_child_B = [str(s)[1] for s in jet_flav_flat[simple_comb_mask]]
-    jet_flav_child_A[simple_comb_mask] = _simple_flav_child_A
-    jet_flav_child_B[simple_comb_mask] = _simple_flav_child_B
-
-
-    #
-    #  The nested combinations
-    #   # A is always the more complex
-    _children = [children_jet_flavors(s) for s in jet_flav_flat[~simple_comb_mask]]
-    _nested_flav_child_A = [child[0] for child in _children]
-    _nested_flav_child_B = [child[1] for child in _children]
-
-    over_flow_child_A = any(len(s) > len_dummy_str for s in _nested_flav_child_A)
-    if over_flow_child_A:
-        print(f"\n ERROR: child A flavor overflow {_nested_flav_child_A} \n")
-
-    over_flow_child_B = any(len(s) > len_dummy_str for s in _nested_flav_child_B)
-    if over_flow_child_B:
-        print(f"\n ERROR: child B flavor overflow {_nested_flav_child_B} \n")
-
-    # print(f'child A {_nested_flav_child_A}')
-    # print(f'child B {_nested_flav_child_B}')
-
-    jet_flav_child_A[~simple_comb_mask] = _nested_flav_child_A
-    jet_flav_child_B[~simple_comb_mask] = _nested_flav_child_B
+    for _, (flav, is_simple) in enumerate(zip(jet_flav_flat, simple_comb_mask)):
+        if is_simple:
+            jet_flav_child_A.append(str(flav)[0])
+            jet_flav_child_B.append(str(flav)[1])
+        else:
+            child_A, child_B = children_jet_flavors(flav)
+            jet_flav_child_A.append(child_A)
+            jet_flav_child_B.append(child_B)
 
     jet_flavor_A = ak.unflatten(jet_flav_child_A, ak.num(input_jet))
     jet_flavor_B = ak.unflatten(jet_flav_child_B, ak.num(input_jet))
 
+    #
+    # Build jet_btag_string lists
+    #
     flat_jet_btag_string = ak.flatten(input_jet.btag_string)
-    _btag_string_pairs = [extract_outermost_pair(str(s)) for s in flat_jet_btag_string]
-    flat_jet_btag_string_A = [p[0] for p in  _btag_string_pairs]
-    flat_jet_btag_string_B = [p[1] for p in  _btag_string_pairs]
+    flat_jet_btag_string_A = []
+    flat_jet_btag_string_B = []
+    for s in flat_jet_btag_string:
+        a, b = extract_outermost_pair(str(s))
+        flat_jet_btag_string_A.append(a)
+        flat_jet_btag_string_B.append(b)
+
     jet_btag_string_A = ak.unflatten(flat_jet_btag_string_A, ak.num(input_jet))
     jet_btag_string_B = ak.unflatten(flat_jet_btag_string_B, ak.num(input_jet))
 
+
+    #
+    #  Now the 4-vectors
+    #
     combined_pt = input_jet.pt
     tanThetaA = np.tan(input_jet.thetaA)
     tanThetaB = input_jet.zA / (1 - input_jet.zA) * tanThetaA
 
     #
-    #  pA (in frame with pz=0 phi=0 decay_phi = 0)
+    #  pA and pB (in frame with pz=0 phi=0 decay_phi = 0)
     #
-    pA_pz0_px = input_jet.zA * combined_pt
-    pA_pz0_py = 0
-    pA_pz0_pz = - input_jet.zA * combined_pt * tanThetaA
-    # pA_mass   = input_jet.rhoA * input_jet.pt * input_jet.zA
-    pA_mass   = input_jet.mA
-    pA_pz0_E  = np.sqrt(pA_pz0_px**2 + pA_pz0_pz**2 + pA_mass**2)
 
-    pA_pz0_phi0_decayPhi0 = ak.zip(
-        {
-            "x": pA_pz0_px,
-            "y": pA_pz0_py,
-            "z": pA_pz0_pz,
-            "t": pA_pz0_E,
-        },
-        with_name="LorentzVector",
-        behavior=vector.behavior,
-    )
+    # Build initial 4-vectors in pz=0, phi=0, decay_phi=0 frame
+    pA_pz0_phi0_decayPhi0 = build_lorentz_vector_pz0(     input_jet.zA, combined_pt, tanThetaA, input_jet.mA, pz_sign=-1)
+    pB_pz0_phi0_decayPhi0 = build_lorentz_vector_pz0( 1 - input_jet.zA, combined_pt, tanThetaB, input_jet.mB, pz_sign= 1)
 
-    pB_pz0_px = (1 - input_jet.zA) * combined_pt
-    pB_pz0_py = 0
-    pB_pz0_pz = (1 - input_jet.zA) * combined_pt * tanThetaB
-    # pB_mass   = input_jet.rhoB * input_jet.pt * (1 - input_jet.zA)
-    pB_mass   = input_jet.mB
-    pB_pz0_E  = np.sqrt(pB_pz0_px**2 + pB_pz0_pz**2 + pB_mass**2)
 
-    pB_pz0_phi0_decayPhi0 = ak.zip(
-        {
-            "x": pB_pz0_px,
-            "y": pB_pz0_py,
-            "z": pB_pz0_pz,
-            "t": pB_pz0_E,
-        },
-        with_name="LorentzVector",
-        behavior=vector.behavior,
-    )
 
     #
     # Do Rotation of the decay plane
@@ -424,83 +447,29 @@ def decluster_combined_jets(input_jet, debug=False):
     # Pseudo-random number to decide if we rotate by phi or phi + pi
     decay_phi = input_jet.decay_phi + np.pi * ((input_jet.pt % 1) > 0.5)
 
-    pA_pz0_phi0 = rotateX(pA_pz0_phi0_decayPhi0, decay_phi)
-    pB_pz0_phi0 = rotateX(pB_pz0_phi0_decayPhi0, decay_phi)
+    pA_pz0_phi0, pB_pz0_phi0 = [rotateX(p, decay_phi) for p in [pA_pz0_phi0_decayPhi0, pB_pz0_phi0_decayPhi0]]
 
     #
     #  Boost back to jet pZ
     #
     boost_vec_z = ak.zip(
-        {
-            "x": 0,
-            "y": 0,
-            "z": input_jet.boostvec.z,
-        },
+        {"x": 0, "y": 0, "z": input_jet.boostvec.z},
         with_name="ThreeVector",
         behavior=vector.behavior,
     )
-
-    pA_phi0 = pA_pz0_phi0.boost(boost_vec_z)
-    pB_phi0 = pB_pz0_phi0.boost(boost_vec_z)
+    pA_phi0, pB_phi0 = [p.boost(boost_vec_z) for p in [pA_pz0_phi0, pB_pz0_phi0]]
 
     #
     #  Rotate to jet phi
     #
-    pA = rotateZ(pA_phi0, input_jet.phi)
-    pB = rotateZ(pB_phi0, input_jet.phi)
+    pA, pB = [rotateZ(p, input_jet.phi) for p in [pA_phi0, pB_phi0]]
 
     #
     #  Logic to update mass of a single jet "b" or "j" with pt x rho
     #
-    jet_flavor_A_flat = ak.flatten(jet_flavor_A)
-    single_jet_mask_A = (np.char.str_len(jet_flavor_A_flat) == 1)
-    pt_A_flat = ak.flatten(pA.pt)
-    mass_A_flat = ak.flatten(pA.mass)
-    rho_A_flat = ak.flatten(input_jet.rhoA)
-    jet_mass_A_new = pt_A_flat[single_jet_mask_A] * rho_A_flat[single_jet_mask_A]
-    mass_A_flat_np  = mass_A_flat.to_numpy()
-    mass_A_flat_np[single_jet_mask_A] = jet_mass_A_new
-    pA_mass = ak.unflatten(mass_A_flat_np, ak.num(input_jet))
-
-    pA = ak.zip(
-        {
-            "pt":         pA.pt,
-            "eta":        pA.eta,
-            "phi":        pA.phi,
-            "mass":       pA_mass,
-            "jet_flavor": jet_flavor_A,
-            "btag_string": jet_btag_string_A,
-        },
-        with_name="PtEtaPhiMLorentzVector",
-        behavior=vector.behavior,
-    )
-
-    #
-    #  Logic to update mass of a single jet "b" or "j" with pt x rho
-    #
-    jet_flavor_B_flat = ak.flatten(jet_flavor_B)
-    single_jet_mask_B = (np.char.str_len(jet_flavor_B_flat) == 1)
-    pt_B_flat = ak.flatten(pB.pt)
-    mass_B_flat = ak.flatten(pB.mass)
-    rho_B_flat = ak.flatten(input_jet.rhoB)
-    jet_mass_B_new = pt_B_flat[single_jet_mask_B] * rho_B_flat[single_jet_mask_B]
-    mass_B_flat_np  = mass_B_flat.to_numpy()
-    mass_B_flat_np[single_jet_mask_B] = jet_mass_B_new
-    pB_mass = ak.unflatten(mass_B_flat_np, ak.num(input_jet))
-
-
-    pB = ak.zip(
-        {
-            "pt":         pB.pt,
-            "eta":        pB.eta,
-            "phi":        pB.phi,
-            "mass":       pB_mass,
-            "jet_flavor": jet_flavor_B,
-            "btag_string": jet_btag_string_B,
-        },
-        with_name="PtEtaPhiMLorentzVector",
-        behavior=vector.behavior,
-    )
+    counts = ak.num(input_jet)
+    pA = update_single_jet_mass(pA, jet_flavor_A, input_jet.rhoA, jet_btag_string_A, counts)
+    pB = update_single_jet_mass(pB, jet_flavor_B, input_jet.rhoB, jet_btag_string_B, counts)
 
     return pA, pB
 
@@ -515,9 +484,7 @@ def decluster_splitting_types(input_jets, splitting_types, input_pdfs, rand_seed
     #
     input_jets['split_mask'] = False
     for _s in splitting_types:
-        jet_flavor_flat  = ak.flatten(input_jets.jet_flavor)
-        _split_mask_flat = jet_flavor_flat == _s
-        _split_mask = ak.unflatten(_split_mask_flat, ak.num(input_jets.jet_flavor))
+        _split_mask = create_flavor_mask(input_jets, _s)
         input_jets["split_mask"] = _split_mask | input_jets.split_mask
 
     #
@@ -554,10 +521,7 @@ def decluster_splitting_types(input_jets, splitting_types, input_pdfs, rand_seed
         for _s in splitting_types:
 
             # Pre compute these to save time
-            jet_flavor_flat = ak.flatten(input_jets_to_decluster.jet_flavor)
-            _s_mask_flat = jet_flavor_flat == _s
-            _s_mask = ak.unflatten(_s_mask_flat, ak.num(input_jets_to_decluster.jet_flavor))
-
+            _s_mask = create_flavor_mask(input_jets_to_decluster, _s)
             _num_samples   = np.sum(ak.num(input_jets_to_decluster[_s_mask]))
             _indicies = np.where(ak.flatten(_s_mask))
             _indicies_tuple = (_indicies[0].to_list())
@@ -583,13 +547,8 @@ def decluster_splitting_types(input_jets, splitting_types, input_pdfs, rand_seed
         # Update to only be bjets
         fail_pt_mask    = (declustered_jets_A.pt < 20) | (declustered_jets_B.pt < 20)
 
-        declustered_jet_A_jet_flavor_flat  = ak.flatten(declustered_jets_A.jet_flavor)
-        A_is_b_mask_flat = declustered_jet_A_jet_flavor_flat == "b"
-        A_is_b_mask = ak.unflatten(A_is_b_mask_flat, ak.num(declustered_jets_A.jet_flavor))
-
-        declustered_jet_B_jet_flavor_flat  = ak.flatten(declustered_jets_B.jet_flavor)
-        B_is_b_mask_flat = declustered_jet_B_jet_flavor_flat == "b"
-        B_is_b_mask = ak.unflatten(B_is_b_mask_flat, ak.num(declustered_jets_B.jet_flavor))
+        A_is_b_mask = create_flavor_mask(declustered_jets_A, "b")
+        B_is_b_mask = create_flavor_mask(declustered_jets_B, "b")
 
         #fail_pt_b_mask  = (A_is_b_mask & (declustered_jets_A.pt < 40) )          | (B_is_b_mask & (declustered_jets_B.pt < 40))
         fail_pt_b_mask  = (A_is_b_mask & (declustered_jets_A.pt < b_pt_threshold) )          | (B_is_b_mask & (declustered_jets_B.pt < b_pt_threshold))
@@ -692,19 +651,24 @@ def make_synthetic_event(input_jets, input_pdfs, declustering_rand_seed=66, *, b
         #  Check the min dr
         #
         delta_r2_matrix = declustered_events.delta_r2(declustered_events[:, None])
-        delta_r2_matrix_flat = ak.flatten(delta_r2_matrix)
-        delta_r2_matrix_flat_flat = ak.flatten(delta_r2_matrix_flat).to_numpy()
-        delta_r2_matrix_flat_flat[delta_r2_matrix_flat_flat == 0] = np.inf
-        delta_r2_matrix_flat_masked = ak.unflatten(delta_r2_matrix_flat_flat, ak.num(delta_r2_matrix_flat))
-        delta_r2_matrix_masked = ak.unflatten(delta_r2_matrix_flat_masked, ak.num(delta_r2_matrix))
+
+        # Mask out diagonal (self-distances) by setting to inf
+        delta_r2_flat = ak.flatten(ak.flatten(delta_r2_matrix)).to_numpy()
+        delta_r2_flat[delta_r2_flat == 0] = np.inf
+        delta_r2_matrix_masked = ak.unflatten(
+            ak.unflatten(delta_r2_flat, ak.num(ak.flatten(delta_r2_matrix))),
+            ak.num(delta_r2_matrix)
+        )
+
 
         min_dr2 = ak.min(ak.min(delta_r2_matrix_masked, axis=1), axis=1)
 
-        pass_dr2_mask_local = min_dr2 > (dr_threshold * dr_threshold)
+        pass_dr2_mask_local = min_dr2 > (dr_threshold ** 2)
 
         if num_trys > _MAX_NUM_EVENT_RETRY:
             print(f"Bailing on dR check with {np.sum(events_to_decluster_mask == True)}\n")
-            pass_dr2_mask_local = (pass_dr2_mask_local | ~pass_dr2_mask_local)  # All True
+            pass_dr2_mask_local = ak.ones_like(pass_dr2_mask_local, dtype=bool)  # All True
+
 
         sucessful_deccluster_event_indicies = np.where(pass_dr2_mask_local)
 

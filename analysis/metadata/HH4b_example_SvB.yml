@@ -14,5 +14,5 @@ config:
       name: Final # name of the output stage (e.g. Final or some other checkpoint)
   top_reconstruction: fast
   friends:
-    trigWeight: "coffea4bees/metadata/datasets_HH4b_2024_v1_trigweights.json@@trigWeight"
+    trigWeight: "coffea4bees/metadata/datasets_HH4b_Run2/trigweights_2024_v1p2.json@@trigWeight"
     # SvB_MA: root://cmseos.fnal.gov//store/user/chuyuanl/HH4b/friend/SvB/ggF/baseline/result.json@@analysis.0.merged

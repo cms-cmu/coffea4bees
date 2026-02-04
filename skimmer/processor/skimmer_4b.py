@@ -15,10 +15,10 @@ from coffea4bees.analysis.helpers.cutflow import cutflow_4b
 
 class Skimmer(PicoAOD):
     def __init__(
-            self, 
-            loosePtForSkim=False, 
-            skim4b=False, 
-            mc_outlier_threshold=200, 
+            self,
+            loosePtForSkim=False,
+            skim4b=False,
+            mc_outlier_threshold=200,
             corrections_metadata=None,
             *args, **kwargs
         ):
@@ -60,11 +60,9 @@ class Skimmer(PicoAOD):
         events = apply_4b_selection(
             events,
             self.corrections_metadata[year],
+            config=config,
             dataset=dataset,
-            doLeptonRemoval=config["do_lepton_jet_cleaning"],
             loosePtForSkim=self.loosePtForSkim,
-            isRun3=config["isRun3"],
-            isMC=config["isMC"]
         )
 
         weights = Weights(len(events), storeIndividual=True)

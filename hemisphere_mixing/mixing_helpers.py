@@ -48,8 +48,8 @@ def transverse_thrust_awkward_fast(p4, n_steps=720, refine_rounds=0, refine_fact
     refine_rounds: how many times to zoom in around the best angle (optional)
     refine_factor: how much denser each refinement grid is
     """
-    if not (hasattr(p4, "px") and hasattr(p4, "py")):
-        raise ValueError("Input must have Momentum4D behavior (with .px/.py).")
+    #if not (hasattr(p4, "px") and hasattr(p4, "py")):
+    #    raise ValueError("Input must have Momentum4D behavior (with .px/.py).")
 
     px, py = p4.px, p4.py
 
@@ -88,8 +88,8 @@ def transverse_thrust_awkward(p4, n_steps=720, refine_rounds=0, refine_factor=6)
     refine_rounds: how many times to zoom in around the best angle (optional)
     refine_factor: how much denser each refinement grid is
     """
-    if not (hasattr(p4, "px") and hasattr(p4, "py")):
-        raise ValueError("Input must have Momentum4D behavior (with .px/.py).")
+    #if not (hasattr(p4, "px") and hasattr(p4, "py")):
+    #    raise ValueError("Input must have Momentum4D behavior (with .px/.py).")
 
     px, py = p4.px, p4.py
 
@@ -603,6 +603,20 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
         #
         subset_hemis_points = np.column_stack([ (subset_hemis[name] - hemi_stats[jet_mult_key][name]["mean"]) / hemi_stats[jet_mult_key][name]["RMS"] for name in hemi_summary_vars])
 
+        # Check for NaN values
+        has_nan = np.any(np.isnan(subset_hemis_points))
+        # Check for inf values (positive or negative)
+        has_inf = np.any(np.isinf(subset_hemis_points))
+        # Check for both NaN and inf
+        has_bad_values = np.any(~np.isfinite(subset_hemis_points))
+
+        if has_bad_values:
+            print(f"Warning: Found {np.sum(np.isnan(subset_hemis_points))} NaN and {np.sum(np.isinf(subset_hemis_points))} inf values in subset_hemis_points! filtering them out.\n")
+            # bad_points = subset_hemis_points[np.any(np.isnan(subset_hemis_points), axis=1)]
+            # print(f"bad points:\n{bad_points}\n")
+            # print(f"Nan is  {np.sum(np.isnan(subset_hemis_points))} NaN and {np.sum(np.isinf(subset_hemis_points))} inf values in subset_hemis_points! filtering them out.\n")
+            subset_hemis_points = np.nan_to_num(subset_hemis_points, nan=0.0) #subset_hemis_points[~np.any(np.isnan(subset_hemis_points), axis=1)]
+            # print(f"Now has_bad_values = {np.any(~np.isfinite(subset_hemis_points))}\n")
         #
         #  Get the nearest neighbor hemisphere from the kd-tree
         #

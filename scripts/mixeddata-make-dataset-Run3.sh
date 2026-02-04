@@ -10,7 +10,7 @@ if [ $? -ne 0 ]; then
 fi
 
 display_section_header "Input Datasets"
-DATASETS=${DATASET:-"coffea4bees//metadata/datasets_HH4b_Run3_fourTag_2025_skims.yml"}
+DATASETS=${DATASET:-"coffea4bees//metadata/datasets_HH4b_Run3/"}
 echo "Using datasets file: $DATASETS"
 
 # Setup proxy if needed

@@ -6,6 +6,7 @@ from coffea4bees.analysis.helpers.hist_templates import (
     SvBHists,
     TopCandHists,
     WCandHists,
+    TrigEmHists,
 )
 from src.hist_tools import Collection, Fill
 from src.hist_tools.object import Elec, Jet, LorentzVector, Muon
@@ -43,6 +44,8 @@ def filling_nominal_histograms(
     fill += hist.add("nPVsGood", (101, -0.5, 100.5, ("PV.npvsGood", "Number of Good Primary Vertices")))
     fill += hist.add("hT", (50, 0, 1500, ("hT", "h_{T} [GeV]")))
     fill += hist.add("hT_selected", (50, 0, 1500, ("hT_selected", "h_{T} [GeV]")))
+
+    fill += TrigEmHists(("trigEm", "Trigger Emulation"), "trigEm")
 
     # Jets
     skip_jet_list = ['energy', 'deepjet_c']
@@ -153,11 +156,26 @@ def filling_nominal_histograms(
         hist_ttbar = Collection(
             process=[processName],
             year=[year],
-            **dict((s, ...) for s in ['passDilepTtbar'])
+            **dict((s, ...) for s in ['passMuMu', 'passElMu'])
         )
-        fill_ttbar += Jet.plot(("tagJets_dilepttbar", "Tag Jets dilep ttbar"), "tagJet", skip=skip_jet_list)
+
+        fill_ttbar += TrigEmHists(("trigEm_ll", "Trigger Emulation"), "trigEm")
+
+        fill_ttbar += Jet.plot(("selJets_ll", "Selected Jets"), "selJet", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
+        fill_ttbar += Jet.plot(("tagJets_ll", "Tag Jets dilep ttbar"), "tagJet", skip=skip_jet_list)
+
+
+        skip_muons = ["charge"] + Muon.skip_detailed_plots
+        fill_ttbar += Muon.plot(("selMuons_ll", "Selected Muons"), "selMuon", skip=skip_muons)
+
+        skip_elecs = ["charge"] + Elec.skip_detailed_plots
+        fill_ttbar += Elec.plot(("selElecs_ll", "Selected Elecs"), "selElec", skip=skip_elecs)
+
+        fill_ttbar += LorentzVector.plot(('MET_ll', R'MeT'), 'MET',  skip=['n','eta', 'mass', 'pz', 'energy'], bins={"pt": (60, 0, 300)})
+        fill_ttbar += hist_ttbar.add('mll_ll', (100, 0, 300, ('mll', 'mll [GeV]')))
+
         fill_ttbar(selev, hist_ttbar)
-        return hist.to_dict(nonempty=True) | {"hists_ttbar": hist_ttbar.to_dict(nonempty=True)["hists"]}
+        return hist.to_dict(nonempty=True) | {"hists_ttbar": hist_ttbar.to_dict(nonempty=True)["hists"], "categories_ttbar": hist_ttbar.to_dict(nonempty=True)["categories"]}
     else:
         return hist.to_dict(nonempty=True)
 
@@ -169,7 +187,7 @@ def filling_syst_histograms(selev, weights, analysis_selections,
                             histCuts: list = []
                             ):
 
-    shift_name = "nominal" if not shift_name else shift_name 
+    shift_name = "nominal" if not shift_name else shift_name
     hist_SvB = Collection( process=[processName],
                             year=[year],
                             variation=[shift_name],

@@ -8,7 +8,7 @@ from src.friendtrees.FriendTreeSchema import FriendTreeSchema
 from src.math_tools.random import Squares
 from coffea4bees.analysis.helpers.event_weights import add_btagweights
 from coffea4bees.analysis.helpers.processor_config import processor_config
-from src.physics.event_weights import add_weights
+from coffea4bees.analysis.helpers.event_weights import add_weights
 
 from coffea.analysis_tools import Weights, PackedSelection
 import numpy as np
@@ -55,10 +55,10 @@ class SubSampler(PicoAOD):
         event = apply_event_selection( event, self.corrections_metadata[year], cut_on_lumimask=config["cut_on_lumimask"] )
 
         ## adds all the event mc weights and 1 for data
-        weights, list_weight_names = add_weights( event, config["do_MC_weights"], dataset, year_label,
+        weights, list_weight_names = add_weights( event, dataset, year_label,
                                                   self.corrections_metadata[year],
                                                   apply_trigWeight = True,
-                                                  isTTForMixed = False,
+                                                  config=config
                                                  )
 
         #
@@ -77,7 +77,7 @@ class SubSampler(PicoAOD):
         event = update_events(event, {"Jet": jets})
 
         # Apply object selection (function does not remove events, adds content to objects)
-        event = apply_4b_selection( event, self.corrections_metadata[year], doLeptonRemoval=config["do_lepton_jet_cleaning"]  )
+        event = apply_4b_selection( event, self.corrections_metadata[year], config=config )
 
         selections = PackedSelection()
         selections.add( "lumimask", event.lumimask)

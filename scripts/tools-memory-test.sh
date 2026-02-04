@@ -16,7 +16,7 @@ OUTPUT_DIR="$OUTPUT_BASE_DIR/tools_memory_test"
 create_output_directory "$OUTPUT_DIR"
 
 display_section_header "Input Datasets"
-DATASETS="coffea4bees/metadata/datasets_HH4b_v1p2.yml"
+DATASETS="coffea4bees/metadata/datasets_HH4b_Run2/"
 echo "Using datasets file: $DATASETS"
 
 run_command python src/scripts/memory/memory_test.py \
