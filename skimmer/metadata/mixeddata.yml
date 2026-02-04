@@ -21,7 +21,7 @@ runner:
     - T3_US_NotreDame
 
 config:
-  base_path: root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor
+  base_path: root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_fixTTSub
   # base_path: skimmer/test/
   subtract_ttbar_with_weights: True
   hemi_library_yaml: coffea4bees/skimmer/metadata/hemisphere_library_noTT.yml
