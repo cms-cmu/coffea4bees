@@ -22,7 +22,7 @@ echo "Using datasets file: $DATASETS"
 display_section_header "Running test processor"
 bash coffea4bees/scripts/run-analysis-processor.sh \
     --output-base "$OUTPUT_BASE_DIR" \
-    --datasets "data" \
+    --datasets "data TTTo2L2Nu TTToSemiLeptonic TTToHadronic" \
     --dataset-metadata "$DATASETS" \
     --year "2022_EE 2022_preEE 2023_BPix 2023_preBPix" \
     --output-filename "test.coffea" \
