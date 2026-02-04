@@ -177,6 +177,11 @@ def plot(var: Union[str, List[str]] = 'selJets.pt', *,
     if kwargs.get("debug", False):
         print(f'kwargs = {kwargs}')
 
+    # Configure the histogram key based on the cut
+    cfg.set_hist_key("hists")
+    if cut in ["passMuMu","passElMu"]:
+        cfg.set_hist_key("hists_ttbar")
+
     # Handle wildcard matching
     if handle_wildcards(var):
         return
@@ -270,7 +275,7 @@ def initialize_config() -> None:
 
     cfg.hists = load_hists(args.inputFile)
     cfg.fileLabels = args.fileLabels
-    cfg.axisLabelsDict, cfg.cutListDict = read_axes_and_cuts(cfg.hists, cfg.plotConfig)
+    cfg.axisLabelsDict, cfg.cutListDict = read_axes_and_cuts(cfg.hists, cfg.plotConfig, hist_keys=['hists','hists_ttbar'])
     cfg.set_hist_key("hists")
 
 if __name__ == '__main__':

@@ -70,6 +70,8 @@ if __name__ == '__main__':
     era_aliases["2023_preBPix"] = ["2023_preBPixA", "2023_preBPixB", "2023_preBPixC", "2023_preBPixD", "2023_preBPixE", "2023_preBPixF"]
     era_aliases["2023_BPix"] = ["2023_BPixD",'2023_BPixE']
 
+    era_aliases["2022_preEEMC"] = ["2022_preEE"]
+    era_aliases["2023_preBPixMC"] = ["2023_preBPix"]
 
     parser = argparse.ArgumentParser(description='uproot_plots')
     parser.add_argument('-i','--inputFile', default='hists.pkl', help='Input File. Default: hists.pkl')
