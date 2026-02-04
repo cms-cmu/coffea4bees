@@ -23,6 +23,7 @@ from src.friendtrees.FriendTreeSchema import FriendTreeSchema
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b
 from coffea4bees.analysis.helpers.topCandReconstruction import find_tops, dumpTopCandidateTestVectors, buildTop
 from coffea4bees.analysis.helpers.hist_templates import SvBHists, FvTHists, QuadJetHistsUnsup, WCandHists, TopCandHists
+from coffea4bees.analysis.helpers.processor_config import processor_config
 
 from functools import partial
 from multiprocessing import Pool
@@ -96,7 +97,8 @@ class analysis(processor.ProcessorABC):
         era     = event.metadata.get('era', '')
         processName = event.metadata['processName']
         isMC    = True if event.run[0] == 1 else False
-        isMixedData = not (dataset.find("mix_v") == -1)
+        # isMixedData = not (dataset.find("mix_v") == -1)
+        config = processor_config(processName, dataset, event)
         lumi    = event.metadata.get('lumi',    1.0)
         xs      = event.metadata.get('xs',      1.0)
         kFactor = event.metadata.get('kFactor', 1.0)
@@ -174,7 +176,7 @@ class analysis(processor.ProcessorABC):
         self._cutFlow.fill("passHLT",  event[ event.lumimask & event.passNoiseFilter & event.passHLT], allTag=True)
 
         ### Apply object selection (function does not remove events, adds content to objects)
-        event =  apply_4b_selection( event, year, isMC, dataset, self.corrections_metadata[year], isMixedData=isMixedData  )
+        event =  apply_4b_selection( event, year, isMC, dataset, self.corrections_metadata[year], config=config  )
         self._cutFlow.fill("passJetMult",  event[ event.lumimask & event.passNoiseFilter & event.passHLT & event.passJetMult ], allTag=True)
 
         selections = []

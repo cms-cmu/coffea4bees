@@ -269,6 +269,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         # Set process and datset dependent flags
         #
         self.config = processor_config(self.processName, self.dataset, event)
+        # print("HACK")
+        if self.config["isRun3"]:
+            self.config["isSyntheticData"] = bool(self.config["isMixedData"]) or self.config["isSyntheticData"]
         logging.debug(f'{self.chunk} config={self.config}, for file {self.fname}\n')
 
 
@@ -327,14 +330,13 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         ### adds all the event mc weights and 1 for data
         weights, list_weight_names = add_weights(
             event,
+            config = self.config,
             target=self.target,
-            do_MC_weights=self.config["do_MC_weights"],
             dataset=self.dataset,
             year_label=self.year_label,
             friend_trigWeight=self.friends.get("trigWeight"),
             corrections_metadata=self.corrections_metadata[self.year],
             apply_trigWeight=self.apply_trigWeight,
-            isTTForMixed=self.config["isTTForMixed"],
             run_systematics= 'others' in self.run_systematics,
         )
 
@@ -395,7 +397,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         event = self.apply_selection(event)
 
         if self.run_dilep_ttbar_crosscheck:
-            event['passDilepTtbar'] = apply_dilep_ttbar_selection(event, isRun3=self.config["isRun3"])
+            apply_dilep_ttbar_selection(event, isRun3=self.config["isRun3"])
 
         #
         #  Test hT reweighting the synthetic data
@@ -1022,8 +1024,15 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         if self.run_dilep_ttbar_crosscheck:
             # This one uses weight_noJCM_noFvT override
-            self._cutFlow.fill("passDilepTtbar", selev[selev.passDilepTtbar], allTag=True,
-                            wOverride=selev['weight_noJCM_noFvT'][selev.passDilepTtbar])
+            self._cutFlow.fill("passMuMu", selev[selev.passMuMu], allTag=True,
+                            wOverride=selev['weight_noJCM_noFvT'][selev.passMuMu])
+            self._cutFlow.fill("passElMu", selev[selev.passElMu], allTag=True,
+                            wOverride=selev['weight_noJCM_noFvT'][selev.passElMu])
+            #self._cutFlow.fill("passElEl", selev[selev.passElEl], allTag=True,
+            #                wOverride=selev['weight_noJCM_noFvT'][selev.passElEl])
+
+
+
 
     def dump_friend_trees(self, selev, analysis_selections, shift_name):
         """Dump all requested friend trees.
@@ -1088,14 +1097,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         return apply_4b_selection(
             event,
             self.corrections_metadata[self.year],
+            config=self.config,
             dataset=self.dataset,
-            doLeptonRemoval=self.config["do_lepton_jet_cleaning"],
-            override_selected_with_flavor_bit=self.config["override_selected_with_flavor_bit"],
-            do_jet_veto_maps=self.config["do_jet_veto_maps"],
-            isRun3=self.config["isRun3"],
-            isMC=self.config["isMC"], ### temporary
-            isSyntheticData=self.config["isSyntheticData"],
-            isSyntheticMC=self.config["isSyntheticMC"],
             apply_mixeddata_sel=self.apply_mixeddata_sel,
         )
 

@@ -3,8 +3,10 @@ import awkward as ak
 import logging
 from src.physics.common import drClean, compute_puid
 from src.physics.objects.jet_corrections import apply_jet_veto_maps, apply_jerc_corrections
+from coffea4bees.analysis.trigger_emulator.helpers import compute_emulation_vars
 from copy import copy
 from typing import Dict, Any
+
 
 def muon_selection(muon: ak.Array, isRun3: bool = False) -> ak.Array:
     """
@@ -208,8 +210,8 @@ def jet_selection(
         if apply_mixeddata_sel:
             event['Jet', 'pileup'] = ((event.Jet.puId < 6) & (event.Jet.pt < 50))
             event['Jet', 'selected_loose'] = (event.Jet.pt >= 20) & ~event.Jet.pileup
-            event['Jet', 'selected'] = (event.Jet.pt >= 40) & (np.abs(event.Jet.eta) <= 2.4) & ~event.Jet.pileup 
-        
+            event['Jet', 'selected'] = (event.Jet.pt >= 40) & (np.abs(event.Jet.eta) <= 2.4) & ~event.Jet.pileup
+
         else:
             if ('GluGlu' in dataset) and not isSyntheticMC:
                 event['Jet', 'corrPuId'] = compute_puid(event.Jet, dataset)
@@ -241,9 +243,11 @@ def jet_selection(
     event['nJet_tagged_loose'] = ak.num(event.tagJet_loose)
 
     # For trigger emulation
+    #   Calculate HT and other event variables
     event['Jet', 'muon_cleaned'] = drClean(event.Jet, event.selMuon)[1]
-    event['Jet', 'ht_selected'] = (event.Jet.pt >= 30) & (np.abs(event.Jet.eta) < 2.4) & event.Jet.muon_cleaned
-    event['Jet', 'pfht_selected'] = (event.Jet.pt >= 30) & (np.abs(event.Jet.eta) < 2.4) 
+    event['Jet', 'ht_selected'] = (event.Jet.pt >= 30) & (np.abs(event.Jet.eta) < 2.5) & event.Jet.muon_cleaned
+    event['Jet', 'pfht_selected'] = (event.Jet.pt >= 30) & (np.abs(event.Jet.eta) < 2.5)
+    compute_emulation_vars(event, useOnlyTop4=(not isRun3))
 
     return event
 

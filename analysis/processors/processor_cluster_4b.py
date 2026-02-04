@@ -145,15 +145,14 @@ class analysis(processor.ProcessorABC):
         target = Chunk.from_coffea_events(event)
 
         ### adds all the event mc weights and 1 for data
-        weights, list_weight_names = add_weights( 
+        weights, list_weight_names = add_weights(
             event, target=target,
-            do_MC_weights=config["do_MC_weights"],
             dataset=dataset,
             year_label=year_label,
             friend_trigWeight=None,
             corrections_metadata=self.corrections_metadata[year],
             apply_trigWeight=True,
-            isTTForMixed=config["isTTForMixed"]
+            config = config
         )
 
 
@@ -178,15 +177,9 @@ class analysis(processor.ProcessorABC):
 
 
         # Apply object selection (function does not remove events, adds content to objects)
-        event = apply_4b_selection( event, self.corrections_metadata[year],
-                                           dataset=dataset,
-                                           doLeptonRemoval=config["do_lepton_jet_cleaning"],
-                                           override_selected_with_flavor_bit=config["override_selected_with_flavor_bit"],
-                                           do_jet_veto_maps=config["do_jet_veto_maps"],
-                                           isRun3=config["isRun3"],
-                                           isMC=config["isMC"], ### temporary
-                                           isSyntheticData=config["isSyntheticData"],
-                                          )
+        event = apply_4b_selection( event, self.corrections_metadata[year], config=config,
+                                    dataset=dataset,
+                                   )
 
         selections = PackedSelection()
         selections.add( "lumimask", event.lumimask)
