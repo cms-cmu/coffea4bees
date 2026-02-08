@@ -28,7 +28,7 @@ from src.friendtrees.FriendTreeSchema import FriendTreeSchema
 from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
 from coffea4bees.analysis.helpers.processor_config import processor_config
 from coffea4bees.analysis.helpers.candidates_selection import create_cand_jet_dijet_quadjet
-from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_SvB, setFvTVars
+from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_FvT, setFvTVars
 from coffea4bees.analysis.helpers.topCandReconstruction import (
     adding_top_reco_to_event,
     buildTop,
@@ -450,7 +450,11 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         # Subtract ttbar using SvB if requested
         if self.subtract_ttbar_with_weights:
-            pass_ttbar_filter_selev = subtract_ttbar_with_SvB(selev, self.dataset, self.year)
+
+            pass_ttbar_filter_4b = subtract_ttbar_with_FvT(selev, self.dataset, self.year, "tt_vs_mj_4")
+            pass_ttbar_filter_3b = subtract_ttbar_with_FvT(selev, self.dataset, self.year, "tt_vs_mj_3")
+            pass_ttbar_filter_selev = ak.where(selev.fourTag, pass_ttbar_filter_4b, pass_ttbar_filter_3b)
+
             pass_ttbar_filter = np.full(len(event), True)
             pass_ttbar_filter[selections.all(*allcuts)] = pass_ttbar_filter_selev
             selections.add('pass_ttbar_filter', pass_ttbar_filter)
@@ -639,7 +643,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             if not ak.all(event.FvT.event == event.event):
                 raise ValueError("ERROR: FvT events do not match events ttree")
 
-            setFvTVars("FvT", event)
+        setFvTVars("FvT", event)
+
 
     def load_SvB(self, event):
         """Load SvB friend tree.

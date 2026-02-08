@@ -196,6 +196,8 @@ def subtract_ttbar_with_SvB(selev, dataset, year):
 def setFvTVars(FvTName, event):
     if "std" not in event.FvT.fields:
         event[FvTName, "std"] = np.ones(len(event))
+
+    if "pt4" not in event.FvT.fields:
         event[FvTName, "pt4"] = np.ones(len(event))
         event[FvTName, "pt3"] = np.ones(len(event))
         event[FvTName, "pd4"] = np.ones(len(event))
