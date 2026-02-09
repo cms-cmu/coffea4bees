@@ -28,7 +28,7 @@ from src.friendtrees.FriendTreeSchema import FriendTreeSchema
 from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
 from coffea4bees.analysis.helpers.processor_config import processor_config
 from coffea4bees.analysis.helpers.candidates_selection import create_cand_jet_dijet_quadjet
-from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_SvB
+from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_SvB, setFvTVars
 from coffea4bees.analysis.helpers.topCandReconstruction import (
     adding_top_reco_to_event,
     buildTop,
@@ -634,16 +634,11 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     ).events().FvT
                 )
 
-            if "std" not in event.FvT.fields:
-                event["FvT", "std"] = np.ones(len(event))
-                event["FvT", "pt4"] = np.ones(len(event))
-                event["FvT", "pt3"] = np.ones(len(event))
-                event["FvT", "pd4"] = np.ones(len(event))
-                event["FvT", "pd3"] = np.ones(len(event))
 
-            event["FvT", "frac_err"] = event["FvT"].std / event["FvT"].FvT
             if not ak.all(event.FvT.event == event.event):
                 raise ValueError("ERROR: FvT events do not match events ttree")
+
+            setFvTVars("FvT", event)
 
     def load_SvB(self, event):
         """Load SvB friend tree.

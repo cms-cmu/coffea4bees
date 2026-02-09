@@ -4,7 +4,7 @@ from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
 from coffea.nanoevents import NanoEventsFactory
 from coffea.nanoevents.methods import vector
 
-from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_SvB
+from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_SvB, setFvTVars, subtract_ttbar_with_FvT
 from src.friendtrees.FriendTreeSchema import FriendTreeSchema
 from src.math_tools.random import Squares
 from coffea4bees.analysis.helpers.event_weights import add_btagweights
@@ -127,15 +127,26 @@ class HemiMixer(PicoAOD):
 
         if self.subtract_ttbar_with_weights:
 
-            SvB_MA_file = f'{fname.replace("picoAOD", "SvB_MA_ULHH")}'
-            event["SvB_MA"] = ( NanoEventsFactory.from_root( SvB_MA_file,
-                                                             entry_start=estart, entry_stop=estop, schemaclass=FriendTreeSchema ).events().SvB_MA )
+            # SvB_MA_file = f'{fname.replace("picoAOD", "SvB_MA_ULHH")}'
+            # event["SvB_MA"] = ( NanoEventsFactory.from_root( SvB_MA_file,
+            #                                                  entry_start=estart, entry_stop=estop, schemaclass=FriendTreeSchema ).events().SvB_MA )
+            #
+            # if not ak.all(event.SvB_MA.event == event.event):
+            #     raise ValueError("ERROR: SvB_MA events do not match events ttree")
+            #
+            # # defining SvB_MA
+            # setSvBVars("SvB_MA", event)
 
-            if not ak.all(event.SvB_MA.event == event.event):
-                raise ValueError("ERROR: SvB_MA events do not match events ttree")
+            #
+            FvT_file = f'{fname.replace("picoAOD", "FvT")}'
+            event["FvT"] = ( NanoEventsFactory.from_root( FvT_file,
+                                                          entry_start=estart, entry_stop=estop, schemaclass=FriendTreeSchema).events().FvT )
 
-            # defining SvB_MA
-            setSvBVars("SvB_MA", event)
+            if not ak.all(event.FvT.event == event.event):
+                raise ValueError("ERROR: FvT events do not match events ttree")
+            setFvTVars("FvT", event)
+
+
 
         event = apply_event_selection( event, self.corrections_metadata[year], cut_on_lumimask=config["cut_on_lumimask"] )
 
@@ -248,7 +259,8 @@ class HemiMixer(PicoAOD):
         #
         if self.subtract_ttbar_with_weights:
 
-            pass_ttbar_filter_selev = subtract_ttbar_with_SvB(selev, dataset, year)
+            #pass_ttbar_filter_selev = subtract_ttbar_with_SvB(selev, dataset, year)
+            pass_ttbar_filter_selev = subtract_ttbar_with_FvT(selev, dataset, year)
 
             pass_ttbar_filter = np.full( len(event), True)
             pass_ttbar_filter[ selections.all(*cumulative_cuts) ] = pass_ttbar_filter_selev

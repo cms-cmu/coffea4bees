@@ -92,5 +92,5 @@ def processor_config(processName, dataset, event):
     if config["isRun3"]:
         config['do_jet_veto_maps'] = False
         config['do_jet_calibration'] = False # Need a better name here (Jet calib is applied in Run3 by default !)
-
+        config["cut_on_HLT_decision"]  = True
     return config

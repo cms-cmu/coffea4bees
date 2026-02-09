@@ -33,7 +33,6 @@ from src.physics.objects.jet_corrections import apply_jerc_corrections
 from src.physics.common import apply_btag_sf, update_events
 from coffea4bees.analysis.helpers.event_weights import add_weights
 
-from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_SvB
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
 from src.physics.event_selection import apply_event_selection
 
@@ -62,8 +61,6 @@ class analysis(processor.ProcessorABC):
             JCM_file: str = "output/mixeddata_cluster/jcm_for_subsampling/jetCombinatoricModel_SB_.txt",
             threeTag=False,
             corrections_metadata: dict = None,
-            run_SvB=True,
-            subtract_ttbar_with_weights = False,
     ):
         logging.debug("\nInitialize  processor_make_hemi_library\n")
         logging.info(f"\nLoading JCM from file: {JCM_file} , apply_JCM = {apply_JCM}")
@@ -71,9 +68,6 @@ class analysis(processor.ProcessorABC):
         self.corrections_metadata = corrections_metadata
         self.classifier_SvB = HCREnsemble(SvB) if SvB else None
         self.classifier_SvB_MA = HCREnsemble(SvB_MA) if SvB_MA else None
-        self.run_SvB = run_SvB
-        self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
-
         self.histCuts = ["passPreSel"] #, "pass0OthJets", "pass1OthJets", "pass2OthJets"]
 
 
@@ -103,33 +97,6 @@ class analysis(processor.ProcessorABC):
         #
         self.config = processor_config(processName, dataset, event)
         logging.debug(f'{chunk_str} config={self.config}, for file {fname}\n')
-
-        #
-        # Reading SvB friend trees (for TTbar subtraction)
-        #
-        svb_path = fname.replace(fname.split("/")[-1], "")
-        if self.run_SvB:
-            if (self.classifier_SvB is None) | (self.classifier_SvB_MA is None):
-
-                #SvB_file = f'{svb_path}/SvB_newSBDef.root' if 'mix' in dataset else f'{fname.replace("picoAOD", "SvB_ULHH")}'
-                SvB_file = f'{svb_path}/SvB_ULHH.root' if 'mix' in dataset else f'{fname.replace("picoAOD", "SvB_ULHH")}'
-                event["SvB"] = ( NanoEventsFactory.from_root( SvB_file,
-                                                              entry_start=estart, entry_stop=estop, schemaclass=FriendTreeSchema).events().SvB )
-
-                if not ak.all(event.SvB.event == event.event):
-                    raise ValueError("ERROR: SvB events do not match events ttree")
-
-                #SvB_MA_file = f'{svb_path}/SvB_MA_newSBDef.root' if 'mix' in dataset else f'{fname.replace("picoAOD", "SvB_MA_ULHH")}'
-                SvB_MA_file = f'{svb_path}/SvB_MA_ULHH.root' if 'mix' in dataset else f'{fname.replace("picoAOD", "SvB_MA_ULHH")}'
-                event["SvB_MA"] = ( NanoEventsFactory.from_root( SvB_MA_file,
-                                                                 entry_start=estart, entry_stop=estop, schemaclass=FriendTreeSchema ).events().SvB_MA )
-
-                if not ak.all(event.SvB_MA.event == event.event):
-                    raise ValueError("ERROR: SvB_MA events do not match events ttree")
-
-                # defining SvB for different SR
-                setSvBVars("SvB", event)
-                setSvBVars("SvB_MA", event)
 
 
         #
@@ -224,22 +191,6 @@ class analysis(processor.ProcessorABC):
         print(f"{chunk_str} event.pseudoTagWeight is now {event.pseudoTagWeight[:10]} \n")
 
         selev = event[selections.all(*allcuts)]
-
-
-        #
-        # TTbar subtractions
-        #
-        if self.subtract_ttbar_with_weights:
-
-            pass_ttbar_filter_selev = subtract_ttbar_with_SvB(selev, dataset, year)
-
-            pass_ttbar_filter = np.full( len(event), True)
-            pass_ttbar_filter[ selections.all(*allcuts) ] = pass_ttbar_filter_selev
-            selections.add( 'pass_ttbar_filter', pass_ttbar_filter )
-            allcuts.append("pass_ttbar_filter")
-            selev = selev[pass_ttbar_filter_selev]
-
-
 
 
         #

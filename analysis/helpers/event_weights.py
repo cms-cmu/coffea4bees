@@ -41,10 +41,23 @@ def add_weights(
                 hlt
             )
         else:
-            weights.add(
-                "CMS_bbbb_resolved_ggf_triggerEffSF",
-                trigWeight.Data
-            )
+            if config["isRun3"]:
+
+                safe_m_total = ak.where(trigWeight.MC > 0, trigWeight.MC, 1.0)
+                raw_sf = trigWeight.Data / safe_m_total
+                sf = ak.where(trigWeight.MC > 0, raw_sf, 1.0)
+
+
+                weights.add(
+                    "CMS_bbbb_resolved_ggf_triggerEffSF",
+                    sf, #trigWeight.Data
+                )
+
+            else:
+                weights.add(
+                    "CMS_bbbb_resolved_ggf_triggerEffSF",
+                    trigWeight.Data
+                )
         list_weight_names.append('CMS_bbbb_resolved_ggf_triggerEffSF')
         logging.debug( f"trigWeight {weights.partial_weight(include=['CMS_bbbb_resolved_ggf_triggerEffSF'])[:10]}\n" )
 
