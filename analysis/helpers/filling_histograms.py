@@ -28,8 +28,9 @@ def filling_nominal_histograms(
     tag_list: list = ["threeTag", "fourTag"],
     run_dilep_ttbar_crosscheck: bool = False,
     event_metadata: dict = {},
+    weight_name = "weight"
 ):
-    fill = Fill(process=processName, year=year, weight="weight")
+    fill = Fill(process=processName, year=year, weight=weight_name)
 
     hist = Collection(
         process=[processName],

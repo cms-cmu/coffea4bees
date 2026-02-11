@@ -147,7 +147,6 @@ def add_pseudotagweights(
 
         # Calculate weight without FvT
         weight_noFvT = ak.where(event[label3b], event.weight * event.pseudoTagWeight * event.pseudoTagWeight_lowpt, event.weight)
-
         event["weight_noFvT"] = weight_noFvT
         logging.debug( f"weight_noFvT {event.weight_noFvT[:10]}\n" )
 
@@ -188,6 +187,18 @@ def add_pseudotagweights(
                 weights.add("FvT", weight)
                 list_weight_names.append("FvT")
                 logging.debug( f"FvT {weights.partial_weight(include=['FvT'])[:10]}\n" )
+
+
+                weight_d3_to_t4 = ak.where(event[label3b], event.weight * event.pseudoTagWeight * event.pseudoTagWeight_lowpt * event.FvT.d3_to_t4, event.weight)
+                event["weight_d3_to_t4"] = weight_d3_to_t4
+                logging.debug( f"weight_d3_to_t4 {event.weight_d3_to_t4[:10]}\n" )
+
+                weight_d3_to_t3 = ak.where(event[label3b], event.weight * event.pseudoTagWeight * event.pseudoTagWeight_lowpt * event.FvT.d3_to_t3, event.weight)
+                event["weight_d3_to_t3"] = weight_d3_to_t3
+                logging.debug( f"weight_d3_to_t3 {event.weight_d3_to_t3[:10]}\n" )
+
+
+
         else:
             weight_noFvT = np.copy(event.weight)
             weight_noFvT = np.where(
