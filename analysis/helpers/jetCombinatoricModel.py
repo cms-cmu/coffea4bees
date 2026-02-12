@@ -7,7 +7,7 @@ from src.math_tools.random import Squares
 from scipy.special import comb
 
 class jetCombinatoricModel:
-    def __init__(self, filename, cut='passPreSel', zero_npt=False, nbt=3, maxPseudoTags=12, lowpt_mode=False, used_stored_weights=False):
+    def __init__(self, filename, cut='passPreSel', zero_npt=False, nbt=3, maxPseudoTags=12, lowpt_mode=False, used_stored_weights=False, lowpt_mode=False, used_stored_weights=False):
         """
         Initialize the jet combinatoric model with parameters from a file.
         

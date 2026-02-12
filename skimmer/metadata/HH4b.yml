@@ -19,18 +19,12 @@ runner:
   # rucio_regex_sites: 'T[123]_(US|CH|DE|UK)'
   allowlist_sites:
     - T3_US_FNALLPC
-    - T2_US_Nebraska
-    - T3_US_NotreDame
-    - T2_US_Caltech
-    # - T2_US_Vanderbilt
-    # - T1_RU_JINR_Disk
-    # - T2_US_UCSD
-    # - T2_CH_CERN
-    # - T2_US_Wisconsin
-    # - T2_IT_Bari
-    - T1_US_FNAL_Disk
-    - T2_US_MIT
-    - T2_US_Purdue
+  #   - T2_US_Nebraska
+  #   - T3_US_NotreDame
+  #   - T2_US_Caltech
+  #   - T1_US_FNAL_Disk
+  #   - T2_US_MIT
+  #   - T2_US_Purdue
   # blocklist_sites:
   #   - T2_US_MIT
   #   - T2_US_Purdue
