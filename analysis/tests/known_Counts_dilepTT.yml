@@ -36,7 +36,7 @@ counts4:
         passElMu: 0.0
 
     data_UL16_preVFPD:
-        passMuMu: 1.0
+        passMuMu: 2.0
         passElMu: 0.0
 
     data_UL16_preVFPC:
@@ -92,20 +92,20 @@ counts4:
         passElMu: 0.0
 
     TTTo2L2Nu_UL18:
-        passMuMu: 0.03
-        passElMu: 0.15
+        passMuMu: 0.12
+        passElMu: 0.35
 
     TTTo2L2Nu_UL17:
-        passMuMu: 0.01
-        passElMu: 0.28
+        passMuMu: 0.17
+        passElMu: 0.5
 
     TTTo2L2Nu_UL16_preVFP:
-        passMuMu: 0.11
-        passElMu: 0.38
+        passMuMu: 0.27
+        passElMu: 0.69
 
     TTTo2L2Nu_UL16_postVFP:
-        passMuMu: 0.27
-        passElMu: 0.44
+        passMuMu: 0.48
+        passElMu: 0.78
 
 
 
@@ -147,7 +147,7 @@ counts3:
         passElMu: 0.0
 
     data_UL16_preVFPD:
-        passMuMu: 1.0
+        passMuMu: 2.0
         passElMu: 0.0
 
     data_UL16_preVFPC:
@@ -203,20 +203,20 @@ counts3:
         passElMu: 0.0
 
     TTTo2L2Nu_UL18:
-        passMuMu: 0.03
-        passElMu: 0.15
+        passMuMu: 0.12
+        passElMu: 0.35
 
     TTTo2L2Nu_UL17:
-        passMuMu: 0.01
-        passElMu: 0.28
+        passMuMu: 0.17
+        passElMu: 0.5
 
     TTTo2L2Nu_UL16_preVFP:
-        passMuMu: 0.11
-        passElMu: 0.38
+        passMuMu: 0.27
+        passElMu: 0.69
 
     TTTo2L2Nu_UL16_postVFP:
-        passMuMu: 0.27
-        passElMu: 0.44
+        passMuMu: 0.48
+        passElMu: 0.78
 
 
 
@@ -258,7 +258,7 @@ counts4_unit:
         passElMu: 0.0
 
     data_UL16_preVFPD:
-        passMuMu: 1.0
+        passMuMu: 2.0
         passElMu: 0.0
 
     data_UL16_preVFPC:
@@ -314,20 +314,20 @@ counts4_unit:
         passElMu: 0.0
 
     TTTo2L2Nu_UL18:
-        passMuMu: 2.0
-        passElMu: 10.0
+        passMuMu: 10.0
+        passElMu: 31.0
 
     TTTo2L2Nu_UL17:
-        passMuMu: 1.0
-        passElMu: 21.0
+        passMuMu: 13.0
+        passElMu: 35.0
 
     TTTo2L2Nu_UL16_preVFP:
-        passMuMu: 5.0
-        passElMu: 14.0
+        passMuMu: 11.0
+        passElMu: 26.0
 
     TTTo2L2Nu_UL16_postVFP:
-        passMuMu: 7.0
-        passElMu: 18.0
+        passMuMu: 17.0
+        passElMu: 32.0
 
 
 
@@ -369,7 +369,7 @@ counts3_unit:
         passElMu: 0.0
 
     data_UL16_preVFPD:
-        passMuMu: 1.0
+        passMuMu: 2.0
         passElMu: 0.0
 
     data_UL16_preVFPC:
@@ -425,20 +425,20 @@ counts3_unit:
         passElMu: 0.0
 
     TTTo2L2Nu_UL18:
-        passMuMu: 2.0
-        passElMu: 10.0
+        passMuMu: 10.0
+        passElMu: 31.0
 
     TTTo2L2Nu_UL17:
-        passMuMu: 1.0
-        passElMu: 21.0
+        passMuMu: 13.0
+        passElMu: 35.0
 
     TTTo2L2Nu_UL16_preVFP:
-        passMuMu: 5.0
-        passElMu: 14.0
+        passMuMu: 11.0
+        passElMu: 26.0
 
     TTTo2L2Nu_UL16_postVFP:
-        passMuMu: 7.0
-        passElMu: 18.0
+        passMuMu: 17.0
+        passElMu: 32.0
 
 
 

@@ -159,6 +159,7 @@ def filling_nominal_histograms(
         hist_ttbar = Collection(
             process=[processName],
             year=[year],
+            tag=tag_list,
             **dict((s, ...) for s in ['passMuMu', 'passElMu'])
         )
 

@@ -188,14 +188,25 @@ def setup_model(bin_data: Tuple, args: argparse.Namespace, logger: logging.Logge
         JCM_model.fixParameter_combination({
             "threeTightTagFraction": threeTightTagFraction,
             "pairEnhancement": 0.0,
-            "pairEnhancementDecay": 1.0
+            "pairEnhancementDecay": 1.0,
+            "tt4bSF": 1.0
         })
+
     elif args.fix_d:
         logger.info("Fixing pairEnhancementDecay parameter to 1.0")
         JCM_model.fixParameter_combination({
             "threeTightTagFraction": threeTightTagFraction,
-            "pairEnhancementDecay": 1.0
+            "pairEnhancementDecay": 1.0,
+            "tt4bSF": 1.0
         })
+
+    elif not args.float_tt4bSF:
+        logger.info("Fixing ttbar4b SF to 1.0")
+        JCM_model.fixParameter_combination({
+            "threeTightTagFraction": threeTightTagFraction,
+            "tt4bSF": 1.0
+        })
+
     else:
         logger.info(f"Fixing threeTightTagFraction to {threeTightTagFraction:.6f}")
         JCM_model.fixParameter_combination({
@@ -489,10 +500,11 @@ def create_plots(
         plot_param_name = {
             "pseudoTagProb": "f",
             "pairEnhancement": "e",
-            "pairEnhancementDecay": "d"
+            "pairEnhancementDecay": "d",
+            "tt4bSF": "tt4bSF"
         }
         for parameter in JCM_model.parameters:
-            if parameter["name"] == "threeTightTagFraction":
+            if parameter["name"] in ["threeTightTagFraction","tt4bSF"]:
                 continue
             fit_text += f"  {plot_param_name[parameter['name']]} = {round(parameter['value'], 2)} +/- {round(parameter['error'], 3)}  ({round(parameter['percentError'], 1)}%)\n"
 
@@ -512,6 +524,7 @@ def create_plots(
 
     # Plot tagged jets
     try:
+        logger.info("Creating tagged jet multiplicity plot")
         cfg.hists[0]['hists'][tagJets].fill(**dummy_data)
 
         # Get N-tag jet predictions
@@ -597,6 +610,8 @@ def main():
                         help='Fix the pairEnhancement parameter to 0')
     parser.add_argument('-fix_d', action="store_true",
                         help='Fix the pairEnhancementDecay parameter to 1')
+    parser.add_argument('-float_tt4bSF', action="store_true",
+                        help='Allow  the ttbar SF  to 1')
     parser.add_argument('-i', '--inputFile', nargs="+", dest="inputFile",
                         default='hists.pkl', help='Input file(s). Default: hists.pkl')
     parser.add_argument('-o', '--outputDir', dest='outputDir', default="",
