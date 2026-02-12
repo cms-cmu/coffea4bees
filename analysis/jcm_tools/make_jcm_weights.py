@@ -200,7 +200,7 @@ def setup_model(bin_data: Tuple, args: argparse.Namespace, logger: logging.Logge
             "tt4bSF": 1.0
         })
 
-    elif args.fix_tt4bSF:
+    elif not args.float_tt4bSF:
         logger.info("Fixing ttbar4b SF to 1.0")
         JCM_model.fixParameter_combination({
             "threeTightTagFraction": threeTightTagFraction,
@@ -610,8 +610,8 @@ def main():
                         help='Fix the pairEnhancement parameter to 0')
     parser.add_argument('-fix_d', action="store_true",
                         help='Fix the pairEnhancementDecay parameter to 1')
-    parser.add_argument('-fix_tt4bSF', action="store_true",
-                        help='Fix the ttbar SF  to 1')
+    parser.add_argument('-float_tt4bSF', action="store_true",
+                        help='Allow  the ttbar SF  to 1')
     parser.add_argument('-i', '--inputFile', nargs="+", dest="inputFile",
                         default='hists.pkl', help='Input file(s). Default: hists.pkl')
     parser.add_argument('-o', '--outputDir', dest='outputDir', default="",
