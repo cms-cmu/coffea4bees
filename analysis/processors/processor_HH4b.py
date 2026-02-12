@@ -188,7 +188,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             logging.info(f"\nUsing JCM from {JCM_file}")
             self.apply_JCM = jetCombinatoricModel(JCM_file)
         else:
-            sel.apply_JCM =  None
+            self.apply_JCM =  None
         self.apply_trigWeight = apply_trigWeight
         self.apply_btagSF = apply_btagSF
         self.apply_FvT = apply_FvT
