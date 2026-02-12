@@ -504,7 +504,7 @@ def create_plots(
             "tt4bSF": "tt4bSF"
         }
         for parameter in JCM_model.parameters:
-            if parameter["name"] == "threeTightTagFraction":
+            if parameter["name"] in ["threeTightTagFraction","tt4bSF"]:
                 continue
             fit_text += f"  {plot_param_name[parameter['name']]} = {round(parameter['value'], 2)} +/- {round(parameter['error'], 3)}  ({round(parameter['percentError'], 1)}%)\n"
 

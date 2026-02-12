@@ -318,7 +318,7 @@ class jetCombinatoricModel:
         return output
 
     def getPseudoTagProbs(self, nj: int, f: float, e: float = 0.0, d: float = 1.0,
-                        norm: float = 1.0, lowpt: bool = False) -> np.ndarray:
+                          norm: float = 1.0, lowpt: bool = False) -> np.ndarray:
         """
         Calculate the pseudo-tag probabilities for a given jet multiplicity.
 
@@ -563,16 +563,12 @@ class jetCombinatoricModel:
 
                 # Sum over all possible lowpt jet multiplicities
                 for nLowptJets in range(this_nTag, 11):  # Need at least this_nTag jets to get this_nTag tags
-                    # Get parameter set
-                    if len(par) in [4, 5]:
-                        nPseudoTagProb = self.getPseudoTagProbs(nLowptJets, par[0], par[1], par[2], par[4], lowpt=True)
-                    elif len(par) == 3:
-                        nPseudoTagProb = self.getPseudoTagProbs(nLowptJets, par[0], par[1], 1.0, par[2], lowpt=True)
-                    elif len(par) == 2:
-                        nPseudoTagProb = self.getPseudoTagProbs(nLowptJets, par[0], 0.0, 1.0, par[1], lowpt=True)
-                    elif len(par) == 1:
-                        norm_value = self.threeTightTagFraction["fix"] if self.threeTightTagFraction["fix"] is not None else 1.0
-                        nPseudoTagProb = self.getPseudoTagProbs(nLowptJets, par[0], 0.0, 1.0, norm_value, lowpt=True)
+                    nPseudoTagProb = self.getPseudoTagProbs(nLowptJets,
+                                                            par[self.pseudoTagProb         ["index"]],
+                                                            par[self.pairEnhancement       ["index"]],
+                                                            par[self.pairEnhancementDecay  ["index"]],
+                                                            par[self.threeTightTagFraction ["index"]],
+                                                            lowpt=True)
 
                     # nPseudoTagProb[this_nTag] = probability of getting exactly this_nTag lowpt tags
                     # from nLowptJets lowpt jets
@@ -591,15 +587,12 @@ class jetCombinatoricModel:
                 # Also add 0-tag events to output[0] if needed
                 if this_nTag == 0:
                     for nLowptJets in range(1, 11):
-                        if len(par) in [4, 5]:
-                            nPseudoTagProb = self.getPseudoTagProbs(nLowptJets, par[0], par[1], par[2], par[4], lowpt=True)
-                        elif len(par) == 3:
-                            nPseudoTagProb = self.getPseudoTagProbs(nLowptJets, par[0], par[1], 1.0, par[2], lowpt=True)
-                        elif len(par) == 2:
-                            nPseudoTagProb = self.getPseudoTagProbs(nLowptJets, par[0], 0.0, 1.0, par[1], lowpt=True)
-                        elif len(par) == 1:
-                            norm_value = self.threeTightTagFraction["fix"] if self.threeTightTagFraction["fix"] is not None else 1.0
-                            nPseudoTagProb = self.getPseudoTagProbs(nLowptJets, par[0], 0.0, 1.0, norm_value, lowpt=True)
+                        nPseudoTagProb = self.getPseudoTagProbs(nLowptJets,
+                                                                par[self.pseudoTagProb        ["index"]],
+                                                                par[self.pairEnhancement      ["index"]],
+                                                                par[self.pairEnhancementDecay ["index"]],
+                                                                par[self.threeTightTagFraction["index"]],
+                                                                lowpt=True)
 
                         hist_bin = nLowptJets + 3
                         if hist_bin < len(self.qcd3b):
@@ -608,15 +601,12 @@ class jetCombinatoricModel:
             # Standard mode: original implementation
             for ibin, this_nTag in enumerate(n):
                 for nj in range(4, 14):
-                    if len(par) in [4, 5]:
-                        nPseudoTagProb = self.getPseudoTagProbs(nj, par[0], par[1], par[2], par[4], lowpt=False)
-                    elif len(par) == 3:
-                        nPseudoTagProb = self.getPseudoTagProbs(nj, par[0], par[1], 1.0, par[2], lowpt=False)
-                    elif len(par) == 2:
-                        nPseudoTagProb = self.getPseudoTagProbs(nj, par[0], 0.0, 1.0, par[1], lowpt=False)
-                    elif len(par) == 1:
-                        norm_value = self.threeTightTagFraction["fix"] if self.threeTightTagFraction["fix"] is not None else 1.0
-                        nPseudoTagProb = self.getPseudoTagProbs(nj, par[0], 0.0, 1.0, norm_value, lowpt=False)
+                    nPseudoTagProb = self.getPseudoTagProbs(nj,
+                                                            par[self.pseudoTagProb        ["index"]],
+                                                            par[self.pairEnhancement      ["index"]],
+                                                            par[self.pairEnhancementDecay ["index"]],
+                                                            par[self.threeTightTagFraction["index"]],
+                                                            lowpt=False)
 
                     if this_nTag >= 4:
                         pseudotag_idx = this_nTag - 3
@@ -661,7 +651,13 @@ class jetCombinatoricModel:
             jet_range = range(4, 16)
 
         for nj in jet_range:
-            nj_pseudoTagProbs = self.getPseudoTagProbs(nj, params[0], params[1], params[2], params[4], lowpt=lowpt)
+            nj_pseudoTagProbs = self.getPseudoTagProbs(nj,
+                                                       params[self.pseudoTagProb        ["index"]],
+                                                       params[self.pairEnhancement      ["index"]],
+                                                       params[self.pairEnhancementDecay ["index"]],
+                                                       params[self.threeTightTagFraction["index"]],
+                                                       lowpt=lowpt)
+
             zerotag_output_weights.append(nj_pseudoTagProbs[0])
             output_weights.append(np.sum(nj_pseudoTagProbs[1:]))
 
