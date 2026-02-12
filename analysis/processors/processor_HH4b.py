@@ -28,7 +28,7 @@ from src.friendtrees.FriendTreeSchema import FriendTreeSchema
 from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
 from coffea4bees.analysis.helpers.processor_config import processor_config
 from coffea4bees.analysis.helpers.candidates_selection import create_cand_jet_dijet_quadjet
-from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_SvB, setFvTVars
+from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_FvT, setFvTVars
 from coffea4bees.analysis.helpers.topCandReconstruction import (
     adding_top_reco_to_event,
     buildTop,
@@ -122,6 +122,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         make_friend_FvT_weight (str): Path for dumping FvT weight friend tree.
         make_friend_SvB (str): Path for dumping SvB friend tree.
         subtract_ttbar_with_weights (bool): Whether to subtract ttbar using weights.
+        plot_ttbar_with_weights (bool): Whether to plot ttbar (3b and 4b) from 3b data using weights.
         apply_mixeddata_sel (bool): Whether to apply mixed data selection.
         friends (dict): Dictionary of friend tree templates or paths.
 
@@ -175,6 +176,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         make_friend_FvT_weight: str = None,
         make_friend_SvB: str = None,
         subtract_ttbar_with_weights: bool = False,
+        plot_ttbar_with_weights: bool = False,
         apply_mixeddata_sel: bool = False,  #### apply HIG-22-011 sel for mixeddata
         friends: dict[str, str|FriendTemplate] = None,
         return_events_for_display: bool = False,
@@ -182,7 +184,11 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         logging.debug("\nInitialize Analysis Processor")
         self.blind = blind
-        self.apply_JCM = jetCombinatoricModel(JCM_file) if apply_JCM else None
+        if apply_JCM:
+            logging.info(f"\nUsing JCM from {JCM_file}")
+            self.apply_JCM = jetCombinatoricModel(JCM_file)
+        else:
+            sel.apply_JCM =  None
         self.apply_trigWeight = apply_trigWeight
         self.apply_btagSF = apply_btagSF
         self.apply_FvT = apply_FvT
@@ -204,6 +210,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         if self.top_reconstruction is not None and self.top_reconstruction not in ["slow", "fast"]:
             raise ValueError(f"top_reconstruction must be None, 'slow', or 'fast', got: {self.top_reconstruction}")
         self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
+        self.plot_ttbar_with_weights = plot_ttbar_with_weights
         self.friends = parse_friends(friends)
         self.histCuts = hist_cuts
         self.apply_mixeddata_sel = apply_mixeddata_sel
@@ -450,7 +457,11 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         # Subtract ttbar using SvB if requested
         if self.subtract_ttbar_with_weights:
-            pass_ttbar_filter_selev = subtract_ttbar_with_SvB(selev, self.dataset, self.year)
+
+            pass_ttbar_filter_4b = subtract_ttbar_with_FvT(selev, self.dataset, self.year, "d4_to_t4")
+            pass_ttbar_filter_3b = subtract_ttbar_with_FvT(selev, self.dataset, self.year, "d3_to_t3")
+            pass_ttbar_filter_selev = ak.where(selev.fourTag, pass_ttbar_filter_4b, pass_ttbar_filter_3b)
+
             pass_ttbar_filter = np.full(len(event), True)
             pass_ttbar_filter[selections.all(*allcuts)] = pass_ttbar_filter_selev
             selections.add('pass_ttbar_filter', pass_ttbar_filter)
@@ -639,7 +650,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             if not ak.all(event.FvT.event == event.event):
                 raise ValueError("ERROR: FvT events do not match events ttree")
 
-            setFvTVars("FvT", event)
+        setFvTVars("FvT", event)
+
 
     def load_SvB(self, event):
         """Load SvB friend tree.
@@ -1202,7 +1214,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         if not self.run_systematics:
             ## this can be simplified
-            return filling_nominal_histograms(
+            hist_nom = filling_nominal_histograms(
                 selev,
                 self.apply_JCM,
                 processName=self.processName,
@@ -1215,7 +1227,48 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 top_reconstruction=self.top_reconstruction,
                 isDataForMixed=self.config['isDataForMixed'],
                 event_metadata=event.metadata
-                )
+            )
+            if not self.plot_ttbar_with_weights:
+                return hist_nom
+
+
+            hist_t4 = filling_nominal_histograms(
+                selev,
+                self.apply_JCM,
+                processName="TTbar4b_from_d3",
+                year=self.year,
+                isMC=self.config["isMC"],
+                histCuts=self.histCuts,
+                apply_FvT=apply_FvT,
+                run_SvB=self.run_SvB,
+                run_dilep_ttbar_crosscheck=self.run_dilep_ttbar_crosscheck,
+                top_reconstruction=self.top_reconstruction,
+                isDataForMixed=self.config['isDataForMixed'],
+                event_metadata=event.metadata,
+                weight_name = "weight_d3_to_t4"
+            )
+
+            hist_t3 = filling_nominal_histograms(
+                selev,
+                self.apply_JCM,
+                processName="TTbar3b_from_d3",
+                year=self.year,
+                isMC=self.config["isMC"],
+                histCuts=self.histCuts,
+                apply_FvT=apply_FvT,
+                run_SvB=self.run_SvB,
+                run_dilep_ttbar_crosscheck=self.run_dilep_ttbar_crosscheck,
+                top_reconstruction=self.top_reconstruction,
+                isDataForMixed=self.config['isDataForMixed'],
+                event_metadata=event.metadata,
+                weight_name = "weight_d3_to_t3"
+            )
+
+            return processor.accumulate([hist_nom, hist_t4, hist_t3])
+
+
+
+
         #
         # Run systematics
         #

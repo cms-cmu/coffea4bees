@@ -196,20 +196,24 @@ def subtract_ttbar_with_SvB(selev, dataset, year):
 def setFvTVars(FvTName, event):
     if "std" not in event.FvT.fields:
         event[FvTName, "std"] = np.ones(len(event))
+
+    if "pt4" not in event.FvT.fields:
         event[FvTName, "pt4"] = np.ones(len(event))
         event[FvTName, "pt3"] = np.ones(len(event))
         event[FvTName, "pd4"] = np.ones(len(event))
         event[FvTName, "pd3"] = np.ones(len(event))
 
     event[FvTName, "frac_err"]   = getattr(event, FvTName).std / getattr(event, FvTName).FvT
-    event[FvTName, "tt_vs_mj_3"] = getattr(event, FvTName).pt3 / getattr(event, FvTName).pd3
-    event[FvTName, "tt_vs_mj_4"] = getattr(event, FvTName).pt4 / getattr(event, FvTName).pd4
+    event[FvTName, "d4_to_t4"] = getattr(event, FvTName).pt4 / getattr(event, FvTName).pd4
+    event[FvTName, "d3_to_t3"]   = getattr(event, FvTName).pt3 / getattr(event, FvTName).pd3
+    event[FvTName, "d3_to_t4"]   = getattr(event, FvTName).pt4 / getattr(event, FvTName).pd3
 
 
 
 
 
-def subtract_ttbar_with_FvT(selev, dataset, year, tt_vs_mj_var="tt_vs_mj_3"):
+
+def subtract_ttbar_with_FvT(selev, dataset, year, tt_vs_mj_var="d3_to_t3"):
 
     #
     # Get reproducible random numbers

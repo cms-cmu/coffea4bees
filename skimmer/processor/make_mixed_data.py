@@ -259,7 +259,6 @@ class HemiMixer(PicoAOD):
         #
         if self.subtract_ttbar_with_weights:
 
-            #pass_ttbar_filter_selev = subtract_ttbar_with_SvB(selev, dataset, year)
             pass_ttbar_filter_selev = subtract_ttbar_with_FvT(selev, dataset, year)
 
             pass_ttbar_filter = np.full( len(event), True)
