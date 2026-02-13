@@ -12,16 +12,15 @@ class analysis(HH4bBaseProcessor):
     def __init__(
         self,
         *,
-        apply_JCM_lowpt: bool = False,
-        JCM_lowpt_file: str = None,
-        run_lowpt_selection: bool = False,
+        apply_JCM: bool = False,
+        JCM_file: str = None,
         **kwargs  # Accept additional arguments to pass to parent
     ):
-        # Initialize parent first, passing all kwargs
-        super().__init__(**kwargs)
+        # Initialize parent without JCM (we'll handle it ourselves)
+        super().__init__(apply_JCM=False, **kwargs)
         
-        self.apply_JCM_lowpt = jetCombinatoricModel(JCM_lowpt_file) if apply_JCM_lowpt else None
-        self.run_lowpt_selection = run_lowpt_selection
+        # Set our own lowpt version of JCM
+        self.apply_JCM = jetCombinatoricModel(JCM_file, lowpt_mode=True) if apply_JCM else None
 
     def apply_selection(self, event):
         return apply_4b_lowpt_selection(
@@ -41,8 +40,8 @@ class analysis(HH4bBaseProcessor):
         return add_pseudotagweights(
             event,
             weights,
-            JCM_lowpt=self.apply_JCM_lowpt,
             JCM=self.apply_JCM,
+            lowpt=True,
             apply_FvT=self.apply_FvT,
             isDataForMixed=self.config["isDataForMixed"],
             list_weight_names=list_weight_names,

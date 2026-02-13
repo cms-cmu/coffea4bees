@@ -19,7 +19,11 @@ from coffea4bees.analysis.helpers.event_weights import (
 )
 from src.physics.event_selection import apply_event_selection
 from coffea4bees.analysis.helpers.event_weights import add_weights
-from coffea4bees.analysis.helpers.event_selection import apply_dilep_ttbar_selection, apply_4b_selection
+from coffea4bees.analysis.helpers.event_selection import (
+    apply_boosted_4b_selection, 
+    apply_dilep_ttbar_selection, 
+    apply_4b_selection
+)
 from coffea4bees.analysis.helpers.filling_histograms import (
     filling_nominal_histograms,
     filling_syst_histograms,
@@ -188,7 +192,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             logging.info(f"\nUsing JCM from {JCM_file}")
             self.apply_JCM = jetCombinatoricModel(JCM_file)
         else:
-            sel.apply_JCM =  None
+            self.apply_JCM =  None
         self.apply_trigWeight = apply_trigWeight
         self.apply_btagSF = apply_btagSF
         self.apply_FvT = apply_FvT
@@ -332,7 +336,6 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             cut_on_lumimask=self.config["cut_on_lumimask"]
         )
         self._log_memory("after_event_selection")
-
 
         ### adds all the event mc weights and 1 for data
         weights, list_weight_names = add_weights(
@@ -725,6 +728,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             boosted_events = boosted_file.get(self.dataset, {}).get('event', event.event)
             boosted_events_set = set(boosted_events)
             event['notInBoostedSel'] = np.array([e not in boosted_events_set for e in event.event.to_numpy()])
+        elif self.dataset.startswith("VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00"):
+            event = apply_boosted_4b_selection(event)
+            event['notInBoostedSel'] = ~event.passBoostedSel
         elif self.dataset.startswith("data"):
             boosted_file = load("coffea4bees/metadata/boosted_overlap_data.coffea")
             mask = np.array(boosted_file['BDTcat_index']) > 0  ### > 0 is all boosted categories, 1 is most sensitive

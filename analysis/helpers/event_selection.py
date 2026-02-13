@@ -165,7 +165,8 @@ def apply_4b_selection(
         event['twoTag'] = False
 
     if config["isRun3"]:
-        event['passPreSel'] = event.twoTag | event.threeTag | event.fourTag
+        # event['passPreSel'] = event.twoTag | event.threeTag | event.fourTag
+        event['passPreSel'] = event.threeTag | event.fourTag
     else:
         event['passPreSel'] = event.threeTag | event.fourTag
 
@@ -276,6 +277,7 @@ def apply_4b_lowpt_selection(
     event['fourTag'] = event['nJet_tagged'] >= 4
     event['threeTag'] = (event['nJet_tagged_loose'] == 3) & (
         event['nJet_selected'] >= 4)
+    event['twoTag'] = (event['nJet_tagged_loose'] == 2) & (event['nJet_selected'] >= 4)  #### temporary
     event['lowpt_fourTag'] = (
         (event['nJet_tagged'] == 3) &
         (event['nJet_selected'] >= 4) &

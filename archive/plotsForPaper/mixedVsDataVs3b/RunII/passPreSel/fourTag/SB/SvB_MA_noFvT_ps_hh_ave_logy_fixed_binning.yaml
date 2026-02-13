@@ -1631,7 +1631,7 @@ kwargs:
   - 0
   - 1
   rlabel: Data/Model
-  ylabel: Events
+  ylabel: Events/0.021
   write_yaml: true
   year_str: 133 $fb^{-1}$
   do_title: False
