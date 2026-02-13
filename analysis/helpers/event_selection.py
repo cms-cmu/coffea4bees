@@ -54,7 +54,7 @@ def apply_dilep_ttbar_selection(event: ak.Array, isRun3: bool = False) -> ak.Arr
 
     event["mll"] = ak.where(ll_mask, (l0 + l1).mass, -1)
 
-    jet_mask = event.nJet_tagged == 2
+    jet_mask = event.nJet_tagged_loose >= 2
 
     # Require MET > 40 GeV
     met_mask = event.MET.pt > 30
