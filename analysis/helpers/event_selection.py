@@ -165,7 +165,8 @@ def apply_4b_selection(
         event['twoTag'] = False
 
     if config["isRun3"]:
-        event['passPreSel'] = event.twoTag | event.threeTag | event.fourTag
+        # event['passPreSel'] = event.twoTag | event.threeTag | event.fourTag
+        event['passPreSel'] = event.threeTag | event.fourTag
     else:
         event['passPreSel'] = event.threeTag | event.fourTag
 

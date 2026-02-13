@@ -9,6 +9,7 @@ to apply to the 3-tag sample to model the 4-tag background.
 """
 
 import sys
+import os
 import argparse
 import logging
 from copy import copy
@@ -28,6 +29,7 @@ from src.plotting.iPlot_config import plot_config
 cfg = plot_config()
 
 from coffea4bees.analysis.jcm_tools.jcm_model import jetCombinatoricModel
+from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel as JCM_apply
 from coffea4bees.analysis.jcm_tools.helpers import (
     loadHistograms,
     data_from_Hist,
@@ -90,6 +92,8 @@ def process_histograms(data4b, data3b, tt4b, tt3b, qcd4b, qcd3b, data4b_nTagJets
         logger.info(f"  tt4b:   {np.sum(tt4b.values()):.1f}")
         logger.info(f"  tt3b:   {np.sum(tt3b.values()):.1f}")
     logger.info(f"  qcd3b:  {np.sum(qcd3b.values()):.1f}")
+    logger.info(f"  qcd4b:  {np.sum(qcd4b.values()):.1f}")
+    logger.info(f"  *** IMPORTANT: Total 3b QCD events in histogram: {np.sum(qcd3b.values()):.1f} ***")
 
     # Update error calculations for better fit
     mu_qcd_bin_by_bin = np.zeros(len(qcd4b.values()))
@@ -248,6 +252,230 @@ def perform_fit(JCM_model: jetCombinatoricModel, bin_data: Tuple,
     return residuals, pulls
 
 
+def create_jcm_validation_table(JCM_model: jetCombinatoricModel, args: argparse.Namespace, 
+                                 logger: logging.Logger, output_dir: str, jcm_file_path: str) -> None:
+    """Create a validation table of JCM weights for specific jet configurations.
+    
+    This function loads the saved JCM file and generates weights for various 
+    untagged jet multiplicities and event numbers. The output can be used to 
+    verify that the processor is applying the same weights.
+    
+    Args:
+        JCM_model: Fitted jetCombinatoricModel instance (used for reference only)
+        args: Command line arguments
+        logger: Logger instance
+        output_dir: Directory to save validation table
+        jcm_file_path: Path to the saved JCM file to test
+    """
+    logger.info("Creating JCM validation table...")
+    
+    # Load the JCM file using the same class as the processor
+    logger.info(f"Loading JCM file: {jcm_file_path}")
+    try:
+        JCM_loaded = JCM_apply(jcm_file_path, lowpt_mode=args.lowpt)
+        logger.info("JCM file loaded successfully for validation")
+    except Exception as e:
+        logger.error(f"Failed to load JCM file for validation: {e}")
+        import traceback
+        traceback.print_exc()
+        logger.warning("Skipping validation table creation")
+        return
+    
+    # Test configurations: various numbers of untagged jets (0 to 10)
+    test_nJets = np.arange(0, 11, dtype=int)
+    
+    # Sample of event numbers to test (odd, even, and specific values)
+    test_event_numbers = np.array([1, 2, 3, 100, 101, 12345, 67890, 999999], dtype=int)
+    
+    validation_file = os.path.join(output_dir, 
+                                   f"JCM_validation_{args.weightRegion}_{args.weightSet}.txt")
+    
+    with open(validation_file, 'w') as f:
+        f.write("# JCM Weight Validation Table\n")
+        f.write(f"# Region: {args.weightRegion}, Weight Set: {args.weightSet}\n")
+        f.write(f"# Lowpt mode: {args.lowpt}\n")
+        f.write("#\n")
+        f.write("# Format: nUntaggedJets | eventNumber -> weight, nPseudotagged\n")
+        f.write("#" + "="*70 + "\n\n")
+        
+        logger.info("Testing JCM weights for various configurations:")
+        logger.info(f"{'nUntagged':<12} | {'EventNum':<10} -> {'Weight':<15} | {'nPseudotag':<12}")
+        logger.info("-" * 70)
+        
+        test_count = 0
+        for nJets in test_nJets:
+            for event_num in test_event_numbers:
+                try:
+                    # Call JCM the same way it's called in the processor
+                    weight, n_pseudotagged = JCM_loaded(
+                        np.array([nJets]), 
+                        np.array([event_num])
+                    )
+                    
+                    # Get scalar values
+                    w = weight[0] if hasattr(weight, '__len__') else weight
+                    n_pt = n_pseudotagged[0] if hasattr(n_pseudotagged, '__len__') else n_pseudotagged
+                    
+                    # Write to file
+                    f.write(f"{nJets:<12} | {event_num:<10} -> {w:<15.6f} | {n_pt:<12}\n")
+                    test_count += 1
+                    
+                    # Log first few and some interesting cases
+                    if nJets <= 3 or (nJets == 5 and event_num == test_event_numbers[0]):
+                        logger.info(f"{nJets:<12} | {event_num:<10} -> {w:<15.6f} | {n_pt:<12}")
+                except Exception as e:
+                    logger.error(f"Error computing weight for nJets={nJets}, event={event_num}: {e}")
+                    raise
+        
+        logger.info(f"Wrote {test_count} test cases to validation file")
+        
+        # Test with array of multiple jets at once
+        f.write("\n# Batch test with multiple events\n")
+        batch_nJets = np.array([0, 1, 2, 3, 4, 5], dtype=int)
+        batch_events = np.array([1, 1, 1, 1, 1, 1], dtype=int)  # All event 1
+        batch_weights, batch_npt = JCM_loaded(batch_nJets, batch_events)
+        
+        f.write(f"# Input nJets: {batch_nJets.tolist()}\n")
+        f.write(f"# Output weights: {batch_weights.tolist()}\n")
+        f.write(f"# Output nPseudotag: {batch_npt.tolist()}\n")
+        
+        logger.info(f"\nBatch test (event=1, nUntagged=0-5):")
+        logger.info(f"  Weights: {batch_weights.tolist()}")
+        logger.info(f"  nPseudotag: {batch_npt.tolist()}")
+    
+    file_size = os.path.getsize(validation_file)
+    logger.info(f"Validation table saved to: {validation_file}")
+    logger.info(f"File size: {file_size} bytes")
+    logger.info("Use this file to verify processor is calculating the same weights!\n")
+
+
+def compute_expected_yields(data3b: Hist, qcd3b: Hist, mu_qcd: float, 
+                           JCM_loaded, args: argparse.Namespace, 
+                           logger: logging.Logger, output_dir: str, 
+                           data4b: Hist = None, subtract3bTT: bool = True) -> None:
+    """Compute expected 4b yields from 3b data using JCM weights.
+    
+    This computes what the processor SHOULD produce when applying JCM to 3b events.
+    For each nJet bin in the 3b histogram, compute the expected weighted yield.
+    
+    Args:
+        data3b: Data 3-tag histogram (includes all 3b events)
+        qcd3b: QCD 3-tag histogram (may be data3b - tt3b if subtract3bTT=True, or = data3b if False)
+        mu_qcd: QCD scale factor (4b/3b ratio)
+        JCM_loaded: Loaded JCM model (callable)
+        args: Command line arguments
+        logger: Logger instance
+        output_dir: Directory to save yields
+        data4b: Data 4-tag histogram (optional, for ratio comparison)
+        subtract3bTT: Whether ttbar was subtracted from data3b to create qcd3b
+    """
+    logger.info("Computing expected 4b yields from 3b histogram using JCM...")
+    
+    # Get histogram axes - need to handle both standard and lowpt modes
+    nJet_values = data3b.axes[0].centers
+    data3b_counts = data3b.values()
+    qcd3b_counts = qcd3b.values()
+    data4b_counts = data4b.values() if data4b is not None else None
+    
+    yields_file = os.path.join(output_dir, 
+                              f"JCM_expected_yields_{args.weightRegion}_{args.weightSet}.txt")
+    
+    with open(yields_file, 'w') as f:
+        f.write("# Expected 4b yields from applying JCM to 3b data\n")
+        f.write(f"# Region: {args.weightRegion}, Weight Set: {args.weightSet}\n")
+        f.write(f"# Lowpt mode: {args.lowpt}\n")
+        f.write(f"# mu_qcd: {mu_qcd:.6f}\n")
+        f.write("#\n")
+        f.write("# For processor comparison: these are the yields you should get\n")
+        f.write("# when you process 3b events and apply JCM weights\n")
+        f.write(f"# subtract3bTT: {subtract3bTT}\n")
+        f.write("#\n")
+        if data4b_counts is not None:
+            f.write(f"{'nJet_bin':<10} | {'3b_data':<12} | {'4b_data':<12} | {'nUntagged':<10} | {'JCM_weight':<12} | {'Pred_from_3b':<15} | {'Pred/4b':<12}\n")
+            f.write("="*110 + "\n")
+        else:
+            f.write(f"{'nJet_bin':<10} | {'3b_data':<12} | {'nUntagged':<10} | {'JCM_weight':<12} | {'Pred_from_3b':<15}\n")
+            f.write("="*80 + "\n")
+        
+        if data4b_counts is not None:
+            logger.info(f"\n{'nJet_bin':<10} | {'3b_data':<12} | {'4b_data':<12} | {'nUntagged':<10} | {'JCM_weight':<12} | {'Pred_from_3b':<15} | {'Pred/4b':<12}")
+            logger.info("="*110)
+        else:
+            logger.info(f"\n{'nJet_bin':<10} | {'3b_data':<12} | {'nUntagged':<10} | {'JCM_weight':<12} | {'Pred_from_3b':<15}")
+            logger.info("="*80)
+        
+        total_3b_data = 0
+        total_prediction_from_3b = 0
+        total_4b_data = 0
+        
+        for i, nJet in enumerate(nJet_values):
+            n3b_data = data3b_counts[i]
+            n4b_data = data4b_counts[i] if data4b_counts is not None else 0
+            
+            if n3b_data == 0 and n4b_data == 0:
+                continue
+            
+            # For this nJet bin, what is nUntagged?
+            # In lowpt mode: bins are [1, 2, 3, ...] lowpt jets
+            # nUntagged = nJet bin value directly (these ARE the untagged jets)
+            if args.lowpt:
+                # First bin is 1 lowpt jet, second is 2, etc
+                nUntagged = int(nJet)
+            else:
+                # Standard mode: bins are total jets, nUntagged = nJet - 3
+                nUntagged = max(0, int(nJet) - 3)
+            
+            # Compute average JCM weight for this nUntagged value
+            # Use a representative event number (doesn't matter much for average)
+            avg_weight, _ = JCM_loaded(np.array([nUntagged]), np.array([1]))
+            avg_weight = avg_weight[0] if hasattr(avg_weight, '__len__') else avg_weight
+            
+            # What processor produces: 3b_data × JCM_weight
+            # This is what you see in the processor output histograms
+            prediction_from_3b = n3b_data * avg_weight
+            
+            total_3b_data += n3b_data
+            total_prediction_from_3b += prediction_from_3b
+            total_4b_data += n4b_data
+            
+            if data4b_counts is not None:
+                ratio_pred_to_4b = prediction_from_3b / n4b_data if n4b_data > 0 else float('nan')
+                f.write(f"{int(nJet):<10} | {n3b_data:<12.1f} | {n4b_data:<12.1f} | {nUntagged:<10} | {avg_weight:<12.6f} | {prediction_from_3b:<15.1f} | {ratio_pred_to_4b:<12.4f}\n")
+                if i < 15:  # Log first 15 bins
+                    logger.info(f"{int(nJet):<10} | {n3b_data:<12.1f} | {n4b_data:<12.1f} | {nUntagged:<10} | {avg_weight:<12.6f} | {prediction_from_3b:<15.1f} | {ratio_pred_to_4b:<12.4f}")
+            else:
+                f.write(f"{int(nJet):<10} | {n3b_data:<12.1f} | {nUntagged:<10} | {avg_weight:<12.6f} | {prediction_from_3b:<15.1f}\n")
+                if i < 15:  # Log first 15 bins
+                    logger.info(f"{int(nJet):<10} | {n3b_data:<12.1f} | {nUntagged:<10} | {avg_weight:<12.6f} | {prediction_from_3b:<15.1f}")
+        
+        if data4b_counts is not None:
+            total_ratio = total_prediction_from_3b / total_4b_data if total_4b_data > 0 else float('nan')
+            f.write("="*110 + "\n")
+            f.write(f"{'TOTAL':<10} | {total_3b_data:<12.1f} | {total_4b_data:<12.1f} | {'':<10} | {'':<12} | {total_prediction_from_3b:<15.1f} | {total_ratio:<12.4f}\n")
+            f.write(f"\n# Processor prediction (3b × JCM): {total_prediction_from_3b:.1f}\n")
+            f.write(f"# Actual 4b data: {total_4b_data:.1f}\n")
+            f.write(f"# Ratio (prediction/data): {total_ratio:.4f}\n")
+            if abs(total_ratio - 1.0) > 0.05:
+                f.write(f"# WARNING: Ratio deviates from 1.0 by more than 5%!\n")
+            
+            logger.info("="*110)
+            logger.info(f"{'TOTAL':<10} | {total_3b_data:<12.1f} | {total_4b_data:<12.1f} | {'':<10} | {'':<12} | {total_prediction_from_3b:<15.1f} | {total_ratio:<12.4f}")
+        else:
+            f.write("="*80 + "\n")
+            f.write(f"{'TOTAL':<10} | {total_3b_data:<12.1f} | {'':<10} | {'':<12} | {total_prediction_from_3b:<15.1f}\n")
+            f.write(f"\n# Processor prediction (3b × JCM): {total_prediction_from_3b:.1f}\n")
+            
+            logger.info("="*80)
+            logger.info(f"{'TOTAL':<10} | {total_3b_data:<12.1f} | {'':<10} | {'':<12} | {total_prediction_from_3b:<15.1f}")
+        
+        logger.info(f"\n*** PROCESSOR COMPARISON ***")
+        logger.info(f"Processor should produce: {total_prediction_from_3b:.1f} (3b data × JCM weights)")
+        if data4b is not None:
+            logger.info(f"Actual 4b data: {total_4b_data:.1f}")
+            logger.info(f"Ratio: {total_prediction_from_3b/total_4b_data:.4f}")
+        logger.info(f"Expected yields file saved to: {yields_file}\n")
+
+
 def save_model_output(JCM_model: jetCombinatoricModel, bin_data: Tuple, args: argparse.Namespace,
                      logger: logging.Logger, output_files: Tuple) -> None:
     """Save the model output to files
@@ -343,6 +571,10 @@ def save_model_output(JCM_model: jetCombinatoricModel, bin_data: Tuple, args: ar
     # Close files
     jetCombinatoricModelFile.close()
     jetCombinatoricModelFile_yml.close()
+    
+    # Ensure files are flushed to disk
+    import time
+    time.sleep(0.1)  # Brief pause to ensure filesystem has written the files
 
     logger.info(f"Model output saved successfully")
 
@@ -692,6 +924,35 @@ def main():
             logger,
             (jetCombinatoricModelFile, jetCombinatoricModelFile_yml)
         )
+
+        # Create validation table for debugging (after saving so we can load the file)
+        try:
+            logger.info("Creating validation table...")
+            create_jcm_validation_table(
+                JCM_model, args, logger, args.outputDir, 
+                jetCombinatoricModelName
+            )
+            
+            # Also compute expected yields for processor comparison
+            logger.info("Computing expected yields...")
+            # Load the JCM model again for computing yields
+            JCM_for_yields = JCM_apply(jetCombinatoricModelName, lowpt_mode=args.lowpt)
+            subtract3bTT = jcm_config.get("subtract3bTT", True)
+            compute_expected_yields(
+                histograms[1],  # data3b
+                histograms[5],  # qcd3b
+                bin_data[8],    # mu_qcd
+                JCM_for_yields,
+                args,
+                logger,
+                args.outputDir,
+                histograms[0],  # data4b for ratio comparison
+                subtract3bTT    # whether ttbar was subtracted from 3b
+            )
+        except Exception as e:
+            logger.error(f"Failed to create validation table or expected yields: {e}")
+            import traceback
+            traceback.print_exc()
 
         # Create plots
         create_plots(JCM_model, bin_data, args, bin_data[8], jcm_config, logger)

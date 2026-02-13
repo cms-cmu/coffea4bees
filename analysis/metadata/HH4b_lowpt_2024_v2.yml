@@ -8,13 +8,11 @@ config:
   blind: false
   apply_FvT: false
   apply_JCM: true
-  apply_JCM_lowpt: true
-  JCM_file: "coffea4bees/analysis/weights/JCM/2024_v2/jetCombinatoricModel_SB_2024_v2.yml"
-  JCM_lowpt_file: "coffea4bees/analysis/weights/JCM/2024_v2/jetCombinatoricModel_SB_2024_v2_lowpt.yml"
+  JCM_file: "coffea4bees/analysis/weights/JCM_lowpt_2024_v2/jetCombinatoricModel_SB_2024_v2.yml"
   apply_trigWeight: true
-  apply_btagSF: false
+  apply_btagSF: true
   apply_boosted_veto: false
   run_SvB: false
   top_reconstruction: fast
   friends:
-    trigWeight: "coffea4bees/metadata/datasets_HH4b_2024_v2_trigweights.json@@trigWeight" 
+    trigWeight: "coffea4bees/metadata/datasets_HH4b_Run2/trigweights_2024_v1p2.json@@trigWeight" 

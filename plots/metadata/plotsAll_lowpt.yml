@@ -48,6 +48,7 @@ stack:
                 fillcolor: "#FFDF7Fff"
                 edgecolor: k
                 label: QCD multijet
+                # scalefactor: 0.064
 
 ratios:
         dataToBkg:

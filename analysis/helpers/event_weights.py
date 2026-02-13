@@ -101,6 +101,7 @@ def add_pseudotagweights(
     all_weights = ['genweight', 'CMS_bbbb_resolved_ggf_triggerEffSF', f'CMS_pileup_{year_label}', 'CMS_btag']
     logging.debug( f"noJCM_noFVT partial {weights.partial_weight(include=all_weights)[:10]}" )
     event["weight_noJCM_noFvT"] = weights.partial_weight(include=all_weights)
+    logging.debug(f"three 3b events flag: {event[label3b][:10]}")
 
     if JCM:
 
@@ -272,8 +273,6 @@ def add_pseudotagweights(
                 weight_d3_to_t3 = ak.where(event[label3b], event.weight * event.pseudoTagWeight * event.pseudoTagWeight_lowpt * event.FvT.d3_to_t3, event.weight)
                 event["weight_d3_to_t3"] = weight_d3_to_t3
                 logging.debug( f"weight_d3_to_t3 {event.weight_d3_to_t3[:10]}\n" )
-
-
 
         else:
             weight_noFvT = np.copy(event.weight)

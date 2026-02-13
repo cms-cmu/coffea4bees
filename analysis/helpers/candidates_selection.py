@@ -63,7 +63,7 @@ def create_cand_jet_dijet_quadjet(
     if include_lowptjets:
         sorted_idx_lowpt = ak.argsort( selev.Jet.btagScore * selev.Jet.selected_lowpt, axis=1, ascending=False )
         canJet_idx = ak.concatenate([sorted_idx[:, 0:3], sorted_idx_lowpt[:, :1]], axis=1)
-        logging.debug(f"lowpt selected {(selev.Jet.selected_lowpt)[:1]}")
+        logging.debug(f"jet lowpt selected {(selev.Jet.selected_lowpt)[:1]}")
         logging.debug(f"both lowpt {(selev.Jet.btagScore * selev.Jet.selected_lowpt)[:1]}")
         logging.debug(f"sorted_idx_lowpt {sorted_idx_lowpt[:1]}")
 
