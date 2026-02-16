@@ -16,6 +16,7 @@ from src.data_formats.root import Chunk, TreeReader
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b
 from coffea4bees.analysis.helpers.load_friend import (
     FriendTemplate,
+    rename_FvT_friend,
     parse_friends
 )
 
@@ -48,7 +49,7 @@ class HemiMixer(PicoAOD):
         super().__init__(*args, **kwargs)
 
         logging.info(f"\nRunning HemiMixer with these parameters: , subtract_ttbar_with_weights = {subtract_ttbar_with_weights}, args = {args}, kwargs = {kwargs}")
-        logging.info(f"\nLoading JCM from file: {JCM_file} , apply_JCM = {apply_JCM}")
+        logging.info(f"\nLoading JCM from file: {JCM_file} , apply_JCM = {apply_JCM}\n")
         self.apply_JCM = jetCombinatoricModel(JCM_file) if apply_JCM else None
 
         self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
@@ -100,9 +101,9 @@ class HemiMixer(PicoAOD):
         year_str = year.replace("_preVFP", "").replace("_postVFP", "")
 
         yaml_file = f'{self.hemi_stats_path}/hemi_statistics_{year_str}.yml'
-        logging.info(f"\nLoading hemisphere libraries = {yaml_file}")
+        logging.info(f"\nLoading hemisphere libraries = {yaml_file}\n")
 
-        logging.info(f"\nLoading hemisphere library file: {self.hemi_library_yaml} for year {year_str}")
+        logging.info(f"\nLoading hemisphere library file: {self.hemi_library_yaml} for year {year_str}\b")
 
         test_load_hemi_kdTrees = True
         if test_load_hemi_kdTrees:
@@ -127,25 +128,18 @@ class HemiMixer(PicoAOD):
 
         if self.subtract_ttbar_with_weights:
 
-            # SvB_MA_file = f'{fname.replace("picoAOD", "SvB_MA_ULHH")}'
-            # event["SvB_MA"] = ( NanoEventsFactory.from_root( SvB_MA_file,
-            #                                                  entry_start=estart, entry_stop=estop, schemaclass=FriendTreeSchema ).events().SvB_MA )
-            #
-            # if not ak.all(event.SvB_MA.event == event.event):
-            #     raise ValueError("ERROR: SvB_MA events do not match events ttree")
-            #
-            # # defining SvB_MA
-            # setSvBVars("SvB_MA", event)
+            if "FvT" in self.friends:
+                event["FvT"] = rename_FvT_friend(target, self.friends["FvT"])
+            else:
 
-            #
-            FvT_file = f'{fname.replace("picoAOD", "FvT")}'
-            event["FvT"] = ( NanoEventsFactory.from_root( FvT_file,
-                                                          entry_start=estart, entry_stop=estop, schemaclass=FriendTreeSchema).events().FvT )
+                FvT_file = f'{fname.replace("picoAOD", "FvT")}'
+                event["FvT"] = ( NanoEventsFactory.from_root( FvT_file,
+                                                              entry_start=estart, entry_stop=estop, schemaclass=FriendTreeSchema).events().FvT )
 
-            if not ak.all(event.FvT.event == event.event):
-                raise ValueError("ERROR: FvT events do not match events ttree")
+                if not ak.all(event.FvT.event == event.event):
+                    raise ValueError("ERROR: FvT events do not match events ttree")
+
             setFvTVars("FvT", event)
-
 
 
         event = apply_event_selection( event, self.corrections_metadata[year], cut_on_lumimask=config["cut_on_lumimask"] )
