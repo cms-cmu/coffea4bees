@@ -41,7 +41,7 @@ cmd=(python runner.py -s \
     -c $JOB_CONFIG \
     -y 2022_EE 2022_preEE 2023_BPix 2023_preBPix  -d data  \
     -op $OUTPUT_DIR \
-    -o picoaod_datasets_mixeddata_Run3.yml \
+    -o picoaod_datasets_mixeddata_Run3_noTT.yml \
     -m $DATASETS \
     --condor)
 time run_command "${cmd[@]}"
