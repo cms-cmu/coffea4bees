@@ -1,7 +1,7 @@
 config = {
     "analysis_container": "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest",
-    "input_path": "output/coffea4bees_20250616_af478bd_unblind_boostedVeto_wdataUL17B_wVBF",
-    "output_path": "output/coffea4bees_20250616_af478bd_unblind_boostedVeto_wdataUL17B_wVBF",
+    "input_path": "output/coffea4bees_20250616_af478bd_unblind_boostedVeto_wdataUL17B_wVBF_boostedVetoVBF",
+    "output_path": "output/coffea4bees_20250616_af478bd_unblind_boostedVeto_wdataUL17B_wVBF_boostedVetoVBF",
     "dataset_location": "",
     'dataset': "",
     "container_wrapper": "./run_container combine ",
@@ -113,7 +113,7 @@ use rule workspace from combine as workspace with:
     output: f"{config['output_path']}/datacards/HH4b/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root"
     params:
         signallabel="ggHH_kl_1_kt_1_13p0TeV_hbbhbb",
-        othersignal_maps=config['channels']['HH4b']['othersignal'],
+        othersignal_maps=lambda wildcards: additional_poi('HH4b'),
         container_wrapper=config["container_wrapper"]
     log: f"{config['output_path']}/logs/workspace_HH4b__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.log"
 
@@ -125,6 +125,6 @@ use rule limits from combine as limits with:
     log: f"{config['output_path']}/logs/limits_HH4b__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.log"
     params:
         signallabel="ggHH_kl_1_kt_1_13p0TeV_hbbhbb",
-        set_parameters_zero=lambda wildcards: set_parameters_zero('HH4b'),
+        set_parameters_zero=lambda wildcards: set_parameters('HH4b', 0),
         freeze_parameters=lambda wildcards: freeze_parameters('HH4b'),
         container_wrapper=config.get("container_wrapper", "./run_container combine")

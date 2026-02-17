@@ -1,12 +1,21 @@
 hists:
-        ZH4b:
-                process: ZH4b
+        # ZH4b:
+        #         process: ZH4b
+        #         tag: fourTag
+        #         year: RunII
+        #         fillcolor: b
+        #         edgecolor: b
+        #         histtype: step
+        #         label: ZH4b
+
+        VBFHH4b:
+                process: VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00
                 tag: fourTag
                 year: RunII
-                fillcolor: b
-                edgecolor: b
                 histtype: step
-                label: ZH4b
+                fillcolor: g
+                edgecolor: g
+                label: VBFHH4b
    
         HH4b:
                 process: GluGluToHHTo4B_cHHH1

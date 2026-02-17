@@ -252,7 +252,12 @@ def jet_selection(
     return event
 
 
-def apply_bRegCorr(jet: ak.Array) -> ak.Array:
+def apply_bRegCorr(
+        jet: ak.Array,
+        selected_label: str = 'selected',
+        tagged_label: str = 'tagged',
+        tagged_loose_label: str = 'tagged_loose'
+    ) -> ak.Array:
     """
     Applies the bRegCorr correction factor to tagged jets and updates their properties.
 
@@ -274,7 +279,8 @@ def apply_bRegCorr(jet: ak.Array) -> ak.Array:
     """
     # Flatten the bRegCorr factors and tagged flags for processing
     bRegCorr_flat = copy(ak.flatten(jet.bRegCorr).to_numpy())
-    tagged_flags_flat = ak.flatten(jet.tagged)
+    # tagged_flags_flat = ak.flatten(jet.tagged)
+    tagged_flags_flat = ak.flatten(jet[tagged_label])
 
     # Set bRegCorr to 1.0 for non-tagged jets
     bRegCorr_flat[~tagged_flags_flat] = 1.0
@@ -283,18 +289,18 @@ def apply_bRegCorr(jet: ak.Array) -> ak.Array:
     bRegCorr = ak.unflatten(bRegCorr_flat, ak.num(jet.bRegCorr))
 
     # Apply the bRegCorr factor to selected jets
-    selected_jets = jet[jet.selected] * bRegCorr[jet.selected]
+    selected_jets = jet[jet[selected_label]] * bRegCorr[jet[selected_label]]
 
     # Update properties of the selected jets
-    selected_jets["tagged"] = jet[jet.selected].tagged
-    selected_jets["tagged_loose"] = jet[jet.selected].tagged_loose
-    selected_jets["btagScore"] = jet[jet.selected].btagScore
-    selected_jets["puId"] = jet[jet.selected].puId
-    selected_jets["jetId"] = jet[jet.selected].jetId
+    selected_jets[tagged_label] = jet[jet[selected_label]][tagged_label]
+    selected_jets[tagged_loose_label] = jet[jet[selected_label]][tagged_loose_label]
+    selected_jets["btagScore"] = jet[jet[selected_label]].btagScore
+    selected_jets["puId"] = jet[jet[selected_label]].puId
+    selected_jets["jetId"] = jet[jet[selected_label]].jetId
 
     # Include hadronFlavour if available
     if "hadronFlavour" in jet.fields:
-        selected_jets["hadronFlavour"] = jet[jet.selected].hadronFlavour
+        selected_jets["hadronFlavour"] = jet[jet[selected_label]].hadronFlavour
 
     return selected_jets
 
@@ -383,19 +389,19 @@ def lowpt_jet_selection(
         ~event.Jet.selected  # Exclude already selected jets
     )
 
-    # Apply bRegCorr to low-pT selected jets
-    event['selJet_lowpt'] = event.Jet[event.Jet.selected_lowpt]
-    event['selJet_lowpt', 'selected'] = event.selJet_lowpt.selected_lowpt
-    event['selJet_lowpt'] = apply_bRegCorr(event.selJet_lowpt)
-    event['nJet_selected_lowpt'] = ak.num(event.selJet_lowpt, axis=1)
-
-    # Define b-tagging for low-pT jets
+    # Tagging jets
     event['Jet', 'tagged_lowpt'] = event.Jet.selected_lowpt & (event.Jet.btagScore >= corrections_metadata['btagWP']['M'])
     event['Jet', 'tagged_loose_lowpt'] = event.Jet.selected_lowpt & (event.Jet.btagScore >= corrections_metadata['btagWP']['L'])
-    event['nJet_tagged_lowpt'] = ak.num(event.Jet[event.Jet.tagged_lowpt])
-    event['nJet_tagged_loose_lowpt'] = ak.num(event.Jet[event.Jet.tagged_loose_lowpt])
 
-    # Collect low-pT tagged jets
-    event['tagJet_lowpt'] = event.Jet[event.Jet.tagged_lowpt]
+    event['nJet_selected_lowpt'] = ak.sum(event.Jet.selected_lowpt, axis=1)
+
+    # Apply bRegCorr to low-pT selected jets
+    event['selJet_no_bRegCorr_lowpt'] = event.Jet[event.Jet.selected_lowpt]
+    event['selJet_lowpt'] = apply_bRegCorr(event.Jet, selected_label='selected_lowpt', tagged_label='tagged_lowpt', tagged_loose_label='tagged_loose_lowpt')
+
+    event['tagJet_lowpt'] = event.selJet_lowpt[event.selJet_lowpt.tagged_lowpt]
+    event['tagJet_loose_lowpt'] = event.selJet_lowpt[event.selJet_lowpt.tagged_loose_lowpt]
+    event['nJet_tagged_lowpt'] = ak.num(event.tagJet_lowpt)
+    event['nJet_tagged_loose_lowpt'] = ak.num(event.tagJet_loose_lowpt)
 
     return event
