@@ -10,28 +10,29 @@ if [ $? -ne 0 ]; then
 fi
 
 # Create output directory
-JOB="analysis_test_Run3"
+JOB="weights_trigger_friendtree_Run3"
 OUTPUT_DIR=$OUTPUT_BASE_DIR/$JOB
 create_output_directory "$OUTPUT_DIR"
 
 display_section_header "Input Datasets"
-#DATASETS=${DATASET:-"coffea4bees//metadata/datasets_HH4b_Run3_2025_Run3_skims.yml"}
-#DATASETS=${DATASET:-"coffea4bees//metadata/datasets_HH4b_Run3_fourTag_2025_skims.yml"}
-DATASETS=${DATASET:-"coffea4bees//metadata/datasets_HH4b_Run3/"}
+DATASETS=${DATASET_RUN3:-"coffea4bees/metadata/datasets_HH4b_Run3/"}
 echo "Using datasets file: $DATASETS"
-#
 
-#    --datasets "data TTToHadronic TTToSemiLeptonic TTTo2L2Nu" \
+# Modify the config file
+JOB_CONFIG=coffea4bees/analysis/metadata/trigger_weights_Run3.yml
+cat $JOB_CONFIG; echo
 
-display_section_header "Running test processor"
+#    --datasets "TTTo2L2Nu" \
+#    --datasets "TTToSemiLeptonic" \
 bash coffea4bees/scripts/run-analysis-processor.sh \
+    --processor "coffea4bees/analysis/processors/processor_trigger_weights.py" \
     --output-base "$OUTPUT_BASE_DIR" \
-    --datasets "data " \
+    --datasets "TTToHadronic" \
     --dataset-metadata "$DATASETS" \
     --year "2022_EE 2022_preEE 2023_BPix 2023_preBPix" \
-    --output-filename "allRun3Data_v2.coffea" \
-    --output-subdir "$JOB" \
-    --config coffea4bees/analysis/metadata/HH4b_run_fastTopReco_Run3.yml \
+    --output-filename "trigger_weights_TTToHadronic_friends.json" \
+    --output-subdir $JOB \
+    --config $JOB_CONFIG \
     --no-test \
     --additional-flags "--condor"
-#    --output-filename "test.coffea" \
+

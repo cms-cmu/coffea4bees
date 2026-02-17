@@ -1,0 +1,37 @@
+mixeddata_4b:
+  2022_EE:
+     picoAOD:
+       files_template:
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2022_EE/picoAOD_mixed_vXXX.chunk0.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2022_EE/picoAOD_mixed_vXXX.chunk1.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2022_EE/picoAOD_mixed_vXXX.chunk2.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2022_EE/picoAOD_mixed_vXXX.chunk3.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2022_EE/picoAOD_mixed_vXXX.chunk4.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2022_EE/picoAOD_mixed_vXXX.chunk5.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2022_EE/picoAOD_mixed_vXXX.chunk6.root       
+
+  2022_preEE:
+    picoAOD:
+      files_template:
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2022_preEE/picoAOD_mixed_vXXX.chunk0.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2022_preEE/picoAOD_mixed_vXXX.chunk1.root
+
+  2023_BPix:
+    picoAOD:
+      files_template:
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2023_BPix/picoAOD_mixed_vXXX.chunk0.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2023_BPix/picoAOD_mixed_vXXX.chunk1.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2023_BPix/picoAOD_mixed_vXXX.chunk2.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2023_BPix/picoAOD_mixed_vXXX.chunk3.root
+
+  2023_preBPix:
+    picoAOD:
+      files_template:
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2023_preBPix/picoAOD_mixed_vXXX.chunk0.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2023_preBPix/picoAOD_mixed_vXXX.chunk1.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2023_preBPix/picoAOD_mixed_vXXX.chunk2.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2023_preBPix/picoAOD_mixed_vXXX.chunk3.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2023_preBPix/picoAOD_mixed_vXXX.chunk4.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2023_preBPix/picoAOD_mixed_vXXX.chunk5.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2023_preBPix/picoAOD_mixed_vXXX.chunk6.root
+  nSamples: 1
