@@ -85,11 +85,12 @@ def processor_config(processName, dataset, event):
 
     if config["isDataForMixed"]:
         config["cut_on_HLT_decision"] = False
+
         config["do_lepton_jet_cleaning"]  = False
         config["do_jet_calibration"]  = False
         config["do_jet_veto_maps"]       = False
 
-    if config["isRun3"]:
+    if config["isRun3"] and config["isMC"]:
         config['do_jet_veto_maps'] = False
         config['do_jet_calibration'] = False # Need a better name here (Jet calib is applied in Run3 by default !)
         config["cut_on_HLT_decision"]  = True

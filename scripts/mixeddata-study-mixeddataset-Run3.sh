@@ -11,7 +11,7 @@ fi
 
 display_section_header "Input Datasets"
 #DATASETS=${DATASET:-"coffea4bees//metadata/datasets_HH4b_Run3_2025_Run3_skims.yml"}
-DATASETS=${DATASET:-"coffea4bees/metadata/datasets_HH4b_Run2/"}
+DATASETS=${DATASET:-"coffea4bees/metadata/datasets_HH4b_Run3/"}
 echo "Using datasets file: $DATASETS"
 
 
@@ -29,7 +29,7 @@ bash coffea4bees/scripts/run-analysis-processor.sh \
     --output-base "$OUTPUT_BASE_DIR" \
     --datasets "mixeddata_all" \
     --year "${YEARS}" \
-    --output-filename "study_mixed_datasets_all_Run3.coffea" \
+    --output-filename "study_mixed_datasets_all_Run3_noTT.coffea" \
     --output-subdir "$JOB" \
     --config coffea4bees/analysis/metadata/study_mixed_data_Run3.yml \
     --dataset-metadata $DATASETS \

@@ -1,4 +1,4 @@
-mixeddata_all:
+#mixeddata_all:
 #  2022_EE:
 #    picoAOD:
 #      files:
@@ -295,6 +295,7 @@ mixeddata_all:
 #      - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_2023_preBPixF/picoAOD_mixed_all.chunk8.root
 #      - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_2023_preBPixF/picoAOD_mixed_all.chunk9.root
 
+mixeddata_all:
   2022_EE:
      picoAOD:
        files:
