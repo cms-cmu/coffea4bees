@@ -45,6 +45,7 @@ class HemiMixer(PicoAOD):
                 hemi_library_yaml: str = None,
                 hemi_stats_path: str = None,
                 corrections_metadata: dict = None,
+                use_boost_corrected_matching: bool = False,
                 *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -60,8 +61,16 @@ class HemiMixer(PicoAOD):
         self.skip_collections = kwargs["skip_collections"]
         self.skip_branches    = kwargs["skip_branches"]
 
+        # Boost-corrected matching: match on 3 variables (no pz), then boost to correct pz
+        self.use_boost_corrected_matching = use_boost_corrected_matching
+        logging.info(f"use_boost_corrected_matching = {self.use_boost_corrected_matching}")
 
-        self.hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ]
+        # Conditional matching variables based on boost correction mode
+        if self.use_boost_corrected_matching:
+            self.hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass"]  # 3D matching
+        else:
+            self.hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz"]  # 4D matching
+
         self.hemi_library_yaml = hemi_library_yaml
         self.hemi_stats_path = hemi_stats_path
 
@@ -290,7 +299,8 @@ class HemiMixer(PicoAOD):
 
         if test_load_hemi_kdTrees:
             all_hemis = replace_hemis_load_kdTrees(all_hemis=all_hemis, hemi_jet_ranges=hemi_jet_ranges,
-                                                   hemi_stats=hemi_stats, hemi_data=hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=self.jet_branches
+                                                   hemi_stats=hemi_stats, hemi_data=hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=self.jet_branches,
+                                                   use_boost_corrected_matching=self.use_boost_corrected_matching
                                                    )
 
         else:
