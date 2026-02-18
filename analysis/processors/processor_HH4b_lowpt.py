@@ -109,7 +109,7 @@ class analysis(HH4bBaseProcessor):
             friends["friends"] |= dump_input_friend(
                 selev,
                 self.make_classifier_input,
-                "HCR_input",
+                "HCR_input_lowpt",
                 analysis_selections,
                 weight=weight,
                 NotCanJet="notCanJet_coffea",

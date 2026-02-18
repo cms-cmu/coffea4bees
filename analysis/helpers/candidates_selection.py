@@ -60,7 +60,7 @@ def create_cand_jet_dijet_quadjet(
     # Build and select boson candidate jets with bRegCorr applied
     #
     sorted_idx = ak.argsort( selev.Jet.btagScore * selev.Jet.selected, axis=1, ascending=False )
-    logging.info(f"all jets {selev.Jet.pt[:2]}")
+    logging.debug(f"all jets {selev.Jet.pt[:2]}")
     if include_lowptjets:
         sorted_idx_lowpt = ak.argsort( selev.Jet.btagScore * selev.Jet.selected_lowpt, axis=1, ascending=False )
         canJet_idx = ak.concatenate([sorted_idx[:, 0:3], sorted_idx_lowpt[:, :1]], axis=1)
@@ -86,7 +86,7 @@ def create_cand_jet_dijet_quadjet(
     
 
     # # apply bJES to canJets
-    logging.info(f"canJet before bReg {selev.Jet[canJet_idx].pt[:2]}\n")
+    logging.debug(f"canJet before bReg {selev.Jet[canJet_idx].pt[:2]}\n")
     canJet = selev.Jet[canJet_idx] * selev.Jet[canJet_idx].bRegCorr
     canJet["bRegCorr"] = selev.Jet.bRegCorr[canJet_idx]
     canJet["btagScore"] = selev.Jet.btagScore[canJet_idx]
