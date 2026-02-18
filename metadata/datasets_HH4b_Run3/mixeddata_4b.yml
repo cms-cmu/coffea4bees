@@ -1,3 +1,42 @@
+mixeddata_4b_noTT:
+  2022_EE:
+    picoAOD:
+      files_template:
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_2022_EE/picoAOD_mixed_vXXX.chunk0.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_2022_EE/picoAOD_mixed_vXXX.chunk1.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_2022_EE/picoAOD_mixed_vXXX.chunk2.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_2022_EE/picoAOD_mixed_vXXX.chunk3.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_2022_EE/picoAOD_mixed_vXXX.chunk4.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_2022_EE/picoAOD_mixed_vXXX.chunk5.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_2022_EE/picoAOD_mixed_vXXX.chunk6.root 
+
+  2022_preEE:
+    picoAOD:
+      files_template:
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_2022_preEE/picoAOD_mixed_vXXX.chunk0.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_2022_preEE/picoAOD_mixed_vXXX.chunk1.root      
+
+  2023_BPix:
+    picoAOD:
+      files_template:
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_2023_BPix/picoAOD_mixed_vXXX.chunk0.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_2023_BPix/picoAOD_mixed_vXXX.chunk1.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_2023_BPix/picoAOD_mixed_vXXX.chunk2.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_2023_BPix/picoAOD_mixed_vXXX.chunk3.root               
+
+  2023_preBPix:
+    picoAOD:
+      files_template:
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_2023_preBPix/picoAOD_mixed_vXXX.chunk0.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_2023_preBPix/picoAOD_mixed_vXXX.chunk1.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_2023_preBPix/picoAOD_mixed_vXXX.chunk2.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_2023_preBPix/picoAOD_mixed_vXXX.chunk3.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_2023_preBPix/picoAOD_mixed_vXXX.chunk4.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_2023_preBPix/picoAOD_mixed_vXXX.chunk5.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_2023_preBPix/picoAOD_mixed_vXXX.chunk6.root            
+  nSamples: 1
+
+
 mixeddata_4b:
   2022_EE:
      picoAOD:
@@ -9,12 +48,18 @@ mixeddata_4b:
        - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2022_EE/picoAOD_mixed_vXXX.chunk4.root
        - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2022_EE/picoAOD_mixed_vXXX.chunk5.root
        - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2022_EE/picoAOD_mixed_vXXX.chunk6.root       
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_2022_EE/picoAOD_PSData.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_2022_EE/picoAOD_PSData.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_2022_EE/picoAOD_PSData.root
 
   2022_preEE:
     picoAOD:
       files_template:
        - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2022_preEE/picoAOD_mixed_vXXX.chunk0.root
        - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2022_preEE/picoAOD_mixed_vXXX.chunk1.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_2022_preEE/picoAOD_PSData.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_2022_preEE/picoAOD_PSData.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_2022_preEE/picoAOD_PSData.root
 
   2023_BPix:
     picoAOD:
@@ -23,6 +68,9 @@ mixeddata_4b:
        - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2023_BPix/picoAOD_mixed_vXXX.chunk1.root
        - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2023_BPix/picoAOD_mixed_vXXX.chunk2.root
        - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2023_BPix/picoAOD_mixed_vXXX.chunk3.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_2023_BPix/picoAOD_PSData.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_2023_BPix/picoAOD_PSData.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_2023_BPix/picoAOD_PSData.root
 
   2023_preBPix:
     picoAOD:
@@ -34,4 +82,39 @@ mixeddata_4b:
        - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2023_preBPix/picoAOD_mixed_vXXX.chunk4.root
        - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2023_preBPix/picoAOD_mixed_vXXX.chunk5.root
        - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT/mixeddata_all_2023_preBPix/picoAOD_mixed_vXXX.chunk6.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_2023_preBPix/picoAOD_PSData.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_2023_preBPix/picoAOD_PSData.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_2023_preBPix/picoAOD_PSData.root
   nSamples: 1
+
+# Only TTPSdata
+mixeddata_4b_onlyTTPSData:
+
+  2022_EE:
+     picoAOD:
+       files_template:
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_2022_EE/picoAOD_PSData.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_2022_EE/picoAOD_PSData.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_2022_EE/picoAOD_PSData.root
+
+  2022_preEE:
+     picoAOD:
+       files_template:
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_2022_preEE/picoAOD_PSData.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_2022_preEE/picoAOD_PSData.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_2022_preEE/picoAOD_PSData.root
+       
+  2023_BPix:
+     picoAOD:
+       files_template:
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_2023_BPix/picoAOD_PSData.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_2023_BPix/picoAOD_PSData.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_2023_BPix/picoAOD_PSData.root
+       
+  2023_preBPix:
+     picoAOD:
+       files_template:
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_2023_preBPix/picoAOD_PSData.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_2023_preBPix/picoAOD_PSData.root
+       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_2023_preBPix/picoAOD_PSData.root
+  nSamples: 2
