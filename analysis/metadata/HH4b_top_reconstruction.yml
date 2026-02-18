@@ -17,6 +17,6 @@ config:
   top_reconstruction: fast
   fill_histograms: false 
   # make_top_reconstruction: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1/
-  make_top_reconstruction: hists/local/   ### local
+  make_top_reconstruction: output/   ### local
 
   

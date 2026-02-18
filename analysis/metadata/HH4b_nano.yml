@@ -15,4 +15,4 @@ config:
   top_reconstruction: fast
   friends:
     trigWeight: "coffea4bees/metadata/datasets_HH4b_Run2/trigweights_2024_v1p2.json@@trigWeight"
-    # top_reconstruction: "hists/local/top_reconstruction_friendtree.json"
+    # top_reconstruction: "output/top_reconstruction_friendtree.json"

@@ -22,4 +22,4 @@ config:
     trigWeight: "coffea4bees/metadata/datasets_HH4b_Run2/trigweights_2024_v1p2.json@@trigWeight"
     # SvB: "coffea4bees/metadata/datasets_HH4b_2024_v1p2_SvB.json@@SvB"
     # SvB_MA: "coffea4bees/metadata/datasets_HH4b_2024_v1p2_SvB.json@@SvB_MA"
-    # top_reconstruction: "hists/local/top_reconstruction_friendtree.json"
+    # top_reconstruction: "output/top_reconstruction_friendtree.json"
