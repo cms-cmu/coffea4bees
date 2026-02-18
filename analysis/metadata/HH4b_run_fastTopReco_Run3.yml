@@ -1,6 +1,6 @@
 runner:
   workers: 4
-  condor_memory: 8GB
+  condor_memory: 5GB
 
 config:
   blind: false
@@ -8,13 +8,13 @@ config:
   apply_trigWeight: true
   apply_btagSF: true
   apply_boosted_veto: false
-  run_SvB: true
+  run_SvB: false
   SvB   : 'coffea4bees/analysis/weights/pytorch_models/2024_HHUL/SvB_HCR_8_np753_seed13_lr0.01_epochs20_offset*_epoch20.pkl'
   SvB_MA: 'coffea4bees/analysis/weights/pytorch_models/2024_HHUL/SvB_MA_HCR+attention_8_np1061_seed13_lr0.01_epochs20_offset*_epoch20.pkl'
-  JCM_file : 'coffea4bees/analysis/weights/JCM/Run3/jetCombinatoricModel_SB_v0.yml' # set JCM weight, where the @@ is used to get the key JCM_weights inside the file
+  JCM_file : 'coffea4bees/analysis/weights/JCM/Run3/jetCombinatoricModel_SB_v2.yml' 
   plot_ttbar_with_weights: true
   top_reconstruction: fast
   friends:
-    # trigWeight: 'output/trigger_weights_friends.json'
-    FvT: root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3/friend/FvT/result.json@@analysis.0.merged
+    # trigWeight: 'hists/local/trigger_weights_friends.json'
+    FvT: root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_v2/friend/FvT/result.json@@analysis.0.merged
     trigWeight: "coffea4bees/metadata/datasets_HH4b_Run3/trigger_weights_TTbar_friends.json@@trigWeight"    

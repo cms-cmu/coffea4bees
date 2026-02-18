@@ -10,7 +10,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Create output directory
-JOB="classifier_inputs_Run3"
+JOB="weights_trigger_analysis"
 OUTPUT_DIR=$OUTPUT_BASE_DIR/$JOB
 create_output_directory "$OUTPUT_DIR"
 
@@ -22,25 +22,24 @@ echo "Using datasets file: $DATASETS"
 	#-e "s|trigWeight: .*|trigWeight: $DATASETS/trigger_weights_TTTo2L2Nu_friends.json@@trigWeight|" \
 
 display_section_header "Modifying config"
-JOB_CONFIG=coffea4bees/analysis/metadata/HH4b_classifier_inputs_Run3.yml
-#sed     -e "s|apply_trigWeight: .*|apply_trigWeight: true|" \
-#    coffea4bees/analysis/metadata/HH4b_signals.yml > $JOB_CONFIG
+JOB_CONFIG=$OUTPUT_DIR/trigger_weights_HH4b.yml
+sed     -e "s|apply_trigWeight: .*|apply_trigWeight: true|" \
+    coffea4bees/analysis/metadata/HH4b_signals.yml > $JOB_CONFIG
 cat $JOB_CONFIG; echo
-#    --datasets "data TTTo2L2Nu TTToSemiLeptonic TTToHadronic" \
-#    --year "2022_EE 2022_preEE 2023_BPix 2023_preBPix" \
+
 display_section_header "Running test processor"
 time bash coffea4bees/scripts/run-analysis-processor.sh \
     --output-base "$OUTPUT_BASE_DIR" \
-    --datasets "TTToSemiLeptonic TTToHadronic" \
+    --datasets "TTTo2L2Nu TTToSemiLeptonic TTToHadronic" \
     --dataset-metadata "$DATASETS" \
     --year "2022_EE 2022_preEE 2023_BPix 2023_preBPix" \
-    --output-filename "classifier_inputs_TTToSemiLeptonic_TTToHadronic.coffea" \
+    --output-filename "trigWeight_TTbar_wHLT_newJCM.coffea" \
     --output-subdir "$JOB" \
     --config $JOB_CONFIG \
     --no-test \
     --additional-flags "--condor"
 
-### Data
+##### Data
 ##display_section_header "Running test processor"
 ##time bash coffea4bees/scripts/run-analysis-processor.sh \
 ##    --output-base "$OUTPUT_BASE_DIR" \

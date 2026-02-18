@@ -40,11 +40,18 @@ def processor_config(processName, dataset, event):
     config["use_prestored_btag_SF"]  = False
     config["do_jet_veto_maps"]       = False   ## false for run2 until check effect
 
+
     if config["isMC"]:
         config["cut_on_lumimask"]     = False
         config["cut_on_HLT_decision"] = False
         config["do_jet_calibration"]  = True
         config["do_MC_weights"]       = True
+
+    if config["isRun3"]:
+        config['do_jet_veto_maps'] = False
+        config['do_jet_calibration'] = False # Need a better name here (Jet calib is applied in Run3 by default !)
+        config["cut_on_HLT_decision"]  = True
+
 
     if config["isSyntheticData"]:
         config["do_lepton_jet_cleaning"]  = False
@@ -85,12 +92,9 @@ def processor_config(processName, dataset, event):
 
     if config["isDataForMixed"]:
         config["cut_on_HLT_decision"] = False
+
         config["do_lepton_jet_cleaning"]  = False
         config["do_jet_calibration"]  = False
         config["do_jet_veto_maps"]       = False
 
-    if config["isRun3"]:
-        config['do_jet_veto_maps'] = False
-        config['do_jet_calibration'] = False # Need a better name here (Jet calib is applied in Run3 by default !)
-        config["cut_on_HLT_decision"]  = True
     return config

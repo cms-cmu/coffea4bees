@@ -32,13 +32,20 @@ from src.physics.objects.jet_corrections import apply_jerc_corrections
 from src.physics.common import apply_btag_sf, update_events
 from coffea4bees.analysis.helpers.event_weights import add_weights
 
-from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_SvB
+from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_FvT, setFvTVars
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
 from src.physics.event_selection import apply_event_selection
 
 import logging
 
 from src.data_formats.root import TreeReader, Chunk
+
+from ..helpers.load_friend import (
+    FriendTemplate,
+    parse_friends,
+    rename_FvT_friend,
+)
+
 
 #
 # Setup
@@ -62,6 +69,7 @@ class analysis(processor.ProcessorABC):
             corrections_metadata: dict = None,
             run_SvB=True,
             subtract_ttbar_with_weights = False,
+            friends: dict[str, str|FriendTemplate] = None,
             campaign: str = ...,
     ):
         logging.debug("\nInitialize  processor_make_hemi_library\n")
@@ -85,7 +93,7 @@ class analysis(processor.ProcessorABC):
         logging.info(f"subtract_ttbar_with_weights = {self.subtract_ttbar_with_weights}")
 
         self.histCuts = ["passPreSel"] #, "pass0OthJets", "pass1OthJets", "pass2OthJets"]
-
+        self.friends = parse_friends(friends)
 
     def process(self, event):
 
@@ -131,34 +139,6 @@ class analysis(processor.ProcessorABC):
         logging.debug(f'{chunk_str} config={config}, for file {fname}\n')
 
         #
-        # Reading SvB friend trees (for TTbar subtraction)
-        #
-        svb_path = fname.replace(fname.split("/")[-1], "")
-        if self.run_SvB:
-            if (self.classifier_SvB is None) | (self.classifier_SvB_MA is None):
-
-                #SvB_file = f'{svb_path}/SvB_newSBDef.root' if 'mix' in dataset else f'{fname.replace("picoAOD", "SvB_ULHH")}'
-                SvB_file = f'{svb_path}/SvB_ULHH.root' if 'mix' in dataset else f'{fname.replace("picoAOD", "SvB_ULHH")}'
-                event["SvB"] = ( NanoEventsFactory.from_root( SvB_file,
-                                                              entry_start=estart, entry_stop=estop, schemaclass=FriendTreeSchema).events().SvB )
-
-                if not ak.all(event.SvB.event == event.event):
-                    raise ValueError("ERROR: SvB events do not match events ttree")
-
-                #SvB_MA_file = f'{svb_path}/SvB_MA_newSBDef.root' if 'mix' in dataset else f'{fname.replace("picoAOD", "SvB_MA_ULHH")}'
-                SvB_MA_file = f'{svb_path}/SvB_MA_ULHH.root' if 'mix' in dataset else f'{fname.replace("picoAOD", "SvB_MA_ULHH")}'
-                event["SvB_MA"] = ( NanoEventsFactory.from_root( SvB_MA_file,
-                                                                 entry_start=estart, entry_stop=estop, schemaclass=FriendTreeSchema ).events().SvB_MA )
-
-                if not ak.all(event.SvB_MA.event == event.event):
-                    raise ValueError("ERROR: SvB_MA events do not match events ttree")
-
-                # defining SvB for different SR
-                setSvBVars("SvB", event)
-                setSvBVars("SvB_MA", event)
-
-
-        #
         # Event selection
         #
         event = apply_event_selection( event, self.corrections_metadata[year], cut_on_lumimask=config["cut_on_lumimask"])
@@ -166,6 +146,23 @@ class analysis(processor.ProcessorABC):
 
         ### target is for new friend trees
         target = Chunk.from_coffea_events(event)
+
+
+        #
+        # Reading FvT friend trees (for TTbar subtraction)
+        #
+        if self.subtract_ttbar_with_weights:
+            if "FvT" in self.friends:
+                event["FvT"] = rename_FvT_friend(target, self.friends["FvT"])
+            else:
+                event["FvT"] = ( NanoEventsFactory.from_root(f'{self.fname.replace("picoAOD", "FvT")}',
+                                                             entry_start=self.estart, entry_stop=self.estop, schemaclass=FriendTreeSchema).events().FvT)
+
+                if not ak.all(event.FvT.event == event.event):
+                    raise ValueError("ERROR: FvT events do not match events ttree")
+
+            setFvTVars("FvT", event)
+
 
         ### adds all the event mc weights and 1 for data
         weights, list_weight_names = add_weights( event, target=target,
@@ -246,14 +243,14 @@ class analysis(processor.ProcessorABC):
         #
         if self.subtract_ttbar_with_weights:
 
-            pass_ttbar_filter_selev = subtract_ttbar_with_SvB(selev, dataset, year)
+            pass_ttbar_filter_4b    = subtract_ttbar_with_FvT(selev, dataset, year, "d4_to_t4")
 
             pass_ttbar_filter = np.full( len(event), True)
-            pass_ttbar_filter[ selections.all(*allcuts) ] = pass_ttbar_filter_selev
+            pass_ttbar_filter[ selections.all(*allcuts) ] = pass_ttbar_filter_4b
             selections.add( 'pass_ttbar_filter', pass_ttbar_filter )
             allcuts.append("pass_ttbar_filter")
             self._cutFlow.fill( "pass_ttbar_filter", event[selections.all(*allcuts)], allTag=True )
-            selev = selev[pass_ttbar_filter_selev]
+            selev = selev[pass_ttbar_filter_4b]
 
         # logging.info( f"\n {chunk} Event:  nSelJets {selev['nJet_selected']}\n")
 

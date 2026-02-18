@@ -21,10 +21,10 @@ runner:
     - T3_US_NotreDame
 
 config:
-  base_path: root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata
+  base_path: root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata_noTT
   # base_path: skimmer/test/
   mixed_subsample: 0
-  JCM_file: coffea4bees/skimmer/metadata/jetCombinatoricModel_for_mixed_Run3_splitting.txt
+  JCM_file: coffea4bees/skimmer/metadata/jetCombinatoricModel_for_mixed_Run3_noTT_splitting.txt
   step: 100000
   skip_collections:
   skip_branches:
