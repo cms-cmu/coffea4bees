@@ -1044,9 +1044,6 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             #self._cutFlow.fill("passElEl", selev[selev.passElEl], allTag=True,
             #                wOverride=selev['weight_noJCM_noFvT'][selev.passElEl])
 
-
-
-
     def dump_friend_trees(self, selev, analysis_selections, shift_name):
         """Dump all requested friend trees.
 

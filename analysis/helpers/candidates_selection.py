@@ -60,24 +60,33 @@ def create_cand_jet_dijet_quadjet(
     # Build and select boson candidate jets with bRegCorr applied
     #
     sorted_idx = ak.argsort( selev.Jet.btagScore * selev.Jet.selected, axis=1, ascending=False )
+    logging.info(f"all jets {selev.Jet.pt[:2]}")
     if include_lowptjets:
         sorted_idx_lowpt = ak.argsort( selev.Jet.btagScore * selev.Jet.selected_lowpt, axis=1, ascending=False )
         canJet_idx = ak.concatenate([sorted_idx[:, 0:3], sorted_idx_lowpt[:, :1]], axis=1)
-        logging.debug(f"jet lowpt selected {(selev.Jet.selected_lowpt)[:1]}")
-        logging.debug(f"both lowpt {(selev.Jet.btagScore * selev.Jet.selected_lowpt)[:1]}")
-        logging.debug(f"sorted_idx_lowpt {sorted_idx_lowpt[:1]}")
+        logging.debug(f"jet lowpt selected {(selev.Jet.selected_lowpt)[:2]}")
+        logging.debug(f"canJet_idx with lowpt {canJet_idx[:2]}")
 
     else:
         canJet_idx = sorted_idx[:, 0:4]
+        
     # Exclude canJet_idx from sorted_idx
     mask = ~ak.any(canJet_idx[:, :, np.newaxis] == sorted_idx[:, np.newaxis, :], axis=1)
     notCanJet_idx = sorted_idx[mask]
-    
-    logging.debug(f"canJet_idx {canJet_idx[:1]}")
-    logging.debug(f"notCanJet_idx {notCanJet_idx[:1]}\n\n")
+    notCanJet = selev.Jet[notCanJet_idx]
+    logging.debug(f"all notCanJet {notCanJet.pt[:2]}")
+    notCanJet = notCanJet[notCanJet.selected_loose | (notCanJet.selected_lowpt if include_lowptjets else True)]
+    logging.debug(f"notCanJet selected_loose {notCanJet.pt[:2]}")
+
+    notCanJet = notCanJet[ak.argsort(notCanJet.pt, axis=1, ascending=False)]
+    logging.debug(f"notCanJet sorted {notCanJet.pt[:2]}")
+
+    logging.debug(f"canJet_idx {canJet_idx[:2]}")
+    logging.debug(f"notCanJet_idx {notCanJet_idx[:2]}\n\n")
     
 
     # # apply bJES to canJets
+    logging.info(f"canJet before bReg {selev.Jet[canJet_idx].pt[:2]}\n")
     canJet = selev.Jet[canJet_idx] * selev.Jet[canJet_idx].bRegCorr
     canJet["bRegCorr"] = selev.Jet.bRegCorr[canJet_idx]
     canJet["btagScore"] = selev.Jet.btagScore[canJet_idx]
@@ -102,9 +111,6 @@ def create_cand_jet_dijet_quadjet(
         selev[f"canJet{i}"] = selev["canJet"][:, i]
 
     selev["v4j"] = canJet.sum(axis=1)
-    notCanJet = selev.Jet[notCanJet_idx]
-    notCanJet = notCanJet[notCanJet.selected_loose]
-    notCanJet = notCanJet[ak.argsort(notCanJet.pt, axis=1, ascending=False)]
 
     # vbf jets should be selected_loose without eta restriction
     mask_two_notCanJets = ak.num(notCanJet) >= 2
