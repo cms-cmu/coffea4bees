@@ -27,7 +27,7 @@ sed -e "s|base_path.*|base_path: $OUTPUT_DIR|" \
     -e "s|\#test.*|test_files: 1|" \
     -e "s|workers:.*|workers: 1|" \
     -e "s|chunksize:.*|chunksize: 1000|" \
-    -e "s|subtract_ttbar.*|subtract_ttbar_with_weights: False|" \
+    -e "s|subtract_ttbar.*|subtract_ttbar_with_weights: True|" \
     coffea4bees/skimmer/metadata/mixeddata_Run3.yml > $JOB_CONFIG
 [[ $(hostname) = *runner* ]] && sed -i "s|T3_US_FNALLPC|T3_CH_PSI|" $JOB_CONFIG
 cat $JOB_CONFIG; echo

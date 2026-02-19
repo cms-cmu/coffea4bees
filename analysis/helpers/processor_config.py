@@ -9,7 +9,7 @@ def processor_config(processName, dataset, event):
     #
     config["isMC"]     = False if "data"    in processName else True
     config["isPSData"] = True  if "ps_data" in processName else False
-    config["isMixedData"]    = not (dataset.find("mix_v") == -1)
+    config["isMixedData"]    = not (dataset.find("mix_v") == -1) or not (dataset.find("mix_noTT_v") == -1)
     config["isSignal"] = False if processName.startswith(("data", 'syn', 'TT', 'mix')) else True
     config["isRun3"] = True if "202" in dataset else False
 
