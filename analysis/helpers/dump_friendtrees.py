@@ -19,6 +19,8 @@ def dump_input_friend(
     CanJet: str = "canJet",
     NotCanJet: str = "notCanJet",
     weight: str = "weight",
+    threeTag_label: str = "threeTag",
+    fourTag_label: str = "fourTag",
     dump_naming: str = _NAMING,
 ):
     selection = _build_cutflow(*selections)
@@ -58,8 +60,8 @@ def dump_input_friend(
                         "HHSR",
                         "SR",
                         "SB",
-                        "fourTag",
-                        "threeTag",
+                        fourTag_label,
+                        threeTag_label,
                         "passHLT",
                         "nSelJets",
                         "xbW",

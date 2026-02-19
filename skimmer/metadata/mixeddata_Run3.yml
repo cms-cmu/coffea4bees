@@ -10,7 +10,7 @@ runner:
   class_name: HemiMixer
   data_tier: picoAOD
   condor_cores: 1
-  condor_memory: 6GB
+  worker_memory: 6GB
   condor_transfer_input_files:
     - src
     - coffea4bees/

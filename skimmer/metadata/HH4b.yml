@@ -9,7 +9,7 @@ runner:
   class_name: Skimmer
   data_tier: nanoAOD
   condor_cores: 1
-  condor_memory: 4GB
+  worker_memory: 4GB
   condor_transfer_input_files:
     - src/
     - coffea4bees/skimmer/

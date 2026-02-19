@@ -1,6 +1,6 @@
 runner:
   workers: 4
-  condor_memory: 8GB
+  worker_memory: 8GB
   chunksize: 5_000
   condor_transfer_input_files:
     - src/

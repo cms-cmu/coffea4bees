@@ -1,6 +1,6 @@
 runner:
   workers: 4
-  condor_memory: 4GB
+  worker_memory: 4GB
 
 config:
   apply_JCM: false
@@ -12,6 +12,6 @@ config:
   run_SvB: false
   friends:
     trigWeight: "coffea4bees/metadata/datasets_HH4b_Run2/trigweights_2024_v1p2.json@@trigWeight"
-  # friend_top_reconstruction: 'hists/local/top_reconstruction_friendtree.json'
+  # friend_top_reconstruction: 'output/top_reconstruction_friendtree.json'
 
   

@@ -1,6 +1,6 @@
 runner:
   workers: 4
-  condor_memory: 2GB
+  worker_memory: 2GB
 
 config:
   blind: false
