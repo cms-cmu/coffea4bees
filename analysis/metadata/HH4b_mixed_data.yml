@@ -1,6 +1,6 @@
 runner:
   workers: 4
-  condor_memory: 4GB
+  worker_memory: 4GB
   use_kfold: True
   use_ZZinSB: False
   use_ZZandZHinSB: False

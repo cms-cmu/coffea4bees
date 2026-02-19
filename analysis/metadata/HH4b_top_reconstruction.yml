@@ -1,6 +1,6 @@
 runner:
   workers: 4
-  condor_memory: 2GB
+  worker_memory: 2GB
   friend_base_argname: make_top_reconstruction
   chunksize: 10000
   # dashboard_address: 10201

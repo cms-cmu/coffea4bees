@@ -17,7 +17,7 @@ create_output_directory "$OUTPUT_DIR"
 
 display_section_header "Modifying HH4b_signals.yml"
 JOB_CONFIG=$OUTPUT_DIR/HH4b_signals_modified.yml
-sed -e "s|condor_memory: 2GB|chunksize: 10000|g" \
+sed -e "s|worker_memory: 2GB|chunksize: 10000|g" \
     coffea4bees/analysis/metadata/HH4b_signals.yml \
     > $JOB_CONFIG
 cat $JOB_CONFIG; echo

@@ -1,6 +1,6 @@
 runner:
   workers: 4
-  condor_memory: 4GB
+  worker_memory: 4GB
 
 config:
   apply_JCM: false

@@ -1,6 +1,6 @@
 runner:
   condor_cores: 1
-  condor_memory: 4GB
+  worker_memory: 4GB
   top_reconstruction: fast
   friend_metafile: friend
 
