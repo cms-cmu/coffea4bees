@@ -119,7 +119,7 @@ class HemiMixer(PicoAOD):
             hemi_data, hemi_jet_ranges, hemi_stats  = init_hemi_data(hemi_metadata_yaml = yaml_file,
                                                                      hemi_files_yaml = self.hemi_library_yaml,
                                                                      year = year_str,
-                                                                     hemi_summary_vars = self.hemi_summary_vars,
+                                                                     hemi_summary_vars = self.hemi_summary_vars + ["pz"] if self.use_boost_corrected_matching else self.hemi_summary_vars,
                                                                      jet_branches = self.jet_branches,
                                                                      )
 

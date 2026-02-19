@@ -261,12 +261,24 @@ def boost_jets_along_z(jets, pz_target, pz_matched, E_matched):
     # Need to broadcast boost_vec to match jet structure (one boost per hemisphere)
     boosted_jets = jets.boost(boost_vec)
 
+    # Manually create pt, eta, phi, mass representation
+    boosted_jets_cylind = ak.zip(
+        {
+            "pt": boosted_jets.pt,
+            "eta": boosted_jets.eta,
+            "phi": boosted_jets.phi,
+            "mass": boosted_jets.mass,
+        },
+        with_name="PtEtaPhiMLorentzVector",
+        behavior=vector.behavior,
+    )
+
     # Copy over other jet branches (btagScore, etc.) that aren't part of the 4-vector
     for field in jets.fields:
         if field not in ["pt", "eta", "phi", "mass", "x", "y", "z", "t"]:
-            boosted_jets[field] = jets[field]
+            boosted_jets_cylind[field] = jets[field]
 
-    return boosted_jets, delta_y
+    return boosted_jets_cylind, delta_y
 
 
 def split_events_into_hemispheres(event, tagged_key="tagJet"):
