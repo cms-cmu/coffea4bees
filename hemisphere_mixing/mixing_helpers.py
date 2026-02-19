@@ -210,6 +210,65 @@ def compute_hemi_vars(hemis):
     return hemis
 
 
+def boost_jets_along_z(jets, pz_target, pz_matched, E_matched):
+    """
+    Apply Lorentz boost along z to jets so their combined pz matches target.
+
+    Parameters
+    ----------
+    jets : ak.Array
+        Jagged array of jets with PtEtaPhiMLorentzVector behavior
+    pz_target : ak.Array
+        Target pz values (one per hemisphere), shape (n_hemis,)
+    pz_matched : ak.Array
+        Matched hemisphere pz values (one per hemisphere), shape (n_hemis,)
+    E_matched : ak.Array
+        Matched hemisphere energy values (one per hemisphere), shape (n_hemis,)
+
+    Returns
+    -------
+    boosted_jets : ak.Array
+        Jets with boosted 4-momenta, same structure as input
+    delta_rapidity : ak.Array
+        Rapidity shift applied (for diagnostics), shape (n_hemis,)
+    """
+    # Compute rapidity of matched and target hemispheres
+    # y = arctanh(pz / E)
+    # Use clipping to avoid infinities at |pz| -> E
+    y_matched = np.arctanh(np.clip(pz_matched / E_matched, -0.9999, 0.9999))
+
+    # For target, estimate rapidity assuming E doesn't change significantly
+    # (valid approximation for small boosts; see README for exact formula if needed)
+    y_target_approx = np.arctanh(np.clip(pz_target / E_matched, -0.9999, 0.9999))
+
+    delta_y = y_target_approx - y_matched
+
+    # Boost velocity: beta_z = tanh(delta_y)
+    beta_z = np.tanh(delta_y)
+
+    # Create boost vector (0, 0, beta_z) for each hemisphere
+    boost_vec = ak.zip(
+        {
+            "x": ak.zeros_like(beta_z),
+            "y": ak.zeros_like(beta_z),
+            "z": beta_z,
+        },
+        with_name="ThreeVector",
+        behavior=vector.behavior,
+    )
+
+    # Apply boost to jets using coffea's built-in method
+    # Need to broadcast boost_vec to match jet structure (one boost per hemisphere)
+    boosted_jets = jets.boost(boost_vec)
+
+    # Copy over other jet branches (btagScore, etc.) that aren't part of the 4-vector
+    for field in jets.fields:
+        if field not in ["pt", "eta", "phi", "mass", "x", "y", "z", "t"]:
+            boosted_jets[field] = jets[field]
+
+    return boosted_jets, delta_y
+
+
 def split_events_into_hemispheres(event, tagged_key="tagJet"):
 
     #
@@ -582,7 +641,7 @@ def replace_hemis(*, all_hemis, hemi_kd_trees, hemi_stats, hemi_data, hemi_jet_r
 
 
 
-def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ranges, hemi_summary_vars, jet_branches, event_branches=["event", "run", "luminosityBlock", "thrust_phi", "hemisphereId", "weight"]):
+def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ranges, hemi_summary_vars, jet_branches, use_boost_corrected_matching=False, event_branches=["event", "run", "luminosityBlock", "thrust_phi", "hemisphereId", "weight"]):
 
     mixed_hemis = []
     all_hemis["local_idx"] = ak.local_index(all_hemis, axis=0)
@@ -620,7 +679,11 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
         #
         #  Get the nearest neighbor hemisphere from the kd-tree
         #
-        hemi_lib_data = get_hemispheres_data(mask_4b, hemi_data, event_branches + hemi_summary_vars + jet_branches, hemi_stats=hemi_stats[jet_mult_key])
+        # Build list of variables to load - always include "pz" for boost correction even if not in matching vars
+        load_vars = event_branches + hemi_summary_vars + jet_branches
+        if use_boost_corrected_matching and "pz" not in hemi_summary_vars:
+            load_vars = load_vars + ["pz"]
+        hemi_lib_data = get_hemispheres_data(mask_4b, hemi_data, load_vars, hemi_stats=hemi_stats[jet_mult_key])
         hemi_lib_points = np.column_stack([ hemi_lib_data[name] for name in hemi_summary_vars])
 
         # Check for NaN values
@@ -673,6 +736,27 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
                 continue
             new_Jets[var_key] = ak.Array(hemi_lib_data[var_name][match_idx])
 
+        #
+        # Apply boost correction if enabled
+        #
+        if use_boost_corrected_matching:
+            # Get target hemisphere pz (from 3-tag event being processed)
+            pz_target = subset_hemis["pz"]
+
+            # Get matched hemisphere pz (from library, unnormalized)
+            # Note: hemi_lib_data["pz"] is normalized, need to get raw value from hemi_data
+            pz_matched_normalized = hemi_lib_data["pz"][match_idx]
+            pz_matched = pz_matched_normalized * hemi_stats[jet_mult_key]["pz"]["RMS"] + hemi_stats[jet_mult_key]["pz"]["mean"]
+
+            # Compute matched hemisphere energy from summed jets
+            matched_hemi_sum = new_Jets.sum(axis=1)
+            E_matched = matched_hemi_sum.energy
+
+            # Apply boost
+            new_Jets, delta_rapidity = boost_jets_along_z(new_Jets, pz_target, pz_matched, E_matched)
+        else:
+            delta_rapidity = np.zeros(len(subset_hemis))
+
         # fill event data
         subset_hemis_new = ak.zip({"thrust_phi":       ak.Array(hemi_lib_data["thrust_phi"]     [match_idx]),
                                    "event":            ak.Array(hemi_lib_data["event"]          [match_idx]),
@@ -685,6 +769,7 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
                                    "nJet" :            ak.num(new_Jets, axis=1),
                                    "Jet":              new_Jets,
                                    "match_dist":       ak.Array(match_dist),
+                                   "delta_rapidity":   ak.Array(delta_rapidity),
                                    "local_idx":      subset_hemis["local_idx"],
                                    },
                                   depth_limit=1
