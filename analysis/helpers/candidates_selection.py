@@ -75,7 +75,7 @@ def create_cand_jet_dijet_quadjet(
     notCanJet_idx = sorted_idx[mask]
     notCanJet = selev.Jet[notCanJet_idx]
     logging.debug(f"all notCanJet {notCanJet.pt[:2]}")
-    notCanJet = notCanJet[notCanJet.selected_loose | (notCanJet.selected_lowpt if include_lowptjets else True)]
+    notCanJet = notCanJet[notCanJet.selected_loose | (notCanJet.selected_lowpt if include_lowptjets else False)]
     logging.debug(f"notCanJet selected_loose {notCanJet.pt[:2]}")
 
     notCanJet = notCanJet[ak.argsort(notCanJet.pt, axis=1, ascending=False)]
