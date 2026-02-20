@@ -42,7 +42,7 @@ for i in {0..0}; do
 	      -c $JOB_CONFIG \
 	      -y 2022_EE 2022_preEE 2023_BPix 2023_preBPix  -d mixeddata_all  \
 	      -op $OUTPUT_DIR \
-	      -o picoaod_datasets_split_mixeddata_Run3_noTT.yml \
+	      -o picoaod_datasets_split_mixeddata_Run3_noTT_pz.yml \
 	      -m $DATASETS \
 	      --condor
       )

@@ -66,6 +66,7 @@ class MixedDataSplitter(PicoAOD):
                                           )
             events["Jet"] = jets
 
+        config["isSyntheticData"] = 'True' # HACK!!!
         events = apply_4b_selection(
             events,
             self.corrections_metadata[year],
