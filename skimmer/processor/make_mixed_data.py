@@ -68,8 +68,10 @@ class HemiMixer(PicoAOD):
         # Conditional matching variables based on boost correction mode
         if self.use_boost_corrected_matching:
             self.hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass"]  # 3D matching
+            self.hemi_load_vars    = self.hemi_summary_vars + ["pz"]               # also load pz for boost
         else:
             self.hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz"]  # 4D matching
+            self.hemi_load_vars    = self.hemi_summary_vars
 
         self.hemi_library_yaml = hemi_library_yaml
         self.hemi_stats_path = hemi_stats_path
@@ -119,7 +121,7 @@ class HemiMixer(PicoAOD):
             hemi_data, hemi_jet_ranges, hemi_stats  = init_hemi_data(hemi_metadata_yaml = yaml_file,
                                                                      hemi_files_yaml = self.hemi_library_yaml,
                                                                      year = year_str,
-                                                                     hemi_summary_vars = self.hemi_summary_vars,
+                                                                     hemi_summary_vars = self.hemi_load_vars,
                                                                      jet_branches = self.jet_branches,
                                                                      )
 

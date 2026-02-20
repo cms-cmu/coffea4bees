@@ -44,7 +44,7 @@ for i in {0..0}; do
 	    -c $JOB_CONFIG \
 	    -y 2022_EE   -d mixeddata_all  \
 	    -op $OUTPUT_DIR \
-	    -o picoaod_datasets_split_mixeddata_2022_EE_noTT.yml \
+	    -o picoaod_datasets_split_mixeddata_2022_EE_noTT_pz.yml \
 	    -m $DATASETS)
   time run_command "${cmd[@]}"
 
