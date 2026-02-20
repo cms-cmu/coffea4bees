@@ -232,16 +232,10 @@ def boost_jets_along_z(jets, pz_target, pz_matched, E_matched):
     delta_rapidity : ak.Array
         Rapidity shift applied (for diagnostics), shape (n_hemis,)
     """
-    # Compute rapidity of matched and target hemispheres
-    # y = arctanh(pz / E)
-    # Use clipping to avoid infinities at |pz| -> E
-    # y_matched = np.arctanh(np.clip(pz_matched / E_matched, -0.9999, 0.9999))
-
-    # For target, estimate rapidity assuming E doesn't change significantly
-    # (valid approximation for small boosts; see README for exact formula if needed)
-    #y_target_approx = np.arctanh(np.clip(pz_target / E_matched, -0.9999, 0.9999))
-
-
+    # Compute rapidity shift using exact formula: arcsinh(pz / M_T)
+    # where M_T = sqrt(E^2 - pz^2) is the transverse mass of the matched hemisphere.
+    # This gives exact pz matching after the boost (unlike the arctanh(pz/E) approximation,
+    # which is only exact for massless objects).
     M_T             = np.sqrt(E_matched**2 - pz_matched**2)
     y_matched       = np.arcsinh(pz_matched / M_T)
     y_target_approx = np.arcsinh(pz_target  / M_T)
