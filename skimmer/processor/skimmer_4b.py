@@ -48,7 +48,7 @@ class Skimmer(PicoAOD):
         )
 
         if config["do_jet_calibration"]:
-            jets = apply_jerc_corrections(
+            jets = apply_jerc_corrections_jsonpog(
                 events,
                 corrections_metadata=self.corrections_metadata[year],
                 isMC=config["isMC"],

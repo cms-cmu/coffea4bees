@@ -49,7 +49,7 @@ class Skimmer(PicoAOD):
         event = apply_event_selection( event, self.corrections_metadata[year], cut_on_lumimask=config["cut_on_lumimask"] )
 
         if config["do_jet_calibration"]:
-            jets = apply_jerc_corrections(event,
+            jets = apply_jerc_corrections_jsonpog(event,
                                       corrections_metadata=self.corrections_metadata[year],
                                       isMC=config["isMC"],
                                       run_systematics=False,

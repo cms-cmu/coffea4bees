@@ -127,7 +127,7 @@ class analysis(processor.ProcessorABC):
         # Calculate and apply Jet Energy Calibration
         #
         if False and self.config["do_jet_calibration"]:
-            jets = apply_jerc_corrections(event,
+            jets = apply_jerc_corrections_jsonpog(event,
                                           corrections_metadata=self.corrections_metadata[year],
                                           isMC=self.config["isMC"],
                                           run_systematics=False,

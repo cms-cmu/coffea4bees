@@ -121,7 +121,7 @@ class analysis(processor.ProcessorABC):
         #
         # Calculate and apply Jet Energy Calibration
         #
-        jets = apply_jerc_corrections(event,
+        jets = apply_jerc_corrections_jsonpog(event,
                                         corrections_metadata=self.corrections_metadata[self.year],
                                         isMC=True,
                                         run_systematics=False,

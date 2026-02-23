@@ -178,7 +178,7 @@ def jet_selection(
         if not isSyntheticData:
             event['Jet'] = ak.where(
                 event.Jet.btagScore >= corrections_metadata['btagWP']['L'],
-                apply_jerc_corrections(
+                apply_jerc_corrections_jsonpog(
                     event,
                     corrections_metadata=corrections_metadata,
                     isMC=isMC,
@@ -187,7 +187,7 @@ def jet_selection(
                     jet_corr_factor=event.Jet.PNetRegPtRawCorr * event.Jet.PNetRegPtRawCorrNeutrino,
                     jet_type="AK4PFPuppiPNetRegressionPlusNeutrino"
                 ),
-                apply_jerc_corrections(
+                apply_jerc_corrections_jsonpog(
                     event,
                     corrections_metadata=corrections_metadata,
                     isMC=isMC,
