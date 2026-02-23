@@ -10,7 +10,7 @@ import awkward as ak
 import numpy as np
 import yaml
 import gc
-from src.physics.objects.jet_corrections import apply_jerc_corrections
+from src.physics.objects.jet_corrections import apply_jerc_corrections, apply_jerc_corrections_jsonpog
 from src.physics.common import update_events
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b
 from coffea4bees.analysis.helpers.event_weights import (
@@ -362,12 +362,26 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         #
         if self.config["do_jet_calibration"]:
 
-            jets = apply_jerc_corrections(
+            # jets = apply_jerc_corrections(
+            #     event,
+            #     corrections_metadata=self.corrections_metadata[self.year],
+            #     isMC=self.config["isMC"],
+            #     run_systematics= 'jes' in self.run_systematics,
+            #     dataset=self.dataset
+            # )
+            jec_meta = self.corrections_metadata[self.year]["jec"]
+            jets = apply_jerc_corrections_jsonpog(
                 event,
-                corrections_metadata=self.corrections_metadata[self.year],
-                isMC=self.config["isMC"],
-                run_systematics= 'jes' in self.run_systematics,
-                dataset=self.dataset
+                jerc_file       = jec_meta["file"],
+                jec_campaign    = jec_meta["jec_campaign"],
+                jec_version     = jec_meta["jec_version"],
+                jer_campaign    = jec_meta.get("jer_campaign"),
+                jer_version     = jec_meta.get("jer_version"),
+                isMC            = self.config["isMC"],
+                run_tag         = jec_meta["run_tags"].get(self.dataset[-1]) if not self.config["isMC"] else None,
+                jet_type        = "AK4PFchs",
+                junc_sources    = self.corrections_metadata[self.year]["JES_uncertainties"] if "jes" in self.run_systematics else None,
+                run_systematics = "jes" in self.run_systematics,
             )
         else:
             jets = event.Jet
