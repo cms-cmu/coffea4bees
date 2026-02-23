@@ -4,7 +4,7 @@ import numpy as np
 import yaml
 from coffea.analysis_tools import PackedSelection, Weights
 
-from src.physics.objects.jet_corrections import apply_jerc_corrections
+from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
 from src.skimmer.mc_weight_outliers import OutlierByMedian
 from src.skimmer.picoaod import PicoAOD
 from src.physics.event_selection import apply_event_selection

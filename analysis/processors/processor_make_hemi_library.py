@@ -28,7 +28,7 @@ from src.friendtrees.FriendTreeSchema import FriendTreeSchema
 from src.data_formats.root import TreeWriter, TreeReader
 from src.storage.eos import EOS, PathLike
 from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
-from src.physics.objects.jet_corrections import apply_jerc_corrections
+from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
 from src.physics.common import apply_btag_sf, update_events
 from coffea4bees.analysis.helpers.event_weights import add_weights
 

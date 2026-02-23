@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 import awkward as ak
 import numpy as np
 import yaml
-from src.physics.objects.jet_corrections import apply_jerc_corrections
+from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
 from src.physics.common import update_events
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b
 from coffea4bees.analysis.helpers.filling_histograms import (

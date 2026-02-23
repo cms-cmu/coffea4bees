@@ -3,7 +3,7 @@ import awkward as ak
 
 import numpy as np
 import yaml
-from src.physics.objects.jet_corrections import apply_jerc_corrections
+from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
 from src.skimmer.mc_weight_outliers import OutlierByMedian
 from coffea4bees.analysis.helpers.processor_config import processor_config
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
