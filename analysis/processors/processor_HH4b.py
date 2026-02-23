@@ -380,7 +380,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 isMC            = self.config["isMC"],
                 run_tag         = jec_meta["run_tags"].get(self.dataset[-1]) if not self.config["isMC"] else None,
                 jet_type        = "AK4PFchs",
-                junc_sources    = self.corrections_metadata[self.year]["JES_uncertainties"] if "jes" in self.run_systematics else None,
+                junc_sources    = self.corrections_metadata[self.year]["jes_unc"] if "jes" in self.run_systematics else None,
                 run_systematics = "jes" in self.run_systematics,
             )
         else:
