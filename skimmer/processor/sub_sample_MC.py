@@ -19,15 +19,27 @@ import logging
 import awkward as ak
 import uproot
 
+from coffea4bees.analysis.helpers.cutflow import cutflow_4b
+from src.data_formats.root import Chunk
+from coffea4bees.analysis.helpers.load_friend import (
+    FriendTemplate,
+    parse_friends,
+)
+
+
 class SubSampler(PicoAOD):
-    def __init__(self, sub_sampling_rand_seed=5, corrections_metadata: dict = None, *args, **kwargs):
+    def __init__(self, sub_sampling_rand_seed=5, corrections_metadata: dict = None, apply_trigWeight: bool = True, friends: dict[str, str|FriendTemplate] = None, *args, **kwargs):
         kwargs["pico_base_name"] = f'picoAOD_PSData'
         super().__init__(*args, **kwargs)
 
         logging.info(f"\nRunning SubSampler with these parameters: sub_sampling_rand_seed = {sub_sampling_rand_seed} args = {args}, kwargs = {kwargs}")
+        # Always use cutflow_4b unless explicitly overridden
+        self._cutFlow = cutflow_4b()
 
         self.sub_sampling_rand_seed = sub_sampling_rand_seed
         self.corrections_metadata = corrections_metadata
+        self.apply_trigWeight = apply_trigWeight
+        self.friends = parse_friends(friends)
 
     def select(self, event):
 
@@ -36,10 +48,15 @@ class SubSampler(PicoAOD):
         fname   = event.metadata['filename']
         estart  = event.metadata['entrystart']
         estop   = event.metadata['entrystop']
+        processName = event.metadata['processName']
         nEvent = len(event)
         year_label = self.corrections_metadata[year]['year_label']
         chunk   = f'{dataset}::{estart:6d}:{estop:6d} >>> '
         logging.debug( f"{chunk} file is {fname}\n" )
+
+        ### target is for new friend trees
+        target = Chunk.from_coffea_events(event)
+
 
         #
         # Set process and datset dependent flags
@@ -55,9 +72,11 @@ class SubSampler(PicoAOD):
         event = apply_event_selection( event, self.corrections_metadata[year], cut_on_lumimask=config["cut_on_lumimask"] )
 
         ## adds all the event mc weights and 1 for data
-        weights, list_weight_names = add_weights( event, dataset, year_label,
-                                                  self.corrections_metadata[year],
-                                                  apply_trigWeight = True,
+        weights, list_weight_names = add_weights( event, dataset=dataset, year_label=year_label,
+                                                  corrections_metadata = self.corrections_metadata[year],
+                                                  target = target,
+                                                  friend_trigWeight=self.friends.get("trigWeight"),
+                                                  apply_trigWeight = self.apply_trigWeight,
                                                   config=config
                                                  )
 
@@ -77,7 +96,12 @@ class SubSampler(PicoAOD):
         event = update_events(event, {"Jet": jets})
 
         # Apply object selection (function does not remove events, adds content to objects)
-        event = apply_4b_selection( event, self.corrections_metadata[year], config=config )
+        event = apply_4b_selection( event,
+                                    self.corrections_metadata[year],
+                                    config=config,
+                                    dataset=dataset,
+                                    apply_mixeddata_sel=False
+                                   )
 
         selections = PackedSelection()
         selections.add( "lumimask", event.lumimask)
@@ -113,8 +137,6 @@ class SubSampler(PicoAOD):
             self._cutFlow.fill( "passJetMult_btagSF", event[selections.all(*cumulative_cuts)], allTag=True )
 
 
-        selection = event.lumimask & event.passNoiseFilter & event.passJetMult & event.fourTag
-        if not config["isMC"]: selection = selection & event.passHLT
         selev = event[selections.all(*cumulative_cuts)]
 
         #
@@ -136,7 +158,6 @@ class SubSampler(PicoAOD):
         self._cutFlow.fill( "passSubSample", event[selections.all(*cumulative_cuts)], allTag=True )
 
         #logging.info(f"Weigthts are {selev.weight}\n")
-        selection = selection & pass_sub_sample_filter
         selev = event[selections.all(*cumulative_cuts)]
 
         out_branches = {
@@ -152,6 +173,6 @@ class SubSampler(PicoAOD):
         processOutput["total_event"] = len(event)
         processOutput["pass_skim"]   = len(selev)
 
-        return (selection,
+        return (selections.all(*cumulative_cuts),
                 branches,
                 processOutput)
