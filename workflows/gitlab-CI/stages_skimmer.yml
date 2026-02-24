@@ -80,5 +80,5 @@ synthetic_dataset_make_dataset_Run3_coffea4bees:
   artifacts:
     paths:
       - output/synthetic_dataset_make_dataset_Run3/picoaod_datasets_declustered_test_2023_BPix.yml
-      - output/synthetic_dataset_make_dataset_Run3/data_2023_BPixD/picoAOD_seed5.root
-      - output/synthetic_dataset_make_dataset_Run3/data_2023_BPixE/picoAOD_seed5.root
+      - output/synthetic_dataset_make_dataset_Run3/data_2023_BPixD1/picoAOD_seed5.root
+      - output/synthetic_dataset_make_dataset_Run3/data_2023_BPixD2/picoAOD_seed5.root
