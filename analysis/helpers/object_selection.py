@@ -2,7 +2,7 @@ import numpy as np
 import awkward as ak
 import logging
 from src.physics.common import drClean, compute_puid
-from src.physics.objects.jet_corrections import apply_jet_veto_maps, apply_jerc_corrections_jsonpog
+from src.physics.objects.jet_corrections import apply_jet_veto_maps, apply_jerc_corrections
 from coffea4bees.analysis.trigger_emulator.helpers import compute_emulation_vars
 from copy import copy
 from typing import Dict, Any
@@ -178,7 +178,7 @@ def jet_selection(
         if not isSyntheticData:
             event['Jet'] = ak.where(
                 event.Jet.btagScore >= corrections_metadata['btagWP']['L'],
-                apply_jerc_corrections_jsonpog(
+                apply_jerc_corrections(
                     event,
                     corrections_metadata=corrections_metadata,
                     isMC=isMC,
@@ -187,7 +187,7 @@ def jet_selection(
                     jet_corr_factor=event.Jet.PNetRegPtRawCorr * event.Jet.PNetRegPtRawCorrNeutrino,
                     jet_type="AK4PFPuppiPNetRegressionPlusNeutrino"
                 ),
-                apply_jerc_corrections_jsonpog(
+                apply_jerc_corrections(
                     event,
                     corrections_metadata=corrections_metadata,
                     isMC=isMC,
