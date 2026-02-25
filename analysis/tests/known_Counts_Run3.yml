@@ -1,9 +1,9 @@
 counts4:
     data_2023_preBPixC4:
-        passJetMult: 948.0
-        passPreSel: 23.0
-        passDiJetMass: 8.0
-        SR: 5.0
+        passJetMult: 953.0
+        passPreSel: 24.0
+        passDiJetMass: 9.0
+        SR: 6.0
         SB: 3.0
 
     data_2023_preBPixC3:
@@ -101,11 +101,11 @@ counts4:
 
 counts3:
     data_2023_preBPixC4:
-        passJetMult: 948.0
-        passPreSel: 20.29
-        passDiJetMass: 7.05
-        SR: 2.04
-        SB: 3.2
+        passJetMult: 953.0
+        passPreSel: 20.79
+        passDiJetMass: 7.12
+        SR: 2.16
+        SB: 3.08
 
     data_2023_preBPixC3:
         passJetMult: 952.0
@@ -202,10 +202,10 @@ counts3:
 
 counts4_unit:
     data_2023_preBPixC4:
-        passJetMult: 948.0
-        passPreSel: 23.0
-        passDiJetMass: 8.0
-        SR: 5.0
+        passJetMult: 953.0
+        passPreSel: 24.0
+        passDiJetMass: 9.0
+        SR: 6.0
         SB: 3.0
 
     data_2023_preBPixC3:
@@ -303,11 +303,11 @@ counts4_unit:
 
 counts3_unit:
     data_2023_preBPixC4:
-        passJetMult: 948.0
-        passPreSel: 389.0
-        passDiJetMass: 127.0
+        passJetMult: 953.0
+        passPreSel: 392.0
+        passDiJetMass: 125.0
         SR: 37.0
-        SB: 57.0
+        SB: 55.0
 
     data_2023_preBPixC3:
         passJetMult: 952.0
@@ -399,3 +399,4 @@ counts3_unit:
         passDiJetMass: 141.0
         SR: 36.0
         SB: 73.0
+
