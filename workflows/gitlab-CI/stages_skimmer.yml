@@ -40,7 +40,6 @@ synthetic_dataset_make_dataset_coffea4bees:
       - output/synthetic_dataset_make_dataset/GluGluToHHTo4B_cHHH1_UL18/picoAOD_seed5.root
 
 
-
 mixeddata_split_dataset_coffea4bees:
   stage: skimmer
   extends:
