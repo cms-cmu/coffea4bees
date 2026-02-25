@@ -27,7 +27,7 @@ from src.friendtrees.FriendTreeSchema import FriendTreeSchema
 
 
 from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
-from src.physics.objects.jet_corrections import apply_jerc_corrections
+from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
 from src.physics.common import apply_btag_sf, update_events
 from coffea4bees.analysis.helpers.event_weights import add_weights
 
@@ -164,7 +164,7 @@ class analysis(processor.ProcessorABC):
         # Calculate and apply Jet Energy Calibration
         #
         if config["do_jet_calibration"]:
-            jets = apply_jerc_corrections(event,
+            jets = apply_jerc_corrections_jsonpog(event,
                                     corrections_metadata=self.corrections_metadata[year],
                                     isMC=config["isMC"],
                                     run_systematics=False,

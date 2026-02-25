@@ -4,7 +4,7 @@ import numpy as np
 import yaml
 from coffea.analysis_tools import PackedSelection, Weights
 
-from src.physics.objects.jet_corrections import apply_jerc_corrections
+from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
 from src.skimmer.mc_weight_outliers import OutlierByMedian
 from src.skimmer.picoaod import PicoAOD
 from src.physics.event_selection import apply_event_selection
@@ -49,7 +49,7 @@ class Skimmer(PicoAOD):
         event = apply_event_selection( event, self.corrections_metadata[year], cut_on_lumimask=config["cut_on_lumimask"] )
 
         if config["do_jet_calibration"]:
-            jets = apply_jerc_corrections(event,
+            jets = apply_jerc_corrections_jsonpog(event,
                                       corrections_metadata=self.corrections_metadata[year],
                                       isMC=config["isMC"],
                                       run_systematics=False,

@@ -23,8 +23,8 @@ datasets:
     2023_BPix:
       picoAOD:
         files_template:
-          - ${INPUT_DIR}/data_2023_BPixD/picoAOD_seed5.root
-          - ${INPUT_DIR}/data_2023_BPixE/picoAOD_seed5.root
+          - ${INPUT_DIR}/data_2023_BPixD1/picoAOD_seed5.root
+          - ${INPUT_DIR}/data_2023_BPixD2/picoAOD_seed5.root
 """ > $OUTPUT_DIR/datasets_synthetic_test_Run3.yml
 cat $OUTPUT_DIR/datasets_synthetic_test_Run3.yml; echo
 

@@ -22,7 +22,7 @@ from coffea4bees.analysis.helpers.load_friend import (
 
 from coffea.analysis_tools import Weights, PackedSelection
 import numpy as np
-from src.physics.objects.jet_corrections import apply_jerc_corrections
+from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
 from src.physics.common import update_events
 from copy import copy
 import logging
@@ -113,7 +113,7 @@ class DeClusterer(PicoAOD):
         # Calculate and apply Jet Energy Calibration
         #
         if config["do_jet_calibration"]:
-            jets = apply_jerc_corrections(event,
+            jets = apply_jerc_corrections_jsonpog(event,
                                           corrections_metadata=self.corrections_metadata[year],
                                           isMC=config["isMC"],
                                           dataset=dataset
