@@ -4,7 +4,7 @@ from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
 from coffea.nanoevents import NanoEventsFactory
 from coffea.nanoevents.methods import vector
 
-from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_SvB, setFvTVars, subtract_ttbar_with_FvT
+from coffea4bees.analysis.helpers.SvB_helpers import setFvTVars, subtract_ttbar_with_FvT
 from src.friendtrees.FriendTreeSchema import FriendTreeSchema
 from src.math_tools.random import Squares
 from coffea4bees.analysis.helpers.event_weights import add_btagweights

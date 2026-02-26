@@ -24,7 +24,7 @@ echo "Using datasets file: $DATASETS"
 display_section_header "Modifying config"
 JOB_CONFIG=$OUTPUT_DIR/trigger_weights_HH4b.yml
 sed     -e "s|apply_trigWeight: .*|apply_trigWeight: true|" \
-    coffea4bees/analysis/metadata/HH4b_signals.yml > $JOB_CONFIG
+    coffea4bees/analysis/metadata/HH4b_signals_Run3.yml > $JOB_CONFIG
 cat $JOB_CONFIG; echo
 
 display_section_header "Running test processor"
