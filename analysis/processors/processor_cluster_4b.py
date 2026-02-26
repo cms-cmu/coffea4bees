@@ -128,8 +128,8 @@ class analysis(processor.ProcessorABC):
             if "FvT" in self.friends:
                 event["FvT"] = rename_FvT_friend(target, self.friends["FvT"])
             else:
-                event["FvT"] = ( NanoEventsFactory.from_root(f'{self.fname.replace("picoAOD", "FvT")}',
-                                                             entry_start=self.estart, entry_stop=self.estop, schemaclass=FriendTreeSchema).events().FvT)
+                event["FvT"] = ( NanoEventsFactory.from_root(f'{fname.replace("picoAOD", "FvT")}',
+                                                             entry_start=estart, entry_stop=estop, schemaclass=FriendTreeSchema).events().FvT)
 
                 if not ak.all(event.FvT.event == event.event):
                     raise ValueError("ERROR: FvT events do not match events ttree")
