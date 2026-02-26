@@ -66,6 +66,6 @@ config:
     - PPSLocalTrack
   skip_branches:
     - "btagWeight_.*"
-    - "^(?!HLT_QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65$)(?!HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepJet_4p5$)(?!HLT_PFHT1050$)(?!HLT_QuadPFJet70_50_40_35_PNet2BTagMean0p65$)(?!HLT_PFHT280_QuadPFJet30_PNet2BTagMean0p55$)(?!HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepJet_4p5$)(?!HLT_QuadJet45_TripleBTagCSV_p087$)(?!HLT_DoubleJet90_Double30_TripleBTagCSV_p087$)(?!HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0$)(?!HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5$)HLT_.*"  ## Run 3 Triggers
+    - "^(?!HLT_QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65$)(?!HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepJet_4p5$)(?!HLT_PFHT1050$)(?!HLT_QuadPFJet70_50_40_35_PNet2BTagMean0p65$)(?!HLT_PFHT280_QuadPFJet30_PNet2BTagMean0p55$)(?!HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepJet_4p5$)(?!HLT_QuadJet45_TripleBTagCSV_p087$)(?!HLT_DoubleJet90_Double30_TripleBTagCSV_p087$)(?!HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0$)(?!HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5$)(?!HLT_PFHT250_QuadPFJet25_PNet2BTagMean0p55$)HLT_.*"  ## Run 3 Triggers
 
 
