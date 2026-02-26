@@ -481,6 +481,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         # Build jet/dijet/quadjet candidates
         selev = self.build_candidates(selev, weights, list_weight_names, analysis_selections, processOutput)
 
+
+        # Custom Processing in the derived classes
+        selev = self.custom_processing(selev, self.config)
+
         # Track events for display if requested
         if self.return_events_for_display:
             self.events_for_display(selev, processOutput)
@@ -1005,6 +1009,15 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             list_weight_names=list_weight_names,
             analysis_selections=analysis_selections,
         )
+
+
+    def custom_processing(self, selev, config):
+        """
+          Place holder for custom analysis implemeted in the derived classes
+
+        """
+        return selev
+
 
     def fill_detailed_cutflows(self, selev):
         """Fill detailed cutflow histograms after candidate building.
