@@ -16,7 +16,7 @@ def processor_config(processName, dataset, event):
     if config["isMixedData"]:
         config["isMC"] = False
 
-    config["isSyntheticData"]  = not (dataset.find("syn_v") == -1)
+    config["isSyntheticData"]  = not (dataset.find("syn_v") == -1) or not (dataset.find("syn_noTT_v") == -1)
     if config["isSyntheticData"]:
         config["isMC"] = False
 

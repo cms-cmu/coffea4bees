@@ -31,13 +31,20 @@ from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
 from src.physics.common import apply_btag_sf, update_events
 from coffea4bees.analysis.helpers.event_weights import add_weights
 
-from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_SvB
+from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_FvT, setFvTVars
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
 from src.physics.event_selection import apply_event_selection
 
 import logging
 
 from src.data_formats.root import TreeReader, Chunk
+
+from ..helpers.load_friend import (
+    FriendTemplate,
+    parse_friends,
+    rename_FvT_friend,
+)
+
 
 #
 # Setup
@@ -53,25 +60,21 @@ class analysis(processor.ProcessorABC):
     def __init__(
             self,
             *,
-            SvB=None,
-            SvB_MA=None,
             threeTag=False,
             corrections_metadata: dict = None,
             clustering_pdfs_file = "jet_clustering/jet-splitting-PDFs-00-07-02/clustering_pdfs_vs_pT_XXX.yml",
-            run_SvB=True,
             do_declustering=False,
             subtract_ttbar_with_weights = False,
+            friends: dict[str, str|FriendTemplate] = None,
     ):
 
         logging.debug("\nInitialize Analysis Processor")
         self.corrections_metadata = corrections_metadata
         self.clustering_pdfs_file = clustering_pdfs_file
-        self.classifier_SvB = HCREnsemble(SvB) if SvB else None
-        self.classifier_SvB_MA = HCREnsemble(SvB_MA) if SvB_MA else None
-        self.run_SvB = run_SvB
         self.do_declustering = do_declustering
         self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
-
+        logging.info(f"subtract_ttbar_with_weights = {self.subtract_ttbar_with_weights}")
+        self.friends = parse_friends(friends)
 
         self.histCuts = ["passPreSel"] #, "pass0OthJets", "pass1OthJets", "pass2OthJets"]
 
@@ -107,33 +110,6 @@ class analysis(processor.ProcessorABC):
         config = processor_config(processName, dataset, event)
         logging.debug(f'{chunk} config={config}, for file {fname}\n')
 
-        #
-        # Reading SvB friend trees (for TTbar subtraction)
-        #
-        path = fname.replace(fname.split("/")[-1], "")
-        if self.run_SvB:
-            if (self.classifier_SvB is None) | (self.classifier_SvB_MA is None):
-
-                #SvB_file = f'{path}/SvB_newSBDef.root' if 'mix' in dataset else f'{fname.replace("picoAOD", "SvB_ULHH")}'
-                SvB_file = f'{path}/SvB_ULHH.root' if 'mix' in dataset else f'{fname.replace("picoAOD", "SvB_ULHH")}'
-                event["SvB"] = ( NanoEventsFactory.from_root( SvB_file,
-                                                              entry_start=estart, entry_stop=estop, schemaclass=FriendTreeSchema).events().SvB )
-
-                if not ak.all(event.SvB.event == event.event):
-                    raise ValueError("ERROR: SvB events do not match events ttree")
-
-                #SvB_MA_file = f'{path}/SvB_MA_newSBDef.root' if 'mix' in dataset else f'{fname.replace("picoAOD", "SvB_MA_ULHH")}'
-                SvB_MA_file = f'{path}/SvB_MA_ULHH.root' if 'mix' in dataset else f'{fname.replace("picoAOD", "SvB_MA_ULHH")}'
-                event["SvB_MA"] = ( NanoEventsFactory.from_root( SvB_MA_file,
-                                                                 entry_start=estart, entry_stop=estop, schemaclass=FriendTreeSchema ).events().SvB_MA )
-
-                if not ak.all(event.SvB_MA.event == event.event):
-                    raise ValueError("ERROR: SvB_MA events do not match events ttree")
-
-                # defining SvB for different SR
-                setSvBVars("SvB", event)
-                setSvBVars("SvB_MA", event)
-
 
         #
         # Event selection
@@ -143,6 +119,23 @@ class analysis(processor.ProcessorABC):
 
         ### target is for new friend trees
         target = Chunk.from_coffea_events(event)
+
+
+        #
+        # Reading FvT friend trees (for TTbar subtraction)
+        #
+        if self.subtract_ttbar_with_weights:
+            if "FvT" in self.friends:
+                event["FvT"] = rename_FvT_friend(target, self.friends["FvT"])
+            else:
+                event["FvT"] = ( NanoEventsFactory.from_root(f'{fname.replace("picoAOD", "FvT")}',
+                                                             entry_start=estart, entry_stop=estop, schemaclass=FriendTreeSchema).events().FvT)
+
+                if not ak.all(event.FvT.event == event.event):
+                    raise ValueError("ERROR: FvT events do not match events ttree")
+
+            setFvTVars("FvT", event)
+
 
         ### adds all the event mc weights and 1 for data
         weights, list_weight_names = add_weights(
@@ -238,13 +231,14 @@ class analysis(processor.ProcessorABC):
         ## TTbar subtractions
         if self.subtract_ttbar_with_weights:
 
-            pass_ttbar_filter_selev = subtract_ttbar_with_SvB(selev, dataset, year)
+            pass_ttbar_filter_4b    = subtract_ttbar_with_FvT(selev, dataset, year, "d4_to_t4")
 
             pass_ttbar_filter = np.full( len(event), True)
-            pass_ttbar_filter[ selections.all(*allcuts) ] = pass_ttbar_filter_selev
+            pass_ttbar_filter[ selections.all(*allcuts) ] = pass_ttbar_filter_4b
             selections.add( 'pass_ttbar_filter', pass_ttbar_filter )
             allcuts.append("pass_ttbar_filter")
-            selev = selev[pass_ttbar_filter_selev]
+            self._cutFlow.fill( "pass_ttbar_filter", event[selections.all(*allcuts)], allTag=True )
+            selev = selev[pass_ttbar_filter_4b]
 
 
         # logging.info( f"\n {chunk} Event:  nSelJets {selev['nJet_selected']}\n")
