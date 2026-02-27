@@ -1,3 +1,4 @@
+import numpy as np
 from coffea4bees.analysis.processors.processor_HH4b import HH4bBaseProcessor
 
 from src.hist_tools import Collection, Fill
@@ -57,34 +58,78 @@ class analysis(HH4bBaseProcessor):
 
 
 
-    def custom_processing(self, selev, config):
+    def custom_processing(self, selev, config, selections, allcuts, nEventTot):
         logging.info(f"processor_FSR_recovery.custom_processing")
+
+        #
+        #  Make four tag cut
+        #
+        fourTag_sel = np.full(nEventTot, False)
+        fourTag_sel[selections.all(*allcuts)] = selev.fourTag
+        selections.add("fourTag", fourTag_sel)
+        allcuts.append("fourTag")
+        analysis_selections = selections.all(*allcuts)
+        selev = selev[selev.fourTag]
+
+
+        # Define low-pT jet selection criteria
+        selev['Jet', 'selected_lowpt'] = (
+            (selev.Jet.pt >= 15) &
+            (np.abs(selev.Jet.eta) <= 3.0) &
+            ~selev.Jet.pileup &
+            (selev.Jet.jetId >= 2) &
+            selev.Jet.lepton_cleaned &
+            ~selev.Jet.tagged  # Exclude already selected jets
+        )
 
 
         # quadJet_selected.subl is the subleading H->bb candidate
         print(f" Hbb lead Mass\n")
         print(f" lead.mass {selev.quadJet_selected.lead.mass[0:10]}\n")
 
+        # quadJet_selected.subl.lead is the leading jet of subleading H->bb candidate
+        print(f" Hbb lead.lead\n")
+        print(f"\t pt   {selev.quadJet_selected.lead.lead.pt [0:10]} \n" +
+              f"\t eta: {selev.quadJet_selected.lead.lead.eta[0:10]} \n" +
+              f"\t phi: {selev.quadJet_selected.lead.lead.phi[0:10] % (2*np.pi) - np.pi}\n")
+
+        # quadJet_selected.subl.subl is the sublleading jet of subleading H->bb candidate
+        print(f"Hbb lead.subl\n")
+        print(f"\t pt   {selev.quadJet_selected.lead.subl.pt [0:10]}\n" +
+              f"\t eta: {selev.quadJet_selected.lead.subl.eta[0:10]}\n" +
+              f"\t phi: {selev.quadJet_selected.lead.subl.phi[0:10] % (2*np.pi) - np.pi}\n")
 
         # quadJet_selected.subl is the subleading H->bb candidate
         print(f"Hbb Subl Mass\n")
         print(f" subl.mass {selev.quadJet_selected.subl.mass[0:10]}\n")
 
-
         # quadJet_selected.subl.lead is the leading jet of subleading H->bb candidate
         print(f" Hbb subl.lead\n")
-        print(f"\t pt {selev.quadJet_selected.subl.lead.pt[0:10]} \n\t eta: {selev.quadJet_selected.subl.lead.eta[0:10]} \n\t phi: {selev.quadJet_selected.subl.lead.phi}\n")
+        print(f"\t pt {selev.quadJet_selected.subl.lead.pt[0:10]} \n" +
+              f"\t eta: {selev.quadJet_selected.subl.lead.eta[0:10]} \n" +
+              f"\t phi: {selev.quadJet_selected.subl.lead.phi[0:10] % (2*np.pi) - np.pi}\n")
 
         # quadJet_selected.subl.subl is the sublleading jet of subleading H->bb candidate
         print(f"Hbb subl.subl\n")
-        print(f"\t pt {selev.quadJet_selected.subl.subl.pt[0:10]} \n\t eta: {selev.quadJet_selected.subl.subl.eta[0:10]} \n\t phi: {selev.quadJet_selected.subl.subl.phi}\n")
+        print(f"\t pt   {selev.quadJet_selected.subl.subl.pt [0:10]}\n" +
+              f"\t eta: {selev.quadJet_selected.subl.subl.eta[0:10]}\n" +
+              f"\t phi: {selev.quadJet_selected.subl.subl.phi[0:10] % (2*np.pi) - np.pi}\n")
+
+
+        selJet_loose = selev.Jet[selev.Jet.selected_lowpt]
+        print(f"Jet Selected Loose\n")
+        print(f"\t pt   {selJet_loose.pt [0:10].tolist()}\n" +
+              f"\t eta: {selJet_loose.eta[0:10].tolist()}\n" +
+              f"\t phi: {selJet_loose.phi[0:10].tolist()}\n")
 
 
         # Event Selection where FRS likely
         # lead~125 / subl < 125
+        canJet_matches, dr = selJet_loose.nearest(selev.canJet, threshold=0.8, return_metric=True)
+        print(canJet_matches[0:10],"\n")
+        print(dr[0:10],"\n")
 
-
-        return selev
+        return selev, selections.all(*allcuts)
 
 
     def histograms(self, event, selev, weights, analysis_selections, shift_name):

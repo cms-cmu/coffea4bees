@@ -20,8 +20,8 @@ from coffea4bees.analysis.helpers.event_weights import (
 from src.physics.event_selection import apply_event_selection
 from coffea4bees.analysis.helpers.event_weights import add_weights
 from coffea4bees.analysis.helpers.event_selection import (
-    apply_boosted_4b_selection, 
-    apply_dilep_ttbar_selection, 
+    apply_boosted_4b_selection,
+    apply_dilep_ttbar_selection,
     apply_4b_selection
 )
 from coffea4bees.analysis.helpers.filling_histograms import (
@@ -483,7 +483,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
 
         # Custom Processing in the derived classes
-        selev = self.custom_processing(selev, self.config)
+        selev, analysis_selections = self.custom_processing(selev, self.config, selections, allcuts, len(event))
 
         # Track events for display if requested
         if self.return_events_for_display:
