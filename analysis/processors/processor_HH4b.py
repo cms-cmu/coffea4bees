@@ -731,6 +731,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         elif self.dataset.startswith("VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00"):
             event = apply_boosted_4b_selection(event)
             event['notInBoostedSel'] = ~event.passBoostedSel
+        elif self.dataset.startswith("VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00"):
+            event = apply_boosted_4b_selection(event)
+            event['notInBoostedSel'] = ~event.passBoostedSel
         elif self.dataset.startswith("data"):
             boosted_file = load("coffea4bees/metadata/boosted_overlap_data.coffea")
             mask = np.array(boosted_file['BDTcat_index']) > 0  ### > 0 is all boosted categories, 1 is most sensitive
