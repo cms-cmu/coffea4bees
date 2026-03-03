@@ -129,8 +129,10 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --additional-flags)
-            ADDITIONAL_FLAGS="$2"
-            shift 2
+            shift
+            # Consume all remaining arguments as additional flags
+            ADDITIONAL_FLAGS="$@"
+            break
             ;;
         --help)
             usage
@@ -185,6 +187,7 @@ OUTPUT_DIR="${OUTPUT_BASE}/${OUTPUT_SUBDIR}/"
 create_output_directory "$OUTPUT_DIR"
 
 display_section_header "Running test processor"
+# Build command with proper handling of multi-word flags
 cmd=(python runner.py 
     -p "$PROCESSOR_PATH" 
     -m "$METADATA_PATH" 
@@ -194,11 +197,14 @@ cmd=(python runner.py
     -d $DATASETS 
     -y $YEAR
     -op "$OUTPUT_DIR" 
-    -o "$OUTPUT_FILENAME" 
-    $TEST_MODE 
-    $ADDITIONAL_FLAGS
-    $CONDOR_MODE
+    -o "$OUTPUT_FILENAME"
 )
+
+# Add optional flags
+[ -n "$TEST_MODE" ] && cmd+=( $TEST_MODE )
+[ -n "$CONDOR_MODE" ] && cmd+=( $CONDOR_MODE )
+[ -n "$ADDITIONAL_FLAGS" ] && cmd+=( $ADDITIONAL_FLAGS )
+
 run_command "${cmd[@]}"
 if [ $? -ne 0 ]; then
     exit 1

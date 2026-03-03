@@ -10,7 +10,7 @@ import awkward as ak
 import numpy as np
 import yaml
 import gc
-from src.physics.objects.jet_corrections import apply_jerc_corrections
+from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
 from src.physics.common import update_events
 from python.analysis.helpers.cutflow import cutflow_4b
 from python.analysis.helpers.event_weights import (
@@ -455,7 +455,7 @@ class analysis(processor.ProcessorABC):
         #
         if self.config["do_jet_calibration"]:
 
-            jets = apply_jerc_corrections(
+            jets = apply_jerc_corrections_jsonpog(
                 event,
                 corrections_metadata=self.corrections_metadata[self.year],
                 isMC=self.config["isMC"],

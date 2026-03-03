@@ -1,7 +1,7 @@
 # runner:
 #   chunksize: 100000
 #   workers: 4
-#   condor_memory: 8GB
+#   worker_memory: 8GB
 #   dashboard_address: 10201
 
 config:

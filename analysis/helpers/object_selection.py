@@ -198,6 +198,8 @@ def jet_selection(
             )
 
         event['Jet', 'puId'] = 10
+        if 'jetId' not in event.Jet.fields:
+            event['Jet', 'jetId'] = 10 ######### In nanoV15 we need to read jetID from json files. To be implemented
         event['Jet', 'pileup'] = ((event.Jet.puId < 7) & (event.Jet.pt < 50)) | ((np.abs(event.Jet.eta) > 2.4) & (event.Jet.pt < 40))
         event['Jet', 'selected_loose'] = (event.Jet.pt >= 20) & (event.Jet.jetId >= 2) & event.Jet.lepton_cleaned & (np.abs(event.Jet.eta) <= 4.7)
         event['Jet', 'selected'] = (event.Jet.pt >= 30) & (np.abs(event.Jet.eta) <= 2.4) & ~event.Jet.pileup & (event.Jet.jetId >= 2) & event.Jet.lepton_cleaned

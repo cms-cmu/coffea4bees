@@ -10,7 +10,7 @@ import awkward as ak
 import numpy as np
 import yaml
 import gc
-from src.physics.objects.jet_corrections import apply_jerc_corrections
+from src.physics.objects.jet_corrections import apply_jerc_corrections, apply_jerc_corrections_jsonpog
 from src.physics.common import update_events
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b
 from coffea4bees.analysis.helpers.event_weights import (
@@ -362,12 +362,12 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         #
         if self.config["do_jet_calibration"]:
 
-            jets = apply_jerc_corrections(
+            jets = apply_jerc_corrections_jsonpog(
                 event,
                 corrections_metadata=self.corrections_metadata[self.year],
                 isMC=self.config["isMC"],
-                run_systematics= 'jes' in self.run_systematics,
-                dataset=self.dataset
+                dataset=self.dataset,
+                run_systematics='jes' in self.run_systematics,
             )
         else:
             jets = event.Jet
@@ -1056,9 +1056,6 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                             wOverride=selev['weight_noJCM_noFvT'][selev.passElMu])
             #self._cutFlow.fill("passElEl", selev[selev.passElEl], allTag=True,
             #                wOverride=selev['weight_noJCM_noFvT'][selev.passElEl])
-
-
-
 
     def dump_friend_trees(self, selev, analysis_selections, shift_name):
         """Dump all requested friend trees.

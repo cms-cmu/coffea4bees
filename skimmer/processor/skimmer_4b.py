@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 import yaml
-from src.physics.objects.jet_corrections import apply_jerc_corrections
+from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
 from src.skimmer.mc_weight_outliers import OutlierByMedian
 from coffea4bees.analysis.helpers.processor_config import processor_config
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
@@ -48,7 +48,7 @@ class Skimmer(PicoAOD):
         )
 
         if config["do_jet_calibration"]:
-            jets = apply_jerc_corrections(
+            jets = apply_jerc_corrections_jsonpog(
                 events,
                 corrections_metadata=self.corrections_metadata[year],
                 isMC=config["isMC"],
@@ -72,8 +72,8 @@ class Skimmer(PicoAOD):
             weights.add("genweight_", events.genWeight)
 
         selections = PackedSelection()
-        selections.add("lumimask", events.lumimask)
-        selections.add("passNoiseFilter", events.passNoiseFilter)
+        selections.add("lumimask", np.full(len(events), True)) #events.lumimask)
+        selections.add("passNoiseFilter", np.full(len(events), True)) #events.passNoiseFilter)
         selections.add("passHLT", (events.passHLT if config["cut_on_HLT_decision"] else np.full(len(events), True)))
 
         if self.loosePtForSkim:
