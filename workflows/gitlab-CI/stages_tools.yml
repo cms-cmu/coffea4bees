@@ -52,6 +52,20 @@ tools_twostageclosure_mixed_coffea4bees:
     paths:
       - output/tools_twostageclosure_mixed/test_dump_twoStageClosureInputsCounts.yml
 
+tools_perf_profile_coffea4bees:
+  stage: tools
+  extends:
+    - .base_analysis
+  needs:
+    - setup_workspace
+  script:
+    - source coffea4bees/scripts/tools-perf-profile.sh --output-base /builds/$CI_PROJECT_PATH/output
+  allow_failure: true
+  artifacts:
+    paths:
+      - output/perf_profile/perf_profile.txt
+      - output/perf_profile/perf_profile.csv
+
 # Needs review
 # histtojson-test-job:   
 #   stage: tools

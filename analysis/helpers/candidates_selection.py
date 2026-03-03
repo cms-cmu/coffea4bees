@@ -71,8 +71,11 @@ def create_cand_jet_dijet_quadjet(
         canJet_idx = sorted_idx[:, 0:4]
         
     # Exclude canJet_idx from sorted_idx
-    mask = ~ak.any(canJet_idx[:, :, np.newaxis] == sorted_idx[:, np.newaxis, :], axis=1)
-    notCanJet_idx = sorted_idx[mask]
+    is_canJet = ak.zeros_like(sorted_idx, dtype=bool)
+    for i in range(4):
+        is_canJet = is_canJet | (sorted_idx == canJet_idx[:, i])
+    notCanJet_idx = sorted_idx[~is_canJet]
+    del is_canJet
     notCanJet = selev.Jet[notCanJet_idx]
     logging.debug(f"all notCanJet {notCanJet.pt[:2]}")
     notCanJet = notCanJet[notCanJet.selected_loose | (notCanJet.selected_lowpt if include_lowptjets else False)]
@@ -87,20 +90,15 @@ def create_cand_jet_dijet_quadjet(
 
     # # apply bJES to canJets
     logging.debug(f"canJet before bReg {selev.Jet[canJet_idx].pt[:2]}\n")
-    canJet = selev.Jet[canJet_idx] * selev.Jet[canJet_idx].bRegCorr
-    canJet["bRegCorr"] = selev.Jet.bRegCorr[canJet_idx]
-    canJet["btagScore"] = selev.Jet.btagScore[canJet_idx]
-    canJet["puId"] = selev.Jet.puId[canJet_idx]
-    canJet["jetId"] = selev.Jet.jetId[canJet_idx]
-
-    # CutFlow Debugging
-    #if "pt_jec" in selev.Jet.fields:
-    #    canJet["PNetRegPtRawCorr"] = selev.Jet.PNetRegPtRawCorr[canJet_idx]
-    #    canJet["PNetRegPtRawCorrNeutrino"] = selev.Jet.PNetRegPtRawCorrNeutrino[canJet_idx]
-    #    canJet["pt_raw"] = selev.Jet.pt_raw[canJet_idx]
-
+    canJet_raw = selev.Jet[canJet_idx]
+    canJet = canJet_raw * canJet_raw.bRegCorr
+    canJet["bRegCorr"] = canJet_raw.bRegCorr
+    canJet["btagScore"] = canJet_raw.btagScore
+    canJet["puId"] = canJet_raw.puId
+    canJet["jetId"] = canJet_raw.jetId
     if "hadronFlavour" in selev.Jet.fields:
-        canJet["hadronFlavour"] = selev.Jet.hadronFlavour[canJet_idx]
+        canJet["hadronFlavour"] = canJet_raw.hadronFlavour
+    del canJet_raw
 
     #
     # pt sort canJets
@@ -130,6 +128,11 @@ def create_cand_jet_dijet_quadjet(
     notCanJet["isSelJet"] = 1 * ( (notCanJet.pt >= 40) & (np.abs(notCanJet.eta) < 2.4) )
     selev["notCanJet_coffea"] = notCanJet
     selev["nNotCanJet"] = ak.num(selev.notCanJet_coffea)
+
+    # Release indexing intermediates
+    del sorted_idx, canJet_idx, notCanJet_idx, notCanJet
+    if include_lowptjets:
+        del sorted_idx_lowpt
 
     # Build diJets, indexed by diJet[event,pairing,0/1]
     canJet = selev["canJet"]
@@ -176,6 +179,9 @@ def create_cand_jet_dijet_quadjet(
 
     diJet["xZ"] = (diJet.mass - cZ) / (0.1 * diJet.mass)
     diJet["xH"] = (diJet.mass - cH) / (0.1 * diJet.mass)
+
+    # Release diJet construction intermediates
+    del canJet, pairing
 
     #
     # Build quadJets
@@ -427,32 +433,11 @@ def create_cand_jet_dijet_quadjet(
         selev["passSvB"] = selev["SvB_MA"].ps > 0.80
         selev["failSvB"] = selev["SvB_MA"].ps < 0.05
 
-    # After building canJet_idx and notCanJet_idx
-    del sorted_idx
-    if include_lowptjets:
-        del sorted_idx_lowpt
-    del canJet_idx, notCanJet_idx
-
-    # After building canJet and notCanJet
-    del canJet, notCanJet
-
-    # After building diJet, diJetDr, pairing
-    del diJet, diJetDr, pairing
-
-    # After building quadJet and all quadJet selection logic
-    del quadJet
-
-    # After Run3 selection logic
+    # Release remaining intermediates
+    del diJet, diJetDr, quadJet, arg_min_close_dr
     if isRun3:
         del quadJet_min_dhh_mask, quadJet_min_dhh, quadJet_min2_dhh_mask, quadJet_min2_dhh
         del dhh_sorted, dhh_sorted_arg, delta_dhh
         del boost_vec_v4j, quadJet_min_dhh_lead_CM, quadJet_min2_dhh_lead_CM, use_dhh2_mask
-
-    # After region/CR selection
-    del arg_min_close_dr
-
-    # Final cleanup
-    import gc
-    gc.collect()
 
     return selev
