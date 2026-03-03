@@ -1011,12 +1011,12 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         )
 
 
-    def custom_processing(self, selev, config):
+    def custom_processing(self, selev, config, selections, allcuts, nEventTot):
         """
           Place holder for custom analysis implemeted in the derived classes
 
         """
-        return selev
+        return selev, selections.all(*allcuts)
 
 
     def fill_detailed_cutflows(self, selev):
