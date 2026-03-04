@@ -56,7 +56,7 @@ PDG_NAMES = {
 
 
 def pdg_name(pdgId):
-    """Return a human-readable label for a PDG particle ID."""
+    """Return a human-readable label for a PDG particle ID ."""
     return PDG_NAMES.get(int(pdgId), f'#{int(pdgId):+d}')
 
 
