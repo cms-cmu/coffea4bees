@@ -21,8 +21,8 @@ from coffea4bees.analysis.helpers.event_weights import (
 from src.physics.event_selection import apply_event_selection
 from coffea4bees.analysis.helpers.event_weights import add_weights
 from coffea4bees.analysis.helpers.event_selection import (
-    apply_boosted_4b_selection, 
-    apply_dilep_ttbar_selection, 
+    apply_boosted_4b_selection,
+    apply_dilep_ttbar_selection,
     apply_4b_selection
 )
 from coffea4bees.analysis.helpers.filling_histograms import (
@@ -504,6 +504,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         with self._stage(f"{label}:build_candidates"):
             # Build jet/dijet/quadjet candidates
             selev = self.build_candidates(selev, weights, list_weight_names, analysis_selections, processOutput)
+
+
+        # Custom Processing in the derived classes
+        selev, analysis_selections = self.custom_processing(selev, self.config, selections, allcuts, len(event))
 
         # Track events for display if requested
         if self.return_events_for_display:
@@ -1034,6 +1038,15 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             list_weight_names=list_weight_names,
             analysis_selections=analysis_selections,
         )
+
+
+    def custom_processing(self, selev, config, selections, allcuts, nEventTot):
+        """
+          Place holder for custom analysis implemeted in the derived classes
+
+        """
+        return selev, selections.all(*allcuts)
+
 
     def fill_detailed_cutflows(self, selev):
         """Fill detailed cutflow histograms after candidate building.

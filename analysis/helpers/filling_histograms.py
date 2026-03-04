@@ -121,7 +121,7 @@ def filling_nominal_histograms(
     if run_SvB:
         fill += SvBHists(("SvB", "SvB Classifier"), "SvB")
         fill += SvBHists(("SvB_MA", "SvB MA Classifier"), "SvB_MA")
-        fill += SvBHists(("SvB_noFvT", "SvB Classifier"), "SvB", weight="weight_noFvT")
+        #fill += SvBHists(("SvB_noFvT", "SvB Classifier"), "SvB", weight="weight_noFvT")
         fill += SvBHists(("SvB_MA_noFvT", "SvB MA Classifier"), "SvB_MA", weight="weight_noFvT")
         #fill += SvBHists(("SvB_MA_noFvT_noJCM", "SvB MA Classifier"), "SvB_MA", weight="weight_noJCM_noFvT")
         fill += hist.add("quadJet_selected.SvB_q_score", (100, 0, 1, ("quadJet_selected.SvB_q_score", "Selected Quad Jet Diboson SvB q score")))
