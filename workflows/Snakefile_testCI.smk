@@ -328,6 +328,13 @@ rule mixeddata_split_dataset:
     shell: "source coffea4bees/scripts/mixeddata-split-dataset.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
 
+rule mixeddata_cluster:
+    output: f"{output_dir}/mixeddata_cluster/test_mixed_datasets.coffea"
+    log: f"{output_dir}/mixeddata_cluster.log"
+    container: analysis_container
+    shell: "source coffea4bees/scripts/mixeddata-cluster.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
+
+
 rule mixeddata_analyze:
     output: f"{output_dir}/mixeddata_analyze/test_mixeddata.coffea"
     input: f"{output_dir}/test_mixeddata_split_dataset/picoaod_datasets_split_mixeddata_UL18_v0.yml"
