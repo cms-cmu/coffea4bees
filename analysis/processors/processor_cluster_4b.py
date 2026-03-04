@@ -1,251 +1,56 @@
-import time
-import gc
-import awkward as ak
+from coffea4bees.analysis.processors.processor_HH4b import HH4bBaseProcessor
 import numpy as np
-import correctionlib
-import yaml
-import warnings
-import uproot
-
-
-from coffea.nanoevents import NanoEventsFactory, NanoAODSchema
-from coffea import processor
-from coffea.util import load
-from coffea.analysis_tools import Weights, PackedSelection
-from coffea4bees.analysis.helpers.processor_config import processor_config
-
+import awkward as ak
 from src.hist_tools import Collection, Fill
 from src.hist_tools.object import LorentzVector, Jet, Muon, Elec
-#from coffea4bees.analysis.helpers.hist_templates import SvBHists, FvTHists, QuadJetHists
+import logging
+
 from coffea4bees.jet_clustering.clustering_hist_templates import ClusterHists, ClusterHistsDetailed
 from coffea4bees.jet_clustering.clustering   import cluster_bs, cluster_bs_fast
 from coffea4bees.jet_clustering.declustering import compute_decluster_variables, make_synthetic_event, get_list_of_splitting_types, clean_ISR, get_list_of_ISR_splittings, get_list_of_combined_jet_types, get_list_of_all_sub_splittings, get_splitting_name, get_list_of_splitting_names
 
-from coffea4bees.analysis.helpers.networks import HCREnsemble
-from coffea4bees.analysis.helpers.cutflow import cutflow_4b
-from src.friendtrees.FriendTreeSchema import FriendTreeSchema
 
-
-from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
-from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
-from src.physics.common import apply_btag_sf, update_events
-from coffea4bees.analysis.helpers.event_weights import add_weights
-
-from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_FvT, setFvTVars
-from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
-from coffea4bees.analysis.helpers.object_selection import load_object_selection_config
-from src.physics.event_selection import apply_event_selection
-
-import logging
-
-from src.data_formats.root import TreeReader, Chunk
-
-from ..helpers.load_friend import (
-    FriendTemplate,
-    parse_friends,
-    rename_FvT_friend,
-)
-
-
-#
-# Setup
-#
-NanoAODSchema.warn_missing_crossrefs = False
-warnings.filterwarnings("ignore")
-
-
-
-
-
-class analysis(processor.ProcessorABC):
+class analysis(HH4bBaseProcessor):
     def __init__(
             self,
-            *,
-            threeTag=False,
-            corrections_metadata: dict = None,
-            clustering_pdfs_file = "jet_clustering/jet-splitting-PDFs-00-07-02/clustering_pdfs_vs_pT_XXX.yml",
-            do_declustering=False,
-            subtract_ttbar_with_weights = False,
-            friends: dict[str, str|FriendTemplate] = None,
-            object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
+            **kwargs  # Accept additional arguments to pass to parent
     ):
 
-        logging.debug("\nInitialize Analysis Processor")
-        self.corrections_metadata = corrections_metadata
-        self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
-        self.clustering_pdfs_file = clustering_pdfs_file
-        self.do_declustering = do_declustering
-        self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
+        # Initialize parent without JCM (we'll handle it ourselves)
+        print(f"kwargs was",kwargs.keys())
+        self.clustering_pdfs_file = kwargs.pop("clustering_pdfs_file","jet_clustering/jet-splitting-PDFs-00-07-02/clustering_pdfs_vs_pT_XXX.yml")
+        self.do_declustering      = kwargs.pop("do_declustering", False)
+        print(f"kwargs is",kwargs.keys())
+        super().__init__(**kwargs)
+        logging.info("\nInitialize cluster 4b Processor")
         logging.info(f"subtract_ttbar_with_weights = {self.subtract_ttbar_with_weights}")
-        self.friends = parse_friends(friends)
-
-        self.histCuts = ["passPreSel"] #, "pass0OthJets", "pass1OthJets", "pass2OthJets"]
 
 
-    def process(self, event):
+    def custom_processing(self, selev, config, selections, allcuts, nEventTot):
+        logging.info(f"processor_cluster_4b.custom_processing")
 
-        tstart = time.time()
-        fname   = event.metadata['filename']
-        dataset = event.metadata['dataset']
-        estart  = event.metadata['entrystart']
-        estop   = event.metadata['entrystop']
-        chunk   = f'{dataset}::{estart:6d}:{estop:6d} >>> '
-        year    = event.metadata['year']
-        year_label = self.corrections_metadata[year]['year_label']
-        processName = event.metadata['processName']
-        lumi    = event.metadata.get('lumi',    1.0)
-        xs      = event.metadata.get('xs',      1.0)
-        kFactor = event.metadata.get('kFactor', 1.0)
-        nEvent = len(event)
+        clustering_pdfs_file = self.clustering_pdfs_file.replace("XXX", self.year)
 
-        clustering_pdfs_file = self.clustering_pdfs_file.replace("XXX", year)
-
-        if not clustering_pdfs_file == "None":
-            clustering_pdfs = yaml.safe_load(open(clustering_pdfs_file, "r"))
-            logging.info(f"Loaded {len(clustering_pdfs.keys())} PDFs from {clustering_pdfs_file}")
+        if not self.clustering_pdfs_file == "None":
+            clustering_pdfs = yaml.safe_load(open(self.clustering_pdfs_file, "r"))
+            logging.info(f"Loaded {len(clustering_pdfs.keys())} PDFs from {self.clustering_pdfs_file}")
         else:
             clustering_pdfs = None
 
 
         #
-        # Set process and datset dependent flags
+        #  Make four tag cut
         #
-        config = processor_config(processName, dataset, event)
-        logging.debug(f'{chunk} config={config}, for file {fname}\n')
+        fourTag_sel = np.full(nEventTot, False)
+        fourTag_sel[selections.all(*allcuts)] = selev.fourTag
+        selections.add("fourTag", fourTag_sel)
+        allcuts.append("fourTag")
+        analysis_selections = selections.all(*allcuts)
+        selev = selev[selev.fourTag]
 
 
-        #
-        # Event selection
-        #
-        event = apply_event_selection( event, self.corrections_metadata[year], cut_on_lumimask=config["cut_on_lumimask"])
+        self._cutFlow.fill("passFourTag", selev )
 
-
-        ### target is for new friend trees
-        target = Chunk.from_coffea_events(event)
-
-
-        #
-        # Reading FvT friend trees (for TTbar subtraction)
-        #
-        if self.subtract_ttbar_with_weights:
-            if "FvT" in self.friends:
-                event["FvT"] = rename_FvT_friend(target, self.friends["FvT"])
-            else:
-                event["FvT"] = ( NanoEventsFactory.from_root(f'{fname.replace("picoAOD", "FvT")}',
-                                                             entry_start=estart, entry_stop=estop, schemaclass=FriendTreeSchema).events().FvT)
-
-                if not ak.all(event.FvT.event == event.event):
-                    raise ValueError("ERROR: FvT events do not match events ttree")
-
-            setFvTVars("FvT", event)
-
-
-        ### adds all the event mc weights and 1 for data
-        weights, list_weight_names = add_weights(
-            event, target=target,
-            dataset=dataset,
-            year_label=year_label,
-            friend_trigWeight=None,
-            corrections_metadata=self.corrections_metadata[year],
-            apply_trigWeight=True,
-            config = config
-        )
-
-
-        logging.debug(f"weights event {weights.weight()[:10]}")
-        logging.debug(f"Weight Statistics {weights.weightStatistics}")
-
-
-        #
-        # Calculate and apply Jet Energy Calibration
-        #
-        if config["do_jet_calibration"]:
-            jets = apply_jerc_corrections_jsonpog(event,
-                                    corrections_metadata=self.corrections_metadata[year],
-                                    isMC=config["isMC"],
-                                    run_systematics=False,
-                                    dataset=dataset
-                                    )
-        else:
-            jets = event.Jet
-
-        event = update_events(event, {"Jet": jets})
-
-
-        # Apply object selection (function does not remove events, adds content to objects)
-        event = apply_4b_selection( event, self.corrections_metadata[year], config=config,
-                                    dataset=dataset,
-                                    sel_cfg=self.sel_cfg,
-                                   )
-
-        selections = PackedSelection()
-        selections.add( "lumimask", event.lumimask)
-        selections.add( "passNoiseFilter", event.passNoiseFilter)
-        selections.add( "passHLT", ( event.passHLT if config["cut_on_HLT_decision"] else np.full(len(event), True)  ) )
-        selections.add( 'passJetMult', event.passJetMult )
-        allcuts = [ 'lumimask', 'passNoiseFilter', 'passHLT', 'passJetMult' ]
-        event['weight'] = weights.weight()   ### this is for _cutflow
-
-        #
-        #  Cut Flows
-        #
-        processOutput = {}
-
-        processOutput['nEvent'] = {}
-        processOutput['nEvent'][event.metadata['dataset']] = {
-            'nEvent' : nEvent,
-            'genWeights': np.sum(event.genWeight) if config["isMC"] else nEvent
-
-        }
-
-        self._cutFlow = cutflow_4b()
-        self._cutFlow.fill( "all", event[selections.require(lumimask=True)], allTag=True)
-        self._cutFlow.fill( "passNoiseFilter", event[selections.require(lumimask=True, passNoiseFilter=True)], allTag=True)
-        self._cutFlow.fill( "passHLT", event[ selections.require( lumimask=True, passNoiseFilter=True, passHLT=True ) ], allTag=True, )
-        self._cutFlow.fill( "passJetMult", event[ selections.all(*allcuts)], allTag=True )
-
-
-        #
-        # Preselection: keep only three or four tag events
-        #
-        #selections.add("passPreSel", event.passPreSel)
-        selections.add("passFourTag", event.fourTag)
-
-        #event['pass0OthJets'] = event.nJet_selected == 4
-        #event['pass1OthJets'] = event.nJet_selected == 5
-        #event['pass2OthJets'] = event.nJet_selected == 6
-        #event['passMax1OthJets'] = event.nJet_selected < 6
-        #event['passMax2OthJets'] = event.nJet_selected < 7
-        #event['passMax4OthJets'] = event.nJet_selected < 9
-        #selections.add("pass0OthJets",    event.pass0OthJets)
-        #selections.add("pass1OthJets",    event.pass1OthJets)
-        #selections.add("pass2OthJets",    event.pass2OthJets)
-        #selections.add("passMax1OthJets", event.passMax1OthJets)
-        #selections.add("passMax2OthJets", event.passMax2OthJets)
-        #selections.add("passMax4OthJets", event.passMax4OthJets)
-        allcuts.append("passFourTag")
-
-        #allcuts.append("passMax1OthJets")
-        #allcuts.append("passMax2OthJets")
-        #allcuts.append("passMax4OthJets")
-        #allcuts.append("pass2OthJets")
-
-        selev = event[selections.all(*allcuts)]
-
-        ## TTbar subtractions
-        if self.subtract_ttbar_with_weights:
-
-            pass_ttbar_filter_4b    = subtract_ttbar_with_FvT(selev, dataset, year, "d4_to_t4")
-
-            pass_ttbar_filter = np.full( len(event), True)
-            pass_ttbar_filter[ selections.all(*allcuts) ] = pass_ttbar_filter_4b
-            selections.add( 'pass_ttbar_filter', pass_ttbar_filter )
-            allcuts.append("pass_ttbar_filter")
-            self._cutFlow.fill( "pass_ttbar_filter", event[selections.all(*allcuts)], allTag=True )
-            selev = selev[pass_ttbar_filter_4b]
-
-
-        # logging.info( f"\n {chunk} Event:  nSelJets {selev['nJet_selected']}\n")
 
         #
         # Build and select boson candidate jets with bRegCorr applied
@@ -331,7 +136,7 @@ class analysis(processor.ProcessorABC):
         # Convert to list of cleaned splitting names
         #
         cleaned_splitting_name = [get_splitting_name(i) for i in cleaned_split_jet_flavors]
-        cleaned_splitting_name = set(cleaned_splitting_name)
+        self.cleaned_splitting_name = set(cleaned_splitting_name)
 
         #
         # Sort clusterings by type
@@ -475,30 +280,23 @@ class analysis(processor.ProcessorABC):
 
 
 
-
+        # Hack for plotting
         selev["region"] = ak.zip({"SR": selev.fourTag})
 
-        #
-        # CutFlow
-        #
-        logging.debug(f"final weight {weights.weight()[:10]}")
-        selev["weight"] = weights.weight()[selections.all(*allcuts)]
-
-        self._cutFlow.fill("passFourTag", selev )
         #self._cutFlow.fill("pass0OthJets",selev )
         #self._cutFlow.fill("pass1OthJets",selev )
         #self._cutFlow.fill("pass2OthJets",selev )
+        return selev, selections.all(*allcuts)
 
-        self._cutFlow.addOutput(processOutput, event.metadata["dataset"])
+    #
+    # Hists
+    #
+    def histograms(self, event, selev, weights, analysis_selections, shift_name):
 
-        #
-        # Hists
-        #
+        fill = Fill(process=self.processName, year=self.year, weight="weight")
 
-        fill = Fill(process=processName, year=year, weight="weight")
-
-        hist = Collection( process=[processName],
-                           year=[year],
+        hist = Collection( process=[self.processName],
+                           year=[self.year],
                            tag=["threeTag", "fourTag"],  # 3 / 4/ Other
                            region=['SR'],  # SR / SB / Other
                            **dict((s, ...) for s in self.histCuts)
@@ -526,7 +324,7 @@ class analysis(processor.ProcessorABC):
             fill += Jet.plot( (f"canJet{iJ}", f"Higgs Candidate Jets {iJ}"), f"canJet{iJ}", skip=["n", "deepjet_c"], )
 
 
-        for _s_type in cleaned_splitting_name:
+        for _s_type in self.cleaned_splitting_name:
             fill += ClusterHists( (f"splitting_{_s_type}", f"{_s_type} Splitting"), f"splitting_{_s_type}" )
 
             # if _s_type in ["1b0j/1b0j", "1b0j/0b1j", "0b1j/0b1j", "1b1j/1b0j"]:
@@ -534,29 +332,17 @@ class analysis(processor.ProcessorABC):
 
 
         if self.do_declustering:
-            for _s_type in cleaned_splitting_name:
+            for _s_type in self.cleaned_splitting_name:
                 fill += ClusterHists( (f"splitting_{_s_type}_re", f"${_s_type} Splitting"), f"splitting_{_s_type}_re" )
 
 
         #
         # fill histograms
         #
-        # fill.cache(selev)
         fill(selev, hist)
 
-        garbage = gc.collect()
-        # print('Garbage:',garbage)
+        return hist.to_dict(nonempty=True)
 
-
-        #
-        # Done
-        #
-        elapsed = time.time() - tstart
-        logging.debug(f"{chunk}{nEvent/elapsed:,.0f} events/s")
-
-        output = hist.output | processOutput
-
-        return output
 
     def postprocess(self, accumulator):
         return accumulator
