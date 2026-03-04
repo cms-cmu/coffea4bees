@@ -18,7 +18,7 @@ fi
 display_section_header "Running test processor"
 YEARS="2022_EE 2022_preEE 2023_BPix 2023_preBPix"
 #YEARS="UL18"
-python runner.py  -o histDeClusteredDataRun3_woTTPSData.coffea -d    synthetic_data  -p coffea4bees/analysis/processors/processor_HH4b.py -y $YEARS  -op $OUTPUT_DIR -m $DATASETS -c coffea4bees/analysis/metadata/HH4b_mixed_data_new.yml # --condor
+python runner.py  -o histDeClusteredDataRun3_noTT.coffea -d    synthetic_data_noTT  -p coffea4bees/analysis/processors/processor_HH4b.py -y $YEARS  -op $OUTPUT_DIR -m $DATASETS -c coffea4bees/analysis/metadata/HH4b_mixed_data_new.yml  --condor
 
 #python runner.py  -o histData.coffea -d    data  -p coffea4bees/analysis/processors/processor_HH4b.py -y UL18 UL17 UL16_preVFP UL16_postVFP    -op $OUTPUT_DIR -m $DATASETS
 

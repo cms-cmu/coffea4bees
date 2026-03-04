@@ -10,6 +10,7 @@ from coffea.analysis_tools import PackedSelection
 
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b
 from coffea4bees.analysis.helpers.event_selection import apply_boosted_4b_selection, apply_4b_selection
+from coffea4bees.analysis.helpers.object_selection import load_object_selection_config
 from src.physics.event_selection import apply_event_selection
 
 import logging
@@ -26,11 +27,13 @@ class analysis(processor.ProcessorABC):
             self,
             *,
             corrections_metadata: dict = None,
+            object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
             **kwargs
     ):
 
         logging.debug("\nInitialize Analysis Processor")
         self.corrections_metadata = corrections_metadata
+        self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
 
 
 
@@ -54,7 +57,7 @@ class analysis(processor.ProcessorABC):
         event = apply_event_selection( event, self.corrections_metadata[year], cut_on_lumimask=False)
 
         # Apply object selection (function does not remove events, adds content to objects)
-        event = apply_4b_selection( event, self.corrections_metadata[year] )
+        event = apply_4b_selection( event, self.corrections_metadata[year], sel_cfg=self.sel_cfg )
         event = apply_boosted_4b_selection(event)
 
         selections = PackedSelection()

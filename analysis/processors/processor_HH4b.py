@@ -21,10 +21,11 @@ from coffea4bees.analysis.helpers.event_weights import (
 from src.physics.event_selection import apply_event_selection
 from coffea4bees.analysis.helpers.event_weights import add_weights
 from coffea4bees.analysis.helpers.event_selection import (
-    apply_boosted_4b_selection, 
-    apply_dilep_ttbar_selection, 
+    apply_boosted_4b_selection,
+    apply_dilep_ttbar_selection,
     apply_4b_selection
 )
+from coffea4bees.analysis.helpers.object_selection import load_object_selection_config
 from coffea4bees.analysis.helpers.filling_histograms import (
     filling_nominal_histograms,
     filling_syst_histograms,
@@ -186,10 +187,12 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         friends: dict[str, str|FriendTemplate] = None,
         return_events_for_display: bool = False,
         tracker = None,
+        object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
     ):
 
         logging.debug("\nInitialize Analysis Processor")
         self.tracker = tracker
+        self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
         self.blind = blind
         if apply_JCM:
             logging.info(f"\nUsing JCM from {JCM_file}")
@@ -504,6 +507,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         with self._stage(f"{label}:build_candidates"):
             # Build jet/dijet/quadjet candidates
             selev = self.build_candidates(selev, weights, list_weight_names, analysis_selections, processOutput)
+
+
+        # Custom Processing in the derived classes
+        selev, analysis_selections = self.custom_processing(selev, self.config, selections, allcuts, len(event))
 
         # Track events for display if requested
         if self.return_events_for_display:
@@ -1038,6 +1045,15 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             analysis_selections=analysis_selections,
         )
 
+
+    def custom_processing(self, selev, config, selections, allcuts, nEventTot):
+        """
+          Place holder for custom analysis implemeted in the derived classes
+
+        """
+        return selev, selections.all(*allcuts)
+
+
     def fill_detailed_cutflows(self, selev):
         """Fill detailed cutflow histograms after candidate building.
 
@@ -1142,6 +1158,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             config=self.config,
             dataset=self.dataset,
             apply_mixeddata_sel=self.apply_mixeddata_sel,
+            sel_cfg=self.sel_cfg,
         )
 
 

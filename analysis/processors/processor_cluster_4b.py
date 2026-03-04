@@ -33,6 +33,7 @@ from coffea4bees.analysis.helpers.event_weights import add_weights
 
 from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_FvT, setFvTVars
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
+from coffea4bees.analysis.helpers.object_selection import load_object_selection_config
 from src.physics.event_selection import apply_event_selection
 
 import logging
@@ -66,10 +67,12 @@ class analysis(processor.ProcessorABC):
             do_declustering=False,
             subtract_ttbar_with_weights = False,
             friends: dict[str, str|FriendTemplate] = None,
+            object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
     ):
 
         logging.debug("\nInitialize Analysis Processor")
         self.corrections_metadata = corrections_metadata
+        self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
         self.clustering_pdfs_file = clustering_pdfs_file
         self.do_declustering = do_declustering
         self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
@@ -172,6 +175,7 @@ class analysis(processor.ProcessorABC):
         # Apply object selection (function does not remove events, adds content to objects)
         event = apply_4b_selection( event, self.corrections_metadata[year], config=config,
                                     dataset=dataset,
+                                    sel_cfg=self.sel_cfg,
                                    )
 
         selections = PackedSelection()

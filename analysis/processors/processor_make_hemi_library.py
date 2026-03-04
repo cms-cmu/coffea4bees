@@ -34,6 +34,7 @@ from coffea4bees.analysis.helpers.event_weights import add_weights
 
 from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_FvT, setFvTVars
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
+from coffea4bees.analysis.helpers.object_selection import load_object_selection_config
 from src.physics.event_selection import apply_event_selection
 
 import logging
@@ -71,6 +72,7 @@ class analysis(processor.ProcessorABC):
             subtract_ttbar_with_weights = False,
             friends: dict[str, str|FriendTemplate] = None,
             campaign: str = ...,
+            object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
     ):
         logging.debug("\nInitialize  processor_make_hemi_library\n")
 
@@ -86,6 +88,7 @@ class analysis(processor.ProcessorABC):
 
 
         self.corrections_metadata = corrections_metadata
+        self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
         self.classifier_SvB = HCREnsemble(SvB) if SvB else None
         self.classifier_SvB_MA = HCREnsemble(SvB_MA) if SvB_MA else None
         self.run_SvB = run_SvB
@@ -200,6 +203,7 @@ class analysis(processor.ProcessorABC):
                                     self.corrections_metadata[year],
                                     config = config,
                                     dataset=dataset,
+                                    sel_cfg=self.sel_cfg,
                                    )
 
         selections = PackedSelection()
