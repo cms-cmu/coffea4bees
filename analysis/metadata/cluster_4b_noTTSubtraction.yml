@@ -9,7 +9,6 @@ runner:
     - coffea4bees/jet_clustering    
   
 config:
-  threeTag: false
   clustering_pdfs_file: None
   subtract_ttbar_with_weights: false
   run_SvB: false

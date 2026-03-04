@@ -3,7 +3,6 @@ runner:
   worker_memory: 8GB
 
 config:
-  threeTag: false
   clustering_pdfs_file: None
   subtract_ttbar_with_weights: true
 
