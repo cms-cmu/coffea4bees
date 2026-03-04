@@ -1,6 +1,7 @@
 import yaml
 from src.skimmer.picoaod import PicoAOD #, fetch_metadata, resize
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
+from coffea4bees.analysis.helpers.object_selection import load_object_selection_config
 from coffea.nanoevents import NanoEventsFactory
 
 from coffea4bees.jet_clustering.clustering   import cluster_bs
@@ -37,6 +38,7 @@ class DeClusterer(PicoAOD):
                 declustering_rand_seed=5,
                 friends: dict[str, str|FriendTemplate] = None,
                 corrections_metadata: dict = None,
+                object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
                 *args, **kwargs):
         kwargs["pico_base_name"] = f'picoAOD_seed{declustering_rand_seed}'
         super().__init__(*args, **kwargs)
@@ -48,6 +50,7 @@ class DeClusterer(PicoAOD):
         self.friends = parse_friends(friends)
         self.declustering_rand_seed = declustering_rand_seed
         self.corrections_metadata = corrections_metadata
+        self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
         self._cutFlow = cutflow_4b()
 
         self.skip_collections = kwargs["skip_collections"]
@@ -131,6 +134,7 @@ class DeClusterer(PicoAOD):
 
         event = apply_4b_selection( event, self.corrections_metadata[year], config=config,
                                     dataset=dataset,
+                                    sel_cfg=self.sel_cfg,
                                    )
 
 

@@ -1,6 +1,7 @@
 import yaml
 from src.skimmer.picoaod import PicoAOD #, fetch_metadata, resize
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
+from coffea4bees.analysis.helpers.object_selection import load_object_selection_config
 from src.physics.event_selection import apply_event_selection
 from coffea.nanoevents import NanoEventsFactory
 
@@ -28,7 +29,7 @@ from coffea4bees.analysis.helpers.load_friend import (
 
 
 class SubSampler(PicoAOD):
-    def __init__(self, sub_sampling_rand_seed=5, corrections_metadata: dict = None, apply_trigWeight: bool = True, friends: dict[str, str|FriendTemplate] = None, *args, **kwargs):
+    def __init__(self, sub_sampling_rand_seed=5, corrections_metadata: dict = None, apply_trigWeight: bool = True, friends: dict[str, str|FriendTemplate] = None, object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml", *args, **kwargs):
         kwargs["pico_base_name"] = f'picoAOD_PSData'
         super().__init__(*args, **kwargs)
 
@@ -40,6 +41,7 @@ class SubSampler(PicoAOD):
         self.corrections_metadata = corrections_metadata
         self.apply_trigWeight = apply_trigWeight
         self.friends = parse_friends(friends)
+        self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
 
     def select(self, event):
 
@@ -100,7 +102,8 @@ class SubSampler(PicoAOD):
                                     self.corrections_metadata[year],
                                     config=config,
                                     dataset=dataset,
-                                    apply_mixeddata_sel=False
+                                    apply_mixeddata_sel=False,
+                                    sel_cfg=self.sel_cfg,
                                    )
 
         selections = PackedSelection()

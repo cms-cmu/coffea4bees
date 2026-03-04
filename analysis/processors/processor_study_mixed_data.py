@@ -34,6 +34,7 @@ from src.physics.common import apply_btag_sf, update_events
 from coffea4bees.analysis.helpers.event_weights import add_weights
 
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
+from coffea4bees.analysis.helpers.object_selection import load_object_selection_config
 from src.physics.event_selection import apply_event_selection
 
 import logging
@@ -61,11 +62,13 @@ class analysis(processor.ProcessorABC):
             JCM_file: str = "output/mixeddata_cluster/jcm_for_subsampling/jetCombinatoricModel_SB_.txt",
             threeTag=False,
             corrections_metadata: dict = None,
+            object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
     ):
         logging.debug("\nInitialize  processor_make_hemi_library\n")
         logging.info(f"\nLoading JCM from file: {JCM_file} , apply_JCM = {apply_JCM}")
         self.apply_JCM = jetCombinatoricModel(JCM_file) if apply_JCM else None
         self.corrections_metadata = corrections_metadata
+        self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
         self.classifier_SvB = HCREnsemble(SvB) if SvB else None
         self.classifier_SvB_MA = HCREnsemble(SvB_MA) if SvB_MA else None
         self.histCuts = ["passPreSel"] #, "pass0OthJets", "pass1OthJets", "pass2OthJets"]
@@ -145,6 +148,7 @@ class analysis(processor.ProcessorABC):
                                     self.corrections_metadata[year],
                                     config=self.config,
                                     dataset=dataset,
+                                    sel_cfg=self.sel_cfg,
                                    )
 
         selections = PackedSelection()

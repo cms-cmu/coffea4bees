@@ -6,6 +6,7 @@ from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
 from src.skimmer.mc_weight_outliers import OutlierByMedian
 from coffea4bees.analysis.helpers.processor_config import processor_config
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
+from coffea4bees.analysis.helpers.object_selection import load_object_selection_config
 from src.physics.event_selection import apply_event_selection
 
 from coffea.analysis_tools import PackedSelection, Weights
@@ -20,6 +21,7 @@ class Skimmer(PicoAOD):
             skim4b=False,
             mc_outlier_threshold=200,
             corrections_metadata=None,
+            object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
             *args, **kwargs
         ):
         if skim4b:
@@ -29,6 +31,7 @@ class Skimmer(PicoAOD):
         self.skim4b = skim4b
         self.corrections_metadata = corrections_metadata if corrections_metadata is not None else {}
         self.mc_outlier_threshold = mc_outlier_threshold
+        self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
         # Always use cutflow_4b unless explicitly overridden
         self._cutFlow = cutflow_4b()
 
@@ -63,6 +66,7 @@ class Skimmer(PicoAOD):
             config=config,
             dataset=dataset,
             loosePtForSkim=self.loosePtForSkim,
+            sel_cfg=self.sel_cfg,
         )
 
         weights = Weights(len(events), storeIndividual=True)
