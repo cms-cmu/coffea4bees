@@ -1,78 +1,29 @@
-import time
-import gc
-import awkward as ak
-import numpy as np
-import correctionlib
-import yaml
-import warnings
-import uproot
 import uuid
+import logging
+import numpy as np
+import awkward as ak
 
-from coffea.nanoevents import NanoEventsFactory, NanoAODSchema
-from coffea import processor
-from coffea.util import load
-from coffea.analysis_tools import Weights, PackedSelection
-from coffea4bees.analysis.helpers.processor_config import processor_config
-from src.data_formats.awkward.zip import NanoAOD
-
+from coffea4bees.analysis.processors.processor_HH4b import HH4bBaseProcessor
 from src.hist_tools import Collection, Fill
-from src.hist_tools.object import LorentzVector, Jet
-#from coffea4bees.analysis.helpers.hist_templates import SvBHists, FvTHists, QuadJetHists
+from src.hist_tools.object import Jet
+from src.storage.eos import EOS, PathLike
+from src.data_formats.root import TreeWriter, TreeReader, Chunk
 
-from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres
+from coffea4bees.hemisphere_mixing.mixing_helpers import split_events_into_hemispheres
 from coffea4bees.hemisphere_mixing.hemisphere_hist_templates import HemisphereHists
 
-from coffea4bees.analysis.helpers.networks import HCREnsemble
-from coffea4bees.analysis.helpers.cutflow import cutflow_4b
-from src.friendtrees.FriendTreeSchema import FriendTreeSchema
-from src.data_formats.root import TreeWriter, TreeReader
-from src.storage.eos import EOS, PathLike
-from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
-from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
-from src.physics.common import apply_btag_sf, update_events
-from coffea4bees.analysis.helpers.event_weights import add_weights
-
-from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_FvT, setFvTVars
-from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
-from coffea4bees.analysis.helpers.object_selection import load_object_selection_config
-from src.physics.event_selection import apply_event_selection
-
-import logging
-
-from src.data_formats.root import TreeReader, Chunk
-
-from ..helpers.load_friend import (
-    FriendTemplate,
-    parse_friends,
-    rename_FvT_friend,
-)
-
-
-#
-# Setup
-#
-NanoAODSchema.warn_missing_crossrefs = False
-warnings.filterwarnings("ignore")
+from ..helpers.load_friend import FriendTemplate
 
 _ROOT = ".root"
 
 
-
-
-class analysis(processor.ProcessorABC):
+class analysis(HH4bBaseProcessor):
     def __init__(
             self,
             base_path: PathLike,
             *,
-            SvB=None,
-            SvB_MA=None,
-            threeTag=False,
-            corrections_metadata: dict = None,
-            run_SvB=True,
-            subtract_ttbar_with_weights = False,
-            friends: dict[str, str|FriendTemplate] = None,
             campaign: str = ...,
-            object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
+            **kwargs,
     ):
         logging.debug("\nInitialize  processor_make_hemi_library\n")
 
@@ -84,298 +35,136 @@ class analysis(processor.ProcessorABC):
             logging.info(f"Using campaign name: {campaign}")
         self._campaign = campaign
 
-        self._transform = NanoAOD(regular=False, jagged=True)
+        # Defaults appropriate for hemisphere library building:
+        # - No JCM weighting needed
+        # - No SvB scoring needed
+        # - No b-tag SF needed
+        # - FvT loaded only if apply_FvT=True is passed (needed for subtract_ttbar_with_weights)
+        kwargs.setdefault("apply_JCM", False)
+        kwargs.setdefault("run_SvB", False)
+        kwargs.setdefault("apply_FvT", False)
+        kwargs.setdefault("apply_btagSF", False)
 
-
-        self.corrections_metadata = corrections_metadata
-        self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
-        self.classifier_SvB = HCREnsemble(SvB) if SvB else None
-        self.classifier_SvB_MA = HCREnsemble(SvB_MA) if SvB_MA else None
-        self.run_SvB = run_SvB
-        self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
-        logging.info(f"subtract_ttbar_with_weights = {self.subtract_ttbar_with_weights}")
-
-        self.histCuts = ["passPreSel"] #, "pass0OthJets", "pass1OthJets", "pass2OthJets"]
-        self.friends = parse_friends(friends)
+        super().__init__(**kwargs)
 
     def process(self, event):
-
-        tstart = time.time()
-        fname   = event.metadata['filename']
-        dataset = event.metadata['dataset']
-        estart  = event.metadata['entrystart']
-        estop   = event.metadata['entrystop']
-        chunk_str  = f'{dataset}::{estart:6d}:{estop:6d} >>> '
-        year    = event.metadata['year']
-        year_label = self.corrections_metadata[year]['year_label']
-        processName = event.metadata['processName']
-        lumi    = event.metadata.get('lumi',    1.0)
-        xs      = event.metadata.get('xs',      1.0)
-        kFactor = event.metadata.get('kFactor', 1.0)
-        nEvent = len(event)
-
+        """Override to add chunk-level caching check before processing."""
         chunk = Chunk.from_coffea_events(event)
+        dataset = event.metadata['dataset']
         source_chunk = {str(chunk.path): [(chunk.entry_start, chunk.entry_stop)]}
-        self._hemiLib_base_name = "hemisphereLib"
+
         path = (
             self._base
-            / f"{dataset}/{self._hemiLib_base_name}_{chunk.uuid}_{chunk.entry_start}_{chunk.entry_stop}{_ROOT}"
+            / f"{dataset}/hemisphereLib_{chunk.uuid}_{chunk.entry_start}_{chunk.entry_stop}{_ROOT}"
         )
 
-        # check if chunks is already finished
+        # Return cached result if this chunk was already processed
         if self._campaign is not None:
             reader = TreeReader()
             try:
                 cached = Chunk(path, fetch=True)
-                metadata = reader.load_metadata(
-                    self._campaign, cached, builtin_types=True
-                )
+                metadata = reader.load_metadata(self._campaign, cached, builtin_types=True)
                 return {dataset: metadata | {"files": [cached], "source": source_chunk}}
             except Exception:
                 pass
 
+        # Store for use in dump_friend_trees()
+        self._hemi_path = path
+        self._hemi_source_chunk = source_chunk
 
-        #
-        # Set process and datset dependent flags
-        #
-        config = processor_config(processName, dataset, event)
-        logging.debug(f'{chunk_str} config={config}, for file {fname}\n')
+        return super().process(event)
 
-        #
-        # Event selection
-        #
-        event = apply_event_selection( event, self.corrections_metadata[year], cut_on_lumimask=config["cut_on_lumimask"])
+    def build_candidates(self, selev, weights, list_weight_names, analysis_selections, processOutput):
+        """No-op: hemisphere library does not need dijet/quadjet candidates."""
+        return selev
 
+    def custom_processing(self, selev, config, selections, allcuts, nEventTot):
+        """Apply fourTag cut, build canJet fields, and split into hemispheres."""
 
-        ### target is for new friend trees
-        target = Chunk.from_coffea_events(event)
-
-
-        #
-        # Reading FvT friend trees (for TTbar subtraction)
-        #
-        if self.subtract_ttbar_with_weights:
-            if "FvT" in self.friends:
-                event["FvT"] = rename_FvT_friend(target, self.friends["FvT"])
-            else:
-                event["FvT"] = ( NanoEventsFactory.from_root(f'{self.fname.replace("picoAOD", "FvT")}',
-                                                             entry_start=self.estart, entry_stop=self.estop, schemaclass=FriendTreeSchema).events().FvT)
-
-                if not ak.all(event.FvT.event == event.event):
-                    raise ValueError("ERROR: FvT events do not match events ttree")
-
-            setFvTVars("FvT", event)
-
-
-        ### adds all the event mc weights and 1 for data
-        weights, list_weight_names = add_weights( event, target=target,
-                                                  dataset=dataset,
-                                                  year_label=year_label,
-                                                  friend_trigWeight=None,
-                                                  corrections_metadata=self.corrections_metadata[year],
-                                                  apply_trigWeight=True,
-                                                  config=config
-                                                 )
-
-
-        logging.debug(f"weights event {weights.weight()[:10]}")
-        logging.debug(f"Weight Statistics {weights.weightStatistics}")
-
-
-        #
-        # Calculate and apply Jet Energy Calibration
-        #
-        if config["do_jet_calibration"]:
-            jets = apply_jerc_corrections_jsonpog(event,
-                                          corrections_metadata=self.corrections_metadata[year],
-                                          isMC=config["isMC"],
-                                          run_systematics=False,
-                                          dataset=dataset
-                                          )
-        else:
-            jets = event.Jet
-
-        event = update_events(event, {"Jet": jets})
-
-
-        # Apply object selection (function does not remove events, adds content to objects)
-        event = apply_4b_selection( event,
-                                    self.corrections_metadata[year],
-                                    config = config,
-                                    dataset=dataset,
-                                    sel_cfg=self.sel_cfg,
-                                   )
-
-        selections = PackedSelection()
-        selections.add( "lumimask", event.lumimask)
-        selections.add( "passNoiseFilter", event.passNoiseFilter)
-        selections.add( "passHLT", ( event.passHLT if config["cut_on_HLT_decision"] else np.full(len(event), True)  ) )
-        selections.add( 'passJetMult', event.passJetMult )
-        allcuts = [ 'lumimask', 'passNoiseFilter', 'passHLT', 'passJetMult' ]
-        event['weight'] = weights.weight()   ### this is for _cutflow
-
-        #
-        #  Cut Flows
-        #
-        processOutput = {}
-
-        processOutput['nEvent'] = {}
-        processOutput['nEvent'][event.metadata['dataset']] = {
-            'nEvent' : nEvent,
-            'genWeights': np.sum(event.genWeight) if config["isMC"] else nEvent
-
-        }
-
-        self._cutFlow = cutflow_4b()
-        self._cutFlow.fill( "all", event[selections.require(lumimask=True)], allTag=True)
-        self._cutFlow.fill( "passNoiseFilter", event[selections.require(lumimask=True, passNoiseFilter=True)], allTag=True)
-        self._cutFlow.fill( "passHLT", event[ selections.require( lumimask=True, passNoiseFilter=True, passHLT=True ) ], allTag=True, )
-        self._cutFlow.fill( "passJetMult", event[ selections.all(*allcuts)], allTag=True )
-
-
-        #
-        # Preselection: keep only four tag events
-        #
-        selections.add("passFourTag", event.fourTag)
-
+        # fourTag cut (same pattern as processor_cluster_4b)
+        fourTag_sel = np.full(nEventTot, False)
+        fourTag_sel[selections.all(*allcuts)] = selev.fourTag
+        selections.add("passFourTag", fourTag_sel)
         allcuts.append("passFourTag")
-        selev = event[selections.all(*allcuts)]
-        self._cutFlow.fill("passFourTag", selev )
+        selev = selev[selev.fourTag]
+        self._cutFlow.fill("passFourTag", selev)
 
-        #
-        # TTbar subtractions
-        #
-        if self.subtract_ttbar_with_weights:
+        # Build canJet and canJet{i} fields for histograms
+        # (build_candidates is a no-op so we do this here)
+        sorted_idx = ak.argsort(selev.Jet.btagScore * selev.Jet.selected, axis=1, ascending=False)
+        canJet = selev.Jet[sorted_idx[:, 0:4]] * selev.Jet[sorted_idx[:, 0:4]].bRegCorr
+        canJet["bRegCorr"]   = selev.Jet.bRegCorr[sorted_idx[:, 0:4]]
+        canJet["btagScore"]  = selev.Jet.btagScore[sorted_idx[:, 0:4]]
+        canJet["puId"]       = selev.Jet.puId[sorted_idx[:, 0:4]]
+        canJet["jetId"]      = selev.Jet.puId[sorted_idx[:, 0:4]]
+        if config["isMC"]:
+            canJet["hadronFlavour"] = selev.Jet.hadronFlavour[sorted_idx[:, 0:4]]
+        canJet = canJet[ak.argsort(canJet.pt, axis=1, ascending=False)]
+        selev["canJet"] = canJet
+        for i in range(4):
+            selev[f"canJet{i}"] = selev["canJet"][:, i]
 
-            pass_ttbar_filter_4b    = subtract_ttbar_with_FvT(selev, dataset, year, "d4_to_t4")
-
-            pass_ttbar_filter = np.full( len(event), True)
-            pass_ttbar_filter[ selections.all(*allcuts) ] = pass_ttbar_filter_4b
-            selections.add( 'pass_ttbar_filter', pass_ttbar_filter )
-            allcuts.append("pass_ttbar_filter")
-            self._cutFlow.fill( "pass_ttbar_filter", event[selections.all(*allcuts)], allTag=True )
-            selev = selev[pass_ttbar_filter_4b]
-
-        # logging.info( f"\n {chunk} Event:  nSelJets {selev['nJet_selected']}\n")
-
-        #
-        #  To dump the testvectors
-        #
-        dumpTestVectors = False
-        if dumpTestVectors:
-            print(f'{chunk_str}\n\n')
-            print(f'{chunk_str} self.input_jet_pt  = {[jets_for_clustering[iE].pt.tolist() for iE in range(10)]}')
-            print(f'{chunk_str} self.input_jet_eta  = {[jets_for_clustering[iE].eta.tolist() for iE in range(10)]}')
-            print(f'{chunk_str} self.input_jet_phi  = {[jets_for_clustering[iE].phi.tolist() for iE in range(10)]}')
-            print(f'{chunk_str} self.input_jet_mass  = {[jets_for_clustering[iE].mass.tolist() for iE in range(10)]}')
-            print(f'{chunk_str} self.input_jet_flavor  = {[jets_for_clustering[iE].jet_flavor.tolist() for iE in range(10)]}')
-            print(f'{chunk_str}\n\n')
-
-
-        #
-        #  Split event into hemispheres
-        #
+        # Split events into hemispheres
         pos_hemi, neg_hemi = split_events_into_hemispheres(selev)
         selev["pos_hemi"] = pos_hemi
         selev["neg_hemi"] = neg_hemi
 
-        logging.debug(f"pos_hemi Fields {pos_hemi.fields}")
-        logging.debug(f"pos_hemi.Jet Fields {selev.pos_hemi.Jet.fields}")
-
-
-
-        #
-        #  Write out hemi library files
-        #
         selev["region"] = ak.zip({"SR": selev.fourTag})
 
-        #
-        # CutFlow
-        #
-        logging.debug(f"final weight {weights.weight()[:10]}")
-        selev["weight"] = weights.weight()[selections.all(*allcuts)]
+        return selev, selections.all(*allcuts)
 
+    def fill_detailed_cutflows(self, selev):
+        """No-op: detailed cutflows require dijet/quadjet candidates which are not built here."""
+        pass
 
-        self._cutFlow.addOutput(processOutput, event.metadata["dataset"])
+    def dump_friend_trees(self, selev, analysis_selections, shift_name):
+        """Write hemisphere library TreeWriter output. Only runs on nominal shift."""
+        if shift_name is not None:
+            return {}
 
-        #
-        # Hists
-        #
-
-        fill = Fill(process=processName, year=year, weight="weight")
-
-        hist = Collection( process=[processName],
-                           year=[year],
-                           tag=["threeTag", "fourTag"],  # 3 / 4/ Other
-                           region=['SR'],  # SR / SB / Other
-                           **dict((s, ...) for s in self.histCuts)
-                           )
-
-        #
-        # Jets
-        #
-        fill += Jet.plot(("selJets", "Selected Jets"),        "selJet",           skip=["deepjet_c"])
-
-
-        #
-        #  Make Jet Hists
-        #
-        skip_all_but_n = ["deepjet_b", "energy", "eta", "id_jet", "id_pileup", "mass", "phi", "pt", "pz", "deepjet_c", ]
-
-        for iJ in range(4):
-            fill += Jet.plot( (f"canJet{iJ}", f"Higgs Candidate Jets {iJ}"), f"canJet{iJ}", skip=["n", "deepjet_c"], )
-
-        fill += HemisphereHists( (f"pos_hemis", f"Hemispheres"), f"pos_hemi" )
-        fill += HemisphereHists( (f"neg_hemis", f"Hemispheres"), f"neg_hemi" )
-
-
-        #
-        # fill histograms
-        #
-        fill(selev, hist)
-
-
-        # construct output
-        metadata = (
-            {
-                "total_events": len(event),
-                "saved_events": len(selev),
-                "saved_hemis":  len(pos_hemi.thrust_phi) + len(neg_hemi.thrust_phi),
-            }
-        )
+        pos_hemi = selev.pos_hemi
+        neg_hemi = selev.neg_hemi
+        metadata = {
+            "total_events": self.nEvent,
+            "saved_events": len(selev),
+            "saved_hemis": len(pos_hemi.thrust_phi) + len(neg_hemi.thrust_phi),
+        }
 
         result = {
-            dataset: metadata
-            | {
+            self.dataset: metadata | {
                 "files": [],
-                "source": source_chunk,
+                "source": self._hemi_source_chunk,
             }
         }
 
-
-        garbage = gc.collect()
-
-
-        # Not sure why the following line is needed
-        #ak.concatenate([pos_hemi, neg_hemi], axis=0)
-        with TreeWriter()(path) as writer:
-
+        with TreeWriter()(self._hemi_path) as writer:
             writer.extend(selev.pos_hemi).extend(selev.neg_hemi)
-
             if self._campaign is not None:
                 writer.save_metadata(self._campaign, metadata)
+            result[self.dataset]["files"].append(self._hemi_path)
 
-            result[dataset]["files"].append(path)
+        return result
 
-        #
-        # Done
-        #
-        elapsed = time.time() - tstart
-        logging.debug(f"{chunk_str}{nEvent/elapsed:,.0f} events/s")
+    def histograms(self, event, selev, weights, analysis_selections, shift_name):
 
-        output = hist.output | processOutput | result
+        fill = Fill(process=self.processName, year=self.year, weight="weight")
 
-        return output
+        hist = Collection(
+            process=[self.processName],
+            year=[self.year],
+            tag=["threeTag", "fourTag"],
+            region=['SR'],
+            **dict((s, ...) for s in self.histCuts),
+        )
 
-    def postprocess(self, accumulator):
-        return accumulator
+        fill += Jet.plot(("selJets", "Selected Jets"), "selJet", skip=["deepjet_c"])
+
+        for iJ in range(4):
+            fill += Jet.plot((f"canJet{iJ}", f"Higgs Candidate Jets {iJ}"), f"canJet{iJ}", skip=["n", "deepjet_c"])
+
+        fill += HemisphereHists(("pos_hemis", "Hemispheres"), "pos_hemi")
+        fill += HemisphereHists(("neg_hemis", "Hemispheres"), "neg_hemi")
+
+        fill(selev, hist)
+
+        return hist.to_dict(nonempty=True)

@@ -4,7 +4,6 @@ runner:
 
   
 config:
-  threeTag: false
   subtract_ttbar_with_weights: true
   run_SvB: false
   base_path: root://cmseos.fnal.gov//store/user/jda102/XX4b/hemiLib_noTT
