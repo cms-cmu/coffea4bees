@@ -1,6 +1,7 @@
 import yaml
 from src.skimmer.picoaod import PicoAOD #, fetch_metadata, resize
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
+from coffea4bees.analysis.helpers.object_selection import load_object_selection_config
 from coffea.nanoevents import NanoEventsFactory
 from coffea.nanoevents.methods import vector
 
@@ -46,6 +47,7 @@ class HemiMixer(PicoAOD):
                 hemi_stats_path: str = None,
                 corrections_metadata: dict = None,
                 use_boost_corrected_matching: bool = False,
+                object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
                 *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -56,6 +58,7 @@ class HemiMixer(PicoAOD):
         self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
         self.friends = parse_friends(friends)
         self.corrections_metadata = corrections_metadata
+        self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
         self._cutFlow = cutflow_4b()
 
         self.skip_collections = kwargs["skip_collections"]
@@ -183,6 +186,7 @@ class HemiMixer(PicoAOD):
 
         event = apply_4b_selection( event, self.corrections_metadata[year], config=config,
                                            dataset=dataset,
+                                           sel_cfg=self.sel_cfg,
                                            )
 
 

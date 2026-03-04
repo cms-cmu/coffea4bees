@@ -27,7 +27,7 @@ class analysis(HH4bBaseProcessor):
 
     def apply_selection(self, event):
         return apply_4b_lowpt_selection(
-            event, 
+            event,
             self.corrections_metadata[self.year],
             dataset=self.dataset,
             doLeptonRemoval=self.config["do_lepton_jet_cleaning"],
@@ -37,6 +37,7 @@ class analysis(HH4bBaseProcessor):
             isMC=self.config["isMC"], ### temporary
             isSyntheticData=self.config["isSyntheticData"],
             isSyntheticMC=self.config["isSyntheticMC"],
+            sel_cfg=self.sel_cfg,
         )
 
     def include_pseudotag_in_weight(self, event, weights, list_weight_names):

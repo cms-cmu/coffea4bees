@@ -8,6 +8,7 @@ from coffea4bees.analysis.trigger_emulator.TrigEmulatorTool   import TrigEmulato
 from coffea4bees.analysis.trigger_emulator.TriggerSFVectorized import TriggerSFVectorized
 from src.physics.event_selection import apply_event_selection
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
+from coffea4bees.analysis.helpers.object_selection import load_object_selection_config
 from coffea4bees.analysis.helpers.candidates_selection import create_cand_jet_dijet_quadjet
 from coffea import processor
 from coffea.analysis_tools import PackedSelection
@@ -29,6 +30,7 @@ class analysis(processor.ProcessorABC):
         corrections_metadata: str ="src/physics/corrections.yml",
         use_vectorized: bool = False,
         tagger: str = "DeepJet",
+        object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
     ):
 
         logging.debug("\nInitialize Analysis Processor")
@@ -37,6 +39,7 @@ class analysis(processor.ProcessorABC):
         self.use_vectorized = use_vectorized
         self.tagger = tagger
         self.trig_sfs_vect = {}
+        self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
 
         self.cutFlowCuts = [
             "all",
@@ -88,6 +91,7 @@ class analysis(processor.ProcessorABC):
             self.corrections_metadata[self.year],
             config=self.config,
             dataset=self.dataset,
+            sel_cfg=self.sel_cfg,
         )
 
         event = create_cand_jet_dijet_quadjet(

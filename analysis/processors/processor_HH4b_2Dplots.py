@@ -19,6 +19,7 @@ from coffea4bees.analysis.helpers.filling_histograms import (
 from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
 from coffea4bees.analysis.helpers.processor_config import processor_config
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
+from coffea4bees.analysis.helpers.object_selection import load_object_selection_config
 from src.physics.event_selection import apply_event_selection
 from src.hist_tools import Fill
 from src.data_formats.root import Chunk, TreeReader
@@ -63,6 +64,7 @@ class analysis(processor.ProcessorABC):
         fill_histograms: bool = True,
         corrections_metadata: dict = None,
         friends: dict[str, str|FriendTemplate] = None,
+        object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
     ):
 
         logging.debug("\nInitialize Analysis Processor")
@@ -71,6 +73,7 @@ class analysis(processor.ProcessorABC):
         self.fill_histograms = fill_histograms
         self.corrections_metadata = corrections_metadata
         self.friends = parse_friends(friends)
+        self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
 
 
         self.cutFlowCuts = [
@@ -134,6 +137,7 @@ class analysis(processor.ProcessorABC):
                                             dataset=self.dataset,
                                             config = config_opts,
                                             run_lowpt_selection=False,
+                                            sel_cfg=self.sel_cfg,
                                             )
 
 

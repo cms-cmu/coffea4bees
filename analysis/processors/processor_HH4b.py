@@ -25,6 +25,7 @@ from coffea4bees.analysis.helpers.event_selection import (
     apply_dilep_ttbar_selection,
     apply_4b_selection
 )
+from coffea4bees.analysis.helpers.object_selection import load_object_selection_config
 from coffea4bees.analysis.helpers.filling_histograms import (
     filling_nominal_histograms,
     filling_syst_histograms,
@@ -186,10 +187,12 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         friends: dict[str, str|FriendTemplate] = None,
         return_events_for_display: bool = False,
         tracker = None,
+        object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
     ):
 
         logging.debug("\nInitialize Analysis Processor")
         self.tracker = tracker
+        self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
         self.blind = blind
         if apply_JCM:
             logging.info(f"\nUsing JCM from {JCM_file}")
@@ -1152,6 +1155,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             config=self.config,
             dataset=self.dataset,
             apply_mixeddata_sel=self.apply_mixeddata_sel,
+            sel_cfg=self.sel_cfg,
         )
 
 
