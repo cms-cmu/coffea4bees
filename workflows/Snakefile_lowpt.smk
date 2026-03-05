@@ -2,7 +2,7 @@ import os
 username = os.getenv("USER")
 
 config.setdefault('output_path', "output/lowpt/")
-config.setdefault('dataset_location', "coffea4bees/metadata/datasets_HH4b_Run2/")
+config.setdefault('dataset_location', "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/datasets_HH4b_2024_v2.yml")
 config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
 config.setdefault('dataset', ['data', 'TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic'])
 config.setdefault('year', 'UL18')
@@ -30,15 +30,25 @@ rule all_lowpt:
     shell:
         """
         echo "Copying results to eos"
-        bash src/tools/copy_files_to_cernbox.sh -s {config['output_path']} -d www/HH4b/{config['eos_path']}/
+        bash src/tools/copy_files_to_cernbox.sh -s {config[output_path]} -d www/HH4b/{config[eos_path]}/
+        """
+
+rule create_metadata_nominal:
+    output: f"{config['output_path']}HH4b_nominal_noJCM.yml"
+    shell:
+        """
+        echo "Creating metadata file for analysis without JCM"
+        sed -e 's|  trigWeight.*|  trigWeight: coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/datasets_HH4b_2024_v2_trigweights.json@@trigWeight |' coffea4bees/analysis/metadata/HH4b_noJCM.yml > {output}
+        cat {output}
         """
 
 use rule analysis_processor from analysis as analysis_nojcm_lowpt with:
+    input: f"{config['output_path']}HH4b_nominal_noJCM.yml"
     output: f"{config['output_path']}histAll_lowpt_noJCM.coffea"
     params:
         datasets = config['dataset'],
         years = config['year'],
-        metadata = "coffea4bees/analysis/metadata/HH4b_noJCM.yml",
+        metadata = lambda wildcards, input: input[0],
         processor = "coffea4bees/analysis/processors/processor_HH4b_lowpt.py",
         datasets_file = config['dataset_location'],
         blind = False,

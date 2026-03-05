@@ -10,18 +10,18 @@ else
 fi
 
 # train
-./pyml.py from $WFS/train.yml \
+./src/pyml.py from $WFS/train.yml \
     -template "user: ${LPCUSER}" $WFS/train_data.yml \
     -setting Monitor "address: :${port}" -flag debug
 
 # evaluate
-./pyml.py template "user: ${LPCUSER}" $WFS/evaluate_data.yml
+./src/pyml.py template "user: ${LPCUSER}" $WFS/evaluate_data.yml
 
 # merge
-./pyml.py template "user: ${LPCUSER}" $WFS/merge_data.yml
+./src/pyml.py template "user: ${LPCUSER}" $WFS/merge_data.yml
 
 if [ -e "$GMAIL" ]; then
-    ./pyml.py analyze \
+    ./src/pyml.py analyze \
         -analysis notify.Gmail \
         --title "FvT done" \
         --body "All jobs done at $(date)" \
