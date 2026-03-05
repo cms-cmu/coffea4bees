@@ -33,22 +33,22 @@ if [[ $1 == "ZX_only" ]]; then
 fi
 
 # train and make plots
-./pyml.py \
+./src/pyml.py \
     template "{norm: ${norms[$1]}, user: ${LPCUSER}, model: $1}" $WFS/train.yml \
     -setting Monitor "address: :${port}" -flag debug "${other_setting[@]}"
 
-./pyml.py analyze --results ${MODEL} \
+./src/pyml.py analyze --results ${MODEL} \
     -analysis HCR.LossROC \
     -setting IO "output: ${WEB}" \
     -setting IO "report: $1" \
     -setting Monitor "address: :${port}"
 # evaluate
-./pyml.py \
+./src/pyml.py \
     template "{user: ${LPCUSER}, model: $1}" $WFS/evaluate.yml \
     -setting Monitor "address: :${port}"
 
 if [ -e "$GMAIL" ]; then
-    ./pyml.py analyze \
+    ./src/pyml.py analyze \
         -analysis notify.Gmail \
         --title "SvB jobs done" \
         --body "${1} finished at $(date)" \

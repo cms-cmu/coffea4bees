@@ -15,11 +15,11 @@ fi
 
 
 # train and make plots
-./pyml.py \
+./src/pyml.py \
     template "{user: ${LPCUSER}, arch: ${1}}" $WFS/train.yml \
     -setting Monitor "address: :${port}"
 
-./pyml.py analyze --results ${MODEL} \
+./src/pyml.py analyze --results ${MODEL} \
     -analysis HCR.LossROC \
     -setting IO "output: ${WEB}" \
     -setting IO "report: $1" \

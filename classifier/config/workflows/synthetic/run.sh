@@ -9,12 +9,12 @@ fi
 
 # train
 for synthetic in {0..2}; do
-    ./pyml.py template "{user: ${1}, synthetic: ${synthetic}}" $SCRIPT_DIR/train.yml \
+    ./src/pyml.py template "{user: ${1}, synthetic: ${synthetic}}" $SCRIPT_DIR/train.yml \
     -setting Monitor "address: :${port}" -flag debug
 done
 
 # evaluate
 for synthetic in {0..2}; do
-    ./pyml.py template "{user: ${1}, synthetic: ${synthetic}}" $SCRIPT_DIR/evaluate.yml \
+    ./src/pyml.py template "{user: ${1}, synthetic: ${synthetic}}" $SCRIPT_DIR/evaluate.yml \
     -setting Monitor "address: :${port}"
 done

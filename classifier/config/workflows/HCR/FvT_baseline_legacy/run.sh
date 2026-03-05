@@ -15,13 +15,13 @@ else
 fi
 
 # train mixed and make plots
-./pyml.py template "{offset: 0, user: ${LPCUSER}}" $WFS/train.yml -setting Monitor "address: :${port}"
-./pyml.py analyze --results ${MODEL}/data/result.json -analysis HCR.LossROC -setting IO "output: ${WEB}" -setting IO "report: data" -setting Monitor "address: :${port}"
+./src/pyml.py template "{offset: 0, user: ${LPCUSER}}" $WFS/train.yml -setting Monitor "address: :${port}"
+./src/pyml.py analyze --results ${MODEL}/data/result.json -analysis HCR.LossROC -setting IO "output: ${WEB}" -setting IO "report: data" -setting Monitor "address: :${port}"
 # evaluate
-./pyml.py template "{user: ${LPCUSER}}" $WFS/evaluate.yml -setting Monitor "address: :${port}"
+./src/pyml.py template "{user: ${LPCUSER}}" $WFS/evaluate.yml -setting Monitor "address: :${port}"
 
 if [ -e "$GMAIL" ]; then
-    ./pyml.py analyze \
+    ./src/pyml.py analyze \
         -analysis notify.Gmail \
         --title "FvT data baseline done" \
         --body "finished at $(date)" \
