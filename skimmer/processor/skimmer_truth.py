@@ -1,7 +1,6 @@
 import logging
 
 import numpy as np
-from coffea4bees.analysis.helpers.processor_config import processor_config
 from coffea.analysis_tools import PackedSelection, Weights
 import awkward as ak
 from coffea4bees.analysis.helpers.truth_tools import find_genpart
@@ -21,15 +20,8 @@ class Skimmer(Skimmer4b):
 
 
     def select(self, event):
-
-        year    = event.metadata['year']
-        dataset = event.metadata['dataset']
-        processName = event.metadata['processName']
-
-        #
-        # Set process and datset dependent flags
-        #
-        config = processor_config(processName, dataset, event)
+        m = self._parse_event_metadata(event)
+        year, dataset, processName, config = m.year, m.dataset, m.processName, m.config
         logging.debug(f'config={config}\n')
 
         event['bfromHorZ_all']= find_genpart(event.GenPart, [5], [23, 25])

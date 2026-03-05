@@ -6,7 +6,6 @@ from coffea.analysis_tools import PackedSelection, Weights
 from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
 from src.physics.event_selection import apply_event_selection
 
-from coffea4bees.analysis.helpers.processor_config import processor_config
 from coffea4bees.analysis.helpers.event_selection import apply_boosted_4b_selection
 from coffea4bees.skimmer.processor.skimmer_4b_base import Skimmer4b
 
@@ -28,15 +27,8 @@ class Skimmer(Skimmer4b):
 
 
     def select(self, event):
-
-        year    = event.metadata['year']
-        dataset = event.metadata['dataset']
-        processName = event.metadata['processName']
-
-        #
-        # Set process and datset dependent flags
-        #
-        config = processor_config(processName, dataset, event)
+        m = self._parse_event_metadata(event)
+        year, dataset, processName, config = m.year, m.dataset, m.processName, m.config
         logging.debug(f'config={config}\n')
 
         event = apply_event_selection( event, self.corrections_metadata[year], cut_on_lumimask=config["cut_on_lumimask"] )

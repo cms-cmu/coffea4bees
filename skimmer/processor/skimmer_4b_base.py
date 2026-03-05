@@ -1,4 +1,5 @@
 import logging
+from types import SimpleNamespace
 
 from src.skimmer.picoaod import PicoAOD
 from src.skimmer.mc_weight_outliers import OutlierByMedian
@@ -27,6 +28,28 @@ class Skimmer4b(PicoAOD):
         self.mc_outlier_threshold = mc_outlier_threshold
         self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
         self._cutFlow = cutflow_4b()
+
+    def _parse_event_metadata(self, event):
+        """Extract common event metadata into a SimpleNamespace.
+
+        Returns attributes: year, dataset, processName, config,
+        fname, estart, estop, nEvent, year_label, chunk.
+        """
+        year = event.metadata['year']
+        dataset = event.metadata['dataset']
+        processName = event.metadata['processName']
+        config = processor_config(processName, dataset, event)
+        fname = event.metadata['filename']
+        estart = event.metadata['entrystart']
+        estop = event.metadata['entrystop']
+        nEvent = len(event)
+        year_label = self.corrections_metadata.get(year, {}).get('year_label', year)
+        chunk = f'{dataset}::{estart:6d}:{estop:6d} >>> '
+        return SimpleNamespace(
+            year=year, dataset=dataset, processName=processName, config=config,
+            fname=fname, estart=estart, estop=estop, nEvent=nEvent,
+            year_label=year_label, chunk=chunk,
+        )
 
     def preselect(self, event):
         dataset = event.metadata['dataset']

@@ -8,7 +8,6 @@ from coffea4bees.analysis.helpers.SvB_helpers import setFvTVars, subtract_ttbar_
 from src.friendtrees.FriendTreeSchema import FriendTreeSchema
 from src.math_tools.random import Squares
 from coffea4bees.analysis.helpers.event_weights import add_btagweights
-from coffea4bees.analysis.helpers.processor_config import processor_config
 from src.physics.event_selection import apply_event_selection
 from coffea4bees.analysis.helpers.event_weights import add_weights
 
@@ -80,16 +79,10 @@ class HemiMixer(Skimmer4b):
 
 
     def select(self, event):
-
-        year    = event.metadata['year']
-        dataset = event.metadata['dataset']
-        fname   = event.metadata['filename']
-        estart  = event.metadata['entrystart']
-        estop   = event.metadata['entrystop']
-        nEvent = len(event)
-        year_label = self.corrections_metadata[year]['year_label']
-        chunk   = f'{dataset}::{estart:6d}:{estop:6d} >>> '
-        processName = event.metadata['processName']
+        m = self._parse_event_metadata(event)
+        year, dataset, fname, estart, estop = m.year, m.dataset, m.fname, m.estart, m.estop
+        nEvent, year_label, chunk, processName, config = m.nEvent, m.year_label, m.chunk, m.processName, m.config
+        logging.debug(f'{chunk} config={config}, for file {fname}\n')
 
         self.jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_jetId", "Jet_puId"]
         if '202' in dataset:
@@ -97,16 +90,8 @@ class HemiMixer(Skimmer4b):
         else:
             self.jet_branches += ["Jet_btagDeepFlavB", "Jet_bRegCorr"]
 
-
         ### target is for new friend trees
         target = Chunk.from_coffea_events(event)
-
-
-        #
-        # Set process and datset dependent flags
-        #
-        config = processor_config(processName, dataset, event)
-        logging.debug(f'{chunk} config={config}, for file {fname}\n')
 
         #
         #  Load the hemisphere libraries

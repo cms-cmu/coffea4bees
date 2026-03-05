@@ -2,7 +2,6 @@ import logging
 
 import numpy as np
 from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
-from coffea4bees.analysis.helpers.processor_config import processor_config
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
 from src.physics.event_selection import apply_event_selection
 
@@ -32,12 +31,8 @@ class Skimmer(Skimmer4b):
         self.skim4b = skim4b
 
     def select(self, events):
-        year    = events.metadata['year']
-        dataset = events.metadata['dataset']
-        processName = events.metadata['processName']
-
-        # Set process and datset dependent flags
-        config = processor_config(processName, dataset, events)
+        m = self._parse_event_metadata(events)
+        year, dataset, processName, config = m.year, m.dataset, m.processName, m.config
         logging.debug(f'config={config}\n')
 
         events = apply_event_selection(
