@@ -1,11 +1,121 @@
 import numpy as np
 import awkward as ak
 import logging
+import yaml
 from src.math_tools.random import Squares
 from coffea4bees.analysis.helpers.SvB_helpers import compute_SvB
 from coffea4bees.analysis.helpers.FvT_helpers import compute_FvT
 from coffea.nanoevents.methods import vector
 from coffea.analysis_tools import Weights
+
+
+def load_candidates_selection_config(path: str) -> dict:
+    """Load candidates selection thresholds from a YAML file.
+
+    Parameters
+    ----------
+    path : str
+        Path to the YAML file.
+
+    Returns
+    -------
+    dict
+        Dictionary of thresholds, suitable for passing as ``cand_cfg``
+        to :func:`cand_jet_selection` and :func:`create_cand_jet_dijet_quadjet`.
+    """
+    with open(path, "r") as f:
+        return yaml.safe_load(f)
+
+
+def cand_jet_selection(
+    selev,
+    include_lowptjets=False,
+    cand_cfg: dict = None,
+):
+    """
+    Creates candidate jets
+
+    Parameters:
+    -----------
+    selev : ak.Array
+        The selected events.
+    cand_cfg : dict, optional
+        Thresholds loaded from candidates_selection_thresholds.yml.
+        If None, hard-coded defaults are used.
+    """
+
+    cfg = (cand_cfg or {}).get('canJet', {})
+    isSelJet_pt_min  = cfg.get('isSelJet_pt_min',  40)
+    isSelJet_eta_max = cfg.get('isSelJet_eta_max', 2.4)
+
+    #
+    # Build and select boson candidate jets with bRegCorr applied
+    #
+    sorted_idx = ak.argsort( selev.Jet.btagScore * selev.Jet.selected, axis=1, ascending=False )
+    logging.debug(f"all jets {selev.Jet.pt[:2]}")
+    if include_lowptjets:
+        sorted_idx_lowpt = ak.argsort( selev.Jet.btagScore * selev.Jet.selected_lowpt, axis=1, ascending=False )
+        canJet_idx = ak.concatenate([sorted_idx[:, 0:3], sorted_idx_lowpt[:, :1]], axis=1)
+        logging.debug(f"jet lowpt selected {(selev.Jet.selected_lowpt)[:2]}")
+        logging.debug(f"canJet_idx with lowpt {canJet_idx[:2]}")
+
+    else:
+        canJet_idx = sorted_idx[:, 0:4]
+
+    # Exclude canJet_idx from sorted_idx
+    is_canJet = ak.zeros_like(sorted_idx, dtype=bool)
+    for i in range(4):
+        is_canJet = is_canJet | (sorted_idx == canJet_idx[:, i])
+    notCanJet_idx = sorted_idx[~is_canJet]
+    del is_canJet
+
+    notCanJet = selev.Jet[notCanJet_idx]
+    logging.debug(f"all notCanJet {notCanJet.pt[:2]}")
+    notCanJet = notCanJet[notCanJet.selected_loose | (notCanJet.selected_lowpt if include_lowptjets else False)]
+    logging.debug(f"notCanJet selected_loose {notCanJet.pt[:2]}")
+
+    notCanJet = notCanJet[ak.argsort(notCanJet.pt, axis=1, ascending=False)]
+    logging.debug(f"notCanJet sorted {notCanJet.pt[:2]}")
+
+    logging.debug(f"canJet_idx {canJet_idx[:2]}")
+    logging.debug(f"notCanJet_idx {notCanJet_idx[:2]}\n\n")
+
+
+    # # apply bJES to canJets
+    logging.debug(f"canJet before bReg {selev.Jet[canJet_idx].pt[:2]}\n")
+    canJet_raw = selev.Jet[canJet_idx]
+    canJet = canJet_raw * canJet_raw.bRegCorr
+    canJet["bRegCorr"] = canJet_raw.bRegCorr
+    canJet["btagScore"] = canJet_raw.btagScore
+    canJet["puId"] = canJet_raw.puId
+    canJet["jetId"] = canJet_raw.jetId
+    if "hadronFlavour" in selev.Jet.fields:
+        canJet["hadronFlavour"] = canJet_raw.hadronFlavour
+    del canJet_raw
+
+    #
+    # pt sort canJets
+    #
+    canJet = canJet[ak.argsort(canJet.pt, axis=1, ascending=False)]
+    selev["canJet"] = canJet
+    for i in range(4):
+        selev[f"canJet{i}"] = selev["canJet"][:, i]
+
+
+
+    notCanJet["isSelJet"] = 1 * ( (notCanJet.pt >= isSelJet_pt_min) & (np.abs(notCanJet.eta) < isSelJet_eta_max) )
+    selev["notCanJet_coffea"] = notCanJet
+    selev["nNotCanJet"] = ak.num(selev.notCanJet_coffea)
+
+    # Release indexing intermediates
+    del sorted_idx, canJet_idx, notCanJet_idx, notCanJet
+    if include_lowptjets:
+        del sorted_idx_lowpt
+
+
+    return selev
+
+
 
 def create_cand_jet_dijet_quadjet(
     selev,
@@ -22,6 +132,7 @@ def create_cand_jet_dijet_quadjet(
     weights: Weights = None,
     list_weight_names: list[str] = None,
     analysis_selections: ak.Array = None,
+    cand_cfg: dict = None,
 ):
     """
     Creates candidate jets, dijets, and quadjets for event selection.
@@ -44,75 +155,24 @@ def create_cand_jet_dijet_quadjet(
         Output dictionary for processing. Defaults to None.
     isRun3 : bool, optional
         Whether to apply Run 3-specific selection criteria. Defaults to False.
+    cand_cfg : dict, optional
+        Thresholds loaded from candidates_selection_thresholds.yml.
+        If None, hard-coded defaults are used.
 
     Returns:
     --------
     None
         Modifies the `selev` object in place.
     """
-    #
-    # To get test vectors
-    #
-    #jet_subset_dict = {key: getattr(selev.Jet,key)[0:10].tolist() for key in ["pt", "eta","phi", "mass","btagScore","bRegCorr","puId","jetId","selected", "selected_loose"]}
-    #print(jet_subset_dict)
 
-    #
-    # Build and select boson candidate jets with bRegCorr applied
-    #
-    sorted_idx = ak.argsort( selev.Jet.btagScore * selev.Jet.selected, axis=1, ascending=False )
-    logging.debug(f"all jets {selev.Jet.pt[:2]}")
-    if include_lowptjets:
-        sorted_idx_lowpt = ak.argsort( selev.Jet.btagScore * selev.Jet.selected_lowpt, axis=1, ascending=False )
-        canJet_idx = ak.concatenate([sorted_idx[:, 0:3], sorted_idx_lowpt[:, :1]], axis=1)
-        logging.debug(f"jet lowpt selected {(selev.Jet.selected_lowpt)[:2]}")
-        logging.debug(f"canJet_idx with lowpt {canJet_idx[:2]}")
+    selev = cand_jet_selection(selev, include_lowptjets, cand_cfg=cand_cfg)
 
-    else:
-        canJet_idx = sorted_idx[:, 0:4]
-        
-    # Exclude canJet_idx from sorted_idx
-    is_canJet = ak.zeros_like(sorted_idx, dtype=bool)
-    for i in range(4):
-        is_canJet = is_canJet | (sorted_idx == canJet_idx[:, i])
-    notCanJet_idx = sorted_idx[~is_canJet]
-    del is_canJet
-    notCanJet = selev.Jet[notCanJet_idx]
-    logging.debug(f"all notCanJet {notCanJet.pt[:2]}")
-    notCanJet = notCanJet[notCanJet.selected_loose | (notCanJet.selected_lowpt if include_lowptjets else False)]
-    logging.debug(f"notCanJet selected_loose {notCanJet.pt[:2]}")
-
-    notCanJet = notCanJet[ak.argsort(notCanJet.pt, axis=1, ascending=False)]
-    logging.debug(f"notCanJet sorted {notCanJet.pt[:2]}")
-
-    logging.debug(f"canJet_idx {canJet_idx[:2]}")
-    logging.debug(f"notCanJet_idx {notCanJet_idx[:2]}\n\n")
-    
-
-    # # apply bJES to canJets
-    logging.debug(f"canJet before bReg {selev.Jet[canJet_idx].pt[:2]}\n")
-    canJet_raw = selev.Jet[canJet_idx]
-    canJet = canJet_raw * canJet_raw.bRegCorr
-    canJet["bRegCorr"] = canJet_raw.bRegCorr
-    canJet["btagScore"] = canJet_raw.btagScore
-    canJet["puId"] = canJet_raw.puId
-    canJet["jetId"] = canJet_raw.jetId
-    if "hadronFlavour" in selev.Jet.fields:
-        canJet["hadronFlavour"] = canJet_raw.hadronFlavour
-    del canJet_raw
-
-    #
-    # pt sort canJets
-    #
-    canJet = canJet[ak.argsort(canJet.pt, axis=1, ascending=False)]
-    selev["canJet"] = canJet
-    for i in range(4):
-        selev[f"canJet{i}"] = selev["canJet"][:, i]
-
-    selev["v4j"] = canJet.sum(axis=1)
+    selev["v4j"] = selev.canJet.sum(axis=1)
+    vbfJets = ak.pad_none(selev.notCanJet_coffea, 2)
 
     # vbf jets should be selected_loose without eta restriction
-    mask_two_notCanJets = ak.num(notCanJet) >= 2
-    vbfJets = ak.pad_none(notCanJet, 2)
+    mask_two_notCanJets = ak.num(selev.notCanJet_coffea) >= 2
+
     selev["vbfJets_mjj"] = ak.where(
         mask_two_notCanJets,
         (vbfJets[:, 0] + vbfJets[:, 1]).mass,
@@ -123,16 +183,12 @@ def create_cand_jet_dijet_quadjet(
         np.abs(vbfJets[:, 0].eta - vbfJets[:, 1].eta),
         -1.0,
     )
-    selev['passVBFSel'] = ( (selev.vbfJets_mjj > 400) & (selev.vbfJets_detajj > 3.5) )
 
-    notCanJet["isSelJet"] = 1 * ( (notCanJet.pt >= 40) & (np.abs(notCanJet.eta) < 2.4) )
-    selev["notCanJet_coffea"] = notCanJet
-    selev["nNotCanJet"] = ak.num(selev.notCanJet_coffea)
+    vbf_cfg = (cand_cfg or {}).get('vbf', {})
+    vbf_mjj_min    = vbf_cfg.get('mjj_min',    400)
+    vbf_detajj_min = vbf_cfg.get('detajj_min', 3.5)
+    selev['passVBFSel'] = ( (selev.vbfJets_mjj > vbf_mjj_min) & (selev.vbfJets_detajj > vbf_detajj_min) )
 
-    # Release indexing intermediates
-    del sorted_idx, canJet_idx, notCanJet_idx, notCanJet
-    if include_lowptjets:
-        del sorted_idx_lowpt
 
     # Build diJets, indexed by diJet[event,pairing,0/1]
     canJet = selev["canJet"]
@@ -153,27 +209,28 @@ def create_cand_jet_dijet_quadjet(
     diJetDr = diJet[ak.argsort(diJet.dr, axis=2, ascending=True)]
     # Now indexed by diJet[event,pairing,lead/subl st]
 
-    # Compute diJetMass cut with independent min/max for lead/subl
-    minDiJetMass = np.array([[[52, 50]]])
-    maxDiJetMass = np.array([[[180, 173]]])
+    dj_cfg = (cand_cfg or {}).get('dijet', {})
+    minDiJetMass = np.array([[[dj_cfg.get('mass_min', [52,  50 ])[0], dj_cfg.get('mass_min', [52,  50 ])[1]]]])
+    maxDiJetMass = np.array([[[dj_cfg.get('mass_max', [180, 173])[0], dj_cfg.get('mass_max', [180, 173])[1]]]])
     diJet["passDiJetMass"] = (minDiJetMass < diJet.mass) & ( diJet.mass < maxDiJetMass )
 
-    # Compute MDRs
-    min_m4j_scale = np.array([[360, 235]])
-    min_dr_offset = np.array([[-0.5, 0.0]])
-    max_m4j_scale = np.array([[650, 650]])
-    max_dr_offset = np.array([[0.5, 0.7]])
-    max_dr = np.array([[1.5, 1.5]])
-    # m4j = np.repeat(np.reshape(np.array(selev["v4j"].mass), (-1, 1, 1)), 2, axis=2)
+    mdr_cfg = (cand_cfg or {}).get('mdr', {})
+    min_m4j_scale = np.array([mdr_cfg.get('min_m4j_scale', [360, 235])])
+    min_dr_offset = np.array([mdr_cfg.get('min_dr_offset', [-0.5, 0.0])])
+    max_m4j_scale = np.array([mdr_cfg.get('max_m4j_scale', [650, 650])])
+    max_dr_offset = np.array([mdr_cfg.get('max_dr_offset', [0.5,  0.7])])
+    max_dr        = np.array([mdr_cfg.get('max_dr',        [1.5,  1.5])])
     m4j = selev["v4j"].mass[:, np.newaxis, np.newaxis]
     diJet["passMDR"] = (min_m4j_scale / m4j + min_dr_offset < diJet.dr) & ( diJet.dr < np.maximum(max_m4j_scale / m4j + max_dr_offset, max_dr) )
 
     #
     # Compute consistency of diJet masses with boson masses
     #
-    mZ = 91.0
-    mH = 125.0
-    st_bias = np.array([[[1.02, 0.98]]])
+    sr2_cfg = (cand_cfg or {}).get('sr_run2', {})
+    mZ      = sr2_cfg.get('mZ',      91.0)
+    mH      = sr2_cfg.get('mH',      125.0)
+    st_bias = sr2_cfg.get('st_bias', [1.02, 0.98])
+    st_bias = np.array([[[st_bias[0], st_bias[1]]]])
     cZ = mZ * st_bias
     cH = mH * st_bias
 
@@ -190,11 +247,6 @@ def create_cand_jet_dijet_quadjet(
     rng_1 = rng_0.shift(1)
     rng_2 = rng_0.shift(2)
     counter = selev.event
-
-    # print(f"{self.chunk} mass {diJet[:, :, 0].mass[0:5]}\n")
-    # print(f"{self.chunk} mass view64 {np.asarray(diJet[:, :, 0].mass).view(np.uint64)[0:5]}\n")
-    # print(f"{self.chunk} mass rounded view64 {np.round(np.asarray(diJet[:, :, 0].mass), 0).view(np.uint64)[0:5]}\n")
-    # print(f"{self.chunk} mass rounded {np.round(np.asarray(diJet[:, :, 0].mass), 0)[0:5]}\n")
 
     quadJet = ak.zip( { "lead": diJet[:, :, 0],
                         "subl": diJet[:, :, 1],
@@ -215,13 +267,13 @@ def create_cand_jet_dijet_quadjet(
     #
     # Compute Signal Regions
     #
+    max_xZZ = sr2_cfg.get('max_xZZ', 2.6)
+    max_xZH = sr2_cfg.get('max_xZH', 1.9)
+    max_xHH = sr2_cfg.get('max_xHH', 1.9)
     quadJet["xZZ"] = np.sqrt(quadJet.lead.xZ**2 + quadJet.subl.xZ**2)
     quadJet["xHH"] = np.sqrt(quadJet.lead.xH**2 + quadJet.subl.xH**2)
     quadJet["xZH"] = np.sqrt( np.minimum( quadJet.lead.xH**2 + quadJet.subl.xZ**2, quadJet.lead.xZ**2 + quadJet.subl.xH**2, ) )
 
-    max_xZZ = 2.6
-    max_xZH = 1.9
-    max_xHH = 1.9
     quadJet["ZZSR"] = quadJet.xZZ < max_xZZ
     quadJet["ZHSR"] = quadJet.xZH < max_xZH
     quadJet["HHSR"] = ((quadJet.xHH < max_xHH) & selev.notInBoostedSel ) if 'notInBoostedSel' in selev.fields else (quadJet.xHH < max_xHH)  ## notInBoostedSel is true by default
@@ -229,9 +281,16 @@ def create_cand_jet_dijet_quadjet(
 
     if isRun3:
 
+        sr3_cfg = (cand_cfg or {}).get('sr_run3', {})
+        diagonalXoYo = sr3_cfg.get('diagonalXoYo', 1.04)
+        delta_dhh_max = sr3_cfg.get('delta_dhh_max', 30)
+        cLead     = sr3_cfg.get('cLead',     125)
+        cSubl     = sr3_cfg.get('cSubl',     120)
+        SR_radius = sr3_cfg.get('SR_radius', 30)
+        CR_radius = sr3_cfg.get('CR_radius', 55)
+
         # Compute distances to diagonal
         #   https://gitlab.cern.ch/mkolosov/hh4b_run3/-/blob/run2/python/producers/hh4bTreeProducer.py#L3386
-        diagonalXoYo = 1.04
         quadJet["dhh"] = (1.0/np.sqrt(1+pow(diagonalXoYo, 2)))*abs(quadJet["lead"].mass - ((diagonalXoYo)*quadJet["subl"].mass))
 
         # If the difference of the minimum and second minimum distance from the diagonal is less than 30, choose the pair that has the
@@ -263,7 +322,7 @@ def create_cand_jet_dijet_quadjet(
         quadJet_min_dhh_lead_CM  = quadJet_min_dhh.lead[:,0].boost(-boost_vec_v4j)
         quadJet_min2_dhh_lead_CM = quadJet_min2_dhh.lead[:,0].boost(-boost_vec_v4j)
 
-        use_dhh2_mask = (delta_dhh < 30) & (quadJet_min2_dhh_lead_CM.pt > quadJet_min_dhh_lead_CM.pt)
+        use_dhh2_mask = (delta_dhh < delta_dhh_max) & (quadJet_min2_dhh_lead_CM.pt > quadJet_min_dhh_lead_CM.pt)
 
         quadJet["selected"] = ak.where(use_dhh2_mask, quadJet_min2_dhh_mask, quadJet_min_dhh_mask)
 
@@ -271,11 +330,6 @@ def create_cand_jet_dijet_quadjet(
         #
         #   For CR selection
         #
-        cLead = 125
-        cSubl = 120
-        SR_radius = 30
-        CR_radius = 55
-
         quadJet["rhh"] = np.sqrt( (quadJet["lead"].mass - cLead)**2 + (quadJet["subl"].mass - cSubl)**2 )
         quadJet["SR"] = (quadJet.rhh < SR_radius)
         quadJet["SB"] =  (~quadJet.SR) & (quadJet.rhh < CR_radius)
@@ -314,7 +368,7 @@ def create_cand_jet_dijet_quadjet(
     if run_SvB:
 
         if (classifier_SvB is not None) | (classifier_SvB_MA is not None):
-            
+
             if run_systematics: tmp_mask = (selev.fourTag & quadJet[quadJet.selected][:, 0].SR)
             else: tmp_mask = np.full(len(selev), True)
             compute_SvB(selev,
@@ -339,6 +393,7 @@ def create_cand_jet_dijet_quadjet(
     selev["quadJet"] = quadJet
     selev["quadJet_selected"] = quadJet[quadJet.selected][:, 0]
     selev["passDiJetMass"] = ak.any(quadJet.passDiJetMass, axis=1)
+
     #
     #  Build the close dR and other quadjets
     #    (There is Probably a better way to do this ...
@@ -371,67 +426,10 @@ def create_cand_jet_dijet_quadjet(
         "SB": selev["quadJet_selected"].SB
         })
 
-    #
-    # Debugging the skimmer
-    #
-    ### selev_mask = selev.event == 434011
-    ### out_data = {}
-    ### out_data["debug_event"  ]            = selev.event[selev_mask]
-    ### out_data["debug_qj_rank"  ]    = quadJet[selev_mask].rank.to_list()
-    ### out_data["debug_qj_selected"  ]    = quadJet[selev_mask].selected.to_list()
-    ### out_data["debug_qj_passDiJetMass"  ]    = quadJet[selev_mask].passDiJetMass.to_list()
-    ### out_data["debug_qj_lead_passMDR"  ]    = quadJet[selev_mask].lead.passMDR.to_list()
-    ### out_data["debug_qj_subl_passMDR"  ]    = quadJet[selev_mask].subl.passMDR.to_list()
-    ### out_data["debug_qj_lead_mass"  ]    = quadJet[selev_mask].lead.mass.to_list()
-    ### out_data["debug_qj_subl_mass"  ]    = quadJet[selev_mask].subl.mass.to_list()
-    ### out_data["debug_qj_random"  ]    = quadJet[selev_mask].random.to_list()
-    ### out_data["debug_qj_SR"  ]    = quadJet[selev_mask].SR.to_list()
-    ### out_data["debug_qj_HHSR"  ]    = quadJet[selev_mask].HHSR.to_list()
-    ### out_data["debug_qj_ZZSR"  ]    = quadJet[selev_mask].ZZSR.to_list()
-    ### out_data["debug_qj_ZHSR"  ]    = quadJet[selev_mask].ZHSR.to_list()
-    ### out_data["debug_qj_xZZ"  ]    = quadJet[selev_mask].xZZ.to_list()
-    ### out_data["debug_qj_xZH"  ]    = quadJet[selev_mask].xZH.to_list()
-    ### out_data["debug_qj_xHH"  ]    = quadJet[selev_mask].xHH.to_list()
-    ### out_data["debug_qj_ZHSR"  ]    = quadJet[selev_mask].ZHSR.to_list()
-    ### out_data["debug_qj_lead_xZ"  ]    = quadJet[selev_mask].lead.xZ.to_list()
-    ### out_data["debug_qj_lead_xH"  ]    = quadJet[selev_mask].lead.xH.to_list()
-    ### out_data["debug_qj_subl_xZ"  ]    = quadJet[selev_mask].subl.xZ.to_list()
-    ### out_data["debug_qj_subl_xH"  ]    = quadJet[selev_mask].subl.xH.to_list()
-    ### out_data["debug_qj_SB"  ]    = quadJet[selev_mask].SB.to_list()
-    ### out_data["debug_counter"  ]    = counter[selev_mask].to_list()
-    ### out_data["debug_SR"] = selev["quadJet_selected"][selev_mask].SR
-    ### out_data["debug_SB"] = selev["quadJet_selected"][selev_mask].SB
-    ### out_data["debug_threeTag"] = selev[selev_mask].threeTag
-    ### out_data["debug_fourTag"] = selev[selev_mask].fourTag
-    ### out_data["debug_qj_lead_pt"  ]         = quadJet[selev_mask].lead.pt.to_list()
-    ### out_data["debug_qj_lead_lead_pt"  ]    = quadJet[selev_mask].lead.lead.pt.to_list()
-    ### out_data["debug_qj_lead_lead_eta"  ]   = quadJet[selev_mask].lead.lead.eta.to_list()
-    ### out_data["debug_qj_lead_lead_phi"  ]   = quadJet[selev_mask].lead.lead.phi.to_list()
-    ### out_data["debug_qj_lead_lead_mass"  ]  = quadJet[selev_mask].lead.lead.mass.to_list()
-    ### out_data["debug_qj_lead_subl_pt"  ]    = quadJet[selev_mask].lead.subl.pt.to_list()
-    ### out_data["debug_qj_lead_subl_eta"  ]   = quadJet[selev_mask].lead.subl.eta.to_list()
-    ### out_data["debug_qj_lead_subl_phi"  ]   = quadJet[selev_mask].lead.subl.phi.to_list()
-    ### out_data["debug_qj_lead_subl_mass"  ]  = quadJet[selev_mask].lead.subl.mass.to_list()
-    ###
-    ### out_data["debug_qj_subl_pt"  ]         = quadJet[selev_mask].subl.pt.to_list()
-    ### out_data["debug_qj_subl_lead_pt"  ]    = quadJet[selev_mask].subl.lead.pt.to_list()
-    ### out_data["debug_qj_subl_lead_eta"  ]   = quadJet[selev_mask].subl.lead.eta.to_list()
-    ### out_data["debug_qj_subl_lead_phi"  ]   = quadJet[selev_mask].subl.lead.phi.to_list()
-    ### out_data["debug_qj_subl_lead_mass"  ]  = quadJet[selev_mask].subl.lead.mass.to_list()
-    ###
-    ### out_data["debug_qj_subl_subl_pt"  ]    = quadJet[selev_mask].subl.subl.pt.to_list()
-    ### out_data["debug_qj_subl_subl_eta"  ]   = quadJet[selev_mask].subl.subl.eta.to_list()
-    ### out_data["debug_qj_subl_subl_phi"  ]   = quadJet[selev_mask].subl.subl.phi.to_list()
-    ### out_data["debug_qj_subl_subl_mass"  ]  = quadJet[selev_mask].subl.subl.mass.to_list()
-    ###
-    ###
-    ### for out_k, out_v in out_data.items():
-    ###     processOutput[out_k] = {}
-    ###     processOutput[out_k][selev.metadata['dataset']] = list(out_v)
-
+    svb_cfg = (cand_cfg or {}).get('svb', {})
     if run_SvB:
-        selev["passSvB"] = selev["SvB_MA"].ps > 0.80
-        selev["failSvB"] = selev["SvB_MA"].ps < 0.05
+        selev["passSvB"] = selev["SvB_MA"].ps > svb_cfg.get('passSvB_min', 0.80)
+        selev["failSvB"] = selev["SvB_MA"].ps < svb_cfg.get('failSvB_max', 0.05)
 
     # Release remaining intermediates
     del diJet, diJetDr, quadJet, arg_min_close_dr

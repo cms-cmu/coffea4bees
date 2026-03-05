@@ -9,6 +9,7 @@ from src.hist_tools.object import Jet
 from src.storage.eos import EOS, PathLike
 from src.data_formats.root import TreeWriter, TreeReader, Chunk
 
+from coffea4bees.analysis.helpers.candidates_selection import cand_jet_selection
 from coffea4bees.hemisphere_mixing.mixing_helpers import split_events_into_hemispheres
 from coffea4bees.hemisphere_mixing.hemisphere_hist_templates import HemisphereHists
 
@@ -89,20 +90,7 @@ class analysis(HH4bBaseProcessor):
         selev = selev[selev.fourTag]
         self._cutFlow.fill("passFourTag", selev)
 
-        # Build canJet and canJet{i} fields for histograms
-        # (build_candidates is a no-op so we do this here)
-        sorted_idx = ak.argsort(selev.Jet.btagScore * selev.Jet.selected, axis=1, ascending=False)
-        canJet = selev.Jet[sorted_idx[:, 0:4]] * selev.Jet[sorted_idx[:, 0:4]].bRegCorr
-        canJet["bRegCorr"]   = selev.Jet.bRegCorr[sorted_idx[:, 0:4]]
-        canJet["btagScore"]  = selev.Jet.btagScore[sorted_idx[:, 0:4]]
-        canJet["puId"]       = selev.Jet.puId[sorted_idx[:, 0:4]]
-        canJet["jetId"]      = selev.Jet.puId[sorted_idx[:, 0:4]]
-        if config["isMC"]:
-            canJet["hadronFlavour"] = selev.Jet.hadronFlavour[sorted_idx[:, 0:4]]
-        canJet = canJet[ak.argsort(canJet.pt, axis=1, ascending=False)]
-        selev["canJet"] = canJet
-        for i in range(4):
-            selev[f"canJet{i}"] = selev["canJet"][:, i]
+        selev = cand_jet_selection(selev, cand_cfg=self.cand_cfg)
 
         # Split events into hemispheres
         pos_hemi, neg_hemi = split_events_into_hemispheres(selev)
