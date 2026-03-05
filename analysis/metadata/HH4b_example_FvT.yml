@@ -10,9 +10,3 @@ config:
   apply_boosted_veto: false
   run_SvB: true
   top_reconstruction: fast
-  friends:
-    trigWeight: "coffea4bees/metadata/datasets_HH4b_Run2/trigweights_2024_v1p2.json@@trigWeight"
-    FvT: root://cmseos.fnal.gov//store/user/chuyuanl/HH4b/friend/FvT/baseline_legacy/JCM/mixed-0/result.json@@analysis.0.merged
-    FvT_3bDvTMix4bDvT_v{mix}_newSBDef:
-      path: root://cmseos.fnal.gov//store/user/chuyuanl/HH4b/friend/FvT/baseline_legacy/JCM/mixed-{mix}/result.json@@analysis.0.merged
-      keys: "[{'mix': i } for i in range(15)]"
