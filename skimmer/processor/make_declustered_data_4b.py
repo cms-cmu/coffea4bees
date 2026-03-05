@@ -1,6 +1,7 @@
 import yaml
 from coffea4bees.skimmer.processor.skimmer_4b_base import Skimmer4b
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
+from coffea4bees.analysis.helpers.candidates_selection import cand_jet_selection
 from coffea.nanoevents import NanoEventsFactory
 
 from coffea4bees.jet_clustering.clustering   import cluster_bs
@@ -193,33 +194,9 @@ class DeClusterer(Skimmer4b):
             selection = selection & pass_ttbar_filter
             selev = selev[pass_ttbar_filter_selev]
 
-        #
-        # Build and select boson candidate jets with bRegCorr applied
-        #
-        sorted_idx = ak.argsort( selev.Jet.btagScore * selev.Jet.selected, axis=1, ascending=False )
-        canJet_idx = sorted_idx[:, 0:4]
-        notCanJet_idx = sorted_idx[:, 4:]
-        canJet = selev.Jet[canJet_idx]
-
-        # apply bJES to canJets
-        canJet = canJet * canJet.bRegCorr
-        canJet["bRegCorr"] = selev.Jet.bRegCorr[canJet_idx]
-        canJet["btagScore"] = selev.Jet.btagScore[canJet_idx]
-        #if '202' in dataset:
-        #    canJet["btagPNetB"] = selev.Jet.btagPNetB[canJet_idx]
-
-
-        if config["isMC"]:
-            canJet["hadronFlavour"] = selev.Jet.hadronFlavour[canJet_idx]
-
-        #
-        # pt sort canJets
-        #
-        canJet = canJet[ak.argsort(canJet.pt, axis=1, ascending=False)]
-
-        notCanJet = selev.Jet[notCanJet_idx]
-        notCanJet = notCanJet[notCanJet.selected_loose]
-        notCanJet = notCanJet[ak.argsort(notCanJet.pt, axis=1, ascending=False)]
+        selev = cand_jet_selection(selev)
+        canJet    = selev.canJet
+        notCanJet = selev.notCanJet_coffea
 
         #
         # Do the Clustering
