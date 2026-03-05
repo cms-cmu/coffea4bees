@@ -14,7 +14,7 @@ rule analysis_processor:
         run_performance = False,
         extra_arguments = "",
         username = username
-    log: "output/logs/analysis_processor.log"
+    log: "output/logs/analysis_processor_{output_file}.log"
     shell:
         """
         mkdir -p $(dirname {log})
@@ -65,7 +65,7 @@ rule merging_coffea_files:
     container: config["analysis_container"]
     params:
         run_performance = False
-    log: "logs/merging_{params.logname}.log"
+    log: "logs/merging_coffea_files_{output_file}.log"
     shell:
         """
         # Set matplotlib config directory to avoid permission issues

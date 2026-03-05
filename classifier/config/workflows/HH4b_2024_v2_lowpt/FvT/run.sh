@@ -18,14 +18,14 @@ else
 fi
 
 # train with train.yml and common.yml configs
-./src/pyml.py \
-    template "model: ${MODEL}" $WFS/train.yml \
-    -from $WFS/../common.yml \
-    -setting Monitor "address: :${port}" \
-    -flag debug # use debug flag
+# ./src/pyml.py \
+#     template "model: ${MODEL}" $WFS/train.yml \
+#     -from $WFS/../common.yml \
+#     -setting Monitor "address: :${port}" \
+#     -flag debug # use debug flag
 
 # # plot the AUC and ROC
-# ./pyml.py analyze \
+# ./src/pyml.py analyze \
 #     --results ${MODEL}/result.json \
 #     -analysis HCR.LossROC \
 #     -setting IO "output: ${PLOT}" \
@@ -33,7 +33,7 @@ fi
 #     -setting Monitor "address: :${port}"
 
 # # evaluate with evaluate.yml and common.yml configs
-# ./pyml.py \
-#     template "{model: ${MODEL}, FvT: ${FvT}}" $WFS/evaluate.yml \
-#     -from $WFS/../common.yml \
-#     -setting Monitor "address: :${port}"
+./src/pyml.py \
+    template "{model: ${MODEL}, FvT: ${FvT}}" $WFS/evaluate.yml \
+    -from $WFS/../common.yml \
+    -setting Monitor "address: :${port}"

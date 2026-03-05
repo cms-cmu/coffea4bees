@@ -17,17 +17,17 @@ fi
 # train mixed and make plots
 for i in {0..14}
 do
-    ./pyml.py template "{mixed: ${i}, offset: 0, user: ${LPCUSER}}" $WFS/train_mixed.yml -setting Monitor "address: :${port}"
-    ./pyml.py analyze --results ${MODEL}/mixed-${i}/result.json -analysis HCR.LossROC -setting IO "output: ${WEB}" -setting IO "report: mixed-${i}" -setting Monitor "address: :${port}"
+    ./src/pyml.py template "{mixed: ${i}, offset: 0, user: ${LPCUSER}}" $WFS/train_mixed.yml -setting Monitor "address: :${port}"
+    ./src/pyml.py analyze --results ${MODEL}/mixed-${i}/result.json -analysis HCR.LossROC -setting IO "output: ${WEB}" -setting IO "report: mixed-${i}" -setting Monitor "address: :${port}"
 done
 # evaluate
 for i in {0..14}
 do
-    ./pyml.py template "{mixed: ${i}, user: ${LPCUSER}}" $WFS/evaluate_mixed.yml -setting Monitor "address: :${port}"
+    ./src/pyml.py template "{mixed: ${i}, user: ${LPCUSER}}" $WFS/evaluate_mixed.yml -setting Monitor "address: :${port}"
 done
 
 if [ -e "$GMAIL" ]; then
-    ./pyml.py analyze \
+    ./src/pyml.py analyze \
         -analysis notify.Gmail \
         --title "FvT mixed baseline done" \
         --body "finished at $(date)" \
