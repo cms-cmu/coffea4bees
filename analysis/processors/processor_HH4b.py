@@ -550,6 +550,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             if not shift_name:
                 self.fill_detailed_cutflows(selev)
                 self._cutFlow.addOutput(processOutput, event.metadata["dataset"])
+                if self.plot_ttbar_with_weights and hasattr(self, '_cutFlow_ttbar'):
+                    era = event.metadata["dataset"].removeprefix("data_")
+                    self._cutFlow_ttbar.addOutput(processOutput, f"TTbar_from_d3_{era}")
 
         with self._stage(f"{label}:fill_histograms"):
             # Fill histograms
@@ -901,6 +904,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         for cut, sel in sel_dict.items():
             self.fill_cutflow_with_and_without_trig(cut, event[sel], selection_mask=sel, weights=weights)
 
+        if self.plot_ttbar_with_weights:
+            self._cutFlow_ttbar = cutflow_4b(do_truth_hists=False)
+
     def fill_cutflow_with_and_without_trig(self, cut_name, events, weights=None, selection_mask=None, allTag=None, weight_override=None):
         """Helper to fill cutflow with and without trigger weight.
 
@@ -1099,6 +1105,43 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                             wOverride=selev['weight_noJCM_noFvT'][selev.passElMu])
             #self._cutFlow.fill("passElEl", selev[selev.passElEl], allTag=True,
             #                wOverride=selev['weight_noJCM_noFvT'][selev.passElEl])
+
+        if self.plot_ttbar_with_weights:
+            self._fill_ttbar_detailed_cutflows(selev)
+
+    def _fill_ttbar_detailed_cutflows(self, selev):
+        """Fill ttbar cutflow histograms using FvT d3_to_t4 and d3_to_t3 weights.
+
+        Uses a single cutflow object where:
+          - _cutFlowFourTag is filled with threeTag events weighted by weight_d3_to_t4
+            (their contribution to the 4b signal region)
+          - _cutFlowThreeTag is filled with threeTag events weighted by weight_d3_to_t3
+            (their contribution to the 3b control region)
+
+        Args:
+            selev: Selected events array (must have passSR and passSB already set)
+        """
+        if 'weight_d3_to_t4' not in selev.fields:
+            return
+
+        def fill_ttbar_cut(cut, ev):
+            ev3 = ev[ev.threeTag]
+            n3 = len(ev3)
+            self._cutFlow_ttbar._cutFlowFourTag [cut] = (float(np.sum(ev3['weight_d3_to_t4'])), n3)
+            self._cutFlow_ttbar._cutFlowThreeTag[cut] = (float(np.sum(ev3['weight_d3_to_t3'])), n3)
+            self._cutFlow_ttbar._cutFlowTwoTag  [cut] = (0, 0)
+
+        fill_ttbar_cut("passPreSel", selev)
+        fill_ttbar_cut("passDiJetMass", selev[selev.passDiJetMass])
+        fill_ttbar_cut("boosted_veto_passPreSel", selev[selev.notInBoostedSel])
+        fill_ttbar_cut("boosted_veto_SR", selev[selev.notInBoostedSel & selev["quadJet_selected"].SR])
+        fill_ttbar_cut("SR", selev[selev.passSR])
+        fill_ttbar_cut("SB", selev[selev.passSB])
+        fill_ttbar_cut("passVBFSel", selev[selev.passVBFSel])
+
+        if self.run_SvB:
+            fill_ttbar_cut("passSvB", selev[selev.passSvB])
+            fill_ttbar_cut("failSvB", selev[selev.failSvB])
 
     def dump_friend_trees(self, selev, analysis_selections, shift_name):
         """Dump all requested friend trees.

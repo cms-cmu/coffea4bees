@@ -56,25 +56,24 @@ class cutflow_4b(cutflow):
             self._hists[cut].fill(mass=m4b, weight=m4b_weights)
 
     def addOutput(self, o, dataset):
-        o["cutFlowFourTag"] = {}
-        o["cutFlowFourTagUnitWeight"] = {}
+        o.setdefault("cutFlowFourTag", {})
+        o.setdefault("cutFlowFourTagUnitWeight", {})
         o["cutFlowFourTag"][dataset] = {}
         o["cutFlowFourTagUnitWeight"][dataset] = {}
         for k, v in  self._cutFlowFourTag.items():
             o["cutFlowFourTag"][dataset][k] = v[0]
             o["cutFlowFourTagUnitWeight"][dataset][k] = v[1]
 
-        o["cutFlowThreeTag"] = {}
-        o["cutFlowThreeTagUnitWeight"] = {}
+        o.setdefault("cutFlowThreeTag", {})
+        o.setdefault("cutFlowThreeTagUnitWeight", {})
         o["cutFlowThreeTag"][dataset] = {}
         o["cutFlowThreeTagUnitWeight"][dataset] = {}
         for k, v in  self._cutFlowThreeTag.items():
             o["cutFlowThreeTag"][dataset][k] = v[0]
             o["cutFlowThreeTagUnitWeight"][dataset][k] = v[1]
 
-
-        o["cutFlowTwoTag"] = {}
-        o["cutFlowTwoTagUnitWeight"] = {}
+        o.setdefault("cutFlowTwoTag", {})
+        o.setdefault("cutFlowTwoTagUnitWeight", {})
         o["cutFlowTwoTag"][dataset] = {}
         o["cutFlowTwoTagUnitWeight"][dataset] = {}
         for k, v in  self._cutFlowTwoTag.items():
