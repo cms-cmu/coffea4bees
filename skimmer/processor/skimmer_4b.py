@@ -1,20 +1,15 @@
 import logging
 
 import numpy as np
-import yaml
 from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
-from src.skimmer.mc_weight_outliers import OutlierByMedian
-from coffea4bees.analysis.helpers.processor_config import processor_config
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
-from coffea4bees.analysis.helpers.object_selection import load_object_selection_config
 from src.physics.event_selection import apply_event_selection
 
 from coffea.analysis_tools import PackedSelection, Weights
-from src.skimmer.picoaod import PicoAOD
-from coffea4bees.analysis.helpers.cutflow import cutflow_4b
+from coffea4bees.skimmer.processor.skimmer_4b_base import Skimmer4b
 
 
-class Skimmer(PicoAOD):
+class Skimmer(Skimmer4b):
     def __init__(
             self,
             loosePtForSkim=False,
@@ -26,22 +21,18 @@ class Skimmer(PicoAOD):
         ):
         if skim4b:
             kwargs["pico_base_name"] = f'picoAOD_fourTag'
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            mc_outlier_threshold=mc_outlier_threshold,
+            corrections_metadata=corrections_metadata,
+            object_selection_cfg=object_selection_cfg,
+            *args, **kwargs,
+        )
         self.loosePtForSkim = loosePtForSkim
         self.skim4b = skim4b
-        self.corrections_metadata = corrections_metadata if corrections_metadata is not None else {}
-        self.mc_outlier_threshold = mc_outlier_threshold
-        self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
-        # Always use cutflow_4b unless explicitly overridden
-        self._cutFlow = cutflow_4b()
 
     def select(self, events):
-        year    = events.metadata['year']
-        dataset = events.metadata['dataset']
-        processName = events.metadata['processName']
-
-        # Set process and datset dependent flags
-        config = processor_config(processName, dataset, events)
+        m = self._parse_event_metadata(events)
+        year, dataset, processName, config = m.year, m.dataset, m.processName, m.config
         logging.debug(f'config={config}\n')
 
         events = apply_event_selection(
@@ -104,10 +95,3 @@ class Skimmer(PicoAOD):
 
         processOutput = {}
         return final_selection, None, processOutput
-
-    def preselect(self, events):
-        dataset = events.metadata['dataset']
-        processName = events.metadata['processName']
-        config = processor_config(processName, dataset, events)
-        if config["isMC"] and self.mc_outlier_threshold is not None and "genWeight" in events.fields:
-            return OutlierByMedian(self.mc_outlier_threshold)(events.genWeight)

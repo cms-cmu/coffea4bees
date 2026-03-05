@@ -33,7 +33,7 @@ from coffea4bees.analysis.helpers.filling_histograms import (
 from src.friendtrees.FriendTreeSchema import FriendTreeSchema
 from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
 from coffea4bees.analysis.helpers.processor_config import processor_config
-from coffea4bees.analysis.helpers.candidates_selection import create_cand_jet_dijet_quadjet
+from coffea4bees.analysis.helpers.candidates_selection import create_cand_jet_dijet_quadjet, load_candidates_selection_config
 from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_FvT, setFvTVars
 from coffea4bees.analysis.helpers.topCandReconstruction import (
     adding_top_reco_to_event,
@@ -188,11 +188,13 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         return_events_for_display: bool = False,
         tracker = None,
         object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
+        candidates_selection_cfg: str = "coffea4bees/analysis/metadata/candidates_selection_thresholds.yml",
     ):
 
         logging.debug("\nInitialize Analysis Processor")
         self.tracker = tracker
         self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
+        self.cand_cfg = load_candidates_selection_config(candidates_selection_cfg) if candidates_selection_cfg else None
         self.blind = blind
         if apply_JCM:
             logging.info(f"\nUsing JCM from {JCM_file}")
@@ -1043,6 +1045,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             weights=weights,
             list_weight_names=list_weight_names,
             analysis_selections=analysis_selections,
+            cand_cfg=self.cand_cfg,
         )
 
 
