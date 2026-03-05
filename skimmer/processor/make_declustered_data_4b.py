@@ -18,7 +18,6 @@ from src.data_formats.root import Chunk, TreeReader
 from coffea4bees.analysis.helpers.load_friend import (
     FriendTemplate,
     rename_FvT_friend,
-    parse_friends
 )
 
 from coffea.analysis_tools import Weights, PackedSelection
@@ -42,6 +41,7 @@ class DeClusterer(Skimmer4b):
         super().__init__(
             corrections_metadata=corrections_metadata,
             object_selection_cfg=object_selection_cfg,
+            friends=friends,
             *args, **kwargs,
         )
 
@@ -49,7 +49,6 @@ class DeClusterer(Skimmer4b):
         self.clustering_pdfs_file = clustering_pdfs_file
 
         self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
-        self.friends = parse_friends(friends)
         self.declustering_rand_seed = declustering_rand_seed
 
         self.skip_collections = kwargs["skip_collections"]

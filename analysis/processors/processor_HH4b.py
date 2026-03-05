@@ -222,6 +222,11 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         if self.top_reconstruction is not None and self.top_reconstruction not in ["slow", "fast"]:
             raise ValueError(f"top_reconstruction must be None, 'slow', or 'fast', got: {self.top_reconstruction}")
         self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
+
+        if self.subtract_ttbar_with_weights and not self.apply_FvT:
+            logging.info("subtract_ttbar_with_weights=True, but apply_FvT=False.  Setting apply_FvT=True\n")
+            self.apply_FvT = True
+
         self.plot_ttbar_with_weights = plot_ttbar_with_weights
         self.friends = parse_friends(friends)
         self.histCuts = hist_cuts

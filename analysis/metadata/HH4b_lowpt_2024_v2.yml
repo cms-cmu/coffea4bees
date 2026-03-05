@@ -14,5 +14,3 @@ config:
   apply_boosted_veto: false
   run_SvB: false
   top_reconstruction: fast
-  friends:
-    trigWeight: "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/datasets_HH4b_2024_v2_trigweights.json@@trigWeight" 

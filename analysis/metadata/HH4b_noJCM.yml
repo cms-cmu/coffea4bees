@@ -10,8 +10,6 @@ config:
   apply_btagSF: true
   apply_boosted_veto: false
   run_SvB: false
-  friends:
-    trigWeight: "coffea4bees/metadata/datasets_HH4b_Run2/trigweights_2024_v1p2.json@@trigWeight"
   # friend_top_reconstruction: 'output/top_reconstruction_friendtree.json'
 
   

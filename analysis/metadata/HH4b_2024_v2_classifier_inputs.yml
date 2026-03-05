@@ -17,7 +17,6 @@ config:
   fill_histograms: false 
   # make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/
   make_classifier_input: outputs/analysis/   ### local
-  friends:
-    trigWeight: 'coffea4bees/metadata/datasets_HH4b_Run2/trigweights_2024_v1p2.json@@trigWeight'
+
 
   
