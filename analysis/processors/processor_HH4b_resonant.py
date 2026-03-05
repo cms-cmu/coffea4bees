@@ -20,6 +20,7 @@ from python.analysis.helpers.event_weights import (
 from src.physics.event_selection import apply_event_selection
 from coffea4bees.analysis.helpers.event_weights import add_weights
 from python.analysis.helpers.event_selection import apply_dilep_ttbar_selection, apply_4b_selection
+from coffea4bees.analysis.helpers.object_selection import load_object_selection_config
 from python.analysis.helpers.filling_histograms import (
     filling_nominal_histograms,
     filling_syst_histograms,
@@ -157,6 +158,7 @@ class analysis(processor.ProcessorABC):
         subtract_ttbar_with_weights: bool = False,
         apply_mixeddata_sel: bool = False,  #### apply HIG-22-011 sel for mixeddata
         friends: dict[str, str|FriendTemplate] = None,
+        object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
     ):
 
         logging.debug("\nInitialize Analysis Processor")
@@ -186,6 +188,7 @@ class analysis(processor.ProcessorABC):
         self.friends = parse_friends(friends)
         self.histCuts = hist_cuts
         self.apply_mixeddata_sel = apply_mixeddata_sel
+        self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
 
         # Memory monitoring
         self.debug_memory = False  # Set to False to disable memory monitoring
@@ -494,6 +497,7 @@ class analysis(processor.ProcessorABC):
             config=self.config,
             dataset=self.dataset,
             apply_mixeddata_sel=self.apply_mixeddata_sel,
+            sel_cfg=self.sel_cfg,
         )
 
         if self.run_dilep_ttbar_crosscheck:

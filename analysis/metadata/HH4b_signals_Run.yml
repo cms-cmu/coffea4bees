@@ -29,9 +29,3 @@ config:
   #   - path: 'coffea4bees/analysis/weights/pytorch_models/2024_HHUL_all_kl/result.json'
   #     name: Final
   top_reconstruction: fast
-  friends:
-    #trigWeight: "coffea4bees/metadata/datasets_HH4b_Run2/trigweights_2024_v1p2.json@@trigWeight"
-    trigWeight: "coffea4bees/metadata/datasets_HH4b_Run3/trigger_weights_TTbar_friends.json@@trigWeight"
-    # SvB: "coffea4bees/metadata/datasets_HH4b_2024_v1p2_friend_SvB.json@@SvB"
-    # SvB_MA: "coffea4bees/metadata/datasets_HH4b_2024_v1p2_friend_SvB.json@@SvB_MA"
-    # top_reconstruction: "hists/local/top_reconstruction_friendtree.json"

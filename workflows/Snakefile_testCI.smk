@@ -32,6 +32,11 @@ rule code_trig_emulator:
     log: f"{output_dir}/code_trig_emulator.log"
     shell: "source coffea4bees/scripts/code-trig-emulator.sh 2>&1 | tee -a {log}"
 
+rule code_hemisphere_mixing:
+    container: analysis_container
+    log: f"{output_dir}/code_hemisphere_mixing.log"
+    shell: "source coffea4bees/scripts/code-hemisphere-mixing.sh 2>&1 | tee -a {log}"
+
 rule tools_memory_test:
     container: analysis_container
     log: f"{output_dir}/tools_memory_test.log"
@@ -161,6 +166,12 @@ rule tools_make_jcm_weights:
     log: f"{output_dir}/tools_make_jcm_weights.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/tools-make-jcm-weights.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
+
+rule tools_perf_profile:
+    output: f"{output_dir}/perf_profile/perf_profile.txt"
+    log: f"{output_dir}/tools_perf_profile.log"
+    container: analysis_container
+    shell: "source coffea4bees/scripts/tools-perf-profile.sh --output-base {output_dir} 2>&1 | tee -a {log}"
 
 rule twoStageClosure_test:
     input: f"{output_dir}/analysis_test_mixed/testMixedData.json"
@@ -328,6 +339,13 @@ rule mixeddata_split_dataset:
     shell: "source coffea4bees/scripts/mixeddata-split-dataset.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
 
+rule mixeddata_cluster:
+    output: f"{output_dir}/mixeddata_cluster/test_mixed_datasets.coffea"
+    log: f"{output_dir}/mixeddata_cluster.log"
+    container: analysis_container
+    shell: "source coffea4bees/scripts/mixeddata-cluster.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
+
+
 rule mixeddata_analyze:
     output: f"{output_dir}/mixeddata_analyze/test_mixeddata.coffea"
     input: f"{output_dir}/test_mixeddata_split_dataset/picoaod_datasets_split_mixeddata_UL18_v0.yml"
@@ -342,3 +360,10 @@ rule mixeddata_analyze_cutflow:
     log: f"{output_dir}/mixeddata_analyze_cutflow.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/mixeddata-analyze-cutflow.sh --output-base {output_dir} 2>&1 | tee -a {log}"
+
+rule mixeddata_study_hemispheres:
+    input: f"{output_dir}/mixeddata_cluster/test_mixed_datasets.coffea"
+    output: f"{output_dir}/test_study_hemispheres/hemi_statistics_UL18.yml"
+    log: f"{output_dir}/mixeddata_study_hemispheres.log"
+    container: analysis_container
+    shell: "source coffea4bees/scripts/mixeddata-study-hemispheres.sh --output-base {output_dir} 2>&1 | tee -a {log}"

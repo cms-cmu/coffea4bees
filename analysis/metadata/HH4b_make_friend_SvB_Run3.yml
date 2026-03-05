@@ -21,9 +21,5 @@ config:
   top_reconstruction: fast
   fill_histograms: false
   make_friend_SvB: *friend_base
-  friends:
-    trigWeight: "coffea4bees/metadata/datasets_HH4b_Run2/trigweights_2024_v1p2.json@@trigWeight"
-    # SvB: "coffea4bees/metadata/datasets_HH4b_2024_v1p2_friend_SvB.json@@SvB"
-    # SvB_MA: "coffea4bees/metadata/datasets_HH4b_2024_v1p2_friend_SvB.json@@SvB_MA"
 
   

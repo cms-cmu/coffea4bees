@@ -57,7 +57,7 @@ declare -A DEFAULTS=(
     ["YEAR"]="UL18"
     ["OUTPUT_FILENAME"]="test.coffea"
     ["TEST_MODE"]="-t"
-    ["OUTPUT_SUBDIR"]="analysis_test"
+    ["OUTPUT_SUBDIR"]=""
     ["ADDITIONAL_FLAGS"]=""
     ["CONDOR_MODE"]=""
 )

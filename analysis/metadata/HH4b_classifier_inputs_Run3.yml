@@ -16,13 +16,10 @@ config:
   run_SvB: false 
   top_reconstruction: fast
   fill_histograms: false 
-  friends:
-    #trigWeight: "coffea4bees/metadata/datasets_HH4b_Run2/trigweights_2024_v1p2.json@@trigWeight"
-    trigWeight: "coffea4bees/metadata/datasets_HH4b_Run3/trigger_weights_TTbar_friends.json@@trigWeight"    
-  make_classifier_input: root://cmseos.fnal.gov//store/user/jda102/XX4b/Run3ClassiferInputs
+  #make_classifier_input: root://cmseos.fnal.gov//store/user/jda102/XX4b/Run3ClassiferInputs
   #make_friend_FvT_weight: root://cmseos.fnal.gov//store/user/jda102/XX4b/Run3ClassiferInputs
-  #make_classifier_input: hists/local/   ### local
-  #make_friend_FvT_weight: hists/local/   ### local
+  make_classifier_input: hists/local/   ### local
+  make_friend_FvT_weight: hists/local/   ### local
 
 
   

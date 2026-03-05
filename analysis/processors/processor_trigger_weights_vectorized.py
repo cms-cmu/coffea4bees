@@ -13,6 +13,7 @@ from coffea.lookup_tools import dense_lookup
 from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
 from src.physics.event_selection import apply_event_selection
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
+from coffea4bees.analysis.helpers.object_selection import load_object_selection_config
 from coffea4bees.analysis.helpers.candidates_selection import create_cand_jet_dijet_quadjet
 from coffea4bees.analysis.helpers.dump_friendtrees import dump_trigger_weight
 from coffea4bees.analysis.helpers.processor_config import processor_config
@@ -654,12 +655,14 @@ class analysis(processor.ProcessorABC):
         *,
         make_classifier_input: str = None,
         corrections_metadata: str ="src/physics/corrections.yml",
+        object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
     ):
 
         logging.debug("\nInitialize Analysis Processor (Vectorized)")
         self.corrections_metadata = corrections_metadata
         self.make_classifier_input = make_classifier_input
         self.trig_sfs = {} # Cache for TriggerSFVectorized objects
+        self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
 
     def process(self, event):
 
@@ -683,7 +686,8 @@ class analysis(processor.ProcessorABC):
 
         # Object selection
         event = apply_4b_selection( event, self.corrections_metadata[self.year], dataset=self.dataset,
-                                           doLeptonRemoval=self.config["do_lepton_jet_cleaning"] )
+                                           doLeptonRemoval=self.config["do_lepton_jet_cleaning"],
+                                           sel_cfg=self.sel_cfg )
 
         # Candidate creation
         event = create_cand_jet_dijet_quadjet( event,
