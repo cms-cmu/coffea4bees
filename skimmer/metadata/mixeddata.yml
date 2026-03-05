@@ -27,8 +27,6 @@ config:
   hemi_library_yaml: coffea4bees/skimmer/metadata/hemisphere_library_noTT.yml
   hemi_stats_path: coffea4bees/skimmer/metadata/
   campaign:   
-  friends:
-    trigWeight: "coffea4bees/metadata/datasets_HH4b_Run2/trigweights_2024_v1p2.json@@trigWeight"
   step: 100000
   skip_collections:
     - notCanJet
