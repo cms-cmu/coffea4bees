@@ -7,6 +7,90 @@ from coffea4bees.analysis.helpers.FvT_helpers import compute_FvT
 from coffea.nanoevents.methods import vector
 from coffea.analysis_tools import Weights
 
+
+def cand_jet_selection(
+    selev,
+    include_lowptjets=False,
+):
+    """
+    Creates candidate jets
+
+    Parameters:
+    -----------
+    selev : ak.Array
+        The selected events.
+
+    """
+
+    #
+    # Build and select boson candidate jets with bRegCorr applied
+    #
+    sorted_idx = ak.argsort( selev.Jet.btagScore * selev.Jet.selected, axis=1, ascending=False )
+    logging.debug(f"all jets {selev.Jet.pt[:2]}")
+    if include_lowptjets:
+        sorted_idx_lowpt = ak.argsort( selev.Jet.btagScore * selev.Jet.selected_lowpt, axis=1, ascending=False )
+        canJet_idx = ak.concatenate([sorted_idx[:, 0:3], sorted_idx_lowpt[:, :1]], axis=1)
+        logging.debug(f"jet lowpt selected {(selev.Jet.selected_lowpt)[:2]}")
+        logging.debug(f"canJet_idx with lowpt {canJet_idx[:2]}")
+
+    else:
+        canJet_idx = sorted_idx[:, 0:4]
+
+    # Exclude canJet_idx from sorted_idx
+    is_canJet = ak.zeros_like(sorted_idx, dtype=bool)
+    for i in range(4):
+        is_canJet = is_canJet | (sorted_idx == canJet_idx[:, i])
+    notCanJet_idx = sorted_idx[~is_canJet]
+    del is_canJet
+
+    notCanJet = selev.Jet[notCanJet_idx]
+    logging.debug(f"all notCanJet {notCanJet.pt[:2]}")
+    notCanJet = notCanJet[notCanJet.selected_loose | (notCanJet.selected_lowpt if include_lowptjets else False)]
+    logging.debug(f"notCanJet selected_loose {notCanJet.pt[:2]}")
+
+    notCanJet = notCanJet[ak.argsort(notCanJet.pt, axis=1, ascending=False)]
+    logging.debug(f"notCanJet sorted {notCanJet.pt[:2]}")
+
+    logging.debug(f"canJet_idx {canJet_idx[:2]}")
+    logging.debug(f"notCanJet_idx {notCanJet_idx[:2]}\n\n")
+
+
+    # # apply bJES to canJets
+    logging.debug(f"canJet before bReg {selev.Jet[canJet_idx].pt[:2]}\n")
+    canJet_raw = selev.Jet[canJet_idx]
+    canJet = canJet_raw * canJet_raw.bRegCorr
+    canJet["bRegCorr"] = canJet_raw.bRegCorr
+    canJet["btagScore"] = canJet_raw.btagScore
+    canJet["puId"] = canJet_raw.puId
+    canJet["jetId"] = canJet_raw.jetId
+    if "hadronFlavour" in selev.Jet.fields:
+        canJet["hadronFlavour"] = canJet_raw.hadronFlavour
+    del canJet_raw
+
+    #
+    # pt sort canJets
+    #
+    canJet = canJet[ak.argsort(canJet.pt, axis=1, ascending=False)]
+    selev["canJet"] = canJet
+    for i in range(4):
+        selev[f"canJet{i}"] = selev["canJet"][:, i]
+
+
+
+    notCanJet["isSelJet"] = 1 * ( (notCanJet.pt >= 40) & (np.abs(notCanJet.eta) < 2.4) )
+    selev["notCanJet_coffea"] = notCanJet
+    selev["nNotCanJet"] = ak.num(selev.notCanJet_coffea)
+
+    # Release indexing intermediates
+    del sorted_idx, canJet_idx, notCanJet_idx, notCanJet
+    if include_lowptjets:
+        del sorted_idx_lowpt
+
+
+    return selev
+
+
+
 def create_cand_jet_dijet_quadjet(
     selev,
     apply_FvT: bool = False,
@@ -56,63 +140,14 @@ def create_cand_jet_dijet_quadjet(
     #jet_subset_dict = {key: getattr(selev.Jet,key)[0:10].tolist() for key in ["pt", "eta","phi", "mass","btagScore","bRegCorr","puId","jetId","selected", "selected_loose"]}
     #print(jet_subset_dict)
 
-    #
-    # Build and select boson candidate jets with bRegCorr applied
-    #
-    sorted_idx = ak.argsort( selev.Jet.btagScore * selev.Jet.selected, axis=1, ascending=False )
-    logging.debug(f"all jets {selev.Jet.pt[:2]}")
-    if include_lowptjets:
-        sorted_idx_lowpt = ak.argsort( selev.Jet.btagScore * selev.Jet.selected_lowpt, axis=1, ascending=False )
-        canJet_idx = ak.concatenate([sorted_idx[:, 0:3], sorted_idx_lowpt[:, :1]], axis=1)
-        logging.debug(f"jet lowpt selected {(selev.Jet.selected_lowpt)[:2]}")
-        logging.debug(f"canJet_idx with lowpt {canJet_idx[:2]}")
+    selev = cand_jet_selection(selev, include_lowptjets)
 
-    else:
-        canJet_idx = sorted_idx[:, 0:4]
-        
-    # Exclude canJet_idx from sorted_idx
-    is_canJet = ak.zeros_like(sorted_idx, dtype=bool)
-    for i in range(4):
-        is_canJet = is_canJet | (sorted_idx == canJet_idx[:, i])
-    notCanJet_idx = sorted_idx[~is_canJet]
-    del is_canJet
-    notCanJet = selev.Jet[notCanJet_idx]
-    logging.debug(f"all notCanJet {notCanJet.pt[:2]}")
-    notCanJet = notCanJet[notCanJet.selected_loose | (notCanJet.selected_lowpt if include_lowptjets else False)]
-    logging.debug(f"notCanJet selected_loose {notCanJet.pt[:2]}")
-
-    notCanJet = notCanJet[ak.argsort(notCanJet.pt, axis=1, ascending=False)]
-    logging.debug(f"notCanJet sorted {notCanJet.pt[:2]}")
-
-    logging.debug(f"canJet_idx {canJet_idx[:2]}")
-    logging.debug(f"notCanJet_idx {notCanJet_idx[:2]}\n\n")
-    
-
-    # # apply bJES to canJets
-    logging.debug(f"canJet before bReg {selev.Jet[canJet_idx].pt[:2]}\n")
-    canJet_raw = selev.Jet[canJet_idx]
-    canJet = canJet_raw * canJet_raw.bRegCorr
-    canJet["bRegCorr"] = canJet_raw.bRegCorr
-    canJet["btagScore"] = canJet_raw.btagScore
-    canJet["puId"] = canJet_raw.puId
-    canJet["jetId"] = canJet_raw.jetId
-    if "hadronFlavour" in selev.Jet.fields:
-        canJet["hadronFlavour"] = canJet_raw.hadronFlavour
-    del canJet_raw
-
-    #
-    # pt sort canJets
-    #
-    canJet = canJet[ak.argsort(canJet.pt, axis=1, ascending=False)]
-    selev["canJet"] = canJet
-    for i in range(4):
-        selev[f"canJet{i}"] = selev["canJet"][:, i]
-
-    selev["v4j"] = canJet.sum(axis=1)
+    selev["v4j"] = selev.canJet.sum(axis=1)
+    vbfJets = ak.pad_none(selev.notCanJet_coffea, 2)
 
     # vbf jets should be selected_loose without eta restriction
-    mask_two_notCanJets = ak.num(notCanJet) >= 2
-    vbfJets = ak.pad_none(notCanJet, 2)
+    mask_two_notCanJets = ak.num(selev.notCanJet_coffea) >= 2
+
     selev["vbfJets_mjj"] = ak.where(
         mask_two_notCanJets,
         (vbfJets[:, 0] + vbfJets[:, 1]).mass,
@@ -125,14 +160,6 @@ def create_cand_jet_dijet_quadjet(
     )
     selev['passVBFSel'] = ( (selev.vbfJets_mjj > 400) & (selev.vbfJets_detajj > 3.5) )
 
-    notCanJet["isSelJet"] = 1 * ( (notCanJet.pt >= 40) & (np.abs(notCanJet.eta) < 2.4) )
-    selev["notCanJet_coffea"] = notCanJet
-    selev["nNotCanJet"] = ak.num(selev.notCanJet_coffea)
-
-    # Release indexing intermediates
-    del sorted_idx, canJet_idx, notCanJet_idx, notCanJet
-    if include_lowptjets:
-        del sorted_idx_lowpt
 
     # Build diJets, indexed by diJet[event,pairing,0/1]
     canJet = selev["canJet"]
@@ -314,7 +341,7 @@ def create_cand_jet_dijet_quadjet(
     if run_SvB:
 
         if (classifier_SvB is not None) | (classifier_SvB_MA is not None):
-            
+
             if run_systematics: tmp_mask = (selev.fourTag & quadJet[quadJet.selected][:, 0].SR)
             else: tmp_mask = np.full(len(selev), True)
             compute_SvB(selev,
@@ -339,6 +366,7 @@ def create_cand_jet_dijet_quadjet(
     selev["quadJet"] = quadJet
     selev["quadJet_selected"] = quadJet[quadJet.selected][:, 0]
     selev["passDiJetMass"] = ak.any(quadJet.passDiJetMass, axis=1)
+
     #
     #  Build the close dR and other quadjets
     #    (There is Probably a better way to do this ...

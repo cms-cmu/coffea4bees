@@ -7,6 +7,7 @@ from coffea4bees.analysis.processors.processor_HH4b import HH4bBaseProcessor
 from src.hist_tools import Collection, Fill
 from src.hist_tools.object import Jet
 
+from coffea4bees.analysis.helpers.candidates_selection import cand_jet_selection
 from coffea4bees.jet_clustering.clustering_hist_templates import ClusterHists
 from coffea4bees.jet_clustering.clustering import cluster_bs
 from coffea4bees.jet_clustering.declustering import (
@@ -61,35 +62,13 @@ class analysis(HH4bBaseProcessor):
 
         self._cutFlow.fill("passFourTag", selev)
 
-        #
-        # Build and select boson candidate jets with bRegCorr applied
-        #
-        sorted_idx = ak.argsort(selev.Jet.btagScore * selev.Jet.selected, axis=1, ascending=False)
-        canJet_idx   = sorted_idx[:, 0:4]
-        notCanJet_idx = sorted_idx[:, 4:]
-
-        canJet = selev.Jet[canJet_idx] * selev.Jet[canJet_idx].bRegCorr
-        canJet["bRegCorr"]  = selev.Jet.bRegCorr[canJet_idx]
-        canJet["btagScore"] = selev.Jet.btagScore[canJet_idx]
-        canJet["puId"]      = selev.Jet.puId[canJet_idx]
-        canJet["jetId"]     = selev.Jet.puId[canJet_idx]
-        if config["isMC"]:
-            canJet["hadronFlavour"] = selev.Jet.hadronFlavour[canJet_idx]
-
-        canJet = canJet[ak.argsort(canJet.pt, axis=1, ascending=False)]
-        selev["canJet"] = canJet
-        for i in range(4):
-            selev[f"canJet{i}"] = selev["canJet"][:, i]
-
-        notCanJet = selev.Jet[notCanJet_idx]
-        notCanJet = notCanJet[notCanJet.selected_loose]
-        notCanJet = notCanJet[ak.argsort(notCanJet.pt, axis=1, ascending=False)]
-        notCanJet["isSelJet"] = 1 * ((notCanJet.pt > 40) & (np.abs(notCanJet.eta) < 2.4))
-        selev["notCanJet_coffea"] = notCanJet
+        selev = cand_jet_selection(selev)
 
         #
         # Do the Clustering
         #
+        canJet    = selev.canJet
+        notCanJet = selev.notCanJet_coffea
         canJet["jet_flavor"]    = "b"
         notCanJet["jet_flavor"] = "j"
 
