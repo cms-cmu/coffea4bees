@@ -1,7 +1,6 @@
 import yaml
-from src.skimmer.picoaod import PicoAOD #, fetch_metadata, resize
+from coffea4bees.skimmer.processor.skimmer_4b_base import Skimmer4b
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
-from coffea4bees.analysis.helpers.object_selection import load_object_selection_config
 from coffea.nanoevents import NanoEventsFactory
 from coffea.nanoevents.methods import vector
 
@@ -14,7 +13,6 @@ from src.physics.event_selection import apply_event_selection
 from coffea4bees.analysis.helpers.event_weights import add_weights
 
 from src.data_formats.root import Chunk, TreeReader
-from coffea4bees.analysis.helpers.cutflow import cutflow_4b
 from coffea4bees.analysis.helpers.load_friend import (
     FriendTemplate,
     rename_FvT_friend,
@@ -37,7 +35,7 @@ from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricMod
 from coffea4bees.analysis.helpers.event_weights import add_pseudotagweights
 
 
-class HemiMixer(PicoAOD):
+class HemiMixer(Skimmer4b):
     def __init__(self,
                 subtract_ttbar_with_weights = False,
                 friends: dict[str, str|FriendTemplate] = None,
@@ -49,7 +47,11 @@ class HemiMixer(PicoAOD):
                 use_boost_corrected_matching: bool = False,
                 object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
                 *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            corrections_metadata=corrections_metadata,
+            object_selection_cfg=object_selection_cfg,
+            *args, **kwargs,
+        )
 
         logging.info(f"\nRunning HemiMixer with these parameters: , subtract_ttbar_with_weights = {subtract_ttbar_with_weights}, args = {args}, kwargs = {kwargs}")
         logging.info(f"\nLoading JCM from file: {JCM_file} , apply_JCM = {apply_JCM}\n")
@@ -57,9 +59,6 @@ class HemiMixer(PicoAOD):
 
         self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
         self.friends = parse_friends(friends)
-        self.corrections_metadata = corrections_metadata
-        self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
-        self._cutFlow = cutflow_4b()
 
         self.skip_collections = kwargs["skip_collections"]
         self.skip_branches    = kwargs["skip_branches"]

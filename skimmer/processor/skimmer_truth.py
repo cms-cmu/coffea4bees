@@ -1,22 +1,21 @@
 import logging
 
 import numpy as np
-import yaml
-from src.skimmer.mc_weight_outliers import OutlierByMedian
 from coffea4bees.analysis.helpers.processor_config import processor_config
 from coffea.analysis_tools import PackedSelection, Weights
-from src.skimmer.picoaod import PicoAOD
 import awkward as ak
 from coffea4bees.analysis.helpers.truth_tools import find_genpart
-from coffea4bees.analysis.helpers.cutflow import cutflow_4b
+from coffea4bees.skimmer.processor.skimmer_4b_base import Skimmer4b
 
-class Skimmer(PicoAOD):
-    def __init__(self, loosePtForSkim=False, mc_outlier_threshold:int|None=200, corrections_metadata: dict = None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.corrections_metadata = corrections_metadata
-        self.mc_outlier_threshold = mc_outlier_threshold
-        self._cutFlow = cutflow_4b()
 
+class Skimmer(Skimmer4b):
+    def __init__(self, loosePtForSkim=False, mc_outlier_threshold: int | None = 200, corrections_metadata: dict = None, *args, **kwargs):
+        super().__init__(
+            mc_outlier_threshold=mc_outlier_threshold,
+            corrections_metadata=corrections_metadata,
+            object_selection_cfg=None,
+            *args, **kwargs,
+        )
         self.skip_collections = kwargs["skip_collections"]
         self.skip_branches    = kwargs["skip_branches"]
 
@@ -114,10 +113,3 @@ class Skimmer(PicoAOD):
         return (selection,
                 branches,
                 processOutput)
-
-    def preselect(self, event):
-        dataset = event.metadata['dataset']
-        processName = event.metadata['processName']
-        config = processor_config(processName, dataset, event)
-        if config["isMC"] and self.mc_outlier_threshold is not None and "genWeight" in event.fields:
-            return OutlierByMedian(self.mc_outlier_threshold)(event.genWeight)
