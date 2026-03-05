@@ -90,7 +90,7 @@ class analysis(HH4bBaseProcessor):
         selev = selev[selev.fourTag]
         self._cutFlow.fill("passFourTag", selev)
 
-        selev = cand_jet_selection(selev)
+        selev = cand_jet_selection(selev, cand_cfg=self.cand_cfg)
 
         # Split events into hemispheres
         pos_hemi, neg_hemi = split_events_into_hemispheres(selev)

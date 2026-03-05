@@ -62,7 +62,7 @@ class analysis(HH4bBaseProcessor):
 
         self._cutFlow.fill("passFourTag", selev)
 
-        selev = cand_jet_selection(selev)
+        selev = cand_jet_selection(selev, cand_cfg=self.cand_cfg)
 
         #
         # Do the Clustering
