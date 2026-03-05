@@ -6,6 +6,7 @@ from src.skimmer.mc_weight_outliers import OutlierByMedian
 from coffea4bees.analysis.helpers.processor_config import processor_config
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b
 from coffea4bees.analysis.helpers.object_selection import load_object_selection_config
+from coffea4bees.analysis.helpers.load_friend import FriendTemplate, parse_friends
 
 
 class Skimmer4b(PicoAOD):
@@ -21,6 +22,7 @@ class Skimmer4b(PicoAOD):
             mc_outlier_threshold: int | None = None,
             corrections_metadata: dict = None,
             object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
+            friends: dict[str, str | FriendTemplate] = None,
             *args, **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -28,6 +30,7 @@ class Skimmer4b(PicoAOD):
         self.mc_outlier_threshold = mc_outlier_threshold
         self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
         self._cutFlow = cutflow_4b()
+        self.friends = parse_friends(friends)
 
     def _parse_event_metadata(self, event):
         """Extract common event metadata into a SimpleNamespace.

@@ -15,7 +15,6 @@ from src.data_formats.root import Chunk, TreeReader
 from coffea4bees.analysis.helpers.load_friend import (
     FriendTemplate,
     rename_FvT_friend,
-    parse_friends
 )
 
 from coffea.analysis_tools import Weights, PackedSelection
@@ -49,6 +48,7 @@ class HemiMixer(Skimmer4b):
         super().__init__(
             corrections_metadata=corrections_metadata,
             object_selection_cfg=object_selection_cfg,
+            friends=friends,
             *args, **kwargs,
         )
 
@@ -57,7 +57,6 @@ class HemiMixer(Skimmer4b):
         self.apply_JCM = jetCombinatoricModel(JCM_file) if apply_JCM else None
 
         self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
-        self.friends = parse_friends(friends)
 
         self.skip_collections = kwargs["skip_collections"]
         self.skip_branches    = kwargs["skip_branches"]
