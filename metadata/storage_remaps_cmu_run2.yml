@@ -1,0 +1,12 @@
+# Storage prefix remappings: FNAL EOS personal areas -> CMU EOS group area
+# Usage: python runner.py --storage-remap coffea4bees/metadata/storage_remaps_cmu.yml
+remaps:
+  # longest/most-specific prefix must come first to avoid partial matches
+  - from: "root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig/"
+    to:   "root://cmsdata.phys.cmu.edu//store/group/HH4b/Run2/"
+  - from: "root://cmseos.fnal.gov//store/user/algomez/XX4b/"
+    to:   "root://cmsdata.phys.cmu.edu//store/group/HH4b/Run2/"
+  - from: "root://cmseos.fnal.gov//store/user/jda102/XX4b/"
+    to:   "root://cmsdata.phys.cmu.edu//store/group/HH4b/Run2/"
+  - from: "root://cmseos.fnal.gov//store/user/smurthy/XX4b/"
+    to:   "root://cmsdata.phys.cmu.edu//store/group/HH4b/Run2/"
