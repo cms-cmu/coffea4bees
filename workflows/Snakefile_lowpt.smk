@@ -81,7 +81,7 @@ rule create_metadata_lowpt:
     shell:
         """
         echo "Modifying metadata file to include new JCM"
-        sed -e 's|  JCM_file.*|  JCM_file: {input}|' -e 's|#apply_JCM_lowpt|apply_JCM_lowpt|' coffea4bees/analysis/metadata/HH4b_lowpt_2024_v2.yml > {output}
+        sed -e 's|  JCM_file.*|  JCM_file: {input}|' -e 's|#apply_JCM_lowpt|apply_JCM_lowpt|' coffea4bees/analysis/metadata/HH4b_lowpt_2024_v2_noFvT_noSvB.yml > {output}
         cat {output}
         """
 
@@ -115,3 +115,36 @@ use rule make_plots from analysis as make_plots with:
         output_dir = f"{config['output_path']}plots/",
         metadata = "coffea4bees/plots/metadata/plotsAll_lowpt.yml",
         extra_arguments = "-s xW "
+
+    
+rule create_metadata_lowpt:
+    input: f"{config['output_path']}JCM_lowpt_2024_v2/jetCombinatoricModel_SB_2024_v2.yml"
+    output: f"{config['output_path']}HH4b_wlowptJCM.yml"
+    shell:
+        """
+        echo "Modifying metadata file to include new JCM"
+        sed -e 's|  JCM_file.*|  JCM_file: {input}|' -e 's|#apply_JCM_lowpt|apply_JCM_lowpt|' coffea4bees/analysis/metadata/HH4b_lowpt_2024_v2_noFvT_noSvB.yml > {output}
+        cat {output}
+        """
+
+use rule analysis_processor from analysis as analysis_lowpt with:
+    input: f"{config['output_path']}HH4b_wlowptJCM.yml"
+    output: f"{config['output_path']}histAll_lowpt_{{dataset}}.coffea"
+    params:
+        datasets = "{dataset}",
+        years = config['year'],
+        metadata = lambda wildcards, input: input[0],
+        processor = "coffea4bees/analysis/processors/processor_HH4b_lowpt.py",
+        datasets_file = config['dataset_location'],
+        blind = False,
+        run_performance = False,
+        extra_arguments = "--condor",
+        username = username
+    log: f"{config['output_path']}logs/analysis_lowpt{{dataset}}.log"
+
+use rule merging_coffea_files from analysis as merging_lowpt_files with:
+    input: expand(f"{config['output_path']}histAll_lowpt_{{dataset}}.coffea", dataset=config['dataset'])
+    output: f"{config['output_path']}histAll_lowpt.coffea"
+    params:
+        run_performance = False
+    log: f"{config['output_path']}logs/merging_lowpt_files.log" 
