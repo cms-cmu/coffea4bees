@@ -4,7 +4,7 @@ import logging
 import yaml
 import os
 from src.physics.common import drClean, compute_puid
-from src.physics.objects.jet_corrections import apply_jet_veto_maps, apply_jerc_corrections
+from src.physics.objects.jet_corrections import apply_jet_veto_maps, apply_jerc_corrections, apply_jerc_corrections_jsonpog
 from coffea4bees.analysis.trigger_emulator.helpers import compute_emulation_vars
 from copy import copy
 from typing import Dict, Any
@@ -251,6 +251,16 @@ def jet_selection(
         event['Jet', 'btagScore'] = event.Jet.btagPNetB
 
         if not isSyntheticData:
+            #### temporary hack
+            if '2024' in dataset:
+                event['Jet'] = apply_jerc_corrections_jsonpog(
+                    event,
+                    corrections_metadata=corrections_metadata,
+                    isMC=isMC,
+                    dataset=dataset,
+                    run_systematics=False,
+                    jet_type="AK4PFPuppi"
+                )
             event['Jet'] = ak.where(
                 event.Jet.btagScore >= corrections_metadata['btagWP']['L'],
                 apply_jerc_corrections(
@@ -262,13 +272,13 @@ def jet_selection(
                     jet_corr_factor=event.Jet.PNetRegPtRawCorr * event.Jet.PNetRegPtRawCorrNeutrino,
                     jet_type="AK4PFPuppiPNetRegressionPlusNeutrino"
                 ),
-                apply_jerc_corrections(
+                apply_jerc_corrections_jsonpog(
                     event,
                     corrections_metadata=corrections_metadata,
                     isMC=isMC,
-                    run_systematics=False,
                     dataset=dataset,
-                    jet_type="AK4PFPuppi.txt"
+                    run_systematics=False,
+                    jet_type="AK4PFPuppi"
                 )
             )
 
