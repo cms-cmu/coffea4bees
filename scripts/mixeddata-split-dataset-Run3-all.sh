@@ -10,7 +10,7 @@ if [ $? -ne 0 ]; then
 fi
 
 display_section_header "Input Datasets"
-DATASETS=${DATASET:-"coffea4bees//metadata/datasets_HH4b_Run3_2025_Run3_skims.yml"}
+DATASETS=${DATASET:-"coffea4bees//metadata/datasets_HH4b_Run3"}
 echo "Using datasets file: $DATASETS"
 
 # Setup proxy if needed
@@ -26,7 +26,7 @@ create_output_directory "$OUTPUT_DIR"
 #    -e "s|chunksize:.*|chunksize: 1000|" \
 # -e "s|base_path.*|base_path: $OUTPUT_DIR|" \
 			
-for i in {0..2}; do
+for i in {0..0}; do
   echo "Doing splitting job $i"
 
   display_section_header "Changing metadata"
@@ -38,12 +38,14 @@ for i in {0..2}; do
   display_section_header "Running test processor split_mixed_data job $i"
 
   cmd=(python runner.py -s \
-	    -p coffea4bees/skimmer/processor/split_mixed_data.py \
-	    -c $JOB_CONFIG \
-	    -y 2022_EE 2022_preEE 2023_BPix 2023_preBPix  -d mixeddata_all  \
-	    -op $OUTPUT_DIR \
-	    -o picoaod_datasets_split_mixeddata_Run3.yml \
-	    -m $DATASETS)
+	      -p coffea4bees/skimmer/processor/split_mixed_data.py \
+	      -c $JOB_CONFIG \
+	      -y 2022_EE 2022_preEE 2023_BPix 2023_preBPix  -d mixeddata_all  \
+	      -op $OUTPUT_DIR \
+	      -o picoaod_datasets_split_mixeddata_Run3_noTT_pz.yml \
+	      -m $DATASETS \
+	      --condor
+      )
   time run_command "${cmd[@]}"
 
   

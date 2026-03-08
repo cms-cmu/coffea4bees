@@ -10,7 +10,7 @@ runner:
   class_name: DeClustererBoosted
   data_tier: picoAOD
   condor_cores: 1
-  condor_memory: 4GB
+  worker_memory: 4GB
   condor_transfer_input_files:
     - src/
     - coffea4bees/analysis/
@@ -27,8 +27,6 @@ config:
   base_path: root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v2
   # base_path: skimmer/test/
   clustering_pdfs_file: "jet_clustering/jet-splitting-PDFs-boosted-00-02-00/clustering_pdfs_vs_pT_XXX.yml"
-  friends:
-    trigWeight: "metadata/datasets_HH4b_2024_v1p1_trigweights.json@@trigWeight"
   declustering_rand_seed: 5
   step: 100000
   skip_collections:

@@ -2,6 +2,7 @@ import os
 import time
 import sys
 import yaml
+import warnings
 import hist
 import argparse
 import tempfile
@@ -17,6 +18,7 @@ from src.plotting.iPlot_config import plot_config
 cfg = plot_config()
 
 np.seterr(divide='ignore', invalid='ignore')
+warnings.filterwarnings('ignore', message='.*All sumw are zero.*')
 
 def doPlots(varList, debug=False):
 
@@ -56,8 +58,8 @@ def doPlots(varList, debug=False):
             if debug: print(plot_args)
             try:
                 fig = makePlot(cfg, **plot_args)
-            except ValueError:
-                print(f"ValueError: {v} {region}")
+            except Exception as e:
+                print(f"Error plotting {v} {region}: {str(e)}")
                 pass
 
             plt.close()
@@ -93,8 +95,13 @@ def doPlots(varList, debug=False):
                 if debug: print("process is ",process)
                 if debug: print(plot_args)
 
-                fig = make2DPlot(cfg, process,
-                                 **plot_args)
+                try:
+                    fig = make2DPlot(cfg, process,
+                                     **plot_args)
+                except Exception as e:
+                    print(f"Error plotting {v} {region} {process}: {str(e)}")
+                    pass
+
                 plt.close()
 
     #
@@ -134,23 +141,29 @@ def doPlots(varList, debug=False):
 
                     if debug: print(plot_args)
 
-                    fig = makePlot(cfg, **plot_args)
-
-
+                    try:
+                        fig = makePlot(cfg, **plot_args)
+                    except Exception as e:
+                        print(f"Error plotting {v} {region} (comp cuts): {str(e)}")
+                        pass
 
                     plt.close()
 
                 #
                 # Comp Regions
                 #
-                fig = makePlot(cfg,
-                               var=v,
-                               cut="passPreSel",
-                               axis_opts = {"region":["SR", "SB"]},
-                               process=process,
-                               outputFolder=args.outputFolder,
-                               **vDict
-                               )
+                try:
+                    fig = makePlot(cfg,
+                                   var=v,
+                                   cut="passPreSel",
+                                   axis_opts = {"region":["SR", "SB"]},
+                                   process=process,
+                                   outputFolder=args.outputFolder,
+                                   **vDict
+                                   )
+                except Exception as e:
+                    print(f"Error plotting {v} (comp regions): {str(e)}")
+                    pass
 
                 plt.close()
 

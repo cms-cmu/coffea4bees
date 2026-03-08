@@ -1,0 +1,67 @@
+muon:
+  pt_min: 10
+  eta_max_run2: 2.5
+  eta_max_run3: 2.4
+  iso_max: 0.15        # pfRelIso04_all
+  ip_cuts:
+    barrel_eta_boundary: 1.479
+    barrel_dz_max: 0.1
+    barrel_dxy_max: 0.05
+    endcap_dz_max: 0.2
+    endcap_dxy_max: 0.1
+
+electron:
+  pt_min: 15
+  eta_max: 2.5
+  iso_max: 0.15        # pfRelIso03_all
+  ip_cuts:
+    barrel_eta_boundary: 1.479
+    barrel_dz_max: 0.1
+    barrel_dxy_max: 0.05
+    endcap_dz_max: 0.2
+    endcap_dxy_max: 0.1
+
+jet:
+  run3:
+    pileup:
+      puId_threshold: 7
+      pt_threshold: 50
+      forward_eta_min: 2.4
+      forward_pt_threshold: 40
+    selected_loose:
+      pt_min: 20
+      eta_max: 4.7
+      jetId_min: 2
+    selected:
+      pt_min: 30
+      eta_max: 2.4
+      jetId_min: 2
+  run2:
+    default:
+      pileup:
+        pt_threshold: 50
+        forward_eta_min: 2.4
+        forward_pt_threshold: 40
+      selected_loose:
+        pt_min: 20
+        jetId_min: 2
+      selected:
+        pt_min: 40
+        eta_max: 2.4
+        jetId_min: 2
+    mixeddata:
+      pileup:
+        puId_threshold: 6
+        pt_threshold: 50
+      selected_loose:
+        pt_min: 20
+      selected:
+        pt_min: 40
+        eta_max: 2.4
+  ht:
+    pt_min: 30
+    eta_max: 2.5
+  lowpt:
+    pt_min: 15
+    eta_max: 2.4
+    jetId_min: 2

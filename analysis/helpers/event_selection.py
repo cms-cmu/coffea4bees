@@ -54,7 +54,7 @@ def apply_dilep_ttbar_selection(event: ak.Array, isRun3: bool = False) -> ak.Arr
 
     event["mll"] = ak.where(ll_mask, (l0 + l1).mass, -1)
 
-    jet_mask = event.nJet_tagged == 2
+    jet_mask = event.nJet_tagged_loose >= 2
 
     # Require MET > 40 GeV
     met_mask = event.MET.pt > 30
@@ -126,7 +126,8 @@ def apply_4b_selection(
         config: dict = {"do_lepton_jet_cleaning": True, "override_selected_with_flavor_bit": False, "do_jet_veto_maps": False, "isRun3": False, "isMC": False, "isSyntheticData": False, "isSyntheticMC": False},
         dataset: str = '',
         loosePtForSkim: bool = False,
-        apply_mixeddata_sel: bool = False
+        apply_mixeddata_sel: bool = False,
+        sel_cfg: dict = None
 ) -> ak.Array:
     """
     Applies object selection criteria for 4b analysis.
@@ -150,9 +151,9 @@ def apply_4b_selection(
         The input event data with additional fields for object selection.
     """
     # Combined RunII and 3 selection
-    event = lepton_selection(event, config["isRun3"])
+    event = lepton_selection(event, config["isRun3"], sel_cfg)
 
-    event = jet_selection(event, corrections_metadata, config["isRun3"], config["isMC"], config["isSyntheticData"], config["isSyntheticMC"], dataset, config["do_lepton_jet_cleaning"], config["do_jet_veto_maps"], apply_mixeddata_sel, config["override_selected_with_flavor_bit"])
+    event = jet_selection(event, corrections_metadata, config["isRun3"], config["isMC"], config["isSyntheticData"], config["isSyntheticMC"], dataset, config["do_lepton_jet_cleaning"], config["do_jet_veto_maps"], apply_mixeddata_sel, config["override_selected_with_flavor_bit"], sel_cfg)
 
     event['passJetMult'] = event['nJet_selected'] >= 4
 
@@ -165,7 +166,8 @@ def apply_4b_selection(
         event['twoTag'] = False
 
     if config["isRun3"]:
-        event['passPreSel'] = event.twoTag | event.threeTag | event.fourTag
+        # event['passPreSel'] = event.twoTag | event.threeTag | event.fourTag
+        event['passPreSel'] = event.threeTag | event.fourTag
     else:
         event['passPreSel'] = event.threeTag | event.fourTag
 
@@ -207,7 +209,8 @@ def apply_4b_lowpt_selection(
     isRun3: bool = False,
     isMC: bool = False,  # Temporary for Run3
     isSyntheticData: bool = False,
-    isSyntheticMC: bool = False
+    isSyntheticMC: bool = False,
+    sel_cfg: dict = None
 ) -> ak.Array:
     """
     Applies low-pT jet selection and categorization for 4b analysis.
@@ -255,7 +258,7 @@ def apply_4b_lowpt_selection(
         - `Jet['selected']`: Updated mask for selected jets, including low-pT jets.
     """
     # Apply lepton selection
-    event = lepton_selection(event, isRun3)
+    event = lepton_selection(event, isRun3, sel_cfg)
 
     # Apply low-pT and nominal jet selection
     event = lowpt_jet_selection(
@@ -268,7 +271,8 @@ def apply_4b_lowpt_selection(
         dataset=dataset,
         doLeptonRemoval=doLeptonRemoval,
         do_jet_veto_maps=do_jet_veto_maps,
-        override_selected_with_flavor_bit=override_selected_with_flavor_bit
+        override_selected_with_flavor_bit=override_selected_with_flavor_bit,
+        sel_cfg=sel_cfg
     )
 
     # Define tagging and categorization
@@ -276,6 +280,7 @@ def apply_4b_lowpt_selection(
     event['fourTag'] = event['nJet_tagged'] >= 4
     event['threeTag'] = (event['nJet_tagged_loose'] == 3) & (
         event['nJet_selected'] >= 4)
+    event['twoTag'] = (event['nJet_tagged_loose'] == 2) & (event['nJet_selected'] >= 4)  #### temporary
     event['lowpt_fourTag'] = (
         (event['nJet_tagged'] == 3) &
         (event['nJet_selected'] >= 4) &

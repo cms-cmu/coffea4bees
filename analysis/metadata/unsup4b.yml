@@ -1,6 +1,6 @@
 runner:
   condor_cores: 6
-  condor_memory: 8GB
+  worker_memory: 8GB
 
 config:
   JCM: 'coffea4bees/analysis/weights/dataRunII/jetCombinatoricModel_SB_00-00-02.txt'

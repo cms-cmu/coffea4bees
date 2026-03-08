@@ -1,6 +1,6 @@
 runner:
   workers: 1
-  condor_memory: 8GB
+  worker_memory: 8GB
 
 config:
   threeTag: true

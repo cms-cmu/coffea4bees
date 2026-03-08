@@ -17,6 +17,7 @@ from coffea.nanoevents.methods import vector
 sys.path.insert(0, os.getcwd())
 from coffea4bees.hemisphere_mixing.mixing_helpers   import transverse_thrust_awkward, transverse_thrust_awkward_fast, split_hemispheres, compute_hemi_vars, read_hemi_files, build_hemi_kdtrees
 from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres, replace_hemis, replace_hemis_load_kdTrees, init_hemi_data
+from coffea4bees.hemisphere_mixing.mixing_helpers   import boost_jets_along_z
 
 #import vector
 #vector.register_awkward()
@@ -493,6 +494,93 @@ class mixingTestCase(unittest.TestCase):
         # end tag loop
 
 
+    def test_boost_jets_along_z(self):
+        """
+        Test the boost_jets_along_z function.
+
+        Verifies:
+        1. After boosting, the combined pz moves in the right direction
+        2. Invariant mass is preserved (Lorentz invariant)
+        3. Transverse momentum (pt) is preserved under z-boost
+        4. Small boosts (pz_target ≈ pz_matched) produce negligible changes
+
+        Note: The current implementation uses an approximation that assumes E doesn't
+        change much under the boost. This is accurate for small rapidity shifts but
+        may have larger errors for very large boosts (|delta_y| > 0.5).
+        """
+        print("\n=== Testing boost_jets_along_z ===")
+
+        # Use the 4-jet test data (10 events, 4 jets each)
+        jets = self.input_jets_4
+
+        # Compute original hemisphere properties
+        hemi_sum_original = jets.sum(axis=1)
+        pz_original = hemi_sum_original.pz
+        E_original = hemi_sum_original.energy
+        mass_original = hemi_sum_original.mass
+        pt_original = hemi_sum_original.pt
+
+        print(f"Original pz: {ak.to_numpy(pz_original)}")
+        print(f"Original mass: {ak.to_numpy(mass_original)}")
+
+        # Test 1: Small boost (typical use case)
+        # Use a small pz shift proportional to the hemisphere pT (more realistic)
+        pz_shift = pt_original * 0.1  # 10% of pT as pz shift
+        pz_target = pz_original + pz_shift
+
+        boosted_jets, delta_rapidity = boost_jets_along_z(
+            jets, pz_target, pz_original, E_original
+        )
+
+        # Compute boosted hemisphere properties
+        hemi_sum_boosted = boosted_jets.sum(axis=1)
+        pz_boosted = hemi_sum_boosted.pz
+        mass_boosted = hemi_sum_boosted.mass
+        pt_boosted = hemi_sum_boosted.pt
+
+        print(f"Target pz: {ak.to_numpy(pz_target)}")
+        print(f"Boosted pz: {ak.to_numpy(pz_boosted)}")
+        print(f"Delta rapidity: {ak.to_numpy(delta_rapidity)}")
+
+        # Check that pz moved in the right direction
+        pz_change = ak.to_numpy(pz_boosted) - ak.to_numpy(pz_original)
+        expected_direction = np.sign(ak.to_numpy(pz_shift))
+        actual_direction = np.sign(pz_change)
+        print(f"pz change direction correct: {np.allclose(expected_direction, actual_direction)}")
+        self.assertTrue(np.allclose(expected_direction, actual_direction),
+                       "Boost should move pz in the correct direction")
+
+        # Check that mass is preserved (Lorentz invariant)
+        mass_diff = np.abs(ak.to_numpy(mass_boosted) - ak.to_numpy(mass_original))
+        relative_mass_error = mass_diff / (ak.to_numpy(mass_original) + 1e-6)
+        print(f"Mass relative difference: {relative_mass_error}")
+        self.assertTrue(np.all(relative_mass_error < 0.01), f"Mass not preserved: {relative_mass_error}")
+
+        # Check that pt is preserved (z-boost doesn't change pt)
+        pt_diff = np.abs(ak.to_numpy(pt_boosted) - ak.to_numpy(pt_original))
+        relative_pt_error = pt_diff / (ak.to_numpy(pt_original) + 1e-6)
+        print(f"pt relative difference: {relative_pt_error}")
+        self.assertTrue(np.all(relative_pt_error < 0.01), f"pt changed under z-boost: {relative_pt_error}")
+
+        # Test 2: No boost case (pz_target == pz_original)
+        print("\n--- Testing no-boost case ---")
+        boosted_jets_no_change, delta_rapidity_no_change = boost_jets_along_z(
+            jets, pz_original, pz_original, E_original
+        )
+
+        hemi_sum_no_change = boosted_jets_no_change.sum(axis=1)
+        pz_no_change = hemi_sum_no_change.pz
+
+        pz_diff_no_change = np.abs(ak.to_numpy(pz_no_change) - ak.to_numpy(pz_original))
+        print(f"pz difference (no boost): {pz_diff_no_change}")
+        self.assertTrue(np.all(pz_diff_no_change < 0.1), f"No-boost case changed pz: {pz_diff_no_change}")
+
+        # delta_rapidity should be ~0
+        print(f"Delta rapidity (no boost): {ak.to_numpy(delta_rapidity_no_change)}")
+        self.assertTrue(np.all(np.abs(ak.to_numpy(delta_rapidity_no_change)) < 0.01),
+                       "Delta rapidity should be ~0 when pz_target == pz_matched")
+
+        print("\n=== boost_jets_along_z tests passed! ===")
 
 
 if __name__ == '__main__':

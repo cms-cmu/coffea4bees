@@ -3,7 +3,7 @@ username = os.getenv("USER", "coffea4bees_default")
 
 rule analysis_processor:
     output: "{output_file}"
-    container: config["analysis_container"]
+    # container: config["analysis_container"]
     params:
         datasets = "",
         years = "",
@@ -14,10 +14,10 @@ rule analysis_processor:
         run_performance = False,
         extra_arguments = "",
         username = username
-    log: "output/logs/analysis_processor.log"
+    log: "output/logs/analysis_processor_{output_file}.log"
     shell:
         """
-        mkdir -p output/logs
+        mkdir -p $(dirname {log})
         mkdir -p /tmp/{params.username}/
         
         # Set matplotlib config directory to avoid permission issues
@@ -48,7 +48,7 @@ rule analysis_processor:
         fi
         
         echo $cmd 2>&1 | tee -a {log}
-        eval $cmd 2>&1 | tee -a {log}
+        eval ./run_container $cmd 2>&1 | tee -a {log}
         
         # Generate performance plot if requested
         if [ "{params.run_performance}" = "True" ]; then
@@ -65,7 +65,7 @@ rule merging_coffea_files:
     container: config["analysis_container"]
     params:
         run_performance = False
-    log: "logs/merging_{params.logname}.log"
+    log: "logs/merging_coffea_files_{output_file}.log"
     shell:
         """
         # Set matplotlib config directory to avoid permission issues
@@ -113,7 +113,9 @@ rule make_plots:
     output: "output/plots/RunII/passPreSel/fourTag/SB/nPVs.pdf"
     container: config["analysis_container"]
     params:
-        output_dir = "output/plots/"
+        output_dir = "output/plots/",
+        metadata = "coffea4bees/plots/metadata/plotsAll.yml",
+        extra_arguments = "-s xW",
     log: "logs/make_plots.log"
     shell:
         """
@@ -122,5 +124,8 @@ rule make_plots:
         mkdir -p $MPLCONFIGDIR
         
         echo "Making plots" 2>&1 | tee -a {log}
-        python coffea4bees/plots/makePlots.py {input} -o {params.output_dir} -m coffea4bees/plots/metadata/plotsAll.yml -s xW 2>&1 | tee -a {log}
+        python coffea4bees/plots/makePlots.py {input} -o {params.output_dir} -m {params.metadata} {params.extra_arguments} 2>&1 | tee -a {log}
+
+        echo "Converting plots to png format" 2>&1 | tee -a {log}
+        python src/plotting/pb_pdf_to_png.py -r -j 4 {params.output_dir} 2>&1 | tee -a {log}
         """

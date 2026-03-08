@@ -10,7 +10,8 @@ if [ $? -ne 0 ]; then
 fi
 
 display_section_header "Input Datasets"
-DATASETS=${DATASET:-"coffea4bees//metadata/datasets_HH4b_Run3_fourTag_2025_skims.yml"}
+DATASETS=${DATASET:-"coffea4bees//metadata/datasets_HH4b_Run3/"}
+#DATASETS="coffea4bees/metadata/datasets_HH4b_Run3/archive/datasets_HH4b_Run3_fourTag_2025_skims.yml"
 echo "Using datasets file: $DATASETS"
 
 
@@ -26,7 +27,7 @@ create_output_directory "$OUTPUT_DIR"
 display_section_header "Changing metadata"
 JOB_CONFIG="$OUTPUT_DIR/make_hemi_library_4b_test.yml"
 sed -e "s|base_path.*|base_path: $OUTPUT_DIR|" \
-    -e "s|subtract_ttbar.*|subtract_ttbar_with_weights: False|" \
+    -e "s|subtract_ttbar.*|subtract_ttbar_with_weights: True|" \
     -e "s|run_SvB.*|run_SvB: False|" \
     coffea4bees/analysis/metadata/make_hemi_library_4b.yml > $JOB_CONFIG
 [[ $(hostname) = *runner* ]] && sed -i "s|T3_US_FNALLPC|T3_CH_PSI|" $JOB_CONFIG

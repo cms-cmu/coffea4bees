@@ -1,27 +1,25 @@
 import yaml
-from src.skimmer.picoaod import PicoAOD #, fetch_metadata, resize
+from coffea4bees.skimmer.processor.skimmer_4b_base import Skimmer4b
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
 from coffea.nanoevents import NanoEventsFactory
 from coffea.nanoevents.methods import vector
 
-from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_SvB
+from coffea4bees.analysis.helpers.SvB_helpers import setFvTVars, subtract_ttbar_with_FvT
 from src.friendtrees.FriendTreeSchema import FriendTreeSchema
 from src.math_tools.random import Squares
 from coffea4bees.analysis.helpers.event_weights import add_btagweights
-from coffea4bees.analysis.helpers.processor_config import processor_config
 from src.physics.event_selection import apply_event_selection
 from coffea4bees.analysis.helpers.event_weights import add_weights
 
 from src.data_formats.root import Chunk, TreeReader
-from coffea4bees.analysis.helpers.cutflow import cutflow_4b
 from coffea4bees.analysis.helpers.load_friend import (
     FriendTemplate,
-    parse_friends
+    rename_FvT_friend,
 )
 
 from coffea.analysis_tools import Weights, PackedSelection
 import numpy as np
-from src.physics.objects.jet_corrections import apply_jerc_corrections
+from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
 from src.physics.common import update_events
 from copy import copy
 import logging
@@ -35,7 +33,7 @@ from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricMod
 from coffea4bees.analysis.helpers.event_weights import add_pseudotagweights
 
 
-class HemiMixer(PicoAOD):
+class HemiMixer(Skimmer4b):
     def __init__(self,
                 subtract_ttbar_with_weights = False,
                 friends: dict[str, str|FriendTemplate] = None,
@@ -44,38 +42,46 @@ class HemiMixer(PicoAOD):
                 hemi_library_yaml: str = None,
                 hemi_stats_path: str = None,
                 corrections_metadata: dict = None,
+                use_boost_corrected_matching: bool = False,
+                object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
                 *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            corrections_metadata=corrections_metadata,
+            object_selection_cfg=object_selection_cfg,
+            friends=friends,
+            *args, **kwargs,
+        )
 
         logging.info(f"\nRunning HemiMixer with these parameters: , subtract_ttbar_with_weights = {subtract_ttbar_with_weights}, args = {args}, kwargs = {kwargs}")
-        logging.info(f"\nLoading JCM from file: {JCM_file} , apply_JCM = {apply_JCM}")
+        logging.info(f"\nLoading JCM from file: {JCM_file} , apply_JCM = {apply_JCM}\n")
         self.apply_JCM = jetCombinatoricModel(JCM_file) if apply_JCM else None
 
         self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
-        self.friends = parse_friends(friends)
-        self.corrections_metadata = corrections_metadata
-        self._cutFlow = cutflow_4b()
 
         self.skip_collections = kwargs["skip_collections"]
         self.skip_branches    = kwargs["skip_branches"]
 
+        # Boost-corrected matching: match on 3 variables (no pz), then boost to correct pz
+        self.use_boost_corrected_matching = use_boost_corrected_matching
+        logging.info(f"use_boost_corrected_matching = {self.use_boost_corrected_matching}")
 
-        self.hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz" ]
+        # Conditional matching variables based on boost correction mode
+        if self.use_boost_corrected_matching:
+            self.hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass"]  # 3D matching
+            self.hemi_load_vars    = self.hemi_summary_vars + ["pz"]               # also load pz for boost
+        else:
+            self.hemi_summary_vars = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz"]  # 4D matching
+            self.hemi_load_vars    = self.hemi_summary_vars
+
         self.hemi_library_yaml = hemi_library_yaml
         self.hemi_stats_path = hemi_stats_path
 
 
     def select(self, event):
-
-        year    = event.metadata['year']
-        dataset = event.metadata['dataset']
-        fname   = event.metadata['filename']
-        estart  = event.metadata['entrystart']
-        estop   = event.metadata['entrystop']
-        nEvent = len(event)
-        year_label = self.corrections_metadata[year]['year_label']
-        chunk   = f'{dataset}::{estart:6d}:{estop:6d} >>> '
-        processName = event.metadata['processName']
+        m = self._parse_event_metadata(event)
+        year, dataset, fname, estart, estop = m.year, m.dataset, m.fname, m.estart, m.estop
+        nEvent, year_label, chunk, processName, config = m.nEvent, m.year_label, m.chunk, m.processName, m.config
+        logging.debug(f'{chunk} config={config}, for file {fname}\n')
 
         self.jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_jetId", "Jet_puId"]
         if '202' in dataset:
@@ -83,16 +89,8 @@ class HemiMixer(PicoAOD):
         else:
             self.jet_branches += ["Jet_btagDeepFlavB", "Jet_bRegCorr"]
 
-
         ### target is for new friend trees
         target = Chunk.from_coffea_events(event)
-
-
-        #
-        # Set process and datset dependent flags
-        #
-        config = processor_config(processName, dataset, event)
-        logging.debug(f'{chunk} config={config}, for file {fname}\n')
 
         #
         #  Load the hemisphere libraries
@@ -100,16 +98,16 @@ class HemiMixer(PicoAOD):
         year_str = year.replace("_preVFP", "").replace("_postVFP", "")
 
         yaml_file = f'{self.hemi_stats_path}/hemi_statistics_{year_str}.yml'
-        logging.info(f"\nLoading hemisphere libraries = {yaml_file}")
+        logging.info(f"\nLoading hemisphere libraries = {yaml_file}\n")
 
-        logging.info(f"\nLoading hemisphere library file: {self.hemi_library_yaml} for year {year_str}")
+        logging.info(f"\nLoading hemisphere library file: {self.hemi_library_yaml} for year {year_str}\b")
 
         test_load_hemi_kdTrees = True
         if test_load_hemi_kdTrees:
             hemi_data, hemi_jet_ranges, hemi_stats  = init_hemi_data(hemi_metadata_yaml = yaml_file,
                                                                      hemi_files_yaml = self.hemi_library_yaml,
                                                                      year = year_str,
-                                                                     hemi_summary_vars = self.hemi_summary_vars,
+                                                                     hemi_summary_vars = self.hemi_load_vars,
                                                                      jet_branches = self.jet_branches,
                                                                      )
 
@@ -127,15 +125,19 @@ class HemiMixer(PicoAOD):
 
         if self.subtract_ttbar_with_weights:
 
-            SvB_MA_file = f'{fname.replace("picoAOD", "SvB_MA_ULHH")}'
-            event["SvB_MA"] = ( NanoEventsFactory.from_root( SvB_MA_file,
-                                                             entry_start=estart, entry_stop=estop, schemaclass=FriendTreeSchema ).events().SvB_MA )
+            if "FvT" in self.friends:
+                event["FvT"] = rename_FvT_friend(target, self.friends["FvT"])
+            else:
 
-            if not ak.all(event.SvB_MA.event == event.event):
-                raise ValueError("ERROR: SvB_MA events do not match events ttree")
+                FvT_file = f'{fname.replace("picoAOD", "FvT")}'
+                event["FvT"] = ( NanoEventsFactory.from_root( FvT_file,
+                                                              entry_start=estart, entry_stop=estop, schemaclass=FriendTreeSchema).events().FvT )
 
-            # defining SvB_MA
-            setSvBVars("SvB_MA", event)
+                if not ak.all(event.FvT.event == event.event):
+                    raise ValueError("ERROR: FvT events do not match events ttree")
+
+            setFvTVars("FvT", event)
+
 
         event = apply_event_selection( event, self.corrections_metadata[year], cut_on_lumimask=config["cut_on_lumimask"] )
 
@@ -154,7 +156,7 @@ class HemiMixer(PicoAOD):
         # Calculate and apply Jet Energy Calibration
         #
         if config["do_jet_calibration"]:
-            jets = apply_jerc_corrections(event,
+            jets = apply_jerc_corrections_jsonpog(event,
                                           corrections_metadata=self.corrections_metadata[year],
                                           isMC=config["isMC"],
                                           dataset=dataset
@@ -167,6 +169,7 @@ class HemiMixer(PicoAOD):
 
         event = apply_4b_selection( event, self.corrections_metadata[year], config=config,
                                            dataset=dataset,
+                                           sel_cfg=self.sel_cfg,
                                            )
 
 
@@ -248,7 +251,7 @@ class HemiMixer(PicoAOD):
         #
         if self.subtract_ttbar_with_weights:
 
-            pass_ttbar_filter_selev = subtract_ttbar_with_SvB(selev, dataset, year)
+            pass_ttbar_filter_selev = subtract_ttbar_with_FvT(selev, dataset, year)
 
             pass_ttbar_filter = np.full( len(event), True)
             pass_ttbar_filter[ selections.all(*cumulative_cuts) ] = pass_ttbar_filter_selev
@@ -285,7 +288,8 @@ class HemiMixer(PicoAOD):
 
         if test_load_hemi_kdTrees:
             all_hemis = replace_hemis_load_kdTrees(all_hemis=all_hemis, hemi_jet_ranges=hemi_jet_ranges,
-                                                   hemi_stats=hemi_stats, hemi_data=hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=self.jet_branches
+                                                   hemi_stats=hemi_stats, hemi_data=hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=self.jet_branches,
+                                                   use_boost_corrected_matching=self.use_boost_corrected_matching
                                                    )
 
         else:

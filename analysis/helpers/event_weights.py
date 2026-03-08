@@ -41,10 +41,23 @@ def add_weights(
                 hlt
             )
         else:
-            weights.add(
-                "CMS_bbbb_resolved_ggf_triggerEffSF",
-                trigWeight.Data
-            )
+            if config["isRun3"]:
+
+                safe_m_total = ak.where(trigWeight.MC > 0, trigWeight.MC, 1.0)
+                raw_sf = trigWeight.Data / safe_m_total
+                sf = ak.where(trigWeight.MC > 0, raw_sf, 1.0)
+
+
+                weights.add(
+                    "CMS_bbbb_resolved_ggf_triggerEffSF",
+                    sf, #trigWeight.Data
+                )
+
+            else:
+                weights.add(
+                    "CMS_bbbb_resolved_ggf_triggerEffSF",
+                    trigWeight.Data
+                )
         list_weight_names.append('CMS_bbbb_resolved_ggf_triggerEffSF')
         logging.debug( f"trigWeight {weights.partial_weight(include=['CMS_bbbb_resolved_ggf_triggerEffSF'])[:10]}\n" )
 
@@ -61,7 +74,8 @@ def add_pseudotagweights(
     event_metadata: dict = {},
     year_label: str = None,
     len_event: int = None,
-    label3b: str = "threeTag"
+    label3b: str = "threeTag",
+    lowpt: bool = False,
 ):
     """
     Add pseudo-tagging weights to the selected events and update the weights object.
@@ -87,53 +101,128 @@ def add_pseudotagweights(
     all_weights = ['genweight', 'CMS_bbbb_resolved_ggf_triggerEffSF', f'CMS_pileup_{year_label}', 'CMS_btag']
     logging.debug( f"noJCM_noFVT partial {weights.partial_weight(include=all_weights)[:10]}" )
     event["weight_noJCM_noFvT"] = weights.partial_weight(include=all_weights)
+    logging.debug(f"three 3b events flag: {event[label3b][:10]}")
 
     if JCM:
+
         # Calculate pseudo-tagging weights
-        event["Jet_untagged_loose"] = event.Jet[event.Jet.selected & ~event.Jet.tagged_loose]
-        pseudoTagWeight = np.full(len(event), event.weight)  # Initialize with existing weights
+        selected_jets = event.Jet.selected_lowpt if lowpt else event.Jet.selected
+        # selected_jets = event.Jet.selected
+        tagged_loose = event.Jet.tagged_loose_lowpt if lowpt else event.Jet.tagged_loose
+        # tagged_loose = event.Jet.tagged_loose
+        event["Jet_untagged_loose"] = event.Jet[selected_jets & ~tagged_loose]
+        pseudoTagWeight = np.ones(len(event), dtype=float)
         nJet_pseudotagged = np.zeros(len(event), dtype=int)
+
+        # Debug logging: Log JCM inputs
+        n_3tag_events = np.sum(event[label3b])
+        logging.debug(f"\n*** Total {label3b} events in this chunk: {n_3tag_events} ***")
+        if n_3tag_events > 0:
+            nUntagged_jets_3tag = ak.num(event[event[label3b]]['Jet_untagged_loose'], axis=1)
+            event_numbers_3tag = event.event[event[label3b]]
+            
+            logging.debug(f"\n{'='*80}")
+            logging.debug(f"JCM Debug - Processing {n_3tag_events} events with label '{label3b}'")
+            logging.debug(f"Lowpt mode: {lowpt}")
+            logging.debug(f"Total events in chunk: {len(event)}")
+            logging.debug(f"Number of {label3b} events: {n_3tag_events}")
+            logging.debug(f"{'='*80}")
+            
+            # Show first 10 events
+            n_show = min(10, n_3tag_events)
+            logging.debug(f"\nFirst {n_show} {label3b} events being sent to JCM:")
+            logging.debug(f"{'Idx':<6} | {'EventNum':<12} | {'nUntagged':<10} | {'nSelected':<10} | {'nTagged':<10}")
+            logging.debug("-" * 70)
+            
+            for i in range(n_show):
+                evt_idx = np.where(event[label3b])[0][i]
+                n_untagged = nUntagged_jets_3tag[i]
+                n_selected = ak.num(event.Jet[evt_idx][selected_jets[evt_idx]], axis=0)
+                n_tagged = ak.num(event.Jet[evt_idx][tagged_loose[evt_idx]], axis=0)
+                logging.debug(f"{i:<6} | {event_numbers_3tag[i]:<12} | {n_untagged:<10} | {n_selected:<10} | {n_tagged:<10}")
+            
+            # Show distribution of untagged jets
+            unique, counts = np.unique(nUntagged_jets_3tag.to_numpy(), return_counts=True)
+            logging.debug(f"\nDistribution of nUntagged jets in {label3b} events:")
+            for nj, count in zip(unique, counts):
+                logging.debug(f"  nUntagged={nj}: {count} events ({100*count/n_3tag_events:.1f}%)")
 
         pseudoTagWeight[event[label3b]], nJet_pseudotagged[event[label3b]] = JCM(
             ak.num(event[event[label3b]]['Jet_untagged_loose'], axis=1),
             event.event[event[label3b]]
         )
+        
+        # Debug logging: Log JCM outputs
+        if n_3tag_events > 0:
+            logging.debug(f"\nJCM Output:")
+            logging.debug(f"{'Idx':<6} | {'EventNum':<12} | {'nUntagged':<10} | {'Weight':<15} | {'nPseudotag':<12}")
+            logging.debug("-" * 70)
+            
+            for i in range(n_show):
+                evt_idx = np.where(event[label3b])[0][i]
+                logging.debug(f"{i:<6} | {event_numbers_3tag[i]:<12} | {nUntagged_jets_3tag[i]:<10} | "
+                             f"{pseudoTagWeight[evt_idx]:<15.6f} | {nJet_pseudotagged[evt_idx]:<12}")
+            
+            # Statistics on weights
+            weights_3tag = pseudoTagWeight[event[label3b]]
+            weighted_sum = np.sum(weights_3tag)
+            logging.debug(f"\nWeight statistics for {label3b} events:")
+            logging.debug(f"  Min weight: {np.min(weights_3tag):.6f}")
+            logging.debug(f"  Max weight: {np.max(weights_3tag):.6f}")
+            logging.debug(f"  Mean weight: {np.mean(weights_3tag):.6f}")
+            logging.debug(f"  Median weight: {np.median(weights_3tag):.6f}")
+            logging.debug(f"  Weights = 1.0: {np.sum(weights_3tag == 1.0)} events")
+            logging.debug(f"  Weights < 1.0: {np.sum(weights_3tag < 1.0)} events")
+            logging.debug(f"  Weights > 1.0: {np.sum(weights_3tag > 1.0)} events")
+            logging.debug(f"  *** WEIGHTED SUM: {weighted_sum:.1f} (unweighted: {n_3tag_events}) ***")
+            logging.debug(f"  *** Effective weight factor: {weighted_sum/n_3tag_events:.6f} ***")
+            logging.debug(f"{'='*80}\n")
+        
         event["nJet_pseudotagged"] = nJet_pseudotagged
         event["pseudoTagWeight"] = pseudoTagWeight
         logging.debug( f"pseudoTagWeight {event.pseudoTagWeight[:10]}\n" )
         logging.debug( f"nJet_pseudotagged {event.nJet_pseudotagged[:10]}\n" )
 
         # Update number of tagged jets
-        nTagJets = ak.num(event.tagJet, axis=1).to_numpy()
-        nTagJets[event[label3b]] = ak.num(event.tagJet_loose[event[label3b]], axis=1)
+        tagJet = event.tagJet_lowpt if lowpt else event.tagJet
+        # tagJet = event.tagJet
+        tagJet_loose = event.tagJet_loose_lowpt if lowpt else event.tagJet_loose
+        # tagJet_loose = event.tagJet_loose
+        nTagJets = ak.num(tagJet, axis=1).to_numpy()
+        nTagJets[event[label3b]] = ak.num(tagJet_loose[event[label3b]], axis=1)
         event["nJet_ps_and_tag"] = nJet_pseudotagged + nTagJets
 
         event["pseudoTagWeight_lowpt"] = np.ones(len(event), dtype=float)  # Initialize dummy lowpt pseudoTagWeight
 
-        if 'lowpt' in label3b:
-            event["weight_noJCM_lowpt_noFvT"] = event.weight_noJCM_noFvT * event.pseudoTagWeight
+        # if 'lowpt' in label3b:
+        #     event["weight_noJCM_lowpt_noFvT"] = event.weight_noJCM_noFvT * event.pseudoTagWeight
 
-            if JCM_lowpt:
-                event["Jet_untagged_loose_lowpt"] = event.Jet[event.Jet.selected_lowpt & ~event.Jet.tagged_loose_lowpt]
-                pseudoTagWeight_lowpt = np.full(len(event), event.weight)  # Initialize with existing weights
-                nJet_pseudotagged_lowpt = np.zeros(len(event), dtype=int)
+        #     if JCM_lowpt:        
 
-                pseudoTagWeight_lowpt[event[label3b]], nJet_pseudotagged_lowpt[event[label3b]] = JCM_lowpt(
-                    ak.num(event[event[label3b]]['Jet_untagged_loose_lowpt'], axis=1),
-                    event.event[event[label3b]]
-                )
-                event["nJet_pseudotagged_lowpt"] = nJet_pseudotagged_lowpt
-                event["pseudoTagWeight_lowpt"] = pseudoTagWeight_lowpt
-                logging.debug( f"pseudoTagWeight_lowpt {event.pseudoTagWeight_lowpt[:10]}\n" )
-                logging.debug( f"nJet_pseudotagged_lowpt {event.nJet_pseudotagged_lowpt[:10]}\n" )
+        #         event["Jet_untagged_loose_lowpt"] = event.Jet[event.Jet.selected_lowpt & ~event.Jet.tagged_loose_lowpt]
+        #         pseudoTagWeight_lowpt = np.ones(len(event), dtype=float)
+        #         nJet_pseudotagged_lowpt = np.zeros(len(event), dtype=int)
 
-                # Update number of tagged jets
-                nTagJets_lowpt = ak.num(event.tagJet_lowpt, axis=1).to_numpy()
-                nTagJets_lowpt[event[label3b]] = ak.num(event.tagJet_loose_lowpt[event[label3b]], axis=1)
-                event["nJet_ps_and_tag_lowpt"] = nJet_pseudotagged_lowpt + nTagJets_lowpt
+        #         pseudoTagWeight_lowpt[event[label3b]], nJet_pseudotagged_lowpt[event[label3b]] = JCM_lowpt(
+        #             ak.num(event[event[label3b]]['Jet_untagged_loose_lowpt'], axis=1),
+        #             event.event[event[label3b]]
+        #         )
+        #         event["nJet_pseudotagged_lowpt"] = nJet_pseudotagged_lowpt
+        #         event["pseudoTagWeight_lowpt"] = pseudoTagWeight_lowpt
+        #         logging.debug( f"pseudoTagWeight_lowpt {event.pseudoTagWeight_lowpt[:10]}\n" )
+        #         logging.debug( f"nJet_pseudotagged_lowpt {event.nJet_pseudotagged_lowpt[:10]}\n" )
+
+        #         # Update number of tagged jets
+        #         nTagJets_lowpt = ak.num(event.Jet.tagged_lowpt, axis=1).to_numpy()
+        #         nTagJets_lowpt[event[label3b]] = ak.num(event.Jet.tagged_loose_lowpt[event[label3b]], axis=1)
+        #         event["nJet_ps_and_tag_lowpt"] = nJet_pseudotagged_lowpt + nTagJets_lowpt
 
         # Calculate weight without FvT
-        weight_noFvT = ak.where(event[label3b], event.weight * event.pseudoTagWeight * event.pseudoTagWeight_lowpt, event.weight)
+        weight_noFvT = ak.where(
+            event[label3b], 
+            event.weight * event.pseudoTagWeight * event.pseudoTagWeight_lowpt, 
+            event.weight
+        )
 
         event["weight_noFvT"] = weight_noFvT
         logging.debug( f"weight_noFvT {event.weight_noFvT[:10]}\n" )
@@ -175,6 +264,16 @@ def add_pseudotagweights(
                 weights.add("FvT", weight)
                 list_weight_names.append("FvT")
                 logging.debug( f"FvT {weights.partial_weight(include=['FvT'])[:10]}\n" )
+
+
+                weight_d3_to_t4 = ak.where(event[label3b], event.weight * event.pseudoTagWeight * event.pseudoTagWeight_lowpt * event.FvT.d3_to_t4, event.weight)
+                event["weight_d3_to_t4"] = weight_d3_to_t4
+                logging.debug( f"weight_d3_to_t4 {event.weight_d3_to_t4[:10]}\n" )
+
+                weight_d3_to_t3 = ak.where(event[label3b], event.weight * event.pseudoTagWeight * event.pseudoTagWeight_lowpt * event.FvT.d3_to_t3, event.weight)
+                event["weight_d3_to_t3"] = weight_d3_to_t3
+                logging.debug( f"weight_d3_to_t3 {event.weight_d3_to_t3[:10]}\n" )
+
         else:
             weight_noFvT = np.copy(event.weight)
             weight_noFvT = np.where(

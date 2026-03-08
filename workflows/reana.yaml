@@ -21,6 +21,7 @@ workflow:
   resources:
     cvmfs:
       - cms.cern.ch
+      - cms-griddata.cern.ch
 workspace:
   retention_days:
     coffea4bees/*: 1

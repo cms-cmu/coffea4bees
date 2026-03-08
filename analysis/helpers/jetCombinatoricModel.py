@@ -6,25 +6,34 @@ import yaml
 from src.math_tools.random import Squares
 from scipy.special import comb
 
-
 class jetCombinatoricModel:
-    def __init__(self, filename, cut='passPreSel', zero_npt=False, nbt=3, maxPseudoTags=12):
+    def __init__(self, filename, cut='passPreSel', zero_npt=False, nbt=3, maxPseudoTags=12, lowpt_mode=False, used_stored_weights=False):
         """
         Initialize the jet combinatoric model with parameters from a file.
+        
         :param filename: Path to the parameter file (txt or yaml format).
-        :param
-        cut: The cut to apply for the model (default is 'passPreSel').
+        :param cut: The cut to apply for the model (default is 'passPreSel').
         :param zero_npt: If True, will return zero pseudo-tags for all events.
-        :param nbt: Number of required b-tags (default is 3).
+        :param nbt: Number of baseline b-tags (default is 3).
         :param maxPseudoTags: Maximum number of pseudo-tags (default is 12).
+        :param lowpt_mode: If True, model lowpt jets becoming lowpt tags (default is False).
+        
+        Standard mode: Models light jets becoming b-tags (3tag → 4tag)
+        Lowpt mode: Models lowpt jets becoming lowpt tags (3tag+0lowpt → 3tag+≥1lowpt)
+        
+        Both modes use the same enhancement logic: enhance when total tags (nbt + npt) is even.
         """
         self.filename = filename
         self.cut = cut
         self.zero_npt = zero_npt
-        self.nbt = nbt  # number of required b-tags
+        self.nbt = nbt  # number of baseline b-tags (3 regular tags in both modes)
         self.maxPseudoTags = maxPseudoTags
+        self.lowpt_mode = lowpt_mode
+        self.used_stored_weights = used_stored_weights
         self.read_parameter_file()
         self._rng = Squares(("JCM", "pseudo tag"))
+        
+        logging.info(f"JCM initialized in {'lowpt' if lowpt_mode else 'standard'} mode with cut={cut}")
 
     def read_parameter_file(self):
 
@@ -58,13 +67,30 @@ class jetCombinatoricModel:
                 logging.error(f'No {self.cut} key in JCM file. Keys are {self.data.keys()}')
 
     def __call__(self, num_untagged_jets, event=None):
-
+        """
+        Apply JCM weights to events.
+        
+        :param jets: 
+            - Standard mode: num_untagged_jets (jets that aren't b-tagged)
+            - Lowpt mode: lowpt_jets (jets that could become lowpt tags)
+        :param event: Optional event number for reproducible random generation
+        :return: (w, npt) where w is the event weight and npt is number of pseudo-tags
+        
+        Physics:
+        - Standard: 3 regular tags + pseudo-tags from light jets
+        - Lowpt: 3 regular tags + lowpt tags from lowpt jets
+        - Enhancement applies when total tags (3 + npt) is even in both cases
+        """
         nEvent = len(num_untagged_jets)
         maxPseudoTags = self.maxPseudoTags
-        nbt = self.nbt  # number of required b-tags
-        #nlt = ak.to_numpy(ak.num(untagged_jets, axis=1))  # number of light jets
+        nbt = self.nbt  # number of baseline b-tags (always 3)
+        
+        # Number of jets that could become pseudo-tags
+        # Standard mode: light jets (nlt)
+        # Lowpt mode: lowpt jets (also called nlt internally)
+        # nlt = ak.to_numpy(ak.num(jets, axis=1))
         nlt = ak.to_numpy(num_untagged_jets)  # number of light jets
-
+        
         # Pre-compute pseudo-tag probability table for all possible light jet counts
         # Use np.max with default value for empty arrays
         max_nlt = np.max(nlt, initial=0) if nlt.size > 0 else 0
@@ -131,9 +157,9 @@ class jetCombinatoricModel:
         npt = np.sum(comparison, axis=1)
 
         # Check if we have JCM_weights stored and compare with calculated values
-        if hasattr(self, 'JCM_weights'):
+        if hasattr(self, 'JCM_weights') and self.used_stored_weights:
             # JCM_weights is a fixed list of 14 elements
-            logging.debug(f"Comparing calculated weights with stored JCM_weights (fixed length={len(self.JCM_weights)})")
+            logging.debug(f"Comparing calculated weights with stored JCM_weights for {'lowpt' if self.lowpt_mode else 'standard'} (fixed length={len(self.JCM_weights)})")
 
             # Only compare up to the minimum length or max_nlt, whichever is smaller
             compare_len = min(len(self.JCM_weights), len(total_weights[1:]))
@@ -146,6 +172,8 @@ class jetCombinatoricModel:
                         logging.warning(f"Calculated weight for {i} light jets ({total_weights[i+1]:.6f}) "
                                     f"differs from stored weight ({self.JCM_weights[i]:.6f}) "
                                     f"by {rel_diff*100:.2f}%")
+                    else:
+                        logging.debug(f"Calculated weight for {i} light jets matches stored weight within 1% for {'lowpt' if self.lowpt_mode else 'standard'}.")
 
             # Check if we need more weights than what's stored
             if max_nlt >= len(self.JCM_weights):

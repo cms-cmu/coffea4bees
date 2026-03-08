@@ -5,21 +5,25 @@ source "src/scripts/common.sh"
 
 # Function to display usage
 usage() {
-    echo "Usage: $0 [OPTIONS]"
-    echo "Options:"
-    echo "  --output-base DIR         Base output directory (default: output/)"
-    echo "  --processor PATH          Path to processor file (default: coffea4bees/analysis/processors/processor_HH4b.py)"
-    echo "  --dataset-metadata PATH   Path to metadata file (default: coffea4bees/metadata/datasets_HH4b_Run2/)"
-    echo "  --config PATH             Path to config file (default: coffea4bees/analysis/metadata/HH4b.yml)"
-    echo "  --triggers PATH           Path to triggers file (default: coffea4bees/metadata/triggers_HH4b.yml)"
-    echo "  --luminosities PATH       Path to luminosities file (default: coffea4bees/metadata/luminosities_HH4b.yml)"
-    echo "  --datasets \"DATASET1 DATASET2\"  Space-separated datasets (default: \"TTToSemiLeptonic\")"
-    echo "  --year YEAR               Analysis year (default: UL18)"
-    echo "  --output-filename FILE    Output filename (default: test.coffea)"
-    echo "  --no-test                 Disable test mode"
-    echo "  --output-subdir DIR       Output subdirectory (default: analysis_test)"
-    echo "  --additional-flags FLAGS  Additional flags to pass to runner.py"
-    echo "  --help                    Show this help message"
+    cat << EOF
+Usage: $0 [OPTIONS]
+
+Options:
+  --output-base DIR              Base output directory (default: output/)
+  --processor PATH               Path to processor file
+  --dataset-metadata PATH        Path to metadata file
+  --config PATH                  Path to config file
+  --triggers PATH                Path to triggers file
+  --luminosities PATH            Path to luminosities file
+  --datasets "DATASET1 ..."      Space-separated datasets
+  --year YEAR                    Analysis year
+  --output-filename FILE         Output filename
+  --output-subdir DIR            Output subdirectory
+  --additional-flags FLAGS       Additional flags for runner.py
+  --no-test                      Disable test mode
+  --condor                       Enable condor mode
+  -h, --help                     Show this help message
+EOF
     exit 1
 }
 
@@ -36,6 +40,7 @@ display_config() {
     echo "Output filename:    $OUTPUT_FILENAME"
     echo "Test mode:          $([ -n "$TEST_MODE" ] && echo "enabled" || echo "disabled")"
     echo "Output subdir:      $OUTPUT_SUBDIR"
+    echo "Condor mode:        $([ -n "$CONDOR_MODE" ] && echo "enabled" || echo "disabled")"
     echo "Additional flags:   ${ADDITIONAL_FLAGS:-"(none)"}"
     echo ""
 }
@@ -52,8 +57,9 @@ declare -A DEFAULTS=(
     ["YEAR"]="UL18"
     ["OUTPUT_FILENAME"]="test.coffea"
     ["TEST_MODE"]="-t"
-    ["OUTPUT_SUBDIR"]="analysis_test"
+    ["OUTPUT_SUBDIR"]=""
     ["ADDITIONAL_FLAGS"]=""
+    ["CONDOR_MODE"]=""
 )
 
 # Initialize variables with defaults
@@ -69,6 +75,7 @@ OUTPUT_FILENAME="${DEFAULTS[OUTPUT_FILENAME]}"
 TEST_MODE="${DEFAULTS[TEST_MODE]}"
 OUTPUT_SUBDIR="${DEFAULTS[OUTPUT_SUBDIR]}"
 ADDITIONAL_FLAGS="${DEFAULTS[ADDITIONAL_FLAGS]}"
+CONDOR_MODE="${DEFAULTS[CONDOR_MODE]}"
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -117,9 +124,15 @@ while [[ $# -gt 0 ]]; do
             OUTPUT_SUBDIR="$2"
             shift 2
             ;;
+        --condor)
+            CONDOR_MODE="--condor"
+            shift
+            ;;
         --additional-flags)
-            ADDITIONAL_FLAGS="$2"
-            shift 2
+            shift
+            # Consume all remaining arguments as additional flags
+            ADDITIONAL_FLAGS="$@"
+            break
             ;;
         --help)
             usage
@@ -146,6 +159,7 @@ declare -A SAVED_VARS=(
     ["DO_PROXY"]="$DO_PROXY"
     ["OUTPUT_SUBDIR"]="$OUTPUT_SUBDIR"
     ["ADDITIONAL_FLAGS"]="$ADDITIONAL_FLAGS"
+    ["CONDOR_MODE"]="$CONDOR_MODE"
 )
 
 # Setup proxy if needed
@@ -164,6 +178,7 @@ OUTPUT_FILENAME="${SAVED_VARS[OUTPUT_FILENAME]}"
 TEST_MODE="${SAVED_VARS[TEST_MODE]}"
 OUTPUT_SUBDIR="${SAVED_VARS[OUTPUT_SUBDIR]}"
 ADDITIONAL_FLAGS="${SAVED_VARS[ADDITIONAL_FLAGS]}"
+CONDOR_MODE="${SAVED_VARS[CONDOR_MODE]}"
 
 # Display configuration
 display_config
@@ -172,6 +187,7 @@ OUTPUT_DIR="${OUTPUT_BASE}/${OUTPUT_SUBDIR}/"
 create_output_directory "$OUTPUT_DIR"
 
 display_section_header "Running test processor"
+# Build command with proper handling of multi-word flags
 cmd=(python runner.py 
     -p "$PROCESSOR_PATH" 
     -m "$METADATA_PATH" 
@@ -181,10 +197,14 @@ cmd=(python runner.py
     -d $DATASETS 
     -y $YEAR
     -op "$OUTPUT_DIR" 
-    -o "$OUTPUT_FILENAME" 
-    $TEST_MODE 
-    $ADDITIONAL_FLAGS
+    -o "$OUTPUT_FILENAME"
 )
+
+# Add optional flags
+[ -n "$TEST_MODE" ] && cmd+=( $TEST_MODE )
+[ -n "$CONDOR_MODE" ] && cmd+=( $CONDOR_MODE )
+[ -n "$ADDITIONAL_FLAGS" ] && cmd+=( $ADDITIONAL_FLAGS )
+
 run_command "${cmd[@]}"
 if [ $? -ne 0 ]; then
     exit 1

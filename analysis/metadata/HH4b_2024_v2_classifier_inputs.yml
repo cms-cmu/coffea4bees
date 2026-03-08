@@ -1,6 +1,6 @@
 runner:
   workers: 4
-  condor_memory: 2GB
+  worker_memory: 2GB
   friend_metafile: classifier_inputs_friend
   chunksize: 10000
 
@@ -17,7 +17,6 @@ config:
   fill_histograms: false 
   # make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/
   make_classifier_input: outputs/analysis/   ### local
-  friends:
-    trigWeight: 'coffea4bees/metadata/datasets_HH4b_2024_v2_trigweights.json@@trigWeight'
+
 
   

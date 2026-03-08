@@ -10,7 +10,7 @@ runner:
   class_name: SubSampler
   data_tier: picoAOD
   condor_cores: 1
-  condor_memory: 4GB
+  worker_memory: 4GB
   condor_transfer_input_files:
     - src/
     - coffea4bees/analysis/

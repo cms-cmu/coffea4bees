@@ -9,27 +9,22 @@ runner:
   class_name: Skimmer
   data_tier: nanoAOD
   condor_cores: 1
-  condor_memory: 4GB
+  worker_memory: 4GB
   condor_transfer_input_files:
     - src/
     - coffea4bees/skimmer/
+    - coffea4bees/analysis/
     - coffea4bees/metadata/
   
   # rucio_regex_sites: 'T[123]_(US|CH|DE|UK)'
   allowlist_sites:
     - T3_US_FNALLPC
-    - T2_US_Nebraska
-    - T3_US_NotreDame
-    - T2_US_Caltech
-    # - T2_US_Vanderbilt
-    # - T1_RU_JINR_Disk
-    # - T2_US_UCSD
-    # - T2_CH_CERN
-    # - T2_US_Wisconsin
-    # - T2_IT_Bari
-    - T1_US_FNAL_Disk
-    - T2_US_MIT
-    - T2_US_Purdue
+  #   - T2_US_Nebraska
+  #   - T3_US_NotreDame
+  #   - T2_US_Caltech
+  #   - T1_US_FNAL_Disk
+  #   - T2_US_MIT
+  #   - T2_US_Purdue
   # blocklist_sites:
   #   - T2_US_MIT
   #   - T2_US_Purdue
@@ -39,6 +34,7 @@ config:
   # base_path: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/
   # base_path: root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_Run3_skims/
   # base_path: root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/
+  # base_path: root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/
   base_path: /srv/output/skimmer/test/   ### local
   step: 100000
   loosePtForSkim: True
@@ -71,6 +67,6 @@ config:
     - PPSLocalTrack
   skip_branches:
     - "btagWeight_.*"
-    - "^(?!HLT_QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65$)(?!HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepJet_4p5$)(?!HLT_PFHT1050$)(?!HLT_QuadPFJet70_50_40_35_PNet2BTagMean0p65$)(?!HLT_PFHT280_QuadPFJet30_PNet2BTagMean0p55$)(?!HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepJet_4p5$)(?!HLT_QuadJet45_TripleBTagCSV_p087$)(?!HLT_DoubleJet90_Double30_TripleBTagCSV_p087$)(?!HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0$)(?!HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5$)HLT_.*"  ## Run 3 Triggers
+    - "^(?!HLT_QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65$)(?!HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepJet_4p5$)(?!HLT_PFHT1050$)(?!HLT_QuadPFJet70_50_40_35_PNet2BTagMean0p65$)(?!HLT_PFHT280_QuadPFJet30_PNet2BTagMean0p55$)(?!HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepJet_4p5$)(?!HLT_QuadJet45_TripleBTagCSV_p087$)(?!HLT_DoubleJet90_Double30_TripleBTagCSV_p087$)(?!HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0$)(?!HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5$)(?!HLT_PFHT250_QuadPFJet25_PNet2BTagMean0p55$)HLT_.*"  ## Run 3 Triggers
 
 

@@ -694,7 +694,16 @@ datasets:
     xs: 0.0270800*0.5824**2
   VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00:
     UL16_postVFP:
-      nanoAOD: /VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM
+      # nanoAOD: /VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM
+      nanoAOD:
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2016APV/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_175845/0000/nanov9_1-1.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2016APV/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_175845/0000/nanov9_1-2.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2016APV/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_175845/0000/nanov9_1-3.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2016APV/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_175845/0000/nanov9_1-4.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2016APV/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_175845/0000/nanov9_1-5.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2016APV/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_175845/0000/nanov9_1.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2016APV/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_175845/0000/nanov9_2.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2016APV/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_175845/0000/nanov9_4.root
       picoAOD:
         count: 459068
         files:
@@ -707,7 +716,12 @@ datasets:
         sumw_raw: 459068.0
         total_events: 459068
     UL16_preVFP:
-      nanoAOD: /VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v2/NANOAODSIM
+      # nanoAOD: /VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v2/NANOAODSIM
+      nanoAOD:
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2016/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_205056/0000/nanov9_1.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2016/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_205056/0000/nanov9_2.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2016/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_205056/0000/nanov9_3.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2016/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_205056/0000/nanov9_4.root
       picoAOD:
         count: 540000
         files:
@@ -720,7 +734,15 @@ datasets:
         sumw_raw: 540000.0
         total_events: 540000
     UL17:
-      nanoAOD: /VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v2/NANOAODSIM
+      # nanoAOD: /VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v2/NANOAODSIM
+      nanoAOD:
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2017/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_205126/0000/nanov9_1.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2017/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_205126/0000/nanov9_2.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2017/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_205126/0000/nanov9_3.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2017/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_205126/0000/nanov9_4.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2017/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_205126/0000/nanov9_5.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2017/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_205126/0000/nanov9_6.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2017/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_205126/0000/nanov9_7.root
       picoAOD:
         count: 998000
         files:
@@ -734,7 +756,20 @@ datasets:
         sumw_raw: 998000.0
         total_events: 998000
     UL18:
-      nanoAOD: /VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2/NANOAODSIM
+      # nanoAOD: /VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2/NANOAODSIM
+      nanoAOD:
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2018/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_205158/0000/nanov9_1-1.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2018/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_205158/0000/nanov9_1-2.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2018/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_205158/0000/nanov9_1-3.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2018/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_205158/0000/nanov9_1-4.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2018/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_205158/0000/nanov9_1-5.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2018/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_205158/0000/nanov9_1-6.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2018/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_205158/0000/nanov9_1-7.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2018/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_205158/0000/nanov9_1-8.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2018/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_205158/0000/nanov9_1.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2018/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_205158/0000/nanov9_2.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2018/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_205158/0000/nanov9_5.root
+        - root://cmseos.fnal.gov//eos/uscms/store/group/lpcdihiggsboost/NanoAOD_v12/cmantill/2018/HH4b/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/251212_205158/0000/nanov9_6.root
       picoAOD:
         count: 999000
         files:
