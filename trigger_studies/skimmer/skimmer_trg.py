@@ -5,13 +5,46 @@ import yaml
 from coffea4bees.analysis.helpers.processor_config import processor_config
 from coffea.analysis_tools import PackedSelection, Weights
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b ## change thiss
-from coffea4bees.analysis.helpers.object_selection import apply_bRegCorr ## (electron_selection, jet_selection, )
+from coffea4bees.analysis.helpers.object_selection import apply_bRegCorr, muon_selection
 from src.physics.common import drClean
 from src.physics.event_selection import apply_event_selection
 from src.skimmer.picoaod import PicoAOD
 from src.physics.objects.jet_corrections import apply_jet_veto_maps, apply_jerc_corrections
 from src.skimmer.mc_weight_outliers import OutlierByMedian
 
+
+def lepton_selection_trg(event: ak.Array, isRun3: bool = False) -> ak.Array:
+    """
+    Selects leptons (muons and electrons) and adds them to the event.
+
+    Parameters:
+    -----------
+    event : ak.Array
+        The event data containing fields such as `Muon` and `Electron`.
+    isRun3 : bool, optional
+        Whether to apply Run 3-specific selection criteria. Defaults to False.
+
+    Returns:
+    --------
+    ak.Array
+        The input event data with additional fields:
+        - `selMuon`: Selected muons.
+        - `selElec`: Selected electrons (if present).
+    """
+    event['selMuon_HLT'] = muon_selection(event.Muon, isRun3)
+    
+    ## keep muon above pT > 10 GeV, mu.pfRelIso04_all < 0.15, |eta|<2.4 -- veto if this is satisfied
+    if 'Electron' in event.fields:
+        event['selElec_L1'] = electron_selection_trg(event.Electron, isRun3, pt = 32, working_point="")
+        event['selElec_HLT'] = electron_selection_trg(event.Electron, isRun3, pt = 15, working_point="mvaIso_WP80")
+        event['selDiLepton_HLT'] = ak.concatenate([event.selElec_HLT, event.selMuon_HLT], axis=1)
+        event['elec_selected_L1'] = ak.sum(event.selElec_L1.selected == True, axis=1) == 1
+        event['elec_selected_HLT'] = ak.sum(event.selElec_HLT.selected == True, axis=1) == 1
+        event['muon_selected_HLT'] = ak.sum(event.selMuon_HLT.selected == True, axis=1) == 1
+        # logging.info(f" SELMUONCHARGE {event[event.muon_selected_HLT].selMuon_HLT.charge} SELMUONCHARGE")
+        # logging.info(f" SELMUONCHARGE {event[event.elec_selected_HLT].selElec_HLT.charge} SELMUONCHARGE")
+        
+    return event
 
 def jet_selection_trg(
     event: ak.Array,
@@ -39,7 +72,8 @@ def jet_selection_trg(
         Whether to apply Run 3-specific selection criteria. Defaults to False.
     """
     # Initialize lepton-cleaned jets
-    event['Jet', 'lepton_cleaned'] = np.full(len(event), True) if not doLeptonRemoval else drClean(event.Jet, event['selLepton'])[1]
+    ## clean the jet vs selected electron with delR = 0.4
+    event['Jet', 'lepton_cleaned'] = np.full(len(event), True) if not doLeptonRemoval else drClean(event.Jet, event['selMuon_HLT'], cone = 0.2)[1]
 
     # Apply jet veto maps if required
     if do_jet_veto_maps:
@@ -52,7 +86,7 @@ def jet_selection_trg(
         event['Jet', 'btagScore'] = event.Jet.btagPNetB
 
         if not isSyntheticData:
-            event['Jet'] = ak.where(
+            event['Jet'] = ak.where(   ### with neutrino if bjet, otherwise just puppi
                 event.Jet.btagScore >= corrections_metadata['btagWP']['L'],
                 apply_jerc_corrections(
                     event,
@@ -73,25 +107,26 @@ def jet_selection_trg(
                 )
             )
 
-        event['Jet', 'selected_init'] = (event.Jet.pt > 40) & (np.abs(event.Jet.eta) < 4.7) & (event.Jet.puId >= 7)
-        event['nJet_selected']        = ak.sum(event.Jet.selected, axis=1)  ## Atleast 4 selected jets
-        event['Jet', 'tagged']        = (event.nJet_selected >= 4) & (event.Jet.btagScore >= corrections_metadata['btagWP']['M'])  ### DeepJet medium working point
-        event['nJet_tagged']          = ak.sum(event.Jet.tagged, axis=1)   ## Atleast 3 tagged jets
-        event['Jet', 'selected']      = event.nJet_tagged >= 3
+        event['Jet', 'preselected']      = (event.Jet.pt > 30) & (np.abs(event.Jet.eta) < 2.5)
+        event['nJet_preselected']        = ak.sum(event.Jet.preselected, axis=1)  ## Atleast 4 selected jets
+        ### need atleast 4 jets but only 2 need to satisty MWP -- change this
+        ### switch to particle net for run3
+        # event['Jet', 'selected_L1']   = (event.nJet_preselected >= 4)
+        event['Jet', 'tagged']        = (event.nJet_preselected >= 4) & (event.Jet.btagScore >= corrections_metadata['btagWP']['M'])  ### DeepJet medium working point
+        event['nJet_tagged']          = ak.sum(event.Jet.tagged, axis=1)   ## Atleast 2 tagged jets for run3; 3 for run2
+        event['selJet']      =  event.nJet_tagged >= 2  ## change this
 
-        # Additional variables
-        # event['selJet_no_bRegCorr'] = event.Jet[event.Jet.selected]
-        # event['selJet'] = apply_bRegCorr(event.Jet)
-        # event['tagJet'] = event.selJet[event.selJet.tagged]
-        # event['tagJet_loose'] = event.selJet[event.selJet.tagged_loose]
-        event['Jet', 'muon_cleaned'] = drClean(event.Jet, event.selMuon, cone = 0.2)[1]
+        ### remove this
+        ### do trigger emulation -- I don't need this -- revisit muon cleaned jets
+        event['Jet', 'muon_cleaned'] = drClean(event.Jet, event.selMuon_HLT, cone = 0.2)[1] ### check again; keep nonisolated muons and don't want to clean with respect to those
         event['Jet', 'ht_selected'] = (event.Jet.muEF < 0.5) & (np.abs(event.Jet.eta) < 2.5) & event.Jet.muon_cleaned
-
+        event['jet_ht_slected'] = ak.all(event.Jet.ht_selected == True, axis=1) == True
+        # selev = event[(event.elec_selected_L1 & event.jet_ht_slected) | (event.selJet)]
     return event
 
 
 
-def electron_selection_trg(electron: ak.Array, isRun3: bool = False) -> ak.Array:
+def electron_selection_trg(electron: ak.Array, isRun3: bool = False, pt = 15, working_point = "") -> ak.Array:
     """
     Selects electrons based on kinematic, isolation, and identification criteria.
 
@@ -107,27 +142,36 @@ def electron_selection_trg(electron: ak.Array, isRun3: bool = False) -> ak.Array
     ak.Array
         A boolean mask indicating selected electrons.
     """
-    electron_kin = (electron.pt > 32) & (abs(electron.eta) < 2.5)
-    electron_iso_ID = (electron.pfRelIso03_all < 0.15) & (
-        getattr(electron, 'mvaIso_WP80') if isRun3 else getattr(electron, 'mvaFall17V2Iso_WP90')  ### Change this for Run 2
-    )
-
+    ### make selections above the trigger threshold
+    ### Aplly this HLT_Ele30_WPTight_Gsf
+    ### ot above 15 GeV and passes medium wp el.mvaIso_WP90 ## loose electron
+    ## exactly 1e should pass tight selection, rest will have llose
+    ### we need it to be from top 
+    ## get me events with one electon
+    electron_kin = (electron.pt > pt) & (abs(electron.eta) < 2.5)
+    
     electron_IP = (
         ((abs(electron.eta) < 1.479) & (abs(electron.dz) < 0.1) & (abs(electron.dxy) < 0.05)) |
         ((abs(electron.eta) >= 1.479) & (abs(electron.dz) < 0.2) & (abs(electron.dxy) < 0.1))
     ) if isRun3 else True
 
-    electron['selected'] = electron_kin & electron_iso_ID & electron_IP
+    electron['selected'] = electron_kin & electron_IP
+    if working_point:
+        ### Offline electron has isolation ## 'mvaIso_WP80' for HLT
+        electron_iso_ID = (electron.pfRelIso03_all < 0.15) & (
+            getattr(electron, working_point) if isRun3 else getattr(electron, 'mvaFall17V2Iso_WP90')  ### Change this for Run 2
+        )
+        electron['selected'] = electron.selected & electron_iso_ID
+    
     return electron[electron.selected]
 
 
-def apply_1e4jet_selection(
+def apply_dilep_jet_selection(
         event, 
         corrections_metadata, 
         *,
         dataset: str = '',
         doLeptonRemoval: bool = True,
-        loosePtForSkim: bool = False,
         override_selected_with_flavor_bit: bool = False,
         do_jet_veto_maps: bool = False,
         isRun3: bool = False,
@@ -149,71 +193,35 @@ def apply_1e4jet_selection(
         The dataset name. Defaults to an empty string.
     doLeptonRemoval : bool, optional
         Whether to perform lepton removal. Defaults to True.
-    loosePtForSkim : bool, optional
-        Whether to use loose pT cuts for skimming. Defaults to False.
-    override_selected_with_flavor_bit : bool, optional
-        Whether to override selected jets with flavor bit. Defaults to False.
     do_jet_veto_maps : bool, optional
         Whether to apply jet veto maps. Defaults to False.
     isRun3 : bool, optional
         Whether to apply Run 3-specific selection criteria. Defaults to False.
     isMC : bool, optional
         Whether the data is Monte Carlo simulation. Defaults to False.
-    isSyntheticData : bool, optional
-        Whether the data is synthetic. Defaults to False.
-    isSyntheticMC : bool, optional
-        Whether the Monte Carlo data is synthetic. Defaults to False.
-    apply_mixeddata_sel : bool, optional
-        Whether to apply mixed data selection. Defaults to False.
-
     Returns:
     --------
     ak.Array
         The input event data with additional fields for object selection.
     """
-    # Combined RunII and 3 selection
-    event = electron_selection_trg(event, isRun3)
-    
+    ### First perform electron selection followed by jet selection
+    event = lepton_selection_trg(event, isRun3)
     event = jet_selection_trg(event, corrections_metadata, isRun3, isMC, isSyntheticData, isSyntheticMC, dataset, doLeptonRemoval, do_jet_veto_maps,apply_mixeddata_sel, override_selected_with_flavor_bit)
 
-    event['passJetMult'] = event['nJet_selected'] >= 4
+    event['passJetMult'] = event['nJet_preselected'] >= 4   ### for L1, HLT
+    event['passJetMult_tagged'] = (event['nJet_tagged'] >= 2) & (event['nJet_preselected'] >= 4)  ### for HLT
+    
+    ### selected events pass L1 skim requirement or HLT skim requirement
+    selev = event[(event.elec_selected_L1 & event.passJetMult) | (event.elec_selected_HLT & event.muon_selected_HLT & event.selJet  )]
 
-    event['fourTag'] = (event['nJet_tagged'] >= 4)
-    event['threeTag'] = (event['nJet_tagged_loose'] == 3) & (event['nJet_selected'] >= 4)
-    event['twoTag'] = (event['nJet_tagged_loose'] == 2) & (event['nJet_selected'] >= 4)
-
-    if isSyntheticData or isSyntheticMC:
-        event['threeTag'] = False
-        event['twoTag'] = False
-
-    if isRun3:
-        event['passPreSel'] = event.twoTag | event.threeTag | event.fourTag
-    else:
-        event['passPreSel'] = event.threeTag | event.fourTag
-
-    event['tag'] = ak.zip({
-        "twoTag": event.twoTag,
-        "threeTag": event.threeTag,
-        "fourTag": event.fourTag,
-    })
-
-    # For trigger emulation
-    event['Jet', 'muon_cleaned'] = drClean(event.Jet, event.selMuon)[1]
-    event['Jet', 'ht_selected'] = (event.Jet.pt >= 30) & (np.abs(event.Jet.eta) < 2.4) & event.Jet.muon_cleaned
-    #  Calculate hT
-    event["hT"] = ak.sum(event.Jet[event.Jet.selected_loose].pt, axis=1)
-    event["hT_selected"] = ak.sum(event.Jet[event.Jet.selected].pt, axis=1)
-    event["hT_trigger"] = ak.sum(event.Jet[event.Jet.ht_selected].pt, axis=1)
-
-    # Only need 30 GeV jets for signal systematics
-    if loosePtForSkim:
-        mask_jet_lowpt_forskim = (event.Jet.pt >= 15) & (np.abs(event.Jet.eta) <= 2.4) & ~event.Jet.pileup & (event.Jet.jetId >= 2) & event.Jet.lepton_cleaned
-        nJet_selected_lowpt_forskim = ak.sum(mask_jet_lowpt_forskim, axis=1)
-        mask_tagjet_lowpt_forskim = mask_jet_lowpt_forskim & (event.Jet.btagScore >= corrections_metadata['btagWP']['M'])
-        event['passJetMult_lowpt_forskim'] = nJet_selected_lowpt_forskim >= 4
-        nJet_tagged_lowpt_forskim = ak.num(event.Jet[mask_tagjet_lowpt_forskim])
-        event["fourTag_lowpt_forskim"] = (nJet_tagged_lowpt_forskim >= 4)
-        event['passPreSel_lowpt_forskim'] = event.threeTag | event.fourTag_lowpt_forskim
+    # logging.info(f"selev {selev}")
+    # logging.info(f"selev {selev}")
+    # logging.info(f"selev {selev}")
+    # logging.info(f"selev {selev}")
+    selev["hT_trigger"] = ak.sum(selev.Jet.pt, axis=1)  ### calojet_ht; L1 is only from calorimeters without tracking/tagging
+    
+    ### for L1, only need ht; for HTL, we need jet4_pt
+    selev["jet4_pt"] = selev.Jet[:,3].pt   ### this is pt sorted
 
     return event
 
@@ -221,17 +229,11 @@ def apply_1e4jet_selection(
 class Skimmer(PicoAOD):
     def __init__(
             self, 
-            loosePtForSkim=False, 
-            skim4b=False, 
             mc_outlier_threshold=200, 
             corrections_metadata=None,
             *args, **kwargs
         ):
-        if skim4b:
-            kwargs["pico_base_name"] = f'picoAOD_fourTag'
         super().__init__(*args, **kwargs)
-        self.loosePtForSkim = loosePtForSkim
-        self.skim4b = skim4b
         self.corrections_metadata = corrections_metadata if corrections_metadata is not None else {}
         self.mc_outlier_threshold = mc_outlier_threshold
         # Always use cutflow_4b unless explicitly overridden
@@ -262,12 +264,11 @@ class Skimmer(PicoAOD):
             )
             events["Jet"] = jets
 
-        events = apply_1e4jet_selection(
+        events = apply_dilep_jet_selection(
             events,
             self.corrections_metadata[year],
             dataset=dataset,
             doLeptonRemoval=config["do_lepton_jet_cleaning"],
-            loosePtForSkim=self.loosePtForSkim,
             isRun3=config["isRun3"],
             isMC=config["isMC"]
         )
@@ -283,19 +284,10 @@ class Skimmer(PicoAOD):
         selections.add("passNoiseFilter", events.passNoiseFilter)
         selections.add("passHLT", (events.passHLT if config["cut_on_HLT_decision"] else np.full(len(events), True)))
 
-        if self.loosePtForSkim:
-            selections.add('passJetMult_lowpt_forskim', events.passJetMult_lowpt_forskim)
-            selections.add("passPreSel_lowpt_forskim", events.passPreSel_lowpt_forskim)
-            final_selection = selections.require(lumimask=True, passNoiseFilter=True, passHLT=True, passJetMult_lowpt_forskim=True, passPreSel_lowpt_forskim=True)
-        elif self.skim4b:
-            selections.add('passJetMult', events.passJetMult)
-            selections.add("passPreSel", events.passPreSel)
-            selections.add("passFourTag", events.fourTag)
-            final_selection = selections.require(lumimask=True, passNoiseFilter=True, passHLT=True, passJetMult=True, passPreSel=True, passFourTag=True)
-        else:
-            selections.add('passJetMult', events.passJetMult)
-            selections.add("passPreSel", events.passPreSel)
-            final_selection = selections.require(lumimask=True, passNoiseFilter=True, passHLT=True, passJetMult=True, passPreSel=True)
+        
+        selections.add('passJetMult', events.passJetMult)
+        selections.add("passJetMult_tagged", events.passJetMult_tagged)
+        final_selection = selections.require(lumimask=True, passNoiseFilter=True, passHLT=True, passJetMult=True, passJetMult_tagged=True)
 
         events["weight"] = weights.weight()
 
