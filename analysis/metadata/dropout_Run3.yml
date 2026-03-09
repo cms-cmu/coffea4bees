@@ -1,0 +1,26 @@
+# -----------------------------------------------------------------------
+# Dropout study config — HH→4b signal on raw NanoAOD (Run 3, 2022)
+#
+# Usage:
+#   ./run_container python runner.py \
+#       -p coffea4bees/analysis/processors/processor_dropout_Run3.py \
+#       -c coffea4bees/analysis/metadata/dropout_Run3.yml \
+#       -m coffea4bees/metadata/datasets_HH4b_Run3/GluGlutoHHto4B.yml \
+#       -y 2022_preEE 2022_EE \
+#       -t
+#
+# To run on full stats, drop the -t flag.
+# -----------------------------------------------------------------------
+
+runner:
+  workers: 4
+  chunksize: 50000
+  data_tier: nanoAOD
+  class_name: analysis
+  allowlist_sites:
+    - T3_US_FNALLPC
+
+# The processor __init__ receives everything under 'config:' as **kwargs.
+# corrections_metadata is injected automatically by runner.py from
+# src/physics/corrections.yml — no need to specify it here.
+config: {}

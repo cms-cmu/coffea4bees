@@ -1,0 +1,38 @@
+hists:
+        HH4b_all:
+                process: GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00
+                label: HH4b (all)
+                edgecolor: k
+                fillcolor: k
+                histtype: step
+
+        HH4b_failTrigger:
+                process: GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00
+                label: Fail trigger
+                edgecolor: "#e42536"
+                fillcolor: "#e42536"
+                histtype: step
+
+        HH4b_failPresel:
+                process: GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00
+                label: Fail presel
+                edgecolor: "#f89c20"
+                fillcolor: "#f89c20"
+                histtype: step
+
+        HH4b_failSR:
+                process: GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00
+                label: Fail SR
+                edgecolor: "#7a21dd"
+                fillcolor: "#7a21dd"
+                histtype: step
+
+        HH4b_passSR:
+                process: GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00
+                label: Pass SR
+                edgecolor: "#5790fc"
+                fillcolor: "#5790fc"
+                histtype: step
+
+doRatio:
+    0
