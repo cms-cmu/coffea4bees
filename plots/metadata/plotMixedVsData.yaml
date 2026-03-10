@@ -1,0 +1,132 @@
+hists:
+
+#        mix_v1:
+#                process: mix_v1
+#                tag: fourTag
+#                year: RunII
+#                label: Mixed Data (v1)
+#                edgecolor: g
+#                fillcolor: g           
+
+        mix_v0:
+                process: mix_v0
+                tag: fourTag
+                year: RunII
+                label: Mixed Data
+                edgecolor: b
+                fillcolor: b            
+
+        mix_noTT_v0:
+                process: mix_noTT_v0
+                tag: fourTag
+                year: RunII
+                label: Mixed Data noTT
+                edgecolor: r
+                fillcolor: r            
+
+
+#        syn_v0:
+#                process: syn_v0
+#                tag: fourTag
+#                year: RunII
+#                label: Synthetic Data (v0)
+#                edgecolor: b
+#                fillcolor: b            
+
+#
+#
+#        mix_all:
+#                process: mixeddata_all
+#                tag: fourTag
+#                year: RunII
+#                label: Mixed Data (before subsample)
+#                edgecolor: r
+#                fillcolor: r            
+#
+
+
+
+
+
+#        mix_v1:
+#                process: mix_v1
+#                tag: fourTag
+#                year: RunII
+#                label: Mixed Data (v1)
+#                edgecolor: r
+#                fillcolor: r            
+
+
+stack:
+        data:
+                process: data
+                tag: fourTag
+                year: RunII
+                label: 4b data
+                edgecolor: k
+                fillcolor: "#FFDF7Fff"  
+
+
+
+ratios:
+        mixToBkg:
+                numerator:
+                        type: hists
+                        key: mix_v0
+                denominator:
+                        type: stack
+                uncertianty:
+                        nominal
+                color: b
+                marker: "o"
+
+
+        mixNoTTToBkg:
+                numerator:
+                        type: hists
+                        key: mix_noTT_v0
+                denominator:
+                        type: stack
+                uncertianty:
+                        nominal
+                color: r
+                marker: "o"
+
+
+#        v1ToBkg:
+#                numerator:
+#                        type: hists
+#                        key: mix_v1
+#                denominator:
+#                        type: stack
+#                uncertianty:
+#                        nominal
+#                color: g
+#                marker: "o"
+#
+#        SynToBkg:
+#                numerator:
+#                        type: hists
+#                        key: syn_v0
+#                denominator:
+#                        type: stack
+#                uncertianty:
+#                        nominal
+#                color: b
+#                marker: "o"
+#
+
+
+codes:
+   region:
+      SR: 2
+      SB: 1
+      other: 0
+   tag:
+      threeTag: 3
+      fourTag: 4
+      other: 0
+
+doRatio:
+    1
+    
