@@ -742,6 +742,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         for k in self.friends:
             if k.startswith("SvB"):
+                logging.info(f"Loading SvB friend tree ")
                 try:
                     event[k] = rename_SvB_friend(self.target, self.friends[k])
                     setSvBVars(k, event)
@@ -1243,8 +1244,6 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             weight = "weight_noJCM_noFvT"
             if weight not in selev.fields:
                 weight = "weight"
-
-            dataset_key = self.dataset
             friends["friends"] |= dump_input_friend(
                 selev,
                 self.make_classifier_input,
@@ -1252,7 +1251,6 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 analysis_selections,
                 weight=weight,
                 NotCanJet="notCanJet_coffea",
-                dump_naming=lambda path0, name, uuid, start, stop, **_: f'{dataset_key}/{name}_{uuid}_{start}_{stop}_{path0}',
             )
 
         if self.make_friend_JCM_weight is not None:

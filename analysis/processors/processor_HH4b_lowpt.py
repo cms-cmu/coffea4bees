@@ -10,6 +10,7 @@ from coffea4bees.analysis.helpers.filling_histograms import (
     filling_nominal_histograms,
     filling_syst_histograms,
 )
+from coffea import processor
 
 class analysis(HH4bBaseProcessor):
     def __init__(
@@ -153,23 +154,80 @@ class analysis(HH4bBaseProcessor):
         if self.classifier_FvT: apply_FvT = True
         else: apply_FvT = self.apply_FvT
 
+        # if not self.run_systematics:
+        #     ## this can be simplified
+        #     return filling_nominal_histograms(
+        #             selev,
+        #             self.apply_JCM,
+        #             processName=self.processName,
+        #             year=self.year,
+        #             isMC=self.config["isMC"],
+        #             histCuts=self.histCuts,
+        #             apply_FvT=self.apply_FvT,
+        #             run_SvB=self.run_SvB,
+        #             run_dilep_ttbar_crosscheck=self.run_dilep_ttbar_crosscheck,
+        #             top_reconstruction=self.top_reconstruction,
+        #             isDataForMixed=self.config['isDataForMixed'],
+        #             tag_list=["lowpt_fourTag", "lowpt_threeTag"],
+        #             event_metadata=event.metadata,
+        #         )
         if not self.run_systematics:
             ## this can be simplified
-            return filling_nominal_histograms(
-                    selev,
-                    self.apply_JCM,
-                    processName=self.processName,
-                    year=self.year,
-                    isMC=self.config["isMC"],
-                    histCuts=self.histCuts,
-                    apply_FvT=self.apply_FvT,
-                    run_SvB=self.run_SvB,
-                    run_dilep_ttbar_crosscheck=self.run_dilep_ttbar_crosscheck,
-                    top_reconstruction=self.top_reconstruction,
-                    isDataForMixed=self.config['isDataForMixed'],
-                    tag_list=["lowpt_fourTag", "lowpt_threeTag"],
-                    event_metadata=event.metadata,
-                )
+            hist_nom = filling_nominal_histograms(
+                selev,
+                self.apply_JCM,
+                processName=self.processName,
+                year=self.year,
+                isMC=self.config["isMC"],
+                histCuts=self.histCuts,
+                apply_FvT=apply_FvT,
+                run_SvB=self.run_SvB,
+                run_dilep_ttbar_crosscheck=self.run_dilep_ttbar_crosscheck,
+                top_reconstruction=self.top_reconstruction,
+                isDataForMixed=self.config['isDataForMixed'],
+                tag_list=["lowpt_fourTag", "lowpt_threeTag"],
+                event_metadata=event.metadata
+            )
+            if not self.plot_ttbar_with_weights:
+                return hist_nom
+
+
+            hist_t4 = filling_nominal_histograms(
+                selev,
+                self.apply_JCM,
+                processName="TTbar4b_from_d3",
+                year=self.year,
+                isMC=self.config["isMC"],
+                histCuts=self.histCuts,
+                apply_FvT=apply_FvT,
+                run_SvB=self.run_SvB,
+                run_dilep_ttbar_crosscheck=self.run_dilep_ttbar_crosscheck,
+                top_reconstruction=self.top_reconstruction,
+                isDataForMixed=self.config['isDataForMixed'],
+                event_metadata=event.metadata,
+                tag_list=["lowpt_fourTag", "lowpt_threeTag"],
+                weight_name = "weight_d3_to_t4"
+            )
+
+            hist_t3 = filling_nominal_histograms(
+                selev,
+                self.apply_JCM,
+                processName="TTbar3b_from_d3",
+                year=self.year,
+                isMC=self.config["isMC"],
+                histCuts=self.histCuts,
+                apply_FvT=apply_FvT,
+                run_SvB=self.run_SvB,
+                run_dilep_ttbar_crosscheck=self.run_dilep_ttbar_crosscheck,
+                top_reconstruction=self.top_reconstruction,
+                isDataForMixed=self.config['isDataForMixed'],
+                event_metadata=event.metadata,
+                tag_list=["lowpt_fourTag", "lowpt_threeTag"],
+                weight_name = "weight_d3_to_t3"
+            )
+
+            return processor.accumulate([hist_nom, hist_t4, hist_t3])
+
         #
         # Run systematics
         #
