@@ -28,8 +28,16 @@ class apply_JCM_from_list:
         self._selected_col = selected_col
 
     def __call__(self, df: pd.DataFrame):
-        n_jets = df.loc[df[self._selected_col], self._n_jets_col]
-        df.loc[df[self._selected_col], self._weight_col] *= np.take(
+        raw = df[self._selected_col]
+        n_nan = raw.isna().sum()
+        if n_nan > 0:
+            import logging
+            logging.warning(
+                f"JCM: '{self._selected_col}' contains {n_nan} NaN values — treating as False"
+            )
+        mask = raw.fillna(False).astype(bool)
+        n_jets = df.loc[mask, self._n_jets_col]
+        df.loc[mask, self._weight_col] *= np.take(
             self._weights, n_jets, mode="clip"
         )
         return df
