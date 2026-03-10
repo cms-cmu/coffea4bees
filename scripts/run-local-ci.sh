@@ -14,20 +14,19 @@ if [[ "$JOB_NAME" == *-* ]]; then
   JOB_NAME=${JOB_NAME//-/_}
 fi
 
+if [[ "$JOB_NAME" == *"all"* ]]; then
+    echo "Running all steps of the CI workflow."
+num_cores=4
+else
+    echo "Running only the step: $JOB_NAME"
+    num_cores=1
+fi
+
 # Check if the folder named 'output' exists
 if [ -d "CI_output" ]; then
-  echo "The folder 'CI_output' exists. Remember that snakemake will not run a step if the output files already exist."
+    echo "The folder 'CI_output' exists. Remember that snakemake will not run a step if the output files already exist."
 else
-  echo "Output files will be created in the 'CI_output' folder."
+    echo "Output files will be created in the 'CI_output' folder."
 fi
 
-# Check if the file ~/x509up* exists
-if ls ~/x509up* 1> /dev/null 2>&1; then
-  echo "Copying ~/x509up* to /proxy/x509_proxy."
-  /bin/cp ~/x509up* proxy/x509_proxy
-else
-  echo "File ~/x509up* does not exist. Run voms-proxy-init -voms cms before running this script."
-  return 0
-fi
-
-./run_container snakemake --snakefile $SNAKEFILE --use-apptainer --apptainer-args "--bind $PWD:/srv --pwd /srv" --cores 1 $JOB_NAME
+./run_container snakemake --snakefile $SNAKEFILE --use-apptainer --cores $num_cores $JOB_NAME

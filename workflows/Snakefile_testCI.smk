@@ -3,17 +3,6 @@ combine_container = "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-analysi
 
 output_dir = "CI_output"
 
-## since we are not going to run the entire workflow, we only need some outputs
-outputs = [ 
-    f"{output_dir}/code_analysis_helpers.log",
-    f"{output_dir}/jet_clustering.log",
-    f"{output_dir}/trig_emulator.log",
-    f"{output_dir}/memory_test.log"
-]
-
-rule all:
-    input: outputs
-
 
 ###### THIS IS WHERE THE RULES START ######
 
@@ -173,10 +162,10 @@ rule tools_perf_profile:
     container: analysis_container
     shell: "source coffea4bees/scripts/tools-perf-profile.sh --output-base {output_dir} 2>&1 | tee -a {log}"
 
-rule twoStageClosure_test:
+rule tools_twostageclosure_mixed:
     input: f"{output_dir}/analysis_test_mixed/testMixedData.json"
-    output: f"{output_dir}/twoStageClosure_test/test_dump_twoStageClosureInputsCounts.yml"
-    log: f"{output_dir}/twoStageClosure_test.log"
+    output: f"{output_dir}/tools_twostageclosure_mixed/test_dump_twoStageClosureInputsCounts.yml"
+    log: f"{output_dir}/tools_twostageclosure_mixed.log"
     shell: "./run_container combine source coffea4bees/scripts/tools-twostageclosure-mixed.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
 rule analysis_plot:
@@ -328,7 +317,6 @@ rule mixeddata_make_dataset:
     output: f"{output_dir}/test_mixeddata_make_dataset/picoaod_datasets_mixeddata_test_UL18.yml"
     container: analysis_container
     log: f"{output_dir}/mixeddata_make_dataset.log"
-    container: analysis_container
     shell: "source coffea4bees/scripts/mixeddata-make-dataset.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
 rule mixeddata_split_dataset:
@@ -367,3 +355,65 @@ rule mixeddata_study_hemispheres:
     log: f"{output_dir}/mixeddata_study_hemispheres.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/mixeddata-study-hemispheres.sh --output-base {output_dir} 2>&1 | tee -a {log}"
+
+
+###### TARGET RULE ######
+
+rule all:
+    default_target: True
+    input:
+        ## log-only rules (no output directive)
+        rules.code_analysis_helpers.log,
+        rules.code_jet_clustering.log,
+        rules.code_trig_emulator.log,
+        rules.code_hemisphere_mixing.log,
+        rules.tools_memory_test.log,
+        rules.skimmer_boosted.log,
+        rules.analysis_iplot.log,
+        rules.check_configs.log,
+        ## rules with output
+        rules.skimmer_test.output,
+        rules.synthetic_dataset_make_dataset.output,
+        rules.weights_trigger_friendtree.output,
+        rules.topreco_friendtree.output,
+        rules.analysis_test.output,
+        rules.analysis_signals_test.output,
+        rules.tools_merge_test.output,
+        rules.analysis_truthStudy_test.output,
+        rules.analysis_truthStudy_plot.output,
+        rules.synthetic_dataset_cluster.output,
+        rules.analysis_unsup_test.output,
+        rules.analysis_test_mixed.output,
+        rules.analysis_systematics_test.output,
+        rules.skimmer_analysis_test.output,
+        rules.synthetic_dataset_analyze.output,
+        rules.synthetic_dataset_analyze_Run3.output,
+        rules.weights_trigger_analysis.output,
+        rules.tools_make_jcm_weights.output,
+        rules.tools_perf_profile.output,
+        rules.tools_twostageclosure_mixed.output,
+        rules.analysis_plot.output,
+        rules.analysis_unsup_plot.output,
+        rules.code_plot_test.output,
+        rules.synthetic_dataset_plot.output,
+        rules.analysis_cutflow.output,
+        rules.analysis_dilepttbar_cutflow.output,
+        rules.analysis_mixed_cutflow.output,
+        rules.skimmer_analysis_cutflow.output,
+        rules.analysis_systematics_cutflow.output,
+        rules.analysis_unsup_cutflow.output,
+        rules.synthetic_dataset_analyze_cutflow.output,
+        rules.synthetic_dataset_analyze_cutflow_Run3.output,
+        rules.weights_trigger_cutflow.output,
+        rules.analysis_test_Run3.output,
+        rules.analysis_cutflow_Run3.output,
+        rules.synthetic_dataset_make_dataset_Run3.output,
+        rules.SvB_friendtree.output,
+        rules.SvB_friendtree_analysis.output,
+        rules.SvB_friendtree_cutflow.output,
+        rules.mixeddata_make_dataset.output,
+        rules.mixeddata_split_dataset.output,
+        rules.mixeddata_cluster.output,
+        rules.mixeddata_analyze.output,
+        rules.mixeddata_analyze_cutflow.output,
+        rules.mixeddata_study_hemispheres.output,
