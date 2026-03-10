@@ -72,6 +72,9 @@ if __name__ == '__main__':
 
     era_aliases["2022_preEEMC"] = ["2022_preEE"]
     era_aliases["2023_preBPixMC"] = ["2023_preBPix"]
+    era_aliases["2022_EEMC"] = ["2022_EE"]
+    era_aliases["2023_BPixMC"] = ["2023_BPix"]
+    era_aliases["Run3MC"] = era_aliases["2022_preEEMC"] + era_aliases["2022_EEMC"] + era_aliases["2023_preBPixMC"] + era_aliases["2023_BPixMC"]
 
     parser = argparse.ArgumentParser(description='uproot_plots')
     parser.add_argument('-i','--inputFile', default='hists.pkl', help='Input File. Default: hists.pkl')

@@ -1,0 +1,33 @@
+hists:
+        data:
+                process: data
+                tag: threeTag
+                label: Three-tag data
+                edgecolor: k
+                fillcolor: k            
+
+
+stack:
+        TTbar:
+                process: [TTToHadronic, TTToSemiLeptonic, TTTo2L2Nu]   
+                tag: threeTag
+                fillcolor: "#85D1FBff"
+                edgecolor: k
+                label: $t\bar{t}$
+
+
+ratios:
+        dataToBkg:
+                numerator:
+                        type: hists
+                        key: data
+                denominator:
+                        type: stack
+                uncertianty:
+                        nominal
+                color: k
+                marker: "o"
+
+doRatio:
+    1
+
