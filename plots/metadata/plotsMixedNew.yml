@@ -1,0 +1,194 @@
+hists:
+        mix_v2:
+                process: mix_v2
+                tag: fourTag
+                year: RunII
+                label: Mixed Data (v2)
+                edgecolor: b
+                fillcolor: b            
+
+        mix_v3:
+                process: mix_v3
+                tag: fourTag
+                year: RunII
+                label: Mixed Data (v3)
+                edgecolor: b
+                fillcolor: b            
+
+
+        mix_v1:
+                process: mix_v1
+                tag: fourTag
+                year: RunII
+                label: Mixed Data (v1)
+                edgecolor: g
+                fillcolor: g           
+
+        mix_v0:
+                process: mix_v0
+                tag: fourTag
+                year: RunII
+                label: Mixed Data (v0) 
+                edgecolor: r
+                fillcolor: r            
+
+        mix_pz_v0:
+                process: mix_pz_v0
+                tag: fourTag
+                year: RunII
+                label: Mixed Data (v0) $p_z$ Boosts
+                edgecolor: g
+                fillcolor: g            
+
+
+        mix_noTT_v0:
+                process: mix_noTT_v0
+                tag: fourTag
+                year: RunII
+                label: Mixed Data (v0) ingore tT
+                edgecolor: b
+                fillcolor: b            
+
+
+        syn_v0:
+                process: syn_v0
+                tag: fourTag
+                year: RunII
+                label: Synthetic Data (v0)
+                edgecolor: purple
+                fillcolor: purple            
+
+
+        syn_noTT_v0:
+                process: syn_noTT_v0
+                tag: fourTag
+                year: RunII
+                label: Syn Data ingore tT
+                edgecolor: g
+                fillcolor: g            
+
+
+
+        mix_all:
+                process: mixeddata_all
+                tag: fourTag
+                year: RunII
+                label: Mixed Data (before subsample)
+                edgecolor: k
+                fillcolor: k            
+
+
+
+
+
+        d3:
+                process: data
+                tag: threeTag
+                fillcolor: "#FFDF7Fff"
+                edgecolor: k
+                label: QCD multijet
+
+        t4_from_d3:
+                process: TTbar4b_from_d3
+                tag: threeTag
+                edgecolor: "#e42536"
+                fillcolor: "#e42536"            
+                label: TTbar4b (weighted)
+
+        t4:
+                process: [TTToHadronic, TTToSemiLeptonic, TTTo2L2Nu]   
+                tag: fourTag
+                edgecolor: "#7a21dd"
+                fillcolor: "#7a21dd"            
+                label: $t\bar{t} 4b$
+
+
+
+        data:
+                process: data
+                tag: fourTag
+                year: RunII
+                label: data
+                edgecolor: k
+                fillcolor: k            
+
+
+#        mix_v1:
+#                process: mix_v1
+#                tag: fourTag
+#                year: RunII
+#                label: Mixed Data (v1)
+#                edgecolor: r
+#                fillcolor: r            
+
+
+stack:
+        TTTo2L2Nu:
+                process: TTTo2L2Nu_for_mixed
+                tag: fourTag
+                year: RunII
+                fillcolor: "#85D1FBff"
+                edgecolor: "#85D1FBff"
+                label: None
+
+        TTToSemiLeptonic:
+                process: TTToSemiLeptonic_for_mixed
+                tag: fourTag
+                year: RunII
+                fillcolor: "#85D1FBff"
+                edgecolor: "#85D1FBff"
+                label: None
+
+        TTToHadronic:
+                process: TTToHadronic_for_mixed
+                tag: fourTag
+                year: RunII
+                fillcolor: "#85D1FBff"
+                edgecolor: k
+                label: TTbar
+
+        Multijet:
+                process: data
+                tag: threeTag
+                year: RunII
+                fillcolor: "#FFDF7Fff"
+                edgecolor: k
+                label: Multijet
+
+ratios:
+        v0ToBkg:
+                numerator:
+                        type: hists
+                        key: mix_v0
+                denominator:
+                        type: stack
+                uncertianty:
+                        nominal
+                color: k
+                marker: "o"
+
+        v1ToBkg:
+                numerator:
+                        type: hists
+                        key: mix_v1
+                denominator:
+                        type: stack
+                uncertianty:
+                        nominal
+                color: r
+                marker: "o"
+
+
+codes:
+   region:
+      SR: 2
+      SB: 1
+      other: 0
+   tag:
+      threeTag: 3
+      fourTag: 4
+      other: 0
+
+doRatio:
+    1
+    

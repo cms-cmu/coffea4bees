@@ -1,0 +1,68 @@
+hists:
+        data:
+                process: data
+                tag: fourTag
+                label: Four-tag data
+                edgecolor: k
+                fillcolor: k            
+
+
+#        t3_from_d3:
+#                process: TTbar3b_from_d3
+#                tag: threeTag
+#                edgecolor: "#964a8b"
+#                fillcolor: "#964a8b"            
+#                label: TTbar3b (weighted)
+#
+#
+#        t3:
+#                process: [TTToHadronic, TTToSemiLeptonic, TTTo2L2Nu]   
+#                tag: threeTag           
+#                fillcolor: "#85D1FBff"
+#                edgecolor: k
+#                label: $t\bar{t} 3b$
+#
+#
+#        t4:
+#                process: [TTToHadronic, TTToSemiLeptonic, TTTo2L2Nu]   
+#                tag: fourTag
+#                edgecolor: "#7a21dd"
+#                fillcolor: "#7a21dd"            
+#                label: $t\bar{t} 4b$
+
+
+stack:
+        t4_from_d3:
+                process: TTbar4b_from_d3
+                tag: threeTag
+                fillcolor: "#85D1FBff"
+                edgecolor: k
+                label: TTbar4b (weighted)
+
+
+        mix_all:
+                process: mixeddata_all
+                tag: fourTag
+                year: RunII
+                label: Mixed Data (before subsample)
+                fillcolor: "#FFDF7Fff"
+                edgecolor: k
+                scalefactor: 0.06
+
+
+
+ratios:
+        dataToBkg:
+                numerator:
+                        type: hists
+                        key: data
+                denominator:
+                        type: stack
+                uncertianty:
+                        nominal
+                color: k
+                marker: "o"
+
+doRatio:
+    1
+

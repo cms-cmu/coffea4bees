@@ -31,11 +31,11 @@ jet:
     selected_loose:
       pt_min: 20
       eta_max: 4.7
-      jetId_min: 2
+      jetId_tag: AK4PUPPI_TightLeptonVeto
     selected:
       pt_min: 30
       eta_max: 2.4
-      jetId_min: 2
+      jetId_tag: AK4PUPPI_TightLeptonVeto
   run2:
     default:
       pileup:

@@ -4,7 +4,8 @@ import logging
 import yaml
 import os
 from src.physics.common import drClean, compute_puid
-from src.physics.objects.jet_corrections import apply_jet_veto_maps, apply_jerc_corrections
+from src.physics.objects.jet_corrections import apply_jet_veto_maps, apply_jerc_corrections, apply_jerc_corrections_jsonpog
+from src.physics.objects.jet_tools import compute_jet_id
 from coffea4bees.analysis.trigger_emulator.helpers import compute_emulation_vars
 from copy import copy
 from typing import Dict, Any
@@ -242,15 +243,25 @@ def jet_selection(
         r3_fwd_pt_thr    = r3_pu.get('forward_pt_threshold', 40)
         r3_sl_pt_min     = r3_sl.get('pt_min', 20)
         r3_sl_eta_max    = r3_sl.get('eta_max', 4.7)
-        r3_sl_jetId_min  = r3_sl.get('jetId_min', 2)
+        r3_sl_jetId_tag  = r3_sl.get('jetId_tag', 'AK4PUPPI_TightLeptonVeto')
         r3_s_pt_min      = r3_s.get('pt_min', 30)
         r3_s_eta_max     = r3_s.get('eta_max', 2.4)
-        r3_s_jetId_min   = r3_s.get('jetId_min', 2)
+        r3_s_jetId_tag   = r3_s.get('jetId_tag', 'AK4PUPPI_TightLeptonVeto')
 
         event['Jet', 'bRegCorr'] = 1.0
         event['Jet', 'btagScore'] = event.Jet.btagPNetB
 
         if not isSyntheticData:
+            #### temporary hack
+            if '2024' in dataset:
+                event['Jet'] = apply_jerc_corrections_jsonpog(
+                    event,
+                    corrections_metadata=corrections_metadata,
+                    isMC=isMC,
+                    dataset=dataset,
+                    run_systematics=False,
+                    jet_type="AK4PFPuppi"
+                )
             event['Jet'] = ak.where(
                 event.Jet.btagScore >= corrections_metadata['btagWP']['L'],
                 apply_jerc_corrections(
@@ -262,22 +273,29 @@ def jet_selection(
                     jet_corr_factor=event.Jet.PNetRegPtRawCorr * event.Jet.PNetRegPtRawCorrNeutrino,
                     jet_type="AK4PFPuppiPNetRegressionPlusNeutrino"
                 ),
-                apply_jerc_corrections(
+                apply_jerc_corrections_jsonpog(
                     event,
                     corrections_metadata=corrections_metadata,
                     isMC=isMC,
-                    run_systematics=False,
                     dataset=dataset,
-                    jet_type="AK4PFPuppi.txt"
+                    run_systematics=False,
+                    jet_type="AK4PFPuppi"
                 )
             )
 
         event['Jet', 'puId'] = 10
-        if 'jetId' not in event.Jet.fields:
-            event['Jet', 'jetId'] = 10 ######### In nanoV15 we need to read jetID from json files. To be implemented
+        if 'jetId' in event.Jet.fields: ###### temporary hack before using nanoV15
+            event['Jet', 'passJetId_loose'] = event.Jet.jetId >= 2
+            event['Jet', 'passJetId'] = event.Jet.jetId >= 2
+        else:
+            event['Jet', 'passJetId_loose'] = compute_jet_id(event.Jet, corrections_metadata['jet_id'], r3_sl_jetId_tag)
+            if r3_s_jetId_tag == r3_sl_jetId_tag:
+                event['Jet', 'passJetId'] = event['Jet', 'passJetId_loose']
+            else:
+                event['Jet', 'passJetId'] = compute_jet_id(event.Jet, corrections_metadata['jet_id'], r3_s_jetId_tag)
         event['Jet', 'pileup'] = ((event.Jet.puId < r3_puId_thr) & (event.Jet.pt < r3_pu_pt_thr)) | ((np.abs(event.Jet.eta) > r3_fwd_eta_min) & (event.Jet.pt < r3_fwd_pt_thr))
-        event['Jet', 'selected_loose'] = (event.Jet.pt >= r3_sl_pt_min) & (event.Jet.jetId >= r3_sl_jetId_min) & event.Jet.lepton_cleaned & (np.abs(event.Jet.eta) <= r3_sl_eta_max)
-        event['Jet', 'selected'] = (event.Jet.pt >= r3_s_pt_min) & (np.abs(event.Jet.eta) <= r3_s_eta_max) & ~event.Jet.pileup & (event.Jet.jetId >= r3_s_jetId_min) & event.Jet.lepton_cleaned
+        event['Jet', 'selected_loose'] = (event.Jet.pt >= r3_sl_pt_min) & event.Jet.passJetId_loose & event.Jet.lepton_cleaned & (np.abs(event.Jet.eta) <= r3_sl_eta_max)
+        event['Jet', 'selected'] = (event.Jet.pt >= r3_s_pt_min) & (np.abs(event.Jet.eta) <= r3_s_eta_max) & ~event.Jet.pileup & event.Jet.passJetId & event.Jet.lepton_cleaned
 
     # Non-Run3 jet selection
     else:
