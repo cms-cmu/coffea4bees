@@ -7,7 +7,7 @@ mixeddata_all:
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL16_postVFPF/picoAOD_mixed_all.chunk1.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL16_postVFPF/picoAOD_mixed_all.chunk2.root
       G:
-        files:      
+        files:
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL16_postVFPG/picoAOD_mixed_all.chunk0.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL16_postVFPG/picoAOD_mixed_all.chunk1.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL16_postVFPG/picoAOD_mixed_all.chunk2.root
@@ -17,7 +17,7 @@ mixeddata_all:
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL16_postVFPG/picoAOD_mixed_all.chunk6.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL16_postVFPG/picoAOD_mixed_all.chunk7.root
       H:
-        files:      
+        files:
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL16_postVFPH/picoAOD_mixed_all.chunk0.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL16_postVFPH/picoAOD_mixed_all.chunk1.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL16_postVFPH/picoAOD_mixed_all.chunk2.root
@@ -54,7 +54,7 @@ mixeddata_all:
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL16_preVFPE/picoAOD_mixed_all.chunk1.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL16_preVFPE/picoAOD_mixed_all.chunk2.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL16_preVFPE/picoAOD_mixed_all.chunk3.root
-     
+        
   UL17:
     picoAOD:
       C:
@@ -68,14 +68,14 @@ mixeddata_all:
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL17D/picoAOD_mixed_all.chunk0.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL17D/picoAOD_mixed_all.chunk1.root
       E:
-        files:      
+        files:
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL17E/picoAOD_mixed_all.chunk0.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL17E/picoAOD_mixed_all.chunk1.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL17E/picoAOD_mixed_all.chunk2.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL17E/picoAOD_mixed_all.chunk3.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL17E/picoAOD_mixed_all.chunk4.root
       F:
-        files:      
+        files:
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL17F/picoAOD_mixed_all.chunk0.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL17F/picoAOD_mixed_all.chunk1.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL17F/picoAOD_mixed_all.chunk2.root
@@ -95,20 +95,20 @@ mixeddata_all:
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL18A/picoAOD_mixed_all.chunk5.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL18A/picoAOD_mixed_all.chunk6.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL18A/picoAOD_mixed_all.chunk7.root
-     B:
-        files:      
+      B:
+        files:
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL18B/picoAOD_mixed_all.chunk0.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL18B/picoAOD_mixed_all.chunk1.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL18B/picoAOD_mixed_all.chunk2.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL18B/picoAOD_mixed_all.chunk3.root
-     C:
-        files:      
+      C:
+        files:
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL18C/picoAOD_mixed_all.chunk0.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL18C/picoAOD_mixed_all.chunk1.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL18C/picoAOD_mixed_all.chunk2.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL18C/picoAOD_mixed_all.chunk3.root
-     D:
-        files:      
+      D:
+        files:
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL18D/picoAOD_mixed_all.chunk0.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL18D/picoAOD_mixed_all.chunk1.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL18D/picoAOD_mixed_all.chunk10.root
@@ -124,7 +124,7 @@ mixeddata_all:
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL18D/picoAOD_mixed_all.chunk7.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL18D/picoAOD_mixed_all.chunk8.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL18D/picoAOD_mixed_all.chunk9.root
-  
+
 # mixeddata_all:
 #   UL16_postVFP:
 #     picoAOD:
