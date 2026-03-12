@@ -14,7 +14,7 @@ dataset:
       - --max-workers 20
       - --data-source mixed_all detector
       - --JCM-weight "source:mixed_all" coffea4bees/analysis/weights/JCM/Run3_MvD/jetCombinatoricModel_SB_.yml@@JCM_weights
-      - --friends "" coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_mixeddata_all.json@@HCR_input
+      - --friends "" coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3.json@@HCR_input
 
 model:
   - module: HCR.MvD.baseline.Train

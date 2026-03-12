@@ -62,6 +62,11 @@ def rename_FvT_friend(chunk: Chunk, friend: Friend):
     return _rename(FvT, kept, rename)
 
 
+def read_MvD_friend(chunk: Chunk, friend: Friend):
+    wanted = {"MvD", "q_1234", "q_1324", "q_1423", "p_mix4", "p_d4", "p_t4", "p_4b"}
+    return friend.arrays(chunk, reader_options={"branch_filter": wanted.intersection})
+
+
 def rename_SvB_friend(chunk: Chunk, friend: Friend):
     kept = ["q_1234", "q_1324", "q_1423"]
     renames = {

@@ -12,7 +12,7 @@ dataset:
     option:
       - --metadata coffea4bees/metadata/datasets_HH4b_Run3/archive/datasets_HH4b_Run3_2025_Run3_skims
       - --max-workers 8
-      - --data-source detector
+      - --data-source detector mixed_all
       - --friends "" coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3.json@@HCR_input
 
 model:
