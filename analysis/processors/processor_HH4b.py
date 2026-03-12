@@ -184,6 +184,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         make_friend_SvB: str = None,
         subtract_ttbar_with_weights: bool = False,
         plot_ttbar_with_weights: bool = False,
+        plot_ttbar_with_MvD_weights: bool = False,
         apply_MvD: bool = False,
         apply_mixeddata_sel: bool = False,  #### apply HIG-22-011 sel for mixeddata
         friends: dict[str, str|FriendTemplate] = None,
@@ -231,6 +232,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             self.apply_FvT = True
 
         self.plot_ttbar_with_weights = plot_ttbar_with_weights
+        self.plot_ttbar_with_MvD_weights = plot_ttbar_with_MvD_weights
         self.friends = parse_friends(friends)
         self.histCuts = hist_cuts
         self.apply_mixeddata_sel = apply_mixeddata_sel
@@ -285,7 +287,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             self.year_label = self.corrections_metadata[self.year]['year_label']
             self.processName = event.metadata['processName']
 
-            if self.processName.find("mix") != -1 or self.dataset.find("syn") != -1:
+            if (self.processName.find("mix") != -1 or self.dataset.find("syn") != -1) and self.processName != "mixeddata_all":
                 new_processName = self.dataset.replace(f'_{self.year}','')
                 logging.info(f"Overridding processName: {self.processName} to {new_processName} for dataset {self.dataset}")
                 self.processName = new_processName
@@ -560,6 +562,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 if self.plot_ttbar_with_weights and hasattr(self, '_cutFlow_ttbar'):
                     era = event.metadata["dataset"].removeprefix("data_")
                     self._cutFlow_ttbar.addOutput(processOutput, f"TTbar_from_d3_{era}")
+                if self.plot_ttbar_with_MvD_weights and hasattr(self, '_cutFlow_ttbar_MvD'):
+                    era = event.metadata["dataset"].removeprefix("mixeddata_all_")
+                    self._cutFlow_ttbar_MvD.addOutput(processOutput, f"TTbar4b_from_MvD_{era}")
 
         with self._stage(f"{label}:fill_histograms"):
             # Fill histograms
@@ -928,6 +933,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         if self.plot_ttbar_with_weights:
             self._cutFlow_ttbar = cutflow_4b(do_truth_hists=False)
 
+        if self.plot_ttbar_with_MvD_weights:
+            self._cutFlow_ttbar_MvD = cutflow_4b(do_truth_hists=False)
+
     def fill_cutflow_with_and_without_trig(self, cut_name, events, weights=None, selection_mask=None, allTag=None, weight_override=None):
         """Helper to fill cutflow with and without trigger weight.
 
@@ -1130,6 +1138,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         if self.plot_ttbar_with_weights:
             self._fill_ttbar_detailed_cutflows(selev)
 
+        if self.plot_ttbar_with_MvD_weights:
+            self._fill_ttbar_MvD_detailed_cutflows(selev)
+
     def _fill_ttbar_detailed_cutflows(self, selev):
         """Fill ttbar cutflow histograms using FvT d3_to_t4 and d3_to_t3 weights.
 
@@ -1163,6 +1174,38 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         if self.run_SvB:
             fill_ttbar_cut("passSvB", selev[selev.passSvB])
             fill_ttbar_cut("failSvB", selev[selev.failSvB])
+
+    def _fill_ttbar_MvD_detailed_cutflows(self, selev):
+        """Fill TTbar cutflow histograms using MvD p_t4/p_mix4 weights.
+
+        Only fills fourTag events (no threeTag component).
+          - _cutFlowFourTag is filled with fourTag events weighted by weight_mix4_to_t4_MvD
+          - _cutFlowThreeTag and _cutFlowTwoTag are set to zero
+
+        Args:
+            selev: Selected events array (must have passSR and passSB already set)
+        """
+        if 'weight_mix4_to_t4_MvD' not in selev.fields:
+            return
+
+        def fill_ttbar_MvD_cut(cut, ev):
+            ev4 = ev[ev.fourTag]
+            n4 = len(ev4)
+            self._cutFlow_ttbar_MvD._cutFlowFourTag [cut] = (float(np.sum(ev4['weight_mix4_to_t4_MvD'])), n4)
+            self._cutFlow_ttbar_MvD._cutFlowThreeTag[cut] = (0, 0)
+            self._cutFlow_ttbar_MvD._cutFlowTwoTag  [cut] = (0, 0)
+
+        fill_ttbar_MvD_cut("passPreSel", selev)
+        fill_ttbar_MvD_cut("passDiJetMass", selev[selev.passDiJetMass])
+        fill_ttbar_MvD_cut("boosted_veto_passPreSel", selev[selev.notInBoostedSel])
+        fill_ttbar_MvD_cut("boosted_veto_SR", selev[selev.notInBoostedSel & selev["quadJet_selected"].SR])
+        fill_ttbar_MvD_cut("SR", selev[selev.passSR])
+        fill_ttbar_MvD_cut("SB", selev[selev.passSB])
+        fill_ttbar_MvD_cut("passVBFSel", selev[selev.passVBFSel])
+
+        if self.run_SvB:
+            fill_ttbar_MvD_cut("passSvB", selev[selev.passSvB])
+            fill_ttbar_MvD_cut("failSvB", selev[selev.failSvB])
 
     def dump_friend_trees(self, selev, analysis_selections, shift_name):
         """Dump all requested friend trees.
@@ -1363,43 +1406,66 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 isDataForMixed=self.config['isDataForMixed'],
                 event_metadata=event.metadata
             )
-            if not self.plot_ttbar_with_weights:
+            if not self.plot_ttbar_with_weights and not self.plot_ttbar_with_MvD_weights:
                 return hist_nom
 
 
-            hist_t4 = filling_nominal_histograms(
-                selev,
-                self.apply_JCM,
-                processName="TTbar4b_from_d3",
-                year=self.year,
-                isMC=self.config["isMC"],
-                histCuts=self.histCuts,
-                apply_FvT=apply_FvT,
-                run_SvB=self.run_SvB,
-                run_dilep_ttbar_crosscheck=self.run_dilep_ttbar_crosscheck,
-                top_reconstruction=self.top_reconstruction,
-                isDataForMixed=self.config['isDataForMixed'],
-                event_metadata=event.metadata,
-                weight_name = "weight_d3_to_t4"
-            )
+            hists = [hist_nom]
 
-            hist_t3 = filling_nominal_histograms(
-                selev,
-                self.apply_JCM,
-                processName="TTbar3b_from_d3",
-                year=self.year,
-                isMC=self.config["isMC"],
-                histCuts=self.histCuts,
-                apply_FvT=apply_FvT,
-                run_SvB=self.run_SvB,
-                run_dilep_ttbar_crosscheck=self.run_dilep_ttbar_crosscheck,
-                top_reconstruction=self.top_reconstruction,
-                isDataForMixed=self.config['isDataForMixed'],
-                event_metadata=event.metadata,
-                weight_name = "weight_d3_to_t3"
-            )
+            if self.plot_ttbar_with_weights:
+                hist_t4 = filling_nominal_histograms(
+                    selev,
+                    self.apply_JCM,
+                    processName="TTbar4b_from_d3",
+                    year=self.year,
+                    isMC=self.config["isMC"],
+                    histCuts=self.histCuts,
+                    apply_FvT=apply_FvT,
+                    run_SvB=self.run_SvB,
+                    run_dilep_ttbar_crosscheck=self.run_dilep_ttbar_crosscheck,
+                    top_reconstruction=self.top_reconstruction,
+                    isDataForMixed=self.config['isDataForMixed'],
+                    event_metadata=event.metadata,
+                    weight_name = "weight_d3_to_t4"
+                )
 
-            return processor.accumulate([hist_nom, hist_t4, hist_t3])
+                hist_t3 = filling_nominal_histograms(
+                    selev,
+                    self.apply_JCM,
+                    processName="TTbar3b_from_d3",
+                    year=self.year,
+                    isMC=self.config["isMC"],
+                    histCuts=self.histCuts,
+                    apply_FvT=apply_FvT,
+                    run_SvB=self.run_SvB,
+                    run_dilep_ttbar_crosscheck=self.run_dilep_ttbar_crosscheck,
+                    top_reconstruction=self.top_reconstruction,
+                    isDataForMixed=self.config['isDataForMixed'],
+                    event_metadata=event.metadata,
+                    weight_name = "weight_d3_to_t3"
+                )
+                hists += [hist_t4, hist_t3]
+
+            if self.plot_ttbar_with_MvD_weights:
+                hist_mvd_t4 = filling_nominal_histograms(
+                    selev,
+                    self.apply_JCM,
+                    processName="TTbar4b_from_MvD",
+                    year=self.year,
+                    isMC=self.config["isMC"],
+                    histCuts=self.histCuts,
+                    apply_FvT=apply_FvT,
+                    run_SvB=self.run_SvB,
+                    run_dilep_ttbar_crosscheck=self.run_dilep_ttbar_crosscheck,
+                    top_reconstruction=self.top_reconstruction,
+                    isDataForMixed=self.config['isDataForMixed'],
+                    event_metadata=event.metadata,
+                    tag_list=["fourTag"],
+                    weight_name="weight_mix4_to_t4_MvD"
+                )
+                hists.append(hist_mvd_t4)
+
+            return processor.accumulate(hists)
 
 
 

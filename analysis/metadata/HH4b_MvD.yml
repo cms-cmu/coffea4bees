@@ -6,6 +6,7 @@ config:
   blind: false
   apply_FvT: false
   apply_MvD: true
+  plot_ttbar_with_MvD_weights: true
   apply_JCM: true
   JCM_file: coffea4bees/analysis/weights/JCM/Run3_MvD/jetCombinatoricModel_SB_.yml
   apply_trigWeight: true

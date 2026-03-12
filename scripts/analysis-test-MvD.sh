@@ -36,13 +36,15 @@ display_section_header "Input Datasets"
 DATASETS=${DATASET_RUN3:-"coffea4bees/metadata/datasets_HH4b_Run3/"}
 echo "Using datasets file: $DATASETS"
 
+#2022_preEE 2023_BPix 2023_preBPix
+
 display_section_header "Running MvD processor"
 if [ -n "$DO_TEST" ]; then
     time bash coffea4bees/scripts/run-analysis-processor.sh \
         --output-base "$OUTPUT_BASE_DIR" \
         --datasets "mixeddata_all data" \
         --dataset-metadata "$DATASETS" \
-        --year "2022_EE 2022_preEE 2023_BPix 2023_preBPix" \
+        --year "2022_EE" \
         --output-filename "test.coffea" \
         --output-subdir "$JOB" \
         --config coffea4bees/analysis/metadata/HH4b_MvD.yml
