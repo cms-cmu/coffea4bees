@@ -70,6 +70,8 @@ def add_pseudotagweights(
     JCM_lowpt: callable = None,
     apply_FvT: bool = False,
     isDataForMixed: bool = False,
+    apply_MvD: bool = False,
+    isMixedDataAll: bool = False,
     list_weight_names: list = [],
     event_metadata: dict = {},
     year_label: str = None,
@@ -101,6 +103,33 @@ def add_pseudotagweights(
     all_weights = ['genweight', 'CMS_bbbb_resolved_ggf_triggerEffSF', f'CMS_pileup_{year_label}', 'CMS_btag']
     logging.debug( f"noJCM_noFVT partial {weights.partial_weight(include=all_weights)[:10]}" )
     event["weight_noJCM_noFvT"] = weights.partial_weight(include=all_weights)
+
+    # MvD path for mixeddata_all: apply JCM to fourTag events, then MvD weight
+    if isMixedDataAll and apply_MvD:
+        if JCM:
+            selected_jets = event.Jet.selected_lowpt if lowpt else event.Jet.selected
+            tagged_loose  = event.Jet.tagged_loose_lowpt if lowpt else event.Jet.tagged_loose
+            event["Jet_untagged_loose"] = event.Jet[selected_jets & ~tagged_loose]
+            fourTag = ak.to_numpy(event["fourTag"]).astype(bool)
+            jcm_weight = np.ones(len(event), dtype=float)
+            jcm_weight[fourTag], _ = JCM(
+                ak.num(event[fourTag]["Jet_untagged_loose"], axis=1),
+                event.event[fourTag],
+            )
+            weights.add("JCM", jcm_weight)
+            list_weight_names.append("JCM")
+            logging.debug(f"MvD JCM (fourTag) {weights.partial_weight(include=['JCM'])[:10]}")
+
+        mvd_weight = np.where(
+            ak.to_numpy(event["fourTag"]).astype(bool),
+            ak.to_numpy(event.MvD.MvD).astype(float),
+            1.0,
+        )
+        weights.add("MvD", mvd_weight)
+        list_weight_names.append("MvD")
+        logging.debug(f"MvD {weights.partial_weight(include=['MvD'])[:10]}")
+        return weights, list_weight_names
+
     logging.debug(f"three 3b events flag: {event[label3b][:10]}")
 
     if JCM:

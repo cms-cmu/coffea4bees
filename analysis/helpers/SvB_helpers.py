@@ -204,7 +204,7 @@ def setFvTVars(FvTName, event):
         event[FvTName, "pd3"] = np.ones(len(event))
 
     event[FvTName, "frac_err"]   = getattr(event, FvTName).std / getattr(event, FvTName).FvT
-    event[FvTName, "d4_to_t4"] = getattr(event, FvTName).pt4 / getattr(event, FvTName).pd4
+    event[FvTName, "d4_to_t4"]   = getattr(event, FvTName).pt4 / getattr(event, FvTName).pd4
     event[FvTName, "d3_to_t3"]   = getattr(event, FvTName).pt3 / getattr(event, FvTName).pd3
     event[FvTName, "d3_to_t4"]   = getattr(event, FvTName).pt4 / getattr(event, FvTName).pd3
 

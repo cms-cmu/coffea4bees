@@ -54,6 +54,7 @@ import os
 from ..helpers.load_friend import (
     FriendTemplate,
     parse_friends,
+    read_MvD_friend,
     rename_FvT_friend,
     rename_SvB_friend,
 )
@@ -183,6 +184,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         make_friend_SvB: str = None,
         subtract_ttbar_with_weights: bool = False,
         plot_ttbar_with_weights: bool = False,
+        apply_MvD: bool = False,
         apply_mixeddata_sel: bool = False,  #### apply HIG-22-011 sel for mixeddata
         friends: dict[str, str|FriendTemplate] = None,
         return_events_for_display: bool = False,
@@ -204,6 +206,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.apply_trigWeight = apply_trigWeight
         self.apply_btagSF = apply_btagSF
         self.apply_FvT = apply_FvT
+        self.apply_MvD = apply_MvD
         self.run_SvB = run_SvB
         self.fill_histograms = fill_histograms
         self.run_dilep_ttbar_crosscheck = run_dilep_ttbar_crosscheck
@@ -329,6 +332,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         with self._stage("load_friend_FvT"):
             if self.apply_FvT and self.classifier_FvT is None:
                 self.load_FvT(event)
+
+        with self._stage("load_friend_MvD"):
+            if self.apply_MvD and self.config["isMixedDataAll"]:
+                self.load_MvD(event)
 
         with self._stage("load_friend_SvB"):
             if self.run_SvB:
@@ -701,6 +708,20 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         setFvTVars("FvT", event)
 
+
+    def load_MvD(self, event):
+        """Load MvD friend tree.
+
+        Requires chunk-scoped variables: target
+        Must be called after process() has initialized these variables.
+
+        Args:
+            event: Event array
+        """
+        if "MvD" in self.friends:
+            event["MvD"] = read_MvD_friend(self.target, self.friends["MvD"])
+        else:
+            raise ValueError("apply_MvD=True but no 'MvD' entry found in friends dict")
 
     def load_SvB(self, event):
         """Load SvB friend tree.
@@ -1256,6 +1277,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             JCM=self.apply_JCM,
             apply_FvT=self.apply_FvT,
             isDataForMixed=self.config["isDataForMixed"],
+            apply_MvD=self.apply_MvD,
+            isMixedDataAll=self.config["isMixedDataAll"],
             list_weight_names=list_weight_names,
             event_metadata=event.metadata,
             year_label=self.year_label,
