@@ -1,7 +1,7 @@
 analysis_test_coffea4bees:
   stage: analysis   
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/analysis-test.sh --output-base /builds/$CI_PROJECT_PATH/output
   artifacts: 
@@ -11,7 +11,7 @@ analysis_test_coffea4bees:
 analysis_signals_test_coffea4bees:
   stage: analysis
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/analysis-signals-test.sh --output-base /builds/$CI_PROJECT_PATH/output
   artifacts: 
@@ -21,7 +21,7 @@ analysis_signals_test_coffea4bees:
 analysis_test_Run3_coffea4bees:
   stage: analysis   
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/analysis-test-Run3.sh --output-base /builds/$CI_PROJECT_PATH/output
   artifacts: 
@@ -31,7 +31,7 @@ analysis_test_Run3_coffea4bees:
 analysis_truthStudy_test_coffea4bees:   
   stage: analysis   
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/analysis-truthStudy-test.sh --output-base /builds/$CI_PROJECT_PATH/output
   artifacts: 
@@ -42,7 +42,7 @@ analysis_truthStudy_test_coffea4bees:
 synthetic_dataset_cluster_coffea4bees:
   stage: analysis   
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/synthetic-dataset-cluster.sh --output-base /builds/$CI_PROJECT_PATH/output
   artifacts: 
@@ -52,7 +52,7 @@ synthetic_dataset_cluster_coffea4bees:
 mixeddata_cluster_coffea4bees:
   stage: analysis
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/mixeddata-cluster.sh --output-base /builds/$CI_PROJECT_PATH/output
   artifacts:
@@ -66,7 +66,7 @@ mixeddata_cluster_coffea4bees:
 analysis_unsup_test_coffea4bees:   
   stage: analysis   
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/analysis-unsup-test.sh --output-base /builds/$CI_PROJECT_PATH/output
   artifacts: 
@@ -76,7 +76,7 @@ analysis_unsup_test_coffea4bees:
 analysis_test_mixed_coffea4bees:   
   stage: analysis   
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/analysis-test-mixed.sh --output-base /builds/$CI_PROJECT_PATH/output
   artifacts: 
@@ -97,7 +97,7 @@ analysis_test_mixed_coffea4bees:
 analysis_systematics_test_coffea4bees:   
   stage: analysis   
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/analysis-systematics-test.sh --output-base /builds/$CI_PROJECT_PATH/output
   artifacts: 
@@ -107,9 +107,9 @@ analysis_systematics_test_coffea4bees:
 skimmer_analysis_test_coffea4bees:   
   stage: analysis   
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs: 
-    - setup_workspace
+    - setup_coffea4bees
     - skimmer_test_coffea4bees
   script:
     - source coffea4bees/scripts/skimmer-analysis-test.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -120,9 +120,9 @@ skimmer_analysis_test_coffea4bees:
 synthetic_dataset_analyze_coffea4bees:
   stage: analysis   
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs:
-    - setup_workspace
+    - setup_coffea4bees
     - synthetic_dataset_make_dataset_coffea4bees
   script:
     - source coffea4bees/scripts/synthetic-dataset-analyze.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -133,9 +133,9 @@ synthetic_dataset_analyze_coffea4bees:
 synthetic_dataset_analyze_Run3_coffea4bees:
   stage: analysis   
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs:
-    - setup_workspace
+    - setup_coffea4bees
     - synthetic_dataset_make_dataset_Run3_coffea4bees
   script:
     - source coffea4bees/scripts/synthetic-dataset-analyze-Run3.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -147,9 +147,9 @@ synthetic_dataset_analyze_Run3_coffea4bees:
 weights_trigger_analysis_coffea4bees:   
   stage: analysis   
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs:
-    - setup_workspace
+    - setup_coffea4bees
     - weights_trigger_friendtree_coffea4bees
   script:
     - source coffea4bees/scripts/weights-trigger-analysis.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -160,9 +160,9 @@ weights_trigger_analysis_coffea4bees:
 SvB_friendtree_analysis_coffea4bees:
   stage: analysis   
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs:
-    - setup_workspace
+    - setup_coffea4bees
     - SvB_friendtree_coffea4bees
   script:
     - source coffea4bees/scripts/SvB-friendtree-analysis.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -173,9 +173,9 @@ SvB_friendtree_analysis_coffea4bees:
 mixeddata_analyze_coffea4bees:
   stage: analysis   
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs:
-    - setup_workspace
+    - setup_coffea4bees
     - mixeddata_split_dataset_coffea4bees
   script:
     - source coffea4bees/scripts/mixeddata-analyze.sh --output-base /builds/$CI_PROJECT_PATH/output
