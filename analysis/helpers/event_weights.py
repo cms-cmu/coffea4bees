@@ -154,6 +154,7 @@ def add_pseudotagweights(
         return weights, list_weight_names
 
     logging.debug(f"three 3b events flag: {event[label3b][:10]}")
+    # logging.debug(f"three 4b events flag: {event['lowpt_fourTag'][:10]}")
 
     if JCM:
 
@@ -244,7 +245,7 @@ def add_pseudotagweights(
         nTagJets[event[label3b]] = ak.num(tagJet_loose[event[label3b]], axis=1)
         event["nJet_ps_and_tag"] = nJet_pseudotagged + nTagJets
 
-        event["pseudoTagWeight_lowpt"] = np.ones(len(event), dtype=float)  # Initialize dummy lowpt pseudoTagWeight
+        # event["pseudoTagWeight_lowpt"] = np.ones(len(event), dtype=float)  # Initialize dummy lowpt pseudoTagWeight
 
         # if 'lowpt' in label3b:
         #     event["weight_noJCM_lowpt_noFvT"] = event.weight_noJCM_noFvT * event.pseudoTagWeight
@@ -272,7 +273,7 @@ def add_pseudotagweights(
         # Calculate weight without FvT
         weight_noFvT = ak.where(
             event[label3b],
-            event.weight * event.pseudoTagWeight * event.pseudoTagWeight_lowpt,
+            event.weight * event.pseudoTagWeight, # * event.pseudoTagWeight_lowpt,
             event.weight
         )
 
@@ -310,7 +311,8 @@ def add_pseudotagweights(
             else:
                 weight = np.where(
                     event[label3b],
-                    event["pseudoTagWeight"] * event["pseudoTagWeight_lowpt"] * event.FvT.FvT,
+                    # event["pseudoTagWeight"] * event["pseudoTagWeight_lowpt"] * event.FvT.FvT,
+                    event["pseudoTagWeight"] * event.FvT.FvT,
                     1.0
                 )
                 weights.add("FvT", weight)
@@ -318,11 +320,21 @@ def add_pseudotagweights(
                 logging.debug( f"FvT {weights.partial_weight(include=['FvT'])[:10]}\n" )
 
 
-                weight_d3_to_t4 = ak.where(event[label3b], event.weight * event.pseudoTagWeight * event.pseudoTagWeight_lowpt * event.FvT.d3_to_t4, event.weight)
+                weight_d3_to_t4 = ak.where(
+                    event[label3b], 
+                    event.weight * event.pseudoTagWeight * event.FvT.d3_to_t4,
+                    event.weight
+                )
+                # weight_d3_to_t4 = ak.where(event[label3b], event.weight * event.pseudoTagWeight * event.pseudoTagWeight_lowpt * event.FvT.d3_to_t4, event.weight)
                 event["weight_d3_to_t4"] = weight_d3_to_t4
                 logging.debug( f"weight_d3_to_t4 {event.weight_d3_to_t4[:10]}\n" )
 
-                weight_d3_to_t3 = ak.where(event[label3b], event.weight * event.pseudoTagWeight * event.pseudoTagWeight_lowpt * event.FvT.d3_to_t3, event.weight)
+                weight_d3_to_t3 = ak.where(
+                    event[label3b], 
+                    event.weight * event.pseudoTagWeight * event.FvT.d3_to_t3, 
+                    event.weight
+                )
+                # weight_d3_to_t3 = ak.where(event[label3b], event.weight * event.pseudoTagWeight * event.pseudoTagWeight_lowpt * event.FvT.d3_to_t3, event.weight)
                 event["weight_d3_to_t3"] = weight_d3_to_t3
                 logging.debug( f"weight_d3_to_t3 {event.weight_d3_to_t3[:10]}\n" )
 
@@ -330,7 +342,7 @@ def add_pseudotagweights(
             weight_noFvT = np.copy(event.weight)
             weight_noFvT = np.where(
                 event[label3b],
-                event["pseudoTagWeight"] * event["pseudoTagWeight_lowpt"],
+                event["pseudoTagWeight"], # * event["pseudoTagWeight_lowpt"],
                 1.0
             )
             weights.add("no_FvT", weight_noFvT)

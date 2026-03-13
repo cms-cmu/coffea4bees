@@ -71,6 +71,7 @@ class analysis(HH4bBaseProcessor):
             weights=weights,
             list_weight_names=list_weight_names,
             analysis_selections=analysis_selections,
+            label3b="lowpt_threeTag",
         )
     
 
@@ -154,23 +155,6 @@ class analysis(HH4bBaseProcessor):
         if self.classifier_FvT: apply_FvT = True
         else: apply_FvT = self.apply_FvT
 
-        # if not self.run_systematics:
-        #     ## this can be simplified
-        #     return filling_nominal_histograms(
-        #             selev,
-        #             self.apply_JCM,
-        #             processName=self.processName,
-        #             year=self.year,
-        #             isMC=self.config["isMC"],
-        #             histCuts=self.histCuts,
-        #             apply_FvT=self.apply_FvT,
-        #             run_SvB=self.run_SvB,
-        #             run_dilep_ttbar_crosscheck=self.run_dilep_ttbar_crosscheck,
-        #             top_reconstruction=self.top_reconstruction,
-        #             isDataForMixed=self.config['isDataForMixed'],
-        #             tag_list=["lowpt_fourTag", "lowpt_threeTag"],
-        #             event_metadata=event.metadata,
-        #         )
         if not self.run_systematics:
             ## this can be simplified
             hist_nom = filling_nominal_histograms(
