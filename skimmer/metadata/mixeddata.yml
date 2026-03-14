@@ -10,7 +10,7 @@ runner:
   class_name: HemiMixer
   data_tier: picoAOD
   condor_cores: 1
-  condor_memory: 4GB
+  worker_memory: 4GB
   condor_transfer_input_files:
     - src
     - coffea4bees/
@@ -21,14 +21,12 @@ runner:
     - T3_US_NotreDame
 
 config:
-  base_path: root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor
+  base_path: root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_fixTTSub
   # base_path: skimmer/test/
   subtract_ttbar_with_weights: True
   hemi_library_yaml: coffea4bees/skimmer/metadata/hemisphere_library_noTT.yml
   hemi_stats_path: coffea4bees/skimmer/metadata/
   campaign:   
-  friends:
-    trigWeight: "coffea4bees/metadata/datasets_HH4b_Run2/trigweights_2024_v1p2.json@@trigWeight"
   step: 100000
   skip_collections:
     - notCanJet

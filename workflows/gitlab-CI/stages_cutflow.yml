@@ -1,9 +1,9 @@
 analysis_cutflow_coffea4bees:
   stage: cutflow
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs: 
-    - setup_workspace
+    - setup_coffea4bees
     - tools_merge_test_coffea4bees
   script:
     - source coffea4bees/scripts/analysis-cutflow.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -14,9 +14,9 @@ analysis_cutflow_coffea4bees:
 analysis_cutflow_Run3_coffea4bees:
   stage: cutflow
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs: 
-    - setup_workspace
+    - setup_coffea4bees
     - analysis_test_Run3_coffea4bees
   script:
     - source coffea4bees/scripts/analysis-cutflow-Run3.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -28,9 +28,9 @@ analysis_cutflow_Run3_coffea4bees:
 analysis_mixed_cutflow_coffea4bees:  
   stage: cutflow
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs: 
-    - setup_workspace
+    - setup_coffea4bees
     - analysis_test_mixed_coffea4bees
   script:
     - source coffea4bees/scripts/analysis-mixed-cutflow.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -42,9 +42,9 @@ analysis_mixed_cutflow_coffea4bees:
 skimmer_analysis_cutflow_coffea4bees:
   stage: cutflow
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs: 
-    - setup_workspace
+    - setup_coffea4bees
     - skimmer_analysis_test_coffea4bees
   script:
     - source coffea4bees/scripts/skimmer-analysis-cutflow.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -55,9 +55,9 @@ skimmer_analysis_cutflow_coffea4bees:
 analysis_systematics_cutflow_coffea4bees:
   stage: cutflow
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs: 
-    - setup_workspace
+    - setup_coffea4bees
     - analysis_systematics_test_coffea4bees
   script:
     - source coffea4bees/scripts/analysis-systematics-cutflow.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -68,9 +68,9 @@ analysis_systematics_cutflow_coffea4bees:
 analysis_unsup_cutflow_coffea4bees:
   stage: cutflow
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs: 
-    - setup_workspace
+    - setup_coffea4bees
     - analysis_unsup_test_coffea4bees
   script:
     - source coffea4bees/scripts/analysis-unsup-cutflow.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -81,9 +81,9 @@ analysis_unsup_cutflow_coffea4bees:
 synthetic_dataset_analyze_cutflow_coffea4bees:
   stage: cutflow
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs: 
-    - setup_workspace
+    - setup_coffea4bees
     - synthetic_dataset_analyze_coffea4bees
   script:
     - source coffea4bees/scripts/synthetic-dataset-analyze-cutflow.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -94,9 +94,9 @@ synthetic_dataset_analyze_cutflow_coffea4bees:
 synthetic_dataset_analyze_cutflow_Run3_coffea4bees:
   stage: cutflow
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs: 
-    - setup_workspace
+    - setup_coffea4bees
     - synthetic_dataset_analyze_Run3_coffea4bees
   script:
     - source coffea4bees/scripts/synthetic-dataset-analyze-cutflow-Run3.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -108,9 +108,9 @@ synthetic_dataset_analyze_cutflow_Run3_coffea4bees:
 weights_trigger_cutflow_coffea4bees:
   stage: cutflow
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs: 
-    - setup_workspace
+    - setup_coffea4bees
     - weights_trigger_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/weights-trigger-cutflow.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -121,9 +121,9 @@ weights_trigger_cutflow_coffea4bees:
 SvB_friendtree_cutflow_coffea4bees:
   stage: cutflow
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs:
-    - setup_workspace
+    - setup_coffea4bees
     - SvB_friendtree_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/SvB-friendtree-cutflow.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -134,9 +134,9 @@ SvB_friendtree_cutflow_coffea4bees:
 analysis_dilepttbar_cutflow_coffea4bees: 
   stage: cutflow
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs: 
-    - setup_workspace
+    - setup_coffea4bees
     - analysis_test_coffea4bees
   script:
     - source coffea4bees/scripts/analysis-dilepttbar-cutflow.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -147,9 +147,9 @@ analysis_dilepttbar_cutflow_coffea4bees:
 mixeddata_analyze_cutflow_coffea4bees:
   stage: cutflow
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs: 
-    - setup_workspace
+    - setup_coffea4bees
     - mixeddata_analyze_coffea4bees
   script:
     - source coffea4bees/scripts/mixeddata-analyze-cutflow.sh --output-base /builds/$CI_PROJECT_PATH/output

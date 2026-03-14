@@ -9,14 +9,15 @@ def processor_config(processName, dataset, event):
     #
     config["isMC"]     = False if "data"    in processName else True
     config["isPSData"] = True  if "ps_data" in processName else False
-    config["isMixedData"]    = not (dataset.find("mix_v") == -1)
+    config["isMixedData"]    = not (dataset.find("mix_v") == -1) or not (dataset.find("mix_noTT_v") == -1) or not (dataset.find("mix_pz_v") == -1) or not (dataset.find("mixeddata_all") == -1)
+    config["isMixedDataAll"] = "mixeddata_all" in dataset
     config["isSignal"] = False if processName.startswith(("data", 'syn', 'TT', 'mix')) else True
     config["isRun3"] = True if "202" in dataset else False
 
     if config["isMixedData"]:
         config["isMC"] = False
 
-    config["isSyntheticData"]  = not (dataset.find("syn_v") == -1)
+    config["isSyntheticData"]  = not (dataset.find("syn_v") == -1) or not (dataset.find("syn_noTT_v") == -1)
     if config["isSyntheticData"]:
         config["isMC"] = False
 
@@ -40,11 +41,18 @@ def processor_config(processName, dataset, event):
     config["use_prestored_btag_SF"]  = False
     config["do_jet_veto_maps"]       = False   ## false for run2 until check effect
 
+
     if config["isMC"]:
         config["cut_on_lumimask"]     = False
         config["cut_on_HLT_decision"] = False
         config["do_jet_calibration"]  = True
         config["do_MC_weights"]       = True
+
+    if config["isRun3"]:
+        config['do_jet_veto_maps'] = False
+        config['do_jet_calibration'] = False # Need a better name here (Jet calib is applied in Run3 by default !)
+        config["cut_on_HLT_decision"]  = True
+
 
     if config["isSyntheticData"]:
         config["do_lepton_jet_cleaning"]  = False
@@ -85,12 +93,9 @@ def processor_config(processName, dataset, event):
 
     if config["isDataForMixed"]:
         config["cut_on_HLT_decision"] = False
+
         config["do_lepton_jet_cleaning"]  = False
         config["do_jet_calibration"]  = False
         config["do_jet_veto_maps"]       = False
-
-    if config["isRun3"]:
-        config['do_jet_veto_maps'] = False
-        config['do_jet_calibration'] = False # Need a better name here (Jet calib is applied in Run3 by default !)
 
     return config

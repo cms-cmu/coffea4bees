@@ -1,13 +1,12 @@
 import os
 username = os.getenv("USER")
 
-config = {
-    'output_path': 'output/computeJCM/',
-    'dataset_location': "coffea4bees/metadata/datasets_HH4b_2024_v2.yml",
-    "analysis_container": "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest",
-    'dataset' : [ 'data', 'TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic'],
-    'year': 'UL18'
-}
+# Use provided config or fall back to defaults
+config.setdefault('output_path', 'output/computeJCM/')
+config.setdefault('dataset_location', "coffea4bees/metadata/datasets_HH4b_Run2/")
+config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
+config.setdefault('dataset', ['data', 'TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic'])
+config.setdefault('year', 'UL18')
 
 rule output_computeJCM:
     input:

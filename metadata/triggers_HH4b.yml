@@ -25,3 +25,6 @@ triggers:
     - PFHT280_QuadPFJet30_PNet2BTagMean0p55
     - PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepJet_4p5
   2023_preBPix: *triggers_2023
+  '2024': 
+    - PFHT250_QuadPFJet25_PNet2BTagMean0p55
+    - PFHT280_QuadPFJet30_PNet2BTagMean0p55

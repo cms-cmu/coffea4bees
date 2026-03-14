@@ -61,7 +61,7 @@ stages:
 
 
 # Setup job that clones barista once
-setup_workspace:
+setup_coffea4bees:
   stage: setup
   image: alpine/git:latest
   needs:
@@ -95,15 +95,15 @@ setup_workspace:
   tags:
     - k8s-cvmfs
 
-.base_analysis:
+.base_analysis_coffea4bees:
   needs:
-    - setup_workspace
+    - setup_coffea4bees
   image: gitlab-registry.cern.ch/cms-cmu/barista:latest
   tags:
     - k8s-cvmfs
   before_script:
     - echo "Add error handling flags"
-    - set -e 
+    - set -e
     - set -o pipefail
     - echo "Checking output directory"
     - ls $CI_PROJECT_PATH/output/ || true
@@ -113,10 +113,10 @@ setup_workspace:
     - ls -la coffea4bees/
   retry: 2
 
-.base_combine:
+.base_combine_coffea4bees:
   image: gitlab-registry.cern.ch/cms-analysis/general/combine-container:CMSSW_11_3_4-combine_v9.1.0-harvester_v2.1.0
   needs:
-    - setup_workspace
+    - setup_coffea4bees
   before_script:
     - echo "Checking output directory"
     - ls $CI_PROJECT_DIR/output/ || true
@@ -133,10 +133,10 @@ setup_workspace:
     - k8s-cvmfs
   retry: 2
 
-# .base_classifier:
+# .base_classifier_coffea4bees:
 #   needs:
 #     - voms_proxy
-#     - setup_workspace
+#     - setup_coffea4bees
 #   image: registry.hub.docker.com/chuyuanliu/heptools:ml-cpu # TODO change to central repo
 #   before_script:
 #     - source /entrypoint.sh

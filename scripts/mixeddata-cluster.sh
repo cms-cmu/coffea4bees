@@ -18,7 +18,8 @@ echo "Using datasets file: $DATASETS"
 setup_proxy 
 
 # Create output directory
-OUTPUT_DIR="$OUTPUT_BASE_DIR/mixeddata_cluster"
+JOB="mixeddata_cluster"
+OUTPUT_DIR=$OUTPUT_BASE_DIR/$JOB
 create_output_directory "$OUTPUT_DIR"
 
 

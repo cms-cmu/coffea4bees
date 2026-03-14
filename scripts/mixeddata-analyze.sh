@@ -24,7 +24,10 @@ datasets:
     UL18:
       picoAOD:
         files_template:
-          - ${INPUT_DIR}/mixeddata_all_UL18/picoAOD_mixed_vXXX.root
+          - ${INPUT_DIR}/mixeddata_all_UL18A/picoAOD_mixed_vXXX.root
+          - ${INPUT_DIR}/mixeddata_all_UL18B/picoAOD_mixed_vXXX.root
+          - ${INPUT_DIR}/mixeddata_all_UL18C/picoAOD_mixed_vXXX.root
+          - ${INPUT_DIR}/mixeddata_all_UL18D/picoAOD_mixed_vXXX.root
 
 """ > $OUTPUT_DIR/datasets_mixeddata_test.yml; echo
 

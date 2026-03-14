@@ -1,0 +1,12 @@
+runner:
+  condor_cores: 2
+  worker_memory: 6GB
+  # chunksize: 1000
+  write_coffea_output: false
+  dashboard_address: 10200
+
+config:
+  use_vectorized: true
+  tagger: PNet
+  make_classifier_input: root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_v3
+  #make_classifier_input: output/trigger_weights/   ### local

@@ -1,9 +1,9 @@
 tools_merge_test_coffea4bees:
   stage: tools
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs:
-    - setup_workspace
+    - setup_coffea4bees
     - analysis_test_coffea4bees
     - analysis_signals_test_coffea4bees
   script:
@@ -15,10 +15,10 @@ tools_merge_test_coffea4bees:
 tools_memory_test_coffea4bees:
   stage: tools
   needs:
-    - setup_workspace
+    - setup_coffea4bees
     - analysis_systematics_test_coffea4bees
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/tools-memory-test.sh
   allow_failure: true
@@ -29,9 +29,9 @@ tools_memory_test_coffea4bees:
 tools_make_jcm_weights_coffea4bees:    
   stage: tools
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs: 
-    - setup_workspace
+    - setup_coffea4bees
     - tools_merge_test_coffea4bees
   script:
     - source coffea4bees/scripts/tools-make-jcm-weights.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -42,9 +42,9 @@ tools_make_jcm_weights_coffea4bees:
 tools_twostageclosure_mixed_coffea4bees:
   stage: tools
   extends:
-    - .base_combine
+    - .base_combine_coffea4bees
   needs: 
-    - setup_workspace
+    - setup_coffea4bees
     - analysis_test_mixed_coffea4bees
   script:
     - source coffea4bees/scripts/tools-twostageclosure-mixed.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -52,11 +52,25 @@ tools_twostageclosure_mixed_coffea4bees:
     paths:
       - output/tools_twostageclosure_mixed/test_dump_twoStageClosureInputsCounts.yml
 
+tools_perf_profile_coffea4bees:
+  stage: tools
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+  script:
+    - source coffea4bees/scripts/tools-perf-profile.sh --output-base /builds/$CI_PROJECT_PATH/output
+  allow_failure: true
+  artifacts:
+    paths:
+      - output/perf_profile/perf_profile.txt
+      - output/perf_profile/perf_profile.csv
+
 # Needs review
 # histtojson-test-job:   
 #   stage: tools
 #   extends:
-#     - .base_analysis
+#     - .base_analysis_coffea4bees
 #   needs: 
 #     - tools_merge_test_coffea4bees
 #   script:

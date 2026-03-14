@@ -19,7 +19,9 @@ display_section_header "Input Datasets"
 #DATASETS=${DATASET:-"coffea4bees//metadata/datasets_HH4b_Run3_fourTag_2025_skims.yml"}
 DATASETS=${DATASET:-"coffea4bees//metadata/datasets_HH4b_Run3/"}
 echo "Using datasets file: $DATASETS"
-#TTToHadronic TTToSemiLeptonic TTTo2L2Nu
+#
+
+#    --datasets "data TTToHadronic TTToSemiLeptonic TTTo2L2Nu" \
 
 display_section_header "Running test processor"
 bash coffea4bees/scripts/run-analysis-processor.sh \
@@ -27,9 +29,9 @@ bash coffea4bees/scripts/run-analysis-processor.sh \
     --datasets "data " \
     --dataset-metadata "$DATASETS" \
     --year "2022_EE 2022_preEE 2023_BPix 2023_preBPix" \
-    --output-filename "allRun3Data_fourTag.coffea" \
+    --output-filename "allRun3Data_wSvB.coffea" \
     --output-subdir "$JOB" \
-    --config coffea4bees/analysis/metadata/HH4b_run_fastTopReco.yml \
+    --config coffea4bees/analysis/metadata/HH4b_run_fastTopReco_Run3.yml \
     --no-test \
     --additional-flags "--condor"
 #    --output-filename "test.coffea" \

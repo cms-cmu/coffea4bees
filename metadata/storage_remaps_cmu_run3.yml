@@ -1,0 +1,5 @@
+remaps:
+  - from: "root://cmseos.fnal.gov//store/user/jda102/XX4b/"
+    to:   "root://cmsdata.phys.cmu.edu//store/group/HH4b/Run3/"
+  - from: "root://cmseos.fnal.gov//store/user/smurthy/XX4b/"
+    to:   "root://cmsdata.phys.cmu.edu//store/group/HH4b/Run3/"

@@ -3,10 +3,11 @@ import awkward as ak
 
 import numpy as np
 import yaml
-from src.physics.objects.jet_corrections import apply_jerc_corrections
+from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
 from src.skimmer.mc_weight_outliers import OutlierByMedian
 from coffea4bees.analysis.helpers.processor_config import processor_config
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
+from coffea4bees.analysis.helpers.object_selection import load_object_selection_config
 from src.physics.event_selection import apply_event_selection
 from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
 
@@ -24,6 +25,7 @@ class MixedDataSplitter(PicoAOD):
             corrections_metadata=None,
             apply_JCM: bool = True,
             JCM_file: str = "coffea4bees/skimmer/metadata/jetCombinatoricModel_for_mixed_splitting.txt",
+            object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
             *args, **kwargs
         ):
 
@@ -33,6 +35,7 @@ class MixedDataSplitter(PicoAOD):
         self.n_subsamples = n_subsamples
         self.mixed_subsample = mixed_subsample
         self.corrections_metadata = corrections_metadata if corrections_metadata is not None else {}
+        self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
         # Always use cutflow_4b unless explicitly overridden
         self._cutFlow = cutflow_4b()
         self.histCuts = ["passPreSel"] #, "pass0OthJets", "pass1OthJets", "pass2OthJets"]
@@ -58,7 +61,7 @@ class MixedDataSplitter(PicoAOD):
         )
 
         if False and config["do_jet_calibration"]:
-            jets = apply_jerc_corrections(events,
+            jets = apply_jerc_corrections_jsonpog(events,
                                           corrections_metadata=self.corrections_metadata[year],
                                           isMC=config["isMC"],
                                           run_systematics=False,
@@ -66,12 +69,14 @@ class MixedDataSplitter(PicoAOD):
                                           )
             events["Jet"] = jets
 
+        config["isSyntheticData"] = True if config["isRun3"] else False # HACK!!!
         events = apply_4b_selection(
             events,
             self.corrections_metadata[year],
             config=config,
             dataset=dataset,
             loosePtForSkim=False,
+            sel_cfg=self.sel_cfg,
         )
 
         weights = Weights(len(events), storeIndividual=True)

@@ -32,6 +32,7 @@ from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricMod
 from src.physics.common import apply_btag_sf, update_events
 from src.physics.event_selection import apply_event_selection
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
+from coffea4bees.analysis.helpers.object_selection import load_object_selection_config
 import logging
 
 
@@ -65,12 +66,13 @@ ak.behavior.update(vector.behavior)
 
 
 class analysis(processor.ProcessorABC):
-    def __init__(self, JCM='', threeTag = True, corrections_metadata: dict = None, run_systematics=[], SRno = '4', make_classifier_input: str = ''):
+    def __init__(self, JCM='', threeTag = True, corrections_metadata: dict = None, run_systematics=[], SRno = '4', make_classifier_input: str = '', object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml"):
         logging.debug('\nInitialize Analysis Processor')
         self.histCuts = ['passPreSel']
         self.tags = ['threeTag', 'fourTag'] if threeTag else ['fourTag']
         # self.JCM = jetCombinatoricModel(JCM)
         self.corrections_metadata = corrections_metadata
+        self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
         self.run_systematics = run_systematics
         self.m4jBinEdges = np.array([[0, 361], [361, 425], [425, 479], [479, 533], [533, 591], [591, 658], [658, 741], [741, 854], [854, 1044], [1044, 1800]])
         self.SRno = int(SRno)
@@ -176,7 +178,7 @@ class analysis(processor.ProcessorABC):
         self._cutFlow.fill("passHLT",  event[ event.lumimask & event.passNoiseFilter & event.passHLT], allTag=True)
 
         ### Apply object selection (function does not remove events, adds content to objects)
-        event =  apply_4b_selection( event, year, isMC, dataset, self.corrections_metadata[year], config=config  )
+        event =  apply_4b_selection( event, year, isMC, dataset, self.corrections_metadata[year], config=config, sel_cfg=self.sel_cfg  )
         self._cutFlow.fill("passJetMult",  event[ event.lumimask & event.passNoiseFilter & event.passHLT & event.passJetMult ], allTag=True)
 
         selections = []

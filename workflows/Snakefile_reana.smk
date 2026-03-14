@@ -297,6 +297,10 @@ use rule make_plots from analysis as make_plots with:
         compute_backend="kubernetes",
         kubernetes_memory_limit="8Gi"
     log: f"{config['output_path']}/logs/make_plots.log"
+    params:
+        output_dir = f"{config['output_path']}/plots/",
+        metadata = "coffea4bees/plots/metadata/plotsAll.yml",
+        extra_arguments = "-s xW",
 
 ########
 ### Converting histograms to JSON and ROOT formats

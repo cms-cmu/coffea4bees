@@ -1,14 +1,36 @@
 import numpy as np
 import awkward as ak
 import logging
+import yaml
+import os
 from src.physics.common import drClean, compute_puid
-from src.physics.objects.jet_corrections import apply_jet_veto_maps, apply_jerc_corrections
+from src.physics.objects.jet_corrections import apply_jet_veto_maps, apply_jerc_corrections, apply_jerc_corrections_jsonpog
+from src.physics.objects.jet_tools import compute_jet_id
 from coffea4bees.analysis.trigger_emulator.helpers import compute_emulation_vars
 from copy import copy
 from typing import Dict, Any
 
 
-def muon_selection(muon: ak.Array, isRun3: bool = False) -> ak.Array:
+def load_object_selection_config(path: str) -> dict:
+    """
+    Load object selection thresholds from a YAML file.
+
+    Parameters:
+    -----------
+    path : str
+        Path to the YAML file containing threshold definitions.
+
+    Returns:
+    --------
+    dict
+        Dictionary of thresholds, suitable for passing as ``sel_cfg``
+        to the selection functions.
+    """
+    with open(path, 'r') as f:
+        return yaml.safe_load(f)
+
+
+def muon_selection(muon: ak.Array, isRun3: bool = False, sel_cfg: dict = None) -> ak.Array:
     """
     Selects muons based on kinematic, isolation, and identification criteria.
 
@@ -18,19 +40,33 @@ def muon_selection(muon: ak.Array, isRun3: bool = False) -> ak.Array:
         The muon collection containing fields such as `pt`, `eta`, `pfRelIso04_all`, `looseId`, `dz`, and `dxy`.
     isRun3 : bool, optional
         Whether to apply Run 3 selection criteria. Defaults to False.
+    sel_cfg : dict, optional
+        Dictionary of threshold overrides loaded from ``object_selection_thresholds.yml``.
+        When ``None`` all thresholds fall back to their hardcoded defaults.
 
     Returns:
     --------
     ak.Array
         A collection of selected muons.
     """
-    muon_kin = (muon.pt > 10) & (abs(muon.eta) < (2.4 if isRun3 else 2.5))
-    muon_iso_ID = (muon.pfRelIso04_all < 0.15) & muon.looseId
+    cfg = (sel_cfg or {}).get('muon', {})
+    pt_min    = cfg.get('pt_min', 10)
+    eta_max   = cfg.get('eta_max_run3' if isRun3 else 'eta_max_run2', 2.4 if isRun3 else 2.5)
+    iso_max   = cfg.get('iso_max', 0.15)
+    ip        = cfg.get('ip_cuts', {})
+    barrel_eta = ip.get('barrel_eta_boundary', 1.479)
+    barrel_dz  = ip.get('barrel_dz_max', 0.1)
+    barrel_dxy = ip.get('barrel_dxy_max', 0.05)
+    endcap_dz  = ip.get('endcap_dz_max', 0.2)
+    endcap_dxy = ip.get('endcap_dxy_max', 0.1)
+
+    muon_kin    = (muon.pt > pt_min) & (abs(muon.eta) < eta_max)
+    muon_iso_ID = (muon.pfRelIso04_all < iso_max) & muon.looseId
 
     if isRun3:
         muon_IP = (
-            ((abs(muon.eta) < 1.479) & (abs(muon.dz) < 0.1) & (abs(muon.dxy) < 0.05)) |
-            ((abs(muon.eta) >= 1.479) & (abs(muon.dz) < 0.2) & (abs(muon.dxy) < 0.1))
+            ((abs(muon.eta) < barrel_eta) & (abs(muon.dz) < barrel_dz) & (abs(muon.dxy) < barrel_dxy)) |
+            ((abs(muon.eta) >= barrel_eta) & (abs(muon.dz) < endcap_dz) & (abs(muon.dxy) < endcap_dxy))
         )
     else:
         muon_IP = True
@@ -40,7 +76,7 @@ def muon_selection(muon: ak.Array, isRun3: bool = False) -> ak.Array:
     return muon[muon.selected]
 
 
-def electron_selection(electron: ak.Array, isRun3: bool = False) -> ak.Array:
+def electron_selection(electron: ak.Array, isRun3: bool = False, sel_cfg: dict = None) -> ak.Array:
     """
     Selects electrons based on kinematic, isolation, and identification criteria.
 
@@ -50,27 +86,41 @@ def electron_selection(electron: ak.Array, isRun3: bool = False) -> ak.Array:
         The electron collection containing fields such as `pt`, `eta`, `pfRelIso03_all`, `mvaNoIso_WP90`, `mvaFall17V2Iso_WP90`, `dz`, and `dxy`.
     isRun3 : bool, optional
         Whether to apply Run 3 selection criteria. Defaults to False.
+    sel_cfg : dict, optional
+        Dictionary of threshold overrides loaded from ``object_selection_thresholds.yml``.
+        When ``None`` all thresholds fall back to their hardcoded defaults.
 
     Returns:
     --------
     ak.Array
         A boolean mask indicating selected electrons.
     """
-    electron_kin = (electron.pt > 15) & (abs(electron.eta) < 2.5)
-    electron_iso_ID = (electron.pfRelIso03_all < 0.15) & (
+    cfg = (sel_cfg or {}).get('electron', {})
+    pt_min  = cfg.get('pt_min', 15)
+    eta_max = cfg.get('eta_max', 2.5)
+    iso_max = cfg.get('iso_max', 0.15)
+    ip      = cfg.get('ip_cuts', {})
+    barrel_eta = ip.get('barrel_eta_boundary', 1.479)
+    barrel_dz  = ip.get('barrel_dz_max', 0.1)
+    barrel_dxy = ip.get('barrel_dxy_max', 0.05)
+    endcap_dz  = ip.get('endcap_dz_max', 0.2)
+    endcap_dxy = ip.get('endcap_dxy_max', 0.1)
+
+    electron_kin    = (electron.pt > pt_min) & (abs(electron.eta) < eta_max)
+    electron_iso_ID = (electron.pfRelIso03_all < iso_max) & (
         getattr(electron, 'mvaNoIso_WP90') if isRun3 else getattr(electron, 'mvaFall17V2Iso_WP90')
     )
 
     electron_IP = (
-        ((abs(electron.eta) < 1.479) & (abs(electron.dz) < 0.1) & (abs(electron.dxy) < 0.05)) |
-        ((abs(electron.eta) >= 1.479) & (abs(electron.dz) < 0.2) & (abs(electron.dxy) < 0.1))
+        ((abs(electron.eta) < barrel_eta) & (abs(electron.dz) < barrel_dz) & (abs(electron.dxy) < barrel_dxy)) |
+        ((abs(electron.eta) >= barrel_eta) & (abs(electron.dz) < endcap_dz) & (abs(electron.dxy) < endcap_dxy))
     ) if isRun3 else True
 
     electron['selected'] = electron_kin & electron_iso_ID & electron_IP
 
     return electron[electron.selected]
 
-def lepton_selection(event: ak.Array, isRun3: bool = False) -> ak.Array:
+def lepton_selection(event: ak.Array, isRun3: bool = False, sel_cfg: dict = None) -> ak.Array:
     """
     Selects leptons (muons and electrons) and adds them to the event.
 
@@ -80,6 +130,9 @@ def lepton_selection(event: ak.Array, isRun3: bool = False) -> ak.Array:
         The event data containing fields such as `Muon` and `Electron`.
     isRun3 : bool, optional
         Whether to apply Run 3-specific selection criteria. Defaults to False.
+    sel_cfg : dict, optional
+        Dictionary of threshold overrides. Passed through to ``muon_selection``
+        and ``electron_selection``.
 
     Returns:
     --------
@@ -89,11 +142,11 @@ def lepton_selection(event: ak.Array, isRun3: bool = False) -> ak.Array:
         - `selElec`: Selected electrons (if present).
     """
     # Select muons
-    event['selMuon'] = muon_selection(event.Muon, isRun3)
+    event['selMuon'] = muon_selection(event.Muon, isRun3, sel_cfg)
 
     # Select electrons if present
     if 'Electron' in event.fields:
-        event['selElec'] = electron_selection(event.Electron, isRun3)
+        event['selElec'] = electron_selection(event.Electron, isRun3, sel_cfg)
         event['selLepton'] = ak.concatenate([event.selElec, event.selMuon], axis=1)
     else:
         event['selLepton'] = event.selMuon
@@ -111,7 +164,8 @@ def jet_selection(
     doLeptonRemoval: bool = True,
     do_jet_veto_maps: bool = False,
     apply_mixeddata_sel: bool = False,
-    override_selected_with_flavor_bit: bool = False
+    override_selected_with_flavor_bit: bool = False,
+    sel_cfg: dict = None
 ) -> ak.Array:
     """
     Applies jet selection criteria and creates new variables for the event data.
@@ -140,6 +194,9 @@ def jet_selection(
         Whether to apply mixeddata selection as in HIG-22-011. Defaults to False.
     override_selected_with_flavor_bit : bool, optional
         Whether to override selected jets with flavor bit. Defaults to False.
+    sel_cfg : dict, optional
+        Dictionary of threshold overrides loaded from ``object_selection_thresholds.yml``.
+        When ``None`` all thresholds fall back to their hardcoded defaults.
 
     Returns:
     --------
@@ -170,12 +227,41 @@ def jet_selection(
         event['Jet', 'jet_veto_maps'] = apply_jet_veto_maps(corrections_metadata['jet_veto_maps'], event.Jet)
         event['Jet'] = event['Jet'][event['Jet', 'jet_veto_maps']]
 
+    # Resolve jet thresholds from sel_cfg (or fall back to hardcoded defaults)
+    jet_cfg = (sel_cfg or {}).get('jet', {})
+
     # Run3-specific jet selection
     if isRun3:
+        r3 = jet_cfg.get('run3', {})
+        r3_pu = r3.get('pileup', {})
+        r3_sl = r3.get('selected_loose', {})
+        r3_s  = r3.get('selected', {})
+
+        r3_puId_thr      = r3_pu.get('puId_threshold', 7)
+        r3_pu_pt_thr     = r3_pu.get('pt_threshold', 50)
+        r3_fwd_eta_min   = r3_pu.get('forward_eta_min', 2.4)
+        r3_fwd_pt_thr    = r3_pu.get('forward_pt_threshold', 40)
+        r3_sl_pt_min     = r3_sl.get('pt_min', 20)
+        r3_sl_eta_max    = r3_sl.get('eta_max', 4.7)
+        r3_sl_jetId_tag  = r3_sl.get('jetId_tag', 'AK4PUPPI_TightLeptonVeto')
+        r3_s_pt_min      = r3_s.get('pt_min', 30)
+        r3_s_eta_max     = r3_s.get('eta_max', 2.4)
+        r3_s_jetId_tag   = r3_s.get('jetId_tag', 'AK4PUPPI_TightLeptonVeto')
+
         event['Jet', 'bRegCorr'] = 1.0
         event['Jet', 'btagScore'] = event.Jet.btagPNetB
 
         if not isSyntheticData:
+            #### temporary hack
+            if '2024' in dataset:
+                event['Jet'] = apply_jerc_corrections_jsonpog(
+                    event,
+                    corrections_metadata=corrections_metadata,
+                    isMC=isMC,
+                    dataset=dataset,
+                    run_systematics=False,
+                    jet_type="AK4PFPuppi"
+                )
             event['Jet'] = ak.where(
                 event.Jet.btagScore >= corrections_metadata['btagWP']['L'],
                 apply_jerc_corrections(
@@ -187,20 +273,29 @@ def jet_selection(
                     jet_corr_factor=event.Jet.PNetRegPtRawCorr * event.Jet.PNetRegPtRawCorrNeutrino,
                     jet_type="AK4PFPuppiPNetRegressionPlusNeutrino"
                 ),
-                apply_jerc_corrections(
+                apply_jerc_corrections_jsonpog(
                     event,
                     corrections_metadata=corrections_metadata,
                     isMC=isMC,
-                    run_systematics=False,
                     dataset=dataset,
-                    jet_type="AK4PFPuppi.txt"
+                    run_systematics=False,
+                    jet_type="AK4PFPuppi"
                 )
             )
 
         event['Jet', 'puId'] = 10
-        event['Jet', 'pileup'] = ((event.Jet.puId < 7) & (event.Jet.pt < 50)) | ((np.abs(event.Jet.eta) > 2.4) & (event.Jet.pt < 40))
-        event['Jet', 'selected_loose'] = (event.Jet.pt >= 20) & (event.Jet.jetId >= 2) & event.Jet.lepton_cleaned & (np.abs(event.Jet.eta) <= 4.7)
-        event['Jet', 'selected'] = (event.Jet.pt >= 30) & (np.abs(event.Jet.eta) <= 2.4) & ~event.Jet.pileup & (event.Jet.jetId >= 2) & event.Jet.lepton_cleaned
+        if 'jetId' in event.Jet.fields: ###### temporary hack before using nanoV15
+            event['Jet', 'passJetId_loose'] = event.Jet.jetId >= 2
+            event['Jet', 'passJetId'] = event.Jet.jetId >= 2
+        else:
+            event['Jet', 'passJetId_loose'] = compute_jet_id(event.Jet, corrections_metadata['jet_id'], r3_sl_jetId_tag)
+            if r3_s_jetId_tag == r3_sl_jetId_tag:
+                event['Jet', 'passJetId'] = event['Jet', 'passJetId_loose']
+            else:
+                event['Jet', 'passJetId'] = compute_jet_id(event.Jet, corrections_metadata['jet_id'], r3_s_jetId_tag)
+        event['Jet', 'pileup'] = ((event.Jet.puId < r3_puId_thr) & (event.Jet.pt < r3_pu_pt_thr)) | ((np.abs(event.Jet.eta) > r3_fwd_eta_min) & (event.Jet.pt < r3_fwd_pt_thr))
+        event['Jet', 'selected_loose'] = (event.Jet.pt >= r3_sl_pt_min) & event.Jet.passJetId_loose & event.Jet.lepton_cleaned & (np.abs(event.Jet.eta) <= r3_sl_eta_max)
+        event['Jet', 'selected'] = (event.Jet.pt >= r3_s_pt_min) & (np.abs(event.Jet.eta) <= r3_s_eta_max) & ~event.Jet.pileup & event.Jet.passJetId & event.Jet.lepton_cleaned
 
     # Non-Run3 jet selection
     else:
@@ -208,19 +303,44 @@ def jet_selection(
         event['Jet', 'btagScore'] = event.Jet.btagDeepFlavB
 
         if apply_mixeddata_sel:
-            event['Jet', 'pileup'] = ((event.Jet.puId < 6) & (event.Jet.pt < 50))
-            event['Jet', 'selected_loose'] = (event.Jet.pt >= 20) & ~event.Jet.pileup
-            event['Jet', 'selected'] = (event.Jet.pt >= 40) & (np.abs(event.Jet.eta) <= 2.4) & ~event.Jet.pileup
+            r2 = jet_cfg.get('run2', {}).get('mixeddata', {})
+            r2_pu = r2.get('pileup', {})
+            r2_sl = r2.get('selected_loose', {})
+            r2_s  = r2.get('selected', {})
+
+            r2_puId_thr  = r2_pu.get('puId_threshold', 6)
+            r2_pu_pt_thr = r2_pu.get('pt_threshold', 50)
+            r2_sl_pt_min = r2_sl.get('pt_min', 20)
+            r2_s_pt_min  = r2_s.get('pt_min', 40)
+            r2_s_eta_max = r2_s.get('eta_max', 2.4)
+
+            event['Jet', 'pileup'] = ((event.Jet.puId < r2_puId_thr) & (event.Jet.pt < r2_pu_pt_thr))
+            event['Jet', 'selected_loose'] = (event.Jet.pt >= r2_sl_pt_min) & ~event.Jet.pileup
+            event['Jet', 'selected'] = (event.Jet.pt >= r2_s_pt_min) & (np.abs(event.Jet.eta) <= r2_s_eta_max) & ~event.Jet.pileup
 
         else:
+            r2 = jet_cfg.get('run2', {}).get('default', {})
+            r2_pu = r2.get('pileup', {})
+            r2_sl = r2.get('selected_loose', {})
+            r2_s  = r2.get('selected', {})
+
+            r2_pu_pt_thr     = r2_pu.get('pt_threshold', 50)
+            r2_fwd_eta_min   = r2_pu.get('forward_eta_min', 2.4)
+            r2_fwd_pt_thr    = r2_pu.get('forward_pt_threshold', 40)
+            r2_sl_pt_min     = r2_sl.get('pt_min', 20)
+            r2_sl_jetId_min  = r2_sl.get('jetId_min', 2)
+            r2_s_pt_min      = r2_s.get('pt_min', 40)
+            r2_s_eta_max     = r2_s.get('eta_max', 2.4)
+            r2_s_jetId_min   = r2_s.get('jetId_min', 2)
+
             if ('GluGlu' in dataset) and not isSyntheticMC:
                 event['Jet', 'corrPuId'] = compute_puid(event.Jet, dataset)
             else:
                 event['Jet', 'corrPuId'] = ak.where(event.Jet.puId < 7, True, False)
 
-            event['Jet', 'pileup'] = ((event.Jet.corrPuId) & (event.Jet.pt < 50)) | ((np.abs(event.Jet.eta) > 2.4) & (event.Jet.pt < 40))
-            event['Jet', 'selected_loose'] = (event.Jet.pt >= 20) & ~event.Jet.pileup & (event.Jet.jetId >= 2) & event.Jet.lepton_cleaned
-            event['Jet', 'selected'] = (event.Jet.pt >= 40) & (np.abs(event.Jet.eta) <= 2.4) & ~event.Jet.pileup & (event.Jet.jetId >= 2) & event.Jet.lepton_cleaned
+            event['Jet', 'pileup'] = ((event.Jet.corrPuId) & (event.Jet.pt < r2_pu_pt_thr)) | ((np.abs(event.Jet.eta) > r2_fwd_eta_min) & (event.Jet.pt < r2_fwd_pt_thr))
+            event['Jet', 'selected_loose'] = (event.Jet.pt >= r2_sl_pt_min) & ~event.Jet.pileup & (event.Jet.jetId >= r2_sl_jetId_min) & event.Jet.lepton_cleaned
+            event['Jet', 'selected'] = (event.Jet.pt >= r2_s_pt_min) & (np.abs(event.Jet.eta) <= r2_s_eta_max) & ~event.Jet.pileup & (event.Jet.jetId >= r2_s_jetId_min) & event.Jet.lepton_cleaned
 
     # Tagging jets
     event['Jet', 'tagged'] = event.Jet.selected & (event.Jet.btagScore >= corrections_metadata['btagWP']['M'])
@@ -244,15 +364,24 @@ def jet_selection(
 
     # For trigger emulation
     #   Calculate HT and other event variables
+    ht_cfg  = jet_cfg.get('ht', {})
+    ht_pt_min  = ht_cfg.get('pt_min', 30)
+    ht_eta_max = ht_cfg.get('eta_max', 2.5)
+
     event['Jet', 'muon_cleaned'] = drClean(event.Jet, event.selMuon)[1]
-    event['Jet', 'ht_selected'] = (event.Jet.pt >= 30) & (np.abs(event.Jet.eta) < 2.5) & event.Jet.muon_cleaned
-    event['Jet', 'pfht_selected'] = (event.Jet.pt >= 30) & (np.abs(event.Jet.eta) < 2.5)
+    event['Jet', 'ht_selected'] = (event.Jet.pt >= ht_pt_min) & (np.abs(event.Jet.eta) < ht_eta_max) & event.Jet.muon_cleaned
+    event['Jet', 'pfht_selected'] = (event.Jet.pt >= ht_pt_min) & (np.abs(event.Jet.eta) < ht_eta_max)
     compute_emulation_vars(event, useOnlyTop4=(not isRun3))
 
     return event
 
 
-def apply_bRegCorr(jet: ak.Array) -> ak.Array:
+def apply_bRegCorr(
+        jet: ak.Array,
+        selected_label: str = 'selected',
+        tagged_label: str = 'tagged',
+        tagged_loose_label: str = 'tagged_loose'
+    ) -> ak.Array:
     """
     Applies the bRegCorr correction factor to tagged jets and updates their properties.
 
@@ -274,7 +403,8 @@ def apply_bRegCorr(jet: ak.Array) -> ak.Array:
     """
     # Flatten the bRegCorr factors and tagged flags for processing
     bRegCorr_flat = copy(ak.flatten(jet.bRegCorr).to_numpy())
-    tagged_flags_flat = ak.flatten(jet.tagged)
+    # tagged_flags_flat = ak.flatten(jet.tagged)
+    tagged_flags_flat = ak.flatten(jet[tagged_label])
 
     # Set bRegCorr to 1.0 for non-tagged jets
     bRegCorr_flat[~tagged_flags_flat] = 1.0
@@ -283,18 +413,18 @@ def apply_bRegCorr(jet: ak.Array) -> ak.Array:
     bRegCorr = ak.unflatten(bRegCorr_flat, ak.num(jet.bRegCorr))
 
     # Apply the bRegCorr factor to selected jets
-    selected_jets = jet[jet.selected] * bRegCorr[jet.selected]
+    selected_jets = jet[jet[selected_label]] * bRegCorr[jet[selected_label]]
 
     # Update properties of the selected jets
-    selected_jets["tagged"] = jet[jet.selected].tagged
-    selected_jets["tagged_loose"] = jet[jet.selected].tagged_loose
-    selected_jets["btagScore"] = jet[jet.selected].btagScore
-    selected_jets["puId"] = jet[jet.selected].puId
-    selected_jets["jetId"] = jet[jet.selected].jetId
+    selected_jets[tagged_label] = jet[jet[selected_label]][tagged_label]
+    selected_jets[tagged_loose_label] = jet[jet[selected_label]][tagged_loose_label]
+    selected_jets["btagScore"] = jet[jet[selected_label]].btagScore
+    selected_jets["puId"] = jet[jet[selected_label]].puId
+    selected_jets["jetId"] = jet[jet[selected_label]].jetId
 
     # Include hadronFlavour if available
     if "hadronFlavour" in jet.fields:
-        selected_jets["hadronFlavour"] = jet[jet.selected].hadronFlavour
+        selected_jets["hadronFlavour"] = jet[jet[selected_label]].hadronFlavour
 
     return selected_jets
 
@@ -308,7 +438,8 @@ def lowpt_jet_selection(
     dataset: str = '',
     doLeptonRemoval: bool = True,
     do_jet_veto_maps: bool = False,
-    override_selected_with_flavor_bit: bool = False
+    override_selected_with_flavor_bit: bool = False,
+    sel_cfg: dict = None
 ) -> ak.Array:
     """
     Applies low-pT jet selection criteria to the event data.
@@ -338,6 +469,9 @@ def lowpt_jet_selection(
         Whether to apply jet veto maps. Defaults to False.
     override_selected_with_flavor_bit : bool, optional
         Whether to override selected jets with flavor bit. Defaults to False.
+    sel_cfg : dict, optional
+        Dictionary of threshold overrides loaded from ``object_selection_thresholds.yml``.
+        When ``None`` all thresholds fall back to their hardcoded defaults.
 
     Returns:
     --------
@@ -370,32 +504,39 @@ def lowpt_jet_selection(
         dataset=dataset,
         doLeptonRemoval=doLeptonRemoval,
         do_jet_veto_maps=do_jet_veto_maps,
-        override_selected_with_flavor_bit=override_selected_with_flavor_bit
+        override_selected_with_flavor_bit=override_selected_with_flavor_bit,
+        sel_cfg=sel_cfg
     )
+
+    # Resolve low-pT thresholds
+    lp_cfg    = (sel_cfg or {}).get('jet', {}).get('lowpt', {})
+    lp_pt_min    = lp_cfg.get('pt_min', 15)
+    lp_eta_max   = lp_cfg.get('eta_max', 2.4)
+    lp_jetId_min = lp_cfg.get('jetId_min', 2)
 
     # Define low-pT jet selection criteria
     event['Jet', 'selected_lowpt'] = (
-        (event.Jet.pt >= 15) &
-        (np.abs(event.Jet.eta) <= 2.4) &
+        (event.Jet.pt >= lp_pt_min) &
+        (np.abs(event.Jet.eta) <= lp_eta_max) &
         ~event.Jet.pileup &
-        (event.Jet.jetId >= 2) &
+        (event.Jet.jetId >= lp_jetId_min) &
         event.Jet.lepton_cleaned &
         ~event.Jet.selected  # Exclude already selected jets
     )
 
-    # Apply bRegCorr to low-pT selected jets
-    event['selJet_lowpt'] = event.Jet[event.Jet.selected_lowpt]
-    event['selJet_lowpt', 'selected'] = event.selJet_lowpt.selected_lowpt
-    event['selJet_lowpt'] = apply_bRegCorr(event.selJet_lowpt)
-    event['nJet_selected_lowpt'] = ak.num(event.selJet_lowpt, axis=1)
-
-    # Define b-tagging for low-pT jets
+    # Tagging jets
     event['Jet', 'tagged_lowpt'] = event.Jet.selected_lowpt & (event.Jet.btagScore >= corrections_metadata['btagWP']['M'])
     event['Jet', 'tagged_loose_lowpt'] = event.Jet.selected_lowpt & (event.Jet.btagScore >= corrections_metadata['btagWP']['L'])
-    event['nJet_tagged_lowpt'] = ak.num(event.Jet[event.Jet.tagged_lowpt])
-    event['nJet_tagged_loose_lowpt'] = ak.num(event.Jet[event.Jet.tagged_loose_lowpt])
 
-    # Collect low-pT tagged jets
-    event['tagJet_lowpt'] = event.Jet[event.Jet.tagged_lowpt]
+    event['nJet_selected_lowpt'] = ak.sum(event.Jet.selected_lowpt, axis=1)
+
+    # Apply bRegCorr to low-pT selected jets
+    event['selJet_no_bRegCorr_lowpt'] = event.Jet[event.Jet.selected_lowpt]
+    event['selJet_lowpt'] = apply_bRegCorr(event.Jet, selected_label='selected_lowpt', tagged_label='tagged_lowpt', tagged_loose_label='tagged_loose_lowpt')
+
+    event['tagJet_lowpt'] = event.selJet_lowpt[event.selJet_lowpt.tagged_lowpt]
+    event['tagJet_loose_lowpt'] = event.selJet_lowpt[event.selJet_lowpt.tagged_loose_lowpt]
+    event['nJet_tagged_lowpt'] = ak.num(event.tagJet_lowpt)
+    event['nJet_tagged_loose_lowpt'] = ak.num(event.tagJet_loose_lowpt)
 
     return event

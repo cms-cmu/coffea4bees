@@ -304,10 +304,10 @@ datasets:
     2023_BPix:
       lumi: 9.451e3
       nanoAOD:
-        D: /ParkingHH/Run2023D-22Sep2023_v1-v1/NANOAOD
-        E: /ParkingHH/Run2023D-22Sep2023_v2-v1/NANOAOD
+        D1: /ParkingHH/Run2023D-22Sep2023_v1-v1/NANOAOD
+        D2: /ParkingHH/Run2023D-22Sep2023_v2-v1/NANOAOD
       picoAOD:
-        D:
+        D1:
           bad_files:
           - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v3/data_2023_BPixD/picoAOD.chunk0.root
           - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v3/data_2023_BPixD/picoAOD.chunk1.root
@@ -406,7 +406,7 @@ datasets:
           - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v3/data_2023_BPixD/picoAOD_fourTag.chunk1.root
           saved_events: 189689
           total_events: 9143050
-        E:
+        D2:
           bad_files:
           - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v3/data_2023_BPixE/picoAOD.chunk0.root
           - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v3/data_2023_BPixE/picoAOD.chunk1.root
@@ -439,14 +439,14 @@ datasets:
     2023_preBPix:
       lumi: 17.794e3
       nanoAOD:
-        A: /JetMET0/Run2023C-22Sep2023_v1-v1/NANOAOD
-        B: /JetMET0/Run2023C-22Sep2023_v2-v1/NANOAOD
-        C: /JetMET1/Run2023C-22Sep2023_v1-v1/NANOAOD
-        D: /JetMET1/Run2023C-22Sep2023_v2-v1/NANOAOD
-        E: /ParkingHH/Run2023C-22Sep2023_v3-v1/NANOAOD
-        F: /ParkingHH/Run2023C-22Sep2023_v4-v1/NANOAOD
+        C01: /JetMET0/Run2023C-22Sep2023_v1-v1/NANOAOD
+        C02: /JetMET0/Run2023C-22Sep2023_v2-v1/NANOAOD
+        C11: /JetMET1/Run2023C-22Sep2023_v1-v1/NANOAOD
+        C12: /JetMET1/Run2023C-22Sep2023_v2-v1/NANOAOD
+        D1: /ParkingHH/Run2023C-22Sep2023_v3-v1/NANOAOD
+        D2: /ParkingHH/Run2023C-22Sep2023_v4-v1/NANOAOD
       picoAOD:
-        A:
+        C01:
           bad_files:
           - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v3/data_2023_preBPixA/picoAOD.chunk0.root
           - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v3/data_2023_preBPixA/picoAOD.chunk1.root
@@ -471,7 +471,7 @@ datasets:
           - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v3/data_2023_preBPixA/picoAOD_fourTag.root
           saved_events: 50766
           total_events: 1839512
-        B:
+        C02:
           bad_files:
           - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v3/data_2023_preBPixB/picoAOD.chunk0.root
           - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v3/data_2023_preBPixB/picoAOD.chunk1.root
@@ -483,7 +483,7 @@ datasets:
           - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v3/data_2023_preBPixB/picoAOD_fourTag.root
           saved_events: 16108
           total_events: 578664
-        C:
+        C11:
           bad_files:
           - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v3/data_2023_preBPixC/picoAOD.chunk0.root
           - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v3/data_2023_preBPixC/picoAOD.chunk1.root
@@ -508,7 +508,7 @@ datasets:
           - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v3/data_2023_preBPixC/picoAOD_fourTag.root
           saved_events: 50921
           total_events: 1839724
-        D:
+        C12:
           bad_files:
           - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v3/data_2023_preBPixD/picoAOD.chunk0.root
           - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v3/data_2023_preBPixD/picoAOD.chunk1.root
@@ -520,7 +520,7 @@ datasets:
           - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v3/data_2023_preBPixD/picoAOD_fourTag.root
           saved_events: 15874
           total_events: 577916
-        E:
+        D1:
           bad_files:
           - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v3/data_2023_preBPixE/picoAOD.chunk0.root
           - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v3/data_2023_preBPixE/picoAOD.chunk1.root
@@ -547,7 +547,7 @@ datasets:
           - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v3/data_2023_preBPixE/picoAOD_fourTag.root
           saved_events: 42906
           total_events: 2058198
-        F:
+        D2:
           bad_files:
           - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v3/data_2023_preBPixF/picoAOD.chunk0.root
           - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v3/data_2023_preBPixF/picoAOD.chunk1.root
@@ -708,6 +708,6 @@ datasets:
     2023_BPix:
       picoAOD:
         files_template:
-          - output/synthetic_dataset_make_dataset_Run3/data_2023_BPixD/picoAOD_seed5.root
-          - output/synthetic_dataset_make_dataset_Run3/data_2023_BPixE/picoAOD_seed5.root
+          - output/synthetic_dataset_make_dataset_Run3/data_2023_BPixD1/picoAOD_seed5.root
+          - output/synthetic_dataset_make_dataset_Run3/data_2023_BPixD2/picoAOD_seed5.root
 
