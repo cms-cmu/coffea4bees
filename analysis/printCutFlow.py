@@ -65,16 +65,28 @@ if __name__ == '__main__':
     era_aliases = {}
     era_aliases["Run2"] = ["UL16_postVFPF" , "UL16_postVFPG" , "UL16_postVFPH" , "UL16_preVFPB" , "UL16_preVFPC" , "UL16_preVFPD" , "UL16_preVFPE" , "UL17C" , "UL17D" , "UL17E" , "UL17F" , "UL18A" , "UL18B" , "UL18C" , "UL18D"]
     era_aliases["Run2MC"] = ["UL16_postVFP" , "UL16_preVFP" , "UL17" ,  "UL18"]
+
     era_aliases["2022_preEE"] = ["2022_preEEB", "2022_preEEC", "2022_preEED"]
     era_aliases["2022_EE"] = ["2022_EEE", "2022_EEF", "2022_EEG"]
-    era_aliases["2023_preBPix"] = ["2023_preBPixA", "2023_preBPixB", "2023_preBPixC", "2023_preBPixD", "2023_preBPixE", "2023_preBPixF"]
-    era_aliases["2023_BPix"] = ["2023_BPixD",'2023_BPixE']
+
+
+    era_aliases["2023_preBPix_old"] = ["2023_preBPixA", "2023_preBPixB", "2023_preBPixC", "2023_preBPixD", "2023_preBPixE", "2023_preBPixF"]
+    era_aliases["2023_BPix_old"] = ["2023_BPixD",'2023_BPixE']
+
+
+    era_aliases["2023_preBPix"] = ["2023_preBPixC01", "2023_preBPixC02", "2023_preBPixC11", "2023_preBPixC12", "2023_preBPixC3", "2023_preBPixC4"]
+    era_aliases["2023_BPix"] = ["2023_BPixD1",'2023_BPixD2']
+
+    era_aliases["Run3_old"] = era_aliases["2022_preEE"] + era_aliases["2022_EE"] + era_aliases["2023_preBPix_old"] + era_aliases["2023_BPix_old"]
+    era_aliases["Run3"] = era_aliases["2022_preEE"] + era_aliases["2022_EE"] + era_aliases["2023_preBPix"] + era_aliases["2023_BPix"]
+
 
     era_aliases["2022_preEEMC"] = ["2022_preEE"]
     era_aliases["2023_preBPixMC"] = ["2023_preBPix"]
     era_aliases["2022_EEMC"] = ["2022_EE"]
     era_aliases["2023_BPixMC"] = ["2023_BPix"]
     era_aliases["Run3MC"] = era_aliases["2022_preEEMC"] + era_aliases["2022_EEMC"] + era_aliases["2023_preBPixMC"] + era_aliases["2023_BPixMC"]
+
 
     parser = argparse.ArgumentParser(description='uproot_plots')
     parser.add_argument('-i','--inputFile', default='hists.pkl', help='Input File. Default: hists.pkl')
@@ -95,6 +107,8 @@ if __name__ == '__main__':
                 eras += era_aliases[e]
             else:
                 eras += args.eras
+
+
 
     eraString = "_".join(eras)
     print(eras)
