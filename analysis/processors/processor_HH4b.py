@@ -499,6 +499,11 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         # Select events passing all cuts
         selev = event[analysis_selections]
 
+        if False and self.apply_MvD and self.config["isMixedDataAll"] and not shift_name:
+            print(f" MvD ",selev.MvD.MvD[:20],"\n")
+            print(f" selJets ",selev.nJet_selected[:20],"\n")
+            print(f" JCM {weights.partial_weight(include=['JCM'])[analysis_selections][:20]}")
+
         # Subtract ttbar using SvB if requested
         if self.subtract_ttbar_with_weights:
             with self._stage(f"{label}:subtract_ttbar"):
@@ -1400,6 +1405,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 isMC=self.config["isMC"],
                 histCuts=self.histCuts,
                 apply_FvT=apply_FvT,
+                apply_MvD=self.apply_MvD,
                 run_SvB=self.run_SvB,
                 run_dilep_ttbar_crosscheck=self.run_dilep_ttbar_crosscheck,
                 top_reconstruction=self.top_reconstruction,

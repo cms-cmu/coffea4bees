@@ -49,6 +49,20 @@ class FvTHists(Template):
     d4_to_t4     = H((50, 0, 1, ('d4_to_t4', "P(tT 4b) | Data 4b")))
     d3_to_t4     = H((50, 0, 1, ('d3_to_t4', "P(tT 4b) | Data 3b")))
 
+
+class MvDHists(Template):
+    MvD  = H((50, 0, 5, ('MvD', 'MvD reweight')))
+    MvD_l = H((50, 0, 50, ('MvD', 'MvD reweight')))
+    # pd4  = H((50, 0, 1, ("pd4",   'MvD Regressed P(Four-tag Data)')))
+    # pmix4  = H((50, 0, 1, ("pmix4",   'MvD Regressed P(mix 4b)')))
+    # pt4  = H((50, 0, 1, ("pt4",   'MvD Regressed P(Four-tag t#bar{t})')))
+    # pm4  = H((50, 0, 1, ("pm4",   'MvD Regressed P(Four-tag Multijet)')))
+    #
+    # # frac_err = H((50, 0, 5, ("frac_err",  'MvD std/MvD')))
+    # #'q_1234', 'q_1324', 'q_1423',
+    # mix4_to_t4     = H((50, 0, 1, ('mix4_to_t4', "P(tT 4b) | mix 4b")))
+
+
 class QuadJetHistsBasic(Template):
     dr              = H((50,     0, 5,   ("dr",          'Diboson Candidate $\\Delta$R(d,d)')))
     dphi            = H((50, -3.2, 3.2, ("dphi",        'Diboson Candidate $\\Delta$R(d,d)')))

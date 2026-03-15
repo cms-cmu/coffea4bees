@@ -1,5 +1,6 @@
 from coffea4bees.analysis.helpers.hist_templates import (
     FvTHists,
+    MvDHists,
     QuadJetHistsSelected,
     QuadJetHistsMinDr,
     QuadJetHistsSRSingle,
@@ -22,6 +23,7 @@ def filling_nominal_histograms(
     isMC: bool = False,
     histCuts: list = [],
     apply_FvT: bool = False,
+    apply_MvD: bool = False,
     run_SvB: bool = False,
     top_reconstruction: bool = False,
     isDataForMixed: bool = False,
@@ -72,6 +74,10 @@ def filling_nominal_histograms(
     fill += QuadJetHistsSRSingle(("dijet_ZHSR", "DiJet Mass ZHSR"), "dijet_ZHSR")
     fill += QuadJetHistsSRSingle(("dijet_ZZSR", "DiJet Mass ZZSR"), "dijet_ZZSR")
 
+    skip_all_but_n = [
+        "deepjet_b", "energy", "eta", "id_jet", "id_pileup", "mass", "phi", "pt", "pz", "deepjet_c",
+    ]
+
     # Make classifier hists
     if apply_FvT:
         FvT_skip = []
@@ -86,9 +92,16 @@ def filling_nominal_histograms(
         if JCM:
             fill += hist.add("FvT_noFvT", (100, 0, 5, ("FvT.FvT", "FvT reweight")), weight="weight_noFvT")
 
-    skip_all_but_n = [
-        "deepjet_b", "energy", "eta", "id_jet", "id_pileup", "mass", "phi", "pt", "pz", "deepjet_c",
-    ]
+
+    if apply_MvD:
+        fill += MvDHists(("MvD", "MvD Classifier"), "MvD")
+        #fill += hist.add("quadJet_selected.MvD_score", (100, 0, 1, ("quadJet_selected.MvD_q_score", "Selected Quad Jet Diboson MvD q score")))
+        #fill += hist.add("quadJet_min_dr.MvD_score", (100, 0, 1, ("quadJet_min_dr.MvD_q_score", "Min dR Quad Jet Diboson MvD q score")))
+
+        if JCM:
+            fill += hist.add("MvD_noMvD", (100, 0, 5, ("MvD.MvD", "MvD reweight")), weight="weight_noMvD")
+        fill += Jet.plot(("selJets_noMvD", "Selected Jets"), "selJet", weight="weight_noMvD", skip=skip_all_but_n)
+
 
     fill += Jet.plot(("selJets_noJCM", "Selected Jets"), "selJet", weight="weight_noJCM_noFvT", skip=skip_all_but_n)
     fill += Jet.plot(("tagJets_noJCM", "Tag Jets"), "tagJet", weight="weight_noJCM_noFvT", skip=skip_all_but_n)

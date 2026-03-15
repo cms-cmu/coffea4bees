@@ -13,12 +13,13 @@ if TYPE_CHECKING:
 
 class apply_JCM_from_list:
     def __init__(
-        self, 
-        path: str, 
-        start: int = 4, 
+        self,
+        path: str,
+        start: int = 4,
         weight_col: str = "weight",
-        n_jets_col: str = "nSelJets", 
-        selected_col: str = "threeTag"
+        n_jets_col: str = "nSelJets",
+        selected_col: str = "threeTag",
+        n_jets_offset: int = 0,
     ):
         weights: list[float] = parse.mapping(path, "file")
         self._weights = np.ones(start + len(weights), dtype=float)
@@ -26,6 +27,7 @@ class apply_JCM_from_list:
         self._weight_col = weight_col
         self._n_jets_col = n_jets_col
         self._selected_col = selected_col
+        self._n_jets_offset = n_jets_offset
 
     def __call__(self, df: pd.DataFrame):
         raw = df[self._selected_col]
@@ -36,7 +38,7 @@ class apply_JCM_from_list:
                 f"JCM: '{self._selected_col}' contains {n_nan} NaN values — treating as False"
             )
         mask = raw.fillna(False).astype(bool)
-        n_jets = df.loc[mask, self._n_jets_col]
+        n_jets = df.loc[mask, self._n_jets_col] + self._n_jets_offset
         df.loc[mask, self._weight_col] *= np.take(
             self._weights, n_jets, mode="clip"
         )
