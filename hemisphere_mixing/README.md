@@ -100,7 +100,7 @@ The current matching algorithm penalizes hemispheres with different `pz` values,
 
 3. **Limited effective library statistics**: By requiring similar pz, we reject many hemispheres that would otherwise be excellent matches in their transverse properties. This effectively reduces the usable library size.
 
-### Proposed Change
+### Difference
 
 **Match on 3 variables instead of 4**, then **correct pz with a Lorentz boost**:
 
@@ -115,7 +115,7 @@ The current matching algorithm penalizes hemispheres with different `pz` values,
    - Boost each jet in the matched hemisphere by Δy = y_target − y_match (i.e., β_z = tanh(Δy))
    - If pz values are already similar, Δy ≈ 0 and the boost is negligible
 
-### Expected Benefits
+### Benefits
 
 - **Increased effective library statistics**: Hemispheres that were previously "far away" due to pz differences become viable matches
 - **Better transverse matching**: By not penalizing pz differences, the algorithm can focus on finding the best transverse-structure match
@@ -131,45 +131,3 @@ The boost-corrected matching is implemented as an **optional mode**, preserving 
 
 **Configuration**: Set `use_boost_corrected_matching: True` in `coffea4bees/skimmer/metadata/mixeddata_Run3.yml` to enable boost-corrected matching (default: `False`)
 
-### Implementation Details
-
-#### Files to Modify
-
-| File | Changes |
-|------|---------|
-| `coffea4bees/skimmer/processor/make_mixed_data.py` | Add config flag to `HemiMixer.__init__()`, pass to replacement function |
-| `coffea4bees/hemisphere_mixing/mixing_helpers.py` | Add boost function, modify `replace_hemis_load_kdTrees()` |
-| `coffea4bees/skimmer/metadata/mixeddata_Run3.yml` | Expose `use_boost_corrected_matching` option |
-
-#### Implementation Summary
-
-1. **Add configuration flag** (`make_mixed_data.py`)
-   - New parameter: `use_boost_corrected_matching: bool = False` in `HemiMixer.__init__()`
-   - Conditionally set `hemi_summary_vars`:
-     - `False` (default): `["sumPt_T_minor", "sumPt_T", "combinedMass", "pz"]` (current behavior)
-     - `True`: `["sumPt_T_minor", "sumPt_T", "combinedMass"]` (3D matching)
-
-2. **Add Lorentz boost function** (`mixing_helpers.py`)
-   - New function: `boost_jets_to_target_pz(jets, pz_matched, pz_target)`
-   - Computes rapidity difference between matched and target hemispheres
-   - Applies z-boost to each jet's 4-momentum (E, px, py, pz) → (E', px, py, pz')
-   - Returns boosted jets with corrected pz
-
-3. **Modify replacement logic** (`mixing_helpers.py`)
-   - Update `replace_hemis_load_kdTrees()` to accept `use_boost_corrected_matching` flag
-   - After constructing `new_Jets`, if boost mode enabled:
-     - Get target hemisphere pz from `subset_hemis`
-     - Get matched hemisphere pz from library
-     - Apply `boost_jets_to_target_pz()` to `new_Jets`
-   - Existing phi rotation for thrust alignment remains unchanged
-
-4. **Optional: Store diagnostic info**
-   - Add `boost_delta_rapidity` to output for validation/debugging
-
-#### What Remains Unchanged
-
-- Hemisphere library creation (Step 1) - no changes needed
-- Thrust axis calculation
-- Phi rotation to align thrust axes
-- Jet multiplicity binning for k-d tree lookup
-- All event selection and weighting logic

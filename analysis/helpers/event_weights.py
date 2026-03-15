@@ -106,26 +106,37 @@ def add_pseudotagweights(
 
     # MvD path for mixeddata_all: apply JCM to fourTag events, then MvD weight
     if isMixedDataAll and apply_MvD:
-        if JCM:
-            selected_jets = event.Jet.selected_lowpt if lowpt else event.Jet.selected
-            tagged_loose  = event.Jet.tagged_loose_lowpt if lowpt else event.Jet.tagged_loose
-            event["Jet_untagged_loose"] = event.Jet[selected_jets & ~tagged_loose]
-            fourTag = ak.to_numpy(event["fourTag"]).astype(bool)
-            jcm_weight = np.ones(len(event), dtype=float)
-            jcm_weight[fourTag], _ = JCM(
-                ak.num(event[fourTag]["Jet_untagged_loose"], axis=1),
-                event.event[fourTag],
-            )
-            weights.add("JCM", jcm_weight)
-            list_weight_names.append("JCM")
-            logging.debug(f"MvD JCM (fourTag) {weights.partial_weight(include=['JCM'])[:10]}")
+        if not JCM:
+            logging.error("Need JCM to use apply_MvD!!!")
 
-        mvd_weight = np.where(
-            ak.to_numpy(event["fourTag"]).astype(bool),
-            ak.to_numpy(event.MvD.MvD).astype(float),
+        selected_jets = event.Jet.selected_lowpt if lowpt else event.Jet.selected
+        tagged_loose  = event.Jet.tagged_loose_lowpt if lowpt else event.Jet.tagged_loose
+        event["Jet_untagged_loose"] = event.Jet[selected_jets & ~tagged_loose]
+        fourTag = ak.to_numpy(event["fourTag"]).astype(bool)
+        jcm_weight = np.ones(len(event), dtype=float)
+        jcm_weight[fourTag], _ = JCM(
+            ak.num(event[fourTag]["Jet_untagged_loose"], axis=1) + 1,
+            event.event[fourTag],
+        )
+
+
+        # Calculate weight without FvT
+        weight_noMvD = ak.where(
+            event["fourTag"],
+            event.weight * jcm_weight,
+            event.weight
+        )
+
+        event["weight_noMvD"] = weight_noMvD
+        logging.debug( f"weight_noMvD {event.weight_noMvD[:10]}\n" )
+
+
+        weight = np.where(
+            event["fourTag"],
+            jcm_weight * event.MvD.MvD,
             1.0,
         )
-        weights.add("MvD", mvd_weight)
+        weights.add("MvD", weight)
         list_weight_names.append("MvD")
         logging.debug(f"MvD {weights.partial_weight(include=['MvD'])[:10]}")
 
