@@ -841,7 +841,7 @@ def assign_mixed_subsamples(event, n_subsamples=16):
 def update_pseudoTagWeight_of_mixed_data(event, JCM):
 
     event["Jet_untagged_loose"] = event.Jet[event.Jet.selected & ~event.Jet.tagged_loose]
-    num_tagged_loose_plus_one = ak.sum(event.Jet.tagged_loose, axis=1) + 1
+    # num_tagged_loose_plus_one = ak.sum(event.Jet.tagged_loose, axis=1) + 1
 
     fourTagFilter = event['fourTag']
     fourTagEvents = event[fourTagFilter]

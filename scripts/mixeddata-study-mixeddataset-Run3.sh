@@ -29,7 +29,7 @@ bash coffea4bees/scripts/run-analysis-processor.sh \
     --output-base "$OUTPUT_BASE_DIR" \
     --datasets "mixeddata_all" \
     --year "${YEARS}" \
-    --output-filename "study_mixed_datasets_all_Run3_noTT_pz.coffea" \
+    --output-filename "study_mixed_datasets_all_Run3_noTT_pz_fixNaN.coffea" \
     --output-subdir "$JOB" \
     --config coffea4bees/analysis/metadata/study_mixed_data_Run3.yml \
     --dataset-metadata $DATASETS \
