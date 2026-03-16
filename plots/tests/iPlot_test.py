@@ -102,6 +102,14 @@ class iPlotTestCase(unittest.TestCase):
         plot(**(args | doRatio | norm | rlim | manyYears))
 
 
+        uniform = {"uniform_bins": True}
+        print(f"plot with uniform_bins")
+        plot(**({"var": "v4j.mass", "region": "SR", "cut": "passPreSel"} | uniform))
+
+        manyRegions_axis = {"region": ["SR", "SB"], "process": "data"}
+        print(f"plot with region list overlay")
+        plot(**({"var": "v4j.mass", "cut": "passPreSel"} | manyRegions_axis))
+
         args["var"] = "v4j.mass"
         invalid_region = {"region": "InvalidRegion"}
         print(f"plot with {args | invalid_region}")
