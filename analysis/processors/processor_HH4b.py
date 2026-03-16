@@ -731,7 +731,14 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             raise ValueError("apply_MvD=True but no 'MvD' entry found in friends dict")
 
     def load_SvB(self, event):
-        """Load SvB friend tree.
+        """Load SvB and SvB_MA scores from one of three sources (in priority order):
+        1. Friend tree arrays (modern method, via --friends config)
+        2. Classifier model (on-the-fly inference, via SvB/SvB_MA config keys)
+        3. Legacy ROOT files next to the picoAOD (fallback)
+
+        Sources 1 and 2 are resolved before this method via self.friends and
+        self.classifier_SvB/self.classifier_SvB_MA. The legacy ROOT fallback
+        only runs if neither of those provided the field.
 
         Requires chunk-scoped variables: target, estart, estop, fname, path, dataset, config
         Must be called after process() has initialized these variables.
@@ -740,6 +747,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             event: Event array
         """
 
+        # Source 1: Load from friend tree arrays
         for k in self.friends:
             if k.startswith("SvB"):
                 logging.info(f"Loading SvB friend tree ")
@@ -747,46 +755,36 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     event[k] = rename_SvB_friend(self.target, self.friends[k])
                     setSvBVars(k, event)
                 except Exception as e:
+                    logging.warning(f"rename_SvB_friend failed for {k}: {e}. Loading raw arrays.")
                     event[k] = self.friends[k].arrays(self.target)
+                    setSvBVars(k, event)
 
         self._log_memory("after_friend_trees_loaded")
 
+        # Source 3: Legacy ROOT file fallback (only if no friend or classifier provides it)
         if self.apply_mixeddata_sel: SvB_suffix = '_newSBDef'
         else: SvB_suffix = '_ULHH'
 
-        if "SvB" not in self.friends and self.classifier_SvB is None:
-            # SvB_file = f'{self.path}/SvB_newSBDef.root' if 'mix' in self.dataset else f'{self.fname.replace("picoAOD", "SvB")}'
-            SvB_file = f'{self.path}/SvB{SvB_suffix}.root' if 'mix' in self.dataset else f'{self.fname.replace("picoAOD", f"SvB{SvB_suffix}")}'
-            event["SvB"] = (
-                NanoEventsFactory.from_root(
-                    SvB_file,
-                    entry_start=self.estart,
-                    entry_stop=self.estop,
-                    schemaclass=FriendTreeSchema
-                ).events().SvB
-            )
+        for svb_name, classifier in [("SvB", self.classifier_SvB), ("SvB_MA", self.classifier_SvB_MA)]:
+            if svb_name in event.fields or classifier is not None:
+                continue
+            # Legacy ROOT file fallback
+            svb_file = f'{self.path}/{svb_name}{SvB_suffix}.root' if 'mix' in self.dataset else f'{self.fname.replace("picoAOD", f"{svb_name}{SvB_suffix}")}'
+            try:
+                event[svb_name] = (
+                    NanoEventsFactory.from_root(
+                        svb_file,
+                        entry_start=self.estart,
+                        entry_stop=self.estop,
+                        schemaclass=FriendTreeSchema
+                    ).events()[svb_name]
+                )
 
-            if not ak.all(event.SvB.event == event.event):
-                raise ValueError("ERROR: SvB events do not match events ttree")
-            # defining SvB for different SR
-            setSvBVars("SvB", event)
-
-        if "SvB_MA" not in self.friends and self.classifier_SvB_MA is None:
-            # SvB_MA_file = f'{self.path}/SvB_MA_newSBDef.root' if 'mix' in self.dataset else f'{self.fname.replace("picoAOD", "SvB_MA")}'
-            SvB_MA_file = f'{self.path}/SvB_MA{SvB_suffix}.root' if 'mix' in self.dataset else f'{self.fname.replace("picoAOD", f"SvB_MA{SvB_suffix}")}'
-            event["SvB_MA"] = (
-                NanoEventsFactory.from_root(
-                    SvB_MA_file,
-                    entry_start=self.estart,
-                    entry_stop=self.estop,
-                    schemaclass=FriendTreeSchema
-                ).events().SvB_MA
-            )
-
-            if not ak.all(event.SvB_MA.event == event.event):
-                raise ValueError("ERROR: SvB_MA events do not match events ttree")
-            # defining SvB for different SR
-            setSvBVars("SvB_MA", event)
+                if not ak.all(getattr(event, svb_name).event == event.event):
+                    raise ValueError(f"ERROR: {svb_name} events do not match events ttree")
+                setSvBVars(svb_name, event)
+            except FileNotFoundError:
+                logging.info(f"No {svb_name} source configured (no friend, classifier, or ROOT file at {svb_file}). Skipping.")
 
     def boosted_veto(self, event):
         """Apply veto for events selected in boosted analysis. This is for Run2 UL only.
