@@ -153,7 +153,20 @@ def apply_4b_selection(
     # Combined RunII and 3 selection
     event = lepton_selection(event, config["isRun3"], sel_cfg)
 
-    event = jet_selection(event, corrections_metadata, config["isRun3"], config["isMC"], config["isSyntheticData"], config["isSyntheticMC"], dataset, config["do_lepton_jet_cleaning"], config["do_jet_veto_maps"], apply_mixeddata_sel, config["override_selected_with_flavor_bit"], sel_cfg)
+    event = jet_selection(
+        event, 
+        corrections_metadata, 
+        config["isRun3"], 
+        config["isMC"], 
+        config["isSyntheticData"], 
+        config["isSyntheticMC"], 
+        dataset, 
+        config["do_lepton_jet_cleaning"], 
+        config["do_jet_veto_maps"], 
+        apply_mixeddata_sel, 
+        config["override_selected_with_flavor_bit"], 
+        sel_cfg
+    )
 
     event['passJetMult'] = event['nJet_selected'] >= 4
 
