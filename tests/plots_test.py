@@ -137,6 +137,28 @@ class PlotTestCase(unittest.TestCase):
         np.testing.assert_array_equal(centers,   expected_centers)
 
 
+    def test_make_ratio(self):
+        # Normal case: 2/1=2, 4/2=2
+        num = np.array([2.0, 4.0])
+        num_vars = np.array([1.0, 1.0])
+        den = np.array([1.0, 2.0])
+        den_vars = np.array([1.0, 1.0])
+        ratios, _ = plot_helpers.make_ratio(num.copy(), num_vars.copy(), den.copy(), den_vars.copy())
+        np.testing.assert_allclose(ratios, [2.0, 2.0])
+
+        # Zero denominator → nan
+        den_zero = np.array([0.0, 0.0])
+        ratios_zero, _ = plot_helpers.make_ratio(num.copy(), num_vars.copy(), den_zero.copy(), den_vars.copy())
+        self.assertTrue(np.all(np.isnan(ratios_zero)))
+
+        # norm=True rescales ratios by den_sf/num_sf
+        num_n = np.array([6.0, 3.0])
+        den_n = np.array([1.0, 1.0])
+        ratios_raw, _ = plot_helpers.make_ratio(num_n.copy(), np.ones(2), den_n.copy(), np.ones(2))
+        ratios_norm, _ = plot_helpers.make_ratio(num_n.copy(), np.ones(2), den_n.copy(), np.ones(2), norm=True)
+        expected_norm = ratios_raw * (np.sum(den_n) / np.sum(num_n))
+        np.testing.assert_allclose(ratios_norm, expected_norm, rtol=1e-5)
+
     def test_stack_type(self):
         # Mocking histogram objects
         hist_mock = MagicMock()
