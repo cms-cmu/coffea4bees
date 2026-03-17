@@ -752,11 +752,19 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             if k.startswith("SvB"):
                 logging.info(f"Loading SvB friend tree ")
                 try:
-                    event[k] = rename_SvB_friend(self.target, self.friends[k])
+                    result = rename_SvB_friend(self.target, self.friends[k])
+                    if result is None:
+                        logging.warning(f"No SvB friend tree entries found for {k} (target not in friend mapping). Skipping.")
+                        continue
+                    event[k] = result
                     setSvBVars(k, event)
                 except Exception as e:
                     logging.warning(f"rename_SvB_friend failed for {k}: {e}. Loading raw arrays.")
-                    event[k] = self.friends[k].arrays(self.target)
+                    result = self.friends[k].arrays(self.target)
+                    if result is None:
+                        logging.warning(f"No raw SvB friend tree entries found for {k}. Skipping.")
+                        continue
+                    event[k] = result
                     setSvBVars(k, event)
 
         self._log_memory("after_friend_trees_loaded")
