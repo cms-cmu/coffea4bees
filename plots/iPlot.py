@@ -156,7 +156,7 @@ def handle_wildcards(var: Union[str, List[str]]) -> bool:
 
 
 def plot(var: Union[str, List[str]] = 'selJets.pt', *,
-         cut: Union[str, List[str]] = "passPreSel",
+         cut: Union[str, List[str], None] = None,
          region: Union[str, List[str]] = "SR",
          axis_opts: Dict = {},
          output_file: str = DEFAULT_OUTPUT_FILE,
@@ -165,7 +165,7 @@ def plot(var: Union[str, List[str]] = 'selJets.pt', *,
 
     Args:
         var: Variable(s) to plot. Can be a string or list of strings.
-        cut: Selection cut to apply (default: "passPreSel")
+        cut: Selection cut to apply (default: None — no cut applied)
         region: Region to plot (default: "SR")
         axis_opts: Dictionary of axis options
         output_file: Name of the output file (default: "test.pdf")
@@ -179,7 +179,7 @@ def plot(var: Union[str, List[str]] = 'selJets.pt', *,
 
     # Configure the histogram key based on the cut
     cfg.set_hist_key("hists")
-    if cut in ["passMuMu","passElMu"]:
+    if cut and cut in ["passMuMu","passElMu"]:
         cfg.set_hist_key("hists_ttbar")
 
     # Handle wildcard matching
@@ -221,7 +221,7 @@ def plot(var: Union[str, List[str]] = 'selJets.pt', *,
 def plot2d(var: str = 'quadJet_selected.lead_vs_subl_m',
            process: Union[str, List[str]] = "HH4b",
            *,
-           cut: Union[str, List[str]] = "passPreSel",
+           cut: Union[str, List[str], None] = None,
            region: Union[str, List[str]] = "SR",
            axis_opts: Dict = {},
            output_file: str = DEFAULT_OUTPUT_FILE,
@@ -231,7 +231,7 @@ def plot2d(var: str = 'quadJet_selected.lead_vs_subl_m',
     Args:
         var: Variable to plot
         process: Process to plot (default: "HH4b")
-        cut: Selection cut to apply (default: "passPreSel")
+        cut: Selection cut to apply (default: None — no cut applied)
         region: Region to plot (default: "SR")
         axis_opts: Dictionary of axis options
         output_file: Name of the output file (default: "test.pdf")
