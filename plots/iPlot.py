@@ -87,6 +87,9 @@ plot("v4j.mass", region=["SR","SB"], cut="passPreSel", process="TTToHadronic", d
 
 # Can overlay different cuts
 plot("v4j.mass", region="SR", cut=["passPreSel","passSvB","failSvB"], process="data", doRatio=1, rebin=4, norm=1)
+
+# Pass vs fail of the same cut
+plot("v4j.mass", region="SR", cut=["passPreSel", "~passPreSel"], process="data", doRatio=1, rebin=4, norm=1)
 plot("v4j.mass", region="SR", cut=["passPreSel","passSvB","failSvB"], process="HH4b", doRatio=1, rebin=4, norm=1)
 plot("v4j.mass", region="SR", cut=["passPreSel","passSvB","failSvB"], process="Multijet", doRatio=1, rebin=4, norm=1)
 plot("v4j.mass", region="SR", cut=["passPreSel","passSvB","failSvB"], process="TTToHadronic", doRatio=1, rebin=4, norm=1)
