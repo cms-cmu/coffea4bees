@@ -1421,7 +1421,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
             hists = [hist_nom]
 
-            if self.plot_ttbar_with_weights:
+            if self.plot_ttbar_with_weights and self.processName == "data":
                 hist_t4 = filling_nominal_histograms(
                     selev,
                     self.apply_JCM,

@@ -121,24 +121,33 @@ def add_pseudotagweights(
 
 
         # Calculate weight without FvT
-        weight_noMvD = ak.where(
-            fourTag,
-            event.weight * jcm_weight,
-            event.weight
-        )
+
+        if isMixedDataAll:
+            weight_noMvD = ak.where(
+                fourTag,
+                event.weight * jcm_weight,
+                event.weight
+            )
+
+            weight = np.where(
+                fourTag,
+                jcm_weight * event.MvD.MvD,
+                #jcm_weight,
+                1.0,
+            )
+        else:
+            weight_noMvD = np.ones(len(event), dtype=float)
+            weight       = np.ones(len(event), dtype=float)
 
         event["weight_noMvD"] = weight_noMvD
         logging.debug( f"weight_noMvD {event.weight_noMvD[:10]}\n" )
 
-        if isMixedDataAll:
-            weight = np.where(
-                fourTag,
-                jcm_weight * event.MvD.MvD,
-                1.0,
-            )
-            weights.add("MvD", weight)
-            list_weight_names.append("MvD")
-            logging.debug(f"MvD {weights.partial_weight(include=['MvD'])[:10]}")
+
+        event["highMvD"] = event.MvD.MvD > 10
+
+        weights.add("MvD", weight)
+        list_weight_names.append("MvD")
+        logging.debug(f"MvD {weights.partial_weight(include=['MvD'])[:10]}")
 
         # Store per-event weight for TTbar4b_from_MvD histogram filling.
         # Use weights excluding MvD (includes JCM) multiplied by p_t4/p_mix4 for fourTag events.
