@@ -1,0 +1,42 @@
+---
+additional_resources:
+- description: Created with hepdata_lib 0.20.0
+  location: https://doi.org/10.5281/zenodo.1217998
+comment: Post-fit distributions from the HH->4b analysis.
+data_license:
+  description: CC0 enables reusers to distribute, remix, adapt, and build upon the
+    material in any medium or format, with no conditions.
+  name: CC0
+  url: https://creativecommons.org/publicdomain/zero/1.0/
+---
+data_file: svb_ma_postfitplots_fit_b_138.yaml
+description: 'Background-only fit. Region: SR. Selection: passPreSel. Variable: SvB_MA.ps_hh.
+  Luminosity: 138 $fb^{-1}$'
+keywords:
+- name: reactions
+  values:
+  - P P --> H H --> B B B B
+- name: cmenergies
+  values:
+  - 13.0
+- name: observables
+  values:
+  - N
+location: 'Source: SvB_MA_postfitplots_fit_b_138.yaml'
+name: SvB_MA_postfitplots_fit_b_138
+---
+data_file: svb_ma_postfitplots_prefit_138.yaml
+description: 'Pre-fit. Region: SR. Selection: passPreSel. Variable: SvB_MA.ps_hh.
+  Luminosity: 138 $fb^{-1}$'
+keywords:
+- name: reactions
+  values:
+  - P P --> H H --> B B B B
+- name: cmenergies
+  values:
+  - 13.0
+- name: observables
+  values:
+  - N
+location: 'Source: SvB_MA_postfitplots_prefit_138.yaml'
+name: SvB_MA_postfitplots_prefit_138

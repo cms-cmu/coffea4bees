@@ -129,6 +129,8 @@ def save_and_open_plot(fig: plt.Figure, output_file: str) -> bool:
     """
     try:
         fig.savefig(output_file)
+        png_file = os.path.splitext(output_file)[0] + ".png"
+        fig.savefig(png_file)
         plt.close()
         os.system(f"open {output_file}")
         return True
