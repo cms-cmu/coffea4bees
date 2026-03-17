@@ -21,58 +21,63 @@ def dump_input_friend(
     weight: str = "weight",
     threeTag_label: str = "threeTag",
     fourTag_label: str = "fourTag",
+    seljet_label: str = "nSelJets",
     dump_naming: str = _NAMING,
 ):
     selection = _build_cutflow(*selections)
     padded = akext.pad.selected()
-    data = ak.Array(
-        {
-            "CanJet": padded(
-                ak.zip(
-                    {
-                        "pt": events[CanJet].pt,
-                        "eta": events[CanJet].eta,
-                        "phi": events[CanJet].phi,
-                        "mass": events[CanJet].mass,
-                    }
-                ),
-                selection,
+    # Build the dictionary step by step, then pass to ak.Array
+    base_dict = {
+        "CanJet": padded(
+            ak.zip(
+                {
+                    "pt": events[CanJet].pt,
+                    "eta": events[CanJet].eta,
+                    "phi": events[CanJet].phi,
+                    "mass": events[CanJet].mass,
+                }
             ),
-            "NotCanJet": padded(
-                ak.zip(
-                    {
-                        "pt": events[NotCanJet].pt,
-                        "eta": events[NotCanJet].eta,
-                        "phi": events[NotCanJet].phi,
-                        "mass": events[NotCanJet].mass,
-                        "isSelJet": events[NotCanJet].isSelJet,
-                    }
-                ),
-                selection,
+            selection,
+        ),
+        "NotCanJet": padded(
+            ak.zip(
+                {
+                    "pt": events[NotCanJet].pt,
+                    "eta": events[NotCanJet].eta,
+                    "phi": events[NotCanJet].phi,
+                    "mass": events[NotCanJet].mass,
+                    "isSelJet": events[NotCanJet].isSelJet,
+                }
             ),
-        }
-        | akext.to_numpy(
-            padded(
-                events[
-                    [
-                        "ZZSR",
-                        "ZHSR",
-                        "HHSR",
-                        "SR",
-                        "SB",
-                        fourTag_label,
-                        threeTag_label,
-                        "passHLT",
-                        "nSelJets",
-                        "xbW",
-                        "xW",
-                    ]
-                ],
-                selection,
-            )
+            selection,
+        ),
+    }
+    # Add numpy fields
+    numpy_fields = akext.to_numpy(
+        padded(
+            events[
+                [
+                    "ZZSR",
+                    "ZHSR",
+                    "HHSR",
+                    "SR",
+                    "SB",
+                    fourTag_label,
+                    threeTag_label,
+                    seljet_label,
+                    "passHLT",
+                    "xbW",
+                    "xW",
+                ]
+            ],
+            selection,
         )
-        | {"weight": padded(events[weight], selection)}
     )
+    # Add weight field
+    weight_field = {"weight": padded(events[weight], selection)}
+    # Merge all dictionaries
+    merged_dict = {**base_dict, **numpy_fields, **weight_field}
+    data = ak.Array(merged_dict)
     return dump_friend(
         events=events,
         output=output,

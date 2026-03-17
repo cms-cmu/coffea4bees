@@ -1,7 +1,7 @@
 reana-job:
   stage: reana
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   tags:
     - k8s-cvmfs
   script:

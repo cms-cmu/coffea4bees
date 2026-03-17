@@ -1,7 +1,7 @@
 weights_trigger_friendtree_coffea4bees:   
   stage: friendtree   
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/weights-trigger-friendtree.sh --output-base /builds/$CI_PROJECT_PATH/output
   artifacts: 
@@ -12,7 +12,7 @@ weights_trigger_friendtree_coffea4bees:
 topreco_friendtree_coffea4bees:
   stage: friendtree   
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/topreco-friendtree.sh
   artifacts: 
@@ -27,7 +27,7 @@ topreco_friendtree_coffea4bees:
 SvB_friendtree_coffea4bees:
   stage: friendtree
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/SvB-friendtree.sh --output-base /builds/$CI_PROJECT_PATH/output
   artifacts:

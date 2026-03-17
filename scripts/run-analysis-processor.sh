@@ -43,7 +43,7 @@ display_config() {
     echo "Friends:            $FRIENDS_PATH"
     echo "Datasets:           $DATASETS"
     echo "Year:               $YEAR"
-    echo "Output filename:    $OUTPUT_FILENAME"
+    echo "Output filename:    ${OUTPUT_BASE}/${OUTPUT_SUBDIR}/${OUTPUT_FILENAME}"
     echo "Test mode:          $([ -n "$TEST_MODE" ] && echo "enabled" || echo "disabled")"
     echo "Output subdir:      $OUTPUT_SUBDIR"
     echo "Condor mode:        $([ -n "$CONDOR_MODE" ] && echo "enabled" || echo "disabled")"
@@ -78,6 +78,7 @@ declare -A DEFAULTS=(
 )
 
 # Initialize variables with defaults
+
 OUTPUT_BASE="${DEFAULTS[OUTPUT_BASE]}"
 PROCESSOR_PATH="${DEFAULTS[PROCESSOR_PATH]}"
 METADATA_PATH="${DEFAULTS[METADATA_PATH]}"
@@ -96,6 +97,8 @@ BLIND_MODE="${DEFAULTS[BLIND_MODE]}"
 RUN_PERFORMANCE="${DEFAULTS[RUN_PERFORMANCE]}"
 LOG_FILE="${DEFAULTS[LOG_FILE]}"
 TMPDIR_PATH="${DEFAULTS[TMPDIR_PATH]}"
+# Initialize DO_PROXY to empty to avoid unbound variable error
+DO_PROXY=""
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -129,8 +132,13 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --datasets)
-            DATASETS="$2"
-            shift 2
+            DATASETS=""
+            shift
+            while [[ $# -gt 0 && ! "$1" =~ ^-- ]]; do
+                DATASETS+="$1 "
+                shift
+            done
+            DATASETS="${DATASETS%% }" # Remove trailing space
             ;;
         --year)
             YEAR="$2"
@@ -233,7 +241,11 @@ TMPDIR_PATH="${SAVED_VARS[TMPDIR_PATH]}"
 # Display configuration
 display_config
 
-OUTPUT_DIR="${OUTPUT_BASE}/${OUTPUT_SUBDIR}/"
+if [ -n "$OUTPUT_SUBDIR" ]; then
+    OUTPUT_DIR="${OUTPUT_BASE}/${OUTPUT_SUBDIR}/"
+else
+    OUTPUT_DIR="${OUTPUT_BASE}/"
+fi
 create_output_directory "$OUTPUT_DIR"
 
 # Setup matplotlib config directory to avoid permission issues

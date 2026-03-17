@@ -1,7 +1,7 @@
 skimmer_test_coffea4bees:
   stage: skimmer   
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/skimmer-test.sh --output-base /builds/$CI_PROJECT_PATH/output
   artifacts: 
@@ -14,7 +14,7 @@ skimmer_test_coffea4bees:
 skimmer_boosted_coffea4bees:
   stage: skimmer
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/skimmer-boosted.sh --output-base /builds/$CI_PROJECT_PATH/output
   artifacts: 
@@ -27,7 +27,7 @@ skimmer_boosted_coffea4bees:
 synthetic_dataset_make_dataset_coffea4bees:
   stage: skimmer
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/synthetic-dataset-make-dataset.sh --output-base /builds/$CI_PROJECT_PATH/output
   artifacts:
@@ -43,9 +43,9 @@ synthetic_dataset_make_dataset_coffea4bees:
 mixeddata_split_dataset_coffea4bees:
   stage: skimmer
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs:
-    - setup_workspace
+    - setup_coffea4bees
     - mixeddata_make_dataset_coffea4bees
   script:
     - source coffea4bees/scripts/mixeddata-split-dataset.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -61,7 +61,7 @@ mixeddata_split_dataset_coffea4bees:
 mixeddata_make_dataset_coffea4bees:
   stage: skimmer
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/mixeddata-make-dataset.sh --output-base /builds/$CI_PROJECT_PATH/output
   artifacts:
@@ -76,7 +76,7 @@ mixeddata_make_dataset_coffea4bees:
 synthetic_dataset_make_dataset_Run3_coffea4bees:
   stage: skimmer
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/synthetic-dataset-make-dataset-Run3.sh --output-base /builds/$CI_PROJECT_PATH/output
   artifacts:
