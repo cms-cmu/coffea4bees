@@ -1436,6 +1436,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     isDataForMixed=self.config['isDataForMixed'],
                     event_metadata=event.metadata,
                     weight_name = "weight_d3_to_t4",
+                    weight_noFvT_override="weight_d3_to_t4_noFvT",
                     year_override=self.year_override,
                 )
 
@@ -1453,6 +1454,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     isDataForMixed=self.config['isDataForMixed'],
                     event_metadata=event.metadata,
                     weight_name = "weight_d3_to_t3",
+                    weight_noFvT_override="weight_d3_to_t3_noFvT",
                     year_override=self.year_override,
                 )
                 hists += [hist_t4, hist_t3]
@@ -1474,6 +1476,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     event_metadata=event.metadata,
                     tag_list=["fourTag"],
                     weight_name="weight_mix4_to_t4_MvD",
+                    weight_noMvD_override="weight_mix4_to_t4_MvD_noMvD",
                     year_override=self.year_override,
                 )
                 hists.append(hist_mvd_t4)
@@ -1494,7 +1497,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 shift_name=shift_name,
                 processName=self.processName,
                 year=self.year,
-                histCuts=self.histCuts
+                histCuts=self.histCuts,
                 )
 
 
