@@ -30,7 +30,16 @@ def add_weights(
 
     if apply_trigWeight and config["do_MC_weights"]:
 
-        trigWeight = event.trigWeight if "trigWeight" in event.fields else friend_trigWeight.arrays(target) if friend_trigWeight else logging.error(f"No friend tree for trigWeight found.")
+        if "trigWeight" in event.fields:
+            trigWeight = event.trigWeight
+        elif friend_trigWeight:
+            trigWeight = friend_trigWeight.arrays(target)
+        else:
+            trigWeight = None
+
+        if trigWeight is None:
+            logging.error("No trigWeight found (not in event fields, no friend tree provided). Skipping trigger weight.")
+            return weights, list_weight_names
 
         if run_systematics:
             hlt = ak.where(event.passHLT, 1., 0.) # type: ignore

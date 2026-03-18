@@ -45,6 +45,11 @@ class apply_JCM_from_list:
         return df
 
     def __repr__(self):
+        cols = {
+            "weight": self._weight_col,
+            "n_jets": self._n_jets_col,
+            "selected": self._selected_col,
+        }
         return (
-            f"{_type_str(self)}({_map_str(self._columns)}) {_iter_str(self._weights)}"
+            f"{_type_str(self)}({_map_str(cols)}) {_iter_str(self._weights)}"
         )

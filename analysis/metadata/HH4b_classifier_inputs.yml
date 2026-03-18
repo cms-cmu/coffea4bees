@@ -1,7 +1,6 @@
 runner:
   workers: 4
   worker_memory: 8GB
-  friend_metafile: classifier_inputs_friend
   # friend_base: output/ 
   chunksize: 10000
 
