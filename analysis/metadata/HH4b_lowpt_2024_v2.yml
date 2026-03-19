@@ -1,8 +1,8 @@
-# runner:
-#   chunksize: 100000
-#   workers: 4
-#   worker_memory: 8GB
-#   dashboard_address: 10201
+runner:
+  chunksize: 10000
+  workers: 4
+  worker_memory: 4GB
+  # dashboard_address: 10201
 
 config:
   blind: false
@@ -13,4 +13,6 @@ config:
   apply_btagSF: true
   apply_boosted_veto: false
   run_SvB: false
+  SvB: null
   top_reconstruction: fast
+  plot_ttbar_with_weights: true

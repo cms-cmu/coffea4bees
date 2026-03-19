@@ -2,6 +2,10 @@ import logging
 import awkward as ak
 
 from coffea4bees.analysis.processors.processor_HH4b import HH4bBaseProcessor
+from ..helpers.load_friend import (
+    FriendTemplate,
+    parse_friends,
+ )
 from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
 from coffea4bees.analysis.helpers.event_selection import apply_4b_lowpt_selection
 from coffea4bees.analysis.helpers.event_weights import add_pseudotagweights
@@ -18,13 +22,15 @@ class analysis(HH4bBaseProcessor):
         *,
         apply_JCM: bool = False,
         JCM_file: str = None,
+        friends: dict[str, str|FriendTemplate] = None,
         **kwargs  # Accept additional arguments to pass to parent
     ):
         # Initialize parent without JCM (we'll handle it ourselves)
-        super().__init__(apply_JCM=False, **kwargs)
+        super().__init__(apply_JCM=False, friends={}, **kwargs)
         
         # Set our own lowpt version of JCM
         self.apply_JCM = jetCombinatoricModel(JCM_file, lowpt_mode=True) if apply_JCM else None
+        self.friends = parse_friends(friends)
 
     def apply_selection(self, event):
         return apply_4b_lowpt_selection(
