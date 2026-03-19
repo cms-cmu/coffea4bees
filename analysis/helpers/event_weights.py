@@ -105,7 +105,7 @@ def add_pseudotagweights(
     event["weight_noJCM_noFvT"] = weights.partial_weight(include=all_weights)
 
     # MvD path for mixeddata_all: apply JCM to fourTag events, then MvD weight
-    if isMixedDataAll and apply_MvD:
+    if  apply_MvD:
         if not JCM:
             logging.error("Need JCM to use apply_MvD!!!")
 
@@ -121,21 +121,30 @@ def add_pseudotagweights(
 
 
         # Calculate weight without FvT
-        weight_noMvD = ak.where(
-            fourTag,
-            event.weight * jcm_weight,
-            event.weight
-        )
+
+        if isMixedDataAll:
+            weight_noMvD = ak.where(
+                fourTag,
+                event.weight * jcm_weight,
+                event.weight
+            )
+
+            weight = np.where(
+                fourTag,
+                jcm_weight * event.MvD.MvD,
+                #jcm_weight,
+                1.0,
+            )
+        else:
+            weight_noMvD = np.ones(len(event), dtype=float)
+            weight       = np.ones(len(event), dtype=float)
 
         event["weight_noMvD"] = weight_noMvD
         logging.debug( f"weight_noMvD {event.weight_noMvD[:10]}\n" )
 
 
-        weight = np.where(
-            fourTag,
-            jcm_weight * event.MvD.MvD,
-            1.0,
-        )
+        event["highMvD"] = event.MvD.MvD > 10
+
         weights.add("MvD", weight)
         list_weight_names.append("MvD")
         logging.debug(f"MvD {weights.partial_weight(include=['MvD'])[:10]}")
@@ -150,6 +159,9 @@ def add_pseudotagweights(
 
         event["weight_mix4_to_t4_MvD"] = ak.from_regular(w_mix4_to_t4)
         logging.debug(f"weight_mix4_to_t4_MvD {event['weight_mix4_to_t4_MvD'][:10]}")
+
+        # Alias for _noMvD histogram TTbar filling: mix4_to_t4 conversion, no MvD classifier
+        event["weight_mix4_to_t4_MvD_noMvD"] = ak.from_regular(w_mix4_to_t4)
 
         return weights, list_weight_names
 
@@ -327,6 +339,7 @@ def add_pseudotagweights(
                 )
                 # weight_d3_to_t4 = ak.where(event[label3b], event.weight * event.pseudoTagWeight * event.pseudoTagWeight_lowpt * event.FvT.d3_to_t4, event.weight)
                 event["weight_d3_to_t4"] = weight_d3_to_t4
+                event["weight_d3_to_t4_noFvT"] = weight_d3_to_t4  # alias for _noFvT histogram TTbar4b filling
                 logging.debug( f"weight_d3_to_t4 {event.weight_d3_to_t4[:10]}\n" )
 
                 weight_d3_to_t3 = ak.where(
@@ -336,6 +349,7 @@ def add_pseudotagweights(
                 )
                 # weight_d3_to_t3 = ak.where(event[label3b], event.weight * event.pseudoTagWeight * event.pseudoTagWeight_lowpt * event.FvT.d3_to_t3, event.weight)
                 event["weight_d3_to_t3"] = weight_d3_to_t3
+                event["weight_d3_to_t3_noFvT"] = weight_d3_to_t3  # alias for _noFvT histogram TTbar3b filling
                 logging.debug( f"weight_d3_to_t3 {event.weight_d3_to_t3[:10]}\n" )
 
         else:

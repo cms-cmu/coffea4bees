@@ -43,9 +43,14 @@ def filling_nominal_histograms(
     event_metadata: dict = {},
     weight_name = "weight",
     year_override: bool = False,
+    weight_noMvD_override: str = None,
+    weight_noFvT_override: str = None,
 ):
     if year_override:
         year = _apply_year_override(year)
+
+    noMvD_weight = weight_noMvD_override or "weight_noMvD"
+    noFvT_weight = weight_noFvT_override or "weight_noFvT"
 
     fill = Fill(process=processName, year=year, weight=weight_name)
 
@@ -105,7 +110,7 @@ def filling_nominal_histograms(
         fill += hist.add("quadJet_min_dr.FvT_score", (100, 0, 1, ("quadJet_min_dr.FvT_q_score", "Min dR Quad Jet Diboson FvT q score")))
 
         if JCM:
-            fill += hist.add("FvT_noFvT", (100, 0, 5, ("FvT.FvT", "FvT reweight")), weight="weight_noFvT")
+            fill += hist.add("FvT_noFvT", (100, 0, 5, ("FvT.FvT", "FvT reweight")), weight=noFvT_weight)
 
 
     if apply_MvD:
@@ -114,8 +119,8 @@ def filling_nominal_histograms(
         #fill += hist.add("quadJet_min_dr.MvD_score", (100, 0, 1, ("quadJet_min_dr.MvD_q_score", "Min dR Quad Jet Diboson MvD q score")))
 
         if JCM:
-            fill += hist.add("MvD_noMvD", (100, 0, 5, ("MvD.MvD", "MvD reweight")), weight="weight_noMvD")
-        fill += Jet.plot(("selJets_noMvD", "Selected Jets"), "selJet", weight="weight_noMvD", skip=skip_all_but_n)
+            fill += hist.add("MvD_noMvD", (100, 0, 5, ("MvD.MvD", "MvD reweight")), weight=noMvD_weight)
+        fill += Jet.plot(("selJets_noMvD", "Selected Jets"), "selJet", weight=noMvD_weight, skip=skip_all_but_n)
 
 
     fill += Jet.plot(("selJets_noJCM", "Selected Jets"), "selJet", weight="weight_noJCM_noFvT", skip=skip_all_but_n)
@@ -150,7 +155,7 @@ def filling_nominal_histograms(
         fill += SvBHists(("SvB", "SvB Classifier"), "SvB")
         fill += SvBHists(("SvB_MA", "SvB MA Classifier"), "SvB_MA")
         #fill += SvBHists(("SvB_noFvT", "SvB Classifier"), "SvB", weight="weight_noFvT")
-        fill += SvBHists(("SvB_MA_noFvT", "SvB MA Classifier"), "SvB_MA", weight="weight_noFvT")
+        fill += SvBHists(("SvB_MA_noFvT", "SvB MA Classifier"), "SvB_MA", weight=noFvT_weight)
         #fill += SvBHists(("SvB_MA_noFvT_noJCM", "SvB MA Classifier"), "SvB_MA", weight="weight_noJCM_noFvT")
         fill += hist.add("quadJet_selected.SvB_q_score", (100, 0, 1, ("quadJet_selected.SvB_q_score", "Selected Quad Jet Diboson SvB q score")))
         fill += hist.add("quadJet_min_dr.SvB_MA_q_score", (100, 0, 1, ("quadJet_min_dr.SvB_MA_q_score", "Min dR Quad Jet Diboson SvB MA q score")))
