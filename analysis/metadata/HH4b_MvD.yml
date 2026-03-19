@@ -1,11 +1,12 @@
 runner:
-  workers: 4
-  worker_memory: 8GB
+  workers: 1
+  worker_memory: 7GB
 
 config:
   blind: false
   apply_FvT: false
   apply_MvD: true
+  year_override: false
   plot_ttbar_with_MvD_weights: true
   apply_JCM: true
   JCM_file: coffea4bees/analysis/weights/JCM/Run3_MvD/jetCombinatoricModel_SB_.yml

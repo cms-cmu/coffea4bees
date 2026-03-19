@@ -14,6 +14,17 @@ from src.hist_tools.object import Elec, Jet, LorentzVector, Muon
 import logging
 from memory_profiler import profile
 
+YEAR_OVERRIDE_MAP = {
+    "201": "Run2",
+    "202": "Run3",
+}
+
+def _apply_year_override(year: str) -> str:
+    for prefix, era in YEAR_OVERRIDE_MAP.items():
+        if year.startswith(prefix):
+            return era
+    return year
+
 # @profile
 def filling_nominal_histograms(
     selev,
@@ -30,8 +41,12 @@ def filling_nominal_histograms(
     tag_list: list = ["threeTag", "fourTag"],
     run_dilep_ttbar_crosscheck: bool = False,
     event_metadata: dict = {},
-    weight_name = "weight"
+    weight_name = "weight",
+    year_override: bool = False,
 ):
+    if year_override:
+        year = _apply_year_override(year)
+
     fill = Fill(process=processName, year=year, weight=weight_name)
 
     hist = Collection(
@@ -201,10 +216,13 @@ def filling_syst_histograms(selev, weights, analysis_selections,
                             shift_name: str = 'nominal',
                             processName: str = None,
                             year: str = 'UL18',
-                            histCuts: list = []
+                            histCuts: list = [],
+                            year_override: bool = False,
                             ):
 
     shift_name = "nominal" if not shift_name else shift_name
+    if year_override:
+        year = _apply_year_override(year)
     hist_SvB = Collection( process=[processName],
                             year=[year],
                             variation=[shift_name],
