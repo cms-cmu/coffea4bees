@@ -247,6 +247,8 @@ let tabMatches = [];   // current candidate list
 let tabStage   = 0;    // 0 = fresh, 1 = listed (awaiting LCP fill)
 let tabKey     = null; // pfx+'\x00'+partial to detect re-typing
 
+const CLI_FUNCS = ['plot(', 'plot2d(', 'ls(', 'info(', 'examples('];
+
 // ---------------------------------------------------------------------------
 // Init
 // ---------------------------------------------------------------------------
@@ -350,6 +352,8 @@ document.getElementById('cli-input').addEventListener('keydown', e => {
 // ---------------------------------------------------------------------------
 // Tab completion
 // ---------------------------------------------------------------------------
+// Matches: a bare function-name prefix (nothing, or partial like "pl", "plot", "plot2")
+const FUNC_RE   = /^([a-zA-Z_]*)$/;
 // Matches: plot("partial  or  plot2d("partial  (with optional leading spaces)
 const TAB_RE    = /^((?:plot2d|plot)\s*\(\s*")([^"]*)$/;
 // Matches kwarg position: anything ending with comma+spaces then a partial identifier
@@ -373,6 +377,16 @@ function doTabComplete(input) {
   const before    = input.value.slice(0, cursorPos);
   const after     = input.value.slice(cursorPos);
 
+  // 1. Function name completion (must be the only thing typed so far)
+  const fnMatch = FUNC_RE.exec(before);
+  if (fnMatch !== null) {
+    const partial  = fnMatch[1];
+    const matches  = CLI_FUNCS.filter(f => f.startsWith(partial));
+    _twoStage(input, '', partial, after, matches, false);
+    return;
+  }
+
+  // 2. Variable name completion inside plot("...
   const varMatch = TAB_RE.exec(before);
   if (varMatch) {
     _twoStage(input, varMatch[1], varMatch[2], after,
@@ -380,6 +394,7 @@ function doTabComplete(input) {
     return;
   }
 
+  // 3. Kwarg name completion after a comma
   const kwMatch = KWARG_RE.exec(before);
   if (kwMatch && !isInsideString(before)) {
     _twoStage(input, kwMatch[1], kwMatch[2], after,

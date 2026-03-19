@@ -4,24 +4,24 @@ Serves a local webpage with a pre-generated plot gallery and an
 interactive form that mirrors the iPlot.py plot() interface.
 
 Setup (one time):
-    python -m venv ~/python-environments/webplot
-    source ~/python-environments/webplot/bin/activate
-    pip install -r coffea4bees/plots/requirements-webplot.txt
+    python -m venv ~/python-environments/pourover
+    source ~/python-environments/pourover/bin/activate
+    pip install -r coffea4bees/plots/requirements-pourover.txt
     pip install -e .   # install barista src/ as editable package
 
 Usage:
-    python coffea4bees/plots/webPlot.py <coffea_file> -m <metadata.yml> [options]
+    python coffea4bees/plots/pourOver.py <coffea_file> -m <metadata.yml> [options]
 
 Extra options (beyond the standard iPlot/makePlotsAll args):
     --port PORT          Port to serve on (default: 5000)
     --no-pregallery      Skip pre-generating the gallery on startup
     --reuse-gallery      Reuse existing gallery plots; only regenerate missing ones
-    --output-dir DIR     Directory for generated plots (default: webplot_output)
+    --output-dir DIR     Directory for generated plots (default: pourover_output)
     --modifiers FILE     Per-variable modifier YAML (optional)
     -j N, --jobs N       Parallel workers for pregallery (default: 1)
 
 Example:
-    python coffea4bees/plots/webPlot.py \\
+    python coffea4bees/plots/pourOver.py \\
         coffea4bees/Run3_MvD/analysis_MvD_new.coffea \\
         -m coffea4bees/plots/metadata/plotsAll_MvD_ttbar_weights.yml
     Then open http://localhost:5000
@@ -468,6 +468,11 @@ def _execute_plot(req):
 
     debug = bool(req.get("debug", False))
 
+    # Normalise doRatio aliases before the whitelist lookup
+    for alias in ("ratio", "do_ratio", "doratio", "Ratio", "do_Ratio"):
+        if alias in req and "doRatio" not in req:
+            req["doRatio"] = req.pop(alias)
+
     kwargs = {}
     for k in ["doRatio", "rebin", "norm", "yscale", "add_flow", "uniform_bins"]:
         v = req.get(k)
@@ -661,7 +666,7 @@ def interactive_history():
 @app.route("/archive", methods=["POST"])
 def archive():
     ts          = datetime.now().strftime("%Y%m%d_%H%M%S")
-    archive_dir = Path(f"webplot_archive_{ts}")
+    archive_dir = Path(f"pourover_archive_{ts}")
     archive_dir.mkdir()
 
     # Copy inputs
@@ -679,7 +684,7 @@ def archive():
             shutil.copytree(str(src), str(archive_dir / subdir))
 
     # Write reproduce.sh
-    cmd = f"python coffea4bees/plots/webPlot.py {' '.join(input_files)} -m {metadata_file}"
+    cmd = f"python coffea4bees/plots/pourOver.py {' '.join(input_files)} -m {metadata_file}"
     script = archive_dir / "reproduce.sh"
     script.write_text(f"#!/bin/bash\n# Run from barista root directory\n{cmd}\n")
     os.chmod(str(script), 0o755)
@@ -792,8 +797,8 @@ def _parse_args():
                         help='Reuse already-generated gallery plots; only regenerate missing ones')
     parser.add_argument('-j', '--jobs', type=int, default=1,
                         help='Number of parallel workers for pregallery (default: 1)')
-    parser.add_argument('--output-dir', default='webplot_output',
-                        help='Directory for generated plots (default: webplot_output)')
+    parser.add_argument('--output-dir', default='pourover_output',
+                        help='Directory for generated plots (default: pourover_output)')
     return parser.parse_args()
 
 
