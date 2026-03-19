@@ -345,6 +345,7 @@ def serve_output(filename):
 
 import ast as _ast
 import contextlib as _contextlib
+import logging as _logging
 
 _PLOT_CMDS = {'plot', 'plot2d'}
 _TEXT_CMDS = {'ls', 'info', 'examples'}
@@ -432,19 +433,8 @@ def _execute_text_cmd(func, args, kwargs):
                 print_cfg(cfg)
 
             elif func == 'examples':
-                print("""\
-plot("v4j.mass")
-plot("v4j.mass", region="SR", cut="passPreSel")
-plot("v4j.mass", region=["SR","SB"], doRatio=1, rebin=4)
-plot("v4j.mass", region="SR", yscale="log", xlim=[0,2000])
-plot("v4j.mass", region="SR", norm=1)
-plot2d("quadJet_selected.lead_vs_subl_m", "HH4b", region="SR")
-
-ls()                    # list all variables
-ls("MvD")               # filter by substring
-ls("region")            # list available regions
-ls("cut")               # list available cuts
-info()                  # print config summary""")
+                from coffea4bees.plots.iPlot import examples as _iplot_examples
+                _iplot_examples()
 
         text = buf.getvalue().rstrip()
         if not text:
@@ -466,6 +456,8 @@ def _execute_plot(req):
     region  = req.get("region", ["SR"])
     if isinstance(region, str):
         region = [region]
+    # Allow "sum" string to be passed as the Python built-in sum function
+    region = [sum if r == "sum" else r for r in region]
     is2d    = req.get("is2d", False)
     process = req.get("process") or None
 
@@ -474,11 +466,15 @@ def _execute_plot(req):
         if cut and cut in ["passMuMu", "passElMu"]:
             cfg.set_hist_key("hists_ttbar")
 
+    debug = bool(req.get("debug", False))
+
     kwargs = {}
     for k in ["doRatio", "rebin", "norm", "yscale", "add_flow", "uniform_bins"]:
         v = req.get(k)
         if v is not None:
             kwargs[k] = v
+    if debug:
+        kwargs["debug"] = True
 
     for k in ["xlim", "ylim", "rlim"]:
         v = req.get(k)
@@ -488,22 +484,38 @@ def _execute_plot(req):
     axis_opts = {"region": region[0] if len(region) == 1 else region}
 
     try:
+        debug_buf = io.StringIO() if debug else None
+        debug_cm  = _contextlib.redirect_stdout(debug_buf) if debug else _contextlib.nullcontext()
+
+        # Route logger output from plotting modules to debug_buf
+        _debug_loggers = [
+            _logging.getLogger("src.plotting.helpers_make_plot"),
+            _logging.getLogger("src.plotting.helpers_make_plot_dict"),
+        ]
+        _log_handler = None
+        if debug and debug_buf:
+            _log_handler = _logging.StreamHandler(debug_buf)
+            _log_handler.setLevel(_logging.DEBUG)
+            for _lg in _debug_loggers:
+                _lg.addHandler(_log_handler)
+
         with plot_lock:
-            if is2d:
-                if not process:
-                    procs = _get_processes()
-                    process = procs[0] if procs else "data"
-                fig, _ = make2DPlot(
-                    cfg, process, var=var, cut=cut,
-                    axis_opts=axis_opts, **kwargs
-                )
-            else:
-                if process:
-                    kwargs["process"] = process
-                fig, _ = makePlot(
-                    cfg, var=var, cut=cut,
-                    axis_opts=axis_opts, **kwargs
-                )
+            with debug_cm:
+                if is2d:
+                    if not process:
+                        procs = _get_processes()
+                        process = procs[0] if procs else "data"
+                    fig, _ = make2DPlot(
+                        cfg, process, var=var, cut=cut,
+                        axis_opts=axis_opts, **kwargs
+                    )
+                else:
+                    if process:
+                        kwargs["process"] = process
+                    fig, _ = makePlot(
+                        cfg, var=var, cut=cut,
+                        axis_opts=axis_opts, **kwargs
+                    )
 
         interactive_dir = Path(output_dir) / "interactive"
         interactive_dir.mkdir(parents=True, exist_ok=True)
@@ -519,13 +531,23 @@ def _execute_plot(req):
             png_b64 = _fig_to_png_b64(fig)
             plt.close(fig)
 
-        return {
+        if _log_handler:
+            for _lg in _debug_loggers:
+                _lg.removeHandler(_log_handler)
+
+        result = {
             "png_b64": png_b64,
             "png_url": f"/outputs/interactive/{stem}.png",
             "pdf_url": f"/outputs/interactive/{stem}.pdf",
-        }, 200
+        }
+        if debug and debug_buf:
+            result["debug"] = debug_buf.getvalue()
+        return result, 200
 
     except Exception as e:
+        if _log_handler:
+            for _lg in _debug_loggers:
+                _lg.removeHandler(_log_handler)
         with plot_lock:
             plt.close("all")
         return {"error": str(e)}, 400
