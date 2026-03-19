@@ -192,6 +192,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         tracker = None,
         object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
         candidates_selection_cfg: str = "coffea4bees/analysis/metadata/candidates_selection_thresholds.yml",
+        year_override: bool = False,
     ):
 
         logging.debug("\nInitialize Analysis Processor")
@@ -237,6 +238,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.histCuts = hist_cuts
         self.apply_mixeddata_sel = apply_mixeddata_sel
         self.return_events_for_display = return_events_for_display
+        self.year_override = year_override
 
         # Track top 20 events with largest ps_hh across all chunks
         self.top_ps_hh_events = []
@@ -336,7 +338,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 self.load_FvT(event)
 
         with self._stage("load_friend_MvD"):
-            if self.apply_MvD and self.config["isMixedDataAll"]:
+            if self.apply_MvD:
                 self.load_MvD(event)
 
         with self._stage("load_friend_SvB"):
@@ -498,11 +500,6 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         # Select events passing all cuts
         selev = event[analysis_selections]
-
-        if False and self.apply_MvD and self.config["isMixedDataAll"] and not shift_name:
-            print(f" MvD ",selev.MvD.MvD[:20],"\n")
-            print(f" selJets ",selev.nJet_selected[:20],"\n")
-            print(f" JCM {weights.partial_weight(include=['JCM'])[analysis_selections][:20]}")
 
         # Subtract ttbar using SvB if requested
         if self.subtract_ttbar_with_weights:
@@ -1410,7 +1407,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 run_dilep_ttbar_crosscheck=self.run_dilep_ttbar_crosscheck,
                 top_reconstruction=self.top_reconstruction,
                 isDataForMixed=self.config['isDataForMixed'],
-                event_metadata=event.metadata
+                event_metadata=event.metadata,
+                year_override=self.year_override,
             )
             if not self.plot_ttbar_with_weights and not self.plot_ttbar_with_MvD_weights:
                 return hist_nom
@@ -1432,7 +1430,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     top_reconstruction=self.top_reconstruction,
                     isDataForMixed=self.config['isDataForMixed'],
                     event_metadata=event.metadata,
-                    weight_name = "weight_d3_to_t4"
+                    weight_name = "weight_d3_to_t4",
+                    year_override=self.year_override,
                 )
 
                 hist_t3 = filling_nominal_histograms(
@@ -1448,11 +1447,12 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     top_reconstruction=self.top_reconstruction,
                     isDataForMixed=self.config['isDataForMixed'],
                     event_metadata=event.metadata,
-                    weight_name = "weight_d3_to_t3"
+                    weight_name = "weight_d3_to_t3",
+                    year_override=self.year_override,
                 )
                 hists += [hist_t4, hist_t3]
 
-            if self.plot_ttbar_with_MvD_weights:
+            if self.plot_ttbar_with_MvD_weights and self.config["isMixedDataAll"]:
                 hist_mvd_t4 = filling_nominal_histograms(
                     selev,
                     self.apply_JCM,
@@ -1461,13 +1461,15 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     isMC=self.config["isMC"],
                     histCuts=self.histCuts,
                     apply_FvT=apply_FvT,
+                    apply_MvD=self.apply_MvD,
                     run_SvB=self.run_SvB,
                     run_dilep_ttbar_crosscheck=self.run_dilep_ttbar_crosscheck,
                     top_reconstruction=self.top_reconstruction,
                     isDataForMixed=self.config['isDataForMixed'],
                     event_metadata=event.metadata,
                     tag_list=["fourTag"],
-                    weight_name="weight_mix4_to_t4_MvD"
+                    weight_name="weight_mix4_to_t4_MvD",
+                    year_override=self.year_override,
                 )
                 hists.append(hist_mvd_t4)
 
