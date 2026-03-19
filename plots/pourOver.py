@@ -468,6 +468,11 @@ def _execute_plot(req):
 
     debug = bool(req.get("debug", False))
 
+    # Normalise doRatio aliases before the whitelist lookup
+    for alias in ("ratio", "do_ratio", "doratio", "Ratio", "do_Ratio"):
+        if alias in req and "doRatio" not in req:
+            req["doRatio"] = req.pop(alias)
+
     kwargs = {}
     for k in ["doRatio", "rebin", "norm", "yscale", "add_flow", "uniform_bins"]:
         v = req.get(k)
