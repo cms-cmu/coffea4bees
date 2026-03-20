@@ -56,10 +56,13 @@ class jetCombinatoricModel:
         else:
             self.data = yaml.safe_load(open(self.filename, 'r'))
             try:
-                self.p = self.data[f'pseudoTagProb_{self.cut}']
-                self.e = self.data[f'pairEnhancement_{self.cut}']
-                self.d = self.data[f'pairEnhancementDecay_{self.cut}']
-                self.t = self.data[f'threeTightTagFraction_{self.cut}']
+                cut_suffix = f'_{self.cut}' if self.cut else ''
+                self.p = self.data.get(f'pseudoTagProb{cut_suffix}', self.data.get('pseudoTagProb'))
+                self.e = self.data.get(f'pairEnhancement{cut_suffix}', self.data.get('pairEnhancement'))
+                self.d = self.data.get(f'pairEnhancementDecay{cut_suffix}', self.data.get('pairEnhancementDecay'))
+                self.t = self.data.get(f'threeTightTagFraction{cut_suffix}', self.data.get('threeTightTagFraction'))
+                if self.p is None or self.e is None or self.d is None or self.t is None:
+                    raise KeyError(f'pseudoTagProb{cut_suffix}')
                 if "JCM_weights" in self.data:
                     self.JCM_weights = self.data[f'JCM_weights']
 
