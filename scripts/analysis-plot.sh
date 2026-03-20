@@ -24,10 +24,10 @@ display_section_header "Checking if pdf files exist"
 ls $OUTPUT_DIR/RunII/region_SR/SvB_MA_ps_zz.pdf
 ls $OUTPUT_DIR/RunII/region_SR/SvB_MA_ps_zh.pdf
 ls $OUTPUT_DIR/RunII/region_SR/SvB_MA_ps_hh.pdf
-ls $OUTPUT_DIR/RunII/passPreSel/region_SR_vs_SB/data/SvB_MA_ps.pdf
-ls $OUTPUT_DIR/RunII/passPreSel/region_SR_vs_SB/HH4b/SvB_MA_ps.pdf
-ls $OUTPUT_DIR/RunII/passPreSel_vs_failSvB_vs_passSvB/region_SR/data/v4j_mass.pdf
-ls $OUTPUT_DIR/RunII/passPreSel_vs_failSvB_vs_passSvB/region_SR/HH4b/v4j_mass.pdf
+ls $OUTPUT_DIR/RunII/region_SR_vs_SB/data/SvB_MA_ps.pdf
+ls $OUTPUT_DIR/RunII/region_SR_vs_SB/HH4b/SvB_MA_ps.pdf
+ls $OUTPUT_DIR/RunII/failSvB_vs_passSvB/region_SR/data/v4j_mass.pdf
+ls $OUTPUT_DIR/RunII/failSvB_vs_passSvB/region_SR/HH4b/v4j_mass.pdf
 ls $OUTPUT_DIR/RunII/region_SR/data/quadJet_min_dr_close_vs_other_m.pdf
 ls $OUTPUT_DIR/RunII/region_SR/HH4b/quadJet_min_dr_close_vs_other_m.pdf
 ls $OUTPUT_DIR/RunII/region_SR/Multijet/quadJet_min_dr_close_vs_other_m.pdf
@@ -38,10 +38,10 @@ run_command python coffea4bees/plots/plot_from_yaml.py \
     --input_yaml $OUTPUT_DIR/RunII/region_SR/SvB_MA_ps_zz.yaml \
         $OUTPUT_DIR/RunII/region_SR/SvB_MA_ps_zh.yaml \
         $OUTPUT_DIR/RunII/region_SR/SvB_MA_ps_hh.yaml \
-        $OUTPUT_DIR/RunII/passPreSel/region_SR_vs_SB/data/SvB_MA_ps.yaml \
-        $OUTPUT_DIR/RunII/passPreSel/region_SR_vs_SB/HH4b/SvB_MA_ps.yaml \
-        $OUTPUT_DIR/RunII/passPreSel_vs_failSvB_vs_passSvB/region_SR/data/v4j_mass.yaml \
-        $OUTPUT_DIR/RunII/passPreSel_vs_failSvB_vs_passSvB/region_SR/HH4b/v4j_mass.yaml \
+        $OUTPUT_DIR/RunII/region_SR_vs_SB/data/SvB_MA_ps.yaml \
+        $OUTPUT_DIR/RunII/region_SR_vs_SB/HH4b/SvB_MA_ps.yaml \
+        $OUTPUT_DIR/RunII/failSvB_vs_passSvB/region_SR/data/v4j_mass.yaml \
+        $OUTPUT_DIR/RunII/failSvB_vs_passSvB/region_SR/HH4b/v4j_mass.yaml \
         $OUTPUT_DIR/RunII/region_SR/data/quadJet_min_dr_close_vs_other_m.yaml \
         $OUTPUT_DIR/RunII/region_SR/HH4b/quadJet_min_dr_close_vs_other_m.yaml \
         $OUTPUT_DIR/RunII/region_SR/Multijet/quadJet_min_dr_close_vs_other_m.yaml \
@@ -51,10 +51,10 @@ display_section_header "Checking if pdf files exist"
 ls $OUTPUT_DIR/test_plots_from_yaml/RunII/region_SR/SvB_MA_ps_zz.pdf
 ls $OUTPUT_DIR/test_plots_from_yaml/RunII/region_SR/SvB_MA_ps_zh.pdf
 ls $OUTPUT_DIR/test_plots_from_yaml/RunII/region_SR/SvB_MA_ps_hh.pdf
-ls $OUTPUT_DIR/test_plots_from_yaml/RunII/passPreSel/region_SR_vs_SB/data/SvB_MA_ps.pdf
-ls $OUTPUT_DIR/test_plots_from_yaml/RunII/passPreSel/region_SR_vs_SB/HH4b/SvB_MA_ps.pdf
-ls $OUTPUT_DIR/test_plots_from_yaml/RunII/passPreSel_vs_failSvB_vs_passSvB/region_SR/data/v4j_mass.pdf
-ls $OUTPUT_DIR/test_plots_from_yaml/RunII/passPreSel_vs_failSvB_vs_passSvB/region_SR/HH4b/v4j_mass.pdf
+ls $OUTPUT_DIR/test_plots_from_yaml/RunII/region_SR_vs_SB/data/SvB_MA_ps.pdf
+ls $OUTPUT_DIR/test_plots_from_yaml/RunII/region_SR_vs_SB/HH4b/SvB_MA_ps.pdf
+ls $OUTPUT_DIR/test_plots_from_yaml/RunII/failSvB_vs_passSvB/region_SR/data/v4j_mass.pdf
+ls $OUTPUT_DIR/test_plots_from_yaml/RunII/failSvB_vs_passSvB/region_SR/HH4b/v4j_mass.pdf
 ls $OUTPUT_DIR/test_plots_from_yaml/RunII/region_SR/data/quadJet_min_dr_close_vs_other_m.pdf
 ls $OUTPUT_DIR/test_plots_from_yaml/RunII/region_SR/HH4b/quadJet_min_dr_close_vs_other_m.pdf
 ls $OUTPUT_DIR/test_plots_from_yaml/RunII/region_SR/Multijet/quadJet_min_dr_close_vs_other_m.pdf

@@ -68,7 +68,7 @@ ak.behavior.update(vector.behavior)
 class analysis(processor.ProcessorABC):
     def __init__(self, JCM='', threeTag = True, corrections_metadata: dict = None, run_systematics=[], SRno = '4', make_classifier_input=None, object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml"):
         logging.debug('\nInitialize Analysis Processor')
-        self.histCuts = ['passPreSel']
+        self.histCuts = []
         self.tags = ['threeTag', 'fourTag'] if threeTag else ['fourTag']
         # self.JCM = jetCombinatoricModel(JCM)
         self.corrections_metadata = corrections_metadata

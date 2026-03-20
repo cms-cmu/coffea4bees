@@ -13,7 +13,8 @@ import matplotlib.pyplot as plt
 
 def print_counts_yaml(var, cut, region, counts):
 
-    outputFile.write(f"{'_'.join([var,cut,region])}:\n")
+    key_parts = [var] + ([cut] if cut is not None else []) + [region]
+    outputFile.write(f"{'_'.join(key_parts)}:\n")
     outputFile.write(f"    var:\n")
     outputFile.write(f"        {var}\n")
     outputFile.write(f"    cut:\n")
@@ -42,17 +43,17 @@ if __name__ == '__main__':
 
     default_args = {"doRatio":0, "rebin":4, "norm":0, "process":"Multijet"}
 
-    test_vectors = [("SvB_MA.ps", "passPreSel", "region_SR"),
-                    ("SvB_MA.ps", "passPreSel", "region_SB"),
+    test_vectors = [("SvB_MA.ps", None, "region_SR"),
+                    ("SvB_MA.ps", None, "region_SB"),
 
-                    ("SvB_MA.ps_hh", "passPreSel", "region_SR"),
-                    ("SvB_MA.ps_hh", "passPreSel", "region_SB"),
+                    ("SvB_MA.ps_hh", None, "region_SR"),
+                    ("SvB_MA.ps_hh", None, "region_SB"),
 
-                    ("SvB_MA.ps_zh", "passPreSel", "region_SR"),
-                    ("SvB_MA.ps_zh", "passPreSel", "region_SB"),
+                    ("SvB_MA.ps_zh", None, "region_SR"),
+                    ("SvB_MA.ps_zh", None, "region_SB"),
 
-                    ("SvB_MA.ps_zz", "passPreSel", "region_SR"),
-                    ("SvB_MA.ps_zz", "passPreSel", "region_SB"),
+                    ("SvB_MA.ps_zz", None, "region_SR"),
+                    ("SvB_MA.ps_zz", None, "region_SB"),
 
                     ]
 

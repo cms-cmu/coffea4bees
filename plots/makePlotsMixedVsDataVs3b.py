@@ -34,7 +34,7 @@ def get_average_over_mixed_data(plotConfig, **kwargs):
     for sub_sample in range(15):
         _proc_config_sub = copy.copy(process_config)
         _proc_config_sub["process"] = f"mix_v{sub_sample}"
-        _hist = plot_helpers_make_plot_dict.get_hist_data(process=_proc_config_sub["process"], cfg=cfg, config=_proc_config_sub, var=var, region=region, rebin=rebin, year=year, cut="passPreSel")
+        _hist = plot_helpers_make_plot_dict.get_hist_data(process=_proc_config_sub["process"], cfg=cfg, config=_proc_config_sub, var=var, region=region, rebin=rebin, year=year, cut=None)
         hist_objs.append( copy.copy(_hist))
 
         if hist_sum:
@@ -59,7 +59,7 @@ def plotVar(var, region, year, rebin, yscale, **kwargs):
 #    fig = makePlot(cfg, **plot_args)
 #    plt.close()
 
-    cut = "passPreSel"
+    cut = None
 
     #
     #  Plot same but using the Average over the mixed datasets

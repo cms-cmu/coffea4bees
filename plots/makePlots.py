@@ -133,7 +133,7 @@ def doPlots(varList, debug=False):
 
                     plot_args  = {}
                     plot_args["var"] = v
-                    plot_args["cut"] = ["passPreSel", "failSvB", "passSvB"]
+                    plot_args["cut"] = ["failSvB", "passSvB"]
                     plot_args["axis_opts"] = {"region": region}
                     plot_args["outputFolder"] = args.outputFolder
                     plot_args["process"] = process
@@ -156,7 +156,7 @@ def doPlots(varList, debug=False):
                 try:
                     fig = makePlot(cfg,
                                    var=v,
-                                   cut="passPreSel",
+                                   cut=None,
                                    axis_opts = {"region":["SR", "SB"]},
                                    process=process,
                                    outputFolder=args.outputFolder,

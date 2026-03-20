@@ -173,7 +173,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         apply_boosted_veto: bool = False,
         run_dilep_ttbar_crosscheck: bool = False,
         fill_histograms: bool = True,
-        hist_cuts = ['passPreSel'],
+        hist_cuts = [],
         run_SvB: bool = True,
         top_reconstruction: str | None = None,
         run_systematics: list = [],  #### Way of splitting systematics. It can be event_weights, jes, btag
