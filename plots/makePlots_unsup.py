@@ -34,7 +34,7 @@ def doPlots(varList, debug=False):
         if vDict.get("2d", False):
             continue
 
-        cut = "passPreSel"
+        cut = None
         tag = "fourTag"
 
         vDict["ylabel"] = "Entries"
@@ -112,7 +112,7 @@ def doPlots(varList, debug=False):
 
                     plot_args  = {}
                     plot_args["var"] = v
-                    plot_args["cut"] = ["passPreSel"]#, "failSvB", "passSvB"]
+                    plot_args["cut"] = []#, "failSvB", "passSvB"]
                     plot_args["axis_opts"] = {"region": region}
                     plot_args["outputFolder"] = args.outputFolder
                     plot_args["process"] = process
@@ -132,7 +132,7 @@ def doPlots(varList, debug=False):
                 #
                 fig = makePlot(cfg,
                                var=v,
-                               cut="passPreSel",
+                               cut=None,
                                axis_opts= {"region":["SR", "SB"]},  #, "SRSB", "notSRSB","lowSB", "highSB"]:
                                process=process,
                                outputFolder=args.outputFolder,

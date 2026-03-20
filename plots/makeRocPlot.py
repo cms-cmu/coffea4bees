@@ -99,7 +99,7 @@ def makeRocPlot(cfg, vars_to_plot, **kwargs):
 
     for _v in vars_to_plot:
 
-        plot_data = get_plot_dict_from_config(cfg, _v["var"], cut="passPreSel", region="SR", **kwargs)
+        plot_data = get_plot_dict_from_config(cfg, _v["var"], cut=None, region="SR", **kwargs)
 
         #
         # Sum signal
