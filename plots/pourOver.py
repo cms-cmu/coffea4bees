@@ -785,6 +785,8 @@ def _parse_args():
                         help='Rename all registry entries with label OLD to NEW and exit.')
     parser.add_argument('--delete', metavar='LABEL',
                         help='Delete all archives with this label (removes directories and registry entries) and exit.')
+    parser.add_argument('--yes', '-y', action='store_true',
+                        help='Skip confirmation prompt for --delete.')
 
     return parser.parse_args()
 
@@ -882,6 +884,18 @@ if __name__ == '__main__':
         if not matches:
             print(f"error: no archives with label {args.delete!r}", file=sys.stderr)
             sys.exit(1)
+        print(f"Will delete {len(matches)} archive(s) with label {args.delete!r}:")
+        for e in matches:
+            print(f"  {e['archive_dir']}")
+        if not args.yes:
+            try:
+                answer = input(f"Delete {len(matches)} archive(s)? [y/N] ").strip().lower()
+            except (EOFError, KeyboardInterrupt):
+                print("\nAborted.")
+                sys.exit(1)
+            if answer not in ('y', 'yes'):
+                print("Aborted.")
+                sys.exit(1)
         for e in matches:
             adir = Path(e['archive_dir'])
             if adir.exists():

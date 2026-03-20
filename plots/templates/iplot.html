@@ -248,9 +248,11 @@ let currentPdf  = '';
 let activeThumb = null;
 
 // Tab completion state (two-stage: Tab1 = list, Tab2 = LCP fill)
-let tabMatches = [];   // current candidate list
-let tabStage   = 0;    // 0 = fresh, 1 = listed (awaiting LCP fill)
-let tabKey     = null; // pfx+'\x00'+partial to detect re-typing
+let tabMatches       = [];   // current candidate list
+let tabStage         = 0;    // 0 = fresh, 1 = cycling/listed
+let tabKey           = null; // pfx+'\x00'+partial to detect re-typing
+let tabLcpCandidates = null; // subset used for LCP (prefix matches only)
+let tabPage          = 0;    // current page when cycling through overflow completions
 
 const CLI_FUNCS = ['plot(', 'plot2d(', 'ls(', 'info(', 'examples('];
 
@@ -297,15 +299,25 @@ function buildWelcome() {
   const regions = (axesData.regions || []).join(', ');
   const cuts    = (axesData.cuts    || []).join(', ') || '(none)';
 
+  let cmdBlock;
+  if (cmdHistory.length) {
+    const recent = cmdHistory.slice(0, 5);
+    cmdBlock = `<span class="dim">Recent:</span>\n` +
+      recent.map(c => `  <span class="cmd">${escHtml(c)}</span>`).join('\n');
+  } else {
+    cmdBlock =
+      `<span class="dim">Commands:</span>\n` +
+      `  <span class="cmd">plot("var")</span>\n` +
+      `  <span class="cmd">plot("var", region="SB")</span>\n` +
+      `  <span class="cmd">plot("var", region=["SR","SB"])</span>\n` +
+      `  <span class="cmd">plot("var", cut="passPreSel", rebin=2)</span>\n` +
+      `  <span class="cmd">plot("var", doRatio=0, yscale="log", xlim=[0,200])</span>\n` +
+      `  <span class="cmd">plot2d("var", "process", region="SR")</span>`;
+  }
+
   document.getElementById('welcome').innerHTML =
     `<span class="head">PourOver — interactive console</span>\n\n` +
-    `<span class="dim">Commands:</span>\n` +
-    `  <span class="cmd">plot("var")</span>\n` +
-    `  <span class="cmd">plot("var", region="SB")</span>\n` +
-    `  <span class="cmd">plot("var", region=["SR","SB"])</span>\n` +
-    `  <span class="cmd">plot("var", cut="passPreSel", rebin=2)</span>\n` +
-    `  <span class="cmd">plot("var", doRatio=0, yscale="log", xlim=[0,200])</span>\n` +
-    `  <span class="cmd">plot2d("var", "process", region="SR")</span>\n\n` +
+    cmdBlock + `\n\n` +
     `<span class="dim">Regions  :</span>  ${regions}\n` +
     `<span class="dim">Cuts     :</span>  ${cuts}\n` +
     `<span class="dim">Variables:</span>  ${vars}\n\n` +
@@ -331,6 +343,7 @@ document.getElementById('cli-input').addEventListener('keydown', e => {
     const cmd = input.value.trim();
     if (!cmd) return;
     cmdHistory.unshift(cmd);
+    input.placeholder = cmd;
     histIdx = -1; pending = '';
     input.value = '';
     runCommand(cmd);
@@ -397,8 +410,13 @@ function doTabComplete(input) {
   // 2. Variable name completion inside plot("...
   const varMatch = TAB_RE.exec(before);
   if (varMatch) {
-    _twoStage(input, varMatch[1], varMatch[2], after,
-              (axesData.variables || []).filter(v => v.startsWith(varMatch[2])), false);
+    const partial   = varMatch[2];
+    const vars      = axesData.variables || [];
+    const pfxMatch  = vars.filter(v => v.startsWith(partial));
+    const subMatch  = partial
+      ? vars.filter(v => !v.startsWith(partial) && v.toLowerCase().includes(partial.toLowerCase()))
+      : [];
+    _twoStage(input, varMatch[1], partial, after, [...pfxMatch, ...subMatch], false, pfxMatch);
     return;
   }
 
@@ -413,38 +431,54 @@ function doTabComplete(input) {
   resetTabComplete();
 }
 
-function _twoStage(input, pfx, partial, after, matches, addEq) {
+const TAB_PAGE_SIZE = 16;
+
+function _twoStage(input, pfx, partial, after, matches, addEq, lcpCandidates) {
   const key = pfx + '\x00' + partial;
   if (tabKey !== key) {
-    tabKey     = key;
-    tabMatches = matches;
-    tabStage   = 0;
+    tabKey           = key;
+    tabMatches       = matches;
+    tabLcpCandidates = lcpCandidates || null;
+    tabStage         = 0;
+    tabPage          = 0;
     if (!matches.length) { resetTabComplete(); return; }
   }
   if (!tabMatches.length) return;
 
-  const suffix = (m) => m + (addEq ? '=' : '');
+  const suffix     = (m) => m + (addEq ? '=' : '');
+  const suffixed   = tabMatches.map(suffix);
+  const totalPages = Math.ceil(suffixed.length / TAB_PAGE_SIZE);
 
   // Unambiguous: complete immediately
   if (tabMatches.length === 1) {
-    _fill(input, pfx, suffix(tabMatches[0]), after);
-    setTabHint(tabMatches.map(suffix), partial);
-    tabKey = null;   // allow re-trigger after fill
+    _fill(input, pfx, suffixed[0], after);
+    setTabHint(suffixed, partial, 0, 1);
+    tabKey = null;
     return;
   }
 
   if (tabStage === 0) {
-    // First Tab: show list, do not change input
-    setTabHint(tabMatches.map(suffix), partial);
+    // First Tab: show page 0
+    tabPage  = 0;
     tabStage = 1;
+    setTabHint(suffixed, partial, 0, totalPages);
+  } else if (totalPages > 1 && tabPage < totalPages - 1) {
+    // More pages remain: advance to next page
+    tabPage++;
+    setTabHint(suffixed, partial, tabPage, totalPages);
   } else {
-    // Second Tab: fill to LCP
-    const common = lcp(tabMatches);
-    _fill(input, pfx, common, after);
-    // Update key so next Tab re-evaluates from the new partial (= common)
-    tabKey   = pfx + '\x00' + common;
-    tabStage = 0;
-    setTabHint(tabMatches.map(suffix), common);
+    // Last (or only) page: attempt LCP fill
+    const forLcp = tabLcpCandidates && tabLcpCandidates.length ? tabLcpCandidates : tabMatches;
+    const common = lcp(forLcp.map(suffix));
+    if (common.length > partial.length) {
+      _fill(input, pfx, common, after);
+      tabKey           = pfx + '\x00' + common;
+      tabLcpCandidates = null;
+      tabStage         = 0;
+      tabPage          = 0;
+      setTabHint(suffixed, common, 0, totalPages);
+    }
+    // else: LCP doesn't advance — keep showing current page
   }
 }
 
@@ -455,11 +489,11 @@ function _fill(input, pfx, completed, after) {
 }
 
 function resetTabComplete() {
-  tabMatches = []; tabStage = 0; tabKey = null;
+  tabMatches = []; tabStage = 0; tabKey = null; tabLcpCandidates = null; tabPage = 0;
   setTabHint([]);
 }
 
-function setTabHint(matches, typed = '') {
+function setTabHint(matches, typed = '', page = 0, totalPages = 1) {
   const hintsEl = document.getElementById('cli-hints');
   const tabEl   = document.getElementById('tab-hint');
 
@@ -472,24 +506,27 @@ function setTabHint(matches, typed = '') {
 
   hintsEl.style.display = 'none';
 
-  const MAX   = 16;
-  const shown = matches.slice(0, MAX);
-  const extra = matches.length - shown.length;
+  const start = page * TAB_PAGE_SIZE;
+  const shown = matches.slice(start, start + TAB_PAGE_SIZE);
   const mid   = Math.ceil(shown.length / 2);
   const row1  = shown.slice(0, mid);
   const row2  = shown.slice(mid);
 
   const renderItem = (m) => {
-    // Split into the already-typed prefix and the distinguishing suffix
-    const pre = escHtml(m.slice(0, typed.length));
-    const suf = escHtml(m.slice(typed.length));
-    return `<span class="tab-item"><span class="tab-item-prefix">${pre}</span><span class="tab-item-suffix">${suf}</span></span>`;
+    if (!typed) return `<span class="tab-item">${escHtml(m)}</span>`;
+    const idx = m.toLowerCase().indexOf(typed.toLowerCase());
+    if (idx === -1) return `<span class="tab-item">${escHtml(m)}</span>`;
+    const pre  = escHtml(m.slice(0, idx));
+    const hit  = escHtml(m.slice(idx, idx + typed.length));
+    const rest = escHtml(m.slice(idx + typed.length));
+    return `<span class="tab-item"><span class="tab-item-prefix">${pre}</span><span class="tab-item-suffix">${hit}</span>${rest}</span>`;
   };
 
-  const makeRow = (items, addMore) => {
+  const pageLabel = totalPages > 1 ? `<span class="tab-more">${page + 1}/${totalPages} ↹</span>` : '';
+
+  const makeRow = (items, addLabel) => {
     const cells = items.map(renderItem).join('');
-    const more  = addMore && extra > 0 ? `<span class="tab-more">+${extra} more</span>` : '';
-    return `<div class="tab-row">${cells}${more}</div>`;
+    return `<div class="tab-row">${cells}${addLabel ? pageLabel : ''}</div>`;
   };
 
   tabEl.innerHTML = makeRow(row1, row2.length === 0) +
@@ -705,21 +742,52 @@ document.addEventListener('keydown', e => {
 // Rotating tip shown after the keyboard shortcuts
 // ---------------------------------------------------------------------------
 const TIPS = [
-  'compare regions by specifiying a process and passing a list: <span class="hint-key">region=["SB","SR"]</span>',
-  'overlay a specific process with <span class="hint-key">process="ttbar"</span>',
+  // --- region / cut ---
+  'compare regions by specifying a process and passing a list: <span class="hint-key">region=["SB","SR"]</span>',
+  'sum all regions with <span class="hint-key">region="sum"</span>',
+  'apply a cut with <span class="hint-key">cut="passPreSel"</span>',
+  'invert a cut with a ~ prefix: <span class="hint-key">cut="~passPreSel"</span>',
+  'overlay multiple cuts: <span class="hint-key">cut=["passPreSel","passLeadSt"]</span>',
+
+  // --- process / year ---
+  'plot a specific process with <span class="hint-key">process="ttbar"</span>',
+  'compare two processes: <span class="hint-key">process=["ttbar","data"]</span>',
+  'select a specific year with <span class="hint-key">year="UL18"</span>',
+  'overlay multiple years: <span class="hint-key">year=["UL17","UL18"]</span> and select a process',
+  'sum all years with <span class="hint-key">year="sum"</span>',
+
+  // --- axis scaling ---
   'set the y-axis to log scale with <span class="hint-key">yscale="log"</span>',
+  'set the x-axis to log scale with <span class="hint-key">xscale="log"</span>',
   'zoom the x-axis with <span class="hint-key">xlim=[0,200]</span>',
-  'zoom the ratio-axis with <span class="hint-key">xlim=[0,2]</span>',    
+  'set y-axis limits with <span class="hint-key">ylim=[0,5000]</span>',
+  'zoom the ratio panel y-axis with <span class="hint-key">rlim=[0.5,1.5]</span>',
+
+  // --- binning / display ---
   'rebin histograms with <span class="hint-key">rebin=4</span>',
+  'include under/overflow in edge bins with <span class="hint-key">add_flow=1</span>',
+  'change histogram style with <span class="hint-key">histtype="step"</span> (step, fill, errorbar, bar)',
+
+  // --- normalisation / ratio ---
   'normalise all processes to unit area with <span class="hint-key">norm=1</span>',
   'hide the ratio panel with <span class="hint-key">doRatio=0</span>',
-  'apply a selection with <span class="hint-key">cut="passPreSel"</span> invert the cut with <span class="hint-key">cut="~passPreSel"</span>',
-  'sum over all regions with <span class="hint-key">region="sum"</span>',
-  'sum over all years with <span class="hint-key">years="sum"</span>',    
-  'make a 2D plot with <span class="hint-key">plot2d("varX",)</span> (needs to be 2d histogram)',
+  'normalise and compare shapes: <span class="hint-key">norm=1, doRatio=1</span>',
+
+  // --- legend / labels ---
+  'move the legend with <span class="hint-key">legend_loc="upper left"</span>',
+
+
+  // --- 2D plots ---
+  'set the 2D colour-axis range with <span class="hint-key">zlim=[0,100]</span>',
+
+  // --- discovery / help ---
   'list available variables with <span class="hint-key">ls()</span>',
+  'filter the variable list: <span class="hint-key">ls("mass")</span>',
+  'print config summary with <span class="hint-key">info()</span>',
   'see more example commands with <span class="hint-key">examples()</span>',
-  'Can compare variable, years, cuts, regions, processes by passing a list',
+
+  // --- combining axes ---
+  'any axis (cut, region, year, process) accepts a list to create overlays',
 ];
 
 function pickTip() {
