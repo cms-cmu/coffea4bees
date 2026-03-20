@@ -37,7 +37,6 @@
     .btn-secondary { background: rgba(255,255,255,0.15); color: #fff;
                      border: 1px solid rgba(255,255,255,0.5); }
     .btn-accent { background: var(--cmu-red-dark); color: #fff; }
-    #archive-msg { font-size: 12px; color: #fff; margin-left: 8px; }
 
     /* ---- middle row: main figure + history panel ---- */
     #middle { flex: 1; display: flex; overflow: hidden; background: var(--bg-base); }
@@ -133,14 +132,23 @@
     #cli-input::placeholder { color: #bbb; }
     #cli-spinner { font-size: 13px; color: var(--text-muted); white-space: nowrap;
                    min-width: 80px; text-align: right; }
-    #cli-hints { display: flex; gap: 18px; margin-top: 6px; padding-left: 2px;
+    /* hints / tab-completion share the same 2-line slot below the input */
+    #cli-below { margin-top: 6px; padding-left: 2px;
+                 height: calc(2 * 1.4em + 4px); overflow: hidden; }
+    #cli-hints { display: flex; gap: 18px;
                  font-family: 'Fira Mono','Consolas',monospace; font-size: 15px;
                  color: #bbb; flex-wrap: wrap; }
     .hint-item { white-space: nowrap; }
     .hint-key  { color: #999; }
-    #tab-hint  { font-family: 'Fira Mono','Consolas',monospace; font-size: 15px;
-                 color: var(--cmu-red); margin-top: 4px; padding-left: 2px; min-height: 18px;
-                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #cli-tip   { color: #bbb; font-style: italic; }
+    #cli-tip .hint-key { font-style: normal; }
+    #tab-hint  { display: none; flex-direction: column; gap: 3px; }
+    .tab-row   { display: flex; gap: 14px; overflow: hidden;
+                 font-family: 'Fira Mono','Consolas',monospace; font-size: 15px; }
+    .tab-item        { white-space: nowrap; }
+    .tab-item-prefix { color: var(--term-muted); }
+    .tab-item-suffix { color: var(--cmu-red); font-weight: 600; }
+    .tab-more        { color: var(--term-muted); white-space: nowrap; }
 
     /* ---- lightbox ---- */
     #lb { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88);
@@ -163,10 +171,8 @@
 <header>
   <img id="cmu-logo" src="/static/cmu-logo.png" alt="CMU" />
   <h1>PourOver</h1>
-  <span class="header-meta">{{ input_files | join(', ') }} &nbsp;|&nbsp; {{ metadata_file }}</span>
-  <a class="btn btn-secondary" href="/">← Gallery</a>
-  <button class="btn btn-secondary" onclick="archiveSession()">Archive Session</button>
-  <span id="archive-msg"></span>
+  <span class="header-meta">{{ session_label if session_label else (input_files | join(', ') + ' &nbsp;|&nbsp; ' + metadata_file) }}</span>
+  <a class="btn btn-secondary" href="/gallery-view">← Gallery</a>
 </header>
 
 <div id="middle">
@@ -213,17 +219,16 @@
            placeholder='plot("selJets.pt", region="SR")' />
     <span id="cli-spinner"></span>
   </div>
-  <div id="cli-hints">
-    <span class="hint-item"><span class="hint-key">↑↓</span> history</span>
-    <span class="hint-item"><span class="hint-key">Esc</span> clear</span>
-    <span class="hint-item"><span class="hint-key">region=</span> "SR" "SB" ["SR","SB"] "sum"</span>
-    <span class="hint-item"><span class="hint-key">rebin=</span> 2</span>
-    <span class="hint-item"><span class="hint-key">yscale=</span> "log"</span>
-    <span class="hint-item"><span class="hint-key">doRatio=</span> 0</span>
-    <span class="hint-item"><span class="hint-key">norm=</span> 1</span>
-    <span class="hint-item"><span class="hint-key">xlim=</span> [0,200]</span>
+  <div id="cli-below">
+    <div id="cli-hints">
+      <span class="hint-item"><span class="hint-key">↑↓</span> history</span>
+      <span class="hint-item"><span class="hint-key">Esc</span> clear</span>
+      <span class="hint-item"><span class="hint-key">Tab</span> complete</span>
+      <span class="hint-item"><span class="hint-key">/</span> focus</span>
+      <span id="cli-tip"></span>
+    </div>
+    <div id="tab-hint"></div>
   </div>
-  <div id="tab-hint"></div>
 </div>
 
 <!-- Lightbox -->
@@ -259,7 +264,10 @@ async function init() {
   axesData = await axesRes.json();
 
   const savedCmds = await histRes.json();
-  if (savedCmds.length) cmdHistory = savedCmds;   // newest-first from server
+  if (savedCmds.length) {
+    cmdHistory = savedCmds;   // newest-first from server
+    document.getElementById('cli-input').placeholder = savedCmds[0];
+  }
 
   const savedPlots = await ihistRes.json();        // newest-first from server
   if (savedPlots.length) restoreInteractiveHistory(savedPlots);
@@ -415,19 +423,19 @@ function _twoStage(input, pfx, partial, after, matches, addEq) {
   }
   if (!tabMatches.length) return;
 
-  const display = tabMatches.map(m => m + (addEq ? '=' : ''));
+  const suffix = (m) => m + (addEq ? '=' : '');
 
   // Unambiguous: complete immediately
   if (tabMatches.length === 1) {
-    _fill(input, pfx, tabMatches[0] + (addEq ? '=' : ''), after);
-    setTabHint(display);
+    _fill(input, pfx, suffix(tabMatches[0]), after);
+    setTabHint(tabMatches.map(suffix), partial);
     tabKey = null;   // allow re-trigger after fill
     return;
   }
 
   if (tabStage === 0) {
     // First Tab: show list, do not change input
-    setTabHint(display);
+    setTabHint(tabMatches.map(suffix), partial);
     tabStage = 1;
   } else {
     // Second Tab: fill to LCP
@@ -436,7 +444,7 @@ function _twoStage(input, pfx, partial, after, matches, addEq) {
     // Update key so next Tab re-evaluates from the new partial (= common)
     tabKey   = pfx + '\x00' + common;
     tabStage = 0;
-    setTabHint(display);
+    setTabHint(tabMatches.map(suffix), common);
   }
 }
 
@@ -451,14 +459,42 @@ function resetTabComplete() {
   setTabHint([]);
 }
 
-function setTabHint(matches) {
-  const el = document.getElementById('tab-hint');
-  if (!matches.length) { el.textContent = ''; return; }
-  if (matches.length === 1) { el.textContent = `  ↹  ${matches[0]}`; return; }
-  const MAX = 8;
+function setTabHint(matches, typed = '') {
+  const hintsEl = document.getElementById('cli-hints');
+  const tabEl   = document.getElementById('tab-hint');
+
+  if (!matches.length) {
+    tabEl.style.display   = 'none';
+    tabEl.innerHTML       = '';
+    hintsEl.style.display = 'flex';
+    return;
+  }
+
+  hintsEl.style.display = 'none';
+
+  const MAX   = 16;
   const shown = matches.slice(0, MAX);
-  const more  = matches.length > MAX ? `  +${matches.length - MAX} more` : '';
-  el.textContent = `  ↹  ${shown.join('   ')}${more}`;
+  const extra = matches.length - shown.length;
+  const mid   = Math.ceil(shown.length / 2);
+  const row1  = shown.slice(0, mid);
+  const row2  = shown.slice(mid);
+
+  const renderItem = (m) => {
+    // Split into the already-typed prefix and the distinguishing suffix
+    const pre = escHtml(m.slice(0, typed.length));
+    const suf = escHtml(m.slice(typed.length));
+    return `<span class="tab-item"><span class="tab-item-prefix">${pre}</span><span class="tab-item-suffix">${suf}</span></span>`;
+  };
+
+  const makeRow = (items, addMore) => {
+    const cells = items.map(renderItem).join('');
+    const more  = addMore && extra > 0 ? `<span class="tab-more">+${extra} more</span>` : '';
+    return `<div class="tab-row">${cells}${more}</div>`;
+  };
+
+  tabEl.innerHTML = makeRow(row1, row2.length === 0) +
+                    (row2.length ? makeRow(row2, true) : '');
+  tabEl.style.display = 'flex';
 }
 
 // ---------------------------------------------------------------------------
@@ -500,6 +536,7 @@ async function runCommand(cmd) {
   }
 
   setSpinner('');
+  pickTip();
 }
 
 // ---------------------------------------------------------------------------
@@ -655,19 +692,41 @@ function closeLb(e) {
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') document.getElementById('lb').classList.remove('active');
+  // Press '/' anywhere outside the input to focus the CLI
+  const input = document.getElementById('cli-input');
+  if (e.key === '/' && document.activeElement !== input) {
+    e.preventDefault();
+    input.focus();
+  }
 });
 
-async function archiveSession() {
-  const msg = document.getElementById('archive-msg');
-  msg.textContent = 'Archiving…';
-  try {
-    const res  = await fetch('/archive', { method: 'POST' });
-    const data = await res.json();
-    msg.textContent = `Saved to: ${data.archive_path}`;
-  } catch(e) {
-    msg.textContent = 'Archive failed: ' + e;
-  }
+
+// ---------------------------------------------------------------------------
+// Rotating tip shown after the keyboard shortcuts
+// ---------------------------------------------------------------------------
+const TIPS = [
+  'compare regions by specifiying a process and passing a list: <span class="hint-key">region=["SB","SR"]</span>',
+  'overlay a specific process with <span class="hint-key">process="ttbar"</span>',
+  'set the y-axis to log scale with <span class="hint-key">yscale="log"</span>',
+  'zoom the x-axis with <span class="hint-key">xlim=[0,200]</span>',
+  'zoom the ratio-axis with <span class="hint-key">xlim=[0,2]</span>',    
+  'rebin histograms with <span class="hint-key">rebin=4</span>',
+  'normalise all processes to unit area with <span class="hint-key">norm=1</span>',
+  'hide the ratio panel with <span class="hint-key">doRatio=0</span>',
+  'apply a selection with <span class="hint-key">cut="passPreSel"</span> invert the cut with <span class="hint-key">cut="~passPreSel"</span>',
+  'sum over all regions with <span class="hint-key">region="sum"</span>',
+  'sum over all years with <span class="hint-key">years="sum"</span>',    
+  'make a 2D plot with <span class="hint-key">plot2d("varX",)</span> (needs to be 2d histogram)',
+  'list available variables with <span class="hint-key">ls()</span>',
+  'see more example commands with <span class="hint-key">examples()</span>',
+  'Can compare variable, years, cuts, regions, processes by passing a list',
+];
+
+function pickTip() {
+  const tip = TIPS[Math.floor(Math.random() * TIPS.length)];
+  document.getElementById('cli-tip').innerHTML = '— ' + tip;
 }
+pickTip();
 
 init();
 </script>

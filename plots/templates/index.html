@@ -39,7 +39,6 @@
     .btn-secondary { background: rgba(255,255,255,0.15); color: #fff;
                      border: 1px solid rgba(255,255,255,0.5); }
     .btn-accent    { background: var(--cmu-red-dark); color: #fff; }
-    #archive-msg { font-size: 12px; color: #fff; margin-left: 8px; }
 
     /* ---- main layout: gallery | interactive ---- */
     main { display: flex; flex: 1; overflow: hidden; }
@@ -133,11 +132,7 @@
 <!-- Header -->
 <header>
   <h1>PourOver</h1>
-  <span class="header-meta">
-    {{ input_files | join(', ') }} &nbsp;|&nbsp; {{ metadata_file }}
-  </span>
-  <button class="btn btn-secondary" onclick="archiveSession()">Archive Session</button>
-  <span id="archive-msg"></span>
+  <span class="header-meta">{{ session_label if session_label else (input_files | join(', ') + ' &nbsp;|&nbsp; ' + metadata_file) }}</span>
 </header>
 
 <!-- Main -->
@@ -505,21 +500,6 @@ function prependResult(png_b64, pdf_url, error, params) {
 
   const container = document.getElementById('iplot-results');
   container.insertBefore(div, container.firstChild);
-}
-
-// ---------------------------------------------------------------------------
-// Archive
-// ---------------------------------------------------------------------------
-async function archiveSession() {
-  const msg = document.getElementById('archive-msg');
-  msg.textContent = 'Archiving...';
-  try {
-    const res  = await fetch('/archive', { method: 'POST' });
-    const data = await res.json();
-    msg.textContent = `Saved to: ${data.archive_path}`;
-  } catch(e) {
-    msg.textContent = 'Archive failed: ' + e;
-  }
 }
 
 // ---------------------------------------------------------------------------

@@ -28,9 +28,9 @@ python coffea4bees/plots/pourOver.py \
     -m coffea4bees/plots/metadata/plotsAll_MvD_ttbar_weights.yml
 ```
 
-Then open **http://localhost:5000** in your browser.
+Then open **http://localhost:5000** in your browser. The interactive plot form is the landing page; the gallery is at `/gallery-view`.
 
-Gallery pre-generation runs at startup and prints progress to the terminal (~2 min for a typical file). The interactive form is available immediately.
+Add `--pregallery` to pre-generate PNG/PDF thumbnails for every variable × region on startup (~2 min for a typical file). Without it the gallery page is empty but the interactive form works immediately.
 
 ---
 
@@ -40,12 +40,19 @@ All standard `iPlot.py` / `makePlotsAll.py` arguments are accepted, plus:
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `inputFile` | (required) | Path(s) to `.coffea` histogram file(s) |
+| `inputFile` | (required unless `--load`) | Path(s) to `.coffea` histogram file(s) |
 | `-m / --metadata` | `plotsAll.yml` | Metadata YAML defining processes, regions, colors |
 | `--modifiers` | `plotModifiers.yml` | Per-variable plot options (xlim, rebin, 2d flag, etc.) |
 | `-o / --outputFolder` | `pourover_output` | Directory for generated PNG and PDF files |
 | `--port` | `5000` | Port to serve on |
-| `--no-pregallery` | off | Skip gallery pre-generation at startup |
+| `--pregallery` | off | Pre-generate the full plot gallery on startup |
+| `--new` | off | Snapshot inputs into a timestamped archive, register it, and serve |
+| `--load LABEL` | — | Load a previously created archive by its label |
+| `--list` | — | List all archives in the registry and exit |
+| `--rename OLD NEW` | — | Rename all archives with label OLD to NEW and exit |
+| `--delete LABEL` | — | Delete all archives with this label (removes directories and registry entries) and exit |
+| `--registry FILE` | `.pourover_archives/pourover_registry.json` | Path to the archive registry JSON |
+| `--label LABEL` | (required with `--new`) | Label for this archive, e.g. `ul18-sb-test` |
 
 ### Examples
 
@@ -56,32 +63,122 @@ python coffea4bees/plots/pourOver.py file.coffea -m metadata.yml
 # Custom port
 python coffea4bees/plots/pourOver.py file.coffea -m metadata.yml --port 8080
 
-# Skip gallery generation (fast startup, interactive form only)
-python coffea4bees/plots/pourOver.py file.coffea -m metadata.yml --no-pregallery
+# Pre-generate the gallery (default is off — interactive form is available immediately)
+python coffea4bees/plots/pourOver.py file.coffea -m metadata.yml --pregallery
 
 # Multiple input files (overlaid)
 python coffea4bees/plots/pourOver.py fileA.coffea fileB.coffea \
     -m metadata.yml -l "Run2" "Run3"
-
-# Custom output directory
-python coffea4bees/plots/pourOver.py file.coffea -m metadata.yml \
-    -o my_plots/
 ```
 
 ---
 
-## Output Directory Layout
+## Session Management
+
+PourOver supports first-class session snapshots via `--new` and `--load`. This replaces the ad-hoc `--reuse-gallery` + manual `pourover_output/` workflow.
+
+### Creating a snapshot (`--new`)
+
+```bash
+pourover file.coffea -m meta.yml --new --label ul18-sb-test
+```
+
+What happens:
+1. A timestamped archive directory is created (`.pourover_archives/pourover_archive_YYYYMMDD_HHMMSS/`)
+2. Input coffea file(s) and metadata YAML are copied into `archive/inputs/`
+3. A `manifest.json` is written recording the inputs, metadata path, timestamp, and label
+4. An entry is appended to `.pourover_archives/pourover_registry.json`
+5. The gallery is generated into `archive/gallery/` and the server starts
+
+The archive is self-contained and relocatable — all paths in `manifest.json` are relative to the archive directory.
+
+### Reloading a snapshot (`--load`)
+
+```bash
+pourover --load ul18-sb-test
+```
+
+What happens:
+1. The label is looked up in the registry to find the archive directory
+2. `manifest.json` is read to locate the coffea and metadata files (inside `inputs/`)
+3. Histograms are loaded from the archived copies
+4. The existing gallery PNGs are reused (no regeneration)
+5. Flask starts immediately
+
+No need to re-specify any inputs — everything comes from the archive. If the same label exists more than once, the most recent entry is used.
+
+### Listing archives (`--list`)
+
+```bash
+pourover --list
+```
+
+Output is columnar: label, timestamp, archive directory path.
 
 ```
-pourover_output/
-  gallery/
-    v4j_mass_region_SR.png      ← pre-generated gallery plots
-    v4j_mass_region_SR.pdf
-    v4j_mass_region_SB.png
-    ...
-  interactive/
-    20240101_120000_v4j_mass.pdf  ← plots created via the interactive form
-    ...
+ul18-sb-test    2026-03-19T15:30:45  .pourover_archives/pourover_archive_20260319_153045
+ul18-sr-full    2026-03-20T09:12:00  .pourover_archives/pourover_archive_20260320_091200
+Run3-MvD        2026-03-21T11:05:33  .pourover_archives/pourover_archive_20260321_110533
+```
+
+Use `--registry` to point at a non-default registry file.
+
+### Deleting archives (`--delete`)
+
+```bash
+pourover --delete ul18-sb-test
+#   Removed .pourover_archives/pourover_archive_20260319_153045
+# Deleted 1 archive(s) with label 'ul18-sb-test'
+```
+
+Removes every archive directory matching the label and purges the corresponding entries from the registry. If a directory is unexpectedly missing it prints a warning and continues. The operation is not reversible.
+
+### Renaming archives (`--rename`)
+
+```bash
+pourover --rename ul18-sb-test ul18-sb-final
+# Renamed 1 archive(s): 'ul18-sb-test' → 'ul18-sb-final'
+```
+
+Updates all matching entries in the registry and the `manifest.json` inside each archive directory. Labels must be kebab-case: letters, digits, and hyphens, no leading or trailing hyphens (e.g. `ul18-sb-final`, `Run3-MvD`).
+
+### Shell tab completion
+
+A bash completion script provides label completion for `--load` and `--rename`, plus file/directory completion for all other arguments.
+
+Add to `~/.bashrc` (use the absolute path to your barista checkout):
+
+```bash
+source /path/to/barista/coffea4bees/plots/pourover-completion.bash
+```
+
+This defines a `pourover` alias. Then use `pourover` in place of `python coffea4bees/plots/pourOver.py`:
+
+```
+pourover --load ul18-<TAB>       # completes labels from registry
+pourover --rename ul18-<TAB>     # same
+pourover --delete ul18-<TAB>     # same
+pourover file<TAB>               # completes .coffea files
+pourover -m meta<TAB>            # completes .yml/.yaml files
+```
+
+### Archive directory layout
+
+```
+.pourover_archives/
+  pourover_registry.json
+  pourover_archive_YYYYMMDD_HHMMSS/
+    manifest.json          ← created/label/inputs/metadata (relative paths)
+    inputs/
+      analysis.coffea      ← copy of input coffea file(s)
+      metadata.yml         ← copy of metadata YAML
+    gallery/
+      v4j_mass_region_SR.png
+      v4j_mass_region_SR.pdf
+      ...
+    interactive/           ← plots created during this session
+    cli_history.json
+    interactive_history.json
 ```
 
 ---
@@ -116,23 +213,6 @@ Controls mirror the `iPlot.py` `plot()` function:
 
 Click **Plot it** to generate. The result appears inline with a PDF download link. Results stack and can be individually dismissed.
 
-### Archive Session
-
-The **Archive Session** button (header) creates a timestamped, self-contained archive:
-
-```
-pourover_archive_YYYYMMDD_HHMMSS/
-  reproduce.sh        ← shell command to reproduce this exact session
-  inputs/
-    analysis.coffea   ← copy of input coffea file(s)
-    metadata.yml      ← copy of metadata file
-  gallery/            ← copy of all pre-generated PNG + PDF files
-  interactive/        ← copy of all interactive plots from this session
-  index.html          ← standalone static page with all gallery plots embedded
-```
-
-The `index.html` is fully self-contained (images are base64-encoded inline) and can be opened directly in a browser with no server.
-
 ---
 
 ## Relation to Other Plotting Scripts
@@ -150,6 +230,6 @@ The `index.html` is fully self-contained (images are base64-encoded inline) and 
 ## Notes
 
 - The server runs single-threaded (`threaded=False`) since matplotlib is not thread-safe. One plot is generated at a time; rapid successive clicks will queue.
-- Gallery generation and interactive plots are both written to `pourover_output/` and persist across server restarts. Use `--no-pregallery` to restart quickly without regenerating.
+- Gallery generation and interactive plots persist inside the archive directory. Use `--load` to restart instantly without regenerating.
 - 2D plots (as flagged in `plotModifiers.yml`) are not included in the gallery but can be created via the interactive form by checking **2D plot** and selecting a process.
 - ttbar control region cuts (`passMuMu`, `passElMu`) automatically switch to the `hists_ttbar` histogram key, matching `iPlot.py` behaviour.
