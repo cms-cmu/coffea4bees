@@ -16,6 +16,24 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
+# pourOver.py imports Flask, matplotlib, and coffea at module level.
+# Those are not available in the analysis CI container (pourOver runs in its own venv).
+# Stub them all out before importing so the pure-logic helpers can be tested without
+# any of the web or plotting infrastructure.
+from unittest.mock import MagicMock
+for _mod in [
+    'flask',
+    'matplotlib', 'matplotlib.pyplot',
+    'coffea4bees.plots.plots',
+    'src.plotting.plots',
+    'src.plotting.iPlot_config',
+]:
+    sys.modules.setdefault(_mod, MagicMock())
+
+# plot_config() is called at module level; make it return a MagicMock so
+# the global `cfg` object exists but is otherwise inert.
+sys.modules['src.plotting.iPlot_config'].plot_config = MagicMock(return_value=MagicMock())
+
 from coffea4bees.plots.pourOver import (
     _parse_cli_cmd,
     _register_archive,
