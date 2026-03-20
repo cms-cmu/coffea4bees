@@ -43,6 +43,7 @@ run_command python src/scripts/memory/perf_profile.py \
         -d GluGluToHHTo4B_cHHH1 \
         -p coffea4bees/analysis/processors/processor_HH4b.py \
         -y UL18 \
+        --friends coffea4bees/metadata/friends_HH4b.yml \
         -op "${OUTPUT_DIR}" \
         -m "$DATASETS" \
         -c coffea4bees/analysis/metadata/HH4b_signals.yml
@@ -55,6 +56,7 @@ if command -v mprof &> /dev/null; then
         -d GluGluToHHTo4B_cHHH1 \
         -p coffea4bees/analysis/processors/processor_HH4b.py \
         -y UL18 \
+        --friends coffea4bees/metadata/friends_HH4b.yml \
         -op "${OUTPUT_DIR}" \
         -m "$DATASETS" \
         -c coffea4bees/analysis/metadata/HH4b_signals.yml

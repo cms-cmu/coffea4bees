@@ -2,7 +2,6 @@ runner:
   condor_cores: 1
   worker_memory: 4GB
   top_reconstruction: fast
-  friend_metafile: friend
 
 config:
   make_classifier_input: root://cmseos.fnal.gov//store/user/chuyuanl/HH4b/friend/

@@ -366,16 +366,18 @@ def _apply_ml_scores(
             )
             compute_SvB(selev, tmp_mask, SvB=classifier_SvB, SvB_MA=classifier_SvB_MA, doCheck=False)
 
-        quadJet["SvB_q_score"] = np.concatenate([
-            selev.SvB.q_1234[:, np.newaxis],
-            selev.SvB.q_1324[:, np.newaxis],
-            selev.SvB.q_1423[:, np.newaxis],
-        ], axis=1)
-        quadJet["SvB_MA_q_score"] = np.concatenate([
-            selev.SvB_MA.q_1234[:, np.newaxis],
-            selev.SvB_MA.q_1324[:, np.newaxis],
-            selev.SvB_MA.q_1423[:, np.newaxis],
-        ], axis=1)
+        if "SvB" in selev.fields:
+            quadJet["SvB_q_score"] = np.concatenate([
+                selev.SvB.q_1234[:, np.newaxis],
+                selev.SvB.q_1324[:, np.newaxis],
+                selev.SvB.q_1423[:, np.newaxis],
+            ], axis=1)
+        if "SvB_MA" in selev.fields:
+            quadJet["SvB_MA_q_score"] = np.concatenate([
+                selev.SvB_MA.q_1234[:, np.newaxis],
+                selev.SvB_MA.q_1324[:, np.newaxis],
+                selev.SvB_MA.q_1423[:, np.newaxis],
+            ], axis=1)
 
     return apply_FvT
 

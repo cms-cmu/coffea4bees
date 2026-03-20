@@ -1,0 +1,50 @@
+VBFHHTo4B_kl_m1p43_cv_m0p962_c2v_0p959_UL16_postVFP:
+  count: 460000
+  cutFlowFourTag:
+    all: 460000.0
+    lumimask: 460000.0
+    passHLT: 459584.0
+    passJetMult: 118094.0
+    passNoiseFilter: 459584.0
+    passPreSel: 46613.0
+  cutFlowFourTagUnitWeight:
+    all: 460000
+    lumimask: 460000
+    passHLT: 459584
+    passJetMult: 118094
+    passNoiseFilter: 459584
+    passPreSel: 46613
+  cutFlowThreeTag:
+    all: 460000.0
+    lumimask: 460000.0
+    passHLT: 459584.0
+    passJetMult: 118094.0
+    passNoiseFilter: 459584.0
+    passPreSel: 46613.0
+  cutFlowThreeTagUnitWeight:
+    all: 460000
+    lumimask: 460000
+    passHLT: 459584
+    passJetMult: 118094
+    passNoiseFilter: 459584
+    passPreSel: 46613
+  files:
+  - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/VBFHHTo4B_kl_m1p43_cv_m0p962_c2v_0p959_UL16_postVFP/picoAOD.root
+  missing: {}
+  reproducible:
+    args: Namespace(processor='coffea4bees/skimmer/processor/skimmer_4b.py', configs='coffea4bees/skimmer/metadata/HH4b.yml',
+      metadata='coffea4bees/metadata/datasets_HH4b_v1p2.yml', triggers='coffea4bees/metadata/triggers_HH4b.yml',
+      luminosities='coffea4bees/metadata/luminosities_HH4b.yml', output_file='picoaod_2024_v2_VBFHHTo4B_kl_m1p43_cv_m0p962_c2v_0p959_UL16_postVFP.yaml',
+      output_path='output/', years=['UL16_postVFP'], datasets=['VBFHHTo4B_kl_m1p43_cv_m0p962_c2v_0p959'],
+      era=['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'], skimming=True, test=False, systematics=None,
+      run_dask=True, condor=True, debug=False, check_input_files=False, githash='',
+      gitdiff='')
+    date: '2025-09-30 15:56:29'
+    diff: ''
+    hash: 26467597ee389f665ab43ef67f067a4bf2f5dab3
+  saved_events: 46613
+  sumw: 460000.0
+  sumw2: 460000.0
+  sumw2_raw: 460000.0
+  sumw_raw: 460000.0
+  total_events: 460000
