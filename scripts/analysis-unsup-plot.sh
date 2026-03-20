@@ -22,7 +22,7 @@ run_command python coffea4bees/plots/makePlots_unsup.py \
     -m coffea4bees/plots/metadata/plotsAll_unsup.yml 
 
 display_section_header "Checking if pdf files exist"
-ls $OUTPUT_DIR/RunII/region_SR/mix_v0/v4j_mass.pdf
+ls $OUTPUT_DIR/RunII/failSvB_vs_passSvB/region_SR/mix_v0/v4j_mass.pdf
 ls $OUTPUT_DIR/RunII/region_SR_vs_SB/mix_v0/v4j_mass.pdf
 ls $OUTPUT_DIR/RunII/region_SR/mix_v0/quadJet_selected_lead_vs_subl_m.pdf
 ls $OUTPUT_DIR/RunII/region_SR/data_3b_for_mixed/quadJet_selected_lead_vs_subl_m.pdf
