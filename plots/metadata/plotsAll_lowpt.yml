@@ -36,8 +36,8 @@ hists:
 
 stack:
         TTbar:
-                process: [TTToHadronic, TTToSemiLeptonic, TTTo2L2Nu]
-                tag: lowpt_fourTag
+                process: TTbar4b_from_d3 #[TTToHadronic, TTToSemiLeptonic, TTTo2L2Nu]
+                tag: lowpt_threeTag
                 fillcolor: "#85D1FBff"
                 edgecolor: k
                 label: $t\bar{t}$
