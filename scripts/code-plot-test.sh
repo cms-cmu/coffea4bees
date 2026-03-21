@@ -14,6 +14,9 @@ JOB="code_plot_test"
 OUTPUT_DIR=$OUTPUT_BASE_DIR/$JOB
 create_output_directory "$OUTPUT_DIR"
 
+display_section_header "Running plotting unit tests"
+run_command python -m pytest src/plotting/tests/ -v
+
 display_section_header "Running code plot test"
 run_command python coffea4bees/tests/dumpPlotCounts.py \
     --input $INPUT_DIR/test.coffea \
