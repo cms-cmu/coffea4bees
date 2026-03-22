@@ -34,6 +34,16 @@ class htVsJet4Pt(Template):
     ht_vs_jet4_pt = H((bins["PFHT"], ("hT_trigger" , "H_T [GeV]")), 
                       ( bins["ForthJetPt"], ("jet4_pt", "jet4 pt [GeV]")))
 
+
+class hltJetPt(Template):
+    ht           = H((bins["PFHT"],   ("hT_trigger",   "H_T [GeV]")))
+    jet1_pt      = H((bins["ForthJetPt"],  ("jet1_pt", "jet1 pt [GeV]")))
+    jet2_pt      = H((bins["ForthJetPt"],  ("jet2_pt", "jet2 pt [GeV]")))
+    jet3_pt      = H((bins["ForthJetPt"],  ("jet3_pt", "jet3 pt [GeV]")))
+    jet4_pt      = H((bins["ForthJetPt"],  ("jet4_pt", "jet4 pt [GeV]")))
+
+
+
 # @profile
 def filling_trigger_histograms(selev, 
                                processName: str = "",
@@ -42,7 +52,8 @@ def filling_trigger_histograms(selev,
                                histCuts: list = [],
                                isDataForMixed: bool = False,
                                event_metadata: dict = {},
-                               L1_seed_dict: dict = {},
+                               L1_seed_weights: list = [],
+                               HLT_filters_paths: list = [],
                                ):
 
     fill = Fill(process=processName, year=year, weight="weight")
@@ -65,10 +76,27 @@ def filling_trigger_histograms(selev,
     logging.info(f"jet4pt {selev.jet4_pt}")
     logging.info(f"jet4pt {selev.jet4_pt}")
 
+    ############ L1 ##############
     ##### denominators
     fill += htVsJet4Pt((f"hT_trigger_vs_jet4_pt",  f"hT_trigger_vs_jet4_pt"),  "hT_trigger_vs_jet4_pt")
     weight_type = 'test'
     fill += htVsJet4Pt((f"hT_trigger_vs_jet4_pt_{weight_type}",  f"hT_trigger_vs_jet4_pt {weight_type}"),  "hT_trigger_vs_jet4_pt", weight="weight_test")
+
+    ## ((name of histogram in coffea, label of histogram in coffea), variable in py file, weight)
+    ## numerators
+    for weight_type in L1_seed_weights:
+        fill += htVsJet4Pt((f"hT_trigger_vs_jet4_pt_{weight_type}",  f"hT_trigger_vs_jet4_pt {weight_type}"),  "hT_trigger_vs_jet4_pt", weight=weight_type)
+
+    for trigPath in HLT_filters_paths:
+        for trigFilter in HLT_filters_paths[trigPath]:
+            weight_type = f"pass_{trigPath}_{trigFilter}"
+            fill += hltJetPt((f"HLT_filter_at_{weight_type}",  f"HLT_filter at {weight_type}"),  "jetAll_pt", weight=weight_type)
+
+    # ############## HLT ##################
+    # for trigPath in HLT_filters_paths:
+    #     selev[f"pass_{trigPath}"] = ak.ones_like(selev.L1_all, dtype=bool)
+    #     for trigFilter in trigPath:
+    
 
     #
     # Jets
@@ -95,11 +123,9 @@ def filling_trigger_histograms(selev,
 
 
 
-    ## ((name of histogram in coffea, label of histogram in coffea), variable in py file, weight)
-    ## numerators
-    L1_seed_weights = L1_seed_dict[year]
-    for weight_type in L1_seed_weights:
-        fill += htVsJet4Pt((f"hT_trigger_vs_jet4_pt_{weight_type}",  f"hT_trigger_vs_jet4_pt {weight_type}"),  "hT_trigger_vs_jet4_pt", weight=weight_type)
+    
+
+
 
     fill(selev, hist)
     return hist.to_dict(nonempty=True)
