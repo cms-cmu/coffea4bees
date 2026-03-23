@@ -15,6 +15,7 @@ OUTPUT_DIR=$OUTPUT_BASE_DIR/$JOB
 create_output_directory "$OUTPUT_DIR"
 
 display_section_header "Running plotting unit tests"
+run_command pip install pytest --quiet --user
 run_command python -m pytest src/plotting/tests/ -v
 
 display_section_header "Running code plot test"
