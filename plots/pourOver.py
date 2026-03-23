@@ -64,7 +64,8 @@ from flask import Flask, jsonify, redirect, request, render_template, send_from_
 
 from coffea4bees.plots.plots import load_config_4b
 from src.plotting.plots import (
-    makePlot, make2DPlot, load_hists, read_axes_and_cuts, init_arg_parser
+    makePlot, make2DPlot, load_hists, read_axes_and_cuts, init_arg_parser,
+    _normalize_kwargs,
 )
 from src.plotting.iPlot_config import plot_config
 
@@ -342,6 +343,75 @@ def _register_archive(registry_path, archive_dir, label):
 
 
 # ---------------------------------------------------------------------------
+# Session tracking (live PID → port mapping per archive directory)
+# ---------------------------------------------------------------------------
+
+def _sessions_path(registry_path):
+    """Derive the sessions file path from the registry path."""
+    return Path(registry_path).parent / "pourover_sessions.json"
+
+
+def _sessions_read(sessions_path):
+    sessions_path = Path(sessions_path)
+    if not sessions_path.exists():
+        return {}
+    try:
+        return json.loads(sessions_path.read_text())
+    except Exception:
+        return {}
+
+
+def _sessions_write(sessions_path, data):
+    sessions_path = Path(sessions_path)
+    sessions_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = sessions_path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(data, indent=2))
+    tmp.rename(sessions_path)
+
+
+def _pid_alive(pid):
+    try:
+        os.kill(pid, 0)
+        return True
+    except (ProcessLookupError, PermissionError):
+        return False
+
+
+def _session_check(archive_dir, sessions_path):
+    """If archive_dir has a live session, print its URL and exit."""
+    key = str(Path(archive_dir).resolve())
+    sessions = _sessions_read(sessions_path)
+    # Prune dead entries while we're here
+    alive = {k: v for k, v in sessions.items() if _pid_alive(v["pid"])}
+    if alive != sessions:
+        _sessions_write(sessions_path, alive)
+    if key in alive:
+        entry = alive[key]
+        print(f"\nPourOver is already running for this archive (pid {entry['pid']}).")
+        print(f"  → http://localhost:{entry['port']}")
+        sys.exit(0)
+
+
+def _session_register(archive_dir, pid, port, sessions_path):
+    """Record a live session for archive_dir."""
+    key = str(Path(archive_dir).resolve())
+    sessions = _sessions_read(sessions_path)
+    # Prune dead entries
+    sessions = {k: v for k, v in sessions.items() if _pid_alive(v["pid"])}
+    sessions[key] = {"pid": pid, "port": port}
+    _sessions_write(sessions_path, sessions)
+
+
+def _session_remove(archive_dir, sessions_path):
+    """Remove any session entry for archive_dir (used by --delete)."""
+    key = str(Path(archive_dir).resolve())
+    sessions = _sessions_read(sessions_path)
+    if key in sessions:
+        del sessions[key]
+        _sessions_write(sessions_path, sessions)
+
+
+# ---------------------------------------------------------------------------
 # Flask routes
 # ---------------------------------------------------------------------------
 
@@ -519,10 +589,7 @@ def _execute_plot(req):
 
     debug = bool(req.get("debug", False))
 
-    # Normalise doRatio aliases before the whitelist lookup
-    for alias in ("ratio", "do_ratio", "doratio", "Ratio", "do_Ratio"):
-        if alias in req and "doRatio" not in req:
-            req["doRatio"] = req.pop(alias)
+    _normalize_kwargs(req)
 
     kwargs = {}
     for k in ["doRatio", "rebin", "norm", "yscale", "add_flow", "uniform_bins"]:
@@ -763,6 +830,8 @@ def _parse_args():
             action.default = []
             break
     parser.add_argument('--port', type=int, default=5000, help='Port to serve on (default: 5000)')
+    parser.add_argument('--foreground', action='store_true',
+                        help='Run server in the foreground instead of detaching to background')
     parser.add_argument('--pregallery', action='store_true',
                         help='Pre-generate the full plot gallery on startup (default: off)')
     parser.add_argument('--reuse-gallery', action='store_true',
@@ -903,6 +972,7 @@ if __name__ == '__main__':
                 print(f"  Removed {adir}")
             else:
                 print(f"  Warning: directory not found, skipping: {adir}")
+            _session_remove(adir, _sessions_path(args.registry))
         remaining = [e for e in entries if e.get('label') != args.delete]
         tmp = registry.with_suffix('.tmp')
         tmp.write_text(json.dumps(remaining, indent=2))
@@ -966,6 +1036,8 @@ if __name__ == '__main__':
 
         Path(output_dir).mkdir(parents=True, exist_ok=True)
 
+        _session_check(archive_dir, _sessions_path(args.registry))
+
         print(f"Loading archive: {archive_dir}")
         print(f"  Label: {manifest.get('label', '')}")
         print(f"  Created: {manifest.get('created', '')}")
@@ -1012,6 +1084,8 @@ if __name__ == '__main__':
         _write_manifest(archive_dir, copied_inputs, copied_meta, args.label)
         _register_archive(args.registry, archive_dir, args.label)
 
+        _session_check(archive_dir, _sessions_path(args.registry))
+
         print(f"Archive created: {archive_dir}")
         if args.label:
             print(f"  Label: {args.label}")
@@ -1052,6 +1126,68 @@ if __name__ == '__main__':
         if args.pregallery:
             _pregallery(output_dir, n_jobs=args.jobs, reuse=args.reuse_gallery)
 
-    print(f"\nStarting web server on http://localhost:{args.port}")
-    print("Press Ctrl+C to stop.\n")
-    app.run(host='0.0.0.0', port=args.port, threaded=False, debug=False)
+    import socket
+    def _find_free_port(preferred):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(('localhost', preferred)) != 0:
+                return preferred  # preferred port is free
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(('', 0))
+            return s.getsockname()[1]
+
+    port = _find_free_port(args.port)
+    if port != args.port:
+        print(f"\nPort {args.port} is in use; using port {port} instead.")
+
+    _sessions_path_val = _sessions_path(args.registry)
+
+    def _run_server():
+        if output_dir:
+            _session_register(output_dir, os.getpid(), port, _sessions_path_val)
+        try:
+            app.run(host='0.0.0.0', port=port, threaded=False, debug=False)
+        finally:
+            if output_dir:
+                _session_remove(output_dir, _sessions_path_val)
+
+    if args.foreground:
+        print(f"\nStarting web server on http://localhost:{port}")
+        print("Press Ctrl+C to stop.\n")
+        _run_server()
+    else:
+        # Fork: parent prints URL and returns to the shell; child runs the server
+        log_path = Path(output_dir) / "server.log" if output_dir else Path(os.devnull)
+        pid = os.fork()
+        if pid > 0:
+            # Parent
+            url = f"http://localhost:{port}"
+            print(f"\nPourOver running in background (pid {pid})")
+            print(f"  → {url}")
+            if output_dir:
+                print(f"  Logs: {log_path}")
+            print(f"  Stop: kill {pid}")
+            # Copy URL to clipboard (best-effort)
+            import subprocess as _sp, platform as _platform
+            _copied = False
+            try:
+                if _platform.system() == "Darwin":
+                    _sp.run(["pbcopy"], input=url.encode(), check=True)
+                    _copied = True
+                else:
+                    for cmd in (["xclip", "-selection", "clipboard"], ["xsel", "--clipboard", "--input"]):
+                        if _sp.run(["which", cmd[0]], capture_output=True).returncode == 0:
+                            _sp.run(cmd, input=url.encode(), check=True)
+                            _copied = True
+                            break
+            except Exception:
+                pass
+            if _copied:
+                print("  (URL copied to clipboard)")
+            sys.exit(0)
+        # Child: detach from terminal, redirect output to log file
+        os.setsid()
+        log_fd = open(log_path, 'a')
+        os.dup2(log_fd.fileno(), sys.stdout.fileno())
+        os.dup2(log_fd.fileno(), sys.stderr.fileno())
+        log_fd.close()
+        _run_server()
