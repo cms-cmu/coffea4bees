@@ -65,7 +65,7 @@ def loadHistograms(inputFile: str, jcm_config: dict, format: str = 'coffea', cfg
     tagJets = jcm_config.get("tagJets", "tagJets_noJCM.n")
 
     logger.info(f"Loading coffea histograms with cut={cut}, year={year}, weightRegion={weightRegion}")
-    cutDict = get_cut_dict(cut, cfg.cutList)
+    cutDict = get_cut_dict(cut, cfg.cutList) if cut is not None else {}
 
     year_val = sum if year == "RunII" else year
     region_selection = sum if weightRegion in ["sum", sum] else weightRegion

@@ -832,3 +832,13 @@ data:
         sumw: 111941888
         sumw2: 111941888
         total_events: 111941888
+  '2024':
+    nanoAOD:
+      C: /ParkingHH/Run2024C-MINIv6NANOv15-v1/NANOAOD
+      D: /ParkingHH/Run2024D-MINIv6NANOv15-v1/NANOAOD
+      E: /ParkingHH/Run2024E-MINIv6NANOv15-v1/NANOAOD
+      F: /ParkingHH/Run2024F-MINIv6NANOv15-v4/NANOAOD
+      G: /ParkingHH/Run2024G-MINIv6NANOv15-v3/NANOAOD
+      H: /ParkingHH/Run2024H-MINIv6NANOv15-v3/NANOAOD
+      I3: /ParkingHH/Run2024I-MINIv6NANOv15-v3/NANOAOD
+      I2: /ParkingHH/Run2024I-MINIv6NANOv15_v2-v2/NANOAOD

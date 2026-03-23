@@ -60,6 +60,15 @@ code_plot_test_coffea4bees:
     paths:
       - output/code_plot_test/test_dumpPlotCounts.yml
 
+code_pourover_test_coffea4bees:
+  stage: plot
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+  script:
+    - source coffea4bees/scripts/code-pourover-test.sh
+
 synthetic_dataset_plot_coffea4bees:
   stage: plot
   extends:

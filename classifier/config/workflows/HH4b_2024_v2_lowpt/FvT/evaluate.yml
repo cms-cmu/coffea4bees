@@ -13,8 +13,9 @@ dataset:
     option:
       - --metadata coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/datasets_HH4b_2024_v2
       - --max-workers 8 # use 8 workers to fetch metadatas for ROOT files
+      # - --test-files 2 # limit to 2 files per group for quick testing (remove for full evaluation)
       - --data-source detector
-      - --friends "" coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/datasets_HH4b_2024_v2_classifier_input.json@@HCR_input_lowpt # set input friend tree
+      - --friends "" coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/classifier_inputs_lowpt_wlowptJCM.json@@HCR_input_lowpt # set input friend tree
 
 model:
   - module: HCR.FvT.baseline.Eval
@@ -37,4 +38,4 @@ setting:
       - output: "{FvT}"
   - module: ml.DataLoader
     option:
-      - num_workers: 8
+      - num_workers: 0

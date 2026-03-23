@@ -54,68 +54,62 @@ def examples() -> None:
     examples_text = """
 examples:
 
-# Nominal plot of data and background in a region passing a cut
-plot("v4j.mass", region="SR", cut="passPreSel")
+# Nominal plot of data and background in a region
+plot("v4j.mass", region="SR")
 
 # Can get a print out of the variables
 ls()
-plot("*", region="SR", cut="passPreSel")
-plot("v4j*", region="SR", cut="passPreSel")
+plot("*", region="SR")
+plot("v4j*", region="SR")
 
 # Can add ratio
-plot("v4j.mass", region="SR", cut="passPreSel", doRatio=1)
+plot("v4j.mass", region="SR", doRatio=1)
 
 # Can rebin
-plot("v4j.mass", region="SR", cut="passPreSel", doRatio=1, rebin=4)
+plot("v4j.mass", region="SR", doRatio=1, rebin=4)
 
 # Can normalize
-plot("v4j.mass", region="SR", cut="passPreSel", doRatio=1, rebin=4, norm=1)
+plot("v4j.mass", region="SR", doRatio=1, rebin=4, norm=1)
 
 # Can set logy
-plot("v4j.mass", region="SR", cut="passPreSel", doRatio=1, rebin=4, norm=1, yscale="log")
+plot("v4j.mass", region="SR", doRatio=1, rebin=4, norm=1, yscale="log")
 
 # Can set ranges
-plot("v4j.mass", region="SR", cut="passPreSel", doRatio=1, rebin=4, norm=1, rlim=[0.5,1.5])
-plot("v4j.mass", region="SR", cut="passPreSel", doRatio=1, rebin=4, norm=1, xlim=[0,1000])
-plot("v4j.mass", region="SR", cut="passPreSel", doRatio=1, rebin=4, norm=1, ylim=[0,0.01])
+plot("v4j.mass", region="SR", doRatio=1, rebin=4, norm=1, rlim=[0.5,1.5])
+plot("v4j.mass", region="SR", doRatio=1, rebin=4, norm=1, xlim=[0,1000])
+plot("v4j.mass", region="SR", doRatio=1, rebin=4, norm=1, ylim=[0,0.01])
 
 # Can overlay different regions
-plot("v4j.mass", region=["SR","SB"], cut="passPreSel", process="data", doRatio=1, rebin=4)
-plot("v4j.mass", region=["SR","SB"], cut="passPreSel", process="HH4b", doRatio=1, rebin=4)
-plot("v4j.mass", region=["SR","SB"], cut="passPreSel", process="Multijet", doRatio=1, rebin=4)
-plot("v4j.mass", region=["SR","SB"], cut="passPreSel", process="TTToHadronic", doRatio=1, rebin=4)
+plot("v4j.mass", region=["SR","SB"], process="data", doRatio=1, rebin=4)
+plot("v4j.mass", region=["SR","SB"], process="HH4b", doRatio=1, rebin=4)
+plot("v4j.mass", region=["SR","SB"], process="Multijet", doRatio=1, rebin=4)
+plot("v4j.mass", region=["SR","SB"], process="TTToHadronic", doRatio=1, rebin=4)
 
-# Can overlay different cuts
-plot("v4j.mass", region="SR", cut=["passPreSel","passSvB","failSvB"], process="data", doRatio=1, rebin=4, norm=1)
-
-# Pass vs fail of the same cut
-plot("v4j.mass", region="SR", cut=["passPreSel", "~passPreSel"], process="data", doRatio=1, rebin=4, norm=1)
-plot("v4j.mass", region="SR", cut=["passPreSel","passSvB","failSvB"], process="HH4b", doRatio=1, rebin=4, norm=1)
-plot("v4j.mass", region="SR", cut=["passPreSel","passSvB","failSvB"], process="Multijet", doRatio=1, rebin=4, norm=1)
-plot("v4j.mass", region="SR", cut=["passPreSel","passSvB","failSvB"], process="TTToHadronic", doRatio=1, rebin=4, norm=1)
+# Can overlay different cuts (e.g. passSvB and failSvB)
+plot("v4j.mass", region="SR", cut=["passSvB","failSvB"], process="data", doRatio=1, rebin=4, norm=1)
 
 # Can overlay different variables
-plot(["canJet0.pt","canJet1.pt"], region="SR", cut="passPreSel", doRatio=1, process="Multijet")
-plot(["canJet0.pt","canJet1.pt","canJet2.pt","canJet3.pt"], region="SR", cut="passPreSel", doRatio=1, process="Multijet")
+plot(["canJet0.pt","canJet1.pt"], region="SR", doRatio=1, process="Multijet")
+plot(["canJet0.pt","canJet1.pt","canJet2.pt","canJet3.pt"], region="SR", doRatio=1, process="Multijet")
 
 # Can plot a single process
-plot("v4j.mass", region="SR", cut="passPreSel", process="data")
+plot("v4j.mass", region="SR", process="data")
 
 # Can overlay processes
-plot("v4j.mass", region="SR", cut="passPreSel", norm=1, process=["data","TTTo2L2Nu","HH4b","Multijet"], doRatio=1)
+plot("v4j.mass", region="SR", norm=1, process=["data","TTTo2L2Nu","HH4b","Multijet"], doRatio=1)
 
 # Can overlay years
-plot("canJet0.pt", region="SR", cut="passPreSel", doRatio=1, process="data", year=["UL16_preVFP","UL16_postVFP","UL17","UL18"])
+plot("canJet0.pt", region="SR", doRatio=1, process="data", year=["UL16_preVFP","UL16_postVFP","UL17","UL18"])
 
 # Plot 2d hists
 plot2d("quadJet_min_dr.close_vs_other_m", process="Multijet", region="SR", cut="failSvB")
 plot2d("quadJet_min_dr.close_vs_other_m", process="Multijet", region="SR", cut="failSvB", full=True)
 
 # Unsup4b plots with SB and SRSB as composite regions
-plot("v4j.mass", region="SRSB", cut="passPreSel")
+plot("v4j.mass", region="SRSB")
 plot2d("quadJet_selected.lead_vs_subl_m", process="data3b", region="SRSB")
-plot("leadStM_selected", region="SB", cut="passPreSel", process=["data3b","mixeddata"])
-plot("v4j.mass", region=["SR", "SB"], cut="passPreSel", process="data3b")
+plot("leadStM_selected", region="SB", process=["data3b","mixeddata"])
+plot("v4j.mass", region=["SR", "SB"], process="data3b")
 """
     print(examples_text)
 
@@ -132,6 +126,8 @@ def save_and_open_plot(fig: plt.Figure, output_file: str) -> bool:
     """
     try:
         fig.savefig(output_file)
+        png_file = os.path.splitext(output_file)[0] + ".png"
+        fig.savefig(png_file)
         plt.close()
         os.system(f"open {output_file}")
         return True
