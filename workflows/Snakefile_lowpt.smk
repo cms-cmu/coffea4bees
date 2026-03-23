@@ -3,9 +3,9 @@ username = os.getenv("USER")
 from datetime import datetime
 
 config.setdefault('output_path', "output/lowpt/")
-config.setdefault('dataset_location', "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/datasets_HH4b_2024_v2.yml")
+config.setdefault('dataset_location', "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/")
 config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
-config.setdefault('dataset', ['data', 'TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic', 'GluGluToHHTo4B_cHHH1'])
+config.setdefault('dataset', ['data', 'TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic', 'GluGluToHHTo4B_cHHH1', 'GluGluToHHTo4B_cHHH0', 'GluGluToHHTo4B_cHHH2p45', 'GluGluToHHTo4B_cHHH5', ''])
 config.setdefault('year', 'UL18')
 config.setdefault('classifier_path', 'root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/')
 config.setdefault('eos_path', f'Plots/{datetime.now().strftime("%Y%m%d")}_lowpt_test/')

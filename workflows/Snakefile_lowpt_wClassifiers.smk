@@ -3,7 +3,7 @@ import os
 
 config.setdefault('output_path', "output/lowpt/")
 config.setdefault('container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
-config.setdefault('dataset_location', "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/datasets_HH4b_2024_v2.yml")
+config.setdefault('dataset_location', "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/")
 config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
 config.setdefault('dataset', ['GluGluToHHTo4B_cHHH1'])
 config.setdefault('eras', ['A', 'B', 'C', 'D'])
