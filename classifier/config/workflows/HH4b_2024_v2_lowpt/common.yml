@@ -9,10 +9,10 @@ setting:
   - module: cms.CollisionData
     option:
       - eras:
+          UL16_preVFP: [C, D, E, F]
+          UL16_postVFP: [F, G, H]
+          UL17: [B, C, D, E, F]
           UL18: [A, B, C, D]
-          # only use UL18 data for 2024_v2 test.
-          # JCM for UL17 looks broken.
-          # UL16 skim is incomplete.
   - module: HCR.InputBranch
     option:
       - feature_ancillary: [xW, nSelJets_lowpt, xbW]

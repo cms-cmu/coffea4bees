@@ -22,7 +22,7 @@ rule analysis_processor:
             --dataset-metadata {params.datasets_file} \
             --datasets "{params.datasets}" \
             --friends "{params.friends}" \
-            --year {params.years} \
+            --year "{params.years}" \
             --output-filename $(basename {output}) \
             --output-base $(dirname {output}) \
             --log {log} \

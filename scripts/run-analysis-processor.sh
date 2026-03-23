@@ -16,7 +16,7 @@ Options:
   --triggers PATH                Path to triggers file
   --luminosities PATH            Path to luminosities file
   --datasets "DATASET1 ..."      Space-separated datasets
-  --year YEAR                    Analysis year
+  --year "YEAR1 ..."              Space-separated analysis years
   --output-filename FILE         Output filename
   --output-subdir DIR            Output subdirectory
   --friends PATH                 Path to friends metadata file (default: coffea4bees/metadata/friends_HH4b.yml)
@@ -141,8 +141,13 @@ while [[ $# -gt 0 ]]; do
             DATASETS="${DATASETS%% }" # Remove trailing space
             ;;
         --year)
-            YEAR="$2"
-            shift 2
+            YEAR=""
+            shift
+            while [[ $# -gt 0 && ! "$1" =~ ^-- ]]; do
+                YEAR+="$1 "
+                shift
+            done
+            YEAR="${YEAR%% }" # Remove trailing space
             ;;
         --output-filename)
             OUTPUT_FILENAME="$2"

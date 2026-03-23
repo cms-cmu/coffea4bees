@@ -171,6 +171,8 @@ def filling_nominal_histograms(
     # low pt
     if any('lowpt' in tag for tag in tag_list):
         fill += hist.add('lowpt_categories', (21, -0.5, 20.5, ('lowpt_categories', 'lowpt_categories')))
+        fill += Jet.plot(("allselJets", "All Selected Jets"), "allSelJet", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
+        fill += Jet.plot(("alltagJets", "All Tag Jets"), "allTagJet", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
         fill += Jet.plot(("selJets_lowpt", "Selected lowpt Jets"), "selJet_lowpt", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
         fill += Jet.plot(("tagJets_lowpt", "Selected lowpt tagged Jets"), "tagJet_lowpt", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
         fill += Jet.plot(("selJets_noJCM_lowpt", "Selected lowpt Jets"), "selJet_lowpt", weight="weight_noJCM_noFvT", skip=skip_all_but_n)
