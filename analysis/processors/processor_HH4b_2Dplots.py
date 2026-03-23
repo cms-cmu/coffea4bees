@@ -87,7 +87,7 @@ class analysis(processor.ProcessorABC):
             "passDiJetMass",
         ]
 
-        self.histCuts = ['passPreSel']
+        self.histCuts = []
 
     def process(self, event):
         logging.info(event.metadata)

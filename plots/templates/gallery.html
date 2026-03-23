@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>PourOver — Gallery</title>
+  <style>
+    :root {
+      --cmu-red:       #C41230;
+      --cmu-red-dark:  #96001d;
+      --bg-base:       #f5f0ee;
+      --bg-panel:      #ffffff;
+      --bg-toolbar:    #C41230;
+      --bg-input:      #ffffff;
+      --border:        #d6c8c8;
+      --text-primary:  #2a1a1a;
+      --text-muted:    #7a5a5a;
+      --text-link:     #96001d;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Georgia, sans-serif; font-size: 14px;
+           background: var(--bg-base); color: var(--text-primary);
+           display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+    /* header */
+    header { background: var(--bg-toolbar); padding: 6px 16px;
+             display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+    #cmu-logo { height: 104px; width: auto; display: block; flex-shrink: 0; }
+    header h1 { font-size: 54px; color: #fff; letter-spacing: 0.5px; font-weight: 600; }
+    .header-meta { font-size: 24px; color: rgba(255,255,255,0.75); flex: 1; }
+    .btn { cursor: pointer; padding: 6px 14px; border-radius: 5px; border: none;
+           font-size: 13px; transition: opacity 0.15s; text-decoration: none; display: inline-block; }
+    .btn:hover { opacity: 0.85; }
+    .btn-secondary { background: rgba(255,255,255,0.15); color: #fff;
+                     border: 1px solid rgba(255,255,255,0.5); }
+    .btn-accent    { background: var(--cmu-red-dark); color: #fff; }
+
+    /* toolbar */
+    #gallery-toolbar { padding: 8px 14px; background: #a00f28;
+                       border-bottom: 1px solid var(--border);
+                       display: flex; gap: 10px; align-items: center; flex-shrink: 0; flex-wrap: wrap; }
+    #gallery-filter { flex: 1; min-width: 200px; max-width: 400px; background: var(--bg-input);
+                      border: 1px solid var(--border); color: var(--text-primary);
+                      padding: 5px 9px; border-radius: 5px; font-size: 13px; }
+    #gallery-filter:focus { outline: none; border-color: var(--cmu-red); }
+    #gallery-count { font-size: 12px; color: rgba(255,255,255,0.8); white-space: nowrap; }
+
+    /* region jump buttons */
+    #region-jumps { display: flex; gap: 6px; flex-wrap: wrap; }
+    .jump-btn { cursor: pointer; padding: 4px 12px; border-radius: 4px; border: none;
+                font-size: 12px; font-weight: 600; letter-spacing: 0.4px;
+                background: rgba(255,255,255,0.18); color: #fff;
+                border: 1px solid rgba(255,255,255,0.4);
+                transition: background 0.15s; text-decoration: none; }
+    .jump-btn:hover { background: rgba(255,255,255,0.32); }
+
+    /* scroll container */
+    #gallery-scroll { flex: 1; overflow-y: auto; }
+
+    /* region section */
+    .region-section { padding: 0 14px 20px; }
+    .region-anchor  { display: block; }   /* invisible anchor target */
+    .region-header  { position: sticky; top: 0; z-index: 10;
+                      background: var(--bg-base); border-bottom: 2px solid var(--cmu-red);
+                      padding: 10px 2px 6px; margin-bottom: 10px;
+                      font-size: 15px; font-weight: 700; color: var(--cmu-red);
+                      letter-spacing: 0.5px; display: flex; align-items: baseline; gap: 10px; }
+    .region-count   { font-size: 12px; font-weight: 400; color: var(--text-muted); }
+
+    /* grid inside each section */
+    .region-grid { display: flex; flex-wrap: wrap; gap: 16px; align-content: flex-start; }
+
+    /* thumbnails */
+    .thumb { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 6px;
+             padding: 10px; width: 420px; cursor: pointer; transition: border-color 0.15s; }
+    .thumb:hover { border-color: var(--cmu-red); }
+    .thumb img { width: 100%; border-radius: 4px; display: block; }
+    .thumb-label { font-size: 11px; color: var(--text-muted); margin-top: 6px;
+                   word-break: break-all; line-height: 1.3; }
+    .thumb-pdf { font-size: 11px; color: var(--text-link); text-decoration: none;
+                 display: block; margin-top: 3px; }
+    .thumb-pdf:hover { text-decoration: underline; }
+    #gallery-loading { padding: 40px; text-align: center; color: var(--text-muted);
+                       font-size: 14px; }
+
+    /* lightbox */
+    #lb { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88);
+          align-items: center; justify-content: center; z-index: 1000; }
+    #lb.active { display: flex; }
+    #lb-img { max-width: 90vw; max-height: 90vh; border-radius: 6px; }
+    #lb-close { position: absolute; top: 14px; right: 20px; font-size: 28px;
+                cursor: pointer; color: #fff; line-height: 1; }
+    #lb-close:hover { color: var(--cmu-red); }
+    #lb-dl { position: absolute; bottom: 20px; right: 20px; }
+
+    ::-webkit-scrollbar { width: 7px; height: 7px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #d0b8b8; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--cmu-red); }
+  </style>
+</head>
+<body>
+
+<header>
+  <img id="cmu-logo" src="/static/cmu-logo.png" alt="CMU" />
+  <h1>PourOver</h1>
+  <span class="header-meta">{{ session_label if session_label else (input_files | join(', ') + ' &nbsp;|&nbsp; ' + metadata_file) }}</span>
+  <a class="btn btn-secondary" href="/">Interactive Plot →</a>
+</header>
+
+<div id="gallery-toolbar">
+  <input id="gallery-filter" type="text" placeholder="Filter by variable name..."
+         oninput="filterGallery()" />
+  <div id="region-jumps"></div>
+  <span id="gallery-count"></span>
+</div>
+
+<div id="gallery-scroll">
+  <div id="gallery-loading" style="padding:40px; text-align:center; color:#7a5a5a;">
+    Loading gallery...
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div id="lb" onclick="closeLb(event)">
+  <span id="lb-close" onclick="closeLb()">✕</span>
+  <img id="lb-img" src="" alt="plot" />
+  <a id="lb-dl" class="btn btn-accent" href="#" download>⬇ PDF</a>
+</div>
+
+<script>
+let galleryData = [];
+let regionOrder = [];   // ordered list of region strings after sort
+
+function regionPriority(r) {
+  if (r.includes('SB')) return 0;
+  if (r.includes('SR')) return 1;
+  return 2;
+}
+
+async function init() {
+  const res = await fetch('/gallery');
+  galleryData = await res.json();
+
+  galleryData.sort((a, b) => {
+    const rp = regionPriority(a.region) - regionPriority(b.region);
+    if (rp !== 0) return rp;
+    return a.var.localeCompare(b.var);
+  });
+
+  buildGallery();
+}
+
+function buildGallery(filter) {
+  const scroll = document.getElementById('gallery-scroll');
+  scroll.innerHTML = '';
+  const q = (filter || '').toLowerCase();
+
+  if (galleryData.length === 0) {
+    scroll.innerHTML = `
+      <div id="gallery-loading" style="padding:60px 40px; text-align:center; line-height:2;">
+        <div style="font-size:15px; color:var(--text-primary); margin-bottom:8px;">No plots generated yet.</div>
+        <div style="font-size:13px; color:var(--text-muted);">
+          Re-run with <code style="background:#ede4e4;padding:2px 6px;border-radius:3px;">--pregallery</code>
+          to pre-generate thumbnails, or use the
+          <a href="/" style="color:var(--text-link);">interactive plot form</a> to generate plots on demand.
+        </div>
+      </div>`;
+    updateCount(0, 0);
+    buildJumpButtons([]);
+    return;
+  }
+
+  // Group by region preserving sorted order
+  const groups  = [];
+  const byRegion = {};
+  for (const item of galleryData) {
+    if (!(item.region in byRegion)) { byRegion[item.region] = []; groups.push(item.region); }
+    byRegion[item.region].push(item);
+  }
+
+  let visible = 0;
+  const visibleRegions = [];
+
+  for (const region of groups) {
+    const items = byRegion[region].filter(it => !q || it.label.toLowerCase().includes(q));
+    if (items.length === 0) continue;
+    visibleRegions.push(region);
+
+    const section = document.createElement('div');
+    section.className = 'region-section';
+
+    const anchor = document.createElement('span');
+    anchor.className = 'region-anchor';
+    anchor.id = `region-${CSS.escape(region)}`;
+    section.appendChild(anchor);
+
+    const hdr = document.createElement('div');
+    hdr.className = 'region-header';
+    hdr.innerHTML = `Region: ${region} <span class="region-count">${items.length} plots</span>`;
+    section.appendChild(hdr);
+
+    const grid = document.createElement('div');
+    grid.className = 'region-grid';
+
+    for (const item of items) {
+      const div = document.createElement('div');
+      div.className = 'thumb';
+      div.innerHTML = `
+        <img src="${item.png_url}" alt="${item.label}" loading="lazy"
+             onclick="openLb('${item.png_url}', '${item.pdf_url}')" />
+        <div class="thumb-label">${item.label}</div>
+        <a class="thumb-pdf" href="${item.pdf_url}" download onclick="event.stopPropagation()">⬇ PDF</a>`;
+      grid.appendChild(div);
+      visible++;
+    }
+
+    section.appendChild(grid);
+    scroll.appendChild(section);
+  }
+
+  buildJumpButtons(visibleRegions);
+  updateCount(visible, galleryData.length);
+}
+
+function buildJumpButtons(regions) {
+  const bar = document.getElementById('region-jumps');
+  bar.innerHTML = '';
+  for (const region of regions) {
+    const a = document.createElement('a');
+    a.className = 'jump-btn';
+    a.textContent = region;
+    a.href = `#region-${CSS.escape(region)}`;
+    // smooth-scroll within the scrollable div rather than the page
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const target = document.getElementById(`region-${CSS.escape(region)}`);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    bar.appendChild(a);
+  }
+}
+
+function filterGallery() {
+  buildGallery(document.getElementById('gallery-filter').value);
+}
+
+function updateCount(visible, total) {
+  document.getElementById('gallery-count').textContent =
+    visible === total ? `${total} plots` : `${visible} / ${total} plots`;
+}
+
+function openLb(pngUrl, pdfUrl) {
+  document.getElementById('lb-img').src = pngUrl;
+  document.getElementById('lb-dl').href = pdfUrl;
+  document.getElementById('lb').classList.add('active');
+}
+
+function closeLb(e) {
+  if (!e || e.target === document.getElementById('lb') ||
+      e.target === document.getElementById('lb-close')) {
+    document.getElementById('lb').classList.remove('active');
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('lb').classList.remove('active');
+});
+
+init();
+</script>
+
+</body>
+</html>

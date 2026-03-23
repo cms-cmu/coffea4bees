@@ -290,6 +290,7 @@ def jet_selection(
             event['Jet', 'passJetId'] = event.Jet.jetId >= 2
         else:
             event['Jet', 'passJetId_loose'] = compute_jet_id(event.Jet, corrections_metadata['jet_id'], r3_sl_jetId_tag)
+            event['Jet', 'jetId'] = event['Jet', 'passJetId_loose']
             if r3_s_jetId_tag == r3_sl_jetId_tag:
                 event['Jet', 'passJetId'] = event['Jet', 'passJetId_loose']
             else:

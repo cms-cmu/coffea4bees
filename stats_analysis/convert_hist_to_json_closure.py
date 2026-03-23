@@ -93,11 +93,11 @@ if __name__ == '__main__':
             for iy in coffea_hists[ih].axes[1]:
                 json_dict[ih][iprocess][iy] = {}
 
-                for itag in range(len(coffea_hists[ih].axes[3])):
+                for itag in range(len(coffea_hists[ih].axes[2])):
                     json_dict[ih][iprocess][iy][codes['tag'][itag]] = {}
 
 
-                    for iregion in range(len(coffea_hists[ih].axes[4])):
+                    for iregion in range(len(coffea_hists[ih].axes[3])):
 
                         tag_region_pair = (codes['tag'][itag], codes['region'][iregion])
 
@@ -111,7 +111,6 @@ if __name__ == '__main__':
                             'year' : iy,
                             'tag' : itag,
                             'region' : iregion,
-                            'passPreSel' : True,
                         }
                         for iaxis in coffea_hists[ih].axes:
                                 if iaxis.name.startswith(('pass', 'fail')) and iaxis.name not in this_hist:

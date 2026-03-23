@@ -41,6 +41,7 @@ stack:
     edgecolor: k
     label: $t\bar{t}$
 
+
   MultiJet:
     process: data
     tag: lowpt_threeTag
