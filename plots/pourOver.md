@@ -63,7 +63,7 @@ pip install -r coffea4bees/plots/requirements-pourover.txt
 
 ```bash
 source ~/python-environments/pourover/bin/activate
-source coffea4bees/plots/pourover-completion.bash 
+source coffea4bees/plots/pourover-completion.sh
 pourover coffea4bees/Run3_MvD/analysis_MvD_new.coffea -m coffea4bees/plots/metadata/plotsAll_MvD_ttbar_weights.yml --new --label MvD-Test
 ```
 
@@ -188,7 +188,7 @@ A bash completion script provides label completion for `--load` and `--rename`, 
 Add to `~/.bashrc` (use the absolute path to your barista checkout):
 
 ```bash
-source /path/to/barista/coffea4bees/plots/pourover-completion.bash
+source /path/to/barista/coffea4bees/plots/pourover-completion.sh
 ```
 
 This defines a `pourover` alias. Then use `pourover` in place of `python coffea4bees/plots/pourOver.py`:
