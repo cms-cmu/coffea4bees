@@ -310,13 +310,15 @@ def _pregallery(out_dir, n_jobs=1, reuse=False):
 # Archive helpers
 # ---------------------------------------------------------------------------
 
-def _write_manifest(archive_dir, input_files_rel, metadata_rel, label):
+def _write_manifest(archive_dir, input_files_rel, metadata_rel, label, args=None):
     """Write manifest.json into archive_dir with paths relative to archive_dir."""
     manifest = {
         "created": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         "label": label,
         "inputs": [str(p) for p in input_files_rel],
         "metadata": str(metadata_rel) if metadata_rel else None,
+        "combine_input_files": getattr(args, 'combine_input_files', False),
+        "fileLabels": getattr(args, 'fileLabels', []) or [],
     }
     (archive_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
     return manifest
@@ -1023,8 +1025,8 @@ if __name__ == '__main__':
         load_args = _argparse.Namespace(
             inputFile=resolved_inputs,
             metadata=resolved_meta,
-            combine_input_files=False,
-            fileLabels=[],
+            combine_input_files=manifest.get('combine_input_files', False),
+            fileLabels=manifest.get('fileLabels', []),
             modifiers=getattr(args, 'modifiers', None),
         )
 
@@ -1081,7 +1083,7 @@ if __name__ == '__main__':
             shutil.copy(args.metadata, dst)
             copied_meta = Path("inputs") / Path(args.metadata).name
 
-        _write_manifest(archive_dir, copied_inputs, copied_meta, args.label)
+        _write_manifest(archive_dir, copied_inputs, copied_meta, args.label, args=args)
         _register_archive(args.registry, archive_dir, args.label)
 
         _session_check(archive_dir, _sessions_path(args.registry))
