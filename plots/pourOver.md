@@ -2,12 +2,52 @@
 
 `pourOver.py` serves a local webpage with two complementary interfaces:
 
-1. **Gallery** — a pre-generated grid of every variable × region combination, with PNG display and PDF download
-2. **Interactive form** — mirrors the `iPlot.py` `plot()` interface, letting you create custom plots on demand without leaving the browser
+1. **Interactive form** — mirrors the `iPlot.py` `plot()` interface, letting you create custom plots on demand without leaving the browser
+2. **Gallery** — a pre-generated grid of every variable × region combination, with PNG display and PDF download
+
 
 ---
 
-## Quick Start
+# Main Commands
+
+PourOver supports first-class session snapshots via `--new` and `--load`. 
+
+## Creating a snapshot (`--new`)
+
+```bash
+pourover file.coffea -m meta.yml --new --label ul18-sb-test
+```
+
+## Reloading a snapshot (`--load`)
+
+```bash
+pourover --load ul18-sb-test
+```
+
+## Listing archives (`--list`)
+
+```bash
+pourover --list
+```
+
+## Deleting archives (`--delete`)
+
+```bash
+pourover --delete ul18-sb-test
+#   Removed .pourover_archives/pourover_archive_20260319_153045
+# Deleted 1 archive(s) with label 'ul18-sb-test'
+```
+
+## Renaming archives (`--rename`)
+
+```bash
+pourover --rename ul18-sb-test ul18-sb-final
+# Renamed 1 archive(s): 'ul18-sb-test' → 'ul18-sb-final'
+```
+
+
+
+## Installation
 
 ### One-time setup
 
@@ -23,9 +63,8 @@ pip install -r coffea4bees/plots/requirements-pourover.txt
 
 ```bash
 source ~/python-environments/pourover/bin/activate
-python coffea4bees/plots/pourOver.py \
-    coffea4bees/Run3_MvD/analysis_MvD_new.coffea \
-    -m coffea4bees/plots/metadata/plotsAll_MvD_ttbar_weights.yml
+source coffea4bees/plots/pourover-completion.bash 
+pourover coffea4bees/Run3_MvD/analysis_MvD_new.coffea -m coffea4bees/plots/metadata/plotsAll_MvD_ttbar_weights.yml --new --label MvD-Test
 ```
 
 Then open **http://localhost:5000** in your browser. The interactive plot form is the landing page; the gallery is at `/gallery-view`.
@@ -38,21 +77,21 @@ Add `--pregallery` to pre-generate PNG/PDF thumbnails for every variable × regi
 
 All standard `iPlot.py` / `makePlotsAll.py` arguments are accepted, plus:
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `inputFile` | (required unless `--load`) | Path(s) to `.coffea` histogram file(s) |
-| `-m / --metadata` | `plotsAll.yml` | Metadata YAML defining processes, regions, colors |
-| `--modifiers` | `plotModifiers.yml` | Per-variable plot options (xlim, rebin, 2d flag, etc.) |
-| `-o / --outputFolder` | `pourover_output` | Directory for generated PNG and PDF files |
-| `--port` | `5000` | Port to serve on |
-| `--pregallery` | off | Pre-generate the full plot gallery on startup |
-| `--new` | off | Snapshot inputs into a timestamped archive, register it, and serve |
-| `--load LABEL` | — | Load a previously created archive by its label |
-| `--list` | — | List all archives in the registry and exit |
-| `--rename OLD NEW` | — | Rename all archives with label OLD to NEW and exit |
-| `--delete LABEL` | — | Delete all archives with this label (removes directories and registry entries) and exit |
-| `--registry FILE` | `.pourover_archives/pourover_registry.json` | Path to the archive registry JSON |
-| `--label LABEL` | (required with `--new`) | Label for this archive, e.g. `ul18-sb-test` |
+| Option                | Default                                     | Description                                                                             |
+|-----------------------|---------------------------------------------|-----------------------------------------------------------------------------------------|
+| `inputFile`           | (required unless `--load`)                  | Path(s) to `.coffea` histogram file(s)                                                  |
+| `-m / --metadata`     | `plotsAll.yml`                              | Metadata YAML defining processes, regions, colors                                       |
+| `--modifiers`         | `plotModifiers.yml`                         | Per-variable plot options (xlim, rebin, 2d flag, etc.)                                  |
+| `-o / --outputFolder` | `pourover_output`                           | Directory for generated PNG and PDF files                                               |
+| `--port`              | `5000`                                      | Port to serve on                                                                        |
+| `--pregallery`        | off                                         | Pre-generate the full plot gallery on startup                                           |
+| `--new`               | off                                         | Snapshot inputs into a timestamped archive, register it, and serve                      |
+| `--load LABEL`        | —                                           | Load a previously created archive by its label                                          |
+| `--list`              | —                                           | List all archives in the registry and exit                                              |
+| `--rename OLD NEW`    | —                                           | Rename all archives with label OLD to NEW and exit                                      |
+| `--delete LABEL`      | —                                           | Delete all archives with this label (removes directories and registry entries) and exit |
+| `--registry FILE`     | `.pourover_archives/pourover_registry.json` | Path to the archive registry JSON                                                       |
+| `--label LABEL`       | (required with `--new`)                     | Label for this archive, e.g. `ul18-sb-test`                                             |
 
 ### Examples
 
@@ -75,7 +114,7 @@ python coffea4bees/plots/pourOver.py fileA.coffea fileB.coffea \
 
 ## Session Management
 
-PourOver supports first-class session snapshots via `--new` and `--load`. This replaces the ad-hoc `--reuse-gallery` + manual `pourover_output/` workflow.
+PourOver supports first-class session snapshots via `--new` and `--load`. 
 
 ### Creating a snapshot (`--new`)
 
@@ -196,20 +235,20 @@ pourover -m meta<TAB>            # completes .yml/.yaml files
 
 Controls mirror the `iPlot.py` `plot()` function:
 
-| Control | Equivalent `plot()` kwarg |
-|---------|--------------------------|
-| Variable | `var` |
-| Cut | `cut` |
+| Control           | Equivalent `plot()` kwarg             |
+|-------------------|---------------------------------------|
+| Variable          | `var`                                 |
+| Cut               | `cut`                                 |
 | Region checkboxes | `region` (single or list for overlay) |
-| Process | `process` |
-| Year | `year` |
-| doRatio | `doRatio=1` |
-| Normalize | `norm=1` |
-| yscale | `yscale="log"` / `"linear"` |
-| Rebin | `rebin=N` |
-| xlim / ylim | `xlim=[min, max]` / `ylim=[min, max]` |
-| Add flow | `add_flow=True` |
-| 2D plot | switches to `plot2d()` |
+| Process           | `process`                             |
+| Year              | `year`                                |
+| doRatio           | `doRatio=1`                           |
+| Normalize         | `norm=1`                              |
+| yscale            | `yscale="log"` / `"linear"`           |
+| Rebin             | `rebin=N`                             |
+| xlim / ylim       | `xlim=[min, max]` / `ylim=[min, max]` |
+| Add flow          | `add_flow=True`                       |
+| 2D plot           | switches to `plot2d()`                |
 
 Click **Plot it** to generate. The result appears inline with a PDF download link. Results stack and can be individually dismissed.
 
@@ -217,11 +256,11 @@ Click **Plot it** to generate. The result appears inline with a PDF download lin
 
 ## Relation to Other Plotting Scripts
 
-| Script | Mode | Use when |
-|--------|------|----------|
-| `iPlot.py` | Interactive Python REPL | Exploratory, scripting, overlays |
+| Script            | Mode                       | Use when                                                                               |
+|-------------------|----------------------------|----------------------------------------------------------------------------------------|
+| `iPlot.py`        | Interactive Python REPL    | Exploratory, scripting, overlays                                                       |
 | `makePlotsAll.py` | Batch, generates all plots | CI, producing full plot sets for notes/papers; supports `-j N` for parallel generation |
-| `pourOver.py` | Browser-based | Browsing the full variable set, sharing results, quick comparisons |
+| `pourOver.py`     | Browser-based              | Browsing the full variable set, sharing results, quick comparisons                     |
 
 `pourOver.py` reuses the same plotting backend (`src/plotting/`) as both scripts. Any plot you can make in `iPlot.py` can also be made in the interactive panel.
 
