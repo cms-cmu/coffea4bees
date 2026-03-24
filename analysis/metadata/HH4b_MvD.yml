@@ -1,6 +1,6 @@
 runner:
   workers: 1
-  worker_memory: 7GB
+  worker_memory: 6GB
 
 config:
   blind: false
@@ -9,7 +9,7 @@ config:
   year_override: true
   plot_ttbar_with_MvD_weights: true
   apply_JCM: true
-  hist_cuts : []
+  hist_cuts : ["highMvD"]
   JCM_file: coffea4bees/analysis/weights/JCM/Run3_MvD/jetCombinatoricModel_SB_.yml
   apply_trigWeight: true
   apply_btagSF: true
