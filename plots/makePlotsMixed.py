@@ -19,7 +19,7 @@ np.seterr(divide='ignore', invalid='ignore')
 
 def doPlots(debug=False):
     region = "SR"
-    cut = "passPreSel"
+    cut = None
     rebin = 2
 
     var_to_plot = "SvB_MA_FvT_3bDvTMix4bDvT_vXXX_newSBDef.ps_hh"
@@ -101,7 +101,7 @@ def doPlots(debug=False):
                      "var_over_ride":{"Multijet": var_bkg},
                      }
 
-        plot_args = plot_args | {"region":"SR", "cut":"passPreSel", "doRatio":1, "rebin":rebin}
+        plot_args = plot_args | {"region":"SR", "cut":None, "doRatio":1, "rebin":rebin}
 
         plot_args["outputFolder"] = args.outputFolder
 

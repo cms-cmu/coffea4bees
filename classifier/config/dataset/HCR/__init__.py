@@ -1,1 +1,0 @@
-# HCR dataset configurations

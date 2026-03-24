@@ -1,63 +1,57 @@
-SvB_MA.ps_passPreSel_SR:
+SvB_MA.ps_SR:
     var:
         SvB_MA.ps
     cut:
-        passPreSel
     region:
            SR
     counts:
            [15.814521550868037, 12.186793104316067, 8.814653550253215, 8.232989230668174, 5.2261317752084455, 5.756472765583808, 5.495077932321322, 4.3236832333561885, 5.424707168888542, 4.816986390320089, 2.9816468493735773, 1.2008022901304447]
 
 
-SvB_MA.ps_passPreSel_SB:
+SvB_MA.ps_SB:
     var:
         SvB_MA.ps
     cut:
-        passPreSel
     region:
            SB
     counts:
            [94.2315656395258, 22.094086270938643, 9.464319505685918, 5.0543754782657855, 2.2595252862950397, 2.2365338221838877, 1.149779678902477, 0.9267575390171797, 0.5887545673821674, 0.6013827615079508, 0.12636103395594486, 0.15550844490132976]
 
 
-SvB_MA.ps_hh_passPreSel_SR:
+SvB_MA.ps_hh_SR:
     var:
         SvB_MA.ps_hh
     cut:
-        passPreSel
     region:
            SR
     counts:
            [11.367466927624664, 2.883159901319512, 1.9722869614868053, 1.04673219851437, 1.0704128409250284, 0.9173331695852924, 1.1099310005965497, 0.2181675299226451, 0.20457039631951385, 0.02692575958845549, 0.18582078601406132]
 
 
-SvB_MA.ps_hh_passPreSel_SB:
+SvB_MA.ps_hh_SB:
     var:
         SvB_MA.ps_hh
     cut:
-        passPreSel
     region:
            SB
     counts:
            [14.125006100467093, 0.6314246836535995, 0.053067865699311066, 0.1488026847738949, 0.12229593795309374, 0.08591027623004394, 0.0, 0.0, 0.0, 0.05855245608687455, 0.0]
 
 
-SvB_MA.ps_zh_passPreSel_SR:
+SvB_MA.ps_zh_SR:
     var:
         SvB_MA.ps_zh
     cut:
-        passPreSel
     region:
            SR
     counts:
            [12.946410686386372, 8.217000192519011, 4.945238705942284, 3.8993384481174056, 0.9494434146665021]
 
 
-SvB_MA.ps_zh_passPreSel_SB:
+SvB_MA.ps_zh_SB:
     var:
         SvB_MA.ps_zh
     cut:
-        passPreSel
     region:
            SB
     counts:
@@ -65,24 +59,21 @@ SvB_MA.ps_zh_passPreSel_SB:
 
 
 
-SvB_MA.ps_zz_passPreSel_SR:
+SvB_MA.ps_zz_SR:
     var:
         SvB_MA.ps_zz
     cut:
-        passPreSel
     region:
            SR
     counts:
            [7.504561222316107, 4.573465144273817, 3.413817886740854, 3.5066747824865327, 4.23967015388048, 1.170911555734079]
 
 
-SvB_MA.ps_zz_passPreSel_SB:
+SvB_MA.ps_zz_SB:
     var:
         SvB_MA.ps_zz
     cut:
-        passPreSel
     region:
            SB
     counts:
            [42.38488184363639, 5.7221566655762865, 1.0560905602472865, 0.813911500590795, 0.37633280268441016, 0.09695598881445519]
-

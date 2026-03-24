@@ -4,30 +4,38 @@ Serves a local webpage with a pre-generated plot gallery and an
 interactive form that mirrors the iPlot.py plot() interface.
 
 Setup (one time):
-    python -m venv ~/python-environments/webplot
-    source ~/python-environments/webplot/bin/activate
-    pip install -r coffea4bees/plots/requirements-webplot.txt
+    python -m venv ~/python-environments/pourover
+    source ~/python-environments/pourover/bin/activate
+    pip install -r coffea4bees/plots/requirements-pourover.txt
     pip install -e .   # install barista src/ as editable package
 
 Usage:
-    python coffea4bees/plots/webPlot.py <coffea_file> -m <metadata.yml> [options]
+    python coffea4bees/plots/pourOver.py <coffea_file> -m <metadata.yml> [options]
+    python coffea4bees/plots/pourOver.py <coffea_file> -m <metadata.yml> --new [--label TEXT]
+    python coffea4bees/plots/pourOver.py --load <archive_dir>
 
 Extra options (beyond the standard iPlot/makePlotsAll args):
     --port PORT          Port to serve on (default: 5000)
-    --no-pregallery      Skip pre-generating the gallery on startup
+    --pregallery         Pre-generate the full plot gallery on startup (default: off)
     --reuse-gallery      Reuse existing gallery plots; only regenerate missing ones
-    --output-dir DIR     Directory for generated plots (default: webplot_output)
+    --output-dir DIR     Directory for generated plots (default: pourover_output)
     --modifiers FILE     Per-variable modifier YAML (optional)
     -j N, --jobs N       Parallel workers for pregallery (default: 1)
+    --new                Snapshot inputs into a timestamped archive, register it,
+                         generate gallery inside the archive, and serve.
+    --load LABEL         Load from a previously created archive by its kebab-case label.
+    --registry FILE      Path to the archive registry JSON (default: .pourover_archives/pourover_registry.json).
+    --label LABEL        Kebab-case label for this archive (required with --new, e.g. ul18-sb-test).
 
 Example:
-    python coffea4bees/plots/webPlot.py \\
+    python coffea4bees/plots/pourOver.py \\
         coffea4bees/Run3_MvD/analysis_MvD_new.coffea \\
         -m coffea4bees/plots/metadata/plotsAll_MvD_ttbar_weights.yml
     Then open http://localhost:5000
 """
 
 import os
+import re
 import sys
 import base64
 import io
@@ -40,7 +48,7 @@ import multiprocessing as mp
 from datetime import datetime
 from pathlib import Path
 
-os.environ['MPLCONFIGDIR'] = tempfile.mkdtemp()
+#os.environ['MPLCONFIGDIR'] = tempfile.mkdtemp()
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -52,11 +60,12 @@ np.seterr(divide='ignore', invalid='ignore')
 warnings.filterwarnings('ignore', message='.*All sumw are zero.*')
 
 sys.path.insert(0, os.getcwd())
-from flask import Flask, jsonify, request, render_template, send_from_directory
+from flask import Flask, jsonify, redirect, request, render_template, send_from_directory
 
 from coffea4bees.plots.plots import load_config_4b
 from src.plotting.plots import (
-    makePlot, make2DPlot, load_hists, read_axes_and_cuts, init_arg_parser
+    makePlot, make2DPlot, load_hists, read_axes_and_cuts, init_arg_parser,
+    _normalize_kwargs,
 )
 from src.plotting.iPlot_config import plot_config
 
@@ -71,6 +80,7 @@ output_dir = None
 input_files = []
 metadata_file = None
 reuse_gallery = False       # set from --reuse-gallery flag
+session_label = ""          # set from --label (--new) or manifest (--load)
 
 app = Flask(__name__, template_folder="templates")
 
@@ -297,23 +307,136 @@ def _pregallery(out_dir, n_jobs=1, reuse=False):
 
 
 # ---------------------------------------------------------------------------
+# Archive helpers
+# ---------------------------------------------------------------------------
+
+def _write_manifest(archive_dir, input_files_rel, metadata_rel, label, args=None):
+    """Write manifest.json into archive_dir with paths relative to archive_dir."""
+    manifest = {
+        "created": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+        "label": label,
+        "inputs": [str(p) for p in input_files_rel],
+        "metadata": str(metadata_rel) if metadata_rel else None,
+        "combine_input_files": getattr(args, 'combine_input_files', False),
+        "fileLabels": getattr(args, 'fileLabels', []) or [],
+    }
+    (archive_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
+    return manifest
+
+
+def _register_archive(registry_path, archive_dir, label):
+    """Append an entry for archive_dir to the registry JSON (atomic write)."""
+    registry_path = Path(registry_path)
+    if registry_path.exists():
+        try:
+            entries = json.loads(registry_path.read_text())
+        except Exception:
+            entries = []
+    else:
+        entries = []
+    entries.append({
+        "created": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+        "label": label,
+        "archive_dir": str(archive_dir),
+    })
+    tmp = registry_path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(entries, indent=2))
+    tmp.rename(registry_path)
+
+
+# ---------------------------------------------------------------------------
+# Session tracking (live PID → port mapping per archive directory)
+# ---------------------------------------------------------------------------
+
+def _sessions_path(registry_path):
+    """Derive the sessions file path from the registry path."""
+    return Path(registry_path).parent / "pourover_sessions.json"
+
+
+def _sessions_read(sessions_path):
+    sessions_path = Path(sessions_path)
+    if not sessions_path.exists():
+        return {}
+    try:
+        return json.loads(sessions_path.read_text())
+    except Exception:
+        return {}
+
+
+def _sessions_write(sessions_path, data):
+    sessions_path = Path(sessions_path)
+    sessions_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = sessions_path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(data, indent=2))
+    tmp.rename(sessions_path)
+
+
+def _pid_alive(pid):
+    try:
+        os.kill(pid, 0)
+        return True
+    except (ProcessLookupError, PermissionError):
+        return False
+
+
+def _session_check(archive_dir, sessions_path):
+    """If archive_dir has a live session, print its URL and exit."""
+    key = str(Path(archive_dir).resolve())
+    sessions = _sessions_read(sessions_path)
+    # Prune dead entries while we're here
+    alive = {k: v for k, v in sessions.items() if _pid_alive(v["pid"])}
+    if alive != sessions:
+        _sessions_write(sessions_path, alive)
+    if key in alive:
+        entry = alive[key]
+        print(f"\nPourOver is already running for this archive (pid {entry['pid']}).")
+        print(f"  → http://localhost:{entry['port']}")
+        sys.exit(0)
+
+
+def _session_register(archive_dir, pid, port, sessions_path):
+    """Record a live session for archive_dir."""
+    key = str(Path(archive_dir).resolve())
+    sessions = _sessions_read(sessions_path)
+    # Prune dead entries
+    sessions = {k: v for k, v in sessions.items() if _pid_alive(v["pid"])}
+    sessions[key] = {"pid": pid, "port": port}
+    _sessions_write(sessions_path, sessions)
+
+
+def _session_remove(archive_dir, sessions_path):
+    """Remove any session entry for archive_dir (used by --delete)."""
+    key = str(Path(archive_dir).resolve())
+    sessions = _sessions_read(sessions_path)
+    if key in sessions:
+        del sessions[key]
+        _sessions_write(sessions_path, sessions)
+
+
+# ---------------------------------------------------------------------------
 # Flask routes
 # ---------------------------------------------------------------------------
 
 def _template_context():
     names = [Path(f).name for f in input_files]
     return dict(input_files=names,
-                metadata_file=Path(metadata_file).name if metadata_file else "")
+                metadata_file=Path(metadata_file).name if metadata_file else "",
+                session_label=session_label)
 
 
 @app.route("/")
 def index():
+    return render_template("iplot.html", **_template_context())
+
+
+@app.route("/gallery-view")
+def gallery_view():
     return render_template("gallery.html", **_template_context())
 
 
 @app.route("/iplot")
 def iplot_page():
-    return render_template("iplot.html", **_template_context())
+    return redirect("/")
 
 
 @app.route("/gallery")
@@ -467,6 +590,8 @@ def _execute_plot(req):
             cfg.set_hist_key("hists_ttbar")
 
     debug = bool(req.get("debug", False))
+
+    _normalize_kwargs(req)
 
     kwargs = {}
     for k in ["doRatio", "rebin", "norm", "yscale", "add_flow", "uniform_bins"]:
@@ -658,142 +783,82 @@ def interactive_history():
         return jsonify([])
 
 
-@app.route("/archive", methods=["POST"])
-def archive():
-    ts          = datetime.now().strftime("%Y%m%d_%H%M%S")
-    archive_dir = Path(f"webplot_archive_{ts}")
-    archive_dir.mkdir()
-
-    # Copy inputs
-    inputs_dir = archive_dir / "inputs"
-    inputs_dir.mkdir()
-    for f in input_files:
-        shutil.copy(f, inputs_dir / Path(f).name)
-    if metadata_file:
-        shutil.copy(metadata_file, inputs_dir / Path(metadata_file).name)
-
-    # Copy plots
-    for subdir in ["gallery", "interactive"]:
-        src = Path(output_dir) / subdir
-        if src.exists():
-            shutil.copytree(str(src), str(archive_dir / subdir))
-
-    # Write reproduce.sh
-    cmd = f"python coffea4bees/plots/webPlot.py {' '.join(input_files)} -m {metadata_file}"
-    script = archive_dir / "reproduce.sh"
-    script.write_text(f"#!/bin/bash\n# Run from barista root directory\n{cmd}\n")
-    os.chmod(str(script), 0o755)
-
-    # Write self-contained index.html
-    _write_archive_html(archive_dir, ts)
-
-    return jsonify({"archive_path": str(archive_dir.resolve())})
 
 
-def _write_archive_html(archive_dir, ts):
-    gallery_dir = archive_dir / "gallery"
-    if not gallery_dir.exists():
-        return
-
-    with gallery_lock:
-        items_snapshot = list(gallery_items)
-
-    items_html = ""
-    for item in items_snapshot:
-        stem     = f"{_sanitize(item['var'])}_region_{_sanitize(item['region'])}"
-        png_file = gallery_dir / f"{stem}.png"
-        if not png_file.exists():
-            continue
-        with open(str(png_file), "rb") as f:
-            b64 = base64.b64encode(f.read()).decode("utf-8")
-        pdf_name = f"{stem}.pdf"
-        items_html += f"""
-        <div class="thumb" data-label="{item['label']}">
-          <img src="data:image/png;base64,{b64}" title="{item['label']}" />
-          <div class="label">{item['label']}</div>
-          <a href="gallery/{pdf_name}" download>⬇ PDF</a>
-        </div>"""
-
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Plot Archive {ts}</title>
-  <style>
-    body {{ font-family: sans-serif; background: #1a1a2e; color: #eee; padding: 20px; margin: 0; }}
-    h1 {{ color: #e0aaff; margin-bottom: 4px; }}
-    .meta {{ color: #a0c4ff; font-size: 13px; margin-bottom: 16px; }}
-    input[type=text] {{ background: #0f3460; border: 1px solid #444; color: #eee;
-                        padding: 6px 10px; border-radius: 4px; width: 300px; margin-bottom: 12px; }}
-    .grid {{ display: flex; flex-wrap: wrap; gap: 14px; }}
-    .thumb {{ background: #16213e; border-radius: 8px; padding: 10px; width: 280px; }}
-    .thumb img {{ width: 100%; border-radius: 4px; cursor: pointer; }}
-    .thumb img:hover {{ opacity: 0.9; }}
-    .label {{ font-size: 11px; margin: 6px 0 4px; color: #a0c4ff; word-break: break-all; }}
-    .thumb a {{ font-size: 11px; color: #e0aaff; text-decoration: none; }}
-    .thumb a:hover {{ text-decoration: underline; }}
-    .hidden {{ display: none !important; }}
-    /* lightbox */
-    #lb {{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85);
-           align-items:center; justify-content:center; z-index:999; }}
-    #lb.active {{ display:flex; }}
-    #lb img {{ max-width:90vw; max-height:90vh; border-radius:6px; }}
-    #lb-close {{ position:absolute; top:16px; right:24px; font-size:28px;
-                 cursor:pointer; color:#fff; }}
-  </style>
-</head>
-<body>
-  <h1>Plot Archive</h1>
-  <div class="meta">
-    Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}<br>
-    Inputs: {', '.join(Path(f).name for f in input_files)}<br>
-    Metadata: {Path(metadata_file).name if metadata_file else ''}
-  </div>
-  <input type="text" id="filter" placeholder="Filter variables..." oninput="filterGallery()" />
-  <div class="grid" id="grid">{items_html}</div>
-
-  <div id="lb" onclick="closeLb()">
-    <span id="lb-close">✕</span>
-    <img id="lb-img" src="" />
-  </div>
-
-  <script>
-    function filterGallery() {{
-      const q = document.getElementById('filter').value.toLowerCase();
-      document.querySelectorAll('.thumb').forEach(el => {{
-        el.classList.toggle('hidden', !el.dataset.label.toLowerCase().includes(q));
-      }});
-    }}
-    document.querySelectorAll('.thumb img').forEach(img => {{
-      img.addEventListener('click', e => {{
-        document.getElementById('lb-img').src = e.target.src;
-        document.getElementById('lb').classList.add('active');
-      }});
-    }});
-    function closeLb() {{ document.getElementById('lb').classList.remove('active'); }}
-    document.addEventListener('keydown', e => {{ if (e.key === 'Escape') closeLb(); }});
-  </script>
-</body>
-</html>"""
-
-    (archive_dir / "index.html").write_text(html)
 
 
 # ---------------------------------------------------------------------------
 # Argument parsing
 # ---------------------------------------------------------------------------
 
+_KEBAB_RE = re.compile(r'^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*$')
+
+
+def _validate_label(label):
+    """Return label if valid kebab-case, else raise ValueError."""
+    if not _KEBAB_RE.match(label):
+        raise ValueError(
+            f"Label must be kebab-case (letters, digits, hyphens; "
+            f"no leading/trailing hyphens): got {label!r}"
+        )
+    return label
+
+
+def _resolve_label(label, registry_path):
+    """Look up label in registry; return the archive_dir of the most recent match."""
+    try:
+        entries = json.loads(Path(registry_path).read_text())
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Registry not found: {registry_path}")
+    matches = [e for e in entries if e.get('label') == label]
+    if not matches:
+        available = sorted({e.get('label', '') for e in entries} - {''})
+        raise KeyError(
+            f"No archive with label {label!r}. "
+            f"Available: {available if available else '(none)'}"
+        )
+    if len(matches) > 1:
+        print(f"Warning: {len(matches)} archives with label {label!r}; using most recent.")
+    return matches[-1]['archive_dir']
+
+
+
 def _parse_args():
     parser = init_arg_parser()
+    # Make inputFile optional so --load can be used without positional args
+    for action in parser._actions:
+        if getattr(action, 'dest', None) == 'inputFile':
+            action.nargs = '*'
+            action.default = []
+            break
     parser.add_argument('--port', type=int, default=5000, help='Port to serve on (default: 5000)')
-    parser.add_argument('--no-pregallery', action='store_true',
-                        help='Skip pre-generating the plot gallery on startup')
+    parser.add_argument('--foreground', action='store_true',
+                        help='Run server in the foreground instead of detaching to background')
+    parser.add_argument('--pregallery', action='store_true',
+                        help='Pre-generate the full plot gallery on startup (default: off)')
     parser.add_argument('--reuse-gallery', action='store_true',
                         help='Reuse already-generated gallery plots; only regenerate missing ones')
     parser.add_argument('-j', '--jobs', type=int, default=1,
                         help='Number of parallel workers for pregallery (default: 1)')
-    parser.add_argument('--output-dir', default='webplot_output',
-                        help='Directory for generated plots (default: webplot_output)')
+    parser.add_argument('--output-dir', default='pourover_output',
+                        help='Directory for generated plots (default: pourover_output)')
+    parser.add_argument('--new', action='store_true',
+                        help='Snapshot inputs, register archive, generate gallery, serve.')
+    load_action = parser.add_argument('--load', metavar='LABEL',
+                        help='Load from a previously created archive by its kebab-case label.')
+    parser.add_argument('--registry', default='.pourover_archives/pourover_registry.json', metavar='FILE',
+                        help='Path to the archive registry JSON (default: .pourover_archives/pourover_registry.json).')
+    parser.add_argument('--label', default='', metavar='LABEL',
+                        help='Kebab-case label for this archive (required with --new, e.g. ul18-sb-test).')
+    parser.add_argument('--list', action='store_true',
+                        help='List all archives in the registry and exit.')
+    parser.add_argument('--rename', nargs=2, metavar=('OLD', 'NEW'),
+                        help='Rename all registry entries with label OLD to NEW and exit.')
+    parser.add_argument('--delete', metavar='LABEL',
+                        help='Delete all archives with this label (removes directories and registry entries) and exit.')
+    parser.add_argument('--yes', '-y', action='store_true',
+                        help='Skip confirmation prompt for --delete.')
+
     return parser.parse_args()
 
 
@@ -802,23 +867,329 @@ def _parse_args():
 # ---------------------------------------------------------------------------
 
 if __name__ == '__main__':
+    print("In main")
+    import argparse as _argparse
+
     args = _parse_args()
 
-    output_dir    = args.output_dir
-    input_files   = args.inputFile
-    metadata_file = args.metadata
-    reuse_gallery = args.reuse_gallery
+    # ------------------------------------------------------------------
+    # --list: print registry and exit
+    # ------------------------------------------------------------------
+    if args.list:
+        registry = Path(args.registry)
+        if not registry.exists():
+            print(f"No registry found at {registry}")
+            sys.exit(0)
+        try:
+            entries = json.loads(registry.read_text())
+        except Exception as e:
+            print(f"Could not read registry: {e}", file=sys.stderr)
+            sys.exit(1)
+        if not entries:
+            print("Registry is empty.")
+            sys.exit(0)
+        col = max(len(e.get('label', '')) for e in entries)
+        for e in entries:
+            label   = e.get('label', '(no label)')
+            created = e.get('created', '')
+            adir    = e.get('archive_dir', '')
+            print(f"{label:<{col}}  {created}  {adir}")
+        sys.exit(0)
 
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    # ------------------------------------------------------------------
+    # --rename OLD NEW: relabel registry entries and manifests, then exit
+    # ------------------------------------------------------------------
+    if args.rename:
+        old_label, new_label = args.rename
+        try:
+            _validate_label(new_label)
+        except ValueError as e:
+            print(f"error: {e}", file=sys.stderr)
+            sys.exit(2)
+        registry = Path(args.registry)
+        if not registry.exists():
+            print(f"No registry found at {registry}", file=sys.stderr)
+            sys.exit(1)
+        try:
+            entries = json.loads(registry.read_text())
+        except Exception as e:
+            print(f"Could not read registry: {e}", file=sys.stderr)
+            sys.exit(1)
+        matches = [e for e in entries if e.get('label') == old_label]
+        if not matches:
+            print(f"error: no archives with label {old_label!r}", file=sys.stderr)
+            sys.exit(1)
+        for e in entries:
+            if e.get('label') == old_label:
+                e['label'] = new_label
+        tmp = registry.with_suffix('.tmp')
+        tmp.write_text(json.dumps(entries, indent=2))
+        tmp.rename(registry)
+        # Update manifest.json inside each matched archive
+        for e in matches:
+            manifest_path = Path(e['archive_dir']) / 'manifest.json'
+            if manifest_path.exists():
+                try:
+                    m = json.loads(manifest_path.read_text())
+                    m['label'] = new_label
+                    manifest_path.write_text(json.dumps(m, indent=2))
+                except Exception as ex:
+                    print(f"Warning: could not update manifest in {e['archive_dir']}: {ex}")
+        print(f"Renamed {len(matches)} archive(s): {old_label!r} → {new_label!r}")
+        sys.exit(0)
 
-    print("Loading histograms and config ...")
-    _init_config(args)
-    print(f"  Loaded {len(cfg.hists)} file(s): {input_files}")
-    print(f"  Metadata: {metadata_file}")
+    # ------------------------------------------------------------------
+    # --delete LABEL: remove archive directories and registry entries, then exit
+    # ------------------------------------------------------------------
+    if args.delete:
+        registry = Path(args.registry)
+        if not registry.exists():
+            print(f"No registry found at {registry}", file=sys.stderr)
+            sys.exit(1)
+        try:
+            entries = json.loads(registry.read_text())
+        except Exception as e:
+            print(f"Could not read registry: {e}", file=sys.stderr)
+            sys.exit(1)
+        matches = [e for e in entries if e.get('label') == args.delete]
+        if not matches:
+            print(f"error: no archives with label {args.delete!r}", file=sys.stderr)
+            sys.exit(1)
+        print(f"Will delete {len(matches)} archive(s) with label {args.delete!r}:")
+        for e in matches:
+            print(f"  {e['archive_dir']}")
+        if not args.yes:
+            try:
+                answer = input(f"Delete {len(matches)} archive(s)? [y/N] ").strip().lower()
+            except (EOFError, KeyboardInterrupt):
+                print("\nAborted.")
+                sys.exit(1)
+            if answer not in ('y', 'yes'):
+                print("Aborted.")
+                sys.exit(1)
+        for e in matches:
+            adir = Path(e['archive_dir'])
+            if adir.exists():
+                shutil.rmtree(adir)
+                print(f"  Removed {adir}")
+            else:
+                print(f"  Warning: directory not found, skipping: {adir}")
+            _session_remove(adir, _sessions_path(args.registry))
+        remaining = [e for e in entries if e.get('label') != args.delete]
+        tmp = registry.with_suffix('.tmp')
+        tmp.write_text(json.dumps(remaining, indent=2))
+        tmp.rename(registry)
+        print(f"Deleted {len(matches)} archive(s) with label {args.delete!r}")
+        sys.exit(0)
 
-    if not args.no_pregallery:
-        _pregallery(output_dir, n_jobs=args.jobs, reuse=args.reuse_gallery)
+    # ------------------------------------------------------------------
+    # Mutual exclusion / required-arg validation
+    # ------------------------------------------------------------------
+    def _arg_error(msg):
+        print(f"error: {msg}", file=sys.stderr)
+        sys.exit(2)
 
-    print(f"\nStarting web server on http://localhost:{args.port}")
-    print("Press Ctrl+C to stop.\n")
-    app.run(host='0.0.0.0', port=args.port, threaded=False, debug=False)
+    if args.new and args.load:
+        _arg_error("--new and --load are mutually exclusive.")
+    if args.load and args.inputFile:
+        _arg_error("Do not pass inputFile with --load; inputs come from the archive.")
+    if not args.load and not args.inputFile:
+        _arg_error("inputFile is required (unless using --load).")
+    if args.new and not args.label:
+        _arg_error("--label is required with --new (kebab-case, e.g. ul18-sb-test).")
+    if args.new:
+        try:
+            _validate_label(args.label)
+        except ValueError as e:
+            _arg_error(str(e))
+
+    # ------------------------------------------------------------------
+    # --load mode: start from an existing archive
+    # ------------------------------------------------------------------
+    if args.load:
+        try:
+            archive_dir = Path(_resolve_label(args.load, args.registry))
+        except (FileNotFoundError, KeyError) as e:
+            _arg_error(str(e))
+        if not archive_dir.exists():
+            _arg_error(f"Archive directory does not exist: {archive_dir}")
+        manifest_path = archive_dir / "manifest.json"
+        if not manifest_path.exists():
+            _arg_error(f"No manifest.json found in {archive_dir} — not a valid --new archive.")
+
+        manifest = json.loads(manifest_path.read_text())
+        resolved_inputs = [str(archive_dir / p) for p in manifest["inputs"]]
+        resolved_meta   = str(archive_dir / manifest["metadata"]) if manifest.get("metadata") else args.metadata
+
+        # Fabricate an args namespace for _init_config
+        load_args = _argparse.Namespace(
+            inputFile=resolved_inputs,
+            metadata=resolved_meta,
+            combine_input_files=manifest.get('combine_input_files', False),
+            fileLabels=manifest.get('fileLabels', []),
+            modifiers=getattr(args, 'modifiers', None),
+        )
+
+        output_dir    = str(archive_dir)
+        input_files   = resolved_inputs
+        metadata_file = resolved_meta
+        reuse_gallery = True
+        session_label = manifest.get('label', '')
+
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
+
+        _session_check(archive_dir, _sessions_path(args.registry))
+
+        print(f"Loading archive: {archive_dir}")
+        print(f"  Label: {manifest.get('label', '')}")
+        print(f"  Created: {manifest.get('created', '')}")
+        _init_config(load_args)
+        print(f"  Loaded {len(cfg.hists)} file(s)")
+        print(f"  Metadata: {metadata_file}")
+
+        if args.pregallery:
+            _pregallery(output_dir, n_jobs=args.jobs, reuse=True)
+
+    # ------------------------------------------------------------------
+    # --new mode: snapshot inputs, register, generate, serve
+    # ------------------------------------------------------------------
+    elif args.new:
+        registry = Path(args.registry)
+        if registry.exists():
+            try:
+                existing = json.loads(registry.read_text())
+                if any(e.get('label') == args.label for e in existing):
+                    _arg_error(f"Label {args.label!r} already exists in the registry. "
+                               f"Use --rename to rename it or --delete to remove it first.")
+            except Exception:
+                pass  # malformed registry; let _register_archive handle it
+
+        ts          = datetime.now().strftime("%Y%m%d_%H%M%S")
+        archive_dir = Path(".pourover_archives") / f"pourover_archive_{ts}"
+        inputs_dir  = archive_dir / "inputs"
+        inputs_dir.mkdir(parents=True)
+
+        # Copy input coffea files into archive
+        copied_inputs = []
+        for src in args.inputFile:
+            dst = inputs_dir / Path(src).name
+            shutil.copy(src, dst)
+            copied_inputs.append(Path("inputs") / Path(src).name)
+
+        # Copy metadata YAML if provided
+        copied_meta = None
+        if args.metadata:
+            dst = inputs_dir / Path(args.metadata).name
+            shutil.copy(args.metadata, dst)
+            copied_meta = Path("inputs") / Path(args.metadata).name
+
+        _write_manifest(archive_dir, copied_inputs, copied_meta, args.label, args=args)
+        _register_archive(args.registry, archive_dir, args.label)
+
+        _session_check(archive_dir, _sessions_path(args.registry))
+
+        print(f"Archive created: {archive_dir}")
+        if args.label:
+            print(f"  Label: {args.label}")
+
+        output_dir    = str(archive_dir)
+        input_files   = args.inputFile
+        metadata_file = args.metadata
+        reuse_gallery = False
+        session_label = args.label
+
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
+
+        print("Loading histograms and config ...")
+        _init_config(args)
+        print(f"  Loaded {len(cfg.hists)} file(s): {input_files}")
+        print(f"  Metadata: {metadata_file}")
+
+        if args.pregallery:
+            _pregallery(output_dir, n_jobs=args.jobs, reuse=False)
+
+    # ------------------------------------------------------------------
+    # Normal mode
+    # ------------------------------------------------------------------
+    else:
+        output_dir    = args.output_dir
+        input_files   = args.inputFile
+        metadata_file = args.metadata
+        reuse_gallery = args.reuse_gallery
+        session_label = ""
+
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
+
+        print("Loading histograms and config ...")
+        _init_config(args)
+        print(f"  Loaded {len(cfg.hists)} file(s): {input_files}")
+        print(f"  Metadata: {metadata_file}")
+
+        if args.pregallery:
+            _pregallery(output_dir, n_jobs=args.jobs, reuse=args.reuse_gallery)
+
+    import socket
+    def _find_free_port(preferred):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(('localhost', preferred)) != 0:
+                return preferred  # preferred port is free
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(('', 0))
+            return s.getsockname()[1]
+
+    port = _find_free_port(args.port)
+    if port != args.port:
+        print(f"\nPort {args.port} is in use; using port {port} instead.")
+
+    _sessions_path_val = _sessions_path(args.registry)
+
+    def _run_server():
+        if output_dir:
+            _session_register(output_dir, os.getpid(), port, _sessions_path_val)
+        try:
+            app.run(host='0.0.0.0', port=port, threaded=False, debug=False)
+        finally:
+            if output_dir:
+                _session_remove(output_dir, _sessions_path_val)
+
+    if args.foreground:
+        print(f"\nStarting web server on http://localhost:{port}")
+        print("Press Ctrl+C to stop.\n")
+        _run_server()
+    else:
+        # Fork: parent prints URL and returns to the shell; child runs the server
+        log_path = Path(output_dir) / "server.log" if output_dir else Path(os.devnull)
+        pid = os.fork()
+        if pid > 0:
+            # Parent
+            url = f"http://localhost:{port}"
+            print(f"\nPourOver running in background (pid {pid})")
+            print(f"  → {url}")
+            if output_dir:
+                print(f"  Logs: {log_path}")
+            print(f"  Stop: kill {pid}")
+            # Copy URL to clipboard (best-effort)
+            import subprocess as _sp, platform as _platform
+            _copied = False
+            try:
+                if _platform.system() == "Darwin":
+                    _sp.run(["pbcopy"], input=url.encode(), check=True)
+                    _copied = True
+                else:
+                    for cmd in (["xclip", "-selection", "clipboard"], ["xsel", "--clipboard", "--input"]):
+                        if _sp.run(["which", cmd[0]], capture_output=True).returncode == 0:
+                            _sp.run(cmd, input=url.encode(), check=True)
+                            _copied = True
+                            break
+            except Exception:
+                pass
+            if _copied:
+                print("  (URL copied to clipboard)")
+            sys.exit(0)
+        # Child: detach from terminal, redirect output to log file
+        os.setsid()
+        log_fd = open(log_path, 'a')
+        os.dup2(log_fd.fileno(), sys.stdout.fileno())
+        os.dup2(log_fd.fileno(), sys.stderr.fileno())
+        log_fd.close()
+        _run_server()

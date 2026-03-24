@@ -264,26 +264,27 @@ def jet_selection(
                     run_systematics=False,
                     jet_type="AK4PFPuppi"
                 )
-            event['Jet'] = ak.where(
-                event.Jet.btagScore >= corrections_metadata['btagWP']['L'],
-                apply_jerc_corrections(
-                    event,
-                    corrections_metadata=corrections_metadata,
-                    isMC=isMC,
-                    run_systematics=False,
-                    dataset=dataset,
-                    jet_corr_factor=event.Jet.PNetRegPtRawCorr * event.Jet.PNetRegPtRawCorrNeutrino,
-                    jet_type="AK4PFPuppiPNetRegressionPlusNeutrino"
-                ),
-                apply_jerc_corrections_jsonpog(
-                    event,
-                    corrections_metadata=corrections_metadata,
-                    isMC=isMC,
-                    dataset=dataset,
-                    run_systematics=False,
-                    jet_type="AK4PFPuppi"
+            else:
+                event['Jet'] = ak.where(
+                    event.Jet.btagScore >= corrections_metadata['btagWP']['L'],
+                    apply_jerc_corrections(
+                        event,
+                        corrections_metadata=corrections_metadata,
+                        isMC=isMC,
+                        run_systematics=False,
+                        dataset=dataset,
+                        jet_corr_factor=event.Jet.PNetRegPtRawCorr * event.Jet.PNetRegPtRawCorrNeutrino,
+                        jet_type="AK4PFPuppiPNetRegressionPlusNeutrino"
+                    ),
+                    apply_jerc_corrections_jsonpog(
+                        event,
+                        corrections_metadata=corrections_metadata,
+                        isMC=isMC,
+                        dataset=dataset,
+                        run_systematics=False,
+                        jet_type="AK4PFPuppi"
+                    )
                 )
-            )
 
         event['Jet', 'puId'] = 10
         if 'jetId' in event.Jet.fields: ###### temporary hack before using nanoV15
@@ -291,6 +292,7 @@ def jet_selection(
             event['Jet', 'passJetId'] = event.Jet.jetId >= 2
         else:
             event['Jet', 'passJetId_loose'] = compute_jet_id(event.Jet, corrections_metadata['jet_id'], r3_sl_jetId_tag)
+            event['Jet', 'jetId'] = event['Jet', 'passJetId_loose']
             if r3_s_jetId_tag == r3_sl_jetId_tag:
                 event['Jet', 'passJetId'] = event['Jet', 'passJetId_loose']
             else:
