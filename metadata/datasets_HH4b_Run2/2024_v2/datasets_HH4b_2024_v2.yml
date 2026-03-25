@@ -45,7 +45,6 @@ datasets:
         sumw: 58023.9636257
         sumw2: 615626.6029922854
         total_events: 978000
-
     xs: 0.07038*0.5824**2
   GluGluToHHTo4B_cHHH1:
     UL16_postVFP:
@@ -94,7 +93,6 @@ datasets:
         sumw: 28210.3267947
         sumw2: 1193909.4220537543
         total_events: 1000000
-
     xs: 0.03105*0.5824**2
   GluGluToHHTo4B_cHHH2p45:
     UL16_postVFP:
@@ -143,7 +141,6 @@ datasets:
         sumw: 10752.851367299998
         sumw2: 357.94212966148234
         total_events: 950000
-
     xs: 0.01310*0.5824**2
   GluGluToHHTo4B_cHHH5:
     UL16_postVFP:
@@ -189,7 +186,6 @@ datasets:
         sumw: 78489.34013980003
         sumw2: 6400.488181203013
         total_events: 994000
-
     xs: 0.09482*0.5824**2
   TTTo2L2Nu:
     UL16_postVFP:
@@ -1177,6 +1173,20 @@ datasets:
       picoAOD:
         A:
           count: 171484635.0
+          cutFlowTwoTag:
+            all: 171484635.0
+            lumimask: 171484635.0
+            passHLT: 7665730.0
+            passJetMult_lowpt_forskim: 7331636.0
+            passNoiseFilter: 171484635.0
+            passPreSel_lowpt_forskim: 854388.0
+          cutFlowTwoTagUnitWeight:
+            all: 171484635
+            lumimask: 171484635
+            passHLT: 7665730
+            passJetMult_lowpt_forskim: 7331636
+            passNoiseFilter: 171484635
+            passPreSel_lowpt_forskim: 854388
           files:
           - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18A/picoAOD.chunk0.root
           - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18A/picoAOD.chunk1.root
@@ -1188,7 +1198,9 @@ datasets:
           - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18A/picoAOD.chunk7.root
           - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18A/picoAOD.chunk8.root
           missing: {}
-          saved_events: 806992
+          saved_events: 854388
+          sumw: 171484635
+          sumw2: 171484635
           total_events: 171484635
         B:
           count: 78255208.0

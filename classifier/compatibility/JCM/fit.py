@@ -13,12 +13,13 @@ if TYPE_CHECKING:
 
 class apply_JCM_from_list:
     def __init__(
-        self, 
-        path: str, 
-        start: int = 4, 
+        self,
+        path: str,
+        start: int = 4,
         weight_col: str = "weight",
-        n_jets_col: str = "nSelJets", 
-        selected_col: str = "threeTag"
+        n_jets_col: str = "nSelJets",
+        selected_col: str = "threeTag",
+        n_jets_offset: int = 0,
     ):
         weights: list[float] = parse.mapping(path, "file")
         self._weights = np.ones(start + len(weights), dtype=float)
@@ -26,15 +27,29 @@ class apply_JCM_from_list:
         self._weight_col = weight_col
         self._n_jets_col = n_jets_col
         self._selected_col = selected_col
+        self._n_jets_offset = n_jets_offset
 
     def __call__(self, df: pd.DataFrame):
-        n_jets = df.loc[df[self._selected_col], self._n_jets_col]
-        df.loc[df[self._selected_col], self._weight_col] *= np.take(
+        raw = df[self._selected_col]
+        n_nan = raw.isna().sum()
+        if n_nan > 0:
+            import logging
+            logging.warning(
+                f"JCM: '{self._selected_col}' contains {n_nan} NaN values — treating as False"
+            )
+        mask = raw.fillna(False).astype(bool)
+        n_jets = df.loc[mask, self._n_jets_col] + self._n_jets_offset
+        df.loc[mask, self._weight_col] *= np.take(
             self._weights, n_jets, mode="clip"
         )
         return df
 
     def __repr__(self):
+        cols = {
+            "weight": self._weight_col,
+            "n_jets": self._n_jets_col,
+            "selected": self._selected_col,
+        }
         return (
-            f"{_type_str(self)}({_map_str(self._columns)}) {_iter_str(self._weights)}"
+            f"{_type_str(self)}({_map_str(cols)}) {_iter_str(self._weights)}"
         )

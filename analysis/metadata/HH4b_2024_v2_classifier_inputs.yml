@@ -1,7 +1,6 @@
 runner:
   workers: 4
   worker_memory: 2GB
-  friend_metafile: classifier_inputs_friend
   chunksize: 10000
 
 config:

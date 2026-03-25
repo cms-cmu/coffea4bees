@@ -112,7 +112,7 @@ def make_PDFs_vs_Pt(config, output_file_name_vs_pT, year, doBoosted=False):
                     if doBoosted:
                         cut_dict = plot_helpers.get_cut_dict("passNFatJets", cfg.cutList)
                     else:
-                        cut_dict = plot_helpers.get_cut_dict("passPreSel", cfg.cutList)
+                        cut_dict = {}
 
                     plot_dict = {"process":"data", "year":year, "tag":sum,"region":sum, "pt":_iPt}
                     plot_dict = plot_dict | cut_dict

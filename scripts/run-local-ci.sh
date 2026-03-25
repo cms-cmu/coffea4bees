@@ -21,13 +21,4 @@ else
   echo "Output files will be created in the 'CI_output' folder."
 fi
 
-# Check if the file ~/x509up* exists
-if ls ~/x509up* 1> /dev/null 2>&1; then
-  echo "Copying ~/x509up* to /proxy/x509_proxy."
-  /bin/cp ~/x509up* proxy/x509_proxy
-else
-  echo "File ~/x509up* does not exist. Run voms-proxy-init -voms cms before running this script."
-  return 0
-fi
-
 ./run_container snakemake --snakefile $SNAKEFILE --use-apptainer --apptainer-args "--bind $PWD:/srv --pwd /srv" --cores 1 $JOB_NAME

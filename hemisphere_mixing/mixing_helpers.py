@@ -260,13 +260,17 @@ def boost_jets_along_z(jets, pz_target, pz_matched, E_matched):
     # Need to broadcast boost_vec to match jet structure (one boost per hemisphere)
     boosted_jets = jets.boost(boost_vec)
 
-    # Manually create pt, eta, phi, mass representation
+    # Manually create pt, eta, phi, mass representation.
+    # Use jets.mass (original mass) rather than boosted_jets.mass:
+    # mass is Lorentz-invariant, so it is unchanged by the boost.
+    # Recomputing it as sqrt(E^2 - |p|^2) after the boost causes NaN for
+    # soft/forward jets where floating-point cancellation makes m^2 slightly negative.
     boosted_jets_cylind = ak.zip(
         {
             "pt": boosted_jets.pt,
             "eta": boosted_jets.eta,
             "phi": boosted_jets.phi,
-            "mass": boosted_jets.mass,
+            "mass": jets.mass,
         },
         with_name="PtEtaPhiMLorentzVector",
         behavior=vector.behavior,
@@ -837,7 +841,7 @@ def assign_mixed_subsamples(event, n_subsamples=16):
 def update_pseudoTagWeight_of_mixed_data(event, JCM):
 
     event["Jet_untagged_loose"] = event.Jet[event.Jet.selected & ~event.Jet.tagged_loose]
-    num_tagged_loose_plus_one = ak.sum(event.Jet.tagged_loose, axis=1) + 1
+    # num_tagged_loose_plus_one = ak.sum(event.Jet.tagged_loose, axis=1) + 1
 
     fourTagFilter = event['fourTag']
     fourTagEvents = event[fourTagFilter]

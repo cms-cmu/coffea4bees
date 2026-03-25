@@ -1,67 +1,86 @@
 hists:
-        data:
-                process: data
-                tag: lowpt_fourTag
-                label: Four-tag data
-                edgecolor: k
-                fillcolor: k            
+  data:
+    process: data
+    tag: lowpt_fourTag
+    label: Four-tag data
+    edgecolor: k
+    fillcolor: k            
 
-        # HH4b:
-        #         process: GluGluToHHTo4B_cHHH1
-        #         tag: lowpt_fourTag
-        #         label: HH4b (x100)
-        #         edgecolor: "#e42536"
-        #         fillcolor: "#e42536"            
-        #         histtype: step
-        #         scalefactor: 100
-                
-        # ZH4b:
-        #         process: [ZH4b, ggZH4b]
-        #         tag: lowpt_fourTag
-        #         label: ZH4b (x100)
-        #         edgecolor: "#964a8b"
-        #         fillcolor: "#964a8b"            
-        #         histtype: step
-        #         scalefactor: 100
+  # HH4b:
+  #     process: GluGluToHHTo4B_cHHH1
+  #     tag: lowpt_fourTag
+  #     label: HH4b (x100)
+  #     edgecolor: "#e42536"
+  #     fillcolor: "#e42536"            
+  #     histtype: step
+  #     scalefactor: 100
+      
+  # ZH4b:
+  #     process: [ZH4b, ggZH4b]
+  #     tag: lowpt_fourTag
+  #     label: ZH4b (x100)
+  #     edgecolor: "#964a8b"
+  #     fillcolor: "#964a8b"            
+  #     histtype: step
+  #     scalefactor: 100
 
-        # ZZ4b:
-        #         process: ZZ4b
-        #         tag: lowpt_fourTag
-        #         label: ZZ4b (x100)
-        #         edgecolor: "#7a21dd"
-        #         fillcolor: "#7a21dd"            
-        #         histtype: step
-        #         scalefactor: 100
-
+  # ZZ4b:
+  #     process: ZZ4b
+  #     tag: lowpt_fourTag
+  #     label: ZZ4b (x100)
+  #     edgecolor: "#7a21dd"
+  #     fillcolor: "#7a21dd"            
+  #     histtype: step
+  #     scalefactor: 100
 
 stack:
-        TTbar:
-                process: [TTToHadronic, TTToSemiLeptonic, TTTo2L2Nu]
-                tag: lowpt_fourTag
-                fillcolor: "#85D1FBff"
-                edgecolor: k
-                label: $t\bar{t}$
+  TTbar:
+    process: TTbar4b_from_d3 #[TTToHadronic, TTToSemiLeptonic, TTTo2L2Nu]
+    tag: lowpt_threeTag
+    fillcolor: "#85D1FBff"
+    edgecolor: k
+    label: $t\bar{t}$
 
-        Multijet:
-                process: data
-                tag: lowpt_threeTag
-                fillcolor: "#FFDF7Fff"
-                edgecolor: k
-                label: QCD multijet
-                # scalefactor: 0.064
+
+  MultiJet:
+    process: data
+    tag: lowpt_threeTag
+    year: UL18
+    fillcolor: "#FFDF7Fff"
+    edgecolor: k
+    label: Multijet
+    # sum:
+      # data_3tag:
+        # process: data
+        # tag: lowpt_threeTag
+        # scalefactor: +1            
+      # ttbar_3tag:
+      #   process: TTbar3b_from_d3
+      #   tag: lowpt_threeTag
+      #   scalefactor: -1
+    #     TTTo2L2Nu_3tag:
+    #         process: TTTo2L2Nu
+    #         tag: threeTag
+    #         scalefactor: -1
+    #     TTToSemiLeptonic_3tag:
+    #         process: TTToSemiLeptonic
+    #         tag: threeTag
+    #         scalefactor: -1
+    #     TTToHadronic_3tag:
+    #         process: TTToHadronic
+    #         tag: threeTag
+    #         scalefactor: -1
 
 ratios:
-        dataToBkg:
-                numerator:
-                        type: hists
-                        key: data
-                denominator:
-                        type: stack
-                uncertianty:
-                        nominal
-                color: k
-                marker: "o"
+  dataToBkg:
+    numerator:
+      type: hists
+      key: data
+    denominator:
+      type: stack
+    uncertianty:
+      nominal
+    color: k
+    marker: "o"
 
-doRatio:
-    1
-
+doRatio: 1

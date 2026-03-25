@@ -510,21 +510,22 @@ def save_model_output(JCM_model: jetCombinatoricModel, bin_data: Tuple, args: ar
 
     # Write parameters to output files
     logger.info(f"Writing model parameters to output files")
+    cut_suffix = ("_" + args.cut) if args.cut else ""
     for parameter in JCM_model.parameters:
         write_to_JCM_file(
-            parameter["name"] + "_" + args.cut,
+            parameter["name"] + cut_suffix,
             parameter["value"],
             jetCombinatoricModelFile,
             jetCombinatoricModelFile_yml
         )
         write_to_JCM_file(
-            parameter["name"] + "_" + args.cut + "_err",
+            parameter["name"] + cut_suffix + "_err",
             parameter["error"],
             jetCombinatoricModelFile,
             jetCombinatoricModelFile_yml
         )
         write_to_JCM_file(
-            parameter["name"] + "_" + args.cut + "_pererr",
+            parameter["name"] + cut_suffix + "_pererr",
             parameter["percentError"],
             jetCombinatoricModelFile,
             jetCombinatoricModelFile_yml
@@ -643,20 +644,23 @@ def create_plots(
         'year': ['UL18'],
         'tag': "lowpt_fourTag" if args.lowpt else "fourTag",
         'region': "SB",
-        'passPreSel': [True],
         'n': [0],
     }
 
-    # Check if we have the SvB variables and handle accordingly
+    # Check if we have the passPreSel and SvB variables and handle accordingly
     try:
         hist_axes = cfg.hists[0]['hists'][selJets].axes
         axis_names = [axis.name for axis in hist_axes]
 
         logger.debug(f"Histogram axes names: {axis_names}")
 
+        has_passPreSel = 'passPreSel' in axis_names
         has_passSvB = 'passSvB' in axis_names
         has_failSvB = 'failSvB' in axis_names
 
+        if has_passPreSel:
+            dummy_data['passPreSel'] = [True]
+            logger.debug("passPreSel variable found in histogram")
         if has_passSvB or has_failSvB:
             dummy_data['passSvB'] = [False]
             dummy_data['failSvB'] = [False]
@@ -669,6 +673,7 @@ def create_plots(
     except Exception as e:
         logger.warning(f"Error analyzing histogram structure: {e}")
         cfg.hists[0]['hists'][selJets].fill(**dummy_data)
+        has_passPreSel = False
         has_passSvB = False
         has_failSvB = False
 
@@ -681,8 +686,9 @@ def create_plots(
             "year": "UL18",
             "tag": "lowpt_fourTag" if args.lowpt else "fourTag",
             "region": "SB",
-            "passPreSel": True
         }
+        if has_passPreSel:
+            index_dict["passPreSel"] = True
         if has_passSvB:
             index_dict["passSvB"] = False
         if has_failSvB:
@@ -836,7 +842,7 @@ def main():
                         help='Label for the weight set')
     parser.add_argument('-r', dest="weightRegion", default="SB",
                         help='Weight region (e.g. SB for sideband)')
-    parser.add_argument('-c', dest="cut", default="passPreSel",
+    parser.add_argument('-c', dest="cut", default=None,
                         help='Cut to apply (e.g. passPreSel)')
     parser.add_argument('-fix_e', action="store_true",
                         help='Fix the pairEnhancement parameter to 0')

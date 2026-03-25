@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>PourOver — Interactive</title>
+  <style>
+    :root {
+      --cmu-red:      #C41230;
+      --cmu-red-dark: #96001d;
+      --bg-base:      #f5f0ee;
+      --bg-panel:     #ffffff;
+      --bg-toolbar:   #C41230;
+      --bg-term:      #1a1a1a;
+      --bg-term-mid:  #242424;
+      --term-prompt:  #ff8080;
+      --term-muted:   #777;
+      --border:       #d6c8c8;
+      --text-primary: #2a1a1a;
+      --text-muted:   #7a5a5a;
+      --text-link:    #96001d;
+      --hist-w:       210px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Georgia, sans-serif; font-size: 14px;
+           background: var(--bg-base); color: var(--text-primary);
+           display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+    /* ---- header ---- */
+    header { background: var(--bg-toolbar); padding: 6px 16px;
+             display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+    #cmu-logo { height: 104px; width: auto; display: block; flex-shrink: 0; }
+    header h1 { font-size: 54px; color: #fff; font-weight: 600; letter-spacing: 0.5px; }
+    .header-meta { font-size: 24px; color: rgba(255,255,255,0.75); flex: 1; }
+    .btn { cursor: pointer; padding: 6px 14px; border-radius: 5px; border: none;
+           font-size: 13px; transition: opacity 0.15s; text-decoration: none; display: inline-block; }
+    .btn:hover { opacity: 0.85; }
+    .btn-secondary { background: rgba(255,255,255,0.15); color: #fff;
+                     border: 1px solid rgba(255,255,255,0.5); }
+    .btn-accent { background: var(--cmu-red-dark); color: #fff; }
+
+    /* ---- middle row: main figure + history panel ---- */
+    #middle { flex: 1; display: flex; overflow: hidden; background: var(--bg-base); }
+
+    /* ---- main figure area ---- */
+    #main-view { flex: 1; display: flex; flex-direction: column;
+                 align-items: center; justify-content: center;
+                 overflow: hidden; background: var(--bg-base); padding: 16px; }
+
+    /* welcome text shown before first plot */
+    #welcome { font-family: 'Fira Mono', 'Consolas', monospace; font-size: 13px;
+               background: var(--bg-term); color: #a8d8a8;
+               padding: 20px 28px; border-radius: 6px; white-space: pre-wrap;
+               line-height: 1.7; max-width: 680px; width: 100%; }
+    #welcome .dim  { color: var(--term-muted); }
+    #welcome .cmd  { color: #fff; }
+    #welcome .head { color: var(--term-prompt); font-weight: bold; }
+
+    /* main figure */
+    #main-fig { display: none; flex-direction: column; align-items: center;
+                gap: 10px; width: 100%; max-width: 900px;
+                flex: 1; min-height: 0; }
+    #main-img { flex: 1; min-height: 0; width: 100%; object-fit: contain;
+                border-radius: 5px; display: block;
+                cursor: zoom-in; }
+    #main-meta { display: flex; align-items: center; gap: 14px;
+                 font-size: 12px; color: var(--text-muted); width: 100%; }
+    #main-cmd  { font-family: 'Fira Mono','Consolas',monospace; font-size: 12px;
+                 color: var(--term-muted); flex: 1; overflow: hidden;
+                 white-space: nowrap; text-overflow: ellipsis; }
+    #main-meta a { color: var(--text-link); text-decoration: none; font-size: 12px; }
+    #main-meta a:hover { text-decoration: underline; }
+
+    /* error display */
+    #main-error { display: none; font-family: 'Fira Mono','Consolas',monospace;
+                  font-size: 13px; background: #2a0a0a; color: #f88;
+                  padding: 14px 20px; border-radius: 5px; max-width: 700px;
+                  width: 100%; white-space: pre-wrap; }
+
+    /* ---- history panel ---- */
+    #history-panel { width: var(--hist-w); flex-shrink: 0;
+                     border-left: 1px solid var(--border);
+                     background: var(--bg-panel);
+                     display: flex; flex-direction: column; overflow: hidden; }
+    #history-header { font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+                      color: #fff; background: #5a2020;
+                      padding: 6px 10px; flex-shrink: 0; text-transform: uppercase; }
+    #history-list { flex: 1; overflow-y: auto; padding: 8px;
+                    display: flex; flex-direction: column; gap: 8px; }
+    #history-empty { font-size: 11px; color: var(--text-muted); padding: 10px 4px;
+                     text-align: center; line-height: 1.5; }
+
+    .hist-thumb { cursor: pointer; border: 2px solid var(--border); border-radius: 5px;
+                  overflow: hidden; transition: border-color 0.15s; flex-shrink: 0; }
+    .hist-thumb:hover  { border-color: var(--cmu-red); }
+    .hist-thumb.active { border-color: var(--cmu-red); }
+    .hist-thumb img    { width: 100%; display: block; }
+    .hist-thumb-label  { font-size: 10px; color: var(--text-muted); padding: 3px 5px;
+                         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+                         background: var(--bg-panel); border-top: 1px solid var(--border); }
+
+    /* ---- console output panel ---- */
+    #console-wrap { flex-shrink: 0; width: 560px; display: none;
+                    border-left: 1px solid #333; background: var(--bg-term);
+                    display: none; flex-direction: column; }
+    #console-header { display: flex; align-items: center; justify-content: space-between;
+                      padding: 5px 10px; background: #111; flex-shrink: 0;
+                      font-family: 'Fira Mono','Consolas',monospace; font-size: 12px;
+                      color: var(--term-muted); border-bottom: 1px solid #333; }
+    #console-close { cursor: pointer; color: #666; font-size: 16px; line-height: 1;
+                     padding: 0 2px; }
+    #console-close:hover { color: #fff; }
+    #console-scroll { flex: 1; overflow-y: auto; }
+    #console-out  { font-family: 'Fira Mono','Consolas',monospace; font-size: 13px;
+                    color: #a8d8a8; padding: 10px 14px; white-space: pre-wrap;
+                    line-height: 1.6; word-break: break-all; }
+    #console-out .co-cmd  { color: var(--term-prompt); }
+    #console-out .co-text { color: #c8e6c8; }
+    #console-out .co-sep  { color: #333; display: block; margin: 4px 0; }
+
+    /* ---- terminal input bar ---- */
+    #cli-bar { flex-shrink: 0; background: var(--bg-panel);
+               border: 1px solid var(--border); border-radius: 8px;
+               margin: 0 20px 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+               display: flex; flex-direction: column;
+               padding: 10px 16px 8px; gap: 0; }
+    #cli-input-row { display: flex; align-items: center; gap: 10px; }
+    #cli-prompt { font-family: 'Fira Mono','Consolas',monospace;
+                  font-size: 15px; color: var(--cmu-red); white-space: nowrap; }
+    #cli-input  { flex: 1; background: transparent; border: none; outline: none;
+                  font-family: 'Fira Mono','Consolas',monospace;
+                  font-size: 15px; color: var(--text-primary); caret-color: var(--cmu-red); }
+    #cli-input::placeholder { color: #bbb; }
+    #cli-spinner { font-size: 13px; color: var(--text-muted); white-space: nowrap;
+                   min-width: 80px; text-align: right; }
+    /* hints / tab-completion share the same 2-line slot below the input */
+    #cli-below { margin-top: 6px; padding-left: 2px;
+                 height: calc(2 * 1.4em + 4px); overflow: hidden; }
+    #cli-hints { display: flex; gap: 18px;
+                 font-family: 'Fira Mono','Consolas',monospace; font-size: 15px;
+                 color: #bbb; flex-wrap: wrap; }
+    .hint-item { white-space: nowrap; }
+    .hint-key  { color: #999; }
+    #cli-tip   { color: #bbb; font-style: italic; }
+    #cli-tip .hint-key { font-style: normal; }
+    #tab-hint  { display: none; flex-direction: column; gap: 3px; }
+    .tab-row   { display: flex; gap: 14px; overflow: hidden;
+                 font-family: 'Fira Mono','Consolas',monospace; font-size: 15px; }
+    .tab-item        { white-space: nowrap; }
+    .tab-item-prefix { color: var(--term-muted); }
+    .tab-item-suffix { color: var(--cmu-red); font-weight: 600; }
+    .tab-more        { color: var(--term-muted); white-space: nowrap; }
+
+    /* ---- lightbox ---- */
+    #lb { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88);
+          align-items: center; justify-content: center; z-index: 1000; }
+    #lb.active { display: flex; }
+    #lb-img { max-width: 90vw; max-height: 90vh; border-radius: 6px; }
+    #lb-close { position: absolute; top: 14px; right: 20px; font-size: 28px;
+                cursor: pointer; color: #fff; line-height: 1; }
+    #lb-close:hover { color: var(--cmu-red); }
+    #lb-dl { position: absolute; bottom: 20px; right: 20px; }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #d0b8b8; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--cmu-red); }
+  </style>
+</head>
+<body>
+
+<header>
+  <img id="cmu-logo" src="/static/cmu-logo.png" alt="CMU" />
+  <h1>PourOver</h1>
+  <span class="header-meta">{{ session_label if session_label else (input_files | join(', ') + ' &nbsp;|&nbsp; ' + metadata_file) }}</span>
+  <a class="btn btn-secondary" href="/gallery-view">← Gallery</a>
+</header>
+
+<div id="middle">
+
+  <!-- Main figure area -->
+  <div id="main-view">
+    <div id="welcome"></div>
+
+    <div id="main-fig">
+      <img id="main-img" src="" alt="" onclick="openLb(currentPng, currentPdf)" />
+      <div id="main-meta">
+        <span id="main-cmd"></span>
+        <a id="main-pdf" href="#" download>⬇ PDF</a>
+      </div>
+    </div>
+
+    <div id="main-error"></div>
+  </div>
+
+  <!-- Console output panel -->
+  <div id="console-wrap">
+    <div id="console-header">
+      <span>console</span>
+      <span id="console-close" onclick="hideConsole()" title="Hide console">✕</span>
+    </div>
+    <div id="console-scroll"><div id="console-out"></div></div>
+  </div>
+
+  <!-- History panel -->
+  <div id="history-panel">
+    <div id="history-header">History</div>
+    <div id="history-list">
+      <div id="history-empty">Plots will appear<br>here as thumbnails</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Terminal input bar -->
+<div id="cli-bar">
+  <div id="cli-input-row">
+    <span id="cli-prompt">&gt;</span>
+    <input id="cli-input" type="text" autocomplete="off" spellcheck="false"
+           placeholder='plot("selJets.pt", region="SR")' />
+    <span id="cli-spinner"></span>
+  </div>
+  <div id="cli-below">
+    <div id="cli-hints">
+      <span class="hint-item"><span class="hint-key">↑↓</span> history</span>
+      <span class="hint-item"><span class="hint-key">Esc</span> clear</span>
+      <span class="hint-item"><span class="hint-key">Tab</span> complete</span>
+      <span class="hint-item"><span class="hint-key">/</span> focus</span>
+      <span id="cli-tip"></span>
+    </div>
+    <div id="tab-hint"></div>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div id="lb" onclick="closeLb(event)">
+  <span id="lb-close" onclick="closeLb()">✕</span>
+  <img id="lb-img" src="" alt="plot" />
+  <a id="lb-dl" class="btn btn-accent" href="#" download>⬇ PDF</a>
+</div>
+
+<script>
+let axesData    = {};
+let cmdHistory  = [];
+let histIdx     = -1;
+let pending     = '';
+let currentPng  = '';
+let currentPdf  = '';
+let activeThumb = null;
+
+// Tab completion state (two-stage: Tab1 = list, Tab2 = LCP fill)
+let tabMatches       = [];   // current candidate list
+let tabStage         = 0;    // 0 = fresh, 1 = cycling/listed
+let tabKey           = null; // pfx+'\x00'+partial to detect re-typing
+let tabLcpCandidates = null; // subset used for LCP (prefix matches only)
+let tabPage          = 0;    // current page when cycling through overflow completions
+
+const CLI_FUNCS = ['plot(', 'plot2d(', 'ls(', 'info(', 'examples('];
+
+// ---------------------------------------------------------------------------
+// Init
+// ---------------------------------------------------------------------------
+async function init() {
+  const [axesRes, histRes, ihistRes] = await Promise.all([
+    fetch('/axes'), fetch('/cli/history'), fetch('/interactive/history')
+  ]);
+  axesData = await axesRes.json();
+
+  const savedCmds = await histRes.json();
+  if (savedCmds.length) {
+    cmdHistory = savedCmds;   // newest-first from server
+    document.getElementById('cli-input').placeholder = savedCmds[0];
+  }
+
+  const savedPlots = await ihistRes.json();        // newest-first from server
+  if (savedPlots.length) restoreInteractiveHistory(savedPlots);
+
+  buildWelcome();
+  document.getElementById('cli-input').focus();
+}
+
+function restoreInteractiveHistory(items) {
+  // items is newest-first; the most recent becomes the main view,
+  // the rest go into the history panel (also newest-first → top of panel)
+  const [newest, ...older] = items;
+
+  // Populate history panel with older items (they're already newest-first,
+  // so insert in order so the most-recent-of-the-older sits at the top)
+  for (const item of older) {
+    pushToHistory(item.png_url, item.pdf_url, item.cmd, /*isUrl=*/true);
+  }
+
+  // Show the most recent plot in the main view
+  showPlotFromUrl(newest.png_url, newest.pdf_url, newest.cmd);
+}
+
+function buildWelcome() {
+  const vars    = (axesData.variables || []).slice(0, 8).join(', ')
+                + ((axesData.variables || []).length > 8 ? ', …' : '');
+  const regions = (axesData.regions || []).join(', ');
+  const cuts    = (axesData.cuts    || []).join(', ') || '(none)';
+
+  let cmdBlock;
+  if (cmdHistory.length) {
+    const recent = cmdHistory.slice(0, 5);
+    cmdBlock = `<span class="dim">Recent:</span>\n` +
+      recent.map(c => `  <span class="cmd">${escHtml(c)}</span>`).join('\n');
+  } else {
+    cmdBlock =
+      `<span class="dim">Commands:</span>\n` +
+      `  <span class="cmd">plot("var")</span>\n` +
+      `  <span class="cmd">plot("var", region="SB")</span>\n` +
+      `  <span class="cmd">plot("var", region=["SR","SB"])</span>\n` +
+      `  <span class="cmd">plot("var", cut="passPreSel", rebin=2)</span>\n` +
+      `  <span class="cmd">plot("var", doRatio=0, yscale="log", xlim=[0,200])</span>\n` +
+      `  <span class="cmd">plot2d("var", "process", region="SR")</span>`;
+  }
+
+  document.getElementById('welcome').innerHTML =
+    `<span class="head">PourOver — interactive console</span>\n\n` +
+    cmdBlock + `\n\n` +
+    `<span class="dim">Regions  :</span>  ${regions}\n` +
+    `<span class="dim">Cuts     :</span>  ${cuts}\n` +
+    `<span class="dim">Variables:</span>  ${vars}\n\n` +
+    `<span class="dim">↑ / ↓  history    Esc  clear</span>`;
+}
+
+// ---------------------------------------------------------------------------
+// Keyboard
+// ---------------------------------------------------------------------------
+document.getElementById('cli-input').addEventListener('keydown', e => {
+  const input = e.target;
+
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    doTabComplete(input);
+    return;
+  }
+
+  // Any other key resets tab completion
+  if (e.key !== 'Shift') resetTabComplete();
+
+  if (e.key === 'Enter') {
+    const cmd = input.value.trim();
+    if (!cmd) return;
+    cmdHistory.unshift(cmd);
+    input.placeholder = cmd;
+    histIdx = -1; pending = '';
+    input.value = '';
+    runCommand(cmd);
+    return;
+  }
+  if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (histIdx === -1) pending = input.value;
+    if (histIdx < cmdHistory.length - 1) {
+      histIdx++;
+      input.value = cmdHistory[histIdx];
+      setTimeout(() => input.setSelectionRange(input.value.length, input.value.length), 0);
+    }
+    return;
+  }
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (histIdx > 0)        { histIdx--; input.value = cmdHistory[histIdx]; }
+    else if (histIdx === 0) { histIdx = -1; input.value = pending; }
+    return;
+  }
+  if (e.key === 'Escape') {
+    input.value = ''; histIdx = -1; pending = '';
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Tab completion
+// ---------------------------------------------------------------------------
+// Matches: a bare function-name prefix (nothing, or partial like "pl", "plot", "plot2")
+const FUNC_RE   = /^([a-zA-Z_]*)$/;
+// Matches: plot("partial  or  plot2d("partial  (with optional leading spaces)
+const TAB_RE    = /^((?:plot2d|plot)\s*\(\s*")([^"]*)$/;
+// Matches kwarg position: anything ending with comma+spaces then a partial identifier
+const KWARG_RE  = /^((?:plot2d|plot)\s*\(.*,\s*)([a-zA-Z_]*)$/;
+const KWARG_LIST = ['region', 'norm', 'rebin', 'doRatio', 'yscale', 'xlim', 'cut', 'process', 'year'];
+
+function isInsideString(s) {
+  // Count unescaped double-quotes; odd → cursor is inside a string literal
+  return (s.match(/"/g) || []).length % 2 === 1;
+}
+
+function lcp(strs) {
+  if (!strs.length) return '';
+  let p = strs[0];
+  for (const s of strs) { while (!s.startsWith(p)) p = p.slice(0, -1); if (!p) return ''; }
+  return p;
+}
+
+function doTabComplete(input) {
+  const cursorPos = input.selectionStart;
+  const before    = input.value.slice(0, cursorPos);
+  const after     = input.value.slice(cursorPos);
+
+  // 1. Function name completion (must be the only thing typed so far)
+  const fnMatch = FUNC_RE.exec(before);
+  if (fnMatch !== null) {
+    const partial  = fnMatch[1];
+    const matches  = CLI_FUNCS.filter(f => f.startsWith(partial));
+    _twoStage(input, '', partial, after, matches, false);
+    return;
+  }
+
+  // 2. Variable name completion inside plot("...
+  const varMatch = TAB_RE.exec(before);
+  if (varMatch) {
+    const partial   = varMatch[2];
+    const vars      = axesData.variables || [];
+    const pfxMatch  = vars.filter(v => v.startsWith(partial));
+    const subMatch  = partial
+      ? vars.filter(v => !v.startsWith(partial) && v.toLowerCase().includes(partial.toLowerCase()))
+      : [];
+    _twoStage(input, varMatch[1], partial, after, [...pfxMatch, ...subMatch], false, pfxMatch);
+    return;
+  }
+
+  // 3. Kwarg name completion after a comma
+  const kwMatch = KWARG_RE.exec(before);
+  if (kwMatch && !isInsideString(before)) {
+    _twoStage(input, kwMatch[1], kwMatch[2], after,
+              KWARG_LIST.filter(k => k.startsWith(kwMatch[2])), true);
+    return;
+  }
+
+  resetTabComplete();
+}
+
+const TAB_PAGE_SIZE = 16;
+
+function _twoStage(input, pfx, partial, after, matches, addEq, lcpCandidates) {
+  const key = pfx + '\x00' + partial;
+  if (tabKey !== key) {
+    tabKey           = key;
+    tabMatches       = matches;
+    tabLcpCandidates = lcpCandidates || null;
+    tabStage         = 0;
+    tabPage          = 0;
+    if (!matches.length) { resetTabComplete(); return; }
+  }
+  if (!tabMatches.length) return;
+
+  const suffix     = (m) => m + (addEq ? '=' : '');
+  const suffixed   = tabMatches.map(suffix);
+  const totalPages = Math.ceil(suffixed.length / TAB_PAGE_SIZE);
+
+  // Unambiguous: complete immediately
+  if (tabMatches.length === 1) {
+    _fill(input, pfx, suffixed[0], after);
+    setTabHint(suffixed, partial, 0, 1);
+    tabKey = null;
+    return;
+  }
+
+  if (tabStage === 0) {
+    // First Tab: show page 0
+    tabPage  = 0;
+    tabStage = 1;
+    setTabHint(suffixed, partial, 0, totalPages);
+  } else if (totalPages > 1 && tabPage < totalPages - 1) {
+    // More pages remain: advance to next page
+    tabPage++;
+    setTabHint(suffixed, partial, tabPage, totalPages);
+  } else {
+    // Last (or only) page: attempt LCP fill
+    const forLcp = tabLcpCandidates && tabLcpCandidates.length ? tabLcpCandidates : tabMatches;
+    const common = lcp(forLcp.map(suffix));
+    if (common.length > partial.length) {
+      _fill(input, pfx, common, after);
+      tabKey           = pfx + '\x00' + common;
+      tabLcpCandidates = null;
+      tabStage         = 0;
+      tabPage          = 0;
+      setTabHint(suffixed, common, 0, totalPages);
+    }
+    // else: LCP doesn't advance — keep showing current page
+  }
+}
+
+function _fill(input, pfx, completed, after) {
+  input.value = pfx + completed + after;
+  const cur = pfx.length + completed.length;
+  input.setSelectionRange(cur, cur);
+}
+
+function resetTabComplete() {
+  tabMatches = []; tabStage = 0; tabKey = null; tabLcpCandidates = null; tabPage = 0;
+  setTabHint([]);
+}
+
+function setTabHint(matches, typed = '', page = 0, totalPages = 1) {
+  const hintsEl = document.getElementById('cli-hints');
+  const tabEl   = document.getElementById('tab-hint');
+
+  if (!matches.length) {
+    tabEl.style.display   = 'none';
+    tabEl.innerHTML       = '';
+    hintsEl.style.display = 'flex';
+    return;
+  }
+
+  hintsEl.style.display = 'none';
+
+  const start = page * TAB_PAGE_SIZE;
+  const shown = matches.slice(start, start + TAB_PAGE_SIZE);
+  const mid   = Math.ceil(shown.length / 2);
+  const row1  = shown.slice(0, mid);
+  const row2  = shown.slice(mid);
+
+  const renderItem = (m) => {
+    if (!typed) return `<span class="tab-item">${escHtml(m)}</span>`;
+    const idx = m.toLowerCase().indexOf(typed.toLowerCase());
+    if (idx === -1) return `<span class="tab-item">${escHtml(m)}</span>`;
+    const pre  = escHtml(m.slice(0, idx));
+    const hit  = escHtml(m.slice(idx, idx + typed.length));
+    const rest = escHtml(m.slice(idx + typed.length));
+    return `<span class="tab-item"><span class="tab-item-prefix">${pre}</span><span class="tab-item-suffix">${hit}</span>${rest}</span>`;
+  };
+
+  const pageLabel = totalPages > 1 ? `<span class="tab-more">${page + 1}/${totalPages} ↹</span>` : '';
+
+  const makeRow = (items, addLabel) => {
+    const cells = items.map(renderItem).join('');
+    return `<div class="tab-row">${cells}${addLabel ? pageLabel : ''}</div>`;
+  };
+
+  tabEl.innerHTML = makeRow(row1, row2.length === 0) +
+                    (row2.length ? makeRow(row2, true) : '');
+  tabEl.style.display = 'flex';
+}
+
+// ---------------------------------------------------------------------------
+// Command execution
+// ---------------------------------------------------------------------------
+async function runCommand(cmd) {
+  // Client-side only: clear() hides the console panel
+  if (/^\s*clear\s*\(\s*\)\s*$/.test(cmd)) {
+    hideConsole();
+    setSpinner('');
+    return;
+  }
+
+  setSpinner('working…');
+  hideError();
+
+  try {
+    const res  = await fetch('/cli', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({cmd})
+    });
+    const data = await res.json();
+
+    if (data.debug) {
+      console.group(`PourOver debug — ${cmd}`);
+      console.log(data.debug);
+      console.groupEnd();
+    }
+    if (data.error) {
+      showError(data.error);
+    } else if (data.text !== undefined) {
+      appendConsole(cmd, data.text);
+    } else {
+      showPlot(data.png_b64, data.pdf_url, cmd);
+    }
+  } catch (e) {
+    showError('Request failed: ' + e);
+  }
+
+  setSpinner('');
+  pickTip();
+}
+
+// ---------------------------------------------------------------------------
+// Main view
+// ---------------------------------------------------------------------------
+function showPlot(png_b64, pdf_url, cmd) {
+  const imgSrc = `data:image/png;base64,${png_b64}`;
+  _setMainView(imgSrc, pdf_url, cmd);
+}
+
+function showPlotFromUrl(png_url, pdf_url, cmd) {
+  _setMainView(png_url, pdf_url, cmd);
+}
+
+function _setMainView(imgSrc, pdf_url, cmd) {
+  // Push the previous main figure to history (if there was one)
+  if (currentPng) pushToHistory(currentPng, currentPdf, document.getElementById('main-cmd').textContent);
+
+  currentPng = imgSrc;
+  currentPdf = pdf_url;
+
+  document.getElementById('welcome').style.display    = 'none';
+  document.getElementById('main-error').style.display = 'none';
+  document.getElementById('main-fig').style.display   = 'flex';
+
+  document.getElementById('main-img').src          = imgSrc;
+  document.getElementById('main-cmd').textContent  = cmd;
+  document.getElementById('main-pdf').href         = pdf_url;
+
+  if (activeThumb) { activeThumb.classList.remove('active'); activeThumb = null; }
+}
+
+function showError(msg) {
+  document.getElementById('welcome').style.display    = 'none';
+  document.getElementById('main-error').style.display = 'block';
+  document.getElementById('main-error').textContent   = 'Error: ' + msg;
+}
+
+function hideError() {
+  document.getElementById('main-error').style.display = 'none';
+}
+
+// ---------------------------------------------------------------------------
+// History panel
+// ---------------------------------------------------------------------------
+function pushToHistory(imgSrc, pdfUrl, cmd) {
+  const list  = document.getElementById('history-list');
+  const empty = document.getElementById('history-empty');
+  if (empty) empty.remove();
+
+  const thumb = document.createElement('div');
+  thumb.className = 'hist-thumb';
+
+  // Short label: first quoted arg, e.g. plot("selJets.pt",...) → selJets.pt
+  const label = (cmd.match(/"([^"]+)"/) || ['', cmd])[1];
+
+  thumb.innerHTML = `
+    <img src="${imgSrc}" alt="${escHtml(cmd)}" loading="lazy" />
+    <div class="hist-thumb-label" title="${escHtml(cmd)}">${escHtml(label)}</div>`;
+
+  thumb.addEventListener('click', () => restoreFromHistory(thumb, imgSrc, pdfUrl, cmd));
+
+  // Insert newest at top
+  list.insertBefore(thumb, list.firstChild);
+}
+
+function restoreFromHistory(thumb, imgSrc, pdfUrl, cmd) {
+  // Push current main figure back to history first
+  if (currentPng && currentPng !== imgSrc) {
+    pushToHistory(currentPng, currentPdf, document.getElementById('main-cmd').textContent);
+  }
+
+  // Remove the clicked thumbnail
+  thumb.remove();
+  if (activeThumb === thumb) activeThumb = null;
+
+  // Show in main view
+  currentPng = imgSrc;
+  currentPdf = pdfUrl;
+
+  document.getElementById('welcome').style.display    = 'none';
+  document.getElementById('main-error').style.display = 'none';
+  document.getElementById('main-fig').style.display   = 'flex';
+  document.getElementById('main-img').src  = imgSrc;
+  document.getElementById('main-cmd').textContent = cmd;
+  document.getElementById('main-pdf').href = pdfUrl;
+
+  // Pre-populate the CLI input with the command that made this plot
+  const input = document.getElementById('cli-input');
+  input.value = cmd;
+  histIdx = -1; pending = '';
+  input.focus();
+  input.setSelectionRange(input.value.length, input.value.length);
+
+  // Restore empty placeholder if list is now empty
+  const list = document.getElementById('history-list');
+  if (list.children.length === 0) {
+    list.innerHTML = '<div id="history-empty">Plots will appear<br>here as thumbnails</div>';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Utilities
+// ---------------------------------------------------------------------------
+function appendConsole(cmd, text) {
+  const wrap   = document.getElementById('console-wrap');
+  const scroll = document.getElementById('console-scroll');
+  const out    = document.getElementById('console-out');
+  if (out.children.length > 0) {
+    const sep = document.createElement('span');
+    sep.className = 'co-sep';
+    sep.textContent = '─'.repeat(40);
+    out.appendChild(sep);
+  }
+  const cmdLine = document.createElement('div');
+  cmdLine.className = 'co-cmd';
+  cmdLine.textContent = '> ' + cmd;
+  out.appendChild(cmdLine);
+
+  const textLine = document.createElement('div');
+  textLine.className = 'co-text';
+  textLine.textContent = text;
+  out.appendChild(textLine);
+
+  wrap.style.display = 'flex';
+  scroll.scrollTop = scroll.scrollHeight;
+}
+
+function hideConsole() {
+  const wrap = document.getElementById('console-wrap');
+  wrap.style.display = 'none';
+}
+
+function setSpinner(txt) { document.getElementById('cli-spinner').textContent = txt; }
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                  .replace(/"/g,'&quot;');
+}
+
+function openLb(pngUrl, pdfUrl) {
+  document.getElementById('lb-img').src  = pngUrl;
+  document.getElementById('lb-dl').href  = pdfUrl;
+  document.getElementById('lb').classList.add('active');
+}
+
+function closeLb(e) {
+  if (!e || e.target === document.getElementById('lb') ||
+      e.target === document.getElementById('lb-close')) {
+    document.getElementById('lb').classList.remove('active');
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('lb').classList.remove('active');
+  // Press '/' anywhere outside the input to focus the CLI
+  const input = document.getElementById('cli-input');
+  if (e.key === '/' && document.activeElement !== input) {
+    e.preventDefault();
+    input.focus();
+  }
+});
+
+
+// ---------------------------------------------------------------------------
+// Rotating tip shown after the keyboard shortcuts
+// ---------------------------------------------------------------------------
+const TIPS = [
+  // --- region / cut ---
+  'compare regions by specifying a process and passing a list: <span class="hint-key">region=["SB","SR"]</span>',
+  'sum all regions with <span class="hint-key">region="sum"</span>',
+  'apply a cut with <span class="hint-key">cut="passPreSel"</span>',
+  'invert a cut with a ~ prefix: <span class="hint-key">cut="~passPreSel"</span>',
+  'overlay multiple cuts: <span class="hint-key">cut=["passPreSel","passLeadSt"]</span>',
+
+  // --- process / year ---
+  'plot a specific process with <span class="hint-key">process="ttbar"</span>',
+  'compare two processes: <span class="hint-key">process=["ttbar","data"]</span>',
+  'select a specific year with <span class="hint-key">year="UL18"</span>',
+  'overlay multiple years: <span class="hint-key">year=["UL17","UL18"]</span> and select a process',
+  'sum all years with <span class="hint-key">year="sum"</span>',
+
+  // --- axis scaling ---
+  'set the y-axis to log scale with <span class="hint-key">yscale="log"</span>',
+  'set the x-axis to log scale with <span class="hint-key">xscale="log"</span>',
+  'zoom the x-axis with <span class="hint-key">xlim=[0,200]</span>',
+  'set y-axis limits with <span class="hint-key">ylim=[0,5000]</span>',
+  'zoom the ratio panel y-axis with <span class="hint-key">rlim=[0.5,1.5]</span>',
+
+  // --- binning / display ---
+  'rebin histograms with <span class="hint-key">rebin=4</span>',
+  'include under/overflow in edge bins with <span class="hint-key">add_flow=1</span>',
+  'change histogram style with <span class="hint-key">histtype="step"</span> (step, fill, errorbar, bar)',
+
+  // --- normalisation / ratio ---
+  'normalise all processes to unit area with <span class="hint-key">norm=1</span>',
+  'hide the ratio panel with <span class="hint-key">doRatio=0</span>',
+  'normalise and compare shapes: <span class="hint-key">norm=1, doRatio=1</span>',
+
+  // --- legend / labels ---
+  'move the legend with <span class="hint-key">legend_loc="upper left"</span>',
+
+
+  // --- 2D plots ---
+  'set the 2D colour-axis range with <span class="hint-key">zlim=[0,100]</span>',
+
+  // --- discovery / help ---
+  'list available variables with <span class="hint-key">ls()</span>',
+  'filter the variable list: <span class="hint-key">ls("mass")</span>',
+  'print config summary with <span class="hint-key">info()</span>',
+  'see more example commands with <span class="hint-key">examples()</span>',
+
+  // --- combining axes ---
+  'any axis (cut, region, year, process) accepts a list to create overlays',
+];
+
+function pickTip() {
+  const tip = TIPS[Math.floor(Math.random() * TIPS.length)];
+  document.getElementById('cli-tip').innerHTML = '— ' + tip;
+}
+pickTip();
+
+init();
+</script>
+
+</body>
+</html>

@@ -6,6 +6,7 @@ main:
   module: evaluate
   option:
     - --max-evaluators 3
+    - --device cuda cpu # use GPU if available, fall back to CPU
 
 model:
   - module: HCR.SvB.ggF.baseline.Eval
@@ -15,11 +16,11 @@ model:
       - "{model}/result.json"
 
 dataset:
-  - module: HCR.SvB.Eval
+  - module: HCR.SvB_lowpt.Eval
     option:
-      - --metadata datasets_HH4b_2024_v2
+      - --metadata coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/datasets_HH4b_2024_v2
       - --max-workers 8
-      - --friends "" metadata/datasets_HH4b_2024_v2_classifier_input.json@@HCR_input
+      - --friends "" coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/datasets_HH4b_2024_v2_classifier_input.json@@HCR_input_lowpt
 
 analysis:
   - module: kfold.Merge

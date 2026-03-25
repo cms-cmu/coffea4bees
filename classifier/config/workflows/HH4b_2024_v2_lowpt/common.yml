@@ -15,7 +15,7 @@ setting:
           # UL16 skim is incomplete.
   - module: HCR.InputBranch
     option:
-      - feature_ancillary: [xW, nSelJets, xbW]
+      - feature_ancillary: [xW, nSelJets_lowpt, xbW]
       # remove the "year" from the input when the dataset only contains one year
       # otherwise the variance will be infinite and the output will be NaN
   ##########################################################

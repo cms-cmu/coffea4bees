@@ -2,7 +2,6 @@ runner:
   workers: 4
   worker_memory: 5GB
   # worker_memory: 7GB
-  friend_metafile: classifier_inputs_friend
   # friend_base: hists/local/ 
   # chunksize: 10000
   chunksize: 100000

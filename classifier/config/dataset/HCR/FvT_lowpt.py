@@ -14,7 +14,10 @@ if TYPE_CHECKING:
 
 
 def _common_selection(df: pd.DataFrame):
-    return (df["SB"] | df["SR"]) & (df["lowpt_fourTag"] | df["lowpt_threeTag"])
+    sb_sr = df["SB"] | df["SR"]
+    lowpt_tag = df["lowpt_fourTag"] | df["lowpt_threeTag"]
+    sel = sb_sr & lowpt_tag
+    return sel
 
 
 def _data_selection(df: pd.DataFrame):
@@ -78,7 +81,7 @@ class Train(CommonTrain):
             "lowpt_threeTag",
             "lowpt_fourTag",
             "passHLT",
-            "nSelJets",
+            "nSelJets_lowpt",
             "weight",
             Columns.event,
             "CanJet_pt",
@@ -111,9 +114,11 @@ class Train(CommonTrain):
                     _group.fullmatch(
                         parse.split_nonempty(opts[0], ","),
                         processors=[partial(
-                            apply_JCM_from_list, 
+                            apply_JCM_from_list,
                             path=opts[1],
-                            selected_col="lowpt_threeTag"  # Use threeTag, not lowpt_threeTag
+                            n_jets_col="nSelJets_lowpt",
+                            selected_col="lowpt_threeTag",
+                            start=1,
                         )],
                     )
                 )

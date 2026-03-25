@@ -1,9 +1,9 @@
 analysis_plot_coffea4bees:    
   stage: plot 
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs: 
-    - setup_workspace
+    - setup_coffea4bees
     - tools_merge_test_coffea4bees
   script:
     - source coffea4bees/scripts/analysis-plot.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -14,9 +14,9 @@ analysis_plot_coffea4bees:
 analysis_unsup_plot_coffea4bees:
   stage: plot 
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs: 
-    - setup_workspace
+    - setup_coffea4bees
     - analysis_unsup_test_coffea4bees
   script:
     - source coffea4bees/scripts/analysis-unsup-plot.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -27,9 +27,9 @@ analysis_unsup_plot_coffea4bees:
 # analysis_truthStudy_plot_coffea4bees:
 #   stage: plot 
 #   extends:
-#     - .base_analysis
+#     - .base_analysis_coffea4bees
 #   needs: 
-#     - setup_workspace
+#     - setup_coffea4bees
 #     - analysis_truthStudy_test_coffea4bees
 #   script:
 #     - source coffea4bees/scripts/analysis-truthStudy-plot.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -40,9 +40,9 @@ analysis_unsup_plot_coffea4bees:
 analysis_iplot_coffea4bees:
   stage: plot 
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs:
-    - setup_workspace
+    - setup_coffea4bees
     - tools_merge_test_coffea4bees
   script:
     - source coffea4bees/scripts/analysis-iplot.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -50,9 +50,9 @@ analysis_iplot_coffea4bees:
 code_plot_test_coffea4bees:
   stage: plot
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs: 
-    - setup_workspace
+    - setup_coffea4bees
     - tools_merge_test_coffea4bees
   script:
     - source coffea4bees/scripts/code-plot-test.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -60,12 +60,21 @@ code_plot_test_coffea4bees:
     paths:
       - output/code_plot_test/test_dumpPlotCounts.yml
 
+code_pourover_test_coffea4bees:
+  stage: plot
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+  script:
+    - source coffea4bees/scripts/code-pourover-test.sh
+
 synthetic_dataset_plot_coffea4bees:
   stage: plot
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs: 
-    - setup_workspace
+    - setup_coffea4bees
     - synthetic_dataset_cluster_coffea4bees
   script:
     - source coffea4bees/scripts/synthetic-dataset-plot.sh --output-base /builds/$CI_PROJECT_PATH/output
@@ -76,9 +85,9 @@ synthetic_dataset_plot_coffea4bees:
 mixeddata_study_hemispheres_coffea4bees:
   stage: plot
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   needs:
-    - setup_workspace
+    - setup_coffea4bees
     - mixeddata_cluster_coffea4bees
   script:
     - source coffea4bees/scripts/mixeddata-study-hemispheres.sh --output-base /builds/$CI_PROJECT_PATH/output

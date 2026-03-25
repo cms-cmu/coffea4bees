@@ -366,16 +366,18 @@ def _apply_ml_scores(
             )
             compute_SvB(selev, tmp_mask, SvB=classifier_SvB, SvB_MA=classifier_SvB_MA, doCheck=False)
 
-        quadJet["SvB_q_score"] = np.concatenate([
-            selev.SvB.q_1234[:, np.newaxis],
-            selev.SvB.q_1324[:, np.newaxis],
-            selev.SvB.q_1423[:, np.newaxis],
-        ], axis=1)
-        quadJet["SvB_MA_q_score"] = np.concatenate([
-            selev.SvB_MA.q_1234[:, np.newaxis],
-            selev.SvB_MA.q_1324[:, np.newaxis],
-            selev.SvB_MA.q_1423[:, np.newaxis],
-        ], axis=1)
+        if "SvB" in selev.fields:
+            quadJet["SvB_q_score"] = np.concatenate([
+                selev.SvB.q_1234[:, np.newaxis],
+                selev.SvB.q_1324[:, np.newaxis],
+                selev.SvB.q_1423[:, np.newaxis],
+            ], axis=1)
+        if "SvB_MA" in selev.fields:
+            quadJet["SvB_MA_q_score"] = np.concatenate([
+                selev.SvB_MA.q_1234[:, np.newaxis],
+                selev.SvB_MA.q_1324[:, np.newaxis],
+                selev.SvB_MA.q_1423[:, np.newaxis],
+            ], axis=1)
 
     return apply_FvT
 
@@ -462,15 +464,25 @@ def create_cand_jet_dijet_quadjet(
         Output dictionary for processing. Defaults to None.
     isRun3 : bool, optional
         Whether to apply Run 3-specific selection criteria. Defaults to False.
+        Overridden by ``cand_cfg['quadjet_selection']['mode']`` when present.
     cand_cfg : dict, optional
         Thresholds loaded from candidates_selection_thresholds.yml.
         If None, hard-coded defaults are used.
+        ``quadjet_selection.mode`` ('run2' or 'run3') controls which quadjet
+        selection algorithm is used, taking precedence over ``isRun3``.
 
     Returns:
     --------
     selev : ak.Array
         Events with candidate jet, dijet, quadjet, and region fields added.
     """
+    # Resolve quadjet selection mode: YAML key takes precedence over isRun3 flag
+    _mode = (cand_cfg or {}).get('quadjet_selection', {}).get('mode')
+    if _mode == 'run3':
+        isRun3 = True
+    elif _mode == 'run2':
+        isRun3 = False
+
     selev = cand_jet_selection(selev, include_lowptjets, cand_cfg=cand_cfg)
     selev["v4j"] = selev.canJet.sum(axis=1)
 

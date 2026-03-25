@@ -1,0 +1,20 @@
+runner:
+  workers: 1
+  worker_memory: 6GB
+
+config:
+  blind: false
+  apply_FvT: false
+  apply_MvD: true
+  year_override: true
+  plot_ttbar_with_MvD_weights: true
+  apply_JCM: true
+  hist_cuts : ["highMvD"]
+  JCM_file: coffea4bees/analysis/weights/JCM/Run3_MvD/jetCombinatoricModel_SB_.yml
+  apply_trigWeight: true
+  apply_btagSF: true
+  apply_boosted_veto: false
+  run_SvB: false
+  SvB   : 'coffea4bees/analysis/weights/pytorch_models/2024_HHUL/SvB_HCR_8_np753_seed13_lr0.01_epochs20_offset*_epoch20.pkl'
+  SvB_MA: 'coffea4bees/analysis/weights/pytorch_models/2024_HHUL/SvB_MA_HCR+attention_8_np1061_seed13_lr0.01_epochs20_offset*_epoch20.pkl'
+  top_reconstruction: fast

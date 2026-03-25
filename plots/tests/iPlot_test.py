@@ -23,7 +23,7 @@ class iPlotTestCase(unittest.TestCase):
 
     def do_plots(self):
 
-        args     = {"var": "v4j.*", "region": "SR", "cut": "passPreSel"}
+        args     = {"var": "v4j.*", "region": "SR", "cut": None}
         doRatio  = {"doRatio": 1}
         norm     = {"norm": 1}
         logy     = {"yscale": "log"}
@@ -63,18 +63,18 @@ class iPlotTestCase(unittest.TestCase):
         print(f"plot with {args | doRatio | norm | rlim | rebin}")
         plot(**(args | doRatio | norm | rlim | rebin))
 
-        manyCuts = {"cut": ["passPreSel", "failSvB", "passSvB"],
+        manyCuts = {"cut": ["failSvB", "passSvB"],
                     "process": "data"}
         print(f"plot with {args | doRatio | norm | rlim | manyCuts}")
         plot(**(args | doRatio | norm | rlim | manyCuts))
 
-        manyRegions = {"cut": ["passPreSel", "failSvB", "passSvB"],
+        manyRegions = {"cut": ["failSvB", "passSvB"],
                        "process": "data"}
         print(f"plot with {args | doRatio | norm | rlim | manyRegions}")
         plot(**(args | doRatio | norm | rlim | manyRegions))
 
         args2d = {"var": "quadJet_min_dr.close_vs_other_m", "region": "SR",
-                  "cut": "passPreSel", "process": "data"}
+                  "cut": None, "process": "data"}
         full = {"full": True}
         print(f"plot with {args2d}")
         plot2d(**args2d)
@@ -82,25 +82,33 @@ class iPlotTestCase(unittest.TestCase):
         print(f"plot with {args2d | full}")
         plot2d(**(args2d | full))
 
-        manyProcs = {"cut": "passPreSel",
+        manyProcs = {"cut": None,
                      "process": ["data","HH4b","TTbar"]}
         print(f"plot with {args | doRatio | norm | rlim | manyProcs}")
         plot(**(args | doRatio | norm | rlim | manyProcs))
 
-        manyVars = {"cut": "passPreSel",
+        manyVars = {"cut": None,
                     "var": ["canJet0.pt","canJet1.pt","canJet2.pt","canJet3.pt"],
                     "process": "data"}
         print(f"plot with {args | doRatio | norm | rlim | manyVars}")
         plot(**(args | doRatio | norm | rlim | manyVars))
 
 
-        manyYears = {"cut": "passPreSel",
+        manyYears = {"cut": None,
                      "var": "canJet0.pt",
                      "year":  ["UL16_preVFP","UL16_postVFP","UL17","UL18"],
                      "process": "data"}
         print(f"plot with {args | doRatio | norm | rlim | manyYears}")
         plot(**(args | doRatio | norm | rlim | manyYears))
 
+
+        uniform = {"uniform_bins": True}
+        print(f"plot with uniform_bins")
+        plot(**({"var": "v4j.mass", "region": "SR", "cut": None} | uniform))
+
+        manyRegions_axis = {"region": ["SR", "SB"], "process": "data"}
+        print(f"plot with region list overlay")
+        plot(**({"var": "v4j.mass", "cut": None} | manyRegions_axis))
 
         args["var"] = "v4j.mass"
         invalid_region = {"region": "InvalidRegion"}
@@ -142,7 +150,7 @@ class iPlotTestCase(unittest.TestCase):
         cfg.set_hist_key("hists")
 
         args    = {"var": "v4j.*", "region": "SR",
-                   "cut": "passPreSel", "process": "data"}
+                   "cut": None, "process": "data"}
 
         doRatio = {"doRatio": 1}
         norm    = {"norm": 1}

@@ -1,61 +1,37 @@
-import os
-username = os.getenv("USER", "coffea4bees_default")
-
 rule analysis_processor:
     output: "{output_file}"
-    # container: config["analysis_container"]
+    # container: config.get("analysis_container", "")
     params:
         datasets = "",
         years = "",
-        metadata = "coffea4bees/analysis/metadata/HH4b_noJCM.yml",
+        config = "coffea4bees/analysis/metadata/HH4b_noJCM.yml",
         processor = "coffea4bees/analysis/processors/processor_HH4b.py",
         datasets_file = config.get("datasets", "datasets/"),
         blind = False,
         run_performance = False,
+        friends = "",
+        run_on_condor = False,
         extra_arguments = "",
-        username = username
+        run_container_wrapper = ""  ###include ./run_container for condor 
     log: "output/logs/analysis_processor_{output_file}.log"
     shell:
         """
-        mkdir -p $(dirname {log})
-        mkdir -p /tmp/{params.username}/
-        
-        # Set matplotlib config directory to avoid permission issues
-        export MPLCONFIGDIR="/tmp/{params.username}/matplotlib"
-        mkdir -p $MPLCONFIGDIR
-        
-        # Prepare metadata file
-        meta_tmp="/tmp/{params.username}/metadata_$(basename {output} .coffea).yml"
-        if [ "{params.blind}" = "True" ]; then
-            echo "Blinding SR region"
-            sed 's/blind.*/blind: true/' {params.metadata} > $meta_tmp
-        else
-            cp {params.metadata} $meta_tmp
-        fi
-        
-        echo "Running with this metadata file" 2>&1 | tee {log}
-        cat $meta_tmp 2>&1 | tee -a {log}
-        echo "Running {params.datasets} {params.years} - output {output}" 2>&1 | tee -a {log}
-        
-        # Set up performance monitoring
-        mprofile_dat="/tmp/{params.username}/mprofile_$(basename {log} .log).dat"
-        mprofile_png="output/performance/mprofile_$(basename {log} .log).png"
-        
-        # Run analysis with optional performance monitoring
-        cmd="python runner.py -d {params.datasets} -p {params.processor} -y {params.years} -o $(basename {output}) -op $(dirname {output})/ -m {params.datasets_file} -c $meta_tmp {params.extra_arguments}"
-        if [ "{params.run_performance}" = "True" ]; then
-            cmd="mprof run -C -o $mprofile_dat $cmd"
-        fi
-        
-        echo $cmd 2>&1 | tee -a {log}
-        eval ./run_container $cmd 2>&1 | tee -a {log}
-        
-        # Generate performance plot if requested
-        if [ "{params.run_performance}" = "True" ]; then
-            echo "Running performance analysis" 2>&1 | tee -a {log}
-            mkdir -p output/performance/
-            mprof plot -o $mprofile_png $mprofile_dat 2>&1 | tee -a {log}
-        fi
+        {params.run_container_wrapper} bash coffea4bees/scripts/run-analysis-processor.sh \
+            --processor {params.processor} \
+            --config {params.config} \
+            --dataset-metadata {params.datasets_file} \
+            --datasets "{params.datasets}" \
+            --friends "{params.friends}" \
+            --year {params.years} \
+            --output-filename $(basename {output}) \
+            --output-base $(dirname {output}) \
+            --log {log} \
+            --tmpdir {resources.tmpdir} \
+            --no-test \
+            $([ "{params.blind}" = "True" ] && echo "--blind") \
+            $([ "{params.run_on_condor}" = "True" ] && echo "--condor") \
+            $([ "{params.run_performance}" = "True" ] && echo "--run-performance") \
+            --additional-flags {params.extra_arguments}
         """
 
 
@@ -68,14 +44,15 @@ rule merging_coffea_files:
     log: "logs/merging_coffea_files_{output_file}.log"
     shell:
         """
-        # Set matplotlib config directory to avoid permission issues
-        mkdir -p /tmp/barista/
+        # export PYTHONPATH="$$PYTHONPATH:$$(pwd)/src"
+        # # Set matplotlib config directory to avoid permission issues
+        # mkdir -p /tmp/barista/
         
-        # Set matplotlib and fontconfig directories to avoid permission issues
-        export MPLCONFIGDIR="/tmp/barista/matplotlib"
-        export FONTCONFIG_PATH="/tmp/barista/fontconfig"
-        mkdir -p $MPLCONFIGDIR
-        mkdir -p $FONTCONFIG_PATH
+        # # Set matplotlib and fontconfig directories to avoid permission issues
+        # export MPLCONFIGDIR="/tmp/barista/matplotlib"
+        # export FONTCONFIG_PATH="/tmp/barista/fontconfig"
+        # mkdir -p $MPLCONFIGDIR
+        # mkdir -p $FONTCONFIG_PATH
         
         echo "Merging all the coffea files" 2>&1 | tee -a {log}
         cmd="mprof run -C -o /tmp/mprofile_merge_$(basename {log} .log).dat python src/tools/merge_coffea_files.py -f {input} -o {output}"

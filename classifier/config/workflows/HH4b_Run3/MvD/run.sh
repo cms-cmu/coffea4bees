@@ -36,3 +36,4 @@ fi
     template "{model: ${MODEL}, MvD: ${MvD}}" $WFS/evaluate.yml \
     -from $WFS/../common.yml \
     -setting Monitor "address: :${port}"
+

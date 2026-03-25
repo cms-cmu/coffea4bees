@@ -11,8 +11,8 @@ setting:
       - eras:
           2022_EE: [E, F, G]
           2022_preEE: [B, C, D]
-          2023_BPix: [D, E]
-          2023_preBPix: [A, B, C, D, E, F]                        
+          2023_BPix: [D1, D2]
+          2023_preBPix: [C01, C02, C11, C12, C3, C4]
           # only use UL18 data for 2024_v2 test.
           # JCM for UL17 looks broken.
           # UL16 skim is incomplete.

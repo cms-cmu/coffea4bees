@@ -1,0 +1,20 @@
+# Requirements for pourOver.py
+# Install on top of the barista analysis environment:
+#
+#   python -m venv ~/python-environments/pourover
+#   source ~/python-environments/pourover/bin/activate
+#   pip install -r coffea4bees/plots/requirements-pourover.txt
+#   pip install -e .    # install barista src/ as editable package
+#
+# For the full pinned list of analysis dependencies see plot_requirements.txt
+
+# Requires Python 3.10 (coffea 0.7.x is not compatible with Python 3.11+)
+# python3.10 -m venv ~/python-environments/pourover
+flask>=2.0
+matplotlib>=3.7
+mplhep>=0.3
+coffea==0.7.22
+hist==2.7.2
+awkward==1.10.5
+numpy==1.23.5
+PyYAML

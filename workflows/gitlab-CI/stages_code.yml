@@ -1,21 +1,21 @@
 code_analysis_helpers_cofffea4bees:
   stage: code
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/code-analysis-helpers.sh
 
 code_jet_clustering_coffea4bees:
   stage: code
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/code-jet-clustering.sh
 
 code_hemisphere_mixing_coffea4bees:
   stage: code
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/code-hemisphere-mixing.sh
 
@@ -23,6 +23,6 @@ code_hemisphere_mixing_coffea4bees:
 code_trig_emulator_coffea4bees:
   stage: code
   extends:
-    - .base_analysis
+    - .base_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/code-trig-emulator.sh
