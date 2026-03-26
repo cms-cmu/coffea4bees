@@ -29,10 +29,13 @@ module analysis:
     snakefile: "rules/analysis.smk"
     config: config
 
+config.setdefault('jcm_config', "coffea4bees/analysis/jcm_tools/metadata/mixeddata_all_config_Run3.yml")
+
 rule all:
     input:
         f"{out}histAll_Run3MvD{config['label']}.coffea",
-        f"{out}classifier_inputs_Run3MvD{config['label']}.json"
+        f"{out}classifier_inputs_Run3MvD{config['label']}.json",
+        f"{out}jcm_for_mixed_all/jetCombinatoricModel_SB_.yml"
 
 # ── Histograms ────────────────────────────────────────────────────────────────
 # Use __ (double underscore) as separator between dataset and year to avoid
@@ -68,6 +71,31 @@ use rule merging_coffea_files from analysis as merge_histograms with:
     params:
         run_performance = False
     log: f"{out}logs/merge_histograms.log"
+
+# ── JCM fitting ───────────────────────────────────────────────────────────────
+
+rule make_JCM_Run3MvD:
+    input: f"{out}histAll_Run3MvD{config['label']}.coffea"
+    output: f"{out}jcm_for_mixed_all/jetCombinatoricModel_SB_.yml"
+    container: config['analysis_container']
+    params:
+        output_dir = f"{out}jcm_for_mixed_all/",
+        jcm_config = config['jcm_config'],
+        extra_arguments = "",
+    log: f"{out}logs/make_JCM_Run3MvD.log"
+    shell:
+        """
+        export MPLCONFIGDIR="/tmp/matplotlib"
+        mkdir -p $MPLCONFIGDIR
+        echo "Computing JCM for mixed_all Run3MvD" 2>&1 | tee -a {log}
+        python coffea4bees/analysis/jcm_tools/make_jcm_weights.py \
+            -o {params.output_dir} \
+            -i {input} \
+            -r SB \
+            --jcm_config {params.jcm_config} \
+            {params.extra_arguments} 2>&1 | tee -a {log}
+        ls {params.output_dir} 2>&1 | tee -a {log}
+        """
 
 # ── Classifier inputs ─────────────────────────────────────────────────────────
 

@@ -5,6 +5,7 @@ runner:
   # friend_base: hists/local/
   # chunksize: 10000
   chunksize: 100000
+  worker_log_directory: dask_log
 
 config:
   blind: false
@@ -15,5 +16,5 @@ config:
   run_SvB: false
   top_reconstruction: fast
   fill_histograms: false
-  make_classifier_input: root://cmseos.fnal.gov//store/user/jda102/XX4b/Run3ClassiferInputs
+  make_classifier_input: root://cmseos.fnal.gov//store/user/jda102/XX4b/Run3ClassiferInputs_quadjet_run2
   candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_quadjet_run2.yml"
