@@ -73,9 +73,11 @@ def filling_nominal_histograms(
     # Jets
     skip_jet_list = ['energy', 'deepjet_c']
     fill += Jet.plot(("selJets", "Selected Jets"), "selJet", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
+    fill += Jet.plot(("selJetsRun2", "Selected Jets (Run 2 criteria)"), "selJetRun2", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
+    fill += Jet.plot(("tagJets", "Tag Jets"), "tagJet", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
+    fill += Jet.plot(("tagJetsRun2", "Tag Jets (Run 2 criteria)"), "tagJetRun2", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
     fill += Jet.plot(("canJets", "Higgs Candidate Jets"), "canJet", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
     fill += Jet.plot(("othJets", "Other Jets"), "notCanJet_coffea", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
-    fill += Jet.plot(("tagJets", "Tag Jets"), "tagJet", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
 
     # Make quad jet hists
     fill += LorentzVector.plot_pair(("v4j", R"$HH_{4b}$"), "v4j", skip=["n", "dr", "dphi", "st"], bins={"mass": (120, 0, 1200)})

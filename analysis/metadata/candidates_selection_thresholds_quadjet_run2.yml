@@ -37,5 +37,5 @@ svb:
   passSvB_min: 0.80
   failSvB_max: 0.05
 
-#quadjet_selection:
-#  mode: run2   # run2 or run3; overrides the isRun3 processor flag when set
+quadjet_selection:
+  mode: run2   # run2 or run3; overrides the isRun3 processor flag when set

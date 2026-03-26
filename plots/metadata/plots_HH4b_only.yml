@@ -1,0 +1,10 @@
+hists:
+        HH4b:
+                process: GluGluToHHTo4B_cHHH1
+                tag: fourTag
+                label: HH4b (x100)
+                edgecolor: "#e42536"
+                fillcolor: "#e42536"            
+                histtype: step
+                scalefactor: 100
+                

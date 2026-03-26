@@ -16,10 +16,10 @@ create_output_directory "$OUTPUT_DIR"
 
 # Modify the config file
 display_section_header "Modifying config"
-JOB_CONFIG=coffea4bees/analysis/metadata/HH4b_signals.yml
+JOB_CONFIG=$OUTPUT_DIR/HH4b_FSR_config.yml
 # JOB_CONFIG=$OUTPUT_DIR/HH4b_signals.yml
-# sed -e "s|hist_cuts: .*|hist_cuts: [ passPreSel, passSvB, failSvB ]|" \
-    # coffea4bees/analysis/metadata/HH4b_signals.yml > $JOB_CONFIG
+sed -e "s|apply_trigWeight: .*|apply_trigWeight: false|" \
+     coffea4bees/analysis/metadata/HH4b_signals.yml > $JOB_CONFIG
 cat $JOB_CONFIG; echo
 
 
