@@ -10,17 +10,17 @@ class jetCombinatoricModel:
     def __init__(self, filename, cut='passPreSel', zero_npt=False, nbt=3, maxPseudoTags=12, lowpt_mode=False, used_stored_weights=False):
         """
         Initialize the jet combinatoric model with parameters from a file.
-        
+
         :param filename: Path to the parameter file (txt or yaml format).
         :param cut: The cut to apply for the model (default is 'passPreSel').
         :param zero_npt: If True, will return zero pseudo-tags for all events.
         :param nbt: Number of baseline b-tags (default is 3).
         :param maxPseudoTags: Maximum number of pseudo-tags (default is 12).
         :param lowpt_mode: If True, model lowpt jets becoming lowpt tags (default is False).
-        
+
         Standard mode: Models light jets becoming b-tags (3tag → 4tag)
         Lowpt mode: Models lowpt jets becoming lowpt tags (3tag+0lowpt → 3tag+≥1lowpt)
-        
+
         Both modes use the same enhancement logic: enhance when total tags (nbt + npt) is even.
         """
         self.filename = filename
@@ -32,7 +32,7 @@ class jetCombinatoricModel:
         self.used_stored_weights = used_stored_weights
         self.read_parameter_file()
         self._rng = Squares(("JCM", "pseudo tag"))
-        
+
         logging.info(f"JCM initialized in {'lowpt' if lowpt_mode else 'standard'} mode with cut={cut}")
 
     def read_parameter_file(self):
@@ -47,11 +47,11 @@ class jetCombinatoricModel:
                         self.data[words[0]] = float(words[1])
                     else:
                         self.data[words[0]] = ' '.join(words[1:])
-
-            self.p = self.data[f'pseudoTagProb_{self.cut}']
-            self.e = self.data[f'pairEnhancement_{self.cut}']
-            self.d = self.data[f'pairEnhancementDecay_{self.cut}']
-            self.t = self.data[f'threeTightTagFraction_{self.cut}']
+            cut_suffix = f'_{self.cut}' if self.cut else ''
+            self.p = self.data[f'pseudoTagProb{cut_suffix}']
+            self.e = self.data[f'pairEnhancement{cut_suffix}']
+            self.d = self.data[f'pairEnhancementDecay{cut_suffix}']
+            self.t = self.data[f'threeTightTagFraction{cut_suffix}']
 
         else:
             self.data = yaml.safe_load(open(self.filename, 'r'))
@@ -72,13 +72,13 @@ class jetCombinatoricModel:
     def __call__(self, num_untagged_jets, event=None):
         """
         Apply JCM weights to events.
-        
-        :param jets: 
+
+        :param jets:
             - Standard mode: num_untagged_jets (jets that aren't b-tagged)
             - Lowpt mode: lowpt_jets (jets that could become lowpt tags)
         :param event: Optional event number for reproducible random generation
         :return: (w, npt) where w is the event weight and npt is number of pseudo-tags
-        
+
         Physics:
         - Standard: 3 regular tags + pseudo-tags from light jets
         - Lowpt: 3 regular tags + lowpt tags from lowpt jets
@@ -87,13 +87,13 @@ class jetCombinatoricModel:
         nEvent = len(num_untagged_jets)
         maxPseudoTags = self.maxPseudoTags
         nbt = self.nbt  # number of baseline b-tags (always 3)
-        
+
         # Number of jets that could become pseudo-tags
         # Standard mode: light jets (nlt)
         # Lowpt mode: lowpt jets (also called nlt internally)
         # nlt = ak.to_numpy(ak.num(jets, axis=1))
         nlt = ak.to_numpy(num_untagged_jets)  # number of light jets
-        
+
         # Pre-compute pseudo-tag probability table for all possible light jet counts
         # Use np.max with default value for empty arrays
         max_nlt = np.max(nlt, initial=0) if nlt.size > 0 else 0
