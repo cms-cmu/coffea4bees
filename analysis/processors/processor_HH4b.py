@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import logging
+import sys
 import warnings
 from collections import OrderedDict
 from contextlib import contextmanager, nullcontext
@@ -344,6 +345,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         with self._stage("load_friend_SvB"):
             if self.run_SvB:
                 self.load_SvB(event)
+                if "SvB_MA" not in event.fields:
+                    logging.warning("SvB_MA not available after load_SvB — disabling run_SvB for this chunk.")
+                    self.run_SvB = False
 
         with self._stage("load_JCM_friends"):
             if self.config["isDataForMixed"]:
@@ -537,16 +541,19 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         # Blind data in fourTag SR
         if not (self.config["isMC"] or "mix_v" in self.dataset) and self.blind:
             with self._stage(f"{label}:blinding"):
-                blind_flag = ~(selev["quadJet_selected"].SR & (selev["SvB_MA"].ps_hh > 0.5) & selev.fourTag)
-                blind_sel = np.full(len(event), True)
-                blind_sel[analysis_selections] = blind_flag
-                selections.add('blind', blind_sel)
-                allcuts.append('blind')
-                if not shift_name:
-                    sel_mask = selections.all(*allcuts)
-                    self.fill_cutflow_with_and_without_trig("blind", event[sel_mask], weights, sel_mask)
-                analysis_selections = selections.all(*allcuts)
-                selev = selev[blind_flag]
+                if "SvB_MA" not in selev.fields:
+                    logging.warning("Blinding requires SvB_MA but it is not available — skipping blinding for this chunk.")
+                else:
+                    blind_flag = ~(selev["quadJet_selected"].SR & (selev["SvB_MA"].ps_hh > 0.5) & selev.fourTag)
+                    blind_sel = np.full(len(event), True)
+                    blind_sel[analysis_selections] = blind_flag
+                    selections.add('blind', blind_sel)
+                    allcuts.append('blind')
+                    if not shift_name:
+                        sel_mask = selections.all(*allcuts)
+                        self.fill_cutflow_with_and_without_trig("blind", event[sel_mask], weights, sel_mask)
+                    analysis_selections = selections.all(*allcuts)
+                    selev = selev[blind_flag]
 
         with self._stage(f"{label}:final_weights"):
             # Add weights to selected events

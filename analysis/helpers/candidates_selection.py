@@ -419,7 +419,7 @@ def _assign_output_vars(selev, diJet, quadJet, run_SvB, cand_cfg):
     })
 
     svb_cfg = (cand_cfg or {}).get('svb', {})
-    if run_SvB:
+    if run_SvB and "SvB_MA" in selev.fields:
         selev["passSvB"] = selev["SvB_MA"].ps > svb_cfg.get('passSvB_min', 0.80)
         selev["failSvB"] = selev["SvB_MA"].ps < svb_cfg.get('failSvB_max', 0.05)
 
