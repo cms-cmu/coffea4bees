@@ -6,6 +6,7 @@ This is a list of the workflows using Snakemake that we are using:
 
  * Snakefile_reana: The workflow we use to launch the reana jobs.
  * Snakefile_binoptimization: workflow to test the bin optimization of the SvB variable.
+ * [Snakefile_classifier_inputs_Run3MvD](Snakefile_classifier_inputs_Run3MvD.md): Generate Run3 classifier input friend trees for data, TTbar, and mixeddata_all (used for MvD training).
 
 ## Useful commands
 
