@@ -628,7 +628,8 @@ class analysis(processor.ProcessorABC):
                 shift_name=shift_name,
                 use_prestored_btag_SF=self.config["use_prestored_btag_SF"],
                 run_systematics = 'others' in self.run_systematics,
-                corrections_metadata=self.corrections_metadata[self.year]
+                corrections_metadata=self.corrections_metadata[self.year],
+                isRun3=self.config["isRun3"],
             )
             logging.debug( f"Btag weight {weights.partial_weight(include=['CMS_btag'])[:10]}\n" )
             event["weight"] = weights.weight()

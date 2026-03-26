@@ -12,7 +12,8 @@ rule analysis_processor:
         friends = "",
         run_on_condor = False,
         extra_arguments = "",
-        run_container_wrapper = ""  ###include ./run_container for condor 
+        run_container_wrapper = "",  ###include ./run_container for condor
+        dashboard_address = ""
     log: "output/logs/analysis_processor_{output_file}.log"
     shell:
         """
@@ -31,6 +32,7 @@ rule analysis_processor:
             $([ "{params.blind}" = "True" ] && echo "--blind") \
             $([ "{params.run_on_condor}" = "True" ] && echo "--condor") \
             $([ "{params.run_performance}" = "True" ] && echo "--run-performance") \
+            $([ -n "{params.dashboard_address}" ] && echo "--dashboard-address {params.dashboard_address}") \
             --additional-flags {params.extra_arguments}
         """
 
@@ -55,7 +57,11 @@ rule merging_coffea_files:
         # mkdir -p $FONTCONFIG_PATH
         
         echo "Merging all the coffea files" 2>&1 | tee -a {log}
-        cmd="mprof run -C -o /tmp/mprofile_merge_$(basename {log} .log).dat python src/tools/merge_coffea_files.py -f {input} -o {output}"
+        if [ "{params.run_performance}" = "True" ]; then
+            cmd="mprof run -C -o /tmp/mprofile_merge_$(basename {log} .log).dat python src/tools/merge_coffea_files.py -f {input} -o {output}"
+        else
+            cmd="python src/tools/merge_coffea_files.py -f {input} -o {output}"
+        fi
         echo $cmd 2>&1 | tee -a {log}
         $cmd 2>&1 | tee -a {log}
         if [ "{params.run_performance}" = "True" ]; then
