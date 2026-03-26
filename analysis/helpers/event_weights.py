@@ -342,7 +342,7 @@ def add_pseudotagweights(
 
 
                 weight_d3_to_t4 = ak.where(
-                    event[label3b], 
+                    event[label3b],
                     event.weight * event.pseudoTagWeight * event.FvT.d3_to_t4,
                     event.weight
                 )
@@ -352,8 +352,8 @@ def add_pseudotagweights(
                 logging.debug( f"weight_d3_to_t4 {event.weight_d3_to_t4[:10]}\n" )
 
                 weight_d3_to_t3 = ak.where(
-                    event[label3b], 
-                    event.weight * event.pseudoTagWeight * event.FvT.d3_to_t3, 
+                    event[label3b],
+                    event.weight * event.pseudoTagWeight * event.FvT.d3_to_t3,
                     event.weight
                 )
                 # weight_d3_to_t3 = ak.where(event[label3b], event.weight * event.pseudoTagWeight * event.pseudoTagWeight_lowpt * event.FvT.d3_to_t3, event.weight)
@@ -380,6 +380,7 @@ def add_btagweights( event, weights,
                     run_systematics: bool = False,
                     use_prestored_btag_SF: bool = False,
                     corrections_metadata: dict = None,
+                    isRun3: bool = False,
                     ):
 
     if use_prestored_btag_SF:
@@ -396,6 +397,7 @@ def add_btagweights( event, weights,
 
         btag_SF_weights = apply_btag_sf(
             event.selJet_no_bRegCorr,
+            correction_type="particleNet_shape" if isRun3 else "deepJet_shape",
             sys_value="central",
             correction_file=corrections_metadata["btagSF"],
             btag_uncertainties=corrections_metadata["btag_uncertainties"] if (not shift_name) & run_systematics else None
