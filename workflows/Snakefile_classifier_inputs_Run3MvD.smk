@@ -12,10 +12,22 @@ if config["mode"] == "nominal":
     config.setdefault('label', '')   # appended to output_path, e.g. '_quadjet_run2'
     config.setdefault('classifier_config', "coffea4bees/analysis/metadata/HH4b_classifier_inputs_Run3.yml")
     config.setdefault('histogram_config', "coffea4bees/analysis/metadata/HH4b_run_fastTopReco_Run3.yml")
+
+    config.setdefault('jcm_install_path', "coffea4bees/analysis/weights/JCM/Run3_MvD/jetCombinatoricModel_SB_.yml")
+    config.setdefault('classifier_inputs_install_path', "coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3.json")
+    config.setdefault('eos_base', "root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_v2")
+
 elif config["mode"] == "quadjet_run2":
     config.setdefault('classifier_config', "coffea4bees/analysis/metadata/HH4b_classifier_inputs_Run3_quadjet_run2.yml")
     config.setdefault('histogram_config', "coffea4bees/analysis/metadata/HH4b_run_fastTopReco_Run3_quadjet_run2.yml")
-    config.setdefault('label', '_quadjet_run2')   # appended to output_path, e.g. '_quadjet_run2'
+    config.setdefault('label', '_quadjet_run2')
+
+    config.setdefault('jcm_install_path', "coffea4bees/analysis/weights/JCM/Run3_MvD/jetCombinatoricModel_SB_quadjet_run2.yml")
+    config.setdefault('classifier_inputs_install_path', "coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3_quadjet_run2.json")
+    config.setdefault('eos_base', "root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_quadjet_run2")
+
+
+
 else:
     print(f"Mode {config['mode']} Not Recognized!")
     import sys
@@ -32,14 +44,6 @@ module analysis:
 config.setdefault('jcm_config', "coffea4bees/analysis/jcm_tools/metadata/mixeddata_all_config_Run3.yml")
 config.setdefault('plots_metadata', "coffea4bees/plots/metadata/plotsAll_MvD.yml")
 
-# Paths where the fitted JCM and classifier inputs JSON are installed for training.
-# These are the paths hardcoded in train.yml — commit both files to git after running.
-JCM_INSTALL_PATH = "coffea4bees/analysis/weights/JCM/Run3_MvD/jetCombinatoricModel_SB_.yml"
-CLASSIFIER_INPUTS_INSTALL_PATH = "coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3.json"
-
-config.setdefault('eos_base', "root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_v2")
-CLASSIFIER_WFS = "coffea4bees/classifier/config/workflows/HH4b_Run3/MvD"
-
 rule all:
     input:
         f"{out}histAll_Run3MvD{config['label']}.coffea",
@@ -50,7 +54,8 @@ rule all:
 rule all_with_training:
     input:
         rules.all.input,
-        f"{out}classifier_training_done.txt"
+        expand("output/Run3_MvD/{classifier}/evaluate.done", classifier=["MvD"]),
+        expand("output/Run3_MvD/{classifier}/analyze.done",  classifier=["MvD"])
 
 # ── Histograms ────────────────────────────────────────────────────────────────
 # Use __ (double underscore) as separator between dataset and year to avoid
@@ -228,7 +233,7 @@ rule merge_json_classifier_inputs:
 
 rule install_JCM:
     input: f"{out}jcm_for_mixed_all/jetCombinatoricModel_SB_.yml"
-    output: JCM_INSTALL_PATH
+    output: config['jcm_install_path']
     shell:
         """
         mkdir -p $(dirname {output})
@@ -238,7 +243,7 @@ rule install_JCM:
 
 rule install_classifier_inputs:
     input: f"{out}classifier_inputs_Run3MvD{config['label']}.json"
-    output: CLASSIFIER_INPUTS_INSTALL_PATH
+    output: config['classifier_inputs_install_path']
     shell:
         """
         mkdir -p $(dirname {output})
@@ -246,23 +251,11 @@ rule install_classifier_inputs:
         echo "Installed classifier inputs JSON to {output} — commit this file to git to version it."
         """
 
-rule train_classifier:
-    input:
-        json = CLASSIFIER_INPUTS_INSTALL_PATH,
-        jcm  = JCM_INSTALL_PATH,
-    output: f"{out}classifier_training_done.txt"
-    params:
-        eos_base = config['eos_base'],
-        wfs      = CLASSIFIER_WFS,
-    log: f"{out}logs/classifier_training.log"
-    shell:
-        """
-        export BASE="{params.eos_base}"
-        export MODEL="${{BASE}}/classifier/MvD/"
-        export MvD="${{BASE}}/friend/MvD/"
-        export PLOT="${{BASE}}/plots/MvD/"
-        export WFS="{params.wfs}"
-        echo "Training MvD classifier" 2>&1 | tee -a {log}
-        ./run_container classifier bash {params.wfs}/run.sh 2>&1 | tee -a {log}
-        touch {output}
-        """
+module training:
+    snakefile: "Snakefile_classifier_training_Run3MvD.smk"
+    config: config
+
+use rule create_train_yml from training
+use rule train            from training
+use rule analyze          from training
+use rule evaluate         from training
