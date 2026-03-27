@@ -154,17 +154,25 @@ def filling_nominal_histograms(
         fill += hist.add("xbW", (100, -15, 15, ("xbW", "xbW")))
 
     if run_SvB:
-        fill += SvBHists(("SvB", "SvB Classifier"), "SvB")
-        fill += SvBHists(("SvB_MA", "SvB MA Classifier"), "SvB_MA")
-        #fill += SvBHists(("SvB_noFvT", "SvB Classifier"), "SvB", weight="weight_noFvT")
-        fill += SvBHists(("SvB_MA_noFvT", "SvB MA Classifier"), "SvB_MA", weight=noFvT_weight)
-        #fill += SvBHists(("SvB_MA_noFvT_noJCM", "SvB MA Classifier"), "SvB_MA", weight="weight_noJCM_noFvT")
-        fill += hist.add("quadJet_selected.SvB_q_score", (100, 0, 1, ("quadJet_selected.SvB_q_score", "Selected Quad Jet Diboson SvB q score")))
-        fill += hist.add("quadJet_min_dr.SvB_MA_q_score", (100, 0, 1, ("quadJet_min_dr.SvB_MA_q_score", "Min dR Quad Jet Diboson SvB MA q score")))
+        has_SvB = "SvB" in selev.fields
+        has_SvB_MA = "SvB_MA" in selev.fields
+        if has_SvB:
+            fill += SvBHists(("SvB", "SvB Classifier"), "SvB")
+        if has_SvB_MA:
+            fill += SvBHists(("SvB_MA", "SvB MA Classifier"), "SvB_MA")
+            #fill += SvBHists(("SvB_noFvT", "SvB Classifier"), "SvB", weight="weight_noFvT")
+            fill += SvBHists(("SvB_MA_noFvT", "SvB MA Classifier"), "SvB_MA", weight=noFvT_weight)
+            #fill += SvBHists(("SvB_MA_noFvT_noJCM", "SvB MA Classifier"), "SvB_MA", weight="weight_noJCM_noFvT")
+        if has_SvB:
+            fill += hist.add("quadJet_selected.SvB_q_score", (100, 0, 1, ("quadJet_selected.SvB_q_score", "Selected Quad Jet Diboson SvB q score")))
+        if has_SvB_MA:
+            fill += hist.add("quadJet_min_dr.SvB_MA_q_score", (100, 0, 1, ("quadJet_min_dr.SvB_MA_q_score", "Min dR Quad Jet Diboson SvB MA q score")))
         if isDataForMixed:
             for _FvT_name in event_metadata["FvT_names"]:
-                fill += SvBHists((f"SvB_{_FvT_name}", "SvB Classifier"), "SvB", weight=f"weight_{_FvT_name}")
-                fill += SvBHists((f"SvB_MA_{_FvT_name}", "SvB MA Classifier"), "SvB_MA", weight=f"weight_{_FvT_name}")
+                if has_SvB:
+                    fill += SvBHists((f"SvB_{_FvT_name}", "SvB Classifier"), "SvB", weight=f"weight_{_FvT_name}")
+                if has_SvB_MA:
+                    fill += SvBHists((f"SvB_MA_{_FvT_name}", "SvB MA Classifier"), "SvB_MA", weight=f"weight_{_FvT_name}")
             for _FvT_name in event_metadata["FvT_names"]:
                 fill += hist.add(f"m4j_{_FvT_name}", (120, 0, 1200, ("m4j", "m4j [GeV]")), weight=f"weight_{_FvT_name}")
                 fill += hist.add(f"m4j_hh_{_FvT_name}", (120, 0, 1200, ("m4j_HHSR", "m4j HHSR [GeV]")), weight=f"weight_{_FvT_name}")
@@ -241,8 +249,10 @@ def filling_syst_histograms(selev, weights, analysis_selections,
                             )
 
     fill_SvB = Fill( process=processName, year=year)
-    fill_SvB += SvBHists(("SvB",    "SvB Classifier"),    "SvB",    skip=["ps", "ptt"])
-    fill_SvB += SvBHists(("SvB_MA", "SvB MA Classifier"), "SvB_MA", skip=["ps", "ptt"])
+    if "SvB" in selev.fields:
+        fill_SvB += SvBHists(("SvB",    "SvB Classifier"),    "SvB",    skip=["ps", "ptt"])
+    if "SvB_MA" in selev.fields:
+        fill_SvB += SvBHists(("SvB_MA", "SvB MA Classifier"), "SvB_MA", skip=["ps", "ptt"])
 
     fill_SvB(selev, hist_SvB, variation=shift_name, weight="weight")
 

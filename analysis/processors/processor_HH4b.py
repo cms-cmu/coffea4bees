@@ -216,6 +216,13 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.apply_boosted_veto = apply_boosted_veto
         self.classifier_SvB = _init_classfier(SvB)
         self.classifier_SvB_MA = _init_classfier(SvB_MA)
+        # Track which SvB names were explicitly set to None in the config
+        # so load_SvB skips the legacy ROOT fallback for them.
+        self._skip_svb_legacy = set()
+        if SvB is None:
+            self._skip_svb_legacy.add("SvB")
+        if SvB_MA is None:
+            self._skip_svb_legacy.add("SvB_MA")
         self.classifier_FvT = _init_classfier_FvT(FvT)
         self.corrections_metadata = corrections_metadata
         self.run_systematics = ['others', 'jes'] if 'all' in run_systematics else run_systematics
@@ -345,8 +352,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         with self._stage("load_friend_SvB"):
             if self.run_SvB:
                 self.load_SvB(event)
-                if "SvB_MA" not in event.fields:
-                    logging.warning("SvB_MA not available after load_SvB — disabling run_SvB for this chunk.")
+                if "SvB_MA" not in event.fields and self.classifier_SvB_MA is None:
+                    logging.warning("SvB_MA not available after load_SvB and no classifier configured — disabling run_SvB for this chunk.")
                     self.run_SvB = False
 
         with self._stage("load_JCM_friends"):
@@ -782,6 +789,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         for svb_name, classifier in [("SvB", self.classifier_SvB), ("SvB_MA", self.classifier_SvB_MA)]:
             if svb_name in event.fields or classifier is not None:
+                continue
+            if svb_name in self._skip_svb_legacy:
+                logging.info(f"{svb_name} explicitly set to null in config — skipping legacy ROOT fallback.")
                 continue
             # Legacy ROOT file fallback
             svb_file = f'{self.path}/{svb_name}{SvB_suffix}.root' if 'mix' in self.dataset else f'{self.fname.replace("picoAOD", f"{svb_name}{SvB_suffix}")}'

@@ -1,0 +1,147 @@
+from datetime import datetime
+DATE = datetime.now().strftime("%Y%m%d")
+
+##### change these vars #####
+LPCUSER  = "algomez"
+CERNUSER = "a/algomez"
+BASE     = f"root://cmseos.fnal.gov//store/user/{LPCUSER}/XX4b/2024_v2"
+#############################
+
+WFS_BASE = "coffea4bees/classifier/config/workflows/HH4b_2024_v2_lowpt"
+CLASSIFIER_CONFIG_PATHS = "coffea4bees"
+
+# Container images (CVMFS unpacked, used directly by apptainer)
+CLASSIFIER_GPU = "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:classifier_latest"
+CLASSIFIER_CPU = "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:classifier_cpu_latest"
+
+# Entrypoint sourced inside the container before running commands
+INIT = "set -e && set +u && source /entrypoint.sh && set -u && export PYTHONUNBUFFERED=1"
+
+# Per-classifier configuration
+# - model:          output directory for trained model
+# - friend:         output directory for evaluated friend trees
+# - train_template: YAML template string passed to `pyml.py template`
+# - eval_template:  YAML template string passed to `pyml.py template`
+FVT_FRIEND = f"{BASE}/friend/FvT_lowpt"
+CLASSIFIERS = {
+    "FvT": {
+        "model":          f"{BASE}/classifier/FvT_lowpt",
+        "friend":         FVT_FRIEND,
+        "train_template": f"model: {BASE}/classifier/FvT_lowpt",
+        "eval_template":  f"model: {BASE}/classifier/FvT_lowpt, FvT: {FVT_FRIEND}",
+    },
+    "SvB": {
+        "model":          f"{BASE}/classifier/SvB_lowpt",
+        "friend":         f"{BASE}/friend/SvB_lowpt",
+        "train_template": f"model: {BASE}/classifier/SvB_lowpt, FvT: {FVT_FRIEND}",
+        "eval_template":  f"model: {BASE}/classifier/SvB_lowpt, SvB: {BASE}/friend/SvB_lowpt",
+    },
+}
+
+
+# Select classifier via: snakemake --config classifier=FvT
+CLASSIFIER = config.get("classifier", None)
+if CLASSIFIER and CLASSIFIER not in CLASSIFIERS:
+    raise ValueError(f"Unknown classifier '{CLASSIFIER}'. Choose from: {list(CLASSIFIERS.keys())}")
+TARGETS = [CLASSIFIER] if CLASSIFIER else CLASSIFIERS.keys()
+
+
+rule all:
+    input:
+        expand("output/{classifier}_lowpt/evaluate.done", classifier=TARGETS),
+        expand("output/{classifier}_lowpt/analyze.done",  classifier=TARGETS),
+
+
+rule train:
+    output:
+        flag = "output/{classifier}_lowpt/train.done",
+    log:
+        "output/{classifier}_lowpt/train.log",
+    container:
+        CLASSIFIER_GPU
+    resources:
+        runtime = 240,
+        mem_mb  = 32000,
+        gres    = "mps:50",
+    threads: 4
+    params:
+        template_str = lambda wc: CLASSIFIERS[wc.classifier]["train_template"],
+        wfs          = lambda wc: f"{WFS_BASE}/{wc.classifier}",
+    shell:
+        """
+        {INIT} && \
+        PORT=$(shuf -i 10000-60000 -n 1) && \
+        CLASSIFIER_CONFIG_PATHS={CLASSIFIER_CONFIG_PATHS} \
+        ./src/pyml.py \
+            template "{{{params.template_str}}}" {params.wfs}/train.yml \
+            -from {WFS_BASE}/common.yml \
+            -setting Monitor "address: '127.0.0.1:$PORT'" \
+            -flag debug \
+            2>&1 | tee -a {log}
+        touch {output.flag}
+        """
+
+
+rule analyze:
+    input:
+        "output/{classifier}_lowpt/train.done",
+    output:
+        flag = "output/{classifier}_lowpt/analyze.done",
+    log:
+        "output/{classifier}_lowpt/analyze.log",
+    container:
+        CLASSIFIER_CPU
+    resources:
+        runtime = 60,
+        mem_mb  = 8000,
+    threads: 1
+    params:
+        model  = lambda wc: CLASSIFIERS[wc.classifier]["model"],
+        report = lambda wc: wc.classifier,
+        plot   = lambda wc: f"root://eosuser.cern.ch//eos/user/{CERNUSER}/www/HH4b/Plots/{DATE}_{wc.classifier}_lowpt",
+    shell:
+        """
+        {INIT} && \
+        PORT=$(shuf -i 10000-60000 -n 1) && \
+        CLASSIFIER_CONFIG_PATHS={CLASSIFIER_CONFIG_PATHS} \
+        ./src/pyml.py analyze \
+            --results {params.model}/result.json \
+            -analysis HCR.LossROC \
+            -setting IO "output: {params.plot}/{wildcards.classifier}" \
+            -setting IO "report: {params.report}" \
+            -setting Monitor "address: '127.0.0.1:$PORT'" \
+            2>&1 | tee -a {log}
+        touch {output.flag}
+        """
+
+
+rule evaluate:
+    input:
+        "output/{classifier}_lowpt/train.done",
+    output:
+        flag = "output/{classifier}_lowpt/evaluate.done",
+    log:
+        "output/{classifier}_lowpt/evaluate.log",
+    container:
+        CLASSIFIER_GPU
+    resources:
+        runtime = 240,
+        mem_mb  = 32000,
+        gres    = "mps:50",
+    threads: 4
+    params:
+        template_str = lambda wc: CLASSIFIERS[wc.classifier]["eval_template"],
+        wfs          = lambda wc: f"{WFS_BASE}/{wc.classifier}",
+    shell:
+        """
+        {INIT} && \
+        PORT=$(shuf -i 10000-60000 -n 1) && \
+        CLASSIFIER_CONFIG_PATHS={CLASSIFIER_CONFIG_PATHS} \
+        ./src/pyml.py \
+            template "{{{params.template_str}}}" {params.wfs}/evaluate.yml \
+            -from {WFS_BASE}/common.yml \
+            -setting Monitor "address: '127.0.0.1:$PORT'" \
+            -flag debug \
+            2>&1 | tee -a {log}
+        touch {output.flag}
+        """

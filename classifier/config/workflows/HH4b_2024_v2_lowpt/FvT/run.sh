@@ -6,7 +6,7 @@ export MODEL="${BASE}/classifier/FvT_lowpt/"
 export FvT="${BASE}/friend/FvT_lowpt/"
 export PLOT="root://eosuser.cern.ch//eos/user/${CERNUSER}/www/HH4b/Plots/$(date +%Y%m%d)_classifier_lowpt/"
 #####################
-look
+
 export CLASSIFIER_CONFIG_PATHS="coffea4bees"
 export WFS="coffea4bees/classifier/config/workflows/HH4b_2024_v2_lowpt/FvT"
 
