@@ -173,10 +173,10 @@ rule tools_perf_profile:
     container: analysis_container
     shell: "source coffea4bees/scripts/tools-perf-profile.sh --output-base {output_dir} 2>&1 | tee -a {log}"
 
-rule twoStageClosure_test:
+rule tools_twostageclosure_mixed:
     input: f"{output_dir}/analysis_test_mixed/testMixedData.json"
-    output: f"{output_dir}/twoStageClosure_test/test_dump_twoStageClosureInputsCounts.yml"
-    log: f"{output_dir}/twoStageClosure_test.log"
+    output: f"{output_dir}/tools_twostageclosure_mixed/test_dump_twoStageClosureInputsCounts.yml"
+    log: f"{output_dir}/tools_twostageclosure_mixed.log"
     shell: "./run_container combine source coffea4bees/scripts/tools-twostageclosure-mixed.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
 rule analysis_plot:

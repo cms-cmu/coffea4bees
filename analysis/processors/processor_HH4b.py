@@ -71,8 +71,13 @@ NanoAODSchema.warn_missing_crossrefs = False
 warnings.filterwarnings("ignore")
 
 
-def _init_classfier(path: str | list[HCRModelMetadata]):
-    if path is None:
+class _Unset:
+    """Sentinel: SvB key absent from config — legacy ROOT fallback is allowed."""
+_UNSET = _Unset()
+
+
+def _init_classfier(path: str | list[HCRModelMetadata] | None | _Unset):
+    if path is None or isinstance(path, _Unset):
         return None
     if isinstance(path, str):
         from ..helpers.classifier.HCR import Legacy_HCREnsemble
@@ -161,8 +166,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
     def __init__(
         self,
         *,
-        SvB: str|list[HCRModelMetadata] = None,
-        SvB_MA: str|list[HCRModelMetadata] = None,
+        SvB: str|list[HCRModelMetadata]|None|_Unset = _UNSET,
+        SvB_MA: str|list[HCRModelMetadata]|None|_Unset = _UNSET,
         FvT: str|list[HCRModelMetadata] = None,
         blind: bool = False,
         apply_JCM: bool = True,
@@ -218,8 +223,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.apply_boosted_veto = apply_boosted_veto
         self.classifier_SvB = _init_classfier(SvB)
         self.classifier_SvB_MA = _init_classfier(SvB_MA)
-        # Track which SvB names were explicitly set to None in the config
-        # so load_SvB skips the legacy ROOT fallback for them.
+        # Skip legacy ROOT fallback only when the key was explicitly set to null
+        # in the config (SvB=None). When the key is absent (_UNSET), the legacy
+        # fallback is still allowed.
         self._skip_svb_legacy = set()
         if SvB is None:
             self._skip_svb_legacy.add("SvB")
