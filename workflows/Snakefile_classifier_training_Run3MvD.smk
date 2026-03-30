@@ -44,6 +44,8 @@ TARGETS = [CLASSIFIER] if CLASSIFIER else list(CLASSIFIERS.keys())
 config.setdefault('jcm_install_path', "coffea4bees/analysis/weights/JCM/Run3_MvD/jetCombinatoricModel_SB_.yml")
 config.setdefault('classifier_inputs_install_path', "coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3.json")
 
+config.setdefault('output_path', "output/Run3_MvD/")
+out = config['output_path']
 
 TRAIN_YML_TEMPLATE = f"{WFS_BASE}/MvD/train.yml"
 
@@ -52,7 +54,7 @@ rule create_train_yml:
         template = TRAIN_YML_TEMPLATE,
         jcm      = config['jcm_install_path'],
         json     = config['classifier_inputs_install_path'],
-    output: "output/Run3_MvD/train.yml"
+    output: f"{out}train.yml"
     shell:
         """
         sed \
@@ -66,17 +68,17 @@ rule create_train_yml:
 
 rule all_training:
     input:
-        expand("output/Run3_MvD/{classifier}/evaluate.done", classifier=TARGETS),
-        expand("output/Run3_MvD/{classifier}/analyze.done",  classifier=TARGETS),
+        expand(f"{out}{{classifier}}/evaluate.done", classifier=TARGETS),
+        expand(f"{out}{{classifier}}/analyze.done",  classifier=TARGETS),
 
 
 rule train:
     input:
-        train_yml = "output/Run3_MvD/train.yml",
+        train_yml = f"{out}train.yml",
     output:
-        flag = "output/Run3_MvD/{classifier}/train.done",
+        flag = f"{out}{{classifier}}/train.done",
     log:
-        "output/Run3_MvD/{classifier}/train.log",
+        f"{out}{{classifier}}/train.log",
     container: CLASSIFIER_GPU
     resources:
         runtime = 240,
@@ -106,11 +108,11 @@ rule train:
 
 rule analyze:
     input:
-        "output/Run3_MvD/{classifier}/train.done",
+        f"{out}{{classifier}}/train.done",
     output:
-        flag = "output/Run3_MvD/{classifier}/analyze.done",
+        flag = f"{out}{{classifier}}/analyze.done",
     log:
-        "output/Run3_MvD/{classifier}/analyze.log",
+        f"{out}{{classifier}}/analyze.log",
     container: CLASSIFIER_CPU
     resources:
         runtime = 60,
@@ -124,6 +126,11 @@ rule analyze:
         plot                    = lambda wc: f"root://eosuser.cern.ch//eos/user/{CERNUSER}/www/HH4b/Plots/{DATE}_{wc.classifier}_Run3MvD",
     shell:
         """
+        mkdir -p proxy
+        if ! voms-proxy-info --file ./proxy/x509_proxy --exists -valid 1:00 &>/dev/null; then
+            voms-proxy-init -voms cms -valid 192:00 -out ./proxy/x509_proxy
+        fi
+        export X509_USER_PROXY="$PWD/proxy/x509_proxy"
         {params.init} && \
         PORT=$(shuf -i 10000-60000 -n 1) && \
         CLASSIFIER_CONFIG_PATHS={params.classifier_config_paths} \
@@ -140,11 +147,11 @@ rule analyze:
 
 rule evaluate:
     input:
-        "output/Run3_MvD/{classifier}/train.done",
+        f"{out}{{classifier}}/train.done",
     output:
-        flag = "output/Run3_MvD/{classifier}/evaluate.done",
+        flag = f"{out}{{classifier}}/evaluate.done",
     log:
-        "output/Run3_MvD/{classifier}/evaluate.log",
+        f"{out}{{classifier}}/evaluate.log",
     container: CLASSIFIER_GPU
     resources:
         runtime = 240,
