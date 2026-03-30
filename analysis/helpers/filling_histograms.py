@@ -35,6 +35,7 @@ def filling_nominal_histograms(
     histCuts: list = [],
     apply_FvT: bool = False,
     apply_MvD: bool = False,
+    apply_MvD_weight: bool = False,
     run_SvB: bool = False,
     top_reconstruction: bool = False,
     isDataForMixed: bool = False,
@@ -116,12 +117,13 @@ def filling_nominal_histograms(
 
 
     if apply_MvD:
-        fill += MvDHists(("MvD", "MvD Classifier"), "MvD")
-        #fill += hist.add("quadJet_selected.MvD_score", (100, 0, 1, ("quadJet_selected.MvD_q_score", "Selected Quad Jet Diboson MvD q score")))
-        #fill += hist.add("quadJet_min_dr.MvD_score", (100, 0, 1, ("quadJet_min_dr.MvD_q_score", "Min dR Quad Jet Diboson MvD q score")))
+        if apply_MvD_weight:
+            fill += MvDHists(("MvD", "MvD Classifier"), "MvD")
+            #fill += hist.add("quadJet_selected.MvD_score", (100, 0, 1, ("quadJet_selected.MvD_q_score", "Selected Quad Jet Diboson MvD q score")))
+            #fill += hist.add("quadJet_min_dr.MvD_score", (100, 0, 1, ("quadJet_min_dr.MvD_q_score", "Min dR Quad Jet Diboson MvD q score")))
 
-        if JCM:
-            fill += hist.add("MvD_noMvD", (100, 0, 5, ("MvD.MvD", "MvD reweight")), weight=noMvD_weight)
+            if JCM:
+                fill += hist.add("MvD_noMvD", (100, 0, 5, ("MvD.MvD", "MvD reweight")), weight=noMvD_weight)
         fill += Jet.plot(("selJets_noMvD", "Selected Jets"), "selJet", weight=noMvD_weight, skip=skip_all_but_n)
 
 

@@ -27,6 +27,7 @@ Options:
   --run-performance              Enable memory profiling with mprof
   --log FILE                     Log file path (output is tee'd to this file)
   --tmpdir DIR                   Temp directory (default: /tmp)
+  --dashboard-address PORT       Dask dashboard port (default: not set, runner.py uses 10200)
   -h, --help                     Show this help message
 EOF
     exit 1
@@ -51,6 +52,7 @@ display_config() {
     echo "Performance:        $([ "$RUN_PERFORMANCE" = true ] && echo "enabled" || echo "disabled")"
     echo "Log file:           ${LOG_FILE:-"(none)"}"
     echo "Tmp directory:      $TMPDIR_PATH"
+    echo "Dashboard address:  ${DASHBOARD_ADDRESS:-"(default: 10200)"}"
     echo "Additional flags:   ${ADDITIONAL_FLAGS:-"(none)"}"
     echo ""
 }
@@ -75,6 +77,7 @@ declare -A DEFAULTS=(
     ["RUN_PERFORMANCE"]=false
     ["LOG_FILE"]=""
     ["TMPDIR_PATH"]="/tmp"
+    ["DASHBOARD_ADDRESS"]=""
 )
 
 # Initialize variables with defaults
@@ -97,6 +100,7 @@ BLIND_MODE="${DEFAULTS[BLIND_MODE]}"
 RUN_PERFORMANCE="${DEFAULTS[RUN_PERFORMANCE]}"
 LOG_FILE="${DEFAULTS[LOG_FILE]}"
 TMPDIR_PATH="${DEFAULTS[TMPDIR_PATH]}"
+DASHBOARD_ADDRESS="${DEFAULTS[DASHBOARD_ADDRESS]}"
 # Initialize DO_PROXY to empty to avoid unbound variable error
 DO_PROXY=""
 
@@ -181,6 +185,10 @@ while [[ $# -gt 0 ]]; do
             TMPDIR_PATH="$2"
             shift 2
             ;;
+        --dashboard-address)
+            DASHBOARD_ADDRESS="$2"
+            shift 2
+            ;;
         --additional-flags)
             shift
             # Consume all remaining arguments as additional flags
@@ -218,6 +226,7 @@ declare -A SAVED_VARS=(
     ["RUN_PERFORMANCE"]="$RUN_PERFORMANCE"
     ["LOG_FILE"]="$LOG_FILE"
     ["TMPDIR_PATH"]="$TMPDIR_PATH"
+    ["DASHBOARD_ADDRESS"]="$DASHBOARD_ADDRESS"
 )
 
 # Setup proxy if needed
@@ -242,6 +251,7 @@ BLIND_MODE="${SAVED_VARS[BLIND_MODE]}"
 RUN_PERFORMANCE="${SAVED_VARS[RUN_PERFORMANCE]}"
 LOG_FILE="${SAVED_VARS[LOG_FILE]}"
 TMPDIR_PATH="${SAVED_VARS[TMPDIR_PATH]}"
+DASHBOARD_ADDRESS="${SAVED_VARS[DASHBOARD_ADDRESS]}"
 
 # Display configuration
 display_config
@@ -303,7 +313,9 @@ cmd=(python runner.py
     -y $YEAR
     -op "$OUTPUT_DIR"
     -o "$OUTPUT_FILENAME"
+    --tmpdir "$TMPDIR_PATH"
 )
+[ -n "$DASHBOARD_ADDRESS" ] && cmd+=( --dashboard-address "$DASHBOARD_ADDRESS" )
 
 # Add optional flags
 [ -n "$TEST_MODE" ] && cmd+=( $TEST_MODE )

@@ -234,7 +234,8 @@ class HemiMixer(Skimmer4b):
 
             weights, list_weight_names = add_btagweights( event, weights,
                                                           list_weight_names=list_weight_names,
-                                                          corrections_metadata=self.corrections_metadata[year]
+                                                          corrections_metadata=self.corrections_metadata[year],
+                                                          isRun3=config["isRun3"],
             )
             logging.debug( f"Btag weight {weights.partial_weight(include=['CMS_btag'])[:10]}\n" )
 

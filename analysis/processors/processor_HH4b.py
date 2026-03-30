@@ -187,6 +187,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         plot_ttbar_with_weights: bool = False,
         plot_ttbar_with_MvD_weights: bool = False,
         apply_MvD: bool = False,
+        apply_MvD_weight: bool = False,
         apply_mixeddata_sel: bool = False,  #### apply HIG-22-011 sel for mixeddata
         friends: dict[str, str|FriendTemplate] = None,
         return_events_for_display: bool = False,
@@ -210,6 +211,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.apply_btagSF = apply_btagSF
         self.apply_FvT = apply_FvT
         self.apply_MvD = apply_MvD
+        self.apply_MvD_weight = apply_MvD_weight
         self.run_SvB = run_SvB
         self.fill_histograms = fill_histograms
         self.run_dilep_ttbar_crosscheck = run_dilep_ttbar_crosscheck
@@ -346,7 +348,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 self.load_FvT(event)
 
         with self._stage("load_friend_MvD"):
-            if self.apply_MvD:
+            if self.apply_MvD and self.apply_MvD_weight:
                 self.load_MvD(event)
 
         with self._stage("load_friend_SvB"):
@@ -1039,7 +1041,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             shift_name=shift_name,
             use_prestored_btag_SF=self.config["use_prestored_btag_SF"],
             run_systematics='others' in self.run_systematics,
-            corrections_metadata=self.corrections_metadata[self.year]
+            corrections_metadata=self.corrections_metadata[self.year],
+            isRun3=self.config["isRun3"],
         )
         logging.debug(f"Btag weight {weights.partial_weight(include=['CMS_btag'])[:10]}\n")
         event["weight"] = weights.weight()
@@ -1344,6 +1347,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             apply_FvT=self.apply_FvT,
             isDataForMixed=self.config["isDataForMixed"],
             apply_MvD=self.apply_MvD,
+            apply_MvD_weight=self.apply_MvD_weight,
             isMixedDataAll=self.config["isMixedDataAll"],
             list_weight_names=list_weight_names,
             event_metadata=event.metadata,
@@ -1424,6 +1428,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 histCuts=self.histCuts,
                 apply_FvT=apply_FvT,
                 apply_MvD=self.apply_MvD,
+                apply_MvD_weight=self.apply_MvD_weight,
                 run_SvB=self.run_SvB,
                 run_dilep_ttbar_crosscheck=self.run_dilep_ttbar_crosscheck,
                 top_reconstruction=self.top_reconstruction,
@@ -1475,7 +1480,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 )
                 hists += [hist_t4, hist_t3]
 
-            if self.plot_ttbar_with_MvD_weights and self.config["isMixedDataAll"]:
+            if self.plot_ttbar_with_MvD_weights and self.apply_MvD_weight and self.config["isMixedDataAll"]:
                 hist_mvd_t4 = filling_nominal_histograms(
                     selev,
                     self.apply_JCM,
@@ -1485,6 +1490,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     histCuts=self.histCuts,
                     apply_FvT=apply_FvT,
                     apply_MvD=self.apply_MvD,
+                    apply_MvD_weight=self.apply_MvD_weight,
                     run_SvB=self.run_SvB,
                     run_dilep_ttbar_crosscheck=self.run_dilep_ttbar_crosscheck,
                     top_reconstruction=self.top_reconstruction,

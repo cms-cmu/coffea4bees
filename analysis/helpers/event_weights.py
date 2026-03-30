@@ -80,6 +80,7 @@ def add_pseudotagweights(
     apply_FvT: bool = False,
     isDataForMixed: bool = False,
     apply_MvD: bool = False,
+    apply_MvD_weight: bool = False,
     isMixedDataAll: bool = False,
     list_weight_names: list = [],
     event_metadata: dict = {},
@@ -138,12 +139,18 @@ def add_pseudotagweights(
                 event.weight
             )
 
-            weight = np.where(
-                fourTag,
-                jcm_weight * event.MvD.MvD,
-                #jcm_weight,
-                1.0,
-            )
+            if apply_MvD_weight:
+                weight = np.where(
+                    fourTag,
+                    jcm_weight * event.MvD.MvD,
+                    1.0,
+                )
+            else:
+                weight = np.where(
+                    fourTag,
+                    jcm_weight,
+                    1.0,
+                )
         else:
             weight_noMvD = np.ones(len(event), dtype=float)
             weight       = np.ones(len(event), dtype=float)
@@ -151,26 +158,27 @@ def add_pseudotagweights(
         event["weight_noMvD"] = weight_noMvD
         logging.debug( f"weight_noMvD {event.weight_noMvD[:10]}\n" )
 
-
-        event["highMvD"] = event.MvD.MvD > 10
+        if apply_MvD_weight:
+            event["highMvD"] = event.MvD.MvD > 10
 
         weights.add("MvD", weight)
         list_weight_names.append("MvD")
         logging.debug(f"MvD {weights.partial_weight(include=['MvD'])[:10]}")
 
-        # Store per-event weight for TTbar4b_from_MvD histogram filling.
-        # Use weights excluding MvD (includes JCM) multiplied by p_t4/p_mix4 for fourTag events.
-        p_t4   = ak.to_numpy(event.MvD.p_t4).astype(float)
-        p_mix4 = ak.to_numpy(event.MvD.p_mix4).astype(float)
-        mix4_to_t4 = np.where(p_mix4 == 0, 0.0, p_t4 / p_mix4)
-        base_weight = weights.partial_weight(exclude=["MvD"])
-        w_mix4_to_t4 = np.where(fourTag, base_weight * jcm_weight * mix4_to_t4, base_weight)
+        if apply_MvD_weight:
+            # Store per-event weight for TTbar4b_from_MvD histogram filling.
+            # Use weights excluding MvD (includes JCM) multiplied by p_t4/p_mix4 for fourTag events.
+            p_t4   = ak.to_numpy(event.MvD.p_t4).astype(float)
+            p_mix4 = ak.to_numpy(event.MvD.p_mix4).astype(float)
+            mix4_to_t4 = np.where(p_mix4 == 0, 0.0, p_t4 / p_mix4)
+            base_weight = weights.partial_weight(exclude=["MvD"])
+            w_mix4_to_t4 = np.where(fourTag, base_weight * jcm_weight * mix4_to_t4, base_weight)
 
-        event["weight_mix4_to_t4_MvD"] = ak.from_regular(w_mix4_to_t4)
-        logging.debug(f"weight_mix4_to_t4_MvD {event['weight_mix4_to_t4_MvD'][:10]}")
+            event["weight_mix4_to_t4_MvD"] = ak.from_regular(w_mix4_to_t4)
+            logging.debug(f"weight_mix4_to_t4_MvD {event['weight_mix4_to_t4_MvD'][:10]}")
 
-        # Alias for _noMvD histogram TTbar filling: mix4_to_t4 conversion, no MvD classifier
-        event["weight_mix4_to_t4_MvD_noMvD"] = ak.from_regular(w_mix4_to_t4)
+            # Alias for _noMvD histogram TTbar filling: mix4_to_t4 conversion, no MvD classifier
+            event["weight_mix4_to_t4_MvD_noMvD"] = ak.from_regular(w_mix4_to_t4)
 
         return weights, list_weight_names
 
@@ -342,7 +350,7 @@ def add_pseudotagweights(
 
 
                 weight_d3_to_t4 = ak.where(
-                    event[label3b], 
+                    event[label3b],
                     event.weight * event.pseudoTagWeight * event.FvT.d3_to_t4,
                     event.weight
                 )
@@ -352,8 +360,8 @@ def add_pseudotagweights(
                 logging.debug( f"weight_d3_to_t4 {event.weight_d3_to_t4[:10]}\n" )
 
                 weight_d3_to_t3 = ak.where(
-                    event[label3b], 
-                    event.weight * event.pseudoTagWeight * event.FvT.d3_to_t3, 
+                    event[label3b],
+                    event.weight * event.pseudoTagWeight * event.FvT.d3_to_t3,
                     event.weight
                 )
                 # weight_d3_to_t3 = ak.where(event[label3b], event.weight * event.pseudoTagWeight * event.pseudoTagWeight_lowpt * event.FvT.d3_to_t3, event.weight)
@@ -380,6 +388,7 @@ def add_btagweights( event, weights,
                     run_systematics: bool = False,
                     use_prestored_btag_SF: bool = False,
                     corrections_metadata: dict = None,
+                    isRun3: bool = False,
                     ):
 
     if use_prestored_btag_SF:
@@ -396,6 +405,7 @@ def add_btagweights( event, weights,
 
         btag_SF_weights = apply_btag_sf(
             event.selJet_no_bRegCorr,
+            correction_type="particleNet_shape" if isRun3 else "deepJet_shape",
             sys_value="central",
             correction_file=corrections_metadata["btagSF"],
             btag_uncertainties=corrections_metadata["btag_uncertainties"] if (not shift_name) & run_systematics else None
