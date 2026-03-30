@@ -8,9 +8,47 @@
 
 ---
 
-# Main Commands
+## Installation
 
-PourOver supports first-class session snapshots via `--new` and `--load`. 
+### Using the analysis container (recommended)
+
+`flask` and `mplhep` are included in the analysis container (`barista:latest`). No extra setup needed — just run from the barista root:
+
+```bash
+./run_container pourover file.coffea -m meta.yml --new --label my-label
+```
+
+Then open **[http://localhost:5000](http://localhost:5000)** in your browser. The interactive plot form is the landing page; the gallery is at `/gallery-view`.
+
+Add `--pregallery` to pre-generate PNG/PDF thumbnails for every variable × region on startup (~2 min for a typical file). Without it the gallery page is empty but the interactive form works immediately.
+
+### Optional: shell alias and tab completion
+
+If you want to type `pourover` instead of `./run_container pourover`, and get label tab-completion for `--load`/`--delete`/`--rename`, add to `~/.bashrc`:
+
+```bash
+source /path/to/barista/coffea4bees/plots/pourover-completion.sh
+```
+
+This is purely optional — `./run_container pourover` works without it.
+
+### Using a local Python environment (no Apptainer)
+
+Requires **Python 3.10** (coffea 0.7.x is not compatible with Python 3.11+).
+
+```bash
+python3.10 -m venv ~/python-environments/pourover
+source ~/python-environments/pourover/bin/activate
+pip install -r coffea4bees/plots/requirements-pourover.txt
+```
+
+When Apptainer is not available, the completion script alias falls back to `python coffea4bees/plots/pourOver.py` automatically.
+
+---
+
+## Main Commands
+
+PourOver supports first-class session snapshots via `--new` and `--load`.
 
 ## Creating a snapshot (`--new`)
 
@@ -45,32 +83,6 @@ pourover --rename ul18-sb-test ul18-sb-final
 # Renamed 1 archive(s): 'ul18-sb-test' → 'ul18-sb-final'
 ```
 
-
-
-## Installation
-
-### One-time setup
-
-Requires **Python 3.10** (coffea 0.7.x is not compatible with Python 3.11+).
-
-```bash
-python3.10 -m venv ~/python-environments/pourover
-source ~/python-environments/pourover/bin/activate
-pip install -r coffea4bees/plots/requirements-pourover.txt
-```
-
-### Run (from barista root)
-
-```bash
-source ~/python-environments/pourover/bin/activate
-source coffea4bees/plots/pourover-completion.sh
-pourover coffea4bees/Run3_MvD/analysis_MvD_new.coffea -m coffea4bees/plots/metadata/plotsAll_MvD_ttbar_weights.yml --new --label MvD-Test
-```
-
-Then open **http://localhost:5000** in your browser. The interactive plot form is the landing page; the gallery is at `/gallery-view`.
-
-Add `--pregallery` to pre-generate PNG/PDF thumbnails for every variable × region on startup (~2 min for a typical file). Without it the gallery page is empty but the interactive form works immediately.
-
 ---
 
 ## Command-Line Options
@@ -97,24 +109,23 @@ All standard `iPlot.py` / `makePlotsAll.py` arguments are accepted, plus:
 
 ```bash
 # Standard run
-python coffea4bees/plots/pourOver.py file.coffea -m metadata.yml
+./run_container pourover file.coffea -m metadata.yml
 
 # Custom port
-python coffea4bees/plots/pourOver.py file.coffea -m metadata.yml --port 8080
+./run_container pourover file.coffea -m metadata.yml --port 8080
 
 # Pre-generate the gallery (default is off — interactive form is available immediately)
-python coffea4bees/plots/pourOver.py file.coffea -m metadata.yml --pregallery
+./run_container pourover file.coffea -m metadata.yml --pregallery
 
 # Multiple input files (overlaid)
-python coffea4bees/plots/pourOver.py fileA.coffea fileB.coffea \
-    -m metadata.yml -l "Run2" "Run3"
+./run_container pourover fileA.coffea fileB.coffea -m metadata.yml -l "Run2" "Run3"
 ```
 
 ---
 
 ## Session Management
 
-PourOver supports first-class session snapshots via `--new` and `--load`. 
+PourOver supports first-class session snapshots via `--new` and `--load`.
 
 ### Creating a snapshot (`--new`)
 
@@ -191,7 +202,7 @@ Add to `~/.bashrc` (use the absolute path to your barista checkout):
 source /path/to/barista/coffea4bees/plots/pourover-completion.sh
 ```
 
-This defines a `pourover` alias. Then use `pourover` in place of `python coffea4bees/plots/pourOver.py`:
+This defines a `pourover` alias. Then use `pourover` in place of `./run_container pourover`:
 
 ```
 pourover --load ul18-<TAB>       # completes labels from registry

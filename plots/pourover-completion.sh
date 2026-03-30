@@ -7,7 +7,11 @@
 #   pourover file.coffea -m meta.yml --new --label ul18-sb
 #   pourover --load <TAB>
 
-alias pourover='python coffea4bees/plots/pourOver.py'
+if command -v apptainer >/dev/null 2>&1 && [ -f "./run_container" ]; then
+    alias pourover='./run_container pourover'
+else
+    alias pourover='python coffea4bees/plots/pourOver.py'
+fi
 
 _pourover_labels() {
     local registry="${1:-.pourover_archives/pourover_registry.json}"
