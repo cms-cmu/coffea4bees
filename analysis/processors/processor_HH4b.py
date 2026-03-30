@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import logging
+import sys
 import warnings
 from collections import OrderedDict
 from contextlib import contextmanager, nullcontext
@@ -70,8 +71,13 @@ NanoAODSchema.warn_missing_crossrefs = False
 warnings.filterwarnings("ignore")
 
 
-def _init_classfier(path: str | list[HCRModelMetadata]):
-    if path is None:
+class _Unset:
+    """Sentinel: SvB key absent from config — legacy ROOT fallback is allowed."""
+_UNSET = _Unset()
+
+
+def _init_classfier(path: str | list[HCRModelMetadata] | None | _Unset):
+    if path is None or isinstance(path, _Unset):
         return None
     if isinstance(path, str):
         from ..helpers.classifier.HCR import Legacy_HCREnsemble
@@ -160,8 +166,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
     def __init__(
         self,
         *,
-        SvB: str|list[HCRModelMetadata] = None,
-        SvB_MA: str|list[HCRModelMetadata] = None,
+        SvB: str|list[HCRModelMetadata]|None|_Unset = _UNSET,
+        SvB_MA: str|list[HCRModelMetadata]|None|_Unset = _UNSET,
         FvT: str|list[HCRModelMetadata] = None,
         blind: bool = False,
         apply_JCM: bool = True,
@@ -217,6 +223,14 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.apply_boosted_veto = apply_boosted_veto
         self.classifier_SvB = _init_classfier(SvB)
         self.classifier_SvB_MA = _init_classfier(SvB_MA)
+        # Skip legacy ROOT fallback only when the key was explicitly set to null
+        # in the config (SvB=None). When the key is absent (_UNSET), the legacy
+        # fallback is still allowed.
+        self._skip_svb_legacy = set()
+        if SvB is None:
+            self._skip_svb_legacy.add("SvB")
+        if SvB_MA is None:
+            self._skip_svb_legacy.add("SvB_MA")
         self.classifier_FvT = _init_classfier_FvT(FvT)
         self.corrections_metadata = corrections_metadata
         self.run_systematics = ['others', 'jes'] if 'all' in run_systematics else run_systematics
@@ -346,6 +360,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         with self._stage("load_friend_SvB"):
             if self.run_SvB:
                 self.load_SvB(event)
+                if "SvB_MA" not in event.fields and self.classifier_SvB_MA is None:
+                    logging.warning("SvB_MA not available after load_SvB and no classifier configured — disabling run_SvB for this chunk.")
+                    self.run_SvB = False
 
         with self._stage("load_JCM_friends"):
             if self.config["isDataForMixed"]:
@@ -539,16 +556,19 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         # Blind data in fourTag SR
         if not (self.config["isMC"] or "mix_v" in self.dataset) and self.blind:
             with self._stage(f"{label}:blinding"):
-                blind_flag = ~(selev["quadJet_selected"].SR & (selev["SvB_MA"].ps_hh > 0.5) & selev.fourTag)
-                blind_sel = np.full(len(event), True)
-                blind_sel[analysis_selections] = blind_flag
-                selections.add('blind', blind_sel)
-                allcuts.append('blind')
-                if not shift_name:
-                    sel_mask = selections.all(*allcuts)
-                    self.fill_cutflow_with_and_without_trig("blind", event[sel_mask], weights, sel_mask)
-                analysis_selections = selections.all(*allcuts)
-                selev = selev[blind_flag]
+                if "SvB_MA" not in selev.fields:
+                    logging.warning("Blinding requires SvB_MA but it is not available — skipping blinding for this chunk.")
+                else:
+                    blind_flag = ~(selev["quadJet_selected"].SR & (selev["SvB_MA"].ps_hh > 0.5) & selev.fourTag)
+                    blind_sel = np.full(len(event), True)
+                    blind_sel[analysis_selections] = blind_flag
+                    selections.add('blind', blind_sel)
+                    allcuts.append('blind')
+                    if not shift_name:
+                        sel_mask = selections.all(*allcuts)
+                        self.fill_cutflow_with_and_without_trig("blind", event[sel_mask], weights, sel_mask)
+                    analysis_selections = selections.all(*allcuts)
+                    selev = selev[blind_flag]
 
         with self._stage(f"{label}:final_weights"):
             # Add weights to selected events
@@ -777,6 +797,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         for svb_name, classifier in [("SvB", self.classifier_SvB), ("SvB_MA", self.classifier_SvB_MA)]:
             if svb_name in event.fields or classifier is not None:
+                continue
+            if svb_name in self._skip_svb_legacy:
+                logging.info(f"{svb_name} explicitly set to null in config — skipping legacy ROOT fallback.")
                 continue
             # Legacy ROOT file fallback
             svb_file = f'{self.path}/{svb_name}{SvB_suffix}.root' if 'mix' in self.dataset else f'{self.fname.replace("picoAOD", f"{svb_name}{SvB_suffix}")}'

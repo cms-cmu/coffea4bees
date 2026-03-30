@@ -2,17 +2,18 @@ runner:
   chunksize: 10000
   workers: 4
   worker_memory: 4GB
-  # dashboard_address: 10201
+  dashboard_address: 0
 
 config:
   blind: false
   apply_FvT: true
   apply_JCM: true
-  JCM_file: "coffea4bees/analysis/weights/JCM/Run2_lowpt_UL18/jetCombinatoricModel_SB_2024_v2.yml"
+  JCM_file: "coffea4bees/analysis/weights/JCM/Run2_lowpt_v1/jetCombinatoricModel_SB_2024_v2.yml"
   apply_trigWeight: true
   apply_btagSF: true
   apply_boosted_veto: false
-  run_SvB: false
+  run_SvB: true
   SvB: null
+  SvB_MA: 'coffea4bees/analysis/weights/pytorch_models/2024_HHUL/SvB_MA_HCR+attention_8_np1061_seed13_lr0.01_epochs20_offset*_epoch20.pkl'
   top_reconstruction: fast
   plot_ttbar_with_weights: true

@@ -6,8 +6,8 @@ config:
   apply_JCM: false
   blind: false
   apply_FvT: false
-  apply_trigWeight: true
-  apply_btagSF: true
+  apply_trigWeight: false
+  apply_btagSF: false
   apply_boosted_veto: false
   run_SvB: false
   # friend_top_reconstruction: 'output/top_reconstruction_friendtree.json'

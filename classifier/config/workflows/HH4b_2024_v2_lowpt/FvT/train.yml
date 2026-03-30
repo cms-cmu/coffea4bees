@@ -14,11 +14,11 @@ main:
 dataset:
   - module: HCR.FvT_lowpt.TrainBaseline # use the baseline dataset for FvT training (lowpt version)
     option:
-      - --metadata coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/datasets_HH4b_2024_v2
+      - --metadata coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/
       - --max-workers 20 # use 20 workers to load ROOT files
       # - --test-files 2 # limit to 2 files per group for quick testing (remove for full training)
       - --data-source detector # only use data (not mixed data or synthetic data)
-      - --JCM-weight "" coffea4bees/analysis/weights/JCM/Run2_lowpt_UL18/jetCombinatoricModel_SB_2024_v2.yml@@JCM_weights # set JCM weight, where the @@ is used to get the key JCM_weights inside the file
+      - --JCM-weight "" coffea4bees/analysis/weights/JCM/Run2_lowpt_v1/jetCombinatoricModel_SB_2024_v2.yml@@JCM_weights # set JCM weight, where the @@ is used to get the key JCM_weights inside the file
       - --friends "" coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/classifier_inputs_lowpt_wlowptJCM.json@@HCR_input_lowpt # set input friend tree
 model:
   - module: HCR.FvT.baseline.Train # use the baseline model for FvT (model is generic, not lowpt-specific)

@@ -2,10 +2,10 @@
 export LPCUSER="algomez"
 export CERNUSER="a/algomez"
 export BASE="root://cmseos.fnal.gov//store/user/${LPCUSER}/XX4b/2024_v2/"
-export MODEL="${BASE}/classifier/SvB/"
-export SvB="${BASE}/friend/SvB/"
-export FvT="${BASE}/friend/FvT/"
-export PLOT="root://eosuser.cern.ch//eos/user/${CERNUSER}/www/HH4b/$(date +%Y%m%d)_classifier_lowpt/"
+export MODEL="${BASE}/classifier/SvB_lowpt/"
+export SvB="${BASE}/friend/SvB_lowpt/"
+export FvT="${BASE}/friend/FvT_lowpt/"
+export PLOT="root://eosuser.cern.ch//eos/user/${CERNUSER}/www/HH4b/$(date +%Y%m%d)_classifier_SvB_lowpt/"
 #####################
 
 export CLASSIFIER_CONFIG_PATHS="coffea4bees"

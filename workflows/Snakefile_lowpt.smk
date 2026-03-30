@@ -3,10 +3,10 @@ username = os.getenv("USER")
 from datetime import datetime
 
 config.setdefault('output_path', "output/lowpt/")
-config.setdefault('dataset_location', "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/datasets_HH4b_2024_v2.yml")
+config.setdefault('dataset_location', "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/")
 config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
-config.setdefault('dataset', ['data', 'TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic', 'GluGluToHHTo4B_cHHH1'])
-config.setdefault('year', 'UL18')
+config.setdefault('dataset', ['data', 'TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic', 'GluGluToHHTo4B_cHHH1', 'GluGluToHHTo4B_cHHH0', 'GluGluToHHTo4B_cHHH2p45', 'GluGluToHHTo4B_cHHH5', 'ZH4b', 'ZZ4b', 'ggZH4b'])
+config.setdefault('year', [ 'UL16_preVFP', 'UL16_postVFP', 'UL17', 'UL18'])
 config.setdefault('classifier_path', 'root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/')
 config.setdefault('eos_path', f'Plots/{datetime.now().strftime("%Y%m%d")}_lowpt_test/')
 
@@ -80,12 +80,12 @@ rule create_metadata_lowpt:
 
 use rule analysis_processor from analysis as analysis_lowpt_classifier_inputs with:
     input: f"{config['output_path']}HH4b_wlowptJCM.yml"
-    output: f"{config['output_path']}histAll_lowpt_wlowptJCM_{{dataset}}.coffea"
-    log: f"{config['output_path']}logs/analysis_lowpt_wlowptJCM_{{dataset}}.log"
+    output: f"{config['output_path']}histAll_lowpt_wlowptJCM_{{dataset}}__{{year}}.coffea"
+    log: f"{config['output_path']}logs/analysis_lowpt_wlowptJCM_{{dataset}}__{{year}}.log"
     container: ""
     params:
         datasets = "{dataset}",
-        years = config['year'],
+        years = "{year}",
         processor = "coffea4bees/analysis/processors/processor_HH4b_lowpt.py",
         config = lambda wildcards, input: input[0],
         datasets_file = config['dataset_location'],
@@ -97,7 +97,7 @@ use rule analysis_processor from analysis as analysis_lowpt_classifier_inputs wi
         run_container_wrapper = "./run_container"
 
 use rule merging_coffea_files from analysis as merging_lowpt_files with:
-    input: expand(f"{config['output_path']}histAll_lowpt_wlowptJCM_{{dataset}}.coffea", dataset=config['dataset'])
+    input: expand(f"{config['output_path']}histAll_lowpt_wlowptJCM_{{dataset}}__{{year}}.coffea", dataset=config['dataset'], year=config['year'])
     output: f"{config['output_path']}histAll_lowpt_wlowptJCM.coffea"
     container: config["analysis_container"]
     params:
@@ -114,7 +114,7 @@ use rule make_plots from analysis as make_plots_wlowptJCM with:
         extra_arguments = "-s xW "
 
 rule merge_json_friend_files:
-    input: expand(f"{config['output_path']}histAll_lowpt_wlowptJCM_{{dataset}}.coffea", dataset=config['dataset'])
+    input: expand(f"{config['output_path']}histAll_lowpt_wlowptJCM_{{dataset}}__{{year}}.coffea", dataset=config['dataset'], year=config['year'])
     output: f"{config['output_path']}classifier_inputs_lowpt_wlowptJCM.json"
     log: f"{config['output_path']}logs/merge_json_friend_files.log"
     container: config["analysis_container"]

@@ -550,4 +550,7 @@ def lowpt_jet_selection(
     event['nJet_tagged_lowpt'] = ak.num(event.tagJet_lowpt)
     event['nJet_tagged_loose_lowpt'] = ak.num(event.tagJet_loose_lowpt)
 
+    event['allSelJet'] = ak.concatenate([event.selJet, event.selJet_lowpt], axis=1)
+    event['allTagJet'] = ak.concatenate([event.tagJet, event.tagJet_lowpt], axis=1)
+
     return event
