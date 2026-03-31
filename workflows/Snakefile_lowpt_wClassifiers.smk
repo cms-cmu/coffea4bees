@@ -58,7 +58,7 @@ use rule analysis_processor from analysis as analysis_lowpt_data with:
         config = lambda wildcards, input: input[0],
         processor = "coffea4bees/analysis/processors/processor_HH4b_lowpt.py",
         datasets_file = config['dataset_location'],
-        blind = False,
+        blind = True,
         run_performance = False,
         friends = "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/friends_HH4b_lowpt.yml",
         run_on_condor = True,
