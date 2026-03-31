@@ -37,6 +37,7 @@ rule limits:
         signallabel = "{signallabel}",
         set_parameters_zero = "",
         freeze_parameters = "",
+        blind = "",
         container_wrapper = config.get("container_wrapper", "./run_container combine")
     log: "output/logs/limits_{path}__{signallabel}.log"
     shell:
@@ -51,6 +52,7 @@ rule limits:
             --redefineSignalPOIs r{params.signallabel} \
             {params.set_parameters_zero} \
             {params.freeze_parameters} \
+            {params.blind} \
             -n _{params.signallabel}" \
             > {output.txt}
 
@@ -280,12 +282,12 @@ rule postfit:
             -n _$(basename {input} .root)_prefit_bonly \
             --saveShapes --saveWithUncertainties --plots" 2>&1 | tee -a $LOG
 
-        echo "[$(date)] Running diffNuisances for b-only" >> $LOG
-        {params.container_wrapper} "cd $(dirname {input}) &&\
-            python /home/cmsusr/CMSSW_11_3_4/src/HiggsAnalysis/CombinedLimit/test/diffNuisances.py \
-            -p r{params.signallabel} \
-            -a fitDiagnostics_$(basename {input} .root)_prefit_bonly.root \
-            -g diffNuisances_$(basename {input} .root)_prefit_bonly.root" 2>&1 | tee -a $LOG
+        # echo "[$(date)] Running diffNuisances for b-only" >> $LOG
+        # {params.container_wrapper} "cd $(dirname {input}) &&\
+        #     python /home/cmsusr/CMSSW_11_3_4/src/HiggsAnalysis/CombinedLimit/test/diffNuisances.py \
+        #     -p r{params.signallabel} \
+        #     -a fitDiagnostics_$(basename {input} .root)_prefit_bonly.root \
+        #     -g diffNuisances_$(basename {input} .root)_prefit_bonly.root" 2>&1 | tee -a $LOG
 
         echo "[$(date)] Running postfit s+b" >> $LOG
         {params.container_wrapper} "cd $(dirname {input}) &&\
@@ -300,14 +302,14 @@ rule postfit:
         mv $(dirname {input})/*th1x* $(dirname {input})/fitDiagnostics_sb/ 2>/dev/null || true
         mv $(dirname {input})/covariance* $(dirname {input})/fitDiagnostics_sb/ 2>/dev/null || true
 
-        echo "[$(date)] Running diffNuisances for s+b" >> $LOG
-        {params.container_wrapper} "cd $(dirname {input}) &&\
-            python /home/cmsusr/CMSSW_11_3_4/src/HiggsAnalysis/CombinedLimit/test/diffNuisances.py \
-            -p r{params.signallabel} \
-            -a fitDiagnostics_$(basename {input} .root)_prefit_sb.root \
-            -g diffNuisances_$(basename {input} .root)_prefit_sb.root" 2>&1 | tee -a $LOG
+        # echo "[$(date)] Running diffNuisances for s+b" >> $LOG
+        # {params.container_wrapper} "cd $(dirname {input}) &&\
+        #     python /home/cmsusr/CMSSW_11_3_4/src/HiggsAnalysis/CombinedLimit/test/diffNuisances.py \
+        #     -p r{params.signallabel} \
+        #     -a fitDiagnostics_$(basename {input} .root)_prefit_sb.root \
+        #     -g diffNuisances_$(basename {input} .root)_prefit_sb.root" 2>&1 | tee -a $LOG
 
-        echo "[$(date)] Running postfit plots for b-only" >> $LOG
+        # echo "[$(date)] Running postfit plots for b-only" >> $LOG
 
         {params.container_wrapper} \
             python3 coffea4bees/plots/make_postfit_plot.py \
@@ -315,7 +317,6 @@ rule postfit:
                 -o $(dirname {input})/plots/ \
                 -c {params.channel} \
                 -s {params.signal} \
-                --log {params.ylog} \
                 -m coffea4bees/stats_analysis/metadata/{params.channel}.yml
 
         echo "[$(date)] Completed postfit rule with signal {params.signallabel}" >> $LOG
