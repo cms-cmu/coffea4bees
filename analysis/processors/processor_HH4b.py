@@ -559,7 +559,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 if "SvB_MA" not in selev.fields:
                     logging.warning("Blinding requires SvB_MA but it is not available — skipping blinding for this chunk.")
                 else:
-                    blind_flag = ~(selev["quadJet_selected"].SR & (selev["SvB_MA"].ps_hh > 0.5) & selev.fourTag)
+                    blind_flag = ~(selev["quadJet_selected"].SR & (selev["SvB_MA"].ps_hh > 0.5) & selev[self._fourtag_label()])
                     blind_sel = np.full(len(event), True)
                     blind_sel[analysis_selections] = blind_flag
                     selections.add('blind', blind_sel)
@@ -1299,6 +1299,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB_MA", analysis_selections)
 
         return friends
+
+    def _fourtag_label(self):
+        return "fourTag"
 
     def apply_selection(self, event):
         """Apply selection to the events"""

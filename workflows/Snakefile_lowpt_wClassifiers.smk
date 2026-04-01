@@ -55,12 +55,11 @@ rule all_lowpt:
         f"{config['output_path']}plots_lowpt_{temp_label}/RunII/region_SB/selJets_lowpt_n.pdf",
         f"{config['output_path']}datacards/HH4b/limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.json",
         f"{config['output_path']}datacards/HH4b/plots/postfitplots__ggHH_kl_1_kt_1_13p0TeV_hbbhbb__fit_s.pdf"
-
-    # shell:
-    #     """
-    #     echo "Copying results to eos"
-    #     bash src/tools/copy_files_to_cernbox.sh -s {config[output_path]} -d www/HH4b/Plots/{config[eos_path]}/ -t
-    #     """
+    shell:
+        """
+        echo "Copying results to eos"
+        bash src/tools/copy_files_to_cernbox.sh -s {config[output_path]} -d www/HH4b/Plots/{config[eos_path]}/ -t
+        """
 
 rule modify_config_file:
     input:
