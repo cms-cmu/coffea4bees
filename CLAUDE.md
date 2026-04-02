@@ -41,6 +41,33 @@ This runs the `Snakefile_testCI` workflow, which mirrors the GitLab CI pipeline.
 
 ## Architecture
 
+This is a **separate git repository** from barista, cloned into `barista/coffea4bees/` at dev/CI time. Commit and push changes here independently.
+
+| Directory | Purpose |
+|-----------|---------|
+| `analysis/processors/` | Event processors (main: `processor_HH4b.py`) |
+| `analysis/helpers/` | Shared analysis helpers |
+| `analysis/weights/` | Scale factor / weight tools |
+| `analysis/trigger_emulator/` | Trigger emulation |
+| `hemisphere_mixing/` | Synthetic dataset generation (hemi mixing) |
+| `classifier/` | ML classifier application |
+| `jet_clustering/` | Custom jet clustering |
+| `metadata/` | Dataset YAML files for Run2/Run3 |
+| `workflows/` | Snakemake workflows for full pipeline |
+| `scripts/` | CI and test shell scripts |
+| `tests/` | Python unit tests (`plots_test.py`, etc.) |
+
+### Running the Analysis
+
+```bash
+# From barista root (processor + config + metadata from coffea4bees)
+./run_container python runner.py \
+  -p coffea4bees/analysis/processors/processor_HH4b.py \
+  -c <config.yml> \
+  -m coffea4bees/metadata/<datasets.yml> \
+  -y UL18 -t
+```
+
 ## processor_HH4b.py Key Features
 
 For detailed implementation notes on TTbar estimation from data and the cutflow structure, see `analysis/processors/ttbar-estimation.md`.

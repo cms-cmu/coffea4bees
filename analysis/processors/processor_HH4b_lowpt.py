@@ -32,6 +32,9 @@ class analysis(HH4bBaseProcessor):
         self.apply_JCM = jetCombinatoricModel(JCM_file, lowpt_mode=True) if apply_JCM else None
         self.friends = parse_friends(friends)
 
+    def _fourtag_label(self):
+        return "lowpt_fourTag"
+
     def apply_selection(self, event):
         return apply_4b_lowpt_selection(
             event,

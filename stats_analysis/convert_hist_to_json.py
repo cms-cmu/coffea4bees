@@ -86,12 +86,7 @@ if __name__ == '__main__':
                                 'year' : iy,
                                 'tag' : itag,
                                 'region' : iregion,
-                                'passPreSel' : True,
                             }
-                            for iaxis in coffea_hists[ih].axes:
-                                if iaxis.name.startswith(('pass', 'fail')) and iaxis.name not in this_hist:
-                                    this_hist[iaxis.name] = sum
-                                    
                             logging.info(f"Converting hist {ih} {this_hist}")
                             json_dict[ih][iprocess][iy][itag][iregion] = hist_to_json( coffea_hists[ih][this_hist] )
                             
@@ -124,9 +119,6 @@ if __name__ == '__main__':
                                     'variation' : ivar,
                                     'tag' : itag,
                                     'region' : iregion,
-                                    'passPreSel' : True,
-                                    # 'passSvB' : sum,
-                                    # 'failSvB' : sum
                                 }
                                 logging.info(f"Converting hist {ih} {this_hist}")
                                 json_dict[ih][iprocess][iy][ivar][itag][iregion] = hist_to_json( coffea_hists[ih][this_hist] )
