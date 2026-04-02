@@ -43,25 +43,31 @@ class analysis(processor.ProcessorABC):
         event = apply_event_selection(event, self.corrections_metadata[year], cut_on_lumimask=False)
 
         # Object-level selections — each adds fields, does not filter events.
-        # apply_4b_lowpt_selection re-runs jet_selection internally so must be called last.
-        event = apply_4b_selection(event, self.corrections_metadata[year], sel_cfg=self.sel_cfg)
-        event = apply_boosted_4b_selection(event)
-        event = apply_semiresolved_4b_selection(event)
+        # apply_4b_lowpt_selection re-runs jet_selection internally (with pt>=15 GeV jets),
+        # which overwrites event.fourTag and event.passPreSel. Save the standard-selection
+        # results before calling it so the categories use consistent jet thresholds.
         event = apply_4b_lowpt_selection(
             event,
             self.corrections_metadata[year],
             sel_cfg=self.sel_cfg,
             isMC=isMC,
         )
+        event = apply_boosted_4b_selection(event)
+        event = apply_semiresolved_4b_selection(event)
+        passResolved     = event.fourTag           # standard resolved: >=4 medium b-tags, pt>=40
+        passBoosted      = event.passBoostedSel
+        passSemiResolved = event.passSemiResolvedSel
+        
+        passLowPt = event.lowpt_fourTag  # events where a low-pT jet completes the 4th b-tag
 
         selections = PackedSelection()
         selections.add("lumimask",         event.lumimask)
         selections.add("passNoiseFilter",  event.passNoiseFilter)
-        selections.add("passHLT",          np.full(nEvent, True) if isMC else event.passHLT)
-        selections.add("fourTag",          event.fourTag)
-        selections.add("passBoostedSel",   event.passBoostedSel)
-        selections.add("passSemiResolved", event.passSemiResolvedSel)
-        selections.add("passLowPt",        event.passPreSel)   # set by apply_4b_lowpt_selection
+        selections.add("passHLT",          event.passHLT)
+        selections.add("passResolved",     passResolved)
+        selections.add("passBoostedSel",   passBoosted)
+        selections.add("passSemiResolved", passSemiResolved)
+        selections.add("passLowPt",        passLowPt)
 
         base = ["lumimask", "passNoiseFilter", "passHLT"]
 
@@ -71,26 +77,34 @@ class analysis(processor.ProcessorABC):
         output = {
             dataset: {
                 'numEvents': nEvent,
-                # exclusive categories
-                'onlyResolved':      count(fourTag=True,  passBoostedSel=False, passSemiResolved=False, passLowPt=False),
-                'onlyBoosted':       count(fourTag=False, passBoostedSel=True,  passSemiResolved=False, passLowPt=False),
-                'onlySemiResolved':  count(fourTag=False, passBoostedSel=False, passSemiResolved=True,  passLowPt=False),
-                'onlyLowPt':         count(fourTag=False, passBoostedSel=False, passSemiResolved=False, passLowPt=True),
-                # pairwise overlaps
-                'resolved_and_boosted':       count(fourTag=True,  passBoostedSel=True,  passSemiResolved=False, passLowPt=False),
-                'resolved_and_semiresolved':  count(fourTag=True,  passBoostedSel=False, passSemiResolved=True,  passLowPt=False),
-                'resolved_and_lowpt':         count(fourTag=True,  passBoostedSel=False, passSemiResolved=False, passLowPt=True),
-                'boosted_and_semiresolved':  count(fourTag=False, passBoostedSel=True,  passSemiResolved=True,  passLowPt=False),
-                'boosted_and_lowpt':         count(fourTag=False, passBoostedSel=True,  passSemiResolved=False, passLowPt=True),
-                'semiresolved_and_lowpt':    count(fourTag=False, passBoostedSel=False, passSemiResolved=True,  passLowPt=True),
-                # anything passing at least one selection
+                'passBase':   int(ak.sum(selections.require(**{k: True for k in base}))),
+                # exclusive categories (pass base + exactly one selection)
+                'onlyResolved':     count(passResolved=True,  passBoostedSel=False, passSemiResolved=False, passLowPt=False),
+                'onlyBoosted':      count(passResolved=False, passBoostedSel=True,  passSemiResolved=False, passLowPt=False),
+                'onlySemiResolved': count(passResolved=False, passBoostedSel=False, passSemiResolved=True,  passLowPt=False),
+                'onlyLowPt':        count(passResolved=False, passBoostedSel=False, passSemiResolved=False, passLowPt=True),
+                # pairwise overlaps (exactly two)
+                'resolved_and_boosted':      count(passResolved=True,  passBoostedSel=True,  passSemiResolved=False, passLowPt=False),
+                'resolved_and_semiresolved': count(passResolved=True,  passBoostedSel=False, passSemiResolved=True,  passLowPt=False),
+                'resolved_and_lowpt':        count(passResolved=True,  passBoostedSel=False, passSemiResolved=False, passLowPt=True),
+                'boosted_and_semiresolved':  count(passResolved=False, passBoostedSel=True,  passSemiResolved=True,  passLowPt=False),
+                'boosted_and_lowpt':         count(passResolved=False, passBoostedSel=True,  passSemiResolved=False, passLowPt=True),
+                'semiresolved_and_lowpt':    count(passResolved=False, passBoostedSel=False, passSemiResolved=True,  passLowPt=True),
+                # three-way overlaps (exactly three)
+                'resolved_boosted_semiresolved': count(passResolved=True,  passBoostedSel=True,  passSemiResolved=True,  passLowPt=False),
+                'resolved_boosted_lowpt':        count(passResolved=True,  passBoostedSel=True,  passSemiResolved=False, passLowPt=True),
+                'resolved_semiresolved_lowpt':   count(passResolved=True,  passBoostedSel=False, passSemiResolved=True,  passLowPt=True),
+                'boosted_semiresolved_lowpt':    count(passResolved=False, passBoostedSel=True,  passSemiResolved=True,  passLowPt=True),
+                # all four
+                'all_four': count(passResolved=True, passBoostedSel=True, passSemiResolved=True, passLowPt=True),
+                # anything passing at least one selection (after base cuts)
                 'anySelection': int(ak.sum(
                     selections.require(**{k: True for k in base}) &
-                    (selections.all("fourTag") | selections.all("passBoostedSel") |
+                    (selections.all("passResolved") | selections.all("passBoostedSel") |
                      selections.all("passSemiResolved") | selections.all("passLowPt"))
                 )),
-                # none
-                'none': count(fourTag=False, passBoostedSel=False, passSemiResolved=False, passLowPt=False),
+                # passes base cuts but fails all selections
+                'none': count(passResolved=False, passBoostedSel=False, passSemiResolved=False, passLowPt=False),
             }
         }
 
