@@ -141,6 +141,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         make_friend_JCM_weight (str): Path for dumping JCM weight friend tree.
         make_friend_FvT_weight (str): Path for dumping FvT weight friend tree.
         make_friend_SvB (str): Path for dumping SvB friend tree.
+        make_friend_SvB_FeynNet (str): Path for dumping SvB_FeynNet friend tree.
         subtract_ttbar_with_weights (bool): Whether to subtract ttbar using weights.
         plot_ttbar_with_weights (bool): Whether to plot ttbar (3b and 4b) from 3b data using weights.
         apply_mixeddata_sel (bool): Whether to apply mixed data selection.
@@ -196,6 +197,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         make_friend_JCM_weight: str = None,
         make_friend_FvT_weight: str = None,
         make_friend_SvB: str = None,
+        make_friend_SvB_FeynNet: str = None,
         subtract_ttbar_with_weights: bool = False,
         plot_ttbar_with_weights: bool = False,
         plot_ttbar_with_MvD_weights: bool = False,
@@ -248,6 +250,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.make_friend_JCM_weight = make_friend_JCM_weight
         self.make_friend_FvT_weight = make_friend_FvT_weight
         self.make_friend_SvB = make_friend_SvB
+        self.make_friend_SvB_FeynNet = make_friend_SvB_FeynNet
         self.top_reconstruction = top_reconstruction
         if self.top_reconstruction is not None and self.top_reconstruction not in ["slow", "fast"]:
             raise ValueError(f"top_reconstruction must be None, 'slow', or 'fast', got: {self.top_reconstruction}")
@@ -1307,6 +1310,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             from ..helpers.dump_friendtrees import dump_SvB
             friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB", analysis_selections)
             friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB_MA", analysis_selections)
+
+        if self.make_friend_SvB_FeynNet is not None:
+            from ..helpers.dump_friendtrees import dump_SvB_FeynNet
+            friends["friends"] |= dump_SvB_FeynNet(selev, self.make_friend_SvB_FeynNet, "SvB_FeynNet", analysis_selections)
 
         return friends
 
