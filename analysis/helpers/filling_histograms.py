@@ -5,6 +5,7 @@ from coffea4bees.analysis.helpers.hist_templates import (
     QuadJetHistsMinDr,
     QuadJetHistsSRSingle,
     SvBHists,
+    FeynNetSvBHists,
     TopCandHists,
     WCandHists,
     TrigEmHists,
@@ -165,6 +166,8 @@ def filling_nominal_histograms(
             #fill += SvBHists(("SvB_noFvT", "SvB Classifier"), "SvB", weight="weight_noFvT")
             fill += SvBHists(("SvB_MA_noFvT", "SvB MA Classifier"), "SvB_MA", weight=noFvT_weight)
             #fill += SvBHists(("SvB_MA_noFvT_noJCM", "SvB MA Classifier"), "SvB_MA", weight="weight_noJCM_noFvT")
+        if "SvB_FeynNet" in selev.fields:
+            fill += FeynNetSvBHists(("SvB_FeynNet", "FeynNet SvB Classifier"), "SvB_FeynNet")
         if has_SvB:
             fill += hist.add("quadJet_selected.SvB_q_score", (100, 0, 1, ("quadJet_selected.SvB_q_score", "Selected Quad Jet Diboson SvB q score")))
         if has_SvB_MA:

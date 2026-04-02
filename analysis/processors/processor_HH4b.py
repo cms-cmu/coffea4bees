@@ -372,7 +372,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         with self._stage("load_friend_SvB"):
             if self.run_SvB:
                 self.load_SvB(event)
-                if "SvB_MA" not in event.fields and self.classifier_SvB_MA is None:
+                if "SvB_MA" not in event.fields and self.classifier_SvB_MA is None and self.classifier_SvB_FeynNet is None:
                     logging.warning("SvB_MA not available after load_SvB and no classifier configured — disabling run_SvB for this chunk.")
                     self.run_SvB = False
 

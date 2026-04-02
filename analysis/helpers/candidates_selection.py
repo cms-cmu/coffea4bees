@@ -386,6 +386,9 @@ def _apply_ml_scores(
             if run_systematics
             else np.full(len(selev), True)
         )
+        # _higgs_cand_flags needs quadJet_selected; set it temporarily here since
+        # _assign_output_vars hasn't run yet.
+        selev["quadJet_selected"] = quadJet[quadJet.selected][:, 0]
         compute_SvB_FeynNet(selev, tmp_mask_fn, SvB_FeynNet=classifier_SvB_FeynNet)
 
     if "SvB_FeynNet" in selev.fields:
@@ -431,9 +434,16 @@ def _assign_output_vars(selev, diJet, quadJet, run_SvB, cand_cfg):
     })
 
     svb_cfg = (cand_cfg or {}).get('svb', {})
-    if run_SvB and "SvB_MA" in selev.fields:
-        selev["passSvB"] = selev["SvB_MA"].ps > svb_cfg.get('passSvB_min', 0.80)
-        selev["failSvB"] = selev["SvB_MA"].ps < svb_cfg.get('failSvB_max', 0.05)
+    if run_SvB:
+        if "SvB_MA" in selev.fields:
+            svb_ps = selev["SvB_MA"].ps
+        elif "SvB_FeynNet" in selev.fields:
+            svb_ps = selev["SvB_FeynNet"].ps
+        else:
+            svb_ps = None
+        if svb_ps is not None:
+            selev["passSvB"] = svb_ps > svb_cfg.get('passSvB_min', 0.80)
+            selev["failSvB"] = svb_ps < svb_cfg.get('failSvB_max', 0.05)
 
 
 # ---------------------------------------------------------------------------

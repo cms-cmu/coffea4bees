@@ -3,6 +3,11 @@ FeynNet ONNX model wrapper for HH→4b analysis.
 
 Wraps an external FeynNet ensemble (k-fold ONNX models) to produce
 classification scores and reweighting ratios from awkward-array event data.
+
+Forward jets are read from ``event.notCanJet_coffea`` (built in
+candidates_selection.py), which is used as an approximation for the FeynNet
+forward-jet inputs. The opposite-eta pair ranking and zero-padding are done
+here; the underlying jet selection lives in object_selection.py.
 """
 
 import json
@@ -52,63 +57,50 @@ def _higgs_cand_flags(event) -> np.ndarray:
     return flags
 
 
-def _select_forward_jets(event) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def _forward_jet_inputs(event) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
-    Select the two 'forward' (non-b-tagged) jets for each event.
+    Build forward-jet arrays from ``event.notCanJet_coffea``.
 
-    Selection criteria applied to event.Jet:
-      - pt > 30
-      - |eta| < 4.7
-      - not b-tagged (tagged == False)
-      - NOT (pt < 50 AND 2.5 < |eta| < 3.0)  [noisy HF region]
-
-    From the surviving jets, pick the best positive-eta and best negative-eta
-    jet (by pt), sort the pair by pt descending, and zero-pad to exactly 2.
+    ``notCanJet_coffea`` (built in candidates_selection.py) is used as an
+    approximation for FeynNet's forward-jet inputs.  From those jets, pick the
+    highest-pt positive-eta jet and the highest-pt negative-eta jet, sort the
+    pair by pt descending, and zero-pad to exactly 2 slots.
 
     Returns
     -------
     f_pt, f_eta, f_phi, f_mass : ndarray, each shape (N, 2), float32
     """
-    # Pad to rectangular shape before converting to numpy (Jet arrays may be jagged)
-    nj = ak.max(ak.num(event.Jet.pt)) if ak.num(event.Jet.pt, axis=0) > 0 else 0
-    # If already rectangular (fixed-length axis), ak.to_numpy works directly
-    try:
-        pt = ak.to_numpy(event.Jet.pt).astype("float32")
-        eta = ak.to_numpy(event.Jet.eta).astype("float32")
-        phi = ak.to_numpy(event.Jet.phi).astype("float32")
-        mass = ak.to_numpy(event.Jet.mass).astype("float32")
-        tagged = ak.to_numpy(event.Jet.tagged)
-    except ValueError:
-        # Jagged arrays: pad to max length with sentinel values
-        pad_val = 0.0
-        pt = ak.fill_none(ak.pad_none(event.Jet.pt, nj, clip=True), pad_val).to_numpy().astype("float32")
-        eta = ak.fill_none(ak.pad_none(event.Jet.eta, nj, clip=True), pad_val).to_numpy().astype("float32")
-        phi = ak.fill_none(ak.pad_none(event.Jet.phi, nj, clip=True), pad_val).to_numpy().astype("float32")
-        mass = ak.fill_none(ak.pad_none(event.Jet.mass, nj, clip=True), pad_val).to_numpy().astype("float32")
-        tagged_padded = ak.fill_none(ak.pad_none(event.Jet.tagged, nj, clip=True), True)
-        tagged = tagged_padded.to_numpy()
+    n = len(event)
+    nj = ak.max(ak.num(event.notCanJet_coffea.pt)) if ak.num(event.notCanJet_coffea.pt, axis=0) > 0 else 0
 
-    n, nj = pt.shape
+    if nj == 0:
+        return (
+            np.zeros((n, 2), dtype="float32"),
+            np.zeros((n, 2), dtype="float32"),
+            np.zeros((n, 2), dtype="float32"),
+            np.zeros((n, 2), dtype="float32"),
+        )
 
-    abs_eta = np.abs(eta)
-    sel = (
-        (pt > 30)
-        & (abs_eta < 4.7)
-        & (~tagged)
-        & ~((pt < 50) & (abs_eta > 2.5) & (abs_eta < 3.0))
-    )
+    pad_val = 0.0
+    pt   = ak.fill_none(ak.pad_none(event.notCanJet_coffea.pt,   nj, clip=True), pad_val).to_numpy().astype("float32")
+    eta  = ak.fill_none(ak.pad_none(event.notCanJet_coffea.eta,  nj, clip=True), pad_val).to_numpy().astype("float32")
+    phi  = ak.fill_none(ak.pad_none(event.notCanJet_coffea.phi,  nj, clip=True), pad_val).to_numpy().astype("float32")
+    mass = ak.fill_none(ak.pad_none(event.notCanJet_coffea.mass, nj, clip=True), pad_val).to_numpy().astype("float32")
 
-    f_pt = np.zeros((n, 2), dtype="float32")
-    f_eta = np.zeros((n, 2), dtype="float32")
-    f_phi = np.zeros((n, 2), dtype="float32")
+    # Mask out zero-padded slots (pt == 0 means no jet in that slot)
+    valid = pt > 0
+
+    f_pt   = np.zeros((n, 2), dtype="float32")
+    f_eta  = np.zeros((n, 2), dtype="float32")
+    f_phi  = np.zeros((n, 2), dtype="float32")
     f_mass = np.zeros((n, 2), dtype="float32")
 
     for i in range(n):
-        mask = sel[i]
-        jet_pt = pt[i, mask]
-        jet_eta = eta[i, mask]
-        jet_phi = phi[i, mask]
-        jet_mass = mass[i, mask]
+        v = valid[i]
+        jet_pt   = pt[i, v]
+        jet_eta  = eta[i, v]
+        jet_phi  = phi[i, v]
+        jet_mass = mass[i, v]
 
         pos_mask = jet_eta >= 0
         neg_mask = jet_eta < 0
@@ -126,9 +118,9 @@ def _select_forward_jets(event) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.
         # Sort pair by pt descending
         candidates.sort(key=lambda x: -x[0])
         for slot, (jpt, jeta, jphi, jmass) in enumerate(candidates[:2]):
-            f_pt[i, slot] = jpt
-            f_eta[i, slot] = jeta
-            f_phi[i, slot] = jphi
+            f_pt[i, slot]   = jpt
+            f_eta[i, slot]  = jeta
+            f_phi[i, slot]  = jphi
             f_mass[i, slot] = jmass
 
     return f_pt, f_eta, f_phi, f_mass
@@ -176,17 +168,13 @@ class FeynNetEnsemble:
     """
 
     def __init__(self, paths: list[dict], batched: bool = True):
-        import onnxruntime as ort
+        # Store paths only — InferenceSession is not picklable, so sessions are
+        # created lazily on first use (after the object is unpickled in a worker).
+        self._paths = paths
+        self._sessions = None  # populated by _ensure_sessions()
 
-        self.sessions = []
         self.preprocessors = []
         for entry in paths:
-            session = ort.InferenceSession(
-                entry["path"],
-                providers=["CPUExecutionProvider"],
-            )
-            self.sessions.append(session)
-
             with open(entry["preprocess"], "r") as f:
                 prep = json.load(f)
             self.preprocessors.append(prep)
@@ -194,6 +182,21 @@ class FeynNetEnsemble:
         self.classes = ["ggHH", "qqHH", "ZZ", "ZH", "Background"]
         self.n_folds = len(paths)
         self._batched = batched
+
+    def _ensure_sessions(self):
+        """Load ONNX sessions on first use (called inside the worker process)."""
+        if self._sessions is not None:
+            return
+        import onnxruntime as ort
+        self._sessions = [
+            ort.InferenceSession(entry["path"], providers=["CPUExecutionProvider"])
+            for entry in self._paths
+        ]
+
+    @property
+    def sessions(self):
+        self._ensure_sessions()
+        return self._sessions
 
     # ------------------------------------------------------------------
     # Input construction
@@ -255,8 +258,8 @@ class FeynNetEnsemble:
             can_phi,
         ], axis=1).astype("float32")  # (N, 4, 4)
 
-        # --- Forward jets ---
-        f_pt, f_eta, f_phi, f_mass = _select_forward_jets(event)  # each (N, 2)
+        # --- Forward jets (from event.notCanJet_coffea, built in candidates_selection.py) ---
+        f_pt, f_eta, f_phi, f_mass = _forward_jet_inputs(event)  # each (N, 2)
 
         min_b_dr = _compute_min_b_dr(f_eta, f_phi, can_eta, can_phi)  # (N, 2)
 
