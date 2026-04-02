@@ -39,12 +39,15 @@ def _higgs_cand_flags(event) -> np.ndarray:
     ], axis=1)  # (N, 4)
 
     flags = np.zeros((n, 4, 4), dtype="float32")
+    claimed = np.zeros((n, 4), dtype=bool)
     for role_idx in range(4):
         role_pt = role_pts[:, role_idx]  # (N,)
         # Find which canJet (by index) has the closest pt to this role
         diff = np.abs(can_pt - role_pt[:, np.newaxis])  # (N, 4)
+        diff[claimed] = np.inf  # exclude already-claimed jets
         best_jet = np.argmin(diff, axis=1)  # (N,)
         flags[np.arange(n), best_jet, role_idx] = 1.0
+        claimed[np.arange(n), best_jet] = True
 
     return flags
 
@@ -66,11 +69,24 @@ def _select_forward_jets(event) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.
     -------
     f_pt, f_eta, f_phi, f_mass : ndarray, each shape (N, 2), float32
     """
-    pt = ak.to_numpy(event.Jet.pt).astype("float32")
-    eta = ak.to_numpy(event.Jet.eta).astype("float32")
-    phi = ak.to_numpy(event.Jet.phi).astype("float32")
-    mass = ak.to_numpy(event.Jet.mass).astype("float32")
-    tagged = ak.to_numpy(event.Jet.tagged)
+    # Pad to rectangular shape before converting to numpy (Jet arrays may be jagged)
+    nj = ak.max(ak.num(event.Jet.pt)) if ak.num(event.Jet.pt, axis=0) > 0 else 0
+    # If already rectangular (fixed-length axis), ak.to_numpy works directly
+    try:
+        pt = ak.to_numpy(event.Jet.pt).astype("float32")
+        eta = ak.to_numpy(event.Jet.eta).astype("float32")
+        phi = ak.to_numpy(event.Jet.phi).astype("float32")
+        mass = ak.to_numpy(event.Jet.mass).astype("float32")
+        tagged = ak.to_numpy(event.Jet.tagged)
+    except ValueError:
+        # Jagged arrays: pad to max length with sentinel values
+        pad_val = 0.0
+        pt = ak.fill_none(ak.pad_none(event.Jet.pt, nj, clip=True), pad_val).to_numpy().astype("float32")
+        eta = ak.fill_none(ak.pad_none(event.Jet.eta, nj, clip=True), pad_val).to_numpy().astype("float32")
+        phi = ak.fill_none(ak.pad_none(event.Jet.phi, nj, clip=True), pad_val).to_numpy().astype("float32")
+        mass = ak.fill_none(ak.pad_none(event.Jet.mass, nj, clip=True), pad_val).to_numpy().astype("float32")
+        tagged_padded = ak.fill_none(ak.pad_none(event.Jet.tagged, nj, clip=True), True)
+        tagged = tagged_padded.to_numpy()
 
     n, nj = pt.shape
 
@@ -336,13 +352,20 @@ class FeynNetEnsemble:
             input_names = prep.get("input_names", list(fold_inputs.keys()))
             ort_inputs = {name: fold_inputs[name] for name in input_names if name in fold_inputs}
 
+            output_names_list = prep.get("output_names", None)
+
             outputs = None
             if self._batched:
                 try:
-                    output_names = prep.get("output_names", None)
-                    outputs = session.run(output_names, ort_inputs)
-                    probs = outputs[0]
-                    ratios = outputs[2]
+                    raw_outputs = session.run(output_names_list, ort_inputs)
+                    if output_names_list is not None:
+                        output_map = dict(zip(output_names_list, raw_outputs))
+                        probs = output_map["event_probs"]
+                        ratios = output_map["event_reweight"]
+                    else:
+                        probs = raw_outputs[0]
+                        ratios = raw_outputs[2]
+                    outputs = raw_outputs
                     if np.any(np.isnan(probs)) or np.any(np.isnan(ratios)):
                         log.warning(
                             "FeynNet fold %d: NaN in batched output, falling back to per-event",
@@ -362,12 +385,16 @@ class FeynNetEnsemble:
                 batch_size = fold_mask.sum()
                 probs_list = []
                 ratios_list = []
-                output_names = prep.get("output_names", None)
                 for ev_idx in range(batch_size):
                     ev_inputs = {k: v[ev_idx : ev_idx + 1] for k, v in ort_inputs.items()}
-                    ev_out = session.run(output_names, ev_inputs)
-                    probs_list.append(ev_out[0])
-                    ratios_list.append(ev_out[2])
+                    ev_out = session.run(output_names_list, ev_inputs)
+                    if output_names_list is not None:
+                        ev_map = dict(zip(output_names_list, ev_out))
+                        probs_list.append(ev_map["event_probs"])
+                        ratios_list.append(ev_map["event_reweight"])
+                    else:
+                        probs_list.append(ev_out[0])
+                        ratios_list.append(ev_out[2])
                 probs = np.concatenate(probs_list, axis=0)
                 ratios = np.concatenate(ratios_list, axis=0)
 

@@ -1,8 +1,6 @@
 # coffea4bees/tests/test_feynnet.py
-import sys
 import os
 import unittest
-sys.path.insert(0, os.getcwd())
 
 import numpy as np
 import awkward as ak
@@ -85,6 +83,8 @@ class FeynNetTestCase(unittest.TestCase):
         flags = _higgs_cand_flags(event)
         # Each role column sums to 1 across the 4 canJets
         self.assertTrue(np.all(flags.sum(axis=1) == 1))
+        # Each canJet is assigned to at most one role
+        self.assertTrue(np.all(flags.sum(axis=2) <= 1))
 
     def test_select_forward_jets_shape(self):
         event = _make_mock_event(10)
