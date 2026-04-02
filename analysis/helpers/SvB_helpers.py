@@ -224,8 +224,8 @@ def compute_SvB_FeynNet(events, mask, **models):
 
         def _ps_gated(win_mask):
             arr = np.full(len(events), -1, dtype=float)
-            arr[win_mask] = ps[win_mask]
             arr[~passMinPs] = -2
+            arr[win_mask] = ps[win_mask]
             return arr
 
         events[name] = ak.zip({

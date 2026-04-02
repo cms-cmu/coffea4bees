@@ -783,7 +783,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         # Source 1: Load from friend tree arrays
         for k in self.friends:
-            if k.startswith("SvB"):
+            if k.startswith("SvB") and not k.startswith("SvB_FeynNet"):
                 logging.info(f"Loading SvB friend tree ")
                 try:
                     result = rename_SvB_friend(self.target, self.friends[k])
@@ -800,6 +800,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                         continue
                     event[k] = result
                     setSvBVars(k, event)
+            elif k.startswith("SvB_FeynNet"):
+                pass  # SvB_FeynNet fields are populated by compute_SvB_FeynNet, no rename/setSvBVars needed
 
         self._log_memory("after_friend_trees_loaded")
 
