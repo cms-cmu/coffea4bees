@@ -92,6 +92,13 @@ def _init_classfier_FvT(path: str | list[HCRModelMetadata]):
     from ..helpers.classifier.HCR import Legacy_HCREnsemble_FvT
     return Legacy_HCREnsemble_FvT(path)
 
+def _init_feynnet(cfg):
+    """Construct FeynNetEnsemble from config list, or return None."""
+    if cfg is None:
+        return None
+    from coffea4bees.analysis.helpers.classifier.FeynNet import FeynNetEnsemble
+    return FeynNetEnsemble(cfg)
+
 class HH4bBaseProcessor(processor.ProcessorABC):
     """
     Coffea processor for HH→4b analysis workflows.
@@ -168,6 +175,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         *,
         SvB: str|list[HCRModelMetadata]|None|_Unset = _UNSET,
         SvB_MA: str|list[HCRModelMetadata]|None|_Unset = _UNSET,
+        SvB_FeynNet: list[dict] | None = None,
         FvT: str|list[HCRModelMetadata] = None,
         blind: bool = False,
         apply_JCM: bool = True,
@@ -223,6 +231,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.apply_boosted_veto = apply_boosted_veto
         self.classifier_SvB = _init_classfier(SvB)
         self.classifier_SvB_MA = _init_classfier(SvB_MA)
+        self.classifier_SvB_FeynNet = _init_feynnet(SvB_FeynNet)
         # Skip legacy ROOT fallback only when the key was explicitly set to null
         # in the config (SvB=None). When the key is absent (_UNSET), the legacy
         # fallback is still allowed.
@@ -1115,6 +1124,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             run_systematics=self.run_systematics,
             classifier_SvB=self.classifier_SvB,
             classifier_SvB_MA=self.classifier_SvB_MA,
+            classifier_SvB_FeynNet=self.classifier_SvB_FeynNet,
             processOutput=processOutput,
             isRun3=self.config["isRun3"],
             weights=weights,

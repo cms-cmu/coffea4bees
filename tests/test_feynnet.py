@@ -161,5 +161,16 @@ class TestComputeSvBFeynNet(unittest.TestCase):
         self.assertTrue(np.all(ak.to_numpy(event["SvB_FeynNet"].hh)))
 
 
+class TestProcessorWiring(unittest.TestCase):
+    def test_processor_SvB_FeynNet_param_exists(self):
+        """processor_HH4b accepts SvB_FeynNet=None without error."""
+        import importlib
+        proc_module = importlib.import_module("coffea4bees.analysis.processors.processor_HH4b")
+        HH4b = proc_module.analysis
+        p = HH4b(SvB_FeynNet=None, SvB=None, SvB_MA=None)
+        self.assertTrue(hasattr(p, "classifier_SvB_FeynNet"))
+        self.assertIsNone(p.classifier_SvB_FeynNet)
+
+
 if __name__ == "__main__":
     unittest.main()
