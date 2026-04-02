@@ -128,5 +128,38 @@ class FeynNetTestCase(unittest.TestCase):
         self.assertFalse(np.any(np.isnan(q_score)))
 
 
+from coffea4bees.analysis.helpers.SvB_helpers import compute_SvB_FeynNet
+
+
+class TestComputeSvBFeynNet(unittest.TestCase):
+    def test_compute_SvB_FeynNet_fields(self):
+        """compute_SvB_FeynNet adds SvB_FeynNet field with expected sub-fields."""
+        n = 10
+        event = _make_mock_event(n)
+        mask = np.ones(n, dtype=bool)
+
+        mock_ensemble = MagicMock()
+        c_score = np.zeros((n, 5), dtype=np.float32)
+        c_score[:, 0] = 0.6   # ggHH dominant
+        c_score[:, 1] = 0.05  # qqHH
+        c_score[:, 2] = 0.1   # ZZ
+        c_score[:, 3] = 0.1   # ZH
+        c_score[:, 4] = 0.15  # Background
+        q_score = np.ones((n, 3), dtype=np.float32)
+        mock_ensemble.return_value = (c_score, q_score)
+        mock_ensemble.classes = ["ggHH", "qqHH", "ZZ", "ZH", "Background"]
+
+        compute_SvB_FeynNet(event, mask, SvB_FeynNet=mock_ensemble)
+
+        self.assertIn("SvB_FeynNet", event.fields)
+        for field in ("p_ggHH", "p_qqHH", "p_ZZ", "p_ZH", "p_bkg",
+                      "ps", "passMinPs", "hh", "zz", "zh",
+                      "ps_hh", "ps_zz", "ps_zh", "reweight", "tt_vs_mj"):
+            self.assertIn(field, event["SvB_FeynNet"].fields, f"Missing field: {field}")
+
+        # hh should be True when combined ggHH+qqHH (0.65) > ZZ (0.1) and ZH (0.1)
+        self.assertTrue(np.all(ak.to_numpy(event["SvB_FeynNet"].hh)))
+
+
 if __name__ == "__main__":
     unittest.main()

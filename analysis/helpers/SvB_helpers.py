@@ -177,6 +177,76 @@ def compute_SvB(events, mask, doCheck=True, **models: HCREnsemble):
                     logging.warning(f"{field} {events[name][worst][field]}")
 
 
+def compute_SvB_FeynNet(events, mask, **models):
+    """Compute FeynNet SvB scores and store in events[name].
+
+    The FeynNet model classes are [ggHH, qqHH, ZZ, ZH, Background].
+    Derived fields mirror the structure of compute_SvB for compatibility.
+
+    Args:
+        events: full event array (unmasked)
+        mask: boolean mask — only masked events are fed to the model
+        **models: keyword args mapping field name → FeynNetEnsemble instance
+                  e.g. compute_SvB_FeynNet(events, mask, SvB_FeynNet=ensemble)
+    """
+    masked_events = events[mask]
+
+    for name, model in models.items():
+        if model is None:
+            continue
+
+        if len(masked_events) == 0:
+            c_score = np.zeros((0, len(model.classes)), dtype=np.float32)
+            q_score = np.zeros((0, 3), dtype=np.float32)
+        else:
+            c_score, q_score = model(masked_events)
+
+        c_full = np.zeros((len(events), len(model.classes)), dtype=np.float32)
+        q_full = np.zeros((len(events), q_score.shape[1] if q_score.ndim > 1 else 1), dtype=np.float32)
+        if c_score.shape[0] > 0:
+            c_full[mask] = c_score
+            q_full[mask] = q_score if q_score.ndim > 1 else q_score[:, np.newaxis]
+
+        classes = model.classes
+        p_ggHH = c_full[:, classes.index("ggHH")]
+        p_qqHH = c_full[:, classes.index("qqHH")]
+        p_ZZ   = c_full[:, classes.index("ZZ")]
+        p_ZH   = c_full[:, classes.index("ZH")]
+        p_bkg  = c_full[:, classes.index("Background")]
+
+        ps = p_ggHH + p_qqHH + p_ZZ + p_ZH
+        passMinPs = (p_ggHH > 0.01) | (p_qqHH > 0.01) | (p_ZZ > 0.01) | (p_ZH > 0.01)
+
+        p_hh = p_ggHH + p_qqHH  # combined HH score
+        zz   = (p_ZZ  > p_ZH)  & (p_ZZ  > p_hh)
+        zh   = (p_ZH  > p_ZZ)  & (p_ZH  > p_hh)
+        hh   = (p_hh  >= p_ZZ) & (p_hh  >= p_ZH)
+
+        def _ps_gated(win_mask):
+            arr = np.full(len(events), -1, dtype=float)
+            arr[win_mask] = ps[win_mask]
+            arr[~passMinPs] = -2
+            return arr
+
+        events[name] = ak.zip({
+            "p_ggHH":    p_ggHH,
+            "p_qqHH":    p_qqHH,
+            "p_ZZ":      p_ZZ,
+            "p_ZH":      p_ZH,
+            "p_bkg":     p_bkg,
+            "ps":        ps,
+            "passMinPs": passMinPs,
+            "zz":        zz,
+            "zh":        zh,
+            "hh":        hh,
+            "ps_zz":     _ps_gated(zz),
+            "ps_zh":     _ps_gated(zh),
+            "ps_hh":     _ps_gated(hh),
+            "reweight":  q_full[:, 0],
+            "tt_vs_mj":  np.zeros(len(events), dtype=np.float32),
+        })
+
+
 def subtract_ttbar_with_SvB(selev, dataset, year):
 
     #
