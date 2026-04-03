@@ -355,6 +355,17 @@ def jet_selection(
     event['Jet', 'tagged_run2'] = event.Jet.selected_run2 & (event.Jet.btagScore >= corrections_metadata['btagWP']['M'])
     event['Jet', 'tagged_loose_run2'] = event.Jet.selected_run2 & (event.Jet.btagScore >= corrections_metadata['btagWP']['L'])
 
+    # Forward jet flag for FeynNet inputs.
+    # Uses btagScore directly (not the 'tagged' flag) so b-tag exclusion applies
+    # to all jets regardless of whether they pass the central 'selected' criteria.
+    # HEM veto (pt<50, 2.5<|eta|<3.0) targets the Run2 noisy HF region; revisit for Run3.
+    event['Jet', 'fwd_feynnet'] = (
+        (event.Jet.pt > 30)
+        & (np.abs(event.Jet.eta) < 4.7)
+        & (event.Jet.btagScore < corrections_metadata['btagWP']['M'])
+        & ~((event.Jet.pt < 50) & (np.abs(event.Jet.eta) > 2.5) & (np.abs(event.Jet.eta) < 3.0))
+    )
+
     # Override selected jets with flavor bit if required
     if override_selected_with_flavor_bit and "jet_flavor_bit" in event.Jet.fields:
         event['Jet', 'selected'] = (event.Jet.selected) | (event.Jet.jet_flavor_bit == 1)

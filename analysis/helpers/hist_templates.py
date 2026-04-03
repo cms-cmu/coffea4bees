@@ -32,6 +32,21 @@ class SvBHists(Template):
     phh_fine      = H((240, 0, 1, ('phh', "Regressed P(HH)  ")))
 
 
+class FeynNetSvBHists(Template):
+    ps      = H((50, 0, 1, ('ps',    "FeynNet P(Signal)")))
+    ps_zz   = H((25, 0, 1, ('ps_zz', "FeynNet P(Signal) $|$ P(ZZ) is largest")))
+    ps_zh   = H((20, 0, 1, ('ps_zh', "FeynNet P(Signal) $|$ P(ZH) is largest")))
+    ps_hh   = H((50, 0, 1, ('ps_hh', "FeynNet P(Signal) $|$ P(HH) is largest")))
+
+    p_ggHH  = H((50, 0, 1, ('p_ggHH',  "FeynNet P(ggHH)")))
+    p_qqHH  = H((50, 0, 1, ('p_qqHH',  "FeynNet P(qqHH)")))
+    p_ZZ    = H((50, 0, 1, ('p_ZZ',    "FeynNet P(ZZ)")))
+    p_ZH    = H((50, 0, 1, ('p_ZH',    "FeynNet P(ZH)")))
+    p_bkg   = H((50, 0, 1, ('p_bkg',   "FeynNet P(Background)")))
+
+    reweight = H((50, 0, 5, ('reweight', "FeynNet event reweight")))
+
+
 class FvTHists(Template):
     FvT  = H((50, 0, 5, ('FvT', 'FvT reweight')))
     FvT_l = H((50, 0, 50, ('FvT', 'FvT reweight')))

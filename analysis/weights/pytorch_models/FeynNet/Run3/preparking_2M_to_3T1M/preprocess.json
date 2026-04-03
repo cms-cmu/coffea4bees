@@ -1,0 +1,248 @@
+{
+  "output_names": [
+    "event_probs",
+    "event_logits",
+    "event_reweight"
+  ],
+  "input_names": [
+    "j",
+    "j_p4",
+    "f",
+    "f_p4"
+  ],
+  "j": {
+    "var_names": [
+      "j_log_pt",
+      "j_log_mass",
+      "j_eta",
+      "j_sinphi",
+      "j_cosphi",
+      "j_h1b1_cand",
+      "j_h1b2_cand",
+      "j_h2b1_cand",
+      "j_h2b2_cand"
+    ],
+    "var_infos": {
+      "j_log_pt": {
+        "median": 4.326672581813614,
+        "norm_factor": 1.867540811571776,
+        "replace_inf_value": 0,
+        "lower_bound": -1e+32,
+        "upper_bound": 1e+32,
+        "pad": 0
+      },
+      "j_log_mass": {
+        "median": 2.3614657454792667,
+        "norm_factor": 2.0442684500602004,
+        "replace_inf_value": 0,
+        "lower_bound": -1e+32,
+        "upper_bound": 1e+32,
+        "pad": 0
+      },
+      "j_eta": {
+        "median": -0.010291663999032839,
+        "norm_factor": 0.9068439519018273,
+        "replace_inf_value": 0,
+        "lower_bound": -1e+32,
+        "upper_bound": 1e+32,
+        "pad": 0
+      },
+      "j_sinphi": {
+        "median": -0.0004734526887342209,
+        "norm_factor": 1.4192618207209093,
+        "replace_inf_value": 0,
+        "lower_bound": -1e+32,
+        "upper_bound": 1e+32,
+        "pad": 0
+      },
+      "j_cosphi": {
+        "median": -0.000851813365429848,
+        "norm_factor": 1.4092201192591507,
+        "replace_inf_value": 0,
+        "lower_bound": -1e+32,
+        "upper_bound": 1e+32,
+        "pad": 0
+      },
+      "j_h1b1_cand": {
+        "median": 0.25,
+        "norm_factor": 2.3094010767585043,
+        "replace_inf_value": 0,
+        "lower_bound": -1e+32,
+        "upper_bound": 1e+32,
+        "pad": 0
+      },
+      "j_h1b2_cand": {
+        "median": 0.25,
+        "norm_factor": 2.3094010767585043,
+        "replace_inf_value": 0,
+        "lower_bound": -1e+32,
+        "upper_bound": 1e+32,
+        "pad": 0
+      },
+      "j_h2b1_cand": {
+        "median": 0.25,
+        "norm_factor": 2.3094010767585043,
+        "replace_inf_value": 0,
+        "lower_bound": -1e+32,
+        "upper_bound": 1e+32,
+        "pad": 0
+      },
+      "j_h2b2_cand": {
+        "median": 0.25,
+        "norm_factor": 2.3094010767585043,
+        "replace_inf_value": 0,
+        "lower_bound": -1e+32,
+        "upper_bound": 1e+32,
+        "pad": 0
+      }
+    },
+    "var_length": 4
+  },
+  "j_p4": {
+    "var_names": [
+      "j_pt",
+      "j_mass",
+      "j_eta",
+      "j_phi"
+    ],
+    "var_infos": {
+      "j_pt": {
+        "median": 0,
+        "norm_factor": 1,
+        "replace_inf_value": 0,
+        "lower_bound": -1e+32,
+        "upper_bound": 1e+32,
+        "pad": 0
+      },
+      "j_mass": {
+        "median": 0,
+        "norm_factor": 1,
+        "replace_inf_value": 0,
+        "lower_bound": -1e+32,
+        "upper_bound": 1e+32,
+        "pad": 0
+      },
+      "j_eta": {
+        "median": 0,
+        "norm_factor": 1,
+        "replace_inf_value": 0,
+        "lower_bound": -1e+32,
+        "upper_bound": 1e+32,
+        "pad": 0
+      },
+      "j_phi": {
+        "median": 0,
+        "norm_factor": 1,
+        "replace_inf_value": 0,
+        "lower_bound": -1e+32,
+        "upper_bound": 1e+32,
+        "pad": 0
+      }
+    },
+    "var_length": 4
+  },
+  "f": {
+    "var_names": [
+      "f_log_pt",
+      "f_log_mass",
+      "f_eta",
+      "f_sinphi",
+      "f_cosphi",
+      "f_min_b_dr"
+    ],
+    "var_infos": {
+      "f_log_pt": {
+        "median": 4.4372342341821485,
+        "norm_factor": 1.6221400536220136,
+        "replace_inf_value": 0,
+        "lower_bound": -1e+32,
+        "upper_bound": 1e+32,
+        "pad": 0
+      },
+      "f_log_mass": {
+        "median": 2.3683594137381676,
+        "norm_factor": 0.9967338649982258,
+        "replace_inf_value": 0,
+        "lower_bound": -1e+32,
+        "upper_bound": 1e+32,
+        "pad": 0
+      },
+      "f_eta": {
+        "median": -0.022469414209413792,
+        "norm_factor": 0.5853456827954148,
+        "replace_inf_value": 0,
+        "lower_bound": -1e+32,
+        "upper_bound": 1e+32,
+        "pad": 0
+      },
+      "f_sinphi": {
+        "median": 0.006499340196302813,
+        "norm_factor": 1.420096816138014,
+        "replace_inf_value": 0,
+        "lower_bound": -1e+32,
+        "upper_bound": 1e+32,
+        "pad": 0
+      },
+      "f_cosphi": {
+        "median": -0.0001594534951093361,
+        "norm_factor": 1.4084618744515573,
+        "replace_inf_value": 0,
+        "lower_bound": -1e+32,
+        "upper_bound": 1e+32,
+        "pad": 0
+      },
+      "f_min_b_dr": {
+        "median": 1.616492638428269,
+        "norm_factor": 1.136888105308207,
+        "replace_inf_value": 0,
+        "lower_bound": -1e+32,
+        "upper_bound": 1e+32,
+        "pad": 0
+      }
+    },
+    "var_length": 2
+  },
+  "f_p4": {
+    "var_names": [
+      "f_pt",
+      "f_mass",
+      "f_eta",
+      "f_phi"
+    ],
+    "var_infos": {
+      "f_pt": {
+        "median": 0,
+        "norm_factor": 1,
+        "replace_inf_value": 0,
+        "lower_bound": -1e+32,
+        "upper_bound": 1e+32,
+        "pad": 0
+      },
+      "f_mass": {
+        "median": 0,
+        "norm_factor": 1,
+        "replace_inf_value": 0,
+        "lower_bound": -1e+32,
+        "upper_bound": 1e+32,
+        "pad": 0
+      },
+      "f_eta": {
+        "median": 0,
+        "norm_factor": 1,
+        "replace_inf_value": 0,
+        "lower_bound": -1e+32,
+        "upper_bound": 1e+32,
+        "pad": 0
+      },
+      "f_phi": {
+        "median": 0,
+        "norm_factor": 1,
+        "replace_inf_value": 0,
+        "lower_bound": -1e+32,
+        "upper_bound": 1e+32,
+        "pad": 0
+      }
+    },
+    "var_length": 2
+  }
+}

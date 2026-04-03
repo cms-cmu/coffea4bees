@@ -140,7 +140,7 @@ rule make_syst_plots:
         channel="{channel}",
         signal="{signal}",
         container_wrapper = config.get("container_wrapper", "./run_container combine")
-    log: "logs/make_syst_plots_{output_dir}_{variable}.log"
+    log: "{output_dir}/logs/make_syst_plots_{variable}.log"
     shell:
         """
         mkdir -p $(dirname {log})

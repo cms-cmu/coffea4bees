@@ -18,10 +18,10 @@ inputs:
 workflow:
   type: snakemake
   file: coffea4bees/workflows/Snakefile_reana.smk
-  resources:
-    cvmfs:
-      - cms.cern.ch
-      - cms-griddata.cern.ch
+  # resources:
+  #   cvmfs:
+  #     - cms.cern.ch
+  #     - cms-griddata.cern.ch
 workspace:
   retention_days:
     coffea4bees/*: 1

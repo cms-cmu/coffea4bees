@@ -92,6 +92,13 @@ def _init_classfier_FvT(path: str | list[HCRModelMetadata]):
     from ..helpers.classifier.HCR import Legacy_HCREnsemble_FvT
     return Legacy_HCREnsemble_FvT(path)
 
+def _init_feynnet(cfg):
+    """Construct FeynNetEnsemble from config list, or return None."""
+    if cfg is None:
+        return None
+    from coffea4bees.analysis.helpers.classifier.FeynNet import FeynNetEnsemble
+    return FeynNetEnsemble(cfg)
+
 class HH4bBaseProcessor(processor.ProcessorABC):
     """
     Coffea processor for HH→4b analysis workflows.
@@ -134,6 +141,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         make_friend_JCM_weight (str): Path for dumping JCM weight friend tree.
         make_friend_FvT_weight (str): Path for dumping FvT weight friend tree.
         make_friend_SvB (str): Path for dumping SvB friend tree.
+        make_friend_SvB_FeynNet (str): Path for dumping SvB_FeynNet friend tree.
         subtract_ttbar_with_weights (bool): Whether to subtract ttbar using weights.
         plot_ttbar_with_weights (bool): Whether to plot ttbar (3b and 4b) from 3b data using weights.
         apply_mixeddata_sel (bool): Whether to apply mixed data selection.
@@ -168,6 +176,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         *,
         SvB: str|list[HCRModelMetadata]|None|_Unset = _UNSET,
         SvB_MA: str|list[HCRModelMetadata]|None|_Unset = _UNSET,
+        SvB_FeynNet: list[dict] | None = None,
         FvT: str|list[HCRModelMetadata] = None,
         blind: bool = False,
         apply_JCM: bool = True,
@@ -188,6 +197,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         make_friend_JCM_weight: str = None,
         make_friend_FvT_weight: str = None,
         make_friend_SvB: str = None,
+        make_friend_SvB_FeynNet: str = None,
         subtract_ttbar_with_weights: bool = False,
         plot_ttbar_with_weights: bool = False,
         plot_ttbar_with_MvD_weights: bool = False,
@@ -223,6 +233,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.apply_boosted_veto = apply_boosted_veto
         self.classifier_SvB = _init_classfier(SvB)
         self.classifier_SvB_MA = _init_classfier(SvB_MA)
+        self.classifier_SvB_FeynNet = _init_feynnet(SvB_FeynNet)
         # Skip legacy ROOT fallback only when the key was explicitly set to null
         # in the config (SvB=None). When the key is absent (_UNSET), the legacy
         # fallback is still allowed.
@@ -239,6 +250,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.make_friend_JCM_weight = make_friend_JCM_weight
         self.make_friend_FvT_weight = make_friend_FvT_weight
         self.make_friend_SvB = make_friend_SvB
+        self.make_friend_SvB_FeynNet = make_friend_SvB_FeynNet
         self.top_reconstruction = top_reconstruction
         if self.top_reconstruction is not None and self.top_reconstruction not in ["slow", "fast"]:
             raise ValueError(f"top_reconstruction must be None, 'slow', or 'fast', got: {self.top_reconstruction}")
@@ -360,7 +372,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         with self._stage("load_friend_SvB"):
             if self.run_SvB:
                 self.load_SvB(event)
-                if "SvB_MA" not in event.fields and self.classifier_SvB_MA is None:
+                if "SvB_MA" not in event.fields and self.classifier_SvB_MA is None and self.classifier_SvB_FeynNet is None:
                     logging.warning("SvB_MA not available after load_SvB and no classifier configured — disabling run_SvB for this chunk.")
                     self.run_SvB = False
 
@@ -771,7 +783,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         # Source 1: Load from friend tree arrays
         for k in self.friends:
-            if k.startswith("SvB"):
+            if k.startswith("SvB") and not k.startswith("SvB_FeynNet"):
                 logging.info(f"Loading SvB friend tree ")
                 try:
                     result = rename_SvB_friend(self.target, self.friends[k])
@@ -788,6 +800,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                         continue
                     event[k] = result
                     setSvBVars(k, event)
+            elif k.startswith("SvB_FeynNet"):
+                pass  # SvB_FeynNet fields are populated by compute_SvB_FeynNet, no rename/setSvBVars needed
 
         self._log_memory("after_friend_trees_loaded")
 
@@ -1115,6 +1129,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             run_systematics=self.run_systematics,
             classifier_SvB=self.classifier_SvB,
             classifier_SvB_MA=self.classifier_SvB_MA,
+            classifier_SvB_FeynNet=self.classifier_SvB_FeynNet,
             processOutput=processOutput,
             isRun3=self.config["isRun3"],
             weights=weights,
@@ -1297,6 +1312,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             from ..helpers.dump_friendtrees import dump_SvB
             friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB", analysis_selections)
             friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB_MA", analysis_selections)
+
+        if self.make_friend_SvB_FeynNet is not None:
+            from ..helpers.dump_friendtrees import dump_SvB_FeynNet
+            friends["friends"] |= dump_SvB_FeynNet(selev, self.make_friend_SvB_FeynNet, "SvB_FeynNet", analysis_selections)
 
         return friends
 
