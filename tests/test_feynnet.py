@@ -1,16 +1,14 @@
 # coffea4bees/tests/test_feynnet.py
-import os
 import unittest
 
 import numpy as np
 import awkward as ak
-from coffea4bees.analysis.helpers.classifier.FeynNet import FeynNetEnsemble, _select_forward_jets, _higgs_cand_flags
+from coffea4bees.analysis.helpers.classifier.FeynNet import FeynNetEnsemble, _higgs_cand_flags
 from unittest.mock import MagicMock
-import json
 
 
 def _make_mock_event(n=10):
-    """Minimal mock selev with canJet, quadJet_selected, Jet fields."""
+    """Minimal mock selev with canJet, quadJet_selected, fwdJet_feynnet, event fields."""
     rng = np.random.default_rng(42)
     pts = np.sort(rng.uniform(40, 300, (n, 4)), axis=1)[:, ::-1].astype("float32")
     etas = rng.uniform(-2.4, 2.4, (n, 4)).astype("float32")
@@ -27,24 +25,22 @@ def _make_mock_event(n=10):
     subl_dijet = ak.zip({"lead": h2b1, "subl": h2b2})
     quadJet_selected = ak.zip({"lead": lead_dijet, "subl": subl_dijet})
 
-    jet_pts   = np.concatenate([pts, rng.uniform(30, 200, (n, 4)).astype("float32")], axis=1)
-    jet_etas  = np.concatenate([etas, rng.uniform(-4.5, 4.5, (n, 4)).astype("float32")], axis=1)
-    jet_phis  = np.concatenate([phis, rng.uniform(-np.pi, np.pi, (n, 4)).astype("float32")], axis=1)
-    jet_masses = np.concatenate([masses, rng.uniform(0, 20, (n, 4)).astype("float32")], axis=1)
-    jet_tagged = np.zeros((n, 8), dtype=bool)
-    jet_tagged[:, :4] = True  # canJets are b-tagged
-    jet_selected = np.ones((n, 8), dtype=bool)
-    Jet = ak.zip({
-        "pt": jet_pts, "eta": jet_etas, "phi": jet_phis, "mass": jet_masses,
-        "tagged": jet_tagged, "selected": jet_selected,
-    })
+    # Forward jets: 2 non-b-tagged jets per event with one positive and one negative eta
+    fwd_pts   = rng.uniform(35, 150, (n, 2)).astype("float32")
+    fwd_etas  = np.stack([
+        rng.uniform(0.1, 4.5, n).astype("float32"),   # positive eta
+        rng.uniform(-4.5, -0.1, n).astype("float32"),  # negative eta
+    ], axis=1)
+    fwd_phis  = rng.uniform(-np.pi, np.pi, (n, 2)).astype("float32")
+    fwd_masses = rng.uniform(0, 20, (n, 2)).astype("float32")
+    fwdJet_feynnet = ak.zip({"pt": fwd_pts, "eta": fwd_etas, "phi": fwd_phis, "mass": fwd_masses})
 
     event_ids = rng.integers(0, 1000000, n).astype(np.uint64)
 
     return ak.zip({
         "canJet": canJet,
         "quadJet_selected": quadJet_selected,
-        "Jet": Jet,
+        "fwdJet_feynnet": fwdJet_feynnet,
         "event": event_ids,
     }, depth_limit=1)
 
@@ -86,16 +82,16 @@ class FeynNetTestCase(unittest.TestCase):
         # Each canJet is assigned to at most one role
         self.assertTrue(np.all(flags.sum(axis=2) <= 1))
 
-    def test_select_forward_jets_shape(self):
+    def test_forward_jet_inputs_shape(self):
+        from coffea4bees.analysis.helpers.classifier.FeynNet import _forward_jet_inputs
         event = _make_mock_event(10)
-        f_pt, f_eta, f_phi, f_mass = _select_forward_jets(event)
+        f_pt, _, _, _ = _forward_jet_inputs(event)
         self.assertEqual(f_pt.shape, (10, 2))
-        self.assertEqual(f_eta.shape, (10, 2))
 
-    def test_select_forward_jets_not_btagged(self):
+    def test_forward_jet_inputs_nonzero(self):
+        from coffea4bees.analysis.helpers.classifier.FeynNet import _forward_jet_inputs
         event = _make_mock_event(10)
-        f_pt, f_eta, f_phi, f_mass = _select_forward_jets(event)
-        # canJets (slots 0-3) are all b-tagged, so forward jets come from slots 4-7
+        f_pt, _, _, _ = _forward_jet_inputs(event)
         self.assertTrue(np.any(f_pt > 0))
 
     def test_feynnet_ensemble_output_shape(self):
@@ -114,7 +110,7 @@ class FeynNetTestCase(unittest.TestCase):
         mock_session.run = fake_run
 
         ensemble = FeynNetEnsemble.__new__(FeynNetEnsemble)
-        ensemble.sessions = [mock_session]
+        ensemble._sessions = [mock_session]
         ensemble.preprocessors = [prep]
         ensemble.n_folds = 1
         ensemble.classes = ["ggHH", "qqHH", "ZZ", "ZH", "Background"]

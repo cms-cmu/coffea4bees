@@ -103,6 +103,7 @@ def cand_jet_selection(
     notCanJet["isSelJet"] = 1 * ( (notCanJet.pt >= isSelJet_pt_min) & (np.abs(notCanJet.eta) < isSelJet_eta_max) )
     selev["notCanJet_coffea"] = notCanJet
     selev["nNotCanJet"] = ak.num(selev.notCanJet_coffea)
+    selev["fwdJet_feynnet"] = selev.Jet[selev.Jet.fwd_feynnet]
 
     # Release indexing intermediates
     del sorted_idx, canJet_idx, notCanJet_idx, notCanJet

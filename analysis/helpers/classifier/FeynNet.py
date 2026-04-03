@@ -4,10 +4,10 @@ FeynNet ONNX model wrapper for HH→4b analysis.
 Wraps an external FeynNet ensemble (k-fold ONNX models) to produce
 classification scores and reweighting ratios from awkward-array event data.
 
-Forward jets are read from ``event.notCanJet_coffea`` (built in
-candidates_selection.py), which is used as an approximation for the FeynNet
-forward-jet inputs. The opposite-eta pair ranking and zero-padding are done
-here; the underlying jet selection lives in object_selection.py.
+Forward jets are read from ``event.fwdJet_feynnet`` (built in
+candidates_selection.py from the ``Jet.fwd_feynnet`` flag set in
+object_selection.py). The opposite-eta pair ranking and zero-padding are
+done here; the underlying jet selection lives in object_selection.py.
 """
 
 import json
@@ -59,19 +59,19 @@ def _higgs_cand_flags(event) -> np.ndarray:
 
 def _forward_jet_inputs(event) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
-    Build forward-jet arrays from ``event.notCanJet_coffea``.
+    Build forward-jet arrays from ``event.fwdJet_feynnet``.
 
-    ``notCanJet_coffea`` (built in candidates_selection.py) is used as an
-    approximation for FeynNet's forward-jet inputs.  From those jets, pick the
-    highest-pt positive-eta jet and the highest-pt negative-eta jet, sort the
-    pair by pt descending, and zero-pad to exactly 2 slots.
+    ``fwdJet_feynnet`` is built in candidates_selection.py from the
+    ``Jet.fwd_feynnet`` flag set in object_selection.py.  From those jets,
+    pick the highest-pt positive-eta jet and the highest-pt negative-eta jet,
+    sort the pair by pt descending, and zero-pad to exactly 2 slots.
 
     Returns
     -------
     f_pt, f_eta, f_phi, f_mass : ndarray, each shape (N, 2), float32
     """
     n = len(event)
-    nj = ak.max(ak.num(event.notCanJet_coffea.pt)) if ak.num(event.notCanJet_coffea.pt, axis=0) > 0 else 0
+    nj = ak.max(ak.num(event.fwdJet_feynnet.pt)) if ak.num(event.fwdJet_feynnet.pt, axis=0) > 0 else 0
 
     if nj == 0:
         return (
@@ -82,10 +82,10 @@ def _forward_jet_inputs(event) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.n
         )
 
     pad_val = 0.0
-    pt   = ak.fill_none(ak.pad_none(event.notCanJet_coffea.pt,   nj, clip=True), pad_val).to_numpy().astype("float32")
-    eta  = ak.fill_none(ak.pad_none(event.notCanJet_coffea.eta,  nj, clip=True), pad_val).to_numpy().astype("float32")
-    phi  = ak.fill_none(ak.pad_none(event.notCanJet_coffea.phi,  nj, clip=True), pad_val).to_numpy().astype("float32")
-    mass = ak.fill_none(ak.pad_none(event.notCanJet_coffea.mass, nj, clip=True), pad_val).to_numpy().astype("float32")
+    pt   = ak.fill_none(ak.pad_none(event.fwdJet_feynnet.pt,   nj, clip=True), pad_val).to_numpy().astype("float32")
+    eta  = ak.fill_none(ak.pad_none(event.fwdJet_feynnet.eta,  nj, clip=True), pad_val).to_numpy().astype("float32")
+    phi  = ak.fill_none(ak.pad_none(event.fwdJet_feynnet.phi,  nj, clip=True), pad_val).to_numpy().astype("float32")
+    mass = ak.fill_none(ak.pad_none(event.fwdJet_feynnet.mass, nj, clip=True), pad_val).to_numpy().astype("float32")
 
     # Mask out zero-padded slots (pt == 0 means no jet in that slot)
     valid = pt > 0
@@ -258,7 +258,7 @@ class FeynNetEnsemble:
             can_phi,
         ], axis=1).astype("float32")  # (N, 4, 4)
 
-        # --- Forward jets (from event.notCanJet_coffea, built in candidates_selection.py) ---
+        # --- Forward jets (from event.fwdJet_feynnet, built in candidates_selection.py) ---
         f_pt, f_eta, f_phi, f_mass = _forward_jet_inputs(event)  # each (N, 2)
 
         min_b_dr = _compute_min_b_dr(f_eta, f_phi, can_eta, can_phi)  # (N, 2)
