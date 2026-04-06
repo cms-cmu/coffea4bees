@@ -3,7 +3,7 @@ import awkward as ak
 import logging
 import yaml
 from src.math_tools.random import Squares
-from coffea4bees.analysis.helpers.SvB_helpers import compute_SvB
+from coffea4bees.analysis.helpers.SvB_helpers import compute_SvB, compute_SvB_FeynNet
 from coffea4bees.analysis.helpers.FvT_helpers import compute_FvT
 from coffea.nanoevents.methods import vector
 from coffea.analysis_tools import Weights
@@ -103,6 +103,7 @@ def cand_jet_selection(
     notCanJet["isSelJet"] = 1 * ( (notCanJet.pt >= isSelJet_pt_min) & (np.abs(notCanJet.eta) < isSelJet_eta_max) )
     selev["notCanJet_coffea"] = notCanJet
     selev["nNotCanJet"] = ak.num(selev.notCanJet_coffea)
+    selev["fwdJet_feynnet"] = selev.Jet[selev.Jet.fwd_feynnet]
 
     # Release indexing intermediates
     del sorted_idx, canJet_idx, notCanJet_idx, notCanJet
@@ -331,6 +332,7 @@ def _apply_ml_scores(
     run_systematics,
     classifier_SvB,
     classifier_SvB_MA,
+    classifier_SvB_FeynNet,
     weights,
     list_weight_names,
     analysis_selections,
@@ -379,6 +381,20 @@ def _apply_ml_scores(
                 selev.SvB_MA.q_1423[:, np.newaxis],
             ], axis=1)
 
+    if run_SvB and classifier_SvB_FeynNet is not None:
+        tmp_mask_fn = (
+            (selev.fourTag & quadJet[quadJet.selected][:, 0].SR)
+            if run_systematics
+            else np.full(len(selev), True)
+        )
+        # _higgs_cand_flags needs quadJet_selected; set it temporarily here since
+        # _assign_output_vars hasn't run yet.
+        selev["quadJet_selected"] = quadJet[quadJet.selected][:, 0]
+        compute_SvB_FeynNet(selev, tmp_mask_fn, SvB_FeynNet=classifier_SvB_FeynNet)
+
+    if "SvB_FeynNet" in selev.fields:
+        quadJet["SvB_FeynNet_reweight"] = selev.SvB_FeynNet.reweight
+
     return apply_FvT
 
 
@@ -419,9 +435,16 @@ def _assign_output_vars(selev, diJet, quadJet, run_SvB, cand_cfg):
     })
 
     svb_cfg = (cand_cfg or {}).get('svb', {})
-    if run_SvB and "SvB_MA" in selev.fields:
-        selev["passSvB"] = selev["SvB_MA"].ps > svb_cfg.get('passSvB_min', 0.80)
-        selev["failSvB"] = selev["SvB_MA"].ps < svb_cfg.get('failSvB_max', 0.05)
+    if run_SvB:
+        if "SvB_MA" in selev.fields:
+            svb_ps = selev["SvB_MA"].ps
+        elif "SvB_FeynNet" in selev.fields:
+            svb_ps = selev["SvB_FeynNet"].ps
+        else:
+            svb_ps = None
+        if svb_ps is not None:
+            selev["passSvB"] = svb_ps > svb_cfg.get('passSvB_min', 0.80)
+            selev["failSvB"] = svb_ps < svb_cfg.get('failSvB_max', 0.05)
 
 
 # ---------------------------------------------------------------------------
@@ -434,6 +457,7 @@ def create_cand_jet_dijet_quadjet(
     run_systematics: bool = False,
     classifier_SvB=None,
     classifier_SvB_MA=None,
+    classifier_SvB_FeynNet=None,
     processOutput=None,
     isRun3=False,
     include_lowptjets=False,
@@ -494,7 +518,7 @@ def create_cand_jet_dijet_quadjet(
 
     apply_FvT = _apply_ml_scores(
         selev, quadJet, apply_FvT, classifier_FvT,
-        run_SvB, run_systematics, classifier_SvB, classifier_SvB_MA,
+        run_SvB, run_systematics, classifier_SvB, classifier_SvB_MA, classifier_SvB_FeynNet,
         weights, list_weight_names, analysis_selections, label3b,
     )
 

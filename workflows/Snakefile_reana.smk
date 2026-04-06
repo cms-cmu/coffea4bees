@@ -1,9 +1,6 @@
 from datetime import datetime
 import os
 
-# Define username once for reuse throughout the workflow
-USERNAME = os.getenv("USER", "coffea4bees_default")
-
 # Import rule modules
 module analysis:
     snakefile: "rules/analysis.smk"
@@ -71,21 +68,24 @@ rule final_rule:
 use rule analysis_processor from analysis as analysis_databkgs with:
     # input: f"{config['output_path']}/JCM/jetCombinatoricModel_SB_reana.yml"
     output: f"{config['output_path']}/singlefiles/hist__{{sample}}-{{year}}.coffea"
+    container: config["analysis_container"]
     params:
         datasets="{sample}",
         years="{year}",
-        metadata="coffea4bees/analysis/metadata/HH4b.yml",
+        config="coffea4bees/analysis/metadata/HH4b.yml",
         processor="coffea4bees/analysis/processors/processor_HH4b.py",
         datasets_file=config['dataset_location'],
+        friends="",
         blind=False,
         run_performance=True,
+        run_on_condor=False,
         extra_arguments=config['extra_arguments'],
-        username=USERNAME
+        run_container_wrapper="",
+        dashboard_address=""
     resources:
         voms_proxy=True,
         kerberos=True,
-        compute_backend="kubernetes",
-        kubernetes_memory_limit="9.5Gi"
+        compute_backend="slurmcern"
     log: f"{config['output_path']}/logs/analysis_hist__{{sample}}-{{year}}.log"
 
 
@@ -95,13 +95,16 @@ use rule analysis_databkgs as analysis_data with:
     params:
         datasets="data",
         years="{year}",
-        metadata="coffea4bees/analysis/metadata/HH4b.yml",
+        config="coffea4bees/analysis/metadata/HH4b.yml",
         processor="coffea4bees/analysis/processors/processor_HH4b.py",
         datasets_file=config['dataset_location'],
+        friends="",
         blind=False,
         run_performance=True,
+        run_on_condor=False,
         extra_arguments=lambda wildcards: f"{config['extra_arguments']} -e {config['data_eras'][wildcards.year]}",
-        username=USERNAME
+        run_container_wrapper="",
+        dashboard_address=""
     log: f"{config['output_path']}/logs/analysis_histdata__data-{{year}}.log"
 
 
@@ -110,14 +113,16 @@ use rule analysis_databkgs as analysis_data_UL17B with:
     params:
         datasets="data",
         years="UL17",
-        metadata="coffea4bees/analysis/metadata/HH4b_dataUL17B.yml",
+        config="coffea4bees/analysis/metadata/HH4b_dataUL17B.yml",
         processor="coffea4bees/analysis/processors/processor_HH4b.py",
         datasets_file=config['dataset_location'],
+        friends="",
         blind=False,
         run_performance=True,
+        run_on_condor=False,
         extra_arguments=f"{config['extra_arguments']} -e B",
-
-        username=USERNAME
+        run_container_wrapper="",
+        dashboard_address=""
     log: f"{config['output_path']}/logs/analysis_histdata__data-UL17B.log"
 
 use rule analysis_databkgs as analysis_signals with:
@@ -126,13 +131,16 @@ use rule analysis_databkgs as analysis_signals with:
     params:
         datasets="{sample_signal}",
         years="{year}",
-        metadata="coffea4bees/analysis/metadata/HH4b_signals.yml",
+        config="coffea4bees/analysis/metadata/HH4b_signals.yml",
         processor="coffea4bees/analysis/processors/processor_HH4b.py",
         datasets_file=config['dataset_location'],
+        friends="",
         blind=False,
         run_performance=True,
+        run_on_condor=False,
         extra_arguments=config['extra_arguments'],
-        username=USERNAME
+        run_container_wrapper="",
+        dashboard_address=""
     log: f"{config['output_path']}/logs/analysis_histsignal__{{sample_signal}}-{{year}}.log"
 
 ### mixdata for HH
@@ -140,14 +148,17 @@ use rule analysis_databkgs as analysis_mixedbkg_data3b with:
     output: f"{config['output_path']}/histMixedBkg_data_3b_for_mixed.coffea"
     params:
         datasets="data_3b_for_mixed",
-        years=config['year_preUL'],
-        metadata="coffea4bees/analysis/metadata/HH4b_mixed_data.yml",
+        years=config.get('year_preUL', config['year']),
+        config="coffea4bees/analysis/metadata/HH4b_mixed_data.yml",
         processor="coffea4bees/analysis/processors/processor_HH4b.py",
         datasets_file=config['dataset_location'],
+        friends="",
         blind=False,
         run_performance=True,
+        run_on_condor=False,
         extra_arguments=config['extra_arguments'],
-        username=USERNAME
+        run_container_wrapper="",
+        dashboard_address=""
     log: f"{config['output_path']}/logs/analysis_mixedbkg_data3b.log"
 
 
@@ -156,27 +167,33 @@ use rule analysis_databkgs as analysis_mixedbkg with:
     params:
         datasets=config['dataset_for_mixed'],
         years=config['year'],
-        metadata="coffea4bees/analysis/metadata/HH4b_nottcheck.yml",
+        config="coffea4bees/analysis/metadata/HH4b_nottcheck.yml",
         processor="coffea4bees/analysis/processors/processor_HH4b.py",
         datasets_file=config['dataset_location'],
+        friends="",
         blind=False,
         run_performance=True,
+        run_on_condor=False,
         extra_arguments=config['extra_arguments'],
-        username=USERNAME
+        run_container_wrapper="",
+        dashboard_address=""
     log: f"{config['output_path']}/logs/analysis_mixedbkg_TT.log"
 
 use rule analysis_databkgs as analysis_mixeddata with:
     output: f"{config['output_path']}/histMixedData.coffea"
     params:
         datasets="mixeddata",
-        years=config['year_preUL'],
-        metadata="coffea4bees/analysis/metadata/HH4b_nottcheck.yml",
+        years=config.get('year_preUL', config['year']),
+        config="coffea4bees/analysis/metadata/HH4b_nottcheck.yml",
         processor="coffea4bees/analysis/processors/processor_HH4b.py",
         datasets_file=config['dataset_location'],
+        friends="",
         blind=False,
         run_performance=True,
+        run_on_condor=False,
         extra_arguments=config['extra_arguments'],
-        username=USERNAME
+        run_container_wrapper="",
+        dashboard_address=""
     log: f"{config['output_path']}/logs/analysis_mixeddata.log"
 
 
@@ -185,14 +202,17 @@ use rule analysis_databkgs as analysis_mixedbkg_data3b_ZZZH with:
     output: f"{config['output_path']}/histMixedBkg_ZZZH_data_3b_for_mixed.coffea"
     params:
         datasets="data_3b_for_mixed",
-        years=config['year_preUL'],
-        metadata="coffea4bees/analysis/metadata/HH4b_mixed_data_ZZZH.yml",
+        years=config.get('year_preUL', config['year']),
+        config="coffea4bees/analysis/metadata/HH4b_mixed_data_ZZZH.yml",
         processor="coffea4bees/analysis/processors/processor_HH4b.py",
         datasets_file=config['dataset_location'],
+        friends="",
         blind=False,
         run_performance=True,
+        run_on_condor=False,
         extra_arguments=config['extra_arguments'],
-        username=USERNAME
+        run_container_wrapper="",
+        dashboard_address=""
     log: f"{config['output_path']}/logs/analysis_mixedbkg_data3b_ZZZH.log"
 
 
@@ -201,28 +221,34 @@ use rule analysis_databkgs as analysis_mixedbkg_ZZZH with:
     params:
         datasets=config['dataset_for_mixed'],
         years=config['year'],
-        metadata="coffea4bees/analysis/metadata/HH4b_mixed_data_ZZZH.yml",
+        config="coffea4bees/analysis/metadata/HH4b_mixed_data_ZZZH.yml",
         processor="coffea4bees/analysis/processors/processor_HH4b.py",
         datasets_file=config['dataset_location'],
+        friends="",
         blind=False,
         run_performance=True,
+        run_on_condor=False,
         extra_arguments=config['extra_arguments'],
-        username=USERNAME
+        run_container_wrapper="",
+        dashboard_address=""
     log: f"{config['output_path']}/logs/analysis_mixedbkg_TT_ZZZH.log"
 
 use rule analysis_databkgs as analysis_mixeddata_ZZZH with:
     output: f"{config['output_path']}/histMixedData_ZZZH.coffea"
     params:
         datasets="mixeddata",
-        years=config['year_preUL'],
-        metadata="coffea4bees/analysis/metadata/HH4b_mixed_data_ZZZH.yml",
+        years=config.get('year_preUL', config['year']),
+        config="coffea4bees/analysis/metadata/HH4b_mixed_data_ZZZH.yml",
         processor="coffea4bees/analysis/processors/processor_HH4b.py",
         datasets_file=config['dataset_location'],
+        friends="",
         blind=False,
         run_performance=True,
+        run_on_condor=False,
         extra_arguments=config['extra_arguments'],
-        username=USERNAME
-    log: f"{config['output_path']}/logs/analysis_mixeddata.log"
+        run_container_wrapper="",
+        dashboard_address=""
+    log: f"{config['output_path']}/logs/analysis_mixeddata_ZZZH.log"
 
 use rule analysis_databkgs as analysis_systematics_others with:
     # input: f"{config['output_path']}/JCM/jetCombinatoricModel_SB_reana.yml"
@@ -230,13 +256,16 @@ use rule analysis_databkgs as analysis_systematics_others with:
     params:
         datasets="{samplesyst}",
         years="{iysyst}",
-        metadata="coffea4bees/analysis/metadata/HH4b_signals.yml",
+        config="coffea4bees/analysis/metadata/HH4b_signals.yml",
         processor="coffea4bees/analysis/processors/processor_HH4b.py",
         datasets_file=config['dataset_location'],
+        friends="",
         blind=False,
         run_performance=True,
+        run_on_condor=False,
         extra_arguments=f"{config['extra_arguments']} --systematics others",
-        username=USERNAME
+        run_container_wrapper="",
+        dashboard_address=""
     log: f"{config['output_path']}/logs/analysis_histsyst_others_{{samplesyst}}-{{iysyst}}.log"
 
 
@@ -246,13 +275,16 @@ use rule analysis_databkgs as analysis_systematics_jes with:
     params:
         datasets="{samplesyst}",
         years="{iysyst}",
-        metadata="coffea4bees/analysis/metadata/HH4b_signals.yml",
+        config="coffea4bees/analysis/metadata/HH4b_signals.yml",
         processor="coffea4bees/analysis/processors/processor_HH4b.py",
         datasets_file=config['dataset_location'],
+        friends="",
         blind=False,
         run_performance=True,
+        run_on_condor=False,
         extra_arguments=f"{config['extra_arguments']} --systematics jes",
-        username=USERNAME
+        run_container_wrapper="",
+        dashboard_address=""
     log: f"{config['output_path']}/logs/analysis_histsyst_jes_{{samplesyst}}-{{iysyst}}.log"
 
 #######
@@ -274,7 +306,7 @@ use rule merging_coffea_files from analysis as merging_coffea_files_syst with:
     output: f"{config['output_path']}/histAll_signals__{{channel}}.coffea"
     resources:
         kerberos=True,
-        compute_backend="kubernetes",
+        compute_backend="slurmcern",
         kubernetes_memory_limit="9.5Gi"
     params:
         run_performance=False
@@ -294,7 +326,7 @@ use rule make_plots from analysis as make_plots with:
     output: f"{config['output_path']}/plots/RunII/passPreSel/fourTag/SB/nPVs.pdf"
     resources:
         kerberos=True,
-        compute_backend="kubernetes",
+        compute_backend="slurmcern",
         kubernetes_memory_limit="8Gi"
     log: f"{config['output_path']}/logs/make_plots.log"
     params:
@@ -350,7 +382,7 @@ use rule convert_json_to_root from stat_analysis with:
     output: f"{config['output_path']}/{{jsonfile}}.root"
     container: config["combine_container"]
     resources:
-        compute_backend="kubernetes",
+        compute_backend="slurmcern",
         kubernetes_memory_limit="8Gi"
     message: "Converting {input} to {output}"
     log: f"{config['output_path']}/logs/convert_json_to_root_{{jsonfile}}.log"
@@ -374,7 +406,7 @@ use rule run_two_stage_closure from stat_analysis as run_two_stage_closure_HH4b 
         extra_arguments = "--use_kfold",
         container_wrapper = config['container_wrapper']
     resources:
-        compute_backend="kubernetes",
+        compute_backend="slurmcern",
         kubernetes_memory_limit="8Gi"
     log: f"{config['output_path']}/logs/run_two_stage_closure_HH4b.log"
 
@@ -429,7 +461,7 @@ use rule make_combine_inputs from stat_analysis with:
     resources:
         voms_proxy=True,
         kerberos=True,
-        compute_backend="kubernetes",
+        compute_backend="slurmcern",
         kubernetes_memory_limit="9.5Gi"
     log: f"{config['output_path']}/logs/make_combine_inputs_{{channel}}.log"
 
@@ -444,7 +476,7 @@ use rule workspace from combine with:
     resources:
         voms_proxy=True,
         kerberos=True,
-        compute_backend="kubernetes"
+        compute_backend="slurmcern"
     log: f"{config['output_path']}/logs/workspace_{{channel}}__{{signallabel}}.log"
 
 use rule limits from combine with:
@@ -461,7 +493,7 @@ use rule limits from combine with:
     resources:
         voms_proxy=True,
         kerberos=True,
-        compute_backend="kubernetes"
+        compute_backend="slurmcern"
     log: f"{config['output_path']}/logs/limits_{{channel}}__{{signallabel}}.log"
 
 use rule significance from combine with:
@@ -476,7 +508,7 @@ use rule significance from combine with:
     resources:
         voms_proxy=True,
         kerberos=True,
-        compute_backend="kubernetes"
+        compute_backend="slurmcern"
     log: f"{config['output_path']}/logs/significance_{{channel}}__{{signallabel}}.log"
 
 use rule impacts from combine with:
@@ -491,7 +523,7 @@ use rule impacts from combine with:
     resources:
         voms_proxy=True,
         kerberos=True,
-        compute_backend="kubernetes",
+        compute_backend="slurmcern",
         kubernetes_memory_limit="9.5Gi"
     log: f"{config['output_path']}/logs/impacts_{{channel}}_datacard_{{channel}}__{{signallabel}}.log"
 
@@ -507,7 +539,7 @@ use rule likelihood_scan from combine with:
     resources:
         voms_proxy=True,
         kerberos=True,
-        compute_backend="kubernetes"
+        compute_backend="slurmcern"
     log: f"{config['output_path']}/logs/likelihood_scan_{{channel}}_datacard_{{channel}}__{{signallabel}}.log"
 
 use rule gof from combine with:
@@ -521,7 +553,7 @@ use rule gof from combine with:
     resources:
         voms_proxy=True,
         kerberos=True,
-        compute_backend="kubernetes"
+        compute_backend="slurmcern"
     log: f"{config['output_path']}/logs/gof_{{channel}}_datacard_{{channel}}__{{signallabel}}.log"
 
 use rule make_syst_plots from stat_analysis with:
@@ -537,7 +569,7 @@ use rule make_syst_plots from stat_analysis with:
         container_wrapper = config['container_wrapper']
     resources:
         kerberos=True,
-        compute_backend="kubernetes",
+        compute_backend="slurmcern",
         kubernetes_memory_limit="8Gi"
 
 use rule postfit from combine as postfit with:
@@ -556,4 +588,4 @@ use rule postfit from combine as postfit with:
     resources:
         voms_proxy=True,
         kerberos=True,
-        compute_backend="kubernetes"
+        compute_backend="slurmcern"
