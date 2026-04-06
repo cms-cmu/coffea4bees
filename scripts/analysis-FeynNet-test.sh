@@ -25,7 +25,7 @@ cat $JOB_CONFIG; echo
 # Call the main analysis_test.sh script with Run3-specific parameters
 bash coffea4bees/scripts/run-analysis-processor.sh \
     --output-base "$OUTPUT_BASE_DIR" \
-    --datasets "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00" \
+    --datasets "data" \
     --dataset-metadata "coffea4bees/metadata/datasets_HH4b_Run3/" \
     --year "2022_EE" \
     --output-filename "test_feynnet.coffea" \
