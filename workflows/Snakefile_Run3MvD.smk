@@ -49,6 +49,23 @@ rule all:
         f"{out}jcm_for_mixed_all/jetCombinatoricModel_SB_.yml",
         f"{out}plots_wJCM/plots_done.txt"
 
+rule all_histograms:
+    """Remake all histogram merges and plots. Does not require JCM refit or classifier_inputs."""
+    input:
+        f"{out}histAll_Run3MvD{config['label']}.coffea",
+        f"{out}histAll_mixeddata_wJCM{config['label']}.coffea",
+        f"{out}plots_wJCM/plots_done.txt",
+        f"{out}histAll_MvD{config['label']}.coffea",
+        f"{out}plots_MvD/plots_done.txt",
+
+rule all_MvD_histograms:
+    """Remake MvD-weighted and wJCM histograms/plots. Does not require JCM refit or training."""
+    input:
+        f"{out}histAll_mixeddata_wJCM{config['label']}.coffea",
+        f"{out}plots_wJCM/plots_done.txt",
+        f"{out}histAll_MvD{config['label']}.coffea",
+        f"{out}plots_MvD/plots_done.txt",
+
 rule all_with_training:
     input:
         rules.all.input,
@@ -60,18 +77,49 @@ rule all_with_training:
 # Use __ (double underscore) as separator between dataset and year to avoid
 # ambiguous wildcard matching, since both dataset names and years contain _.
 
+rule create_friends_wSvB:
+    input:
+        friends_yml = "coffea4bees/metadata/friends_HH4b.yml",
+        svb_json    = "coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data.json",
+    output: f"{out}friends_wSvB.yml"
+    shell:
+        """
+        sed \
+            -e 's|    SvB:.*|    SvB: "{input.svb_json}@@SvB"|' \
+            -e 's|    SvB_MA:.*|    SvB_MA: "{input.svb_json}@@SvB_MA"|' \
+            {input.friends_yml} > {output}
+        echo "Patched friends:"
+        grep -E "SvB" {output}
+        """
+
+rule create_histogram_config_wSvB:
+    input:
+        config_file = config['histogram_config']
+    output: f"{out}histogram_config_wSvB.yml"
+    shell:
+        """
+        sed \
+            -e 's|  run_SvB.*|  run_SvB: true|' \
+            {input.config_file} > {output}
+        echo "Patched config:"
+        grep -E "run_SvB" {output}
+        """
+
 use rule analysis_processor from analysis as make_histograms with:
+    input:
+        config_file  = f"{out}histogram_config_wSvB.yml",
+        friends_file = f"{out}friends_wSvB.yml",
     output: f"{out}histograms/hist_{{dataset}}__{{year}}.coffea"
     log: f"{out}logs/hist_{{dataset}}__{{year}}.log"
     params:
         datasets = "{dataset}",
         years = "{year}",
-        config = config['histogram_config'],
+        config = lambda wildcards, input: input.config_file,
         processor = "coffea4bees/analysis/processors/processor_HH4b.py",
         datasets_file = config['dataset_location'],
         blind = False,
         run_performance = False,
-        friends = "coffea4bees/metadata/friends_HH4b.yml",
+        friends = lambda wildcards, input: input.friends_file,
         run_on_condor = True,
         extra_arguments = "",
         run_container_wrapper = "./run_container",
@@ -94,7 +142,7 @@ use rule merging_coffea_files from analysis as merge_histograms with:
 # ── JCM fitting ───────────────────────────────────────────────────────────────
 
 rule make_JCM_Run3MvD:
-    input: f"{out}histAll_Run3MvD{config['label']}.coffea"
+    input: ancient(f"{out}histAll_Run3MvD{config['label']}.coffea")
     output: f"{out}jcm_for_mixed_all/jetCombinatoricModel_SB_.yml"
     container: config['analysis_container']
     params:
@@ -126,27 +174,30 @@ rule create_histogram_config_wJCM:
     shell:
         """
         sed \
+            -e 's|  run_SvB.*|  run_SvB: true|' \
             -e 's|  JCM_file.*|  JCM_file: {input.jcm_file}|' \
             -e 's|  apply_MvD_weight.*|  apply_MvD_weight: false|' \
             -e 's|  apply_MvD:[^_].*|  apply_MvD: true|' \
             {input.config_file} > {output}
         echo "Patched config:"
-        grep -E "JCM_file|apply_MvD" {output}
+        grep -E "run_SvB|JCM_file|apply_MvD" {output}
         """
 
 use rule analysis_processor from analysis as make_histograms_mixeddata_wJCM with:
-    input: f"{out}histogram_config_wJCM.yml"
+    input:
+        config_file  = f"{out}histogram_config_wJCM.yml",
+        friends_file = f"{out}friends_wSvB.yml",
     output: f"{out}histograms_wJCM/hist_mixeddata_all__{{year}}.coffea"
     log: f"{out}logs/hist_wJCM_mixeddata_all__{{year}}.log"
     params:
         datasets = "mixeddata_all",
         years = "{year}",
-        config = lambda wildcards, input: input[0],
+        config = lambda wildcards, input: input.config_file,
         processor = "coffea4bees/analysis/processors/processor_HH4b.py",
         datasets_file = config['dataset_location'],
         blind = False,
         run_performance = False,
-        friends = "coffea4bees/metadata/friends_HH4b.yml",
+        friends = lambda wildcards, input: input.friends_file,
         run_on_condor = True,
         extra_arguments = "",
         run_container_wrapper = "./run_container",
@@ -257,7 +308,9 @@ rule install_classifier_inputs:
 # TTbar histograms are reused from the nominal step (MvD weights don't apply).
 
 rule create_friends_MvD:
-    input: "coffea4bees/metadata/friends_HH4b.yml"
+    input:
+        friends_yml = "coffea4bees/metadata/friends_HH4b.yml",
+        svb_json    = "coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data.json",
     output: f"{out}friends_MvD.yml"
     params:
         mvd_path = f"{config['eos_base']}/friend/MvD/result.json@@analysis.0.merged"
@@ -265,9 +318,11 @@ rule create_friends_MvD:
         """
         sed \
             -e 's|    MvD:.*|    MvD: {params.mvd_path}|' \
-            {input} > {output}
+            -e 's|    SvB:.*|    SvB: "{input.svb_json}@@SvB"|' \
+            -e 's|    SvB_MA:.*|    SvB_MA: "{input.svb_json}@@SvB_MA"|' \
+            {input.friends_yml} > {output}
         echo "Patched friends:"
-        grep "MvD" {output}
+        grep -E "MvD|SvB" {output}
         """
 
 rule create_histogram_config_MvD:
@@ -278,19 +333,20 @@ rule create_histogram_config_MvD:
     shell:
         """
         sed \
+            -e 's|  run_SvB.*|  run_SvB: true|' \
             -e 's|  JCM_file.*|  JCM_file: {input.jcm_file}|' \
             -e 's|  apply_MvD_weight.*|  apply_MvD_weight: true\\n  plot_ttbar_with_MvD_weights: true|' \
             -e 's|  apply_MvD:[^_].*|  apply_MvD: true|' \
             {input.config_file} > {output}
         echo "Patched config:"
-        grep -E "JCM_file|apply_MvD|plot_ttbar_with_MvD" {output}
+        grep -E "run_SvB|JCM_file|apply_MvD|plot_ttbar_with_MvD" {output}
         """
 
 use rule analysis_processor from analysis as make_histograms_data_MvD with:
     input:
         config_file   = f"{out}histogram_config_MvD.yml",
         friends_file  = f"{out}friends_MvD.yml",
-        evaluate_done = expand(f"{out}{{classifier}}/evaluate.done", classifier=["MvD"]),
+        evaluate_done = ancient(expand(f"{out}{{classifier}}/evaluate.done", classifier=["MvD"])),
     output: f"{out}histograms_MvD/hist_data__{{year}}.coffea"
     log: f"{out}logs/hist_MvD_data__{{year}}.log"
     params:
@@ -311,7 +367,7 @@ use rule analysis_processor from analysis as make_histograms_mixeddata_MvD with:
     input:
         config_file   = f"{out}histogram_config_MvD.yml",
         friends_file  = f"{out}friends_MvD.yml",
-        evaluate_done = expand(f"{out}{{classifier}}/evaluate.done", classifier=["MvD"]),
+        evaluate_done = ancient(expand(f"{out}{{classifier}}/evaluate.done", classifier=["MvD"])),
     output: f"{out}histograms_MvD/hist_mixeddata_all__{{year}}.coffea"
     log: f"{out}logs/hist_MvD_mixeddata_all__{{year}}.log"
     params:
@@ -373,7 +429,7 @@ rule make_plots_MvD:
 
 
 module training:
-    snakefile: "Snakefile_classifier_training_Run3MvD.smk"
+    snakefile: "Snakefile_Run3MvD_training.smk"
     config: config
 
 use rule create_train_yml from training
