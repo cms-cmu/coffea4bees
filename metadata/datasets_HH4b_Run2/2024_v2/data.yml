@@ -1,0 +1,330 @@
+data:
+  UL16_postVFP:
+    nanoAOD:
+      F: /BTagCSV/Run2016F-UL2016_MiniAODv2_NanoAODv9-v1/NANOAOD
+      G: /BTagCSV/Run2016G-UL2016_MiniAODv2_NanoAODv9-v1/NANOAOD
+      H: /BTagCSV/Run2016H-UL2016_MiniAODv2_NanoAODv9-v1/NANOAOD
+    picoAOD:
+      F:
+        count: 4852270.0
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_postVFPF/picoAOD.root
+        missing: {}
+        saved_events: 45436
+        total_events: 4852270
+      G:
+        count: 100826567.0
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_postVFPG/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_postVFPG/picoAOD.chunk1.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_postVFPG/picoAOD.chunk2.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_postVFPG/picoAOD.chunk3.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_postVFPG/picoAOD.chunk4.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_postVFPG/picoAOD.chunk5.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_postVFPG/picoAOD.chunk6.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_postVFPG/picoAOD.chunk7.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_postVFPG/picoAOD.chunk8.root
+        missing: {}
+        saved_events: 818505
+        sumw2_raw: 100826567
+        sumw_raw: 100826567
+        total_events: 100826567
+      H:
+        count: 64989678.0
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_postVFPH/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_postVFPH/picoAOD.chunk1.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_postVFPH/picoAOD.chunk2.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_postVFPH/picoAOD.chunk3.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_postVFPH/picoAOD.chunk4.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_postVFPH/picoAOD.chunk5.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_postVFPH/picoAOD.chunk6.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_postVFPH/picoAOD.chunk7.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_postVFPH/picoAOD.chunk8.root
+        missing: {}
+        saved_events: 827166
+        total_events: 64989678
+  UL16_preVFP:
+    nanoAOD:
+      B: /BTagCSV/Run2016B-ver2_HIPM_UL2016_MiniAODv2_NanoAODv9-v2/NANOAOD
+      C: /BTagCSV/Run2016C-HIPM_UL2016_MiniAODv2_NanoAODv9-v2/NANOAOD
+      D: /BTagCSV/Run2016D-HIPM_UL2016_MiniAODv2_NanoAODv9-v2/NANOAOD
+      E: /BTagCSV/Run2016E-HIPM_UL2016_MiniAODv2_NanoAODv9-v2/NANOAOD
+      F: /BTagCSV/Run2016F-HIPM_UL2016_MiniAODv2_NanoAODv9-v2/NANOAOD
+    picoAOD:
+      B:
+        count: 77890616.0
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPB/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPB/picoAOD.chunk1.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPB/picoAOD.chunk2.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPB/picoAOD.chunk3.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPB/picoAOD.chunk4.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPB/picoAOD.chunk5.root
+        missing: {}
+        saved_events: 525571
+        total_events: 77890616
+      C:
+        count: 30358567.0
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPC/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPC/picoAOD.chunk1.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPC/picoAOD.chunk2.root
+        missing: {}
+        saved_events: 237569
+        sumw2_raw: 30358567
+        sumw_raw: 30358567
+        total_events: 30358567
+      D:
+        count: 56527008.0
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPD/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPD/picoAOD.chunk1.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPD/picoAOD.chunk2.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPD/picoAOD.chunk3.root
+        missing: {}
+        saved_events: 392634
+        sumw2_raw: 56527008
+        sumw_raw: 56527008
+        total_events: 56527008
+      E:
+        bad_files:
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/03D92B17-97C3-9D44-A9A7-1B357C6A22FC.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/07F930E5-26B7-C944-B030-16CEABBDC08C.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/146BEB9C-1329-2141-B3F1-E0807CB0D5EE.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/1797761D-7453-B748-AD9E-DC5F2F1E3AC2.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/23FC47BC-2795-7643-B826-31ABBAC27C76.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/2F3E5EFC-9141-2645-8E31-87AE50265F81.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/32B1491D-A8D7-994E-8F10-A2A7A418D503.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/40474A03-5870-4349-84C4-6CF4D881B65E.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/489A2FDF-80A4-674C-B294-7D123A4BF9C5.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/54B8F4E5-DC2E-4740-9CB3-8E409A807922.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/595DF04E-B7FF-064F-A48A-F2FA03A5ACD9.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/6FF621BC-FD8D-0D4B-88A8-958E680D3313.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/72638AD1-B876-FA4E-A8AD-6F6547CE0938.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/7613030C-A49E-E349-BAC0-A53956766F4D.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/7D35E486-A88E-1742-AE72-7B3E7467A68F.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/7DBB5885-AD87-6F42-AFE1-6AD9DAD97755.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/8094B8D1-527B-0E4D-9B13-27F21A80CCE1.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/875E1522-82C7-9243-BEBA-C3AB949BAB1E.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/92032D48-52E4-1146-B064-6086FF4A49B2.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/93A70235-B534-3345-837E-161FB8B0AF58.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/9E376216-E54D-6240-B2A7-51BB6FA11F02.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/9FFFF66D-A1FE-FB40-AAA9-CEFEB070B77A.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/A1C21686-06FB-B845-9196-BDE99EC2D8C1.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/A2F6FA73-2190-7E4B-BF33-D8C66FE065AC.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/A7D0347C-247D-734D-B870-D815070230CF.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/BF4450A2-C77A-114F-AEDC-31BF4861FB4F.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/C211C283-979A-904E-8C12-384778E8CA93.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/C8B95658-2D6B-C042-8865-22B50E900603.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/D09CDB0C-35E6-7A40-AEFC-D57BDEAA6DF0.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/D8A97670-18EB-CF4E-914F-494CCB8997B7.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/D8B6FDFC-CBB6-8849-90AF-02A843AAEAB8.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/E49A4BD8-5123-BC49-A8B7-ADB8BC20DF57.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/E4B79444-1A8C-8649-BA4B-33CEF9C66C2C.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/F670F30A-3B78-1C42-99F4-2899BF71F52D.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016E/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2430000/F9CC87A2-E34E-A04E-B468-71CA92E9D4EA.root
+        count: 294202.0
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPE/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPE/picoAOD.chunk1.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPE/picoAOD.chunk2.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPE/picoAOD.chunk3.root
+        missing: {}
+        saved_events: 353154
+        sumw2_raw: 60415444
+        sumw_raw: 60415444
+        total_events: 60415444
+      F:
+        bad_files:
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016F/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/24310000/6CADEDAF-10EB-8A42-A042-B64FEB2218B7.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016F/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/24310000/775A5D46-3D17-744A-A6F1-80B4FD37C2A4.root
+        - root://redirector.t2.ucsd.edu:1095//store/data/Run2016F/BTagCSV/NANOAOD/HIPM_UL2016_MiniAODv2_NanoAODv9-v2/2520000/8F874C55-D68F-C94F-A166-81373DCDDBA9.root
+        count: 27068905.0
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPF/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPF/picoAOD.chunk1.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPF/picoAOD.chunk2.root
+        missing: {}
+        saved_events: 234087
+        sumw2_raw: 32756402
+        sumw_raw: 32756402
+        total_events: 32756402
+  UL17:
+    nanoAOD:
+      B: /BTagCSV/Run2017B-UL2017_MiniAODv2_NanoAODv9-v1/NANOAOD
+      C: /BTagCSV/Run2017C-UL2017_MiniAODv2_NanoAODv9-v1/NANOAOD
+      D: /BTagCSV/Run2017D-UL2017_MiniAODv2_NanoAODv9-v1/NANOAOD
+      E: /BTagCSV/Run2017E-UL2017_MiniAODv2_NanoAODv9-v1/NANOAOD
+      F: /BTagCSV/Run2017F-UL2017_MiniAODv2_NanoAODv9-v1/NANOAOD
+    picoAOD:
+      B:
+        count: 1808836.0
+        files: []
+        missing: {}
+        saved_events: 0
+        total_events: 1808836
+      C:
+        count: 34491540.0
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL17C/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL17C/picoAOD.chunk1.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL17C/picoAOD.chunk2.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL17C/picoAOD.chunk3.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL17C/picoAOD.chunk4.root
+        missing: {}
+        saved_events: 444104
+        sumw2_raw: 34491540
+        sumw_raw: 34491540
+        total_events: 34491540
+      D:
+        count: 7967055.0
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL17D/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL17D/picoAOD.chunk1.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL17D/picoAOD.chunk2.root
+        missing: {}
+        saved_events: 210095
+        sumw2_raw: 7967055
+        sumw_raw: 7967055
+        total_events: 7967055
+      E:
+        count: 17175226.0
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL17E/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL17E/picoAOD.chunk1.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL17E/picoAOD.chunk2.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL17E/picoAOD.chunk3.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL17E/picoAOD.chunk4.root
+        missing: {}
+        saved_events: 487174
+        total_events: 17175226
+      F:
+        count: 75677461.0
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL17F/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL17F/picoAOD.chunk1.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL17F/picoAOD.chunk2.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL17F/picoAOD.chunk3.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL17F/picoAOD.chunk4.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL17F/picoAOD.chunk5.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL17F/picoAOD.chunk6.root
+        missing: {}
+        saved_events: 625024
+        sumw2_raw: 75677461
+        sumw_raw: 75677461
+        total_events: 75677461
+  UL18:
+    nanoAOD:
+      A: /JetHT/Run2018A-UL2018_MiniAODv2_NanoAODv9-v2/NANOAOD
+      B: /JetHT/Run2018B-UL2018_MiniAODv2_NanoAODv9-v1/NANOAOD
+      C: /JetHT/Run2018C-UL2018_MiniAODv2_NanoAODv9-v1/NANOAOD
+      D: /JetHT/Run2018D-UL2018_MiniAODv2_NanoAODv9-v2/NANOAOD
+    picoAOD:
+      A:
+        count: 171484635.0
+        cutFlowTwoTag:
+          all: 171484635.0
+          lumimask: 171484635.0
+          passHLT: 7665730.0
+          passJetMult_lowpt_forskim: 7331636.0
+          passNoiseFilter: 171484635.0
+          passPreSel_lowpt_forskim: 854388.0
+        cutFlowTwoTagUnitWeight:
+          all: 171484635
+          lumimask: 171484635
+          passHLT: 7665730
+          passJetMult_lowpt_forskim: 7331636
+          passNoiseFilter: 171484635
+          passPreSel_lowpt_forskim: 854388
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18A/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18A/picoAOD.chunk1.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18A/picoAOD.chunk2.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18A/picoAOD.chunk3.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18A/picoAOD.chunk4.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18A/picoAOD.chunk5.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18A/picoAOD.chunk6.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18A/picoAOD.chunk7.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18A/picoAOD.chunk8.root
+        missing: {}
+        saved_events: 854388
+        sumw: 171484635
+        sumw2: 171484635
+        total_events: 171484635
+      B:
+        count: 78255208.0
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18B/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18B/picoAOD.chunk1.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18B/picoAOD.chunk2.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18B/picoAOD.chunk3.root
+        missing: {}
+        saved_events: 388479
+        total_events: 78255208
+      C:
+        count: 70027804.0
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18C/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18C/picoAOD.chunk1.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18C/picoAOD.chunk2.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18C/picoAOD.chunk3.root
+        missing: {}
+        saved_events: 362082
+        sumw2_raw: 70027804
+        sumw_raw: 70027804
+        total_events: 70027804
+      D:
+        count: 356976276.0
+        files:
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18D/picoAOD.chunk0.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18D/picoAOD.chunk1.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18D/picoAOD.chunk2.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18D/picoAOD.chunk3.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18D/picoAOD.chunk4.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18D/picoAOD.chunk5.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18D/picoAOD.chunk6.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18D/picoAOD.chunk7.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18D/picoAOD.chunk8.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18D/picoAOD.chunk9.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18D/picoAOD.chunk10.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18D/picoAOD.chunk11.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18D/picoAOD.chunk12.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18D/picoAOD.chunk13.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18D/picoAOD.chunk14.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18D/picoAOD.chunk15.root
+        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL18D/picoAOD.chunk16.root
+        missing: {}
+        saved_events: 1661807
+        total_events: 356976276
+
+data_3b_for_mixed:
+  '2016':
+    picoAOD:
+      FvT_file_kfold_template: root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//data2016_3b/FvT_3bDvTMix4bDvT_vXXX_newSBDefSeedAll45.root
+      FvT_file_template: root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//data2016_3b/FvT_3bDvTMix4bDvT_vXXX_newSBDef.root
+      FvT_name_kfold_template: FvT_3bDvTMix4bDvT_vXXX_newSBDefSeedAve
+      FvT_name_template: FvT_3bDvTMix4bDvT_vXXX_newSBDef
+      JCM_load_template: 3bDvTMix4bDvT_vXXX
+      files:
+      - root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//data2016_3b/picoAOD_3b_wJCM_newSBDef.root
+  '2017':
+    picoAOD:
+      FvT_file_kfold_template: root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//data2017_3b/FvT_3bDvTMix4bDvT_vXXX_newSBDefSeedAll45.root
+      FvT_file_template: root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//data2017_3b/FvT_3bDvTMix4bDvT_vXXX_newSBDef.root
+      FvT_name_kfold_template: FvT_3bDvTMix4bDvT_vXXX_newSBDefSeedAve
+      FvT_name_template: FvT_3bDvTMix4bDvT_vXXX_newSBDef
+      JCM_load_template: 3bDvTMix4bDvT_vXXX
+      files:
+      - root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//data2017_3b/picoAOD_3b_wJCM_newSBDef.root
+  '2018':
+    picoAOD:
+      FvT_file_kfold_template: root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//data2018_3b/FvT_3bDvTMix4bDvT_vXXX_newSBDefSeedAll45.root
+      FvT_file_template: root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//data2018_3b/FvT_3bDvTMix4bDvT_vXXX_newSBDef.root
+      FvT_name_kfold_template: FvT_3bDvTMix4bDvT_vXXX_newSBDefSeedAve
+      FvT_name_template: FvT_3bDvTMix4bDvT_vXXX_newSBDef
+      JCM_load_template: 3bDvTMix4bDvT_vXXX
+      files:
+      - root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//data2018_3b/picoAOD_3b_wJCM_newSBDef.root
+  nSamples: 15
+  use_kfold: true

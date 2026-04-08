@@ -1,0 +1,107 @@
+from datetime import datetime
+DATE = datetime.now().strftime("%Y%m%d")
+
+##### change these vars #####
+LPCUSER  = "algomez"
+CERNUSER = "a/algomez"
+BASE     = f"root://cmseos.fnal.gov//store/user/{LPCUSER}/XX4b/2024_v2"
+MODEL    = f"{BASE}/classifier/FvT_lowpt"
+FVT      = f"{BASE}/friend/FvT_lowpt"
+PLOT     = f"root://eosuser.cern.ch//eos/user/{CERNUSER}/www/HH4b/Plots/{DATE}_classifier_lowpt"
+#############################
+
+WFS = "coffea4bees/classifier/config/workflows/HH4b_2024_v2_lowpt/FvT"
+CLASSIFIER_CONFIG_PATHS = "coffea4bees"
+LOG_DIR = "output/FvT_lowpt"
+
+# Container images (CVMFS unpacked, used directly by apptainer)
+CLASSIFIER_GPU = "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:classifier_latest"
+CLASSIFIER_CPU = "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:classifier_cpu_latest"
+
+# Entrypoint sourced inside the container before running commands
+INIT = "set -e && set +u && source /entrypoint.sh && set -u && export PYTHONUNBUFFERED=1"
+
+
+rule all:
+    input:
+        f"{LOG_DIR}/evaluate.done",
+        f"{LOG_DIR}/analyze.done",
+
+
+rule train:
+    output:
+        flag = f"{LOG_DIR}/train.done",
+    log:
+        f"{LOG_DIR}/train.log",
+    container:
+        CLASSIFIER_GPU
+    resources:
+        runtime = 240,
+        mem_mb = 16000,
+        gres = "mps:50",
+    threads: 4
+    shell:
+        """
+        {INIT} && \
+        CLASSIFIER_CONFIG_PATHS={CLASSIFIER_CONFIG_PATHS} \
+        ./src/pyml.py \
+            template "model: {MODEL}" {WFS}/train.yml \
+            -from {WFS}/../common.yml \
+            -flag debug \
+            2>&1 | tee -a {log}
+        touch {output.flag}
+        """
+
+
+rule analyze:
+    input:
+        f"{LOG_DIR}/train.done",
+    output:
+        flag = f"{LOG_DIR}/analyze.done",
+    log:
+        f"{LOG_DIR}/analyze.log",
+    container:
+        CLASSIFIER_CPU
+    resources:
+        runtime = 60,
+        mem_mb = 8000,
+    threads: 1
+    shell:
+        """
+        {INIT} && \
+        CLASSIFIER_CONFIG_PATHS={CLASSIFIER_CONFIG_PATHS} \
+        ./src/pyml.py analyze \
+            --results {MODEL}/result.json \
+            -analysis HCR.LossROC \
+            -setting IO "output: {PLOT}" \
+            -setting IO "report: FvT" \
+            2>&1 | tee -a {log}
+        touch {output.flag}
+        """
+
+
+rule evaluate:
+    input:
+        f"{LOG_DIR}/train.done",
+    output:
+        flag = f"{LOG_DIR}/evaluate.done",
+    log:
+        f"{LOG_DIR}/evaluate.log",
+    container:
+        CLASSIFIER_GPU
+    resources:
+        runtime = 240,
+        mem_mb = 16000,
+        gres = "mps:50",
+    threads: 4
+    shell:
+        """
+        {INIT} && \
+        CLASSIFIER_CONFIG_PATHS={CLASSIFIER_CONFIG_PATHS} \
+        ./src/pyml.py \
+            template "{{model: {MODEL}, FvT: {FVT}}}" {WFS}/evaluate.yml \
+            -from {WFS}/../common.yml \
+            -flag debug \
+            2>&1 | tee -a {log}
+        touch {output.flag}
+        """

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import logging
+import sys
 import warnings
 from collections import OrderedDict
 from contextlib import contextmanager, nullcontext
@@ -70,8 +71,13 @@ NanoAODSchema.warn_missing_crossrefs = False
 warnings.filterwarnings("ignore")
 
 
-def _init_classfier(path: str | list[HCRModelMetadata]):
-    if path is None:
+class _Unset:
+    """Sentinel: SvB key absent from config — legacy ROOT fallback is allowed."""
+_UNSET = _Unset()
+
+
+def _init_classfier(path: str | list[HCRModelMetadata] | None | _Unset):
+    if path is None or isinstance(path, _Unset):
         return None
     if isinstance(path, str):
         from ..helpers.classifier.HCR import Legacy_HCREnsemble
@@ -85,6 +91,13 @@ def _init_classfier_FvT(path: str | list[HCRModelMetadata]):
         return None
     from ..helpers.classifier.HCR import Legacy_HCREnsemble_FvT
     return Legacy_HCREnsemble_FvT(path)
+
+def _init_feynnet(cfg):
+    """Construct FeynNetEnsemble from config list, or return None."""
+    if cfg is None:
+        return None
+    from coffea4bees.analysis.helpers.classifier.FeynNet import FeynNetEnsemble
+    return FeynNetEnsemble(cfg)
 
 class HH4bBaseProcessor(processor.ProcessorABC):
     """
@@ -128,6 +141,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         make_friend_JCM_weight (str): Path for dumping JCM weight friend tree.
         make_friend_FvT_weight (str): Path for dumping FvT weight friend tree.
         make_friend_SvB (str): Path for dumping SvB friend tree.
+        make_friend_SvB_FeynNet (str): Path for dumping SvB_FeynNet friend tree.
         subtract_ttbar_with_weights (bool): Whether to subtract ttbar using weights.
         plot_ttbar_with_weights (bool): Whether to plot ttbar (3b and 4b) from 3b data using weights.
         apply_mixeddata_sel (bool): Whether to apply mixed data selection.
@@ -160,8 +174,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
     def __init__(
         self,
         *,
-        SvB: str|list[HCRModelMetadata] = None,
-        SvB_MA: str|list[HCRModelMetadata] = None,
+        SvB: str|list[HCRModelMetadata]|None|_Unset = _UNSET,
+        SvB_MA: str|list[HCRModelMetadata]|None|_Unset = _UNSET,
+        SvB_FeynNet: list[dict] | None = None,
         FvT: str|list[HCRModelMetadata] = None,
         blind: bool = False,
         apply_JCM: bool = True,
@@ -182,6 +197,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         make_friend_JCM_weight: str = None,
         make_friend_FvT_weight: str = None,
         make_friend_SvB: str = None,
+        make_friend_SvB_FeynNet: str = None,
         subtract_ttbar_with_weights: bool = False,
         plot_ttbar_with_weights: bool = False,
         plot_ttbar_with_MvD_weights: bool = False,
@@ -217,6 +233,15 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.apply_boosted_veto = apply_boosted_veto
         self.classifier_SvB = _init_classfier(SvB)
         self.classifier_SvB_MA = _init_classfier(SvB_MA)
+        self.classifier_SvB_FeynNet = _init_feynnet(SvB_FeynNet)
+        # Skip legacy ROOT fallback only when the key was explicitly set to null
+        # in the config (SvB=None). When the key is absent (_UNSET), the legacy
+        # fallback is still allowed.
+        self._skip_svb_legacy = set()
+        if SvB is None:
+            self._skip_svb_legacy.add("SvB")
+        if SvB_MA is None:
+            self._skip_svb_legacy.add("SvB_MA")
         self.classifier_FvT = _init_classfier_FvT(FvT)
         self.corrections_metadata = corrections_metadata
         self.run_systematics = ['others', 'jes'] if 'all' in run_systematics else run_systematics
@@ -225,6 +250,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.make_friend_JCM_weight = make_friend_JCM_weight
         self.make_friend_FvT_weight = make_friend_FvT_weight
         self.make_friend_SvB = make_friend_SvB
+        self.make_friend_SvB_FeynNet = make_friend_SvB_FeynNet
         self.top_reconstruction = top_reconstruction
         if self.top_reconstruction is not None and self.top_reconstruction not in ["slow", "fast"]:
             raise ValueError(f"top_reconstruction must be None, 'slow', or 'fast', got: {self.top_reconstruction}")
@@ -346,6 +372,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         with self._stage("load_friend_SvB"):
             if self.run_SvB:
                 self.load_SvB(event)
+                if "SvB_MA" not in event.fields and self.classifier_SvB_MA is None and self.classifier_SvB_FeynNet is None:
+                    logging.warning("SvB_MA not available after load_SvB and no classifier configured — disabling run_SvB for this chunk.")
+                    self.run_SvB = False
 
         with self._stage("load_JCM_friends"):
             if self.config["isDataForMixed"]:
@@ -539,16 +568,19 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         # Blind data in fourTag SR
         if not (self.config["isMC"] or "mix_v" in self.dataset) and self.blind:
             with self._stage(f"{label}:blinding"):
-                blind_flag = ~(selev["quadJet_selected"].SR & (selev["SvB_MA"].ps_hh > 0.5) & selev.fourTag)
-                blind_sel = np.full(len(event), True)
-                blind_sel[analysis_selections] = blind_flag
-                selections.add('blind', blind_sel)
-                allcuts.append('blind')
-                if not shift_name:
-                    sel_mask = selections.all(*allcuts)
-                    self.fill_cutflow_with_and_without_trig("blind", event[sel_mask], weights, sel_mask)
-                analysis_selections = selections.all(*allcuts)
-                selev = selev[blind_flag]
+                if "SvB_MA" not in selev.fields:
+                    logging.warning("Blinding requires SvB_MA but it is not available — skipping blinding for this chunk.")
+                else:
+                    blind_flag = ~(selev["quadJet_selected"].SR & (selev["SvB_MA"].ps_hh > 0.5) & selev[self._fourtag_label()])
+                    blind_sel = np.full(len(event), True)
+                    blind_sel[analysis_selections] = blind_flag
+                    selections.add('blind', blind_sel)
+                    allcuts.append('blind')
+                    if not shift_name:
+                        sel_mask = selections.all(*allcuts)
+                        self.fill_cutflow_with_and_without_trig("blind", event[sel_mask], weights, sel_mask)
+                    analysis_selections = selections.all(*allcuts)
+                    selev = selev[blind_flag]
 
         with self._stage(f"{label}:final_weights"):
             # Add weights to selected events
@@ -751,7 +783,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         # Source 1: Load from friend tree arrays
         for k in self.friends:
-            if k.startswith("SvB"):
+            if k.startswith("SvB") and not k.startswith("SvB_FeynNet"):
                 logging.info(f"Loading SvB friend tree ")
                 try:
                     result = rename_SvB_friend(self.target, self.friends[k])
@@ -768,6 +800,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                         continue
                     event[k] = result
                     setSvBVars(k, event)
+            elif k.startswith("SvB_FeynNet"):
+                pass  # SvB_FeynNet fields are populated by compute_SvB_FeynNet, no rename/setSvBVars needed
 
         self._log_memory("after_friend_trees_loaded")
 
@@ -777,6 +811,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         for svb_name, classifier in [("SvB", self.classifier_SvB), ("SvB_MA", self.classifier_SvB_MA)]:
             if svb_name in event.fields or classifier is not None:
+                continue
+            if svb_name in self._skip_svb_legacy:
+                logging.info(f"{svb_name} explicitly set to null in config — skipping legacy ROOT fallback.")
                 continue
             # Legacy ROOT file fallback
             svb_file = f'{self.path}/{svb_name}{SvB_suffix}.root' if 'mix' in self.dataset else f'{self.fname.replace("picoAOD", f"{svb_name}{SvB_suffix}")}'
@@ -1092,6 +1129,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             run_systematics=self.run_systematics,
             classifier_SvB=self.classifier_SvB,
             classifier_SvB_MA=self.classifier_SvB_MA,
+            classifier_SvB_FeynNet=self.classifier_SvB_FeynNet,
             processOutput=processOutput,
             isRun3=self.config["isRun3"],
             weights=weights,
@@ -1275,7 +1313,14 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB", analysis_selections)
             friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB_MA", analysis_selections)
 
+        if self.make_friend_SvB_FeynNet is not None:
+            from ..helpers.dump_friendtrees import dump_SvB_FeynNet
+            friends["friends"] |= dump_SvB_FeynNet(selev, self.make_friend_SvB_FeynNet, "SvB_FeynNet", analysis_selections)
+
         return friends
+
+    def _fourtag_label(self):
+        return "fourTag"
 
     def apply_selection(self, event):
         """Apply selection to the events"""
