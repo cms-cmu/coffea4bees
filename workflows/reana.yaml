@@ -3,9 +3,9 @@ inputs:
   directories:
     - src/
     - coffea4bees/analysis/
-    - coffea4bees/data/
     - coffea4bees/metadata/
     - coffea4bees/plots/
+    - coffea4bees/scripts/
     - coffea4bees/skimmer/processor/
     - coffea4bees/stats_analysis/
     - coffea4bees/workflows/
@@ -18,13 +18,8 @@ inputs:
 workflow:
   type: snakemake
   file: coffea4bees/workflows/Snakefile_reana.smk
-  # resources:
-  #   cvmfs:
-  #     - cms.cern.ch
-  #     - cms-griddata.cern.ch
 workspace:
   retention_days:
-    coffea4bees/*: 1
     output/*: 30
 outputs:
   directories:
