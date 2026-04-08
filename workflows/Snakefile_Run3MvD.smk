@@ -429,7 +429,7 @@ rule make_plots_MvD:
 
 
 module training:
-    snakefile: "Snakefile_classifier_training_Run3MvD.smk"
+    snakefile: "Snakefile_Run3MvD_training.smk"
     config: config
 
 use rule create_train_yml from training

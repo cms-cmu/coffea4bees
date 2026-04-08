@@ -1,0 +1,22 @@
+runner:
+  workers: 4
+  condor_memory: 6GB
+  friend_metafile: make_friend_SvB_FeynNet
+  friend_base: &friend_base root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_v3
+  # friend_base: &friend_base /tmp/SvBFeynNet_test   # local path for testing
+
+config:
+  blind: false
+  apply_FvT: false
+  apply_trigWeight: false
+  apply_btagSF: true
+  apply_boosted_veto: false
+  run_SvB: true
+  SvB: null
+  SvB_MA: null
+  SvB_FeynNet:
+  - path: coffea4bees/analysis/weights/pytorch_models/FeynNet/Run3/preparking_svb/model.onnx
+    preprocess: coffea4bees/analysis/weights/pytorch_models/FeynNet/Run3/preparking_svb/preprocess.json
+  top_reconstruction: null
+  fill_histograms: false
+  make_friend_SvB_FeynNet: *friend_base
