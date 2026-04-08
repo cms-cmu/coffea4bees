@@ -1,6 +1,13 @@
 from datetime import datetime
 import os
 
+# Set per-job Apptainer cache/tmp dirs to avoid race conditions between concurrent Slurm jobs
+shell.prefix(
+    "export APPTAINER_CACHEDIR=/tmp/apptainer_cache_${{SLURM_JOB_ID:-$$}} && "
+    "export APPTAINER_TMPDIR=/tmp/apptainer_tmp_${{SLURM_JOB_ID:-$$}} && "
+    "mkdir -p $APPTAINER_CACHEDIR $APPTAINER_TMPDIR && "
+)
+
 # Import rule modules
 module analysis:
     snakefile: "rules/analysis.smk"
@@ -69,6 +76,8 @@ use rule analysis_processor from analysis as analysis_databkgs with:
     # input: f"{config['output_path']}/JCM/jetCombinatoricModel_SB_reana.yml"
     output: f"{config['output_path']}/singlefiles/hist__{{sample}}-{{year}}.coffea"
     container: config["analysis_container"]
+    threads: 4
+    log: f"{config['output_path']}/logs/analysis_hist__{{sample}}-{{year}}.log"
     params:
         datasets="{sample}",
         years="{year}",
@@ -77,6 +86,7 @@ use rule analysis_processor from analysis as analysis_databkgs with:
         datasets_file=config['dataset_location'],
         friends="",
         blind=False,
+        not_do_proxy=True,
         run_performance=True,
         run_on_condor=False,
         extra_arguments=config['extra_arguments'],
@@ -84,14 +94,13 @@ use rule analysis_processor from analysis as analysis_databkgs with:
         dashboard_address=""
     resources:
         voms_proxy=True,
-        kerberos=True,
         compute_backend="slurmcern"
-    log: f"{config['output_path']}/logs/analysis_hist__{{sample}}-{{year}}.log"
 
 
 use rule analysis_databkgs as analysis_data with:
     # input: f"{config['output_path']}/JCM/jetCombinatoricModel_SB_reana.yml"
     output: f"{config['output_path']}/singlefiles/histdata__data-{{year}}.coffea"
+    log: f"{config['output_path']}/logs/analysis_histdata__data-{{year}}.log"
     params:
         datasets="data",
         years="{year}",
@@ -100,16 +109,17 @@ use rule analysis_databkgs as analysis_data with:
         datasets_file=config['dataset_location'],
         friends="",
         blind=False,
+        not_do_proxy=True,
         run_performance=True,
         run_on_condor=False,
         extra_arguments=lambda wildcards: f"{config['extra_arguments']} -e {config['data_eras'][wildcards.year]}",
         run_container_wrapper="",
         dashboard_address=""
-    log: f"{config['output_path']}/logs/analysis_histdata__data-{{year}}.log"
 
 
 use rule analysis_databkgs as analysis_data_UL17B with:
     output: f"{config['output_path']}/singlefiles/histdata__data-UL17B.coffea"
+    log: f"{config['output_path']}/logs/analysis_histdata__data-UL17B.log"
     params:
         datasets="data",
         years="UL17",
@@ -118,16 +128,18 @@ use rule analysis_databkgs as analysis_data_UL17B with:
         datasets_file=config['dataset_location'],
         friends="",
         blind=False,
+        not_do_proxy=True,
         run_performance=True,
         run_on_condor=False,
         extra_arguments=f"{config['extra_arguments']} -e B",
         run_container_wrapper="",
         dashboard_address=""
-    log: f"{config['output_path']}/logs/analysis_histdata__data-UL17B.log"
 
 use rule analysis_databkgs as analysis_signals with:
     # input: f"{config['output_path']}/JCM/jetCombinatoricModel_SB_reana.yml"
     output: f"{config['output_path']}/singlefiles/histsignal__{{sample_signal}}-{{year}}.coffea"
+    threads: 8
+    log: f"{config['output_path']}/logs/analysis_histsignal__{{sample_signal}}-{{year}}.log"
     params:
         datasets="{sample_signal}",
         years="{year}",
@@ -136,16 +148,17 @@ use rule analysis_databkgs as analysis_signals with:
         datasets_file=config['dataset_location'],
         friends="",
         blind=False,
+        not_do_proxy=True,
         run_performance=True,
         run_on_condor=False,
         extra_arguments=config['extra_arguments'],
         run_container_wrapper="",
         dashboard_address=""
-    log: f"{config['output_path']}/logs/analysis_histsignal__{{sample_signal}}-{{year}}.log"
 
 ### mixdata for HH
 use rule analysis_databkgs as analysis_mixedbkg_data3b with:
     output: f"{config['output_path']}/histMixedBkg_data_3b_for_mixed.coffea"
+    log: f"{config['output_path']}/logs/analysis_mixedbkg_data3b.log"
     params:
         datasets="data_3b_for_mixed",
         years=config.get('year_preUL', config['year']),
@@ -154,16 +167,17 @@ use rule analysis_databkgs as analysis_mixedbkg_data3b with:
         datasets_file=config['dataset_location'],
         friends="",
         blind=False,
+        not_do_proxy=True,
         run_performance=True,
         run_on_condor=False,
         extra_arguments=config['extra_arguments'],
         run_container_wrapper="",
         dashboard_address=""
-    log: f"{config['output_path']}/logs/analysis_mixedbkg_data3b.log"
 
 
 use rule analysis_databkgs as analysis_mixedbkg with:
     output: f"{config['output_path']}/histMixedBkg_TT.coffea"
+    log: f"{config['output_path']}/logs/analysis_mixedbkg_TT.log"
     params:
         datasets=config['dataset_for_mixed'],
         years=config['year'],
@@ -172,15 +186,16 @@ use rule analysis_databkgs as analysis_mixedbkg with:
         datasets_file=config['dataset_location'],
         friends="",
         blind=False,
+        not_do_proxy=True,
         run_performance=True,
         run_on_condor=False,
         extra_arguments=config['extra_arguments'],
         run_container_wrapper="",
         dashboard_address=""
-    log: f"{config['output_path']}/logs/analysis_mixedbkg_TT.log"
 
 use rule analysis_databkgs as analysis_mixeddata with:
     output: f"{config['output_path']}/histMixedData.coffea"
+    log: f"{config['output_path']}/logs/analysis_mixeddata.log"
     params:
         datasets="mixeddata",
         years=config.get('year_preUL', config['year']),
@@ -189,17 +204,18 @@ use rule analysis_databkgs as analysis_mixeddata with:
         datasets_file=config['dataset_location'],
         friends="",
         blind=False,
+        not_do_proxy=True,
         run_performance=True,
         run_on_condor=False,
         extra_arguments=config['extra_arguments'],
         run_container_wrapper="",
         dashboard_address=""
-    log: f"{config['output_path']}/logs/analysis_mixeddata.log"
 
 
 ### mixeddata for ZZ/ZH
 use rule analysis_databkgs as analysis_mixedbkg_data3b_ZZZH with:
     output: f"{config['output_path']}/histMixedBkg_ZZZH_data_3b_for_mixed.coffea"
+    log: f"{config['output_path']}/logs/analysis_mixedbkg_data3b_ZZZH.log"
     params:
         datasets="data_3b_for_mixed",
         years=config.get('year_preUL', config['year']),
@@ -208,16 +224,17 @@ use rule analysis_databkgs as analysis_mixedbkg_data3b_ZZZH with:
         datasets_file=config['dataset_location'],
         friends="",
         blind=False,
+        not_do_proxy=True,
         run_performance=True,
         run_on_condor=False,
         extra_arguments=config['extra_arguments'],
         run_container_wrapper="",
         dashboard_address=""
-    log: f"{config['output_path']}/logs/analysis_mixedbkg_data3b_ZZZH.log"
 
 
 use rule analysis_databkgs as analysis_mixedbkg_ZZZH with:
     output: f"{config['output_path']}/histMixedBkg_ZZZH_TT.coffea"
+    log: f"{config['output_path']}/logs/analysis_mixedbkg_TT_ZZZH.log"
     params:
         datasets=config['dataset_for_mixed'],
         years=config['year'],
@@ -226,15 +243,16 @@ use rule analysis_databkgs as analysis_mixedbkg_ZZZH with:
         datasets_file=config['dataset_location'],
         friends="",
         blind=False,
+        not_do_proxy=True,
         run_performance=True,
         run_on_condor=False,
         extra_arguments=config['extra_arguments'],
         run_container_wrapper="",
         dashboard_address=""
-    log: f"{config['output_path']}/logs/analysis_mixedbkg_TT_ZZZH.log"
 
 use rule analysis_databkgs as analysis_mixeddata_ZZZH with:
     output: f"{config['output_path']}/histMixedData_ZZZH.coffea"
+    log: f"{config['output_path']}/logs/analysis_mixeddata_ZZZH.log"
     params:
         datasets="mixeddata",
         years=config.get('year_preUL', config['year']),
@@ -243,16 +261,18 @@ use rule analysis_databkgs as analysis_mixeddata_ZZZH with:
         datasets_file=config['dataset_location'],
         friends="",
         blind=False,
+        not_do_proxy=True,
         run_performance=True,
         run_on_condor=False,
         extra_arguments=config['extra_arguments'],
         run_container_wrapper="",
         dashboard_address=""
-    log: f"{config['output_path']}/logs/analysis_mixeddata_ZZZH.log"
 
 use rule analysis_databkgs as analysis_systematics_others with:
     # input: f"{config['output_path']}/JCM/jetCombinatoricModel_SB_reana.yml"
     output: f"{config['output_path']}/singlefiles/histsyst_others_{{samplesyst}}-{{iysyst}}.coffea"
+    threads: 8
+    log: f"{config['output_path']}/logs/analysis_histsyst_others_{{samplesyst}}-{{iysyst}}.log"
     params:
         datasets="{samplesyst}",
         years="{iysyst}",
@@ -261,17 +281,19 @@ use rule analysis_databkgs as analysis_systematics_others with:
         datasets_file=config['dataset_location'],
         friends="",
         blind=False,
+        not_do_proxy=True,
         run_performance=True,
         run_on_condor=False,
         extra_arguments=f"{config['extra_arguments']} --systematics others",
         run_container_wrapper="",
         dashboard_address=""
-    log: f"{config['output_path']}/logs/analysis_histsyst_others_{{samplesyst}}-{{iysyst}}.log"
 
 
 use rule analysis_databkgs as analysis_systematics_jes with:
     # input: f"{config['output_path']}/JCM/jetCombinatoricModel_SB_reana.yml"
     output: f"{config['output_path']}/singlefiles/histsyst_jes_{{samplesyst}}-{{iysyst}}.coffea"
+    threads: 8
+    log: f"{config['output_path']}/logs/analysis_histsyst_jes_{{samplesyst}}-{{iysyst}}.log"
     params:
         datasets="{samplesyst}",
         years="{iysyst}",
@@ -280,12 +302,12 @@ use rule analysis_databkgs as analysis_systematics_jes with:
         datasets_file=config['dataset_location'],
         friends="",
         blind=False,
+        not_do_proxy=True,
         run_performance=True,
         run_on_condor=False,
         extra_arguments=f"{config['extra_arguments']} --systematics jes",
         run_container_wrapper="",
         dashboard_address=""
-    log: f"{config['output_path']}/logs/analysis_histsyst_jes_{{samplesyst}}-{{iysyst}}.log"
 
 #######
 ### Merging histograms 
