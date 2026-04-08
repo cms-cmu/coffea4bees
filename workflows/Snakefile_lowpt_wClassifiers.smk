@@ -26,11 +26,12 @@ config.setdefault('channels', {
 })
 
 
-# Derive flat year list from year_eras keys
+# Derive flat year/era and year lists from year_eras
 DATA_YEAR_ERA = [(yr, era) for yr, eras in config['year_eras'].items() for era in eras]
+DATA_YEARS = list(config['year_eras'].keys())
 config.setdefault('eos_path', f"{datetime.now().strftime('%Y%m%d')}_lowpt_test")
 
-temp_label = "wNominalSvB"
+temp_label = "wSvB"
 
 # Constrain year wildcard to valid year values (avoids ambiguity with underscores in dataset names)
 wildcard_constraints:
@@ -68,7 +69,7 @@ rule modify_config_file:
         f"{config['output_path']}HH4b_lowpt_2024_v2_signal.yml"
     shell:
         """
-        sed -e 's|apply_FvT: .*|apply_FvT: false|' -e 's|plot_ttbar_with_weights: true|plot_ttbar_with_weights: false|' {input.config_file} > {output}
+        sed -e 's|apply_FvT: .*|apply_FvT: false|' -e 's|blind:.*|blind: false|' -e 's|plot_ttbar_with_weights: true|plot_ttbar_with_weights: false|' {input.config_file} > {output}
         """
 
 use rule analysis_processor from analysis as analysis_lowpt_data with:
@@ -106,7 +107,7 @@ use rule analysis_processor from analysis as analysis_lowpt_MC with:
         run_container_wrapper = "./run_container"
 
 use rule merging_coffea_files from analysis as merging_lowpt_files with:
-    input: [f"{config['output_path']}singlefiles/histAll_lowpt_{temp_label}_data__{yr}_{era}.coffea" for yr, era in DATA_YEAR_ERA] + expand("{output_path}singlefiles/histAll_lowpt_" + temp_label + "__{dataset}__{year}.coffea", output_path=config['output_path'], dataset=config['dataset'], year=config['year_eras'].keys())
+    input: [f"{config['output_path']}singlefiles/histAll_lowpt_{temp_label}_data__{yr}_{era}.coffea" for yr, era in DATA_YEAR_ERA] + expand("{output_path}singlefiles/histAll_lowpt_" + temp_label + "__{dataset}__{year}.coffea", output_path=config['output_path'], dataset=config['dataset'], year=DATA_YEARS)
     output: f"{config['output_path']}histAll_lowpt_{temp_label}.coffea"
     params:
         run_performance = False
