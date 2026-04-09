@@ -244,7 +244,7 @@ def apply_4b_selection(
 
     # Only need 30 GeV jets for signal systematics
     if loosePtForSkim:
-        mask_jet_lowpt_forskim = (event.Jet.pt >= 15) & (np.abs(event.Jet.eta) <= 2.4) & ~event.Jet.pileup & (event.Jet.jetId >= 2) & event.Jet.lepton_cleaned
+        mask_jet_lowpt_forskim = (event.Jet.pt >= 15) & (np.abs(event.Jet.eta) <= 2.4) & event.Jet.lepton_cleaned
         nJet_selected_lowpt_forskim = ak.sum(mask_jet_lowpt_forskim, axis=1)
         mask_tagjet_lowpt_forskim = mask_jet_lowpt_forskim & (event.Jet.btagScore >= corrections_metadata['btagWP']['M'])
         event['passJetMult_lowpt_forskim'] = nJet_selected_lowpt_forskim >= 4

@@ -1659,7 +1659,16 @@ class HCREnsemble(nn.Module):
                 features_index = 3 if '_MA_' in pkl else 2
             features = int(pkl.split('_')[features_index])
             ancillaryFeatures = ['year', 'nSelJets', 'xW', 'xbW']
-            state_dict = torch.load(path, map_location=torch.device('cpu'))
+            for attempt in range(3):
+                try:
+                    state_dict = torch.load(path, map_location=torch.device('cpu'))
+                    break
+                except EOFError:
+                    if attempt < 2:
+                        logging.warning(f"EOFError loading {path}, retrying ({attempt + 1}/3)...")
+                        time.sleep(1)
+                    else:
+                        raise
             nClasses = state_dict['model']['out.conv.module.weight'].shape[0]
             self.HCRs.append(
                 HCR(features, features, ancillaryFeatures, useOthJets=useOthJets, device='cpu', nClasses=nClasses, architecture=architecture)

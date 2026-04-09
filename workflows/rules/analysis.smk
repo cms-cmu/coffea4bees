@@ -11,6 +11,7 @@ rule analysis_processor:
         run_performance = False,
         friends = "",
         run_on_condor = False,
+        not_do_proxy = False,
         extra_arguments = "",
         run_container_wrapper = "",  ###include ./run_container for condor
         dashboard_address = ""
@@ -27,14 +28,15 @@ rule analysis_processor:
             --output-filename $(basename {output}) \
             --output-base $(dirname {output}) \
             --log {log} \
-            --tmpdir {resources.tmpdir} \
             --no-test \
+            $([ "{params.not_do_proxy}" = "True" ] && echo "--not-do-proxy") \
             $([ "{params.blind}" = "True" ] && echo "--blind") \
             $([ "{params.run_on_condor}" = "True" ] && echo "--condor") \
             $([ "{params.run_performance}" = "True" ] && echo "--run-performance") \
             $([ -n "{params.dashboard_address}" ] && echo "--dashboard-address {params.dashboard_address}") \
             --additional-flags {params.extra_arguments}
         """
+            # --tmpdir {resources.tmpdir} \
 
 
 rule merging_coffea_files:

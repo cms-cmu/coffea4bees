@@ -29,12 +29,14 @@ CLASSIFIERS = {
         "friend":         FVT_FRIEND,
         "train_template": f"model: {BASE}/classifier/FvT_lowpt",
         "eval_template":  f"model: {BASE}/classifier/FvT_lowpt, FvT: {FVT_FRIEND}",
+        "metadata": "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/classifier_inputs_lowpt_wlowptJCM.json@@HCR_input_lowpt",
     },
     "SvB": {
         "model":          f"{BASE}/classifier/SvB_lowpt",
         "friend":         f"{BASE}/friend/SvB_lowpt",
         "train_template": f"model: {BASE}/classifier/SvB_lowpt, FvT: {FVT_FRIEND}",
         "eval_template":  f"model: {BASE}/classifier/SvB_lowpt, SvB: {BASE}/friend/SvB_lowpt",
+        "metadata": "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/classifier_inputs_lowpt_wlowptJCM.json@@HCR_input_lowpt",
     },
 }
 
@@ -50,6 +52,8 @@ rule all:
     input:
         expand("output/{classifier}_lowpt/evaluate.done", classifier=TARGETS),
         expand("output/{classifier}_lowpt/analyze.done",  classifier=TARGETS),
+        expand("output/{classifier}_lowpt/plot_inputs_raw.done", classifier=TARGETS),
+        expand("output/{classifier}_lowpt/plot_inputs_dataprep.done", classifier=TARGETS),
 
 
 rule train:
@@ -110,6 +114,66 @@ rule analyze:
             -setting IO "output: {params.plot}/{wildcards.classifier}" \
             -setting IO "report: {params.report}" \
             -setting Monitor "address: '127.0.0.1:$PORT'" \
+            2>&1 | tee -a {log}
+        touch {output.flag}
+        """
+
+
+rule plot_inputs_raw:
+    input:
+        "output/{classifier}_lowpt/train.done",
+    output:
+        flag = "output/{classifier}_lowpt/plot_inputs_raw.done",
+    log:
+        "output/{classifier}_lowpt/plot_inputs_raw.log",
+    container:
+        CLASSIFIER_CPU
+    resources:
+        runtime = 60,
+        mem_mb  = 8000,
+    threads: 1
+    params:
+        model    = lambda wc: CLASSIFIERS[wc.classifier]["model"],
+        metadata = lambda wc: CLASSIFIERS[wc.classifier]["metadata"],
+        plot     = lambda wc: f"root://eosuser.cern.ch//eos/user/{CERNUSER}/www/HH4b/Plots/{DATE}_{wc.classifier}_lowpt_inputs",
+    shell:
+        """
+        {INIT} && \
+        python src/classifier/plot_inputs.py \
+            --mode raw \
+            --checkpoint {params.model} \
+            --metadata {params.metadata} \
+            --output-dir {params.plot}/{wildcards.classifier} \
+            2>&1 | tee -a {log}
+        touch {output.flag}
+        """
+
+
+rule plot_inputs_dataprep:
+    input:
+        "output/{classifier}_lowpt/train.done",
+    output:
+        flag = "output/{classifier}_lowpt/plot_inputs_dataprep.done",
+    log:
+        "output/{classifier}_lowpt/plot_inputs_dataprep.log",
+    container:
+        CLASSIFIER_CPU
+    resources:
+        runtime = 60,
+        mem_mb  = 8000,
+    threads: 1
+    params:
+        model    = lambda wc: CLASSIFIERS[wc.classifier]["model"],
+        metadata = lambda wc: CLASSIFIERS[wc.classifier]["metadata"],
+        plot     = lambda wc: f"root://eosuser.cern.ch//eos/user/{CERNUSER}/www/HH4b/Plots/{DATE}_{wc.classifier}_lowpt_inputs",
+    shell:
+        """
+        {INIT} && \
+        python src/classifier/plot_inputs.py \
+            --mode dataprep \
+            --checkpoint {params.model} \
+            --metadata {params.metadata} \
+            --output-dir {params.plot}/{wildcards.classifier} \
             2>&1 | tee -a {log}
         touch {output.flag}
         """
