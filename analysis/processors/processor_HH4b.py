@@ -801,7 +801,17 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     event[k] = result
                     setSvBVars(k, event)
             elif k.startswith("SvB_FeynNet"):
-                pass  # SvB_FeynNet fields are populated by compute_SvB_FeynNet, no rename/setSvBVars needed
+                # Load SvB_FeynNet directly from friend tree — fields are already in the correct
+                # format (p_ggHH, p_ZZ, ps_hh, etc.) as stored by dump_SvB_FeynNet, no rename needed.
+                try:
+                    result = self.friends[k].arrays(self.target)
+                    if result is None:
+                        logging.warning(f"No SvB_FeynNet friend tree entries found (target not in friend mapping). Skipping.")
+                        continue
+                    event[k] = result
+                    logging.info(f"Loaded SvB_FeynNet friend tree for {k}")
+                except Exception as e:
+                    logging.warning(f"Failed to load SvB_FeynNet friend tree for {k}: {e}. Skipping.")
 
         self._log_memory("after_friend_trees_loaded")
 

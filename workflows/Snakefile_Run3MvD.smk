@@ -79,14 +79,16 @@ rule all_with_training:
 
 rule create_friends_wSvB:
     input:
-        friends_yml = "coffea4bees/metadata/friends_HH4b.yml",
-        svb_json    = "coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data.json",
+        friends_yml    = "coffea4bees/metadata/friends_HH4b.yml",
+        svb_json       = "coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data.json",
+        feynet_json    = "coffea4bees/metadata/datasets_HH4b_Run3/SvBFeynNetfriend_mixeddata_data.json",
     output: f"{out}friends_wSvB.yml"
     shell:
         """
         sed \
             -e 's|    SvB:.*|    SvB: "{input.svb_json}@@SvB"|' \
             -e 's|    SvB_MA:.*|    SvB_MA: "{input.svb_json}@@SvB_MA"|' \
+            -e 's|    SvB_FeynNet:.*|    SvB_FeynNet: "{input.feynet_json}@@SvB_FeynNet"|' \
             {input.friends_yml} > {output}
         echo "Patched friends:"
         grep -E "SvB" {output}
@@ -311,6 +313,7 @@ rule create_friends_MvD:
     input:
         friends_yml = "coffea4bees/metadata/friends_HH4b.yml",
         svb_json    = "coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data.json",
+        feynet_json = "coffea4bees/metadata/datasets_HH4b_Run3/SvBFeynNetfriend_mixeddata_data.json",
     output: f"{out}friends_MvD.yml"
     params:
         mvd_path = f"{config['eos_base']}/friend/MvD/result.json@@analysis.0.merged"
@@ -320,6 +323,7 @@ rule create_friends_MvD:
             -e 's|    MvD:.*|    MvD: {params.mvd_path}|' \
             -e 's|    SvB:.*|    SvB: "{input.svb_json}@@SvB"|' \
             -e 's|    SvB_MA:.*|    SvB_MA: "{input.svb_json}@@SvB_MA"|' \
+            -e 's|    SvB_FeynNet:.*|    SvB_FeynNet: "{input.feynet_json}@@SvB_FeynNet"|' \
             {input.friends_yml} > {output}
         echo "Patched friends:"
         grep -E "MvD|SvB" {output}
