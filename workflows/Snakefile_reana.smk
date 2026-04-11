@@ -49,23 +49,45 @@ SYST_PLOTS = {
 
 rule final_rule:
     input:
-        f"{config['output_path']}/plots/RunII/passPreSel/fourTag/SB/nPVs.pdf",
-        [expand(pattern, zip, channel=CHANNELS, signallabel=SIGNALLABELS, channellabel=CHANNELLABELS)
-         for pattern in OUTPUT_PATTERNS.values()],
-        list(SYST_PLOTS.values()),
-    container: config["analysis_container"]
-    resources:
-        voms_proxy=True,
-        kerberos=True,
-    shell: 
+        # TT backgrounds
+        expand(f"{config['output_path']}/singlefiles/hist__{{sample}}-{{year}}.coffea", sample=config['dataset_tt'], year=config['year']),
+        # Data
+        expand(f"{config['output_path']}/singlefiles/histdata__data-{{year}}.coffea", year=config['year']),
+        f"{config['output_path']}/singlefiles/histdata__data-UL17B.coffea",
+        # Signals
+        expand(f"{config['output_path']}/singlefiles/histsignal__{{sample_signal}}-{{year}}.coffea", sample_signal=config['dataset_signals'], year=config['year']),
+        # Systematics
+        expand(f"{config['output_path']}/singlefiles/histsyst_others_{{samplesyst}}-{{iysyst}}.coffea", samplesyst=config['dataset_systematics'], iysyst=config['year']),
+        expand(f"{config['output_path']}/singlefiles/histsyst_jes_{{samplesyst}}-{{iysyst}}.coffea", samplesyst=config['dataset_systematics'], iysyst=config['year']),
+        # Mixed backgrounds (HH)
+        f"{config['output_path']}/histMixedBkg_data_3b_for_mixed.coffea",
+        f"{config['output_path']}/histMixedBkg_TT.coffea",
+        f"{config['output_path']}/histMixedData.coffea",
+        # Mixed backgrounds (ZZ/ZH)
+        f"{config['output_path']}/histMixedBkg_ZZZH_data_3b_for_mixed.coffea",
+        f"{config['output_path']}/histMixedBkg_ZZZH_TT.coffea",
+        f"{config['output_path']}/histMixedData_ZZZH.coffea",
+    shell:
         """
-        rm -rf {config[output_path]}/datacards/*/higgsCombine_*
-        cp gitdiff.txt {config[output_path]}
-        echo "Copying output to cernbox "
-        mkdir -p {EOS_OUTPUT}
-        cp -r {config[output_path]}/* {EOS_OUTPUT}
-        python src/plotting/pb_deploy_plots.py {config[output_path]}/ {EOS_OUTPUT} -r -c -j 4
+        echo "Done running all singlefile analysis jobs (Stage 2)"
         """
+
+# rule final_rule:
+#     input:
+#         f"{config['output_path']}/plots/RunII/passPreSel/fourTag/SB/nPVs.pdf",
+#         [expand(pattern, zip, channel=CHANNELS, signallabel=SIGNALLABELS, channellabel=CHANNELLABELS)
+#          for pattern in OUTPUT_PATTERNS.values()],
+#         list(SYST_PLOTS.values()),
+#     container: config["analysis_container"]
+#     shell:
+#         """
+#         rm -rf {config[output_path]}/datacards/*/higgsCombine_*
+#         cp gitdiff.txt {config[output_path]}
+#         echo "Converting pdf to png"
+#         python src/plotting/pb_deploy_plots.py {config[output_path]}/ -r -c -j 4
+#         echo "Copying results to eos"
+#         bash src/tools/copy_files_to_cernbox.sh -s {config[output_path]} -d www/HH4b/{config[eos_path]}/ -t
+#         """
 
 #######
 ### Running analysis processor
@@ -76,7 +98,7 @@ use rule analysis_processor from analysis as analysis_databkgs with:
     # input: f"{config['output_path']}/JCM/jetCombinatoricModel_SB_reana.yml"
     output: f"{config['output_path']}/singlefiles/hist__{{sample}}-{{year}}.coffea"
     container: config["analysis_container"]
-    threads: 4
+    threads: 16
     log: f"{config['output_path']}/logs/analysis_hist__{{sample}}-{{year}}.log"
     params:
         datasets="{sample}",
@@ -92,9 +114,6 @@ use rule analysis_processor from analysis as analysis_databkgs with:
         extra_arguments=config['extra_arguments'],
         run_container_wrapper="",
         dashboard_address=""
-    resources:
-        voms_proxy=True,
-        compute_backend="slurmcern"
 
 
 use rule analysis_databkgs as analysis_data with:
@@ -326,10 +345,6 @@ def get_channel_datasets(channel):
 use rule merging_coffea_files from analysis as merging_coffea_files_syst with:
     input: lambda wildcards: expand([f'{config["output_path"]}/singlefiles/histsyst_others_{{idatsyst}}-{{iyear}}.coffea'], idatsyst=get_channel_datasets(wildcards.channel), iyear=config['year']) + expand([f'{config["output_path"]}/singlefiles/histsyst_jes_{{idatsyst}}-{{iyear}}.coffea'], idatsyst=get_channel_datasets(wildcards.channel), iyear=config['year'])
     output: f"{config['output_path']}/histAll_signals__{{channel}}.coffea"
-    resources:
-        kerberos=True,
-        compute_backend="slurmcern",
-        kubernetes_memory_limit="9.5Gi"
     params:
         run_performance=False
     log: f"{config['output_path']}/logs/merging_signals_{{channel}}.log"
@@ -346,10 +361,6 @@ use rule merging_coffea_files_syst as merging_coffea_files_histAll with:
 use rule make_plots from analysis as make_plots with:
     input: f"{config['output_path']}/histAll.coffea"
     output: f"{config['output_path']}/plots/RunII/passPreSel/fourTag/SB/nPVs.pdf"
-    resources:
-        kerberos=True,
-        compute_backend="slurmcern",
-        kubernetes_memory_limit="8Gi"
     log: f"{config['output_path']}/logs/make_plots.log"
     params:
         output_dir = f"{config['output_path']}/plots/",
@@ -366,8 +377,6 @@ use rule convert_hist_to_json from stat_analysis as convert_hist_to_json with:
     params:
         syst_flag=lambda wildcards: "-s --histos SvB_MA.ps_hh SvB_MA.ps_zz SvB_MA.ps_zh" if "signals" in wildcards.histfile else ""
     log: f"{config['output_path']}/logs/convert_hist_to_json_{{histfile}}.log"
-    resources:
-        kubernetes_memory_limit="8Gi"
 
 use rule convert_hist_to_json_closure from stat_analysis as convert_hist_to_json_mixdata3b with:
     input: f"{config['output_path']}/histMixedBkg_data_3b_for_mixed.coffea"
@@ -403,9 +412,6 @@ use rule convert_json_to_root from stat_analysis with:
     input: f"{config['output_path']}/{{jsonfile}}.json"
     output: f"{config['output_path']}/{{jsonfile}}.root"
     container: config["combine_container"]
-    resources:
-        compute_backend="slurmcern",
-        kubernetes_memory_limit="8Gi"
     message: "Converting {input} to {output}"
     log: f"{config['output_path']}/logs/convert_json_to_root_{{jsonfile}}.log"
 
@@ -427,9 +433,6 @@ use rule run_two_stage_closure from stat_analysis as run_two_stage_closure_HH4b 
         variable = "SvB_MA_ps_hh",
         extra_arguments = "--use_kfold",
         container_wrapper = config['container_wrapper']
-    resources:
-        compute_backend="slurmcern",
-        kubernetes_memory_limit="8Gi"
     log: f"{config['output_path']}/logs/run_two_stage_closure_HH4b.log"
 
 use rule run_two_stage_closure_HH4b as run_two_stage_closure_ZZ4b with:
@@ -480,11 +483,6 @@ use rule make_combine_inputs from stat_analysis with:
         output_dir=f"{config['output_path']}/datacards/{{channel}}/",
         signal="{channel}",
         container_wrapper = config['container_wrapper']
-    resources:
-        voms_proxy=True,
-        kerberos=True,
-        compute_backend="slurmcern",
-        kubernetes_memory_limit="9.5Gi"
     log: f"{config['output_path']}/logs/make_combine_inputs_{{channel}}.log"
 
 use rule workspace from combine with:
@@ -495,10 +493,6 @@ use rule workspace from combine with:
         signallabel="{signallabel}",
         othersignal_maps=lambda wildcards: additional_poi(wildcards.channel),
         container_wrapper=config.get("container_wrapper", "./run_container combine")
-    resources:
-        voms_proxy=True,
-        kerberos=True,
-        compute_backend="slurmcern"
     log: f"{config['output_path']}/logs/workspace_{{channel}}__{{signallabel}}.log"
 
 use rule limits from combine with:
@@ -512,10 +506,6 @@ use rule limits from combine with:
         set_parameters_zero=lambda wildcards: set_parameters(wildcards.channel, 0),
         freeze_parameters=lambda wildcards: freeze_parameters(wildcards.channel),
         container_wrapper=config.get("container_wrapper", "./run_container combine")
-    resources:
-        voms_proxy=True,
-        kerberos=True,
-        compute_backend="slurmcern"
     log: f"{config['output_path']}/logs/limits_{{channel}}__{{signallabel}}.log"
 
 use rule significance from combine with:
@@ -527,10 +517,6 @@ use rule significance from combine with:
         set_parameters_zero=lambda wildcards: set_parameters(wildcards.channel, 0),
         freeze_parameters=lambda wildcards: freeze_parameters(wildcards.channel),
         container_wrapper=config.get("container_wrapper", "./run_container combine")
-    resources:
-        voms_proxy=True,
-        kerberos=True,
-        compute_backend="slurmcern"
     log: f"{config['output_path']}/logs/significance_{{channel}}__{{signallabel}}.log"
 
 use rule impacts from combine with:
@@ -542,11 +528,6 @@ use rule impacts from combine with:
         set_parameters_zero=lambda wildcards: set_parameters(wildcards.channel, 0),
         set_parameters_ranges=lambda wildcards: set_parameters_ranges(wildcards.channel),
         container_wrapper=config.get("container_wrapper", "./run_container combine")
-    resources:
-        voms_proxy=True,
-        kerberos=True,
-        compute_backend="slurmcern",
-        kubernetes_memory_limit="9.5Gi"
     log: f"{config['output_path']}/logs/impacts_{{channel}}_datacard_{{channel}}__{{signallabel}}.log"
 
 use rule likelihood_scan from combine with:
@@ -558,10 +539,6 @@ use rule likelihood_scan from combine with:
         set_parameters_zero=lambda wildcards: set_parameters(wildcards.channel, 0),
         freeze_parameters=lambda wildcards: freeze_parameters(wildcards.channel),
         container_wrapper=config.get("container_wrapper", "./run_container combine")
-    resources:
-        voms_proxy=True,
-        kerberos=True,
-        compute_backend="slurmcern"
     log: f"{config['output_path']}/logs/likelihood_scan_{{channel}}_datacard_{{channel}}__{{signallabel}}.log"
 
 use rule gof from combine with:
@@ -572,10 +549,6 @@ use rule gof from combine with:
         signallabel="{signallabel}",
         set_parameters_zero=lambda wildcards: set_parameters(wildcards.channel, 0),
         container_wrapper=config.get("container_wrapper", "./run_container combine")
-    resources:
-        voms_proxy=True,
-        kerberos=True,
-        compute_backend="slurmcern"
     log: f"{config['output_path']}/logs/gof_{{channel}}_datacard_{{channel}}__{{signallabel}}.log"
 
 use rule make_syst_plots from stat_analysis with:
@@ -589,10 +562,6 @@ use rule make_syst_plots from stat_analysis with:
         channel="{channel}",
         signal=lambda wildcards: config['channels'][wildcards.channel]['signal'],
         container_wrapper = config['container_wrapper']
-    resources:
-        kerberos=True,
-        compute_backend="slurmcern",
-        kubernetes_memory_limit="8Gi"
 
 use rule postfit from combine as postfit with:
     input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{signallabel}}.root"
@@ -607,7 +576,3 @@ use rule postfit from combine as postfit with:
         set_parameters_zero=lambda wildcards: set_parameters(wildcards.channel, 0),
         freeze_parameters=lambda wildcards: freeze_parameters(wildcards.channel),
         container_wrapper=config.get("container_wrapper", "./run_container combine")
-    resources:
-        voms_proxy=True,
-        kerberos=True,
-        compute_backend="slurmcern"
