@@ -124,3 +124,210 @@ GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00:
       sumw2_raw: 7245.558406810411
       sumw_raw: 195203.95581580012
       total_events: 6588007
+  '2024':
+    nanoAOD: /GluGluHHto4B_Par-c2-0p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
+    picoAOD:
+      count: 1988270
+      files:
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024/picoAOD.chunk6.root 
+      missing: {}
+      saved_events: 680612
+      sumw: 58893.34443569183
+      sumw2: 2185.0093396902084
+      sumw2_raw: 2185.0093876400724
+      sumw_raw: 58893.33705250001
+      total_events: 1988270
+
+GluGlutoHHto4B_kl-0p00_kt-1p00_c2-0p00:
+  '2024':
+    nanoAOD: /GluGluHHto4B_Par-c2-0p00-kl-0p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v1/NANOAODSIM
+    picoAOD:
+      count: 1981254
+      files:
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-0p00_2024/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-0p00_2024/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-0p00_2024/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-0p00_2024/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-0p00_2024/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-0p00_2024/picoAOD.chunk5.root
+      missing: {}
+      saved_events: 579533
+      sumw: 129416.70539093018
+      sumw2: 9630.736232697964
+      sumw2_raw: 9630.735754969097
+      sumw_raw: 129416.68157330001
+      total_events: 1981254
+    
+GluGlutoHHto4B_kl-2p45_kt-1p00_c2-0p00:
+  '2024':
+    nanoAOD: /GluGluHHto4B_Par-c2-0p00-kl-2p45-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
+    picoAOD:
+      count: 1964470
+      files:
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-2p45_kt-1p00_c2-0p00_2024/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-2p45_kt-1p00_c2-0p00_2024/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-2p45_kt-1p00_c2-0p00_2024/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-2p45_kt-1p00_c2-0p00_2024/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-2p45_kt-1p00_c2-0p00_2024/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-2p45_kt-1p00_c2-0p00_2024/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-2p45_kt-1p00_c2-0p00_2024/picoAOD.chunk6.root
+      missing: {}
+      saved_events: 668717
+      sumw: 25221.909098386765
+      sumw2: 432.2664079889655
+      sumw2_raw: 432.26648900815417
+      sumw_raw: 25221.91414049999
+      total_events: 1964470
+    
+GluGlutoHHto4B_kl-5p00_kt-1p00_c2-0p00:
+  '2024':
+    nanoAOD: /GluGluHHto4B_Par-c2-0p00-kl-5p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
+    picoAOD:
+      count: 1980512
+      files:
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-5p00_kt-1p00_c2-0p00_2024/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-5p00_kt-1p00_c2-0p00_2024/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-5p00_kt-1p00_c2-0p00_2024/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-5p00_kt-1p00_c2-0p00_2024/picoAOD.chunk3.root
+      missing: {}
+      saved_events: 333375
+      sumw: 166161.61863136292
+      sumw2: 14405.19196653366
+      sumw2_raw: 14405.19213007322
+      sumw_raw: 166161.65195519995
+      total_events: 1980512      
+
+GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p10:
+  '2024':
+    nanoAOD: /GluGluHHto4B_Par-c2-0p10-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
+    picoAOD:
+      count: 1992064
+      files:
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p10_2024/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p10_2024/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p10_2024/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p10_2024/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p10_2024/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p10_2024/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p10_2024/picoAOD.chunk6.root
+      missing: {}
+      saved_events: 693405
+      sumw: 30651.768607616425
+      sumw2: 638.7891859244555
+      sumw2_raw: 638.7891594870109
+      sumw_raw: 30651.768653800053
+      total_events: 1992064
+
+GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35:
+  '2024':
+    nanoAOD: /GluGluHHto4B_Par-c2-0p35-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
+    picoAOD:
+      count: 1931490
+      files:
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35_2024/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35_2024/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35_2024/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35_2024/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35_2024/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35_2024/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35_2024/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35_2024/picoAOD.chunk7.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35_2024/picoAOD.chunk8.root
+      missing: {}
+      saved_events: 897324
+      sumw: 17522.78785598278
+      sumw2: 188.1844134479761
+      sumw2_raw: 188.18442272204547
+      sumw_raw: 17522.786954220017
+      total_events: 1931490
+
+GluGlutoHHto4B_kl-1p00_kt-1p00_c2-m2p00:
+  '2024':
+    nanoAOD: /GluGluHHto4B_Par-c2-m2p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
+    picoAOD:
+      count: 1999574
+      files:
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-m2p00_2024/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-m2p00_2024/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-m2p00_2024/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-m2p00_2024/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-m2p00_2024/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-m2p00_2024/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-m2p00_2024/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-m2p00_2024/picoAOD.chunk7.root
+      missing: {}
+      saved_events: 705977
+      sumw: 3436696.5573120117
+      sumw2: 6013242.088256836
+      sumw2_raw: 6013241.0328159295
+      sumw_raw: 3436696.334739999
+      total_events: 1999574
+
+GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00:
+  '2024':
+    nanoAOD: /GluGluHHto4B_Par-c2-1p00-kl-0p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
+    picoAOD:
+      count: 1996031
+      files:
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00_2024/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00_2024/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00_2024/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00_2024/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00_2024/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00_2024/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00_2024/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00_2024/picoAOD.chunk7.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00_2024/picoAOD.chunk8.root
+      missing: {}
+      saved_events: 862950
+      sumw: 254472.24193382263
+      sumw2: 35224.66087818146
+      sumw2_raw: 35224.66507916197
+      sumw_raw: 254472.23476699993
+      total_events: 1996031
+
+GluGlutoHHto4B_kl-1p00_kt-1p00_c2-3p00:
+  '2024':
+    nanoAOD: /GluGluHHto4B_Par-c2-3p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
+    picoAOD:
+      count: 1957664
+      files:
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-3p00_2024/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-3p00_2024/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-3p00_2024/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-3p00_2024/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-3p00_2024/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-3p00_2024/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-3p00_2024/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-3p00_2024/picoAOD.chunk7.root
+      missing: {}
+      saved_events: 714728
+      sumw: 4918822.57623291
+      sumw2: 12521871.776855469
+      sumw2_raw: 12521872.00555251
+      sumw_raw: 4918821.820619993
+      total_events: 1957664
+
+GluGlutoHHto4B_kl-m20p00_kt-1p00_c2-2p24:
+  '2024':
+    nanoAOD: /GluGluHHto4B_Par-c2-2p24-kl-m20p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
+    picoAOD:
+      count: 1957455
+      files:
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-m20p00_kt-1p00_c2-2p24_2024/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-m20p00_kt-1p00_c2-2p24_2024/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-m20p00_kt-1p00_c2-2p24_2024/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-m20p00_kt-1p00_c2-2p24_2024/picoAOD.chunk3.root
+      missing: {}
+      saved_events: 328038
+      sumw: 3259003.515991211
+      sumw2: 5496057.9978637695
+      sumw2_raw: 5496058.024455868
+      sumw_raw: 3259004.2030900023
+      total_events: 1957455
