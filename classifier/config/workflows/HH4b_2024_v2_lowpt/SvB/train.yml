@@ -20,6 +20,7 @@ model:
       - --finetuning FinetuneStep
       - epoch: 1
         bs_init: 16384
+      - --pretrained-weights coffea4bees/analysis/weights/pytorch_models/2024_HHUL/SvB_MA_HCR+attention_8_np1061_seed13_lr0.01_epochs20_offset0_epoch20.pkl
 
 dataset:
   - module: HCR.SvB_lowpt.Background # load background dataset (lowpt version)
