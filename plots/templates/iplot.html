@@ -379,7 +379,11 @@ const FUNC_RE   = /^([a-zA-Z_]*)$/;
 const TAB_RE    = /^((?:plot2d|plot)\s*\(\s*")([^"]*)$/;
 // Matches kwarg position: anything ending with comma+spaces then a partial identifier
 const KWARG_RE  = /^((?:plot2d|plot)\s*\(.*,\s*)([a-zA-Z_]*)$/;
-const KWARG_LIST = ['region', 'norm', 'rebin', 'doRatio', 'yscale', 'xlim', 'cut', 'process', 'year'];
+const KWARG_LIST = ['region', 'norm', 'rebin', 'doRatio', 'yscale', 'xscale', 'xlim', 'ylim', 'rlim', 'zlim',
+                    'cut', 'process', 'year', 'year_str', 'CMSText',
+                    'xlabel', 'ylabel', 'rlabel',
+                    'legend', 'legend_loc', 'ratio_legend_loc', 'legend_order', 'ratio_legend_order',
+                    'do_title', 'add_flow', 'uniform_bins'];
 
 function isInsideString(s) {
   // Count unescaped double-quotes; odd → cursor is inside a string literal
