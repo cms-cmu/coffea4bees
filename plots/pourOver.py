@@ -615,6 +615,10 @@ def _execute_plot(req):
         if v is not None:
             kwargs[k] = v
 
+    # Convert "sum" string to the Python built-in sum function for axis summing
+    if isinstance(kwargs.get("year"), str) and kwargs["year"] == "sum":
+        kwargs["year"] = sum
+
     axis_opts = {"region": region[0] if len(region) == 1 else region}
 
     try:
