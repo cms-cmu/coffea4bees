@@ -22,7 +22,7 @@ analysis_unsup_plot_coffea4bees:
     - source coffea4bees/scripts/analysis-unsup-plot.sh --output-base /builds/$CI_PROJECT_PATH/output
   artifacts:
     paths:
-      - output/analysis_plot_unsup/RunII/
+      - output/analysis_unsup_plot/RunII/
 
 # analysis_truthStudy_plot_coffea4bees:
 #   stage: plot 
