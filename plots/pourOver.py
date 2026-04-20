@@ -598,7 +598,8 @@ def _execute_plot(req):
               "year", "year_str", "CMSText",
               "xlabel", "ylabel", "rlabel",
               "legend", "legend_loc", "ratio_legend_loc",
-              "do_title"]:
+              "do_title",
+              "full", "plot_contour", "plot_leadst_lines", "plot_sublst_lines"]:
         v = req.get(k)
         if v is not None:
             kwargs[k] = v

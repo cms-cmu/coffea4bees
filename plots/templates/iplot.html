@@ -247,9 +247,9 @@ let currentPng  = '';
 let currentPdf  = '';
 let activeThumb = null;
 
-// Tab completion state (two-stage: Tab1 = list, Tab2 = LCP fill)
+// Tab completion state (emacs dabbrev-style: Tab1 = LCP fill, Tab2+ = cycle pages)
 let tabMatches       = [];   // current candidate list
-let tabStage         = 0;    // 0 = fresh, 1 = cycling/listed
+let tabStage         = 0;    // 0 = fresh (will attempt LCP), 1 = listing/cycling
 let tabKey           = null; // pfx+'\x00'+partial to detect re-typing
 let tabLcpCandidates = null; // subset used for LCP (prefix matches only)
 let tabPage          = 0;    // current page when cycling through overflow completions
@@ -383,7 +383,8 @@ const KWARG_LIST = ['region', 'norm', 'rebin', 'doRatio', 'yscale', 'xscale', 'x
                     'cut', 'process', 'year', 'year_str', 'CMSText',
                     'xlabel', 'ylabel', 'rlabel',
                     'legend', 'legend_loc', 'ratio_legend_loc', 'legend_order', 'ratio_legend_order',
-                    'do_title', 'add_flow', 'uniform_bins'];
+                    'do_title', 'add_flow', 'uniform_bins',
+                    'full', 'plot_contour', 'plot_leadst_lines', 'plot_sublst_lines'];
 
 function isInsideString(s) {
   // Count unescaped double-quotes; odd → cursor is inside a string literal
@@ -462,27 +463,27 @@ function _twoStage(input, pfx, partial, after, matches, addEq, lcpCandidates) {
   }
 
   if (tabStage === 0) {
-    // First Tab: show page 0
-    tabPage  = 0;
-    tabStage = 1;
-    setTabHint(suffixed, partial, 0, totalPages);
-  } else if (totalPages > 1 && tabPage < totalPages - 1) {
-    // More pages remain: advance to next page
-    tabPage++;
-    setTabHint(suffixed, partial, tabPage, totalPages);
-  } else {
-    // Last (or only) page: attempt LCP fill
+    // First Tab: attempt LCP fill (emacs dabbrev-expand style)
     const forLcp = tabLcpCandidates && tabLcpCandidates.length ? tabLcpCandidates : tabMatches;
     const common = lcp(forLcp.map(suffix));
     if (common.length > partial.length) {
+      // LCP advances: fill input. Next Tab will show the list.
       _fill(input, pfx, common, after);
       tabKey           = pfx + '\x00' + common;
       tabLcpCandidates = null;
-      tabStage         = 0;
+      tabStage         = 1;
       tabPage          = 0;
       setTabHint(suffixed, common, 0, totalPages);
+    } else {
+      // LCP doesn't advance (already at common prefix): show list immediately
+      tabStage = 1;
+      tabPage  = 0;
+      setTabHint(suffixed, partial, 0, totalPages);
     }
-    // else: LCP doesn't advance — keep showing current page
+  } else {
+    // Subsequent Tabs: cycle through pages
+    tabPage = (tabPage + 1) % totalPages;
+    setTabHint(suffixed, partial, tabPage, totalPages);
   }
 }
 
