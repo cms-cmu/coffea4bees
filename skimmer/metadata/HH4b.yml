@@ -10,6 +10,7 @@ runner:
   data_tier: nanoAOD
   condor_cores: 1
   worker_memory: 4GB
+  #dashboard_address: 10200
   condor_transfer_input_files:
     - src/
     - coffea4bees/skimmer/
