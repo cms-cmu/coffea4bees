@@ -443,7 +443,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 shifts = []
                 shifts.extend([({"Jet": jets.JER.up}, f"CMS_res_j_{self.year_label}Up"), ({"Jet": jets.JER.down}, f"CMS_res_j_{self.year_label}Down")])
 
-                for jesunc in self.corrections_metadata[self.year]["JES_uncertainties"]:
+                for jesunc in self.corrections_metadata[self.year]["jes_unc"]:
                     shifts.extend( [ ({"Jet": jets[f"JES_{jesunc}"].up}, f"CMS_scale_j_{jesunc}Up"),
                                      ({"Jet": jets[f"JES_{jesunc}"].down}, f"CMS_scale_j_{jesunc}Down"), ] )
                 logging.info(f"\nJet variations {[name for _, name in shifts]}")

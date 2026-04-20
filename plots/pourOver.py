@@ -594,17 +594,30 @@ def _execute_plot(req):
     _normalize_kwargs(req)
 
     kwargs = {}
-    for k in ["doRatio", "rebin", "norm", "yscale", "add_flow", "uniform_bins"]:
+    for k in ["doRatio", "rebin", "norm", "yscale", "xscale", "add_flow", "uniform_bins",
+              "year", "year_str", "CMSText",
+              "xlabel", "ylabel", "rlabel",
+              "legend", "legend_loc", "ratio_legend_loc",
+              "do_title"]:
         v = req.get(k)
         if v is not None:
             kwargs[k] = v
     if debug:
         kwargs["debug"] = True
 
-    for k in ["xlim", "ylim", "rlim"]:
+    for k in ["xlim", "ylim", "rlim", "zlim"]:
         v = req.get(k)
         if v and any(x is not None for x in v):
             kwargs[k] = [x for x in v]
+
+    for k in ["legend_order", "ratio_legend_order"]:
+        v = req.get(k)
+        if v is not None:
+            kwargs[k] = v
+
+    # Convert "sum" string to the Python built-in sum function for axis summing
+    if isinstance(kwargs.get("year"), str) and kwargs["year"] == "sum":
+        kwargs["year"] = sum
 
     axis_opts = {"region": region[0] if len(region) == 1 else region}
 
