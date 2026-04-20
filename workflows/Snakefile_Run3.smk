@@ -12,10 +12,20 @@ if config["mode"] == "nominal":
     config.setdefault('output_path', "output/Run3/")
     config.setdefault('histogram_config', "coffea4bees/analysis/metadata/HH4b_run_fastTopReco_Run3.yml")
 
+    config.setdefault('jcm_install_path', "coffea4bees/analysis/weights/JCM/Run3/jetCombinatoricModel_SB_.yml")
+    # FvT training reuses the existing committed Run3 classifier inputs JSON
+    config.setdefault('classifier_inputs_install_path', "coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_Run3.json")
+    config.setdefault('eos_base', "root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_v2")
+
 elif config["mode"] == "quadjet_run2":
     config.setdefault('label', '_quadjet_run2')
     config.setdefault('output_path', "output/Run3_quadjet_run2/")
     config.setdefault('histogram_config', "coffea4bees/analysis/metadata/HH4b_run_fastTopReco_Run3_quadjet_run2.yml")
+
+    config.setdefault('jcm_install_path', "coffea4bees/analysis/weights/JCM/Run3/jetCombinatoricModel_SB_quadjet_run2.yml")
+    # FvT training for quadjet_run2 reuses the MvD-produced classifier inputs JSON
+    config.setdefault('classifier_inputs_install_path', "coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3_quadjet_run2.json")
+    config.setdefault('eos_base', "root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_quadjet_run2")
 
 else:
     print(f"Mode {config['mode']} Not Recognized!")
@@ -44,6 +54,12 @@ rule all_histograms:
         f"{out}histAll_Run3{config['label']}.coffea",
         f"{out}histAll_wJCM{config['label']}.coffea",
         f"{out}plots_wJCM/plots_done.txt"
+
+rule all_with_training:
+    input:
+        rules.all.input,
+        expand(f"{out}{{classifier}}/evaluate.done", classifier=["FvT"]),
+        expand(f"{out}{{classifier}}/analyze.done",  classifier=["FvT"]),
 
 # ── Histograms ────────────────────────────────────────────────────────────────
 # Use __ (double underscore) as separator between dataset and year to avoid
@@ -210,3 +226,26 @@ rule make_plots_wJCM:
         python src/plotting/pb_pdf_to_png.py -r -j 4 {params.output_dir} 2>&1 | tee -a {log}
         touch {output}
         """
+
+# ── Classifier training ────────────────────────────────────────────────────────
+# Install the fitted JCM to the path expected by train.yml. Commit the file
+# to git after running to version the inputs.
+
+rule install_JCM:
+    input: f"{out}jcm/jetCombinatoricModel_SB_.yml"
+    output: config['jcm_install_path']
+    shell:
+        """
+        mkdir -p $(dirname {output})
+        cp {input} {output}
+        echo "Installed JCM to {output} — commit this file to git to version it."
+        """
+
+module training:
+    snakefile: "Snakefile_Run3_training.smk"
+    config: config
+
+use rule create_train_yml from training
+use rule train            from training
+use rule analyze          from training
+use rule evaluate         from training
