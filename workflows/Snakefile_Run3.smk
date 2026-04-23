@@ -60,6 +60,13 @@ rule all_with_training:
         rules.all.input,
         expand(f"{out}{{classifier}}/evaluate.done", classifier=["FvT"]),
         expand(f"{out}{{classifier}}/analyze.done",  classifier=["FvT"]),
+        f"{out}plots_FvT/plots_done.txt"
+
+rule all_FvT_histograms:
+    """Remake FvT-weighted histograms/plots. Requires evaluate.done."""
+    input:
+        f"{out}histAll_FvT{config['label']}.coffea",
+        f"{out}plots_FvT/plots_done.txt",
 
 # ── Histograms ────────────────────────────────────────────────────────────────
 # Use __ (double underscore) as separator between dataset and year to avoid
@@ -227,6 +234,103 @@ rule make_plots_wJCM:
         touch {output}
         """
 
+# ── Histograms with FvT weights (depends on evaluate) ────────────────────────
+# Re-runs all data + TT samples with apply_FvT=true. The FvT friend tree
+# produced by classifier evaluate (on EOS) reweights threeTag events into
+# the 4b-like multijet background.
+
+rule create_friends_FvT:
+    input:
+        friends_yml = "coffea4bees/metadata/friends_HH4b.yml",
+        svb_json    = "coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data.json",
+        feynet_json = "coffea4bees/metadata/datasets_HH4b_Run3/SvBFeynNetfriend_mixeddata_data.json",
+    output: f"{out}friends_FvT.yml"
+    params:
+        fvt_path = f"{config['eos_base']}/friend/FvT/result.json@@analysis.0.merged"
+    shell:
+        """
+        sed \
+            -e 's|    FvT:.*|    FvT: {params.fvt_path}|' \
+            -e 's|    SvB:.*|    SvB: "{input.svb_json}@@SvB"|' \
+            -e 's|    SvB_MA:.*|    SvB_MA: "{input.svb_json}@@SvB_MA"|' \
+            -e 's|    SvB_FeynNet:.*|    SvB_FeynNet: "{input.feynet_json}@@SvB_FeynNet"|' \
+            {input.friends_yml} > {output}
+        echo "Patched friends:"
+        grep -E "FvT|SvB" {output}
+        """
+
+rule create_histogram_config_FvT:
+    input:
+        jcm_file    = config['jcm_install_path'],
+        config_file = config['histogram_config']
+    output: f"{out}histogram_config_FvT.yml"
+    shell:
+        """
+        sed \
+            -e 's|  run_SvB.*|  run_SvB: true|' \
+            -e 's|  JCM_file.*|  JCM_file: {input.jcm_file}|' \
+            -e 's|  apply_FvT.*|  apply_FvT: true|' \
+            -e 's|  plot_ttbar_with_weights.*|  plot_ttbar_with_weights: true|' \
+            {input.config_file} > {output}
+        echo "Patched config:"
+        grep -E "run_SvB|JCM_file|apply_FvT|plot_ttbar_with_weights" {output}
+        """
+
+# Only data is re-run with FvT — TT estimate comes from 3b data × FvT.d3_to_t4
+# (plot_ttbar_with_weights=true), so re-running TT MC samples is redundant.
+use rule analysis_processor from analysis as make_histograms_FvT with:
+    input:
+        config_file   = f"{out}histogram_config_FvT.yml",
+        friends_file  = f"{out}friends_FvT.yml",
+        evaluate_done = ancient(expand(f"{out}{{classifier}}/evaluate.done", classifier=["FvT"])),
+    output: f"{out}histograms_FvT/hist_data__{{year}}.coffea"
+    log: f"{out}logs/hist_FvT_data__{{year}}.log"
+    params:
+        datasets              = "data",
+        years                 = "{year}",
+        config                = lambda wildcards, input: input.config_file,
+        processor             = "coffea4bees/analysis/processors/processor_HH4b.py",
+        datasets_file         = config['dataset_location'],
+        blind                 = False,
+        run_performance       = False,
+        friends               = lambda wildcards, input: input.friends_file,
+        run_on_condor         = True,
+        extra_arguments       = "",
+        run_container_wrapper = "./run_container",
+        dashboard_address     = 0
+
+use rule merging_coffea_files from analysis as merge_histograms_FvT with:
+    input:
+        expand(
+            "{out}histograms_FvT/hist_data__{year}.coffea",
+            out=out,
+            year=config['years']
+        )
+    output: f"{out}histAll_FvT{config['label']}.coffea"
+    container: config['analysis_container']
+    params:
+        run_performance = False
+    log: f"{out}logs/merge_histograms_FvT.log"
+
+rule make_plots_FvT:
+    input: f"{out}histAll_FvT{config['label']}.coffea"
+    output: f"{out}plots_FvT/plots_done.txt"
+    container: config['analysis_container']
+    params:
+        output_dir      = f"{out}plots_FvT/",
+        metadata        = config['plots_metadata'],
+        extra_arguments = "",
+    log: f"{out}logs/make_plots_FvT.log"
+    shell:
+        """
+        export MPLCONFIGDIR="/tmp/matplotlib"
+        mkdir -p $MPLCONFIGDIR
+        echo "Making plots with FvT weights" 2>&1 | tee -a {log}
+        python coffea4bees/plots/makePlots.py {input} -o {params.output_dir} -m {params.metadata} {params.extra_arguments} 2>&1 | tee -a {log}
+        python src/plotting/pb_pdf_to_png.py -r -j 4 {params.output_dir} 2>&1 | tee -a {log}
+        touch {output}
+        """
+
 # ── Classifier training ────────────────────────────────────────────────────────
 # Install the fitted JCM to the path expected by train.yml. Commit the file
 # to git after running to version the inputs.
@@ -245,7 +349,8 @@ module training:
     snakefile: "Snakefile_Run3_training.smk"
     config: config
 
-use rule create_train_yml from training
-use rule train            from training
-use rule analyze          from training
-use rule evaluate         from training
+use rule create_train_yml    from training
+use rule create_evaluate_yml from training
+use rule train               from training
+use rule analyze             from training
+use rule evaluate            from training
