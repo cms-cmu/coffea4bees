@@ -4,7 +4,7 @@ GluGluToHHTo4B_cHHH0:
     picoAOD:
       count: 449692
       files:
-      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH0_UL16_preVFP/picoAOD.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH0_UL16_postVFP/picoAOD.root
       outliers:
       - 435081
       saved_events: 71633
@@ -20,7 +20,7 @@ GluGluToHHTo4B_cHHH0:
     picoAOD:
       count: 540000
       files:
-      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH0_UL16_postVFP/picoAOD.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH0_UL16_preVFP/picoAOD.root
       outliers:
       - 366349
       - 530441
@@ -77,7 +77,7 @@ GluGluToHHTo4B_cHHH1:
     picoAOD:
       count: 460000
       files:
-      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH1_UL16_preVFP/picoAOD.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH1_UL16_postVFP/picoAOD.root
       outliers:
       - 73109
       saved_events: 84852
@@ -93,7 +93,7 @@ GluGluToHHTo4B_cHHH1:
     picoAOD:
       count: 540000
       files:
-      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH1_UL16_postVFP/picoAOD.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH1_UL16_preVFP/picoAOD.root
       outliers:
       - 72345
       - 438482
@@ -152,7 +152,7 @@ GluGluToHHTo4B_cHHH2p45:
     picoAOD:
       count: 455302
       files:
-      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH2p45_UL16_preVFP/picoAOD.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH2p45_UL16_postVFP/picoAOD.root
       outliers:
       - 177665
       - 298138
@@ -169,7 +169,7 @@ GluGluToHHTo4B_cHHH2p45:
     picoAOD:
       count: 540000
       files:
-      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH2p45_UL16_postVFP/picoAOD.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH2p45_UL16_preVFP/picoAOD.root
       saved_events: 90285
       sumw: 6106.33740234375
       sumw2: 93.19666862487793
@@ -219,7 +219,7 @@ GluGluToHHTo4B_cHHH5:
     picoAOD:
       count: 460000
       files:
-      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH5_UL16_preVFP/picoAOD.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH5_UL16_postVFP/picoAOD.root
       saved_events: 50381
       sumw: 36305.91455078125
       sumw2: 2961.2872924804688
@@ -231,7 +231,7 @@ GluGluToHHTo4B_cHHH5:
     picoAOD:
       count: 539182
       files:
-      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH5_UL16_postVFP/picoAOD.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH5_UL16_preVFP/picoAOD.root
       outliers:
       - 165086
       saved_events: 50283

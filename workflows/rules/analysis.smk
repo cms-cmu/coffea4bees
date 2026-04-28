@@ -28,7 +28,6 @@ rule analysis_processor:
             --output-filename $(basename {output}) \
             --output-base $(dirname {output}) \
             --log {log} \
-            --no-test \
             $([ "{params.not_do_proxy}" = "True" ] && echo "--not-do-proxy") \
             $([ "{params.blind}" = "True" ] && echo "--blind") \
             $([ "{params.run_on_condor}" = "True" ] && echo "--condor") \
