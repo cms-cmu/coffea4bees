@@ -338,6 +338,22 @@ def add_pseudotagweights(
                 logging.debug( f"FvT {weights.partial_weight(include=['FvT'])[:10]}\n" )
 
             else:
+                # Audit-only NaN check on the FvT friend-tree branches in the
+                # threeTag region. Surfaces a regression of the train/eval
+                # selection mismatch (HCR-input writer rejecting events the
+                # analysis accepts → all-zero inputs → NaN outputs). Does not
+                # modify the weights — the fix lives in the workflow.
+                threeTag_mask = ak.to_numpy(event[label3b])
+                n_threeTag = int(threeTag_mask.sum())
+                for branch in ("FvT", "d3_to_t4", "d3_to_t3"):
+                    vals = ak.to_numpy(getattr(event.FvT, branch))
+                    n_nan = int((np.isnan(vals) & threeTag_mask).sum())
+                    if n_nan:
+                        logging.warning(
+                            f"[FvT NaN check] {n_nan} NaN values in FvT.{branch} "
+                            f"over {n_threeTag} threeTag events"
+                        )
+
                 weight = np.where(
                     event[label3b],
                     # event["pseudoTagWeight"] * event["pseudoTagWeight_lowpt"] * event.FvT.FvT,
