@@ -86,7 +86,12 @@ class analysis(processor.ProcessorABC):
     """
 
     def __init__(self, make_friend_isParking: str = None,
-                 parking_lumi_cfg: str = _DEFAULT_LUMI_CFG):
+                 parking_lumi_cfg: str = _DEFAULT_LUMI_CFG,
+                 corrections_metadata: dict = None,
+                 **kwargs):
+        # corrections_metadata is injected by runner.py for every processor;
+        # we don't use it for the is_parking assignment. **kwargs absorbs any
+        # other runner-injected config keys we don't consume.
         if make_friend_isParking is None:
             raise ValueError("make_friend_isParking output path must be set")
         self.make_friend_isParking = make_friend_isParking
