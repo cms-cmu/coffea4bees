@@ -354,6 +354,8 @@ def jet_selection(
     event['Jet', 'tagged_loose'] = event.Jet.selected & (event.Jet.btagScore >= corrections_metadata['btagWP']['L'])
     event['Jet', 'tagged_run2'] = event.Jet.selected_run2 & (event.Jet.btagScore >= corrections_metadata['btagWP']['M'])
     event['Jet', 'tagged_loose_run2'] = event.Jet.selected_run2 & (event.Jet.btagScore >= corrections_metadata['btagWP']['L'])
+    if 'T' in corrections_metadata['btagWP']:
+        event['Jet', 'tagged_tight'] = event.Jet.selected & (event.Jet.btagScore >= corrections_metadata['btagWP']['T'])
 
     # Forward jet flag for FeynNet inputs.
     # Uses btagScore directly (not the 'tagged' flag) so b-tag exclusion applies
@@ -383,6 +385,8 @@ def jet_selection(
     event['tagJet_loose'] = event.selJet[event.selJet.tagged_loose]
     event['nJet_tagged'] = ak.num(event.tagJet)
     event['nJet_tagged_loose'] = ak.num(event.tagJet_loose)
+    if 'tagged_tight' in event.Jet.fields:
+        event['nJet_tagged_tight'] = ak.sum(event.Jet.tagged_tight, axis=1)
 
     # For trigger emulation
     #   Calculate HT and other event variables
