@@ -303,6 +303,35 @@ class HemiMixer(Skimmer4b):
         pos_hemi_new = all_hemis[:n_event]
         neg_hemi_new = all_hemis[n_event:]
 
+        #
+        #  Drop events where the pos and neg replacement hemispheres came from the
+        #  same library source event: that degenerately reconstructs a real 4-tag event
+        #  and defeats the inter-hemisphere decorrelation mixing is meant to provide.
+        #
+        same_event_selev = ak.to_numpy(
+            (pos_hemi_new.event             == neg_hemi_new.event)
+            & (pos_hemi_new.run             == neg_hemi_new.run)
+            & (pos_hemi_new.luminosityBlock == neg_hemi_new.luminosityBlock)
+        )
+        not_same_event_selev = ~same_event_selev
+        n_same_event = int(np.sum(same_event_selev))
+        if n_same_event:
+            logging.info(f"Dropping {n_same_event}/{n_event} events with same-library-event hemisphere pairs")
+
+        not_same_event = np.full(len(event), True)
+        not_same_event[selections.all(*cumulative_cuts)] = not_same_event_selev
+        selections.add("pass_not_same_event_hemi", not_same_event)
+        cumulative_cuts.append("pass_not_same_event_hemi")
+        self._cutFlow.fill("pass_not_same_event_hemi", event[selections.all(*cumulative_cuts)], allTag=True)
+
+        selection    = selection & not_same_event
+        selev        = selev[not_same_event_selev]
+        pos_hemi     = pos_hemi[not_same_event_selev]
+        neg_hemi     = neg_hemi[not_same_event_selev]
+        pos_hemi_new = pos_hemi_new[not_same_event_selev]
+        neg_hemi_new = neg_hemi_new[not_same_event_selev]
+        n_event      = len(selev)
+
 
         old_hemi_output_vars = ["thrust_phi",  "event", "run", "luminosityBlock", "weight", "hemisphereId"]
         new_hemi_output_vars = old_hemi_output_vars + ["match_dist", "nSelJet", "nTagJet", "nJet"]
