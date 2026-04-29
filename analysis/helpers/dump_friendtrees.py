@@ -110,6 +110,22 @@ def dump_JCM_weight(
     )
 
 
+def dump_isParking(
+    events: ak.Array,
+    output: PathLike,
+    name: str,
+    is_parking: ak.Array,
+    dump_naming: str = _NAMING,
+):
+    return dump_friend(
+        events=events,
+        output=output,
+        name=name,
+        data=ak.Array({"is_parking": ak.values_astype(is_parking, "bool")}),
+        dump_naming=dump_naming,
+    )
+
+
 def dump_FvT_weight(  ### TODO: replace with proper evaluation code
     events: ak.Array,
     output: PathLike,
