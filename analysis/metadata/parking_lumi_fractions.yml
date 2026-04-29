@@ -1,0 +1,34 @@
+# Parking vs preparking trigger-era assignment.
+#
+# parking_minRun  -- data: events with run >= parking_minRun use parking.
+#                    null means no parking data in this year.
+# parking_fraction -- MC: fraction of events to assign is_parking=True
+#                     (lumi(parking eras) / lumi(year)). Used only for years
+#                     that span the parking/preparking boundary.
+#
+# Run3: parking triggers were introduced in 2023 era C3.
+#   2022          -- pure preparking
+#   2023_preBPix  -- mixed (eras C3+ are parking; placeholder fraction)
+#   2023_BPix     -- pure parking
+#
+# parking_minRun = 367621 marks the first parking run in 2023_preBPix.
+
+2022:
+  parking_minRun: null
+  parking_fraction: 0.0
+
+2022_EE:
+  parking_minRun: null
+  parking_fraction: 0.0
+
+2022_preEE:
+  parking_minRun: null
+  parking_fraction: 0.0
+
+2023_preBPix:
+  parking_minRun: 367621
+  parking_fraction: 0.687505683467  # lumi(C3+D)/lumi(2023_preBPix)
+
+2023_BPix:
+  parking_minRun: 0
+  parking_fraction: 1.0
