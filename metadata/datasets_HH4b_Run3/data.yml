@@ -260,7 +260,6 @@ data:
         sumw: 84696790
         sumw2: 84696790
         total_events: 84696790
-	
   2022_preEE:
     nanoAOD:
       B: /JetHT/Run2022C-22Sep2023-v1/NANOAOD
@@ -347,7 +346,6 @@ data:
         sumw: 100853361
         sumw2: 100853361
         total_events: 100853361
-	
   2023_BPix:
     nanoAOD:
       D1: /ParkingHH/Run2023D-22Sep2023_v1-v1/NANOAOD
@@ -512,7 +510,6 @@ data:
         sumw: 15433343
         sumw2: 15433343
         total_events: 15433343
-	
   2023_preBPix:
     nanoAOD:
       C01: /JetMET0/Run2023C-22Sep2023_v1-v1/NANOAOD
