@@ -28,7 +28,7 @@ import uproot
 
 
 from coffea4bees.hemisphere_mixing.mixing_helpers   import build_hemi_kdtrees, compute_hemi_vars
-from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres, replace_hemis, replace_hemis_load_kdTrees, init_hemi_data, transverse_thrust_awkward_fast
+from coffea4bees.hemisphere_mixing.mixing_helpers   import split_events_into_hemispheres, replace_hemis, replace_hemis_load_kdTrees, replace_hemis_topk_kdTrees, init_hemi_data, transverse_thrust_awkward_fast
 from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
 from coffea4bees.analysis.helpers.event_weights import add_pseudotagweights
 
@@ -43,6 +43,10 @@ class HemiMixer(Skimmer4b):
                 hemi_stats_path: str = None,
                 corrections_metadata: dict = None,
                 use_boost_corrected_matching: bool = False,
+                use_topk_matching: bool = False,
+                k_neighbors: int = 10,
+                collision_mode: str = "retry",
+                default_rank: int = 0,
                 object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
                 *args, **kwargs):
         super().__init__(
@@ -64,6 +68,14 @@ class HemiMixer(Skimmer4b):
         # Boost-corrected matching: match on 3 variables (no pz), then boost to correct pz
         self.use_boost_corrected_matching = use_boost_corrected_matching
         logging.info(f"use_boost_corrected_matching = {self.use_boost_corrected_matching}")
+
+        # Top-K matching with rank selection: parallel implementation, opt-in via flag.
+        # collision_mode: "ignore" | "drop" | "retry"; default_rank=0 reproduces nearest-neighbor.
+        self.use_topk_matching = use_topk_matching
+        self.k_neighbors       = k_neighbors
+        self.collision_mode    = collision_mode
+        self.default_rank      = default_rank
+        logging.info(f"use_topk_matching = {self.use_topk_matching}, k_neighbors = {self.k_neighbors}, collision_mode = {self.collision_mode}, default_rank = {self.default_rank}")
 
         # Conditional matching variables based on boost correction mode
         if self.use_boost_corrected_matching:
@@ -287,7 +299,20 @@ class HemiMixer(Skimmer4b):
         all_hemis["replaced"] = 0
         all_hemis["match_dist"] = -1
 
-        if test_load_hemi_kdTrees:
+        topk_kept = None
+        if self.use_topk_matching:
+            if not test_load_hemi_kdTrees:
+                raise RuntimeError("use_topk_matching=True requires the load-kdTrees code path (test_load_hemi_kdTrees=True).")
+            all_hemis, topk_kept = replace_hemis_topk_kdTrees(
+                all_hemis=all_hemis, hemi_jet_ranges=hemi_jet_ranges,
+                hemi_stats=hemi_stats, hemi_data=hemi_data,
+                hemi_summary_vars=self.hemi_summary_vars, jet_branches=self.jet_branches,
+                k_neighbors=self.k_neighbors,
+                default_rank=self.default_rank,
+                collision_mode=self.collision_mode,
+                use_boost_corrected_matching=self.use_boost_corrected_matching,
+            )
+        elif test_load_hemi_kdTrees:
             all_hemis = replace_hemis_load_kdTrees(all_hemis=all_hemis, hemi_jet_ranges=hemi_jet_ranges,
                                                    hemi_stats=hemi_stats, hemi_data=hemi_data, hemi_summary_vars=self.hemi_summary_vars, jet_branches=self.jet_branches,
                                                    use_boost_corrected_matching=self.use_boost_corrected_matching
@@ -307,16 +332,29 @@ class HemiMixer(Skimmer4b):
         #  Drop events where the pos and neg replacement hemispheres came from the
         #  same library source event: that degenerately reconstructs a real 4-tag event
         #  and defeats the inter-hemisphere decorrelation mixing is meant to provide.
+        #  Topk path: collisions are retried internally; topk_kept is False only for
+        #  events whose collision could not be resolved within K. Legacy path: detect
+        #  here and drop.
         #
-        same_event_selev = ak.to_numpy(
-            (pos_hemi_new.event             == neg_hemi_new.event)
-            & (pos_hemi_new.run             == neg_hemi_new.run)
-            & (pos_hemi_new.luminosityBlock == neg_hemi_new.luminosityBlock)
-        )
-        not_same_event_selev = ~same_event_selev
-        n_same_event = int(np.sum(same_event_selev))
-        if n_same_event:
-            logging.info(f"Dropping {n_same_event}/{n_event} events with same-library-event hemisphere pairs")
+        if self.use_topk_matching:
+            not_same_event_selev = np.asarray(topk_kept, dtype=bool)
+            n_same_event = int(np.sum(~not_same_event_selev))
+            if n_same_event:
+                logging.info(f"Dropping {n_same_event}/{n_event} events with unresolvable same-library-event hemisphere pairs (after K={self.k_neighbors})")
+        else:
+            same_event_selev = ak.to_numpy(
+                (pos_hemi_new.event             == neg_hemi_new.event)
+                & (pos_hemi_new.run             == neg_hemi_new.run)
+                & (pos_hemi_new.luminosityBlock == neg_hemi_new.luminosityBlock)
+            )
+            not_same_event_selev = ~same_event_selev
+            n_same_event = int(np.sum(same_event_selev))
+            if n_same_event:
+                logging.info(f"Dropping {n_same_event}/{n_event} events with same-library-event hemisphere pairs")
+
+            # Legacy path doesn't emit match_rank; fill zeros so the picoAOD schema is consistent across A/B runs.
+            pos_hemi_new = ak.with_field(pos_hemi_new, ak.zeros_like(pos_hemi_new.event), "match_rank")
+            neg_hemi_new = ak.with_field(neg_hemi_new, ak.zeros_like(neg_hemi_new.event), "match_rank")
 
         not_same_event = np.full(len(event), True)
         not_same_event[selections.all(*cumulative_cuts)] = not_same_event_selev
@@ -334,7 +372,7 @@ class HemiMixer(Skimmer4b):
 
 
         old_hemi_output_vars = ["thrust_phi",  "event", "run", "luminosityBlock", "weight", "hemisphereId"]
-        new_hemi_output_vars = old_hemi_output_vars + ["match_dist", "nSelJet", "nTagJet", "nJet"]
+        new_hemi_output_vars = old_hemi_output_vars + ["match_dist", "match_rank", "nSelJet", "nTagJet", "nJet"]
         output_vars = []
 
         for var_name in old_hemi_output_vars:
