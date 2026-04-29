@@ -204,6 +204,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         apply_MvD: bool = False,
         apply_MvD_weight: bool = False,
         apply_mixeddata_sel: bool = False,  #### apply HIG-22-011 sel for mixeddata
+        fourTag_use_tight: bool = False,  # Run3: redefine fourTag as 3 Tight + >=4 Medium b-tagged jets
         friends: dict[str, str|FriendTemplate] = None,
         return_events_for_display: bool = False,
         tracker = None,
@@ -217,6 +218,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
         self.cand_cfg = load_candidates_selection_config(candidates_selection_cfg) if candidates_selection_cfg else None
         self.blind = blind
+        self.fourTag_use_tight = fourTag_use_tight
         if apply_JCM:
             logging.info(f"\nUsing JCM from {JCM_file}")
             self.apply_JCM = jetCombinatoricModel(JCM_file)
@@ -334,6 +336,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             # print("HACK")
             if self.config["isRun3"]:
                 self.config["isSyntheticData"] = bool(self.config["isMixedData"]) or self.config["isSyntheticData"]
+                self.config["fourTag_use_tight"] = self.fourTag_use_tight
             logging.debug(f'{self.chunk} config={self.config}, for file {self.fname}\n')
 
 
