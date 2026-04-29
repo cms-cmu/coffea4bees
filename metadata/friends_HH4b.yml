@@ -17,5 +17,7 @@ friends:
     SvB_MA: "coffea4bees/metadata/datasets_HH4b_Run3/data_SvBfriend.json@@SvB_MA"
     SvB_FeynNet: "coffea4bees/metadata/datasets_HH4b_Run3/SvBFeynNetfriend_mixeddata_data.json@@SvB_FeynNet"
   2022_EE: *friends_Run3
-  2023_preBPix: *friends_Run3
+  2023_preBPix:
+    <<: *friends_Run3
+    is_parking: "coffea4bees/metadata/datasets_HH4b_Run3/isParkingfriend_2023_preBPix.json@@is_parking"
   2023_BPix: *friends_Run3
