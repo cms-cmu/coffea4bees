@@ -17,6 +17,8 @@ config.setdefault('years', ['2022_EE', '2022_preEE', '2023_BPix', '2023_preBPix'
 FEYNNET_OUT = "output/Run3_FeynNet/feynnet_friendtrees/"
 
 TT_DATASETS = ['TTTo2L2Nu', 'TTToHadronic', 'TTToSemiLeptonic']
+# Only this HH coupling point currently has 2022/2023 picoAODs.
+HH_DATASETS = ['GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00']
 
 module analysis:
     snakefile: "rules/analysis.smk"
@@ -93,6 +95,27 @@ use rule analysis_processor from analysis as make_SvBFeynNet_friendtrees_ttbar w
         dashboard_address     = 0
 
 
+use rule analysis_processor from analysis as make_SvBFeynNet_friendtrees_HH with:
+    input: "coffea4bees/analysis/metadata/HH4b_make_friend_SvBFeynNet_Run3.yml"
+    output: f"{FEYNNET_OUT}SvBFeynNet_{{hh_dataset}}__{{year}}.coffea"
+    log: f"{FEYNNET_OUT}logs/SvBFeynNet_{{hh_dataset}}__{{year}}.log"
+    wildcard_constraints:
+        hh_dataset = "|".join(HH_DATASETS)
+    params:
+        datasets              = "{hh_dataset}",
+        years                 = "{year}",
+        config                = lambda wildcards, input: input[0],
+        processor             = "coffea4bees/analysis/processors/processor_HH4b.py",
+        datasets_file         = config['dataset_location'],
+        blind                 = False,
+        run_performance       = False,
+        friends               = "coffea4bees/metadata/friends_HH4b.yml",
+        run_on_condor         = True,
+        extra_arguments       = "",
+        run_container_wrapper = "./run_container",
+        dashboard_address     = 0
+
+
 rule merge_SvBFeynNet_friendtrees:
     """Merge per-year data, mixeddata_all, and TTBar SvB_FeynNet metafiles into one JSON.
 
@@ -114,13 +137,18 @@ rule merge_SvBFeynNet_friendtrees:
             tt_dataset=TT_DATASETS,
             year=config['years']
         ),
+        hh_coffea = expand(
+            f"{FEYNNET_OUT}SvBFeynNet_{{hh_dataset}}__{{year}}.coffea",
+            hh_dataset=HH_DATASETS,
+            year=config['years']
+        ),
     output: f"{FEYNNET_OUT}SvBFeynNetfriend_mixeddata_data.json"
     container: config['analysis_container']
     log: f"{FEYNNET_OUT}logs/merge_SvBFeynNet_friendtrees.log"
     params:
         all_jsons = lambda wildcards, input: [
             f.replace(".coffea", ".json")
-            for f in list(input.data_coffea) + list(input.mixeddata_coffea) + list(input.ttbar_coffea)
+            for f in list(input.data_coffea) + list(input.mixeddata_coffea) + list(input.ttbar_coffea) + list(input.hh_coffea)
         ]
     shell:
         """
