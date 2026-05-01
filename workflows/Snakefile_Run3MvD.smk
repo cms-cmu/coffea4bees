@@ -1,36 +1,19 @@
 import os
 
-config.setdefault('mode', 'nominal')
+include: "rules/run3_variants.smk"
 
-config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
-config.setdefault('dataset_location', "coffea4bees/metadata/datasets_HH4b_Run3/")
 config.setdefault('datasets', ['TTToSemiLeptonic', 'TTToHadronic', 'TTTo2L2Nu', 'data', 'mixeddata_all'])
 config.setdefault('years', ['2022_EE', '2022_preEE', '2023_BPix', '2023_preBPix'])
 
 if config["mode"] == "nominal":
-    config.setdefault('label', '')
     config.setdefault('output_path', "output/Run3_MvD/")
-    config.setdefault('classifier_config', "coffea4bees/analysis/metadata/HH4b_classifier_inputs_Run3.yml")
-    config.setdefault('histogram_config', "coffea4bees/analysis/metadata/HH4b_run_fastTopReco_Run3.yml")
-
     config.setdefault('jcm_install_path', "coffea4bees/analysis/weights/JCM/Run3_MvD/jetCombinatoricModel_SB_.yml")
     config.setdefault('classifier_inputs_install_path', "coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3.json")
-    config.setdefault('eos_base', "root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_v2")
 
 elif config["mode"] == "quadjet_run2":
-    config.setdefault('label', '_quadjet_run2')
     config.setdefault('output_path', "output/Run3_MvD_quadjet_run2/")
-    config.setdefault('classifier_config', "coffea4bees/analysis/metadata/HH4b_classifier_inputs_Run3_quadjet_run2.yml")
-    config.setdefault('histogram_config', "coffea4bees/analysis/metadata/HH4b_run_fastTopReco_Run3_quadjet_run2.yml")
-
     config.setdefault('jcm_install_path', "coffea4bees/analysis/weights/JCM/Run3_MvD/jetCombinatoricModel_SB_quadjet_run2.yml")
     config.setdefault('classifier_inputs_install_path', "coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3_quadjet_run2.json")
-    config.setdefault('eos_base', "root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_quadjet_run2")
-
-else:
-    print(f"Mode {config['mode']} Not Recognized!")
-    import sys
-    sys.exit(-1)
 
 out = config['output_path']
 
@@ -39,13 +22,21 @@ module analysis:
     snakefile: "rules/analysis.smk"
     config: config
 
+# Classifier-inputs rules now live in their own Snakefile.
+# Module is declared here so its outputs are visible to `rule all`; the
+# corresponding `use rule` statements are placed below `rule all` so the
+# wildcard-bearing `classifier_inputs` rule is not picked as the default target.
+module classifier_inputs:
+    snakefile: "Snakefile_classifier_inputs_Run3.smk"
+    config: config
+
 config.setdefault('jcm_config', "coffea4bees/analysis/jcm_tools/metadata/mixeddata_all_config_Run3.yml")
 config.setdefault('plots_metadata', "coffea4bees/plots/metadata/plotsAll_MvD.yml")
 
 rule all:
     input:
         f"{out}histAll_Run3MvD{config['label']}.coffea",
-        f"{out}classifier_inputs_Run3MvD{config['label']}.json",
+        config['classifier_inputs_install_path'],
         f"{out}jcm_for_mixed_all/jetCombinatoricModel_SB_.yml",
         f"{out}plots_wJCM/plots_done.txt"
 
@@ -72,6 +63,12 @@ rule all_with_training:
         expand(f"{out}{{classifier}}/evaluate.done", classifier=["MvD"]),
         expand(f"{out}{{classifier}}/analyze.done",  classifier=["MvD"]),
         f"{out}plots_MvD/plots_done.txt"
+
+# Re-export classifier-inputs rules from the module after `rule all` so
+# the wildcard `classifier_inputs` rule isn't picked as default target.
+use rule classifier_inputs            from classifier_inputs
+use rule merge_json_classifier_inputs from classifier_inputs
+use rule install_classifier_inputs    from classifier_inputs
 
 # ── Histograms ────────────────────────────────────────────────────────────────
 # Use __ (double underscore) as separator between dataset and year to avoid
@@ -243,45 +240,10 @@ rule make_plots_wJCM:
         touch {output}
         """
 
-# ── Classifier inputs ─────────────────────────────────────────────────────────
-
-use rule analysis_processor from analysis as classifier_inputs with:
-    output: f"{out}classifier_inputs/classifier_inputs_{{dataset}}__{{year}}.coffea"
-    log: f"{out}logs/classifier_inputs_{{dataset}}__{{year}}.log"
-    params:
-        datasets = "{dataset}",
-        years = "{year}",
-        config = config['classifier_config'],
-        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
-        datasets_file = config['dataset_location'],
-        blind = False,
-        run_performance = False,
-        friends = "coffea4bees/metadata/friends_HH4b.yml",
-        run_on_condor = True,
-        extra_arguments = "",
-        run_container_wrapper = "./run_container",
-        dashboard_address = 0
-
-rule merge_json_classifier_inputs:
-    input:
-        expand(
-            "{out}classifier_inputs/classifier_inputs_{dataset}__{year}.coffea",
-            out=out,
-            dataset=config['datasets'],
-            year=config['years']
-        )
-    output: f"{out}classifier_inputs_Run3MvD{config['label']}.json"
-    log: f"{out}logs/merge_json_classifier_inputs.log"
-    container: config["analysis_container"]
-    shell:
-        """
-        echo "Merging JSON classifier input files" 2>&1 | tee -a {log}
-        python -m src.friendtrees.merge_friend_meta -i $(echo {input} | sed 's/\\.coffea/.json/g') -o {output} 2>&1 | tee -a {log}
-        """
-
 # ── Classifier training ────────────────────────────────────────────────────────
-# Install the fitted JCM and classifier inputs JSON to the paths expected by
-# train.yml. Commit both files to git after running to version the inputs.
+# Install the fitted JCM to the path expected by train.yml. Commit both this
+# file and the classifier inputs JSON (installed by the imported module) to git
+# after running, to version the inputs.
 
 rule install_JCM:
     input: f"{out}jcm_for_mixed_all/jetCombinatoricModel_SB_.yml"
@@ -291,16 +253,6 @@ rule install_JCM:
         mkdir -p $(dirname {output})
         cp {input} {output}
         echo "Installed JCM to {output} — commit this file to git to version it."
-        """
-
-rule install_classifier_inputs:
-    input: f"{out}classifier_inputs_Run3MvD{config['label']}.json"
-    output: config['classifier_inputs_install_path']
-    shell:
-        """
-        mkdir -p $(dirname {output})
-        cp {input} {output}
-        echo "Installed classifier inputs JSON to {output} — commit this file to git to version it."
         """
 
 # ── Histograms with MvD weights (depends on evaluate) ─────────────────────────
