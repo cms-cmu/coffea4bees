@@ -439,7 +439,9 @@ def _assign_output_vars(selev, diJet, quadJet, run_SvB, cand_cfg):
         if "SvB_MA" in selev.fields:
             svb_ps = selev["SvB_MA"].ps
         elif "SvB_FeynNet" in selev.fields:
-            svb_ps = selev["SvB_FeynNet"].ps
+            # FeynNet classes [ggHH, qqHH, ZZ, ZH, Background] sum to 1, so
+            # 1 - p_bkg = p_ggHH + p_qqHH + p_ZZ + p_ZH (the old "ps" sum).
+            svb_ps = 1.0 - selev["SvB_FeynNet"].p_bkg
         else:
             svb_ps = None
         if svb_ps is not None:
