@@ -103,7 +103,7 @@ use rule analysis_processor from analysis as make_histograms with:
         blind = False,
         run_performance = False,
         friends = lambda wildcards, input: input.friends_file,
-        run_on_condor = True,
+        run_on_condor = config['run_on_condor'],
         extra_arguments = "",
         run_container_wrapper = "./run_container",
         dashboard_address = 0
@@ -181,7 +181,7 @@ use rule analysis_processor from analysis as make_histograms_wJCM with:
         blind = False,
         run_performance = False,
         friends = lambda wildcards, input: input.friends_file,
-        run_on_condor = True,
+        run_on_condor = config['run_on_condor'],
         extra_arguments = "",
         run_container_wrapper = "./run_container",
         dashboard_address = 0
@@ -279,7 +279,7 @@ use rule analysis_processor from analysis as make_histograms_FvT with:
         blind                 = False,
         run_performance       = False,
         friends               = lambda wildcards, input: input.friends_file,
-        run_on_condor         = True,
+        run_on_condor         = config['run_on_condor'],
         extra_arguments       = "",
         run_container_wrapper = "./run_container",
         dashboard_address     = 0
