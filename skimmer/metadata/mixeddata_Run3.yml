@@ -28,6 +28,10 @@ config:
   hemi_library_yaml: coffea4bees/skimmer/metadata/hemisphere_library_Run3_noTT.yml
   hemi_stats_path: coffea4bees/skimmer/metadata/hemi_statistics_noTT
   use_boost_corrected_matching: True  # Set to True to enable 3D matching with pz boost correction
+  use_topk_matching: True              # Set to True to use the parallel top-K matcher with rank-based collision retry
+  k_neighbors: 10                      # K for the kd-tree top-K query (only used when use_topk_matching is True)
+  collision_mode: retry                # ignore | drop | retry — policy when pos/neg hemis come from same library event
+  default_rank: 0                      # 0 = nearest neighbor; >0 selects further neighbors (future dataset-expansion knob)
   campaign:   
   step: 100000
   skip_collections:

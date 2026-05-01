@@ -36,6 +36,11 @@ from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricMod
 from coffea4bees.analysis.helpers.processor_config import processor_config
 from coffea4bees.analysis.helpers.candidates_selection import create_cand_jet_dijet_quadjet, load_candidates_selection_config
 from coffea4bees.analysis.helpers.SvB_helpers import setSvBVars, subtract_ttbar_with_FvT, setFvTVars
+from coffea4bees.analysis.helpers.parking import (
+    DEFAULT_LUMI_CFG_PATH as _PARKING_LUMI_CFG_DEFAULT,
+    assign_is_parking,
+    load_parking_lumi_cfg,
+)
 from coffea4bees.analysis.helpers.topCandReconstruction import (
     adding_top_reco_to_event,
     buildTop,
@@ -93,10 +98,26 @@ def _init_classfier_FvT(path: str | list[HCRModelMetadata]):
     return Legacy_HCREnsemble_FvT(path)
 
 def _init_feynnet(cfg):
-    """Construct FeynNetEnsemble from config list, or return None."""
+    """Construct a FeynNet classifier from config.
+
+    Two config schemas are supported:
+
+    1. Flat list of model entries (back-compat) -> single ``FeynNetEnsemble``.
+
+    2. Dict with ``parking`` and ``preparking`` keys, each a list of model
+       entries -> ``FeynNetParkingDispatcher`` that picks the model per event
+       based on ``event.is_parking``.
+
+    Returns None if cfg is None.
+    """
     if cfg is None:
         return None
-    from coffea4bees.analysis.helpers.classifier.FeynNet import FeynNetEnsemble
+    from coffea4bees.analysis.helpers.classifier.FeynNet import (
+        FeynNetEnsemble,
+        FeynNetParkingDispatcher,
+    )
+    if isinstance(cfg, dict) and "parking" in cfg and "preparking" in cfg:
+        return FeynNetParkingDispatcher(cfg["parking"], cfg["preparking"])
     return FeynNetEnsemble(cfg)
 
 class HH4bBaseProcessor(processor.ProcessorABC):
@@ -204,11 +225,13 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         apply_MvD: bool = False,
         apply_MvD_weight: bool = False,
         apply_mixeddata_sel: bool = False,  #### apply HIG-22-011 sel for mixeddata
+        fourTag_use_tight: bool = False,  # Run3: redefine fourTag as 3 Tight + >=4 Medium b-tagged jets
         friends: dict[str, str|FriendTemplate] = None,
         return_events_for_display: bool = False,
         tracker = None,
         object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
         candidates_selection_cfg: str = "coffea4bees/analysis/metadata/candidates_selection_thresholds.yml",
+        parking_lumi_cfg: str = _PARKING_LUMI_CFG_DEFAULT,
         year_override: bool = False,
     ):
 
@@ -217,6 +240,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
         self.cand_cfg = load_candidates_selection_config(candidates_selection_cfg) if candidates_selection_cfg else None
         self.blind = blind
+        self.fourTag_use_tight = fourTag_use_tight
         if apply_JCM:
             logging.info(f"\nUsing JCM from {JCM_file}")
             self.apply_JCM = jetCombinatoricModel(JCM_file)
@@ -267,12 +291,27 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.apply_mixeddata_sel = apply_mixeddata_sel
         self.return_events_for_display = return_events_for_display
         self.year_override = year_override
+        self.parking_lumi_cfg = load_parking_lumi_cfg(parking_lumi_cfg) if parking_lumi_cfg else None
 
         # Track top 20 events with largest ps_hh across all chunks
         self.top_ps_hh_events = []
 
         # Memory monitoring
         self.debug_memory = False  # Set to False to disable memory monitoring
+
+
+    def _needs_is_parking(self) -> bool:
+        """True if any active classifier consumes ``event.is_parking``.
+
+        Currently only ``FeynNetParkingDispatcher`` reads it. Returning
+        False short-circuits ``assign_is_parking`` so downstream analyses
+        that load SvB_FeynNet from a friend tree don't require the
+        is_parking friend tree to be present.
+        """
+        from coffea4bees.analysis.helpers.classifier.FeynNet import (
+            FeynNetParkingDispatcher,
+        )
+        return isinstance(self.classifier_SvB_FeynNet, FeynNetParkingDispatcher)
 
 
     # @profile
@@ -334,6 +373,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             # print("HACK")
             if self.config["isRun3"]:
                 self.config["isSyntheticData"] = bool(self.config["isMixedData"]) or self.config["isSyntheticData"]
+                self.config["fourTag_use_tight"] = self.fourTag_use_tight
             logging.debug(f'{self.chunk} config={self.config}, for file {self.fname}\n')
 
 
@@ -375,6 +415,17 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 if "SvB_MA" not in event.fields and self.classifier_SvB_MA is None and self.classifier_SvB_FeynNet is None:
                     logging.warning("SvB_MA not available after load_SvB and no classifier configured — disabling run_SvB for this chunk.")
                     self.run_SvB = False
+
+        with self._stage("assign_is_parking"):
+            if self.parking_lumi_cfg is not None and self._needs_is_parking():
+                assign_is_parking(
+                    event,
+                    year=self.year,
+                    is_mc=self.config["isMC"],
+                    parking_lumi_cfg=self.parking_lumi_cfg,
+                    friend=self.friends.get("is_parking"),
+                    target=self.target,
+                )
 
         with self._stage("load_JCM_friends"):
             if self.config["isDataForMixed"]:

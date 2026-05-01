@@ -48,7 +48,8 @@ config.setdefault('output_path', "output/Run3/")
 out = config['output_path']
 LABEL = config.get('label', '')
 
-TRAIN_YML_TEMPLATE = f"{WFS_BASE}/FvT/train.yml"
+TRAIN_YML_TEMPLATE    = f"{WFS_BASE}/FvT/train.yml"
+EVALUATE_YML_TEMPLATE = f"{WFS_BASE}/FvT/evaluate.yml"
 
 rule create_train_yml:
     input:
@@ -64,6 +65,20 @@ rule create_train_yml:
             {input.template} > {output}
         echo "Patched train.yml:"
         grep -E "JCM-weight|friends" {output}
+        """
+
+rule create_evaluate_yml:
+    input:
+        template = EVALUATE_YML_TEMPLATE,
+        json     = config['classifier_inputs_install_path'],
+    output: f"{out}evaluate.yml"
+    shell:
+        """
+        sed \
+            -e 's|--friends.*|--friends "" {input.json}@@HCR_input|' \
+            {input.template} > {output}
+        echo "Patched evaluate.yml:"
+        grep -E "friends" {output}
         """
 
 
@@ -148,7 +163,8 @@ rule analyze:
 
 rule evaluate:
     input:
-        f"{out}{{classifier}}/train.done",
+        train_done = f"{out}{{classifier}}/train.done",
+        eval_yml   = f"{out}evaluate.yml",
     output:
         flag = f"{out}{{classifier}}/evaluate.done",
     log:
@@ -164,14 +180,13 @@ rule evaluate:
         classifier_config_paths = CLASSIFIER_CONFIG_PATHS,
         wfs_base                = WFS_BASE,
         template_str            = lambda wc: CLASSIFIERS[wc.classifier]["eval_template"],
-        wfs                     = lambda wc: f"{WFS_BASE}/{wc.classifier}",
     shell:
         """
         {params.init} && \
         PORT=$(shuf -i 10000-60000 -n 1) && \
         CLASSIFIER_CONFIG_PATHS={params.classifier_config_paths} \
         ./src/pyml.py \
-            template "{{{params.template_str}}}" {params.wfs}/evaluate.yml \
+            template "{{{params.template_str}}}" {input.eval_yml} \
             -from {params.wfs_base}/common.yml \
             -setting Monitor "address: '127.0.0.1:$PORT'" \
             -flag debug \
