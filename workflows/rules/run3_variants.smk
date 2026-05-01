@@ -18,6 +18,14 @@ config.setdefault('analysis_container',
 config.setdefault('dataset_location',
     "coffea4bees/metadata/datasets_HH4b_Run3/")
 
+# Whether the analysis_processor rule submits to HTCondor. Auto-detects by
+# probing for condor_submit on PATH: present on LPC, absent on falcon. Override
+# with --config run_on_condor=True/False. Snakemake --config values arrive as
+# strings; coerce to bool here.
+import shutil
+_roc = config.setdefault('run_on_condor', shutil.which("condor_submit") is not None)
+config['run_on_condor'] = str(_roc).lower() not in ('false', '0', 'no')
+
 if config["mode"] == "nominal":
     config.setdefault('label', '')
     config.setdefault('histogram_config',

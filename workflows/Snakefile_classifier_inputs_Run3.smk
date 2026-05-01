@@ -43,7 +43,7 @@ use rule analysis_processor from analysis as classifier_inputs with:
         blind = False,
         run_performance = False,
         friends = "coffea4bees/metadata/friends_HH4b.yml",
-        run_on_condor = True,
+        run_on_condor = config['run_on_condor'],
         extra_arguments = "",
         run_container_wrapper = "./run_container",
         dashboard_address = 0
