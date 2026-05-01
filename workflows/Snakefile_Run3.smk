@@ -1,36 +1,21 @@
 import os
 
-config.setdefault('mode', 'nominal')
+include: "rules/run3_variants.smk"
 
-config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
-config.setdefault('dataset_location', "coffea4bees/metadata/datasets_HH4b_Run3/")
 config.setdefault('datasets', ['TTToSemiLeptonic', 'TTToHadronic', 'TTTo2L2Nu', 'data'])
 config.setdefault('years', ['2022_EE', '2022_preEE', '2023_BPix', '2023_preBPix'])
 
 if config["mode"] == "nominal":
-    config.setdefault('label', '')
     config.setdefault('output_path', "output/Run3/")
-    config.setdefault('histogram_config', "coffea4bees/analysis/metadata/HH4b_run_fastTopReco_Run3.yml")
-
     config.setdefault('jcm_install_path', "coffea4bees/analysis/weights/JCM/Run3/jetCombinatoricModel_SB_.yml")
     # FvT training reuses the existing committed Run3 classifier inputs JSON
     config.setdefault('classifier_inputs_install_path', "coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_Run3.json")
-    config.setdefault('eos_base', "root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_v2")
 
 elif config["mode"] == "quadjet_run2":
-    config.setdefault('label', '_quadjet_run2')
     config.setdefault('output_path', "output/Run3_quadjet_run2/")
-    config.setdefault('histogram_config', "coffea4bees/analysis/metadata/HH4b_run_fastTopReco_Run3_quadjet_run2.yml")
-
     config.setdefault('jcm_install_path', "coffea4bees/analysis/weights/JCM/Run3/jetCombinatoricModel_SB_quadjet_run2.yml")
     # FvT training for quadjet_run2 reuses the MvD-produced classifier inputs JSON
     config.setdefault('classifier_inputs_install_path', "coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3_quadjet_run2.json")
-    config.setdefault('eos_base', "root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_quadjet_run2")
-
-else:
-    print(f"Mode {config['mode']} Not Recognized!")
-    import sys
-    sys.exit(-1)
 
 out = config['output_path']
 
