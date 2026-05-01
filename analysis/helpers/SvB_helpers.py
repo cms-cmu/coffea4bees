@@ -214,7 +214,11 @@ def compute_SvB_FeynNet(events, mask, **models):
         p_ZH   = c_full[:, classes.index("ZH")]
         p_bkg  = c_full[:, classes.index("Background")]
 
-        ps = p_ggHH + p_qqHH + p_ZZ + p_ZH
+        p_ggHH_vs_bkg = p_ggHH / (p_ggHH + p_bkg)
+        p_qqHH_vs_bkg = p_qqHH / (p_qqHH + p_bkg)
+        p_ZZ_vs_bkg   = p_ZZ   / (p_ZZ   + p_bkg)
+        p_ZH_vs_bkg   = p_ZH   / (p_ZH   + p_bkg)
+
         passMinPs = (p_ggHH > 0.01) | (p_qqHH > 0.01) | (p_ZZ > 0.01) | (p_ZH > 0.01)
 
         p_hh = p_ggHH + p_qqHH  # combined HH score
@@ -222,26 +226,23 @@ def compute_SvB_FeynNet(events, mask, **models):
         zh   = (p_ZH  > p_ZZ)  & (p_ZH  > p_hh)
         hh   = (p_hh  >= p_ZZ) & (p_hh  >= p_ZH)
 
-        def _ps_gated(win_mask):
+
+        def _ps_gated(input_var, win_mask):
             arr = np.full(len(events), -1, dtype=float)
             arr[~passMinPs] = -2
-            arr[win_mask] = ps[win_mask]
+            arr[win_mask] = input_var[win_mask]
             return arr
 
         events[name] = ak.zip({
-            "p_ggHH":    p_ggHH,
-            "p_qqHH":    p_qqHH,
-            "p_ZZ":      p_ZZ,
-            "p_ZH":      p_ZH,
-            "p_bkg":     p_bkg,
-            "ps":        ps,
+            "p_ggHH_vs_bkg":  _ps_gated(p_ggHH_vs_bkg,  hh),
+            "p_qqHH_vs_bkg":  _ps_gated(p_qqHH_vs_bkg,  hh),
+            "p_ZZ_vs_bkg":    _ps_gated(p_ZZ_vs_bkg  ,  zz),
+            "p_ZH_vs_bkg":    _ps_gated(p_ZH_vs_bkg  ,  zh),
+            "p_bkg"  :  p_bkg ,
             "passMinPs": passMinPs,
+            "hh":        hh,
             "zz":        zz,
             "zh":        zh,
-            "hh":        hh,
-            "ps_zz":     _ps_gated(zz),
-            "ps_zh":     _ps_gated(zh),
-            "ps_hh":     _ps_gated(hh),
             "reweight":  q_full[:, 0],
             "tt_vs_mj":  np.zeros(len(events), dtype=np.float32),
         })
