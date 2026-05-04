@@ -28,12 +28,13 @@ def _higgs_cand_flags(event) -> np.ndarray:
     Returns
     -------
     flags : ndarray, shape (N, 4, 4)
-        Axis 1 = canJet index (0–3, btag-sorted order)
+        Axis 1 = canJet index (0–3, pt-sorted descending)
         Axis 2 = role index [h1b1, h1b2, h2b1, h2b2]
         flags[i, j, r] = 1.0 if canJet j plays role r in event i
     """
     n = len(event)
     can_pt = ak.to_numpy(event.canJet.pt).astype("float32")  # (N, 4)
+    assert np.all(np.diff(can_pt, axis=1) <= 0), "canJet not pt-descending"
 
     # pt of each role from the selected quad-jet pairing
     role_pts = np.stack([
@@ -223,7 +224,6 @@ class FeynNetEnsemble:
         can_phi = ak.to_numpy(event.canJet.phi).astype("float32")
         can_mass = ak.to_numpy(event.canJet.mass).astype("float32")
 
-        # Flags before pt-resorting (btag-sorted order)
         flags_orig = _higgs_cand_flags(event)  # (N, 4, 4)
 
         # pt-sort descending
