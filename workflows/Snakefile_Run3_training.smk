@@ -189,7 +189,6 @@ rule evaluate:
             template "{{{params.template_str}}}" {input.eval_yml} \
             -from {params.wfs_base}/common.yml \
             -setting Monitor "address: '127.0.0.1:$PORT'" \
-            -flag debug \
             2>&1 | tee -a {log}
         touch {output.flag}
         """
