@@ -99,7 +99,7 @@ rule train:
     resources:
         runtime = 240,
         mem_mb  = 32000,
-        gres    = "mps:50",
+        gres    = "mps:25",
     threads: 4
     params:
         init                    = INIT,
@@ -173,7 +173,7 @@ rule evaluate:
     resources:
         runtime = 240,
         mem_mb  = 32000,
-        gres    = "mps:50",
+        gres    = "mps:25",
     threads: 4
     params:
         init                    = INIT,
@@ -189,7 +189,6 @@ rule evaluate:
             template "{{{params.template_str}}}" {input.eval_yml} \
             -from {params.wfs_base}/common.yml \
             -setting Monitor "address: '127.0.0.1:$PORT'" \
-            -flag debug \
             2>&1 | tee -a {log}
         touch {output.flag}
         """
