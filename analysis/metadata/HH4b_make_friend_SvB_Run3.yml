@@ -1,6 +1,6 @@
 runner:
   workers: 4
-  condor_memory: 6GB
+  worker_memory: 8GB
   friend_metafile: make_friend_SvB
   friend_base: &friend_base root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_v3
   # friend_base: &friend_base /srv/output/tmp/ 
