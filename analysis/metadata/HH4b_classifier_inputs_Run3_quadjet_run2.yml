@@ -15,6 +15,7 @@ config:
   apply_boosted_veto: false
   run_SvB: false
   top_reconstruction: fast
+  fourTag_use_tight: true
   fill_histograms: false
   make_classifier_input: root://cmseos.fnal.gov//store/user/jda102/XX4b/Run3ClassiferInputs_quadjet_run2
   candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_quadjet_run2.yml"

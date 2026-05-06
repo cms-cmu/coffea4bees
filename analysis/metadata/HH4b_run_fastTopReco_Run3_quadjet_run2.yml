@@ -16,4 +16,5 @@ config:
   apply_MvD_weight: false
   plot_ttbar_with_weights: true
   top_reconstruction: fast
+  fourTag_use_tight: true
   candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_quadjet_run2.yml"
