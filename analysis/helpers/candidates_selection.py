@@ -103,7 +103,13 @@ def cand_jet_selection(
     notCanJet["isSelJet"] = 1 * ( (notCanJet.pt >= isSelJet_pt_min) & (np.abs(notCanJet.eta) < isSelJet_eta_max) )
     selev["notCanJet_coffea"] = notCanJet
     selev["nNotCanJet"] = ak.num(selev.notCanJet_coffea)
-    selev["fwdJet_feynnet"] = selev.Jet[selev.Jet.fwd_feynnet]
+    # Veto canJets from fwd_feynnet so the same jet can't be fed to FeynNet
+    # twice (once as canJet, once as forward jet). Without this, a 3b event's
+    # 4th canJet (untagged by construction) leaks into fwd_feynnet, breaking
+    # FvT closure for SvB_FeynNet.
+    local_idx = ak.local_index(selev.Jet, axis=1)
+    is_canJet = ak.any(local_idx[:, :, np.newaxis] == canJet_idx[:, np.newaxis, :], axis=-1)
+    selev["fwdJet_feynnet"] = selev.Jet[selev.Jet.fwd_feynnet & ~is_canJet]
 
     # Release indexing intermediates
     del sorted_idx, canJet_idx, notCanJet_idx, notCanJet
@@ -439,7 +445,9 @@ def _assign_output_vars(selev, diJet, quadJet, run_SvB, cand_cfg):
         if "SvB_MA" in selev.fields:
             svb_ps = selev["SvB_MA"].ps
         elif "SvB_FeynNet" in selev.fields:
-            svb_ps = selev["SvB_FeynNet"].ps
+            # FeynNet classes [ggHH, qqHH, ZZ, ZH, Background] sum to 1, so
+            # 1 - p_bkg = p_ggHH + p_qqHH + p_ZZ + p_ZH (the old "ps" sum).
+            svb_ps = 1.0 - selev["SvB_FeynNet"].p_bkg
         else:
             svb_ps = None
         if svb_ps is not None:

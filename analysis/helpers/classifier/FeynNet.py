@@ -28,12 +28,13 @@ def _higgs_cand_flags(event) -> np.ndarray:
     Returns
     -------
     flags : ndarray, shape (N, 4, 4)
-        Axis 1 = canJet index (0–3, btag-sorted order)
+        Axis 1 = canJet index (0–3, pt-sorted descending)
         Axis 2 = role index [h1b1, h1b2, h2b1, h2b2]
         flags[i, j, r] = 1.0 if canJet j plays role r in event i
     """
     n = len(event)
     can_pt = ak.to_numpy(event.canJet.pt).astype("float32")  # (N, 4)
+    assert np.all(np.diff(can_pt, axis=1) <= 0), "canJet not pt-descending"
 
     # pt of each role from the selected quad-jet pairing
     role_pts = np.stack([
@@ -223,7 +224,6 @@ class FeynNetEnsemble:
         can_phi = ak.to_numpy(event.canJet.phi).astype("float32")
         can_mass = ak.to_numpy(event.canJet.mass).astype("float32")
 
-        # Flags before pt-resorting (btag-sorted order)
         flags_orig = _higgs_cand_flags(event)  # (N, 4, 4)
 
         # pt-sort descending
@@ -404,5 +404,64 @@ class FeynNetEnsemble:
             c_score[fold_mask] = probs
             n_ratio_cols = min(ratios.shape[1], 3)
             q_score[fold_mask, :n_ratio_cols] = ratios[:, :n_ratio_cols]
+
+        return c_score, q_score
+
+
+class FeynNetParkingDispatcher:
+    """Dispatches FeynNet inference between parking and preparking models.
+
+    In Run3 the trigger strategy changed mid-2023_preBPix; the parking and
+    preparking eras have separate FeynNet ONNX models. This dispatcher holds
+    one ``FeynNetEnsemble`` per trigger era and, given an event array with an
+    ``is_parking`` boolean field, runs each ensemble on its slice and stitches
+    the outputs back together.
+
+    The ``__call__`` signature matches ``FeynNetEnsemble`` so this can be used
+    transparently anywhere a single ensemble is expected (e.g. inside
+    ``compute_SvB_FeynNet``).
+    """
+
+    def __init__(
+        self,
+        parking_paths: list[dict],
+        preparking_paths: list[dict],
+        batched: bool = True,
+    ):
+        self.parking = FeynNetEnsemble(parking_paths, batched=batched)
+        self.preparking = FeynNetEnsemble(preparking_paths, batched=batched)
+        if self.parking.classes != self.preparking.classes:
+            raise ValueError(
+                "Parking and preparking FeynNet ensembles must have the same classes; "
+                f"got parking={self.parking.classes} preparking={self.preparking.classes}"
+            )
+        self.classes = self.parking.classes
+        # Folds may differ between parking/preparking ensembles; that's fine —
+        # each ensemble handles its own fold assignment internally.
+
+    def __call__(self, event) -> tuple[npt.NDArray, npt.NDArray]:
+        if "is_parking" not in event.fields:
+            raise ValueError(
+                "FeynNetParkingDispatcher requires 'is_parking' field on the event "
+                "array. Run processor_isParking_friend.py first and load the friend "
+                "tree, or set is_parking from the data run number."
+            )
+
+        n = len(event)
+        n_classes = len(self.classes)
+        c_score = np.zeros((n, n_classes), dtype="float32")
+        q_score = np.zeros((n, 3), dtype="float32")
+
+        is_parking = np.asarray(ak.to_numpy(event.is_parking)).astype(bool)
+        is_preparking = ~is_parking
+
+        if is_parking.any():
+            c_p, q_p = self.parking(event[is_parking])
+            c_score[is_parking] = c_p
+            q_score[is_parking, : q_p.shape[1]] = q_p
+        if is_preparking.any():
+            c_pp, q_pp = self.preparking(event[is_preparking])
+            c_score[is_preparking] = c_pp
+            q_score[is_preparking, : q_pp.shape[1]] = q_pp
 
         return c_score, q_score

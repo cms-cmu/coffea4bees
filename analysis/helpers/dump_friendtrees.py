@@ -110,6 +110,22 @@ def dump_JCM_weight(
     )
 
 
+def dump_isParking(
+    events: ak.Array,
+    output: PathLike,
+    name: str,
+    is_parking: ak.Array,
+    dump_naming: str = _NAMING,
+):
+    return dump_friend(
+        events=events,
+        output=output,
+        name=name,
+        data=ak.Array({"is_parking": ak.values_astype(is_parking, "bool")}),
+        dump_naming=dump_naming,
+    )
+
+
 def dump_FvT_weight(  ### TODO: replace with proper evaluation code
     events: ak.Array,
     output: PathLike,
@@ -265,19 +281,15 @@ def dump_SvB_FeynNet(
     dump_naming: str = _NAMING,
 ):
     data = ak.zip({
-        "p_ggHH": events[name].p_ggHH,
-        "p_qqHH": events[name].p_qqHH,
-        "p_ZZ": events[name].p_ZZ,
-        "p_ZH": events[name].p_ZH,
+        "p_ggHH_vs_bkg": events[name].p_ggHH_vs_bkg,
+        "p_qqHH_vs_bkg": events[name].p_qqHH_vs_bkg,
+        "p_ZZ_vs_bkg": events[name].p_ZZ_vs_bkg,
+        "p_ZH_vs_bkg": events[name].p_ZH_vs_bkg,
         "p_bkg": events[name].p_bkg,
-        "ps": events[name].ps,
         "passMinPs": events[name].passMinPs,
         "hh": events[name].hh,
         "zz": events[name].zz,
         "zh": events[name].zh,
-        "ps_hh": events[name].ps_hh,
-        "ps_zz": events[name].ps_zz,
-        "ps_zh": events[name].ps_zh,
         "reweight": events[name].reweight,
     })
     selection = _build_cutflow(*selections)
@@ -301,7 +313,7 @@ def dump_SvB(
 ):
     data = ak.zip({
         'pmj': events[name].pmj,
-        'ptt': events[name].ptt, 
+        'ptt': events[name].ptt,
         "pzz": events[name].pzz,
         "pzh": events[name].pzh,
         "phh": events[name].phh,
