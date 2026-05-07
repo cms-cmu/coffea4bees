@@ -832,14 +832,17 @@ def replace_hemis_topk_kdTrees(
 
     Parallel implementation to replace_hemis_load_kdTrees. Queries the top-K
     nearest neighbors per hemi, then chooses a rank per hemi based on
-    `collision_mode`:
+    `collision_mode`. `default_rank` is either an int (same rank for both
+    pos and neg hemis) or a (rp, rn) pair (independent per side); the pair
+    form expands the available "alternative datasets" from K to K^2 for
+    multi-rank dataset expansion runs.
 
-    - "ignore": every hemi uses rank=default_rank (matches legacy behavior
-       when k_neighbors=1, default_rank=0).
+    - "ignore": every hemi uses its configured default rank.
     - "drop":   pos/neg pairs whose default-rank library hemis come from the
        same source event are flagged in kept_event_mask=False.
-    - "retry":  for colliding pairs, search ranks (rp,rn) in [default_rank..K-1]
-       for the smallest-distance non-colliding pair; if none, kept=False.
+    - "retry":  for colliding pairs, search (rp, rn) in
+       [rp_default..K-1] x [rn_default..K-1] for the smallest-distance
+       non-colliding pair; if none, kept=False.
 
     Returns
     -------
@@ -852,8 +855,14 @@ def replace_hemis_topk_kdTrees(
     """
     if k_neighbors < 1:
         raise ValueError(f"k_neighbors must be >= 1, got {k_neighbors}")
-    if not (0 <= default_rank < k_neighbors):
-        raise ValueError(f"default_rank ({default_rank}) must be in [0, k_neighbors={k_neighbors})")
+    if isinstance(default_rank, (tuple, list)):
+        if len(default_rank) != 2:
+            raise ValueError(f"default_rank as a sequence must have length 2 (rp, rn); got {default_rank!r}")
+        rp_default, rn_default = int(default_rank[0]), int(default_rank[1])
+    else:
+        rp_default = rn_default = int(default_rank)
+    if not (0 <= rp_default < k_neighbors and 0 <= rn_default < k_neighbors):
+        raise ValueError(f"default_rank ({default_rank}) entries must be in [0, k_neighbors={k_neighbors})")
     if collision_mode not in ("ignore", "drop", "retry"):
         raise ValueError(f"collision_mode must be one of ignore/drop/retry, got {collision_mode!r}")
 
@@ -942,7 +951,9 @@ def replace_hemis_topk_kdTrees(
         match_dist_per_hemi[m] = rec["match_dist"]
 
     # ─── Stage 2: pick rank per hemi ──────────────────────────────────────
-    chosen_rank = np.full(N, default_rank, dtype=np.int32)
+    chosen_rank = np.empty(N, dtype=np.int32)
+    chosen_rank[:n_event] = rp_default
+    chosen_rank[n_event:] = rn_default
     kept_event_mask = np.ones(n_event, dtype=bool)
 
     if collision_mode != "ignore":
@@ -952,9 +963,9 @@ def replace_hemis_topk_kdTrees(
         pos_d = match_dist_per_hemi[:n_event]; neg_d = match_dist_per_hemi[n_event:]
 
         collision = (
-            (pos_e[:, default_rank] == neg_e[:, default_rank])
-            & (pos_r[:, default_rank] == neg_r[:, default_rank])
-            & (pos_l[:, default_rank] == neg_l[:, default_rank])
+            (pos_e[:, rp_default] == neg_e[:, rn_default])
+            & (pos_r[:, rp_default] == neg_r[:, rn_default])
+            & (pos_l[:, rp_default] == neg_l[:, rn_default])
         )
 
         if collision_mode == "drop":
@@ -963,10 +974,10 @@ def replace_hemis_topk_kdTrees(
             coll_idx = np.where(collision)[0]
             for i in coll_idx:
                 best = None  # (sum_dist, rp, rn)
-                for rp in range(default_rank, K):
+                for rp in range(rp_default, K):
                     pe, pr, pl = pos_e[i, rp], pos_r[i, rp], pos_l[i, rp]
                     pd = pos_d[i, rp]
-                    for rn in range(default_rank, K):
+                    for rn in range(rn_default, K):
                         if pe == neg_e[i, rn] and pr == neg_r[i, rn] and pl == neg_l[i, rn]:
                             continue
                         d = pd + neg_d[i, rn]
