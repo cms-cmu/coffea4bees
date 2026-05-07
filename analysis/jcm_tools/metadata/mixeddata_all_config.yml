@@ -10,4 +10,5 @@ selJets: selJets_noJCM.n
 tagJets: tagJets_noJCM.n
 
 subtract3bTT: False
-threeTightTagFraction: 0.463830 
+#threeTightTagFraction: 0.463830
+float_t: true                    # mixed-data fit: derive t from data4b/(JCM·mixed_3b) normalization
