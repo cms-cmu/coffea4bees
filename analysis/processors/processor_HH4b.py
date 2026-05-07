@@ -356,7 +356,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             self.year_label = self.corrections_metadata[self.year]['year_label']
             self.processName = event.metadata['processName']
 
-            if (self.processName.find("mix") != -1 or self.dataset.find("syn") != -1) and self.processName != "mixeddata_all":
+            if (self.processName.find("mix") != -1 or self.dataset.find("syn") != -1) and not self.processName.startswith("mixeddata_all"):
                 new_processName = self.dataset.replace(f'_{self.year}','')
                 logging.info(f"Overridding processName: {self.processName} to {new_processName} for dataset {self.dataset}")
                 self.processName = new_processName
