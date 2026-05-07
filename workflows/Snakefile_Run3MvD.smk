@@ -2,7 +2,15 @@ import os
 
 include: "rules/run3_variants.smk"
 
-config.setdefault('datasets', ['TTToSemiLeptonic', 'TTToHadronic', 'TTTo2L2Nu', 'data', 'mixeddata_all'])
+# Top-level mixed-data dataset name. Default 'mixeddata_all' preserves the
+# legacy MvD workflow. Override (e.g. --config dataset_name=mixeddata_all_rank0)
+# to point the whole pipeline at a different mixed-data sample. The matching
+# dataset yaml must exist under coffea4bees/metadata/datasets_HH4b_Run3/, and
+# the JCM yaml's data3bName field is sed-patched at fit time (see
+# create_jcm_config rule below) so its committed value doesn't have to match.
+config.setdefault('dataset_name', 'mixeddata_all')
+
+config.setdefault('datasets', ['TTToSemiLeptonic', 'TTToHadronic', 'TTTo2L2Nu', 'data', config['dataset_name']])
 config.setdefault('years', ['2022_EE', '2022_preEE', '2023_BPix', '2023_preBPix'])
 
 if config["mode"] == "nominal":
@@ -140,13 +148,30 @@ use rule merging_coffea_files from analysis as merge_histograms with:
 
 # ── JCM fitting ───────────────────────────────────────────────────────────────
 
+rule create_jcm_config:
+    """Patch the JCM config so data3bName matches our configured dataset_name.
+    Committed yaml hardcodes 'mixeddata_all'; this rule lets us point the fit
+    at any rank/variant without editing the source."""
+    input:  config['jcm_config']
+    output: f"{out}jcm_config_patched.yml"
+    params:
+        dataset_name = config['dataset_name']
+    shell:
+        """
+        sed -e 's|data3bName:.*|data3bName: {params.dataset_name}|' \
+            {input} > {output}
+        echo "Patched JCM config:"
+        grep -E "data3bName" {output}
+        """
+
 rule make_JCM_Run3MvD:
-    input: ancient(f"{out}histAll_Run3MvD{config['label']}.coffea")
+    input:
+        hist       = ancient(f"{out}histAll_Run3MvD{config['label']}.coffea"),
+        jcm_config = f"{out}jcm_config_patched.yml",
     output: f"{out}jcm_for_mixed_all/jetCombinatoricModel_SB_.yml"
     container: config['analysis_container']
     params:
         output_dir = f"{out}jcm_for_mixed_all/",
-        jcm_config = config['jcm_config'],
         extra_arguments = "",
     log: f"{out}logs/make_JCM_Run3MvD.log"
     shell:
@@ -156,9 +181,9 @@ rule make_JCM_Run3MvD:
         echo "Computing JCM for mixed_all Run3MvD" 2>&1 | tee -a {log}
         python coffea4bees/analysis/jcm_tools/make_jcm_weights.py \
             -o {params.output_dir} \
-            -i {input} \
+            -i {input.hist} \
             -r SB \
-            --jcm_config {params.jcm_config} \
+            --jcm_config {input.jcm_config} \
             {params.extra_arguments} 2>&1 | tee -a {log}
         ls {params.output_dir} 2>&1 | tee -a {log}
         """
@@ -186,10 +211,10 @@ use rule analysis_processor from analysis as make_histograms_mixeddata_wJCM with
     input:
         config_file  = f"{out}histogram_config_wJCM.yml",
         friends_file = f"{out}friends_wSvB.yml",
-    output: f"{out}histograms_wJCM/hist_mixeddata_all__{{year}}.coffea"
-    log: f"{out}logs/hist_wJCM_mixeddata_all__{{year}}.log"
+    output: f"{out}histograms_wJCM/hist_{config['dataset_name']}__{{year}}.coffea"
+    log: f"{out}logs/hist_wJCM_{config['dataset_name']}__{{year}}.log"
     params:
-        datasets = "mixeddata_all",
+        datasets = config['dataset_name'],
         years = "{year}",
         config = lambda wildcards, input: input.config_file,
         processor = "coffea4bees/analysis/processors/processor_HH4b.py",
@@ -205,8 +230,9 @@ use rule analysis_processor from analysis as make_histograms_mixeddata_wJCM with
 use rule merging_coffea_files from analysis as merge_histograms_mixeddata_wJCM with:
     input:
         expand(
-            "{out}histograms_wJCM/hist_mixeddata_all__{year}.coffea",
+            "{out}histograms_wJCM/hist_{dataset_name}__{year}.coffea",
             out=out,
+            dataset_name=config['dataset_name'],
             year=config['years']
         ),
         expand(
@@ -324,10 +350,10 @@ use rule analysis_processor from analysis as make_histograms_mixeddata_MvD with:
         config_file   = f"{out}histogram_config_MvD.yml",
         friends_file  = f"{out}friends_MvD.yml",
         evaluate_done = ancient(expand(f"{out}{{classifier}}/evaluate.done", classifier=["MvD"])),
-    output: f"{out}histograms_MvD/hist_mixeddata_all__{{year}}.coffea"
-    log: f"{out}logs/hist_MvD_mixeddata_all__{{year}}.log"
+    output: f"{out}histograms_MvD/hist_{config['dataset_name']}__{{year}}.coffea"
+    log: f"{out}logs/hist_MvD_{config['dataset_name']}__{{year}}.log"
     params:
-        datasets              = "mixeddata_all",
+        datasets              = config['dataset_name'],
         years                 = "{year}",
         config                = lambda wildcards, input: input.config_file,
         processor             = "coffea4bees/analysis/processors/processor_HH4b.py",
@@ -348,8 +374,9 @@ use rule merging_coffea_files from analysis as merge_histograms_MvD with:
             year=config['years']
         ),
         expand(
-            "{out}histograms_MvD/hist_mixeddata_all__{year}.coffea",
+            "{out}histograms_MvD/hist_{dataset_name}__{year}.coffea",
             out=out,
+            dataset_name=config['dataset_name'],
             year=config['years']
         ),
         expand(
@@ -388,7 +415,8 @@ module training:
     snakefile: "Snakefile_Run3MvD_training.smk"
     config: config
 
-use rule create_train_yml from training
-use rule train            from training
-use rule analyze          from training
-use rule evaluate         from training
+use rule create_train_yml    from training
+use rule create_evaluate_yml from training
+use rule train               from training
+use rule analyze             from training
+use rule evaluate            from training
