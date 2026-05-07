@@ -45,24 +45,50 @@ config.setdefault('jcm_install_path', "coffea4bees/analysis/weights/JCM/Run3_MvD
 config.setdefault('classifier_inputs_install_path', "coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3.json")
 
 config.setdefault('output_path', "output/Run3_MvD/")
+config.setdefault('dataset_name', 'mixeddata_all')
 out = config['output_path']
 
-TRAIN_YML_TEMPLATE = f"{WFS_BASE}/MvD/train.yml"
+TRAIN_YML_TEMPLATE    = f"{WFS_BASE}/MvD/train.yml"
+EVALUATE_YML_TEMPLATE = f"{WFS_BASE}/MvD/evaluate.yml"
 
 rule create_train_yml:
+    """Patch the committed train.yml template with installed JCM / friend
+    paths and inject --data-mixed-all-name so the trainer reads from the
+    configured dataset_name (default 'mixeddata_all', backward compatible)."""
     input:
         template = TRAIN_YML_TEMPLATE,
         jcm      = config['jcm_install_path'],
         json     = config['classifier_inputs_install_path'],
     output: f"{out}train.yml"
+    params:
+        dataset_name = config['dataset_name']
     shell:
         """
         sed \
             -e 's|--JCM-weight.*|--JCM-weight "source:mixed_all" {input.jcm}@@JCM_weights|' \
             -e 's|--friends.*|--friends "" {input.json}@@HCR_input|' \
+            -e '/--data-source mixed_all detector/a\\      - --data-mixed-all-name {params.dataset_name}' \
             {input.template} > {output}
         echo "Patched train.yml:"
-        grep -E "JCM-weight|friends" {output}
+        grep -E "JCM-weight|friends|data-mixed-all-name" {output}
+        """
+
+
+rule create_evaluate_yml:
+    """Patch the committed evaluate.yml template to inject
+    --data-mixed-all-name so evaluation reads from the same dataset as
+    training."""
+    input:
+        template = EVALUATE_YML_TEMPLATE,
+    output: f"{out}evaluate.yml"
+    params:
+        dataset_name = config['dataset_name']
+    shell:
+        """
+        sed -e '/--data-source detector mixed_all/a\\      - --data-mixed-all-name {params.dataset_name}' \
+            {input.template} > {output}
+        echo "Patched evaluate.yml:"
+        grep -E "data-source|data-mixed-all-name" {output}
         """
 
 
@@ -147,7 +173,8 @@ rule analyze:
 
 rule evaluate:
     input:
-        f"{out}{{classifier}}/train.done",
+        train_done   = f"{out}{{classifier}}/train.done",
+        evaluate_yml = f"{out}evaluate.yml",
     output:
         flag = f"{out}{{classifier}}/evaluate.done",
     log:
@@ -163,14 +190,13 @@ rule evaluate:
         classifier_config_paths = CLASSIFIER_CONFIG_PATHS,
         wfs_base                = WFS_BASE,
         template_str            = lambda wc: CLASSIFIERS[wc.classifier]["eval_template"],
-        wfs                     = lambda wc: f"{WFS_BASE}/{wc.classifier}",
     shell:
         """
         {params.init} && \
         PORT=$(shuf -i 10000-60000 -n 1) && \
         CLASSIFIER_CONFIG_PATHS={params.classifier_config_paths} \
         ./src/pyml.py \
-            template "{{{params.template_str}}}" {params.wfs}/evaluate.yml \
+            template "{{{params.template_str}}}" {input.evaluate_yml} \
             -from {params.wfs_base}/common.yml \
             -setting Monitor "address: '127.0.0.1:$PORT'" \
             -flag debug \

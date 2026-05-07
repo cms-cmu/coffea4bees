@@ -4,8 +4,9 @@ include: "rules/run3_variants.smk"
 
 # Per-Snakefile defaults
 config.setdefault('output_path', f"output/classifier_inputs_Run3{config['label']}/")
+config.setdefault('dataset_name', 'mixeddata_all')
 config.setdefault('datasets',
-    ['TTToSemiLeptonic', 'TTToHadronic', 'TTTo2L2Nu', 'data', 'mixeddata_all'])
+    ['TTToSemiLeptonic', 'TTToHadronic', 'TTTo2L2Nu', 'data', config['dataset_name']])
 config.setdefault('years', ['2022_EE', '2022_preEE', '2023_BPix', '2023_preBPix'])
 
 # install path differs per mode; matches the file historically produced by
