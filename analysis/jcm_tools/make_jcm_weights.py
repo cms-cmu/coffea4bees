@@ -157,17 +157,22 @@ def process_histograms(data4b, data3b, tt4b, tt3b, qcd4b, qcd3b, data4b_nTagJets
             mu_qcd, threeTightTagFraction)
 
 
-def setup_model(bin_data: Tuple, args: argparse.Namespace, logger: logging.Logger) -> jetCombinatoricModel:
+def setup_model(bin_data: Tuple, args: argparse.Namespace, logger: logging.Logger,
+                jcm_config: dict = None) -> jetCombinatoricModel:
     """Set up the JCM model for fitting
 
     Args:
         bin_data: Tuple of data from process_histograms
         args: Command line arguments
         logger: Logger instance
+        jcm_config: JCM yaml config dict; reads `float_t` to optionally float
+            the threeTightTagFraction normalization. Defaults to {} (legacy).
 
     Returns:
         Configured JCM model ready for fitting
     """
+    if jcm_config is None:
+        jcm_config = {}
     (_, _, _, tt4b_nTagJets_values, tt4b_nTagJets_errors,
      tt4b_values, qcd3b_values, qcd3b_errors, _, threeTightTagFraction) = bin_data
 
@@ -186,36 +191,51 @@ def setup_model(bin_data: Tuple, args: argparse.Namespace, logger: logging.Logge
     logger.debug(f"Default parameters: {JCM_model.default_parameters}")
     logger.debug(f"Parameter bounds: {list(zip(JCM_model.parameters_lower_bounds, JCM_model.parameters_upper_bounds))}")
 
-    # Set fixed parameters based on command-line options
+    # Build the dict of parameters to fix based on CLI flags. By default
+    # threeTightTagFraction is fixed in every branch (legacy behavior); if
+    # -float_t is passed, it's removed below so the fit derives it from the
+    # data4b/(JCM·3b) normalization. Opt-in only — defaults preserve all
+    # existing fit results and unit tests.
     if args.fix_e:
         logger.info("Fixing pairEnhancement parameter to 0.0")
-        JCM_model.fixParameter_combination({
+        params_to_fix = {
             "threeTightTagFraction": threeTightTagFraction,
             "pairEnhancement": 0.0,
             "pairEnhancementDecay": 1.0,
-            "tt4bSF": 1.0
-        })
+            "tt4bSF": 1.0,
+        }
 
     elif args.fix_d:
         logger.info("Fixing pairEnhancementDecay parameter to 1.0")
-        JCM_model.fixParameter_combination({
+        params_to_fix = {
             "threeTightTagFraction": threeTightTagFraction,
             "pairEnhancementDecay": 1.0,
-            "tt4bSF": 1.0
-        })
+            "tt4bSF": 1.0,
+        }
 
     elif not args.float_tt4bSF:
         logger.info("Fixing ttbar4b SF to 1.0")
-        JCM_model.fixParameter_combination({
+        params_to_fix = {
             "threeTightTagFraction": threeTightTagFraction,
-            "tt4bSF": 1.0
-        })
+            "tt4bSF": 1.0,
+        }
 
     else:
         logger.info(f"Fixing threeTightTagFraction to {threeTightTagFraction:.6f}")
-        JCM_model.fixParameter_combination({
-            "threeTightTagFraction": threeTightTagFraction
-        })
+        params_to_fix = {
+            "threeTightTagFraction": threeTightTagFraction,
+        }
+
+    if jcm_config.get("float_t", False):
+        params_to_fix.pop("threeTightTagFraction", None)
+        # Seed the fit at the value we'd otherwise have pinned (yaml override
+        # or auto-formula). Without this, the fit starts from the model's
+        # hardcoded default of 1000 — far from any sensible converged value.
+        JCM_model.threeTightTagFraction["default"] = threeTightTagFraction
+        logger.info(f"Floating threeTightTagFraction as a free fit parameter "
+                    f"(jcm_config.float_t=True), seed = {threeTightTagFraction:.6f}")
+
+    JCM_model.fixParameter_combination(params_to_fix)
 
     return JCM_model
 
@@ -934,7 +954,7 @@ def main():
         bin_data = process_histograms(*histograms, args, logger, jcm_config)
 
         # Set up the model
-        JCM_model = setup_model(bin_data, args, logger)
+        JCM_model = setup_model(bin_data, args, logger, jcm_config=jcm_config)
 
         # Perform the fit
         residuals, pulls = perform_fit(JCM_model, bin_data[:3], args, logger)

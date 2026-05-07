@@ -46,7 +46,7 @@ class HemiMixer(Skimmer4b):
                 use_topk_matching: bool = False,
                 k_neighbors: int = 10,
                 collision_mode: str = "retry",
-                default_rank: int = 0,
+                default_rank = 0,                 # int or [rp, rn] / (rp, rn) for per-side ranks
                 object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
                 *args, **kwargs):
         super().__init__(

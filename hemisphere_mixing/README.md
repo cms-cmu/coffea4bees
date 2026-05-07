@@ -145,7 +145,7 @@ The default nearest-neighbor (k=1) matching has two limitations:
 Both reduce to the same primitive: **query the top-K nearest neighbors per hemisphere and choose a rank per hemisphere.** With that primitive:
 
 - Same-event collisions can be resolved by walking down the rank list to the next non-colliding pair.
-- The dataset can be expanded by running multiple times with `default_rank = 0, 1, 2, …` and recording the rank used in each output picoAOD.
+- The dataset can be expanded by running multiple times with different rank choices, recording the rank used in each output picoAOD. Per-side ranks `[rp, rn]` give K² alternative datasets per input event (vs. K with a single shared rank).
 
 ### Difference
 
@@ -154,12 +154,27 @@ Two new knobs on top of the standard 4D / boost-corrected matching:
 | Knob | Meaning |
 |------|---------|
 | `k_neighbors` (K) | Query the top-K neighbors instead of just the nearest. K=10 is plenty for collision retry; bump higher for dataset expansion. |
-| `default_rank` (R) | Select the R-th nearest neighbor as the primary pick. R=0 reproduces nearest-neighbor; R>0 picks further neighbors (future dataset-expansion knob). |
+| `default_rank` | Either an int R (same rank for both pos and neg) or a 2-element list `[rp, rn]` (independent ranks per side). 0 = nearest neighbor; >0 picks further neighbors (dataset-expansion knob). |
 | `collision_mode` | Policy when pos/neg hemispheres of an input collide on the library source event: `ignore` (keep), `drop` (discard the input event), or `retry` (rank-walk to a non-colliding pair). |
 
-When `collision_mode: retry` and a pos/neg pair collide at rank R, the algorithm searches `(rp, rn) ∈ [R..K-1]²` for the smallest-distance non-colliding pair. If none exists within K (vanishingly rare in practice), the event is dropped.
+#### Valid forms of `default_rank`
 
-The chosen rank is written to the output as `posHemiNew_match_rank` / `negHemiNew_match_rank` so downstream code can stratify by rank.
+| Form | Meaning |
+|------|---------|
+| `0` | int — pos and neg both use rank 0 (nearest neighbor). Default. |
+| `2` | int — pos and neg both use rank 2 (3rd-nearest). |
+| `[0, 0]` | list `[rp, rn]` — explicit per-side; equivalent to `0`. |
+| `[0, 1]` | pos uses rank 0, neg uses rank 1. |
+| `[1, 0]` | pos uses rank 1, neg uses rank 0 — **distinct event** from `[0, 1]` since pos/neg are physically different (thrust direction). |
+| `[2, 5]` | mixed: pos = 3rd-nearest, neg = 6th-nearest. |
+
+Each entry must satisfy `0 ≤ r < k_neighbors`. Lists must have exactly two entries.
+
+#### Retry semantics
+
+When `collision_mode: retry` and a pos/neg pair collide at the configured `[rp_default, rn_default]`, the algorithm searches `(rp, rn) ∈ [rp_default..K-1] × [rn_default..K-1]` for the smallest-`pos_dist + neg_dist` non-colliding pair. If none exists within K (vanishingly rare in practice), the event is dropped. Retry never goes *below* the configured default rank on either side, so the rank label keeps its "used at least the R-th neighbor on that side" meaning.
+
+The chosen rank is written to the output as `posHemiNew_match_rank` / `negHemiNew_match_rank` (per-hemi) so downstream code can stratify by rank.
 
 ### Benefits
 
@@ -176,8 +191,16 @@ config:
   use_topk_matching: True   # opt in to top-K matching
   k_neighbors: 10           # K for the kd-tree query
   collision_mode: retry     # ignore | drop | retry
-  default_rank: 0           # 0 = nearest; >0 picks further neighbors
+  default_rank: 0           # int (same rank for pos & neg) or [rp, rn] for independent per-side ranks
 ```
+
+For dataset expansion, run repeatedly with different `default_rank` values, e.g.:
+
+```yaml
+default_rank: [0, 1]   # pos uses nearest, neg uses 2nd-nearest — a distinct event from [1, 0]
+```
+
+With `k_neighbors: 10`, this gives K² = 100 alternative `(rp, rn)` pairs per input event. The useful subset is whichever combinations have small enough `match_dist` to remain physically reasonable — worth a study before committing to running all of them.
 
 Defaults: `use_topk_matching: False` (legacy nearest-neighbor; events whose pos/neg hemispheres collide on the library source event are dropped).
 
