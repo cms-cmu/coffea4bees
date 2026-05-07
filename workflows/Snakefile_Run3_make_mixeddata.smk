@@ -68,6 +68,14 @@ else:
     raise ValueError(f"Unknown mode: {config['mode']!r}; expected 'nominal' or 'quadjet_run2'")
 config.setdefault('histogram_datasets',
     ['TTToSemiLeptonic', 'TTToHadronic', 'TTTo2L2Nu', 'data', config['dataset_name']])
+config.setdefault('jcm_config',
+    "coffea4bees/analysis/jcm_tools/metadata/mixeddata_all_config_Run3.yml")
+# When fitting JCM with mixed-data as the 3b stand-in, the nTightTags-based
+# auto-derivation of `t` doesn't apply and the nominal-data value isn't
+# physically the right normalization either. Pass -float_t to let the fit
+# derive t from data4b/(JCM·mixed_3b) normalization. Default off to preserve
+# legacy fit results.
+config.setdefault('float_t', False)
 
 # Auto-detect HTCondor; override with --config run_on_condor=True/False.
 _roc = config.setdefault('run_on_condor',
@@ -88,7 +96,9 @@ module analysis:
 
 
 rule all:
-    input: f"{out}study_mixeddata_all{_rank_suffix}.coffea"
+    input:
+        f"{out}study_mixeddata_all{_rank_suffix}.coffea",
+        f"{out}jcm_{config['mode']}{_rank_suffix}/jetCombinatoricModel_SB_.yml",
 
 
 rule patch_skimmer_config:
@@ -298,3 +308,55 @@ use rule merging_coffea_files from analysis as merge_histograms with:
     params:
         run_performance = False
     log: f"{out}logs/merge_histograms.log"
+
+
+# ── JCM fitting ───────────────────────────────────────────────────────────────
+# Fits the jet-combinatoric model (JCM) from the merged histogram coffea.
+# The JCM config references a 3b dataset name (`data3bName`); the committed
+# yaml hardcodes `mixeddata_all`, so we sed-patch it to track our actual
+# `mixeddata_all_rank{N}` dataset.
+
+rule create_jcm_config:
+    """Patch JCM config so data3bName matches our installed dataset name and
+    set float_t per snakemake config. float_t lets the fit derive the JCM
+    normalization t from data4b/(JCM·mixed_3b) instead of pinning it."""
+    input:  config['jcm_config']
+    output: f"{out}jcm_config_{config['mode']}.yml"
+    params:
+        dataset_name = config['dataset_name'],
+        float_t      = "true" if str(config['float_t']).lower() in ('true', '1', 'yes') else "false",
+    shell:
+        """
+        sed -e 's|data3bName:.*|data3bName: {params.dataset_name}|' \
+            -e 's|^float_t:.*|float_t: {params.float_t}|' \
+            {input} > {output}
+        grep -q "^float_t:" {output} || printf '\nfloat_t: %s\n' "{params.float_t}" >> {output}
+        echo "Patched JCM config:"
+        grep -E "data3bName|float_t" {output}
+        """
+
+
+rule fit_JCM:
+    """Fit the JCM weights from the merged histograms. Output yaml is the
+    versioned JCM artifact for this mixed-data dataset."""
+    input:
+        hist       = ancient(f"{out}histAll_{config['mode']}{_rank_suffix}.coffea"),
+        jcm_config = f"{out}jcm_config_{config['mode']}.yml",
+    output: f"{out}jcm_{config['mode']}{_rank_suffix}/jetCombinatoricModel_SB_.yml"
+    container: config['analysis_container']
+    params:
+        output_dir = f"{out}jcm_{config['mode']}{_rank_suffix}/",
+        label      = f"{config['mode']}, rank={_rank}",
+    log: f"{out}logs/fit_JCM.log"
+    shell:
+        """
+        export MPLCONFIGDIR="/tmp/matplotlib"
+        mkdir -p $MPLCONFIGDIR
+        echo "Fitting JCM ({params.label})" 2>&1 | tee -a {log}
+        python coffea4bees/analysis/jcm_tools/make_jcm_weights.py \
+            -o {params.output_dir} \
+            -i {input.hist} \
+            -r SB \
+            --jcm_config {input.jcm_config} 2>&1 | tee -a {log}
+        ls {params.output_dir} 2>&1 | tee -a {log}
+        """

@@ -9,7 +9,8 @@ taglabel3b_tt: threeTag
 selJets: selJets_noJCM.n
 tagJets: tagJets_noJCM.n
 
-threeTightTagFraction: 0.4726707382464659
+threeTightTagFraction: 0.4726707382464659   # acts as the fit seed when float_t is true
 
 ignoreTT: True
 subtract3bTT: False
+float_t: true                    # mixed-data fit: derive t from data4b/(JCM·mixed_3b) normalization

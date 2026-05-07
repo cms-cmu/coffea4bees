@@ -476,22 +476,20 @@ class jetCombinatoricModel:
                 logger.warning(f"Error calculating parameter error: {e}")
                 sigma_p1.append(0.001)  # Default error
 
-        # Update parameter values and errors
-        for ip, parameter in enumerate(self.parameters):
-            if parameter["fix"] is not None:
-                parameter["value"] = parameter["fix"]
-                parameter["error"] = 0
-                continue
+        # Update parameter values and errors. Iterate over self.fit_parameters
+        # (the free-only list, which is in the same order popt was built from)
+        # so popt[i] always lines up with fit_parameters[i] regardless of where
+        # the gaps fall. Iterating over self.parameters with parameter["index"]
+        # only worked when the free params happened to occupy indices [0..N-1].
+        for popt_idx, parameter in enumerate(self.fit_parameters):
+            parameter["value"] = popt[popt_idx]
+            parameter["error"] = sigma_p1[popt_idx]
 
-            idx = parameter["index"]
-            if idx < len(popt):
-                parameter["value"] = popt[idx]
-                parameter["error"] = sigma_p1[idx]
-                # Update fit parameters for calls to other functions
-                for i, param in enumerate(self.fit_parameters):
-                    if param["index"] == idx:
-                        self.fit_parameters[i] = parameter
-                        break
+        # Fixed parameters already have value=fix from fixParameters(); ensure
+        # error is zeroed for completeness.
+        for parameter in self.parameters:
+            if parameter["fix"] is not None:
+                parameter["error"] = 0
 
         # Calculate fit quality metrics
         self.fit_chi2 = np.sum(
