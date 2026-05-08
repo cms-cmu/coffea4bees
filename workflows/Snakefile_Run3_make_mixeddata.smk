@@ -72,10 +72,17 @@ config.setdefault('jcm_config',
     "coffea4bees/analysis/jcm_tools/metadata/mixeddata_all_config_Run3.yml")
 # When fitting JCM with mixed-data as the 3b stand-in, the nTightTags-based
 # auto-derivation of `t` doesn't apply and the nominal-data value isn't
-# physically the right normalization either. Pass -float_t to let the fit
-# derive t from data4b/(JCM·mixed_3b) normalization. Default off to preserve
-# legacy fit results.
-config.setdefault('float_t', False)
+# physically the right normalization either. Default on here — this
+# snakefile is mixed-data-specific. Override to False if you want to compare
+# against a pinned-t fit.
+config.setdefault('float_t', True)
+
+# When generating SvB / SvB_FeynNet friend trees as part of this workflow,
+# skip the data/TT/HH per-year jobs (which don't change with rank) and
+# merge the new mixed-data friend trees against the legacy combined JSONs
+# instead. Override with --config reuse_legacy_friends=False to do a full
+# regenerate-from-scratch.
+config.setdefault('reuse_legacy_friends', True)
 
 # Auto-detect HTCondor; override with --config run_on_condor=True/False.
 _roc = config.setdefault('run_on_condor',
@@ -94,11 +101,31 @@ module analysis:
     snakefile: "rules/analysis.smk"
     config: config
 
+# SvB / SvB_FeynNet friend-tree producers. Module-import so snakemake knows
+# how to make their installed JSONs from the just-installed mixeddata dataset.
+# `use rule` statements live below `rule all` so the wildcard-bearing per-job
+# rules don't shadow our default target.
+module svb_friends:
+    snakefile: "Snakefile_SvB_friendtrees_Run3.smk"
+    config: config
+
+module feynet_friends:
+    snakefile: "Snakefile_SvBFeynNet_friendtrees_Run3.smk"
+    config: config
+
+# Rank-suffixed friend-JSON install paths (mode-independent, computed the
+# same way the producer snakefiles do). Targeting these in `rule all` makes
+# the friend trees build automatically after install_mixeddata_dataset.
+SVB_FRIEND_JSON    = f"coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data{_rank_suffix}.json"
+FEYNET_FRIEND_JSON = f"coffea4bees/metadata/datasets_HH4b_Run3/SvBFeynNetfriend_mixeddata_data{_rank_suffix}.json"
+
 
 rule all:
     input:
         f"{out}study_mixeddata_all{_rank_suffix}.coffea",
         f"{out}jcm_{config['mode']}{_rank_suffix}/jetCombinatoricModel_SB_.yml",
+        SVB_FRIEND_JSON,
+        FEYNET_FRIEND_JSON,
 
 
 rule patch_skimmer_config:
@@ -360,3 +387,22 @@ rule fit_JCM:
             --jcm_config {input.jcm_config} 2>&1 | tee -a {log}
         ls {params.output_dir} 2>&1 | tee -a {log}
         """
+
+
+# ── SvB / SvB_FeynNet friend trees ────────────────────────────────────────────
+# Re-export the per-job and merge/install rules from the friend-tree
+# Snakefiles. Their `dataset_name` is shared via the module config dict, so
+# they read picoAODs from our just-installed mixeddata_all_rank{N} dataset
+# and write to rank-suffixed install paths.
+
+use rule make_SvB_friendtrees_mixeddata  from svb_friends
+use rule make_SvB_friendtrees_HH         from svb_friends
+use rule merge_SvB_friendtrees_mixeddata from svb_friends
+use rule install_SvB_friend_json         from svb_friends
+
+use rule make_SvBFeynNet_friendtrees_data       from feynet_friends
+use rule make_SvBFeynNet_friendtrees_mixeddata  from feynet_friends
+use rule make_SvBFeynNet_friendtrees_ttbar      from feynet_friends
+use rule make_SvBFeynNet_friendtrees_HH         from feynet_friends
+use rule merge_SvBFeynNet_friendtrees           from feynet_friends
+use rule install_SvBFeynNet_friend_json         from feynet_friends
