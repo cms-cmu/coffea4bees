@@ -13,9 +13,13 @@ CERNUSER = config['cern_user']
 WFS_BASE = "coffea4bees/classifier/config/workflows/HH4b_Run3"
 CLASSIFIER_CONFIG_PATHS = "coffea4bees"
 
-# Container images
-CLASSIFIER_GPU = "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:classifier_latest"
-CLASSIFIER_CPU = "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:classifier_cpu_latest"
+# Container images. The default GPU image targets recent CUDA (good for
+# rogue / lxplus). cmslpcgpu* nodes have older P100s (sm60) and need a
+# Chuyuan-built variant; the lpc_gpu snakemake profile overrides this knob.
+config.setdefault('classifier_gpu_tag', 'classifier_latest')
+config.setdefault('classifier_cpu_tag', 'classifier_cpu_latest')
+CLASSIFIER_GPU = f"/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:{config['classifier_gpu_tag']}"
+CLASSIFIER_CPU = f"/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:{config['classifier_cpu_tag']}"
 
 # Entrypoint sourced inside the container before running commands
 INIT = "set -e && set +u && source /entrypoint.sh && set -u && export PYTHONUNBUFFERED=1"
@@ -51,44 +55,62 @@ out = config['output_path']
 TRAIN_YML_TEMPLATE    = f"{WFS_BASE}/MvD/train.yml"
 EVALUATE_YML_TEMPLATE = f"{WFS_BASE}/MvD/evaluate.yml"
 
+# Default metadata path. Legacy 'mixeddata_all' uses the archive yaml (which
+# has both data/TT/mixeddata_all entries under a `datasets:` wrapper). For
+# non-legacy dataset_name (e.g. mixeddata_all_rank0), use the parent dir
+# in dir-mode — the merger picks up the rank-suffixed yaml at top level
+# alongside data.yml and TT.yml. Don't use parent dir for legacy because
+# the parent's mixeddata_all.yml has top-key `mixeddata_all_noTT`, which
+# wouldn't match the trainer's `mixeddata_all` lookup.
+LEGACY_METADATA = "coffea4bees/metadata/datasets_HH4b_Run3/archive/datasets_HH4b_Run3_2025_Run3_skims"
+RANK_METADATA   = "coffea4bees/metadata/datasets_HH4b_Run3/"
+_metadata_path  = LEGACY_METADATA if config['dataset_name'] == 'mixeddata_all' else RANK_METADATA
+
+
 rule create_train_yml:
     """Patch the committed train.yml template with installed JCM / friend
-    paths and inject --data-mixed-all-name so the trainer reads from the
-    configured dataset_name (default 'mixeddata_all', backward compatible)."""
+    paths, inject --data-mixed-all-name so the trainer reads from the
+    configured dataset_name, and redirect --metadata to a path that has
+    that dataset_name registered."""
     input:
         template = TRAIN_YML_TEMPLATE,
         jcm      = config['jcm_install_path'],
         json     = config['classifier_inputs_install_path'],
     output: f"{out}train.yml"
     params:
-        dataset_name = config['dataset_name']
+        dataset_name  = config['dataset_name'],
+        metadata_path = _metadata_path,
     shell:
         """
         sed \
             -e 's|--JCM-weight.*|--JCM-weight "source:mixed_all" {input.jcm}@@JCM_weights|' \
             -e 's|--friends.*|--friends "" {input.json}@@HCR_input|' \
+            -e 's|--metadata coffea4bees/metadata/datasets_HH4b_Run3/archive/datasets_HH4b_Run3_2025_Run3_skims|--metadata {params.metadata_path}|' \
             -e '/--data-source mixed_all detector/a\\      - --data-mixed-all-name {params.dataset_name}' \
             {input.template} > {output}
         echo "Patched train.yml:"
-        grep -E "JCM-weight|friends|data-mixed-all-name" {output}
+        grep -E "JCM-weight|friends|data-mixed-all-name|metadata" {output}
         """
 
 
 rule create_evaluate_yml:
     """Patch the committed evaluate.yml template to inject
     --data-mixed-all-name so evaluation reads from the same dataset as
-    training."""
+    training, and redirect --metadata likewise."""
     input:
         template = EVALUATE_YML_TEMPLATE,
     output: f"{out}evaluate.yml"
     params:
-        dataset_name = config['dataset_name']
+        dataset_name  = config['dataset_name'],
+        metadata_path = _metadata_path,
     shell:
         """
-        sed -e '/--data-source detector mixed_all/a\\      - --data-mixed-all-name {params.dataset_name}' \
+        sed \
+            -e 's|--metadata coffea4bees/metadata/datasets_HH4b_Run3/archive/datasets_HH4b_Run3_2025_Run3_skims|--metadata {params.metadata_path}|' \
+            -e '/--data-source detector mixed_all/a\\      - --data-mixed-all-name {params.dataset_name}' \
             {input.template} > {output}
         echo "Patched evaluate.yml:"
-        grep -E "data-source|data-mixed-all-name" {output}
+        grep -E "data-source|data-mixed-all-name|metadata" {output}
         """
 
 
