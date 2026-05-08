@@ -26,6 +26,14 @@ import shutil
 _roc = config.setdefault('run_on_condor', shutil.which("condor_submit") is not None)
 config['run_on_condor'] = str(_roc).lower() not in ('false', '0', 'no')
 
+# Mixed-data dataset name and derived suffix used to keep per-rank EOS
+# outputs (trained MvD model, MvD/FvT friend trees) distinct. Empty for the
+# legacy 'mixeddata_all' so historical eos_base values are preserved.
+config.setdefault('dataset_name', 'mixeddata_all')
+_dsn_tag = "" if config['dataset_name'] == "mixeddata_all" \
+           else config['dataset_name'].removeprefix("mixeddata_all_") or config['dataset_name']
+_eos_suffix = f"_{_dsn_tag}" if _dsn_tag else ""
+
 if config["mode"] == "nominal":
     config.setdefault('label', '')
     config.setdefault('histogram_config',
@@ -33,7 +41,7 @@ if config["mode"] == "nominal":
     config.setdefault('classifier_config',
         "coffea4bees/analysis/metadata/HH4b_classifier_inputs_Run3.yml")
     config.setdefault('eos_base',
-        "root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_v2")
+        f"root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_v2{_eos_suffix}")
 
 elif config["mode"] == "quadjet_run2":
     config.setdefault('label', '_quadjet_run2')
@@ -42,7 +50,7 @@ elif config["mode"] == "quadjet_run2":
     config.setdefault('classifier_config',
         "coffea4bees/analysis/metadata/HH4b_classifier_inputs_Run3_quadjet_run2.yml")
     config.setdefault('eos_base',
-        "root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_quadjet_run2")
+        f"root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_quadjet_run2{_eos_suffix}")
 
 else:
     print(f"Mode {config['mode']} Not Recognized!")
