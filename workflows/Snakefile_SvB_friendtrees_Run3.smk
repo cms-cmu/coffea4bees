@@ -13,6 +13,12 @@ config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry
 config.setdefault('dataset_location',   "coffea4bees/metadata/datasets_HH4b_Run3/")
 config.setdefault('years', ['2022_EE', '2022_preEE', '2023_BPix', '2023_preBPix'])
 config.setdefault('dataset_name', 'mixeddata_all')
+# Path to the installed dataset metadata yaml. Declared as an input to
+# make_SvB_friendtrees_mixeddata so snakemake schedules the install step
+# (when invoked from Snakefile_Run3_make_mixeddata.smk) before the SvB job.
+# In standalone mode this just points at the legacy committed yaml.
+config.setdefault('install_path',
+    f"coffea4bees/metadata/datasets_HH4b_Run3/{config['dataset_name']}.yml")
 
 # When True, skip the HH per-year jobs and reuse the legacy combined SvB JSON
 # (which already contains data + HH + legacy mixeddata friend mappings) as a
@@ -53,13 +59,17 @@ rule install_SvB_friend_json:
 use rule analysis_processor from analysis as make_SvB_friendtrees_mixeddata with:
     # runner.py writes a matching .json metafile alongside each .coffea output,
     # which merge_SvB_friendtrees_mixeddata picks up via the .coffea → .json swap.
-    input: "coffea4bees/analysis/metadata/HH4b_make_friend_SvB_Run3.yml"
+    # install_path is the installed dataset yaml — required so this rule waits
+    # for install_mixeddata_dataset when run inside the make-mixeddata pipeline.
+    input:
+        config_yml   = "coffea4bees/analysis/metadata/HH4b_make_friend_SvB_Run3.yml",
+        install_path = config['install_path'],
     output: f"{SvB_OUT}SvB_{config['dataset_name']}__{{year}}.coffea"
     log: f"{SvB_OUT}logs/SvB_{config['dataset_name']}__{{year}}.log"
     params:
         datasets              = config['dataset_name'],
         years                 = "{year}",
-        config                = lambda wildcards, input: input[0],
+        config                = lambda wildcards, input: input.config_yml,
         processor             = "coffea4bees/analysis/processors/processor_HH4b.py",
         datasets_file         = config['dataset_location'],
         blind                 = False,

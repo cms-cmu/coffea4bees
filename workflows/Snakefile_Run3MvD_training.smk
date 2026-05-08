@@ -14,9 +14,16 @@ WFS_BASE = "coffea4bees/classifier/config/workflows/HH4b_Run3"
 CLASSIFIER_CONFIG_PATHS = "coffea4bees"
 
 # Container images. The default GPU image targets recent CUDA (good for
-# rogue / lxplus). cmslpcgpu* nodes have older P100s (sm60) and need a
-# Chuyuan-built variant; the lpc_gpu snakemake profile overrides this knob.
-config.setdefault('classifier_gpu_tag', 'classifier_latest')
+# rogue / lxplus / falcon). cmslpcgpu* nodes have older P100s (sm60) and
+# need a Chuyuan-built variant; auto-detect by hostname so users on
+# cmslpcgpu* don't have to remember to override. Override with
+# --config classifier_gpu_tag=... if needed.
+import socket as _socket
+_default_gpu_tag = (
+    'classifier_lpc_latest' if 'cmslpcgpu' in _socket.gethostname()
+    else 'classifier_latest'
+)
+config.setdefault('classifier_gpu_tag', _default_gpu_tag)
 config.setdefault('classifier_cpu_tag', 'classifier_cpu_latest')
 CLASSIFIER_GPU = f"/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:{config['classifier_gpu_tag']}"
 CLASSIFIER_CPU = f"/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:{config['classifier_cpu_tag']}"
@@ -94,11 +101,16 @@ rule create_train_yml:
 
 
 rule create_evaluate_yml:
-    """Patch the committed evaluate.yml template to inject
-    --data-mixed-all-name so evaluation reads from the same dataset as
-    training, and redirect --metadata likewise."""
+    """Patch the committed evaluate.yml template:
+    - inject --data-mixed-all-name so evaluation reads from the same
+      dataset as training,
+    - redirect --metadata to a path containing that dataset_name,
+    - redirect --friends to the rank-suffixed classifier_inputs JSON
+      installed by the pipeline (the committed template hardcodes the
+      legacy nominal path which has no rank0 entries)."""
     input:
         template = EVALUATE_YML_TEMPLATE,
+        json     = config['classifier_inputs_install_path'],
     output: f"{out}evaluate.yml"
     params:
         dataset_name  = config['dataset_name'],
@@ -107,10 +119,11 @@ rule create_evaluate_yml:
         """
         sed \
             -e 's|--metadata coffea4bees/metadata/datasets_HH4b_Run3/archive/datasets_HH4b_Run3_2025_Run3_skims|--metadata {params.metadata_path}|' \
+            -e 's|--friends.*|--friends "" {input.json}@@HCR_input|' \
             -e '/--data-source detector mixed_all/a\\      - --data-mixed-all-name {params.dataset_name}' \
             {input.template} > {output}
         echo "Patched evaluate.yml:"
-        grep -E "data-source|data-mixed-all-name|metadata" {output}
+        grep -E "data-source|data-mixed-all-name|metadata|friends" {output}
         """
 
 
@@ -221,7 +234,6 @@ rule evaluate:
             template "{{{params.template_str}}}" {input.evaluate_yml} \
             -from {params.wfs_base}/common.yml \
             -setting Monitor "address: '127.0.0.1:$PORT'" \
-            -flag debug \
             2>&1 | tee -a {log}
         touch {output.flag}
         """

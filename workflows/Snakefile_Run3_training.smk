@@ -15,9 +15,16 @@ CLASSIFIER_CONFIG_PATHS = "coffea4bees"
 
 # Container images
 # Container images. The default GPU image targets recent CUDA (good for
-# rogue / lxplus). cmslpcgpu* nodes have older P100s (sm60) and need a
-# Chuyuan-built variant; the lpc_gpu snakemake profile overrides this knob.
-config.setdefault('classifier_gpu_tag', 'classifier_latest')
+# rogue / lxplus / falcon). cmslpcgpu* nodes have older P100s (sm60) and
+# need a Chuyuan-built variant; auto-detect by hostname so users on
+# cmslpcgpu* don't have to remember to override. Override with
+# --config classifier_gpu_tag=... if needed.
+import socket as _socket
+_default_gpu_tag = (
+    'classifier_lpc_latest' if 'cmslpcgpu' in _socket.gethostname()
+    else 'classifier_latest'
+)
+config.setdefault('classifier_gpu_tag', _default_gpu_tag)
 config.setdefault('classifier_cpu_tag', 'classifier_cpu_latest')
 CLASSIFIER_GPU = f"/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:{config['classifier_gpu_tag']}"
 CLASSIFIER_CPU = f"/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:{config['classifier_cpu_tag']}"

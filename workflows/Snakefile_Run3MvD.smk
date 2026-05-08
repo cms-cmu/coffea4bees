@@ -135,6 +135,7 @@ rule create_histogram_config_wSvB:
         """
         sed \
             -e 's|  run_SvB.*|  run_SvB: true|' \
+            -e 's|  worker_memory:.*|  worker_memory: 8GB|' \
             {input.config_file} > {output}
         echo "Patched config:"
         grep -E "run_SvB" {output}
@@ -230,6 +231,7 @@ rule create_histogram_config_wJCM:
             -e 's|  JCM_file.*|  JCM_file: {input.jcm_file}|' \
             -e 's|  apply_MvD_weight.*|  apply_MvD_weight: false|' \
             -e 's|  apply_MvD:[^_].*|  apply_MvD: true|' \
+            -e 's|  worker_memory:.*|  worker_memory: 8GB|' \
             {input.config_file} > {output}
         echo "Patched config:"
         grep -E "run_SvB|JCM_file|apply_MvD" {output}
@@ -347,6 +349,7 @@ rule create_histogram_config_MvD:
             -e 's|  JCM_file.*|  JCM_file: {input.jcm_file}|' \
             -e 's|  apply_MvD_weight.*|  apply_MvD_weight: true\\n  plot_ttbar_with_MvD_weights: true|' \
             -e 's|  apply_MvD:[^_].*|  apply_MvD: true|' \
+            -e 's|  worker_memory:.*|  worker_memory: 8GB|' \
             {input.config_file} > {output}
         echo "Patched config:"
         grep -E "run_SvB|JCM_file|apply_MvD|plot_ttbar_with_MvD" {output}
