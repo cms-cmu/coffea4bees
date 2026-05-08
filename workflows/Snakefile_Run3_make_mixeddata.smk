@@ -279,14 +279,25 @@ rule all_histograms:
     input: f"{out}histAll_{config['mode']}{_rank_suffix}.coffea"
 
 
+# Shared (rank-independent, mode-specific) location for data + TT histograms
+# and the patched histogram config. The quadjet selection algorithm differs
+# by mode so data/TT outputs ARE mode-specific, but they're identical across
+# rank runs — putting them in a shared dir means subsequent ranks reuse them
+# instead of re-running 16 condor jobs.
+SHARED_HISTS_OUT = f"output/Run3_mixeddata_shared_{config['mode']}/"
+SHARED_DATASETS  = ['TTToSemiLeptonic', 'TTToHadronic', 'TTTo2L2Nu', 'data']
+
+
 rule create_histogram_config:
     """Patch the histogram config to (1) force fourTag_use_tight: false in
     both modes, and (2) bump worker_memory to give the dask merge enough
     headroom on cmslpc (the committed yaml ships 5GB, ~equal to the
-    submit-slot cap, which OOMs during merge). Done as a patch so the
-    committed yaml — shared with Snakefile_Run3.smk — stays unchanged."""
+    submit-slot cap, which OOMs during merge). Output goes to the shared
+    (rank-independent) dir so per-rank runs all use the same patched yaml.
+    Done as a patch so the committed yaml — shared with Snakefile_Run3.smk —
+    stays unchanged."""
     input:  config['histogram_config']
-    output: f"{out}histogram_config_{config['mode']}.yml"
+    output: f"{SHARED_HISTS_OUT}histogram_config.yml"
     shell:
         """
         sed -e 's|  fourTag_use_tight:.*|  fourTag_use_tight: false|' \
@@ -299,14 +310,40 @@ rule create_histogram_config:
         """
 
 
-use rule analysis_processor from analysis as make_histograms with:
+# Data + TTbar histograms — rank-independent path so multiple rank runs reuse
+# the same outputs.
+use rule analysis_processor from analysis as make_histograms_shared with:
     input:
-        config_file = f"{out}histogram_config_{config['mode']}.yml",
+        config_file = f"{SHARED_HISTS_OUT}histogram_config.yml",
+    output: f"{SHARED_HISTS_OUT}histograms/hist_{{dataset}}__{{year}}.coffea"
+    log:    f"{SHARED_HISTS_OUT}logs/hist_{{dataset}}__{{year}}.log"
+    wildcard_constraints:
+        dataset = "|".join(SHARED_DATASETS),
+        year    = "|".join(config['years']),
+    params:
+        datasets              = "{dataset}",
+        years                 = "{year}",
+        config                = lambda wildcards, input: input.config_file,
+        processor             = "coffea4bees/analysis/processors/processor_HH4b.py",
+        datasets_file         = config['dataset_location'],
+        blind                 = False,
+        run_performance       = False,
+        friends               = "coffea4bees/metadata/friends_HH4b.yml",
+        run_on_condor         = config['run_on_condor'],
+        extra_arguments       = "",
+        run_container_wrapper = "./run_container",
+        dashboard_address     = 0
+
+
+# Mixed-data histogram — rank-specific path (different per dataset_name).
+use rule analysis_processor from analysis as make_histograms_mixeddata with:
+    input:
+        config_file = f"{SHARED_HISTS_OUT}histogram_config.yml",
         dataset_yml = config['install_path'],
     output: f"{out}histograms/hist_{{dataset}}__{{year}}.coffea"
     log:    f"{out}logs/hist_{{dataset}}__{{year}}.log"
     wildcard_constraints:
-        dataset = "|".join(config['histogram_datasets']),
+        dataset = config['dataset_name'],
         year    = "|".join(config['years']),
     params:
         datasets              = "{dataset}",
@@ -326,10 +363,15 @@ use rule analysis_processor from analysis as make_histograms with:
 use rule merging_coffea_files from analysis as merge_histograms with:
     input:
         expand(
-            f"{out}histograms/hist_{{dataset}}__{{year}}.coffea",
-            dataset=config['histogram_datasets'],
+            f"{SHARED_HISTS_OUT}histograms/hist_{{dataset}}__{{year}}.coffea",
+            dataset=SHARED_DATASETS,
             year=config['years'],
-        )
+        ),
+        expand(
+            f"{out}histograms/hist_{{dataset_name}}__{{year}}.coffea",
+            dataset_name=config['dataset_name'],
+            year=config['years'],
+        ),
     output: f"{out}histAll_{config['mode']}{_rank_suffix}.coffea"
     container: config['analysis_container']
     params:
