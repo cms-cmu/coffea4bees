@@ -13,15 +13,33 @@ config.setdefault('dataset_name', 'mixeddata_all')
 config.setdefault('datasets', ['TTToSemiLeptonic', 'TTToHadronic', 'TTTo2L2Nu', 'data', config['dataset_name']])
 config.setdefault('years', ['2022_EE', '2022_preEE', '2023_BPix', '2023_preBPix'])
 
-if config["mode"] == "nominal":
-    config.setdefault('output_path', "output/Run3_MvD/")
-    config.setdefault('jcm_install_path', "coffea4bees/analysis/weights/JCM/Run3_MvD/jetCombinatoricModel_SB_.yml")
-    config.setdefault('classifier_inputs_install_path', "coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3.json")
+# Build a tag combining mode and dataset_name so install paths don't collide
+# between (mode, rank) runs. Empty for legacy nominal + 'mixeddata_all' so
+# historical install paths are preserved unchanged.
+_mode_tag    = "" if config['mode'] == "nominal" else config['mode']
+_dsn_tag     = "" if config['dataset_name'] == "mixeddata_all" \
+               else config['dataset_name'].removeprefix("mixeddata_all_") or config['dataset_name']
+_install_tag = "_".join(filter(None, [_mode_tag, _dsn_tag]))
 
+# When running on a non-legacy dataset_name (e.g. mixeddata_all_rank0),
+# default to reusing the legacy data/TT classifier inputs instead of
+# regenerating them. data/TT inputs don't change with rank, so this saves
+# 16 condor jobs per rank-suffixed run. Override with --config
+# reuse_legacy_classifier_inputs=False to force a full regenerate.
+if _dsn_tag:
+    config.setdefault('reuse_legacy_classifier_inputs', True)
+
+if config["mode"] == "nominal":
+    _output_subdir = f"Run3_MvD{'_' + _dsn_tag if _dsn_tag else ''}"
 elif config["mode"] == "quadjet_run2":
-    config.setdefault('output_path', "output/Run3_MvD_quadjet_run2/")
-    config.setdefault('jcm_install_path', "coffea4bees/analysis/weights/JCM/Run3_MvD/jetCombinatoricModel_SB_quadjet_run2.yml")
-    config.setdefault('classifier_inputs_install_path', "coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3_quadjet_run2.json")
+    _output_subdir = f"Run3_MvD_quadjet_run2{'_' + _dsn_tag if _dsn_tag else ''}"
+
+config.setdefault('output_path', f"output/{_output_subdir}/")
+config.setdefault('jcm_install_path',
+    f"coffea4bees/analysis/weights/JCM/Run3_MvD/jetCombinatoricModel_SB_{_install_tag}.yml")
+config.setdefault('classifier_inputs_install_path',
+    f"coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3"
+    f"{'_' + _install_tag if _install_tag else ''}.json")
 
 out = config['output_path']
 
@@ -40,6 +58,16 @@ module classifier_inputs:
 
 config.setdefault('jcm_config', "coffea4bees/analysis/jcm_tools/metadata/mixeddata_all_config_Run3.yml")
 config.setdefault('plots_metadata', "coffea4bees/plots/metadata/plotsAll_MvD.yml")
+
+# SvB / SvB_FeynNet friend JSONs are mode-independent (one fit covers both
+# modes) but rank-dependent — rank0 events have different UUIDs than rank1
+# / legacy. Defaults pull from the rank-suffixed install paths produced by
+# Snakefile_SvB_friendtrees_Run3.smk and Snakefile_SvBFeynNet_friendtrees_Run3.smk.
+_svb_install_tag = f"_{_dsn_tag}" if _dsn_tag else ""
+config.setdefault('svb_friend_json',
+    f"coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data{_svb_install_tag}.json")
+config.setdefault('feynet_friend_json',
+    f"coffea4bees/metadata/datasets_HH4b_Run3/SvBFeynNetfriend_mixeddata_data{_svb_install_tag}.json")
 
 rule all:
     input:
@@ -85,8 +113,8 @@ use rule install_classifier_inputs    from classifier_inputs
 rule create_friends_wSvB:
     input:
         friends_yml    = "coffea4bees/metadata/friends_HH4b.yml",
-        svb_json       = "coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data.json",
-        feynet_json    = "coffea4bees/metadata/datasets_HH4b_Run3/SvBFeynNetfriend_mixeddata_data.json",
+        svb_json       = config['svb_friend_json'],
+        feynet_json    = config['feynet_friend_json'],
     output: f"{out}friends_wSvB.yml"
     shell:
         """
@@ -290,8 +318,8 @@ rule install_JCM:
 rule create_friends_MvD:
     input:
         friends_yml = "coffea4bees/metadata/friends_HH4b.yml",
-        svb_json    = "coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data.json",
-        feynet_json = "coffea4bees/metadata/datasets_HH4b_Run3/SvBFeynNetfriend_mixeddata_data.json",
+        svb_json    = config['svb_friend_json'],
+        feynet_json = config['feynet_friend_json'],
     output: f"{out}friends_MvD.yml"
     params:
         mvd_path = f"{config['eos_base']}/friend/MvD/result.json@@analysis.0.merged"
