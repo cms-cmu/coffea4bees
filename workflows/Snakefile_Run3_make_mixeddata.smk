@@ -37,14 +37,33 @@ config.setdefault('dataset_location',
     "coffea4bees/metadata/datasets_HH4b_Run3/")
 config.setdefault('years',
     ['2022_EE', '2022_preEE', '2023_BPix', '2023_preBPix'])
-config.setdefault('default_rank', 0)  # 0 = nearest neighbor; >0 selects further neighbors
+config.setdefault('default_rank', 0)  # int (same rank both sides) or [rp, rn]; 0 = nearest neighbor
 
 # Auto-namespace local outputs and EOS picoAOD location by rank to keep
 # concurrent rank runs from clobbering each other. The _rank{N} suffix is
 # always applied so directory names visibly self-document the rank used.
 # An explicit --config output_path=... or base_path=... still wins.
-_rank        = int(config['default_rank'])
-_rank_suffix = f"_rank{_rank}"
+#
+# default_rank can be:
+#   int       -> same rank for pos and neg sides; suffix _rank{N}
+#   [rp, rn]  -> independent per-side ranks;       suffix _rank{rp}_{rn}
+# When supplied via `--config`, snakemake passes everything as a string,
+# so we literal_eval first.
+import ast as _ast
+_rank_raw = config['default_rank']
+if isinstance(_rank_raw, str):
+    try:
+        _rank = _ast.literal_eval(_rank_raw)
+    except (ValueError, SyntaxError):
+        _rank = _rank_raw  # leave as-is; downstream will surface the error
+else:
+    _rank = _rank_raw
+
+if isinstance(_rank, (list, tuple)):
+    _rp, _rn = _rank
+    _rank_suffix = f"_rank{_rp}_{_rn}"
+else:
+    _rank_suffix = f"_rank{int(_rank)}"
 config.setdefault('output_path', f"output/Run3_mixeddata{_rank_suffix}/")
 config.setdefault('base_path',
     f"root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_noTT_pz{_rank_suffix}")
