@@ -14,6 +14,11 @@ config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry
 config.setdefault('dataset_location',   "coffea4bees/metadata/datasets_HH4b_Run3/")
 config.setdefault('years', ['2022_EE', '2022_preEE', '2023_BPix', '2023_preBPix'])
 config.setdefault('dataset_name', 'mixeddata_all')
+# Path to the installed dataset metadata yaml — declared as input to
+# make_SvBFeynNet_friendtrees_mixeddata so snakemake schedules the install
+# step (when invoked from Snakefile_Run3_make_mixeddata.smk) before this.
+config.setdefault('install_path',
+    f"coffea4bees/metadata/datasets_HH4b_Run3/{config['dataset_name']}.yml")
 
 # When True, skip the data, ttbar, and HH per-year jobs and reuse the legacy
 # combined SvB_FeynNet JSON (which already contains all four sources) as a
@@ -71,13 +76,17 @@ use rule analysis_processor from analysis as make_SvBFeynNet_friendtrees_data wi
 
 
 use rule analysis_processor from analysis as make_SvBFeynNet_friendtrees_mixeddata with:
-    input: "coffea4bees/analysis/metadata/HH4b_make_friend_SvBFeynNet_Run3.yml"
+    # install_path declared so this rule waits for install_mixeddata_dataset
+    # when invoked from Snakefile_Run3_make_mixeddata.smk.
+    input:
+        config_yml   = "coffea4bees/analysis/metadata/HH4b_make_friend_SvBFeynNet_Run3.yml",
+        install_path = config['install_path'],
     output: f"{FEYNNET_OUT}SvBFeynNet_{config['dataset_name']}__{{year}}.coffea"
     log: f"{FEYNNET_OUT}logs/SvBFeynNet_{config['dataset_name']}__{{year}}.log"
     params:
         datasets              = config['dataset_name'],
         years                 = "{year}",
-        config                = lambda wildcards, input: input[0],
+        config                = lambda wildcards, input: input.config_yml,
         processor             = "coffea4bees/analysis/processors/processor_HH4b.py",
         datasets_file         = config['dataset_location'],
         blind                 = False,
