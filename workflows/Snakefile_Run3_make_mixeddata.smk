@@ -149,12 +149,21 @@ rule all:
 
 rule patch_skimmer_config:
     """Inject configured fields (base_path, default_rank) into the skimmer
-    config. Other fields are passed through unchanged."""
+    config. Other fields are passed through unchanged.
+
+    default_rank must be rendered as a single YAML token (int or list
+    literal). Snakemake's default `{{params.X}}` substitution joins list
+    values with spaces, which would yield `default_rank: 3 3` and the
+    skimmer's `int(default_rank)` would explode. So we precompute a
+    YAML-safe string here.
+    """
     input:  SKIMMER_CFG
     output: f"{out}mixeddata_Run3.yml"
     params:
         base_path    = config['base_path'],
-        default_rank = config['default_rank']
+        default_rank = (f"[{_rank[0]}, {_rank[1]}]"
+                        if isinstance(_rank, (list, tuple))
+                        else str(int(_rank))),
     shell:
         """
         sed -e 's|  base_path:.*|  base_path: {params.base_path}|' \

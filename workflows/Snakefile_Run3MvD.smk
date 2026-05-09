@@ -110,7 +110,17 @@ use rule install_classifier_inputs    from classifier_inputs
 # Use __ (double underscore) as separator between dataset and year to avoid
 # ambiguous wildcard matching, since both dataset names and years contain _.
 
+# Rank-independent shared dir for data + TT histograms. The first-pass
+# (pre-JCM, pre-MvD-weight) data + TT outputs only depend on (mode); they're
+# identical across ranks, so sharing them avoids 16 redundant condor jobs
+# per rank run. mixeddata stays rank-specific in {out}histograms/.
+SHARED_OUT_MvD = f"output/Run3_MvD_shared_{config['mode']}/"
+SHARED_DATASETS = ['TTToSemiLeptonic', 'TTToHadronic', 'TTTo2L2Nu', 'data']
+
+
 rule create_friends_wSvB:
+    """Patched friends file for the rank-specific mixeddata histogram.
+    Points SvB / SvB_FeynNet at the rank-suffixed friend JSONs."""
     input:
         friends_yml    = "coffea4bees/metadata/friends_HH4b.yml",
         svb_json       = config['svb_friend_json'],
@@ -128,9 +138,11 @@ rule create_friends_wSvB:
         """
 
 rule create_histogram_config_wSvB:
+    """Patched histogram config; mode-specific only (no rank deps), so
+    output goes to the shared dir for reuse across rank runs."""
     input:
         config_file = config['histogram_config']
-    output: f"{out}histogram_config_wSvB.yml"
+    output: f"{SHARED_OUT_MvD}histogram_config_wSvB.yml"
     shell:
         """
         sed \
@@ -141,12 +153,43 @@ rule create_histogram_config_wSvB:
         grep -E "run_SvB" {output}
         """
 
-use rule analysis_processor from analysis as make_histograms with:
+# data + TT histograms — first pass, rank-independent. Output to shared dir.
+# Friends file is the legacy committed friends_HH4b.yml (no rank-specific
+# patching needed; SvB lookups for data+TT events use the same legacy
+# `data_SvBfriend.json@@SvB` regardless of rank).
+use rule analysis_processor from analysis as make_histograms_shared with:
     input:
-        config_file  = f"{out}histogram_config_wSvB.yml",
+        config_file  = f"{SHARED_OUT_MvD}histogram_config_wSvB.yml",
+    output: f"{SHARED_OUT_MvD}histograms/hist_{{dataset}}__{{year}}.coffea"
+    log:    f"{SHARED_OUT_MvD}logs/hist_{{dataset}}__{{year}}.log"
+    wildcard_constraints:
+        dataset = "|".join(SHARED_DATASETS),
+        year    = "|".join(config['years']),
+    params:
+        datasets = "{dataset}",
+        years = "{year}",
+        config = lambda wildcards, input: input.config_file,
+        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
+        datasets_file = config['dataset_location'],
+        blind = False,
+        run_performance = False,
+        friends = "coffea4bees/metadata/friends_HH4b.yml",
+        run_on_condor = config['run_on_condor'],
+        extra_arguments = "",
+        run_container_wrapper = "./run_container",
+        dashboard_address = 0
+
+# mixeddata histogram — first pass, rank-specific. Uses the patched
+# friends_wSvB.yml so SvB lookups go to the rank-suffixed friend JSON.
+use rule analysis_processor from analysis as make_histograms_mixeddata with:
+    input:
+        config_file  = f"{SHARED_OUT_MvD}histogram_config_wSvB.yml",
         friends_file = f"{out}friends_wSvB.yml",
     output: f"{out}histograms/hist_{{dataset}}__{{year}}.coffea"
-    log: f"{out}logs/hist_{{dataset}}__{{year}}.log"
+    log:    f"{out}logs/hist_{{dataset}}__{{year}}.log"
+    wildcard_constraints:
+        dataset = config['dataset_name'],
+        year    = "|".join(config['years']),
     params:
         datasets = "{dataset}",
         years = "{year}",
@@ -164,11 +207,17 @@ use rule analysis_processor from analysis as make_histograms with:
 use rule merging_coffea_files from analysis as merge_histograms with:
     input:
         expand(
-            "{out}histograms/hist_{dataset}__{year}.coffea",
+            "{shared}histograms/hist_{dataset}__{year}.coffea",
+            shared=SHARED_OUT_MvD,
+            dataset=SHARED_DATASETS,
+            year=config['years'],
+        ),
+        expand(
+            "{out}histograms/hist_{dataset_name}__{year}.coffea",
             out=out,
-            dataset=config['datasets'],
-            year=config['years']
-        )
+            dataset_name=config['dataset_name'],
+            year=config['years'],
+        ),
     output: f"{out}histAll_Run3MvD{config['label']}.coffea"
     container: config['analysis_container']
     params:
@@ -265,10 +314,12 @@ use rule merging_coffea_files from analysis as merge_histograms_mixeddata_wJCM w
             dataset_name=config['dataset_name'],
             year=config['years']
         ),
+        # data + TT first-pass hists are rank-independent → read from the
+        # shared dir so different rank runs reuse them.
         expand(
-            "{out}histograms/hist_{dataset}__{year}.coffea",
-            out=out,
-            dataset=['TTToSemiLeptonic', 'TTToHadronic', 'TTTo2L2Nu', 'data'],
+            "{shared}histograms/hist_{dataset}__{year}.coffea",
+            shared=SHARED_OUT_MvD,
+            dataset=SHARED_DATASETS,
             year=config['years']
         )
     output: f"{out}histAll_mixeddata_wJCM{config['label']}.coffea"
@@ -410,9 +461,10 @@ use rule merging_coffea_files from analysis as merge_histograms_MvD with:
             dataset_name=config['dataset_name'],
             year=config['years']
         ),
+        # TT first-pass hists are rank-independent → read from the shared dir.
         expand(
-            "{out}histograms/hist_{dataset}__{year}.coffea",
-            out=out,
+            "{shared}histograms/hist_{dataset}__{year}.coffea",
+            shared=SHARED_OUT_MvD,
             dataset=['TTToSemiLeptonic', 'TTToHadronic', 'TTTo2L2Nu'],
             year=config['years']
         )
