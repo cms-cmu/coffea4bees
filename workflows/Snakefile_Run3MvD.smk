@@ -73,7 +73,7 @@ rule all:
     input:
         f"{out}histAll_Run3MvD{config['label']}.coffea",
         config['classifier_inputs_install_path'],
-        f"{out}jcm_for_mixed_all/jetCombinatoricModel_SB_.yml",
+        config['jcm_install_path'],
         f"{out}plots_wJCM/plots_done.txt"
 
 rule all_histograms:
