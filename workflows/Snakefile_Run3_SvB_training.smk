@@ -1,10 +1,34 @@
+"""Snakefile: Run3 SvB training (quadjet_run2 inputs).
+
+Adapted from Snakefile_Run3MvD_training.smk and Snakefile_Run3_training.smk.
+
+SvB is structurally heavier than FvT/MvD because:
+  * train.yml uses two `dataset` modules (HCR.SvB.Background + HCR.SvB.Signal)
+  * The Background module needs the FvT result.json as an additional friend
+    tree (the "label:data" friend) to apply FvT weights to the 3b→4b
+    background projection during training.
+
+The FvT result.json is treated as a *soft* dependency — Snakemake does not
+re-train FvT. The path defaults to ${EOS}/friend/FvT which is whatever
+the most recent FvT-evaluate step on the same EOS base produced.
+
+Usage:
+    ./run_container snakemake \\
+        --snakefile coffea4bees/workflows/Snakefile_Run3_SvB_training.smk \\
+        --cores 1 --resources gres=mps:25 \\
+        output/Run3_quadjet_run2/SvB/train.done
+
+Override paths via --config when needed, e.g. to point at a different EOS
+prefix or a non-quadjet_run2 JCM/inputs combination.
+"""
 from datetime import datetime
 DATE = datetime.now().strftime("%Y%m%d")
 
 ##### change these vars #####
 config.setdefault('lpc_user',  "jda102")
 config.setdefault('cern_user', "j/johnda")
-config.setdefault('eos_base',  f"root://cmseos.fnal.gov//store/user/{config['lpc_user']}/HH4b_Run3_v2")
+config.setdefault('eos_base',
+    f"root://cmseos.fnal.gov//store/user/{config['lpc_user']}/HH4b_Run3_quadjet_run2")
 #############################
 
 BASE     = config['eos_base']
@@ -13,11 +37,9 @@ CERNUSER = config['cern_user']
 WFS_BASE = "coffea4bees/classifier/config/workflows/HH4b_Run3"
 CLASSIFIER_CONFIG_PATHS = "coffea4bees"
 
-# Container images. The default GPU image targets recent CUDA (good for
-# rogue / lxplus / falcon). cmslpcgpu* nodes have older P100s (sm60) and
-# need a Chuyuan-built variant; auto-detect by hostname so users on
-# cmslpcgpu* don't have to remember to override. Override with
-# --config classifier_gpu_tag=... if needed.
+# Container images. Same auto-detect logic as the other Run3 training
+# Snakefiles: cmslpcgpu* nodes have older P100s (sm60) and need a
+# Chuyuan-built variant; everyone else defaults to the recent CUDA image.
 import socket as _socket
 _default_gpu_tag = (
     'classifier_lpc_latest' if 'cmslpcgpu' in _socket.gethostname()
@@ -32,98 +54,87 @@ CLASSIFIER_CPU = f"/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/baris
 INIT = "set -e && set +u && source /entrypoint.sh && set -u && export PYTHONUNBUFFERED=1"
 
 # Per-classifier configuration.
-# train.yml and evaluate.yml live under {WFS_BASE}/{classifier}/
-MvD_MODEL  = f"{BASE}/classifier/MvD"
-MvD_FRIEND = f"{BASE}/friend/MvD"
+SvB_MODEL  = f"{BASE}/classifier/SvB"
+SvB_FRIEND = f"{BASE}/friend/SvB"
+FvT_FRIEND = f"{BASE}/friend/FvT"      # soft reference — assumed pre-existing
 CLASSIFIERS = {
-    "MvD": {
-        "model":          MvD_MODEL,
-        "friend":         MvD_FRIEND,
-        "train_template": f"model: {MvD_MODEL}",
-        "eval_template":  f"model: {MvD_MODEL}, MvD: {MvD_FRIEND}",
+    "SvB": {
+        "model":          SvB_MODEL,
+        "friend":         SvB_FRIEND,
+        # SvB train.yml needs both {model} and {FvT}.
+        "train_template": f"model: {SvB_MODEL}, FvT: {FvT_FRIEND}",
+        "eval_template":  f"model: {SvB_MODEL}, SvB: {SvB_FRIEND}",
     },
 }
 
-# Select a single classifier via: snakemake --config classifier=MvD
-CLASSIFIER = config.get("classifier", None)
-if CLASSIFIER and CLASSIFIER not in CLASSIFIERS:
+# Single-target Snakefile; classifier=SvB always. Kept structurally
+# consistent with the FvT/MvD Snakefiles so it's easy to extend later.
+CLASSIFIER = config.get("classifier", "SvB")
+if CLASSIFIER not in CLASSIFIERS:
     raise ValueError(f"Unknown classifier '{CLASSIFIER}'. Choose from: {list(CLASSIFIERS.keys())}")
-TARGETS = [CLASSIFIER] if CLASSIFIER else list(CLASSIFIERS.keys())
+TARGETS = [CLASSIFIER]
 
-# Inputs produced by Snakefile_classifier_inputs_Run3MvD.smk and installed to git.
-# These paths are also hardcoded in train.yml.
-config.setdefault('jcm_install_path', "coffea4bees/analysis/weights/JCM/Run3_MvD/jetCombinatoricModel_SB_.yml")
-config.setdefault('classifier_inputs_install_path', "coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3.json")
+# Inputs (already installed in the repo).
+# Defaults follow the quadjet_run2 mode of Snakefile_Run3.smk.
+config.setdefault('jcm_install_path',
+    "coffea4bees/analysis/weights/JCM/Run3/jetCombinatoricModel_SB_quadjet_run2.yml")
+config.setdefault('classifier_inputs_install_path',
+    # SvB-specific JSON — has HH4b signal entries in addition to data+TT.
+    # Produced by Snakefile_classifier_inputs_Run3.smk with
+    #   dataset_name=GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00,
+    #   reuse_legacy_classifier_inputs=true.
+    "coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_SvB_Run3_quadjet_run2.json")
 
-config.setdefault('output_path', "output/Run3_MvD/")
-config.setdefault('dataset_name', 'mixeddata_all')
+config.setdefault('output_path', "output/Run3_quadjet_run2/")
 out = config['output_path']
+LABEL = config.get('label', '')
 
-TRAIN_YML_TEMPLATE    = f"{WFS_BASE}/MvD/train.yml"
-EVALUATE_YML_TEMPLATE = f"{WFS_BASE}/MvD/evaluate.yml"
-
-# Default metadata path. Legacy 'mixeddata_all' uses the archive yaml (which
-# has both data/TT/mixeddata_all entries under a `datasets:` wrapper). For
-# non-legacy dataset_name (e.g. mixeddata_all_rank0), use the parent dir
-# in dir-mode — the merger picks up the rank-suffixed yaml at top level
-# alongside data.yml and TT.yml. Don't use parent dir for legacy because
-# the parent's mixeddata_all.yml has top-key `mixeddata_all_noTT`, which
-# wouldn't match the trainer's `mixeddata_all` lookup.
-LEGACY_METADATA = "coffea4bees/metadata/datasets_HH4b_Run3/archive/datasets_HH4b_Run3_2025_Run3_skims"
-RANK_METADATA   = "coffea4bees/metadata/datasets_HH4b_Run3/"
-_metadata_path  = LEGACY_METADATA if config['dataset_name'] == 'mixeddata_all' else RANK_METADATA
+TRAIN_YML_TEMPLATE    = f"{WFS_BASE}/SvB/train.yml"
+EVALUATE_YML_TEMPLATE = f"{WFS_BASE}/SvB/evaluate.yml"
 
 
 rule create_train_yml:
-    """Patch the committed train.yml template with installed JCM / friend
-    paths, inject --data-mixed-all-name so the trainer reads from the
-    configured dataset_name, and redirect --metadata to a path that has
-    that dataset_name registered."""
+    """Patch the committed SvB train.yml template with the installed JCM
+    weight path and the two friend-tree paths.
+
+    Unlike the FvT/MvD Snakefiles which only have one `--friends` line,
+    SvB train.yml has TWO: the HCR_input friends (the classifier-inputs
+    JSON, applied to both Background and Signal datasets) and the
+    label:data friend (the FvT result.json, applied only to the
+    Background dataset to provide FvT weights). The two are anchored
+    on distinct trailing keywords (HCR_input vs analysis.0.merged) so
+    the sed patterns don't collide.
+    """
     input:
         template = TRAIN_YML_TEMPLATE,
         jcm      = config['jcm_install_path'],
         json     = config['classifier_inputs_install_path'],
-    output: f"{out}train.yml"
-    params:
-        dataset_name  = config['dataset_name'],
-        metadata_path = _metadata_path,
+    output: f"{out}SvB_train.yml"
     shell:
         """
         sed \
-            -e 's|--JCM-weight.*|--JCM-weight "source:mixed_all" {input.jcm}@@JCM_weights|' \
-            -e 's|--friends.*|--friends "" {input.json}@@HCR_input|' \
-            -e 's|--metadata coffea4bees/metadata/datasets_HH4b_Run3/archive/datasets_HH4b_Run3_2025_Run3_skims|--metadata {params.metadata_path}|' \
-            -e '/--data-source mixed_all detector/a\\      - --data-mixed-all-name {params.dataset_name}' \
+            -e 's|^      - --JCM-weight.*|      - --JCM-weight "" {input.jcm}@@JCM_weights|' \
+            -e 's|^      - --friends "" .*HCR_input.*|      - --friends "" {input.json}@@HCR_input|' \
             {input.template} > {output}
-        echo "Patched train.yml:"
-        grep -E "JCM-weight|friends|data-mixed-all-name|metadata" {output}
+        echo "Patched SvB train.yml:"
+        grep -E "JCM-weight|friends" {output}
         """
 
 
 rule create_evaluate_yml:
-    """Patch the committed evaluate.yml template:
-    - inject --data-mixed-all-name so evaluation reads from the same
-      dataset as training,
-    - redirect --metadata to a path containing that dataset_name,
-    - redirect --friends to the rank-suffixed classifier_inputs JSON
-      installed by the pipeline (the committed template hardcodes the
-      legacy nominal path which has no rank0 entries)."""
+    """Patch the committed SvB evaluate.yml template with the installed
+    classifier-inputs JSON path."""
     input:
         template = EVALUATE_YML_TEMPLATE,
         json     = config['classifier_inputs_install_path'],
-    output: f"{out}evaluate.yml"
-    params:
-        dataset_name  = config['dataset_name'],
-        metadata_path = _metadata_path,
+    output: f"{out}SvB_evaluate.yml"
     shell:
         """
         sed \
-            -e 's|--metadata coffea4bees/metadata/datasets_HH4b_Run3/archive/datasets_HH4b_Run3_2025_Run3_skims|--metadata {params.metadata_path}|' \
-            -e 's|--friends.*|--friends "" {input.json}@@HCR_input|' \
-            -e '/--data-source detector mixed_all/a\\      - --data-mixed-all-name {params.dataset_name}' \
+            -e 's|^      - --friends "" .*HCR_input.*|      - --friends "" {input.json}@@HCR_input|' \
             {input.template} > {output}
-        echo "Patched evaluate.yml:"
-        grep -E "data-source|data-mixed-all-name|metadata|friends" {output}
+        echo "Patched SvB evaluate.yml:"
+        grep -E "friends" {output}
         """
 
 
@@ -135,7 +146,7 @@ rule all_training:
 
 rule train:
     input:
-        train_yml = f"{out}train.yml",
+        train_yml = f"{out}SvB_train.yml",
     output:
         flag = f"{out}{{classifier}}/train.done",
     log:
@@ -144,7 +155,7 @@ rule train:
     resources:
         runtime = 240,
         mem_mb  = 32000,
-        gres    = "mps:50",
+        gres    = "mps:25",
     threads: 4
     params:
         init                    = INIT,
@@ -184,7 +195,7 @@ rule analyze:
         classifier_config_paths = CLASSIFIER_CONFIG_PATHS,
         model                   = lambda wc: CLASSIFIERS[wc.classifier]["model"],
         report                  = lambda wc: wc.classifier,
-        plot                    = lambda wc: f"root://eosuser.cern.ch//eos/user/{CERNUSER}/www/HH4b/Plots/{DATE}_{wc.classifier}_Run3MvD",
+        plot                    = lambda wc: f"root://eosuser.cern.ch//eos/user/{CERNUSER}/www/HH4b/Plots/{DATE}_{wc.classifier}_Run3{LABEL}",
     shell:
         """
         mkdir -p proxy
@@ -208,8 +219,8 @@ rule analyze:
 
 rule evaluate:
     input:
-        train_done   = f"{out}{{classifier}}/train.done",
-        evaluate_yml = f"{out}evaluate.yml",
+        train_done = f"{out}{{classifier}}/train.done",
+        eval_yml   = f"{out}SvB_evaluate.yml",
     output:
         flag = f"{out}{{classifier}}/evaluate.done",
     log:
@@ -218,7 +229,7 @@ rule evaluate:
     resources:
         runtime = 240,
         mem_mb  = 32000,
-        gres    = "mps:50",
+        gres    = "mps:25",
     threads: 4
     params:
         init                    = INIT,
@@ -231,7 +242,7 @@ rule evaluate:
         PORT=$(shuf -i 10000-60000 -n 1) && \
         CLASSIFIER_CONFIG_PATHS={params.classifier_config_paths} \
         ./src/pyml.py \
-            template "{{{params.template_str}}}" {input.evaluate_yml} \
+            template "{{{params.template_str}}}" {input.eval_yml} \
             -from {params.wfs_base}/common.yml \
             -setting Monitor "address: '127.0.0.1:$PORT'" \
             2>&1 | tee -a {log}

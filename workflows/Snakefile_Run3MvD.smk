@@ -2,18 +2,44 @@ import os
 
 include: "rules/run3_variants.smk"
 
-config.setdefault('datasets', ['TTToSemiLeptonic', 'TTToHadronic', 'TTTo2L2Nu', 'data', 'mixeddata_all'])
+# Top-level mixed-data dataset name. Default 'mixeddata_all' preserves the
+# legacy MvD workflow. Override (e.g. --config dataset_name=mixeddata_all_rank0)
+# to point the whole pipeline at a different mixed-data sample. The matching
+# dataset yaml must exist under coffea4bees/metadata/datasets_HH4b_Run3/, and
+# the JCM yaml's data3bName field is sed-patched at fit time (see
+# create_jcm_config rule below) so its committed value doesn't have to match.
+config.setdefault('dataset_name', 'mixeddata_all')
+
+config.setdefault('datasets', ['TTToSemiLeptonic', 'TTToHadronic', 'TTTo2L2Nu', 'data', config['dataset_name']])
 config.setdefault('years', ['2022_EE', '2022_preEE', '2023_BPix', '2023_preBPix'])
 
-if config["mode"] == "nominal":
-    config.setdefault('output_path', "output/Run3_MvD/")
-    config.setdefault('jcm_install_path', "coffea4bees/analysis/weights/JCM/Run3_MvD/jetCombinatoricModel_SB_.yml")
-    config.setdefault('classifier_inputs_install_path', "coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3.json")
+# Build a tag combining mode and dataset_name so install paths don't collide
+# between (mode, rank) runs. Empty for legacy nominal + 'mixeddata_all' so
+# historical install paths are preserved unchanged.
+_mode_tag    = "" if config['mode'] == "nominal" else config['mode']
+_dsn_tag     = "" if config['dataset_name'] == "mixeddata_all" \
+               else config['dataset_name'].removeprefix("mixeddata_all_") or config['dataset_name']
+_install_tag = "_".join(filter(None, [_mode_tag, _dsn_tag]))
 
+# When running on a non-legacy dataset_name (e.g. mixeddata_all_rank0),
+# default to reusing the legacy data/TT classifier inputs instead of
+# regenerating them. data/TT inputs don't change with rank, so this saves
+# 16 condor jobs per rank-suffixed run. Override with --config
+# reuse_legacy_classifier_inputs=False to force a full regenerate.
+if _dsn_tag:
+    config.setdefault('reuse_legacy_classifier_inputs', True)
+
+if config["mode"] == "nominal":
+    _output_subdir = f"Run3_MvD{'_' + _dsn_tag if _dsn_tag else ''}"
 elif config["mode"] == "quadjet_run2":
-    config.setdefault('output_path', "output/Run3_MvD_quadjet_run2/")
-    config.setdefault('jcm_install_path', "coffea4bees/analysis/weights/JCM/Run3_MvD/jetCombinatoricModel_SB_quadjet_run2.yml")
-    config.setdefault('classifier_inputs_install_path', "coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3_quadjet_run2.json")
+    _output_subdir = f"Run3_MvD_quadjet_run2{'_' + _dsn_tag if _dsn_tag else ''}"
+
+config.setdefault('output_path', f"output/{_output_subdir}/")
+config.setdefault('jcm_install_path',
+    f"coffea4bees/analysis/weights/JCM/Run3_MvD/jetCombinatoricModel_SB_{_install_tag}.yml")
+config.setdefault('classifier_inputs_install_path',
+    f"coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3"
+    f"{'_' + _install_tag if _install_tag else ''}.json")
 
 out = config['output_path']
 
@@ -33,11 +59,21 @@ module classifier_inputs:
 config.setdefault('jcm_config', "coffea4bees/analysis/jcm_tools/metadata/mixeddata_all_config_Run3.yml")
 config.setdefault('plots_metadata', "coffea4bees/plots/metadata/plotsAll_MvD.yml")
 
+# SvB / SvB_FeynNet friend JSONs are mode-independent (one fit covers both
+# modes) but rank-dependent — rank0 events have different UUIDs than rank1
+# / legacy. Defaults pull from the rank-suffixed install paths produced by
+# Snakefile_SvB_friendtrees_Run3.smk and Snakefile_SvBFeynNet_friendtrees_Run3.smk.
+_svb_install_tag = f"_{_dsn_tag}" if _dsn_tag else ""
+config.setdefault('svb_friend_json',
+    f"coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data{_svb_install_tag}.json")
+config.setdefault('feynet_friend_json',
+    f"coffea4bees/metadata/datasets_HH4b_Run3/SvBFeynNetfriend_mixeddata_data{_svb_install_tag}.json")
+
 rule all:
     input:
         f"{out}histAll_Run3MvD{config['label']}.coffea",
         config['classifier_inputs_install_path'],
-        f"{out}jcm_for_mixed_all/jetCombinatoricModel_SB_.yml",
+        config['jcm_install_path'],
         f"{out}plots_wJCM/plots_done.txt"
 
 rule all_histograms:
@@ -74,11 +110,21 @@ use rule install_classifier_inputs    from classifier_inputs
 # Use __ (double underscore) as separator between dataset and year to avoid
 # ambiguous wildcard matching, since both dataset names and years contain _.
 
+# Rank-independent shared dir for data + TT histograms. The first-pass
+# (pre-JCM, pre-MvD-weight) data + TT outputs only depend on (mode); they're
+# identical across ranks, so sharing them avoids 16 redundant condor jobs
+# per rank run. mixeddata stays rank-specific in {out}histograms/.
+SHARED_OUT_MvD = f"output/Run3_MvD_shared_{config['mode']}/"
+SHARED_DATASETS = ['TTToSemiLeptonic', 'TTToHadronic', 'TTTo2L2Nu', 'data']
+
+
 rule create_friends_wSvB:
+    """Patched friends file for the rank-specific mixeddata histogram.
+    Points SvB / SvB_FeynNet at the rank-suffixed friend JSONs."""
     input:
         friends_yml    = "coffea4bees/metadata/friends_HH4b.yml",
-        svb_json       = "coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data.json",
-        feynet_json    = "coffea4bees/metadata/datasets_HH4b_Run3/SvBFeynNetfriend_mixeddata_data.json",
+        svb_json       = config['svb_friend_json'],
+        feynet_json    = config['feynet_friend_json'],
     output: f"{out}friends_wSvB.yml"
     shell:
         """
@@ -92,24 +138,58 @@ rule create_friends_wSvB:
         """
 
 rule create_histogram_config_wSvB:
+    """Patched histogram config; mode-specific only (no rank deps), so
+    output goes to the shared dir for reuse across rank runs."""
     input:
         config_file = config['histogram_config']
-    output: f"{out}histogram_config_wSvB.yml"
+    output: f"{SHARED_OUT_MvD}histogram_config_wSvB.yml"
     shell:
         """
         sed \
             -e 's|  run_SvB.*|  run_SvB: true|' \
+            -e 's|  worker_memory:.*|  worker_memory: 8GB|' \
             {input.config_file} > {output}
         echo "Patched config:"
         grep -E "run_SvB" {output}
         """
 
-use rule analysis_processor from analysis as make_histograms with:
+# data + TT histograms — first pass, rank-independent. Output to shared dir.
+# Friends file is the legacy committed friends_HH4b.yml (no rank-specific
+# patching needed; SvB lookups for data+TT events use the same legacy
+# `data_SvBfriend.json@@SvB` regardless of rank).
+use rule analysis_processor from analysis as make_histograms_shared with:
     input:
-        config_file  = f"{out}histogram_config_wSvB.yml",
+        config_file  = f"{SHARED_OUT_MvD}histogram_config_wSvB.yml",
+    output: f"{SHARED_OUT_MvD}histograms/hist_{{dataset}}__{{year}}.coffea"
+    log:    f"{SHARED_OUT_MvD}logs/hist_{{dataset}}__{{year}}.log"
+    wildcard_constraints:
+        dataset = "|".join(SHARED_DATASETS),
+        year    = "|".join(config['years']),
+    params:
+        datasets = "{dataset}",
+        years = "{year}",
+        config = lambda wildcards, input: input.config_file,
+        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
+        datasets_file = config['dataset_location'],
+        blind = False,
+        run_performance = False,
+        friends = "coffea4bees/metadata/friends_HH4b.yml",
+        run_on_condor = config['run_on_condor'],
+        extra_arguments = "",
+        run_container_wrapper = "./run_container",
+        dashboard_address = 0
+
+# mixeddata histogram — first pass, rank-specific. Uses the patched
+# friends_wSvB.yml so SvB lookups go to the rank-suffixed friend JSON.
+use rule analysis_processor from analysis as make_histograms_mixeddata with:
+    input:
+        config_file  = f"{SHARED_OUT_MvD}histogram_config_wSvB.yml",
         friends_file = f"{out}friends_wSvB.yml",
     output: f"{out}histograms/hist_{{dataset}}__{{year}}.coffea"
-    log: f"{out}logs/hist_{{dataset}}__{{year}}.log"
+    log:    f"{out}logs/hist_{{dataset}}__{{year}}.log"
+    wildcard_constraints:
+        dataset = config['dataset_name'],
+        year    = "|".join(config['years']),
     params:
         datasets = "{dataset}",
         years = "{year}",
@@ -127,11 +207,17 @@ use rule analysis_processor from analysis as make_histograms with:
 use rule merging_coffea_files from analysis as merge_histograms with:
     input:
         expand(
-            "{out}histograms/hist_{dataset}__{year}.coffea",
+            "{shared}histograms/hist_{dataset}__{year}.coffea",
+            shared=SHARED_OUT_MvD,
+            dataset=SHARED_DATASETS,
+            year=config['years'],
+        ),
+        expand(
+            "{out}histograms/hist_{dataset_name}__{year}.coffea",
             out=out,
-            dataset=config['datasets'],
-            year=config['years']
-        )
+            dataset_name=config['dataset_name'],
+            year=config['years'],
+        ),
     output: f"{out}histAll_Run3MvD{config['label']}.coffea"
     container: config['analysis_container']
     params:
@@ -140,13 +226,30 @@ use rule merging_coffea_files from analysis as merge_histograms with:
 
 # ── JCM fitting ───────────────────────────────────────────────────────────────
 
+rule create_jcm_config:
+    """Patch the JCM config so data3bName matches our configured dataset_name.
+    Committed yaml hardcodes 'mixeddata_all'; this rule lets us point the fit
+    at any rank/variant without editing the source."""
+    input:  config['jcm_config']
+    output: f"{out}jcm_config_patched.yml"
+    params:
+        dataset_name = config['dataset_name']
+    shell:
+        """
+        sed -e 's|data3bName:.*|data3bName: {params.dataset_name}|' \
+            {input} > {output}
+        echo "Patched JCM config:"
+        grep -E "data3bName" {output}
+        """
+
 rule make_JCM_Run3MvD:
-    input: ancient(f"{out}histAll_Run3MvD{config['label']}.coffea")
+    input:
+        hist       = ancient(f"{out}histAll_Run3MvD{config['label']}.coffea"),
+        jcm_config = f"{out}jcm_config_patched.yml",
     output: f"{out}jcm_for_mixed_all/jetCombinatoricModel_SB_.yml"
     container: config['analysis_container']
     params:
         output_dir = f"{out}jcm_for_mixed_all/",
-        jcm_config = config['jcm_config'],
         extra_arguments = "",
     log: f"{out}logs/make_JCM_Run3MvD.log"
     shell:
@@ -156,9 +259,9 @@ rule make_JCM_Run3MvD:
         echo "Computing JCM for mixed_all Run3MvD" 2>&1 | tee -a {log}
         python coffea4bees/analysis/jcm_tools/make_jcm_weights.py \
             -o {params.output_dir} \
-            -i {input} \
+            -i {input.hist} \
             -r SB \
-            --jcm_config {params.jcm_config} \
+            --jcm_config {input.jcm_config} \
             {params.extra_arguments} 2>&1 | tee -a {log}
         ls {params.output_dir} 2>&1 | tee -a {log}
         """
@@ -177,6 +280,7 @@ rule create_histogram_config_wJCM:
             -e 's|  JCM_file.*|  JCM_file: {input.jcm_file}|' \
             -e 's|  apply_MvD_weight.*|  apply_MvD_weight: false|' \
             -e 's|  apply_MvD:[^_].*|  apply_MvD: true|' \
+            -e 's|  worker_memory:.*|  worker_memory: 8GB|' \
             {input.config_file} > {output}
         echo "Patched config:"
         grep -E "run_SvB|JCM_file|apply_MvD" {output}
@@ -186,10 +290,10 @@ use rule analysis_processor from analysis as make_histograms_mixeddata_wJCM with
     input:
         config_file  = f"{out}histogram_config_wJCM.yml",
         friends_file = f"{out}friends_wSvB.yml",
-    output: f"{out}histograms_wJCM/hist_mixeddata_all__{{year}}.coffea"
-    log: f"{out}logs/hist_wJCM_mixeddata_all__{{year}}.log"
+    output: f"{out}histograms_wJCM/hist_{config['dataset_name']}__{{year}}.coffea"
+    log: f"{out}logs/hist_wJCM_{config['dataset_name']}__{{year}}.log"
     params:
-        datasets = "mixeddata_all",
+        datasets = config['dataset_name'],
         years = "{year}",
         config = lambda wildcards, input: input.config_file,
         processor = "coffea4bees/analysis/processors/processor_HH4b.py",
@@ -205,14 +309,17 @@ use rule analysis_processor from analysis as make_histograms_mixeddata_wJCM with
 use rule merging_coffea_files from analysis as merge_histograms_mixeddata_wJCM with:
     input:
         expand(
-            "{out}histograms_wJCM/hist_mixeddata_all__{year}.coffea",
+            "{out}histograms_wJCM/hist_{dataset_name}__{year}.coffea",
             out=out,
+            dataset_name=config['dataset_name'],
             year=config['years']
         ),
+        # data + TT first-pass hists are rank-independent → read from the
+        # shared dir so different rank runs reuse them.
         expand(
-            "{out}histograms/hist_{dataset}__{year}.coffea",
-            out=out,
-            dataset=['TTToSemiLeptonic', 'TTToHadronic', 'TTTo2L2Nu', 'data'],
+            "{shared}histograms/hist_{dataset}__{year}.coffea",
+            shared=SHARED_OUT_MvD,
+            dataset=SHARED_DATASETS,
             year=config['years']
         )
     output: f"{out}histAll_mixeddata_wJCM{config['label']}.coffea"
@@ -264,8 +371,8 @@ rule install_JCM:
 rule create_friends_MvD:
     input:
         friends_yml = "coffea4bees/metadata/friends_HH4b.yml",
-        svb_json    = "coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data.json",
-        feynet_json = "coffea4bees/metadata/datasets_HH4b_Run3/SvBFeynNetfriend_mixeddata_data.json",
+        svb_json    = config['svb_friend_json'],
+        feynet_json = config['feynet_friend_json'],
     output: f"{out}friends_MvD.yml"
     params:
         mvd_path = f"{config['eos_base']}/friend/MvD/result.json@@analysis.0.merged"
@@ -293,6 +400,7 @@ rule create_histogram_config_MvD:
             -e 's|  JCM_file.*|  JCM_file: {input.jcm_file}|' \
             -e 's|  apply_MvD_weight.*|  apply_MvD_weight: true\\n  plot_ttbar_with_MvD_weights: true|' \
             -e 's|  apply_MvD:[^_].*|  apply_MvD: true|' \
+            -e 's|  worker_memory:.*|  worker_memory: 8GB|' \
             {input.config_file} > {output}
         echo "Patched config:"
         grep -E "run_SvB|JCM_file|apply_MvD|plot_ttbar_with_MvD" {output}
@@ -324,10 +432,10 @@ use rule analysis_processor from analysis as make_histograms_mixeddata_MvD with:
         config_file   = f"{out}histogram_config_MvD.yml",
         friends_file  = f"{out}friends_MvD.yml",
         evaluate_done = ancient(expand(f"{out}{{classifier}}/evaluate.done", classifier=["MvD"])),
-    output: f"{out}histograms_MvD/hist_mixeddata_all__{{year}}.coffea"
-    log: f"{out}logs/hist_MvD_mixeddata_all__{{year}}.log"
+    output: f"{out}histograms_MvD/hist_{config['dataset_name']}__{{year}}.coffea"
+    log: f"{out}logs/hist_MvD_{config['dataset_name']}__{{year}}.log"
     params:
-        datasets              = "mixeddata_all",
+        datasets              = config['dataset_name'],
         years                 = "{year}",
         config                = lambda wildcards, input: input.config_file,
         processor             = "coffea4bees/analysis/processors/processor_HH4b.py",
@@ -348,13 +456,15 @@ use rule merging_coffea_files from analysis as merge_histograms_MvD with:
             year=config['years']
         ),
         expand(
-            "{out}histograms_MvD/hist_mixeddata_all__{year}.coffea",
+            "{out}histograms_MvD/hist_{dataset_name}__{year}.coffea",
             out=out,
+            dataset_name=config['dataset_name'],
             year=config['years']
         ),
+        # TT first-pass hists are rank-independent → read from the shared dir.
         expand(
-            "{out}histograms/hist_{dataset}__{year}.coffea",
-            out=out,
+            "{shared}histograms/hist_{dataset}__{year}.coffea",
+            shared=SHARED_OUT_MvD,
             dataset=['TTToSemiLeptonic', 'TTToHadronic', 'TTTo2L2Nu'],
             year=config['years']
         )
@@ -388,7 +498,8 @@ module training:
     snakefile: "Snakefile_Run3MvD_training.smk"
     config: config
 
-use rule create_train_yml from training
-use rule train            from training
-use rule analyze          from training
-use rule evaluate         from training
+use rule create_train_yml    from training
+use rule create_evaluate_yml from training
+use rule train               from training
+use rule analyze             from training
+use rule evaluate            from training

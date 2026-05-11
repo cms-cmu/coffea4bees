@@ -14,8 +14,20 @@ WFS_BASE = "coffea4bees/classifier/config/workflows/HH4b_Run3"
 CLASSIFIER_CONFIG_PATHS = "coffea4bees"
 
 # Container images
-CLASSIFIER_GPU = "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:classifier_latest"
-CLASSIFIER_CPU = "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:classifier_cpu_latest"
+# Container images. The default GPU image targets recent CUDA (good for
+# rogue / lxplus / falcon). cmslpcgpu* nodes have older P100s (sm60) and
+# need a Chuyuan-built variant; auto-detect by hostname so users on
+# cmslpcgpu* don't have to remember to override. Override with
+# --config classifier_gpu_tag=... if needed.
+import socket as _socket
+_default_gpu_tag = (
+    'classifier_lpc_latest' if 'cmslpcgpu' in _socket.gethostname()
+    else 'classifier_latest'
+)
+config.setdefault('classifier_gpu_tag', _default_gpu_tag)
+config.setdefault('classifier_cpu_tag', 'classifier_cpu_latest')
+CLASSIFIER_GPU = f"/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:{config['classifier_gpu_tag']}"
+CLASSIFIER_CPU = f"/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:{config['classifier_cpu_tag']}"
 
 # Entrypoint sourced inside the container before running commands
 INIT = "set -e && set +u && source /entrypoint.sh && set -u && export PYTHONUNBUFFERED=1"

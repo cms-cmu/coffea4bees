@@ -211,6 +211,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         fill_histograms: bool = True,
         hist_cuts = [],
         run_SvB: bool = True,
+        run_SvB_FeynNet_comparison: bool = False,
         top_reconstruction: str | None = None,
         run_systematics: list = [],  #### Way of splitting systematics. It can be event_weights, jes, btag
         make_classifier_input: str = None,
@@ -252,6 +253,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.apply_MvD = apply_MvD
         self.apply_MvD_weight = apply_MvD_weight
         self.run_SvB = run_SvB
+        self.run_SvB_FeynNet_comparison = run_SvB_FeynNet_comparison
         self.fill_histograms = fill_histograms
         self.run_dilep_ttbar_crosscheck = run_dilep_ttbar_crosscheck
         self.apply_boosted_veto = apply_boosted_veto
@@ -356,7 +358,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             self.year_label = self.corrections_metadata[self.year]['year_label']
             self.processName = event.metadata['processName']
 
-            if (self.processName.find("mix") != -1 or self.dataset.find("syn") != -1) and self.processName != "mixeddata_all":
+            if (self.processName.find("mix") != -1 or self.dataset.find("syn") != -1) and not self.processName.startswith("mixeddata_all"):
                 new_processName = self.dataset.replace(f'_{self.year}','')
                 logging.info(f"Overridding processName: {self.processName} to {new_processName} for dataset {self.dataset}")
                 self.processName = new_processName
@@ -1519,6 +1521,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 apply_MvD=self.apply_MvD,
                 apply_MvD_weight=self.apply_MvD_weight,
                 run_SvB=self.run_SvB,
+                run_SvB_FeynNet_comparison=self.run_SvB_FeynNet_comparison,
                 run_dilep_ttbar_crosscheck=self.run_dilep_ttbar_crosscheck,
                 top_reconstruction=self.top_reconstruction,
                 isDataForMixed=self.config['isDataForMixed'],
@@ -1541,6 +1544,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     histCuts=self.histCuts,
                     apply_FvT=apply_FvT,
                     run_SvB=self.run_SvB,
+                    run_SvB_FeynNet_comparison=self.run_SvB_FeynNet_comparison,
                     run_dilep_ttbar_crosscheck=self.run_dilep_ttbar_crosscheck,
                     top_reconstruction=self.top_reconstruction,
                     isDataForMixed=self.config['isDataForMixed'],
@@ -1559,6 +1563,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     histCuts=self.histCuts,
                     apply_FvT=apply_FvT,
                     run_SvB=self.run_SvB,
+                    run_SvB_FeynNet_comparison=self.run_SvB_FeynNet_comparison,
                     run_dilep_ttbar_crosscheck=self.run_dilep_ttbar_crosscheck,
                     top_reconstruction=self.top_reconstruction,
                     isDataForMixed=self.config['isDataForMixed'],
@@ -1581,6 +1586,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     apply_MvD=self.apply_MvD,
                     apply_MvD_weight=self.apply_MvD_weight,
                     run_SvB=self.run_SvB,
+                    run_SvB_FeynNet_comparison=self.run_SvB_FeynNet_comparison,
                     run_dilep_ttbar_crosscheck=self.run_dilep_ttbar_crosscheck,
                     top_reconstruction=self.top_reconstruction,
                     isDataForMixed=self.config['isDataForMixed'],
