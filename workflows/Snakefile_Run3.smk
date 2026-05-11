@@ -79,10 +79,15 @@ rule create_histogram_config_wSvB:
     input:
         config_file = config['histogram_config']
     output: f"{out}histogram_config_wSvB.yml"
+    params:
+        # Pass --config enable_SvB_FeynNet_comparison=true to also fill the
+        # 2D/3D SvB_MA vs SvB_FeynNet comparison histograms.
+        svb_fn_cmp = str(config.get('enable_SvB_FeynNet_comparison', False)).lower()
     shell:
         """
         sed \
-            -e 's|  run_SvB.*|  run_SvB: true|' \
+            -e 's|  run_SvB:.*|  run_SvB: true|' \
+            -e 's|  run_SvB_FeynNet_comparison:.*|  run_SvB_FeynNet_comparison: {params.svb_fn_cmp}|' \
             {input.config_file} > {output}
         echo "Patched config:"
         grep -E "run_SvB" {output}
@@ -156,10 +161,13 @@ rule create_histogram_config_wJCM:
         jcm_file = f"{out}jcm/jetCombinatoricModel_SB_.yml",
         config_file = config['histogram_config']
     output: f"{out}histogram_config_wJCM.yml"
+    params:
+        svb_fn_cmp = str(config.get('enable_SvB_FeynNet_comparison', False)).lower()
     shell:
         """
         sed \
-            -e 's|  run_SvB.*|  run_SvB: true|' \
+            -e 's|  run_SvB:.*|  run_SvB: true|' \
+            -e 's|  run_SvB_FeynNet_comparison:.*|  run_SvB_FeynNet_comparison: {params.svb_fn_cmp}|' \
             -e 's|  JCM_file.*|  JCM_file: {input.jcm_file}|' \
             {input.config_file} > {output}
         echo "Patched config:"
@@ -249,12 +257,15 @@ rule create_histogram_config_FvT:
         jcm_file    = config['jcm_install_path'],
         config_file = config['histogram_config']
     output: f"{out}histogram_config_FvT.yml"
+    params:
+        svb_fn_cmp = str(config.get('enable_SvB_FeynNet_comparison', False)).lower()
     shell:
         """
         sed \
-            -e 's|  run_SvB.*|  run_SvB: true|' \
+            -e 's|  run_SvB:.*|  run_SvB: true|' \
+            -e 's|  run_SvB_FeynNet_comparison:.*|  run_SvB_FeynNet_comparison: {params.svb_fn_cmp}|' \
             -e 's|  JCM_file.*|  JCM_file: {input.jcm_file}|' \
-            -e 's|  apply_FvT.*|  apply_FvT: true|' \
+            -e 's|  apply_FvT:.*|  apply_FvT: true|' \
             -e 's|  plot_ttbar_with_weights.*|  plot_ttbar_with_weights: true|' \
             {input.config_file} > {output}
         echo "Patched config:"

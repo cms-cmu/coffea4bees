@@ -1,3 +1,4 @@
+import awkward as ak
 from coffea4bees.analysis.helpers.hist_templates import (
     FvTHists,
     MvDHists,
@@ -38,6 +39,7 @@ def filling_nominal_histograms(
     apply_MvD: bool = False,
     apply_MvD_weight: bool = False,
     run_SvB: bool = False,
+    run_SvB_FeynNet_comparison: bool = False,
     top_reconstruction: bool = False,
     isDataForMixed: bool = False,
     tag_list: list = ["threeTag", "fourTag"],
@@ -183,6 +185,105 @@ def filling_nominal_histograms(
                 fill += hist.add(f"m4j_hh_{_FvT_name}", (120, 0, 1200, ("m4j_HHSR", "m4j HHSR [GeV]")), weight=f"weight_{_FvT_name}")
                 fill += hist.add(f"m4j_zh_{_FvT_name}", (120, 0, 1200, ("m4j_ZHSR", "m4j ZHSR [GeV]")), weight=f"weight_{_FvT_name}")
                 fill += hist.add(f"m4j_zz_{_FvT_name}", (120, 0, 1200, ("m4j_ZZSR", "m4j ZZSR [GeV]")), weight=f"weight_{_FvT_name}")
+
+        # ── SvB_MA vs SvB_FeynNet comparison study ────────────────────────────
+        # Gated, off by default. Adds 2D correlations and 3D
+        # (feature × ps_hh × p_ggHH_vs_bkg) histograms used by
+        # coffea4bees/plots/SvB_FeynNet_comparison.py.
+        if run_SvB_FeynNet_comparison and has_SvB_MA and "SvB_FeynNet" in selev.fields:
+            # Derived FeynNet "total signal" probability: p_signal = 1 - p_bkg.
+            # Used to compare against SvB_MA.ps (sum across channels).
+            if "p_signal" not in selev.SvB_FeynNet.fields:
+                selev["SvB_FeynNet", "p_signal"] = 1.0 - selev.SvB_FeynNet.p_bkg
+
+            # 2D correlations per channel (50×50 — fine enough to project at any cut)
+            fill += hist.add("SvB_vs_FeynNet.ps_hh_vs_p_ggHH",
+                             (50, 0, 1, ("SvB_MA.ps_hh",             "SvB_MA P(HH)")),
+                             (50, 0, 1, ("SvB_FeynNet.p_ggHH_vs_bkg", "FeynNet P(ggHH vs bkg)")))
+            fill += hist.add("SvB_vs_FeynNet.ps_zh_vs_p_ZH",
+                             (50, 0, 1, ("SvB_MA.ps_zh",             "SvB_MA P(ZH)")),
+                             (50, 0, 1, ("SvB_FeynNet.p_ZH_vs_bkg",   "FeynNet P(ZH vs bkg)")))
+            fill += hist.add("SvB_vs_FeynNet.ps_zz_vs_p_ZZ",
+                             (50, 0, 1, ("SvB_MA.ps_zz",             "SvB_MA P(ZZ)")),
+                             (50, 0, 1, ("SvB_FeynNet.p_ZZ_vs_bkg",   "FeynNet P(ZZ vs bkg)")))
+
+            # Total-signal comparisons — SvB_MA.ps is the unconditional sum-of-signal
+            # probability (HH+ZH+ZZ together), which doesn't suffer from the
+            # channel-attribution effect that ps_hh has.
+            fill += hist.add("SvB_vs_FeynNet.ps_vs_p_ggHH",
+                             (50, 0, 1, ("SvB_MA.ps",                "SvB_MA P(any signal)")),
+                             (50, 0, 1, ("SvB_FeynNet.p_ggHH_vs_bkg", "FeynNet P(ggHH vs bkg)")))
+            fill += hist.add("SvB_vs_FeynNet.ps_vs_p_signal",
+                             (50, 0, 1, ("SvB_MA.ps",                "SvB_MA P(any signal)")),
+                             (50, 0, 1, ("SvB_FeynNet.p_signal",     "FeynNet P(any signal) = 1-p_bkg")))
+
+            # 3D feature × ps_hh × p_ggHH_vs_bkg for disagreement studies.
+            # Coarse 20×20 classifier binning to keep storage in check
+            # (60×20×20 ≈ 24k bins per feature; ~10MB per feature across
+            # processes/years/tags/regions).
+            cls_axes = (
+                (20, 0, 1, ("SvB_MA.ps_hh",             "SvB_MA P(HH)")),
+                (20, 0, 1, ("SvB_FeynNet.p_ggHH_vs_bkg", "FeynNet P(ggHH vs bkg)")),
+            )
+            # Derive forward-jet kinematics on the fly (FeynNet uses these,
+            # SvB_MA does not — the prime suspect for the disagreement).
+            if "n_fwd_jets" not in selev.fields:
+                fwd_jets = selev.Jet[selev.Jet.fwd_feynnet]
+                selev["n_fwd_jets"]   = ak.num(fwd_jets, axis=1)
+                selev["lead_fwd_pt"]  = ak.fill_none(ak.firsts(fwd_jets.pt,  axis=1), 0.0)
+                selev["lead_fwd_eta"] = ak.fill_none(ak.firsts(fwd_jets.eta, axis=1), 0.0)
+            # Leading selected jet (could be a non-tagged jet harder than canJet0)
+            if "lead_selJet_pt" not in selev.fields:
+                selev["lead_selJet_pt"]  = ak.fill_none(ak.firsts(selev.selJet.pt,  axis=1), 0.0)
+                selev["lead_selJet_eta"] = ak.fill_none(ak.firsts(selev.selJet.eta, axis=1), 0.0)
+            # n_othJet — non-candidate jet count per event
+            if "n_othJet" not in selev.fields:
+                selev["n_othJet"] = ak.num(selev.notCanJet_coffea, axis=1)
+
+            event_features = [
+                (60, 0, 1500,  ("m4j",              "m4j [GeV]")),
+                (10, -0.5, 9.5, ("nJet_selected",   "n selected jets")),
+                (15, -0.5, 14.5, ("nJet_tagged",    "n b-tagged jets")),
+                (15, -0.5, 14.5, ("n_othJet",       "n non-candidate jets")),
+                (50,    0, 1500, ("hT_selected",    "h_T (selected) [GeV]")),
+                (50,    0,  500, ("v4j.pt",         "v4j pT [GeV]")),
+                (50, 50, 250,  ("leadStM_selected", "lead Higgs M [GeV]")),
+                (50, 50, 250,  ("sublStM_selected", "subl Higgs M [GeV]")),
+                (50, -12, 12,  ("xW",               "xW")),
+                (50, -15, 15,  ("xbW",              "xbW")),
+                (10, -0.5, 9.5, ("n_fwd_jets",      "n forward jets (FeynNet input)")),
+                (50,    0,  500, ("lead_fwd_pt",    "leading fwd-jet pT [GeV]")),
+                (50, -5.0, 5.0,  ("lead_fwd_eta",   "leading fwd-jet eta")),
+                (50,    0, 1000, ("lead_selJet_pt", "leading selJet pT [GeV]")),
+                (50, -5.0, 5.0,  ("lead_selJet_eta", "leading selJet eta")),
+            ]
+            # canJet kinematics (4 candidate jets × pt/eta/mass)
+            canjet_features = []
+            for iJ in range(4):
+                canjet_features += [
+                    (50,    0, 500, (f"canJet{iJ}.pt",   f"canJet{iJ} pT [GeV]")),
+                    (50, -3.0, 3.0, (f"canJet{iJ}.eta",  f"canJet{iJ} eta")),
+                    (50,    0, 100, (f"canJet{iJ}.mass", f"canJet{iJ} mass [GeV]")),
+                ]
+            # Per-jet kinematics for selJets and othJet (notCanJet_coffea):
+            # event-level classifier scores broadcast across jets per event.
+            per_jet_features = [
+                (50,    0,  500, ("selJet.pt",            "selJet pT [GeV]")),
+                (50,    0,  100, ("selJet.mass",          "selJet mass [GeV]")),
+                (50,    0,  500, ("notCanJet_coffea.pt",   "othJet pT [GeV]")),
+                (50,    0,  100, ("notCanJet_coffea.mass", "othJet mass [GeV]")),
+            ]
+            for feat in event_features + canjet_features + per_jet_features:
+                feat_name = feat[3][0].replace(".", "_")
+                fill += hist.add(f"SvB_vs_FeynNet.{feat_name}_vs_2cls", feat, *cls_axes)
+
+            # FvT-weighted variants for the mixed-data background path
+            if isDataForMixed:
+                for _FvT_name in event_metadata["FvT_names"]:
+                    fill += hist.add(f"SvB_vs_FeynNet.ps_hh_vs_p_ggHH_{_FvT_name}",
+                                     (50, 0, 1, ("SvB_MA.ps_hh",             "SvB_MA P(HH)")),
+                                     (50, 0, 1, ("SvB_FeynNet.p_ggHH_vs_bkg", "FeynNet P(ggHH vs bkg)")),
+                                     weight=f"weight_{_FvT_name}")
 
     # MC Truth
     if "truth_v4b" in selev.fields:
