@@ -1,0 +1,21 @@
+# coffea4bees/classifier/config/workflows/HH4b_2024_v2_lowpt/FvT/workflow_config.yml
+#
+# Config for src/classifier/workflow/Snakefile.
+# Placeholders {lpc_user} and {eos_base} are resolved by the Snakefile.
+# To keep outputs from a separate run, change output_dir.
+
+lpc_user: algomez
+cern_user: a/algomez
+eos_base: "root://cmseos.fnal.gov//store/user/{lpc_user}/XX4b/2024_v2/nominal_sel/"
+
+classifier_config_paths: coffea4bees
+wfs_base: coffea4bees/classifier/config/workflows/HH4b_2024_v2/SvB
+output_dir: output/nominal_SvB/
+
+plot_inputs: true
+
+model: "{eos_base}/classifier/SvB_nominal"
+friend: "{eos_base}/friend/SvB_nominal"
+train_template: "model: {eos_base}/classifier/SvB_nominal, FvT: {eos_base}/friend/FvT_nominal"
+eval_template: "model: {eos_base}/classifier/SvB_nominal, SvB: {eos_base}/friend/SvB_nominal"
+metadata: "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/classifier_inputs_nominal.json@@HCR_input"

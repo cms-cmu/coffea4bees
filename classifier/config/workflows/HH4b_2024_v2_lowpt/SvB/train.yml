@@ -11,7 +11,7 @@ main:
 model:
   - module: HCR.SvB.ggF.baseline.Train
     option:
-      - --roc-signal-by-category # calculate ROC by category
+      # - --roc-signal-by-category # calculate ROC by category
       - --kfold-seed SvB random
       - --kfold-seed-offsets 0
       - --training FixedStep
@@ -20,6 +20,7 @@ model:
       - --finetuning FinetuneStep
       - epoch: 1
         bs_init: 16384
+      - --pretrained-weights coffea4bees/analysis/weights/pytorch_models/2024_HHUL/SvB_MA_HCR+attention_8_np1061_seed13_lr0.01_epochs20_offset0_epoch20.pkl
 
 dataset:
   - module: HCR.SvB_lowpt.Background # load background dataset (lowpt version)
