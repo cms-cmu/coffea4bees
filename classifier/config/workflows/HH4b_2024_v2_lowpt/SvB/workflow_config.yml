@@ -10,12 +10,12 @@ eos_base: "root://cmseos.fnal.gov//store/user/{lpc_user}/XX4b/2024_v2"
 
 classifier_config_paths: coffea4bees
 wfs_base: coffea4bees/classifier/config/workflows/HH4b_2024_v2_lowpt/SvB
-output_dir: output/lowpt_SvB/
+output_dir: output/SvB_lowpt_wNominal/
 
-plot_inputs: true
+plot_inputs: false
 
-model: "{eos_base}/classifier/SvB_lowpt_all_kl"
-friend: "{eos_base}/friend/SvB_lowpt_all_kl"
-train_template: "model: {eos_base}/classifier/SvB_lowpt_all_kl, FvT: {eos_base}/friend/FvT_lowpt"
-eval_template: "model: {eos_base}/classifier/SvB_lowpt_all_kl, SvB: {eos_base}/friend/SvB_lowpt_all_kl"
+model: "{eos_base}/classifier/SvB_lowpt_wNominal"
+friend: "{eos_base}/friend/SvB_lowpt_wNominal"
+train_template: "model: {eos_base}/classifier/SvB_lowpt_wNominal, FvT: {eos_base}/friend/FvT_lowpt"
+eval_template: "model: {eos_base}/classifier/SvB_lowpt_wNominal, SvB: {eos_base}/friend/SvB_lowpt_wNominal"
 metadata: "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/classifier_inputs_lowpt_wlowptJCM.json@@HCR_input_lowpt"

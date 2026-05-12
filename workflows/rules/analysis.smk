@@ -89,7 +89,7 @@ rule make_JCM:
         mkdir -p $MPLCONFIGDIR
         
         echo "Computing JCM" 2>&1 | tee -a {log}
-        python coffea4bees/analysis/jcm_tools/make_jcm_weights.py -o {params.output_dir} -c passPreSel -r SB -i {input} {params.extra_arguments} -w {params.tag} 2>&1 | tee -a {log}
+        python coffea4bees/analysis/jcm_tools/make_jcm_weights.py -o {params.output_dir} -r SB -i {input} {params.extra_arguments} -w {params.tag} 2>&1 | tee -a {log}
         ls {params.output_dir}
         """
 

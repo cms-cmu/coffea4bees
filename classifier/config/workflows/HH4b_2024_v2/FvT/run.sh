@@ -10,18 +10,14 @@ export PLOT="root://eosuser.cern.ch//eos/user/${CERNUSER}/www/HH4b/classifier/HH
 export CLASSIFIER_CONFIG_PATHS="coffea4bees"
 export WFS="coffea4bees/classifier/config/workflows/HH4b_2024_v2/FvT"
 
-# the first argument can be a port
-if [ -z "$1" ]; then
-    port=10200
-else
-    port=$1
-fi
+# Generate a random port between 10000 and 60000 so jobs don't crash
+export PORT=$(shuf -i 10000-60000 -n 1)
 
-# train with train.yml and common.yml configs
+#train with train.yml and common.yml configs
 ./src/pyml.py \
     template "model: ${MODEL}" $WFS/train.yml \
     -from $WFS/../common.yml \
-    -setting Monitor "address: :${port}" \
+    -setting Monitor "address: '127.0.0.1:${PORT}'" \
     -flag debug # use debug flag
 
 # # plot the AUC and ROC
