@@ -3,9 +3,27 @@ import os
 
 include: "helpers/common.smk"
 
-config.setdefault('output_path', "output/lowpt/")
-config.setdefault('container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
+if config['mode'] == "lowpt":
+    config.setdefault('label', "lowpt_wSvB")
+    config.setdefault('output_path', "output/lowpt_wSvB/")
+    config.setdefault('analysis_config', "coffea4bees/analysis/metadata/HH4b_lowpt_2024_v2.yml")
+    config.setdefault('processor', "coffea4bees/analysis/processors/processor_HH4b_lowpt.py")
+    config.setdefault('friend_file', "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/friends_HH4b_lowpt.yml")
+    config.setdefault('plot_config', "coffea4bees/plots/metadata/plotsAll_lowpt.yml")
+    config.setdefault('combine_flags', "--three_tag lowpt_threeTag --four_tag lowpt_fourTag --blind")
+
+elif config['mode'] == "nominal":
+    config.setdefault('label', "nominal_wNewSvB")
+    config.setdefault('output_path', "output/nominal_wNewSvB/")
+    config.setdefault('analysis_config', "coffea4bees/analysis/metadata/HH4b_2024_v2.yml")
+    config.setdefault('processor', "coffea4bees/analysis/processors/processor_HH4b.py")
+    config.setdefault('friend_file', "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/friends_HH4b.yml")
+    config.setdefault('plot_config', "coffea4bees/plots/metadata/plotsAll_ttbarWeights.yml")
+    config.setdefault('combine_flags', "--blind")
+
+
 config.setdefault('dataset_location', "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/")
+config.setdefault('container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
 config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
 config.setdefault('combine_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-analysis/general/combine-container:CMSSW_11_3_4-combine_v9.1.0-harvester_v2.1.0")
 config.setdefault('container_wrapper', "./run_container combine")
@@ -25,13 +43,9 @@ config.setdefault('channels', {
     }
 })
 
-
 # Derive flat year/era and year lists from year_eras
 DATA_YEAR_ERA = [(yr, era) for yr, eras in config['year_eras'].items() for era in eras]
 DATA_YEARS = list(config['year_eras'].keys())
-config.setdefault('eos_path', f"{datetime.now().strftime('%Y%m%d')}_lowpt_test")
-
-temp_label = "wSvB"
 
 # Constrain year wildcard to valid year values (avoids ambiguity with underscores in dataset names)
 wildcard_constraints:
@@ -52,89 +66,89 @@ module combine:
 
 rule all_lowpt:
     input:
-        f"{config['output_path']}histAll_lowpt_{temp_label}.coffea",
-        f"{config['output_path']}plots_lowpt_{temp_label}/RunII/region_SB/selJets_lowpt_n.pdf",
+        f"{config['output_path']}histAll_{config['label']}.coffea",
+        f"{config['output_path']}plots_{config['label']}/RunII/region_SB/selJets_n.pdf",
         f"{config['output_path']}datacards/HH4b/limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.json",
         f"{config['output_path']}datacards/HH4b/plots/postfitplots__ggHH_kl_1_kt_1_13p0TeV_hbbhbb__fit_s.pdf"
+    params:
+        output_dir = f"{datetime.now().strftime('%Y%m%d')}_{config['label']}/"
     shell:
         """
         echo "Copying results to eos"
-        bash src/tools/copy_files_to_cernbox.sh -s {config[output_path]} -d www/HH4b/Plots/{config[eos_path]}/ -t
+        bash src/tools/copy_files_to_cernbox.sh -s {config[output_path]} -d www/HH4b/Plots/{params.output_dir} -t
         """
 
 rule modify_config_file:
-    input:
-        config_file = "coffea4bees/analysis/metadata/HH4b_lowpt_2024_v2.yml"
+    input: config['analysis_config']
     output:
-        f"{config['output_path']}HH4b_lowpt_2024_v2_signal.yml"
+        f"{config['output_path']}HH4b_{config['label']}_signal.yml"
     shell:
         """
-        sed -e 's|apply_FvT: .*|apply_FvT: false|' -e 's|blind:.*|blind: false|' -e 's|plot_ttbar_with_weights: true|plot_ttbar_with_weights: false|' {input.config_file} > {output}
+        sed -e 's|apply_FvT: .*|apply_FvT: false|' -e 's|blind:.*|blind: false|' -e 's|plot_ttbar_with_weights: true|plot_ttbar_with_weights: false|' {input} > {output}
         """
 
-use rule analysis_processor from analysis as analysis_lowpt_data with:
-    input: "coffea4bees/analysis/metadata/HH4b_lowpt_2024_v2.yml"
-    output: f"{config['output_path']}singlefiles/histAll_lowpt_{temp_label}_data__{{year}}_{{era}}.coffea"
-    log: f"{config['output_path']}logs/analysis_lowpt_{temp_label}_data__{{year}}_{{era}}.log"
+use rule analysis_processor from analysis as analysis_data with:
+    input: config['analysis_config']
+    output: f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{{year}}_{{era}}.coffea"
+    log: f"{config['output_path']}logs/analysis_{config['label']}_data__{{year}}_{{era}}.log"
     params:
         datasets = "data",
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input[0],
-        processor = "coffea4bees/analysis/processors/processor_HH4b_lowpt.py",
+        processor = config['processor'],
         datasets_file = config['dataset_location'],
         blind = True,
         run_performance = False,
-        friends = "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/friends_HH4b_lowpt.yml",
+        friends = config['friend_file'],
         run_on_condor = True,
         extra_arguments = lambda wildcards: f'"--era {wildcards.era}"',
         run_container_wrapper = "./run_container"
 
-use rule analysis_processor from analysis as analysis_lowpt_MC with:
-    input: f"{config['output_path']}HH4b_lowpt_2024_v2_signal.yml"
-    output: f"{config['output_path']}singlefiles/histAll_lowpt_{temp_label}__{{dataset}}__{{year}}.coffea"
-    log: f"{config['output_path']}logs/analysis_lowpt_{temp_label}_{{dataset}}__{{year}}.log"
+use rule analysis_processor from analysis as analysis_MC with:
+    input: f"{config['output_path']}HH4b_{config['label']}_signal.yml"
+    output: f"{config['output_path']}singlefiles/histAll_{config['label']}__{{dataset}}__{{year}}.coffea"
+    log: f"{config['output_path']}logs/analysis_{config['label']}_{{dataset}}__{{year}}.log"
     params:
         datasets = "{dataset}",
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input[0],
-        processor = "coffea4bees/analysis/processors/processor_HH4b_lowpt.py",
+        processor = config['processor'],
         datasets_file = config['dataset_location'],
         blind = False,
         run_performance = False,
-        friends = "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/friends_HH4b_lowpt.yml",
+        friends = config['friend_file'],
         run_on_condor = True,
         extra_arguments = "",
         run_container_wrapper = "./run_container"
 
-use rule merging_coffea_files from analysis as merging_lowpt_files with:
-    input: [f"{config['output_path']}singlefiles/histAll_lowpt_{temp_label}_data__{yr}_{era}.coffea" for yr, era in DATA_YEAR_ERA] + expand("{output_path}singlefiles/histAll_lowpt_" + temp_label + "__{dataset}__{year}.coffea", output_path=config['output_path'], dataset=config['dataset'], year=DATA_YEARS)
-    output: f"{config['output_path']}histAll_lowpt_{temp_label}.coffea"
+use rule merging_coffea_files from analysis as merging_files with:
+    input: [f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{yr}_{era}.coffea" for yr, era in DATA_YEAR_ERA] + expand("{output_path}singlefiles/histAll_" + config['label'] + "__{dataset}__{year}.coffea", output_path=config['output_path'], dataset=config['dataset'], year=DATA_YEARS)
+    output: f"{config['output_path']}histAll_{config['label']}.coffea"
     params:
         run_performance = False
     container: config['analysis_container']
-    log: f"{config['output_path']}logs/merging_lowpt_files.log" 
+    log: f"{config['output_path']}logs/merging_files.log" 
 
-use rule make_plots from analysis as make_plots_lowpt with:
-    input: f"{config['output_path']}histAll_lowpt_{temp_label}.coffea"
-    output: f"{config['output_path']}plots_lowpt_{temp_label}/RunII/region_SB/selJets_lowpt_n.pdf"
+use rule make_plots from analysis as make_plots with:
+    input: f"{config['output_path']}histAll_{config['label']}.coffea"
+    output: f"{config['output_path']}plots_{config['label']}/RunII/region_SB/selJets_n.pdf"
     log: f"{config['output_path']}logs/make_plots.log"
     params:
-        output_dir = f"{config['output_path']}plots_lowpt_{temp_label}/",
-        metadata = "coffea4bees/plots/metadata/plotsAll_lowpt.yml",
+        output_dir = f"{config['output_path']}plots_{config['label']}/",
+        metadata = config['plot_config'],
         extra_arguments = "-s xW "
 
-use rule convert_hist_to_json from stat_analysis as convert_hist_to_json with:
-    input: f"{config['output_path']}histAll_lowpt_{temp_label}.coffea"
-    output: f"{config['output_path']}histAll_lowpt_{temp_label}.json"
+use rule convert_hist_to_json from stat_analysis with:
+    input: f"{config['output_path']}histAll_{config['label']}.coffea"
+    output: f"{config['output_path']}histAll_{config['label']}.json"
     params:
         syst_flag="--histos SvB_MA.ps_hh SvB_MA.ps_hh_fine SvB_MA.ps_zz SvB_MA.ps_zh"
-    log: f"{config['output_path']}logs/convert_hist_to_json_lowpt_{temp_label}.log"
+    log: f"{config['output_path']}logs/convert_hist_to_json_{config['label']}.log"
 
 
-use rule make_combine_inputs from stat_analysis as make_combine_inputs with:
+use rule make_combine_inputs from stat_analysis with:
     input:
-        injson = f"{config['output_path']}histAll_lowpt_{temp_label}.json",
-        # injsonsyst = f"{config['output_path']}histAll_lowpt_{temp_label}.json", 
+        injson = f"{config['output_path']}histAll_{config['label']}.json",
         injsonsyst = list([]), 
         bkgsyst = f"reana_outputs/coffea4bees_20250616_af478bd_unblind_boostedVeto/closureFits/ULHH_kfold/3bDvTMix4bDvT/SvB_MA/rebin1/SR/hh/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_hh_rebin1.pkl"
     output: f"{config['output_path']}datacards/HH4b/datacard__HH4b.txt"
@@ -142,17 +156,17 @@ use rule make_combine_inputs from stat_analysis as make_combine_inputs with:
         variable= "SvB_MA.ps_hh",
         syst_file = "",
         rebin=1,
-        metadata="coffea4bees/stats_analysis/metadata/HH4b_lowpt.yml",
+        metadata="coffea4bees/stats_analysis/metadata/HH4b.yml",
         output_dir=f"{config['output_path']}datacards/HH4b/",
         variable_binning="",
         stat_only="--stat_only",
         signal="HH4b",
-        tag_flags="--three_tag lowpt_threeTag --four_tag lowpt_fourTag --blind",
+        tag_flags= config['combine_flags'],
         container_wrapper = config['container_wrapper']
     log: f"{config['output_path']}logs/make_combine_inputs_HH4b.log"
 
 
-use rule workspace from combine as workspace with:
+use rule workspace from combine with:
     input: f"{config['output_path']}datacards/HH4b/datacard__HH4b.txt"
     output: f"{config['output_path']}datacards/HH4b/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root"
     log: f"{config['output_path']}logs/workspace_HH4b__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.log"
@@ -161,7 +175,7 @@ use rule workspace from combine as workspace with:
         othersignal_maps=lambda wildcards: additional_poi('HH4b'),
         container_wrapper=config["container_wrapper"]
 
-use rule limits from combine as limits with:
+use rule limits from combine with:
     input: f"{config['output_path']}datacards/HH4b/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root"
     output: 
         txt=f"{config['output_path']}datacards/HH4b/limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.txt",
@@ -174,7 +188,7 @@ use rule limits from combine as limits with:
         freeze_parameters=lambda wildcards: freeze_parameters('HH4b'),
         container_wrapper=config["container_wrapper"]
 
-use rule postfit from combine as postfit with:
+use rule postfit from combine with:
     input: f"{config['output_path']}datacards/HH4b/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root"
     output: f"{config['output_path']}datacards/HH4b/plots/postfitplots__ggHH_kl_1_kt_1_13p0TeV_hbbhbb__fit_s.pdf"
     # container: config["combine_container"]

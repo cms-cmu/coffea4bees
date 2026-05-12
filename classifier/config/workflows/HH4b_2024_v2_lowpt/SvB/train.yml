@@ -11,7 +11,7 @@ main:
 model:
   - module: HCR.SvB.ggF.baseline.Train
     option:
-      - --roc-signal-by-category # calculate ROC by category
+      # - --roc-signal-by-category # calculate ROC by category
       - --kfold-seed SvB random
       - --kfold-seed-offsets 0
       - --training FixedStep

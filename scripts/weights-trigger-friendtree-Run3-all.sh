@@ -22,8 +22,6 @@ echo "Using datasets file: $DATASETS"
 JOB_CONFIG=coffea4bees/analysis/metadata/trigger_weights_Run3.yml
 cat $JOB_CONFIG; echo
 
-#    --datasets "TTTo2L2Nu" \
-#    --datasets "TTToSemiLeptonic" \
 bash coffea4bees/scripts/run-analysis-processor.sh \
     --processor "coffea4bees/analysis/processors/processor_trigger_weights.py" \
     --output-base "$OUTPUT_BASE_DIR" \
