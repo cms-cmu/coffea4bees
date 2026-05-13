@@ -14,9 +14,9 @@ dataset_signals:
   - GluGluToHHTo4B_cHHH1
 dataset_systematics:
   - GluGluToHHTo4B_cHHH1
-  # - GluGluToHHTo4B_cHHH0
-  # - GluGluToHHTo4B_cHHH2p45
-  # - GluGluToHHTo4B_cHHH5
+  - GluGluToHHTo4B_cHHH0
+  - GluGluToHHTo4B_cHHH2p45
+  - GluGluToHHTo4B_cHHH5
   # - VBFHHTo4B_kl_1p00_cv_1p00_c2v_0p00
   # - VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00
   # - VBFHHTo4B_kl_10p2_cv_m0p012_c2v_0p03
@@ -27,9 +27,9 @@ dataset_systematics:
   # - VBFHHTo4B_kl_m1p43_cv_m0p962_c2v_0p959
   # - VBFHHTo4B_kl_m5p96_cv_2p12_c2v_3p87
   # - VBFHHTo4B_kl_m3p39_cv_m1p83_c2v_3p5
-  # - ZZ4b
-  # - ggZH4b
-  # - ZH4b
+  - ZZ4b
+  - ggZH4b
+  - ZH4b
 dataset_for_mixed:
   - TTToSemiLeptonic_for_mixed
   - TTToHadronic_for_mixed
@@ -50,7 +50,8 @@ data_eras:
 channels:
   HH4b:
     signallabel: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb"
-    othersignal: "ggHH_kl_0_kt_1_13p0TeV_hbbhbb ggHH_kl_2p45_kt_1_13p0TeV_hbbhbb ggHH_kl_5_kt_1_13p0TeV_hbbhbb qqHH_CV_1_C2V_1_kl_1_13p0TeV_hbbhbb qqHH_CV_m0p758_C2V_1p44_kl_m19p3_13p0TeV_hbbhbb qqHH_CV_m1p6_C2V_2p72_kl_m1p36_13p0TeV_hbbhbb qqHH_CV_1p74_C2V_1p37_kl_14p4_13p0TeV_hbbhbb qqHH_CV_m0p962_C2V_0p959_kl_m1p43_13p0TeV_hbbhbb qqHH_CV_m1p83_C2V_3p57_kl_m3p39_13p0TeV_hbbhbb qqHH_CV_2p12_C2V_3p87_kl_m5p96_13p0TeV_hbbhbb qqHH_CV_m0p012_C2V_0p03_kl_10p2_13p0TeV_hbbhbb qqHH_CV_m1p21_C2V_1p94_kl_m0p94_13p0TeV_hbbhbb"
+    othersignal: "ggHH_kl_0_kt_1_13p0TeV_hbbhbb ggHH_kl_2p45_kt_1_13p0TeV_hbbhbb ggHH_kl_5_kt_1_13p0TeV_hbbhbb" 
+    # qqHH_CV_1_C2V_1_kl_1_13p0TeV_hbbhbb qqHH_CV_m0p758_C2V_1p44_kl_m19p3_13p0TeV_hbbhbb qqHH_CV_m1p6_C2V_2p72_kl_m1p36_13p0TeV_hbbhbb qqHH_CV_1p74_C2V_1p37_kl_14p4_13p0TeV_hbbhbb qqHH_CV_m0p962_C2V_0p959_kl_m1p43_13p0TeV_hbbhbb qqHH_CV_m1p83_C2V_3p57_kl_m3p39_13p0TeV_hbbhbb qqHH_CV_2p12_C2V_3p87_kl_m5p96_13p0TeV_hbbhbb qqHH_CV_m0p012_C2V_0p03_kl_10p2_13p0TeV_hbbhbb qqHH_CV_m1p21_C2V_1p94_kl_m0p94_13p0TeV_hbbhbb"
     variable: "SvB_MA.ps_hh"
     signal: "GluGluToHHTo4B_cHHH1"
   ZZ4b:
@@ -64,7 +65,12 @@ channels:
     variable: "SvB_MA.ps_zh"
     signal: "ZH4b"
 
-extra_arguments: "--gitdiff In_gitdiff.txt_file --githash e3ce601d --storage-remap coffea4bees/metadata/storage_remaps_cmu_run2.yml"
+extra_arguments: "--gitdiff In_gitdiff.txt_file --githash 17eab2e22 --storage-remap coffea4bees/metadata/storage_remaps_cmu_run2.yml"
+
+channel_metadata:
+  HH4b: "coffea4bees/stats_analysis/metadata/HH4b.yml"
+  ZH4b: "coffea4bees/stats_analysis/metadata/ZH4b.yml"
+  ZZ4b: "coffea4bees/stats_analysis/metadata/ZZ4b.yml"
 # analysis_container: "gitlab-registry.cern.ch/cms-cmu/coffea4bees:20250714_44f08ac8"   ### actual tag for reproducibility
 # combine_container: "gitlab-registry.cern.ch/cms-analysis/general/combine-container:CMSSW_11_3_4-combine_v9.1.0-harvester_v2.1.0"
 container_wrapper: "source /cvmfs/cms.cern.ch/cmsset_default.sh && cd /home/cmsusr/CMSSW_11_3_4/ && cmsenv || true && cd - && eval"

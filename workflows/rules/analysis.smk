@@ -28,6 +28,7 @@ rule analysis_processor:
             --output-filename $(basename {output}) \
             --output-base $(dirname {output}) \
             --log {log} \
+            --no-test \
             $([ "{params.not_do_proxy}" = "True" ] && echo "--not-do-proxy") \
             $([ "{params.blind}" = "True" ] && echo "--blind") \
             $([ "{params.run_on_condor}" = "True" ] && echo "--condor") \
@@ -65,6 +66,9 @@ rule merging_coffea_files:
         fi
         echo $cmd 2>&1 | tee -a {log}
         $cmd 2>&1 | tee -a {log}
+        echo "Output file size: $(ls -lh {output})" 2>&1 | tee -a {log}
+        sync
+        sleep 30
         if [ "{params.run_performance}" = "True" ]; then
             echo "Running performance analysis" 2>&1 | tee -a {log}
             mkdir -p $(dirname {output})/performance/
@@ -100,16 +104,17 @@ rule make_plots:
         output_dir = "output/plots/",
         metadata = "coffea4bees/plots/metadata/plotsAll.yml",
         extra_arguments = "-s xW",
+        png_cores = 4,
     log: "logs/make_plots.log"
     shell:
         """
         # Set matplotlib config directory to avoid permission issues
         export MPLCONFIGDIR="/tmp/matplotlib"
         mkdir -p $MPLCONFIGDIR
-        
+
         echo "Making plots" 2>&1 | tee -a {log}
         python coffea4bees/plots/makePlots.py {input} -o {params.output_dir} -m {params.metadata} {params.extra_arguments} 2>&1 | tee -a {log}
 
         echo "Converting plots to png format" 2>&1 | tee -a {log}
-        python src/plotting/pb_pdf_to_png.py -r -j 4 {params.output_dir} 2>&1 | tee -a {log}
+        python src/plotting/pb_pdf_to_png.py -r -j {params.png_cores} {params.output_dir} 2>&1 | tee -a {log}
         """

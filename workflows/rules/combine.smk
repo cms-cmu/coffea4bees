@@ -13,16 +13,17 @@ rule workspace:
     shell:
         """
         LOG=$(pwd)/{log}
+        DATACARD_DIR=$(realpath $(dirname {input}))
         echo "$LOG"
         mkdir -p $(dirname $LOG)
         (
         echo "[$(date)] Starting workspace rule with signal {params.signallabel}"
-        {params.container_wrapper} "cd $(dirname {input}) && \
+        {params.container_wrapper} "cd $DATACARD_DIR && \
             text2workspace.py $(basename {input}) \
             -P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose \
             --PO 'map=.*/{params.signallabel}:r{params.signallabel}[1,-10,10]' \
             {params.othersignal_maps} \
-            -o $(basename {output})" 
+            -o $(basename {output})"
 
         echo "[$(date)] Completed workspace rule with signal {params.signallabel}"
         ) 2>&1 | tee {log}
@@ -43,11 +44,12 @@ rule limits:
     shell:
         """
         LOG=$(pwd)/{log}
+        DATACARD_DIR=$(realpath $(dirname {input}))
         mkdir -p $(dirname $LOG)
         (
         echo "[$(date)] Starting limits rule with signal {params.signallabel}"
         echo "[$(date)] Running AsymptoticLimits"
-        {params.container_wrapper} "cd $(dirname {input}) && \
+        {params.container_wrapper} "cd $DATACARD_DIR && \
             combine -M AsymptoticLimits $(basename {input}) \
             --redefineSignalPOIs r{params.signallabel} \
             {params.set_parameters_zero} \
@@ -57,12 +59,12 @@ rule limits:
             > {output.txt}
 
         echo "[$(date)] Running CollectLimits"
-        {params.container_wrapper} "cd $(dirname {input}) && \
+        {params.container_wrapper} "cd $DATACARD_DIR && \
             combineTool.py -M CollectLimits \
             higgsCombine_{params.signallabel}.AsymptoticLimits.mH120.root \
-            -o $(basename {output.json})" 
+            -o $(basename {output.json})"
 
-        echo "[$(date)] Completed limits rule with signal {params.signallabel}" 
+        echo "[$(date)] Completed limits rule with signal {params.signallabel}"
         ) 2>&1 | tee {log}
         """
 
@@ -78,11 +80,12 @@ rule significance:
     shell:
         """
         LOG=$(pwd)/{log}
+        DATACARD_DIR=$(realpath $(dirname {input}))
         mkdir -p $(dirname $LOG)
         echo "[$(date)] Starting significance rule with signal {params.signallabel}" > $LOG
 
         echo "[$(date)] Running observed significance" >> $LOG
-        {params.container_wrapper} "cd $(dirname {input}) && \
+        {params.container_wrapper} "cd $DATACARD_DIR && \
             combine -M Significance $(basename {input}) \
             {params.set_parameters_zero} \
             {params.freeze_parameters} \
@@ -91,7 +94,7 @@ rule significance:
             2>&1 | tee -a $LOG > {output}
 
         echo "[$(date)] Running expected significance" >> $LOG
-        {params.container_wrapper} "cd $(dirname {input}) && \
+        {params.container_wrapper} "cd $DATACARD_DIR && \
             combine -M Significance $(basename {input}) \
             --redefineSignalPOIs r{params.signallabel} \
             {params.set_parameters_zero} \
@@ -249,7 +252,7 @@ rule gof:
         echo "[$(date)] Plotting Goodness of Fit results" >> $LOG
         {params.container_wrapper} "cd $(dirname {input}) &&\
             plotGof.py gof_$(basename {input} .root)_{params.signallabel}.json \
-            --statistic staturated --mass 120.0 \
+            --statistic saturated --mass 120.0 \
             --output $(basename {output} .pdf)" 2>&1 | tee -a $LOG
 
         echo "[$(date)] Completed gof rule with signal {params.signallabel}" >> $LOG

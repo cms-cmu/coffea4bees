@@ -49,45 +49,18 @@ SYST_PLOTS = {
 
 rule final_rule:
     input:
-        # TT backgrounds
-        expand(f"{config['output_path']}/singlefiles/hist__{{sample}}-{{year}}.coffea", sample=config['dataset_tt'], year=config['year']),
-        # Data
-        expand(f"{config['output_path']}/singlefiles/histdata__data-{{year}}.coffea", year=config['year']),
-        f"{config['output_path']}/singlefiles/histdata__data-UL17B.coffea",
-        # Signals
-        expand(f"{config['output_path']}/singlefiles/histsignal__{{sample_signal}}-{{year}}.coffea", sample_signal=config['dataset_signals'], year=config['year']),
-        # Systematics
-        expand(f"{config['output_path']}/singlefiles/histsyst_others_{{samplesyst}}-{{iysyst}}.coffea", samplesyst=config['dataset_systematics'], iysyst=config['year']),
-        expand(f"{config['output_path']}/singlefiles/histsyst_jes_{{samplesyst}}-{{iysyst}}.coffea", samplesyst=config['dataset_systematics'], iysyst=config['year']),
-        # Mixed backgrounds (HH)
-        f"{config['output_path']}/histMixedBkg_data_3b_for_mixed.coffea",
-        f"{config['output_path']}/histMixedBkg_TT.coffea",
-        f"{config['output_path']}/histMixedData.coffea",
-        # Mixed backgrounds (ZZ/ZH)
-        f"{config['output_path']}/histMixedBkg_ZZZH_data_3b_for_mixed.coffea",
-        f"{config['output_path']}/histMixedBkg_ZZZH_TT.coffea",
-        f"{config['output_path']}/histMixedData_ZZZH.coffea",
+        f"{config['output_path']}/plots/RunII/region_SB/nPVs.pdf",
+        expand(OUTPUT_PATTERNS["limits"], zip, channel=CHANNELS, signallabel=SIGNALLABELS),
+        expand(OUTPUT_PATTERNS["significance"], zip, channel=CHANNELS, signallabel=SIGNALLABELS),
+        expand(OUTPUT_PATTERNS["impacts"], zip, channel=CHANNELS, signallabel=SIGNALLABELS),
+        expand(OUTPUT_PATTERNS["postfit"], zip, channel=CHANNELS, signallabel=SIGNALLABELS),
+        expand(OUTPUT_PATTERNS["gof"], zip, channel=CHANNELS, signallabel=SIGNALLABELS),
+        expand(OUTPUT_PATTERNS["likelihood_scan"], zip, channel=CHANNELS, signallabel=SIGNALLABELS),
+        list(SYST_PLOTS.values()),
     shell:
         """
-        echo "Done running all singlefile analysis jobs (Stage 2)"
+        echo "Done: full pipeline for all channels"
         """
-
-# rule final_rule:
-#     input:
-#         f"{config['output_path']}/plots/RunII/passPreSel/fourTag/SB/nPVs.pdf",
-#         [expand(pattern, zip, channel=CHANNELS, signallabel=SIGNALLABELS, channellabel=CHANNELLABELS)
-#          for pattern in OUTPUT_PATTERNS.values()],
-#         list(SYST_PLOTS.values()),
-#     container: config["analysis_container"]
-#     shell:
-#         """
-#         rm -rf {config[output_path]}/datacards/*/higgsCombine_*
-#         cp gitdiff.txt {config[output_path]}
-#         echo "Converting pdf to png"
-#         python src/plotting/pb_deploy_plots.py {config[output_path]}/ -r -c -j 4
-#         echo "Copying results to eos"
-#         bash src/tools/copy_files_to_cernbox.sh -s {config[output_path]} -d www/HH4b/{config[eos_path]}/ -t
-#         """
 
 #######
 ### Running analysis processor
@@ -98,7 +71,9 @@ use rule analysis_processor from analysis as analysis_databkgs with:
     # input: f"{config['output_path']}/JCM/jetCombinatoricModel_SB_reana.yml"
     output: f"{config['output_path']}/singlefiles/hist__{{sample}}-{{year}}.coffea"
     container: config["analysis_container"]
-    threads: 16
+    threads: 64
+    resources:
+        mem_mb=196608
     log: f"{config['output_path']}/logs/analysis_hist__{{sample}}-{{year}}.log"
     params:
         datasets="{sample}",
@@ -112,7 +87,7 @@ use rule analysis_processor from analysis as analysis_databkgs with:
         run_performance=True,
         run_on_condor=False,
         extra_arguments=config['extra_arguments'],
-        run_container_wrapper="",
+        run_container_wrapper="OMP_NUM_THREADS=1 MKL_NUM_THREADS=1",
         dashboard_address=""
 
 
@@ -132,7 +107,7 @@ use rule analysis_databkgs as analysis_data with:
         run_performance=True,
         run_on_condor=False,
         extra_arguments=lambda wildcards: f"{config['extra_arguments']} -e {config['data_eras'][wildcards.year]}",
-        run_container_wrapper="",
+        run_container_wrapper="OMP_NUM_THREADS=1 MKL_NUM_THREADS=1",
         dashboard_address=""
 
 
@@ -151,13 +126,15 @@ use rule analysis_databkgs as analysis_data_UL17B with:
         run_performance=True,
         run_on_condor=False,
         extra_arguments=f"{config['extra_arguments']} -e B",
-        run_container_wrapper="",
+        run_container_wrapper="OMP_NUM_THREADS=1 MKL_NUM_THREADS=1",
         dashboard_address=""
 
 use rule analysis_databkgs as analysis_signals with:
     # input: f"{config['output_path']}/JCM/jetCombinatoricModel_SB_reana.yml"
     output: f"{config['output_path']}/singlefiles/histsignal__{{sample_signal}}-{{year}}.coffea"
-    threads: 8
+    threads: 64
+    resources:
+        mem_mb=196608
     log: f"{config['output_path']}/logs/analysis_histsignal__{{sample_signal}}-{{year}}.log"
     params:
         datasets="{sample_signal}",
@@ -171,7 +148,7 @@ use rule analysis_databkgs as analysis_signals with:
         run_performance=True,
         run_on_condor=False,
         extra_arguments=config['extra_arguments'],
-        run_container_wrapper="",
+        run_container_wrapper="OMP_NUM_THREADS=1 MKL_NUM_THREADS=1",
         dashboard_address=""
 
 ### mixdata for HH
@@ -190,7 +167,7 @@ use rule analysis_databkgs as analysis_mixedbkg_data3b with:
         run_performance=True,
         run_on_condor=False,
         extra_arguments=config['extra_arguments'],
-        run_container_wrapper="",
+        run_container_wrapper="OMP_NUM_THREADS=1 MKL_NUM_THREADS=1",
         dashboard_address=""
 
 
@@ -209,7 +186,7 @@ use rule analysis_databkgs as analysis_mixedbkg with:
         run_performance=True,
         run_on_condor=False,
         extra_arguments=config['extra_arguments'],
-        run_container_wrapper="",
+        run_container_wrapper="OMP_NUM_THREADS=1 MKL_NUM_THREADS=1",
         dashboard_address=""
 
 use rule analysis_databkgs as analysis_mixeddata with:
@@ -227,7 +204,7 @@ use rule analysis_databkgs as analysis_mixeddata with:
         run_performance=True,
         run_on_condor=False,
         extra_arguments=config['extra_arguments'],
-        run_container_wrapper="",
+        run_container_wrapper="OMP_NUM_THREADS=1 MKL_NUM_THREADS=1",
         dashboard_address=""
 
 
@@ -247,7 +224,7 @@ use rule analysis_databkgs as analysis_mixedbkg_data3b_ZZZH with:
         run_performance=True,
         run_on_condor=False,
         extra_arguments=config['extra_arguments'],
-        run_container_wrapper="",
+        run_container_wrapper="OMP_NUM_THREADS=1 MKL_NUM_THREADS=1",
         dashboard_address=""
 
 
@@ -266,7 +243,7 @@ use rule analysis_databkgs as analysis_mixedbkg_ZZZH with:
         run_performance=True,
         run_on_condor=False,
         extra_arguments=config['extra_arguments'],
-        run_container_wrapper="",
+        run_container_wrapper="OMP_NUM_THREADS=1 MKL_NUM_THREADS=1",
         dashboard_address=""
 
 use rule analysis_databkgs as analysis_mixeddata_ZZZH with:
@@ -284,13 +261,15 @@ use rule analysis_databkgs as analysis_mixeddata_ZZZH with:
         run_performance=True,
         run_on_condor=False,
         extra_arguments=config['extra_arguments'],
-        run_container_wrapper="",
+        run_container_wrapper="OMP_NUM_THREADS=1 MKL_NUM_THREADS=1",
         dashboard_address=""
 
 use rule analysis_databkgs as analysis_systematics_others with:
     # input: f"{config['output_path']}/JCM/jetCombinatoricModel_SB_reana.yml"
     output: f"{config['output_path']}/singlefiles/histsyst_others_{{samplesyst}}-{{iysyst}}.coffea"
-    threads: 8
+    threads: 64
+    resources:
+        mem_mb=196608
     log: f"{config['output_path']}/logs/analysis_histsyst_others_{{samplesyst}}-{{iysyst}}.log"
     params:
         datasets="{samplesyst}",
@@ -304,14 +283,16 @@ use rule analysis_databkgs as analysis_systematics_others with:
         run_performance=True,
         run_on_condor=False,
         extra_arguments=f"{config['extra_arguments']} --systematics others",
-        run_container_wrapper="",
+        run_container_wrapper="OMP_NUM_THREADS=1 MKL_NUM_THREADS=1",
         dashboard_address=""
 
 
 use rule analysis_databkgs as analysis_systematics_jes with:
     # input: f"{config['output_path']}/JCM/jetCombinatoricModel_SB_reana.yml"
     output: f"{config['output_path']}/singlefiles/histsyst_jes_{{samplesyst}}-{{iysyst}}.coffea"
-    threads: 8
+    threads: 64
+    resources:
+        mem_mb=196608
     log: f"{config['output_path']}/logs/analysis_histsyst_jes_{{samplesyst}}-{{iysyst}}.log"
     params:
         datasets="{samplesyst}",
@@ -325,7 +306,7 @@ use rule analysis_databkgs as analysis_systematics_jes with:
         run_performance=True,
         run_on_condor=False,
         extra_arguments=f"{config['extra_arguments']} --systematics jes",
-        run_container_wrapper="",
+        run_container_wrapper="OMP_NUM_THREADS=1 MKL_NUM_THREADS=1",
         dashboard_address=""
 
 #######
@@ -342,8 +323,24 @@ def get_channel_datasets(channel):
     }
     return datasets_map.get(channel, [])
 
+def get_channel_signals(channel):
+    """Return signal datasets for each channel from dataset_signals"""
+    datasets_map = {
+        "HH4b": [d for d in config['dataset_signals'] if d.startswith(('GluGlu', 'VBF'))],
+        "ZZ4b": [d for d in config['dataset_signals'] if 'ZZ4b' in d],
+        "ZH4b": [d for d in config['dataset_signals'] if 'ZH4b' in d]
+    }
+    return datasets_map.get(channel, [])
+
+def get_syst_merge_inputs(wildcards):
+    syst_datasets = get_channel_datasets(wildcards.channel)
+    if syst_datasets:
+        return expand([f'{config["output_path"]}/singlefiles/histsyst_others_{{idatsyst}}-{{iyear}}.coffea'], idatsyst=syst_datasets, iyear=config['year']) + expand([f'{config["output_path"]}/singlefiles/histsyst_jes_{{idatsyst}}-{{iyear}}.coffea'], idatsyst=syst_datasets, iyear=config['year'])
+    else:
+        return expand([f'{config["output_path"]}/singlefiles/histsignal__{{isig}}-{{iyear}}.coffea'], isig=get_channel_signals(wildcards.channel), iyear=config['year'])
+
 use rule merging_coffea_files from analysis as merging_coffea_files_syst with:
-    input: lambda wildcards: expand([f'{config["output_path"]}/singlefiles/histsyst_others_{{idatsyst}}-{{iyear}}.coffea'], idatsyst=get_channel_datasets(wildcards.channel), iyear=config['year']) + expand([f'{config["output_path"]}/singlefiles/histsyst_jes_{{idatsyst}}-{{iyear}}.coffea'], idatsyst=get_channel_datasets(wildcards.channel), iyear=config['year'])
+    input: get_syst_merge_inputs
     output: f"{config['output_path']}/histAll_signals__{{channel}}.coffea"
     params:
         run_performance=False
@@ -360,12 +357,17 @@ use rule merging_coffea_files_syst as merging_coffea_files_histAll with:
 
 use rule make_plots from analysis as make_plots with:
     input: f"{config['output_path']}/histAll.coffea"
-    output: f"{config['output_path']}/plots/RunII/passPreSel/fourTag/SB/nPVs.pdf"
+    output: f"{config['output_path']}/plots/RunII/region_SB/nPVs.pdf"
+    container: config["analysis_container"]
+    threads: 8
+    resources:
+        mem_mb=16384
     log: f"{config['output_path']}/logs/make_plots.log"
     params:
         output_dir = f"{config['output_path']}/plots/",
         metadata = "coffea4bees/plots/metadata/plotsAll.yml",
         extra_arguments = "-s xW",
+        png_cores = 8,
 
 ########
 ### Converting histograms to JSON and ROOT formats
@@ -375,7 +377,7 @@ use rule convert_hist_to_json from stat_analysis as convert_hist_to_json with:
     input: f"{config['output_path']}/{{histfile}}.coffea"
     output: f"{config['output_path']}/{{histfile}}.json"
     params:
-        syst_flag=lambda wildcards: "-s --histos SvB_MA.ps_hh SvB_MA.ps_zz SvB_MA.ps_zh" if "signals" in wildcards.histfile else ""
+        syst_flag=lambda wildcards: "-s --histos SvB_MA.ps_hh SvB_MA.ps_zz SvB_MA.ps_zh" if wildcards.histfile.endswith(("HH4b", "ZZ4b", "ZH4b")) else ""
     log: f"{config['output_path']}/logs/convert_hist_to_json_{{histfile}}.log"
 
 use rule convert_hist_to_json_closure from stat_analysis as convert_hist_to_json_mixdata3b with:
@@ -479,7 +481,8 @@ use rule make_combine_inputs from stat_analysis with:
         rebin=1,
         variable_binning="",
         stat_only="",
-        metadata=lambda wildcards: f"coffea4bees/stats_coffea4bees/analysis/metadata/{wildcards.channel}.yml",
+        syst_file=lambda wildcards: f"-s {config['output_path']}/histAll_signals__{wildcards.channel}.json" if wildcards.channel == "HH4b" else "",
+        metadata=lambda wildcards: config.get('channel_metadata', {}).get(wildcards.channel, f"coffea4bees/stats_analysis/metadata/{wildcards.channel}.yml"),
         output_dir=f"{config['output_path']}/datacards/{{channel}}/",
         signal="{channel}",
         container_wrapper = config['container_wrapper']
