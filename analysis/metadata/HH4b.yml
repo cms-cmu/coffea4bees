@@ -1,6 +1,6 @@
 runner:
-  workers: 64
-  worker_memory: 3GB
+  workers: 4
+  worker_memory: 4GB
   condor_transfer_input_files: 
     - coffea4bees/analysis/
     - coffea4bees/metadata/

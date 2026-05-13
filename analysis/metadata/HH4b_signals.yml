@@ -1,5 +1,5 @@
 runner:
-  workers: 64
+  #workers: 4
   max_workers: 200
   chunksize: 10000
   # condor_cores: 1
