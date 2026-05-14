@@ -18,7 +18,6 @@ inputs:
 workflow:
   type: snakemake
   file: coffea4bees/workflows/Snakefile_reana.smk
-  options: --forcerun make_combine_inputs
   resources:
     compute_backend: slurmcern
     voms_proxy: true
