@@ -51,6 +51,18 @@ SYST_PLOTS = {
 def reana_config(name):
     return f"{config['output_path']}/configs/{name}_reana.yml"
 
+
+rule all:
+    input:
+        f"{config['output_path']}/plots/RunII/region_SB/nPVs.pdf",
+        expand(OUTPUT_PATTERNS["limits"], zip, channel=CHANNELS, signallabel=SIGNALLABELS),
+        expand(OUTPUT_PATTERNS["significance"], zip, channel=CHANNELS, signallabel=SIGNALLABELS),
+        expand(OUTPUT_PATTERNS["impacts"], zip, channel=CHANNELS, signallabel=SIGNALLABELS),
+        expand(OUTPUT_PATTERNS["postfit"], zip, channel=CHANNELS, signallabel=SIGNALLABELS),
+        expand(OUTPUT_PATTERNS["gof"], zip, channel=CHANNELS, signallabel=SIGNALLABELS),
+        expand(OUTPUT_PATTERNS["likelihood_scan"], zip, channel=CHANNELS, signallabel=SIGNALLABELS),
+        list(SYST_PLOTS.values()),
+
 localrules: make_reana_config
 
 rule make_reana_config:
@@ -66,22 +78,6 @@ rule make_reana_config:
         cfg['runner']['worker_memory'] = '3GB'
         with open(str(output[0]), 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False, allow_unicode=True)
-
-
-rule all:
-    input:
-        f"{config['output_path']}/plots/RunII/region_SB/nPVs.pdf",
-        expand(OUTPUT_PATTERNS["limits"], zip, channel=CHANNELS, signallabel=SIGNALLABELS),
-        expand(OUTPUT_PATTERNS["significance"], zip, channel=CHANNELS, signallabel=SIGNALLABELS),
-        expand(OUTPUT_PATTERNS["impacts"], zip, channel=CHANNELS, signallabel=SIGNALLABELS),
-        expand(OUTPUT_PATTERNS["postfit"], zip, channel=CHANNELS, signallabel=SIGNALLABELS),
-        expand(OUTPUT_PATTERNS["gof"], zip, channel=CHANNELS, signallabel=SIGNALLABELS),
-        expand(OUTPUT_PATTERNS["likelihood_scan"], zip, channel=CHANNELS, signallabel=SIGNALLABELS),
-        list(SYST_PLOTS.values()),
-    shell:
-        """
-        echo "Done: full pipeline for all channels"
-        """
 
 #######
 ### Running analysis processor
