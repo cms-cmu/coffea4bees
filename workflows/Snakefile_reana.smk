@@ -515,6 +515,8 @@ use rule workspace from combine with:
     input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{channel}}.txt"
     output: f"{config['output_path']}/datacards/{{channel}}/datacard__{{signallabel}}.root"
     container: config["combine_container"]
+    resources:
+        runtime=240
     params:
         signallabel="{signallabel}",
         othersignal_maps=lambda wildcards: additional_poi(wildcards.channel),
@@ -523,10 +525,12 @@ use rule workspace from combine with:
 
 use rule limits from combine with:
     input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{signallabel}}.root"
-    output: 
+    output:
         txt=f"{config['output_path']}/datacards/{{channel}}/limits__{{signallabel}}.txt",
         json=f"{config['output_path']}/datacards/{{channel}}/limits__{{signallabel}}.json"
     container: config["combine_container"]
+    resources:
+        runtime=240
     params:
         signallabel="{signallabel}",
         set_parameters_zero=lambda wildcards: set_parameters(wildcards.channel, 0),
@@ -538,6 +542,8 @@ use rule significance from combine with:
     input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{signallabel}}.root"
     output: f"{config['output_path']}/datacards/{{channel}}/significance__{{signallabel}}.log"
     container: config["combine_container"]
+    resources:
+        runtime=240
     params:
         signallabel="{signallabel}",
         set_parameters_zero=lambda wildcards: set_parameters(wildcards.channel, 0),
@@ -549,6 +555,8 @@ use rule impacts from combine with:
     input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{signallabel}}.root"
     output: f"{config['output_path']}/datacards/{{channel}}/impacts__{{signallabel}}.pdf"
     container: config["combine_container"]
+    resources:
+        runtime=240
     params:
         signallabel="{signallabel}",
         set_parameters_zero=lambda wildcards: set_parameters(wildcards.channel, 0),
@@ -560,6 +568,8 @@ use rule likelihood_scan from combine with:
     input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{signallabel}}.root"
     output: f"{config['output_path']}/datacards/{{channel}}/likelihood_scan__{{signallabel}}.pdf"
     container: config["combine_container"]
+    resources:
+        runtime=240
     params:
         signallabel="{signallabel}",
         set_parameters_zero=lambda wildcards: set_parameters(wildcards.channel, 0),
@@ -571,6 +581,8 @@ use rule gof from combine with:
     input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{signallabel}}.root"
     output: f"{config['output_path']}/datacards/{{channel}}/gof__{{signallabel}}.pdf"
     container: config["combine_container"]
+    resources:
+        runtime=240
     params:
         signallabel="{signallabel}",
         set_parameters_zero=lambda wildcards: set_parameters(wildcards.channel, 0),
@@ -593,6 +605,8 @@ use rule postfit from combine as postfit with:
     input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{signallabel}}.root"
     output: f"{config['output_path']}/datacards/{{channel}}/plots/postfitplots__{{signallabel}}__prefit.pdf"
     container: config["combine_container"]
+    resources:
+        runtime=240
     log: f"{config['output_path']}/logs/postfit__{{channel}}__{{signallabel}}.log"
     params:
         signallabel="{signallabel}",
