@@ -18,7 +18,7 @@ inputs:
 workflow:
   type: snakemake
   file: coffea4bees/workflows/Snakefile_reana.smk
-  options: --forcerun make_combine_inputs workspace limits significance impacts likelihood_scan gof postfit
+  options: --forcerun make_combine_inputs workspace
   resources:
     compute_backend: slurmcern
     voms_proxy: true
