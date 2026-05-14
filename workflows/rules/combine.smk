@@ -12,6 +12,7 @@ rule workspace:
     log: "output/logs/workspace_{path}.log"
     shell:
         """
+        set -o pipefail
         LOG=$(pwd)/{log}
         DATACARD_DIR=$(realpath $(dirname {input}))
         echo "$LOG"
@@ -24,7 +25,7 @@ rule workspace:
             --PO 'map=.*/{params.signallabel}:r{params.signallabel}[1,-10,10]' \
             {params.othersignal_maps} \
             -o $(basename {output}) && \
-            rootls $(basename {output}) > /dev/null"
+            rootls $(basename {output})"
 
         echo "[$(date)] Completed workspace rule with signal {params.signallabel}"
         ) 2>&1 | tee {log}
@@ -174,6 +175,7 @@ rule impacts:
         {params.container_wrapper} "cd $(dirname {input}) && \
             combineTool.py -M Impacts -d $(basename {input}) \
             --doInitialFit --robustFit 1 -m 125 \
+            --redefineSignalPOIs r{params.signallabel} \
             --setParameterRanges r{params.signallabel}=-10,10{params.set_parameters_ranges} \
             {params.set_parameters_zero} \
             -n $(basename {input} .root)" \
@@ -184,6 +186,7 @@ rule impacts:
         {params.container_wrapper} "cd $(dirname {input}) && \
             combineTool.py -M Impacts -d $(basename {input}) \
             --doFits --robustFit 1 -m 125 --parallel 4 \
+            --redefineSignalPOIs r{params.signallabel} \
             --setParameterRanges r{params.signallabel}=-10,10{params.set_parameters_ranges} \
             {params.set_parameters_zero} \
             -n $(basename {input} .root)" \
@@ -194,6 +197,7 @@ rule impacts:
         {params.container_wrapper} "cd $(dirname {input}) && \
             combineTool.py -M Impacts \
             -m 125 -n $(basename {input} .root) \
+            --redefineSignalPOIs r{params.signallabel} \
             -d $(basename {input}) \
             -o impacts_combine_$(basename {input} .root)_exp.json" \
             2>&1 | tee -a $LOG
