@@ -23,7 +23,8 @@ rule workspace:
             -P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose \
             --PO 'map=.*/{params.signallabel}:r{params.signallabel}[1,-10,10]' \
             {params.othersignal_maps} \
-            -o $(basename {output})"
+            -o $(basename {output}) && \
+            rootls $(basename {output}) > /dev/null"
 
         echo "[$(date)] Completed workspace rule with signal {params.signallabel}"
         ) 2>&1 | tee {log}
