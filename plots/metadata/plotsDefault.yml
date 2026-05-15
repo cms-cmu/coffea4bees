@@ -1,0 +1,181 @@
+hists:
+        data:
+                process: data
+                tag: fourTag
+                year: RunII
+                label: data
+                edgecolor: k
+                fillcolor: k
+
+        d3:
+                process: data
+                tag: threeTag
+                fillcolor: "#FFDF7Fff"
+                edgecolor: k
+                label: QCD multijet
+
+        t4:
+                process: [TTToHadronic, TTToSemiLeptonic, TTTo2L2Nu]
+                tag: fourTag
+                edgecolor: "#7a21dd"
+                fillcolor: "#7a21dd"
+                label: $t\bar{t} 4b$
+
+        t4_from_d3:
+                process: TTbar4b_from_d3
+                tag: threeTag
+                edgecolor: "#e42536"
+                fillcolor: "#e42536"
+                label: TTbar4b (weighted)
+
+        mix_v0:
+                process: mix_v0
+                tag: fourTag
+                year: RunII
+                label: Mixed Data (v0)
+                edgecolor: r
+                fillcolor: r
+
+        mix_v1:
+                process: mix_v1
+                tag: fourTag
+                year: RunII
+                label: Mixed Data (v1)
+                edgecolor: g
+                fillcolor: g
+
+        mix_v2:
+                process: mix_v2
+                tag: fourTag
+                year: RunII
+                label: Mixed Data (v2)
+                edgecolor: b
+                fillcolor: b
+
+        mix_v3:
+                process: mix_v3
+                tag: fourTag
+                year: RunII
+                label: Mixed Data (v3)
+                edgecolor: c
+                fillcolor: c
+
+        mix_pz_v0:
+                process: mix_pz_v0
+                tag: fourTag
+                year: RunII
+                label: Mixed Data (v0) $p_z$ Boosts
+                edgecolor: m
+                fillcolor: m
+
+        mix_noTT_v0:
+                process: mix_noTT_v0
+                tag: fourTag
+                year: RunII
+                label: Mixed Data (v0) ignore tT
+                edgecolor: orange
+                fillcolor: orange
+
+        mix_all:
+                process: mixeddata_all
+                tag: fourTag
+                year: RunII
+                label: Mixed Data (before subsample)
+                edgecolor: gray
+                fillcolor: gray
+
+        mix_all_rank0:
+                process: mixeddata_all_rank0
+                tag: fourTag
+                year: RunII
+                label: Mixed Data rank-0
+                edgecolor: gray
+                fillcolor: gray
+
+        mix_all_rank3_3:
+                process: mixeddata_all_rank3_3
+                tag: fourTag
+                year: RunII
+                label: Mixed Data rank-3
+                edgecolor: blue
+                fillcolor: blue
+
+        mix_all_rank7_7:
+                process: mixeddata_all_rank7_7
+                tag: fourTag
+                year: RunII
+                label: Mixed Data rank-7
+                edgecolor: red
+                fillcolor: red
+
+
+
+        syn_v0:
+                process: syn_v0
+                tag: fourTag
+                year: RunII
+                label: Synthetic Data (v0)
+                edgecolor: purple
+                fillcolor: purple
+
+        syn_noTT_v0:
+                process: syn_noTT_v0
+                tag: fourTag
+                year: RunII
+                label: Syn Data ignore tT
+                edgecolor: olive
+                fillcolor: olive
+
+        HH4b:
+                process: GluGluToHHTo4B_cHHH1
+                tag: fourTag
+                label: HH4b (x100)
+                edgecolor: "#e42536"
+                fillcolor: "#e42536"
+                histtype: step
+                scalefactor: 100
+
+        ZH4b:
+                process: [ZH4b, ggZH4b]
+                tag: fourTag
+                label: ZH4b (x100)
+                edgecolor: "#964a8b"
+                fillcolor: "#964a8b"
+                histtype: step
+                scalefactor: 100
+
+        ZZ4b:
+                process: ZZ4b
+                tag: fourTag
+                label: ZZ4b (x100)
+                edgecolor: "#7a21dd"
+                fillcolor: "#7a21dd"
+                histtype: step
+                scalefactor: 100
+
+
+stack:
+        TTbar:
+                process: [TTToHadronic, TTToSemiLeptonic, TTTo2L2Nu]
+                tag: fourTag
+                fillcolor: "#85D1FBff"
+                edgecolor: k
+                label: $t\bar{t}$
+
+        Multijet:
+                process: data
+                tag: threeTag
+                fillcolor: "#FFDF7Fff"
+                edgecolor: k
+                label: QCD multijet
+
+
+codes:
+   region:
+      SR: 2
+      SB: 1
+      other: 0
+   tag:
+      threeTag: 3
+      fourTag: 4
+      other: 0

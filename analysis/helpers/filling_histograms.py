@@ -47,6 +47,7 @@ def filling_nominal_histograms(
     year_override: bool = False,
     weight_noMvD_override: str = None,
     weight_noFvT_override: str = None,
+    compute_hemi_mixing_diagnostics: bool = False,
 ):
     if year_override:
         year = _apply_year_override(year)
@@ -200,6 +201,57 @@ def filling_nominal_histograms(
         fill += Jet.plot(("tagJets_loose_noJCM_lowpt", "Loose Tag lowpt Jets"), "tagJet_loose_lowpt", weight="weight_noJCM_noFvT", skip=skip_all_but_n)
 
 
+
+    # Hemisphere-mixing closure diagnostics: tagged-jet 4-vector sum per
+    # hemisphere, joint (eta+, eta-) via the product, and pz / mass / pT
+    # analogs. Inter-hemi correlations on these quantities drive the closure
+    # of HH-system observables; the mechanism is described in
+    # ~/ClaudeBrain/physics/hemisphere-mixing-toy/README.md.
+    # Fields are attached by the processor when compute_hemi_mixing_diagnostics
+    # is set; here we only book the corresponding histograms.
+    if compute_hemi_mixing_diagnostics:
+        fill += hist.add("hemi_tag_pos_eta",
+                         (50, -5, 5,
+                          ("hemi_tag_pos_eta", r"$\eta$ of tagged-jet sum, + hemi")))
+        fill += hist.add("hemi_tag_neg_eta",
+                         (50, -5, 5,
+                          ("hemi_tag_neg_eta", r"$\eta$ of tagged-jet sum, $-$ hemi")))
+        fill += hist.add("hemi_tag_eta_product",
+                         (60, -10, 10,
+                          ("hemi_tag_eta_product", r"$\eta_+ \cdot \eta_-$ tagged-jet sums")))
+
+        fill += hist.add("hemi_tag_pos_pz",
+                         (60, -800, 800,
+                          ("hemi_tag_pos_pz", r"$p_z$ tagged-jet sum, + hemi [GeV]")))
+        fill += hist.add("hemi_tag_neg_pz",
+                         (60, -800, 800,
+                          ("hemi_tag_neg_pz", r"$p_z$ tagged-jet sum, $-$ hemi [GeV]")))
+        fill += hist.add("hemi_tag_pz_product",
+                         (60, -2.5e5, 2.5e5,
+                          ("hemi_tag_pz_product",
+                           r"$p_{z,+} \cdot p_{z,-}$ tagged-jet sums [GeV$^2$]")))
+
+        fill += hist.add("hemi_tag_pos_mass",
+                         (50, 0, 500,
+                          ("hemi_tag_pos_mass", r"$m$ tagged-jet sum, + hemi [GeV]")))
+        fill += hist.add("hemi_tag_neg_mass",
+                         (50, 0, 500,
+                          ("hemi_tag_neg_mass", r"$m$ tagged-jet sum, $-$ hemi [GeV]")))
+        fill += hist.add("hemi_tag_mass_product",
+                         (60, 0, 1e5,
+                          ("hemi_tag_mass_product",
+                           r"$m_+ \cdot m_-$ tagged-jet sums [GeV$^2$]")))
+
+        fill += hist.add("hemi_tag_pos_pt",
+                         (50, 0, 500,
+                          ("hemi_tag_pos_pt", r"$p_T$ tagged-jet sum, + hemi [GeV]")))
+        fill += hist.add("hemi_tag_neg_pt",
+                         (50, 0, 500,
+                          ("hemi_tag_neg_pt", r"$p_T$ tagged-jet sum, $-$ hemi [GeV]")))
+        fill += hist.add("hemi_tag_pt_product",
+                         (60, 0, 1e5,
+                          ("hemi_tag_pt_product",
+                           r"$p_{T,+} \cdot p_{T,-}$ tagged-jet sums [GeV$^2$]")))
 
     # fill histograms
     fill(selev, hist)
