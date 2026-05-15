@@ -66,7 +66,7 @@ rule all:
 localrules: make_reana_config
 
 rule make_reana_config:
-    """Generate a patched analysis config with workers=64 and worker_memory=3GB for REANA."""
+    """Generate a patched analysis config with workers=32 and worker_memory=3GB for REANA."""
     input: "coffea4bees/analysis/metadata/{cfg_name}.yml"
     output: f"{config['output_path']}/configs/{{cfg_name}}_reana.yml"
     run:
@@ -74,7 +74,7 @@ rule make_reana_config:
         with open(str(input[0])) as f:
             cfg = yaml.safe_load(f)
         cfg.setdefault('runner', {})
-        cfg['runner']['workers'] = 64
+        cfg['runner']['workers'] = 32
         cfg['runner']['worker_memory'] = '3GB'
         with open(str(output[0]), 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False, allow_unicode=True)
@@ -88,9 +88,9 @@ use rule analysis_processor from analysis as analysis_databkgs with:
     input: reana_config("HH4b")
     output: f"{config['output_path']}/singlefiles/hist__{{sample}}-{{year}}.coffea"
     container: config["analysis_container"]
-    threads: 64
+    threads: 32
     resources:
-        mem_mb=196608
+        mem_mb=98304
     log: f"{config['output_path']}/logs/analysis_hist__{{sample}}-{{year}}.log"
     params:
         datasets="{sample}",
@@ -149,9 +149,9 @@ use rule analysis_databkgs as analysis_data_UL17B with:
 use rule analysis_databkgs as analysis_signals with:
     input: reana_config("HH4b_signals")
     output: f"{config['output_path']}/singlefiles/histsignal__{{sample_signal}}-{{year}}.coffea"
-    threads: 64
+    threads: 32
     resources:
-        mem_mb=196608
+        mem_mb=98304
     log: f"{config['output_path']}/logs/analysis_histsignal__{{sample_signal}}-{{year}}.log"
     params:
         datasets="{sample_signal}",
@@ -290,9 +290,9 @@ use rule analysis_databkgs as analysis_mixeddata_ZZZH with:
 use rule analysis_databkgs as analysis_systematics_others with:
     input: reana_config("HH4b_signals")
     output: f"{config['output_path']}/singlefiles/histsyst_others_{{samplesyst}}-{{iysyst}}.coffea"
-    threads: 64
+    threads: 32
     resources:
-        mem_mb=196608
+        mem_mb=98304
     log: f"{config['output_path']}/logs/analysis_histsyst_others_{{samplesyst}}-{{iysyst}}.log"
     params:
         datasets="{samplesyst}",
@@ -313,9 +313,9 @@ use rule analysis_databkgs as analysis_systematics_others with:
 use rule analysis_databkgs as analysis_systematics_jes with:
     input: reana_config("HH4b_signals")
     output: f"{config['output_path']}/singlefiles/histsyst_jes_{{samplesyst}}-{{iysyst}}.coffea"
-    threads: 64
+    threads: 32
     resources:
-        mem_mb=196608
+        mem_mb=98304
     log: f"{config['output_path']}/logs/analysis_histsyst_jes_{{samplesyst}}-{{iysyst}}.log"
     params:
         datasets="{samplesyst}",
