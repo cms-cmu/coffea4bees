@@ -17,6 +17,7 @@ rule workspace:
         DATACARD_DIR=$(realpath $(dirname {input}))
         echo "$LOG"
         mkdir -p $(dirname $LOG)
+        TMPOUT=$(mktemp /tmp/workspace_XXXXXX.root)
         (
         echo "[$(date)] Starting workspace rule with signal {params.signallabel}"
         {params.container_wrapper} "cd $DATACARD_DIR && \
@@ -24,11 +25,14 @@ rule workspace:
             -P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose \
             --PO 'map=.*/{params.signallabel}:r{params.signallabel}[1,-10,10]' \
             {params.othersignal_maps} \
-            -o $(basename {output}) && \
-            rootls $(basename {output})"
+            -o $TMPOUT && \
+            rootls $TMPOUT"
 
         echo "[$(date)] Completed workspace rule with signal {params.signallabel}"
         ) 2>&1 | tee {log}
+        test -s $TMPOUT || {{ echo "ERROR: workspace tmp output missing or empty" >&2; exit 1; }}
+        cp $TMPOUT {output}
+        rm -f $TMPOUT
         """
 
 rule limits:
