@@ -49,6 +49,7 @@ def filling_nominal_histograms(
     year_override: bool = False,
     weight_noMvD_override: str = None,
     weight_noFvT_override: str = None,
+    compute_hemi_mixing_diagnostics: bool = False,
 ):
     if year_override:
         year = _apply_year_override(year)
@@ -301,6 +302,44 @@ def filling_nominal_histograms(
         fill += Jet.plot(("tagJets_loose_noJCM_lowpt", "Loose Tag lowpt Jets"), "tagJet_loose_lowpt", weight="weight_noJCM_noFvT", skip=skip_all_but_n)
 
 
+
+    # Hemisphere-mixing closure diagnostics: 2D joint distributions of
+    # (+hemi, -hemi) tagged-jet 4-vector-sum kinematics. From these joint
+    # histograms we recover, offline, the per-sample marginals, moments
+    # (means, variances), the covariance, and the correlation coefficient
+    # for the inter-hemi pair. The mechanism is described in
+    # ~/ClaudeBrain/physics/hemisphere-mixing-toy/README.md.
+    # Fields are attached by the processor when compute_hemi_mixing_diagnostics
+    # is set; here we only book the corresponding histograms.
+    if compute_hemi_mixing_diagnostics:
+        fill += hist.add(
+            "hemi_tag_eta_2d",
+            (50, -5, 5,
+             ("hemi_tag_pos_eta",  r"$\eta$ tagged-jet sum, + hemi")),
+            (50, -5, 5,
+             ("hemi_tag_neg_eta",  r"$\eta$ tagged-jet sum, $-$ hemi")),
+        )
+        fill += hist.add(
+            "hemi_tag_pz_2d",
+            (40, -800, 800,
+             ("hemi_tag_pos_pz",   r"$p_z$ tagged-jet sum, + hemi [GeV]")),
+            (40, -800, 800,
+             ("hemi_tag_neg_pz",   r"$p_z$ tagged-jet sum, $-$ hemi [GeV]")),
+        )
+        fill += hist.add(
+            "hemi_tag_mass_2d",
+            (30, 0, 500,
+             ("hemi_tag_pos_mass", r"$m$ tagged-jet sum, + hemi [GeV]")),
+            (30, 0, 500,
+             ("hemi_tag_neg_mass", r"$m$ tagged-jet sum, $-$ hemi [GeV]")),
+        )
+        fill += hist.add(
+            "hemi_tag_pt_2d",
+            (40, 0, 500,
+             ("hemi_tag_pos_pt",   r"$p_T$ tagged-jet sum, + hemi [GeV]")),
+            (40, 0, 500,
+             ("hemi_tag_neg_pt",   r"$p_T$ tagged-jet sum, $-$ hemi [GeV]")),
+        )
 
     # fill histograms
     fill(selev, hist)
