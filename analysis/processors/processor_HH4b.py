@@ -1456,18 +1456,14 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         s_pos = tag_pos.sum(axis=1)
         s_neg = tag_neg.sum(axis=1)
 
-        selev['hemi_tag_pos_pt']      = s_pos.pt
-        selev['hemi_tag_pos_eta']     = s_pos.eta
-        selev['hemi_tag_pos_pz']      = s_pos.pz
-        selev['hemi_tag_pos_mass']    = s_pos.mass
-        selev['hemi_tag_neg_pt']      = s_neg.pt
-        selev['hemi_tag_neg_eta']     = s_neg.eta
-        selev['hemi_tag_neg_pz']      = s_neg.pz
-        selev['hemi_tag_neg_mass']    = s_neg.mass
-        selev['hemi_tag_eta_product']  = s_pos.eta  * s_neg.eta
-        selev['hemi_tag_pz_product']   = s_pos.pz   * s_neg.pz
-        selev['hemi_tag_mass_product'] = s_pos.mass * s_neg.mass
-        selev['hemi_tag_pt_product']   = s_pos.pt   * s_neg.pt
+        selev['hemi_tag_pos_pt']   = s_pos.pt
+        selev['hemi_tag_pos_eta']  = s_pos.eta
+        selev['hemi_tag_pos_pz']   = s_pos.pz
+        selev['hemi_tag_pos_mass'] = s_pos.mass
+        selev['hemi_tag_neg_pt']   = s_neg.pt
+        selev['hemi_tag_neg_eta']  = s_neg.eta
+        selev['hemi_tag_neg_pz']   = s_neg.pz
+        selev['hemi_tag_neg_mass'] = s_neg.mass
         return selev
 
     def histograms(self, event, selev, weights, analysis_selections, shift_name):
