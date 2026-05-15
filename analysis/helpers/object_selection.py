@@ -297,7 +297,7 @@ def jet_selection(
                 event['Jet', 'passJetId'] = event['Jet', 'passJetId_loose']
             else:
                 event['Jet', 'passJetId'] = compute_jet_id(event.Jet, corrections_metadata['jet_id'], r3_s_jetId_tag)
-        # event['Jet', 'pileup'] = ((event.Jet.puId < r3_puId_thr) & (event.Jet.pt < r3_pu_pt_thr)) | ((np.abs(event.Jet.eta) > r3_fwd_eta_min) & (event.Jet.pt < r3_fwd_pt_thr))
+        event['Jet', 'pileup'] = ((event.Jet.puId < r3_puId_thr) & (event.Jet.pt < r3_pu_pt_thr)) | ((np.abs(event.Jet.eta) > r3_fwd_eta_min) & (event.Jet.pt < r3_fwd_pt_thr))
         event['Jet', 'selected_loose'] = (event.Jet.pt >= r3_sl_pt_min) & event.Jet.passJetId_loose & event.Jet.lepton_cleaned & (np.abs(event.Jet.eta) <= r3_sl_eta_max)
         event['Jet', 'selected'] = (event.Jet.pt >= r3_s_pt_min) & (np.abs(event.Jet.eta) <= r3_s_eta_max) & event.Jet.passJetId & event.Jet.lepton_cleaned
         event['Jet', 'selected_run2'] = (event.Jet.pt >= r2_s_pt_min) & (np.abs(event.Jet.eta) <= r3_s_eta_max) & event.Jet.passJetId & event.Jet.lepton_cleaned

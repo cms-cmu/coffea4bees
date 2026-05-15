@@ -781,16 +781,18 @@ def create_plots(
                 "year": "UL18",
                 "tag": "lowpt_fourTag" if args.lowpt else "fourTag",
                 "region": "SB",
-                "passPreSel": True
             }
+            if has_passPreSel:
+                index_dict["passPreSel"] = True
             if has_passSvB:
                 index_dict["passSvB"] = False
             if has_failSvB:
                 index_dict["failSvB"] = False
 
+
             for iBin in range(15):
                 index_dict["n"] = iBin
-                cfg.hists[0]['hists'][tagJets][tuple(index_dict.values())] = (nTag_pred[iBin], 0)
+                cfg.hists[0]['hists'][tagJets][index_dict] = (nTag_pred[iBin], 0)
 
         except Exception as e:
             logger.warning(f"Error setting histogram values, trying alternative approach: {e}")
