@@ -62,6 +62,14 @@ rule all:
         expand(OUTPUT_PATTERNS["gof"], zip, channel=CHANNELS, signallabel=SIGNALLABELS),
         expand(OUTPUT_PATTERNS["likelihood_scan"], zip, channel=CHANNELS, signallabel=SIGNALLABELS),
         list(SYST_PLOTS.values()),
+    container: config["analysis_container"]
+    params:
+        output_dir = f"{datetime.now().strftime('%Y%m%d')}_scheduled/"
+    shell:
+        """
+        echo "Copying results to eos"
+        bash src/tools/copy_files_to_cernbox.sh -s {config[output_path]} -d www/HH4b/reana/{params.output_dir} -t
+        """
 
 localrules: make_reana_config
 
