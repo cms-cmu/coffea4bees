@@ -205,7 +205,10 @@ def create_combine_root_file( file_to_convert,
                 root_hists[channel]['multijet'][bkg_name_syst].SetName(f'multijet_{bkg_name_syst}')
                 for i in range(len(ivalues)):
                     nom_val = root_hists[channel]['multijet'][bkg_name_syst].GetBinContent( i+1 )
-                    root_hists[channel]['multijet'][bkg_name_syst].SetBinContent( i+1, nom_val*ivalues[i]  )
+                    factor = float(ivalues[i])
+                    if not np.isfinite(factor):
+                        factor = 1.0
+                    root_hists[channel]['multijet'][bkg_name_syst].SetBinContent( i+1, nom_val * factor )
 
         closureSysts = [ i.replace('Up', '') for i in root_hists[next(iter(root_hists))]['multijet'].keys() if i.endswith('Up') ]
 

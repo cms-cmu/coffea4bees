@@ -1,11 +1,8 @@
 processes:
   signal:
-    GluGluToHHTo4B_cHHH1:
-      label: HH4b
-      process: 2
-    ZH4b:
-      label: ZH4b
-      process: 1
+    # ZH4b:
+    #   label: ZH4b
+    #   process: 1
     ZZ4b:
       label: ZZ_bbbb
       process: 0

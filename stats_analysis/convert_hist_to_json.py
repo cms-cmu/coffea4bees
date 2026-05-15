@@ -2,6 +2,7 @@ import os, sys
 import argparse
 import logging
 import json
+import tempfile
 import numpy as np
 from coffea.util import load
 import hist
@@ -127,4 +128,11 @@ if __name__ == '__main__':
     output_dir = '/'.join( args.output.split('/')[:-1] )
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    json.dump(json_dict, open(f'{args.output}', 'w'))
+    tmp_fd, tmp_path = tempfile.mkstemp(dir=output_dir or '.', suffix='.json.tmp')
+    try:
+        with os.fdopen(tmp_fd, 'w') as f:
+            json.dump(json_dict, f)
+        os.replace(tmp_path, args.output)
+    except:
+        os.unlink(tmp_path)
+        raise

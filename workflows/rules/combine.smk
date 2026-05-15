@@ -12,20 +12,27 @@ rule workspace:
     log: "output/logs/workspace_{path}.log"
     shell:
         """
+        set -o pipefail
         LOG=$(pwd)/{log}
+        DATACARD_DIR=$(realpath $(dirname {input}))
         echo "$LOG"
         mkdir -p $(dirname $LOG)
+        TMPOUT=$(mktemp /tmp/workspace_XXXXXX.root)
         (
         echo "[$(date)] Starting workspace rule with signal {params.signallabel}"
-        {params.container_wrapper} "cd $(dirname {input}) && \
+        {params.container_wrapper} "cd $DATACARD_DIR && \
             text2workspace.py $(basename {input}) \
             -P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose \
             --PO 'map=.*/{params.signallabel}:r{params.signallabel}[1,-10,10]' \
             {params.othersignal_maps} \
-            -o $(basename {output})" 
+            -o $TMPOUT && \
+            rootls $TMPOUT"
 
         echo "[$(date)] Completed workspace rule with signal {params.signallabel}"
         ) 2>&1 | tee {log}
+        test -s $TMPOUT || {{ echo "ERROR: workspace tmp output missing or empty" >&2; exit 1; }}
+        cp $TMPOUT {output}
+        rm -f $TMPOUT
         """
 
 rule limits:
@@ -43,11 +50,12 @@ rule limits:
     shell:
         """
         LOG=$(pwd)/{log}
+        DATACARD_DIR=$(realpath $(dirname {input}))
         mkdir -p $(dirname $LOG)
         (
         echo "[$(date)] Starting limits rule with signal {params.signallabel}"
         echo "[$(date)] Running AsymptoticLimits"
-        {params.container_wrapper} "cd $(dirname {input}) && \
+        {params.container_wrapper} "cd $DATACARD_DIR && \
             combine -M AsymptoticLimits $(basename {input}) \
             --redefineSignalPOIs r{params.signallabel} \
             {params.set_parameters_zero} \
@@ -57,12 +65,12 @@ rule limits:
             > {output.txt}
 
         echo "[$(date)] Running CollectLimits"
-        {params.container_wrapper} "cd $(dirname {input}) && \
+        {params.container_wrapper} "cd $DATACARD_DIR && \
             combineTool.py -M CollectLimits \
             higgsCombine_{params.signallabel}.AsymptoticLimits.mH120.root \
-            -o $(basename {output.json})" 
+            -o $(basename {output.json})"
 
-        echo "[$(date)] Completed limits rule with signal {params.signallabel}" 
+        echo "[$(date)] Completed limits rule with signal {params.signallabel}"
         ) 2>&1 | tee {log}
         """
 
@@ -78,11 +86,12 @@ rule significance:
     shell:
         """
         LOG=$(pwd)/{log}
+        DATACARD_DIR=$(realpath $(dirname {input}))
         mkdir -p $(dirname $LOG)
         echo "[$(date)] Starting significance rule with signal {params.signallabel}" > $LOG
 
         echo "[$(date)] Running observed significance" >> $LOG
-        {params.container_wrapper} "cd $(dirname {input}) && \
+        {params.container_wrapper} "cd $DATACARD_DIR && \
             combine -M Significance $(basename {input}) \
             {params.set_parameters_zero} \
             {params.freeze_parameters} \
@@ -91,7 +100,7 @@ rule significance:
             2>&1 | tee -a $LOG > {output}
 
         echo "[$(date)] Running expected significance" >> $LOG
-        {params.container_wrapper} "cd $(dirname {input}) && \
+        {params.container_wrapper} "cd $DATACARD_DIR && \
             combine -M Significance $(basename {input}) \
             --redefineSignalPOIs r{params.signallabel} \
             {params.set_parameters_zero} \
@@ -170,6 +179,7 @@ rule impacts:
         {params.container_wrapper} "cd $(dirname {input}) && \
             combineTool.py -M Impacts -d $(basename {input}) \
             --doInitialFit --robustFit 1 -m 125 \
+            --redefineSignalPOIs r{params.signallabel} \
             --setParameterRanges r{params.signallabel}=-10,10{params.set_parameters_ranges} \
             {params.set_parameters_zero} \
             -n $(basename {input} .root)" \
@@ -180,6 +190,7 @@ rule impacts:
         {params.container_wrapper} "cd $(dirname {input}) && \
             combineTool.py -M Impacts -d $(basename {input}) \
             --doFits --robustFit 1 -m 125 --parallel 4 \
+            --redefineSignalPOIs r{params.signallabel} \
             --setParameterRanges r{params.signallabel}=-10,10{params.set_parameters_ranges} \
             {params.set_parameters_zero} \
             -n $(basename {input} .root)" \
@@ -190,6 +201,7 @@ rule impacts:
         {params.container_wrapper} "cd $(dirname {input}) && \
             combineTool.py -M Impacts \
             -m 125 -n $(basename {input} .root) \
+            --redefineSignalPOIs r{params.signallabel} \
             -d $(basename {input}) \
             -o impacts_combine_$(basename {input} .root)_exp.json" \
             2>&1 | tee -a $LOG
@@ -249,7 +261,7 @@ rule gof:
         echo "[$(date)] Plotting Goodness of Fit results" >> $LOG
         {params.container_wrapper} "cd $(dirname {input}) &&\
             plotGof.py gof_$(basename {input} .root)_{params.signallabel}.json \
-            --statistic staturated --mass 120.0 \
+            --statistic saturated --mass 120.0 \
             --output $(basename {output} .pdf)" 2>&1 | tee -a $LOG
 
         echo "[$(date)] Completed gof rule with signal {params.signallabel}" >> $LOG
