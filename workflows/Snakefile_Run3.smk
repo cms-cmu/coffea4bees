@@ -171,16 +171,18 @@ rule create_histogram_config_wJCM:
         config_file = config['histogram_config']
     output: f"{out}histogram_config_wJCM.yml"
     params:
-        svb_fn_cmp = str(config.get('enable_SvB_FeynNet_comparison', False)).lower()
+        svb_fn_cmp = str(config.get('enable_SvB_FeynNet_comparison', False)).lower(),
+        hemi_diag  = str(config.get('compute_hemi_mixing_diagnostics', False)).lower()
     shell:
         """
         sed \
             -e 's|  run_SvB:.*|  run_SvB: true|' \
             -e 's|  run_SvB_FeynNet_comparison:.*|  run_SvB_FeynNet_comparison: {params.svb_fn_cmp}|' \
             -e 's|  JCM_file.*|  JCM_file: {input.jcm_file}|' \
+            -e 's|  compute_hemi_mixing_diagnostics:.*|  compute_hemi_mixing_diagnostics: {params.hemi_diag}|' \
             {input.config_file} > {output}
         echo "Patched config:"
-        grep -E "run_SvB|JCM_file" {output}
+        grep -E "run_SvB|JCM_file|compute_hemi_mixing_diagnostics" {output}
         """
 
 use rule analysis_processor from analysis as make_histograms_wJCM with:
@@ -268,7 +270,8 @@ rule create_histogram_config_FvT:
         config_file = config['histogram_config']
     output: f"{out}histogram_config_FvT.yml"
     params:
-        svb_fn_cmp = str(config.get('enable_SvB_FeynNet_comparison', False)).lower()
+        svb_fn_cmp = str(config.get('enable_SvB_FeynNet_comparison', False)).lower(),
+        hemi_diag  = str(config.get('compute_hemi_mixing_diagnostics', False)).lower()
     shell:
         """
         sed \
@@ -277,9 +280,10 @@ rule create_histogram_config_FvT:
             -e 's|  JCM_file.*|  JCM_file: {input.jcm_file}|' \
             -e 's|  apply_FvT:.*|  apply_FvT: true|' \
             -e 's|  plot_ttbar_with_weights.*|  plot_ttbar_with_weights: true|' \
+            -e 's|  compute_hemi_mixing_diagnostics:.*|  compute_hemi_mixing_diagnostics: {params.hemi_diag}|' \
             {input.config_file} > {output}
         echo "Patched config:"
-        grep -E "run_SvB|JCM_file|apply_FvT|plot_ttbar_with_weights" {output}
+        grep -E "run_SvB|JCM_file|apply_FvT|plot_ttbar_with_weights|compute_hemi_mixing_diagnostics" {output}
         """
 
 # Only data is re-run with FvT — TT estimate comes from 3b data × FvT.d3_to_t4
