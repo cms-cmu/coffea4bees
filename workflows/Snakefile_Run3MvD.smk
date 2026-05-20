@@ -143,14 +143,17 @@ rule create_histogram_config_wSvB:
     input:
         config_file = config['histogram_config']
     output: f"{SHARED_OUT_MvD}histogram_config_wSvB.yml"
+    params:
+        hemi_diag = str(config.get('compute_hemi_mixing_diagnostics', False)).lower()
     shell:
         """
         sed \
             -e 's|  run_SvB.*|  run_SvB: true|' \
             -e 's|  worker_memory:.*|  worker_memory: 8GB|' \
+            -e 's|  compute_hemi_mixing_diagnostics:.*|  compute_hemi_mixing_diagnostics: {params.hemi_diag}|' \
             {input.config_file} > {output}
         echo "Patched config:"
-        grep -E "run_SvB" {output}
+        grep -E "run_SvB|compute_hemi_mixing_diagnostics" {output}
         """
 
 # data + TT histograms — first pass, rank-independent. Output to shared dir.
@@ -393,6 +396,8 @@ rule create_histogram_config_MvD:
         jcm_file    = config['jcm_install_path'],
         config_file = config['histogram_config']
     output: f"{out}histogram_config_MvD.yml"
+    params:
+        hemi_diag = str(config.get('compute_hemi_mixing_diagnostics', False)).lower()
     shell:
         """
         sed \
@@ -401,9 +406,10 @@ rule create_histogram_config_MvD:
             -e 's|  apply_MvD_weight.*|  apply_MvD_weight: true\\n  plot_ttbar_with_MvD_weights: true|' \
             -e 's|  apply_MvD:[^_].*|  apply_MvD: true|' \
             -e 's|  worker_memory:.*|  worker_memory: 8GB|' \
+            -e 's|  compute_hemi_mixing_diagnostics:.*|  compute_hemi_mixing_diagnostics: {params.hemi_diag}|' \
             {input.config_file} > {output}
         echo "Patched config:"
-        grep -E "run_SvB|JCM_file|apply_MvD|plot_ttbar_with_MvD" {output}
+        grep -E "run_SvB|JCM_file|apply_MvD|plot_ttbar_with_MvD|compute_hemi_mixing_diagnostics" {output}
         """
 
 use rule analysis_processor from analysis as make_histograms_data_MvD with:

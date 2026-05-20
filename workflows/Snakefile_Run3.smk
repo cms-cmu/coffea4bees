@@ -58,17 +58,26 @@ rule all_FvT_histograms:
 # ambiguous wildcard matching, since both dataset names and years contain _.
 # SvB friend trees are reused from the MvD workflow output.
 
+# SvB_MA friend tree pointer. Defaults to the Run3-trained SvB produced by
+# Snakefile_Run3_SvB_training.smk on this same EOS base (mtime 2026-05-12).
+# For A/B testing against the legacy Run2-trained SvB_MA scores, override:
+#   --config svb_ma_path='coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data.json@@SvB_MA'
+config.setdefault('svb_ma_path',
+    f"{config['eos_base']}/friend/SvB/result.json@@analysis.0.merged")
+
 rule create_friends_wSvB:
     input:
         friends_yml    = "coffea4bees/metadata/friends_HH4b.yml",
         svb_json       = "coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data.json",
         feynet_json    = "coffea4bees/metadata/datasets_HH4b_Run3/SvBFeynNetfriend_mixeddata_data.json",
     output: f"{out}friends_wSvB.yml"
+    params:
+        svb_ma_path = config['svb_ma_path']
     shell:
         """
         sed \
             -e 's|    SvB:.*|    SvB: "{input.svb_json}@@SvB"|' \
-            -e 's|    SvB_MA:.*|    SvB_MA: "{input.svb_json}@@SvB_MA"|' \
+            -e 's|    SvB_MA:.*|    SvB_MA: {params.svb_ma_path}|' \
             -e 's|    SvB_FeynNet:.*|    SvB_FeynNet: "{input.feynet_json}@@SvB_FeynNet"|' \
             {input.friends_yml} > {output}
         echo "Patched friends:"
@@ -162,16 +171,18 @@ rule create_histogram_config_wJCM:
         config_file = config['histogram_config']
     output: f"{out}histogram_config_wJCM.yml"
     params:
-        svb_fn_cmp = str(config.get('enable_SvB_FeynNet_comparison', False)).lower()
+        svb_fn_cmp = str(config.get('enable_SvB_FeynNet_comparison', False)).lower(),
+        hemi_diag  = str(config.get('compute_hemi_mixing_diagnostics', False)).lower()
     shell:
         """
         sed \
             -e 's|  run_SvB:.*|  run_SvB: true|' \
             -e 's|  run_SvB_FeynNet_comparison:.*|  run_SvB_FeynNet_comparison: {params.svb_fn_cmp}|' \
             -e 's|  JCM_file.*|  JCM_file: {input.jcm_file}|' \
+            -e 's|  compute_hemi_mixing_diagnostics:.*|  compute_hemi_mixing_diagnostics: {params.hemi_diag}|' \
             {input.config_file} > {output}
         echo "Patched config:"
-        grep -E "run_SvB|JCM_file" {output}
+        grep -E "run_SvB|JCM_file|compute_hemi_mixing_diagnostics" {output}
         """
 
 use rule analysis_processor from analysis as make_histograms_wJCM with:
@@ -239,13 +250,14 @@ rule create_friends_FvT:
         feynet_json = "coffea4bees/metadata/datasets_HH4b_Run3/SvBFeynNetfriend_mixeddata_data.json",
     output: f"{out}friends_FvT.yml"
     params:
-        fvt_path = f"{config['eos_base']}/friend/FvT/result.json@@analysis.0.merged"
+        fvt_path    = f"{config['eos_base']}/friend/FvT/result.json@@analysis.0.merged",
+        svb_ma_path = config['svb_ma_path']
     shell:
         """
         sed \
             -e 's|    FvT:.*|    FvT: {params.fvt_path}|' \
             -e 's|    SvB:.*|    SvB: "{input.svb_json}@@SvB"|' \
-            -e 's|    SvB_MA:.*|    SvB_MA: "{input.svb_json}@@SvB_MA"|' \
+            -e 's|    SvB_MA:.*|    SvB_MA: {params.svb_ma_path}|' \
             -e 's|    SvB_FeynNet:.*|    SvB_FeynNet: "{input.feynet_json}@@SvB_FeynNet"|' \
             {input.friends_yml} > {output}
         echo "Patched friends:"
@@ -258,7 +270,8 @@ rule create_histogram_config_FvT:
         config_file = config['histogram_config']
     output: f"{out}histogram_config_FvT.yml"
     params:
-        svb_fn_cmp = str(config.get('enable_SvB_FeynNet_comparison', False)).lower()
+        svb_fn_cmp = str(config.get('enable_SvB_FeynNet_comparison', False)).lower(),
+        hemi_diag  = str(config.get('compute_hemi_mixing_diagnostics', False)).lower()
     shell:
         """
         sed \
@@ -267,9 +280,10 @@ rule create_histogram_config_FvT:
             -e 's|  JCM_file.*|  JCM_file: {input.jcm_file}|' \
             -e 's|  apply_FvT:.*|  apply_FvT: true|' \
             -e 's|  plot_ttbar_with_weights.*|  plot_ttbar_with_weights: true|' \
+            -e 's|  compute_hemi_mixing_diagnostics:.*|  compute_hemi_mixing_diagnostics: {params.hemi_diag}|' \
             {input.config_file} > {output}
         echo "Patched config:"
-        grep -E "run_SvB|JCM_file|apply_FvT|plot_ttbar_with_weights" {output}
+        grep -E "run_SvB|JCM_file|apply_FvT|plot_ttbar_with_weights|compute_hemi_mixing_diagnostics" {output}
         """
 
 # Only data is re-run with FvT — TT estimate comes from 3b data × FvT.d3_to_t4

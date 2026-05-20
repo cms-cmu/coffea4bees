@@ -49,6 +49,7 @@ def filling_nominal_histograms(
     year_override: bool = False,
     weight_noMvD_override: str = None,
     weight_noFvT_override: str = None,
+    compute_hemi_mixing_diagnostics: bool = False,
 ):
     if year_override:
         year = _apply_year_override(year)
@@ -301,6 +302,56 @@ def filling_nominal_histograms(
         fill += Jet.plot(("tagJets_loose_noJCM_lowpt", "Loose Tag lowpt Jets"), "tagJet_loose_lowpt", weight="weight_noJCM_noFvT", skip=skip_all_but_n)
 
 
+
+    # Hemisphere-mixing closure diagnostics: 2D joint distributions of
+    # (+hemi, -hemi) per-hemi 4-vector-sum kinematics, for three jet
+    # collections (can / sel / other = notCanJet). From these joint
+    # histograms we recover, offline, the per-sample marginals, moments,
+    # covariance, and correlation. Mechanism: see
+    # ~/ClaudeBrain/physics/hemisphere-mixing-toy/README.md.
+    if compute_hemi_mixing_diagnostics:
+        # 'all' is event.Jet (what the matching pins);
+        # 'can' is canJet (4 HH cand jets, observable);
+        # 'other' is notCanJet (selJet minus canJet, slack carrier).
+        for coll, coll_label in (('can',   'cand'),
+                                 ('all',   'all'),
+                                 ('other', 'other')):
+            fill += hist.add(
+                f"hemi_{coll}_eta_2d",
+                (50, -5, 5,
+                 (f"hemi_{coll}_pos_eta",
+                  rf"$\eta$ {coll_label}-jet sum, + hemi")),
+                (50, -5, 5,
+                 (f"hemi_{coll}_neg_eta",
+                  rf"$\eta$ {coll_label}-jet sum, $-$ hemi")),
+            )
+            fill += hist.add(
+                f"hemi_{coll}_pz_2d",
+                (40, -800, 800,
+                 (f"hemi_{coll}_pos_pz",
+                  rf"$p_z$ {coll_label}-jet sum, + hemi [GeV]")),
+                (40, -800, 800,
+                 (f"hemi_{coll}_neg_pz",
+                  rf"$p_z$ {coll_label}-jet sum, $-$ hemi [GeV]")),
+            )
+            fill += hist.add(
+                f"hemi_{coll}_mass_2d",
+                (30, 0, 500,
+                 (f"hemi_{coll}_pos_mass",
+                  rf"$m$ {coll_label}-jet sum, + hemi [GeV]")),
+                (30, 0, 500,
+                 (f"hemi_{coll}_neg_mass",
+                  rf"$m$ {coll_label}-jet sum, $-$ hemi [GeV]")),
+            )
+            fill += hist.add(
+                f"hemi_{coll}_pt_2d",
+                (40, 0, 500,
+                 (f"hemi_{coll}_pos_pt",
+                  rf"$p_T$ {coll_label}-jet sum, + hemi [GeV]")),
+                (40, 0, 500,
+                 (f"hemi_{coll}_neg_pt",
+                  rf"$p_T$ {coll_label}-jet sum, $-$ hemi [GeV]")),
+            )
 
     # fill histograms
     fill(selev, hist)
