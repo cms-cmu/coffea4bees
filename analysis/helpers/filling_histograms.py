@@ -252,8 +252,66 @@ def filling_nominal_histograms(
                   rf"$p_T$ {coll_label}-jet sum, $-$ hemi [GeV]")),
             )
 
+    # Pre-region (inclusive) hemi-mixing diagnostics: same 12 2D histograms,
+    # but on a Collection without the region axis -- so every event passing
+    # the analysis selection contributes, regardless of SR/SB membership.
+    # The SR/SB-cut joint correlations can be biased by the region cuts on
+    # HH-like quantities; the inclusive set is the clean measurement of what
+    # the mixing algorithm itself does.
+    hist_inclusive = None
+    fill_inclusive = None
+    if compute_hemi_mixing_diagnostics:
+        hist_inclusive = Collection(
+            process=[processName],
+            year=[year],
+            tag=tag_list,
+            **dict((s, ...) for s in histCuts),
+        )
+        fill_inclusive = Fill(process=processName, year=year, weight=weight_name)
+        for coll, coll_label in (('can',   'cand'),
+                                 ('all',   'all'),
+                                 ('other', 'other')):
+            fill_inclusive += hist_inclusive.add(
+                f"hemi_{coll}_eta_2d_inclusive",
+                (50, -5, 5,
+                 (f"hemi_{coll}_pos_eta",
+                  rf"$\eta$ {coll_label}-jet sum, + hemi (inclusive)")),
+                (50, -5, 5,
+                 (f"hemi_{coll}_neg_eta",
+                  rf"$\eta$ {coll_label}-jet sum, $-$ hemi (inclusive)")),
+            )
+            fill_inclusive += hist_inclusive.add(
+                f"hemi_{coll}_pz_2d_inclusive",
+                (40, -800, 800,
+                 (f"hemi_{coll}_pos_pz",
+                  rf"$p_z$ {coll_label}-jet sum, + hemi (inclusive) [GeV]")),
+                (40, -800, 800,
+                 (f"hemi_{coll}_neg_pz",
+                  rf"$p_z$ {coll_label}-jet sum, $-$ hemi (inclusive) [GeV]")),
+            )
+            fill_inclusive += hist_inclusive.add(
+                f"hemi_{coll}_mass_2d_inclusive",
+                (30, 0, 500,
+                 (f"hemi_{coll}_pos_mass",
+                  rf"$m$ {coll_label}-jet sum, + hemi (inclusive) [GeV]")),
+                (30, 0, 500,
+                 (f"hemi_{coll}_neg_mass",
+                  rf"$m$ {coll_label}-jet sum, $-$ hemi (inclusive) [GeV]")),
+            )
+            fill_inclusive += hist_inclusive.add(
+                f"hemi_{coll}_pt_2d_inclusive",
+                (40, 0, 500,
+                 (f"hemi_{coll}_pos_pt",
+                  rf"$p_T$ {coll_label}-jet sum, + hemi (inclusive) [GeV]")),
+                (40, 0, 500,
+                 (f"hemi_{coll}_neg_pt",
+                  rf"$p_T$ {coll_label}-jet sum, $-$ hemi (inclusive) [GeV]")),
+            )
+
     # fill histograms
     fill(selev, hist)
+    if fill_inclusive is not None:
+        fill_inclusive(selev, hist_inclusive)
 
     if run_dilep_ttbar_crosscheck:
         fill_ttbar = Fill(process=processName, year=year, weight="weight_noJCM_noFvT")
@@ -280,9 +338,15 @@ def filling_nominal_histograms(
         fill_ttbar += hist_ttbar.add('mll_ll', (100, 0, 300, ('mll', 'mll [GeV]')))
 
         fill_ttbar(selev, hist_ttbar)
-        return hist.to_dict(nonempty=True) | {"hists_ttbar": hist_ttbar.to_dict(nonempty=True)["hists"], "categories_ttbar": hist_ttbar.to_dict(nonempty=True)["categories"]}
+        result = hist.to_dict(nonempty=True) | {"hists_ttbar": hist_ttbar.to_dict(nonempty=True)["hists"], "categories_ttbar": hist_ttbar.to_dict(nonempty=True)["categories"]}
     else:
-        return hist.to_dict(nonempty=True)
+        result = hist.to_dict(nonempty=True)
+
+    # Merge inclusive (no-region) hemi-mixing diagnostic histograms in-place.
+    if hist_inclusive is not None:
+        inc = hist_inclusive.to_dict(nonempty=True)
+        result['hists'].update(inc['hists'])
+    return result
 
 
 def filling_syst_histograms(selev, weights, analysis_selections,
