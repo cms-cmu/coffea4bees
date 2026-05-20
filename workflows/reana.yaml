@@ -18,6 +18,9 @@ inputs:
 workflow:
   type: snakemake
   file: coffea4bees/workflows/Snakefile_reana.smk
+  resources:
+    compute_backend: slurmcern
+    voms_proxy: true
 workspace:
   retention_days:
     output/*: 30

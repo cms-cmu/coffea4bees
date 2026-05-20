@@ -106,8 +106,9 @@ rule make_combine_inputs:
     shell:
         """
         mkdir -p $(dirname {log})
+        OUTPUT_DIR=$(realpath {params.output_dir} 2>/dev/null || echo "$(pwd)/{params.output_dir}")
         echo "[$(date)] Starting make_combine_inputs for signal {params.signal}" > {log}
-        
+
         echo "[$(date)] Making combine inputs with full stats" | tee -a {log}
         {params.container_wrapper} \
             python3 coffea4bees/stats_analysis/make_combine_inputs.py \
@@ -121,13 +122,13 @@ rule make_combine_inputs:
                 --metadata {params.metadata} \
                 {params.stat_only} \
                 {params.tag_flags} 2>&1 | tee -a {log}
-                
+
         echo "[$(date)] Combining datacards" | tee -a {log}
-        {params.container_wrapper} "cd {params.output_dir} && \
+        {params.container_wrapper} "cd $OUTPUT_DIR && \
             combineCards.py {params.signal}_2016=datacard_{params.signal}_2016.txt \
             {params.signal}_2017=datacard_{params.signal}_2017.txt \
             {params.signal}_2018=datacard_{params.signal}_2018.txt > datacard__{params.signal}.txt" 2>&1 | tee -a {log}
-            
+
         echo "[$(date)] Completed make_combine_inputs for signal {params.signal}" >> {log}
         """
 

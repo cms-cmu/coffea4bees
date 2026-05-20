@@ -94,7 +94,10 @@ def mkdir(directory, doExecute=True, xrd=False, url="root://cmseos.fnal.gov/", d
         if not os.path.isdir(directory):
             print("mkdir", directory)
             if doExecute:
-                os.mkdir(directory)
+                try:
+                    os.mkdir(directory)
+                except FileExistsError:
+                    pass
 
 
 def mkpath(path, doExecute=True, debug=False):
@@ -558,8 +561,10 @@ class multijetEnsemble:
         B_no_rebin = np.array([[b.Integral(self.average.GetBinLowEdge(bin), self.average.GetXaxis().GetBinUpEdge(bin)) / self.average.GetBinWidth(bin) for bin in range(1, self.nBins + 1)] for b in BE])
         B = np.array([[b.Integral(self.average_rebin.GetBinLowEdge(bin), self.average_rebin.GetXaxis().GetBinUpEdge(bin)) / self.average_rebin.GetBinWidth(bin) for bin in range(1, self.nBins_rebin + 1)] for b in BE])
         S = np.array([[self.signal.GetBinContent(bin) for bin in range(1, self.nBins_rebin + 1)]])
-        S = S / h
-        S = S / S.max()
+        S = np.where(h > 0, S / h, 0.0)
+        smax = S.max()
+        if smax > 0:
+            S = S / smax
         S = S.repeat(len(BE), axis=0)
         self.basis_element = B
         self.basis_signal  = S
