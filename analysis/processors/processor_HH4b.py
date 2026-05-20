@@ -1491,13 +1491,17 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             processOutput['top_ps_hh_events'] = []
 
     def _attach_hemi_mixing_diagnostics(self, selev):
-        """Compute per-hemi tagged-jet 4-vector sums for closure diagnostics.
+        """Compute per-hemi 4-vector sums for closure diagnostics.
 
-        Splits each event's tagged-jet collection into +/- hemispheres using
-        the transverse-thrust axis and stores eta/pt/pz/mass of each summed
-        4-vector plus the pairwise products needed to extract inter-hemi
-        covariances offline. See ~/ClaudeBrain/physics/hemisphere-mixing-toy
-        for the motivation.
+        Splits each event's jets into +/- hemispheres using the transverse-
+        thrust axis and stores eta/pt/pz/mass of the per-hemi 4-vector sum
+        for three jet collections:
+
+          can    -- canJet            (4 HH-candidate jets per event)
+          sel    -- selJet            (all selected jets, what matching pins)
+          other  -- notCanJet_coffea  (the non-candidate selected jets)
+
+        See ~/ClaudeBrain/physics/hemisphere-mixing-toy for the motivation.
         """
         from coffea4bees.hemisphere_mixing.mixing_helpers import (
             transverse_thrust_awkward_fast,
@@ -1505,18 +1509,29 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         )
         thrust = transverse_thrust_awkward_fast(
             selev.Jet, n_steps=720, refine_rounds=2)
-        tag_pos, tag_neg = split_hemispheres(selev.tagJet, thrust)
-        s_pos = tag_pos.sum(axis=1)
-        s_neg = tag_neg.sum(axis=1)
 
-        selev['hemi_tag_pos_pt']   = s_pos.pt
-        selev['hemi_tag_pos_eta']  = s_pos.eta
-        selev['hemi_tag_pos_pz']   = s_pos.pz
-        selev['hemi_tag_pos_mass'] = s_pos.mass
-        selev['hemi_tag_neg_pt']   = s_neg.pt
-        selev['hemi_tag_neg_eta']  = s_neg.eta
-        selev['hemi_tag_neg_pz']   = s_neg.pz
-        selev['hemi_tag_neg_mass'] = s_neg.mass
+        # "all"   = event.Jet  -- the collection the matching variables are
+        #                          actually computed over (see compute_hemi_vars
+        #                          in mixing_helpers.py).
+        # "can"   = canJet     -- HH candidate jets (4 per event); HH observable.
+        # "other" = notCanJet  -- selJet minus canJet; the slack carrier.
+        collections = [
+            ('can',   selev.canJet),
+            ('all',   selev.Jet),
+            ('other', selev.notCanJet_coffea),
+        ]
+        for prefix, coll in collections:
+            pos, neg = split_hemispheres(coll, thrust)
+            s_pos = pos.sum(axis=1)
+            s_neg = neg.sum(axis=1)
+            selev[f'hemi_{prefix}_pos_pt']   = s_pos.pt
+            selev[f'hemi_{prefix}_pos_eta']  = s_pos.eta
+            selev[f'hemi_{prefix}_pos_pz']   = s_pos.pz
+            selev[f'hemi_{prefix}_pos_mass'] = s_pos.mass
+            selev[f'hemi_{prefix}_neg_pt']   = s_neg.pt
+            selev[f'hemi_{prefix}_neg_eta']  = s_neg.eta
+            selev[f'hemi_{prefix}_neg_pz']   = s_neg.pz
+            selev[f'hemi_{prefix}_neg_mass'] = s_neg.mass
         return selev
 
     def histograms(self, event, selev, weights, analysis_selections, shift_name):

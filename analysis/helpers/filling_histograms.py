@@ -304,42 +304,54 @@ def filling_nominal_histograms(
 
 
     # Hemisphere-mixing closure diagnostics: 2D joint distributions of
-    # (+hemi, -hemi) tagged-jet 4-vector-sum kinematics. From these joint
-    # histograms we recover, offline, the per-sample marginals, moments
-    # (means, variances), the covariance, and the correlation coefficient
-    # for the inter-hemi pair. The mechanism is described in
+    # (+hemi, -hemi) per-hemi 4-vector-sum kinematics, for three jet
+    # collections (can / sel / other = notCanJet). From these joint
+    # histograms we recover, offline, the per-sample marginals, moments,
+    # covariance, and correlation. Mechanism: see
     # ~/ClaudeBrain/physics/hemisphere-mixing-toy/README.md.
-    # Fields are attached by the processor when compute_hemi_mixing_diagnostics
-    # is set; here we only book the corresponding histograms.
     if compute_hemi_mixing_diagnostics:
-        fill += hist.add(
-            "hemi_tag_eta_2d",
-            (50, -5, 5,
-             ("hemi_tag_pos_eta",  r"$\eta$ tagged-jet sum, + hemi")),
-            (50, -5, 5,
-             ("hemi_tag_neg_eta",  r"$\eta$ tagged-jet sum, $-$ hemi")),
-        )
-        fill += hist.add(
-            "hemi_tag_pz_2d",
-            (40, -800, 800,
-             ("hemi_tag_pos_pz",   r"$p_z$ tagged-jet sum, + hemi [GeV]")),
-            (40, -800, 800,
-             ("hemi_tag_neg_pz",   r"$p_z$ tagged-jet sum, $-$ hemi [GeV]")),
-        )
-        fill += hist.add(
-            "hemi_tag_mass_2d",
-            (30, 0, 500,
-             ("hemi_tag_pos_mass", r"$m$ tagged-jet sum, + hemi [GeV]")),
-            (30, 0, 500,
-             ("hemi_tag_neg_mass", r"$m$ tagged-jet sum, $-$ hemi [GeV]")),
-        )
-        fill += hist.add(
-            "hemi_tag_pt_2d",
-            (40, 0, 500,
-             ("hemi_tag_pos_pt",   r"$p_T$ tagged-jet sum, + hemi [GeV]")),
-            (40, 0, 500,
-             ("hemi_tag_neg_pt",   r"$p_T$ tagged-jet sum, $-$ hemi [GeV]")),
-        )
+        # 'all' is event.Jet (what the matching pins);
+        # 'can' is canJet (4 HH cand jets, observable);
+        # 'other' is notCanJet (selJet minus canJet, slack carrier).
+        for coll, coll_label in (('can',   'cand'),
+                                 ('all',   'all'),
+                                 ('other', 'other')):
+            fill += hist.add(
+                f"hemi_{coll}_eta_2d",
+                (50, -5, 5,
+                 (f"hemi_{coll}_pos_eta",
+                  rf"$\eta$ {coll_label}-jet sum, + hemi")),
+                (50, -5, 5,
+                 (f"hemi_{coll}_neg_eta",
+                  rf"$\eta$ {coll_label}-jet sum, $-$ hemi")),
+            )
+            fill += hist.add(
+                f"hemi_{coll}_pz_2d",
+                (40, -800, 800,
+                 (f"hemi_{coll}_pos_pz",
+                  rf"$p_z$ {coll_label}-jet sum, + hemi [GeV]")),
+                (40, -800, 800,
+                 (f"hemi_{coll}_neg_pz",
+                  rf"$p_z$ {coll_label}-jet sum, $-$ hemi [GeV]")),
+            )
+            fill += hist.add(
+                f"hemi_{coll}_mass_2d",
+                (30, 0, 500,
+                 (f"hemi_{coll}_pos_mass",
+                  rf"$m$ {coll_label}-jet sum, + hemi [GeV]")),
+                (30, 0, 500,
+                 (f"hemi_{coll}_neg_mass",
+                  rf"$m$ {coll_label}-jet sum, $-$ hemi [GeV]")),
+            )
+            fill += hist.add(
+                f"hemi_{coll}_pt_2d",
+                (40, 0, 500,
+                 (f"hemi_{coll}_pos_pt",
+                  rf"$p_T$ {coll_label}-jet sum, + hemi [GeV]")),
+                (40, 0, 500,
+                 (f"hemi_{coll}_neg_pt",
+                  rf"$p_T$ {coll_label}-jet sum, $-$ hemi [GeV]")),
+            )
 
     # fill histograms
     fill(selev, hist)
