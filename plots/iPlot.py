@@ -92,6 +92,9 @@ plot("v4j.mass", region="SR", cut=["passSvB","failSvB"], process="data", doRatio
 plot(["canJet0.pt","canJet1.pt"], region="SR", doRatio=1, process="Multijet")
 plot(["canJet0.pt","canJet1.pt","canJet2.pt","canJet3.pt"], region="SR", doRatio=1, process="Multijet")
 
+# With two input files, a var list pairs elementwise: var[0] from file0, var[1] from file1
+plot(["v4j.mass","canJet0.pt"], region="SR", process="Multijet", doRatio=1)
+
 # Can plot a single process
 plot("v4j.mass", region="SR", process="data")
 
