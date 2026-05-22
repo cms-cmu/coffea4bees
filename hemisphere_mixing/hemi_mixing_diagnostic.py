@@ -47,14 +47,17 @@ except ImportError:
     raise
 
 
-def _var_list(collection: str):
+def _var_list(collection: str, inclusive: bool = False):
     """Return list of (var_key, hist_name, var_label) for a jet collection.
-    collection in {'can', 'sel', 'other'} (or 'tag' for backwards compat)."""
+    collection in {'can', 'all', 'other'} (or 'tag' for backwards compat).
+    If inclusive=True, points at the *_2d_inclusive histograms (no region axis).
+    """
+    suffix = '_inclusive' if inclusive else ''
     return [
-        ('eta',  f'hemi_{collection}_eta_2d',  r'$\eta$'),
-        ('pz',   f'hemi_{collection}_pz_2d',   r'$p_z$ [GeV]'),
-        ('mass', f'hemi_{collection}_mass_2d', r'$m$ [GeV]'),
-        ('pt',   f'hemi_{collection}_pt_2d',   r'$p_T$ [GeV]'),
+        ('eta',  f'hemi_{collection}_eta_2d{suffix}',  r'$\eta$'),
+        ('pz',   f'hemi_{collection}_pz_2d{suffix}',   r'$p_z$ [GeV]'),
+        ('mass', f'hemi_{collection}_mass_2d{suffix}', r'$m$ [GeV]'),
+        ('pt',   f'hemi_{collection}_pt_2d{suffix}',   r'$p_T$ [GeV]'),
     ]
 
 
@@ -192,7 +195,7 @@ def make_plots(rows_by_var, out_prefix, var_key, var_label,
         print(f"  [plot] skipping {var_key}: missing truth or mixed sample")
         return
 
-    fig, axes = plt.subplots(1, 4, figsize=(22, 5.2))
+    fig, axes = plt.subplots(2, 3, figsize=(17, 10))
     truth_proc_name  = truth_label
     target_proc_name = target_label if target_key is not None else None
     mixed_proc_name  = mixed_label
@@ -213,7 +216,8 @@ def make_plots(rows_by_var, out_prefix, var_key, var_label,
         Hs.append(values / max(values.sum(), 1e-9))
     vmax = max((h.max() for h in Hs if h is not None), default=1.0)
 
-    for ax, (sample, proc_name), H in zip(axes[:3], samples, Hs):
+    # Row 0: heatmaps for 4b, 3b, Mixed
+    for ax, (sample, proc_name), H in zip(axes[0], samples, Hs):
         if sample is None or H is None:
             ax.set_title(f"{proc_name or '(absent)'}: no data")
             ax.axis('off')
@@ -228,21 +232,28 @@ def make_plots(rows_by_var, out_prefix, var_key, var_label,
         ax.set_title(f"{proc_name}  corr={m['corr']:+.3f}")
         fig.colorbar(im, ax=ax, fraction=0.046)
 
-    # ratio panel
-    H_t, H_m = Hs[0], Hs[2]
-    if H_t is not None and H_m is not None:
+    # Row 1: three ratio maps -- 4b/Mixed, 4b/3b, 3b/Mixed
+    H_t, H_tgt, H_m = Hs[0], Hs[1], Hs[2]
+    edges_x = np.r_[cxs - (cxs[1] - cxs[0]) / 2, cxs[-1] + (cxs[1] - cxs[0]) / 2]
+    edges_y = np.r_[cys - (cys[1] - cys[0]) / 2, cys[-1] + (cys[1] - cys[0]) / 2]
+
+    def _ratio_panel(ax, H_num, H_den, num_name, den_name):
+        if H_num is None or H_den is None:
+            ax.set_title(f"{num_name} / {den_name}: missing")
+            ax.axis('off')
+            return
         with np.errstate(divide='ignore', invalid='ignore'):
-            ratio = np.where(H_m > 0, H_t / H_m, np.nan)
-        edges_x = np.r_[cxs - (cxs[1] - cxs[0]) / 2, cxs[-1] + (cxs[1] - cxs[0]) / 2]
-        edges_y = np.r_[cys - (cys[1] - cys[0]) / 2, cys[-1] + (cys[1] - cys[0]) / 2]
-        im = axes[3].pcolormesh(edges_x, edges_y, ratio.T, cmap='RdBu_r',
-                                vmin=0.5, vmax=1.5)
-        axes[3].set_xlabel(f'{var_label} (+ hemi)')
-        axes[3].set_ylabel(f'{var_label} (− hemi)')
-        axes[3].set_title(f'{truth_proc_name} / {mixed_proc_name} ratio')
-        fig.colorbar(im, ax=axes[3], fraction=0.046)
-    else:
-        axes[3].axis('off')
+            ratio = np.where(H_den > 0, H_num / H_den, np.nan)
+        im = ax.pcolormesh(edges_x, edges_y, ratio.T,
+                           cmap='RdBu_r', vmin=0.5, vmax=1.5)
+        ax.set_xlabel(f'{var_label} (+ hemi)')
+        ax.set_ylabel(f'{var_label} (− hemi)')
+        ax.set_title(f'{num_name} / {den_name} ratio')
+        fig.colorbar(im, ax=ax, fraction=0.046)
+
+    _ratio_panel(axes[1, 0], H_t,   H_m,   truth_proc_name,  mixed_proc_name)
+    _ratio_panel(axes[1, 1], H_t,   H_tgt, truth_proc_name,  target_proc_name)
+    _ratio_panel(axes[1, 2], H_tgt, H_m,   target_proc_name, mixed_proc_name)
 
     fig.suptitle(f'Hemi-mixing 2D diagnostic ({var_label})', y=1.02)
     fig.tight_layout()
@@ -403,6 +414,10 @@ def main():
                          'HH observable); all (event.Jet, what the matching '
                          'pins -- gives closure check); other (notCanJet, '
                          'the slack carrier); tag (legacy tagJet)')
+    ap.add_argument('--inclusive', action='store_true',
+                    help='use the *_2d_inclusive histograms (no region axis -- '
+                         'all events that passed the selection contribute, not '
+                         'just SR or SB)')
     ap.add_argument('--out', default='hemi_diag',
                     help='output prefix for plots (default: hemi_diag)')
     ap.add_argument('--mixed-input', default=None,
@@ -458,10 +473,11 @@ def main():
     }
 
     print(f"Input: {args.input}")
-    print(f"Collection: {args.collection}")
+    print(f"Collection: {args.collection}"
+          + ("  (inclusive: no region axis)" if args.inclusive else ""))
     print()
 
-    var_list = _var_list(args.collection)
+    var_list = _var_list(args.collection, inclusive=args.inclusive)
     for key, hist_name, label in var_list:
         if key not in var_filter:
             continue
