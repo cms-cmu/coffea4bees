@@ -65,7 +65,7 @@ channels:
     variable: "SvB_MA.ps_zh"
     signal: "ZH4b"
 
-extra_arguments: "--gitdiff In_gitdiff.txt_file --githash 17eab2e22 --storage-remap coffea4bees/metadata/storage_remaps_cmu_run2.yml"
+extra_arguments: "--gitdiff In_gitdiff.txt_file --githash scheduled_35c5a7db"
 
 channel_metadata:
   HH4b: "coffea4bees/stats_analysis/metadata/HH4b.yml"
