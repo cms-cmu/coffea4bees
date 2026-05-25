@@ -59,21 +59,25 @@ def transverse_thrust_awkward_fast(p4, n_steps=720, refine_rounds=0, refine_fact
     sin_t = np.sin(phis)
 
     # loop on events
-    results = []
+    all_phi, all_nx, all_ny, all_mx, all_my = [], [], [], [], []
     for px_i, py_i in zip(px, py):
         px_np, py_np = np.asarray(px_i), np.asarray(py_i)
         if len(px_np) == 0:
-            results.append(dict(phi=np.nan,
-                                axis=dict(nx=np.nan, ny=np.nan),
-                                minor=dict(nx=np.nan, ny=np.nan)))
+            all_phi.append(np.nan)
+            all_nx.append(np.nan); all_ny.append(np.nan)
+            all_mx.append(np.nan); all_my.append(np.nan)
             continue
         th, nx, ny, mx, my = _thrust_event_numba(px_np, py_np, n_steps)
-        results.append(dict(phi=th,
-                            axis=dict(nx=nx, ny=ny), minor=dict(nx=mx, ny=my)))
-
+        all_phi.append(th)
+        all_nx.append(nx); all_ny.append(ny)
+        all_mx.append(mx); all_my.append(my)
 
     # pack back into an Awkward array of records
-    return ak.Array(results)
+    return ak.zip({
+        "phi": np.array(all_phi),
+        "axis": ak.zip({"nx": np.array(all_nx), "ny": np.array(all_ny)}),
+        "minor": ak.zip({"nx": np.array(all_mx), "ny": np.array(all_my)}),
+    })
 
 
 
@@ -99,27 +103,16 @@ def transverse_thrust_awkward(p4, n_steps=720, refine_rounds=0, refine_factor=6)
     sin_t = np.sin(phis)
 
     # loop on events
-    results = []
+    all_phi, all_nx, all_ny, all_mx, all_my = [], [], [], [], []
     for px_i, py_i in zip(px, py):
         # handle empty events
         if len(px_i) == 0:
-            results.append(
-                dict(T=np.nan, T_minor=np.nan, phi=np.nan,
-                     axis=dict(nx=np.nan, ny=np.nan),
-                     minor=dict(nx=np.nan, ny=np.nan))
-            )
+            all_phi.append(np.nan)
+            all_nx.append(np.nan); all_ny.append(np.nan)
+            all_mx.append(np.nan); all_my.append(np.nan)
             continue
 
         pTi = np.hypot(px_i, py_i)
-
-        #denom = np.sum(pTi)
-        #if denom == 0:
-        #    results.append(
-        #        dict(T=np.nan, T_minor=np.nan, phi=np.nan,
-        #             axis=dict(nx=np.nan, ny=np.nan),
-        #             minor=dict(nx=np.nan, ny=np.nan))
-        #    )
-        #    continue
 
         # --- coarse scan ---
         proj = np.abs(px_i[:, None] * cos_t[None, :] + py_i[:, None] * sin_t[None, :])
@@ -150,18 +143,16 @@ def transverse_thrust_awkward(p4, n_steps=720, refine_rounds=0, refine_factor=6)
         nx, ny = np.cos(best_phi), np.sin(best_phi)
         mx, my = -ny, nx
 
-        #T = best_sum / denom
-        #T_minor = np.sum(np.abs(-px_i * ny + py_i * nx)) / denom
-
-        results.append(
-            #dict(T=T, T_minor=T_minor, phi=best_phi,
-            #     axis=dict(nx=nx, ny=ny), minor=dict(nx=mx, ny=my))
-            dict(phi=best_phi,
-                 axis=dict(nx=nx, ny=ny), minor=dict(nx=mx, ny=my))
-        )
+        all_phi.append(best_phi)
+        all_nx.append(nx); all_ny.append(ny)
+        all_mx.append(mx); all_my.append(my)
 
     # pack back into an Awkward array of records
-    return ak.Array(results)
+    return ak.zip({
+        "phi": np.array(all_phi),
+        "axis": ak.zip({"nx": np.array(all_nx), "ny": np.array(all_ny)}),
+        "minor": ak.zip({"nx": np.array(all_mx), "ny": np.array(all_my)}),
+    })
 
 
 def split_hemispheres(p4, thrust):
@@ -736,10 +727,10 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
         #
         new_Jets = ak.zip(
             {
-                "pt":   ak.Array(hemi_lib_data["Jet_pt"]  [match_idx]),
-                "eta":  ak.Array(hemi_lib_data["Jet_eta"] [match_idx]),
-                "phi": (ak.Array(hemi_lib_data["Jet_phi"] [match_idx]) + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
-                "mass": ak.Array(hemi_lib_data["Jet_mass"][match_idx]),
+                "pt":   ak.from_iter(hemi_lib_data["Jet_pt"]  [match_idx]),
+                "eta":  ak.from_iter(hemi_lib_data["Jet_eta"] [match_idx]),
+                "phi": (ak.from_iter(hemi_lib_data["Jet_phi"] [match_idx]) + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
+                "mass": ak.from_iter(hemi_lib_data["Jet_mass"][match_idx]),
             },
             with_name="PtEtaPhiMLorentzVector",
             behavior=vector.behavior,
@@ -782,7 +773,7 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
             var_key = var_name.replace("Jet_", "")
             if var_key in ["pt", "eta", "phi", "mass"]:
                 continue
-            new_Jets[var_key] = ak.Array(hemi_lib_data[var_name][match_idx])
+            new_Jets[var_key] = ak.from_iter(hemi_lib_data[var_name][match_idx])
 
 
         # fill event data

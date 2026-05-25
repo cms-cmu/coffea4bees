@@ -51,7 +51,8 @@ from src.hist_tools import Fill
 from src.data_formats.root import Chunk, TreeReader
 from coffea import processor
 from coffea.analysis_tools import PackedSelection
-from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
+from coffea.nanoevents import NanoAODSchema
+from src.compat import nano_from_root
 from coffea.util import load
 from memory_profiler import profile
 import psutil
@@ -524,7 +525,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         label = shift_name or "nominal"
 
         # Copy weights to avoid modifying the original
-        weights = copy.copy(weights)
+        weights = copy.deepcopy(weights)
 
         with self._stage(f"{label}:apply_selection"):
             # Apply object selection
@@ -732,8 +733,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
                 FvT_name = event.metadata["FvT_name"]
                 event["FvT"] = getattr(
-                    NanoEventsFactory.from_root(
-                        f'{event.metadata["FvT_file"]}',
+                    nano_from_root(
+                        {f'{event.metadata["FvT_file"]}': "Events"},
                         entry_start=self.estart,
                         entry_stop=self.estop,
                         schemaclass=FriendTreeSchema,
@@ -756,8 +757,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 # Use the first to define the FvT weights
                 #
                 event["FvT"] = getattr(
-                    NanoEventsFactory.from_root(
-                        f'{event.metadata["FvT_files"][0]}',
+                    nano_from_root(
+                        {f'{event.metadata["FvT_files"][0]}': "Events"},
                         entry_start=self.estart,
                         entry_stop=self.estop,
                         schemaclass=FriendTreeSchema,
@@ -777,8 +778,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 for _FvT_name, _FvT_file in zip( event.metadata["FvT_names"], event.metadata["FvT_files"] ):
 
                     event[_FvT_name] = getattr(
-                        NanoEventsFactory.from_root(
-                            f"{_FvT_file}",
+                        nano_from_root(
+                            {f"{_FvT_file}": "Events"},
                             entry_start=self.estart,
                             entry_stop=self.estop,
                             schemaclass=FriendTreeSchema,
@@ -790,8 +791,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
             else:
                 event["FvT"] = (
-                    NanoEventsFactory.from_root(
-                        f'{self.fname.replace("picoAOD", "FvT")}',
+                    nano_from_root(
+                        {f'{self.fname.replace("picoAOD", "FvT")}': "Events"},
                         entry_start=self.estart,
                         entry_stop=self.estop,
                         schemaclass=FriendTreeSchema
@@ -884,8 +885,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             svb_file = f'{self.path}/{svb_name}{SvB_suffix}.root' if 'mix' in self.dataset else f'{self.fname.replace("picoAOD", f"{svb_name}{SvB_suffix}")}'
             try:
                 event[svb_name] = (
-                    NanoEventsFactory.from_root(
-                        svb_file,
+                    nano_from_root(
+                        {svb_file: "Events"},
                         entry_start=self.estart,
                         entry_stop=self.estop,
                         schemaclass=FriendTreeSchema
@@ -1152,7 +1153,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             adding_top_reco_to_event(selev, top_cand)
         elif self.top_reconstruction in ["slow", "fast"]:
             # Sort jets by b-tagging score
-            selev.selJet = selev.selJet[ak.argsort(selev.selJet.btagScore, axis=1, ascending=False)]
+            selev["selJet"] = selev.selJet[ak.argsort(selev.selJet.btagScore, axis=1, ascending=False)]
 
             if self.top_reconstruction == "slow":
                 top_cands = find_tops_slow(selev.selJet)

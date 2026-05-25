@@ -1,7 +1,7 @@
 import yaml
 from coffea4bees.skimmer.processor.skimmer_4b_base import Skimmer4b
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
-from coffea.nanoevents import NanoEventsFactory
+from src.compat import nano_from_root
 from coffea.nanoevents.methods import vector
 
 from coffea4bees.analysis.helpers.SvB_helpers import setFvTVars, subtract_ttbar_with_FvT
@@ -142,7 +142,7 @@ class HemiMixer(Skimmer4b):
             else:
 
                 FvT_file = f'{fname.replace("picoAOD", "FvT")}'
-                event["FvT"] = ( NanoEventsFactory.from_root( FvT_file,
+                event["FvT"] = ( nano_from_root( {FvT_file: "Events"},
                                                               entry_start=estart, entry_stop=estop, schemaclass=FriendTreeSchema).events().FvT )
 
                 if not ak.all(event.FvT.event == event.event):

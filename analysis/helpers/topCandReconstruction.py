@@ -104,6 +104,9 @@ def find_tops(events_jets):
     #    # operating on length-zero data returns the wrong layout!
     #    ak.typetracer.length_zero_if_typetracer(events_jets.btagScore) # force touching of the necessary data
     #    return ak.Array(ak.Array([[(0,0,0)]]).layout.to_typetracer(forget_length=True))
+    events_jets = ak.materialize(events_jets)
+    if "btagScore" in events_jets.fields:
+        events_jets["btagScore"] = ak.materialize(events_jets.btagScore)
     return find_tops_kernel(events_jets, ak.ArrayBuilder()).snapshot()
 
 

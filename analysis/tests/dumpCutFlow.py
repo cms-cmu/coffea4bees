@@ -36,8 +36,7 @@ if __name__ == '__main__':
 
     outputFile = open(f'{args.outputFile}', 'w')
 
-    with open(f'{args.inputFile}', 'rb') as hfile:
-        hists = load(hfile)
+    hists = load(args.inputFile)
 
     cf4      = hists["cutFlowFourTag"]
     cf4_unit = hists["cutFlowFourTagUnitWeight"]

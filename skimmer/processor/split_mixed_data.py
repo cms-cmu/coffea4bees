@@ -94,7 +94,7 @@ class MixedDataSplitter(PicoAOD):
         #  Assign mixed data subsamples
         #
         assign_mixed_subsamples(events, n_subsamples=self.n_subsamples)
-        events.passSubSample = events[f"pass_mixedSubSample_v{self.mixed_subsample}"]
+        events["passSubSample"] = events[f"pass_mixedSubSample_v{self.mixed_subsample}"]
 
         # general event weights
         if config["isMC"]:

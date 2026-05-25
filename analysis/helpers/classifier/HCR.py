@@ -45,11 +45,11 @@ class Legacy_HCREnsemble(networks.HCREnsemble):
         # ancillary features
         a = torch.zeros(n, 4)
         a[:, 0] = float(event.metadata["year"][3])
-        a[:, 1] = torch.tensor(event.nJet_selected)
-        a[:, 2] = torch.tensor(event.xW)
-        a[:, 3] = torch.tensor(event.xbW)
+        a[:, 1] = torch.tensor(ak.to_numpy(event.nJet_selected))
+        a[:, 2] = torch.tensor(ak.to_numpy(event.xW))
+        a[:, 3] = torch.tensor(ak.to_numpy(event.xbW))
         # event offset
-        e = torch.tensor(event.event) % 3
+        e = torch.tensor(ak.to_numpy(event.event).astype('int64')) % 3
 
         c_logits, q_logits = self.forward(j, o, a, e)
         return F.softmax(c_logits, dim=-1).numpy(), F.softmax(q_logits, dim=-1).numpy()

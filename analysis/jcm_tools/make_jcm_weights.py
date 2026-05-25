@@ -303,7 +303,10 @@ def create_jcm_validation_table(JCM_model: jetCombinatoricModel, args: argparse.
     # Load the JCM file using the same class as the processor
     logger.info(f"Loading JCM file: {jcm_file_path}")
     try:
-        JCM_loaded = JCM_apply(jcm_file_path, cut=args.cut, lowpt_mode=args.lowpt)
+        jcm_kwargs = {"lowpt_mode": args.lowpt}
+        if args.cut is not None:
+            jcm_kwargs["cut"] = args.cut
+        JCM_loaded = JCM_apply(jcm_file_path, **jcm_kwargs)
         logger.info("JCM file loaded successfully for validation")
     except Exception as e:
         logger.error(f"Failed to load JCM file for validation: {e}")
@@ -720,13 +723,15 @@ def create_plots(
 
     except Exception as e:
         logger.warning(f"Error setting histogram values, trying alternative approach: {e}")
+        hist_obj = cfg.hists[0]['hists'][selJets]
+        hist_view = hist_obj.view()
+        process_idx = None
+        for idx, process in enumerate(hist_obj.axes[0]):
+            if process == "JCM":
+                process_idx = idx
+                break
         for iBin in range(14):
             try:
-                hist_view = cfg.hists[0]['hists'][selJets].view()
-                for idx, process in enumerate(hist_view.axes[0]):
-                    if process == "JCM":
-                        process_idx = idx
-                        break
                 if has_passSvB and has_failSvB:
                     hist_view[process_idx, 0, 1, 1, True, False, False, iBin] = (nJet_pred[iBin], 0)
                 else:
@@ -816,13 +821,15 @@ def create_plots(
 
         except Exception as e:
             logger.warning(f"Error setting histogram values, trying alternative approach: {e}")
+            hist_obj = cfg.hists[0]['hists'][tagJets]
+            hist_view = hist_obj.view()
+            process_idx = None
+            for idx, process in enumerate(hist_obj.axes[0]):
+                if process == "JCM":
+                    process_idx = idx
+                    break
             for iBin in range(15):
                 try:
-                    hist_view = cfg.hists[0]['hists'][tagJets].view()
-                    for idx, process in enumerate(hist_view.axes[0]):
-                        if process == "JCM":
-                            process_idx = idx
-                            break
                     if has_passSvB and has_failSvB:
                         hist_view[process_idx, 0, 1, 1, True, False, False, iBin] = (nTag_pred[iBin], 0)
                     else:
