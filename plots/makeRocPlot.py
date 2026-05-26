@@ -15,7 +15,8 @@ import yaml
 import mplhep as hep  # HEP (CMS) extensions/styling on top of mpl
 
 sys.path.insert(0, os.getcwd())
-from src.plotting.plots import makePlot, make2DPlot, load_config, load_hists, read_axes_and_cuts, parse_args, get_plot_dict_from_config
+from src.plotting.plots import makePlot, make2DPlot, load_config, load_hists, read_axes_and_cuts, parse_args
+from src.plotting.helpers_make_plot_dict import get_plot_dict_from_config
 import src.plotting.iPlot_config as cfg
 import src.plotting.helpers as plot_helpers
 import copy
@@ -99,7 +100,7 @@ def makeRocPlot(cfg, vars_to_plot, **kwargs):
 
     for _v in vars_to_plot:
 
-        plot_data = get_plot_dict_from_config(cfg, _v["var"], cut=None, region="SR", **kwargs)
+        plot_data = get_plot_dict_from_config(cfg=cfg, var=_v["var"], cut=None, axis_opts={"region": _v.get("region", "SR")})
 
         #
         # Sum signal

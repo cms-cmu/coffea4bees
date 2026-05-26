@@ -9,9 +9,10 @@ main:
     - --max-trainers 3
 
 model:
+  # - module: HCR.SvB.ggF.all_kl.Train
   - module: HCR.SvB.ggF.baseline.Train
     option:
-      # - --roc-signal-by-category # calculate ROC by category
+      - --roc-signal-by-category # calculate ROC by category
       - --kfold-seed SvB random
       - --kfold-seed-offsets 0
       - --training FixedStep

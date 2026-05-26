@@ -173,22 +173,22 @@ rule tools_perf_profile:
     container: analysis_container
     shell: "source coffea4bees/scripts/tools-perf-profile.sh --output-base {output_dir} 2>&1 | tee -a {log}"
 
-rule tools_twostageclosure_mixed:
+rule twoStageClosure_test:
     input: f"{output_dir}/analysis_test_mixed/testMixedData.json"
-    output: f"{output_dir}/tools_twostageclosure_mixed/test_dump_twoStageClosureInputsCounts.yml"
-    log: f"{output_dir}/tools_twostageclosure_mixed.log"
+    output: f"{output_dir}/twoStageClosure_test/test_dump_twoStageClosureInputsCounts.yml"
+    log: f"{output_dir}/twoStageClosure_test.log"
     shell: "./run_container combine source coffea4bees/scripts/tools-twostageclosure-mixed.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
 rule analysis_plot:
     input: f"{output_dir}/tools_merge_test/test.coffea"
-    output: f"{output_dir}/analysis_plot/RunII/region_SR/SvB_MA_ps_zz.pdf"
+    output: f"{output_dir}/analysis_plot/RunII/passPreSel/region_SR/SvB_MA_ps_zz.pdf"
     log: f"{output_dir}/analysis_plot.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/analysis-plot.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
 rule analysis_unsup_plot:
     input: f"{output_dir}/analysis_unsup_test/test_unsup.coffea"
-    output: f"{output_dir}/analysis_plot_unsup/RunII/failSvB_vs_passSvB/region_SR/mix_v0/v4j_mass.pdf"
+    output: f"{output_dir}/analysis_unsup_plot/RunII/passPreSel/fourTag/SR/mix_v0/v4j_mass.pdf"
     log: f"{output_dir}/analysis_unsup_plot.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/analysis-unsup-plot.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
@@ -367,3 +367,25 @@ rule mixeddata_study_hemispheres:
     log: f"{output_dir}/mixeddata_study_hemispheres.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/mixeddata-study-hemispheres.sh --output-base {output_dir} 2>&1 | tee -a {log}"
+
+rule analysis_test_lowpt_data_Run2:
+    output: f"{output_dir}/analysis_test_lowpt_data_Run2/test_data_lowpt.coffea" 
+    log: f"{output_dir}/analysis_test_lowpt_data_Run2.log"
+    container: analysis_container
+    shell: "source coffea4bees/scripts/analysis-test-lowpt-data-Run2.sh --output-base {output_dir} 2>&1 | tee -a {log}"
+
+rule analysis_test_lowpt_signal_Run2:
+    output: f"{output_dir}/analysis_test_lowpt_signal_Run2/test_signal_lowpt.coffea" 
+    log: f"{output_dir}/analysis_test_lowpt_signal_Run2.log"
+    container: analysis_container
+    shell: "source coffea4bees/scripts/analysis-test-lowpt-signal-Run2.sh --output-base {output_dir} 2>&1 | tee -a {log}"
+
+
+rule analysis_cutflow_lowpt_Run2:    
+    input: 
+        f"{output_dir}/analysis_test_lowpt_data_Run2/test_data_lowpt.coffea",
+        f"{output_dir}/analysis_test_lowpt_signal_Run2/test_signal_lowpt.coffea"
+    output: f"{output_dir}/analysis_cutflow_lowpt_Run2/test_dump_cutflow.yml"
+    log: f"{output_dir}/analysis_cutflow_lowpt_Run2.log"
+    container: analysis_container
+    shell: "source coffea4bees/scripts/analysis-cutflow-lowpt-Run2.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
