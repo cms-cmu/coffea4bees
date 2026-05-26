@@ -24,6 +24,18 @@ analysis_cutflow_Run3_coffea4bees:
     paths:
       - output/analysis_cutflow_Run3/test_dump_cutflow.yml
 
+analysis_cutflow_Run3_2024_coffea4bees:
+  stage: cutflow
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - analysis_test_Run3_coffea4bees
+  script:
+    - source coffea4bedes/scripts/analysis-cutflow-Run3-2024.sh --output-base /builds/$CI_PROJECT_PATH/output
+  artifacts:
+    paths:
+      - output/analysis_cutflow_Run3_2024/test_dump_cutflow.yml
 
 analysis_mixed_cutflow_coffea4bees:  
   stage: cutflow
