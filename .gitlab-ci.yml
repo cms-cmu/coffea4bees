@@ -98,7 +98,7 @@ setup_coffea4bees:
 .base_analysis_coffea4bees:
   needs:
     - setup_coffea4bees
-  image: gitlab-registry.cern.ch/cms-cmu/barista:coffea2025
+  image: gitlab-registry.cern.ch/cms-cmu/barista:latest
   tags:
     - k8s-cvmfs
   before_script:
