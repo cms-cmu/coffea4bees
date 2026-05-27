@@ -899,7 +899,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 if not ak.all(getattr(event, svb_name).event == event.event):
                     raise ValueError(f"ERROR: {svb_name} events do not match events ttree")
                 setSvBVars(svb_name, event)
-            except FileNotFoundError:
+            except (FileNotFoundError, OSError):
                 logging.info(f"No {svb_name} source configured (no friend, classifier, or ROOT file at {svb_file}). Skipping.")
 
     def boosted_veto(self, event):
