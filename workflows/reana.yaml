@@ -5,6 +5,8 @@ inputs:
     - coffea4bees/analysis/
     - coffea4bees/metadata/
     - coffea4bees/plots/
+    - coffea4bees/scripts/
+    - coffea4bees/skimmer/processor/
     - coffea4bees/stats_analysis/
     - coffea4bees/workflows/
   parameters:
@@ -13,7 +15,6 @@ inputs:
     - gitdiff.txt
     - runner.py
     - run_container
-    - coffea4bees/scripts/run-analysis-processor.sh
 workflow:
   type: snakemake
   file: coffea4bees/workflows/Snakefile_reana.smk

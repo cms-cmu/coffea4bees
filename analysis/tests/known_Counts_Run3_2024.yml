@@ -1,320 +1,319 @@
 counts4:
     data_2024I3:
-        passJetMult: 974.0
-        passPreSel: 41.0
-        passDiJetMass: 16.0
-        SR: 4.0
-        SB: 9.0
+        passJetMult: 975.0
+        passPreSel: 38.0
+        passDiJetMass: 13.0
+        SR: 5.0
+        SB: 7.0
 
     data_2024I2:
-        passJetMult: 972.0
-        passPreSel: 34.0
-        passDiJetMass: 14.0
-        SR: 4.0
-        SB: 9.0
+        passJetMult: 974.0
+        passPreSel: 36.0
+        passDiJetMass: 13.0
+        SR: 3.0
+        SB: 6.0
 
     data_2024G:
         passJetMult: 979.0
-        passPreSel: 60.0
-        passDiJetMass: 23.0
-        SR: 5.0
-        SB: 11.0
+        passPreSel: 38.0
+        passDiJetMass: 20.0
+        SR: 4.0
+        SB: 13.0
 
     data_2024F:
-        passJetMult: 975.0
-        passPreSel: 47.0
-        passDiJetMass: 18.0
-        SR: 5.0
-        SB: 9.0
+        passJetMult: 976.0
+        passPreSel: 44.0
+        passDiJetMass: 17.0
+        SR: 4.0
+        SB: 5.0
 
     data_2024E:
-        passJetMult: 971.0
-        passPreSel: 36.0
-        passDiJetMass: 16.0
-        SR: 3.0
-        SB: 10.0
-
-    data_2024D:
-        passJetMult: 979.0
-        passPreSel: 51.0
-        passDiJetMass: 16.0
-        SR: 4.0
-        SB: 6.0
-
-    data_2024C:
-        passJetMult: 985.0
-        passPreSel: 39.0
-        passDiJetMass: 11.0
+        passJetMult: 980.0
+        passPreSel: 40.0
+        passDiJetMass: 14.0
         SR: 1.0
         SB: 5.0
 
+    data_2024D:
+        passJetMult: 975.0
+        passPreSel: 47.0
+        passDiJetMass: 9.0
+        SR: 4.0
+        SB: 2.0
+
+    data_2024C:
+        passJetMult: 977.0
+        passPreSel: 37.0
+        passDiJetMass: 14.0
+        SR: 4.0
+        SB: 7.0
+
     TTToSemiLeptonic_2024:
-        passJetMult: 86.38
-        passPreSel: 3.27
-        passDiJetMass: 1.6
-        SR: 0.07
-        SB: 0.99
+        passJetMult: 86.69
+        passPreSel: 2.52
+        passDiJetMass: 1.21
+        SR: 0.47
+        SB: 0.47
 
     TTToHadronic_2024:
-        passJetMult: 94.19
-        passPreSel: 3.54
-        passDiJetMass: 2.26
-        SR: 0.59
-        SB: 1.47
+        passJetMult: 93.07
+        passPreSel: 2.75
+        passDiJetMass: 1.07
+        SR: 0.42
+        SB: 0.61
 
     TTTo2L2Nu_2024:
-        passJetMult: 23.25
-        passPreSel: 0.86
-        passDiJetMass: 0.39
-        SR: 0.09
-        SB: 0.21
+        passJetMult: 23.24
+        passPreSel: 1.09
+        passDiJetMass: 0.43
+        SR: 0.08
+        SB: 0.32
 
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024:
-        passJetMult: 53.15
-        passPreSel: 21.17
-        passDiJetMass: 18.88
-        SR: 13.17
-        SB: 5.1
+        passJetMult: 49.74
+        passPreSel: 18.57
+        passDiJetMass: 16.33
+        SR: 9.74
+        SB: 5.06
 
 
 
 counts3:
     data_2024I3:
-        passJetMult: 974.0
-        passPreSel: 61.44
-        passDiJetMass: 22.94
-        SR: 5.84
-        SB: 11.77
+        passJetMult: 975.0
+        passPreSel: 61.07
+        passDiJetMass: 20.29
+        SR: 4.91
+        SB: 11.42
 
     data_2024I2:
-        passJetMult: 972.0
-        passPreSel: 61.48
-        passDiJetMass: 24.8
-        SR: 5.95
-        SB: 12.48
+        passJetMult: 974.0
+        passPreSel: 60.57
+        passDiJetMass: 21.87
+        SR: 5.85
+        SB: 10.4
 
     data_2024G:
         passJetMult: 979.0
-        passPreSel: 61.36
-        passDiJetMass: 22.26
-        SR: 5.25
-        SB: 12.1
+        passPreSel: 60.23
+        passDiJetMass: 20.56
+        SR: 5.63
+        SB: 9.52
 
     data_2024F:
-        passJetMult: 975.0
-        passPreSel: 60.01
-        passDiJetMass: 20.34
-        SR: 5.58
-        SB: 9.08
+        passJetMult: 976.0
+        passPreSel: 60.76
+        passDiJetMass: 22.95
+        SR: 6.17
+        SB: 9.72
 
     data_2024E:
-        passJetMult: 971.0
-        passPreSel: 62.14
-        passDiJetMass: 19.75
-        SR: 4.98
-        SB: 9.14
+        passJetMult: 980.0
+        passPreSel: 62.07
+        passDiJetMass: 22.45
+        SR: 5.47
+        SB: 11.14
 
     data_2024D:
-        passJetMult: 979.0
-        passPreSel: 61.4
-        passDiJetMass: 22.86
-        SR: 5.6
-        SB: 11.57
+        passJetMult: 975.0
+        passPreSel: 63.21
+        passDiJetMass: 23.48
+        SR: 6.09
+        SB: 11.16
 
     data_2024C:
-        passJetMult: 985.0
-        passPreSel: 62.87
-        passDiJetMass: 22.51
-        SR: 7.6
-        SB: 10.23
+        passJetMult: 977.0
+        passPreSel: 63.12
+        passDiJetMass: 24.23
+        SR: 6.15
+        SB: 12.68
 
     TTToSemiLeptonic_2024:
-        passJetMult: 86.38
-        passPreSel: 5.08
-        passDiJetMass: 2.83
-        SR: 0.94
-        SB: 1.26
+        passJetMult: 86.69
+        passPreSel: 5.57
+        passDiJetMass: 3.23
+        SR: 0.92
+        SB: 1.4
 
     TTToHadronic_2024:
-        passJetMult: 94.19
-        passPreSel: 7.42
-        passDiJetMass: 4.85
-        SR: 1.34
-        SB: 2.41
+        passJetMult: 93.07
+        passPreSel: 7.39
+        passDiJetMass: 4.77
+        SR: 1.54
+        SB: 2.2
 
     TTTo2L2Nu_2024:
-        passJetMult: 23.25
-        passPreSel: 1.43
-        passDiJetMass: 0.68
-        SR: 0.18
-        SB: 0.3
+        passJetMult: 23.24
+        passPreSel: 1.44
+        passDiJetMass: 0.67
+        SR: 0.2
+        SB: 0.33
 
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024:
-        passJetMult: 53.15
-        passPreSel: 1.98
-        passDiJetMass: 1.13
-        SR: 0.44
-        SB: 0.57
+        passJetMult: 49.74
+        passPreSel: 1.88
+        passDiJetMass: 1.04
+        SR: 0.5
+        SB: 0.45
 
 
 
 counts4_unit:
     data_2024I3:
-        passJetMult: 974.0
-        passPreSel: 41.0
-        passDiJetMass: 16.0
-        SR: 4.0
-        SB: 9.0
+        passJetMult: 975.0
+        passPreSel: 38.0
+        passDiJetMass: 13.0
+        SR: 5.0
+        SB: 7.0
 
     data_2024I2:
-        passJetMult: 972.0
-        passPreSel: 34.0
-        passDiJetMass: 14.0
-        SR: 4.0
-        SB: 9.0
+        passJetMult: 974.0
+        passPreSel: 36.0
+        passDiJetMass: 13.0
+        SR: 3.0
+        SB: 6.0
 
     data_2024G:
         passJetMult: 979.0
-        passPreSel: 60.0
-        passDiJetMass: 23.0
-        SR: 5.0
-        SB: 11.0
+        passPreSel: 38.0
+        passDiJetMass: 20.0
+        SR: 4.0
+        SB: 13.0
 
     data_2024F:
-        passJetMult: 975.0
-        passPreSel: 47.0
-        passDiJetMass: 18.0
-        SR: 5.0
-        SB: 9.0
+        passJetMult: 976.0
+        passPreSel: 44.0
+        passDiJetMass: 17.0
+        SR: 4.0
+        SB: 5.0
 
     data_2024E:
-        passJetMult: 971.0
-        passPreSel: 36.0
-        passDiJetMass: 16.0
-        SR: 3.0
-        SB: 10.0
-
-    data_2024D:
-        passJetMult: 979.0
-        passPreSel: 51.0
-        passDiJetMass: 16.0
-        SR: 4.0
-        SB: 6.0
-
-    data_2024C:
-        passJetMult: 985.0
-        passPreSel: 39.0
-        passDiJetMass: 11.0
+        passJetMult: 980.0
+        passPreSel: 40.0
+        passDiJetMass: 14.0
         SR: 1.0
         SB: 5.0
 
+    data_2024D:
+        passJetMult: 975.0
+        passPreSel: 47.0
+        passDiJetMass: 9.0
+        SR: 4.0
+        SB: 2.0
+
+    data_2024C:
+        passJetMult: 977.0
+        passPreSel: 37.0
+        passDiJetMass: 14.0
+        SR: 4.0
+        SB: 7.0
+
     TTToSemiLeptonic_2024:
-        passJetMult: 924.0
-        passPreSel: 35.0
-        passDiJetMass: 17.0
-        SR: 1.0
-        SB: 9.0
+        passJetMult: 931.0
+        passPreSel: 27.0
+        passDiJetMass: 13.0
+        SR: 5.0
+        SB: 5.0
 
     TTToHadronic_2024:
-        passJetMult: 985.0
-        passPreSel: 41.0
-        passDiJetMass: 26.0
-        SR: 8.0
-        SB: 14.0
+        passJetMult: 977.0
+        passPreSel: 33.0
+        passDiJetMass: 12.0
+        SR: 5.0
+        SB: 6.0
 
     TTTo2L2Nu_2024:
-        passJetMult: 973.0
-        passPreSel: 37.0
-        passDiJetMass: 18.0
-        SR: 4.0
-        SB: 11.0
+        passJetMult: 976.0
+        passPreSel: 48.0
+        passDiJetMass: 19.0
+        SR: 5.0
+        SB: 12.0
 
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024:
-        passJetMult: 943.0
-        passPreSel: 386.0
-        passDiJetMass: 342.0
-        SR: 234.0
+        passJetMult: 945.0
+        passPreSel: 375.0
+        passDiJetMass: 336.0
+        SR: 216.0
         SB: 97.0
 
 
 
 counts3_unit:
     data_2024I3:
-        passJetMult: 974.0
-        passPreSel: 911.0
-        passDiJetMass: 310.0
-        SR: 81.0
-        SB: 160.0
+        passJetMult: 975.0
+        passPreSel: 921.0
+        passDiJetMass: 300.0
+        SR: 77.0
+        SB: 168.0
 
     data_2024I2:
-        passJetMult: 972.0
-        passPreSel: 923.0
-        passDiJetMass: 345.0
-        SR: 82.0
-        SB: 180.0
+        passJetMult: 974.0
+        passPreSel: 918.0
+        passDiJetMass: 317.0
+        SR: 90.0
+        SB: 154.0
 
     data_2024G:
         passJetMult: 979.0
-        passPreSel: 898.0
-        passDiJetMass: 286.0
-        SR: 68.0
-        SB: 156.0
+        passPreSel: 910.0
+        passDiJetMass: 297.0
+        SR: 80.0
+        SB: 147.0
 
     data_2024F:
-        passJetMult: 975.0
-        passPreSel: 915.0
-        passDiJetMass: 287.0
-        SR: 78.0
-        SB: 136.0
+        passJetMult: 976.0
+        passPreSel: 905.0
+        passDiJetMass: 306.0
+        SR: 85.0
+        SB: 133.0
 
     data_2024E:
-        passJetMult: 971.0
-        passPreSel: 915.0
-        passDiJetMass: 271.0
-        SR: 77.0
-        SB: 123.0
+        passJetMult: 980.0
+        passPreSel: 930.0
+        passDiJetMass: 309.0
+        SR: 78.0
+        SB: 158.0
 
     data_2024D:
-        passJetMult: 979.0
-        passPreSel: 909.0
-        passDiJetMass: 307.0
-        SR: 73.0
-        SB: 161.0
+        passJetMult: 975.0
+        passPreSel: 915.0
+        passDiJetMass: 305.0
+        SR: 78.0
+        SB: 149.0
 
     data_2024C:
-        passJetMult: 985.0
-        passPreSel: 924.0
-        passDiJetMass: 297.0
-        SR: 98.0
-        SB: 141.0
+        passJetMult: 977.0
+        passPreSel: 919.0
+        passDiJetMass: 317.0
+        SR: 79.0
+        SB: 168.0
 
     TTToSemiLeptonic_2024:
-        passJetMult: 924.0
-        passPreSel: 720.0
-        passDiJetMass: 406.0
-        SR: 127.0
-        SB: 191.0
+        passJetMult: 931.0
+        passPreSel: 743.0
+        passDiJetMass: 435.0
+        SR: 129.0
+        SB: 200.0
 
     TTToHadronic_2024:
-        passJetMult: 985.0
-        passPreSel: 783.0
-        passDiJetMass: 522.0
-        SR: 157.0
-        SB: 260.0
+        passJetMult: 977.0
+        passPreSel: 775.0
+        passDiJetMass: 518.0
+        SR: 178.0
+        SB: 236.0
 
     TTTo2L2Nu_2024:
-        passJetMult: 973.0
-        passPreSel: 911.0
-        passDiJetMass: 426.0
-        SR: 115.0
-        SB: 204.0
+        passJetMult: 976.0
+        passPreSel: 910.0
+        passDiJetMass: 425.0
+        SR: 120.0
+        SB: 213.0
 
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024:
-        passJetMult: 943.0
-        passPreSel: 537.0
-        passDiJetMass: 308.0
-        SR: 133.0
-        SB: 146.0
-
+        passJetMult: 945.0
+        passPreSel: 552.0
+        passDiJetMass: 313.0
+        SR: 155.0
+        SB: 124.0
 
 

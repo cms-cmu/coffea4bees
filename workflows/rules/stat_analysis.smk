@@ -92,7 +92,7 @@ rule make_combine_inputs:
         "output/datacards/datacard__HHbb.txt"
     params:
         variable = "SvB_MA.ps_hh_fine",
-        syst_file = {input.injsonsyst},
+        syst_file = lambda wildcards, input: f"--syst_file {input.injsonsyst}",
         metadata = "coffea4bees/stats_analysis/metadata/HH4b.yml",
         rebin = 1,
         output_dir = "output/datacards/",

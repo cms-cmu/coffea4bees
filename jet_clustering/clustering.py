@@ -153,7 +153,17 @@ def comb_jet_btag_string(btag_A, btag_B):
 
 
 def combine_particles(part_A, part_B, *, debug=False):
-    part_comb = part_A + part_B
+    # awkward 2.x requires matching behavior types for +; compute sum via LorentzVector (x,y,z,t)
+    part_comb = ak.zip(
+        {
+            "x": part_A.x + part_B.x,
+            "y": part_A.y + part_B.y,
+            "z": part_A.z + part_B.z,
+            "t": part_A.energy + part_B.energy,
+        },
+        with_name="LorentzVector",
+        behavior=vector.behavior,
+    )
 
     new_part_A = part_A
     new_part_B = part_B
@@ -355,7 +365,7 @@ def kt_clustering(event_jets, R, *, debug=False):
         if debug:
             print(f"iEvent {iEvent}")
 
-        while ak.any(particles):
+        while len(particles) > 0:
 
             #
             # Calculate the distance measures

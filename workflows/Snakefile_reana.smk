@@ -68,7 +68,7 @@ rule all:
     shell:
         """
         echo "Copying results to eos"
-        bash src/tools/copy_files_to_cernbox.sh -s {config[output_path]} -d www/HH4b/reana/{params.output_dir} -t
+        bash src/tools/copy_files_to_cernbox.sh -s {config[output_path]} -d /eos/user/a/algomez/www/HH4b/reana/{params.output_dir} -t
         """
 
 localrules: make_reana_config
@@ -77,15 +77,20 @@ rule make_reana_config:
     """Generate a patched analysis config with workers=32 and worker_memory=3GB for REANA."""
     input: "coffea4bees/analysis/metadata/{cfg_name}.yml"
     output: f"{config['output_path']}/configs/{{cfg_name}}_reana.yml"
-    run:
-        os.makedirs(os.path.dirname(str(output[0])), exist_ok=True)
-        with open(str(input[0])) as f:
-            cfg = yaml.safe_load(f)
-        cfg.setdefault('runner', {})
-        cfg['runner']['workers'] = 32
-        cfg['runner']['worker_memory'] = '3GB'
-        with open(str(output[0]), 'w') as f:
-            yaml.dump(cfg, f, default_flow_style=False, allow_unicode=True)
+    shell:
+        """
+        python3 -c "
+import yaml, os
+os.makedirs(os.path.dirname('{output}'), exist_ok=True)
+with open('{input}') as f:
+    cfg = yaml.safe_load(f)
+cfg.setdefault('runner', {{}})
+cfg['runner']['workers'] = 28
+cfg['runner']['worker_memory'] = '3GB'
+with open('{output}', 'w') as f:
+    yaml.dump(cfg, f, default_flow_style=False, allow_unicode=True)
+"
+        """
 
 #######
 ### Running analysis processor
@@ -96,9 +101,9 @@ use rule analysis_processor from analysis as analysis_databkgs with:
     input: reana_config("HH4b")
     output: f"{config['output_path']}/singlefiles/hist__{{sample}}-{{year}}.coffea"
     container: config["analysis_container"]
-    threads: 32
+    threads: 28
     resources:
-        mem_mb=98304
+        mem_mb=86016
     log: f"{config['output_path']}/logs/analysis_hist__{{sample}}-{{year}}.log"
     params:
         datasets="{sample}",
@@ -157,9 +162,9 @@ use rule analysis_databkgs as analysis_data_UL17B with:
 use rule analysis_databkgs as analysis_signals with:
     input: reana_config("HH4b_signals")
     output: f"{config['output_path']}/singlefiles/histsignal__{{sample_signal}}-{{year}}.coffea"
-    threads: 32
+    threads: 28
     resources:
-        mem_mb=98304
+        mem_mb=86016
     log: f"{config['output_path']}/logs/analysis_histsignal__{{sample_signal}}-{{year}}.log"
     params:
         datasets="{sample_signal}",
@@ -298,9 +303,9 @@ use rule analysis_databkgs as analysis_mixeddata_ZZZH with:
 use rule analysis_databkgs as analysis_systematics_others with:
     input: reana_config("HH4b_signals")
     output: f"{config['output_path']}/singlefiles/histsyst_others_{{samplesyst}}-{{iysyst}}.coffea"
-    threads: 32
+    threads: 28
     resources:
-        mem_mb=98304
+        mem_mb=86016
     log: f"{config['output_path']}/logs/analysis_histsyst_others_{{samplesyst}}-{{iysyst}}.log"
     params:
         datasets="{samplesyst}",
@@ -321,9 +326,9 @@ use rule analysis_databkgs as analysis_systematics_others with:
 use rule analysis_databkgs as analysis_systematics_jes with:
     input: reana_config("HH4b_signals")
     output: f"{config['output_path']}/singlefiles/histsyst_jes_{{samplesyst}}-{{iysyst}}.coffea"
-    threads: 32
+    threads: 28
     resources:
-        mem_mb=98304
+        mem_mb=86016
     log: f"{config['output_path']}/logs/analysis_histsyst_jes_{{samplesyst}}-{{iysyst}}.log"
     params:
         datasets="{samplesyst}",

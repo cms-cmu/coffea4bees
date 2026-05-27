@@ -11,7 +11,8 @@ import correctionlib
 import yaml
 import warnings
 
-from coffea.nanoevents import NanoEventsFactory, NanoAODSchema
+from coffea.nanoevents import NanoAODSchema
+from src.compat import nano_from_root
 from coffea.nanoevents.methods import vector
 from coffea import processor
 
@@ -124,10 +125,10 @@ class analysis(processor.ProcessorABC):
             # fname_wDtoM = f"/smurthy/condor/unsupervised4b/randPair/wDtoMwJMC/data20{year[2:4]}_picoAOD_3b_wJCM_newSBDef_wDtoM.root"
             fname_w3to4 = f"/smurthy/condor/unsup4b_coff/w3to4/data20{year[2:4]}_picoAOD_3b_wJCM_newSBDef_w3to4.root"
             fname_wDtoM = f"/smurthy/condor/unsup4b_coff/wDtoM/data20{year[2:4]}_picoAOD_3b_wJCM_newSBDef_wDtoM.root"
-            event['w3to4'] = NanoEventsFactory.from_root(f'{path}{fname_w3to4}',
+            event['w3to4'] = nano_from_root({f'{path}{fname_w3to4}': "Events"},
                             entry_start=estart, entry_stop=estop, schemaclass=FriendTreeSchema).events().w3to4.w3to4
 
-            event['wDtoM'] = NanoEventsFactory.from_root(f'{path}{fname_wDtoM}',
+            event['wDtoM'] = nano_from_root({f'{path}{fname_wDtoM}': "Events"},
                             entry_start=estart, entry_stop=estop, schemaclass=FriendTreeSchema).events().wDtoM.wDtoM
 
             #### event['w3to4', 'frac_err'] = event['w3to4'].std / event['w3to4'].w3to4
@@ -265,8 +266,8 @@ class analysis(processor.ProcessorABC):
 
         ### Build diJets, indexed by diJet[event,pairing,0/1]
         canJet = selev['canJet']
-        pairing = [([0, 2], [0, 1], [0, 1]),
-                   ([1, 3], [2, 3], [3, 2])]
+        pairing = [np.array([[0, 2], [0, 1], [0, 1]]),
+                   np.array([[1, 3], [2, 3], [3, 2]])]
         diJet       = canJet[:, pairing[0]]     +   canJet[:, pairing[1]]
         diJet['st'] = canJet[:, pairing[0]].pt  +   canJet[:, pairing[1]].pt
         diJet['dr'] = canJet[:, pairing[0]].delta_r(canJet[:, pairing[1]])
@@ -328,7 +329,7 @@ class analysis(processor.ProcessorABC):
 
         ###  Build the top Candiates
         ### sort the jets by btagging
-        selev.selJet  = selev.selJet[ak.argsort(selev.selJet.btagScore, axis=1, ascending=False)]
+        selev["selJet"] = selev.selJet[ak.argsort(selev.selJet.btagScore, axis=1, ascending=False)]
         try:
             top_cands = find_tops(selev.selJet)
         except Exception as e:

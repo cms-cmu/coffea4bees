@@ -1,5 +1,6 @@
 import numpy as np
 import awkward as ak
+import vector as vec
 from coffea.nanoevents.methods import vector
 from coffea4bees.jet_clustering.sample_jet_templates import sample_PDFs_vs_pT
 
@@ -205,10 +206,8 @@ def create_flavor_mask(jets, flavor):
 def compute_decluster_variables(clustered_splittings):
 
     # Define coordinate system axes and boost vectors
-    z_axis = ak.zip(
+    z_axis = vec.zip(
         {"x": 0, "y": 0, "z": 1},
-        with_name="ThreeVector",
-        behavior=vector.behavior
     )
 
     boost_vec_z = ak.zip(
@@ -225,18 +224,59 @@ def compute_decluster_variables(clustered_splittings):
     part_A_pz0 = clustered_splittings.part_A.boost(-boost_vec_z)
     part_B_pz0 = clustered_splittings.part_B.boost(-boost_vec_z)
 
-    # Calculate plane normals
-    comb_z_plane_hat = z_axis.cross(clustered_splittings_pz0).unit
-    decay_plane_hat = part_A_pz0.cross(part_B_pz0).unit
+    # Calculate plane normals (cross product requires 3D vectors)
+    clustered_splittings_pz0_3d = vec.zip(
+        {"x": clustered_splittings_pz0.x, "y": clustered_splittings_pz0.y, "z": clustered_splittings_pz0.z},
+    )
+    part_A_pz0_3d = vec.zip(
+        {"x": part_A_pz0.x, "y": part_A_pz0.y, "z": part_A_pz0.z},
+    )
+    part_B_pz0_3d = vec.zip(
+        {"x": part_B_pz0.x, "y": part_B_pz0.y, "z": part_B_pz0.z},
+    )
+    # cross().unit() returns NaN for zero vectors (collinear particles); treat as zero-dot so arccos → π/2
+    comb_z_plane_cross = z_axis.cross(clustered_splittings_pz0_3d)
+    comb_z_plane_mag = np.sqrt(comb_z_plane_cross.x**2 + comb_z_plane_cross.y**2 + comb_z_plane_cross.z**2)
+    comb_z_plane_hat = vec.zip({
+        "x": ak.nan_to_num(comb_z_plane_cross.x / comb_z_plane_mag, nan=0.0),
+        "y": ak.nan_to_num(comb_z_plane_cross.y / comb_z_plane_mag, nan=0.0),
+        "z": ak.nan_to_num(comb_z_plane_cross.z / comb_z_plane_mag, nan=0.0),
+    })
+    decay_plane_cross = part_A_pz0_3d.cross(part_B_pz0_3d)
+    decay_plane_mag = np.sqrt(decay_plane_cross.x**2 + decay_plane_cross.y**2 + decay_plane_cross.z**2)
+    decay_plane_hat = vec.zip({
+        "x": ak.nan_to_num(decay_plane_cross.x / decay_plane_mag, nan=0.0),
+        "y": ak.nan_to_num(decay_plane_cross.y / decay_plane_mag, nan=0.0),
+        "z": ak.nan_to_num(decay_plane_cross.z / decay_plane_mag, nan=0.0),
+    })
 
 
     #
     # Compute and store clustering variables
     #
-    thetaA = np.arccos(clustered_splittings_pz0.unit.dot(part_A_pz0.unit))
+    # Compute thetaA as angle between spatial 3-momentum vectors
+    # coffea 2025 .unit()/.dot() use Lorentz metric; use vec.zip 3D vectors instead
+    comb_pz0_3d_unit = vec.zip({
+        "x": clustered_splittings_pz0.x,
+        "y": clustered_splittings_pz0.y,
+        "z": clustered_splittings_pz0.z,
+    }).unit()
+    partA_pz0_3d_unit = vec.zip({
+        "x": part_A_pz0.x,
+        "y": part_A_pz0.y,
+        "z": part_A_pz0.z,
+    }).unit()
+    dot_theta = comb_pz0_3d_unit.dot(partA_pz0_3d_unit)
+    # Clamp to [-1, 1] to avoid NaN from floating point rounding in arccos
+    dot_theta = ak.where(dot_theta > 1.0, 1.0, ak.where(dot_theta < -1.0, -1.0, dot_theta))
+    thetaA = np.arccos(dot_theta)
 
-    clustered_splittings["zA_num"]     = clustered_splittings_pz0.dot(part_A_pz0)
-    clustered_splittings["zA"]         = clustered_splittings_pz0.dot(part_A_pz0) / (clustered_splittings_pz0.pt**2)
+    # zA uses spatial 3D dot product; coffea 2025 .dot() uses Lorentz metric so compute explicitly
+    _spatial_dot_comb_A = (clustered_splittings_pz0.x * part_A_pz0.x
+                           + clustered_splittings_pz0.y * part_A_pz0.y
+                           + clustered_splittings_pz0.z * part_A_pz0.z)
+    clustered_splittings["zA_num"]     = _spatial_dot_comb_A
+    clustered_splittings["zA"]         = _spatial_dot_comb_A / (clustered_splittings_pz0.pt**2)
     clustered_splittings["mA"]         = clustered_splittings.part_A.mass
     clustered_splittings["rhoA"]       = clustered_splittings.part_A.mass / clustered_splittings.part_A.pt
     clustered_splittings["mB"]         = clustered_splittings.part_B.mass
@@ -273,7 +313,17 @@ def compute_decluster_variables(clustered_splittings):
         for p in [part_A_pz0_phi0, part_B_pz0_phi0]
     ]
 
-    decay_plane_pdphi0 = part_A_pdphi0.cross(part_B_pdphi0).unit
+    # cross() requires 3D vectors — extract spatial components first
+    # Handle zero cross product (collinear particles) by replacing NaN with 0 to match coffea 0.7 .unit behavior
+    part_A_pdphi0_3d = vec.zip({"x": part_A_pdphi0.x, "y": part_A_pdphi0.y, "z": part_A_pdphi0.z})
+    part_B_pdphi0_3d = vec.zip({"x": part_B_pdphi0.x, "y": part_B_pdphi0.y, "z": part_B_pdphi0.z})
+    pdphi0_cross = part_A_pdphi0_3d.cross(part_B_pdphi0_3d)
+    pdphi0_mag = np.sqrt(pdphi0_cross.x**2 + pdphi0_cross.y**2 + pdphi0_cross.z**2)
+    decay_plane_pdphi0 = vec.zip({
+        "x": ak.nan_to_num(pdphi0_cross.x / pdphi0_mag, nan=0.0),
+        "y": ak.nan_to_num(pdphi0_cross.y / pdphi0_mag, nan=0.0),
+        "z": ak.nan_to_num(pdphi0_cross.z / pdphi0_mag, nan=0.0),
+    })
     pos_decay_phi_mask = np.abs(decay_plane_pdphi0.y - 1) < 0.001
     pos_decay_phi_mask_flat = ak.flatten(pos_decay_phi_mask)
 
@@ -361,7 +411,7 @@ def build_lorentz_vector_pz0(z_fraction, combined_pt, tan_theta, mass, pz_sign=-
 def update_single_jet_mass(p, jet_flavor, rho, btag_string, counts):
     """Update mass for single jets using pt × rho."""
     jet_flavor_flat = ak.flatten(jet_flavor)
-    single_jet_mask = (np.char.str_len(jet_flavor_flat) == 1)
+    single_jet_mask = (ak.str.length(jet_flavor_flat) == 1)
 
     pt_flat   = ak.flatten(p.pt)
     mass_flat = ak.flatten(p.mass)
@@ -392,7 +442,7 @@ def decluster_combined_jets(input_jet, debug=False):
     # Build jet_flav_child lists
     #
     jet_flav_flat = ak.flatten(input_jet.jet_flavor)
-    simple_comb_mask = (np.char.str_len(jet_flav_flat) == 2)
+    simple_comb_mask = (ak.str.length(jet_flav_flat) == 2)
     jet_flav_child_A = []
     jet_flav_child_B = []
 
@@ -504,7 +554,7 @@ def decluster_splitting_types(input_jets, splitting_types, input_pdfs, rand_seed
     #   - Some of the splittings are recursive (no implemented yet!)
     num_trys = 0
 
-    while ak.any(input_jets_to_decluster):
+    while ak.any(ak.num(input_jets_to_decluster) > 0):
 
         if debug:
             print(f"{chunk} decluster_splitting_types num_trys {num_trys}\n")

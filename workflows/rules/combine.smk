@@ -12,6 +12,10 @@ rule workspace:
     log: "output/logs/workspace_{path}.log"
     shell:
         """
+        if [ "${{SLURM_PROCID:-0}}" -ne 0 ]; then
+            echo "Skipping duplicate Slurm task (SLURM_PROCID=$SLURM_PROCID)"
+            exit 0
+        fi
         set -o pipefail
         LOG=$(pwd)/{log}
         DATACARD_DIR=$(realpath $(dirname {input}))
@@ -48,6 +52,10 @@ rule limits:
     log: "output/logs/limits_{path}__{signallabel}.log"
     shell:
         """
+        if [ "${{SLURM_PROCID:-0}}" -ne 0 ]; then
+            echo "Skipping duplicate Slurm task (SLURM_PROCID=$SLURM_PROCID)"
+            exit 0
+        fi
         LOG=$(pwd)/{log}
         DATACARD_DIR=$(realpath $(dirname {input}))
         mkdir -p $(dirname $LOG)
@@ -83,6 +91,10 @@ rule significance:
     log: "output/logs/significance_{path}__{signallabel}.log"
     shell:
         """
+        if [ "${{SLURM_PROCID:-0}}" -ne 0 ]; then
+            echo "Skipping duplicate Slurm task (SLURM_PROCID=$SLURM_PROCID)"
+            exit 0
+        fi
         LOG=$(pwd)/{log}
         DATACARD_DIR=$(realpath $(dirname {input}))
         mkdir -p $(dirname $LOG)
@@ -121,6 +133,10 @@ rule likelihood_scan:
     log: "output/logs/likelihood_scan_{path}__{signallabel}.log"
     shell:
         """
+        if [ "${{SLURM_PROCID:-0}}" -ne 0 ]; then
+            echo "Skipping duplicate Slurm task (SLURM_PROCID=$SLURM_PROCID)"
+            exit 0
+        fi
         LOG=$(pwd)/{log}
         mkdir -p $(dirname $LOG)
         echo "[$(date)] Starting likelihood_scan rule with signal {params.signallabel}" > $LOG
@@ -168,6 +184,10 @@ rule impacts:
     log: "output/logs/impacts_{path}__{signallabel}.log"
     shell:
         """
+        if [ "${{SLURM_PROCID:-0}}" -ne 0 ]; then
+            echo "Skipping duplicate Slurm task (SLURM_PROCID=$SLURM_PROCID)"
+            exit 0
+        fi
         LOG=$(pwd)/{log}
         mkdir -p $(dirname $LOG)
         echo "[$(date)] Starting impacts rule with signal {params.signallabel}" > $LOG
@@ -226,6 +246,10 @@ rule gof:
     log: "output/logs/gof_{path}__{signallabel}.log"
     shell:
         """
+        if [ "${{SLURM_PROCID:-0}}" -ne 0 ]; then
+            echo "Skipping duplicate Slurm task (SLURM_PROCID=$SLURM_PROCID)"
+            exit 0
+        fi
         LOG=$(pwd)/{log}
         mkdir -p $(dirname $LOG)
         echo "[$(date)] Starting gof rule with signal {params.signallabel}" > $LOG
@@ -279,6 +303,10 @@ rule postfit:
     log: "output/logs/postfit_{path}__{signallabel}.log"
     shell:
         """
+        if [ "${{SLURM_PROCID:-0}}" -ne 0 ]; then
+            echo "Skipping duplicate Slurm task (SLURM_PROCID=$SLURM_PROCID)"
+            exit 0
+        fi
         LOG=$(pwd)/{log}
         mkdir -p $(dirname $LOG)
         echo "[$(date)] Starting postfit rule with signal {params.signallabel}" > $LOG
