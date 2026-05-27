@@ -605,6 +605,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 analysis_selections = selections.all(*allcuts)
                 selev = selev[pass_ttbar_filter_selev]
 
+        if len(selev) == 0:
+            return processOutput
+
         with self._stage(f"{label}:reconstruct_tops"):
             # Reconstruct top candidates
             self.reconstruct_tops(selev)

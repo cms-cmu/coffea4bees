@@ -280,6 +280,26 @@ class TestParseCliCmd(unittest.TestCase):
         r = _parse_cli_cmd("examples()")
         self.assertEqual(r["func"], "examples")
 
+    # ---- valid plot_roc() ----
+    def test_plot_roc_simple(self):
+        r = _parse_cli_cmd('plot_roc("SvB_MA.ps_hh_fine", sig=["HH4b"], bkg=["TTbar","Multijet"])')
+        self.assertEqual(r["func"], "plot_roc")
+        self.assertEqual(r["req"]["var"], "SvB_MA.ps_hh_fine")
+        self.assertEqual(r["req"]["sig"], ["HH4b"])
+        self.assertEqual(r["req"]["bkg"], ["TTbar", "Multijet"])
+
+    def test_plot_roc_with_region(self):
+        r = _parse_cli_cmd('plot_roc("SvB_MA.ps_hh_fine", sig=["HH4b"], bkg=["TTbar"], region="SR")')
+        self.assertEqual(r["req"]["region"], "SR")
+
+    def test_plot_roc_with_cut(self):
+        r = _parse_cli_cmd('plot_roc("SvB_MA.ps_hh_fine", sig=["HH4b"], bkg=["TTbar"], cut="passSvB")')
+        self.assertEqual(r["req"]["cut"], "passSvB")
+
+    def test_plot_roc_req_is2d_false(self):
+        r = _parse_cli_cmd('plot_roc("SvB_MA.ps_hh_fine", sig=["HH4b"], bkg=["TTbar"])')
+        self.assertFalse(r["req"].get("is2d", False))
+
     # ---- error cases ----
     def test_unknown_function_raises(self):
         with self.assertRaises(ValueError):
