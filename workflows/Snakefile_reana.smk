@@ -43,9 +43,8 @@ OUTPUT_PATTERNS = {
 }
 
 SYST_PLOTS = {
-    "HH4b": f"{config['output_path']}/datacards/HH4b/systs/SvB_MA_ps_hh_nominal.pdf",
-    "ZZ4b": f"{config['output_path']}/datacards/ZZ4b/systs/SvB_MA_ps_zz_nominal.pdf",
-    "ZH4b": f"{config['output_path']}/datacards/ZH4b/systs/SvB_MA_ps_zh_nominal.pdf",
+    c: f"{config['output_path']}/datacards/{c}/systs/SvB_MA_ps_{c.lower().split('4b')[0]}_nominal.pdf"
+    for c in CHANNELS
 }
 
 def reana_config(name):
