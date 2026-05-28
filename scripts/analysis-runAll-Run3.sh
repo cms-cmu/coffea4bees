@@ -29,7 +29,7 @@ bash coffea4bees/scripts/run-analysis-processor.sh \
     --datasets "data " \
     --dataset-metadata "$DATASETS" \
     --year "2022_EE 2022_preEE 2023_BPix 2023_preBPix" \
-    --output-filename "allRun3Data_wSvB.coffea" \
+    --output-filename "allRun3Data.coffea" \
     --output-subdir "$JOB" \
     --config coffea4bees/analysis/metadata/HH4b_run_fastTopReco_Run3.yml \
     --no-test \

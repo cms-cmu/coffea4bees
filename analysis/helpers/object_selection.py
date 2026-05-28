@@ -147,7 +147,7 @@ def lepton_selection(event: ak.Array, isRun3: bool = False, sel_cfg: dict = None
     # Select electrons if present
     if 'Electron' in event.fields:
         event['selElec'] = electron_selection(event.Electron, isRun3, sel_cfg)
-        event['selLepton'] = ak.concatenate([event.selElec, event.selMuon], axis=1)
+        event['selLepton'] = ak.with_name(ak.concatenate([event.selElec, event.selMuon], axis=1), name="PtEtaPhiMCandidate")
     else:
         event['selLepton'] = event.selMuon
 
@@ -299,8 +299,8 @@ def jet_selection(
                 event['Jet', 'passJetId'] = compute_jet_id(event.Jet, corrections_metadata['jet_id'], r3_s_jetId_tag)
         event['Jet', 'pileup'] = ((event.Jet.puId < r3_puId_thr) & (event.Jet.pt < r3_pu_pt_thr)) | ((np.abs(event.Jet.eta) > r3_fwd_eta_min) & (event.Jet.pt < r3_fwd_pt_thr))
         event['Jet', 'selected_loose'] = (event.Jet.pt >= r3_sl_pt_min) & event.Jet.passJetId_loose & event.Jet.lepton_cleaned & (np.abs(event.Jet.eta) <= r3_sl_eta_max)
-        event['Jet', 'selected'] = (event.Jet.pt >= r3_s_pt_min) & (np.abs(event.Jet.eta) <= r3_s_eta_max) & ~event.Jet.pileup & event.Jet.passJetId & event.Jet.lepton_cleaned
-        event['Jet', 'selected_run2'] = (event.Jet.pt >= r2_s_pt_min) & (np.abs(event.Jet.eta) <= r3_s_eta_max) & ~event.Jet.pileup & event.Jet.passJetId & event.Jet.lepton_cleaned
+        event['Jet', 'selected'] = (event.Jet.pt >= r3_s_pt_min) & (np.abs(event.Jet.eta) <= r3_s_eta_max) & event.Jet.passJetId & event.Jet.lepton_cleaned
+        event['Jet', 'selected_run2'] = (event.Jet.pt >= r2_s_pt_min) & (np.abs(event.Jet.eta) <= r3_s_eta_max) & event.Jet.passJetId & event.Jet.lepton_cleaned
 
     # Non-Run3 jet selection
     else:
@@ -354,6 +354,19 @@ def jet_selection(
     event['Jet', 'tagged_loose'] = event.Jet.selected & (event.Jet.btagScore >= corrections_metadata['btagWP']['L'])
     event['Jet', 'tagged_run2'] = event.Jet.selected_run2 & (event.Jet.btagScore >= corrections_metadata['btagWP']['M'])
     event['Jet', 'tagged_loose_run2'] = event.Jet.selected_run2 & (event.Jet.btagScore >= corrections_metadata['btagWP']['L'])
+    if 'T' in corrections_metadata['btagWP']:
+        event['Jet', 'tagged_tight'] = event.Jet.selected & (event.Jet.btagScore >= corrections_metadata['btagWP']['T'])
+
+    # Forward jet flag for FeynNet inputs.
+    # Uses btagScore directly (not the 'tagged' flag) so b-tag exclusion applies
+    # to all jets regardless of whether they pass the central 'selected' criteria.
+    # HEM veto (pt<50, 2.5<|eta|<3.0) targets the Run2 noisy HF region; revisit for Run3.
+    event['Jet', 'fwd_feynnet'] = (
+        (event.Jet.pt > 30)
+        & (np.abs(event.Jet.eta) < 4.7)
+        & (event.Jet.btagScore < corrections_metadata['btagWP']['M'])
+        & ~((event.Jet.pt < 50) & (np.abs(event.Jet.eta) > 2.5) & (np.abs(event.Jet.eta) < 3.0))
+    )
 
     # Override selected jets with flavor bit if required
     if override_selected_with_flavor_bit and "jet_flavor_bit" in event.Jet.fields:
@@ -372,6 +385,8 @@ def jet_selection(
     event['tagJet_loose'] = event.selJet[event.selJet.tagged_loose]
     event['nJet_tagged'] = ak.num(event.tagJet)
     event['nJet_tagged_loose'] = ak.num(event.tagJet_loose)
+    if 'tagged_tight' in event.Jet.fields:
+        event['nJet_tagged_tight'] = ak.sum(event.Jet.tagged_tight, axis=1)
 
     # For trigger emulation
     #   Calculate HT and other event variables
@@ -549,5 +564,8 @@ def lowpt_jet_selection(
     event['tagJet_loose_lowpt'] = event.selJet_lowpt[event.selJet_lowpt.tagged_loose_lowpt]
     event['nJet_tagged_lowpt'] = ak.num(event.tagJet_lowpt)
     event['nJet_tagged_loose_lowpt'] = ak.num(event.tagJet_loose_lowpt)
+
+    event['allSelJet'] = ak.concatenate([event.selJet, event.selJet_lowpt], axis=1)
+    event['allTagJet'] = ak.concatenate([event.tagJet, event.tagJet_lowpt], axis=1)
 
     return event

@@ -2,6 +2,7 @@ import os, sys
 import argparse
 import logging
 import json
+import tempfile
 import numpy as np
 from coffea.util import load
 import hist
@@ -86,12 +87,7 @@ if __name__ == '__main__':
                                 'year' : iy,
                                 'tag' : itag,
                                 'region' : iregion,
-                                'passPreSel' : True,
                             }
-                            for iaxis in coffea_hists[ih].axes:
-                                if iaxis.name.startswith(('pass', 'fail')) and iaxis.name not in this_hist:
-                                    this_hist[iaxis.name] = sum
-                                    
                             logging.info(f"Converting hist {ih} {this_hist}")
                             json_dict[ih][iprocess][iy][itag][iregion] = hist_to_json( coffea_hists[ih][this_hist] )
                             
@@ -124,9 +120,6 @@ if __name__ == '__main__':
                                     'variation' : ivar,
                                     'tag' : itag,
                                     'region' : iregion,
-                                    'passPreSel' : True,
-                                    # 'passSvB' : sum,
-                                    # 'failSvB' : sum
                                 }
                                 logging.info(f"Converting hist {ih} {this_hist}")
                                 json_dict[ih][iprocess][iy][ivar][itag][iregion] = hist_to_json( coffea_hists[ih][this_hist] )
@@ -135,4 +128,11 @@ if __name__ == '__main__':
     output_dir = '/'.join( args.output.split('/')[:-1] )
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    json.dump(json_dict, open(f'{args.output}', 'w'))
+    tmp_fd, tmp_path = tempfile.mkstemp(dir=output_dir or '.', suffix='.json.tmp')
+    try:
+        with os.fdopen(tmp_fd, 'w') as f:
+            json.dump(json_dict, f)
+        os.replace(tmp_path, args.output)
+    except:
+        os.unlink(tmp_path)
+        raise

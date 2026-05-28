@@ -1,7 +1,7 @@
 import logging
 import awkward as ak
 
-from coffea4bees.analysis.processors.processor_HH4b import HH4bBaseProcessor
+from coffea4bees.analysis.processors.processor_HH4b import HH4bBaseProcessor, _Unset, _UNSET
 from ..helpers.load_friend import (
     FriendTemplate,
     parse_friends,
@@ -16,6 +16,18 @@ from coffea4bees.analysis.helpers.filling_histograms import (
 )
 from coffea import processor
 
+
+def _init_classfier_lowpt(path):
+    """Like _init_classfier but uses HCREnsemble_lowpt for modern (non-legacy) models."""
+    if path is None or isinstance(path, _Unset):
+        return None
+    if isinstance(path, str):
+        from ..helpers.classifier.HCR import Legacy_HCREnsemble
+        return Legacy_HCREnsemble(path)
+    from ..helpers.classifier.HCR import HCREnsemble_lowpt
+    return HCREnsemble_lowpt(path)
+
+
 class analysis(HH4bBaseProcessor):
     def __init__(
         self,
@@ -23,14 +35,23 @@ class analysis(HH4bBaseProcessor):
         apply_JCM: bool = False,
         JCM_file: str = None,
         friends: dict[str, str|FriendTemplate] = None,
+        SvB_MA=_UNSET,
         **kwargs  # Accept additional arguments to pass to parent
     ):
-        # Initialize parent without JCM (we'll handle it ourselves)
-        super().__init__(apply_JCM=False, friends={}, **kwargs)
-        
+        # Initialize parent without JCM (we'll handle it ourselves).
+        # Pass SvB_MA through so the parent's _skip_svb_legacy logic fires correctly,
+        # then replace classifier_SvB_MA with the lowpt-aware variant below.
+        super().__init__(apply_JCM=False, friends={}, SvB_MA=SvB_MA, **kwargs)
+
+        # Replace with lowpt-aware ensemble (reads nSelJets_lowpt instead of nJet_selected)
+        self.classifier_SvB_MA = _init_classfier_lowpt(SvB_MA)
+
         # Set our own lowpt version of JCM
         self.apply_JCM = jetCombinatoricModel(JCM_file, lowpt_mode=True) if apply_JCM else None
         self.friends = parse_friends(friends)
+
+    def _fourtag_label(self):
+        return "lowpt_fourTag"
 
     def apply_selection(self, event):
         return apply_4b_lowpt_selection(
@@ -161,6 +182,9 @@ class analysis(HH4bBaseProcessor):
 
         if self.classifier_FvT: apply_FvT = True
         else: apply_FvT = self.apply_FvT
+
+        if self.run_SvB and "SvB_MA" in selev.fields and "passMinPs" not in selev.fields:
+            selev["passMinPs"] = selev.SvB_MA.passMinPs
 
         if not self.run_systematics:
             ## this can be simplified

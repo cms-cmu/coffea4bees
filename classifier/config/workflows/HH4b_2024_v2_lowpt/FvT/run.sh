@@ -13,7 +13,7 @@ export WFS="coffea4bees/classifier/config/workflows/HH4b_2024_v2_lowpt/FvT"
 # Generate a random port between 10000 and 60000 so jobs don't crash
 export PORT=$(shuf -i 10000-60000 -n 1)
 
-train with train.yml and common.yml configs
+# train with train.yml and common.yml configs
 ./src/pyml.py \
     template "model: ${MODEL}" $WFS/train.yml \
     -from $WFS/../common.yml \

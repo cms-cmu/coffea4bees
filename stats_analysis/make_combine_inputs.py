@@ -14,11 +14,11 @@ import CombineHarvester.CombineTools.ch as ch
 ROOT.gROOT.SetBatch(True)
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
-def make_trigger_syst( json_input, root_output, name, rebin ):
+def make_trigger_syst( json_input, root_output, name, rebin, four_tag='fourTag' ):
 
-    hData = json_input['nominal']['fourTag']['SR']
-    hMC = json_input['CMS_bbbb_resolved_ggf_triggerEffSFUp']['fourTag']['SR']
-    nominal = json_input['CMS_bbbb_resolved_ggf_triggerEffSFDown']['fourTag']['SR']
+    hData = json_input['nominal'][four_tag]['SR']
+    hMC = json_input['CMS_bbbb_resolved_ggf_triggerEffSFUp'][four_tag]['SR']
+    nominal = json_input['CMS_bbbb_resolved_ggf_triggerEffSFDown'][four_tag]['SR']
 
     # Previous way
     # for num, denom, ivar in [ (nominal, hData, 'Up'), (nominal, hMC, 'Down')]:
@@ -49,7 +49,10 @@ def create_combine_root_file( file_to_convert,
                                 metadata_file='coffea4bees/stats_analysis/metadata/HH4b.yml',
                                 mixeddata_file=None,
                                 variable_binning=False,
-                                stat_only=False ):
+                                stat_only=False,
+                                three_tag='threeTag',
+                                four_tag='fourTag',
+                                blind=False ):
 
     logging.info(f"Reading {metadata_file}")
     metadata = yaml.safe_load(open(metadata_file, 'r'))
@@ -76,29 +79,29 @@ def create_combine_root_file( file_to_convert,
         ### For multijets
         root_hists[iyear]['multijet'] = {}
         root_hists[iyear]['multijet']['nominal'] = json_to_TH1(
-            coffea_hists[var]['data'][iyear]['threeTag']['SR'], 'multijet_'+iyear+var, rebin )
+            coffea_hists[var]['data'][iyear][three_tag]['SR'], 'multijet_'+iyear+var, rebin )
 
         for iprocess in coffea_hists[var].keys():
 
-            if iprocess.startswith(('TTTo', 'data')):
+            if iprocess.startswith(('TTTo', 'TTbar4b_from_d3', 'data')):
                 
                 if iprocess.startswith('TTTo') and mixeddata_file:
-                    coffea_hist = mixedbkg_tt[var][f"{iprocess}_for_mixed"][iyear]['fourTag']['SR']
+                    coffea_hist = mixedbkg_tt[var][f"{iprocess}_for_mixed"][iyear][four_tag]['SR']
                 else:
-                    coffea_hist = coffea_hists[var][iprocess][iyear]['fourTag']['SR']
+                    coffea_hist = coffea_hists[var][iprocess][iyear][four_tag]['SR']
                 root_hists[iyear][iprocess] = json_to_TH1( coffea_hist, 
                                                             f'{iprocess.split("4b")[0]}_{iyear}', rebin )
             else:
                 root_hists[iyear][iprocess] = {}
                 root_hists[iyear][iprocess]['nominal'] = json_to_TH1(
-                    coffea_hists[var][iprocess][iyear]['fourTag']['SR'], iprocess+'_'+iyear, rebin )
+                    coffea_hists[var][iprocess][iyear][four_tag]['SR'], iprocess+'_'+iyear, rebin )
                 
         if systematics_file:
             for iprocess in metadata['processes']['signal']:
                 root_hists[iyear][iprocess] = {}
                 if stat_only:
                     root_hists[iyear][iprocess]["nominal"] = json_to_TH1(
-                                                        coffea_hists_syst[var][iprocess][iyear]["nominal"]['fourTag']['SR'], 
+                                                        coffea_hists_syst[var][iprocess][iyear]["nominal"][four_tag]['SR'],
                                                         f'{iprocess}_nominal_{iyear}', rebin )
                 else:
                     for ivar in coffea_hists_syst[var][iprocess][iyear].keys():
@@ -127,11 +130,11 @@ def create_combine_root_file( file_to_convert,
                         if 'triggerEffSFUp' in namevar:
                             make_trigger_syst(coffea_hists_syst[var][iprocess][iyear],
                                                 root_hists[iyear][iprocess],
-                                                f'{iprocess}_{ivar}_{iyear}', rebin)
+                                                f'{iprocess}_{ivar}_{iyear}', rebin, four_tag=four_tag)
                         elif 'triggerEffSFDown' in namevar: continue
                         else:
                             root_hists[iyear][iprocess][namevar] = json_to_TH1(
-                                                            coffea_hists_syst[var][iprocess][iyear][ivar]['fourTag']['SR'], 
+                                                            coffea_hists_syst[var][iprocess][iyear][ivar][four_tag]['SR'],
                                                             f'{iprocess}_{ivar}_{iyear}', rebin )
         if 'ggZH4b' in root_hists[iyear].keys():
             for ih in root_hists[iyear]['ggZH4b'].keys():
@@ -191,7 +194,7 @@ def create_combine_root_file( file_to_convert,
         logging.info("\n Using multijet from mixeddata")
         for iy in root_hists:
             root_hists[iy]["multijet"]["nominal"] = json_to_TH1(
-                mixedBkg_data3b[var]['data_3b_for_mixed'][iy.split("_")[1]]['threeTag']['SR'], 
+                mixedBkg_data3b[var]['data_3b_for_mixed'][iy.split("_")[1]][three_tag]['SR'],
                 f'multijet_{iy}_{var}', rebin )
 
     if not stat_only:
@@ -202,7 +205,10 @@ def create_combine_root_file( file_to_convert,
                 root_hists[channel]['multijet'][bkg_name_syst].SetName(f'multijet_{bkg_name_syst}')
                 for i in range(len(ivalues)):
                     nom_val = root_hists[channel]['multijet'][bkg_name_syst].GetBinContent( i+1 )
-                    root_hists[channel]['multijet'][bkg_name_syst].SetBinContent( i+1, nom_val*ivalues[i]  )
+                    factor = float(ivalues[i])
+                    if not np.isfinite(factor):
+                        factor = 1.0
+                    root_hists[channel]['multijet'][bkg_name_syst].SetBinContent( i+1, nom_val * factor )
 
         closureSysts = [ i.replace('Up', '') for i in root_hists[next(iter(root_hists))]['multijet'].keys() if i.endswith('Up') ]
 
@@ -214,14 +220,14 @@ def create_combine_root_file( file_to_convert,
         root_hists[channel][tt_label].SetTitle(f"{tt_label}_{channel}")
         root_hists[channel][tt_label].Reset()
         for ip, _ in list(root_hists[channel].items()):
-            if 'TTTo' in ip:
+            if ip.startswith(('TTTo', 'TTbar4b_from_d3')):
                 root_hists[channel][tt_label].Add( root_hists[channel][ip] )
                 del root_hists[channel][ip]
             elif 'data' in ip:
                 if mixeddata_file:
                     logging.info(f"Using mixeddata for data_obs")
                     root_hists[channel]['data_obs'] = json_to_TH1(
-                        mixeddata[var]['mix_v0'][channel.split("_")[1]]['fourTag']['SR'], 
+                        mixeddata[var]['mix_v0'][channel.split("_")[1]][four_tag]['SR'],
                         f'data_obs{channel}', rebin )
                 else:
                     root_hists[channel]['data_obs'] = root_hists[channel][ip]
@@ -244,9 +250,32 @@ def create_combine_root_file( file_to_convert,
                             root_hists[channel][label][ivar] = root_hists[channel][label][ivar].Clone(f'{label}_{tmpivar}')
                             root_hists[channel][label][ivar].SetTitle(f'{label}_{tmpivar}_{channel}')
                 if not ip.startswith(label): del root_hists[channel][ip]
-            else: 
+            else:
                 logging.info(f"{ip} not in metadata processes, removing from root file.")
                 del root_hists[channel][ip]
+
+    if blind:
+        logging.info("\n Blinding: replacing data_obs with sum of backgrounds")
+        for channel in root_hists.keys():
+            bkg_labels = [ metadata['processes']['background'][ip]['label']
+                           for ip in metadata['processes']['background'] ]
+            blind_hist = None
+            for label in bkg_labels:
+                if label not in root_hists[channel]:
+                    continue
+                ih = root_hists[channel][label]
+                nominal = ih['nominal'] if isinstance(ih, dict) else ih
+                if blind_hist is None:
+                    blind_hist = nominal.Clone("data_obs")
+                else:
+                    blind_hist.Add(nominal)
+            if blind_hist is not None:
+                blind_hist.SetName("data_obs")
+                blind_hist.SetTitle(f"data_obs_{channel}")
+                root_hists[channel]['data_obs'] = blind_hist
+                logging.info(f"  {channel}: data_obs set to sum of backgrounds")
+            else:
+                logging.warning(f"  {channel}: no background histograms found, data_obs not replaced")
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -390,6 +419,12 @@ if __name__ == '__main__':
                         default='coffea4bees/stats_analysis/metadata/HH4b.yml', help="File contain systematic variations")
     parser.add_argument('--stat_only', dest='stat_only', action="store_true",
                         default=False, help="Create stat only inputs")
+    parser.add_argument('--three_tag', dest='three_tag',
+                        default='threeTag', help="Label for the three-tag category")
+    parser.add_argument('--four_tag', dest='four_tag',
+                        default='fourTag', help="Label for the four-tag category")
+    parser.add_argument('--blind', dest='blind', action="store_true",
+                        default=False, help="Replace data_obs with sum of backgrounds (blind analysis)")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
@@ -415,4 +450,7 @@ if __name__ == '__main__':
         metadata_file=args.metadata,
         mixeddata_file=args.mixeddata_file,
         stat_only=args.stat_only,
+        three_tag=args.three_tag,
+        four_tag=args.four_tag,
+        blind=args.blind,
     )

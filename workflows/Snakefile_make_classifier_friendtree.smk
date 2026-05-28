@@ -1,6 +1,6 @@
 config = {
     "output_path": "output/lowpt/classifier_inputs",
-    "dataset_location": "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/datasets_HH4b_2024_v2.yml",
+    "dataset_location": "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/",
     "samples": [
         "GluGluToHHTo4B_cHHH1",
         "TTTo2L2Nu",

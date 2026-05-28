@@ -10,6 +10,7 @@ runner:
   data_tier: nanoAOD
   condor_cores: 1
   worker_memory: 4GB
+  #dashboard_address: 10200
   condor_transfer_input_files:
     - src/
     - coffea4bees/skimmer/
@@ -34,8 +35,8 @@ config:
   # base_path: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/
   # base_path: root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_Run3_skims/
   # base_path: root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/
-  # base_path: root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/
-  base_path: /srv/output/skimmer/test/   ### local
+  base_path: root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/
+  # base_path: /srv/output/skimmer/test/   ### local
   step: 100000
   loosePtForSkim: True
   skip_collections:

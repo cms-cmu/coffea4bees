@@ -5,7 +5,7 @@ rule convert_hist_to_json:
     params:
         syst_flag = " "
     log:
-        "logs/{input_file}.log"
+        "logs/{output_file}.log"
     shell:
         """
         mkdir -p $(dirname {log})
@@ -62,7 +62,7 @@ rule run_two_stage_closure:
         extra_arguments = "",
         container_wrapper = config.get("container_wrapper", "./run_container combine")
     log:
-        "logs/run_two_stage_closure_{variable}.log"
+        "logs/run_two_stage_closure_SvB_MA_ps_hh_fine.log"
     shell:
         """
         mkdir -p $(dirname {log})
@@ -92,38 +92,43 @@ rule make_combine_inputs:
         "output/datacards/datacard__HHbb.txt"
     params:
         variable = "SvB_MA.ps_hh_fine",
-        rebin = 2,
+        syst_file = lambda wildcards, input: f"--syst_file {input.injsonsyst}",
+        metadata = "coffea4bees/stats_analysis/metadata/HH4b.yml",
+        rebin = 1,
         output_dir = "output/datacards/",
         variable_binning =  "--variable_binning",
         stat_only = "--stat_only",
         signal = "HH4b",
+        tag_flags = "",
         container_wrapper = config.get("container_wrapper", "./run_container combine")
     log:
-        "logs/make_combine_inputs_{signal}.log"
+        "logs/make_combine_inputs_HH4b.log"
     shell:
         """
         mkdir -p $(dirname {log})
+        OUTPUT_DIR=$(realpath {params.output_dir} 2>/dev/null || echo "$(pwd)/{params.output_dir}")
         echo "[$(date)] Starting make_combine_inputs for signal {params.signal}" > {log}
-        
+
         echo "[$(date)] Making combine inputs with full stats" | tee -a {log}
         {params.container_wrapper} \
             python3 coffea4bees/stats_analysis/make_combine_inputs.py \
                 --var {params.variable} \
                 -f {input.injson} \
-                --syst_file {input.injsonsyst} \
+                {params.syst_file} \
                 --bkg_syst_file {input.bkgsyst} \
                 --output_dir {params.output_dir} \
                 --rebin {params.rebin} \
                 {params.variable_binning} \
-                --metadata coffea4bees/stats_analysis/metadata/{params.signal}.yml \
-                {params.stat_only} 2>&1 | tee -a {log}
-                
+                --metadata {params.metadata} \
+                {params.stat_only} \
+                {params.tag_flags} 2>&1 | tee -a {log}
+
         echo "[$(date)] Combining datacards" | tee -a {log}
-        {params.container_wrapper} "cd {params.output_dir} && \
+        {params.container_wrapper} "cd $OUTPUT_DIR && \
             combineCards.py {params.signal}_2016=datacard_{params.signal}_2016.txt \
             {params.signal}_2017=datacard_{params.signal}_2017.txt \
             {params.signal}_2018=datacard_{params.signal}_2018.txt > datacard__{params.signal}.txt" 2>&1 | tee -a {log}
-            
+
         echo "[$(date)] Completed make_combine_inputs for signal {params.signal}" >> {log}
         """
 
@@ -136,7 +141,7 @@ rule make_syst_plots:
         channel="{channel}",
         signal="{signal}",
         container_wrapper = config.get("container_wrapper", "./run_container combine")
-    log: "logs/make_syst_plots_{variable}.log"
+    log: "{output_dir}/logs/make_syst_plots_{variable}.log"
     shell:
         """
         mkdir -p $(dirname {log})

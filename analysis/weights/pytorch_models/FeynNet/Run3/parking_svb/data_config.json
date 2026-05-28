@@ -1,0 +1,231 @@
+treename: Events
+variables:
+    ak4_local_index: ak.local_index(ak4_pt)
+    ak4_log_pt: np.log( np.abs(ak4_pt) + 1e-6 )
+    ak4_log_mass: np.log( np.abs(ak4_mass) + 1e-6 )
+    ak4_sinphi: np.sin(ak4_phi)
+    ak4_cosphi: np.cos(ak4_phi)
+    ak4_hh4b_selected: ak4_used_in_dHH
+    ak4_vbf_selected: ak4_used_in_VBF
+    is_2022_preEE: 1*(year == 2021)
+    is_2022_postEE: 1*(year == 2022)
+    is_2023_preBPix: 1*(year == 2023)
+    is_2023_postBPix: 1*(year == 2020)
+    j_pt: ak4_pt[ak4_hh4b_selected]
+    j_log_pt: ak4_log_pt[ak4_hh4b_selected]
+    j_mass: ak4_mass[ak4_hh4b_selected]
+    j_log_mass: ak4_log_mass[ak4_hh4b_selected]
+    j_eta: ak4_eta[ak4_hh4b_selected]
+    j_phi: ak4_phi[ak4_hh4b_selected]
+    j_sinphi: ak4_sinphi[ak4_hh4b_selected]
+    j_cosphi: ak4_cosphi[ak4_hh4b_selected]
+    j_mask: ak4_hh4b_selected[ak4_hh4b_selected]
+    j_index: ak4_local_index[ak4_hh4b_selected]
+    j_signalId: ak4_signalId[ak4_hh4b_selected] + 1
+    j_h1b1_cand: ak4_h1b1_cand[ak4_hh4b_selected]
+    j_h1b2_cand: ak4_h1b2_cand[ak4_hh4b_selected]
+    j_h2b1_cand: ak4_h2b1_cand[ak4_hh4b_selected]
+    j_h2b2_cand: ak4_h2b2_cand[ak4_hh4b_selected]
+    j_is_padded: ak.fill_none(ak.pad_none(ak.zeros_like(ak4_hh4b_selected)[ak4_hh4b_selected],
+        4), 1)
+    j_is_2022_preEE: is_2022_preEE * ak.ones_like(j_is_padded)
+    j_is_2022_postEE: is_2022_postEE * ak.ones_like(j_is_padded)
+    j_is_2023_preBPix: is_2023_preBPix * ak.ones_like(j_is_padded)
+    j_is_2023_postBPix: is_2023_postBPix * ak.ones_like(j_is_padded)
+    f_pt: ak4_pt[ak4_vbf_selected]
+    f_log_pt: ak4_log_pt[ak4_vbf_selected]
+    f_mass: ak4_mass[ak4_vbf_selected]
+    f_log_mass: ak4_log_mass[ak4_vbf_selected]
+    f_eta: ak4_eta[ak4_vbf_selected]
+    f_phi: ak4_phi[ak4_vbf_selected]
+    f_sinphi: ak4_sinphi[ak4_vbf_selected]
+    f_cosphi: ak4_cosphi[ak4_vbf_selected]
+    f_min_b_dr: ak4_min_dr_b[ak4_vbf_selected]
+    f_mask: ak4_vbf_selected[ak4_vbf_selected]
+    f_index: ak4_local_index[ak4_vbf_selected]
+    f_signalId: ak4_signalId[ak4_vbf_selected] + 1
+    f_is_padded: ak.fill_none(ak.pad_none(ak.zeros_like(ak4_vbf_selected)[ak4_vbf_selected],
+        2), 1)
+    f_is_2022_preEE: is_2022_preEE * ak.ones_like(f_is_padded)
+    f_is_2022_postEE: is_2022_postEE * ak.ones_like(f_is_padded)
+    f_is_2023_preBPix: is_2023_preBPix * ak.ones_like(f_is_padded)
+    f_is_2023_postBPix: is_2023_postBPix * ak.ones_like(f_is_padded)
+selection: []
+validate_selection: []
+test_selection: []
+predict_selection: []
+inputs:
+    j:
+        features:
+        -   j_log_pt:
+                dtype: float
+                length: 4
+        -   j_log_mass:
+                dtype: float
+                length: 4
+        -   j_eta:
+                dtype: float
+                length: 4
+        -   j_sinphi:
+                dtype: float
+                length: 4
+        -   j_cosphi:
+                dtype: float
+                length: 4
+        -   j_h1b1_cand:
+                dtype: float
+                length: 4
+        -   j_h1b2_cand:
+                dtype: float
+                length: 4
+        -   j_h2b1_cand:
+                dtype: float
+                length: 4
+        -   j_h2b2_cand:
+                dtype: float
+                length: 4
+        ndim: null
+        flatten: false
+    j_p4:
+        features:
+        -   j_pt:
+                dtype: float
+                length: 4
+        -   j_mass:
+                dtype: float
+                length: 4
+        -   j_eta:
+                dtype: float
+                length: 4
+        -   j_phi:
+                dtype: float
+                length: 4
+        ndim: null
+        flatten: false
+    j_mask:
+        features:
+        -   ak.fill_none(ak.pad_none(j_mask, 4), True):
+                dtype: null
+                length: 4
+        ndim: 3
+        flatten: false
+    j_index:
+        features:
+        -   j_index:
+                dtype: null
+                length: 4
+        ndim: null
+        flatten: false
+    f:
+        features:
+        -   f_log_pt:
+                dtype: float
+                length: 2
+        -   f_log_mass:
+                dtype: float
+                length: 2
+        -   f_eta:
+                dtype: float
+                length: 2
+        -   f_sinphi:
+                dtype: float
+                length: 2
+        -   f_cosphi:
+                dtype: float
+                length: 2
+        -   f_min_b_dr:
+                dtype: float
+                length: 2
+        ndim: null
+        flatten: false
+    f_p4:
+        features:
+        -   f_pt:
+                dtype: float
+                length: 2
+        -   f_mass:
+                dtype: float
+                length: 2
+        -   f_eta:
+                dtype: float
+                length: 2
+        -   f_phi:
+                dtype: float
+                length: 2
+        ndim: null
+        flatten: false
+    f_mask:
+        features:
+        -   ak.fill_none(ak.pad_none(f_mask, 2), True):
+                dtype: null
+                length: 2
+        ndim: 3
+        flatten: false
+    f_index:
+        features:
+        -   f_index:
+                dtype: null
+                length: 2
+        ndim: null
+        flatten: false
+targets:
+    j:
+        features:
+        -   j_signalId:
+                dtype: int
+                length: 4
+        ndim: null
+        flatten: false
+    f:
+        features:
+        -   f_signalId:
+                dtype: int
+                length: 2
+        ndim: null
+        flatten: false
+    class_vectors:
+        features:
+        -   is_ggf:
+                dtype: int
+        -   is_vbf:
+                dtype: int
+        -   is_zz:
+                dtype: int
+        -   is_zh:
+                dtype: int
+        -   ~(is_ggf | is_vbf | is_zz | is_zh):
+                dtype: int
+        ndim: null
+        flatten: false
+    normalization:
+        features:
+        -   is_ggf:
+                dtype: int
+        -   is_vbf:
+                dtype: int
+        -   is_zz:
+                dtype: int
+        -   is_zh:
+                dtype: int
+        -   ~(is_ggf | is_vbf | is_zz | is_zh):
+                dtype: int
+        ndim: null
+        flatten: false
+weights:
+    weight:
+    - scale
+    kfold_split:
+        k: 5
+        idx: 0
+        reserve_for_testing: false
+    random_split:
+        subset: 2
+        idx: 0
+        fraction: 0.25
+        dataset_mask: null
+        encoding: true
+        encoding_type: hexbytes
+        reserve_for_testing: false
+    class_normalization:
+        class_label: normalization
+        probabilities: null

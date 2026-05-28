@@ -2,7 +2,7 @@ import yaml
 from coffea4bees.skimmer.processor.skimmer_4b_base import Skimmer4b
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
 from coffea4bees.analysis.helpers.candidates_selection import cand_jet_selection
-from coffea.nanoevents import NanoEventsFactory
+from src.compat import nano_from_root
 
 from coffea4bees.jet_clustering.clustering   import cluster_bs
 from coffea4bees.jet_clustering.declustering import make_synthetic_event, clean_ISR
@@ -82,7 +82,7 @@ class DeClusterer(Skimmer4b):
             else:
 
                 FvT_file = f'{fname.replace("picoAOD", "FvT")}'
-                event["FvT"] = ( NanoEventsFactory.from_root( FvT_file,
+                event["FvT"] = ( nano_from_root( {FvT_file: "Events"},
                                                               entry_start=estart, entry_stop=estop, schemaclass=FriendTreeSchema).events().FvT )
 
                 if not ak.all(event.FvT.event == event.event):
@@ -165,7 +165,8 @@ class DeClusterer(Skimmer4b):
 
             weights, list_weight_names = add_btagweights( event, weights,
                                                           list_weight_names=list_weight_names,
-                                                          corrections_metadata=self.corrections_metadata[year]
+                                                          corrections_metadata=self.corrections_metadata[year],
+                                                          isRun3=config["isRun3"],
             )
             logging.debug( f"Btag weight {weights.partial_weight(include=['CMS_btag'])[:10]}\n" )
             event["weight"] = weights.weight()

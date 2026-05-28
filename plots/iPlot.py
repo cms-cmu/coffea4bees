@@ -92,6 +92,9 @@ plot("v4j.mass", region="SR", cut=["passSvB","failSvB"], process="data", doRatio
 plot(["canJet0.pt","canJet1.pt"], region="SR", doRatio=1, process="Multijet")
 plot(["canJet0.pt","canJet1.pt","canJet2.pt","canJet3.pt"], region="SR", doRatio=1, process="Multijet")
 
+# With two input files, a var list pairs elementwise: var[0] from file0, var[1] from file1
+plot(["v4j.mass","canJet0.pt"], region="SR", process="Multijet", doRatio=1)
+
 # Can plot a single process
 plot("v4j.mass", region="SR", process="data")
 
@@ -110,6 +113,10 @@ plot("v4j.mass", region="SRSB")
 plot2d("quadJet_selected.lead_vs_subl_m", process="data3b", region="SRSB")
 plot("leadStM_selected", region="SB", process=["data3b","mixeddata"])
 plot("v4j.mass", region=["SR", "SB"], process="data3b")
+
+# ROC curves — one curve per loaded input file (labeled by --labelNames or filename)
+plot_roc("SvB_MA.ps_hh_fine", sig=["HH4b"], bkg=["TTbar","Multijet"], region="SR")
+plot_roc("SvB_MA.ps_hh_fine", sig=["HH4b"], bkg=["TTbar","Multijet"], region="SR", cut="passSvB")
 """
     print(examples_text)
 

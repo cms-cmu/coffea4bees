@@ -56,9 +56,9 @@ counts4:
     TTToHadronic_for_mixed_UL16_preVFP:
         passJetMult: 74.27
         passPreSel: 68.54
-        passDiJetMass: 34.58
+        passDiJetMass: 34.68
         SR: 16.3
-        SB: 18.27
+        SB: 18.37
         passSvB: 0.34
         failSvB: 33.43
 
@@ -278,9 +278,9 @@ counts4_unit:
     TTToHadronic_for_mixed_UL16_preVFP:
         passJetMult: 1002.0
         passPreSel: 966.0
-        passDiJetMass: 499.0
+        passDiJetMass: 500.0
         SR: 241.0
-        SB: 258.0
+        SB: 259.0
         passSvB: 4.0
         failSvB: 478.0
 

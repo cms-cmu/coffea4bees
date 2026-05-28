@@ -470,7 +470,7 @@ import ast as _ast
 import contextlib as _contextlib
 import logging as _logging
 
-_PLOT_CMDS = {'plot', 'plot2d'}
+_PLOT_CMDS = {'plot', 'plot2d', 'plot_roc'}
 _TEXT_CMDS = {'ls', 'info', 'examples'}
 _ALL_CMDS  = _PLOT_CMDS | _TEXT_CMDS
 
@@ -519,6 +519,8 @@ def _parse_cli_cmd(cmd):
         if func == 'plot2d':
             if len(args) >= 1: req['var']     = args[0]
             if len(args) >= 2: req['process'] = args[1]
+        elif func == 'plot_roc':
+            if len(args) >= 1: req['var'] = args[0]
         else:
             if len(args) >= 1: req['var'] = args[0]
         req.update(kwargs)
@@ -594,17 +596,31 @@ def _execute_plot(req):
     _normalize_kwargs(req)
 
     kwargs = {}
-    for k in ["doRatio", "rebin", "norm", "yscale", "add_flow", "uniform_bins"]:
+    for k in ["doRatio", "rebin", "norm", "yscale", "xscale", "add_flow", "uniform_bins",
+              "year", "year_str", "CMSText",
+              "xlabel", "ylabel", "rlabel",
+              "legend", "legend_loc", "ratio_legend_loc",
+              "do_title",
+              "full", "plot_contour", "plot_leadst_lines", "plot_sublst_lines"]:
         v = req.get(k)
         if v is not None:
             kwargs[k] = v
     if debug:
         kwargs["debug"] = True
 
-    for k in ["xlim", "ylim", "rlim"]:
+    for k in ["xlim", "ylim", "rlim", "zlim"]:
         v = req.get(k)
         if v and any(x is not None for x in v):
             kwargs[k] = [x for x in v]
+
+    for k in ["legend_order", "ratio_legend_order"]:
+        v = req.get(k)
+        if v is not None:
+            kwargs[k] = v
+
+    # Convert "sum" string to the Python built-in sum function for axis summing
+    if isinstance(kwargs.get("year"), str) and kwargs["year"] == "sum":
+        kwargs["year"] = sum
 
     axis_opts = {"region": region[0] if len(region) == 1 else region}
 
@@ -678,9 +694,148 @@ def _execute_plot(req):
         return {"error": str(e)}, 400
 
 
+def _get_signal_plot(plot_data, s):
+    import src.plotting.helpers as _ph
+    try:
+        return _ph.get_value_nested_dict(plot_data, s)
+    except Exception:
+        return _ph.make_klambda_hist(s, plot_data)
+
+
+def _make_roc_figure(roc_data, outputFolder=None):
+    for _v in roc_data:
+        sig_cumsum = np.cumsum(np.array(roc_data[_v]["sig_values"])[::-1])[::-1]
+        bkg_cumsum = np.cumsum(np.array(roc_data[_v]["bkg_values"])[::-1])[::-1]
+        TPR = sig_cumsum / sig_cumsum[0]
+        FPR = bkg_cumsum / bkg_cumsum[0]
+        roc_data[_v]["FPR"] = FPR
+        roc_data[_v]["TPR"] = TPR
+        roc_data[_v]["auc"] = np.trapz(TPR, FPR)
+
+    fig = plt.figure(figsize=(8, 6))
+    for _v in roc_data:
+        plt.plot(roc_data[_v]["FPR"], roc_data[_v]["TPR"],
+                 color=roc_data[_v]["color"], lw=2,
+                 label=f'{roc_data[_v]["label"]} (AUC = {roc_data[_v]["auc"]:.2f})')
+    plt.plot([0, 1], [0, 1], color='gray', lw=2, linestyle='--')
+    plt.xlabel('Background Efficiency')
+    plt.ylabel('Signal Efficiency')
+    plt.legend(loc='lower right')
+    plt.grid()
+    return fig
+
+
+def _execute_roc(req):
+    """Generate a ROC curve: one curve per loaded input file.
+
+    Returns (data_dict, status_code) — same contract as _execute_plot.
+    """
+    import src.plotting.helpers as plot_helpers
+    from src.plotting.helpers_make_plot_dict import get_plot_dict_from_config
+
+    var    = req.get("var", "SvB_MA.ps_hh_fine")
+    sig    = req.get("sig") or []
+    bkg    = req.get("bkg") or []
+    region = req.get("region", "SR")
+    cut    = req.get("cut") or None
+
+    if not sig or not bkg:
+        return {"error": "plot_roc requires sig= and bkg= process lists"}, 400
+
+    file_labels  = cfg.fileLabels or []
+    colors_cycle = ["blue", "orange", "green", "red", "purple", "brown", "pink", "gray"]
+
+    roc_data = {}
+    try:
+        for i, hist_entry in enumerate(cfg.hists):
+            if i < len(file_labels):
+                label = file_labels[i]
+            elif i < len(input_files):
+                label = Path(input_files[i]).stem
+            else:
+                label = f"file_{i}"
+            color = colors_cycle[i % len(colors_cycle)]
+
+            with plot_lock:
+                saved_hists = cfg.hists
+                cfg.hists = [hist_entry]
+                try:
+                    plot_data = get_plot_dict_from_config(cfg=cfg, var=var, cut=cut, axis_opts={"region": region})
+                finally:
+                    cfg.hists = saved_hists
+
+            sig_data = None
+            for s in sig:
+                try:
+                    s_data = _get_signal_plot(plot_data, s)
+                except Exception as e:
+                    return {"error": f"Signal process '{s}' not found: {e}"}, 400
+                if sig_data is None:
+                    sig_data = {k: np.array(v) for k, v in s_data.items()
+                                if k in ("values", "variances", "under_flow", "over_flow")}
+                else:
+                    for k in ("values", "variances", "under_flow", "over_flow"):
+                        sig_data[k] = sig_data[k] + np.array(s_data[k])
+
+            bkg_data = None
+            for b in bkg:
+                try:
+                    b_data = plot_helpers.get_value_nested_dict(plot_data, b)
+                except Exception as e:
+                    return {"error": f"Background process '{b}' not found: {e}"}, 400
+                if bkg_data is None:
+                    bkg_data = {k: np.array(v) for k, v in b_data.items()
+                                if k in ("values", "variances", "under_flow", "over_flow")}
+                else:
+                    for k in ("values", "variances", "under_flow", "over_flow"):
+                        bkg_data[k] = bkg_data[k] + np.array(b_data[k])
+
+            sig_data["values"][0] += sig_data["under_flow"]
+            bkg_data["values"][0] += bkg_data["under_flow"]
+
+            roc_data[label] = {
+                "sig_values": sig_data["values"],
+                "bkg_values": bkg_data["values"],
+                "label": label,
+                "color": color,
+            }
+
+        with plot_lock:
+            fig = _make_roc_figure(roc_data)
+
+            interactive_dir = Path(output_dir) / "interactive"
+            interactive_dir.mkdir(parents=True, exist_ok=True)
+            ts   = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+            stem = f"{ts}_roc_{_sanitize(var)}"
+            png_path = interactive_dir / f"{stem}.png"
+            pdf_path = interactive_dir / f"{stem}.pdf"
+
+            fig.savefig(str(png_path), format="png", dpi=100, bbox_inches="tight")
+            fig.savefig(str(pdf_path), format="pdf")
+            png_b64 = _fig_to_png_b64(fig)
+            plt.close(fig)
+
+        return {
+            "png_b64": png_b64,
+            "png_url": f"/outputs/interactive/{stem}.png",
+            "pdf_url": f"/outputs/interactive/{stem}.pdf",
+        }, 200
+
+    except Exception as e:
+        with plot_lock:
+            plt.close("all")
+        return {"error": str(e)}, 400
+
+
 @app.route("/plot", methods=["POST"])
 def plot_endpoint():
     data, code = _execute_plot(request.get_json())
+    return jsonify(data), code
+
+
+@app.route("/plot_roc", methods=["POST"])
+def plot_roc_endpoint():
+    data, code = _execute_roc(request.get_json())
     return jsonify(data), code
 
 
@@ -714,8 +869,11 @@ def cli_endpoint():
             _save_cli_history(cmd)
         return jsonify(data), code
 
-    # Normal plot
-    data, code = _execute_plot(plot_req)
+    # Dispatch by command type
+    if func == 'plot_roc':
+        data, code = _execute_roc(plot_req)
+    else:
+        data, code = _execute_plot(plot_req)
     if code == 200:
         _save_cli_history(cmd)
         _save_interactive_item(data["png_url"], data["pdf_url"], cmd)

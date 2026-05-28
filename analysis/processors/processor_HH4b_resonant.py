@@ -40,7 +40,8 @@ from src.hist_tools import Fill
 from src.data_formats.root import Chunk, TreeReader
 from coffea import processor
 from coffea.analysis_tools import PackedSelection
-from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
+from coffea.nanoevents import NanoAODSchema
+from src.compat import nano_from_root
 from coffea.util import load
 from memory_profiler import profile
 import psutil
@@ -270,8 +271,8 @@ class analysis(processor.ProcessorABC):
 
                     FvT_name = event.metadata["FvT_name"]
                     event["FvT"] = getattr(
-                        NanoEventsFactory.from_root(
-                            f'{event.metadata["FvT_file"]}',
+                        nano_from_root(
+                            {f'{event.metadata["FvT_file"]}': "Events"},
                             entry_start=self.estart,
                             entry_stop=self.estop,
                             schemaclass=FriendTreeSchema,
@@ -294,8 +295,8 @@ class analysis(processor.ProcessorABC):
                     # Use the first to define the FvT weights
                     #
                     event["FvT"] = getattr(
-                        NanoEventsFactory.from_root(
-                            f'{event.metadata["FvT_files"][0]}',
+                        nano_from_root(
+                            {f'{event.metadata["FvT_files"][0]}': "Events"},
                             entry_start=self.estart,
                             entry_stop=self.estop,
                             schemaclass=FriendTreeSchema,
@@ -315,8 +316,8 @@ class analysis(processor.ProcessorABC):
                     for _FvT_name, _FvT_file in zip( event.metadata["FvT_names"], event.metadata["FvT_files"] ):
 
                         event[_FvT_name] = getattr(
-                            NanoEventsFactory.from_root(
-                                f"{_FvT_file}",
+                            nano_from_root(
+                                {f"{_FvT_file}": "Events"},
                                 entry_start=self.estart,
                                 entry_stop=self.estop,
                                 schemaclass=FriendTreeSchema,
@@ -328,8 +329,8 @@ class analysis(processor.ProcessorABC):
 
                 else:
                     event["FvT"] = (
-                        NanoEventsFactory.from_root(
-                            f'{fname.replace("picoAOD", "FvT")}',
+                        nano_from_root(
+                            {f'{fname.replace("picoAOD", "FvT")}': "Events"},
                             entry_start=self.estart,
                             entry_stop=self.estop,
                             schemaclass=FriendTreeSchema
@@ -365,8 +366,8 @@ class analysis(processor.ProcessorABC):
                 # SvB_file = f'{path}/SvB_newSBDef.root' if 'mix' in self.dataset else f'{fname.replace("picoAOD", "SvB")}'
                 SvB_file = f'{path}/SvB{SvB_suffix}.root' if 'mix' in self.dataset else f'{fname.replace("picoAOD", f"SvB{SvB_suffix}")}'
                 event["SvB"] = (
-                    NanoEventsFactory.from_root(
-                        SvB_file,
+                    nano_from_root(
+                        {SvB_file: "Events"},
                         entry_start=self.estart,
                         entry_stop=self.estop,
                         schemaclass=FriendTreeSchema
@@ -382,8 +383,8 @@ class analysis(processor.ProcessorABC):
                 # SvB_MA_file = f'{path}/SvB_MA_newSBDef.root' if 'mix' in self.dataset else f'{fname.replace("picoAOD", "SvB_MA")}'
                 SvB_MA_file = f'{path}/SvB_MA{SvB_suffix}.root' if 'mix' in self.dataset else f'{fname.replace("picoAOD", f"SvB_MA{SvB_suffix}")}'
                 event["SvB_MA"] = (
-                    NanoEventsFactory.from_root(
-                        SvB_MA_file,
+                    nano_from_root(
+                        {SvB_MA_file: "Events"},
                         entry_start=self.estart,
                         entry_stop=self.estop,
                         schemaclass=FriendTreeSchema
@@ -488,7 +489,7 @@ class analysis(processor.ProcessorABC):
         """For different jet variations. It computes event variations for the nominal case."""
 
         # Copy the weights to avoid modifying the original
-        weights = copy.copy(weights)
+        weights = copy.deepcopy(weights)
 
         # Apply object selection (function does not remove events, adds content to objects)
         event = apply_4b_selection(
@@ -628,7 +629,8 @@ class analysis(processor.ProcessorABC):
                 shift_name=shift_name,
                 use_prestored_btag_SF=self.config["use_prestored_btag_SF"],
                 run_systematics = 'others' in self.run_systematics,
-                corrections_metadata=self.corrections_metadata[self.year]
+                corrections_metadata=self.corrections_metadata[self.year],
+                isRun3=self.config["isRun3"],
             )
             logging.debug( f"Btag weight {weights.partial_weight(include=['CMS_btag'])[:10]}\n" )
             event["weight"] = weights.weight()
@@ -701,7 +703,7 @@ class analysis(processor.ProcessorABC):
             if self.top_reconstruction in ["slow","fast"]:
 
                 # sort the jets by btagging
-                selev.selJet = selev.selJet[ ak.argsort(selev.selJet.btagScore, axis=1, ascending=False) ]
+                selev["selJet"] = selev.selJet[ ak.argsort(selev.selJet.btagScore, axis=1, ascending=False) ]
 
                 if self.top_reconstruction == "slow":
                     top_cands = find_tops_slow(selev.selJet)

@@ -1,24 +1,21 @@
 runner:
   workers: 4
   worker_memory: 4GB
-  friend_metafile: classifier_inputs_friend
   # friend_base: output/ 
   chunksize: 10000
 
 config:
   blind: false 
   apply_FvT: false
+  apply_JCM: true
+  JCM_file: "coffea4bees/analysis/weights/JCM_lowpt_2024_v2/jetCombinatoricModel_SB_2024_v2.yml"
   apply_trigWeight: true
   apply_btagSF: true
-  JCM_file: "coffea4bees/analysis/weights/JCM_lowpt_2024_v2/jetCombinatoricModel_SB_2024_v2.yml"
   apply_boosted_veto: false
   run_SvB: false 
   top_reconstruction: fast
-  fill_histograms: false 
-  # make_classifier_input: root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v4/
-  # make_friend_FvT_weight: root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v4/  
-  make_classifier_input: output/classifier_input/   ### local
-  # make_friend_FvT_weight: output/   ### local
+  fill_histograms: true 
+  make_classifier_input: output/lowpt/classifier_input/   ### local
 
 
   

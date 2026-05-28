@@ -16,7 +16,7 @@ Options:
   --triggers PATH                Path to triggers file
   --luminosities PATH            Path to luminosities file
   --datasets "DATASET1 ..."      Space-separated datasets
-  --year YEAR                    Analysis year
+  --year "YEAR1 ..."              Space-separated analysis years
   --output-filename FILE         Output filename
   --output-subdir DIR            Output subdirectory
   --friends PATH                 Path to friends metadata file (default: coffea4bees/metadata/friends_HH4b.yml)
@@ -26,7 +26,8 @@ Options:
   --blind                        Enable blinding (set blind: true in config)
   --run-performance              Enable memory profiling with mprof
   --log FILE                     Log file path (output is tee'd to this file)
-  --tmpdir DIR                   Temp directory (default: /tmp)
+  --not-do-proxy                 Skip grid proxy setup
+  --dashboard-address PORT       Dask dashboard port (default: not set, runner.py uses 10200)
   -h, --help                     Show this help message
 EOF
     exit 1
@@ -50,7 +51,7 @@ display_config() {
     echo "Blind mode:         $([ "$BLIND_MODE" = true ] && echo "enabled" || echo "disabled")"
     echo "Performance:        $([ "$RUN_PERFORMANCE" = true ] && echo "enabled" || echo "disabled")"
     echo "Log file:           ${LOG_FILE:-"(none)"}"
-    echo "Tmp directory:      $TMPDIR_PATH"
+    echo "Dashboard address:  ${DASHBOARD_ADDRESS:-"(default: 10200)"}"
     echo "Additional flags:   ${ADDITIONAL_FLAGS:-"(none)"}"
     echo ""
 }
@@ -74,7 +75,7 @@ declare -A DEFAULTS=(
     ["BLIND_MODE"]=false
     ["RUN_PERFORMANCE"]=false
     ["LOG_FILE"]=""
-    ["TMPDIR_PATH"]="/tmp"
+    ["DASHBOARD_ADDRESS"]=""
 )
 
 # Initialize variables with defaults
@@ -96,9 +97,8 @@ CONDOR_MODE="${DEFAULTS[CONDOR_MODE]}"
 BLIND_MODE="${DEFAULTS[BLIND_MODE]}"
 RUN_PERFORMANCE="${DEFAULTS[RUN_PERFORMANCE]}"
 LOG_FILE="${DEFAULTS[LOG_FILE]}"
-TMPDIR_PATH="${DEFAULTS[TMPDIR_PATH]}"
-# Initialize DO_PROXY to empty to avoid unbound variable error
-DO_PROXY=""
+DASHBOARD_ADDRESS="${DEFAULTS[DASHBOARD_ADDRESS]}"
+DO_PROXY=true
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -141,8 +141,13 @@ while [[ $# -gt 0 ]]; do
             DATASETS="${DATASETS%% }" # Remove trailing space
             ;;
         --year)
-            YEAR="$2"
-            shift 2
+            YEAR=""
+            shift
+            while [[ $# -gt 0 && ! "$1" =~ ^-- ]]; do
+                YEAR+="$1 "
+                shift
+            done
+            YEAR="${YEAR%% }" # Remove trailing space
             ;;
         --output-filename)
             OUTPUT_FILENAME="$2"
@@ -172,8 +177,12 @@ while [[ $# -gt 0 ]]; do
             LOG_FILE="$2"
             shift 2
             ;;
-        --tmpdir)
-            TMPDIR_PATH="$2"
+        --not-do-proxy)
+            DO_PROXY=false
+            shift
+            ;;
+        --dashboard-address)
+            DASHBOARD_ADDRESS="$2"
             shift 2
             ;;
         --additional-flags)
@@ -212,11 +221,8 @@ declare -A SAVED_VARS=(
     ["BLIND_MODE"]="$BLIND_MODE"
     ["RUN_PERFORMANCE"]="$RUN_PERFORMANCE"
     ["LOG_FILE"]="$LOG_FILE"
-    ["TMPDIR_PATH"]="$TMPDIR_PATH"
+    ["DASHBOARD_ADDRESS"]="$DASHBOARD_ADDRESS"
 )
-
-# Setup proxy if needed
-setup_proxy 
 
 # Restore our configuration variables after setup
 OUTPUT_BASE="${SAVED_VARS[OUTPUT_BASE]}"
@@ -230,13 +236,19 @@ DATASETS="${SAVED_VARS[DATASETS]}"
 YEAR="${SAVED_VARS[YEAR]}"
 OUTPUT_FILENAME="${SAVED_VARS[OUTPUT_FILENAME]}"
 TEST_MODE="${SAVED_VARS[TEST_MODE]}"
+DO_PROXY="${SAVED_VARS[DO_PROXY]}"
 OUTPUT_SUBDIR="${SAVED_VARS[OUTPUT_SUBDIR]}"
 ADDITIONAL_FLAGS="${SAVED_VARS[ADDITIONAL_FLAGS]}"
 CONDOR_MODE="${SAVED_VARS[CONDOR_MODE]}"
 BLIND_MODE="${SAVED_VARS[BLIND_MODE]}"
 RUN_PERFORMANCE="${SAVED_VARS[RUN_PERFORMANCE]}"
 LOG_FILE="${SAVED_VARS[LOG_FILE]}"
-TMPDIR_PATH="${SAVED_VARS[TMPDIR_PATH]}"
+DASHBOARD_ADDRESS="${SAVED_VARS[DASHBOARD_ADDRESS]}"
+
+# Ensure log directory exists before any tee calls
+if [ -n "$LOG_FILE" ]; then
+    mkdir -p "$(dirname "$LOG_FILE")"
+fi
 
 # Display configuration
 display_config
@@ -247,11 +259,6 @@ else
     OUTPUT_DIR="${OUTPUT_BASE}/"
 fi
 create_output_directory "$OUTPUT_DIR"
-
-# Setup matplotlib config directory to avoid permission issues
-USERNAME=$(whoami 2>/dev/null || echo "barista")
-export MPLCONFIGDIR="${TMPDIR_PATH}/${USERNAME}/matplotlib"
-mkdir -p "$MPLCONFIGDIR"
 
 # Setup logging helper
 log_exec() {
@@ -272,6 +279,14 @@ log_msg() {
     fi
 }
 
+# Setup proxy if needed
+if [ "$DO_PROXY" = true ]; then
+    log_msg "Setting up proxy"
+    setup_proxy
+else
+    log_msg "Proxy setup skipped (--not-do-proxy)"
+fi
+
 # Handle blinding: patch config to set blind: true
 EFFECTIVE_CONFIG="$CONFIG_PATH"
 if [ "$BLIND_MODE" = true ]; then
@@ -281,6 +296,16 @@ if [ "$BLIND_MODE" = true ]; then
     sed 's/blind.*/blind: true/' "$CONFIG_PATH" > "$blind_tmp"
     EFFECTIVE_CONFIG="$blind_tmp"
 fi
+
+# Cap NumExpr threads to avoid oversubscribing shared nodes.
+# Use SLURM_CPUS_PER_TASK if available (set by Slurm/REANA), otherwise default to 4.
+NUMEXPR_MAX_THREADS="${SLURM_CPUS_PER_TASK:-4}"
+export NUMEXPR_MAX_THREADS
+log_msg "NUMEXPR_MAX_THREADS set to $NUMEXPR_MAX_THREADS"
+
+# Prevent concurrent jobs sharing the same NFS workspace from racing to write
+# __pycache__ files, which can produce corrupt .pyc reads and ImportErrors.
+export PYTHONDONTWRITEBYTECODE=1
 
 log_msg "Running with config file: $EFFECTIVE_CONFIG"
 log_msg "Running $DATASETS $YEAR - output ${OUTPUT_DIR}${OUTPUT_FILENAME}"
@@ -299,6 +324,7 @@ cmd=(python runner.py
     -op "$OUTPUT_DIR"
     -o "$OUTPUT_FILENAME"
 )
+[ -n "$DASHBOARD_ADDRESS" ] && cmd+=( --dashboard-address "$DASHBOARD_ADDRESS" )
 
 # Add optional flags
 [ -n "$TEST_MODE" ] && cmd+=( $TEST_MODE )
@@ -306,8 +332,9 @@ cmd=(python runner.py
 [ -n "$ADDITIONAL_FLAGS" ] && cmd+=( $ADDITIONAL_FLAGS )
 
 # Wrap with mprof if performance monitoring is enabled
+USERNAME=$(whoami 2>/dev/null || echo "barista")
 if [ "$RUN_PERFORMANCE" = true ]; then
-    mprofile_dat="${TMPDIR_PATH}/${USERNAME}/mprofile_$(basename "$OUTPUT_FILENAME" .coffea).dat"
+    mprofile_dat="/tmp/${USERNAME}/mprofile_$(basename "$OUTPUT_FILENAME" .coffea).dat"
     mkdir -p "$(dirname "$mprofile_dat")"
     cmd=(mprof run -C -o "$mprofile_dat" "${cmd[@]}")
 fi
@@ -339,4 +366,14 @@ if [ "$RUN_PERFORMANCE" = true ]; then
 fi
 
 display_section_header "Output files"
-ls -R "$OUTPUT_DIR"
+EXPECTED_OUTPUT="${OUTPUT_DIR}${OUTPUT_FILENAME}"
+if [ -f "$EXPECTED_OUTPUT" ]; then
+    log_msg "Output file created successfully: $EXPECTED_OUTPUT ($(du -h "$EXPECTED_OUTPUT" | cut -f1))"
+    # Flush NFS writes so Snakemake controller can see the file immediately
+    sync
+    sleep 60
+
+else
+    log_msg "ERROR: Expected output file not found: $EXPECTED_OUTPUT"
+    exit 1
+fi

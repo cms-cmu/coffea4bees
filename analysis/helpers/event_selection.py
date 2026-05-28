@@ -119,6 +119,50 @@ def apply_boosted_4b_selection(event: ak.Array) -> ak.Array:
 
     return event
 
+
+def apply_semiresolved_4b_selection(event: ak.Array) -> ak.Array:
+    """
+    Applies semiresolved selection for the HH→4b analysis.
+
+    Selects events with:
+      - At least one FatJet with pt > 250, |eta| < 2.5,
+        50 < msoftdrop < 200, and particleNetMD_Xbb > 0.7
+      - At least two medium-b-tagged AK4 jets with dR > 0.8
+        from every selected FatJet
+
+    Requires `apply_4b_selection` to have been called first so that
+    `event.Jet.tagged` (medium WP) is already set.
+
+    Parameters:
+    -----------
+    event : ak.Array
+        Event data with FatJet and Jet collections.
+
+    Returns:
+    --------
+    ak.Array
+        The input event with `passSemiResolvedSel` boolean field added.
+    """
+    fatjet_mask = (
+        (event.FatJet.pt > 250) &
+        (np.abs(event.FatJet.eta) < 2.5) &
+        (event.FatJet.msoftdrop > 50) &
+        (event.FatJet.msoftdrop < 200) &
+        (event.FatJet.particleNetMD_Xbb > 0.7)
+    )
+    nFatJet_sel = ak.sum(fatjet_mask, axis=1)
+    candFatJets = event.FatJet[fatjet_mask]
+
+    taggedJets = event.Jet[event.Jet.tagged]
+
+    # drClean returns [cleaned_coll, bool_mask]; mask is True when coll1 jet is outside ALL coll2 objects.
+    # When candFatJets is empty, mask is all-True (vacuously outside), but nFatJet_sel>=1 rejects the event.
+    _, outside_mask = drClean(taggedJets, candFatJets, cone=0.8)
+    nTaggedOutside = ak.sum(outside_mask, axis=1)
+
+    event['passSemiResolvedSel'] = (nFatJet_sel >= 1) & (nTaggedOutside >= 2)
+    return event
+
 def apply_4b_selection(
         event,
         corrections_metadata,
@@ -170,7 +214,10 @@ def apply_4b_selection(
 
     event['passJetMult'] = event['nJet_selected'] >= 4
 
-    event['fourTag'] = (event['nJet_tagged'] >= 4)
+    if config.get('fourTag_use_tight', False):
+        event['fourTag'] = (event['nJet_tagged_tight'] >= 3) & (event['nJet_tagged'] >= 4)
+    else:
+        event['fourTag'] = (event['nJet_tagged'] >= 4)
     event['threeTag'] = (event['nJet_tagged_loose'] == 3) & (event['nJet_selected'] >= 4)
     event['twoTag'] = (event['nJet_tagged_loose'] == 2) & (event['nJet_selected'] >= 4)
 
@@ -200,7 +247,7 @@ def apply_4b_selection(
 
     # Only need 30 GeV jets for signal systematics
     if loosePtForSkim:
-        mask_jet_lowpt_forskim = (event.Jet.pt >= 15) & (np.abs(event.Jet.eta) <= 2.4) & ~event.Jet.pileup & (event.Jet.jetId >= 2) & event.Jet.lepton_cleaned
+        mask_jet_lowpt_forskim = (event.Jet.pt >= 15) & (np.abs(event.Jet.eta) <= 2.4) & event.Jet.lepton_cleaned
         nJet_selected_lowpt_forskim = ak.sum(mask_jet_lowpt_forskim, axis=1)
         mask_tagjet_lowpt_forskim = mask_jet_lowpt_forskim & (event.Jet.btagScore >= corrections_metadata['btagWP']['M'])
         event['passJetMult_lowpt_forskim'] = nJet_selected_lowpt_forskim >= 4

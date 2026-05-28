@@ -34,13 +34,13 @@ hists:
 #                scalefactor: 100
 
 
-        TTbar:
-                process: TTbar4b_from_MvD
-                tag: fourTag
-                edgecolor: "#7a21dd"
-                fillcolor: "#7a21dd"            
-                edgecolor: k
-                label: TTbar4b_from_MvD
+#        TTbar:
+#                process: TTbar4b_from_MvD
+#                tag: fourTag
+#                edgecolor: "#7a21dd"
+#                fillcolor: "#7a21dd"            
+#                edgecolor: k
+#                label: TTbar4b_from_MvD
 
 
 stack:

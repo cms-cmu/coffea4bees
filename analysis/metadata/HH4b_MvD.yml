@@ -6,10 +6,11 @@ config:
   blind: false
   apply_FvT: false
   apply_MvD: true
+  apply_MvD_weight: false
   year_override: true
   plot_ttbar_with_MvD_weights: true
   apply_JCM: true
-  hist_cuts : ["highMvD"]
+  hist_cuts : []
   JCM_file: coffea4bees/analysis/weights/JCM/Run3_MvD/jetCombinatoricModel_SB_.yml
   apply_trigWeight: true
   apply_btagSF: true

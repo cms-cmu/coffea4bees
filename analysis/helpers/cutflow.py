@@ -35,9 +35,9 @@ class cutflow_4b(cutflow):
         else:
             e2, e3, e4 = event[event.twoTag], event[event.threeTag], event[event.fourTag]
             if isinstance(wOverride, ak.Array):
-                e2.weight = wOverride[event.twoTag]
-                e3.weight = wOverride[event.threeTag]
-                e4.weight = wOverride[event.fourTag]
+                e2["weight"] = wOverride[event.twoTag]
+                e3["weight"] = wOverride[event.threeTag]
+                e4["weight"] = wOverride[event.fourTag]
             if self._hists is not None:
                 m4b = e4.truth_v4b.mass
             m4b_weights      = e4.weight

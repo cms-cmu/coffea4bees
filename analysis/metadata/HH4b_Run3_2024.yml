@@ -1,0 +1,18 @@
+runner:
+  workers: 4
+  worker_memory: 8GB
+  condor_transfer_input_files: 
+    - coffea4bees/analysis/
+    - coffea4bees/metadata/
+    - src/
+
+config:
+  blind: false
+  apply_FvT: false
+  apply_trigWeight: false
+  apply_btagSF: false
+  apply_boosted_veto: false
+  run_SvB: false
+  #SvB   : 'coffea4bees/analysis/weights/pytorch_models/2024_HHUL/SvB_HCR_8_np753_seed13_lr0.01_epochs20_offset*_epoch20.pkl'
+  #SvB_MA: 'coffea4bees/analysis/weights/pytorch_models/2024_HHUL/SvB_MA_HCR+attention_8_np1061_seed13_lr0.01_epochs20_offset*_epoch20.pkl'
+  top_reconstruction: fast

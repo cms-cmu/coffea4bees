@@ -132,6 +132,9 @@ if __name__ == '__main__':
     # channels = [ 'HHbb_2018' ]
     for itype in args.type_of_fit:
         print(f"Creating {itype} plot")
+        if not infile.Get(f'shapes_{itype}'):
+            print(f"WARNING: shapes_{itype} not found in file, skipping")
+            continue
         for i, ichannel in enumerate(channels):
             tmp_folder = f'shapes_{itype}/{ichannel}'
             if i==0:

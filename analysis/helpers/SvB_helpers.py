@@ -11,42 +11,82 @@ if TYPE_CHECKING:
     from coffea4bees.analysis.helpers.classifier.HCR import HCREnsemble
 
 def setSvBVars(SvBName, event):
+    """Derive analysis-level SvB fields from the raw friend-tree branches.
 
-    event[SvBName, "passMinPs"] = ( (getattr(event, SvBName).pzz > 0.01)
-                                    | (getattr(event, SvBName).pzh > 0.01)
-                                    | (getattr(event, SvBName).phh > 0.01) )
+    Supports two friend-tree schemas:
+      * **legacy multi-class** (5-class SvB / SvB_MA — phh/pzh/pzz/pmj/ptt/ps)
+      * **new binary ggF-vs-bkg** (p_ggF/p_multijet/p_ttbar/p_sig — produced by
+        the Run3 SvB training with `--mc-processes ggF` which doesn't load
+        ZZ/ZH samples). For this schema, all events are treated as
+        "HH-channel" (ps_hh = p_ggF); ps_zh and ps_zz are set to -2 (n/a).
+    """
+    sv = getattr(event, SvBName)
+    is_legacy = "phh" in sv.fields
 
-    event[SvBName, "zz"] = ( getattr(event, SvBName).pzz >  getattr(event, SvBName).pzh ) & (getattr(event, SvBName).pzz > getattr(event, SvBName).phh)
+    if is_legacy:
+        event[SvBName, "passMinPs"] = ( (sv.pzz > 0.01) | (sv.pzh > 0.01) | (sv.phh > 0.01) )
+        event[SvBName, "zz"] = (sv.pzz >  sv.pzh) & (sv.pzz > sv.phh)
+        event[SvBName, "zh"] = (sv.pzh >  sv.pzz) & (sv.pzh > sv.phh)
+        event[SvBName, "hh"] = (sv.phh >= sv.pzz) & (sv.phh >= sv.pzh)
+        event[SvBName, "tt_vs_mj"] = sv.ptt / (sv.ptt + sv.pmj)
 
-    event[SvBName, "zh"] = ( getattr(event, SvBName).pzh >  getattr(event, SvBName).pzz ) & (getattr(event, SvBName).pzh > getattr(event, SvBName).phh)
+        sv = getattr(event, SvBName)  # refresh after adding fields
 
-    event[SvBName, "hh"] = ( getattr(event, SvBName).phh >= getattr(event, SvBName).pzz ) & (getattr(event, SvBName).phh >= getattr(event, SvBName).pzh)
+        this_ps_zz = np.full(len(event), -1, dtype=float)
+        this_ps_zz[sv.zz] = sv.ps[sv.zz]
+        this_ps_zz[sv.passMinPs == False] = -2
+        event[SvBName, "ps_zz"] = this_ps_zz
 
-    event[SvBName, "tt_vs_mj"] = ( getattr(event, SvBName).ptt / (getattr(event, SvBName).ptt + getattr(event, SvBName).pmj) )
+        this_ps_zh = np.full(len(event), -1, dtype=float)
+        this_ps_zh[sv.zh] = sv.ps[sv.zh]
+        this_ps_zh[sv.passMinPs == False] = -2
+        event[SvBName, "ps_zh"] = this_ps_zh
 
+        this_ps_hh = np.full(len(event), -1, dtype=float)
+        this_ps_hh[sv.hh] = sv.ps[sv.hh]
+        this_ps_hh[sv.passMinPs == False] = -2
+        event[SvBName, "ps_hh"] = this_ps_hh
 
-    #
-    #  Set ps_{bb}
-    #
-    this_ps_zz = np.full(len(event), -1, dtype=float)
-    this_ps_zz[getattr(event, SvBName).zz] = getattr(event, SvBName).ps[ getattr(event, SvBName).zz ]
-    this_ps_zz[getattr(event, SvBName).passMinPs == False] = -2
-    event[SvBName, "ps_zz"] = this_ps_zz
+        this_phh_hh = np.full(len(event), -1, dtype=float)
+        this_phh_hh[sv.hh] = sv.phh[sv.hh]
+        this_phh_hh[sv.passMinPs == False] = -2
+        event[SvBName, "phh_hh"] = this_phh_hh
+    else:
+        # Binary ggF-vs-bkg schema. No ZZ/ZH channels — treat every event
+        # as HH-channel for downstream histograms that key on `hh`/`ps_hh`.
+        # The aliasing below (pmj/ptt/phh/ps) keeps the rest of the
+        # processor compatible with the legacy field names.
+        n = len(event)
+        true_mask  = np.ones(n, dtype=bool)
+        false_mask = np.zeros(n, dtype=bool)
+        zeros      = np.zeros(n, dtype=float)
+        na         = np.full(n, -2.0, dtype=float)
 
-    this_ps_zh = np.full(len(event), -1, dtype=float)
-    this_ps_zh[getattr(event, SvBName).zh] = getattr(event, SvBName).ps[ getattr(event, SvBName).zh ]
-    this_ps_zh[getattr(event, SvBName).passMinPs == False] = -2
-    event[SvBName, "ps_zh"] = this_ps_zh
+        event[SvBName, "pmj"] = sv.p_multijet
+        event[SvBName, "ptt"] = sv.p_ttbar
+        event[SvBName, "phh"] = sv.p_ggF
+        event[SvBName, "pzz"] = zeros
+        event[SvBName, "pzh"] = zeros
+        event[SvBName, "ps"]  = sv.p_sig
 
-    this_ps_hh = np.full(len(event), -1, dtype=float)
-    this_ps_hh[getattr(event, SvBName).hh] = getattr(event, SvBName).ps[ getattr(event, SvBName).hh ]
-    this_ps_hh[getattr(event, SvBName).passMinPs == False] = -2
-    event[SvBName, "ps_hh"] = this_ps_hh
+        event[SvBName, "passMinPs"] = sv.p_ggF > 0.01
+        event[SvBName, "zz"] = false_mask
+        event[SvBName, "zh"] = false_mask
+        event[SvBName, "hh"] = true_mask
+        event[SvBName, "tt_vs_mj"] = sv.p_ttbar / (sv.p_ttbar + sv.p_multijet)
 
-    this_phh_hh = np.full(len(event), -1, dtype=float)
-    this_phh_hh[getattr(event, SvBName).hh] = getattr(event, SvBName).phh[ getattr(event, SvBName).hh ]
-    this_phh_hh[getattr(event, SvBName).passMinPs == False] = -2
-    event[SvBName, "phh_hh"] = this_phh_hh
+        sv = getattr(event, SvBName)  # refresh
+
+        this_ps_hh = sv.p_sig.to_numpy().copy() if hasattr(sv.p_sig, "to_numpy") else np.array(sv.p_sig)
+        this_ps_hh[sv.passMinPs == False] = -2
+        event[SvBName, "ps_hh"] = this_ps_hh
+
+        event[SvBName, "ps_zz"] = na.copy()
+        event[SvBName, "ps_zh"] = na.copy()
+
+        this_phh_hh = sv.p_ggF.to_numpy().copy() if hasattr(sv.p_ggF, "to_numpy") else np.array(sv.p_ggF)
+        this_phh_hh[sv.passMinPs == False] = -2
+        event[SvBName, "phh_hh"] = this_phh_hh
 
 
 def compute_SvB(events, mask, doCheck=True, **models: HCREnsemble):
@@ -175,6 +215,77 @@ def compute_SvB(events, mask, doCheck=True, **models: HCREnsemble):
 
                 for field in events[name].fields:
                     logging.warning(f"{field} {events[name][worst][field]}")
+
+
+def compute_SvB_FeynNet(events, mask, **models):
+    """Compute FeynNet SvB scores and store in events[name].
+
+    The FeynNet model classes are [ggHH, qqHH, ZZ, ZH, Background].
+    Derived fields mirror the structure of compute_SvB for compatibility.
+
+    Args:
+        events: full event array (unmasked)
+        mask: boolean mask — only masked events are fed to the model
+        **models: keyword args mapping field name → FeynNetEnsemble instance
+                  e.g. compute_SvB_FeynNet(events, mask, SvB_FeynNet=ensemble)
+    """
+    masked_events = events[mask]
+
+    for name, model in models.items():
+        if model is None:
+            continue
+
+        if len(masked_events) == 0:
+            c_score = np.zeros((0, len(model.classes)), dtype=np.float32)
+            q_score = np.zeros((0, 3), dtype=np.float32)
+        else:
+            c_score, q_score = model(masked_events)
+
+        c_full = np.zeros((len(events), len(model.classes)), dtype=np.float32)
+        q_full = np.zeros((len(events), q_score.shape[1] if q_score.ndim > 1 else 1), dtype=np.float32)
+        if c_score.shape[0] > 0:
+            c_full[mask] = c_score
+            q_full[mask] = q_score if q_score.ndim > 1 else q_score[:, np.newaxis]
+
+        classes = model.classes
+        p_ggHH = c_full[:, classes.index("ggHH")]
+        p_qqHH = c_full[:, classes.index("qqHH")]
+        p_ZZ   = c_full[:, classes.index("ZZ")]
+        p_ZH   = c_full[:, classes.index("ZH")]
+        p_bkg  = c_full[:, classes.index("Background")]
+
+        p_ggHH_vs_bkg = p_ggHH / (p_ggHH + p_bkg)
+        p_qqHH_vs_bkg = p_qqHH / (p_qqHH + p_bkg)
+        p_ZZ_vs_bkg   = p_ZZ   / (p_ZZ   + p_bkg)
+        p_ZH_vs_bkg   = p_ZH   / (p_ZH   + p_bkg)
+
+        passMinPs = (p_ggHH > 0.01) | (p_qqHH > 0.01) | (p_ZZ > 0.01) | (p_ZH > 0.01)
+
+        p_hh = p_ggHH + p_qqHH  # combined HH score
+        zz   = (p_ZZ  > p_ZH)  & (p_ZZ  > p_hh)
+        zh   = (p_ZH  > p_ZZ)  & (p_ZH  > p_hh)
+        hh   = (p_hh  >= p_ZZ) & (p_hh  >= p_ZH)
+
+
+        def _ps_gated(input_var, win_mask):
+            arr = np.full(len(events), -1, dtype=float)
+            arr[~passMinPs] = -2
+            arr[win_mask] = input_var[win_mask]
+            return arr
+
+        events[name] = ak.zip({
+            "p_ggHH_vs_bkg":  _ps_gated(p_ggHH_vs_bkg,  hh),
+            "p_qqHH_vs_bkg":  _ps_gated(p_qqHH_vs_bkg,  hh),
+            "p_ZZ_vs_bkg":    _ps_gated(p_ZZ_vs_bkg  ,  zz),
+            "p_ZH_vs_bkg":    _ps_gated(p_ZH_vs_bkg  ,  zh),
+            "p_bkg"  :  p_bkg ,
+            "passMinPs": passMinPs,
+            "hh":        hh,
+            "zz":        zz,
+            "zh":        zh,
+            "reweight":  q_full[:, 0],
+            "tt_vs_mj":  np.zeros(len(events), dtype=np.float32),
+        })
 
 
 def subtract_ttbar_with_SvB(selev, dataset, year):

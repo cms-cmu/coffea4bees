@@ -32,6 +32,14 @@ class SvBHists(Template):
     phh_fine      = H((240, 0, 1, ('phh', "Regressed P(HH)  ")))
 
 
+class FeynNetSvBHists(Template):
+    p_ggHH_vs_bkg  = H((50, 0, 1, ('p_ggHH_vs_bkg',  "FeynNet P(ggF vs bkg)")))
+    p_qqHH_vs_bkg  = H((50, 0, 1, ('p_qqHH_vs_bkg',  "FeynNet P(VBF vs bkg)")))
+    p_ZZ_vs_bkg    = H((50, 0, 1, ('p_ZZ_vs_bkg',    "FeynNet P(ZZ vs bkg)")))
+    p_ZH_vs_bkg    = H((50, 0, 1, ('p_ZH_vs_bkg',    "FeynNet P(ZH vs bkg)")))
+
+
+
 class FvTHists(Template):
     FvT  = H((50, 0, 5, ('FvT', 'FvT reweight')))
     FvT_l = H((50, 0, 50, ('FvT', 'FvT reweight')))
