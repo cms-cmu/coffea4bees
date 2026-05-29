@@ -68,6 +68,7 @@ def filling_nominal_histograms(
     )
 
     fill += hist.add("trigWeight", (40, 0, 2, ("trigWeight", 'Trigger weight')), weight='no_weight')
+    fill += hist.add("total_weight", (110, -10, 100, ("event_weight", "Total weight")), weight='no_weight', event_weight="weight")
     fill += hist.add("nPVs", (101, -0.5, 100.5, ("PV.npvs", "Number of Primary Vertices")))
     fill += hist.add("nPVsGood", (101, -0.5, 100.5, ("PV.npvsGood", "Number of Good Primary Vertices")))
     fill += hist.add("hT", (50, 0, 1500, ("hT", "h_{T} [GeV]")))
