@@ -47,9 +47,18 @@ def write_to_JCM_file(text: str, value: Any, jetCombinatoricModelFile, jetCombin
         jetCombinatoricModelFile: The text file object
         jetCombinatoricModelFile_yml: The YAML file object
     """
-    jetCombinatoricModelFile.write(f"{text:<30} {value}\n")
+    if isinstance(value, (list, tuple)):
+        clean_value = [x.item() if hasattr(x, "item") else x for x in value]
+    elif isinstance(value, np.ndarray):
+        clean_value = value.tolist()
+    elif hasattr(value, "item"):
+        clean_value = value.item()
+    else:
+        clean_value = value
+
+    jetCombinatoricModelFile.write(f"{text:<30} {clean_value}\n")
     jetCombinatoricModelFile_yml.write(f"{text}:\n")
-    jetCombinatoricModelFile_yml.write(f"        {value}\n")
+    jetCombinatoricModelFile_yml.write(f"        {clean_value}\n")
 
 def process_histograms(data4b, data3b, tt4b, tt3b, qcd4b, qcd3b, data4b_nTagJets,
                        tt4b_nTagJets, qcd3b_nTightTags, args: argparse.Namespace, logger: logging.Logger, jcm_config : dict) -> Tuple:
@@ -303,9 +312,7 @@ def create_jcm_validation_table(JCM_model: jetCombinatoricModel, args: argparse.
     # Load the JCM file using the same class as the processor
     logger.info(f"Loading JCM file: {jcm_file_path}")
     try:
-        jcm_kwargs = {"lowpt_mode": args.lowpt}
-        if args.cut is not None:
-            jcm_kwargs["cut"] = args.cut
+        jcm_kwargs = {"lowpt_mode": args.lowpt, "cut": args.cut}
         JCM_loaded = JCM_apply(jcm_file_path, **jcm_kwargs)
         logger.info("JCM file loaded successfully for validation")
     except Exception as e:
