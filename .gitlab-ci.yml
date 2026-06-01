@@ -102,11 +102,6 @@ setup_coffea4bees:
     # Copy the proxy if it exists
     - echo "Checking for proxy directory in $CI_PROJECT_DIR/proxy"
     - if [ -d "$CI_PROJECT_DIR/proxy" ]; then cp -r $CI_PROJECT_DIR/proxy/ .; fi
-
-    # Prepare git metadata for REANA
-    - echo "Preparing git metadata for REANA"
-    - sed -e 's|--githash.*|--githash '${CI_COMMIT_SHORT_SHA}'"|' -i coffea4bees/workflows/inputs_reana.yaml
-    - git -C $CI_PROJECT_DIR diff HEAD > gitdiff.txt
   artifacts:
     paths:
       - barista_framework/
