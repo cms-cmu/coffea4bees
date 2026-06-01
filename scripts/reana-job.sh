@@ -13,13 +13,16 @@ echo """
 ##########################################################
 """
 
-if [[ "$workflow_name" == coffea4bees_* ]]; then
-    hash="${workflow_name#coffea4bees_}"
+if command -v git >/dev/null 2>&1; then
+    if [[ "$workflow_name" == coffea4bees_* ]]; then
+        hash="${workflow_name#coffea4bees_}"
+    else
+        hash="$(git rev-parse --short HEAD)"
+    fi
+    sed -e 's|--githash.*|--githash '${hash}'"|' -i coffea4bees/workflows/inputs_reana.yaml
+    git diff HEAD > gitdiff.txt
 else
-    hash="$(git rev-parse --short HEAD)"
+    echo "git command not found. Assuming gitdiff.txt and inputs_reana.yaml were pre-patched in setup stage."
 fi
-
-sed -e 's|--githash.*|--githash '${hash}'"|' -i coffea4bees/workflows/inputs_reana.yaml
-git diff HEAD > gitdiff.txt
 cat coffea4bees/workflows/inputs_reana.yaml
 reana-client run -f coffea4bees/workflows/reana.yaml -w ${workflow_name}

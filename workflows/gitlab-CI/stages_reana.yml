@@ -1,11 +1,16 @@
 reana-job:
   stage: reana
-  extends:
-    - .base_analysis_coffea4bees
+  image: reanahub/reana-client:0.9.4
+  needs:
+    - setup_coffea4bees
   tags:
     - k8s-cvmfs
+  before_script:
+    - set -e
+    - set -o pipefail
+    - cd barista_framework/
   script:
-    - ./run_container reana source coffea4bees/scripts/reana-job.sh $NAME
+    - bash coffea4bees/scripts/reana-job.sh $NAME
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule"
       variables:
