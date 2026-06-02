@@ -30,6 +30,54 @@ def load_object_selection_config(path: str) -> dict:
         return yaml.safe_load(f)
 
 
+def _deep_merge(base: dict, override: dict) -> dict:
+    """Recursively merge ``override`` onto a copy of ``base``.
+
+    Nested dicts are merged key-by-key; any non-dict value in ``override``
+    replaces the corresponding value in ``base``.
+    """
+    out = dict(base)
+    for k, v in (override or {}).items():
+        if isinstance(v, dict) and isinstance(out.get(k), dict):
+            out[k] = _deep_merge(out[k], v)
+        else:
+            out[k] = v
+    return out
+
+
+def resolve_object_selection_config(cfg: dict, year) -> dict:
+    """Resolve era-specific threshold overrides for a given ``year``.
+
+    The config may contain a top-level ``era_overrides`` block mapping a
+    year-prefix (e.g. ``"2023"``) to a partial threshold tree. Every override
+    whose key is a prefix of ``year`` is deep-merged onto the base config, with
+    longer (more specific) prefixes applied last so they win. The base config
+    is returned unchanged when there are no overrides or no match, so callers
+    that pass a plain config (or ``None``) are unaffected.
+
+    Parameters
+    ----------
+    cfg : dict
+        The loaded object-selection config (output of
+        :func:`load_object_selection_config`), possibly ``None``.
+    year : str
+        The era string, e.g. ``"2022_EE"`` or ``"2023_BPix"``.
+
+    Returns
+    -------
+    dict
+        A new config dict with the matching era overrides applied, or the
+        original ``cfg`` when nothing applies.
+    """
+    if not cfg or 'era_overrides' not in cfg:
+        return cfg
+    base = {k: v for k, v in cfg.items() if k != 'era_overrides'}
+    for key in sorted(cfg['era_overrides'], key=len):   # longest prefix wins
+        if str(year).startswith(str(key)):
+            base = _deep_merge(base, cfg['era_overrides'][key])
+    return base
+
+
 def muon_selection(muon: ak.Array, isRun3: bool = False, sel_cfg: dict = None) -> ak.Array:
     """
     Selects muons based on kinematic, isolation, and identification criteria.
