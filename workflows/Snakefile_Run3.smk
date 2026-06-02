@@ -91,15 +91,17 @@ rule create_histogram_config_wSvB:
     params:
         # Pass --config enable_SvB_FeynNet_comparison=true to also fill the
         # 2D/3D SvB_MA vs SvB_FeynNet comparison histograms.
-        svb_fn_cmp = str(config.get('enable_SvB_FeynNet_comparison', False)).lower()
+        svb_fn_cmp = str(config.get('enable_SvB_FeynNet_comparison', False)).lower(),
+        hemi_diag  = str(config.get('compute_hemi_mixing_diagnostics', False)).lower()
     shell:
         """
         sed \
             -e 's|  run_SvB:.*|  run_SvB: true|' \
             -e 's|  run_SvB_FeynNet_comparison:.*|  run_SvB_FeynNet_comparison: {params.svb_fn_cmp}|' \
+            -e 's|  compute_hemi_mixing_diagnostics:.*|  compute_hemi_mixing_diagnostics: {params.hemi_diag}|' \
             {input.config_file} > {output}
         echo "Patched config:"
-        grep -E "run_SvB" {output}
+        grep -E "run_SvB|compute_hemi_mixing_diagnostics" {output}
         """
 
 use rule analysis_processor from analysis as make_histograms with:
