@@ -254,7 +254,7 @@ let tabKey           = null; // pfx+'\x00'+partial to detect re-typing
 let tabLcpCandidates = null; // subset used for LCP (prefix matches only)
 let tabPage          = 0;    // current page when cycling through overflow completions
 
-const CLI_FUNCS = ['plot(', 'plot2d(', 'ls(', 'info(', 'examples('];
+const CLI_FUNCS = ['plot(', 'plot2d(', 'plot_roc(', 'ls(', 'info(', 'examples('];
 
 // ---------------------------------------------------------------------------
 // Init
@@ -312,7 +312,8 @@ function buildWelcome() {
       `  <span class="cmd">plot("var", region=["SR","SB"])</span>\n` +
       `  <span class="cmd">plot("var", cut="passPreSel", rebin=2)</span>\n` +
       `  <span class="cmd">plot("var", doRatio=0, yscale="log", xlim=[0,200])</span>\n` +
-      `  <span class="cmd">plot2d("var", "process", region="SR")</span>`;
+      `  <span class="cmd">plot2d("var", "process", region="SR")</span>\n` +
+      `  <span class="cmd">plot_roc("var", sig=["HH4b"], bkg=["TTbar","Multijet"], region="SR")</span>`;
   }
 
   document.getElementById('welcome').innerHTML =

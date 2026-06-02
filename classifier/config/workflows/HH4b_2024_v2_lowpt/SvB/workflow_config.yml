@@ -8,9 +8,10 @@ plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
 
 classifier_config_paths: coffea4bees
 wfs_base: coffea4bees/classifier/config/workflows/HH4b_2024_v2_lowpt/SvB
-label: lowpt_wNominalSvB
+label: lowpt_SvB
+# label: lowpt_wSvB_all_kl
 output_dir: output/{label}/
-plot_inputs: false
+plot_inputs: true
 
 model: "{eos_base}/classifier/{label}"
 friend: "{eos_base}/friend/{label}"

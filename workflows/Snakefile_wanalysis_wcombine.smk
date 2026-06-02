@@ -4,8 +4,8 @@ import os
 include: "helpers/common.smk"
 
 if config['mode'] == "lowpt":
-    config.setdefault('label', "lowpt_wSvB")
-    config.setdefault('output_path', "output/lowpt_wSvB/")
+    config.setdefault('label', "lowpt_wfixedSvB")
+    config.setdefault('output_path', "output/lowpt_wfixedSvB/")
     config.setdefault('analysis_config', "coffea4bees/analysis/metadata/HH4b_lowpt_2024_v2.yml")
     config.setdefault('processor', "coffea4bees/analysis/processors/processor_HH4b_lowpt.py")
     config.setdefault('friend_file', "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/friends_HH4b_lowpt.yml")
@@ -68,8 +68,8 @@ rule all_lowpt:
     input:
         f"{config['output_path']}histAll_{config['label']}.coffea",
         f"{config['output_path']}plots_{config['label']}/RunII/region_SB/selJets_n.pdf",
-        f"{config['output_path']}datacards/HH4b/limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.json",
-        f"{config['output_path']}datacards/HH4b/plots/postfitplots__ggHH_kl_1_kt_1_13p0TeV_hbbhbb__fit_s.pdf"
+        f"{config['output_path']}datacards/HH4b_fine/limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.json",
+        f"{config['output_path']}datacards/HH4b_fine/plots/postfitplots__ggHH_kl_1_kt_1_13p0TeV_hbbhbb__fit_s.pdf"
     params:
         output_dir = f"{datetime.now().strftime('%Y%m%d')}_{config['label']}/"
     shell:
@@ -151,13 +151,13 @@ use rule make_combine_inputs from stat_analysis with:
         injson = f"{config['output_path']}histAll_{config['label']}.json",
         injsonsyst = list([]), 
         bkgsyst = f"reana_outputs/coffea4bees_20250616_af478bd_unblind_boostedVeto/closureFits/ULHH_kfold/3bDvTMix4bDvT/SvB_MA/rebin1/SR/hh/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_hh_rebin1.pkl"
-    output: f"{config['output_path']}datacards/HH4b/datacard__HH4b.txt"
+    output: f"{config['output_path']}datacards/HH4b_fine/datacard__HH4b.txt"
     params:
-        variable= "SvB_MA.ps_hh",
+        variable= "SvB_MA.ps_hh_fine",
         syst_file = "",
         rebin=1,
         metadata="coffea4bees/stats_analysis/metadata/HH4b.yml",
-        output_dir=f"{config['output_path']}datacards/HH4b/",
+        output_dir=f"{config['output_path']}datacards/HH4b_fine/",
         variable_binning="",
         stat_only="--stat_only",
         signal="HH4b",
@@ -167,8 +167,8 @@ use rule make_combine_inputs from stat_analysis with:
 
 
 use rule workspace from combine with:
-    input: f"{config['output_path']}datacards/HH4b/datacard__HH4b.txt"
-    output: f"{config['output_path']}datacards/HH4b/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root"
+    input: f"{config['output_path']}datacards/HH4b_fine/datacard__HH4b.txt"
+    output: f"{config['output_path']}datacards/HH4b_fine/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root"
     log: f"{config['output_path']}logs/workspace_HH4b__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.log"
     params:
         signallabel="ggHH_kl_1_kt_1_13p0TeV_hbbhbb",
@@ -176,10 +176,10 @@ use rule workspace from combine with:
         container_wrapper=config["container_wrapper"]
 
 use rule limits from combine with:
-    input: f"{config['output_path']}datacards/HH4b/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root"
+    input: f"{config['output_path']}datacards/HH4b_fine/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root"
     output: 
-        txt=f"{config['output_path']}datacards/HH4b/limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.txt",
-        json=f"{config['output_path']}datacards/HH4b/limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.json"
+        txt=f"{config['output_path']}datacards/HH4b_fine/limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.txt",
+        json=f"{config['output_path']}datacards/HH4b_fine/limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.json"
     log: f"{config['output_path']}logs/limits_HH4b__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.log"
     params:
         signallabel="ggHH_kl_1_kt_1_13p0TeV_hbbhbb",
@@ -189,15 +189,15 @@ use rule limits from combine with:
         container_wrapper=config["container_wrapper"]
 
 use rule postfit from combine with:
-    input: f"{config['output_path']}datacards/HH4b/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root"
-    output: f"{config['output_path']}datacards/HH4b/plots/postfitplots__ggHH_kl_1_kt_1_13p0TeV_hbbhbb__fit_s.pdf"
+    input: f"{config['output_path']}datacards/HH4b_fine/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root"
+    output: f"{config['output_path']}datacards/HH4b_fine/plots/postfitplots__ggHH_kl_1_kt_1_13p0TeV_hbbhbb__fit_s.pdf"
     # container: config["combine_container"]
     log: f"{config['output_path']}logs/postfit__HH4b__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.log"
     params:
         signallabel="ggHH_kl_1_kt_1_13p0TeV_hbbhbb",
         channel="HH4b",
         signal=config['channels']['HH4b']['signal'],
-        ylog=True,
+        ylog="--log",
         set_parameters_zero=set_parameters('HH4b', 0),
         freeze_parameters=freeze_parameters('HH4b'),
         container_wrapper=config["container_wrapper"]

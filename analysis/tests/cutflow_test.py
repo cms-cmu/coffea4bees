@@ -19,8 +19,7 @@ class CutFlowTestCase(unittest.TestCase):
         self.error_threshold = float(wrapper.args["error_threshold"])
 
         inputFile = wrapper.args["inputFile"]
-        with open(f'{inputFile}', 'rb') as hfile:
-            hists = load(hfile)
+        hists = load(inputFile)
 
         self.cf4      = hists["cutFlowFourTag"]
         self.cf4_unit = hists["cutFlowFourTagUnitWeight"]

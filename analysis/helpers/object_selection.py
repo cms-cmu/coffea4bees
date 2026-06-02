@@ -147,7 +147,7 @@ def lepton_selection(event: ak.Array, isRun3: bool = False, sel_cfg: dict = None
     # Select electrons if present
     if 'Electron' in event.fields:
         event['selElec'] = electron_selection(event.Electron, isRun3, sel_cfg)
-        event['selLepton'] = ak.concatenate([event.selElec, event.selMuon], axis=1)
+        event['selLepton'] = ak.with_name(ak.concatenate([event.selElec, event.selMuon], axis=1), name="PtEtaPhiMCandidate")
     else:
         event['selLepton'] = event.selMuon
 

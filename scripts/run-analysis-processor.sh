@@ -372,6 +372,7 @@ if [ -f "$EXPECTED_OUTPUT" ]; then
     # Flush NFS writes so Snakemake controller can see the file immediately
     sync
     sleep 60
+
 else
     log_msg "ERROR: Expected output file not found: $EXPECTED_OUTPUT"
     exit 1
