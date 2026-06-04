@@ -65,15 +65,14 @@ module stat_analysis:
     snakefile: "rules/stat_analysis.smk"
     config: config
 module combine:
-    snakefile: "rules/combine.smk"
+    snakefile: os.path.join(os.getcwd(), "src/stat_analysis/combine.smk")
     config: config
 
 include: "helpers/common.smk"
 
 rule all:
     input:
-        # f"{config['output_path']}/histAll_signals_HH4b.coffea",
-        f"{config['output_path']}/datacards/HH4b/limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.txt"
+        f"{config['output_path']}/datacards/HH4b/datacard_limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.txt"
 
 
 use rule merging_coffea_files from analysis as merge_signals with:
@@ -112,19 +111,34 @@ use rule workspace from combine as workspace with:
     input: f"{config['output_path']}/datacards/HH4b/datacard__HH4b.txt"
     output: f"{config['output_path']}/datacards/HH4b/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root"
     params:
-        signallabel="ggHH_kl_1_kt_1_13p0TeV_hbbhbb",
-        othersignal_maps=lambda wildcards: additional_poi('HH4b'),
-        container_wrapper=config["container_wrapper"]
+        poi_maps=lambda wildcards: make_poi_maps(
+            signals=["ggHH_kl_1_kt_1_13p0TeV_hbbhbb"] + config["GluGlu"] + config["VBF"],
+            poi_ranges=config.get("poi_ranges", "1,-10,10")
+        )
     log: f"{config['output_path']}/logs/workspace_HH4b__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.log"
 
 use rule limits from combine as limits with:
     input: f"{config['output_path']}/datacards/HH4b/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root"
     output: 
-        txt=f"{config['output_path']}/datacards/HH4b/limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.txt",
-        json=f"{config['output_path']}/datacards/HH4b/limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.json"
+        txt=f"{config['output_path']}/datacards/HH4b/datacard_limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.txt",
+        json=f"{config['output_path']}/datacards/HH4b/datacard_limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.json"
     log: f"{config['output_path']}/logs/limits_HH4b__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.log"
     params:
-        signallabel="ggHH_kl_1_kt_1_13p0TeV_hbbhbb",
-        set_parameters_zero=lambda wildcards: set_parameters('HH4b', 0),
-        freeze_parameters=lambda wildcards: freeze_parameters('HH4b'),
-        container_wrapper=config.get("container_wrapper", "./run_container combine")
+        signallabel="ggHH_kl_1_kt_1_13p0TeV_hbbhbb"
+
+# Import other rules from combine to satisfy ruleorder definitions
+use rule significance from combine
+use rule likelihood_scan_snapshot from combine
+use rule likelihood_scan_chunk from combine
+use rule likelihood_scan from combine
+use rule gof_data from combine
+use rule gof_toys_chunk from combine
+use rule gof from combine
+use rule fit_diagnostics_bonly from combine
+use rule fit_diagnostics_sb from combine
+use rule postfit from combine
+use rule impacts_initial_fit from combine
+use rule impacts_do_fits from combine
+use rule impacts_collect from combine
+use rule split_impacts from combine
+use rule pdf_to_png from combine

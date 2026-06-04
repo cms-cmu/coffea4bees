@@ -18,9 +18,7 @@ module stat_analysis:
     snakefile: "rules/stat_analysis.smk"
     config: config
 
-module combine:
-    snakefile: "rules/combine.smk"
-    config: config
+include: os.path.join(os.getcwd(), "src/stat_analysis/combine.smk")
 
 include: "helpers/common.smk"
 
@@ -34,12 +32,12 @@ SIGNALLABELS = [config['channels'][k]['signallabel'] for k in CHANNELS]
 CHANNELLABELS = [k.lower().split('4b')[0] for k in CHANNELS]
 
 OUTPUT_PATTERNS = {
-    "limits": f"{config['output_path']}/datacards/{{channel}}/limits__{{signallabel}}.json",
-    "significance": f"{config['output_path']}/datacards/{{channel}}/significance__{{signallabel}}.log",
-    "impacts": f"{config['output_path']}/datacards/{{channel}}/impacts__{{signallabel}}.pdf",
-    "likelihood_scan": f"{config['output_path']}/datacards/{{channel}}/likelihood_scan__{{signallabel}}.pdf",
-    "gof": f"{config['output_path']}/datacards/{{channel}}/gof__{{signallabel}}.pdf",
-    "postfit": f"{config['output_path']}/datacards/{{channel}}/plots/postfitplots__{{signallabel}}__prefit.pdf",
+    "limits": f"{config['output_path']}/datacards/{{channel}}/datacard__{{channel}}_limits__{{signallabel}}.json",
+    "significance": f"significance__{config['output_path']}/datacards/{{channel}}/datacard__{{channel}}__{{signallabel}}.log",
+    "impacts": f"{config['output_path']}/datacards/{{channel}}/datacard__{{channel}}_impacts__{{signallabel}}.pdf",
+    "likelihood_scan": f"{config['output_path']}/datacards/{{channel}}/datacard__{{channel}}_likelihood_scan__{{signallabel}}.pdf",
+    "gof": f"{config['output_path']}/datacards/{{channel}}/datacard__{{channel}}_gof__{{signallabel}}.pdf",
+    "postfit": f"{config['output_path']}/datacards/{{channel}}/datacard__{{channel}}_postfit__{{signallabel}}.pdf",
 }
 
 SYST_PLOTS = {
@@ -523,84 +521,6 @@ use rule make_combine_inputs from stat_analysis with:
         container_wrapper = config['container_wrapper']
     log: f"{config['output_path']}/logs/make_combine_inputs_{{channel}}.log"
 
-use rule workspace from combine with:
-    input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{channel}}.txt"
-    output: f"{config['output_path']}/datacards/{{channel}}/datacard__{{signallabel}}.root"
-    container: config["combine_container"]
-    resources:
-        runtime=60
-    params:
-        signallabel="{signallabel}",
-        othersignal_maps=lambda wildcards: additional_poi(wildcards.channel),
-        container_wrapper=config.get("container_wrapper", "./run_container combine")
-    log: f"{config['output_path']}/logs/workspace_{{channel}}__{{signallabel}}.log"
-
-use rule limits from combine with:
-    input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{signallabel}}.root"
-    output:
-        txt=f"{config['output_path']}/datacards/{{channel}}/limits__{{signallabel}}.txt",
-        json=f"{config['output_path']}/datacards/{{channel}}/limits__{{signallabel}}.json"
-    container: config["combine_container"]
-    resources:
-        runtime=60
-    params:
-        signallabel="{signallabel}",
-        set_parameters_zero=lambda wildcards: set_parameters(wildcards.channel, 0),
-        freeze_parameters=lambda wildcards: freeze_parameters(wildcards.channel),
-        container_wrapper=config.get("container_wrapper", "./run_container combine")
-    log: f"{config['output_path']}/logs/limits_{{channel}}__{{signallabel}}.log"
-
-use rule significance from combine with:
-    input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{signallabel}}.root"
-    output: f"{config['output_path']}/datacards/{{channel}}/significance__{{signallabel}}.log"
-    container: config["combine_container"]
-    resources:
-        runtime=60
-    params:
-        signallabel="{signallabel}",
-        set_parameters_zero=lambda wildcards: set_parameters(wildcards.channel, 0),
-        freeze_parameters=lambda wildcards: freeze_parameters(wildcards.channel),
-        container_wrapper=config.get("container_wrapper", "./run_container combine")
-    log: f"{config['output_path']}/logs/significance_{{channel}}__{{signallabel}}.log"
-
-use rule impacts from combine with:
-    input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{signallabel}}.root"
-    output: f"{config['output_path']}/datacards/{{channel}}/impacts__{{signallabel}}.pdf"
-    container: config["combine_container"]
-    resources:
-        runtime=60
-    params:
-        signallabel="{signallabel}",
-        set_parameters_zero=lambda wildcards: set_parameters(wildcards.channel, 0),
-        set_parameters_ranges=lambda wildcards: set_parameters_ranges(wildcards.channel),
-        container_wrapper=config.get("container_wrapper", "./run_container combine")
-    log: f"{config['output_path']}/logs/impacts_{{channel}}_datacard_{{channel}}__{{signallabel}}.log"
-
-use rule likelihood_scan from combine with:
-    input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{signallabel}}.root"
-    output: f"{config['output_path']}/datacards/{{channel}}/likelihood_scan__{{signallabel}}.pdf"
-    container: config["combine_container"]
-    resources:
-        runtime=60
-    params:
-        signallabel="{signallabel}",
-        set_parameters_zero=lambda wildcards: set_parameters(wildcards.channel, 0),
-        freeze_parameters=lambda wildcards: freeze_parameters(wildcards.channel),
-        container_wrapper=config.get("container_wrapper", "./run_container combine")
-    log: f"{config['output_path']}/logs/likelihood_scan_{{channel}}_datacard_{{channel}}__{{signallabel}}.log"
-
-use rule gof from combine with:
-    input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{signallabel}}.root"
-    output: f"{config['output_path']}/datacards/{{channel}}/gof__{{signallabel}}.pdf"
-    container: config["combine_container"]
-    resources:
-        runtime=60
-    params:
-        signallabel="{signallabel}",
-        set_parameters_zero=lambda wildcards: set_parameters(wildcards.channel, 0),
-        container_wrapper=config.get("container_wrapper", "./run_container combine")
-    log: f"{config['output_path']}/logs/gof_{{channel}}_datacard_{{channel}}__{{signallabel}}.log"
-
 use rule make_syst_plots from stat_analysis with:
     input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{channel}}.txt"
     output: f"{config['output_path']}/datacards/{{channel}}/systs/SvB_MA_ps_{{channel_lower}}_nominal.pdf"
@@ -612,19 +532,3 @@ use rule make_syst_plots from stat_analysis with:
         channel="{channel}",
         signal=lambda wildcards: config['channels'][wildcards.channel]['signal'],
         container_wrapper = config['container_wrapper']
-
-use rule postfit from combine as postfit with:
-    input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{signallabel}}.root"
-    output: f"{config['output_path']}/datacards/{{channel}}/plots/postfitplots__{{signallabel}}__prefit.pdf"
-    container: config["combine_container"]
-    resources:
-        runtime=60
-    log: f"{config['output_path']}/logs/postfit__{{channel}}__{{signallabel}}.log"
-    params:
-        signallabel="{signallabel}",
-        channel="{channel}",
-        signal=lambda wildcards: config['channels'][wildcards.channel]['signal'],
-        ylog=lambda wildcards: True if wildcards.channel == "HH4b" else False,
-        set_parameters_zero=lambda wildcards: set_parameters(wildcards.channel, 0),
-        freeze_parameters=lambda wildcards: freeze_parameters(wildcards.channel),
-        container_wrapper=config.get("container_wrapper", "./run_container combine")

@@ -35,7 +35,7 @@ config = {
 }
 
 # Include all the combine rules
-include: "rules/combine.smk"
+include: os.path.join(os.getcwd(), "src/stat_analysis/combine.smk")
 
 # Adding specific rules for analysis
 module analysis:
@@ -66,11 +66,11 @@ def make_outputs(patterns, cases):
     return outputs
 
 output_patterns = [
-    "{workspace}limits_{datacard}__{signallabel}.txt",
-    "{workspace}significance_expected_{datacard}__{signallabel}.txt",
-    "{workspace}impacts_combine_{datacard}__{signallabel}_observed.pdf",
-    "{workspace}gof_{datacard}__{signallabel}.pdf",
-    "{workspace}likelihood_scan_{datacard}__{signallabel}.pdf"
+    "{workspace}{datacard}_limits__{signallabel}.json",
+    "significance__{workspace}{datacard}__{signallabel}.log",
+    "{workspace}{datacard}_impacts__{signallabel}.pdf",
+    "{workspace}{datacard}_gof__{signallabel}.pdf",
+    "{workspace}{datacard}_likelihood_scan__{signallabel}.pdf"
 ]
 
 rule all:
