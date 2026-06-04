@@ -39,10 +39,18 @@ config.setdefault('years',
     ['2022_EE', '2022_preEE', '2023_BPix', '2023_preBPix'])
 config.setdefault('default_rank', 0)  # int (same rank both sides) or [rp, rn]; 0 = nearest neighbor
 
-# Auto-namespace local outputs and EOS picoAOD location by rank to keep
-# concurrent rank runs from clobbering each other. The _rank{N} suffix is
-# always applied so directory names visibly self-document the rank used.
-# An explicit --config output_path=... or base_path=... still wins.
+# Optional campaign tag (e.g. 'pt25') folded into the namespace suffix ahead of
+# the rank, so a variant built from a different hemi library / selection (e.g.
+# the lower-2023-pT, _pt25 library) lands on its own EOS/dataset/JCM/friend
+# paths and never clobbers the untagged production. Empty by default.
+config.setdefault('tag', '')
+_tag = str(config['tag'])
+_tag_suffix = f"_{_tag}" if _tag else ''
+
+# Auto-namespace local outputs and EOS picoAOD location by tag+rank to keep
+# concurrent variant/rank runs from clobbering each other. The _{tag}_rank{N}
+# suffix is applied to every derived path so directory names self-document the
+# variant. An explicit --config output_path=... or base_path=... still wins.
 #
 # default_rank can be:
 #   int       -> same rank for pos and neg sides; suffix _rank{N}
@@ -61,9 +69,9 @@ else:
 
 if isinstance(_rank, (list, tuple)):
     _rp, _rn = _rank
-    _rank_suffix = f"_rank{_rp}_{_rn}"
+    _rank_suffix = f"{_tag_suffix}_rank{_rp}_{_rn}"
 else:
-    _rank_suffix = f"_rank{int(_rank)}"
+    _rank_suffix = f"{_tag_suffix}_rank{int(_rank)}"
 config.setdefault('output_path', f"output/Run3_mixeddata{_rank_suffix}/")
 config.setdefault('base_path',
     f"root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_noTT_pz{_rank_suffix}")
@@ -324,12 +332,13 @@ rule all_histograms:
     input: f"{out}histAll_{config['mode']}{_rank_suffix}.coffea"
 
 
-# Shared (rank-independent, mode-specific) location for data + TT histograms
-# and the patched histogram config. The quadjet selection algorithm differs
-# by mode so data/TT outputs ARE mode-specific, but they're identical across
-# rank runs — putting them in a shared dir means subsequent ranks reuse them
-# instead of re-running 16 condor jobs.
-SHARED_HISTS_OUT = f"output/Run3_mixeddata_shared_{config['mode']}/"
+# Shared (rank-independent) location for data + TT histograms and the patched
+# histogram config. These are identical across rank runs, so a shared dir lets
+# subsequent ranks reuse them instead of re-running 16 condor jobs. They ARE
+# specific to (a) the quadjet `mode` and (b) the `tag` — the tag implies a
+# different object selection (e.g. lower 2023 jet pT), which changes the data/TT
+# histograms — so both are in the path to avoid reusing a 30-GeV build for pt25.
+SHARED_HISTS_OUT = f"output/Run3_mixeddata_shared_{config['mode']}{_tag_suffix}/"
 SHARED_DATASETS  = ['TTToSemiLeptonic', 'TTToHadronic', 'TTTo2L2Nu', 'data']
 
 
