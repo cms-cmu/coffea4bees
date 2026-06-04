@@ -111,8 +111,16 @@ config['run_on_condor'] = str(_roc).lower() not in ('false', '0', 'no')
 out         = config['output_path']
 SKIMMER_CFG    = "coffea4bees/skimmer/metadata/mixeddata_Run3.yml"
 JCM_FILE       = "coffea4bees/analysis/weights/JCM/Run3/jetCombinatoricModel_SB_v2.yml"
-HEMI_LIB       = "coffea4bees/skimmer/metadata/hemisphere_library_Run3_noTT.yml"
-HEMI_STATS_DIR = "coffea4bees/skimmer/metadata/hemi_statistics_noTT"
+# Hemisphere library + statistics. Defaults to the committed production library;
+# point at a rebuilt one (e.g. the lower-pT 2023 build) without editing this
+# file via:
+#   --config hemi_lib=coffea4bees/skimmer/metadata/hemisphere_library_Run3_noTT_pt25.yml \
+#            hemi_stats_dir=coffea4bees/skimmer/metadata/hemi_statistics_noTT_pt25
+# (produced by Snakefile_Run3_make_hemisphere_library.smk).
+HEMI_LIB       = config.setdefault('hemi_lib',
+    "coffea4bees/skimmer/metadata/hemisphere_library_Run3_noTT.yml")
+HEMI_STATS_DIR = config.setdefault('hemi_stats_dir',
+    "coffea4bees/skimmer/metadata/hemi_statistics_noTT")
 STUDY_CFG      = "coffea4bees/analysis/metadata/study_mixed_data_Run3.yml"
 REGISTRY       = "picoaod_datasets_mixeddata_Run3_noTT_pz.yml"
 
@@ -148,8 +156,13 @@ rule all:
 
 
 rule patch_skimmer_config:
-    """Inject configured fields (base_path, default_rank) into the skimmer
-    config. Other fields are passed through unchanged.
+    """Inject configured fields (base_path, default_rank, hemi_library_yaml,
+    hemi_stats_path) into the skimmer config. Other fields pass through.
+
+    The hemi library/stats paths are what make_mixed_data.py actually reads —
+    the rule `input:` declarations only enforce DAG ordering — so they MUST be
+    patched here for `--config hemi_lib=... hemi_stats_dir=...` to take effect
+    (e.g. to use a rebuilt lower-pT library). Default keeps the committed paths.
 
     default_rank must be rendered as a single YAML token (int or list
     literal). Snakemake's default `{{params.X}}` substitution joins list
@@ -160,17 +173,21 @@ rule patch_skimmer_config:
     input:  SKIMMER_CFG
     output: f"{out}mixeddata_Run3.yml"
     params:
-        base_path    = config['base_path'],
-        default_rank = (f"[{_rank[0]}, {_rank[1]}]"
-                        if isinstance(_rank, (list, tuple))
-                        else str(int(_rank))),
+        base_path      = config['base_path'],
+        hemi_library   = HEMI_LIB,
+        hemi_stats     = HEMI_STATS_DIR,
+        default_rank   = (f"[{_rank[0]}, {_rank[1]}]"
+                          if isinstance(_rank, (list, tuple))
+                          else str(int(_rank))),
     shell:
         """
         sed -e 's|  base_path:.*|  base_path: {params.base_path}|' \
             -e 's|  default_rank:.*|  default_rank: {params.default_rank}|' \
+            -e 's|  hemi_library_yaml:.*|  hemi_library_yaml: {params.hemi_library}|' \
+            -e 's|  hemi_stats_path:.*|  hemi_stats_path: {params.hemi_stats}|' \
             {input} > {output}
         echo "Patched skimmer config:"
-        grep -E "base_path|default_rank" {output}
+        grep -E "base_path|default_rank|hemi_library_yaml|hemi_stats_path" {output}
         """
 
 
