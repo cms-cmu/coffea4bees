@@ -61,7 +61,7 @@ module stat_analysis:
     config: config
 
 module combine:
-    snakefile: "rules/combine.smk"
+    snakefile: os.path.join(os.getcwd(), "src/stat_analysis/combine.smk")
     config: config
 
 rule all_lowpt:
@@ -171,9 +171,10 @@ use rule workspace from combine with:
     output: f"{config['output_path']}datacards/HH4b_fine/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root"
     log: f"{config['output_path']}logs/workspace_HH4b__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.log"
     params:
-        signallabel="ggHH_kl_1_kt_1_13p0TeV_hbbhbb",
-        othersignal_maps=lambda wildcards: additional_poi('HH4b'),
-        container_wrapper=config["container_wrapper"]
+        poi_maps=lambda wildcards: make_poi_maps(
+            signals=[config["channels"]["HH4b"]["signallabel"]] + config["channels"]["HH4b"].get("othersignal", "").split(),
+            poi_ranges=config.get("poi_ranges", "1,-10,10")
+        )
 
 use rule limits from combine with:
     input: f"{config['output_path']}datacards/HH4b_fine/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root"
@@ -182,22 +183,42 @@ use rule limits from combine with:
         json=f"{config['output_path']}datacards/HH4b_fine/limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.json"
     log: f"{config['output_path']}logs/limits_HH4b__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.log"
     params:
-        signallabel="ggHH_kl_1_kt_1_13p0TeV_hbbhbb",
-        blind="--run blind",
-        set_parameters_zero=lambda wildcards: set_parameters('HH4b', 0),
-        freeze_parameters=lambda wildcards: freeze_parameters('HH4b'),
-        container_wrapper=config["container_wrapper"]
+        signallabel="ggHH_kl_1_kt_1_13p0TeV_hbbhbb"
+
+use rule fit_diagnostics_bonly from combine with:
+    input: f"{config['output_path']}datacards/HH4b_fine/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root"
+    output:
+        bonly=f"{config['output_path']}datacards/HH4b_fine/datacard_fitDiagnostics_bonly__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root",
+        diff_bonly=f"{config['output_path']}datacards/HH4b_fine/datacard_diffNuisances_bonly__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root"
+    log: f"{config['output_path']}logs/fit_diagnostics_bonly_HH4b__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.log"
+    params:
+        signallabel="ggHH_kl_1_kt_1_13p0TeV_hbbhbb"
 
 use rule postfit from combine with:
-    input: f"{config['output_path']}datacards/HH4b_fine/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root"
+    input:
+        workspace=f"{config['output_path']}datacards/HH4b_fine/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root",
+        fit_result=f"{config['output_path']}datacards/HH4b_fine/datacard_fitDiagnostics_bonly__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root"
     output: f"{config['output_path']}datacards/HH4b_fine/plots/postfitplots__ggHH_kl_1_kt_1_13p0TeV_hbbhbb__fit_s.pdf"
-    # container: config["combine_container"]
     log: f"{config['output_path']}logs/postfit__HH4b__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.log"
     params:
         signallabel="ggHH_kl_1_kt_1_13p0TeV_hbbhbb",
         channel="HH4b",
         signal=config['channels']['HH4b']['signal'],
         ylog="--log",
-        set_parameters_zero=set_parameters('HH4b', 0),
-        freeze_parameters=freeze_parameters('HH4b'),
-        container_wrapper=config["container_wrapper"]
+        plot_script=lambda wildcards: config.get("postfit_plot_script", "src/stat_analysis/plots/make_postfit_plot.py"),
+        metadata_template=lambda wildcards: config.get("metadata_template", "coffea4bees/stats_analysis/metadata/{channel}.yml")
+
+# Import remaining combine rules to satisfy ruleorder definition
+use rule significance from combine
+use rule likelihood_scan_snapshot from combine
+use rule likelihood_scan_chunk from combine
+use rule likelihood_scan from combine
+use rule fit_diagnostics_sb from combine
+use rule gof_data from combine
+use rule gof_toys_chunk from combine
+use rule gof from combine
+use rule impacts_initial_fit from combine
+use rule impacts_do_fits from combine
+use rule impacts_collect from combine
+use rule split_impacts from combine
+use rule pdf_to_png from combine
