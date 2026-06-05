@@ -73,6 +73,18 @@ mixeddata_make_dataset_coffea4bees:
       - output/test_mixeddata_make_dataset/data_UL18D/picoAOD_mixed_all.root
 
 
+mixeddata_make_dataset_Run3_coffea4bees:
+  stage: skimmer
+  extends:
+    - .base_analysis_coffea4bees
+  script:
+    - source coffea4bees/scripts/mixeddata-make-dataset-Run3.sh --output-base /builds/$CI_PROJECT_PATH/output
+  artifacts:
+    paths:
+      - output/test_mixeddata_make_dataset_Run3/picoaod_datasets_mixeddata_test_2022_EE.yml
+      - output/test_mixeddata_make_dataset_Run3/data_2022_EE/*.root
+
+
 synthetic_dataset_make_dataset_Run3_coffea4bees:
   stage: skimmer
   extends:

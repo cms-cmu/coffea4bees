@@ -602,10 +602,10 @@ def replace_hemis(*, all_hemis, hemi_kd_trees, hemi_stats, hemi_data, hemi_jet_r
         #
         new_Jets = ak.zip(
             {
-                "pt":   ak.Array(hemi_data[jet_mult_key]["Jet_pt"]  [match_idx]),
-                "eta":  ak.Array(hemi_data[jet_mult_key]["Jet_eta"] [match_idx]),
-                "phi": (ak.Array(hemi_data[jet_mult_key]["Jet_phi"] [match_idx]) + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
-                "mass": ak.Array(hemi_data[jet_mult_key]["Jet_mass"][match_idx]),
+                "pt":   ak.from_iter(hemi_data[jet_mult_key]["Jet_pt"]  [match_idx]),
+                "eta":  ak.from_iter(hemi_data[jet_mult_key]["Jet_eta"] [match_idx]),
+                "phi": (ak.from_iter(hemi_data[jet_mult_key]["Jet_phi"] [match_idx]) + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
+                "mass": ak.from_iter(hemi_data[jet_mult_key]["Jet_mass"][match_idx]),
             },
             with_name="PtEtaPhiMLorentzVector",
             behavior=vector.behavior,
@@ -616,7 +616,7 @@ def replace_hemis(*, all_hemis, hemi_kd_trees, hemi_stats, hemi_data, hemi_jet_r
             var_key = var_name.replace("Jet_", "")
             if var_key in ["pt", "eta", "phi", "mass"]:
                 continue
-            new_Jets[var_key] = ak.Array(hemi_data[jet_mult_key][var_name][match_idx])
+            new_Jets[var_key] = ak.from_iter(hemi_data[jet_mult_key][var_name][match_idx])
 
         # fill event data
         subset_hemis_new = ak.zip({"thrust_phi":       ak.Array(hemi_data[jet_mult_key]["thrust_phi"]     [match_idx]),
@@ -1009,10 +1009,10 @@ def replace_hemis_topk_kdTrees(
 
         new_Jets = ak.zip(
             {
-                "pt":   ak.Array(hemi_lib_data["Jet_pt"]  [match_idx_chosen]),
-                "eta":  ak.Array(hemi_lib_data["Jet_eta"] [match_idx_chosen]),
-                "phi": (ak.Array(hemi_lib_data["Jet_phi"] [match_idx_chosen]) + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
-                "mass": ak.Array(hemi_lib_data["Jet_mass"][match_idx_chosen]),
+                "pt":   ak.from_iter(hemi_lib_data["Jet_pt"]  [match_idx_chosen]),
+                "eta":  ak.from_iter(hemi_lib_data["Jet_eta"] [match_idx_chosen]),
+                "phi": (ak.from_iter(hemi_lib_data["Jet_phi"] [match_idx_chosen]) + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
+                "mass": ak.from_iter(hemi_lib_data["Jet_mass"][match_idx_chosen]),
             },
             with_name="PtEtaPhiMLorentzVector",
             behavior=vector.behavior,
@@ -1031,7 +1031,7 @@ def replace_hemis_topk_kdTrees(
             var_key = var_name.replace("Jet_", "")
             if var_key in ["pt", "eta", "phi", "mass"]:
                 continue
-            new_Jets[var_key] = ak.Array(hemi_lib_data[var_name][match_idx_chosen])
+            new_Jets[var_key] = ak.from_iter(hemi_lib_data[var_name][match_idx_chosen])
 
         subset_hemis_new = ak.zip(
             {
