@@ -26,11 +26,12 @@
            display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
     /* ---- header ---- */
-    header { background: var(--bg-toolbar); padding: 6px 16px;
-             display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
-    #cmu-logo { height: 104px; width: auto; display: block; flex-shrink: 0; }
-    header h1 { font-size: 54px; color: #fff; font-weight: 600; letter-spacing: 0.5px; }
-    .header-meta { font-size: 24px; color: rgba(255,255,255,0.75); flex: 1; }
+    header { background: var(--bg-toolbar); padding: 8px 16px;
+             display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    #cmu-logo { height: 22px; width: auto; display: block; flex-shrink: 0; }
+    header h1 { font-size: 20px; color: #fff; font-weight: 600; letter-spacing: 0.5px; }
+    .header-meta { font-size: 13px; color: rgba(255,255,255,0.8); flex: 1; margin-left: 8px;
+                   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .btn { cursor: pointer; padding: 6px 14px; border-radius: 5px; border: none;
            font-size: 13px; transition: opacity 0.15s; text-decoration: none; display: inline-block; }
     .btn:hover { opacity: 0.85; }
@@ -169,9 +170,9 @@
 <body>
 
 <header>
-  <img id="cmu-logo" src="/static/cmu-logo.png" alt="CMU" />
+  <img id="cmu-logo" src="/static/cmu-logo.svg" alt="CMU" />
   <h1>PourOver</h1>
-  <span class="header-meta">{{ session_label if session_label else (input_files | join(', ') + ' &nbsp;|&nbsp; ' + metadata_file) }}</span>
+  <span class="header-meta">{% if session_label %}{{ session_label }}{% else %}{{ input_files | join(', ') }} &nbsp;|&nbsp; {{ metadata_file }}{% endif %}</span>
   <a class="btn btn-secondary" href="/gallery-view">← Gallery</a>
 </header>
 
@@ -254,7 +255,7 @@ let tabKey           = null; // pfx+'\x00'+partial to detect re-typing
 let tabLcpCandidates = null; // subset used for LCP (prefix matches only)
 let tabPage          = 0;    // current page when cycling through overflow completions
 
-const CLI_FUNCS = ['plot(', 'plot2d(', 'plot_roc(', 'ls(', 'info(', 'examples('];
+const CLI_FUNCS = ['plot(', 'plot2d(', 'plot_roc(', 'ls(', 'info(', 'examples(', 'yield(', 'yields('];
 
 // ---------------------------------------------------------------------------
 // Init
@@ -313,7 +314,8 @@ function buildWelcome() {
       `  <span class="cmd">plot("var", cut="passPreSel", rebin=2)</span>\n` +
       `  <span class="cmd">plot("var", doRatio=0, yscale="log", xlim=[0,200])</span>\n` +
       `  <span class="cmd">plot2d("var", "process", region="SR")</span>\n` +
-      `  <span class="cmd">plot_roc("var", sig=["HH4b"], bkg=["TTbar","Multijet"], region="SR")</span>`;
+      `  <span class="cmd">plot_roc("var", sig=["HH4b"], bkg=["TTbar","Multijet"], region="SR")</span>\n` +
+      `  <span class="cmd">yield("var", region="SR")</span>`;
   }
 
   document.getElementById('welcome').innerHTML =
@@ -377,9 +379,9 @@ document.getElementById('cli-input').addEventListener('keydown', e => {
 // Matches: a bare function-name prefix (nothing, or partial like "pl", "plot", "plot2")
 const FUNC_RE   = /^([a-zA-Z_]*)$/;
 // Matches: plot("partial  or  plot2d("partial  (with optional leading spaces)
-const TAB_RE    = /^((?:plot2d|plot)\s*\(\s*")([^"]*)$/;
+const TAB_RE    = /^((?:plot2d|plot|yield|yields)\s*\(\s*")([^"]*)$/;
 // Matches kwarg position: anything ending with comma+spaces then a partial identifier
-const KWARG_RE  = /^((?:plot2d|plot)\s*\(.*,\s*)([a-zA-Z_]*)$/;
+const KWARG_RE  = /^((?:plot2d|plot|yield|yields)\s*\(.*,\s*)([a-zA-Z_]*)$/;
 const KWARG_LIST = ['region', 'norm', 'rebin', 'doRatio', 'yscale', 'xscale', 'xlim', 'ylim', 'rlim', 'zlim',
                     'cut', 'process', 'year', 'year_str', 'CMSText',
                     'xlabel', 'ylabel', 'rlabel',

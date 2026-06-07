@@ -22,11 +22,12 @@
            display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
     /* header */
-    header { background: var(--bg-toolbar); padding: 6px 16px;
-             display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
-    #cmu-logo { height: 104px; width: auto; display: block; flex-shrink: 0; }
-    header h1 { font-size: 54px; color: #fff; letter-spacing: 0.5px; font-weight: 600; }
-    .header-meta { font-size: 24px; color: rgba(255,255,255,0.75); flex: 1; }
+    header { background: var(--bg-toolbar); padding: 8px 16px;
+             display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    #cmu-logo { height: 22px; width: auto; display: block; flex-shrink: 0; }
+    header h1 { font-size: 20px; color: #fff; letter-spacing: 0.5px; font-weight: 600; }
+    .header-meta { font-size: 13px; color: rgba(255,255,255,0.8); flex: 1; margin-left: 8px;
+                   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .btn { cursor: pointer; padding: 6px 14px; border-radius: 5px; border: none;
            font-size: 13px; transition: opacity 0.15s; text-decoration: none; display: inline-block; }
     .btn:hover { opacity: 0.85; }
@@ -101,9 +102,9 @@
 <body>
 
 <header>
-  <img id="cmu-logo" src="/static/cmu-logo.png" alt="CMU" />
+  <img id="cmu-logo" src="/static/cmu-logo.svg" alt="CMU" />
   <h1>PourOver</h1>
-  <span class="header-meta">{{ session_label if session_label else (input_files | join(', ') + ' &nbsp;|&nbsp; ' + metadata_file) }}</span>
+  <span class="header-meta">{% if session_label %}{{ session_label }}{% else %}{{ input_files | join(', ') }} &nbsp;|&nbsp; {{ metadata_file }}{% endif %}</span>
   <a class="btn btn-secondary" href="/">Interactive Plot →</a>
 </header>
 
