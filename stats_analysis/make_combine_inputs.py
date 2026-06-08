@@ -88,7 +88,8 @@ def create_combine_root_file( file_to_convert,
                 if iprocess.startswith('TTTo') and mixeddata_file:
                     coffea_hist = mixedbkg_tt[var][f"{iprocess}_for_mixed"][iyear][four_tag]['SR']
                 else:
-                    coffea_hist = coffea_hists[var][iprocess][iyear][four_tag]['SR']
+                    tag_to_use = three_tag if iprocess.startswith('TTbar4b_from_d3') else four_tag
+                    coffea_hist = coffea_hists[var][iprocess][iyear][tag_to_use]['SR']
                 root_hists[iyear][iprocess] = json_to_TH1( coffea_hist, 
                                                             f'{iprocess.split("4b")[0]}_{iyear}', rebin )
             else:
