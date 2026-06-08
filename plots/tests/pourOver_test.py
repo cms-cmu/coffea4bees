@@ -40,6 +40,7 @@ from coffea4bees.plots.pourOver import (
     _resolve_label,
     _validate_label,
     _write_manifest,
+    _get_default_output_dir,
 )
 
 
@@ -230,6 +231,35 @@ class TestResolveLabel(unittest.TestCase):
             {"label": "ul17", "archive_dir": "arc_002", "created": "2026-01-01"},
         ])
         self.assertEqual(_resolve_label("ul17", self.registry), "arc_002")
+
+
+# ---------------------------------------------------------------------------
+# _get_default_output_dir
+# ---------------------------------------------------------------------------
+class TestGetDefaultOutputDir(unittest.TestCase):
+
+    def test_empty_inputs(self):
+        self.assertEqual(_get_default_output_dir([], None), "pourover_output")
+
+    def test_single_input(self):
+        res = _get_default_output_dir(["foo/bar/analysis.coffea"], None)
+        self.assertTrue(res.startswith("pourover_output/session_analysis_"))
+        self.assertEqual(len(res.split("_")[-1]), 8)
+
+    def test_multiple_inputs(self):
+        res = _get_default_output_dir(["foo/bar/analysis.coffea", "baz/qux.coffea"], None)
+        self.assertTrue(res.startswith("pourover_output/session_analysis_etc_"))
+        self.assertEqual(len(res.split("_")[-1]), 8)
+
+    def test_same_inputs_same_output(self):
+        res1 = _get_default_output_dir(["foo/bar/analysis.coffea"], "config.yml")
+        res2 = _get_default_output_dir(["foo/bar/analysis.coffea"], "config.yml")
+        self.assertEqual(res1, res2)
+
+    def test_different_inputs_different_output(self):
+        res1 = _get_default_output_dir(["foo/bar/analysis.coffea"], "config1.yml")
+        res2 = _get_default_output_dir(["foo/bar/analysis.coffea"], "config2.yml")
+        self.assertNotEqual(res1, res2)
 
 
 # ---------------------------------------------------------------------------
