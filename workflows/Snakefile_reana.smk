@@ -9,6 +9,12 @@ shell.prefix(
     "mkdir -p $APPTAINER_CACHEDIR $APPTAINER_TMPDIR && "
 )
 
+_roc = config.get('run_on_condor', True)
+if isinstance(_roc, str):
+    config['run_on_condor'] = _roc.lower() not in ('false', '0', 'no')
+else:
+    config['run_on_condor'] = bool(_roc)
+
 # Import rule modules
 module analysis:
     snakefile: "rules/analysis.smk"
@@ -18,7 +24,33 @@ module stat_analysis:
     snakefile: "rules/stat_analysis.smk"
     config: config
 
-include: os.path.join(os.getcwd(), "src/stat_analysis/combine.smk")
+combine_config = config.copy()
+combine_config["output_path"] = os.path.join(config["output_path"], "stat_analysis/")
+combine_config["combine_container"] = "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-analysis/general/combine-container:CMSSW_14_1_0_pre4-combine_v10.6.0-harvester_v3.1.0"
+
+module combine:
+    snakefile: os.path.join(os.getcwd(), "src/stat_analysis/combine.smk")
+    config: combine_config
+
+def get_channel_from_path(wildcards):
+    parts = wildcards.path.rstrip('/').split('/')
+    for folder in ['workspace', 'limits', 'significance', 'impacts', 'likelihood_scan', 'gof', 'postfit']:
+        if folder in parts:
+            idx = parts.index(folder)
+            if idx > 0:
+                return parts[idx - 1]
+    for ch in config.get('channels', {}):
+        if f"/{ch}/" in wildcards.path:
+            return ch
+    return ""
+
+def get_signal_from_path(wildcards):
+    channel = get_channel_from_path(wildcards)
+    return config.get('channels', {}).get(channel, {}).get('signal', '')
+
+def get_workspace_input_reana(wildcards):
+    channel = get_channel_from_path(wildcards)
+    return f"{config['output_path']}/datacards/{channel}/datacard__{channel}.txt"
 
 include: "helpers/common.smk"
 
@@ -32,16 +64,16 @@ SIGNALLABELS = [config['channels'][k]['signallabel'] for k in CHANNELS]
 CHANNELLABELS = [k.lower().split('4b')[0] for k in CHANNELS]
 
 OUTPUT_PATTERNS = {
-    "limits": f"{config['output_path']}/datacards/{{channel}}/datacard__{{channel}}_limits__{{signallabel}}.json",
-    "significance": f"significance__{config['output_path']}/datacards/{{channel}}/datacard__{{channel}}__{{signallabel}}.log",
-    "impacts": f"{config['output_path']}/datacards/{{channel}}/datacard__{{channel}}_impacts__{{signallabel}}.pdf",
-    "likelihood_scan": f"{config['output_path']}/datacards/{{channel}}/datacard__{{channel}}_likelihood_scan__{{signallabel}}.pdf",
-    "gof": f"{config['output_path']}/datacards/{{channel}}/datacard__{{channel}}_gof__{{signallabel}}.pdf",
-    "postfit": f"{config['output_path']}/datacards/{{channel}}/datacard__{{channel}}_postfit__{{signallabel}}.pdf",
+    "limits": f"{config['output_path']}/stat_analysis/{{channel}}/limits/datacard_limits__{{signallabel}}.json",
+    "significance": f"{config['output_path']}/stat_analysis/{{channel}}/significance/datacard_significance__{{signallabel}}.log",
+    "impacts": f"{config['output_path']}/stat_analysis/{{channel}}/impacts/datacard_impacts__{{signallabel}}.pdf",
+    "likelihood_scan": f"{config['output_path']}/stat_analysis/{{channel}}/likelihood_scan/datacard_likelihood_scan__{{signallabel}}.pdf",
+    "gof": f"{config['output_path']}/stat_analysis/{{channel}}/gof/datacard_gof__{{signallabel}}.pdf",
+    "postfit": f"{config['output_path']}/stat_analysis/{{channel}}/postfit/datacard_postfit__{{signallabel}}.pdf",
 }
 
 SYST_PLOTS = {
-    c: f"{config['output_path']}/datacards/{c}/systs/SvB_MA_ps_{c.lower().split('4b')[0]}_nominal.pdf"
+    c: f"{config['output_path']}/stat_analysis/{c}/datacards/systs/SvB_MA_ps_{c.lower().split('4b')[0]}_nominal.pdf"
     for c in CHANNELS
 }
 
@@ -507,7 +539,7 @@ use rule make_combine_inputs from stat_analysis with:
         injson = f"{config['output_path']}/histAll.json",
         injsonsyst = f"{config['output_path']}/histAll_signals__{{channel}}.json", 
         bkgsyst = lambda wildcards: f"{config['output_path']}/closureFits/3bDvTMix4bDvT/SvB_MA/rebin1/SR/{get_channel_lower(wildcards.channel)}/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_{get_channel_lower(wildcards.channel)}_rebin1.pkl"
-    output: f"{config['output_path']}/datacards/{{channel}}/datacard__{{channel}}.txt"
+    output: f"{config['output_path']}/stat_analysis/{{channel}}/datacards/datacard__{{channel}}.txt"
     container: config["combine_container"]
     params:
         variable= lambda wildcards: config['channels'][wildcards.channel]['variable'],
@@ -516,19 +548,34 @@ use rule make_combine_inputs from stat_analysis with:
         stat_only="",
         syst_file=lambda wildcards: f"-s {config['output_path']}/histAll_signals__{wildcards.channel}.json" if wildcards.channel == "HH4b" else "",
         metadata=lambda wildcards: config.get('channel_metadata', {}).get(wildcards.channel, f"coffea4bees/stats_analysis/metadata/{wildcards.channel}.yml"),
-        output_dir=f"{config['output_path']}/datacards/{{channel}}/",
+        output_dir=f"{config['output_path']}/stat_analysis/{{channel}}/datacards/",
         signal="{channel}",
-        container_wrapper = config['container_wrapper']
+        container_wrapper = config['container_wrapper'],
+        tag_flags = ""
     log: f"{config['output_path']}/logs/make_combine_inputs_{{channel}}.log"
 
 use rule make_syst_plots from stat_analysis with:
-    input: f"{config['output_path']}/datacards/{{channel}}/datacard__{{channel}}.txt"
-    output: f"{config['output_path']}/datacards/{{channel}}/systs/SvB_MA_ps_{{channel_lower}}_nominal.pdf"
+    input: f"{config['output_path']}/stat_analysis/{{channel}}/datacards/datacard__{{channel}}.txt"
+    output: f"{config['output_path']}/stat_analysis/{{channel}}/datacards/systs/SvB_MA_ps_{{channel_lower}}_nominal.pdf"
     container: config["combine_container"]
     log: f"{config['output_path']}/logs/make_syst_plots_{{channel}}_{{channel_lower}}.log"
     params:
         variable=lambda wildcards: f"SvB_MA_ps_{get_channel_lower(wildcards.channel)}",
-        output_dir=f"{config['output_path']}/datacards/{{channel}}/",
+        output_dir=f"{config['output_path']}/stat_analysis/{{channel}}/datacards/",
         channel="{channel}",
         signal=lambda wildcards: config['channels'][wildcards.channel]['signal'],
         container_wrapper = config['container_wrapper']
+
+use rule * from combine
+
+localrules: all, make_reana_config, merging_coffea_files_syst, merging_coffea_files_histAll, make_plots, convert_hist_to_json, convert_hist_to_json_mixdata3b, convert_hist_to_json_mixbkgtt, convert_hist_to_json_mixdata, convert_hist_to_json_mixdata3b_ZZZH, convert_hist_to_json_mixbkgtt_ZZZH, convert_hist_to_json_mixdata_ZZZH, convert_json_to_root, run_two_stage_closure_HH4b, run_two_stage_closure_ZZ4b, run_two_stage_closure_ZH4b, make_combine_inputs, make_syst_plots
+
+if not config.get('run_on_condor', True):
+    combine_rules = [
+        "workspace", "limits", "significance", "likelihood_scan_snapshot",
+        "likelihood_scan_chunk", "likelihood_scan", "impacts_initial_fit",
+        "impacts_do_fits", "impacts_collect", "split_impacts", "pdf_to_png",
+        "gof_data", "gof_toys_chunk", "gof", "fit_diagnostics_bonly", "fit_diagnostics_sb",
+        "postfit"
+    ]
+    workflow._localrules.update(combine_rules)
