@@ -3,6 +3,10 @@ import os
 
 include: "helpers/common.smk"
 
+import shutil
+_roc = config.setdefault('run_on_condor', shutil.which("condor_submit") is not None)
+config['run_on_condor'] = str(_roc).lower() not in ('false', '0', 'no')
+
 if config['mode'] == "lowpt":
     config.setdefault('label', "lowpt_wfixedSvB")
     config.setdefault('output_path', "output/lowpt_wfixedSvB/")
@@ -25,7 +29,7 @@ elif config['mode'] == "nominal":
 config.setdefault('dataset_location', "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/")
 config.setdefault('container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
 config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
-config.setdefault('combine_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-analysis/general/combine-container:CMSSW_11_3_4-combine_v9.1.0-harvester_v2.1.0")
+config.setdefault('combine_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-analysis/general/combine-container:CMSSW_14_1_0_pre4-combine_v10.6.0-harvester_v3.1.0")
 config.setdefault('container_wrapper', "./run_container combine")
 config.setdefault('dataset', ['GluGluToHHTo4B_cHHH1', 'GluGluToHHTo4B_cHHH0', 'GluGluToHHTo4B_cHHH2p45', 'GluGluToHHTo4B_cHHH5', 'ZH4b', 'ZZ4b', 'ggZH4b'])
 config.setdefault('year_eras', {
@@ -60,16 +64,19 @@ module stat_analysis:
     snakefile: "rules/stat_analysis.smk"
     config: config
 
+combine_config = config.copy()
+combine_config["output_path"] = os.path.join(config["output_path"], "stat_analysis/HH4b/")
+
 module combine:
-    snakefile: "rules/combine.smk"
-    config: config
+    snakefile: os.path.join(os.getcwd(), "src/stat_analysis/combine.smk")
+    config: combine_config
 
 rule all_lowpt:
     input:
         f"{config['output_path']}histAll_{config['label']}.coffea",
         f"{config['output_path']}plots_{config['label']}/RunII/region_SB/selJets_n.pdf",
-        f"{config['output_path']}datacards/HH4b_fine/limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.json",
-        f"{config['output_path']}datacards/HH4b_fine/plots/postfitplots__ggHH_kl_1_kt_1_13p0TeV_hbbhbb__fit_s.pdf"
+        f"{config['output_path']}stat_analysis/HH4b/limits/datacard_limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.json",
+        f"{config['output_path']}stat_analysis/HH4b/postfit/datacard_postfit__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.pdf"
     params:
         output_dir = f"{datetime.now().strftime('%Y%m%d')}_{config['label']}/"
     shell:
@@ -100,9 +107,11 @@ use rule analysis_processor from analysis as analysis_data with:
         blind = True,
         run_performance = False,
         friends = config['friend_file'],
-        run_on_condor = True,
+        run_on_condor = lambda wildcards: config['run_on_condor'],
+        not_do_proxy = False,
         extra_arguments = lambda wildcards: f'"--era {wildcards.era}"',
-        run_container_wrapper = "./run_container"
+        run_container_wrapper = "./run_container",
+        dashboard_address = ""
 
 use rule analysis_processor from analysis as analysis_MC with:
     input: f"{config['output_path']}HH4b_{config['label']}_signal.yml"
@@ -117,9 +126,11 @@ use rule analysis_processor from analysis as analysis_MC with:
         blind = False,
         run_performance = False,
         friends = config['friend_file'],
-        run_on_condor = True,
+        run_on_condor = lambda wildcards: config['run_on_condor'],
+        not_do_proxy = False,
         extra_arguments = "",
-        run_container_wrapper = "./run_container"
+        run_container_wrapper = "./run_container",
+        dashboard_address = ""
 
 use rule merging_coffea_files from analysis as merging_files with:
     input: [f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{yr}_{era}.coffea" for yr, era in DATA_YEAR_ERA] + expand("{output_path}singlefiles/histAll_" + config['label'] + "__{dataset}__{year}.coffea", output_path=config['output_path'], dataset=config['dataset'], year=DATA_YEARS)
@@ -136,7 +147,8 @@ use rule make_plots from analysis as make_plots with:
     params:
         output_dir = f"{config['output_path']}plots_{config['label']}/",
         metadata = config['plot_config'],
-        extra_arguments = "-s xW "
+        extra_arguments = "-s xW ",
+        png_cores = 4
 
 use rule convert_hist_to_json from stat_analysis with:
     input: f"{config['output_path']}histAll_{config['label']}.coffea"
@@ -151,13 +163,13 @@ use rule make_combine_inputs from stat_analysis with:
         injson = f"{config['output_path']}histAll_{config['label']}.json",
         injsonsyst = list([]), 
         bkgsyst = f"reana_outputs/coffea4bees_20250616_af478bd_unblind_boostedVeto/closureFits/ULHH_kfold/3bDvTMix4bDvT/SvB_MA/rebin1/SR/hh/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_hh_rebin1.pkl"
-    output: f"{config['output_path']}datacards/HH4b_fine/datacard__HH4b.txt"
+    output: f"{config['output_path']}stat_analysis/HH4b/datacards/datacard__HH4b.txt"
     params:
-        variable= "SvB_MA.ps_hh_fine",
+        variable= "SvB_MA.ps_hh",
         syst_file = "",
         rebin=1,
         metadata="coffea4bees/stats_analysis/metadata/HH4b.yml",
-        output_dir=f"{config['output_path']}datacards/HH4b_fine/",
+        output_dir=f"{config['output_path']}stat_analysis/HH4b/datacards/",
         variable_binning="",
         stat_only="--stat_only",
         signal="HH4b",
@@ -166,38 +178,16 @@ use rule make_combine_inputs from stat_analysis with:
     log: f"{config['output_path']}logs/make_combine_inputs_HH4b.log"
 
 
-use rule workspace from combine with:
-    input: f"{config['output_path']}datacards/HH4b_fine/datacard__HH4b.txt"
-    output: f"{config['output_path']}datacards/HH4b_fine/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root"
-    log: f"{config['output_path']}logs/workspace_HH4b__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.log"
-    params:
-        signallabel="ggHH_kl_1_kt_1_13p0TeV_hbbhbb",
-        othersignal_maps=lambda wildcards: additional_poi('HH4b'),
-        container_wrapper=config["container_wrapper"]
+use rule * from combine
 
-use rule limits from combine with:
-    input: f"{config['output_path']}datacards/HH4b_fine/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root"
-    output: 
-        txt=f"{config['output_path']}datacards/HH4b_fine/limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.txt",
-        json=f"{config['output_path']}datacards/HH4b_fine/limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.json"
-    log: f"{config['output_path']}logs/limits_HH4b__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.log"
-    params:
-        signallabel="ggHH_kl_1_kt_1_13p0TeV_hbbhbb",
-        blind="--run blind",
-        set_parameters_zero=lambda wildcards: set_parameters('HH4b', 0),
-        freeze_parameters=lambda wildcards: freeze_parameters('HH4b'),
-        container_wrapper=config["container_wrapper"]
+localrules: all_lowpt, modify_config_file, analysis_data, analysis_MC, merging_files, make_plots, convert_hist_to_json, make_combine_inputs
 
-use rule postfit from combine with:
-    input: f"{config['output_path']}datacards/HH4b_fine/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root"
-    output: f"{config['output_path']}datacards/HH4b_fine/plots/postfitplots__ggHH_kl_1_kt_1_13p0TeV_hbbhbb__fit_s.pdf"
-    # container: config["combine_container"]
-    log: f"{config['output_path']}logs/postfit__HH4b__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.log"
-    params:
-        signallabel="ggHH_kl_1_kt_1_13p0TeV_hbbhbb",
-        channel="HH4b",
-        signal=config['channels']['HH4b']['signal'],
-        ylog="--log",
-        set_parameters_zero=set_parameters('HH4b', 0),
-        freeze_parameters=freeze_parameters('HH4b'),
-        container_wrapper=config["container_wrapper"]
+if not config.get('run_on_condor', True) and config.get('run_local_without_container', False):
+    combine_rules = [
+        "workspace", "limits", "significance", "likelihood_scan_snapshot",
+        "likelihood_scan_chunk", "likelihood_scan", "impacts_initial_fit",
+        "impacts_do_fits", "impacts_collect", "split_impacts", "pdf_to_png",
+        "gof_data", "gof_toys_chunk", "gof", "fit_diagnostics_bonly", "fit_diagnostics_sb",
+        "postfit"
+    ]
+    workflow._localrules.update(combine_rules)
