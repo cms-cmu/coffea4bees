@@ -44,7 +44,13 @@ rule merging_coffea_files:
     output: "{output_file}"
     container: config["analysis_container"]
     params:
-        run_performance = False
+        run_performance = False,
+        # Prefix for the merge command. The `container:` directive above is NOT
+        # honored when snakemake is launched via `./run_container snakemake` (it
+        # runs in the pixi env, which lacks coffea), so LPC consumers set this to
+        # "./run_container" to re-enter the analysis container. Default "" keeps
+        # behavior unchanged for environments that do honor `container:` (reana).
+        run_container_wrapper = ""
     log: "logs/merging_coffea_files_{output_file}.log"
     shell:
         """
@@ -60,9 +66,9 @@ rule merging_coffea_files:
         
         echo "Merging all the coffea files" 2>&1 | tee -a {log}
         if [ "{params.run_performance}" = "True" ]; then
-            cmd="mprof run -C -o /tmp/mprofile_merge_$(basename {log} .log).dat python src/tools/merge_coffea_files.py -f {input} -o {output}"
+            cmd="{params.run_container_wrapper} mprof run -C -o /tmp/mprofile_merge_$(basename {log} .log).dat python src/tools/merge_coffea_files.py -f {input} -o {output}"
         else
-            cmd="python src/tools/merge_coffea_files.py -f {input} -o {output}"
+            cmd="{params.run_container_wrapper} python src/tools/merge_coffea_files.py -f {input} -o {output}"
         fi
         echo $cmd 2>&1 | tee -a {log}
         $cmd 2>&1 | tee -a {log}

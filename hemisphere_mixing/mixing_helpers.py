@@ -288,21 +288,11 @@ def split_events_into_hemispheres(event, tagged_key="tagJet"):
     jets = event.Jet
     drop = {"muonIdxG", "electronIdxG","NOTTHERE",'electronIdx1G', 'electronIdx2G','muonIdx1G', 'muonIdx2G'}
     keep = [f for f in jets.fields if f not in drop]
-    thinned = jets[keep]
 
-    # the original record name, e.g. "PtEtaPhiMLorentzVector"
-    record = ak.parameters(jets).get("__record__")
-
-    # the behavior dictionary (vector mixin functions)
-    behavior = jets.behavior
-
-    # restore it
-    thinned = ak.Array(thinned.layout, behavior=behavior)
-    thinned_jets = ak.with_name(
-        thinned,
-        "PtEtaPhiMLorentzVector",
-        behavior=jets.behavior
-    )
+    # Field selection drops the __record__ name, so restore the Lorentz-vector
+    # behavior. ak.with_name reattaches both the record name and behavior in one
+    # step (no need to round-trip through ak.Array(layout, behavior=...)).
+    thinned_jets = ak.with_name(jets[keep], "PtEtaPhiMLorentzVector", behavior=jets.behavior)
 
     #
     #  For outputs
@@ -363,41 +353,24 @@ def read_hemi_files(hemi_files_yaml, year, tree_name="Events", branch_list=None)
         # print("Hemi files:", type(hemi_files), hemi_files)
 
 
-    hemi_vars = { var_name: [] for var_name in branch_list }
+    # Read with library="ak" so jagged jet branches come back as native awkward
+    # arrays (not numpy object-dtype). This lets the matchers index them with a
+    # vectorized gather (hemi_data["Jet_pt"][match_idx]) instead of the slow
+    # per-chunk ak.from_iter conversion the object-dtype path required.
+    source = f"{hemi_files}:{tree_name}" if isinstance(hemi_files, str) else {f: tree_name for f in hemi_files}
 
-    if isinstance(hemi_files, str):
-        for batch in uproot.iterate(
-                f"{hemi_files}:{tree_name}",
-                branch_list,
-                step_size=200_000,  # entries per chunk
-                library="np",
-        ):
+    batches = { var_name: [] for var_name in branch_list }
+    for batch in uproot.iterate(
+            source,
+            branch_list,
+            step_size=200_000,  # entries per chunk
+            library="ak",
+    ):
+        for var_name in branch_list:
+            batches[var_name].append(batch[var_name])
 
-            if hemi_vars[branch_list[0]] is None:
-                for var_name in branch_list:
-                    hemi_vars[var_name] = batch[var_name]
-            else:
-                for var_name in branch_list:
-                    hemi_vars[var_name] = np.concatenate( (hemi_vars[var_name], batch[var_name]) )
-        print(f"\tread_hemi_files: Read n hemispheres: {len(hemi_vars[branch_list[0]])}")
-
-    elif isinstance(hemi_files, list):
-        #print("Reading hemisphere files:", hemifiles)
-        file_spec = {f: tree_name for f in hemi_files}
-
-        for batch in uproot.iterate(
-                file_spec,
-                branch_list,
-                step_size=200_000,
-                library="np",
-        ):
-            if hemi_vars[branch_list[0]] is None:
-                for var_name in branch_list:
-                    hemi_vars[var_name] = batch[var_name]
-            else:
-                for var_name in branch_list:
-                    hemi_vars[var_name] = np.concatenate( (hemi_vars[var_name], batch[var_name]) )
-        print(f"\tread_hemi_files: Read n hemispheres: {len(hemi_vars[branch_list[0]])}")
+    hemi_vars = { var_name: ak.concatenate(batches[var_name]) for var_name in branch_list }
+    print(f"\tread_hemi_files: Read n hemispheres: {len(hemi_vars[branch_list[0]])}")
 
     return hemi_vars
 
@@ -424,7 +397,14 @@ def iter_hemi_filters(hemi_ranges, hemi_data):
         (tag, sel, jet, mask, tag_filter, sel_filter, jet_filter)
     where jet = -1 indicates the special 'no jet bins' case.
     """
-    tag_keys = list(hemi_ranges.keys())
+    # Use only POPULATED tag bins. A tag that passed the tag-count threshold but
+    # whose sel sub-bins were all pruned ends up as an empty dict (e.g. tag=5).
+    # If left in the key list it would be the last key and steal the `>=`
+    # high_edge overflow, then get `continue`d — so every hemisphere with
+    # nTagJet above the last populated tag is dropped instead of folding into it.
+    # Filtering empties here puts the overflow back on the last populated tag, so
+    # high-multiplicity hemispheres merge into the nearest populated bin.
+    tag_keys = [t for t in hemi_ranges.keys() if hemi_ranges[t]]
 
     for itag, tag in enumerate(tag_keys):
 
@@ -435,11 +415,6 @@ def iter_hemi_filters(hemi_ranges, hemi_data):
             low_edge=(itag == 0),
             high_edge=(itag == len(tag_keys) - 1)
         )
-
-        # Skip empty tag bins
-        if not hemi_ranges[tag]:
-            print(f"ERROR: no sel jets for tag = {tag}")
-            continue
 
         # Selected-jet multiplicity loop
         sel_keys = list(hemi_ranges[tag].keys())
@@ -602,10 +577,10 @@ def replace_hemis(*, all_hemis, hemi_kd_trees, hemi_stats, hemi_data, hemi_jet_r
         #
         new_Jets = ak.zip(
             {
-                "pt":   ak.from_iter(hemi_data[jet_mult_key]["Jet_pt"]  [match_idx]),
-                "eta":  ak.from_iter(hemi_data[jet_mult_key]["Jet_eta"] [match_idx]),
-                "phi": (ak.from_iter(hemi_data[jet_mult_key]["Jet_phi"] [match_idx]) + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
-                "mass": ak.from_iter(hemi_data[jet_mult_key]["Jet_mass"][match_idx]),
+                "pt":   hemi_data[jet_mult_key]["Jet_pt"]  [match_idx],
+                "eta":  hemi_data[jet_mult_key]["Jet_eta"] [match_idx],
+                "phi": (hemi_data[jet_mult_key]["Jet_phi"] [match_idx] + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
+                "mass": hemi_data[jet_mult_key]["Jet_mass"][match_idx],
             },
             with_name="PtEtaPhiMLorentzVector",
             behavior=vector.behavior,
@@ -616,15 +591,15 @@ def replace_hemis(*, all_hemis, hemi_kd_trees, hemi_stats, hemi_data, hemi_jet_r
             var_key = var_name.replace("Jet_", "")
             if var_key in ["pt", "eta", "phi", "mass"]:
                 continue
-            new_Jets[var_key] = ak.from_iter(hemi_data[jet_mult_key][var_name][match_idx])
+            new_Jets[var_key] = hemi_data[jet_mult_key][var_name][match_idx]
 
         # fill event data
-        subset_hemis_new = ak.zip({"thrust_phi":       ak.Array(hemi_data[jet_mult_key]["thrust_phi"]     [match_idx]),
-                                   "event":            ak.Array(hemi_data[jet_mult_key]["event"]          [match_idx]),
-                                   "run":              ak.Array(hemi_data[jet_mult_key]["run"]            [match_idx]),
-                                   "luminosityBlock" : ak.Array(hemi_data[jet_mult_key]["luminosityBlock"][match_idx]),
-                                   "hemisphereId":     ak.Array(hemi_data[jet_mult_key]["hemisphereId"]   [match_idx]),
-                                   "weight":           ak.Array(hemi_data[jet_mult_key]["weight"]         [match_idx]),
+        subset_hemis_new = ak.zip({"thrust_phi":       hemi_data[jet_mult_key]["thrust_phi"]     [match_idx],
+                                   "event":            hemi_data[jet_mult_key]["event"]          [match_idx],
+                                   "run":              hemi_data[jet_mult_key]["run"]            [match_idx],
+                                   "luminosityBlock" : hemi_data[jet_mult_key]["luminosityBlock"][match_idx],
+                                   "hemisphereId":     hemi_data[jet_mult_key]["hemisphereId"]   [match_idx],
+                                   "weight":           hemi_data[jet_mult_key]["weight"]         [match_idx],
                                    "nSelJet":          subset_hemis["nSelJet"],
                                    "nTagJet":          subset_hemis["nTagJet"],
                                    "nJet" :            ak.num(new_Jets, axis=1),
@@ -727,10 +702,10 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
         #
         new_Jets = ak.zip(
             {
-                "pt":   ak.from_iter(hemi_lib_data["Jet_pt"]  [match_idx]),
-                "eta":  ak.from_iter(hemi_lib_data["Jet_eta"] [match_idx]),
-                "phi": (ak.from_iter(hemi_lib_data["Jet_phi"] [match_idx]) + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
-                "mass": ak.from_iter(hemi_lib_data["Jet_mass"][match_idx]),
+                "pt":   hemi_lib_data["Jet_pt"]  [match_idx],
+                "eta":  hemi_lib_data["Jet_eta"] [match_idx],
+                "phi": (hemi_lib_data["Jet_phi"] [match_idx] + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
+                "mass": hemi_lib_data["Jet_mass"][match_idx],
             },
             with_name="PtEtaPhiMLorentzVector",
             behavior=vector.behavior,
@@ -773,16 +748,16 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
             var_key = var_name.replace("Jet_", "")
             if var_key in ["pt", "eta", "phi", "mass"]:
                 continue
-            new_Jets[var_key] = ak.from_iter(hemi_lib_data[var_name][match_idx])
+            new_Jets[var_key] = hemi_lib_data[var_name][match_idx]
 
 
         # fill event data
-        subset_hemis_new = ak.zip({"thrust_phi":       ak.Array(hemi_lib_data["thrust_phi"]     [match_idx]),
-                                   "event":            ak.Array(hemi_lib_data["event"]          [match_idx]),
-                                   "run":              ak.Array(hemi_lib_data["run"]            [match_idx]),
-                                   "luminosityBlock" : ak.Array(hemi_lib_data["luminosityBlock"][match_idx]),
-                                   "hemisphereId":     ak.Array(hemi_lib_data["hemisphereId"]   [match_idx]),
-                                   "weight":           ak.Array(hemi_lib_data["weight"]         [match_idx]),
+        subset_hemis_new = ak.zip({"thrust_phi":       hemi_lib_data["thrust_phi"]     [match_idx],
+                                   "event":            hemi_lib_data["event"]          [match_idx],
+                                   "run":              hemi_lib_data["run"]            [match_idx],
+                                   "luminosityBlock" : hemi_lib_data["luminosityBlock"][match_idx],
+                                   "hemisphereId":     hemi_lib_data["hemisphereId"]   [match_idx],
+                                   "weight":           hemi_lib_data["weight"]         [match_idx],
                                    "nSelJet":          subset_hemis["nSelJet"],
                                    "nTagJet":          subset_hemis["nTagJet"],
                                    "nJet" :            ak.num(new_Jets, axis=1),
@@ -1009,10 +984,10 @@ def replace_hemis_topk_kdTrees(
 
         new_Jets = ak.zip(
             {
-                "pt":   ak.from_iter(hemi_lib_data["Jet_pt"]  [match_idx_chosen]),
-                "eta":  ak.from_iter(hemi_lib_data["Jet_eta"] [match_idx_chosen]),
-                "phi": (ak.from_iter(hemi_lib_data["Jet_phi"] [match_idx_chosen]) + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
-                "mass": ak.from_iter(hemi_lib_data["Jet_mass"][match_idx_chosen]),
+                "pt":   hemi_lib_data["Jet_pt"]  [match_idx_chosen],
+                "eta":  hemi_lib_data["Jet_eta"] [match_idx_chosen],
+                "phi": (hemi_lib_data["Jet_phi"] [match_idx_chosen] + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
+                "mass": hemi_lib_data["Jet_mass"][match_idx_chosen],
             },
             with_name="PtEtaPhiMLorentzVector",
             behavior=vector.behavior,
@@ -1031,16 +1006,16 @@ def replace_hemis_topk_kdTrees(
             var_key = var_name.replace("Jet_", "")
             if var_key in ["pt", "eta", "phi", "mass"]:
                 continue
-            new_Jets[var_key] = ak.from_iter(hemi_lib_data[var_name][match_idx_chosen])
+            new_Jets[var_key] = hemi_lib_data[var_name][match_idx_chosen]
 
         subset_hemis_new = ak.zip(
             {
-                "thrust_phi":      ak.Array(hemi_lib_data["thrust_phi"]     [match_idx_chosen]),
-                "event":           ak.Array(hemi_lib_data["event"]          [match_idx_chosen]),
-                "run":             ak.Array(hemi_lib_data["run"]            [match_idx_chosen]),
-                "luminosityBlock": ak.Array(hemi_lib_data["luminosityBlock"][match_idx_chosen]),
-                "hemisphereId":    ak.Array(hemi_lib_data["hemisphereId"]   [match_idx_chosen]),
-                "weight":          ak.Array(hemi_lib_data["weight"]         [match_idx_chosen]),
+                "thrust_phi":      hemi_lib_data["thrust_phi"]     [match_idx_chosen],
+                "event":           hemi_lib_data["event"]          [match_idx_chosen],
+                "run":             hemi_lib_data["run"]            [match_idx_chosen],
+                "luminosityBlock": hemi_lib_data["luminosityBlock"][match_idx_chosen],
+                "hemisphereId":    hemi_lib_data["hemisphereId"]   [match_idx_chosen],
+                "weight":          hemi_lib_data["weight"]         [match_idx_chosen],
                 "nSelJet":         subset_hemis["nSelJet"],
                 "nTagJet":         subset_hemis["nTagJet"],
                 "nJet":            ak.num(new_Jets, axis=1),
