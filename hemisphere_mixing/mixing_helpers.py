@@ -363,41 +363,24 @@ def read_hemi_files(hemi_files_yaml, year, tree_name="Events", branch_list=None)
         # print("Hemi files:", type(hemi_files), hemi_files)
 
 
-    hemi_vars = { var_name: [] for var_name in branch_list }
+    # Read with library="ak" so jagged jet branches come back as native awkward
+    # arrays (not numpy object-dtype). This lets the matchers index them with a
+    # vectorized gather (hemi_data["Jet_pt"][match_idx]) instead of the slow
+    # per-chunk ak.from_iter conversion the object-dtype path required.
+    source = f"{hemi_files}:{tree_name}" if isinstance(hemi_files, str) else {f: tree_name for f in hemi_files}
 
-    if isinstance(hemi_files, str):
-        for batch in uproot.iterate(
-                f"{hemi_files}:{tree_name}",
-                branch_list,
-                step_size=200_000,  # entries per chunk
-                library="np",
-        ):
+    batches = { var_name: [] for var_name in branch_list }
+    for batch in uproot.iterate(
+            source,
+            branch_list,
+            step_size=200_000,  # entries per chunk
+            library="ak",
+    ):
+        for var_name in branch_list:
+            batches[var_name].append(batch[var_name])
 
-            if hemi_vars[branch_list[0]] is None:
-                for var_name in branch_list:
-                    hemi_vars[var_name] = batch[var_name]
-            else:
-                for var_name in branch_list:
-                    hemi_vars[var_name] = np.concatenate( (hemi_vars[var_name], batch[var_name]) )
-        print(f"\tread_hemi_files: Read n hemispheres: {len(hemi_vars[branch_list[0]])}")
-
-    elif isinstance(hemi_files, list):
-        #print("Reading hemisphere files:", hemifiles)
-        file_spec = {f: tree_name for f in hemi_files}
-
-        for batch in uproot.iterate(
-                file_spec,
-                branch_list,
-                step_size=200_000,
-                library="np",
-        ):
-            if hemi_vars[branch_list[0]] is None:
-                for var_name in branch_list:
-                    hemi_vars[var_name] = batch[var_name]
-            else:
-                for var_name in branch_list:
-                    hemi_vars[var_name] = np.concatenate( (hemi_vars[var_name], batch[var_name]) )
-        print(f"\tread_hemi_files: Read n hemispheres: {len(hemi_vars[branch_list[0]])}")
+    hemi_vars = { var_name: ak.concatenate(batches[var_name]) for var_name in branch_list }
+    print(f"\tread_hemi_files: Read n hemispheres: {len(hemi_vars[branch_list[0]])}")
 
     return hemi_vars
 
@@ -604,10 +587,10 @@ def replace_hemis(*, all_hemis, hemi_kd_trees, hemi_stats, hemi_data, hemi_jet_r
         #
         new_Jets = ak.zip(
             {
-                "pt":   ak.from_iter(hemi_data[jet_mult_key]["Jet_pt"]  [match_idx]),
-                "eta":  ak.from_iter(hemi_data[jet_mult_key]["Jet_eta"] [match_idx]),
-                "phi": (ak.from_iter(hemi_data[jet_mult_key]["Jet_phi"] [match_idx]) + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
-                "mass": ak.from_iter(hemi_data[jet_mult_key]["Jet_mass"][match_idx]),
+                "pt":   hemi_data[jet_mult_key]["Jet_pt"]  [match_idx],
+                "eta":  hemi_data[jet_mult_key]["Jet_eta"] [match_idx],
+                "phi": (hemi_data[jet_mult_key]["Jet_phi"] [match_idx] + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
+                "mass": hemi_data[jet_mult_key]["Jet_mass"][match_idx],
             },
             with_name="PtEtaPhiMLorentzVector",
             behavior=vector.behavior,
@@ -618,7 +601,7 @@ def replace_hemis(*, all_hemis, hemi_kd_trees, hemi_stats, hemi_data, hemi_jet_r
             var_key = var_name.replace("Jet_", "")
             if var_key in ["pt", "eta", "phi", "mass"]:
                 continue
-            new_Jets[var_key] = ak.from_iter(hemi_data[jet_mult_key][var_name][match_idx])
+            new_Jets[var_key] = hemi_data[jet_mult_key][var_name][match_idx]
 
         # fill event data
         subset_hemis_new = ak.zip({"thrust_phi":       ak.Array(hemi_data[jet_mult_key]["thrust_phi"]     [match_idx]),
@@ -729,10 +712,10 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
         #
         new_Jets = ak.zip(
             {
-                "pt":   ak.from_iter(hemi_lib_data["Jet_pt"]  [match_idx]),
-                "eta":  ak.from_iter(hemi_lib_data["Jet_eta"] [match_idx]),
-                "phi": (ak.from_iter(hemi_lib_data["Jet_phi"] [match_idx]) + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
-                "mass": ak.from_iter(hemi_lib_data["Jet_mass"][match_idx]),
+                "pt":   hemi_lib_data["Jet_pt"]  [match_idx],
+                "eta":  hemi_lib_data["Jet_eta"] [match_idx],
+                "phi": (hemi_lib_data["Jet_phi"] [match_idx] + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
+                "mass": hemi_lib_data["Jet_mass"][match_idx],
             },
             with_name="PtEtaPhiMLorentzVector",
             behavior=vector.behavior,
@@ -775,7 +758,7 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
             var_key = var_name.replace("Jet_", "")
             if var_key in ["pt", "eta", "phi", "mass"]:
                 continue
-            new_Jets[var_key] = ak.from_iter(hemi_lib_data[var_name][match_idx])
+            new_Jets[var_key] = hemi_lib_data[var_name][match_idx]
 
 
         # fill event data
@@ -1011,10 +994,10 @@ def replace_hemis_topk_kdTrees(
 
         new_Jets = ak.zip(
             {
-                "pt":   ak.from_iter(hemi_lib_data["Jet_pt"]  [match_idx_chosen]),
-                "eta":  ak.from_iter(hemi_lib_data["Jet_eta"] [match_idx_chosen]),
-                "phi": (ak.from_iter(hemi_lib_data["Jet_phi"] [match_idx_chosen]) + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
-                "mass": ak.from_iter(hemi_lib_data["Jet_mass"][match_idx_chosen]),
+                "pt":   hemi_lib_data["Jet_pt"]  [match_idx_chosen],
+                "eta":  hemi_lib_data["Jet_eta"] [match_idx_chosen],
+                "phi": (hemi_lib_data["Jet_phi"] [match_idx_chosen] + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
+                "mass": hemi_lib_data["Jet_mass"][match_idx_chosen],
             },
             with_name="PtEtaPhiMLorentzVector",
             behavior=vector.behavior,
@@ -1033,7 +1016,7 @@ def replace_hemis_topk_kdTrees(
             var_key = var_name.replace("Jet_", "")
             if var_key in ["pt", "eta", "phi", "mass"]:
                 continue
-            new_Jets[var_key] = ak.from_iter(hemi_lib_data[var_name][match_idx_chosen])
+            new_Jets[var_key] = hemi_lib_data[var_name][match_idx_chosen]
 
         subset_hemis_new = ak.zip(
             {
