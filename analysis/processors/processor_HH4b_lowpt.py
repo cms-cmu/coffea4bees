@@ -130,7 +130,6 @@ class analysis(HH4bBaseProcessor):
         if self.make_classifier_input is not None:
             for k in ["ZZSR", "ZHSR", "HHSR", "SR", "SB"]:
                 selev[k] = selev["quadJet_selected"][k]
-            selev["nSelJets_lowpt"] = ak.num(selev.selJet_lowpt)
 
             from ..helpers.dump_friendtrees import dump_input_friend
             weight = "weight_noJCM_noFvT"
