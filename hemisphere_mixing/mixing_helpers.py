@@ -424,7 +424,14 @@ def iter_hemi_filters(hemi_ranges, hemi_data):
         (tag, sel, jet, mask, tag_filter, sel_filter, jet_filter)
     where jet = -1 indicates the special 'no jet bins' case.
     """
-    tag_keys = list(hemi_ranges.keys())
+    # Use only POPULATED tag bins. A tag that passed the tag-count threshold but
+    # whose sel sub-bins were all pruned ends up as an empty dict (e.g. tag=5).
+    # If left in the key list it would be the last key and steal the `>=`
+    # high_edge overflow, then get `continue`d — so every hemisphere with
+    # nTagJet above the last populated tag is dropped instead of folding into it.
+    # Filtering empties here puts the overflow back on the last populated tag, so
+    # high-multiplicity hemispheres merge into the nearest populated bin.
+    tag_keys = [t for t in hemi_ranges.keys() if hemi_ranges[t]]
 
     for itag, tag in enumerate(tag_keys):
 
@@ -435,11 +442,6 @@ def iter_hemi_filters(hemi_ranges, hemi_data):
             low_edge=(itag == 0),
             high_edge=(itag == len(tag_keys) - 1)
         )
-
-        # Skip empty tag bins
-        if not hemi_ranges[tag]:
-            print(f"ERROR: no sel jets for tag = {tag}")
-            continue
 
         # Selected-jet multiplicity loop
         sel_keys = list(hemi_ranges[tag].keys())

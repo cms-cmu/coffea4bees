@@ -75,7 +75,10 @@ class analysis(HH4bBaseProcessor):
         selev["thrustDeltaPhi"] = (selev.posHemiOld.thrust_phi - selev.newThrustPhi) % (2 * np.pi) - np.pi
         match_dist = ak.concatenate([selev.posHemiNew.match_dist[:, np.newaxis], selev.negHemiNew.match_dist[:, np.newaxis]], axis=1)
         hemis = ak.concatenate([selev.posHemiNew[:, np.newaxis], selev.negHemiNew[:, np.newaxis]], axis=1)
-        selev["hemiMatchDist"] = match_dist
+        # ak.from_regular: the size-2 (pos/neg) RegularArray won't broadcast
+        # against the per-event weight under awkward v2; a var ListOffsetArray
+        # does (same as jagged jet fills). Fixes the 'matchDist' FillError.
+        selev["hemiMatchDist"] = ak.from_regular(match_dist)
         selev["nSelJetOld"] = selev.posHemiNew.nSelJet + selev.negHemiNew.nSelJet
 
         # Check how often hemispheres from the same event are matched
