@@ -219,7 +219,7 @@ class HCREnsemble_lowpt(HCREnsemble):
             match k:
                 case "year":
                     a[:, i] = self.get_year(event.metadata["year"])
-                case "nSelJets":
+                case "nSelJets_lowpt":
                     a[:, i] = torch.tensor(event.nSelJets_lowpt)
                 case "xW":
                     a[:, i] = torch.tensor(event.xW)

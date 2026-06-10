@@ -5,11 +5,13 @@ include: "helpers/common.smk"
 
 import shutil
 _roc = config.setdefault('run_on_condor', shutil.which("condor_submit") is not None)
-config['run_on_condor'] = str(_roc).lower() not in ('false', '0', 'no')
+config['run_on_condor'] = False #str(_roc).lower() not in ('false', '0', 'no')
 
 if config['mode'] == "lowpt":
-    config.setdefault('label', "lowpt_wfixedSvB")
-    config.setdefault('output_path', "output/lowpt_wfixedSvB/")
+    # config.setdefault('label', "lowpt_wfixedSvB")
+    # config.setdefault('output_path', "output/lowpt_wfixedSvB/")
+    config.setdefault('label', "lowpt_wNewNominalSvB_fixed")
+    config.setdefault('output_path', "output/lowpt_wNewNominalSvB_fixed/")
     config.setdefault('analysis_config', "coffea4bees/analysis/metadata/HH4b_lowpt_2024_v2.yml")
     config.setdefault('processor', "coffea4bees/analysis/processors/processor_HH4b_lowpt.py")
     config.setdefault('friend_file', "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/friends_HH4b_lowpt.yml")
@@ -38,13 +40,26 @@ config.setdefault('year_eras', {
     'UL17':         ['C', 'D', 'E', 'F'],
     'UL18':         ['A', 'B', 'C', 'D'],
 })
+# config.setdefault('combine_outdir', "datacards/HH4b_fine")
+config.setdefault('combine_outdir', "datacards/HH4b_fine")
 config.setdefault('channels', {
     'HH4b': {
         'signallabel': "ggHH_kl_1_kt_1_13p0TeV_hbbhbb",
         'othersignal': "ggHH_kl_0_kt_1_13p0TeV_hbbhbb ggHH_kl_2p45_kt_1_13p0TeV_hbbhbb ggHH_kl_5_kt_1_13p0TeV_hbbhbb", # qqHH_CV_1_C2V_1_kl_1_13p0TeV_hbbhbb qqHH_CV_m0p758_C2V_1p44_kl_m19p3_13p0TeV_hbbhbb qqHH_CV_m1p6_C2V_2p72_kl_m1p36_13p0TeV_hbbhbb qqHH_CV_1p74_C2V_1p37_kl_14p4_13p0TeV_hbbhbb qqHH_CV_m0p962_C2V_0p959_kl_m1p43_13p0TeV_hbbhbb qqHH_CV_m1p83_C2V_3p57_kl_m3p39_13p0TeV_hbbhbb qqHH_CV_2p12_C2V_3p87_kl_m5p96_13p0TeV_hbbhbb qqHH_CV_m0p012_C2V_0p03_kl_10p2_13p0TeV_hbbhbb qqHH_CV_m1p21_C2V_1p94_kl_m0p94_13p0TeV_hbbhbb",
-        'variable': "SvB_MA.ps_hh",
+        'variable': "SvB_MA.ps_hh_fine",
         'signal': "GluGluToHHTo4B_cHHH1"
     }
+    # 'ZZ4b':{
+    #     'signallabel': "ZZ_bbbb"
+    #     'othersignal': "ggHH_kl_1_kt_1_13p0TeV_hbbhbb ZH_bbbb"
+    #     'variable': "SvB_MA.ps_zz"
+    #     'signal': "ZZ4b"
+    # },
+    # 'ZH4b':{
+    #     'signallabel': "ZH_bbbb"
+    #     'othersignal': "ggHH_kl_1_kt_1_13p0TeV_hbbhbb ZZ_bbbb"
+    #     'variable': "SvB_MA.ps_zh"
+    #     'signal': "ZH4b"
 })
 
 # Derive flat year/era and year lists from year_eras
@@ -165,7 +180,7 @@ use rule make_combine_inputs from stat_analysis with:
         bkgsyst = f"reana_outputs/coffea4bees_20250616_af478bd_unblind_boostedVeto/closureFits/ULHH_kfold/3bDvTMix4bDvT/SvB_MA/rebin1/SR/hh/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_hh_rebin1.pkl"
     output: f"{config['output_path']}stat_analysis/HH4b/datacards/datacard__HH4b.txt"
     params:
-        variable= "SvB_MA.ps_hh",
+        variable= f"{config['channels']['HH4b']['variable']}",
         syst_file = "",
         rebin=1,
         metadata="coffea4bees/stats_analysis/metadata/HH4b.yml",
@@ -181,13 +196,3 @@ use rule make_combine_inputs from stat_analysis with:
 use rule * from combine
 
 localrules: all_lowpt, modify_config_file, analysis_data, analysis_MC, merging_files, make_plots, convert_hist_to_json, make_combine_inputs
-
-if not config.get('run_on_condor', True) and config.get('run_local_without_container', False):
-    combine_rules = [
-        "workspace", "limits", "significance", "likelihood_scan_snapshot",
-        "likelihood_scan_chunk", "likelihood_scan", "impacts_initial_fit",
-        "impacts_do_fits", "impacts_collect", "split_impacts", "pdf_to_png",
-        "gof_data", "gof_toys_chunk", "gof", "fit_diagnostics_bonly", "fit_diagnostics_sb",
-        "postfit"
-    ]
-    workflow._localrules.update(combine_rules)
