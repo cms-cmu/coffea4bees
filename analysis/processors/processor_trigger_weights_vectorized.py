@@ -36,7 +36,8 @@ TRGSF_FILES = {
         2021: "2021/TriggerEfficiency_Fit_2021_18April2025.root",
         2022: "2022/TriggerEfficiency_Fit_2022_18April2025.root",
         2023: "2023/TriggerEfficiency_Fit_2023_18April2025.root",
-        2020: "2020/TriggerEfficiency_Fit_2020_18April2025.root"
+        2020: "2020/TriggerEfficiency_Fit_2020_18April2025.root",
+        2024: "2024/TriggerEfficiency_Fit_2024_22April2026.root"
     },
     "PNet": {
         2015: "2016/TriggerEfficiency_Fit_2016_matched_0p5.root", 
@@ -46,14 +47,16 @@ TRGSF_FILES = {
         2021: "2021/TriggerEfficiency_Fit_2021_18April2025.root",
         2022: "2022/TriggerEfficiency_Fit_2022_18April2025.root",
         2023: "2023/TriggerEfficiency_Fit_2023_18April2025.root",
-        2020: "2020/TriggerEfficiency_Fit_2020_18April2025.root"
+        2020: "2020/TriggerEfficiency_Fit_2020_18April2025.root",
+        2024: "2024/TriggerEfficiency_Fit_2024_22April2026.root"
     },
     "ParT": {
         2017: "2017/TriggerEfficiency_Fit_2017_14Feb2024.root",
         2021: "2021/TriggerEfficiency_Fit_2021_18April2025.root",
         2022: "2022/TriggerEfficiency_Fit_2022_18April2025.root",
         2023: "2023/TriggerEfficiency_Fit_2023_18April2025.root",
-        2020: "2020/TriggerEfficiency_Fit_2020_18April2025.root"
+        2020: "2020/TriggerEfficiency_Fit_2020_18April2025.root",
+        2024: "2024/TriggerEfficiency_Fit_2024_22April2026.root"
     }
 }
 
@@ -62,6 +65,7 @@ TRGSF_L1_FILES = {
     2022: "2022/L1T_ttbar1L_ele_Efficiency_Fit_2022_18April2025.root",
     2023: "2023/L1T_ttbar1L_ele_Efficiency_Fit_2023_18April2025.root",
     2020: "2020/L1T_ttbar1L_ele_Efficiency_Fit_2023_18April2025.root",
+    2024: "2024/L1T_ttbar1L_ele_Efficiency_Fit_2024_05March2026.root",
 }
 
 class TriggerSFVectorized:
@@ -354,6 +358,9 @@ class TriggerSFVectorized:
                      return self._calculate_2023_PostBPix(pt4, pfjetht, calojetht, btagTMean)
                  else:
                      return self._calculate_2023_PreBPix(pt4, pfjetht, calojetht, btagTMean)
+        
+        elif self.year == 2024:
+            return self._calculate_2024(pt4, pfjetht, calojetht, btagTMean)
 
         ones = ak.ones_like(pt1, dtype=float)
         return ones, ones, ones
@@ -640,6 +647,24 @@ class TriggerSFVectorized:
 
         d_comps = [d_L1, d_JetLeg, d_BJetLeg]
         m_comps = [m_L1, m_JetLeg, m_BJetLeg]
+        return self._compute_sf(d_comps, m_comps)
+
+    def _calculate_2024(self, pt4, pfjetht, calojetht, btagTMean):
+        # HLT_PFHT250_QuadPFJet25_PNet2BTagMean0p55
+        d_L1, _, _ = self.lookup_efficiency("L1All_inclusive", calojetht, is_data=True)
+        m_L1, _, _ = self.lookup_efficiency("L1All_inclusive", calojetht, is_data=False)
+
+        d_PFHT250, _, _ = self.lookup_efficiency("PFHT250", pfjetht, is_data=True)
+        m_PFHT250, _, _ = self.lookup_efficiency("PFHT250", pfjetht, is_data=False)
+
+        d_QuadPFJet25, _, _ = self.lookup_efficiency("QuadPFJet25", pt4, is_data=True)
+        m_QuadPFJet25, _, _ = self.lookup_efficiency("QuadPFJet25", pt4, is_data=False)
+        
+        d_BTag, _, _ = self.lookup_efficiency("PNet2BTagMean0p55", btagTMean, is_data=True)
+        m_BTag, _, _ = self.lookup_efficiency("PNet2BTagMean0p55", btagTMean, is_data=False)
+
+        d_comps = [d_L1, d_PFHT250, d_QuadPFJet25, d_BTag]
+        m_comps = [m_L1, m_PFHT250, m_QuadPFJet25, m_BTag]
         return self._compute_sf(d_comps, m_comps)
         
     def _compute_sf(self, d_comps, m_comps):
