@@ -607,6 +607,7 @@ def lowpt_jet_selection(
     # Apply bRegCorr to low-pT selected jets
     event['selJet_no_bRegCorr_lowpt'] = event.Jet[event.Jet.selected_lowpt]
     event['selJet_lowpt'] = apply_bRegCorr(event.Jet, selected_label='selected_lowpt', tagged_label='tagged_lowpt', tagged_loose_label='tagged_loose_lowpt')
+    event["nSelJets_lowpt"] = ak.num(event.selJet_lowpt)
 
     event['tagJet_lowpt'] = event.selJet_lowpt[event.selJet_lowpt.tagged_lowpt]
     event['tagJet_loose_lowpt'] = event.selJet_lowpt[event.selJet_lowpt.tagged_loose_lowpt]
