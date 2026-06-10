@@ -288,21 +288,11 @@ def split_events_into_hemispheres(event, tagged_key="tagJet"):
     jets = event.Jet
     drop = {"muonIdxG", "electronIdxG","NOTTHERE",'electronIdx1G', 'electronIdx2G','muonIdx1G', 'muonIdx2G'}
     keep = [f for f in jets.fields if f not in drop]
-    thinned = jets[keep]
 
-    # the original record name, e.g. "PtEtaPhiMLorentzVector"
-    record = ak.parameters(jets).get("__record__")
-
-    # the behavior dictionary (vector mixin functions)
-    behavior = jets.behavior
-
-    # restore it
-    thinned = ak.Array(thinned.layout, behavior=behavior)
-    thinned_jets = ak.with_name(
-        thinned,
-        "PtEtaPhiMLorentzVector",
-        behavior=jets.behavior
-    )
+    # Field selection drops the __record__ name, so restore the Lorentz-vector
+    # behavior. ak.with_name reattaches both the record name and behavior in one
+    # step (no need to round-trip through ak.Array(layout, behavior=...)).
+    thinned_jets = ak.with_name(jets[keep], "PtEtaPhiMLorentzVector", behavior=jets.behavior)
 
     #
     #  For outputs
@@ -604,12 +594,12 @@ def replace_hemis(*, all_hemis, hemi_kd_trees, hemi_stats, hemi_data, hemi_jet_r
             new_Jets[var_key] = hemi_data[jet_mult_key][var_name][match_idx]
 
         # fill event data
-        subset_hemis_new = ak.zip({"thrust_phi":       ak.Array(hemi_data[jet_mult_key]["thrust_phi"]     [match_idx]),
-                                   "event":            ak.Array(hemi_data[jet_mult_key]["event"]          [match_idx]),
-                                   "run":              ak.Array(hemi_data[jet_mult_key]["run"]            [match_idx]),
-                                   "luminosityBlock" : ak.Array(hemi_data[jet_mult_key]["luminosityBlock"][match_idx]),
-                                   "hemisphereId":     ak.Array(hemi_data[jet_mult_key]["hemisphereId"]   [match_idx]),
-                                   "weight":           ak.Array(hemi_data[jet_mult_key]["weight"]         [match_idx]),
+        subset_hemis_new = ak.zip({"thrust_phi":       hemi_data[jet_mult_key]["thrust_phi"]     [match_idx],
+                                   "event":            hemi_data[jet_mult_key]["event"]          [match_idx],
+                                   "run":              hemi_data[jet_mult_key]["run"]            [match_idx],
+                                   "luminosityBlock" : hemi_data[jet_mult_key]["luminosityBlock"][match_idx],
+                                   "hemisphereId":     hemi_data[jet_mult_key]["hemisphereId"]   [match_idx],
+                                   "weight":           hemi_data[jet_mult_key]["weight"]         [match_idx],
                                    "nSelJet":          subset_hemis["nSelJet"],
                                    "nTagJet":          subset_hemis["nTagJet"],
                                    "nJet" :            ak.num(new_Jets, axis=1),
@@ -762,12 +752,12 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
 
 
         # fill event data
-        subset_hemis_new = ak.zip({"thrust_phi":       ak.Array(hemi_lib_data["thrust_phi"]     [match_idx]),
-                                   "event":            ak.Array(hemi_lib_data["event"]          [match_idx]),
-                                   "run":              ak.Array(hemi_lib_data["run"]            [match_idx]),
-                                   "luminosityBlock" : ak.Array(hemi_lib_data["luminosityBlock"][match_idx]),
-                                   "hemisphereId":     ak.Array(hemi_lib_data["hemisphereId"]   [match_idx]),
-                                   "weight":           ak.Array(hemi_lib_data["weight"]         [match_idx]),
+        subset_hemis_new = ak.zip({"thrust_phi":       hemi_lib_data["thrust_phi"]     [match_idx],
+                                   "event":            hemi_lib_data["event"]          [match_idx],
+                                   "run":              hemi_lib_data["run"]            [match_idx],
+                                   "luminosityBlock" : hemi_lib_data["luminosityBlock"][match_idx],
+                                   "hemisphereId":     hemi_lib_data["hemisphereId"]   [match_idx],
+                                   "weight":           hemi_lib_data["weight"]         [match_idx],
                                    "nSelJet":          subset_hemis["nSelJet"],
                                    "nTagJet":          subset_hemis["nTagJet"],
                                    "nJet" :            ak.num(new_Jets, axis=1),
@@ -1020,12 +1010,12 @@ def replace_hemis_topk_kdTrees(
 
         subset_hemis_new = ak.zip(
             {
-                "thrust_phi":      ak.Array(hemi_lib_data["thrust_phi"]     [match_idx_chosen]),
-                "event":           ak.Array(hemi_lib_data["event"]          [match_idx_chosen]),
-                "run":             ak.Array(hemi_lib_data["run"]            [match_idx_chosen]),
-                "luminosityBlock": ak.Array(hemi_lib_data["luminosityBlock"][match_idx_chosen]),
-                "hemisphereId":    ak.Array(hemi_lib_data["hemisphereId"]   [match_idx_chosen]),
-                "weight":          ak.Array(hemi_lib_data["weight"]         [match_idx_chosen]),
+                "thrust_phi":      hemi_lib_data["thrust_phi"]     [match_idx_chosen],
+                "event":           hemi_lib_data["event"]          [match_idx_chosen],
+                "run":             hemi_lib_data["run"]            [match_idx_chosen],
+                "luminosityBlock": hemi_lib_data["luminosityBlock"][match_idx_chosen],
+                "hemisphereId":    hemi_lib_data["hemisphereId"]   [match_idx_chosen],
+                "weight":          hemi_lib_data["weight"]         [match_idx_chosen],
                 "nSelJet":         subset_hemis["nSelJet"],
                 "nTagJet":         subset_hemis["nTagJet"],
                 "nJet":            ak.num(new_Jets, axis=1),
