@@ -163,9 +163,18 @@ rule all:
         FEYNET_FRIEND_JSON,
 
 
+# Memory knobs, overridable via --config. The lower-2023-pT selection admits
+# more jets, so the top-K hemisphere matcher uses more memory there; bumping
+# worker_memory and/or shrinking chunksize relieves it. Defaults match the
+# committed mixeddata_Run3.yml so patching is a no-op when not overridden.
+config.setdefault('worker_memory', '8GB')
+config.setdefault('chunksize', 100000)
+
+
 rule patch_skimmer_config:
     """Inject configured fields (base_path, default_rank, hemi_library_yaml,
-    hemi_stats_path) into the skimmer config. Other fields pass through.
+    hemi_stats_path, worker_memory, chunksize) into the skimmer config.
+    Other fields pass through.
 
     The hemi library/stats paths are what make_mixed_data.py actually reads —
     the rule `input:` declarations only enforce DAG ordering — so they MUST be
@@ -184,6 +193,8 @@ rule patch_skimmer_config:
         base_path      = config['base_path'],
         hemi_library   = HEMI_LIB,
         hemi_stats     = HEMI_STATS_DIR,
+        worker_memory  = config['worker_memory'],
+        chunksize      = config['chunksize'],
         default_rank   = (f"[{_rank[0]}, {_rank[1]}]"
                           if isinstance(_rank, (list, tuple))
                           else str(int(_rank))),
@@ -193,9 +204,12 @@ rule patch_skimmer_config:
             -e 's|  default_rank:.*|  default_rank: {params.default_rank}|' \
             -e 's|  hemi_library_yaml:.*|  hemi_library_yaml: {params.hemi_library}|' \
             -e 's|  hemi_stats_path:.*|  hemi_stats_path: {params.hemi_stats}|' \
+            -e 's|  worker_memory:.*|  worker_memory: {params.worker_memory}|' \
+            -e 's|  chunksize:.*|  chunksize: {params.chunksize}|' \
+            -e 's|  step:.*|  step: {params.chunksize}|' \
             {input} > {output}
         echo "Patched skimmer config:"
-        grep -E "base_path|default_rank|hemi_library_yaml|hemi_stats_path" {output}
+        grep -E "base_path|default_rank|hemi_library_yaml|hemi_stats_path|worker_memory|chunksize|step" {output}
         """
 
 
@@ -237,24 +251,11 @@ rule merge_mixeddata_registries:
             year=config['years'],
         )
     output: f"{out}{REGISTRY}"
-    container: config['analysis_container']
     log: f"{out}logs/merge_mixeddata_registries.log"
     shell:
         """
-        python -c '
-import sys, yaml
-out = {{}}
-for f in sys.argv[1:-1]:
-    with open(f) as fh:
-        d = yaml.full_load(fh) or {{}}
-    overlap = set(out) & set(d)
-    if overlap:
-        raise SystemExit(f"Key collision merging {{f}}: {{overlap}}")
-    out.update(d)
-with open(sys.argv[-1], "w") as fh:
-    yaml.dump(out, fh, default_flow_style=False)
-print(f"Merged {{len(sys.argv)-2}} files -> {{sys.argv[-1]}} ({{len(out)}} datasets)")
-' {input} {output} 2>&1 | tee -a {log}
+        python coffea4bees/workflows/scripts/merge_mixeddata_registries.py \
+            {input} {output} 2>&1 | tee -a {log}
         """
 
 
@@ -317,7 +318,8 @@ use rule merging_coffea_files from analysis as merge_study_mixeddata with:
     output: f"{out}study_mixeddata_all{_rank_suffix}.coffea"
     container: config['analysis_container']
     params:
-        run_performance = False
+        run_performance = False,
+        run_container_wrapper = "./run_container"
     log: f"{out}logs/merge_study_mixeddata.log"
 
 
@@ -429,7 +431,8 @@ use rule merging_coffea_files from analysis as merge_histograms with:
     output: f"{out}histAll_{config['mode']}{_rank_suffix}.coffea"
     container: config['analysis_container']
     params:
-        run_performance = False
+        run_performance = False,
+        run_container_wrapper = "./run_container"
     log: f"{out}logs/merge_histograms.log"
 
 
@@ -476,7 +479,7 @@ rule fit_JCM:
         export MPLCONFIGDIR="/tmp/matplotlib"
         mkdir -p $MPLCONFIGDIR
         echo "Fitting JCM ({params.label})" 2>&1 | tee -a {log}
-        python coffea4bees/analysis/jcm_tools/make_jcm_weights.py \
+        ./run_container env PYTHONPATH=. python coffea4bees/analysis/jcm_tools/make_jcm_weights.py \
             -o {params.output_dir} \
             -i {input.hist} \
             -r SB \
