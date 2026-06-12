@@ -227,8 +227,12 @@ rule evaluate:
         f"{out}{{classifier}}/evaluate.log",
     container: CLASSIFIER_GPU
     resources:
-        runtime = 240,
-        mem_mb  = 32000,
+        # SvB eval with max-evaluators=1 does 3 sequential passes (one per fold);
+        # 4h SLURM limit isn't enough. Bumped to 8h. Memory sized to fit rogue01's
+        # free RAM (58 GB) without swap; max-evaluators bumped back to 2 to
+        # complete in ~3-4h while staying under the 56 GB cap.
+        runtime = 480,
+        mem_mb  = 56000,
         gres    = "mps:25",
     threads: 4
     params:

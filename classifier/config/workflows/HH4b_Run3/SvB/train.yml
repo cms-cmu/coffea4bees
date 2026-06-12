@@ -1,6 +1,6 @@
 # template:
-# - model: path to model (e.g. ${EOS}/HH4b_Run3_quadjet_run2/classifier/SvB)
-# - FvT:   path to FvT friend tree directory (e.g. ${EOS}/HH4b_Run3_quadjet_run2/friend/FvT)
+# - model: path to model (e.g. ${{EOS}}/HH4b_Run3_quadjet_run2/classifier/SvB)
+# - FvT:   path to FvT friend tree directory (e.g. ${{EOS}}/HH4b_Run3_quadjet_run2/friend/FvT)
 #
 # Adapted from coffea4bees/classifier/config/workflows/HH4b_2024_v2/SvB/train.yml
 # for Run3 quadjet_run2 — uses the quadjet_run2 JCM table, the
@@ -31,10 +31,11 @@ dataset:
       # Restrict to ggF only — Run3 does not yet have ZZ4b/ZH4b/ggZH4b skims.
       # Drop this once those samples are produced and added to the archive.
       - --mc-processes ggF
-      # Run3 ggF samples are named GluGlutoHHto4B_kl-{kl}_kt-{kt}_c2-{c2}
+      # Run3 ggF samples are named GluGlutoHHto4B_kl-{{kl}}_kt-{{kt}}_c2-{{c2}}
       # (lowercase 'to', explicit kt/c2). Override the default Run2 pattern
       # and use the fixed-2-decimal coupling format (1.0 -> '1p00').
-      - --ggf-signal-pattern "GluGlutoHHto4B_kl-{kl}_kt-{kt}_c2-{c2}"
+      # Braces doubled to survive yml str.format (template substitution).
+      - --ggf-signal-pattern "GluGlutoHHto4B_kl-{{kl}}_kt-{{kt}}_c2-{{c2}}"
       - --ggf-coupling-format fixed2
       - --ggf-coupling-defaults "kt=1.0,c2=0.0"
       # Restrict to the SM kl=1 point for the first SvB training.
