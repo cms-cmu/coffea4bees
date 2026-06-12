@@ -1,26 +1,22 @@
-version: 0.9.4
 inputs:
-  directories:
-    - src/
-    - coffea4bees/analysis/
-    - coffea4bees/metadata/
-    - coffea4bees/plots/
-    - coffea4bees/scripts/
-    - coffea4bees/skimmer/processor/
-    - coffea4bees/stats_analysis/
-    - coffea4bees/workflows/
+  git: 
+    - repo: git@github.com:cms-cmu/barista.git
+      branch: "master"
+      target: "."
+    - repo: git@github.com:cms-cmu/coffea4bees.git
+      branch: "master"
+      target: "coffea4bees"
   parameters:
     input: coffea4bees/workflows/inputs_reana.yaml
-  files:
-    - gitdiff.txt
-    - runner.py
-    - run_container
 workflow:
   type: snakemake
   file: coffea4bees/workflows/Snakefile_reana.smk
+  resources:
+    compute_backend: slurmcern
+    voms_proxy: true
 workspace:
   retention_days:
-    output/*: 30
+    output_test/*: 30
 outputs:
   directories:
-    - output/
+    - output_test/

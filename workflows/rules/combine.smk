@@ -12,20 +12,31 @@ rule workspace:
     log: "output/logs/workspace_{path}.log"
     shell:
         """
+        if [ "${{SLURM_PROCID:-0}}" -ne 0 ]; then
+            echo "Skipping duplicate Slurm task (SLURM_PROCID=$SLURM_PROCID)"
+            exit 0
+        fi
+        set -o pipefail
         LOG=$(pwd)/{log}
+        DATACARD_DIR=$(realpath $(dirname {input}))
         echo "$LOG"
         mkdir -p $(dirname $LOG)
+        TMPOUT=$(mktemp /tmp/workspace_XXXXXX.root)
         (
         echo "[$(date)] Starting workspace rule with signal {params.signallabel}"
-        {params.container_wrapper} "cd $(dirname {input}) && \
+        {params.container_wrapper} "cd $DATACARD_DIR && \
             text2workspace.py $(basename {input}) \
             -P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose \
             --PO 'map=.*/{params.signallabel}:r{params.signallabel}[1,-10,10]' \
             {params.othersignal_maps} \
-            -o $(basename {output})" 
+            -o $TMPOUT && \
+            rootls $TMPOUT"
 
         echo "[$(date)] Completed workspace rule with signal {params.signallabel}"
         ) 2>&1 | tee {log}
+        test -s $TMPOUT || {{ echo "ERROR: workspace tmp output missing or empty" >&2; exit 1; }}
+        cp $TMPOUT {output}
+        rm -f $TMPOUT
         """
 
 rule limits:
@@ -37,32 +48,35 @@ rule limits:
         signallabel = "{signallabel}",
         set_parameters_zero = "",
         freeze_parameters = "",
-        blind = "",
         container_wrapper = config.get("container_wrapper", "./run_container combine")
     log: "output/logs/limits_{path}__{signallabel}.log"
     shell:
         """
+        if [ "${{SLURM_PROCID:-0}}" -ne 0 ]; then
+            echo "Skipping duplicate Slurm task (SLURM_PROCID=$SLURM_PROCID)"
+            exit 0
+        fi
         LOG=$(pwd)/{log}
+        DATACARD_DIR=$(realpath $(dirname {input}))
         mkdir -p $(dirname $LOG)
         (
         echo "[$(date)] Starting limits rule with signal {params.signallabel}"
         echo "[$(date)] Running AsymptoticLimits"
-        {params.container_wrapper} "cd $(dirname {input}) && \
+        {params.container_wrapper} "cd $DATACARD_DIR && \
             combine -M AsymptoticLimits $(basename {input}) \
             --redefineSignalPOIs r{params.signallabel} \
             {params.set_parameters_zero} \
             {params.freeze_parameters} \
-            {params.blind} \
             -n _{params.signallabel}" \
             > {output.txt}
 
         echo "[$(date)] Running CollectLimits"
-        {params.container_wrapper} "cd $(dirname {input}) && \
+        {params.container_wrapper} "cd $DATACARD_DIR && \
             combineTool.py -M CollectLimits \
             higgsCombine_{params.signallabel}.AsymptoticLimits.mH120.root \
-            -o $(basename {output.json})" 
+            -o $(basename {output.json})"
 
-        echo "[$(date)] Completed limits rule with signal {params.signallabel}" 
+        echo "[$(date)] Completed limits rule with signal {params.signallabel}"
         ) 2>&1 | tee {log}
         """
 
@@ -77,12 +91,17 @@ rule significance:
     log: "output/logs/significance_{path}__{signallabel}.log"
     shell:
         """
+        if [ "${{SLURM_PROCID:-0}}" -ne 0 ]; then
+            echo "Skipping duplicate Slurm task (SLURM_PROCID=$SLURM_PROCID)"
+            exit 0
+        fi
         LOG=$(pwd)/{log}
+        DATACARD_DIR=$(realpath $(dirname {input}))
         mkdir -p $(dirname $LOG)
         echo "[$(date)] Starting significance rule with signal {params.signallabel}" > $LOG
 
         echo "[$(date)] Running observed significance" >> $LOG
-        {params.container_wrapper} "cd $(dirname {input}) && \
+        {params.container_wrapper} "cd $DATACARD_DIR && \
             combine -M Significance $(basename {input}) \
             {params.set_parameters_zero} \
             {params.freeze_parameters} \
@@ -91,7 +110,7 @@ rule significance:
             2>&1 | tee -a $LOG > {output}
 
         echo "[$(date)] Running expected significance" >> $LOG
-        {params.container_wrapper} "cd $(dirname {input}) && \
+        {params.container_wrapper} "cd $DATACARD_DIR && \
             combine -M Significance $(basename {input}) \
             --redefineSignalPOIs r{params.signallabel} \
             {params.set_parameters_zero} \
@@ -114,6 +133,10 @@ rule likelihood_scan:
     log: "output/logs/likelihood_scan_{path}__{signallabel}.log"
     shell:
         """
+        if [ "${{SLURM_PROCID:-0}}" -ne 0 ]; then
+            echo "Skipping duplicate Slurm task (SLURM_PROCID=$SLURM_PROCID)"
+            exit 0
+        fi
         LOG=$(pwd)/{log}
         mkdir -p $(dirname $LOG)
         echo "[$(date)] Starting likelihood_scan rule with signal {params.signallabel}" > $LOG
@@ -161,6 +184,10 @@ rule impacts:
     log: "output/logs/impacts_{path}__{signallabel}.log"
     shell:
         """
+        if [ "${{SLURM_PROCID:-0}}" -ne 0 ]; then
+            echo "Skipping duplicate Slurm task (SLURM_PROCID=$SLURM_PROCID)"
+            exit 0
+        fi
         LOG=$(pwd)/{log}
         mkdir -p $(dirname $LOG)
         echo "[$(date)] Starting impacts rule with signal {params.signallabel}" > $LOG
@@ -170,6 +197,7 @@ rule impacts:
         {params.container_wrapper} "cd $(dirname {input}) && \
             combineTool.py -M Impacts -d $(basename {input}) \
             --doInitialFit --robustFit 1 -m 125 \
+            --redefineSignalPOIs r{params.signallabel} \
             --setParameterRanges r{params.signallabel}=-10,10{params.set_parameters_ranges} \
             {params.set_parameters_zero} \
             -n $(basename {input} .root)" \
@@ -180,6 +208,7 @@ rule impacts:
         {params.container_wrapper} "cd $(dirname {input}) && \
             combineTool.py -M Impacts -d $(basename {input}) \
             --doFits --robustFit 1 -m 125 --parallel 4 \
+            --redefineSignalPOIs r{params.signallabel} \
             --setParameterRanges r{params.signallabel}=-10,10{params.set_parameters_ranges} \
             {params.set_parameters_zero} \
             -n $(basename {input} .root)" \
@@ -190,6 +219,7 @@ rule impacts:
         {params.container_wrapper} "cd $(dirname {input}) && \
             combineTool.py -M Impacts \
             -m 125 -n $(basename {input} .root) \
+            --redefineSignalPOIs r{params.signallabel} \
             -d $(basename {input}) \
             -o impacts_combine_$(basename {input} .root)_exp.json" \
             2>&1 | tee -a $LOG
@@ -216,6 +246,10 @@ rule gof:
     log: "output/logs/gof_{path}__{signallabel}.log"
     shell:
         """
+        if [ "${{SLURM_PROCID:-0}}" -ne 0 ]; then
+            echo "Skipping duplicate Slurm task (SLURM_PROCID=$SLURM_PROCID)"
+            exit 0
+        fi
         LOG=$(pwd)/{log}
         mkdir -p $(dirname $LOG)
         echo "[$(date)] Starting gof rule with signal {params.signallabel}" > $LOG
@@ -249,7 +283,7 @@ rule gof:
         echo "[$(date)] Plotting Goodness of Fit results" >> $LOG
         {params.container_wrapper} "cd $(dirname {input}) &&\
             plotGof.py gof_$(basename {input} .root)_{params.signallabel}.json \
-            --statistic staturated --mass 120.0 \
+            --statistic saturated --mass 120.0 \
             --output $(basename {output} .pdf)" 2>&1 | tee -a $LOG
 
         echo "[$(date)] Completed gof rule with signal {params.signallabel}" >> $LOG
@@ -269,6 +303,10 @@ rule postfit:
     log: "output/logs/postfit_{path}__{signallabel}.log"
     shell:
         """
+        if [ "${{SLURM_PROCID:-0}}" -ne 0 ]; then
+            echo "Skipping duplicate Slurm task (SLURM_PROCID=$SLURM_PROCID)"
+            exit 0
+        fi
         LOG=$(pwd)/{log}
         mkdir -p $(dirname $LOG)
         echo "[$(date)] Starting postfit rule with signal {params.signallabel}" > $LOG
@@ -295,12 +333,12 @@ rule postfit:
             --redefineSignalPOIs r{params.signallabel} \
             {params.set_parameters_zero} \
             {params.freeze_parameters} \
-            -n _$(basename {input} .root)_prefit_sb \
+            -n _$(basename {input} .root)_prefit_bonly \
             --saveShapes --saveWithUncertainties --plots" 2>&1 | tee -a $LOG
 
-        mkdir -p $(dirname {input})/fitDiagnostics_sb/
-        mv $(dirname {input})/*th1x* $(dirname {input})/fitDiagnostics_sb/ 2>/dev/null || true
-        mv $(dirname {input})/covariance* $(dirname {input})/fitDiagnostics_sb/ 2>/dev/null || true
+        mkdir -p $(dirname {input})/fitDiagnostics_bonly/
+        mv $(dirname {input})/*th1x* $(dirname {input})/fitDiagnostics_bonly/ 2>/dev/null || true
+        mv $(dirname {input})/covariance* $(dirname {input})/fitDiagnostics_bonly/ 2>/dev/null || true
 
         # echo "[$(date)] Running diffNuisances for s+b" >> $LOG
         # {params.container_wrapper} "cd $(dirname {input}) &&\
@@ -309,14 +347,15 @@ rule postfit:
         #     -a fitDiagnostics_$(basename {input} .root)_prefit_sb.root \
         #     -g diffNuisances_$(basename {input} .root)_prefit_sb.root" 2>&1 | tee -a $LOG
 
-        # echo "[$(date)] Running postfit plots for b-only" >> $LOG
+        echo "[$(date)] Running postfit plots for b-only" >> $LOG
 
         {params.container_wrapper} \
             python3 coffea4bees/plots/make_postfit_plot.py \
-                -i $(dirname {input})/fitDiagnostics_$(basename {input} .root)_prefit_sb.root \
+                -i $(dirname {input})/fitDiagnostics_$(basename {input} .root)_prefit_bonly.root \
                 -o $(dirname {input})/plots/ \
                 -c {params.channel} \
                 -s {params.signal} \
+                {params.ylog} \
                 -m coffea4bees/stats_analysis/metadata/{params.channel}.yml
 
         echo "[$(date)] Completed postfit rule with signal {params.signallabel}" >> $LOG

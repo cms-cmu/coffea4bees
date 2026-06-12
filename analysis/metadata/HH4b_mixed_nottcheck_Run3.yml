@@ -1,0 +1,17 @@
+runner:
+  workers: 4
+  worker_memory: 4GB
+
+# Friendless Run3 mixed-data analysis config for the CI cutflow regression test.
+# FvT/SvB are OFF (the freshly-mixed CI picoAOD has no classifier friend trees),
+# and ttbar subtraction is OFF (mirrors the Run2 `HH4b_nottcheck.yml` intent).
+# The cutflow assertion uses the unit-weight counts, which are pure selection on
+# the mixed output and therefore sensitive to the hemisphere matcher.
+config:
+  blind: false
+  apply_FvT: false
+  apply_trigWeight: true
+  apply_btagSF: true
+  apply_boosted_veto: false
+  run_SvB: false
+  hist_cuts: []

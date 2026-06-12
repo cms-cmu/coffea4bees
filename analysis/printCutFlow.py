@@ -160,10 +160,8 @@ if __name__ == '__main__':
 
 
     else:
-        with open(f'{args.inputFile}', 'rb') as hfile:
-            print(f"loading {args.inputFile}...")
-            hists = load(hfile)
-            #load_hists(args.inputFile)
+        print(f"loading {args.inputFile}...")
+        hists = load(args.inputFile)
 
         doTwoTag = True
         if not "cutFlowTwoTag" in hists:

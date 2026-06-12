@@ -159,7 +159,7 @@ def _build_dijets(selev, cand_cfg, isRun3):
         sr_run2 thresholds (re-used by _build_quadjets for xZZ/xZH/xHH).
     """
     canJet  = selev["canJet"]
-    pairing = [([0, 2], [0, 1], [0, 1]), ([1, 3], [2, 3], [3, 2])]
+    pairing = [np.array([[0, 2], [0, 1], [0, 1]]), np.array([[1, 3], [2, 3], [3, 2]])]
     diJet   = canJet[:, pairing[0]] + canJet[:, pairing[1]]
     diJet["lead"] = canJet[:, pairing[0]]
     diJet["subl"] = canJet[:, pairing[1]]
@@ -411,8 +411,8 @@ def _assign_output_vars(selev, diJet, quadJet, run_SvB, cand_cfg):
     selev["quadJet_selected"] = quadJet[quadJet.selected][:, 0]
     selev["passDiJetMass"]    = ak.any(quadJet.passDiJetMass, axis=1)
 
-    arg_min_close_dr = np.argmin(quadJet.close.dr, axis=1).to_numpy()
-    selev["quadJet_min_dr"] = quadJet[np.array(range(len(quadJet))), arg_min_close_dr]
+    arg_min_close_dr = ak.argmin(quadJet.close.dr, axis=1, keepdims=True)
+    selev["quadJet_min_dr"] = quadJet[arg_min_close_dr][:, 0]
 
     selev["m4j"]      = selev.v4j.mass
     selev["m4j_HHSR"] = ak.where(~selev.quadJet_selected.HHSR, -2, selev.m4j)

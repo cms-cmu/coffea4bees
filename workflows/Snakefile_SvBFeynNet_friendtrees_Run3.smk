@@ -165,7 +165,7 @@ if config['reuse_legacy_friends']:
             ]
         shell:
             """
-            PYTHONPATH=. python src/friendtrees/merge_friend_meta.py \
+            ./run_container env PYTHONPATH=. python src/friendtrees/merge_friend_meta.py \
                 -i {params.all_jsons} {input.legacy_json} \
                 -o {output} \
                 2>&1 | tee -a {log}
@@ -209,7 +209,7 @@ else:
             ]
         shell:
             """
-            PYTHONPATH=. python src/friendtrees/merge_friend_meta.py \
+            ./run_container env PYTHONPATH=. python src/friendtrees/merge_friend_meta.py \
                 -i {params.all_jsons} \
                 -o {output} \
                 2>&1 | tee -a {log}

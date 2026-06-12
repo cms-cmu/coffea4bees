@@ -46,24 +46,24 @@ data:
         total_events: 64989678
   UL16_preVFP:
     nanoAOD:
-      B: /BTagCSV/Run2016B-ver2_HIPM_UL2016_MiniAODv2_NanoAODv9-v2/NANOAOD
+      # B: /BTagCSV/Run2016B-ver2_HIPM_UL2016_MiniAODv2_NanoAODv9-v2/NANOAOD
       C: /BTagCSV/Run2016C-HIPM_UL2016_MiniAODv2_NanoAODv9-v2/NANOAOD
       D: /BTagCSV/Run2016D-HIPM_UL2016_MiniAODv2_NanoAODv9-v2/NANOAOD
       E: /BTagCSV/Run2016E-HIPM_UL2016_MiniAODv2_NanoAODv9-v2/NANOAOD
       F: /BTagCSV/Run2016F-HIPM_UL2016_MiniAODv2_NanoAODv9-v2/NANOAOD
     picoAOD:
-      B:
-        count: 77890616.0
-        files:
-        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPB/picoAOD.chunk0.root
-        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPB/picoAOD.chunk1.root
-        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPB/picoAOD.chunk2.root
-        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPB/picoAOD.chunk3.root
-        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPB/picoAOD.chunk4.root
-        - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPB/picoAOD.chunk5.root
-        missing: {}
-        saved_events: 525571
-        total_events: 77890616
+      # B:
+      #   count: 77890616.0
+      #   files:
+      #   - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPB/picoAOD.chunk0.root
+      #   - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPB/picoAOD.chunk1.root
+      #   - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPB/picoAOD.chunk2.root
+      #   - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPB/picoAOD.chunk3.root
+      #   - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPB/picoAOD.chunk4.root
+      #   - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/data_UL16_preVFPB/picoAOD.chunk5.root
+      #   missing: {}
+      #   saved_events: 525571
+      #   total_events: 77890616
       C:
         count: 30358567.0
         files:

@@ -1,10 +1,10 @@
 # change these vars #
-export LPCUSER="chuyuanl"
-export CERNUSER="c/chuyuan"
-export BASE="root://cmseos.fnal.gov//store/user/${LPCUSER}/HH4b_2024_v2"
-export MODEL="${BASE}/classifier/SvB/"
-export SvB="${BASE}/friend/SvB/"
-export FvT="${BASE}/friend/FvT/"
+export LPCUSER="algomez"
+export CERNUSER="a/algomez"
+export BASE="root://cmseos.fnal.gov//store/user/${LPCUSER}/XX4b/2024_v2/nominal_sel/"
+export MODEL="${BASE}/classifier/SvB_nominal/"
+export SvB="${BASE}/friend/SvB_nominal/"
+export FvT="${BASE}/friend/FvT_nominal/"
 export PLOT="root://eosuser.cern.ch//eos/user/${CERNUSER}/www/HH4b/classifier/HH4b_2024_v2/"
 #####################
 
@@ -25,15 +25,15 @@ fi
     -setting Monitor "address: :${port}" -flag debug
 
 # plot the AUC and ROC
-./src/pyml.py analyze \
-    --results ${MODEL}/result.json \
-    -analysis HCR.LossROC \
-    -setting IO "output: ${PLOT}" \
-    -setting IO "report: SvB" \
-    -setting Monitor "address: :${port}"
+# ./src/pyml.py analyze \
+#     --results ${MODEL}/result.json \
+#     -analysis HCR.LossROC \
+#     -setting IO "output: ${PLOT}" \
+#     -setting IO "report: SvB" \
+#     -setting Monitor "address: :${port}"
 
-# evaluate
-./src/pyml.py \
-    template "{model: ${MODEL}, SvB: ${SvB}}" $WFS/evaluate.yml \
-    -from $WFS/../common.yml \
-    -setting Monitor "address: :${port}"
+# # evaluate
+# ./src/pyml.py \
+#     template "{model: ${MODEL}, SvB: ${SvB}}" $WFS/evaluate.yml \
+#     -from $WFS/../common.yml \
+#     -setting Monitor "address: :${port}"

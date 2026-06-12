@@ -45,11 +45,11 @@ class Legacy_HCREnsemble(networks.HCREnsemble):
         # ancillary features
         a = torch.zeros(n, 4)
         a[:, 0] = float(event.metadata["year"][3])
-        a[:, 1] = torch.tensor(event.nJet_selected)
-        a[:, 2] = torch.tensor(event.xW)
-        a[:, 3] = torch.tensor(event.xbW)
+        a[:, 1] = torch.tensor(ak.to_numpy(event.nJet_selected))
+        a[:, 2] = torch.tensor(ak.to_numpy(event.xW))
+        a[:, 3] = torch.tensor(ak.to_numpy(event.xbW))
         # event offset
-        e = torch.tensor(event.event) % 3
+        e = torch.tensor(ak.to_numpy(event.event).astype('int64')) % 3
 
         c_logits, q_logits = self.forward(j, o, a, e)
         return F.softmax(c_logits, dim=-1).numpy(), F.softmax(q_logits, dim=-1).numpy()
@@ -171,6 +171,60 @@ class HCREnsemble:
                 case "xbW":
                     a[:, i] = torch.tensor(event.xbW)
         # event offset
+        batch[KFold.offset] = torch.from_numpy(event.event.to_numpy().view("int64"))
+
+        c_logits = torch.zeros(n, len(self.classes), dtype=torch.float32)
+        q_logits = torch.zeros(n, 3, dtype=torch.float32)
+        for model in self.models:
+            mask = model.splitter.split(batch)[SplitterKeys.validation]
+            c_logits[mask], q_logits[mask] = model(j[mask], o[mask], a[mask])
+
+        return F.softmax(c_logits, dim=-1).numpy(), F.softmax(q_logits, dim=-1).numpy()
+
+
+class HCREnsemble_lowpt(HCREnsemble):
+    """HCREnsemble variant for the lowpt selection.
+
+    Identical to HCREnsemble except the ``nSelJets`` ancillary feature is read
+    from ``event.nSelJets_lowpt`` (lowpt jet count) instead of
+    ``event.nJet_selected`` (standard jet count), matching what the Snakemake
+    evaluate path reads from the HCR_input_lowpt friend tree.
+    """
+
+    @torch.no_grad()
+    def __call__(self, event: ak.Array) -> tuple[npt.NDArray, npt.NDArray]:
+        n = len(event)
+        batch: BatchType = {
+            Input.CanJet: torch.zeros(n, 4, 4, dtype=torch.float32),
+            Input.NotCanJet: torch.zeros(n, 5, self.n_othjets, dtype=torch.float32),
+            Input.ancillary: torch.zeros(n, len(self.ancillary), dtype=torch.float32),
+        }
+        j = batch[Input.CanJet]
+        for i, k in enumerate(("pt", "eta", "phi", "mass")):
+            j[:, i, :] = torch.tensor(event.canJet[k])
+        o = batch[Input.NotCanJet]
+        for i, k in enumerate(("pt", "eta", "phi", "mass", "isSelJet")):
+            o[:, i, :] = torch.tensor(
+                ak.fill_none(
+                    ak.to_regular(
+                        ak.pad_none(
+                            event.notCanJet_coffea[k], target=self.n_othjets, clip=True
+                        )
+                    ),
+                    -1,
+                )
+            )
+        a = batch[Input.ancillary]
+        for i, k in enumerate(self.ancillary):
+            match k:
+                case "year":
+                    a[:, i] = self.get_year(event.metadata["year"])
+                case "nSelJets_lowpt":
+                    a[:, i] = torch.tensor(event.nSelJets_lowpt)
+                case "xW":
+                    a[:, i] = torch.tensor(event.xW)
+                case "xbW":
+                    a[:, i] = torch.tensor(event.xbW)
         batch[KFold.offset] = torch.from_numpy(event.event.to_numpy().view("int64"))
 
         c_logits = torch.zeros(n, len(self.classes), dtype=torch.float32)

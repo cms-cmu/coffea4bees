@@ -1,8 +1,10 @@
 runner:
-  workers: 4
-  worker_memory: 8GB
+  # workers: 4
+  # worker_memory: 8GB
   # friend_base: output/ 
-  chunksize: 10000
+  # chunksize: 10000
+  dashboard_address: 0
+
 
 config:
   blind: false 

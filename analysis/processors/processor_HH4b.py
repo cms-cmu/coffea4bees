@@ -51,7 +51,8 @@ from src.hist_tools import Fill
 from src.data_formats.root import Chunk, TreeReader
 from coffea import processor
 from coffea.analysis_tools import PackedSelection
-from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
+from coffea.nanoevents import NanoAODSchema
+from src.compat import nano_from_root
 from coffea.util import load
 from memory_profiler import profile
 import psutil
@@ -234,6 +235,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         candidates_selection_cfg: str = "coffea4bees/analysis/metadata/candidates_selection_thresholds.yml",
         parking_lumi_cfg: str = _PARKING_LUMI_CFG_DEFAULT,
         year_override: bool = False,
+        compute_hemi_mixing_diagnostics: bool = False,
     ):
 
         logging.debug("\nInitialize Analysis Processor")
@@ -294,6 +296,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.return_events_for_display = return_events_for_display
         self.year_override = year_override
         self.parking_lumi_cfg = load_parking_lumi_cfg(parking_lumi_cfg) if parking_lumi_cfg else None
+        self.compute_hemi_mixing_diagnostics = compute_hemi_mixing_diagnostics
 
         # Track top 20 events with largest ps_hh across all chunks
         self.top_ps_hh_events = []
@@ -522,7 +525,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         label = shift_name or "nominal"
 
         # Copy weights to avoid modifying the original
-        weights = copy.copy(weights)
+        weights = copy.deepcopy(weights)
 
         with self._stage(f"{label}:apply_selection"):
             # Apply object selection
@@ -601,6 +604,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     self.fill_cutflow_with_and_without_trig("pass_ttbar_filter", event[sel_mask], weights, sel_mask)
                 analysis_selections = selections.all(*allcuts)
                 selev = selev[pass_ttbar_filter_selev]
+
+        if len(selev) == 0:
+            return processOutput
 
         with self._stage(f"{label}:reconstruct_tops"):
             # Reconstruct top candidates
@@ -730,8 +736,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
                 FvT_name = event.metadata["FvT_name"]
                 event["FvT"] = getattr(
-                    NanoEventsFactory.from_root(
-                        f'{event.metadata["FvT_file"]}',
+                    nano_from_root(
+                        {f'{event.metadata["FvT_file"]}': "Events"},
                         entry_start=self.estart,
                         entry_stop=self.estop,
                         schemaclass=FriendTreeSchema,
@@ -754,8 +760,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 # Use the first to define the FvT weights
                 #
                 event["FvT"] = getattr(
-                    NanoEventsFactory.from_root(
-                        f'{event.metadata["FvT_files"][0]}',
+                    nano_from_root(
+                        {f'{event.metadata["FvT_files"][0]}': "Events"},
                         entry_start=self.estart,
                         entry_stop=self.estop,
                         schemaclass=FriendTreeSchema,
@@ -775,8 +781,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 for _FvT_name, _FvT_file in zip( event.metadata["FvT_names"], event.metadata["FvT_files"] ):
 
                     event[_FvT_name] = getattr(
-                        NanoEventsFactory.from_root(
-                            f"{_FvT_file}",
+                        nano_from_root(
+                            {f"{_FvT_file}": "Events"},
                             entry_start=self.estart,
                             entry_stop=self.estop,
                             schemaclass=FriendTreeSchema,
@@ -788,8 +794,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
             else:
                 event["FvT"] = (
-                    NanoEventsFactory.from_root(
-                        f'{self.fname.replace("picoAOD", "FvT")}',
+                    nano_from_root(
+                        {f'{self.fname.replace("picoAOD", "FvT")}': "Events"},
                         entry_start=self.estart,
                         entry_stop=self.estop,
                         schemaclass=FriendTreeSchema
@@ -882,8 +888,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             svb_file = f'{self.path}/{svb_name}{SvB_suffix}.root' if 'mix' in self.dataset else f'{self.fname.replace("picoAOD", f"{svb_name}{SvB_suffix}")}'
             try:
                 event[svb_name] = (
-                    NanoEventsFactory.from_root(
-                        svb_file,
+                    nano_from_root(
+                        {svb_file: "Events"},
                         entry_start=self.estart,
                         entry_stop=self.estop,
                         schemaclass=FriendTreeSchema
@@ -893,7 +899,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 if not ak.all(getattr(event, svb_name).event == event.event):
                     raise ValueError(f"ERROR: {svb_name} events do not match events ttree")
                 setSvBVars(svb_name, event)
-            except FileNotFoundError:
+            except (FileNotFoundError, OSError):
                 logging.info(f"No {svb_name} source configured (no friend, classifier, or ROOT file at {svb_file}). Skipping.")
 
     def boosted_veto(self, event):
@@ -1150,7 +1156,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             adding_top_reco_to_event(selev, top_cand)
         elif self.top_reconstruction in ["slow", "fast"]:
             # Sort jets by b-tagging score
-            selev.selJet = selev.selJet[ak.argsort(selev.selJet.btagScore, axis=1, ascending=False)]
+            selev["selJet"] = selev.selJet[ak.argsort(selev.selJet.btagScore, axis=1, ascending=False)]
 
             if self.top_reconstruction == "slow":
                 top_cands = find_tops_slow(selev.selJet)
@@ -1488,6 +1494,50 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 logging.warning("selev.SvB_MA does not have ps_hh attribute")
             processOutput['top_ps_hh_events'] = []
 
+    def _attach_hemi_mixing_diagnostics(self, selev):
+        """Compute per-hemi 4-vector sums for closure diagnostics.
+
+        Splits each event's jets into +/- hemispheres using the transverse-
+        thrust axis and stores eta/pt/pz/mass of the per-hemi 4-vector sum
+        for three jet collections:
+
+          can    -- canJet            (4 HH-candidate jets per event)
+          sel    -- selJet            (all selected jets, what matching pins)
+          other  -- notCanJet_coffea  (the non-candidate selected jets)
+
+        See ~/ClaudeBrain/physics/hemisphere-mixing-toy for the motivation.
+        """
+        from coffea4bees.hemisphere_mixing.mixing_helpers import (
+            transverse_thrust_awkward_fast,
+            split_hemispheres,
+        )
+        thrust = transverse_thrust_awkward_fast(
+            selev.Jet, n_steps=720, refine_rounds=2)
+
+        # "all"   = event.Jet  -- the collection the matching variables are
+        #                          actually computed over (see compute_hemi_vars
+        #                          in mixing_helpers.py).
+        # "can"   = canJet     -- HH candidate jets (4 per event); HH observable.
+        # "other" = notCanJet  -- selJet minus canJet; the slack carrier.
+        collections = [
+            ('can',   selev.canJet),
+            ('all',   selev.Jet),
+            ('other', selev.notCanJet_coffea),
+        ]
+        for prefix, coll in collections:
+            pos, neg = split_hemispheres(coll, thrust)
+            s_pos = pos.sum(axis=1)
+            s_neg = neg.sum(axis=1)
+            selev[f'hemi_{prefix}_pos_pt']   = s_pos.pt
+            selev[f'hemi_{prefix}_pos_eta']  = s_pos.eta
+            selev[f'hemi_{prefix}_pos_pz']   = s_pos.pz
+            selev[f'hemi_{prefix}_pos_mass'] = s_pos.mass
+            selev[f'hemi_{prefix}_neg_pt']   = s_neg.pt
+            selev[f'hemi_{prefix}_neg_eta']  = s_neg.eta
+            selev[f'hemi_{prefix}_neg_pz']   = s_neg.pz
+            selev[f'hemi_{prefix}_neg_mass'] = s_neg.mass
+        return selev
+
     def histograms(self, event, selev, weights, analysis_selections, shift_name):
         """Fill histograms for analysis.
 
@@ -1508,6 +1558,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         if self.classifier_FvT: apply_FvT = True
         else: apply_FvT = self.apply_FvT
 
+        if self.compute_hemi_mixing_diagnostics:
+            selev = self._attach_hemi_mixing_diagnostics(selev)
+
         if not self.run_systematics:
             ## this can be simplified
             hist_nom = filling_nominal_histograms(
@@ -1527,6 +1580,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 isDataForMixed=self.config['isDataForMixed'],
                 event_metadata=event.metadata,
                 year_override=self.year_override,
+                compute_hemi_mixing_diagnostics=self.compute_hemi_mixing_diagnostics,
             )
             if not self.plot_ttbar_with_weights and not self.plot_ttbar_with_MvD_weights:
                 return hist_nom

@@ -6,14 +6,15 @@ main:
   module: evaluate
   option:
     - --max-evaluators 3 # use 3 workers to evaluate
+    - --device cuda cpu # use GPU if available, fall back to CPU
 
 dataset:
   - module: HCR.FvT.Eval
     option:
-      - --metadata coffea4bees/metadata/datasets_HH4b_2024_v2
+      - --metadata coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/
       - --max-workers 8 # use 8 workers to fetch metadatas for ROOT files
       - --data-source detector
-      - --friends "" coffea4bees/metadata/datasets_HH4b_2024_v2_classifier_input.json@@HCR_input
+      - --friends "" coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/classifier_inputs_nominal.json@@HCR_input
 
 model:
   - module: HCR.FvT.baseline.Eval

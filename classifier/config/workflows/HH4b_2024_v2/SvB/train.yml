@@ -12,6 +12,8 @@ model:
   - module: HCR.SvB.ggF.baseline.Train
     option:
       - --roc-signal-by-category # calculate ROC by category
+      - --kfold-seed SvB random
+      - --kfold-seed-offsets 0
       - --training FixedStep
       - epoch: 20
         bs_init: 1024
@@ -22,16 +24,16 @@ model:
 dataset:
   - module: HCR.SvB.Background # load background dataset
     option:
-      - --metadata datasets_HH4b_2024_v2
+      - --metadata coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/
       - --norm 3
-      - --JCM-weight "" analysis/weights/JCM/2024_v2/jetCombinatoricModel_SB_2024_v2.yml@@JCM_weights
-      - --friends "" metadata/datasets_HH4b_2024_v2_classifier_input.json@@HCR_input
+      - --JCM-weight "" coffea4bees/analysis/weights/JCM/2024_v2_nominal/jetCombinatoricModel_SB_2024_v2.yml@@JCM_weights
+      - --friends "" coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/classifier_inputs_nominal.json@@HCR_input 
       - --friends label:data {FvT}/result.json@@analysis.0.merged # setup the path to FvT friend tree
 
   - module: HCR.SvB.Signal # load signal dataset
     option:
-      - --metadata datasets_HH4b_2024_v2
-      - --friends "" metadata/datasets_HH4b_2024_v2_classifier_input.json@@HCR_input
+      - --metadata coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/
+      - --friends "" coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/classifier_inputs_nominal.json@@HCR_input 
 
 setting:
   - module: IO

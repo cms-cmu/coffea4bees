@@ -303,6 +303,10 @@ NUMEXPR_MAX_THREADS="${SLURM_CPUS_PER_TASK:-4}"
 export NUMEXPR_MAX_THREADS
 log_msg "NUMEXPR_MAX_THREADS set to $NUMEXPR_MAX_THREADS"
 
+# Prevent concurrent jobs sharing the same NFS workspace from racing to write
+# __pycache__ files, which can produce corrupt .pyc reads and ImportErrors.
+export PYTHONDONTWRITEBYTECODE=1
+
 log_msg "Running with config file: $EFFECTIVE_CONFIG"
 log_msg "Running $DATASETS $YEAR - output ${OUTPUT_DIR}${OUTPUT_FILENAME}"
 
@@ -365,6 +369,10 @@ display_section_header "Output files"
 EXPECTED_OUTPUT="${OUTPUT_DIR}${OUTPUT_FILENAME}"
 if [ -f "$EXPECTED_OUTPUT" ]; then
     log_msg "Output file created successfully: $EXPECTED_OUTPUT ($(du -h "$EXPECTED_OUTPUT" | cut -f1))"
+    # Flush NFS writes so Snakemake controller can see the file immediately
+    sync
+    sleep 60
+
 else
     log_msg "ERROR: Expected output file not found: $EXPECTED_OUTPUT"
     exit 1

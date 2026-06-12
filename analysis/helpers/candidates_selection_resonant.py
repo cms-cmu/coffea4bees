@@ -112,7 +112,7 @@ def create_cand_jet_dijet_quadjet(
 
     # Build diJets, indexed by diJet[event,pairing,0/1]
     canJet = selev["canJet"]
-    pairing = [([0, 2], [0, 1], [0, 1]), ([1, 3], [2, 3], [3, 2])]
+    pairing = [np.array([[0, 2], [0, 1], [0, 1]]), np.array([[1, 3], [2, 3], [3, 2]])]
     diJet = canJet[:, pairing[0]] + canJet[:, pairing[1]]
     diJet["lead"] = canJet[:, pairing[0]]
     diJet["subl"] = canJet[:, pairing[1]]
@@ -316,9 +316,8 @@ def create_cand_jet_dijet_quadjet(
     #  Build the close dR and other quadjets
     #    (There is Probably a better way to do this ...
     #
-    arg_min_close_dr = np.argmin(quadJet.close.dr, axis=1)
-    arg_min_close_dr = arg_min_close_dr.to_numpy()
-    selev["quadJet_min_dr"] = quadJet[ np.array(range(len(quadJet))), arg_min_close_dr ]
+    arg_min_close_dr = ak.argmin(quadJet.close.dr, axis=1, keepdims=True)
+    selev["quadJet_min_dr"] = quadJet[arg_min_close_dr][:, 0]
 
 
     selev["m4j"] = selev.v4j.mass
