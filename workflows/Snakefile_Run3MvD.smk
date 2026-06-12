@@ -21,6 +21,17 @@ _dsn_tag     = "" if config['dataset_name'] == "mixeddata_all" \
                else config['dataset_name'].removeprefix("mixeddata_all_") or config['dataset_name']
 _install_tag = "_".join(filter(None, [_mode_tag, _dsn_tag]))
 
+# Optional campaign tag (e.g. 'pt25') distinguishing object-selection /
+# threshold variants. Folded into the shared data+TT histogram dir
+# (SHARED_OUT_MvD below) so a different jet-pT acceptance — e.g. the 25 GeV
+# 2023 acceptance applied via the committed era_overrides resolver — neither
+# reuses nor clobbers the untagged-threshold shared hists. The per-rank
+# outputs are already pt-distinct via _dsn_tag, so only the rank-shared
+# data+TT dir needs this. Matches the `tag` knob in
+# Snakefile_Run3_make_mixeddata.smk. Empty by default.
+config.setdefault('tag', '')
+_tag_suffix  = f"_{config['tag']}" if config['tag'] else ''
+
 # When running on a non-legacy dataset_name (e.g. mixeddata_all_rank0),
 # default to reusing the legacy data/TT classifier inputs instead of
 # regenerating them. data/TT inputs don't change with rank, so this saves
@@ -114,7 +125,7 @@ use rule install_classifier_inputs    from classifier_inputs
 # (pre-JCM, pre-MvD-weight) data + TT outputs only depend on (mode); they're
 # identical across ranks, so sharing them avoids 16 redundant condor jobs
 # per rank run. mixeddata stays rank-specific in {out}histograms/.
-SHARED_OUT_MvD = f"output/Run3_MvD_shared_{config['mode']}/"
+SHARED_OUT_MvD = f"output/Run3_MvD_shared_{config['mode']}{_tag_suffix}/"
 SHARED_DATASETS = ['TTToSemiLeptonic', 'TTToHadronic', 'TTTo2L2Nu', 'data']
 
 

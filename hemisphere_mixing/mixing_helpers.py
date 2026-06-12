@@ -14,69 +14,74 @@ from src.math_tools.random import Squares
 
 
 @nb.njit(cache=True)
-def _thrust_event_numba(px_i, py_i, n_steps=720):
-    phis = np.linspace(0.0, 2.0*np.pi, n_steps)
+def _thrust_all_events_numba(px_flat, py_flat, offsets, n_steps):
+    # Coarse transverse-thrust scan for every event in one compiled pass.
+    # px_flat/py_flat are the jets of all events concatenated; offsets[e]:offsets[e+1]
+    # delimits event e. Per-event math is identical to the old per-event kernel
+    # (build |px*cos + py*sin|, sum over jets, argmax over angles) so results are
+    # bit-for-bit unchanged — this just removes the Python-level per-event loop.
+    n_events = len(offsets) - 1
+    phis  = np.linspace(0.0, 2.0*np.pi, n_steps)
     cos_t = np.cos(phis)
     sin_t = np.sin(phis)
 
-    pTi = np.hypot(px_i, py_i)
-    #denom = pTi.sum()
-    #if denom == 0.0:
-    #    return np.nan, 0.0, 0.0, 0.0, 0.0
+    out_phi = np.empty(n_events)
+    out_nx  = np.empty(n_events); out_ny = np.empty(n_events)
+    out_mx  = np.empty(n_events); out_my = np.empty(n_events)
 
-    proj = np.abs(px_i[:, None]*cos_t[None,:] + py_i[:, None]*sin_t[None,:])
-    sums = proj.sum(axis=0)
-    best_idx = np.argmax(sums)
-    best_phi = phis[best_idx]
-    best_sum = sums[best_idx]
+    for e in range(n_events):
+        start = offsets[e]; stop = offsets[e + 1]
+        if stop == start:
+            out_phi[e] = np.nan
+            out_nx[e] = np.nan; out_ny[e] = np.nan
+            out_mx[e] = np.nan; out_my[e] = np.nan
+            continue
 
-    nx, ny = np.cos(best_phi), np.sin(best_phi)
-    mx, my = -ny, nx
-    #T = best_sum/denom
-    #T_minor = np.sum(np.abs(-px_i*ny + py_i*nx))/denom
-    return best_phi, nx, ny, mx, my
+        px_i = px_flat[start:stop]
+        py_i = py_flat[start:stop]
+        proj = np.abs(px_i[:, None]*cos_t[None, :] + py_i[:, None]*sin_t[None, :])
+        sums = proj.sum(axis=0)
+        best_idx = np.argmax(sums)
+        best_phi = phis[best_idx]
 
+        out_phi[e] = best_phi
+        out_nx[e] = np.cos(best_phi); out_ny[e] =  np.sin(best_phi)
+        out_mx[e] = -np.sin(best_phi); out_my[e] = np.cos(best_phi)
+
+    return out_phi, out_nx, out_ny, out_mx, out_my
 
 
 def transverse_thrust_awkward_fast(p4, n_steps=720, refine_rounds=0, refine_factor=6):
     """
-    Fully Awkward-1.x–compatible computation of transverse thrust (T)
-    and thrust minor (T_minor) for jagged Momentum4D objects.
-    Works directly on e.g. events.Jet.
+    Coarse transverse-thrust axis for jagged Momentum4D objects (e.g. events.Jet).
 
-    n_steps number of coarse angular steps (default: 720->0.5 degree granularity)
-    refine_rounds: how many times to zoom in around the best angle (optional)
-    refine_factor: how much denser each refinement grid is
+    n_steps: number of coarse angular steps (default 720 -> 0.5 degree granularity).
+    refine_rounds/refine_factor: accepted for signature compatibility but unused
+    (this "fast" path is coarse-only; see transverse_thrust_awkward for refinement).
+
+    Vectorized over events: the per-event scan runs in a single numba pass over the
+    flattened jets instead of a Python loop, with identical numerics.
     """
-    #if not (hasattr(p4, "px") and hasattr(p4, "py")):
-    #    raise ValueError("Input must have Momentum4D behavior (with .px/.py).")
-
     px, py = p4.px, p4.py
 
-    # Precompute angular grid
-    phis = np.linspace(0.0, 2.0 * np.pi, num=n_steps, endpoint=False)
-    cos_t = np.cos(phis)
-    sin_t = np.sin(phis)
+    # Flatten jagged jets to 1D + per-event offsets for the numba kernel. Keep the
+    # native float dtype (no cast) so the scan is bit-identical to the old path.
+    counts  = ak.to_numpy(ak.num(px, axis=1)).astype(np.int64)
+    offsets = np.empty(len(counts) + 1, dtype=np.int64)
+    offsets[0] = 0
+    np.cumsum(counts, out=offsets[1:])
+    px_flat = np.ascontiguousarray(ak.to_numpy(ak.flatten(px, axis=1)))
+    py_flat = np.ascontiguousarray(ak.to_numpy(ak.flatten(py, axis=1)))
 
-    # loop on events
-    all_phi, all_nx, all_ny, all_mx, all_my = [], [], [], [], []
-    for px_i, py_i in zip(px, py):
-        px_np, py_np = np.asarray(px_i), np.asarray(py_i)
-        if len(px_np) == 0:
-            all_phi.append(np.nan)
-            all_nx.append(np.nan); all_ny.append(np.nan)
-            all_mx.append(np.nan); all_my.append(np.nan)
-            continue
-        th, nx, ny, mx, my = _thrust_event_numba(px_np, py_np, n_steps)
-        all_phi.append(th)
-        all_nx.append(nx); all_ny.append(ny)
-        all_mx.append(mx); all_my.append(my)
+    out_phi, out_nx, out_ny, out_mx, out_my = _thrust_all_events_numba(
+        px_flat, py_flat, offsets, n_steps
+    )
 
     # pack back into an Awkward array of records
     return ak.zip({
-        "phi": np.array(all_phi),
-        "axis": ak.zip({"nx": np.array(all_nx), "ny": np.array(all_ny)}),
-        "minor": ak.zip({"nx": np.array(all_mx), "ny": np.array(all_my)}),
+        "phi": out_phi,
+        "axis": ak.zip({"nx": out_nx, "ny": out_ny}),
+        "minor": ak.zip({"nx": out_mx, "ny": out_my}),
     })
 
 
