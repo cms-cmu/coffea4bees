@@ -1,0 +1,25 @@
+runner:
+  workers: 4
+  worker_memory: 5GB
+  # worker_memory: 7GB
+  # friend_base: hists/local/
+  # chunksize: 10000
+  chunksize: 100000
+  worker_log_directory: /uscms_data/d3/jda102/HH4b/Run3/barista/dask_logs
+
+config:
+  blind: false
+  apply_FvT: false
+  apply_trigWeight: true
+  apply_btagSF: true
+  apply_boosted_veto: false
+  run_SvB: false
+  top_reconstruction: fast
+  fourTag_use_tight: true
+  fill_histograms: false
+  # pt25 variant: HCR_input friend trees written to a pt-tagged EOS path so the
+  # 25-GeV-in-2023 acceptance (committed era_overrides resolver) does not clobber
+  # the legacy 30-GeV data/TT trees at Run3ClassiferInputs_quadjet_run2 that the
+  # existing quadjet_run2 FvT/analyses depend on.
+  make_classifier_input: root://cmseos.fnal.gov//store/user/jda102/XX4b/Run3ClassiferInputs_quadjet_run2_pt25
+  candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_quadjet_run2.yml"
