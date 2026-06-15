@@ -393,7 +393,7 @@ rule create_friends_MvD:
     shell:
         """
         sed \
-            -e 's|    MvD:.*|    MvD: {params.mvd_path}|' \
+            -e 's|    #*MvD:.*|    MvD: {params.mvd_path}|' \
             -e 's|    SvB:.*|    SvB: "{input.svb_json}@@SvB"|' \
             -e 's|    SvB_MA:.*|    SvB_MA: "{input.svb_json}@@SvB_MA"|' \
             -e 's|    SvB_FeynNet:.*|    SvB_FeynNet: "{input.feynet_json}@@SvB_FeynNet"|' \
