@@ -52,7 +52,7 @@ stack:
                 label: $t\bar{t}$
 
         Multijet:
-                process: mixeddata_all
+                process: mixeddata_all_rank0
                 tag: fourTag
                 fillcolor: "#FFDF7Fff"
                 edgecolor: k
