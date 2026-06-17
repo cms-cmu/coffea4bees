@@ -45,7 +45,7 @@ variables:
   ANALYSIS_IMAGE_TAG: "latest"
   # DATASET: metadata/datasets_HH4b_cernbox.yml
   # DATASET_RUN3: metadata/datasets_HH4b_Run3_cernbox.yml
-  RUN_REANA: "false"
+  RUN_REANA: "true"
 
 include:
   - local: workflows/gitlab-CI/stages_code.yml
