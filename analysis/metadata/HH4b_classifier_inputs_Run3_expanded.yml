@@ -1,0 +1,25 @@
+runner:
+  workers: 4
+  worker_memory: 5GB
+  # worker_memory: 7GB
+  # friend_base: hists/local/
+  # chunksize: 10000
+  chunksize: 100000
+
+config:
+  blind: false
+  apply_FvT: false
+  apply_trigWeight: true
+  apply_btagSF: true
+  apply_boosted_veto: false
+  run_SvB: false
+  top_reconstruction: fast
+  fill_histograms: false
+  # Expanded per-jet canJet feature set (btagScore, PNet flavor outputs, nSVs,
+  # energy fractions, area, rawFactor, HF shape vars, ...). Written to a
+  # dedicated EOS subdir so it never collides with the legacy classifier inputs.
+  # Classifier-agnostic: usable for SvB, FvT, and MvD training alike.
+  make_classifier_input: root://cmseos.fnal.gov//store/user/jda102/XX4b/Run3ClassiferInputs_expanded
+  #make_friend_FvT_weight: root://cmseos.fnal.gov//store/user/jda102/XX4b/Run3ClassiferInputs_expanded
+  #make_classifier_input: hists/local/   ### local
+  #make_friend_FvT_weight: hists/local/   ### local
