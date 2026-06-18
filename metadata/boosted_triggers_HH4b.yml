@@ -1,0 +1,16 @@
+triggers:  
+  # Run3 triggers
+  2022_EE: &triggers_2022
+    - AK8PFJet230_SoftDropMass40
+    - AK8PFJet425_SoftDropMass40
+    - AK8PFJet250_SoftDropMass40_PFAK8ParticleNetBB0p35
+  2022_preEE: *triggers_2022
+  2023_BPix: &triggers_2023
+    - AK8PFJet230_SoftDropMass40
+    - AK8PFJet425_SoftDropMass40
+    - AK8PFJet250_SoftDropMass40_PFAK8ParticleNetBB0p35
+    - AK8PFJet230_SoftDropMass40_PFAK8ParticleNetBB0p06
+  2023_preBPix: *triggers_2023
+  # '2024': 
+  #   - PFHT250_QuadPFJet25_PNet2BTagMean0p55
+  #   - PFHT280_QuadPFJet30_PNet2BTagMean0p55

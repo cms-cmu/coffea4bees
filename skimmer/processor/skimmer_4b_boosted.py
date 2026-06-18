@@ -1,6 +1,7 @@
 import logging
 
 import numpy as np
+import awkward as ak
 from coffea.analysis_tools import PackedSelection, Weights
 
 from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
@@ -38,11 +39,12 @@ class Skimmer(Skimmer4b):
                                       corrections_metadata=self.corrections_metadata[year],
                                       isMC=config["isMC"],
                                       run_systematics=False,
-                                      dataset=dataset
+                                      dataset=dataset,
+                                      collection="FatJet"
                                       )
-            event["Jet"] = jets
+            event["FatJet"] = jets
 
-        event = apply_boosted_4b_selection(event)
+        event["passBoostedSel"] = ak.num( event.FatJet, axis=1 ) >= 2
 
         weights = Weights(len(event), storeIndividual=True)
 
@@ -56,7 +58,7 @@ class Skimmer(Skimmer4b):
         selections.add( "lumimask", event.lumimask)
         selections.add( "passNoiseFilter", event.passNoiseFilter)
         selections.add( "passHLT", ( event.passHLT if config["cut_on_HLT_decision"] else np.full(len(event), True)  ) )
-        selections.add( "passBoostedSel", event.passBoostedSel)
+        selections.add( "passBoostedSel", event.passBoostedSel )
 
         event["weight"] = weights.weight()
 
@@ -69,8 +71,6 @@ class Skimmer(Skimmer4b):
             cumulative_cuts.append(cut)
             self._cutFlow.fill( cut, event[selections.all(*cumulative_cuts)], allTag=True )
 
-        selection = event.lumimask & event.passNoiseFilter & event.passBoostedSel
-
-        if not config["isMC"]: selection = selection & event.passHLT
+        selection = event.lumimask & event.passNoiseFilter & event.passHLT & event.passBoostedSel
 
         return selection
