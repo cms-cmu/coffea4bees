@@ -1,10 +1,10 @@
 runner:
   workers: 4
-  worker_memory: 5GB
-  # worker_memory: 7GB
+  # Expanded canJet feature set makes each event heavier; 5GB/100k OOM'd
+  # (KilledWorker on TTToSemiLeptonic). Bump memory + halve chunksize.
+  worker_memory: 8GB
   # friend_base: hists/local/
-  # chunksize: 10000
-  chunksize: 100000
+  chunksize: 50000
 
 config:
   blind: false
