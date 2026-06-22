@@ -30,6 +30,54 @@ def load_object_selection_config(path: str) -> dict:
         return yaml.safe_load(f)
 
 
+def _deep_merge(base: dict, override: dict) -> dict:
+    """Recursively merge ``override`` onto a copy of ``base``.
+
+    Nested dicts are merged key-by-key; any non-dict value in ``override``
+    replaces the corresponding value in ``base``.
+    """
+    out = dict(base)
+    for k, v in (override or {}).items():
+        if isinstance(v, dict) and isinstance(out.get(k), dict):
+            out[k] = _deep_merge(out[k], v)
+        else:
+            out[k] = v
+    return out
+
+
+def resolve_object_selection_config(cfg: dict, year) -> dict:
+    """Resolve era-specific threshold overrides for a given ``year``.
+
+    The config may contain a top-level ``era_overrides`` block mapping a
+    year-prefix (e.g. ``"2023"``) to a partial threshold tree. Every override
+    whose key is a prefix of ``year`` is deep-merged onto the base config, with
+    longer (more specific) prefixes applied last so they win. The base config
+    is returned unchanged when there are no overrides or no match, so callers
+    that pass a plain config (or ``None``) are unaffected.
+
+    Parameters
+    ----------
+    cfg : dict
+        The loaded object-selection config (output of
+        :func:`load_object_selection_config`), possibly ``None``.
+    year : str
+        The era string, e.g. ``"2022_EE"`` or ``"2023_BPix"``.
+
+    Returns
+    -------
+    dict
+        A new config dict with the matching era overrides applied, or the
+        original ``cfg`` when nothing applies.
+    """
+    if not cfg or 'era_overrides' not in cfg:
+        return cfg
+    base = {k: v for k, v in cfg.items() if k != 'era_overrides'}
+    for key in sorted(cfg['era_overrides'], key=len):   # longest prefix wins
+        if str(year).startswith(str(key)):
+            base = _deep_merge(base, cfg['era_overrides'][key])
+    return base
+
+
 def muon_selection(muon: ak.Array, isRun3: bool = False, sel_cfg: dict = None) -> ak.Array:
     """
     Selects muons based on kinematic, isolation, and identification criteria.
@@ -147,7 +195,7 @@ def lepton_selection(event: ak.Array, isRun3: bool = False, sel_cfg: dict = None
     # Select electrons if present
     if 'Electron' in event.fields:
         event['selElec'] = electron_selection(event.Electron, isRun3, sel_cfg)
-        event['selLepton'] = ak.concatenate([event.selElec, event.selMuon], axis=1)
+        event['selLepton'] = ak.with_name(ak.concatenate([event.selElec, event.selMuon], axis=1), name="PtEtaPhiMCandidate")
     else:
         event['selLepton'] = event.selMuon
 
@@ -354,6 +402,8 @@ def jet_selection(
     event['Jet', 'tagged_loose'] = event.Jet.selected & (event.Jet.btagScore >= corrections_metadata['btagWP']['L'])
     event['Jet', 'tagged_run2'] = event.Jet.selected_run2 & (event.Jet.btagScore >= corrections_metadata['btagWP']['M'])
     event['Jet', 'tagged_loose_run2'] = event.Jet.selected_run2 & (event.Jet.btagScore >= corrections_metadata['btagWP']['L'])
+    if 'T' in corrections_metadata['btagWP']:
+        event['Jet', 'tagged_tight'] = event.Jet.selected & (event.Jet.btagScore >= corrections_metadata['btagWP']['T'])
 
     # Forward jet flag for FeynNet inputs.
     # Uses btagScore directly (not the 'tagged' flag) so b-tag exclusion applies
@@ -383,6 +433,8 @@ def jet_selection(
     event['tagJet_loose'] = event.selJet[event.selJet.tagged_loose]
     event['nJet_tagged'] = ak.num(event.tagJet)
     event['nJet_tagged_loose'] = ak.num(event.tagJet_loose)
+    if 'tagged_tight' in event.Jet.fields:
+        event['nJet_tagged_tight'] = ak.sum(event.Jet.tagged_tight, axis=1)
 
     # For trigger emulation
     #   Calculate HT and other event variables
@@ -555,6 +607,7 @@ def lowpt_jet_selection(
     # Apply bRegCorr to low-pT selected jets
     event['selJet_no_bRegCorr_lowpt'] = event.Jet[event.Jet.selected_lowpt]
     event['selJet_lowpt'] = apply_bRegCorr(event.Jet, selected_label='selected_lowpt', tagged_label='tagged_lowpt', tagged_loose_label='tagged_loose_lowpt')
+    event["nSelJets_lowpt"] = ak.num(event.selJet_lowpt)
 
     event['tagJet_lowpt'] = event.selJet_lowpt[event.selJet_lowpt.tagged_lowpt]
     event['tagJet_loose_lowpt'] = event.selJet_lowpt[event.selJet_lowpt.tagged_loose_lowpt]

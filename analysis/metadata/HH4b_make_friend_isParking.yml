@@ -1,0 +1,10 @@
+runner:
+  workers: 4
+  condor_memory: 4GB
+  friend_metafile: make_friend_isParking
+  friend_base: &friend_base root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_v3
+  # friend_base: &friend_base /tmp/isParking_test   # local path for testing
+
+config:
+  make_friend_isParking: *friend_base
+  parking_lumi_cfg: coffea4bees/analysis/metadata/parking_lumi_fractions.yml

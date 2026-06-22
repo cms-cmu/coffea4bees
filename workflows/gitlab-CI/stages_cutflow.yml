@@ -24,6 +24,18 @@ analysis_cutflow_Run3_coffea4bees:
     paths:
       - output/analysis_cutflow_Run3/test_dump_cutflow.yml
 
+analysis_cutflow_Run3_2024_coffea4bees:
+  stage: cutflow
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - analysis_test_Run3_2024_coffea4bees
+  script:
+    - source coffea4bees/scripts/analysis-cutflow-Run3-2024.sh --output-base /builds/$CI_PROJECT_PATH/output
+  artifacts:
+    paths:
+      - output/analysis_cutflow_Run3_2024/test_dump_cutflow.yml
 
 analysis_mixed_cutflow_coffea4bees:  
   stage: cutflow
@@ -156,3 +168,17 @@ mixeddata_analyze_cutflow_coffea4bees:
   artifacts:
     paths:
       - output//mixeddata_analyze_cutflow/test_dump_cutflow_mixeddata.yml
+
+analysis_cutflow_lowpt_Run2_coffea4bees:
+  stage: cutflow
+  extends:
+    - .base_analysis_coffea4bees
+  needs: 
+    - setup_coffea4bees
+    - analysis_test_lowpt_data_Run2_coffea4bees
+    - analysis_test_lowpt_signal_Run2_coffea4bees
+  script:
+    - source coffea4bees/scripts/analysis-cutflow-lowpt-Run2.sh --output-base /builds/$CI_PROJECT_PATH/output
+  artifacts:
+    paths:
+      - output/analysis_cutflow_lowpt_Run2/test_dump_cutflow.yml

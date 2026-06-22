@@ -15,7 +15,7 @@ setting:
           UL18: [A, B, C, D]
   - module: HCR.InputBranch
     option:
-      - feature_ancillary: [xW, nSelJets_lowpt, xbW]
+      - feature_ancillary: [xW, nSelJets_lowpt, xbW, year]
       # remove the "year" from the input when the dataset only contains one year
       # otherwise the variance will be infinite and the output will be NaN
   ##########################################################

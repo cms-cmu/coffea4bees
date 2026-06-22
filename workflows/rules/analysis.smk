@@ -44,7 +44,13 @@ rule merging_coffea_files:
     output: "{output_file}"
     container: config["analysis_container"]
     params:
-        run_performance = False
+        run_performance = False,
+        # Prefix for the merge command. The `container:` directive above is NOT
+        # honored when snakemake is launched via `./run_container snakemake` (it
+        # runs in the pixi env, which lacks coffea), so LPC consumers set this to
+        # "./run_container" to re-enter the analysis container. Default "" keeps
+        # behavior unchanged for environments that do honor `container:` (reana).
+        run_container_wrapper = ""
     log: "logs/merging_coffea_files_{output_file}.log"
     shell:
         """
@@ -60,12 +66,15 @@ rule merging_coffea_files:
         
         echo "Merging all the coffea files" 2>&1 | tee -a {log}
         if [ "{params.run_performance}" = "True" ]; then
-            cmd="mprof run -C -o /tmp/mprofile_merge_$(basename {log} .log).dat python src/tools/merge_coffea_files.py -f {input} -o {output}"
+            cmd="{params.run_container_wrapper} mprof run -C -o /tmp/mprofile_merge_$(basename {log} .log).dat python src/tools/merge_coffea_files.py -f {input} -o {output}"
         else
-            cmd="python src/tools/merge_coffea_files.py -f {input} -o {output}"
+            cmd="{params.run_container_wrapper} python src/tools/merge_coffea_files.py -f {input} -o {output}"
         fi
         echo $cmd 2>&1 | tee -a {log}
         $cmd 2>&1 | tee -a {log}
+        echo "Output file size: $(ls -lh {output})" 2>&1 | tee -a {log}
+        sync
+        sleep 30
         if [ "{params.run_performance}" = "True" ]; then
             echo "Running performance analysis" 2>&1 | tee -a {log}
             mkdir -p $(dirname {output})/performance/
@@ -89,7 +98,7 @@ rule make_JCM:
         mkdir -p $MPLCONFIGDIR
         
         echo "Computing JCM" 2>&1 | tee -a {log}
-        python coffea4bees/analysis/jcm_tools/make_jcm_weights.py -o {params.output_dir} -c passPreSel -r SB -i {input} {params.extra_arguments} -w {params.tag} 2>&1 | tee -a {log}
+        python coffea4bees/analysis/jcm_tools/make_jcm_weights.py -o {params.output_dir} -r SB -i {input} {params.extra_arguments} -w {params.tag} 2>&1 | tee -a {log}
         ls {params.output_dir}
         """
 
@@ -101,16 +110,17 @@ rule make_plots:
         output_dir = "output/plots/",
         metadata = "coffea4bees/plots/metadata/plotsAll.yml",
         extra_arguments = "-s xW",
+        png_cores = 4,
     log: "logs/make_plots.log"
     shell:
         """
         # Set matplotlib config directory to avoid permission issues
         export MPLCONFIGDIR="/tmp/matplotlib"
         mkdir -p $MPLCONFIGDIR
-        
+
         echo "Making plots" 2>&1 | tee -a {log}
         python coffea4bees/plots/makePlots.py {input} -o {params.output_dir} -m {params.metadata} {params.extra_arguments} 2>&1 | tee -a {log}
 
         echo "Converting plots to png format" 2>&1 | tee -a {log}
-        python src/plotting/pb_pdf_to_png.py -r -j 4 {params.output_dir} 2>&1 | tee -a {log}
+        python src/plotting/pb_pdf_to_png.py -r -j {params.png_cores} {params.output_dir} 2>&1 | tee -a {log}
         """

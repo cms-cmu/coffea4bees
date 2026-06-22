@@ -14,8 +14,20 @@ WFS_BASE = "coffea4bees/classifier/config/workflows/HH4b_Run3"
 CLASSIFIER_CONFIG_PATHS = "coffea4bees"
 
 # Container images
-CLASSIFIER_GPU = "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:classifier_latest"
-CLASSIFIER_CPU = "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:classifier_cpu_latest"
+# Container images. The default GPU image targets recent CUDA (good for
+# rogue / lxplus / falcon). cmslpcgpu* nodes have older P100s (sm60) and
+# need a Chuyuan-built variant; auto-detect by hostname so users on
+# cmslpcgpu* don't have to remember to override. Override with
+# --config classifier_gpu_tag=... if needed.
+import socket as _socket
+_default_gpu_tag = (
+    'classifier_lpc_latest' if 'cmslpcgpu' in _socket.gethostname()
+    else 'classifier_latest'
+)
+config.setdefault('classifier_gpu_tag', _default_gpu_tag)
+config.setdefault('classifier_cpu_tag', 'classifier_cpu_latest')
+CLASSIFIER_GPU = f"/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:{config['classifier_gpu_tag']}"
+CLASSIFIER_CPU = f"/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:{config['classifier_cpu_tag']}"
 
 # Entrypoint sourced inside the container before running commands
 INIT = "set -e && set +u && source /entrypoint.sh && set -u && export PYTHONUNBUFFERED=1"
@@ -48,7 +60,8 @@ config.setdefault('output_path', "output/Run3/")
 out = config['output_path']
 LABEL = config.get('label', '')
 
-TRAIN_YML_TEMPLATE = f"{WFS_BASE}/FvT/train.yml"
+TRAIN_YML_TEMPLATE    = f"{WFS_BASE}/FvT/train.yml"
+EVALUATE_YML_TEMPLATE = f"{WFS_BASE}/FvT/evaluate.yml"
 
 rule create_train_yml:
     input:
@@ -64,6 +77,20 @@ rule create_train_yml:
             {input.template} > {output}
         echo "Patched train.yml:"
         grep -E "JCM-weight|friends" {output}
+        """
+
+rule create_evaluate_yml:
+    input:
+        template = EVALUATE_YML_TEMPLATE,
+        json     = config['classifier_inputs_install_path'],
+    output: f"{out}evaluate.yml"
+    shell:
+        """
+        sed \
+            -e 's|--friends.*|--friends "" {input.json}@@HCR_input|' \
+            {input.template} > {output}
+        echo "Patched evaluate.yml:"
+        grep -E "friends" {output}
         """
 
 
@@ -84,7 +111,7 @@ rule train:
     resources:
         runtime = 240,
         mem_mb  = 32000,
-        gres    = "mps:50",
+        gres    = "mps:25",
     threads: 4
     params:
         init                    = INIT,
@@ -148,7 +175,8 @@ rule analyze:
 
 rule evaluate:
     input:
-        f"{out}{{classifier}}/train.done",
+        train_done = f"{out}{{classifier}}/train.done",
+        eval_yml   = f"{out}evaluate.yml",
     output:
         flag = f"{out}{{classifier}}/evaluate.done",
     log:
@@ -157,24 +185,22 @@ rule evaluate:
     resources:
         runtime = 240,
         mem_mb  = 32000,
-        gres    = "mps:50",
+        gres    = "mps:25",
     threads: 4
     params:
         init                    = INIT,
         classifier_config_paths = CLASSIFIER_CONFIG_PATHS,
         wfs_base                = WFS_BASE,
         template_str            = lambda wc: CLASSIFIERS[wc.classifier]["eval_template"],
-        wfs                     = lambda wc: f"{WFS_BASE}/{wc.classifier}",
     shell:
         """
         {params.init} && \
         PORT=$(shuf -i 10000-60000 -n 1) && \
         CLASSIFIER_CONFIG_PATHS={params.classifier_config_paths} \
         ./src/pyml.py \
-            template "{{{params.template_str}}}" {params.wfs}/evaluate.yml \
+            template "{{{params.template_str}}}" {input.eval_yml} \
             -from {params.wfs_base}/common.yml \
             -setting Monitor "address: '127.0.0.1:$PORT'" \
-            -flag debug \
             2>&1 | tee -a {log}
         touch {output.flag}
         """

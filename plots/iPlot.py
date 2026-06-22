@@ -113,6 +113,14 @@ plot("v4j.mass", region="SRSB")
 plot2d("quadJet_selected.lead_vs_subl_m", process="data3b", region="SRSB")
 plot("leadStM_selected", region="SB", process=["data3b","mixeddata"])
 plot("v4j.mass", region=["SR", "SB"], process="data3b")
+
+# ROC curves — one curve per loaded input file (labeled by --labelNames or filename)
+plot_roc("SvB_MA.ps_hh_fine", sig=["HH4b"], bkg=["TTbar","Multijet"], region="SR")
+plot_roc("SvB_MA.ps_hh_fine", sig=["HH4b"], bkg=["TTbar","Multijet"], region="SR", cut="passSvB")
+
+# Yield tables (calculates event count/yield + uncertainty for each process instead of plotting)
+yields("v4j.mass", region="SR")
+yield("v4j.mass", region="SR", cut="passSvB")
 """
     print(examples_text)
 

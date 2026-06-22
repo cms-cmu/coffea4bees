@@ -171,14 +171,21 @@ def add_pseudotagweights(
             p_t4   = ak.to_numpy(event.MvD.p_t4).astype(float)
             p_mix4 = ak.to_numpy(event.MvD.p_mix4).astype(float)
             mix4_to_t4 = np.where(p_mix4 == 0, 0.0, p_t4 / p_mix4)
+            # Clamp the per-event TTbar reweight factor (p_t4/p_mix4) to avoid
+            # pathologically large weights from small p_mix4 in the tails.
+            TTBAR_REWEIGHT_CLAMP = 3.0
+            mix4_to_t4 = np.minimum(mix4_to_t4, TTBAR_REWEIGHT_CLAMP)
             base_weight = weights.partial_weight(exclude=["MvD"])
             w_mix4_to_t4 = np.where(fourTag, base_weight * jcm_weight * mix4_to_t4, base_weight)
 
-            event["weight_mix4_to_t4_MvD"] = ak.from_regular(w_mix4_to_t4)
+            # w_mix4_to_t4 is a flat per-event numpy array (depth 1); assign it
+            # directly. ak.from_regular defaults to axis=1, which doesn't exist
+            # on a depth-1 array and raised AxisError under awkward-v2/coffea-2025.
+            event["weight_mix4_to_t4_MvD"] = w_mix4_to_t4
             logging.debug(f"weight_mix4_to_t4_MvD {event['weight_mix4_to_t4_MvD'][:10]}")
 
             # Alias for _noMvD histogram TTbar filling: mix4_to_t4 conversion, no MvD classifier
-            event["weight_mix4_to_t4_MvD_noMvD"] = ak.from_regular(w_mix4_to_t4)
+            event["weight_mix4_to_t4_MvD_noMvD"] = w_mix4_to_t4
 
         return weights, list_weight_names
 
@@ -338,6 +345,22 @@ def add_pseudotagweights(
                 logging.debug( f"FvT {weights.partial_weight(include=['FvT'])[:10]}\n" )
 
             else:
+                # Audit-only NaN check on the FvT friend-tree branches in the
+                # threeTag region. Surfaces a regression of the train/eval
+                # selection mismatch (HCR-input writer rejecting events the
+                # analysis accepts → all-zero inputs → NaN outputs). Does not
+                # modify the weights — the fix lives in the workflow.
+                threeTag_mask = ak.to_numpy(event[label3b])
+                n_threeTag = int(threeTag_mask.sum())
+                for branch in ("FvT", "d3_to_t4", "d3_to_t3"):
+                    vals = ak.to_numpy(getattr(event.FvT, branch))
+                    n_nan = int((np.isnan(vals) & threeTag_mask).sum())
+                    if n_nan:
+                        logging.warning(
+                            f"[FvT NaN check] {n_nan} NaN values in FvT.{branch} "
+                            f"over {n_threeTag} threeTag events"
+                        )
+
                 weight = np.where(
                     event[label3b],
                     # event["pseudoTagWeight"] * event["pseudoTagWeight_lowpt"] * event.FvT.FvT,

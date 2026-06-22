@@ -344,6 +344,34 @@ def _register_archive(registry_path, archive_dir, label):
     tmp.rename(registry_path)
 
 
+def _get_default_output_dir(input_files, metadata_file):
+    if not input_files:
+        return "pourover_output"
+    
+    first_name = Path(input_files[0]).stem
+    if len(input_files) > 1:
+        first_name += "_etc"
+        
+    import hashlib
+    paths_str = "".join(sorted(os.path.abspath(f) for f in input_files))
+    if metadata_file:
+        paths_str += os.path.abspath(metadata_file)
+    h = hashlib.sha256(paths_str.encode()).hexdigest()[:8]
+    
+    return os.path.join("pourover_output", f"session_{first_name}_{h}")
+
+
+def _write_session_manifest(output_dir, input_files, metadata_file):
+    manifest_path = Path(output_dir) / "manifest.json"
+    manifest = {
+        "inputs": [os.path.abspath(f) for f in input_files],
+        "metadata": os.path.abspath(metadata_file) if metadata_file else None,
+        "timestamp": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    }
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(json.dumps(manifest, indent=2))
+
+
 # ---------------------------------------------------------------------------
 # Session tracking (live PID → port mapping per archive directory)
 # ---------------------------------------------------------------------------
@@ -470,8 +498,8 @@ import ast as _ast
 import contextlib as _contextlib
 import logging as _logging
 
-_PLOT_CMDS = {'plot', 'plot2d'}
-_TEXT_CMDS = {'ls', 'info', 'examples'}
+_PLOT_CMDS = {'plot', 'plot2d', 'plot_roc'}
+_TEXT_CMDS = {'ls', 'info', 'examples', 'yield', 'yields'}
 _ALL_CMDS  = _PLOT_CMDS | _TEXT_CMDS
 
 
@@ -513,12 +541,14 @@ def _parse_cli_cmd(cmd):
 
     parsed = {"func": func, "args": args, "kwargs": kwargs}
 
-    # For plot/plot2d also build the request payload inline
-    if func in _PLOT_CMDS:
+    # For plot/plot2d/yield/yields also build the request payload inline
+    if func in _PLOT_CMDS or func in {'yield', 'yields'}:
         req = {"is2d": func == 'plot2d'}
         if func == 'plot2d':
             if len(args) >= 1: req['var']     = args[0]
             if len(args) >= 2: req['process'] = args[1]
+        elif func == 'plot_roc':
+            if len(args) >= 1: req['var'] = args[0]
         else:
             if len(args) >= 1: req['var'] = args[0]
         req.update(kwargs)
@@ -527,8 +557,8 @@ def _parse_cli_cmd(cmd):
     return parsed
 
 
-def _execute_text_cmd(func, args, kwargs):
-    """Execute a text-output command (ls/info/examples).
+def _execute_text_cmd(func, args, kwargs, req=None):
+    """Execute a text-output command (ls/info/examples/yield/yields).
 
     Returns (data_dict, status_code).
     """
@@ -558,6 +588,97 @@ def _execute_text_cmd(func, args, kwargs):
             elif func == 'examples':
                 from coffea4bees.plots.iPlot import examples as _iplot_examples
                 _iplot_examples()
+
+            elif func in {'yield', 'yields'}:
+                if not req:
+                    req = {}
+                var     = req.get("var", "selJets.pt")
+                cut     = req.get("cut") or None
+                region  = req.get("region", ["SR"])
+                if isinstance(region, str):
+                    region = [region]
+                region = [sum if r == "sum" else r for r in region]
+
+                with plot_lock:
+                    cfg.set_hist_key("hists")
+                    if cut and cut in ["passMuMu", "passElMu"]:
+                        cfg.set_hist_key("hists_ttbar")
+
+                _normalize_kwargs(req)
+
+                kwargs_plot = {}
+                for k in ["rebin", "norm", "yscale", "xscale", "add_flow", "uniform_bins",
+                          "year", "year_str", "CMSText",
+                          "xlabel", "ylabel", "rlabel",
+                          "legend", "legend_loc", "ratio_legend_loc",
+                          "do_title",
+                          "full", "plot_contour", "plot_leadst_lines", "plot_sublst_lines"]:
+                    v = req.get(k)
+                    if v is not None:
+                        kwargs_plot[k] = v
+
+                for k in ["xlim", "ylim", "rlim", "zlim"]:
+                    v = req.get(k)
+                    if v and any(x is not None for x in v):
+                        kwargs_plot[k] = [x for x in v]
+
+                for k in ["legend_order", "ratio_legend_order"]:
+                    v = req.get(k)
+                    if v is not None:
+                        kwargs_plot[k] = v
+
+                if isinstance(kwargs_plot.get("year"), str) and kwargs_plot["year"] == "sum":
+                    kwargs_plot["year"] = sum
+
+                axis_opts = {"region": region[0] if len(region) == 1 else region}
+
+                from src.plotting.helpers_make_plot_dict import get_plot_dict_from_config, get_plot_dict_from_list
+                with plot_lock:
+                    is_list = (isinstance(cut, list)) or (any(isinstance(v, list) for v in axis_opts.values())) or (len(cfg.hists) > 1 and not cfg.combine_input_files) or (isinstance(var, list)) or (isinstance(kwargs_plot.get("process"), list)) or (isinstance(kwargs_plot.get("year"), list))
+                    if is_list:
+                        plot_data = get_plot_dict_from_list(cfg=cfg, var=var, cut=cut, axis_opts=axis_opts, **kwargs_plot)
+                    else:
+                        plot_data = get_plot_dict_from_config(cfg=cfg, var=var, cut=cut, axis_opts=axis_opts, **kwargs_plot)
+
+                add_flow = kwargs_plot.get("add_flow", False)
+
+                rows = []
+                def process_p_cfg(name, p_cfg):
+                    vals = np.array(p_cfg.get("values", []))
+                    vars_ = np.array(p_cfg.get("variances", []))
+                    under = float(p_cfg.get("under_flow", 0.0))
+                    over = float(p_cfg.get("over_flow", 0.0))
+                    raw_yield = np.sum(vals)
+                    raw_unc = np.sqrt(np.sum(vars_)) if vars_ is not None else 0.0
+
+                    if add_flow:
+                        total_yield = raw_yield + under + over
+                        total_unc = raw_unc
+                    else:
+                        total_yield = raw_yield
+                        total_unc = raw_unc
+
+                    total_inc_flow = raw_yield + under + over
+                    label = p_cfg.get("label", name)
+                    return (label, total_yield, total_unc, under, over, total_inc_flow)
+
+                for name, p_cfg in plot_data.get("hists", {}).items():
+                    rows.append(process_p_cfg(name, p_cfg))
+
+                for name, p_cfg in plot_data.get("stack", {}).items():
+                    rows.append(process_p_cfg(name, p_cfg))
+
+                if not rows:
+                    print("No processes found in configuration.")
+                else:
+                    max_label_len = max(len(r[0]) for r in rows)
+                    max_label_len = max(max_label_len, 7) # "Process" length
+                    header = f"{'Process':<{max_label_len}} | {'Yield':>12} | {'Uncertainty':>12} | {'Underflow':>12} | {'Overflow':>12} | {'Yield+Flow':>12}"
+                    divider = "-" * len(header)
+                    print(header)
+                    print(divider)
+                    for label, y, unc, under, over, tot in rows:
+                        print(f"{label:<{max_label_len}} | {y:12.2f} | {unc:12.2f} | {under:12.2f} | {over:12.2f} | {tot:12.2f}")
 
         text = buf.getvalue().rstrip()
         if not text:
@@ -692,9 +813,148 @@ def _execute_plot(req):
         return {"error": str(e)}, 400
 
 
+def _get_signal_plot(plot_data, s):
+    import src.plotting.helpers as _ph
+    try:
+        return _ph.get_value_nested_dict(plot_data, s)
+    except Exception:
+        return _ph.make_klambda_hist(s, plot_data)
+
+
+def _make_roc_figure(roc_data, outputFolder=None):
+    for _v in roc_data:
+        sig_cumsum = np.cumsum(np.array(roc_data[_v]["sig_values"])[::-1])[::-1]
+        bkg_cumsum = np.cumsum(np.array(roc_data[_v]["bkg_values"])[::-1])[::-1]
+        TPR = sig_cumsum / sig_cumsum[0]
+        FPR = bkg_cumsum / bkg_cumsum[0]
+        roc_data[_v]["FPR"] = FPR
+        roc_data[_v]["TPR"] = TPR
+        roc_data[_v]["auc"] = np.trapz(TPR, FPR)
+
+    fig = plt.figure(figsize=(8, 6))
+    for _v in roc_data:
+        plt.plot(roc_data[_v]["FPR"], roc_data[_v]["TPR"],
+                 color=roc_data[_v]["color"], lw=2,
+                 label=f'{roc_data[_v]["label"]} (AUC = {roc_data[_v]["auc"]:.2f})')
+    plt.plot([0, 1], [0, 1], color='gray', lw=2, linestyle='--')
+    plt.xlabel('Background Efficiency')
+    plt.ylabel('Signal Efficiency')
+    plt.legend(loc='lower right')
+    plt.grid()
+    return fig
+
+
+def _execute_roc(req):
+    """Generate a ROC curve: one curve per loaded input file.
+
+    Returns (data_dict, status_code) — same contract as _execute_plot.
+    """
+    import src.plotting.helpers as plot_helpers
+    from src.plotting.helpers_make_plot_dict import get_plot_dict_from_config
+
+    var    = req.get("var", "SvB_MA.ps_hh_fine")
+    sig    = req.get("sig") or []
+    bkg    = req.get("bkg") or []
+    region = req.get("region", "SR")
+    cut    = req.get("cut") or None
+
+    if not sig or not bkg:
+        return {"error": "plot_roc requires sig= and bkg= process lists"}, 400
+
+    file_labels  = cfg.fileLabels or []
+    colors_cycle = ["blue", "orange", "green", "red", "purple", "brown", "pink", "gray"]
+
+    roc_data = {}
+    try:
+        for i, hist_entry in enumerate(cfg.hists):
+            if i < len(file_labels):
+                label = file_labels[i]
+            elif i < len(input_files):
+                label = Path(input_files[i]).stem
+            else:
+                label = f"file_{i}"
+            color = colors_cycle[i % len(colors_cycle)]
+
+            with plot_lock:
+                saved_hists = cfg.hists
+                cfg.hists = [hist_entry]
+                try:
+                    plot_data = get_plot_dict_from_config(cfg=cfg, var=var, cut=cut, axis_opts={"region": region})
+                finally:
+                    cfg.hists = saved_hists
+
+            sig_data = None
+            for s in sig:
+                try:
+                    s_data = _get_signal_plot(plot_data, s)
+                except Exception as e:
+                    return {"error": f"Signal process '{s}' not found: {e}"}, 400
+                if sig_data is None:
+                    sig_data = {k: np.array(v) for k, v in s_data.items()
+                                if k in ("values", "variances", "under_flow", "over_flow")}
+                else:
+                    for k in ("values", "variances", "under_flow", "over_flow"):
+                        sig_data[k] = sig_data[k] + np.array(s_data[k])
+
+            bkg_data = None
+            for b in bkg:
+                try:
+                    b_data = plot_helpers.get_value_nested_dict(plot_data, b)
+                except Exception as e:
+                    return {"error": f"Background process '{b}' not found: {e}"}, 400
+                if bkg_data is None:
+                    bkg_data = {k: np.array(v) for k, v in b_data.items()
+                                if k in ("values", "variances", "under_flow", "over_flow")}
+                else:
+                    for k in ("values", "variances", "under_flow", "over_flow"):
+                        bkg_data[k] = bkg_data[k] + np.array(b_data[k])
+
+            sig_data["values"][0] += sig_data["under_flow"]
+            bkg_data["values"][0] += bkg_data["under_flow"]
+
+            roc_data[label] = {
+                "sig_values": sig_data["values"],
+                "bkg_values": bkg_data["values"],
+                "label": label,
+                "color": color,
+            }
+
+        with plot_lock:
+            fig = _make_roc_figure(roc_data)
+
+            interactive_dir = Path(output_dir) / "interactive"
+            interactive_dir.mkdir(parents=True, exist_ok=True)
+            ts   = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+            stem = f"{ts}_roc_{_sanitize(var)}"
+            png_path = interactive_dir / f"{stem}.png"
+            pdf_path = interactive_dir / f"{stem}.pdf"
+
+            fig.savefig(str(png_path), format="png", dpi=100, bbox_inches="tight")
+            fig.savefig(str(pdf_path), format="pdf")
+            png_b64 = _fig_to_png_b64(fig)
+            plt.close(fig)
+
+        return {
+            "png_b64": png_b64,
+            "png_url": f"/outputs/interactive/{stem}.png",
+            "pdf_url": f"/outputs/interactive/{stem}.pdf",
+        }, 200
+
+    except Exception as e:
+        with plot_lock:
+            plt.close("all")
+        return {"error": str(e)}, 400
+
+
 @app.route("/plot", methods=["POST"])
 def plot_endpoint():
     data, code = _execute_plot(request.get_json())
+    return jsonify(data), code
+
+
+@app.route("/plot_roc", methods=["POST"])
+def plot_roc_endpoint():
+    data, code = _execute_roc(request.get_json())
     return jsonify(data), code
 
 
@@ -713,7 +973,7 @@ def cli_endpoint():
 
     # Text-output commands
     if func in _TEXT_CMDS:
-        data, code = _execute_text_cmd(func, parsed["args"], parsed["kwargs"])
+        data, code = _execute_text_cmd(func, parsed["args"], parsed["kwargs"], req=parsed.get("req"))
         if code == 200:
             _save_cli_history(cmd)
         return jsonify(data), code
@@ -728,8 +988,11 @@ def cli_endpoint():
             _save_cli_history(cmd)
         return jsonify(data), code
 
-    # Normal plot
-    data, code = _execute_plot(plot_req)
+    # Dispatch by command type
+    if func == 'plot_roc':
+        data, code = _execute_roc(plot_req)
+    else:
+        data, code = _execute_plot(plot_req)
     if code == 200:
         _save_cli_history(cmd)
         _save_interactive_item(data["png_url"], data["pdf_url"], cmd)
@@ -854,8 +1117,8 @@ def _parse_args():
                         help='Reuse already-generated gallery plots; only regenerate missing ones')
     parser.add_argument('-j', '--jobs', type=int, default=1,
                         help='Number of parallel workers for pregallery (default: 1)')
-    parser.add_argument('--output-dir', default='pourover_output',
-                        help='Directory for generated plots (default: pourover_output)')
+    parser.add_argument('--output-dir', default=None,
+                        help='Directory for generated plots (default: pourover_output/session_<input_name>_<hash>)')
     parser.add_argument('--new', action='store_true',
                         help='Snapshot inputs, register archive, generate gallery, serve.')
     load_action = parser.add_argument('--load', metavar='LABEL',
@@ -1126,13 +1389,98 @@ if __name__ == '__main__':
     # Normal mode
     # ------------------------------------------------------------------
     else:
-        output_dir    = args.output_dir
+        if not args.output_dir:
+            output_dir = _get_default_output_dir(args.inputFile, args.metadata)
+        else:
+            output_dir = args.output_dir
+
         input_files   = args.inputFile
         metadata_file = args.metadata
         reuse_gallery = args.reuse_gallery
         session_label = ""
 
+        # Check for existing manifest in output_dir
+        manifest_path = Path(output_dir) / "manifest.json"
+        if manifest_path.exists():
+            try:
+                manifest = json.loads(manifest_path.read_text())
+                manifest_inputs = [os.path.abspath(f) for f in manifest.get("inputs", [])]
+                manifest_metadata = os.path.abspath(manifest["metadata"]) if manifest.get("metadata") else None
+                
+                current_inputs = [os.path.abspath(f) for f in args.inputFile]
+                current_metadata = os.path.abspath(args.metadata) if args.metadata else None
+                
+                if manifest_inputs == current_inputs and manifest_metadata == current_metadata:
+                    # Same inputs! Ask to reopen
+                    reopen = True
+                    if sys.stdin.isatty():
+                        try:
+                            ans = input(f"Found existing session for these inputs in '{output_dir}'. Reopen last session? [Y/n]: ").strip().lower()
+                            if ans in ('n', 'no'):
+                                reopen = False
+                        except (EOFError, KeyboardInterrupt):
+                            pass
+                    if reopen:
+                        print("Reopening last session (reusing gallery and history).")
+                        reuse_gallery = True
+                    else:
+                        print("Starting a clean new session.")
+                        # Clear old session files
+                        for p in [Path(output_dir) / "cli_history.json",
+                                  Path(output_dir) / "interactive_history.json",
+                                  Path(output_dir) / "gallery",
+                                  Path(output_dir) / "interactive"]:
+                            if p.exists():
+                                if p.is_dir():
+                                    shutil.rmtree(p)
+                                else:
+                                    p.unlink()
+                        reuse_gallery = False
+                else:
+                    # Different inputs!
+                    overwrite = False
+                    if sys.stdin.isatty():
+                        try:
+                            print(f"Warning: '{output_dir}' contains an existing session for different inputs:")
+                            print(f"  Existing: inputs={manifest.get('inputs')}, metadata={manifest.get('metadata')}")
+                            print(f"  Current:  inputs={args.inputFile}, metadata={args.metadata}")
+                            ans = input("Overwrite and start a clean new session? [y/N]: ").strip().lower()
+                            if ans in ('y', 'yes'):
+                                overwrite = True
+                        except (EOFError, KeyboardInterrupt):
+                            pass
+                    else:
+                        # Non-interactive: overwrite to avoid blocking/failing
+                        overwrite = True
+                        
+                    if overwrite:
+                        print("Overwriting existing session and starting fresh.")
+                        for p in [Path(output_dir) / "cli_history.json",
+                                  Path(output_dir) / "interactive_history.json",
+                                  Path(output_dir) / "gallery",
+                                  Path(output_dir) / "interactive",
+                                  manifest_path]:
+                            if p.exists():
+                                if p.is_dir():
+                                    shutil.rmtree(p)
+                                else:
+                                    p.unlink()
+                        reuse_gallery = False
+                    else:
+                        print("Aborted. Please specify a different output directory with --output-dir.")
+                        sys.exit(1)
+            except Exception as e:
+                print(f"Warning: error reading existing manifest: {e}")
+        else:
+            # No manifest exists yet, use the user's --reuse-gallery choice
+            reuse_gallery = args.reuse_gallery
+
         Path(output_dir).mkdir(parents=True, exist_ok=True)
+        # Write/update the manifest for this session
+        try:
+            _write_session_manifest(output_dir, args.inputFile, args.metadata)
+        except Exception as e:
+            print(f"Warning: could not write session manifest: {e}")
 
         print("Loading histograms and config ...")
         _init_config(args)
@@ -1140,7 +1488,7 @@ if __name__ == '__main__':
         print(f"  Metadata: {metadata_file}")
 
         if args.pregallery:
-            _pregallery(output_dir, n_jobs=args.jobs, reuse=args.reuse_gallery)
+            _pregallery(output_dir, n_jobs=args.jobs, reuse=reuse_gallery)
 
     import socket
     def _find_free_port(preferred):

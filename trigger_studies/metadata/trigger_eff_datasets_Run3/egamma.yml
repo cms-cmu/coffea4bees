@@ -1,0 +1,95 @@
+data__egamma:
+  2022_EE:
+    nanoAOD:
+      E: /EGamma/Run2022E-22Sep2023-v1/NANOAOD
+      F: /EGamma/Run2022F-22Sep2023-v1/NANOAOD
+      G: /EGamma/Run2022G-22Sep2023-v2/NANOAOD
+    picoAOD:
+      E:
+        count: 138985608.0
+        saved_events: 293929
+        sumw: 148654795
+        sumw2: 148654795
+        total_events: 148654795
+        files:
+          - /srv/output/skimmer/test/data__egamma_2022_EEE/picoAOD.chunk0.root
+          - /srv/output/skimmer/test/data__egamma_2022_EEE/picoAOD.chunk1.root
+          - /srv/output/skimmer/test/data__egamma_2022_EEE/picoAOD.chunk2.root
+  
+  2022_preEE:
+    nanoAOD:
+      C: /EGamma/Run2022C-22Sep2023-v1/NANOAOD
+      D: /EGamma/Run2022D-22Sep2023-v1/NANOAOD
+  
+  2023_preBPix:
+    nanoAOD:                                                 
+      A: /EGamma0/Run2023C-22Sep2023_v1-v1/NANOAOD
+      B: /EGamma0/Run2023C-22Sep2023_v2-v1/NANOAOD
+      C: /EGamma0/Run2023C-22Sep2023_v3-v1/NANOAOD
+      D: /EGamma0/Run2023C-22Sep2023_v4-v1/NANOAOD
+      E: /EGamma1/Run2023C-22Sep2023_v1-v1/NANOAOD
+      F: /EGamma1/Run2023C-22Sep2023_v2-v1/NANOAOD
+      G: /EGamma1/Run2023C-22Sep2023_v3-v1/NANOAOD
+      H: /EGamma1/Run2023C-22Sep2023_v4-v1/NANOAOD
+  
+  2023_BPix:
+    nanoAOD:   
+      E: /EGamma0/Run2023D-22Sep2023_v1-v1/NANOAOD
+      F: /EGamma0/Run2023D-22Sep2023_v2-v1/NANOAOD
+      G: /EGamma1/Run2023D-22Sep2023_v1-v1/NANOAOD
+      H: /EGamma1/Run2023D-22Sep2023_v2-v1/NANOAOD
+  
+  "2024":
+    nanoAOD:
+      A: /EGamma0/Run2024C-2024CDEReprocessing-v1/NANOAOD
+      B: /EGamma1/Run2024C-2024CDEReprocessing-v1/NANOAOD
+      C: /EGamma0/Run2024D-2024CDEReprocessing-v1/NANOAOD
+      D: /EGamma1/Run2024D-2024CDEReprocessing-v1/NANOAOD
+      E: /EGamma0/Run2024E-2024CDEReprocessing-v1/NANOAOD
+      F: /EGamma1/Run2024E-2024CDEReprocessing-v1/NANOAOD
+      G: /EGamma0/Run2024F-PromptReco-v1/NANOAOD
+      H: /EGamma1/Run2024F-PromptReco-v1/NANOAOD
+      I: /EGamma0/Run2024G-PromptReco-v1/NANOAOD
+      J: /EGamma1/Run2024G-PromptReco-v1/NANOAOD
+      K: /EGamma0/Run2024H-PromptReco-v1/NANOAOD
+      L: /EGamma1/Run2024H-PromptReco-v1/NANOAOD
+      M: /EGamma0/Run2024I-PromptReco-v1/NANOAOD
+      N: /EGamma0/Run2024I-PromptReco-v2/NANOAOD
+      O: /EGamma1/Run2024I-PromptReco-v1/NANOAOD
+      P: /EGamma1/Run2024I-PromptReco-v2/NANOAOD
+
+
+data__muoneg:
+  2022_preEE:
+    nanoAOD:
+      A: /MuonEG/Run2022C-22Sep2023-v1/NANOAOD
+      B: /MuonEG/Run2022D-22Sep2023-v1/NANOAOD
+
+  2022_EE:
+    nanoAOD:
+      E: /MuonEG/Run2022E-22Sep2023-v1/NANOAOD
+      F: /MuonEG/Run2022F-22Sep2023-v1/NANOAOD
+      G: /MuonEG/Run2022G-22Sep2023-v1/NANOAOD
+
+  2023_preBPix:
+    nanoAOD:
+      A: /MuonEG/Run2023C-22Sep2023_v1-v1/NANOAOD
+      B: /MuonEG/Run2023C-22Sep2023_v2-v1/NANOAOD
+      C: /MuonEG/Run2023C-22Sep2023_v3-v1/NANOAOD
+      D: /MuonEG/Run2023C-22Sep2023_v4-v1/NANOAOD
+    
+  2023_BPix:
+    nanoAOD:
+      E: /MuonEG/Run2023D-22Sep2023_v1-v1/NANOAOD
+      F: /MuonEG/Run2023D-22Sep2023_v2-v1/NANOAOD
+
+  "2024":
+    nanoAOD:
+      A: /MuonEG/Run2024C-2024CDEReprocessing-v1/NANOAOD
+      B: /MuonEG/Run2024D-2024CDEReprocessing-v1/NANOAOD
+      C: /MuonEG/Run2024E-2024CDEReprocessing-v1/NANOAOD
+      D: /MuonEG/Run2024F-PromptReco-v1/NANOAOD
+      E: /MuonEG/Run2024G-PromptReco-v1/NANOAOD
+      F: /MuonEG/Run2024H-PromptReco-v1/NANOAOD
+      G: /MuonEG/Run2024I-PromptReco-v1/NANOAOD
+      H: /MuonEG/Run2024I-PromptReco-v2/NANOAOD

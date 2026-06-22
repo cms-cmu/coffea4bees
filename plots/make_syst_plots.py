@@ -89,8 +89,13 @@ if __name__ == '__main__':
     nom_mj_low_error = nom_mj.Clone("nom_mj_low_error")
     nom_mj_low_error.Reset()
     for i in range(1, nom_mj.GetNbinsX() + 1):
-        nom_mj_high_error.SetBinContent(i, (nom_mj.GetBinErrorUp(i)+nom_mj.GetBinContent(i))/nom_mj.GetBinContent(i))
-        nom_mj_low_error.SetBinContent(i, (nom_mj.GetBinContent(i)-nom_mj.GetBinErrorUp(i))/nom_mj.GetBinContent(i))
+        bc = nom_mj.GetBinContent(i)
+        if bc == 0:
+            nom_mj_high_error.SetBinContent(i, 1.0)
+            nom_mj_low_error.SetBinContent(i, 1.0)
+        else:
+            nom_mj_high_error.SetBinContent(i, (nom_mj.GetBinErrorUp(i)+bc)/bc)
+            nom_mj_low_error.SetBinContent(i, (bc-nom_mj.GetBinErrorUp(i))/bc)
 
     # Styling
     CMS.SetExtraText("Preliminary")

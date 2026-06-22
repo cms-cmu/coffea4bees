@@ -33,7 +33,7 @@ jet:
       eta_max: 4.7
       jetId_tag: AK4PUPPI_TightLeptonVeto
     selected:
-      pt_min: 30
+      pt_min: 30          # default applies to the 2022 eras
       eta_max: 2.4
       jetId_tag: AK4PUPPI_TightLeptonVeto
   run2:
@@ -65,3 +65,15 @@ jet:
     pt_min: 15
     eta_max: 2.4
     jetId_min: 2
+
+# Era-specific overrides. Each key is matched as a prefix of the era string
+# (event.metadata['year'], e.g. "2023_BPix"), and the partial tree below it is
+# deep-merged onto the base config above. Longer prefixes win, so a future
+# "2023_BPix" entry would take precedence over "2023". Eras with no matching
+# key (e.g. the 2022* eras) use the base thresholds unchanged.
+era_overrides:
+  "2023":                 # 2023, 2023_preBPix, 2023_BPix
+    jet:
+      run3:
+        selected:
+          pt_min: 25

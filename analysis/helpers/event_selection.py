@@ -4,7 +4,8 @@ import logging
 from coffea4bees.analysis.helpers.object_selection import (
     lepton_selection,
     jet_selection,
-    lowpt_jet_selection
+    lowpt_jet_selection,
+    resolve_object_selection_config,
 )
 from src.physics.common import drClean
 
@@ -194,6 +195,9 @@ def apply_4b_selection(
     ak.Array
         The input event data with additional fields for object selection.
     """
+    # Apply any era-specific threshold overrides (e.g. lower jet pT in 2023)
+    sel_cfg = resolve_object_selection_config(sel_cfg, event.metadata.get('year'))
+
     # Combined RunII and 3 selection
     event = lepton_selection(event, config["isRun3"], sel_cfg)
 
@@ -214,7 +218,10 @@ def apply_4b_selection(
 
     event['passJetMult'] = event['nJet_selected'] >= 4
 
-    event['fourTag'] = (event['nJet_tagged'] >= 4)
+    if config.get('fourTag_use_tight', False):
+        event['fourTag'] = (event['nJet_tagged_tight'] >= 3) & (event['nJet_tagged'] >= 4)
+    else:
+        event['fourTag'] = (event['nJet_tagged'] >= 4)
     event['threeTag'] = (event['nJet_tagged_loose'] == 3) & (event['nJet_selected'] >= 4)
     event['twoTag'] = (event['nJet_tagged_loose'] == 2) & (event['nJet_selected'] >= 4)
 
@@ -314,6 +321,9 @@ def apply_4b_lowpt_selection(
         - `passPreSel`: Boolean mask for events passing preselection.
         - `Jet['selected']`: Updated mask for selected jets, including low-pT jets.
     """
+    # Apply any era-specific threshold overrides (e.g. lower jet pT in 2023)
+    sel_cfg = resolve_object_selection_config(sel_cfg, event.metadata.get('year'))
+
     # Apply lepton selection
     event = lepton_selection(event, isRun3, sel_cfg)
 

@@ -40,6 +40,7 @@ from coffea4bees.plots.pourOver import (
     _resolve_label,
     _validate_label,
     _write_manifest,
+    _get_default_output_dir,
 )
 
 
@@ -233,6 +234,35 @@ class TestResolveLabel(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# _get_default_output_dir
+# ---------------------------------------------------------------------------
+class TestGetDefaultOutputDir(unittest.TestCase):
+
+    def test_empty_inputs(self):
+        self.assertEqual(_get_default_output_dir([], None), "pourover_output")
+
+    def test_single_input(self):
+        res = _get_default_output_dir(["foo/bar/analysis.coffea"], None)
+        self.assertTrue(res.startswith("pourover_output/session_analysis_"))
+        self.assertEqual(len(res.split("_")[-1]), 8)
+
+    def test_multiple_inputs(self):
+        res = _get_default_output_dir(["foo/bar/analysis.coffea", "baz/qux.coffea"], None)
+        self.assertTrue(res.startswith("pourover_output/session_analysis_etc_"))
+        self.assertEqual(len(res.split("_")[-1]), 8)
+
+    def test_same_inputs_same_output(self):
+        res1 = _get_default_output_dir(["foo/bar/analysis.coffea"], "config.yml")
+        res2 = _get_default_output_dir(["foo/bar/analysis.coffea"], "config.yml")
+        self.assertEqual(res1, res2)
+
+    def test_different_inputs_different_output(self):
+        res1 = _get_default_output_dir(["foo/bar/analysis.coffea"], "config1.yml")
+        res2 = _get_default_output_dir(["foo/bar/analysis.coffea"], "config2.yml")
+        self.assertNotEqual(res1, res2)
+
+
+# ---------------------------------------------------------------------------
 # _parse_cli_cmd
 # ---------------------------------------------------------------------------
 class TestParseCliCmd(unittest.TestCase):
@@ -279,6 +309,26 @@ class TestParseCliCmd(unittest.TestCase):
     def test_examples(self):
         r = _parse_cli_cmd("examples()")
         self.assertEqual(r["func"], "examples")
+
+    # ---- valid plot_roc() ----
+    def test_plot_roc_simple(self):
+        r = _parse_cli_cmd('plot_roc("SvB_MA.ps_hh_fine", sig=["HH4b"], bkg=["TTbar","Multijet"])')
+        self.assertEqual(r["func"], "plot_roc")
+        self.assertEqual(r["req"]["var"], "SvB_MA.ps_hh_fine")
+        self.assertEqual(r["req"]["sig"], ["HH4b"])
+        self.assertEqual(r["req"]["bkg"], ["TTbar", "Multijet"])
+
+    def test_plot_roc_with_region(self):
+        r = _parse_cli_cmd('plot_roc("SvB_MA.ps_hh_fine", sig=["HH4b"], bkg=["TTbar"], region="SR")')
+        self.assertEqual(r["req"]["region"], "SR")
+
+    def test_plot_roc_with_cut(self):
+        r = _parse_cli_cmd('plot_roc("SvB_MA.ps_hh_fine", sig=["HH4b"], bkg=["TTbar"], cut="passSvB")')
+        self.assertEqual(r["req"]["cut"], "passSvB")
+
+    def test_plot_roc_req_is2d_false(self):
+        r = _parse_cli_cmd('plot_roc("SvB_MA.ps_hh_fine", sig=["HH4b"], bkg=["TTbar"])')
+        self.assertFalse(r["req"].get("is2d", False))
 
     # ---- error cases ----
     def test_unknown_function_raises(self):

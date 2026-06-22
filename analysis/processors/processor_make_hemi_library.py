@@ -24,6 +24,7 @@ class analysis(HH4bBaseProcessor):
             base_path: PathLike,
             *,
             campaign: str = ...,
+            friends: dict = None,
             **kwargs,
     ):
         logging.debug("\nInitialize  processor_make_hemi_library\n")
@@ -46,7 +47,7 @@ class analysis(HH4bBaseProcessor):
         kwargs.setdefault("apply_FvT", False)
         kwargs.setdefault("apply_btagSF", False)
 
-        super().__init__(**kwargs)
+        super().__init__(friends=friends, **kwargs)
 
     def process(self, event):
         """Override to add chunk-level caching check before processing."""

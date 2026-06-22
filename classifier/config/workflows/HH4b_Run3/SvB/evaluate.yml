@@ -1,0 +1,53 @@
+# template:
+# - model: path to trained model (e.g. ${{EOS}}/HH4b_Run3_quadjet_run2/classifier/SvB)
+# - SvB:   path to friend-tree output dir (e.g. ${{EOS}}/HH4b_Run3_quadjet_run2/friend/SvB)
+#
+# Adapted from coffea4bees/classifier/config/workflows/HH4b_2024_v2/SvB/evaluate.yml
+# for Run3 quadjet_run2.
+
+main:
+  module: evaluate
+  option:
+    # 1 evaluator: 3 sequential passes, ~4-5h total in 56 GB cap.
+    # 2 evaluators swap-thrash (2 loaders alone need ~55 GB).
+    - --max-evaluators 1
+
+dataset:
+  - module: HCR.SvB.Eval
+    option:
+      - --metadata coffea4bees/metadata/datasets_HH4b_Run3/archive/datasets_HH4b_Run3_SvB
+      - --max-workers 4
+      # Same Run3 restrictions as train.yml — Run3 has no ZZ4b/ZH4b/ggZH4b
+      # skims; the Eval class inherits from _picoAOD.Signal which adds
+      # these args.
+      - --mc-processes ggF ttbar
+      # Braces doubled to survive yml str.format (template substitution).
+      - --ggf-signal-pattern "GluGlutoHHto4B_kl-{{kl}}_kt-{{kt}}_c2-{{c2}}"
+      - --ggf-coupling-format fixed2
+      - --ggf-coupling-defaults "kt=1.0,c2=0.0"
+      - --ggf-load-kl 1.0
+      - --friends "" coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_SvB_Run3_quadjet_run2.json@@HCR_input
+
+model:
+  - module: HCR.SvB.ggF.baseline.Eval
+    option:
+      - --models
+      - Final
+      - "{model}/result.json"
+
+analysis:
+  - module: kfold.Merge
+    option:
+      - --name SvB
+      - --step 100000
+      - --workers 5
+      - --clean
+
+setting:
+  - module: IO
+    option:
+      - output: "{SvB}"
+  - module: ml.DataLoader
+    option:
+      # Reduced from 8 alongside max-evaluators=1 to keep peak RAM in budget.
+      - num_workers: 4
