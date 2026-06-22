@@ -1,0 +1,6 @@
+# Empty friends map for friend-GENERATION jobs (SvB/FeynNet eval).
+# These jobs evaluate networks fresh on the picoAODs and must NOT inject
+# FvT/SvB/etc. friends, which (a) are not needed (apply_FvT: false) and
+# (b) have no entries for newly-made samples, causing runner to stall on
+# friend-chunk alignment.
+friends: {}
