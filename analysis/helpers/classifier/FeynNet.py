@@ -334,6 +334,9 @@ class FeynNetEnsemble:
         n = len(event)
         n_classes = len(self.classes)
 
+        if n == 0:
+            return np.zeros((0, n_classes), dtype="float32"), np.zeros((0, 3), dtype="float32")
+
         c_score = np.zeros((n, n_classes), dtype="float32")
         q_score = np.zeros((n, 3), dtype="float32")
 
@@ -451,6 +454,8 @@ class FeynNetParkingDispatcher:
 
         n = len(event)
         n_classes = len(self.classes)
+        if n == 0:
+            return np.zeros((0, n_classes), dtype="float32"), np.zeros((0, 3), dtype="float32")
         c_score = np.zeros((n, n_classes), dtype="float32")
         q_score = np.zeros((n, 3), dtype="float32")
 

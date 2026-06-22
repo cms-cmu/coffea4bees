@@ -130,6 +130,7 @@ class analysis(HH4bBaseProcessor):
         if self.make_classifier_input is not None:
             for k in ["ZZSR", "ZHSR", "HHSR", "SR", "SB"]:
                 selev[k] = selev["quadJet_selected"][k]
+            selev["nSelJets"] = ak.num(selev.selJet)
 
             from ..helpers.dump_friendtrees import dump_input_friend
             weight = "weight_noJCM_noFvT"
@@ -144,21 +145,23 @@ class analysis(HH4bBaseProcessor):
                 NotCanJet="notCanJet_coffea",
                 threeTag_label="lowpt_threeTag",
                 fourTag_label="lowpt_fourTag",
-                seljet_label="nSelJets_lowpt",
+                seljet_label=["nSelJets_lowpt", "nSelJets"],
             )
 
-        # if self.make_friend_JCM_weight is not None:
-        #     from ..helpers.dump_friendtrees import dump_JCM_weight
-        #     friends["friends"] |= dump_JCM_weight(selev, self.make_friend_JCM_weight, "JCM_weight", analysis_selections)
+        if self.make_friend_JCM_weight is not None:
+            from ..helpers.dump_friendtrees import dump_JCM_weight
+            friends["friends"] |= dump_JCM_weight(selev, self.make_friend_JCM_weight, "JCM_weight", analysis_selections)
 
-        # if self.make_friend_FvT_weight is not None:
-        #     from ..helpers.dump_friendtrees import dump_FvT_weight
-        #     friends["friends"] |= dump_FvT_weight(selev, self.make_friend_FvT_weight, "FvT_weight", analysis_selections)
+        if self.make_friend_FvT_weight is not None:
+            from ..helpers.dump_friendtrees import dump_FvT_weight
+            friends["friends"] |= dump_FvT_weight(selev, self.make_friend_FvT_weight, "FvT_weight", analysis_selections)
 
-        # if self.make_friend_SvB is not None:
-        #     from ..helpers.dump_friendtrees import dump_SvB
-        #     friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB", analysis_selections)
-        #     friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB_MA", analysis_selections)
+        if self.make_friend_SvB is not None:
+            from ..helpers.dump_friendtrees import dump_SvB
+            if "SvB" in selev.fields and self.classifier_SvB is not None:
+                friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB", analysis_selections)
+            if "SvB_MA" in selev.fields and self.classifier_SvB_MA is not None:
+                friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB_MA", analysis_selections)
 
         return friends
 
