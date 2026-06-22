@@ -22,6 +22,8 @@ sed -e "s|base_path: .*|base_path: ${OUTPUT_DIR}|" \
     -e "s|\#max.*|maxchunks: 5|" \
     -e "s|\#test.*|test_files: 1|" \
     -e "s|2024_.*|tmp\/|" \
+    -e "s|PFNano|nanoAOD|g" \
+    -e "s|picoPFnano_boosted|picoAOD_boosted|g" \
     coffea4bees/skimmer/metadata/HH4b_boosted.yml > $JOB_CONFIG
 [[ $(hostname) = *runner* ]] && sed -i "s|T3_US_FNALLPC|T3_CH_PSI|" $JOB_CONFIG
 cat $JOB_CONFIG; echo
