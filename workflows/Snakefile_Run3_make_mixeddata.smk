@@ -71,7 +71,9 @@ if isinstance(_rank, (list, tuple)):
     _rp, _rn = _rank
     _rank_suffix = f"{_tag_suffix}_rank{_rp}_{_rn}"
 else:
-    _rank_suffix = f"{_tag_suffix}_rank{int(_rank)}"
+    # Render the single-int rank as _rank{N}_{N} so it matches the per-side
+    # list form (_rank{rp}_{rn}); default_rank=0 -> _rank0_0.
+    _rank_suffix = f"{_tag_suffix}_rank{int(_rank)}_{int(_rank)}"
 config.setdefault('output_path', f"output/Run3_mixeddata{_rank_suffix}/")
 config.setdefault('base_path',
     f"root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_noTT_pz{_rank_suffix}")
@@ -119,16 +121,17 @@ config['run_on_condor'] = str(_roc).lower() not in ('false', '0', 'no')
 out         = config['output_path']
 SKIMMER_CFG    = "coffea4bees/skimmer/metadata/mixeddata_Run3.yml"
 JCM_FILE       = "coffea4bees/analysis/weights/JCM/Run3/jetCombinatoricModel_SB_v2.yml"
-# Hemisphere library + statistics. Defaults to the committed production library;
-# point at a rebuilt one (e.g. the lower-pT 2023 build) without editing this
-# file via:
-#   --config hemi_lib=coffea4bees/skimmer/metadata/hemisphere_library_Run3_noTT_pt25.yml \
-#            hemi_stats_dir=coffea4bees/skimmer/metadata/hemi_statistics_noTT_pt25
-# (produced by Snakefile_Run3_make_hemisphere_library.smk).
+# Hemisphere library + statistics. Defaults to the 25-GeV-2023 (pt25) build,
+# which is now the production selection (object_selection_thresholds.yml sets
+# run3 selected pt_min=25 for the 2023 eras via era_overrides). To fall back to
+# the legacy 30-GeV-2023 build without editing this file:
+#   --config hemi_lib=coffea4bees/skimmer/metadata/hemisphere_library_Run3_noTT.yml \
+#            hemi_stats_dir=coffea4bees/skimmer/metadata/hemi_statistics_noTT
+# (libraries produced by Snakefile_Run3_make_hemisphere_library.smk).
 HEMI_LIB       = config.setdefault('hemi_lib',
-    "coffea4bees/skimmer/metadata/hemisphere_library_Run3_noTT.yml")
+    "coffea4bees/skimmer/metadata/hemisphere_library_Run3_noTT_pt25.yml")
 HEMI_STATS_DIR = config.setdefault('hemi_stats_dir',
-    "coffea4bees/skimmer/metadata/hemi_statistics_noTT")
+    "coffea4bees/skimmer/metadata/hemi_statistics_noTT_pt25")
 STUDY_CFG      = "coffea4bees/analysis/metadata/study_mixed_data_Run3.yml"
 REGISTRY       = "picoaod_datasets_mixeddata_Run3_noTT_pz.yml"
 

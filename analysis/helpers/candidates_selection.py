@@ -88,6 +88,19 @@ def cand_jet_selection(
     canJet["btagScore"] = canJet_raw.btagScore
     canJet["puId"]      = canJet_raw.puId
     canJet["jetId"]     = canJet_raw.jetId
+    # Extra per-jet features dumped into the HCR classifier inputs (see dump_input_friend).
+    # Passed through unscaled: the bRegCorr scaling above only applies to the 4-vector.
+    # Guarded on availability so Run2 inputs (no ParticleNet/HF branches) don't crash.
+    for _feat in (
+        "btagPNetCvB", "btagPNetCvL", "btagPNetQvG", "btagPNetTauVJet",
+        "PNetRegPtRawRes", "nSVs",
+        "chHEF", "neHEF", "chEmEF", "neEmEF", "muEF",
+        "nConstituents", "area", "rawFactor",
+        "hfsigmaEtaEta", "hfsigmaPhiPhi",
+        "hfadjacentEtaStripsSize", "hfcentralEtaStripSize",
+    ):
+        if _feat in canJet_raw.fields:
+            canJet[_feat] = canJet_raw[_feat]
     if "hadronFlavour" in selev.Jet.fields:
         canJet["hadronFlavour"] = canJet_raw.hadronFlavour
     del canJet_raw
