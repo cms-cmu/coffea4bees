@@ -9,12 +9,15 @@ main:
     - --max-trainers 3
 
 model:
-  # - module: HCR.SvB.ggF.all_kl.Train
   - module: HCR.SvB.ggF.baseline.Train
     option:
       - --roc-signal-by-category # calculate ROC by category
       - --kfold-seed SvB random
       - --kfold-seed-offsets 0
+      - --architecture
+      - n_features: 8
+        use_kv_proj: true
+        use_attention_gate: true
       - --training FixedStep
       - epoch: 20
         bs_init: 1024
@@ -26,7 +29,6 @@ dataset:
   - module: HCR.SvB_lowpt.Background # load background dataset (lowpt version)
     option:
       - --metadata coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/
-      # - --test-files 2 # limit to 2 files per group for quick testing (remove for full training)
       - --norm 3
       - --JCM-weight "" coffea4bees/analysis/weights/JCM/Run2_lowpt_v1/jetCombinatoricModel_SB_2024_v2.yml@@JCM_weights
       - --friends "" coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/classifier_inputs_lowpt_wlowptJCM.json@@HCR_input_lowpt
