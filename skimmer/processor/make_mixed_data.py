@@ -98,6 +98,16 @@ class HemiMixer(Skimmer4b):
         self.jet_branches = ["Jet_phi", "Jet_pt", "Jet_eta", "Jet_mass", "Jet_jetId", "Jet_puId"]
         if '202' in dataset:
             self.jet_branches += ["Jet_btagPNetB", "Jet_PNetRegPtRawCorr", "Jet_PNetRegPtRawCorrNeutrino", "Jet_PNetRegPtRawRes"]
+            # Extra per-jet features forwarded into the mixed picoAOD so that the
+            # mixed-data HCR classifier inputs match the real-data/ttbar inputs
+            # (see candidates_selection.cand_jet_selection / dump_input_friend).
+            self.jet_branches += [
+                "Jet_btagPNetCvB", "Jet_btagPNetCvL", "Jet_btagPNetQvG", "Jet_btagPNetTauVJet",
+                "Jet_nSVs", "Jet_nConstituents", "Jet_area", "Jet_rawFactor",
+                "Jet_chHEF", "Jet_neHEF", "Jet_chEmEF", "Jet_neEmEF", "Jet_muEF",
+                "Jet_hfsigmaEtaEta", "Jet_hfsigmaPhiPhi",
+                "Jet_hfadjacentEtaStripsSize", "Jet_hfcentralEtaStripSize",
+            ]
         else:
             self.jet_branches += ["Jet_btagDeepFlavB", "Jet_bRegCorr"]
 
