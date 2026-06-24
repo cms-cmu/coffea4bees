@@ -9,7 +9,7 @@ from coffea.analysis_tools import PackedSelection
 from coffea4bees.analysis.helpers.processor_config import processor_config
 from src.physics.common import drClean
 from src.physics.event_selection import apply_event_selection
-from src.physics.objects.jet_corrections import apply_jerc_corrections
+from src.physics.objects.jet_corrections import apply_jerc_corrections, apply_jerc_corrections_jsonpog
 from coffea4bees.trigger_studies.skimmer.skimmer_trg import apply_dilep_jet_selection
 from coffea4bees.trigger_studies.filling_histograms import filling_trigger_histograms
 import awkward as ak
@@ -226,9 +226,9 @@ class analysis(processor.ProcessorABC):
         #
         # Calculate and apply Jet Energy Calibration
         #
-        jets = apply_jerc_corrections(
+        jets = apply_jerc_corrections_jsonpog(
             event,
-            jet_type="AK4PFPuppi.txt", 
+            jet_type="AK4PFPuppi",
             corrections_metadata=self.corrections_metadata[self.year],
             isMC=self.config["isMC"],
             run_systematics=False,

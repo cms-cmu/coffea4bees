@@ -368,6 +368,13 @@ rule mixeddata_study_hemispheres:
     container: analysis_container
     shell: "source coffea4bees/scripts/mixeddata-study-hemispheres.sh --output-base {output_dir} 2>&1 | tee -a {log}"
 
+rule mixeddata_test_Run3:
+    output: f"{output_dir}/test_mixeddata_Run3/test_dump_MixedData_Run3.yml"
+    container: analysis_container
+    log: f"{output_dir}/mixeddata_test_Run3.log"
+    container: analysis_container
+    shell: "source coffea4bees/scripts/mixeddata-test-Run3.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
+
 rule analysis_test_lowpt_data_Run2:
     output: f"{output_dir}/analysis_test_lowpt_data_Run2/test_data_lowpt.coffea" 
     log: f"{output_dir}/analysis_test_lowpt_data_Run2.log"
