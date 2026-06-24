@@ -315,7 +315,7 @@ def jet_selection(
             else:
                 event['Jet'] = ak.where(
                     event.Jet.btagScore >= corrections_metadata['btagWP']['L'],
-                    apply_jerc_corrections(
+                    apply_jerc_corrections_jsonpog(
                         event,
                         corrections_metadata=corrections_metadata,
                         isMC=isMC,
