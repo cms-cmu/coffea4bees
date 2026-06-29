@@ -168,6 +168,7 @@ mixeddata_all_rank3_3:
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_noTT_pz_rank3_3/data_2023_BPixD1/picoAOD_mixed_all.chunk39.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_noTT_pz_rank3_3/data_2023_BPixD1/picoAOD_mixed_all.chunk4.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_noTT_pz_rank3_3/data_2023_BPixD1/picoAOD_mixed_all.chunk40.root
+        - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_noTT_pz_rank3_3/data_2023_BPixD1/picoAOD_mixed_all.chunk41.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_noTT_pz_rank3_3/data_2023_BPixD1/picoAOD_mixed_all.chunk5.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_noTT_pz_rank3_3/data_2023_BPixD1/picoAOD_mixed_all.chunk6.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_noTT_pz_rank3_3/data_2023_BPixD1/picoAOD_mixed_all.chunk7.root
@@ -296,6 +297,7 @@ mixeddata_all_rank3_3:
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_noTT_pz_rank3_3/data_2023_preBPixC4/picoAOD_mixed_all.chunk62.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_noTT_pz_rank3_3/data_2023_preBPixC4/picoAOD_mixed_all.chunk63.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_noTT_pz_rank3_3/data_2023_preBPixC4/picoAOD_mixed_all.chunk64.root
+        - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_noTT_pz_rank3_3/data_2023_preBPixC4/picoAOD_mixed_all.chunk65.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_noTT_pz_rank3_3/data_2023_preBPixC4/picoAOD_mixed_all.chunk7.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_noTT_pz_rank3_3/data_2023_preBPixC4/picoAOD_mixed_all.chunk8.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_noTT_pz_rank3_3/data_2023_preBPixC4/picoAOD_mixed_all.chunk9.root
