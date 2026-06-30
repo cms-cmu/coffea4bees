@@ -169,10 +169,17 @@ rule train:
         # 100x nets (SR+SB esp.) are slow at the capped batch -> 16h; others 8h.
         runtime = 960 if "100x" in VARIANT else 480,
         mem_mb  = 56000,
-        # mps:30 is the per-job max (=24 GB GPU). Bumped from 25 for the wide-net
-        # capacity scan (n_features=54 ~30x); MPS shares GPU memory, so wide nets
-        # must also keep their batch within 24 GB and not double-up on one GPU.
-        gres    = "mps:30",
+        # MPS = fraction of the A100 (mps:N = N% SMs). The admin reaper kills a
+        # job whose actual GPU SM usage exceeds its mps:N request. The wide 30x
+        # net (n_features=54) peaks above 30% and got reaped at mps:30, so wide
+        # nets need mps:50 (medium's per-job max) for headroom; smaller nets fit
+        # mps:30. (mps:50 also runs ~faster: 50% SMs vs 30%.)
+        gres    = "mps:50" if ("30x" in VARIANT or "100x" in VARIANT) else "mps:30",
+        # >25 MPS/job requires the 'medium' QoS (CMS-CMU SLURM guide); jobs left
+        # on the default 'light' QoS get reaped by the admin (CANCELLED by 0 at
+        # ~5 min). NB: medium MaxWall is 8h, so the 100x variant (runtime 960=16h)
+        # would be DenyOnLimit-rejected here — 100x needs a separate QoS/time plan.
+        qos     = "medium",
     threads: 4
     params:
         init                    = INIT,
