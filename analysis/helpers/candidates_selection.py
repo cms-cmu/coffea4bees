@@ -96,8 +96,6 @@ def cand_jet_selection(
         "PNetRegPtRawRes", "nSVs",
         "chHEF", "neHEF", "chEmEF", "neEmEF", "muEF",
         "nConstituents", "area", "rawFactor",
-        "hfsigmaEtaEta", "hfsigmaPhiPhi",
-        "hfadjacentEtaStripsSize", "hfcentralEtaStripSize",
     ):
         if _feat in canJet_raw.fields:
             canJet[_feat] = canJet_raw[_feat]
