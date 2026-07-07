@@ -45,6 +45,8 @@ def dump_input_friend(
     ):
         if _feat in events[CanJet].fields:
             canjet_fields[_feat] = events[CanJet][_feat]
+        else:
+            canjet_fields[_feat] = ak.zeros_like(events[CanJet].pt)
     base_dict = {
         "CanJet": padded(
             ak.zip(canjet_fields),
