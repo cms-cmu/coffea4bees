@@ -92,6 +92,15 @@ hists:
                 edgecolor: gray
                 fillcolor: gray
 
+        mix_all_pt25_rank0:
+                process: mixeddata_all_pt25_rank0
+                tag: fourTag
+                year: RunII
+                label: Mixed Data rank-0 pt25
+                edgecolor: blue
+                fillcolor: blue
+
+
         mix_all_rank3_3:
                 process: mixeddata_all_rank3_3
                 tag: fourTag

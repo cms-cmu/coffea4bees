@@ -27,16 +27,29 @@ def dump_input_friend(
     selection = _build_cutflow(*selections)
     padded = akext.pad.selected()
     # Build the dictionary step by step, then pass to ak.Array
+    canjet_fields = {
+        "pt": events[CanJet].pt,
+        "eta": events[CanJet].eta,
+        "phi": events[CanJet].phi,
+        "mass": events[CanJet].mass,
+    }
+    # Extra per-jet classifier-input features, included when attached to the
+    # candidate jets (see cand_jet_selection). Kept in sync with what is
+    # available so Run2/Run3 inputs both dump cleanly.
+    for _feat in (
+        "btagScore",
+        "btagPNetCvB", "btagPNetCvL", "btagPNetQvG", "btagPNetTauVJet",
+        "PNetRegPtRawRes", "nSVs",
+        "chHEF", "neHEF", "chEmEF", "neEmEF", "muEF",
+        "nConstituents", "area", "rawFactor",
+    ):
+        if _feat in events[CanJet].fields:
+            canjet_fields[_feat] = events[CanJet][_feat]
+        else:
+            canjet_fields[_feat] = ak.zeros_like(events[CanJet].pt)
     base_dict = {
         "CanJet": padded(
-            ak.zip(
-                {
-                    "pt": events[CanJet].pt,
-                    "eta": events[CanJet].eta,
-                    "phi": events[CanJet].phi,
-                    "mass": events[CanJet].mass,
-                }
-            ),
+            ak.zip(canjet_fields),
             selection,
         ),
         "NotCanJet": padded(

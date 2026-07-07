@@ -236,6 +236,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         parking_lumi_cfg: str = _PARKING_LUMI_CFG_DEFAULT,
         year_override: bool = False,
         compute_hemi_mixing_diagnostics: bool = False,
+        plot_extra_canjet_vars: bool = False,
     ):
 
         logging.debug("\nInitialize Analysis Processor")
@@ -297,6 +298,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.year_override = year_override
         self.parking_lumi_cfg = load_parking_lumi_cfg(parking_lumi_cfg) if parking_lumi_cfg else None
         self.compute_hemi_mixing_diagnostics = compute_hemi_mixing_diagnostics
+        self.plot_extra_canjet_vars = plot_extra_canjet_vars
 
         # Track top 20 events with largest ps_hh across all chunks
         self.top_ps_hh_events = []
@@ -417,8 +419,13 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         with self._stage("load_friend_SvB"):
             if self.run_SvB:
                 self.load_SvB(event)
-                if "SvB_MA" not in event.fields and self.classifier_SvB_MA is None and self.classifier_SvB_FeynNet is None:
-                    logging.warning("SvB_MA not available after load_SvB and no classifier configured — disabling run_SvB for this chunk.")
+                # Keep run_SvB on if any SvB-like record was loaded (SvB, SvB_MA,
+                # or any configurable SvB_* / SvB_FeynNet friend) or an on-the-fly
+                # classifier is configured (its field is created later in
+                # candidates_selection). Only disable when nothing is available.
+                has_any_svb = any(f.startswith("SvB") for f in event.fields)
+                if not has_any_svb and self.classifier_SvB_MA is None and self.classifier_SvB_FeynNet is None:
+                    logging.warning("No SvB-like friend or classifier available after load_SvB — disabling run_SvB for this chunk.")
                     self.run_SvB = False
 
         with self._stage("assign_is_parking"):
@@ -1241,7 +1248,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         self._cutFlow.fill("passVBFSel", selev[selev.passVBFSel])
 
-        if self.run_SvB:
+        # passSvB/failSvB are only set when a signal-discriminant field
+        # (SvB_MA or SvB_FeynNet) is present; skip these cutflow rows otherwise.
+        if self.run_SvB and "passSvB" in selev.fields:
             self.fill_cutflow_with_and_without_trig("passSvB", selev[selev.passSvB])
             self.fill_cutflow_with_and_without_trig("failSvB", selev[selev.failSvB])
 
@@ -1290,7 +1299,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         fill_ttbar_cut("SB", selev[selev.passSB])
         fill_ttbar_cut("passVBFSel", selev[selev.passVBFSel])
 
-        if self.run_SvB:
+        if self.run_SvB and "passSvB" in selev.fields:
             fill_ttbar_cut("passSvB", selev[selev.passSvB])
             fill_ttbar_cut("failSvB", selev[selev.failSvB])
 
@@ -1322,7 +1331,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         fill_ttbar_MvD_cut("SB", selev[selev.passSB])
         fill_ttbar_MvD_cut("passVBFSel", selev[selev.passVBFSel])
 
-        if self.run_SvB:
+        if self.run_SvB and "passSvB" in selev.fields:
             fill_ttbar_MvD_cut("passSvB", selev[selev.passSvB])
             fill_ttbar_MvD_cut("failSvB", selev[selev.failSvB])
 
@@ -1581,6 +1590,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 event_metadata=event.metadata,
                 year_override=self.year_override,
                 compute_hemi_mixing_diagnostics=self.compute_hemi_mixing_diagnostics,
+                plot_extra_canjet_vars=self.plot_extra_canjet_vars,
             )
             if not self.plot_ttbar_with_weights and not self.plot_ttbar_with_MvD_weights:
                 return hist_nom
@@ -1606,6 +1616,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     weight_name = "weight_d3_to_t4",
                     weight_noFvT_override="weight_d3_to_t4_noFvT",
                     year_override=self.year_override,
+                    plot_extra_canjet_vars=self.plot_extra_canjet_vars,
                 )
 
                 hist_t3 = filling_nominal_histograms(
@@ -1625,6 +1636,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     weight_name = "weight_d3_to_t3",
                     weight_noFvT_override="weight_d3_to_t3_noFvT",
                     year_override=self.year_override,
+                    plot_extra_canjet_vars=self.plot_extra_canjet_vars,
                 )
                 hists += [hist_t4, hist_t3]
 
@@ -1649,6 +1661,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     weight_name="weight_mix4_to_t4_MvD",
                     weight_noMvD_override="weight_mix4_to_t4_MvD_noMvD",
                     year_override=self.year_override,
+                    plot_extra_canjet_vars=self.plot_extra_canjet_vars,
                 )
                 hists.append(hist_mvd_t4)
 

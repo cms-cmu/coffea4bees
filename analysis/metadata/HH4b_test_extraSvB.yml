@@ -1,0 +1,16 @@
+runner:
+  workers: 4
+  worker_memory: 4GB
+
+config:
+  blind: false
+  apply_FvT: false
+  apply_JCM: false
+  apply_trigWeight: false
+  apply_btagSF: true
+  apply_boosted_veto: false
+  run_SvB: true
+  SvB: null
+  SvB_MA: null
+  top_reconstruction: fast
+  plot_extra_canjet_vars: true

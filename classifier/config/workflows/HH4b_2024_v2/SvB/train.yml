@@ -14,6 +14,10 @@ model:
       - --roc-signal-by-category # calculate ROC by category
       - --kfold-seed SvB random
       - --kfold-seed-offsets 0
+      - --architecture
+      - n_features: 8
+        use_kv_proj: true
+        use_attention_gate: true
       - --training FixedStep
       - epoch: 20
         bs_init: 1024
