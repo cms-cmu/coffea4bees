@@ -81,4 +81,12 @@ def rename_SvB_friend(chunk: Chunk, friend: Friend):
         chunk,
         reader_options={"branch_filter": set().union(kept, renames).intersection},
     )
+    if SvB is None:
+        return None
+    # Binary ggF-vs-bkg schema (no ZZ/ZH channels): keep the raw branch names
+    # so setSvBVars' binary branch — which reads p_sig/p_ggF/p_multijet/p_ttbar —
+    # picks them up. Renaming p_ggF->phh would make setSvBVars misdetect the
+    # legacy 5-class schema and crash on the missing pzz field.
+    if "p_ZZ" not in SvB.fields:
+        return SvB
     return _rename(SvB, kept, renames)
