@@ -16,6 +16,7 @@ from coffea4bees.analysis.helpers.event_selection import (
 from coffea4bees.analysis.helpers.object_selection import load_object_selection_config
 from coffea4bees.analysis.helpers.truth_tools import find_genpart
 from src.physics.event_selection import apply_event_selection
+from src.physics.common import mask_event_decision
 
 import logging
 
@@ -115,10 +116,18 @@ class analysis(processor.ProcessorABC):
             *,
             corrections_metadata: dict = None,
             object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
+            resolved_triggers_cfg: str = "coffea4bees/metadata/triggers_HH4b.yml",
+            boosted_triggers_cfg: str = "coffea4bees/metadata/boosted_triggers_HH4b.yml",
             **kwargs
     ):
         self.corrections_metadata = corrections_metadata
         self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
+
+        import yaml
+        with open(resolved_triggers_cfg, "r") as f:
+            self.resolved_triggers = yaml.safe_load(f)["triggers"]
+        with open(boosted_triggers_cfg, "r") as f:
+            self.boosted_triggers = yaml.safe_load(f)["triggers"]
 
     def process(self, event):
         year    = event.metadata['year']
@@ -137,6 +146,26 @@ class analysis(processor.ProcessorABC):
         event = apply_boosted_4b_selection(event)
         event = apply_semiresolved_4b_selection(event)
 
+        # Compute selection-specific HLT trigger masks
+        if 'HLT' in event.fields:
+            resolved_trig_list = self.resolved_triggers.get(year, [])
+            boosted_trig_list = self.boosted_triggers.get(year, [])
+            semiresolved_trig_list = list(set(resolved_trig_list + boosted_trig_list))
+
+            passHLT_resolved = mask_event_decision(
+                event, decision="OR", branch="HLT", list_to_mask=resolved_trig_list
+            )
+            passHLT_boosted = mask_event_decision(
+                event, decision="OR", branch="HLT", list_to_mask=boosted_trig_list
+            )
+            passHLT_semiresolved = mask_event_decision(
+                event, decision="OR", branch="HLT", list_to_mask=semiresolved_trig_list
+            )
+        else:
+            passHLT_resolved = np.full(nEvent, True)
+            passHLT_boosted = np.full(nEvent, True)
+            passHLT_semiresolved = np.full(nEvent, True)
+
         # Gen-matching (MC only)
         if isMC and 'GenPart' in event.fields:
             event = build_gen_truth(event)
@@ -145,21 +174,20 @@ class analysis(processor.ProcessorABC):
         else:
             has_genmatching = False
 
-        passResolved     = event.fourTag
-        passBoosted      = event.passBoostedSel
-        passSemiResolved = event.passSemiResolvedSel
-        passLowPt        = event.lowpt_fourTag
+        passResolved     = event.fourTag & passHLT_resolved
+        passBoosted      = event.passBoostedSel & passHLT_boosted
+        passSemiResolved = event.passSemiResolvedSel & passHLT_semiresolved
+        passLowPt        = event.lowpt_fourTag & passHLT_resolved
 
         selections = PackedSelection()
         selections.add("lumimask",         event.lumimask)
         selections.add("passNoiseFilter",  event.passNoiseFilter)
-        selections.add("passHLT",          event.passHLT)
         selections.add("passResolved",     passResolved)
         selections.add("passBoostedSel",   passBoosted)
         selections.add("passSemiResolved", passSemiResolved)
         selections.add("passLowPt",        passLowPt)
 
-        base      = ["lumimask", "passNoiseFilter", "passHLT"]
+        base      = ["lumimask", "passNoiseFilter"]
         base_mask = selections.require(**{k: True for k in base})
 
         def count(**kwargs):
@@ -382,6 +410,198 @@ class analysis(processor.ProcessorABC):
             sel_btag_flat = ak.to_numpy(ak.flatten(sel_untagged_genb_bscore[sel_untagged_genb_bscore >= 0]))
             genmatch_cutflow['untagged_sel_genb_btag_hist'], _ = np.histogram(sel_btag_flat, bins=btag_bins)
 
+        # ── Only Semi-Resolved diagnostics ──
+        only_sr_mask = base_mask & passSemiResolved & ~passResolved & ~passLowPt & ~passBoosted
+        total_only_sr = ak.sum(only_sr_mask)
+        
+        fail_jets = ak.sum(only_sr_mask & (n_selected < 4))
+        fail_tags = ak.sum(only_sr_mask & (n_selected >= 4) & (n_tagged < 4))
+        fail_trigger = ak.sum(only_sr_mask & (n_selected >= 4) & (n_tagged >= 4) & ~passHLT_resolved)
+        fail_other = total_only_sr - (fail_jets + fail_tags + fail_trigger)
+
+        # Low-pT failure modes
+        fail_lowpt_jets = ak.sum(only_sr_mask & (n_selected < 4))
+        fail_lowpt_tags_short = ak.sum(only_sr_mask & (n_selected >= 4) & (n_tagged < 3))
+        fail_lowpt_tags_long = ak.sum(only_sr_mask & (n_selected >= 4) & (n_tagged > 3))
+        fail_lowpt_no_lowpt_tag = ak.sum(
+            only_sr_mask & (n_selected >= 4) & (n_tagged == 3) & (n_lowpt_tagged == 0)
+        )
+        fail_lowpt_trigger = ak.sum(
+            only_sr_mask & (n_selected >= 4) & (n_tagged == 3) & (n_lowpt_tagged >= 1) & ~passHLT_resolved
+        )
+        fail_lowpt_other = total_only_sr - (
+            fail_lowpt_jets + fail_lowpt_tags_short + fail_lowpt_tags_long +
+            fail_lowpt_no_lowpt_tag + fail_lowpt_trigger
+        )
+
+        fj_mask = (
+            (event.FatJet.pt > 250) &
+            (np.abs(event.FatJet.eta) < 2.5) &
+            (event.FatJet.msoftdrop > 50) &
+            (event.FatJet.msoftdrop < 200) &
+            (event.FatJet.particleNetMD_Xbb > 0.7)
+        )
+        candFatJets = event.FatJet[fj_mask]
+        lead_fatjet = ak.pad_none(candFatJets, 1)[:, 0]
+        
+        sr_events_pt = lead_fatjet.pt[only_sr_mask]
+        sr_events_mass = lead_fatjet.msoftdrop[only_sr_mask]
+        sr_events_xbb = lead_fatjet.particleNetMD_Xbb[only_sr_mask]
+        
+        sr_pt_flat = ak.to_numpy(ak.fill_none(sr_events_pt, -1.0))
+        sr_mass_flat = ak.to_numpy(ak.fill_none(sr_events_mass, -1.0))
+        sr_xbb_flat = ak.to_numpy(ak.fill_none(sr_events_xbb, -1.0))
+        
+        sr_njets_flat = ak.to_numpy(n_selected[only_sr_mask])
+        sr_ntags_flat = ak.to_numpy(n_tagged[only_sr_mask])
+        sr_nlowpt_jets_flat = ak.to_numpy(n_lowpt_sel[only_sr_mask])
+        sr_nlowpt_tags_flat = ak.to_numpy(n_lowpt_tagged[only_sr_mask])
+        
+        sr_pt_bins = np.linspace(200, 1000, 41)
+        sr_mass_bins = np.linspace(0, 250, 26)
+        sr_xbb_bins = np.linspace(0, 1, 26)
+        sr_njets_bins = np.arange(0, 11)
+        
+        sr_njets_hist, _ = np.histogram(sr_njets_flat, bins=sr_njets_bins)
+        sr_ntags_hist, _ = np.histogram(sr_ntags_flat, bins=sr_njets_bins)
+        sr_nlowpt_jets_hist, _ = np.histogram(sr_nlowpt_jets_flat, bins=sr_njets_bins)
+        sr_nlowpt_tags_hist, _ = np.histogram(sr_nlowpt_tags_flat, bins=sr_njets_bins)
+        sr_pt_hist, _ = np.histogram(sr_pt_flat[sr_pt_flat >= 0], bins=sr_pt_bins)
+        sr_mass_hist, _ = np.histogram(sr_mass_flat[sr_mass_flat >= 0], bins=sr_mass_bins)
+        sr_xbb_hist, _ = np.histogram(sr_xbb_flat[sr_xbb_flat >= 0], bins=sr_xbb_bins)
+        
+        only_sr_diagnostics = {
+            'total_only_sr': int(total_only_sr),
+            'fail_resolved_jets': int(fail_jets),
+            'fail_resolved_tags': int(fail_tags),
+            'fail_resolved_trigger': int(fail_trigger),
+            'fail_resolved_other': int(fail_other),
+            'fail_lowpt_jets': int(fail_lowpt_jets),
+            'fail_lowpt_tags_short': int(fail_lowpt_tags_short),
+            'fail_lowpt_tags_long': int(fail_lowpt_tags_long),
+            'fail_lowpt_no_lowpt_tag': int(fail_lowpt_no_lowpt_tag),
+            'fail_lowpt_trigger': int(fail_lowpt_trigger),
+            'fail_lowpt_other': int(fail_lowpt_other),
+            'njets_hist': sr_njets_hist,
+            'ntags_hist': sr_ntags_hist,
+            'nlowpt_jets_hist': sr_nlowpt_jets_hist,
+            'nlowpt_tags_hist': sr_nlowpt_tags_hist,
+            'pt_hist': sr_pt_hist,
+            'mass_hist': sr_mass_hist,
+            'xbb_hist': sr_xbb_hist,
+            'btag_wp_m': float(btagWP['M']),
+        }
+
+        if has_genmatching:
+            matched_btags = ak.fill_none(event.genb_matched_jet.btagScore, -1.0)
+            sr_matched_btags = matched_btags[only_sr_mask]
+            sr_matched_btags_sorted = ak.sort(sr_matched_btags, axis=1, ascending=False)
+            sr_matched_btags_pad = ak.pad_none(sr_matched_btags_sorted, 4, clip=True)
+            
+            btag_1 = ak.to_numpy(ak.fill_none(sr_matched_btags_pad[:, 0], -1.0))
+            btag_2 = ak.to_numpy(ak.fill_none(sr_matched_btags_pad[:, 1], -1.0))
+            btag_3 = ak.to_numpy(ak.fill_none(sr_matched_btags_pad[:, 2], -1.0))
+            btag_4 = ak.to_numpy(ak.fill_none(sr_matched_btags_pad[:, 3], -1.0))
+            
+            sr_matched_btag_bins = np.linspace(0, 1, 51)
+            hist_btag_1, _ = np.histogram(btag_1[btag_1 >= 0], bins=sr_matched_btag_bins)
+            hist_btag_2, _ = np.histogram(btag_2[btag_2 >= 0], bins=sr_matched_btag_bins)
+            hist_btag_3, _ = np.histogram(btag_3[btag_3 >= 0], bins=sr_matched_btag_bins)
+            hist_btag_4, _ = np.histogram(btag_4[btag_4 >= 0], bins=sr_matched_btag_bins)
+
+            # Delta R between jets matched to H0 and H1
+            jets_h0 = event.genb_matched_jet[(event.genb_higgs_idx == 0) & event.genb_is_matched]
+            jets_h1 = event.genb_matched_jet[(event.genb_higgs_idx == 1) & event.genb_is_matched]
+            
+            pairs = ak.cartesian([jets_h0, jets_h1], axis=1)
+            dr_pairs = pairs["0"].delta_r(pairs["1"])
+            min_dr = ak.min(dr_pairs, axis=1)
+            
+            sr_min_dr = ak.to_numpy(ak.fill_none(min_dr[only_sr_mask], -1.0))
+            
+            # Delta R between two jets of the same Higgs (H0 and H1)
+            jets_h0_pad = ak.pad_none(jets_h0, 2, clip=True)
+            dr_h0 = jets_h0_pad[:, 0].delta_r(jets_h0_pad[:, 1])
+            sr_dr_h0 = ak.to_numpy(ak.fill_none(dr_h0[only_sr_mask], -1.0))
+            
+            jets_h1_pad = ak.pad_none(jets_h1, 2, clip=True)
+            dr_h1 = jets_h1_pad[:, 0].delta_r(jets_h1_pad[:, 1])
+            sr_dr_h1 = ak.to_numpy(ak.fill_none(dr_h1[only_sr_mask], -1.0))
+            
+            sr_dr_bins = np.linspace(0, 5, 51)
+            hist_dr, _ = np.histogram(sr_min_dr[sr_min_dr >= 0], bins=sr_dr_bins)
+            hist_dr_h0, _ = np.histogram(sr_dr_h0[sr_dr_h0 >= 0], bins=sr_dr_bins)
+            hist_dr_h1, _ = np.histogram(sr_dr_h1[sr_dr_h1 >= 0], bins=sr_dr_bins)
+
+            # Higgs pt (lead and sublead pt from matched reco jets)
+            def sum_jets(jets):
+                px = ak.sum(jets.pt * np.cos(jets.phi), axis=-1)
+                py = ak.sum(jets.pt * np.sin(jets.phi), axis=-1)
+                pz = ak.sum(jets.pt * np.sinh(jets.eta), axis=-1)
+                e = ak.sum(np.sqrt(jets.pt**2 * np.cosh(jets.eta)**2 + jets.mass**2), axis=-1)
+                pt = np.sqrt(px**2 + py**2)
+                pt_safe = ak.where(pt > 0, pt, 1e-9)
+                eta = np.arcsinh(pz / pt_safe)
+                phi = np.arctan2(py, px)
+                m2 = e**2 - px**2 - py**2 - pz**2
+                mass = np.sqrt(ak.where(m2 > 0, m2, 0))
+                return ak.zip({"pt": pt, "eta": eta, "phi": phi, "mass": mass})
+
+            h0_reco = sum_jets(jets_h0)
+            h1_reco = sum_jets(jets_h1)
+            h_pts = ak.concatenate([h0_reco.pt[:, np.newaxis], h1_reco.pt[:, np.newaxis]], axis=1)
+            h_pts_sorted = ak.sort(h_pts, axis=1, ascending=False)
+            lead_h_pt = h_pts_sorted[:, 0]
+            sublead_h_pt = h_pts_sorted[:, 1]
+            
+            sr_lead_h_pt = ak.to_numpy(ak.fill_none(lead_h_pt[only_sr_mask], -1.0))
+            sr_sublead_h_pt = ak.to_numpy(ak.fill_none(sublead_h_pt[only_sr_mask], -1.0))
+            sr_h_pt_bins = np.linspace(0, 800, 41)
+            hist_lead_pt, _ = np.histogram(sr_lead_h_pt[sr_lead_h_pt >= 0], bins=sr_h_pt_bins)
+            hist_sublead_pt, _ = np.histogram(sr_sublead_h_pt[sr_sublead_h_pt >= 0], bins=sr_h_pt_bins)
+
+            # Invariant mass of matched reco jets
+            all_matched_jets = event.genb_matched_jet[event.genb_is_matched]
+            total_reco_system = sum_jets(all_matched_jets)
+            m4j = total_reco_system.mass
+            
+            sr_m4j = ak.to_numpy(ak.fill_none(m4j[only_sr_mask], -1.0))
+            sr_m4j_bins = np.linspace(0, 1200, 61)
+            hist_m4j, _ = np.histogram(sr_m4j[sr_m4j >= 0], bins=sr_m4j_bins)
+
+            # Eta of 4th highest b-tag score jet (reco vs gen)
+            matched_jets_pad = ak.pad_none(event.genb_matched_jet, 4, clip=True)
+            btag_scores = ak.fill_none(matched_jets_pad.btagScore, -1.0)
+            sort_idx = ak.argsort(btag_scores, axis=1, ascending=False)
+            genb_pad = ak.pad_none(event.genb, 4, clip=True)
+            
+            matched_jets_sorted = matched_jets_pad[sort_idx]
+            genb_sorted = genb_pad[sort_idx]
+            
+            reco_jet_4th = matched_jets_sorted[:, 3]
+            genb_4th = genb_sorted[:, 3]
+            
+            sr_reco_eta = ak.to_numpy(ak.fill_none(reco_jet_4th.eta[only_sr_mask], -999.0))
+            sr_gen_eta = ak.to_numpy(ak.fill_none(genb_4th.eta[only_sr_mask], -999.0))
+            sr_eta_bins = np.linspace(-2.5, 2.5, 51)
+            hist_reco_eta, _ = np.histogram(sr_reco_eta[sr_reco_eta > -900.0], bins=sr_eta_bins)
+            hist_gen_eta, _ = np.histogram(sr_gen_eta[sr_gen_eta > -900.0], bins=sr_eta_bins)
+            
+            only_sr_diagnostics.update({
+                'matched_btag_1_hist': hist_btag_1,
+                'matched_btag_2_hist': hist_btag_2,
+                'matched_btag_3_hist': hist_btag_3,
+                'matched_btag_4_hist': hist_btag_4,
+                'match_dr_h1h2_hist': hist_dr,
+                'match_dr_h0_hist': hist_dr_h0,
+                'match_dr_h1_hist': hist_dr_h1,
+                'match_h_lead_pt_hist': hist_lead_pt,
+                'match_h_sublead_pt_hist': hist_sublead_pt,
+                'match_m4j_hist': hist_m4j,
+                'match_4th_reco_eta_hist': hist_reco_eta,
+                'match_4th_gen_eta_hist': hist_gen_eta,
+            })
+
         output = {
             dataset: {
                 'numEvents': nEvent,
@@ -417,6 +637,7 @@ class analysis(processor.ProcessorABC):
                 # diagnostic cutflow for the "none" population
                 'cutflow': cutflow,
                 'genmatch_cutflow': genmatch_cutflow,
+                'only_sr_diagnostics': only_sr_diagnostics,
             }
         }
 

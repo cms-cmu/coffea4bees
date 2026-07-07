@@ -301,6 +301,8 @@ def filling_nominal_histograms(
         fill += Jet.plot(("selJets_noJCM_lowpt", "Selected lowpt Jets"), "selJet_lowpt", weight="weight_noJCM_noFvT", skip=skip_all_but_n)
         fill += Jet.plot(("tagJets_noJCM_lowpt", "Tag lowpt Jets"), "tagJet_lowpt", weight="weight_noJCM_noFvT", skip=skip_all_but_n)
         fill += Jet.plot(("tagJets_loose_noJCM_lowpt", "Loose Tag lowpt Jets"), "tagJet_loose_lowpt", weight="weight_noJCM_noFvT", skip=skip_all_but_n)
+        if "matched_lowpt_jet_rank" in selev.fields:
+            fill += hist.add('matched_lowpt_jet_rank', (6, -1.5, 4.5, ('matched_lowpt_jet_rank', 'Matched lowpt jet rank (-1: no match, 0: lead, 1: sublead...)')))
 
 
 

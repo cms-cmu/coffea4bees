@@ -188,6 +188,21 @@ class analysis(HH4bBaseProcessor):
         if self.run_SvB and "SvB_MA" in selev.fields and "passMinPs" not in selev.fields:
             selev["passMinPs"] = selev.SvB_MA.passMinPs
 
+        if self.config["isMC"]:
+            if self.config["isSignal"] and "bfromHorZ" in selev.fields and "tagJet_lowpt" in selev.fields:
+                matched_genb = selev.tagJet_lowpt.nearest(selev.bfromHorZ, threshold=0.4)
+                is_matched = ~ak.is_none(matched_genb, axis=1)
+                local_idx = ak.local_index(selev.tagJet_lowpt, axis=1)
+                matched_indices = local_idx[is_matched]
+                has_any_match = ak.any(is_matched, axis=1)
+                selev["matched_lowpt_jet_rank"] = ak.where(
+                    has_any_match,
+                    matched_indices,
+                    ak.singletons(ak.full_like(has_any_match, -1, dtype=int))
+                )
+            else:
+                selev["matched_lowpt_jet_rank"] = ak.singletons(ak.full_like(selev.run, -1, dtype=int))
+
         if not self.run_systematics:
             ## this can be simplified
             hist_nom = filling_nominal_histograms(
