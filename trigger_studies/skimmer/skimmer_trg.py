@@ -9,7 +9,7 @@ from coffea4bees.analysis.helpers.object_selection import apply_bRegCorr, muon_s
 from src.physics.common import drClean
 from src.physics.event_selection import apply_event_selection
 from src.skimmer.picoaod import PicoAOD
-from src.physics.objects.jet_corrections import apply_jet_veto_maps, apply_jerc_corrections
+from src.physics.objects.jet_corrections import apply_jet_veto_maps, apply_jerc_corrections, apply_jerc_corrections_jsonpog
 from src.skimmer.mc_weight_outliers import OutlierByMedian
 
 
@@ -88,7 +88,7 @@ def jet_selection_trg(
         if not isSyntheticData:
             event['Jet'] = ak.where(   ### with neutrino if bjet, otherwise just puppi
                 event.Jet.btagScore >= corrections_metadata['btagWP']['L'],
-                apply_jerc_corrections(
+                apply_jerc_corrections_jsonpog(
                     event,
                     corrections_metadata=corrections_metadata,
                     isMC=isMC,
@@ -97,13 +97,13 @@ def jet_selection_trg(
                     jet_corr_factor=event.Jet.PNetRegPtRawCorr * event.Jet.PNetRegPtRawCorrNeutrino,
                     jet_type="AK4PFPuppiPNetRegressionPlusNeutrino"
                 ),
-                apply_jerc_corrections(
+                apply_jerc_corrections_jsonpog(
                     event,
                     corrections_metadata=corrections_metadata,
                     isMC=isMC,
                     run_systematics=False,
                     dataset=dataset,
-                    jet_type="AK4PFPuppi.txt"
+                    jet_type="AK4PFPuppi"
                 )
             )
 

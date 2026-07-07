@@ -76,6 +76,8 @@ class _HCRKFoldModel:
             ancillaryFeatures=self.ancillary,
             useOthJets=("attention" if states["arch"]["attention"] else ""),
             nClasses=len(self._classes),
+            use_attention_gate=states["arch"].get("use_attention_gate", False),
+            use_kv_proj=states["arch"].get("use_kv_proj", False),
             device="cpu",
         )
         self._model.to("cpu")

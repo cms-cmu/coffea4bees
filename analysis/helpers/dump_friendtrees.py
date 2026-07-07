@@ -42,11 +42,11 @@ def dump_input_friend(
         "PNetRegPtRawRes", "nSVs",
         "chHEF", "neHEF", "chEmEF", "neEmEF", "muEF",
         "nConstituents", "area", "rawFactor",
-        "hfsigmaEtaEta", "hfsigmaPhiPhi",
-        "hfadjacentEtaStripsSize", "hfcentralEtaStripSize",
     ):
         if _feat in events[CanJet].fields:
             canjet_fields[_feat] = events[CanJet][_feat]
+        else:
+            canjet_fields[_feat] = ak.zeros_like(events[CanJet].pt)
     base_dict = {
         "CanJet": padded(
             ak.zip(canjet_fields),

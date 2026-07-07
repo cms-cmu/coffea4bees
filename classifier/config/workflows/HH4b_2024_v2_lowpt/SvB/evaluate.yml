@@ -5,7 +5,7 @@
 main:
   module: evaluate
   option:
-    - --max-evaluators 3
+    - --max-evaluators 1
     - --device cuda cpu # use GPU if available, fall back to CPU
 
 model:
