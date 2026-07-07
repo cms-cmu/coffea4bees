@@ -144,6 +144,16 @@ hists:
                 histtype: step
                 scalefactor: 100
 
+        HH4bRun3:
+                process: GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00
+                tag: fourTag
+                label: HH4b (x100)
+                edgecolor: "#e42536"
+                fillcolor: "#e42536"
+                histtype: step
+                scalefactor: 100
+
+
         ZH4b:
                 process: [ZH4b, ggZH4b]
                 tag: fourTag
