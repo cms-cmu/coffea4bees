@@ -1,6 +1,7 @@
 rule analysis_processor:
     output: "{output_file}"
     # container: config.get("analysis_container", "")
+    retries: 3
     params:
         datasets = "",
         years = "",
