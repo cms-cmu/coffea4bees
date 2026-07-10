@@ -14,7 +14,7 @@ config:
   run_SvB: false 
   top_reconstruction: slow
   fill_histograms: false 
-  # make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/
+  # make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/nominal_sel/
   make_classifier_input: outputs/analysis/   ### local
 
 

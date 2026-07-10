@@ -130,6 +130,7 @@ class analysis(HH4bBaseProcessor):
         if self.make_classifier_input is not None:
             for k in ["ZZSR", "ZHSR", "HHSR", "SR", "SB"]:
                 selev[k] = selev["quadJet_selected"][k]
+            selev["nSelJets"] = ak.num(selev.selJet)
 
             from ..helpers.dump_friendtrees import dump_input_friend
             weight = "weight_noJCM_noFvT"
@@ -144,21 +145,23 @@ class analysis(HH4bBaseProcessor):
                 NotCanJet="notCanJet_coffea",
                 threeTag_label="lowpt_threeTag",
                 fourTag_label="lowpt_fourTag",
-                seljet_label="nSelJets_lowpt",
+                seljet_label=["nSelJets_lowpt", "nSelJets"],
             )
 
-        # if self.make_friend_JCM_weight is not None:
-        #     from ..helpers.dump_friendtrees import dump_JCM_weight
-        #     friends["friends"] |= dump_JCM_weight(selev, self.make_friend_JCM_weight, "JCM_weight", analysis_selections)
+        if self.make_friend_JCM_weight is not None:
+            from ..helpers.dump_friendtrees import dump_JCM_weight
+            friends["friends"] |= dump_JCM_weight(selev, self.make_friend_JCM_weight, "JCM_weight", analysis_selections)
 
-        # if self.make_friend_FvT_weight is not None:
-        #     from ..helpers.dump_friendtrees import dump_FvT_weight
-        #     friends["friends"] |= dump_FvT_weight(selev, self.make_friend_FvT_weight, "FvT_weight", analysis_selections)
+        if self.make_friend_FvT_weight is not None:
+            from ..helpers.dump_friendtrees import dump_FvT_weight
+            friends["friends"] |= dump_FvT_weight(selev, self.make_friend_FvT_weight, "FvT_weight", analysis_selections)
 
-        # if self.make_friend_SvB is not None:
-        #     from ..helpers.dump_friendtrees import dump_SvB
-        #     friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB", analysis_selections)
-        #     friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB_MA", analysis_selections)
+        if self.make_friend_SvB is not None:
+            from ..helpers.dump_friendtrees import dump_SvB
+            if "SvB" in selev.fields and self.classifier_SvB is not None:
+                friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB", analysis_selections)
+            if "SvB_MA" in selev.fields and self.classifier_SvB_MA is not None:
+                friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB_MA", analysis_selections)
 
         return friends
 
@@ -184,6 +187,21 @@ class analysis(HH4bBaseProcessor):
 
         if self.run_SvB and "SvB_MA" in selev.fields and "passMinPs" not in selev.fields:
             selev["passMinPs"] = selev.SvB_MA.passMinPs
+
+        if self.config["isMC"]:
+            if self.config["isSignal"] and "bfromHorZ" in selev.fields and "tagJet_lowpt" in selev.fields:
+                matched_genb = selev.tagJet_lowpt.nearest(selev.bfromHorZ, threshold=0.4)
+                is_matched = ~ak.is_none(matched_genb, axis=1)
+                local_idx = ak.local_index(selev.tagJet_lowpt, axis=1)
+                matched_indices = local_idx[is_matched]
+                has_any_match = ak.any(is_matched, axis=1)
+                selev["matched_lowpt_jet_rank"] = ak.where(
+                    has_any_match,
+                    matched_indices,
+                    ak.singletons(ak.full_like(has_any_match, -1, dtype=int))
+                )
+            else:
+                selev["matched_lowpt_jet_rank"] = ak.singletons(ak.full_like(selev.run, -1, dtype=int))
 
         if not self.run_systematics:
             ## this can be simplified

@@ -599,7 +599,7 @@ def lowpt_jet_selection(
     )
 
     # Tagging jets
-    event['Jet', 'tagged_lowpt'] = event.Jet.selected_lowpt & (event.Jet.btagScore >= corrections_metadata['btagWP']['M'])
+    event['Jet', 'tagged_lowpt'] = event.Jet.selected_lowpt & (event.Jet.btagScore >= corrections_metadata['btagWP']['L'])
     event['Jet', 'tagged_loose_lowpt'] = event.Jet.selected_lowpt & (event.Jet.btagScore >= corrections_metadata['btagWP']['L'])
 
     event['nJet_selected_lowpt'] = ak.sum(event.Jet.selected_lowpt, axis=1)

@@ -2,13 +2,13 @@ import os
 username = os.getenv("USER")
 from datetime import datetime
 
-config.setdefault('output_path', "output/lowpt/")
+config.setdefault('output_path', "output/lowpt_friendtrees/")
 config.setdefault('dataset_location', "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/")
 config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
 config.setdefault('dataset', ['data', 'TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic', 'GluGluToHHTo4B_cHHH1', 'GluGluToHHTo4B_cHHH0', 'GluGluToHHTo4B_cHHH2p45', 'GluGluToHHTo4B_cHHH5', 'ZH4b', 'ZZ4b', 'ggZH4b'])
 config.setdefault('year', [ 'UL16_preVFP', 'UL16_postVFP', 'UL17', 'UL18'])
 config.setdefault('classifier_path', 'root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/')
-config.setdefault('eos_path', f'Plots/{datetime.now().strftime("%Y%m%d")}_lowpt_test/')
+config.setdefault('eos_path', f'Plots/{datetime.now().strftime("%Y%m%d")}_lowpt_friendtrees/')
 
 # Import analysis module
 module analysis:
@@ -18,8 +18,8 @@ module analysis:
 
 rule all_lowpt:
     input:
-        f"{config['output_path']}plots_noJCMlowpt/RunII/passPreSel/region_SB/nPVs.pdf",
-        f"{config['output_path']}plots_wlowptJCM/RunII/passPreSel/region_SB/nPVs.pdf",
+        f"{config['output_path']}plots_noJCMlowpt/RunII/region_SB/nPVs.pdf",
+        f"{config['output_path']}plots_wlowptJCM/RunII/region_SB/nPVs.pdf",
         f"{config['output_path']}classifier_inputs_lowpt_wlowptJCM.json"
     # default_target: True
     shell:
@@ -48,7 +48,7 @@ use rule analysis_processor from analysis as analysis_nojcm_lowpt with:
 
 use rule make_plots from analysis as make_plots_noJCMlowpt with:
     input: f"{config['output_path']}histAll_lowpt_noJCM.coffea"
-    output: f"{config['output_path']}plots_noJCMlowpt/RunII/passPreSel/region_SB/nPVs.pdf"
+    output: f"{config['output_path']}plots_noJCMlowpt/RunII/region_SB/nPVs.pdf"
     log: f"{config['output_path']}logs/make_plots.log"
     params:
         output_dir = f"{config['output_path']}plots_noJCMlowpt/",
@@ -106,7 +106,7 @@ use rule merging_coffea_files from analysis as merging_lowpt_files with:
 
 use rule make_plots from analysis as make_plots_wlowptJCM with:
     input: f"{config['output_path']}histAll_lowpt_wlowptJCM.coffea"
-    output: f"{config['output_path']}plots_wlowptJCM/RunII/passPreSel/region_SB/nPVs.pdf"
+    output: f"{config['output_path']}plots_wlowptJCM/RunII/region_SB/nPVs.pdf"
     log: f"{config['output_path']}logs/make_plots.log"
     params:
         output_dir = f"{config['output_path']}plots_wlowptJCM/",

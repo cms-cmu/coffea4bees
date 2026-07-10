@@ -45,7 +45,6 @@ stack:
   MultiJet:
     process: data
     tag: lowpt_threeTag
-    year: UL18
     fillcolor: "#FFDF7Fff"
     edgecolor: k
     label: Multijet

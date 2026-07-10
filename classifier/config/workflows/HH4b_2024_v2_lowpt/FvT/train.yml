@@ -28,6 +28,10 @@ model:
       - --kfold-seed-offsets 0 # use seed ("FvT", "random", 0)
       # --kfold-seed-offsets 0-14 will use seed ("FvT", "random", 0), ... ("FvT", "random", 14) to train 15 models
       - --training FixedStep # setup training schedule
+      - --architecture
+      - n_features: 30
+        use_kv_proj: true
+        use_attention_gate: true
       # FixedStep is defined in config/scheduler
       - epoch: 3 # reduced for testing (was 20)
         bs_init: 1024 # equivalent to use FixedStep(epoch=3, bs_init=1024)

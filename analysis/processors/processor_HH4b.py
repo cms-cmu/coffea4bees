@@ -95,8 +95,12 @@ def _init_classfier(path: str | list[HCRModelMetadata] | None | _Unset):
 def _init_classfier_FvT(path: str | list[HCRModelMetadata]):
     if path is None:
         return None
-    from ..helpers.classifier.HCR import Legacy_HCREnsemble_FvT
-    return Legacy_HCREnsemble_FvT(path)
+    if isinstance(path, str):
+        from ..helpers.classifier.HCR import Legacy_HCREnsemble_FvT
+        return Legacy_HCREnsemble_FvT(path)
+    else:
+        from ..helpers.classifier.HCR import HCREnsemble
+        return HCREnsemble(path)
 
 def _init_feynnet(cfg):
     """Construct a FeynNet classifier from config.
@@ -1388,8 +1392,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         if self.make_friend_SvB is not None:
             from ..helpers.dump_friendtrees import dump_SvB
-            friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB", analysis_selections)
-            friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB_MA", analysis_selections)
+            if "SvB" in selev.fields and self.classifier_SvB is not None:
+                friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB", analysis_selections)
+            if "SvB_MA" in selev.fields and self.classifier_SvB_MA is not None:
+                friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB_MA", analysis_selections)
 
         if self.make_friend_SvB_FeynNet is not None:
             from ..helpers.dump_friendtrees import dump_SvB_FeynNet
@@ -1446,11 +1452,14 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         Returns:
             Updated weights object
         """
+        # When FvT is evaluated on-the-fly via classifier, it hasn't run yet at
+        # this point in the pipeline — weights are added later in _apply_ml_scores.
+        apply_FvT = self.apply_FvT and self.classifier_FvT is None
         return add_pseudotagweights(
             event,
             weights,
             JCM=self.apply_JCM,
-            apply_FvT=self.apply_FvT,
+            apply_FvT=apply_FvT,
             isDataForMixed=self.config["isDataForMixed"],
             apply_MvD=self.apply_MvD,
             apply_MvD_weight=self.apply_MvD_weight,
