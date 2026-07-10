@@ -3,7 +3,7 @@
 # Config for src/classifier/workflow/Snakefile.
 # To keep outputs from a separate run, change output_dir.
 
-eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/lowpt_sel"
+eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/lowpt_sel_LWP"
 plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
 
 classifier_config_paths: coffea4bees
