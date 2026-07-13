@@ -579,3 +579,7 @@ if not config.get('run_on_condor', True):
         "postfit"
     ]
     workflow._localrules.update(combine_rules)
+
+# Set retries to 3 for all rules to automatically restart failed cluster jobs
+for r in workflow.rules:
+    r.retries = 3
