@@ -1,0 +1,26 @@
+# Ignore compiled/cached Python files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore git metadata relative to coffea4bees/workflows/
+../../.git/
+../../.gitmodules
+../.git/
+../.gitmodules
+
+# Ignore large/temporary local output directories relative to coffea4bees/workflows/
+../../output*
+../../tmp/
+../../.snakemake/
+../../.pixi/
+../../.vscode/
+../../.gemini/
+../../.context/
+../../.claude/
+../../slurm_logs/
+../../logs/
+../../notes/
+../../*.code-workspace
+../../*.log

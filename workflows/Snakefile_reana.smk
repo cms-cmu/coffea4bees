@@ -81,6 +81,10 @@ def reana_config(name):
     return f"{config['output_path']}/configs/{name}_reana.yml"
 
 
+print(f"DEBUG Snakefile: CHANNELS={CHANNELS}")
+print(f"DEBUG Snakefile: SIGNALLABELS={SIGNALLABELS}")
+print(f"DEBUG Snakefile: output_path={config.get('output_path')}")
+
 rule all:
     input:
         f"{config['output_path']}/plots/RunII/region_SB/nPVs.pdf",
@@ -102,9 +106,15 @@ rule all:
 
 localrules: make_reana_config
 
+def get_reana_config_input(wildcards):
+    cfg_name = wildcards.cfg_name
+    if cfg_name.endswith('_syst'):
+        cfg_name = cfg_name[:-5]
+    return f"coffea4bees/analysis/metadata/{cfg_name}.yml"
+
 rule make_reana_config:
     """Generate a patched analysis config with workers=32 and worker_memory=3GB for REANA."""
-    input: "coffea4bees/analysis/metadata/{cfg_name}.yml"
+    input: get_reana_config_input
     output: f"{config['output_path']}/configs/{{cfg_name}}_reana.yml"
     shell:
         """
@@ -114,10 +124,18 @@ os.makedirs(os.path.dirname('{output}'), exist_ok=True)
 with open('{input}') as f:
     cfg = yaml.safe_load(f)
 cfg.setdefault('runner', {{}})
-cfg['runner']['workers'] = 28
-cfg['runner']['worker_memory'] = '3GB'
+if '{wildcards.cfg_name}'.endswith('_syst'):
+    cfg['runner']['workers'] = 8
+else:
+    cfg['runner']['workers'] = 4
+cfg['runner']['worker_memory'] = '2GB'
+new_content = yaml.dump(cfg, default_flow_style=False, allow_unicode=True)
+if os.path.exists('{output}'):
+    with open('{output}') as f:
+        if f.read() == new_content:
+            exit(0)
 with open('{output}', 'w') as f:
-    yaml.dump(cfg, f, default_flow_style=False, allow_unicode=True)
+    f.write(new_content)
 "
         """
 
@@ -130,9 +148,9 @@ use rule analysis_processor from analysis as analysis_databkgs with:
     input: reana_config("HH4b")
     output: f"{config['output_path']}/singlefiles/hist__{{sample}}-{{year}}.coffea"
     container: config["analysis_container"]
-    threads: 28
+    threads: 4
     resources:
-        mem_mb=86016
+        mem_mb=8192
     log: f"{config['output_path']}/logs/analysis_hist__{{sample}}-{{year}}.log"
     params:
         datasets="{sample}",
@@ -191,9 +209,9 @@ use rule analysis_databkgs as analysis_data_UL17B with:
 use rule analysis_databkgs as analysis_signals with:
     input: reana_config("HH4b_signals")
     output: f"{config['output_path']}/singlefiles/histsignal__{{sample_signal}}-{{year}}.coffea"
-    threads: 28
+    threads: 4
     resources:
-        mem_mb=86016
+        mem_mb=8192
     log: f"{config['output_path']}/logs/analysis_histsignal__{{sample_signal}}-{{year}}.log"
     params:
         datasets="{sample_signal}",
@@ -330,16 +348,16 @@ use rule analysis_databkgs as analysis_mixeddata_ZZZH with:
         dashboard_address=""
 
 use rule analysis_databkgs as analysis_systematics_others with:
-    input: reana_config("HH4b_signals")
+    input: reana_config("HH4b_signals_syst")
     output: f"{config['output_path']}/singlefiles/histsyst_others_{{samplesyst}}-{{iysyst}}.coffea"
-    threads: 28
+    threads: 8
     resources:
-        mem_mb=86016
+        mem_mb=16384
     log: f"{config['output_path']}/logs/analysis_histsyst_others_{{samplesyst}}-{{iysyst}}.log"
     params:
         datasets="{samplesyst}",
         years="{iysyst}",
-        config=reana_config("HH4b_signals"),
+        config=reana_config("HH4b_signals_syst"),
         processor="coffea4bees/analysis/processors/processor_HH4b.py",
         datasets_file=config['dataset_location'],
         friends="",
@@ -353,16 +371,16 @@ use rule analysis_databkgs as analysis_systematics_others with:
 
 
 use rule analysis_databkgs as analysis_systematics_jes with:
-    input: reana_config("HH4b_signals")
+    input: reana_config("HH4b_signals_syst")
     output: f"{config['output_path']}/singlefiles/histsyst_jes_{{samplesyst}}-{{iysyst}}.coffea"
-    threads: 28
+    threads: 8
     resources:
-        mem_mb=86016
+        mem_mb=16384
     log: f"{config['output_path']}/logs/analysis_histsyst_jes_{{samplesyst}}-{{iysyst}}.log"
     params:
         datasets="{samplesyst}",
         years="{iysyst}",
-        config=reana_config("HH4b_signals"),
+        config=reana_config("HH4b_signals_syst"),
         processor="coffea4bees/analysis/processors/processor_HH4b.py",
         datasets_file=config['dataset_location'],
         friends="",
@@ -500,6 +518,8 @@ use rule run_two_stage_closure from stat_analysis as run_two_stage_closure_HH4b 
         variable = "SvB_MA_ps_hh",
         extra_arguments = "--use_kfold",
         container_wrapper = config['container_wrapper']
+    resources:
+        mem_mb=16384
     log: f"{config['output_path']}/logs/run_two_stage_closure_HH4b.log"
 
 use rule run_two_stage_closure_HH4b as run_two_stage_closure_ZZ4b with:
@@ -568,7 +588,7 @@ use rule make_syst_plots from stat_analysis with:
 
 use rule * from combine
 
-localrules: all, make_reana_config, merging_coffea_files_syst, merging_coffea_files_histAll, make_plots, convert_hist_to_json, convert_hist_to_json_mixdata3b, convert_hist_to_json_mixbkgtt, convert_hist_to_json_mixdata, convert_hist_to_json_mixdata3b_ZZZH, convert_hist_to_json_mixbkgtt_ZZZH, convert_hist_to_json_mixdata_ZZZH, convert_json_to_root, run_two_stage_closure_HH4b, run_two_stage_closure_ZZ4b, run_two_stage_closure_ZH4b, make_combine_inputs, make_syst_plots
+localrules: all, make_reana_config
 
 if not config.get('run_on_condor', True):
     combine_rules = [
@@ -580,6 +600,10 @@ if not config.get('run_on_condor', True):
     ]
     workflow._localrules.update(combine_rules)
 
-# Set retries to 3 for all rules to automatically restart failed cluster jobs
+# Set retries to 3 and default mem_mb to 8192 for all rules to automatically restart and prevent timeouts
 for r in workflow.rules:
     r.retries = 3
+    if 'mem_mb' not in r.resources:
+        r.resources['mem_mb'] = 8192
+
+print(f"DEBUG Snakefile: rules.all.input = {list(rules.all.input)}")

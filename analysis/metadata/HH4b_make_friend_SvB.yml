@@ -1,24 +1,30 @@
 runner:
   workers: 4
   worker_memory: 2GB
-  # friend_base: &friend_base root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p2/
-  friend_base: &friend_base /srv/output/tmp/ 
+  friend_base: &friend_base root://cmsdata.phys.cmu.edu//store/group/HH4b/Run2/opendata_project/ 
+  # friend_base: &friend_base /srv/output/all_friends/
   chunksize: 10000
 
 config:
   blind: false
-  apply_FvT: false
-  apply_trigWeight: true
+  apply_FvT: true
+  FvT:
+    - path: 'root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/nominal_sel/classifier/FvT_nominal/result.json'
+      name: Final
+  apply_trigWeight: false
   apply_btagSF: true
   apply_boosted_veto: false
   run_SvB: true
-  SvB   : 'coffea4bees/analysis/weights/pytorch_models/2024_HHUL/SvB_HCR_8_np753_seed13_lr0.01_epochs20_offset*_epoch20.pkl'
-  SvB_MA: 'coffea4bees/analysis/weights/pytorch_models/2024_HHUL/SvB_MA_HCR+attention_8_np1061_seed13_lr0.01_epochs20_offset*_epoch20.pkl'
-  # SvB_MA:
-  #   - path: 'coffea4bees/analysis/weights/pytorch_models/2024_HHUL_all_kl/result.json'
-  #     name: Final # name of the output stage (e.g. Final or some other checkpoint)
+  SvB: null
+  SvB_MA:
+    - path: 'root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/nominal_sel/classifier/SvB_nominal_TEST/result.json'
+      name: Final
   top_reconstruction: fast
   fill_histograms: false
-  # make_friend_SvB: *friend_base
+  make_friend_SvB: *friend_base
+  make_friend_JCM_weight: *friend_base
+  make_friend_FvT_weight: *friend_base
+  make_classifier_input: *friend_base
 
   
+

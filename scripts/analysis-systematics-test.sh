@@ -25,7 +25,7 @@ cat $JOB_CONFIG; echo
 # Call the main run-analysis-processor.sh script
 bash coffea4bees/scripts/run-analysis-processor.sh \
     --output-base "$OUTPUT_BASE_DIR" \
-    --dataset-metadata "coffea4bees/metadata/datasets_HH4b_Run2/" \
+    --dataset-metadata "coffea4bees/metadata/datasets/" \
     --datasets "GluGluToHHTo4B_cHHH1" \
     --year "UL18" \
     --output-filename "test_systematics.coffea" \

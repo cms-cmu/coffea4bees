@@ -23,7 +23,7 @@ cat $JOB_CONFIG; echo
 
 ### Temporary fix for CI tests
 display_section_header "Temporary Input Datasets"
-DATASETS=${DATASET:-"coffea4bees/metadata/datasets_HH4b_Run2"}
+DATASETS=${DATASET:-"coffea4bees/metadata/datasets"}
 # 1. Merge files, add 'datasets:' at the top and indent existing lines by 2 spaces
 (cat "$DATASETS/data.yml"; echo; cat "$DATASETS/TT.yml") | \
 sed -e 's/^/  /' -e '1s/^/datasets:\n/' > $OUTPUT_DIR/datasets_temp.yml

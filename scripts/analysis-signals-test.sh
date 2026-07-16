@@ -26,7 +26,7 @@ cat $JOB_CONFIG; echo
 bash coffea4bees/scripts/run-analysis-processor.sh \
     --output-base "$OUTPUT_BASE_DIR" \
     --datasets "GluGluToHHTo4B_cHHH1 ZZ4b ggZH4b ZH4b" \
-    --dataset-metadata "coffea4bees/metadata/datasets_HH4b_Run2/" \
+    --dataset-metadata "coffea4bees/metadata/datasets/" \
     --year "UL17 UL18 UL16_preVFP UL16_postVFP" \
     --output-filename "test_signal.coffea" \
     --output-subdir "$JOB" \

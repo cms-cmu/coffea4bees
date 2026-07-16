@@ -3,7 +3,7 @@ username = os.getenv("USER")
 from datetime import datetime
 
 config.setdefault('output_path', "output/lowpt_friendtrees_LWP/")
-config.setdefault('dataset_location', "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/")
+config.setdefault('dataset_location', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/")
 config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
 config.setdefault('dataset', ['data', 'TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic', 'GluGluToHHTo4B_cHHH1', 'GluGluToHHTo4B_cHHH0', 'GluGluToHHTo4B_cHHH2p45', 'GluGluToHHTo4B_cHHH5', 'ZH4b', 'ZZ4b', 'ggZH4b'])
 config.setdefault('year', [ 'UL16_preVFP', 'UL16_postVFP', 'UL17', 'UL18'])
@@ -41,7 +41,7 @@ use rule analysis_processor from analysis as analysis_nojcm_lowpt with:
         datasets_file = config['dataset_location'],
         blind = False,
         run_performance = False,
-        friends = "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/friends_HH4b_lowpt.yml",
+        friends = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b_lowpt.yml",
         run_on_condor = True,
         extra_arguments = "",
         run_container_wrapper = "./run_container"
@@ -91,7 +91,7 @@ use rule analysis_processor from analysis as analysis_lowpt_classifier_inputs wi
         datasets_file = config['dataset_location'],
         blind = False,
         run_performance = False,
-        friends = "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/friends_HH4b_lowpt.yml",
+        friends = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b_lowpt.yml",
         run_on_condor = True,
         extra_arguments = "--shared-dask",
         run_container_wrapper = "./run_container"

@@ -134,7 +134,7 @@ use rule analysis_processor from analysis as cluster_hemi with:
         # --friends would swallow the following --year token and break parsing.
         # This is the script's own default, matching the original cluster bash
         # (which passed no --friends and thus used this default).
-        friends               = "coffea4bees/metadata/friends_HH4b.yml",
+        friends               = "coffea4bees/metadata/friends/friends_HH4b.yml",
         run_on_condor         = config['run_on_condor'],
         extra_arguments       = "",
         run_container_wrapper = "./run_container",

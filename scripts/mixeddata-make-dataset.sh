@@ -10,7 +10,7 @@ if [ $? -ne 0 ]; then
 fi
 
 display_section_header "Input Datasets"
-DATASETS=${DATASET:-"coffea4bees/metadata/datasets_HH4b_Run2/"}
+DATASETS=${DATASET:-"coffea4bees/metadata/datasets/"}
 echo "Using datasets file: $DATASETS"
 
 # Setup proxy if needed

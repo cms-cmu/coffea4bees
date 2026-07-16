@@ -1,8 +1,9 @@
-config.setdefault('output_path', "output/boosted_VBF/")
-config.setdefault('dataset_location', "coffea4bees/metadata/datasets_HH4b_v1p2.yml")
+config.setdefault('output_path', "output/ttHbb/")
+config.setdefault('dataset_location', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/")
 config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
-config.setdefault('dataset', ['VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00'])
-config.setdefault('year', ['UL16_postVFP', 'UL16_preVFP', 'UL17', 'UL18'])
+config.setdefault('dataset', ['ttHbb'])
+# config.setdefault('year', ['UL16_postVFP', 'UL16_preVFP', 'UL17', 'UL18'])
+config.setdefault('year', ['UL18'])
 
 rule all:
     input:
@@ -22,7 +23,6 @@ rule skimms:
         """
         ./run_container bash coffea4bees/scripts/run-analysis-processor.sh \
             --processor coffea4bees/skimmer/processor/skimmer_4b.py \
-            --additional-flags '-s' \
             --output-filename "picoaod_dataset_{wildcards.dataset}__{wildcards.year}.yml" \
             --output-subdir "skimmer" \
             --output-base {params.output_path} \
@@ -31,7 +31,8 @@ rule skimms:
             --dataset-metadata "{params.dataset_location}" \
             --config {params.config} \
             {params.condor_mode} \
-            --no-test
+            --no-test \
+            --additional-flags '-s' 
         """        
 
 rule modify_datasets:
@@ -76,7 +77,7 @@ rule merge_friendtree_json:
     input: expand( f"{config['output_path']}trigger_weights/trigger_weights_friends_{{dataset}}__{{year}}.json", dataset=config['dataset'], year=config['year'])
     output: f"{config['output_path']}trigger_weights/trigger_weights_friends_allDatasets.json"
     params:
-        friendtree_file = "coffea4bees/metadata/datasets_HH4b_Run2/trigweights_2024_v1p2.json",
+        friendtree_file = "coffea4bees/metadata/friends/trigweights_2024_v1p2.json",
         output_path = config['output_path'],
     log: f"{config['output_path']}logs/merge_friendtree_json.log"
     shell:

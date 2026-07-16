@@ -30,9 +30,9 @@ bash coffea4bees/scripts/run-analysis-processor.sh \
     --output-base "$OUTPUT_BASE_DIR" \
     --datasets "GluGluToHHTo4B_cHHH1" \
     --year "UL17 UL18 UL16_preVFP UL16_postVFP" \
-    --friends "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/friends_HH4b_lowpt.yml" \
+    --friends "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b_lowpt.yml" \
     --output-filename "test_signal_lowpt.coffea" \
     --output-subdir "$JOB" \
     --config $JOB_CONFIG \
-    --dataset-metadata "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/" \
+    --dataset-metadata "coffea4bees/metadata/datasets/archive/Run2_2024_v2/" \
     # --additional-flags "--slurm --debug"

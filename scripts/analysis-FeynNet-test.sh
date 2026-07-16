@@ -26,7 +26,7 @@ cat $JOB_CONFIG; echo
 bash coffea4bees/scripts/run-analysis-processor.sh \
     --output-base "$OUTPUT_BASE_DIR" \
     --datasets "data" \
-    --dataset-metadata "coffea4bees/metadata/datasets_HH4b_Run3/" \
+    --dataset-metadata "coffea4bees/metadata/datasets/" \
     --year "2022_EE" \
     --output-filename "test_feynnet.coffea" \
     --output-subdir "$JOB" \

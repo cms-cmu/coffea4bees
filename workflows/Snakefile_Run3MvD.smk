@@ -145,7 +145,7 @@ rule create_friends_wSvB:
     """Patched friends file for the rank-specific mixeddata histogram.
     Points SvB / SvB_FeynNet at the rank-suffixed friend JSONs."""
     input:
-        friends_yml    = "coffea4bees/metadata/friends_HH4b.yml",
+        friends_yml    = "coffea4bees/metadata/friends/friends_HH4b.yml",
         svb_json       = config['svb_friend_json'],
         feynet_json    = config['feynet_friend_json'],
     output: f"{out}friends_wSvB.yml"
@@ -199,7 +199,7 @@ use rule analysis_processor from analysis as make_histograms_shared with:
         datasets_file = config['dataset_location'],
         blind = False,
         run_performance = False,
-        friends = "coffea4bees/metadata/friends_HH4b.yml",
+        friends = "coffea4bees/metadata/friends/friends_HH4b.yml",
         run_on_condor = config['run_on_condor'],
         extra_arguments = "",
         run_container_wrapper = "./run_container",
@@ -396,7 +396,7 @@ rule install_JCM:
 
 rule create_friends_MvD:
     input:
-        friends_yml = "coffea4bees/metadata/friends_HH4b.yml",
+        friends_yml = "coffea4bees/metadata/friends/friends_HH4b.yml",
         svb_json    = config['svb_friend_json'],
         feynet_json = config['feynet_friend_json'],
     output: f"{out}friends_MvD.yml"

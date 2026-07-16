@@ -29,7 +29,7 @@ OUTPUT_DIR="$OUTPUT_BASE_DIR/perf_profile"
 create_output_directory "$OUTPUT_DIR"
 
 display_section_header "Performance Profile"
-DATASETS="coffea4bees/metadata/datasets_HH4b_Run2/"
+DATASETS="coffea4bees/metadata/datasets/"
 echo "Using datasets file: $DATASETS"
 
 # --- Stage 1: Per-stage instrumented run ---
@@ -43,7 +43,7 @@ run_command python src/scripts/memory/perf_profile.py \
         -d GluGluToHHTo4B_cHHH1 \
         -p coffea4bees/analysis/processors/processor_HH4b.py \
         -y UL18 \
-        --friends coffea4bees/metadata/friends_HH4b.yml \
+        --friends coffea4bees/metadata/friends/friends_HH4b.yml \
         -op "${OUTPUT_DIR}" \
         -m "$DATASETS" \
         -c coffea4bees/analysis/metadata/HH4b_signals.yml
@@ -56,7 +56,7 @@ if command -v mprof &> /dev/null; then
         -d GluGluToHHTo4B_cHHH1 \
         -p coffea4bees/analysis/processors/processor_HH4b.py \
         -y UL18 \
-        --friends coffea4bees/metadata/friends_HH4b.yml \
+        --friends coffea4bees/metadata/friends/friends_HH4b.yml \
         -op "${OUTPUT_DIR}" \
         -m "$DATASETS" \
         -c coffea4bees/analysis/metadata/HH4b_signals.yml

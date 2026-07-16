@@ -1,0 +1,159 @@
+mixeddata:
+  '2016':
+    picoAOD:
+      FvT_file_template: root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//mixed2016_3bDvTMix4bDvT_vXXX/FvT_3bDvTMix4bDvT_vXXX_newSBDef.root
+      FvT_name_template: FvT_3bDvTMix4bDvT_vXXX_newSBDef
+      files_template:
+      - root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig/mixed2016_3bDvTMix4bDvT_vXXX/picoAOD_3bDvTMix4bDvT_4b_wJCM_vXXX_newSBDef.root
+  '2017':
+    picoAOD:
+      FvT_file_template: root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//mixed2017_3bDvTMix4bDvT_vXXX/FvT_3bDvTMix4bDvT_vXXX_newSBDef.root
+      FvT_name_template: FvT_3bDvTMix4bDvT_vXXX_newSBDef
+      files_template:
+      - root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig/mixed2017_3bDvTMix4bDvT_vXXX/picoAOD_3bDvTMix4bDvT_4b_wJCM_vXXX_newSBDef.root
+  '2018':
+    picoAOD:
+      FvT_file_template: root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//mixed2018_3bDvTMix4bDvT_vXXX/FvT_3bDvTMix4bDvT_vXXX_newSBDef.root
+      FvT_name_template: FvT_3bDvTMix4bDvT_vXXX_newSBDef
+      files_template:
+      - root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig/mixed2018_3bDvTMix4bDvT_vXXX/picoAOD_3bDvTMix4bDvT_4b_wJCM_vXXX_newSBDef.root
+  nSamples: 15
+  xs:
+    Run2: 1
+    Run3: 1
+synthetic_data:
+  2022_EE:
+    picoAOD:
+      files_template:
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2022_EEE/picoAOD_seedXXX.chunk0.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2022_EEE/picoAOD_seedXXX.chunk1.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2022_EEF/picoAOD_seedXXX.chunk0.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2022_EEF/picoAOD_seedXXX.chunk1.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2022_EEF/picoAOD_seedXXX.chunk2.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2022_EEF/picoAOD_seedXXX.chunk3.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2022_EEF/picoAOD_seedXXX.chunk4.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2022_EEG/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_2022_preEE/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_2022_preEE/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_2022_preEE/picoAOD_PSData.root
+  2022_preEE:
+    picoAOD:
+      files_template:
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2022_preEEB/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2022_preEEC/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2022_preEED/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_2022_preEE/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_2022_preEE/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_2022_preEE/picoAOD_PSData.root
+  2023_BPix:
+    picoAOD:
+      files_template:
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2023_BPixD/picoAOD_seedXXX.chunk0.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2023_BPixD/picoAOD_seedXXX.chunk1.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2023_BPixD/picoAOD_seedXXX.chunk2.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2023_BPixE/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_2023_BPix/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_2023_BPix/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_2023_BPix/picoAOD_PSData.root
+  2023_preBPix:
+    picoAOD:
+      files_template:
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2023_preBPixA/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2023_preBPixB/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2023_preBPixC/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2023_preBPixD/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2023_preBPixE/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2023_preBPixF/picoAOD_seedXXX.chunk0.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2023_preBPixF/picoAOD_seedXXX.chunk1.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2023_preBPixF/picoAOD_seedXXX.chunk2.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2023_preBPixF/picoAOD_seedXXX.chunk3.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_subTT/data_2023_preBPixF/picoAOD_seedXXX.chunk4.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_2023_preBPix/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_2023_preBPix/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_2023_preBPix/picoAOD_PSData.root
+  UL16_postVFP:
+    picoAOD:
+      files_template:
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v2/data_UL16_postVFPF/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v2/data_UL16_postVFPG/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v2/data_UL16_postVFPH/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_UL16_postVFP/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_UL16_postVFP/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_UL16_postVFP/picoAOD_PSData.root
+  UL16_preVFP:
+    picoAOD:
+      files_template:
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v2/data_UL16_preVFPB/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v2/data_UL16_preVFPC/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v2/data_UL16_preVFPD/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v2/data_UL16_preVFPE/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_UL16_preVFP/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_UL16_preVFP/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_UL16_preVFP/picoAOD_PSData.root
+  UL17:
+    picoAOD:
+      files_template:
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v2/data_UL17C/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v2/data_UL17D/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v2/data_UL17E/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v2/data_UL17F/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_UL17/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_UL17/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_UL17/picoAOD_PSData.root
+  UL18:
+    picoAOD:
+      files_template:
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v2/data_UL18A/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v2/data_UL18B/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v2/data_UL18C/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v2/data_UL18D/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_UL18/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_UL18/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_UL18/picoAOD_PSData.root
+  nSamples: 1
+  xs:
+    Run2: 1
+    Run3: 1
+synthetic_data_noTT:
+  2022_EE:
+    picoAOD:
+      files_template:
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2022_EEE/picoAOD_seedXXX.chunk0.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2022_EEE/picoAOD_seedXXX.chunk1.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2022_EEF/picoAOD_seedXXX.chunk0.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2022_EEF/picoAOD_seedXXX.chunk1.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2022_EEF/picoAOD_seedXXX.chunk2.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2022_EEF/picoAOD_seedXXX.chunk3.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2022_EEF/picoAOD_seedXXX.chunk4.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2022_EEG/picoAOD_seedXXX.root
+  2022_preEE:
+    picoAOD:
+      files_template:
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2022_preEEB/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2022_preEEC/picoAOD_seedXXX.chunk0.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2022_preEEC/picoAOD_seedXXX.chunk1.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2022_preEED/picoAOD_seedXXX.root
+  2023_BPix:
+    picoAOD:
+      files_template:
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2023_BPixD/picoAOD_seedXXX.chunk0.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2023_BPixD/picoAOD_seedXXX.chunk1.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2023_BPixD/picoAOD_seedXXX.chunk2.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2023_BPixE/picoAOD_seedXXX.root
+  2023_preBPix:
+    picoAOD:
+      files_template:
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2023_preBPixA/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2023_preBPixB/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2023_preBPixC/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2023_preBPixD/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2023_preBPixE/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2023_preBPixF/picoAOD_seedXXX.chunk0.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2023_preBPixF/picoAOD_seedXXX.chunk1.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2023_preBPixF/picoAOD_seedXXX.chunk2.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2023_preBPixF/picoAOD_seedXXX.chunk3.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2023_preBPixF/picoAOD_seedXXX.chunk4.root
+  nSamples: 1
+  xs:
+    Run2: 1
+    Run3: 1

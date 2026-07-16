@@ -1,0 +1,852 @@
+GluGluToHHTo4B_cHHH0:
+  UL16_postVFP:
+    nanoAOD: /GluGluToHHTo4B_cHHH0_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v1/NANOAODSIM
+    picoAOD:
+      count: 449692
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH0_UL16_postVFP/picoAOD.root
+      outliers:
+      - 435081
+      saved_events: 71633
+      sumw: 27064.57666015625
+      sumw2: 1846.0009155273438
+      sumw2_diff: 102519680.0
+      sumw2_raw: 102521521.04100181
+      sumw_diff: 10125.2001953125
+      sumw_raw: 37189.7774754
+      total_events: 449692
+  UL16_preVFP:
+    nanoAOD: /GluGluToHHTo4B_cHHH0_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v1/NANOAODSIM
+    picoAOD:
+      count: 540000
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH0_UL16_preVFP/picoAOD.root
+      outliers:
+      - 366349
+      - 530441
+      saved_events: 76491
+      sumw: 32532.203125
+      sumw2: 2216.929962158203
+      sumw2_diff: 26339668874.798767
+      sumw2_raw: 26339670148.728962
+      sumw_diff: 162325.11310005188
+      sumw_raw: 194857.31640980014
+      total_events: 540000
+  UL17:
+    nanoAOD: /GluGluToHHTo4B_cHHH0_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v1/NANOAODSIM
+    picoAOD:
+      count: 997000
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH0_UL17/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH0_UL17/picoAOD.chunk1.root
+      outliers:
+      - 463185
+      - 921949
+      saved_events: 179910
+      sumw: 60062.94873046875
+      sumw2: 4099.854095458984
+      sumw2_diff: 2024360940.0
+      sumw2_raw: 2024365017.806673
+      sumw_diff: 49767.18017578125
+      sumw_raw: 109830.12948480003
+      total_events: 997000
+  UL18:
+    nanoAOD: /GluGluToHHTo4B_cHHH0_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1/NANOAODSIM
+    picoAOD:
+      count: 978000
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH0_UL18/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH0_UL18/picoAOD.chunk1.root
+      outliers:
+      - 75214
+      - 490979
+      - 923717
+      saved_events: 170872
+      sumw: 58913.00732421875
+      sumw2: 4031.8057861328125
+      sumw2_diff: 611594.841796875
+      sumw2_raw: 615626.6029922854
+      sumw_diff: -889.0460205078125
+      sumw_raw: 58023.9636257
+      total_events: 978000
+  xs:
+    Run2: 0.06856*0.5824**2
+    Run3: 1
+GluGluToHHTo4B_cHHH1:
+  UL16_postVFP:
+    nanoAOD: /GluGluToHHTo4B_cHHH1_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v1/NANOAODSIM
+    picoAOD:
+      count: 460000
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH1_UL16_postVFP/picoAOD.root
+      outliers:
+      - 73109
+      saved_events: 84852
+      sumw: 12325.337890625
+      sumw2: 422.25842666625977
+      sumw2_diff: 475.8680419921875
+      sumw2_raw: 898.1264641586223
+      sumw_diff: 21.81439971923828
+      sumw_raw: 12347.151023600001
+      total_events: 460000
+  UL16_preVFP:
+    nanoAOD: /GluGluToHHTo4B_cHHH1_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v1/NANOAODSIM
+    picoAOD:
+      count: 540000
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH1_UL16_preVFP/picoAOD.root
+      outliers:
+      - 72345
+      - 438482
+      saved_events: 88364
+      sumw: 14451.494018554688
+      sumw2: 482.06490325927734
+      sumw2_diff: 928.4020385742188
+      sumw2_raw: 1410.4669680334337
+      sumw_diff: -8.582500457763672
+      sumw_raw: 14442.908792499999
+      total_events: 540000
+  UL17:
+    nanoAOD: /GluGluToHHTo4B_cHHH1_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v1/NANOAODSIM
+    picoAOD:
+      count: 999000
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH1_UL17/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH1_UL17/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH1_UL17/picoAOD.chunk2.root
+      outliers:
+      - 73365
+      - 16956
+      saved_events: 205328
+      sumw: 26723.560791015625
+      sumw2: 907.6921005249023
+      sumw2_diff: 54865394.23120117
+      sumw2_raw: 54866303.20358257
+      sumw_diff: 7445.101921081543
+      sumw_raw: 34168.658367800024
+      total_events: 999000
+  UL18:
+    nanoAOD: /GluGluToHHTo4B_cHHH1_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1/NANOAODSIM
+    picoAOD:
+      count: 1000000
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH1_UL18/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH1_UL18/picoAOD.chunk1.root
+      outliers:
+      - 334929
+      - 529954
+      - 86541
+      - 279036
+      saved_events: 199653
+      sumw: 26757.179077148438
+      sumw2: 919.0958442687988
+      sumw2_diff: 1192990.2674102783
+      sumw2_raw: 1193909.4220537543
+      sumw_diff: 1453.1521577835083
+      sumw_raw: 28210.3267947
+      total_events: 1000000
+  xs:
+    Run2: 0.03077*0.5824**2
+    Run3: 1
+GluGluToHHTo4B_cHHH2p45:
+  UL16_postVFP:
+    nanoAOD: /GluGluToHHTo4B_cHHH2p45_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v1/NANOAODSIM
+    picoAOD:
+      count: 455302
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH2p45_UL16_postVFP/picoAOD.root
+      outliers:
+      - 177665
+      - 298138
+      saved_events: 84837
+      sumw: 5144.9566650390625
+      sumw2: 80.0413122177124
+      sumw2_diff: 527710.785648346
+      sumw2_raw: 527790.7869580539
+      sumw_diff: 733.7338943481445
+      sumw_raw: 5878.690951899998
+      total_events: 455302
+  UL16_preVFP:
+    nanoAOD: /GluGluToHHTo4B_cHHH2p45_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v1/NANOAODSIM
+    picoAOD:
+      count: 540000
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH2p45_UL16_preVFP/picoAOD.root
+      saved_events: 90285
+      sumw: 6106.33740234375
+      sumw2: 93.19666862487793
+      sumw2_raw: 93.19666107346168
+      sumw_raw: 6106.337723199998
+      total_events: 540000
+  UL17:
+    nanoAOD: /GluGluToHHTo4B_cHHH2p45_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v1/NANOAODSIM
+    picoAOD:
+      count: 1000000
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH2p45_UL17/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH2p45_UL17/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH2p45_UL17/picoAOD.chunk2.root
+      outliers:
+      - 152121
+      saved_events: 208329
+      sumw: 11313.857055664062
+      sumw2: 172.89194297790527
+      sumw2_diff: 124463024.0
+      sumw2_raw: 124463202.58192764
+      sumw_diff: 11156.2998046875
+      sumw_raw: 22470.158006400008
+      total_events: 1000000
+  UL18:
+    nanoAOD: /GluGluToHHTo4B_cHHH2p45_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1/NANOAODSIM
+    picoAOD:
+      count: 950000
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH2p45_UL18/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH2p45_UL18/picoAOD.chunk1.root
+      outliers:
+      - 702193
+      saved_events: 192133
+      sumw: 10738.940551757812
+      sumw2: 164.44847679138184
+      sumw2_diff: 193.49366760253906
+      sumw2_raw: 357.94212966148234
+      sumw_diff: 13.910200119018555
+      sumw_raw: 10752.851367299998
+      total_events: 950000
+  xs:
+    Run2: 0.01333*0.5824**2
+    Run3: 1
+GluGluToHHTo4B_cHHH5:
+  UL16_postVFP:
+    nanoAOD: /GluGluToHHTo4B_cHHH5_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v1/NANOAODSIM
+    picoAOD:
+      count: 460000
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH5_UL16_postVFP/picoAOD.root
+      saved_events: 50381
+      sumw: 36305.91455078125
+      sumw2: 2961.2872924804688
+      sumw2_raw: 2961.2877290087913
+      sumw_raw: 36305.91562400002
+      total_events: 460000
+  UL16_preVFP:
+    nanoAOD: /GluGluToHHTo4B_cHHH5_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v1/NANOAODSIM
+    picoAOD:
+      count: 539182
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH5_UL16_preVFP/picoAOD.root
+      outliers:
+      - 165086
+      saved_events: 50283
+      sumw: 42581.560546875
+      sumw2: 3684.797119140625
+      sumw2_diff: 3540870.0
+      sumw2_raw: 3544554.9560027653
+      sumw_diff: 1881.719970703125
+      sumw_raw: 44463.28239280002
+      total_events: 539182
+  UL17:
+    nanoAOD: /GluGluToHHTo4B_cHHH5_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v1/NANOAODSIM
+    picoAOD:
+      count: 992000
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH5_UL17/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH5_UL17/picoAOD.chunk1.root
+      outliers:
+      - 269373
+      saved_events: 123689
+      sumw: 78298.56689453125
+      sumw2: 6402.1829833984375
+      sumw2_diff: 35952132.0
+      sumw2_raw: 35958538.1040809
+      sumw_diff: 5996.009765625
+      sumw_raw: 84294.57780660008
+      total_events: 992000
+  UL18:
+    nanoAOD: /GluGluToHHTo4B_cHHH5_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1/NANOAODSIM
+    picoAOD:
+      count: 994000
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH5_UL18/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1p1/GluGluToHHTo4B_cHHH5_UL18/picoAOD.chunk1.root
+      missing: {}
+      saved_events: 118864
+      sumw: 78489.3359375
+      sumw2: 6400.487365722656
+      sumw2_raw: 6400.488181203013
+      sumw_raw: 78489.34013980003
+      total_events: 994000
+  xs:
+    Run2: 0.09082*0.5824**2
+    Run3: 1
+GluGlutoHHto4B_kl-0p00_kt-1p00_c2-0p00:
+  '2024':
+    nanoAOD: /GluGluHHto4B_Par-c2-0p00-kl-0p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v1/NANOAODSIM
+    picoAOD:
+      count: 1981254
+      files:
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-0p00_2024/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-0p00_2024/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-0p00_2024/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-0p00_2024/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-0p00_2024/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-0p00_2024/picoAOD.chunk5.root
+      missing: {}
+      saved_events: 579533
+      sumw: 129416.70539093018
+      sumw2: 9630.736232697964
+      sumw2_raw: 9630.735754969097
+      sumw_raw: 129416.68157330001
+      total_events: 1981254
+  xs:
+    Run2: 1
+    Run3: 1
+GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00:
+  '2024':
+    nanoAOD: /GluGluHHto4B_Par-c2-1p00-kl-0p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
+    picoAOD:
+      count: 1996031
+      files:
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00_2024/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00_2024/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00_2024/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00_2024/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00_2024/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00_2024/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00_2024/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00_2024/picoAOD.chunk7.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00_2024/picoAOD.chunk8.root
+      missing: {}
+      saved_events: 862950
+      sumw: 254472.24193382263
+      sumw2: 35224.66087818146
+      sumw2_raw: 35224.66507916197
+      sumw_raw: 254472.23476699993
+      total_events: 1996031
+  xs:
+    Run2: 1
+    Run3: 1
+GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00:
+  2022_EE:
+    PFNano:
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_1-1.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_1-2.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_1-3.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_1-4.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_1-5.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_1.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_10.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_11.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_12.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_13.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_14.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_15.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_16.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_17.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_18.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_19.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_2.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_20.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_21.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_22.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_23.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_24.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_25.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_26.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_27.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_28.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_29.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_3.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_30.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_31.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_32.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_33.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_34.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_35.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_36.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_37.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_38.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_39.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_4.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_40.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_41.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_42.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_43.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_44.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_45.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_46.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_47.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_48.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_49.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_5.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_50.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_6.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_7.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_8.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_9.root
+    nanoAOD: /GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EENanoAODv12-130X_mcRun3_2022_realistic_postEE_v6-v1/NANOAODSIM
+    picoAOD:
+      count: 7391383
+      files:
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk7.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk8.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk9.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk10.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk11.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk12.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk13.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk14.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk15.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk16.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk17.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk18.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk19.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk20.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk21.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk22.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk23.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk24.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk25.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk26.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk27.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE/picoAOD.chunk28.root
+      missing: {}
+      saved_events: 2802846
+      sumw: 218969.89655017853
+      sumw2: 8129.003095038235
+      sumw2_raw: 8129.002450438127
+      sumw_raw: 218969.87430720005
+      total_events: 7391383
+  2022_preEE:
+    PFNano:
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_1.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_10.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_11.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_12.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_13.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_14.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_15.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_16.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_17.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_18.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_19.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_2.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_20.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_21.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_23.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_24.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_25.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_26.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_27.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_28.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_29.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_3.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_30.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_31.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_32.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_33.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_34.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_35.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_36.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_37.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_4.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_5.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_6.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_7.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_8.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_DAZSLE_PFNano/250618_192850/0000/MC_preEE2022_9.root
+    nanoAOD: /GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_LHEweights_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22NanoAODv12-130X_mcRun3_2022_realistic_v5-v2/NANOAODSIM
+    picoAOD:
+      count: 2295032
+      files:
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_preEE/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_preEE/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_preEE/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_preEE/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_preEE/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_preEE/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_preEE/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_preEE/picoAOD.chunk7.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_preEE/picoAOD.chunk8.root
+      missing: {}
+      saved_events: 878344
+      sumw: 68000.17453718185
+      sumw2: 2524.0828290730715
+      sumw2_raw: 2524.0826822842464
+      sumw_raw: 68000.16868040002
+      total_events: 2295032
+  2023_BPix:
+    PFNano:
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_1-1.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_1-2.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_1-3.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_1-5.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_1-6.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_1.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_10.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_11.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_12.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_13.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_14.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_15.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_16.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_17.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_18.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_19.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_2.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_20.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_21.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_22.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_23.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_25.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_26.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_27.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_28.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_29.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_3.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_30.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_31.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_32.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_4.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_5.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_6.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_7.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_8.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023BPix/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v6-v2_DAZSLE_PFNano/250618_224323/0000/MC_postBPix2023_9.root
+    nanoAOD: /GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixNanoAODv13-133X_mcRun3_2023_realistic_postBPix_ForNanov13_v2-v2/NANOAODSIM
+    picoAOD:
+      count: 3314010
+      files:
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_BPix/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_BPix/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_BPix/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_BPix/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_BPix/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_BPix/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_BPix/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_BPix/picoAOD.chunk7.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_BPix/picoAOD.chunk8.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_BPix/picoAOD.chunk9.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_BPix/picoAOD.chunk10.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_BPix/picoAOD.chunk11.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_BPix/picoAOD.chunk12.root
+      missing: {}
+      saved_events: 1265686
+      sumw: 98145.1690196991
+      sumw2: 3644.743627458811
+      sumw2_raw: 3644.743382282149
+      sumw_raw: 98145.16011639997
+      total_events: 3314010
+  2023_preBPix:
+    PFNano:
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_1-1.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_1-2.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_1-3.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_1-4.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_1-5.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_1-6.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_1-7.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_1-8.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_1-9.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_1.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_10.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_11.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_12.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_13.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_14.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_15.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_16.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_17.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_18.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_19.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_2.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_20.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_21.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_22.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_23.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_24.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_25.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_26.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_27.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_28.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_29.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_3.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_30.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_31.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_32.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_33.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_34.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_35.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_36.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_37.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_38.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_39.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_4.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_40.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_41.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_42.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_43.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_44.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_45.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_46.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_47.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_48.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_49.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_5.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_6.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_7.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_8.root
+    - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2023/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15-v3_DAZSLE_PFNano/250618_223237/0000/MC_preBPix2023_9.root
+    nanoAOD: /GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23NanoAODv13-133X_mcRun3_2023_realistic_ForNanov13_v1-v3/NANOAODSIM
+    picoAOD:
+      count: 6588007
+      files:
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk7.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk8.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk9.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk10.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk11.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk12.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk13.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk14.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk15.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk16.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk17.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk18.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk19.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk20.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk21.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk22.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk23.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk24.root
+      - root://cmseos.fnal.gov//store/user/smurthy/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix/picoAOD.chunk25.root
+      missing: {}
+      saved_events: 2538898
+      sumw: 195203.97392964363
+      sumw2: 7245.558915361762
+      sumw2_raw: 7245.558406810411
+      sumw_raw: 195203.95581580012
+      total_events: 6588007
+  '2024':
+    nanoAOD: /GluGluHHto4B_Par-c2-0p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
+    picoAOD:
+      count: 1988270
+      files:
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024/picoAOD.chunk6.root
+      missing: {}
+      saved_events: 680612
+      sumw: 58893.34443569183
+      sumw2: 2185.0093396902084
+      sumw2_raw: 2185.0093876400724
+      sumw_raw: 58893.33705250001
+      total_events: 1988270
+  xs:
+    Run2: 1
+    Run3: 1
+GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p10:
+  '2024':
+    nanoAOD: /GluGluHHto4B_Par-c2-0p10-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
+    picoAOD:
+      count: 1992064
+      files:
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p10_2024/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p10_2024/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p10_2024/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p10_2024/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p10_2024/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p10_2024/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p10_2024/picoAOD.chunk6.root
+      missing: {}
+      saved_events: 693405
+      sumw: 30651.768607616425
+      sumw2: 638.7891859244555
+      sumw2_raw: 638.7891594870109
+      sumw_raw: 30651.768653800053
+      total_events: 1992064
+  xs:
+    Run2: 1
+    Run3: 1
+GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35:
+  '2024':
+    nanoAOD: /GluGluHHto4B_Par-c2-0p35-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
+    picoAOD:
+      count: 1931490
+      files:
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35_2024/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35_2024/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35_2024/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35_2024/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35_2024/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35_2024/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35_2024/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35_2024/picoAOD.chunk7.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35_2024/picoAOD.chunk8.root
+      missing: {}
+      saved_events: 897324
+      sumw: 17522.78785598278
+      sumw2: 188.1844134479761
+      sumw2_raw: 188.18442272204547
+      sumw_raw: 17522.786954220017
+      total_events: 1931490
+  xs:
+    Run2: 1
+    Run3: 1
+GluGlutoHHto4B_kl-1p00_kt-1p00_c2-3p00:
+  '2024':
+    nanoAOD: /GluGluHHto4B_Par-c2-3p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
+    picoAOD:
+      count: 1957664
+      files:
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-3p00_2024/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-3p00_2024/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-3p00_2024/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-3p00_2024/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-3p00_2024/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-3p00_2024/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-3p00_2024/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-3p00_2024/picoAOD.chunk7.root
+      missing: {}
+      saved_events: 714728
+      sumw: 4918822.57623291
+      sumw2: 12521871.776855469
+      sumw2_raw: 12521872.00555251
+      sumw_raw: 4918821.820619993
+      total_events: 1957664
+  xs:
+    Run2: 1
+    Run3: 1
+GluGlutoHHto4B_kl-1p00_kt-1p00_c2-m2p00:
+  '2024':
+    nanoAOD: /GluGluHHto4B_Par-c2-m2p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
+    picoAOD:
+      count: 1999574
+      files:
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-m2p00_2024/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-m2p00_2024/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-m2p00_2024/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-m2p00_2024/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-m2p00_2024/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-m2p00_2024/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-m2p00_2024/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-m2p00_2024/picoAOD.chunk7.root
+      missing: {}
+      saved_events: 705977
+      sumw: 3436696.5573120117
+      sumw2: 6013242.088256836
+      sumw2_raw: 6013241.0328159295
+      sumw_raw: 3436696.334739999
+      total_events: 1999574
+  xs:
+    Run2: 1
+    Run3: 1
+GluGlutoHHto4B_kl-2p45_kt-1p00_c2-0p00:
+  '2024':
+    nanoAOD: /GluGluHHto4B_Par-c2-0p00-kl-2p45-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
+    picoAOD:
+      count: 1964470
+      files:
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-2p45_kt-1p00_c2-0p00_2024/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-2p45_kt-1p00_c2-0p00_2024/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-2p45_kt-1p00_c2-0p00_2024/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-2p45_kt-1p00_c2-0p00_2024/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-2p45_kt-1p00_c2-0p00_2024/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-2p45_kt-1p00_c2-0p00_2024/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-2p45_kt-1p00_c2-0p00_2024/picoAOD.chunk6.root
+      missing: {}
+      saved_events: 668717
+      sumw: 25221.909098386765
+      sumw2: 432.2664079889655
+      sumw2_raw: 432.26648900815417
+      sumw_raw: 25221.91414049999
+      total_events: 1964470
+  xs:
+    Run2: 1
+    Run3: 1
+GluGlutoHHto4B_kl-5p00_kt-1p00_c2-0p00:
+  '2024':
+    nanoAOD: /GluGluHHto4B_Par-c2-0p00-kl-5p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
+    picoAOD:
+      count: 1980512
+      files:
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-5p00_kt-1p00_c2-0p00_2024/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-5p00_kt-1p00_c2-0p00_2024/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-5p00_kt-1p00_c2-0p00_2024/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-5p00_kt-1p00_c2-0p00_2024/picoAOD.chunk3.root
+      missing: {}
+      saved_events: 333375
+      sumw: 166161.61863136292
+      sumw2: 14405.19196653366
+      sumw2_raw: 14405.19213007322
+      sumw_raw: 166161.65195519995
+      total_events: 1980512
+  xs:
+    Run2: 1
+    Run3: 1
+GluGlutoHHto4B_kl-m20p00_kt-1p00_c2-2p24:
+  '2024':
+    nanoAOD: /GluGluHHto4B_Par-c2-2p24-kl-m20p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
+    picoAOD:
+      count: 1957455
+      files:
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-m20p00_kt-1p00_c2-2p24_2024/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-m20p00_kt-1p00_c2-2p24_2024/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-m20p00_kt-1p00_c2-2p24_2024/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/GluGlutoHHto4B_kl-m20p00_kt-1p00_c2-2p24_2024/picoAOD.chunk3.root
+      missing: {}
+      saved_events: 328038
+      sumw: 3259003.515991211
+      sumw2: 5496057.9978637695
+      sumw2_raw: 5496058.024455868
+      sumw_raw: 3259004.2030900023
+      total_events: 1957455
+  xs:
+    Run2: 1
+    Run3: 1
+HH4b:
+  '2016':
+    nanoAOD: /GluGluToHHTo4B_node_SM_13TeV-madgraph/RunIISummer16NanoAODv7-PUMoriond17_Nano02Apr2020_102X_mcRun2_asymptotic_v8-v1/NANOAODSIM
+    picoAOD:
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/20231115/HH4b2016/picoAOD.root
+      sumw: 299800.0
+      sumw2: 299800.0
+      total_events: 299800.0
+  '2017':
+    nanoAOD: /GluGluToHHTo4B_node_SM_13TeV-madgraph_correctedcfg/RunIIFall17NanoAODv7-PU2017_12Apr2018_Nano02Apr2020_102X_mc2017_realistic_v8-v1/NANOAODSIM
+    picoAOD:
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/20231115/HH4b2017/picoAOD.root
+      sumw: 371968.0
+      sumw2: 372000.0
+      total_events: 372000.0
+  '2018':
+    nanoAOD: /GluGluToHHTo4B_node_SM_TuneCP5_PSWeights_13TeV-madgraph-pythia8/RunIIAutumn18NanoAODv7-Nano02Apr2020_102X_upgrade2018_realistic_v21-v1/NANOAODSIM
+    picoAOD:
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/20231115/HH4b2018/picoAOD.root
+      sumw: 399923.13198395696
+      sumw2: 399938.590997903
+      total_events: 400000.0
+  xs:
+    Run2: 0.03105*0.5824**2
+    Run3: 1
