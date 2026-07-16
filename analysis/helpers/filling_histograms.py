@@ -50,6 +50,7 @@ def filling_nominal_histograms(
     weight_noMvD_override: str = None,
     weight_noFvT_override: str = None,
     compute_hemi_mixing_diagnostics: bool = False,
+    plot_extra_canjet_vars: bool = False,
 ):
     if year_override:
         year = _apply_year_override(year)
@@ -82,7 +83,8 @@ def filling_nominal_histograms(
     fill += Jet.plot(("selJetsRun2", "Selected Jets (Run 2 criteria)"), "selJetRun2", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
     fill += Jet.plot(("tagJets", "Tag Jets"), "tagJet", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
     fill += Jet.plot(("tagJetsRun2", "Tag Jets (Run 2 criteria)"), "tagJetRun2", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
-    fill += Jet.plot(("canJets", "Higgs Candidate Jets"), "canJet", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
+    canJet_plot = Jet.plot_extra if plot_extra_canjet_vars else Jet.plot
+    fill += canJet_plot(("canJets", "Higgs Candidate Jets"), "canJet", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
     fill += Jet.plot(("othJets", "Other Jets"), "notCanJet_coffea", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
 
     # Make quad jet hists
@@ -163,10 +165,24 @@ def filling_nominal_histograms(
     if run_SvB:
         has_SvB = "SvB" in selev.fields
         has_SvB_MA = "SvB_MA" in selev.fields
-        if has_SvB:
-            fill += SvBHists(("SvB", "SvB Classifier"), "SvB")
+        # Auto-discover every SvB-like record on selev (SvB, SvB_MA, and any
+        # extra SvB_* friend trees configured in the `friends:` list). load_SvB
+        # attaches each friend whose key starts with "SvB" (FeynNet excluded)
+        # and runs setSvBVars, so the friend's config key becomes the histogram
+        # name here. Add a friend -> get its histograms, no second config list.
+        svb_fields = [
+            f for f in selev.fields
+            if f.startswith("SvB") and not f.startswith("SvB_FeynNet")
+        ]
+        for name in svb_fields:
+            # Full (fine-binned) hists only for the nominal SvB/SvB_MA (the
+            # final-fit discriminant). The extra SvB_mixedMvD study classifiers
+            # get the coarse hists only — drop the 5 240-bin _fine hists (large
+            # storage, not needed for classifier comparison).
+            fine_skip = [] if name in ("SvB", "SvB_MA") else [
+                "ps_zz_fine", "ps_zh_fine", "ps_hh_fine", "phh_hh_fine", "phh_fine"]
+            fill += SvBHists((name, f"{name} Classifier"), name, skip=fine_skip)
         if has_SvB_MA:
-            fill += SvBHists(("SvB_MA", "SvB MA Classifier"), "SvB_MA")
             #fill += SvBHists(("SvB_noFvT", "SvB Classifier"), "SvB", weight="weight_noFvT")
             fill += SvBHists(("SvB_MA_noFvT", "SvB MA Classifier"), "SvB_MA", weight=noFvT_weight)
             #fill += SvBHists(("SvB_MA_noFvT_noJCM", "SvB MA Classifier"), "SvB_MA", weight="weight_noJCM_noFvT")
@@ -473,10 +489,20 @@ def filling_syst_histograms(selev, weights, analysis_selections,
                             )
 
     fill_SvB = Fill( process=processName, year=year)
-    if "SvB" in selev.fields:
-        fill_SvB += SvBHists(("SvB",    "SvB Classifier"),    "SvB",    skip=["ps", "ptt"])
-    if "SvB_MA" in selev.fields:
-        fill_SvB += SvBHists(("SvB_MA", "SvB MA Classifier"), "SvB_MA", skip=["ps", "ptt"])
+    # Auto-discover every SvB-like record on selev (SvB, SvB_MA, and any extra
+    # SvB_* friend trees configured in the `friends:` list). load_SvB attaches
+    # each friend whose key starts with "SvB" (FeynNet excluded) and runs
+    # setSvBVars, so the friend's config key becomes the histogram name here.
+    svb_fields = [
+        f for f in selev.fields
+        if f.startswith("SvB") and not f.startswith("SvB_FeynNet")
+    ]
+    for name in svb_fields:
+        # Coarse-only for the extra SvB_mixedMvD study classifiers (drop the 5
+        # _fine hists); full for nominal SvB/SvB_MA. See the nominal path above.
+        _skip = ["ps", "ptt"] if name in ("SvB", "SvB_MA") else [
+            "ps", "ptt", "ps_zz_fine", "ps_zh_fine", "ps_hh_fine", "phh_hh_fine", "phh_fine"]
+        fill_SvB += SvBHists((name, f"{name} Classifier"), name, skip=_skip)
 
     fill_SvB(selev, hist_SvB, variation=shift_name, weight="weight")
 

@@ -105,8 +105,6 @@ class HemiMixer(Skimmer4b):
                 "Jet_btagPNetCvB", "Jet_btagPNetCvL", "Jet_btagPNetQvG", "Jet_btagPNetTauVJet",
                 "Jet_nSVs", "Jet_nConstituents", "Jet_area", "Jet_rawFactor",
                 "Jet_chHEF", "Jet_neHEF", "Jet_chEmEF", "Jet_neEmEF", "Jet_muEF",
-                "Jet_hfsigmaEtaEta", "Jet_hfsigmaPhiPhi",
-                "Jet_hfadjacentEtaStripsSize", "Jet_hfcentralEtaStripSize",
             ]
         else:
             self.jet_branches += ["Jet_btagDeepFlavB", "Jet_bRegCorr"]
