@@ -19,7 +19,7 @@ Options:
   --year "YEAR1 ..."              Space-separated analysis years
   --output-filename FILE         Output filename
   --output-subdir DIR            Output subdirectory
-  --friends PATH                 Path to friends metadata file (default: coffea4bees/metadata/friends_HH4b.yml)
+  --friends PATH                 Path to friends metadata file (default: coffea4bees/metadata/friends/friends_HH4b.yml)
   --additional-flags FLAGS       Additional flags for runner.py
   --no-test                      Disable test mode
   --condor                       Enable condor mode
@@ -64,7 +64,7 @@ declare -A DEFAULTS=(
     ["CONFIG_PATH"]="coffea4bees/analysis/metadata/HH4b.yml"
     ["TRIGGERS_PATH"]="coffea4bees/metadata/triggers_HH4b.yml"
     ["LUMINOSITIES_PATH"]="coffea4bees/metadata/luminosities_HH4b.yml"
-    ["FRIENDS_PATH"]="coffea4bees/metadata/friends_HH4b.yml"
+    ["FRIENDS_PATH"]="coffea4bees/metadata/friends/friends_HH4b.yml"
     ["DATASETS"]="TTToSemiLeptonic"
     ["YEAR"]="UL18"
     ["OUTPUT_FILENAME"]="test.coffea"
