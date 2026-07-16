@@ -38,7 +38,7 @@ python runner.py --help
 - **classifier/**: Machine learning models, utilities, and scripts for classification tasks.
 - **examples/**: Example scripts for analysis and meta-data rescue.
 - **jet_clustering/**: Jet clustering algorithms, studies, and synthetic data generation.
-- **metadata/**: Datasets, cross-sections, triggers, and luminosity files for analyses.
+- **metadata/**: Central metadata configurations including unified datasets, cross-sections, triggers, and friend trees.
 - **plots/**: Plotting scripts, styles, and metadata for visualizations.
 - **scripts/**: Shell scripts for running, testing, and automating analysis jobs.
 - **skimmer/**: Processors for filtering NanoAOD files and saving skimmed (picoAOD) files.
@@ -46,6 +46,26 @@ python runner.py --help
 - **workflows/**: Snakemake workflows and rules for automating analysis pipelines.
 
 For more details about each component, refer to the `README.md` file in the respective folder.
+
+## Metadata & Dataset Structure
+
+The `metadata/` directory has been reorganized into a centralized structure to support seamless, unified execution across different runs:
+
+### 1. Unified Datasets (`metadata/datasets/`)
+Contains all data and MC dataset definition YAML files (e.g. `TT.yml`, `GluGluToHHTo4B.yml`, `data.yml`). 
+- **Unified Cross-Sections**: To prevent key collisions and support running Run 2 and Run 3 analysis scripts under the same dataset keys, all cross-sections (`xs`) are defined as run-dependent dictionaries:
+  ```yaml
+  xs:
+    Run2: <run2_cross_section_value>
+    Run3: <run3_cross_section_value>
+  ```
+  If a dataset is specific to only one Run, the other Run's cross-section is set to a placeholder `1`.
+- **Dataset Archive (`metadata/datasets/archive/`)**: Holds older dataset definitions and versions (e.g. `Run2_2024_v1`, `Run2_2024_v2`, `Run3_archive`).
+
+### 2. Friend Trees & Trigger Weights (`metadata/friends/`)
+Contains friend tree configurations (`friends_HH4b.yml`, `friends_empty.yml`) and their corresponding active JSON lookups:
+- Active JSON files for trigger weights and classifier friend trees (e.g. `trigweights_2024_v1p2.json`, `data_SvBfriend.json`, etc.) live directly in `metadata/friends/`.
+- Unused/legacy friend trees are placed in `metadata/friends/archive/`.
 
 ## REANA Integration
 
