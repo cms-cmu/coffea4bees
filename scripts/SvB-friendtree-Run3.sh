@@ -15,9 +15,9 @@ OUTPUT_DIR=$OUTPUT_BASE_DIR/$JOB
 create_output_directory "$OUTPUT_DIR"
 
 display_section_header "Input Datasets"
-#DATASETS=${DATASET:-"coffea4bees//metadata/datasets_HH4b_Run3_2025_Run3_skims.yml"}
-#DATASETS=${DATASET:-"coffea4bees//metadata/datasets_HH4b_Run3_fourTag_2025_skims.yml"}
-DATASETS=${DATASET:-"coffea4bees//metadata/datasets_HH4b_Run3/"}
+#DATASETS=${DATASET:-"coffea4bees//metadata/datasets_2025_Run3_skims.yml"}
+#DATASETS=${DATASET:-"coffea4bees//metadata/datasets_fourTag_2025_skims.yml"}
+DATASETS=${DATASET:-"coffea4bees//metadata/datasets/"}
 echo "Using datasets file: $DATASETS"
 #
 

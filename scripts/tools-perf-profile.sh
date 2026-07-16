@@ -29,7 +29,7 @@ OUTPUT_DIR="$OUTPUT_BASE_DIR/perf_profile"
 create_output_directory "$OUTPUT_DIR"
 
 display_section_header "Performance Profile"
-DATASETS="coffea4bees/metadata/datasets_HH4b_Run2/"
+DATASETS="coffea4bees/metadata/datasets/"
 echo "Using datasets file: $DATASETS"
 
 # --- Stage 1: Per-stage instrumented run ---
