@@ -1,5 +1,5 @@
 config.setdefault('output_path', "output/ttHbb/")
-config.setdefault('dataset_location', "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/")
+config.setdefault('dataset_location', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/")
 config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
 config.setdefault('dataset', ['ttHbb'])
 # config.setdefault('year', ['UL16_postVFP', 'UL16_preVFP', 'UL17', 'UL18'])
@@ -77,7 +77,7 @@ rule merge_friendtree_json:
     input: expand( f"{config['output_path']}trigger_weights/trigger_weights_friends_{{dataset}}__{{year}}.json", dataset=config['dataset'], year=config['year'])
     output: f"{config['output_path']}trigger_weights/trigger_weights_friends_allDatasets.json"
     params:
-        friendtree_file = "coffea4bees/metadata/datasets_HH4b_Run2/trigweights_2024_v1p2.json",
+        friendtree_file = "coffea4bees/metadata/friends/trigweights_2024_v1p2.json",
         output_path = config['output_path'],
     log: f"{config['output_path']}logs/merge_friendtree_json.log"
     shell:

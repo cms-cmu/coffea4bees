@@ -518,6 +518,8 @@ use rule run_two_stage_closure from stat_analysis as run_two_stage_closure_HH4b 
         variable = "SvB_MA_ps_hh",
         extra_arguments = "--use_kfold",
         container_wrapper = config['container_wrapper']
+    resources:
+        mem_mb=16384
     log: f"{config['output_path']}/logs/run_two_stage_closure_HH4b.log"
 
 use rule run_two_stage_closure_HH4b as run_two_stage_closure_ZZ4b with:
@@ -598,8 +600,10 @@ if not config.get('run_on_condor', True):
     ]
     workflow._localrules.update(combine_rules)
 
-# Set retries to 3 for all rules to automatically restart failed cluster jobs
+# Set retries to 3 and default mem_mb to 8192 for all rules to automatically restart and prevent timeouts
 for r in workflow.rules:
     r.retries = 3
+    if 'mem_mb' not in r.resources:
+        r.resources['mem_mb'] = 8192
 
 print(f"DEBUG Snakefile: rules.all.input = {list(rules.all.input)}")

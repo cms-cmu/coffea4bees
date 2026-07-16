@@ -31,4 +31,4 @@ channel_metadata:
 container_wrapper: "source /cvmfs/cms.cern.ch/cmsset_default.sh && cd /home/cmsusr/CMSSW_11_3_4/ && cmsenv || true && cd - && eval"
 
 output_path: "output_test"
-dataset_location: "coffea4bees/metadata/datasets_HH4b_Run2/"
+dataset_location: "coffea4bees/metadata/datasets/"

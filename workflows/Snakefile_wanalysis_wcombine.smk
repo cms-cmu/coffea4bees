@@ -12,7 +12,7 @@ if config['mode'] == "lowpt":
     config.setdefault('output_path', "output/lowpt_SvB_LWP/")
     config.setdefault('analysis_config', "coffea4bees/analysis/metadata/HH4b_lowpt_2024_v2.yml")
     config.setdefault('processor', "coffea4bees/analysis/processors/processor_HH4b_lowpt.py")
-    config.setdefault('friend_file', "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/friends_HH4b_lowpt.yml")
+    config.setdefault('friend_file', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b_lowpt.yml")
     config.setdefault('plot_config', "coffea4bees/plots/metadata/plotsAll_lowpt.yml")
     config.setdefault('combine_flags', "--three_tag lowpt_threeTag --four_tag lowpt_fourTag --blind")
 
@@ -21,12 +21,12 @@ elif config['mode'] == "nominal":
     config.setdefault('output_path', "output/nominal_wNewSvB/")
     config.setdefault('analysis_config', "coffea4bees/analysis/metadata/HH4b_2024_v2.yml")
     config.setdefault('processor', "coffea4bees/analysis/processors/processor_HH4b.py")
-    config.setdefault('friend_file', "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/friends_HH4b.yml")
+    config.setdefault('friend_file', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b.yml")
     config.setdefault('plot_config', "coffea4bees/plots/metadata/plotsAll_ttbarWeights.yml")
     config.setdefault('combine_flags', "--blind")
 
 
-config.setdefault('dataset_location', "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/")
+config.setdefault('dataset_location', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/")
 config.setdefault('container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
 config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
 config.setdefault('combine_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-analysis/general/combine-container:CMSSW_14_1_0_pre4-combine_v10.6.0-harvester_v3.1.0")

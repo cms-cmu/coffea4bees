@@ -2,7 +2,7 @@ import os
 import yaml
 
 config.setdefault( 'output_path', "output/mixeddata_friendtrees" )
-config.setdefault( 'dataset_location',  "coffea4bees/metadata/datasets_HH4b_Run2/" )
+config.setdefault( 'dataset_location',  "coffea4bees/metadata/datasets/" )
 config.setdefault( 'samples', ["mixeddata_all", "data"] )
 config.setdefault( 'samples_sim', ['GluGluToHHTo4B_cHHH1', 'ZH4b', 'ZZ4b'] )
 config.setdefault( 'years', ['UL16_preVFP', 'UL16_postVFP', 'UL17', 'UL18'] )
