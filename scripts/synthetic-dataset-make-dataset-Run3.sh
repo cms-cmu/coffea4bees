@@ -11,8 +11,8 @@ if [ $? -ne 0 ]; then
 fi
 
 display_section_header "Input Datasets"
-# DATASETS=${DATASET:-"coffea4bees/metadata/datasets_synthetic_test_Run3.yml"}
-DATASETS="coffea4bees/metadata/datasets_synthetic_test_Run3.yml"
+# DATASETS=${DATASET:-"coffea4bees/metadata/datasets/archive/Run3_archive/datasets_synthetic_test_Run3.yml"}
+DATASETS="coffea4bees/metadata/datasets/archive/Run3_archive/datasets_synthetic_test_Run3.yml"
 echo "Using datasets file: $DATASETS"
 
 # Setup proxy if needed

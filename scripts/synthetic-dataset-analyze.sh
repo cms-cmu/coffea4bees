@@ -67,9 +67,9 @@ time bash coffea4bees/scripts/run-analysis-processor.sh \
 #time python runner.py -o test_synthetic_data_test.coffea -d data -p coffea4bees/analysis/processors/processor_HH4b.py -y UL18  -op $OUTPUT_DIR/ -c $OUTPUT_DIR/HH4b_synthetic_data.yml -m coffea4bees/metadata/datasets_synthetic_seed17.yml
 
 
-# python src/tools/merge_yaml_datasets.py -m coffea4bees/metadata/datasets/ -f coffea4bees/skimmer/metadata/picoaod_datasets_declustered_test_UL18.yml  -o coffea4bees/metadata/datasets_synthetic_test.yml
+# python src/tools/merge_yaml_datasets.py -m coffea4bees/metadata/datasets/ -f coffea4bees/skimmer/metadata/picoaod_datasets_declustered_test_UL18.yml  -o coffea4bees/metadata/datasets/archive/Run2_2024_v1/datasets_synthetic_test.yml
 # python src/tools/merge_yaml_datasets.py -m coffea4bees/metadata/datasets_synthetic_seed17.yml -f coffea4bees/skimmer/metadata/picoaod_datasets_declustered_GluGluToHHTo4B_cHHH1_Run2_seed17.yml -o coffea4bees/metadata/datasets_synthetic_seed17.yml
-#cat coffea4bees/metadata/datasets_synthetic_test.yml
+#cat coffea4bees/metadata/datasets/archive/Run2_2024_v1/datasets_synthetic_test.yml
 
 
 # time python runner.py -o test_synthetic_datasets.coffea -d data GluGluToHHTo4B_cHHH1 -p coffea4bees/analysis/processors/processor_HH4b.py -y UL18  -op $OUTPUT_DIR/ -c coffea4bees/analysis/metadata/HH4b_synthetic_data.yml -m $OUTPUT_DIR/datasets_synthetic_test.yml
