@@ -2362,7 +2362,9 @@ TTTo2L2Nu_for_mixed:
       sumw2: 784670307914.478
       total_events: 148470000.0
   nSamples: 15
-  xs: 88.3419033256
+  xs:
+    Run2: 88.3419033256
+    Run3: 1
 TTToHadronic:
   2022_EE:
     PFNano:
@@ -8516,7 +8518,9 @@ TTToHadronic_for_mixed:
       sumw2: 34454655050080.375
       total_events: 344028000.0
   nSamples: 15
-  xs: 377.9607353256
+  xs:
+    Run2: 377.9607353256
+    Run3: 1
 TTToSemiLeptonic:
   2022_EE:
     PFNano:
@@ -16325,4 +16329,6 @@ TTToSemiLeptonic_for_mixed:
       sumw2: 44795533094350.31
       total_events: 486770000.0
   nSamples: 15
-  xs: 365.7826460496
+  xs:
+    Run2: 365.7826460496
+    Run3: 1

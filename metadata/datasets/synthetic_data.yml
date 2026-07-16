@@ -18,6 +18,9 @@ mixeddata:
       files_template:
       - root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig/mixed2018_3bDvTMix4bDvT_vXXX/picoAOD_3bDvTMix4bDvT_4b_wJCM_vXXX_newSBDef.root
   nSamples: 15
+  xs:
+    Run2: 1
+    Run3: 1
 synthetic_data:
   2022_EE:
     picoAOD:
@@ -108,6 +111,9 @@ synthetic_data:
       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_UL18/picoAOD_PSData.root
       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_UL18/picoAOD_PSData.root
   nSamples: 1
+  xs:
+    Run2: 1
+    Run3: 1
 synthetic_data_noTT:
   2022_EE:
     picoAOD:
@@ -148,3 +154,6 @@ synthetic_data_noTT:
       - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2023_preBPixF/picoAOD_seedXXX.chunk3.root
       - root://cmseos.fnal.gov//store/user/jda102/XX4b/DeClustered_noTT/data_2023_preBPixF/picoAOD_seedXXX.chunk4.root
   nSamples: 1
+  xs:
+    Run2: 1
+    Run3: 1

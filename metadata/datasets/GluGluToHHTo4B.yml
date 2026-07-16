@@ -69,7 +69,9 @@ GluGluToHHTo4B_cHHH0:
       sumw_diff: -889.0460205078125
       sumw_raw: 58023.9636257
       total_events: 978000
-  xs: 0.06856*0.5824**2
+  xs:
+    Run2: 0.06856*0.5824**2
+    Run3: 1
 GluGluToHHTo4B_cHHH1:
   UL16_postVFP:
     nanoAOD: /GluGluToHHTo4B_cHHH1_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v1/NANOAODSIM
@@ -143,7 +145,9 @@ GluGluToHHTo4B_cHHH1:
       sumw_diff: 1453.1521577835083
       sumw_raw: 28210.3267947
       total_events: 1000000
-  xs: 0.03077*0.5824**2
+  xs:
+    Run2: 0.03077*0.5824**2
+    Run3: 1
 GluGluToHHTo4B_cHHH2p45:
   UL16_postVFP:
     nanoAOD: /GluGluToHHTo4B_cHHH2p45_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v1/NANOAODSIM
@@ -209,7 +213,9 @@ GluGluToHHTo4B_cHHH2p45:
       sumw_diff: 13.910200119018555
       sumw_raw: 10752.851367299998
       total_events: 950000
-  xs: 0.01333*0.5824**2
+  xs:
+    Run2: 0.01333*0.5824**2
+    Run3: 1
 GluGluToHHTo4B_cHHH5:
   UL16_postVFP:
     nanoAOD: /GluGluToHHTo4B_cHHH5_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v1/NANOAODSIM
@@ -270,7 +276,9 @@ GluGluToHHTo4B_cHHH5:
       sumw2_raw: 6400.488181203013
       sumw_raw: 78489.34013980003
       total_events: 994000
-  xs: 0.09082*0.5824**2
+  xs:
+    Run2: 0.09082*0.5824**2
+    Run3: 1
 GluGlutoHHto4B_kl-0p00_kt-1p00_c2-0p00:
   '2024':
     nanoAOD: /GluGluHHto4B_Par-c2-0p00-kl-0p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v1/NANOAODSIM
@@ -290,6 +298,9 @@ GluGlutoHHto4B_kl-0p00_kt-1p00_c2-0p00:
       sumw2_raw: 9630.735754969097
       sumw_raw: 129416.68157330001
       total_events: 1981254
+  xs:
+    Run2: 1
+    Run3: 1
 GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00:
   '2024':
     nanoAOD: /GluGluHHto4B_Par-c2-1p00-kl-0p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
@@ -312,6 +323,9 @@ GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00:
       sumw2_raw: 35224.66507916197
       sumw_raw: 254472.23476699993
       total_events: 1996031
+  xs:
+    Run2: 1
+    Run3: 1
 GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00:
   2022_EE:
     PFNano:
@@ -646,6 +660,9 @@ GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00:
       sumw2_raw: 2185.0093876400724
       sumw_raw: 58893.33705250001
       total_events: 1988270
+  xs:
+    Run2: 1
+    Run3: 1
 GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p10:
   '2024':
     nanoAOD: /GluGluHHto4B_Par-c2-0p10-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
@@ -666,6 +683,9 @@ GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p10:
       sumw2_raw: 638.7891594870109
       sumw_raw: 30651.768653800053
       total_events: 1992064
+  xs:
+    Run2: 1
+    Run3: 1
 GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35:
   '2024':
     nanoAOD: /GluGluHHto4B_Par-c2-0p35-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
@@ -688,6 +708,9 @@ GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35:
       sumw2_raw: 188.18442272204547
       sumw_raw: 17522.786954220017
       total_events: 1931490
+  xs:
+    Run2: 1
+    Run3: 1
 GluGlutoHHto4B_kl-1p00_kt-1p00_c2-3p00:
   '2024':
     nanoAOD: /GluGluHHto4B_Par-c2-3p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
@@ -709,6 +732,9 @@ GluGlutoHHto4B_kl-1p00_kt-1p00_c2-3p00:
       sumw2_raw: 12521872.00555251
       sumw_raw: 4918821.820619993
       total_events: 1957664
+  xs:
+    Run2: 1
+    Run3: 1
 GluGlutoHHto4B_kl-1p00_kt-1p00_c2-m2p00:
   '2024':
     nanoAOD: /GluGluHHto4B_Par-c2-m2p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
@@ -730,6 +756,9 @@ GluGlutoHHto4B_kl-1p00_kt-1p00_c2-m2p00:
       sumw2_raw: 6013241.0328159295
       sumw_raw: 3436696.334739999
       total_events: 1999574
+  xs:
+    Run2: 1
+    Run3: 1
 GluGlutoHHto4B_kl-2p45_kt-1p00_c2-0p00:
   '2024':
     nanoAOD: /GluGluHHto4B_Par-c2-0p00-kl-2p45-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
@@ -750,6 +779,9 @@ GluGlutoHHto4B_kl-2p45_kt-1p00_c2-0p00:
       sumw2_raw: 432.26648900815417
       sumw_raw: 25221.91414049999
       total_events: 1964470
+  xs:
+    Run2: 1
+    Run3: 1
 GluGlutoHHto4B_kl-5p00_kt-1p00_c2-0p00:
   '2024':
     nanoAOD: /GluGluHHto4B_Par-c2-0p00-kl-5p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
@@ -767,6 +799,9 @@ GluGlutoHHto4B_kl-5p00_kt-1p00_c2-0p00:
       sumw2_raw: 14405.19213007322
       sumw_raw: 166161.65195519995
       total_events: 1980512
+  xs:
+    Run2: 1
+    Run3: 1
 GluGlutoHHto4B_kl-m20p00_kt-1p00_c2-2p24:
   '2024':
     nanoAOD: /GluGluHHto4B_Par-c2-2p24-kl-m20p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
@@ -784,6 +819,9 @@ GluGlutoHHto4B_kl-m20p00_kt-1p00_c2-2p24:
       sumw2_raw: 5496058.024455868
       sumw_raw: 3259004.2030900023
       total_events: 1957455
+  xs:
+    Run2: 1
+    Run3: 1
 HH4b:
   '2016':
     nanoAOD: /GluGluToHHTo4B_node_SM_13TeV-madgraph/RunIISummer16NanoAODv7-PUMoriond17_Nano02Apr2020_102X_mcRun2_asymptotic_v8-v1/NANOAODSIM
@@ -809,4 +847,6 @@ HH4b:
       sumw: 399923.13198395696
       sumw2: 399938.590997903
       total_events: 400000.0
-  xs: 0.03105*0.5824**2
+  xs:
+    Run2: 0.03105*0.5824**2
+    Run3: 1

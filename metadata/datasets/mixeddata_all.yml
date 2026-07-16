@@ -421,6 +421,9 @@ mixeddata_all:
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL18D/picoAOD_mixed_all.chunk7.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL18D/picoAOD_mixed_all.chunk8.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_UL18D/picoAOD_mixed_all.chunk9.root
+  xs:
+    Run2: 1
+    Run3: 1
 mixeddata_all_noTT:
   2022_EE:
     picoAOD:
@@ -738,3 +741,6 @@ mixeddata_all_noTT:
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_2023_preBPixF/picoAOD_mixed_all.chunk7.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_2023_preBPixF/picoAOD_mixed_all.chunk8.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_condor/data_2023_preBPixF/picoAOD_mixed_all.chunk9.root
+  xs:
+    Run2: 1
+    Run3: 1

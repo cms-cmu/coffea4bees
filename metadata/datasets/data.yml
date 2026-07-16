@@ -20102,6 +20102,9 @@ data:
       D:
         files:
         - root://cmseos.fnal.gov//store/user/algomez/XX4b/20231115/data2018D/picoAOD.root
+  xs:
+    Run2: 1
+    Run3: 1
 data_3b_for_mixed:
   '2016':
     picoAOD:
@@ -20143,3 +20146,6 @@ data_3b_for_mixed:
       files:
       - root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//data2018_3b/picoAOD_3b_wJCM_newSBDef.root
   nSamples: 15
+  xs:
+    Run2: 1
+    Run3: 1

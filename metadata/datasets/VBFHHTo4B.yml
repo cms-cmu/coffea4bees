@@ -35,6 +35,9 @@ VBFHHTo4B_CV-1p00-C2V-0p00-C3-1p00:
       sumw2_raw: 6666666.0
       sumw_raw: 6666666.0
       total_events: 6666666
+  xs:
+    Run2: 1
+    Run3: 1
 VBFHHTo4B_CV-1p00-C2V-1p00-C3-1p00:
   '2024':
     nanoAOD: /VBFHHto4B_Par-CV-1-C2V-1-C3-1_TuneCP5_13p6TeV_madgraph-pythia8/RunIII2024Summer24NanoAODv15-150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
@@ -60,6 +63,9 @@ VBFHHTo4B_CV-1p00-C2V-1p00-C3-1p00:
       sumw2_raw: 6653667.0
       sumw_raw: 6653667.0
       total_events: 6653667
+  xs:
+    Run2: 1
+    Run3: 1
 VBFHHTo4B_CV-1p74-C2V-1p37-C3-14p4:
   '2024':
     nanoAOD: /VBFHHto4B_Par-CV-1p74-C2V-1p37-C3-14p4_TuneCP5_13p6TeV_madgraph-pythia8/RunIII2024Summer24NanoAODv15-150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
@@ -75,6 +81,9 @@ VBFHHTo4B_CV-1p74-C2V-1p37-C3-14p4:
       sumw2_raw: 660000.0
       sumw_raw: 660000.0
       total_events: 660000
+  xs:
+    Run2: 1
+    Run3: 1
 VBFHHTo4B_CV-2p12-C2V-3p87-C3-m5p96:
   '2024':
     nanoAOD: /VBFHHto4B_Par-CV-2p12-C2V-3p87-C3-m5p96_TuneCP5_13p6TeV_madgraph-pythia8/RunIII2024Summer24NanoAODv15-150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
@@ -90,6 +99,9 @@ VBFHHTo4B_CV-2p12-C2V-3p87-C3-m5p96:
       sumw2_raw: 660000.0
       sumw_raw: 660000.0
       total_events: 660000
+  xs:
+    Run2: 1
+    Run3: 1
 VBFHHTo4B_CV-m0p012-C2V-0p030-C3-10p2:
   '2024':
     nanoAOD: /VBFHHto4B_Par-CV-m0p012-C2V-0p030-C3-10p2_TuneCP5_13p6TeV_madgraph-pythia8/RunIII2024Summer24NanoAODv15-150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
@@ -106,6 +118,9 @@ VBFHHTo4B_CV-m0p012-C2V-0p030-C3-10p2:
       sumw2_raw: 660000.0
       sumw_raw: 660000.0
       total_events: 660000
+  xs:
+    Run2: 1
+    Run3: 1
 VBFHHTo4B_CV-m0p758-C2V-1p44-C3-m19p3:
   '2024':
     nanoAOD: /VBFHHto4B_Par-CV-m0p758-C2V-1p44-C3-m19p3_TuneCP5_13p6TeV_madgraph-pythia8/RunIII2024Summer24NanoAODv15-150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
@@ -121,6 +136,9 @@ VBFHHTo4B_CV-m0p758-C2V-1p44-C3-m19p3:
       sumw2_raw: 660000.0
       sumw_raw: 660000.0
       total_events: 660000
+  xs:
+    Run2: 1
+    Run3: 1
 VBFHHTo4B_CV-m0p962-C2V-0p959-C3-1p43:
   '2024':
     nanoAOD: /VBFHHto4B_Par-CV-m0p962-C2V-0p959-C3-m1p43_TuneCP5_13p6TeV_madgraph-pythia8/RunIII2024Summer24NanoAODv15-150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
@@ -136,6 +154,9 @@ VBFHHTo4B_CV-m0p962-C2V-0p959-C3-1p43:
       sumw2_raw: 660000.0
       sumw_raw: 660000.0
       total_events: 660000
+  xs:
+    Run2: 1
+    Run3: 1
 VBFHHTo4B_CV-m1p21-C2V-1p94-C3-m0p94:
   '2024':
     nanoAOD: /VBFHHto4B_Par-CV-m1p21-C2V-1p94-C3-m0p94_TuneCP5_13p6TeV_madgraph-pythia8/RunIII2024Summer24NanoAODv15-150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
@@ -152,6 +173,9 @@ VBFHHTo4B_CV-m1p21-C2V-1p94-C3-m0p94:
       sumw2_raw: 660000.0
       sumw_raw: 660000.0
       total_events: 660000
+  xs:
+    Run2: 1
+    Run3: 1
 VBFHHTo4B_CV-m1p60-C2V-2p72-C3-m1p36:
   '2024':
     nanoAOD: /VBFHHto4B_Par-CV-m1p60-C2V-2p72-C3-m1p36_TuneCP5_13p6TeV_madgraph-pythia8/RunIII2024Summer24NanoAODv15-150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
@@ -167,6 +191,9 @@ VBFHHTo4B_CV-m1p60-C2V-2p72-C3-m1p36:
       sumw2_raw: 660000.0
       sumw_raw: 660000.0
       total_events: 660000
+  xs:
+    Run2: 1
+    Run3: 1
 VBFHHTo4B_CV-m1p83-C2V-3p57-C3-m3p39:
   '2024':
     nanoAOD: /VBFHHto4B_Par-CV-m1p83-C2V-3p57-C3-m3p39_TuneCP5_13p6TeV_madgraph-pythia8/RunIII2024Summer24NanoAODv15-150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
@@ -182,6 +209,9 @@ VBFHHTo4B_CV-m1p83-C2V-3p57-C3-m3p39:
       sumw2_raw: 660000.0
       sumw_raw: 660000.0
       total_events: 660000
+  xs:
+    Run2: 1
+    Run3: 1
 VBFHHTo4B_kl_10p2_cv_m0p012_c2v_0p030:
   UL16_postVFP:
     nanoAOD: /VBFHHTo4B_kl_10p2_cv_m0p012_c2v_0p030_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM
@@ -237,7 +267,9 @@ VBFHHTo4B_kl_10p2_cv_m0p012_c2v_0p030:
       sumw2_raw: 999000.0
       sumw_raw: 999000.0
       total_events: 999000
-  xs: 0.0000120*0.5824**2
+  xs:
+    Run2: 0.0000120*0.5824**2
+    Run3: 1
 VBFHHTo4B_kl_14p4_cv_1p74_c2v_1p37:
   UL16_postVFP:
     nanoAOD: /VBFHHTo4B_kl_14p4_cv_1p74_c2v_1p37_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM
@@ -293,7 +325,9 @@ VBFHHTo4B_kl_14p4_cv_1p74_c2v_1p37:
       sumw2_raw: 999000.0
       sumw_raw: 999000.0
       total_events: 999000
-  xs: 0.3777832*0.5824**2
+  xs:
+    Run2: 0.3777832*0.5824**2
+    Run3: 1
 VBFHHTo4B_kl_1p00_cv_1p00_c2v_0p00:
   UL16_postVFP:
     nanoAOD: /VBFHHTo4B_kl_1p00_cv_1p00_c2v_0p00_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM
@@ -352,7 +386,9 @@ VBFHHTo4B_kl_1p00_cv_1p00_c2v_0p00:
       sumw2_raw: 1000000.0
       sumw_raw: 1000000.0
       total_events: 1000000
-  xs: 0.0270800*0.5824**2
+  xs:
+    Run2: 0.0270800*0.5824**2
+    Run3: 1
 VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00:
   UL16_postVFP:
     nanoAOD: /VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM
@@ -408,7 +444,9 @@ VBFHHTo4B_kl_1p00_cv_1p00_c2v_1p00:
       sumw2_raw: 999000.0
       sumw_raw: 999000.0
       total_events: 999000
-  xs: 0.0017260*0.5824**2
+  xs:
+    Run2: 0.0017260*0.5824**2
+    Run3: 1
 VBFHHTo4B_kl_m0p94_cv_m1p21_c2v_1p94:
   UL16_postVFP:
     nanoAOD: /VBFHHTo4B_kl_m0p94_cv_m1p21_c2v_1p94_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM
@@ -466,7 +504,9 @@ VBFHHTo4B_kl_m0p94_cv_m1p21_c2v_1p94:
       sumw2_raw: 1000000.0
       sumw_raw: 1000000.0
       total_events: 1000000
-  xs: 0.0033739*0.5824**2
+  xs:
+    Run2: 0.0033739*0.5824**2
+    Run3: 1
 VBFHHTo4B_kl_m19p3_cv_m0p758_c2v_1p44:
   UL16_postVFP:
     nanoAOD: /VBFHHTo4B_kl_m19p3_cv_m0p758_c2v_1p44_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM
@@ -522,7 +562,9 @@ VBFHHTo4B_kl_m19p3_cv_m0p758_c2v_1p44:
       sumw2_raw: 1000000.0
       sumw_raw: 1000000.0
       total_events: 1000000
-  xs: 0.3340766*0.5824**2
+  xs:
+    Run2: 0.3340766*0.5824**2
+    Run3: 1
 VBFHHTo4B_kl_m1p36_cv_m1p60_c2v_2p72:
   UL16_postVFP:
     nanoAOD: /VBFHHTo4B_kl_m1p36_cv_m1p60_c2v_2p72_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM
@@ -578,7 +620,9 @@ VBFHHTo4B_kl_m1p36_cv_m1p60_c2v_2p72:
       sumw2_raw: 1000000.0
       sumw_raw: 1000000.0
       total_events: 1000000
-  xs: 0.0105109*0.5824**2
+  xs:
+    Run2: 0.0105109*0.5824**2
+    Run3: 1
 VBFHHTo4B_kl_m1p43_cv_m0p962_c2v_0p959:
   UL16_postVFP:
     nanoAOD: /VBFHHTo4B_kl_m1p43_cv_m0p962_c2v_0p959_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM
@@ -634,7 +678,9 @@ VBFHHTo4B_kl_m1p43_cv_m0p962_c2v_0p959:
       sumw2_raw: 999000.0
       sumw_raw: 999000.0
       total_events: 999000
-  xs: 0.0105109*0.5824**2
+  xs:
+    Run2: 0.0105109*0.5824**2
+    Run3: 1
 VBFHHTo4B_kl_m3p39_cv_m1p83_c2v_3p57:
   UL16_postVFP:
     nanoAOD: /VBFHHTo4B_kl_m3p39_cv_m1p83_c2v_3p57_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM
@@ -690,7 +736,9 @@ VBFHHTo4B_kl_m3p39_cv_m1p83_c2v_3p57:
       sumw2_raw: 999000.0
       sumw_raw: 999000.0
       total_events: 999000
-  xs: 0.0149850*0.5824**2
+  xs:
+    Run2: 0.0149850*0.5824**2
+    Run3: 1
 VBFHHTo4B_kl_m5p96_cv_2p12_c2v_3p87:
   UL16_postVFP:
     nanoAOD: /VBFHHTo4B_kl_m5p96_cv_2p12_c2v_3p87_TuneCP5_13TeV_madgraph-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM
@@ -746,4 +794,6 @@ VBFHHTo4B_kl_m5p96_cv_2p12_c2v_3p87:
       sumw2_raw: 999000.0
       sumw_raw: 999000.0
       total_events: 999000
-  xs: 0.6322811*0.5824**2
+  xs:
+    Run2: 0.6322811*0.5824**2
+    Run3: 1

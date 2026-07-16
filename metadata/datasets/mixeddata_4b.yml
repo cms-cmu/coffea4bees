@@ -73,6 +73,9 @@ mixeddata_4b:
       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_UL18/picoAOD_PSData.root
       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_UL18/picoAOD_PSData.root
   nSamples: 1
+  xs:
+    Run2: 1
+    Run3: 1
 mixeddata_4b_noTT:
   2022_EE:
     picoAOD:
@@ -107,6 +110,9 @@ mixeddata_4b_noTT:
       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_2023_preBPix/picoAOD_mixed_vXXX.chunk5.root
       - root://cmseos.fnal.gov//store/user/jda102/XX4b/mixeddata/mixeddata_all_2023_preBPix/picoAOD_mixed_vXXX.chunk6.root
   nSamples: 1
+  xs:
+    Run2: 1
+    Run3: 1
 mixeddata_4b_onlyTTPSData:
   2022_EE:
     picoAOD:
@@ -133,6 +139,9 @@ mixeddata_4b_onlyTTPSData:
       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_2023_preBPix/picoAOD_PSData.root
       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_2023_preBPix/picoAOD_PSData.root
   nSamples: 2
+  xs:
+    Run2: 1
+    Run3: 1
 mixeddata_4b_pz:
   2022_EE:
     picoAOD:
@@ -179,3 +188,6 @@ mixeddata_4b_pz:
       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_2023_preBPix/picoAOD_PSData.root
       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_2023_preBPix/picoAOD_PSData.root
   nSamples: 1
+  xs:
+    Run2: 1
+    Run3: 1
