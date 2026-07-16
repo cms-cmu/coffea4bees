@@ -1,6 +1,6 @@
 import os, sys
 import ROOT
-import cmsstyle as CMS
+import src.stat_analysis.plots.cmsstyle as CMS
 import argparse
 import logging
 import yaml
