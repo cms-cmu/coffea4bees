@@ -9,9 +9,6 @@ config:
   apply_btagSF: false
   apply_boosted_veto: false
   run_SvB: false
-  SvB   : 'coffea4bees/analysis/weights/pytorch_models/2024_HHUL/SvB_HCR_8_np753_seed13_lr0.01_epochs20_offset*_epoch20.pkl'
-  SvB_MA: 'coffea4bees/analysis/weights/pytorch_models/2024_HHUL/SvB_MA_HCR+attention_8_np1061_seed13_lr0.01_epochs20_offset*_epoch20.pkl'
-  JCM_file : 'coffea4bees/analysis/weights/JCM/Run3/jetCombinatoricModel_SB_v2.yml'
   apply_MvD: false
   apply_MvD_weight: false
   plot_ttbar_with_weights: false

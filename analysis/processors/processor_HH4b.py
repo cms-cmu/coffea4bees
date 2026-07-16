@@ -206,7 +206,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         FvT: str|list[HCRModelMetadata] = None,
         blind: bool = False,
         apply_JCM: bool = True,
-        JCM_file: str = "coffea4bees/analysis/weights/JCM/AN_24_089_v3/jetCombinatoricModel_SB_6771c35.yml",
+        JCM_file: str = "coffea4bees/metadata/weights/JCM/AN_24_089_v3/jetCombinatoricModel_SB_6771c35.yml",
         corrections_metadata: dict = None,
         apply_trigWeight: bool = True,
         apply_btagSF: bool = True,

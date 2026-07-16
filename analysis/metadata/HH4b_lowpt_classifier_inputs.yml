@@ -8,7 +8,6 @@ config:
   blind: false 
   apply_FvT: false
   apply_JCM: true
-  JCM_file: "coffea4bees/analysis/weights/JCM/Run2_lowpt_v1/jetCombinatoricModel_SB_2024_v2.yml"
   apply_trigWeight: true
   apply_btagSF: true
   apply_boosted_veto: false
@@ -19,3 +18,4 @@ config:
 
 
   
+  category: lowpt

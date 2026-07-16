@@ -1,0 +1,45 @@
+default:
+  UL16_preVFP: &weights_Run2
+    JCM_file: "coffea4bees/metadata/weights/JCM/2024_v2_nominal/jetCombinatoricModel_SB_2024_v2.yml"
+    SvB:
+      - path: "coffea4bees/metadata/weights/pytorch_models/2024_HHUL/SvB_HCR_8_np753_seed13_lr0.01_epochs20_offset*_epoch20.pkl"
+        name: Final
+    SvB_MA:
+      - path: "coffea4bees/metadata/weights/pytorch_models/2024_HHUL/SvB_MA_HCR+attention_8_np1061_seed13_lr0.01_epochs20_offset*_epoch20.pkl"
+        name: Final
+    FvT:
+      - path: "coffea4bees/metadata/weights/pytorch_models/2023/FvT_HCR+attention_8_np1052_seed0_lr0.01_epochs20_offset*_epoch20.pkl"
+        name: Final
+  UL16_postVFP: *weights_Run2
+  UL17: *weights_Run2
+  UL18: *weights_Run2
+
+  2022_preEE: &weights_Run3
+    JCM_file: "coffea4bees/metadata/weights/JCM/Run3/jetCombinatoricModel_SB_v2.yml"
+    SvB:
+      - path: "coffea4bees/metadata/weights/pytorch_models/2024_HHUL/SvB_HCR_8_np753_seed13_lr0.01_epochs20_offset*_epoch20.pkl"
+        name: Final
+    SvB_MA:
+      - path: "coffea4bees/metadata/weights/pytorch_models/2024_HHUL/SvB_MA_HCR+attention_8_np1061_seed13_lr0.01_epochs20_offset*_epoch20.pkl"
+        name: Final
+  2022_EE: *weights_Run3
+  2023_preBPix: *weights_Run3
+  2023_BPix: *weights_Run3
+  2024: *weights_Run3
+
+lowpt:
+  UL16_preVFP: &weights_lowpt_Run2
+    JCM_file: "coffea4bees/metadata/weights/JCM/Run2_lowpt_v1/jetCombinatoricModel_SB_2024_v2.yml"
+    SvB_MA:
+      - path: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/lowpt_sel_LWP/classifier/lowpt_SvB_LWP/result.json"
+        name: Final
+  UL16_postVFP: *weights_lowpt_Run2
+  UL17: *weights_lowpt_Run2
+  UL18: *weights_lowpt_Run2
+
+unsupervised:
+  UL16_preVFP: &weights_unsup_Run2
+    JCM: "coffea4bees/metadata/weights/dataRunII/jetCombinatoricModel_SB_00-00-02.txt"
+  UL16_postVFP: *weights_unsup_Run2
+  UL17: *weights_unsup_Run2
+  UL18: *weights_unsup_Run2

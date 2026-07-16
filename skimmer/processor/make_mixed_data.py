@@ -38,7 +38,7 @@ class HemiMixer(Skimmer4b):
                 subtract_ttbar_with_weights = False,
                 friends: dict[str, str|FriendTemplate] = None,
                 apply_JCM: bool = True,
-                JCM_file: str = "coffea4bees/analysis/weights/JCM/AN_24_089_v3/jetCombinatoricModel_SB_6771c35.yml",
+                JCM_file: str = "coffea4bees/metadata/weights/JCM/AN_24_089_v3/jetCombinatoricModel_SB_6771c35.yml",
                 hemi_library_yaml: str = None,
                 hemi_stats_path: str = None,
                 corrections_metadata: dict = None,

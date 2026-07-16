@@ -138,7 +138,7 @@ class analysis(processor.ProcessorABC):
         FvT: str|list[HCRModelMetadata] = None,
         blind: bool = False,
         apply_JCM: bool = True,
-        JCM_file: str = "python/analysis/weights/JCM/AN_24_089_v3/jetCombinatoricModel_SB_6771c35.yml",
+        JCM_file: str = "coffea4bees/metadata/weights/JCM/AN_24_089_v3/jetCombinatoricModel_SB_6771c35.yml",
         # JCM_file: str = "python/analysis/hists/testJCM_Coffea/jetCombinatoricModel_SB_.yml",
         corrections_metadata: dict = None,
         apply_trigWeight: bool = True,

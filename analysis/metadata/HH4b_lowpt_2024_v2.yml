@@ -8,14 +8,10 @@ config:
   blind: true
   apply_FvT: true
   apply_JCM: true
-  JCM_file: "coffea4bees/analysis/weights/JCM/Run2_lowpt_v1/jetCombinatoricModel_SB_2024_v2.yml"
   apply_trigWeight: true
   apply_btagSF: true
   apply_boosted_veto: false
   run_SvB: true
-  SvB: null
-  SvB_MA:
-    - path: 'root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/lowpt_sel_LWP/classifier/lowpt_SvB_LWP/result.json'
-      name: Final
   top_reconstruction: fast
   plot_ttbar_with_weights: true
+  category: lowpt
