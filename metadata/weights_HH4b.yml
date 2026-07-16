@@ -1,3 +1,4 @@
+# Central weights configuration
 weights:
   UL16_preVFP: &weights_Run2
     JCM_file: "coffea4bees/metadata/weights/JCM/2024_v2_nominal/jetCombinatoricModel_SB_2024_v2.yml"
