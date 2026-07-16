@@ -10,7 +10,7 @@ rule convert_hist_to_json:
         """
         mkdir -p $(dirname {log})
         echo "[$(date)] Starting convert_hist_to_json for {input}" > {log}
-        python coffea4bees/stats_analysis/convert_hist_to_json.py -o {output} -i {input} {params.syst_flag} 2>&1 | tee -a {log}
+        python3 coffea4bees/stats_analysis/convert_hist_to_json.py -o {output} -i {input} {params.syst_flag} 2>&1 | tee -a {log}
         echo "[$(date)] Completed convert_hist_to_json for {input}" >> {log}
         """
 
@@ -24,7 +24,7 @@ rule convert_hist_to_json_closure:
         """
         mkdir -p $(dirname {log})
         echo "[$(date)] Starting convert_hist_to_json_closure" > {log}
-        python coffea4bees/stats_analysis/convert_hist_to_json_closure.py -o {output} -i {input} 2>&1 | tee -a {log}
+        python3 coffea4bees/stats_analysis/convert_hist_to_json_closure.py -o {output} -i {input} 2>&1 | tee -a {log}
         echo "[$(date)] Completed convert_hist_to_json_closure" >> {log}
         """
 

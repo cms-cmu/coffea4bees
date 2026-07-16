@@ -42,7 +42,7 @@ except Exception as e:  # pragma: no cover
 def try_import_cmsstyle():
 	"""Try to import cmsstyle (optional). Return module or None."""
 	try:
-		import cmsstyle as _cmsstyle  # type: ignore
+		import src.stat_analysis.plots.cmsstyle as _cmsstyle  # type: ignore
 
 		return _cmsstyle
 	except Exception:

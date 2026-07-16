@@ -8,8 +8,8 @@ _roc = config.setdefault('run_on_condor', shutil.which("condor_submit") is not N
 config['run_on_condor'] = False #str(_roc).lower() not in ('false', '0', 'no')
 
 if config['mode'] == "lowpt":
-    config.setdefault('label', "lowpt_SvB_bothnSelJets")
-    config.setdefault('output_path', "output/lowpt_SvB_bothnSelJets/")
+    config.setdefault('label', "lowpt_SvB_LWP")
+    config.setdefault('output_path', "output/lowpt_SvB_LWP/")
     config.setdefault('analysis_config', "coffea4bees/analysis/metadata/HH4b_lowpt_2024_v2.yml")
     config.setdefault('processor', "coffea4bees/analysis/processors/processor_HH4b_lowpt.py")
     config.setdefault('friend_file', "coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/friends_HH4b_lowpt.yml")
