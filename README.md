@@ -1,5 +1,5 @@
 
-# Coffea4bees Python Package 
+# Coffea4bees Python Package  
 
 [![pipeline status](https://gitlab.cern.ch/cms-cmu/coffea4bees/badges/master/pipeline.svg)](https://gitlab.cern.ch/cms-cmu/coffea4bees/-/commits/master)
 
