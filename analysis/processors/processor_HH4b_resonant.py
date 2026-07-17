@@ -173,7 +173,7 @@ class analysis(processor.ProcessorABC):
 
         self.apply_JCM = {}
         if apply_JCM:
-            if JCM_file is not None:
+            if isinstance(JCM_file, str):
                 self.apply_JCM = {"default": jetCombinatoricModel(JCM_file)}
             elif self.weights_data:
                 for year, year_cfg in self.weights_data.items():
