@@ -30,4 +30,4 @@ run_command python src/scripts/memory/memory_test.py \
         -op ${OUTPUT_DIR} \
         -m $DATASETS \
         -c coffea4bees/analysis/metadata/HH4b_signals.yml \
-        --weights coffea4bees/metadata/weights_HH4b.yml
+        --weights coffea4bees/metadata/weights/weights_HH4b.yml

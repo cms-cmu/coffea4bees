@@ -138,8 +138,7 @@ class analysis(processor.ProcessorABC):
         FvT: str|list[HCRModelMetadata] = None,
         blind: bool = False,
         apply_JCM: bool = True,
-        JCM_file: str = "coffea4bees/metadata/weights/JCM/AN_24_089_v3/jetCombinatoricModel_SB_6771c35.yml",
-        # JCM_file: str = "python/analysis/hists/testJCM_Coffea/jetCombinatoricModel_SB_.yml",
+        JCM_file: str | None = None,
         corrections_metadata: dict = None,
         apply_trigWeight: bool = True,
         apply_btagSF: bool = True,
@@ -164,7 +163,12 @@ class analysis(processor.ProcessorABC):
 
         logging.debug("\nInitialize Analysis Processor")
         self.blind = blind
-        self.apply_JCM = jetCombinatoricModel(JCM_file) if apply_JCM else None
+        if apply_JCM:
+            if JCM_file is None:
+                raise ValueError("JCM_file must be specified when apply_JCM is True")
+            self.apply_JCM = jetCombinatoricModel(JCM_file)
+        else:
+            self.apply_JCM = None
         self.apply_trigWeight = apply_trigWeight
         self.apply_btagSF = apply_btagSF
         self.apply_FvT = apply_FvT

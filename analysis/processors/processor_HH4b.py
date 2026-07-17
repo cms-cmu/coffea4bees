@@ -206,7 +206,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         FvT: str|list[HCRModelMetadata] = None,
         blind: bool = False,
         apply_JCM: bool = True,
-        JCM_file: str = "coffea4bees/metadata/weights/JCM/AN_24_089_v3/jetCombinatoricModel_SB_6771c35.yml",
+        JCM_file: str | None = None,
         corrections_metadata: dict = None,
         apply_trigWeight: bool = True,
         apply_btagSF: bool = True,
@@ -250,6 +250,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.blind = blind
         self.fourTag_use_tight = fourTag_use_tight
         if apply_JCM:
+            if JCM_file is None:
+                raise ValueError("JCM_file must be specified when apply_JCM is True")
             logging.info(f"\nUsing JCM from {JCM_file}")
             self.apply_JCM = jetCombinatoricModel(JCM_file)
         else:

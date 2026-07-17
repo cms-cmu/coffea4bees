@@ -5,7 +5,7 @@ runner:
   dashboard_address: 0
 
 config:
-  SvB_MA: default
+  SvB_MA: true
   blind: true
   apply_FvT: true
   apply_JCM: true

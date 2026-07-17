@@ -34,6 +34,6 @@ bash coffea4bees/scripts/run-analysis-processor.sh \
     --output-filename "test_signal_lowpt.coffea" \
     --output-subdir "$JOB" \
     --config $JOB_CONFIG \
-    --weights coffea4bees/metadata/weights_HH4b_lowpt.yml \
+    --weights coffea4bees/metadata/weights/weights_HH4b_lowpt.yml \
     --dataset-metadata "coffea4bees/metadata/datasets/archive/Run2_2024_v2/" \
     # --additional-flags "--slurm --debug"

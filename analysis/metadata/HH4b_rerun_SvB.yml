@@ -3,8 +3,8 @@ runner:
   worker_memory: 4GB
 
 config:
-  SvB: default
-  SvB_MA: default
+  SvB: true
+  SvB_MA: true
   blind: false
   apply_FvT: true 
   apply_trigWeight: true

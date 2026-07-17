@@ -3,8 +3,8 @@ runner:
   worker_memory: 6GB
 
 config:
-  SvB: default
-  SvB_MA: default
+  SvB: 'coffea4bees/metadata/weights/pytorch_models/2024_HHUL/SvB_HCR_8_np753_seed13_lr0.01_epochs20_offset*_epoch20.pkl'
+  SvB_MA: 'coffea4bees/metadata/weights/pytorch_models/2024_HHUL/SvB_MA_HCR+attention_8_np1061_seed13_lr0.01_epochs20_offset*_epoch20.pkl'
   blind: false
   apply_FvT: false
   apply_MvD: true
@@ -13,6 +13,7 @@ config:
   plot_ttbar_with_MvD_weights: true
   apply_JCM: true
   hist_cuts : []
+  JCM_file: coffea4bees/metadata/weights/JCM/Run3_MvD/jetCombinatoricModel_SB_.yml
   apply_trigWeight: true
   apply_btagSF: true
   apply_boosted_veto: false
