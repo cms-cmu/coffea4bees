@@ -24,7 +24,7 @@ config:
   base_path: root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_noTT_pz
   # base_path: skimmer/test/
   subtract_ttbar_with_weights: True
-  JCM_file : coffea4bees/analysis/weights/JCM/Run3/jetCombinatoricModel_SB_v2.yml
+  JCM_file : default
   hemi_library_yaml: coffea4bees/skimmer/metadata/hemisphere_library_Run3_noTT.yml
   hemi_stats_path: coffea4bees/skimmer/metadata/hemi_statistics_noTT
   use_boost_corrected_matching: True  # Set to True to enable 3D matching with pz boost correction
