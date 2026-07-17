@@ -264,10 +264,15 @@ class analysis(processor.ProcessorABC):
         self.chunk   = f'{self.dataset}::{self.estart:6d}:{self.estop:6d} >>> '
         self.year    = event.metadata['year']
         self.year_label = self.corrections_metadata[self.year]['year_label']
-        self.clf_SvB = self.classifier_SvB.get(self.year_label) or self.classifier_SvB.get(self.year) if isinstance(self.classifier_SvB, dict) else self.classifier_SvB
-        self.clf_SvB_MA = self.classifier_SvB_MA.get(self.year_label) or self.classifier_SvB_MA.get(self.year) if isinstance(self.classifier_SvB_MA, dict) else self.classifier_SvB_MA
-        self.clf_FvT = self.classifier_FvT.get(self.year_label) or self.classifier_FvT.get(self.year) if isinstance(self.classifier_FvT, dict) else self.classifier_FvT
-        self.jcm_model = self.apply_JCM.get(self.year_label) or self.apply_JCM.get(self.year) if isinstance(self.apply_JCM, dict) else self.apply_JCM
+        weights_era = self.year
+        if weights_era == "2018":
+            weights_era = "UL18"
+        elif weights_era == "2017":
+            weights_era = "UL17"
+        self.clf_SvB = self.classifier_SvB.get(weights_era) or self.classifier_SvB.get(self.year_label) or self.classifier_SvB.get(self.year) if isinstance(self.classifier_SvB, dict) else self.classifier_SvB
+        self.clf_SvB_MA = self.classifier_SvB_MA.get(weights_era) or self.classifier_SvB_MA.get(self.year_label) or self.classifier_SvB_MA.get(self.year) if isinstance(self.classifier_SvB_MA, dict) else self.classifier_SvB_MA
+        self.clf_FvT = self.classifier_FvT.get(weights_era) or self.classifier_FvT.get(self.year_label) or self.classifier_FvT.get(self.year) if isinstance(self.classifier_FvT, dict) else self.classifier_FvT
+        self.jcm_model = self.apply_JCM.get(weights_era) or self.apply_JCM.get(self.year_label) or self.apply_JCM.get(self.year) if isinstance(self.apply_JCM, dict) else self.apply_JCM
         self.processName = event.metadata['processName']
 
         ### target is for new friend trees
