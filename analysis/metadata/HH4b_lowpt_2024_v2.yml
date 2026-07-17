@@ -15,4 +15,3 @@ config:
   run_SvB: true
   top_reconstruction: fast
   plot_ttbar_with_weights: true
-  category: lowpt

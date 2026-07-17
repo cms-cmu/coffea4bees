@@ -15,7 +15,3 @@ config:
   top_reconstruction: fast
   fill_histograms: true 
   make_classifier_input: output/lowpt/classifier_input/   ### local
-
-
-  
-  category: lowpt

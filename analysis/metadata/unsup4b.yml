@@ -5,8 +5,6 @@ runner:
 config:
   SRno: '4'
   make_classifier_input: coffea4bees/analysis/hists/newFriendTrees
-
-  category: unsupervised
 datasets:
   data:
     'UL16_preVFP':
