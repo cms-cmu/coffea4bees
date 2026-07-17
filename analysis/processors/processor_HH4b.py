@@ -412,6 +412,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 weights_era = "UL18"
             elif weights_era == "2017":
                 weights_era = "UL17"
+            elif weights_era == "2016":
+                weights_era = "UL16_preVFP"
             self.clf_SvB = self.classifier_SvB.get(weights_era) or self.classifier_SvB.get(self.year_label) or self.classifier_SvB.get(self.year) if isinstance(self.classifier_SvB, dict) else self.classifier_SvB
             self.clf_SvB_MA = self.classifier_SvB_MA.get(weights_era) or self.classifier_SvB_MA.get(self.year_label) or self.classifier_SvB_MA.get(self.year) if isinstance(self.classifier_SvB_MA, dict) else self.classifier_SvB_MA
             self.clf_FvT = self.classifier_FvT.get(weights_era) or self.classifier_FvT.get(self.year_label) or self.classifier_FvT.get(self.year) if isinstance(self.classifier_FvT, dict) else self.classifier_FvT
