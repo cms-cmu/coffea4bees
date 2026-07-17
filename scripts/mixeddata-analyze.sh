@@ -34,7 +34,7 @@ datasets:
 
 display_section_header "Running test processor"
 YEARS="UL18"
-python runner.py  -o test_mixeddata.coffea -d    mixeddata_4b  -p coffea4bees/analysis/processors/processor_HH4b.py -y UL18  -op $OUTPUT_DIR -m $OUTPUT_DIR/datasets_mixeddata_test.yml -c coffea4bees/analysis/metadata/HH4b_mixed_data_new.yml
+python runner.py  -o test_mixeddata.coffea -d    mixeddata_4b  -p coffea4bees/analysis/processors/processor_HH4b.py -y UL18  -op $OUTPUT_DIR -m $OUTPUT_DIR/datasets_mixeddata_test.yml -c coffea4bees/analysis/metadata/HH4b_mixed_data_new.yml --weights coffea4bees/metadata/weights_HH4b.yml
 
 #python runner.py  -o histData.coffea -d    data  -p coffea4bees/analysis/processors/processor_HH4b.py -y UL18 UL17 UL16_preVFP UL16_postVFP    -op $OUTPUT_DIR -m $DATASETS
 
