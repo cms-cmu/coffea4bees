@@ -36,18 +36,40 @@ class analysis(HH4bBaseProcessor):
         JCM_file: str = None,
         friends: dict[str, str|FriendTemplate] = None,
         SvB_MA=_UNSET,
+        weights: str | None = None,
         **kwargs  # Accept additional arguments to pass to parent
     ):
         # Initialize parent without JCM (we'll handle it ourselves).
         # Pass SvB_MA through so the parent's _skip_svb_legacy logic fires correctly,
         # then replace classifier_SvB_MA with the lowpt-aware variant below.
-        super().__init__(apply_JCM=False, friends={}, SvB_MA=SvB_MA, **kwargs)
+        super().__init__(apply_JCM=False, friends={}, SvB_MA=SvB_MA, weights=weights, **kwargs)
 
         # Replace with lowpt-aware ensemble (reads nSelJets_lowpt instead of nJet_selected)
-        self.classifier_SvB_MA = _init_classfier_lowpt(SvB_MA)
+        self.classifier_SvB_MA = {}
+        if SvB_MA is True and self.weights_data:
+            for year, year_cfg in self.weights_data.items():
+                if "SvB_MA" in year_cfg:
+                    self.classifier_SvB_MA[year] = _init_classfier_lowpt(year_cfg["SvB_MA"])
+        else:
+            self.classifier_SvB_MA = _init_classfier_lowpt(SvB_MA)
 
         # Set our own lowpt version of JCM
-        self.apply_JCM = jetCombinatoricModel(JCM_file, lowpt_mode=True) if apply_JCM else None
+        self.apply_JCM = {}
+        if apply_JCM:
+            if JCM_file is not None:
+                self.apply_JCM = {"default": jetCombinatoricModel(JCM_file, lowpt_mode=True)}
+            elif self.weights_data:
+                for year, year_cfg in self.weights_data.items():
+                    jcm_path = year_cfg.get("JCM_file") or year_cfg.get("JCM")
+                    if jcm_path:
+                        self.apply_JCM[year] = jetCombinatoricModel(jcm_path, lowpt_mode=True)
+                if not self.apply_JCM:
+                    raise ValueError("apply_JCM is True, but no JCM_file found in weights file.")
+            else:
+                raise ValueError("apply_JCM is True, but JCM_file is not specified and no weights file is provided.")
+        else:
+            self.apply_JCM = None
+
         self.friends = parse_friends(friends)
 
     def _fourtag_label(self):
@@ -72,7 +94,7 @@ class analysis(HH4bBaseProcessor):
         return add_pseudotagweights(
             event,
             weights,
-            JCM=self.apply_JCM,
+            JCM=self.jcm_model,
             lowpt=True,
             apply_FvT=self.apply_FvT,
             isDataForMixed=self.config["isDataForMixed"],
@@ -90,8 +112,8 @@ class analysis(HH4bBaseProcessor):
             apply_FvT=self.apply_FvT,
             run_SvB=self.run_SvB,
             run_systematics=self.run_systematics,
-            classifier_SvB=self.classifier_SvB,
-            classifier_SvB_MA=self.classifier_SvB_MA,
+            classifier_SvB=self.clf_SvB,
+            classifier_SvB_MA=self.clf_SvB_MA,
             processOutput=processOutput,
             isRun3=self.config["isRun3"],
             include_lowptjets=True,
@@ -158,9 +180,9 @@ class analysis(HH4bBaseProcessor):
 
         if self.make_friend_SvB is not None:
             from ..helpers.dump_friendtrees import dump_SvB
-            if "SvB" in selev.fields and self.classifier_SvB is not None:
+            if "SvB" in selev.fields and self.clf_SvB is not None:
                 friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB", analysis_selections)
-            if "SvB_MA" in selev.fields and self.classifier_SvB_MA is not None:
+            if "SvB_MA" in selev.fields and self.clf_SvB_MA is not None:
                 friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB_MA", analysis_selections)
 
         return friends
@@ -207,7 +229,7 @@ class analysis(HH4bBaseProcessor):
             ## this can be simplified
             hist_nom = filling_nominal_histograms(
                 selev,
-                self.apply_JCM,
+                self.jcm_model,
                 processName=self.processName,
                 year=self.year,
                 isMC=self.config["isMC"],
