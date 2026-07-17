@@ -3,6 +3,8 @@ runner:
   worker_memory: 8GB
 
 config:
+  SvB: default
+  SvB_MA: default
   threeTag: true
   apply_FvT: true
   apply_trigWeight: true

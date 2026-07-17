@@ -14,6 +14,8 @@ runner:
 
 
 config:
+  SvB: default
+  SvB_MA: default
   blind: false
   apply_FvT: false
   apply_trigWeight: true
