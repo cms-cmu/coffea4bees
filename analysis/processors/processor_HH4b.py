@@ -1500,7 +1500,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         """
         # When FvT is evaluated on-the-fly via classifier, it hasn't run yet at
         # this point in the pipeline — weights are added later in _apply_ml_scores.
-        apply_FvT = self.apply_FvT and self.classifier_FvT is None
+        apply_FvT = self.apply_FvT and self.clf_FvT is None
         return add_pseudotagweights(
             event,
             weights,
