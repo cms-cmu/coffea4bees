@@ -248,7 +248,7 @@ class analysis(HH4bBaseProcessor):
 
             hist_t4 = filling_nominal_histograms(
                 selev,
-                self.apply_JCM,
+                self.jcm_model,
                 processName="TTbar4b_from_d3",
                 year=self.year,
                 isMC=self.config["isMC"],
@@ -265,7 +265,7 @@ class analysis(HH4bBaseProcessor):
 
             hist_t3 = filling_nominal_histograms(
                 selev,
-                self.apply_JCM,
+                self.jcm_model,
                 processName="TTbar3b_from_d3",
                 year=self.year,
                 isMC=self.config["isMC"],

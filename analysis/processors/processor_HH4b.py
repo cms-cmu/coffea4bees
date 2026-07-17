@@ -1504,7 +1504,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         return add_pseudotagweights(
             event,
             weights,
-            JCM=self.apply_JCM,
+            JCM=self.jcm_model,
             apply_FvT=apply_FvT,
             isDataForMixed=self.config["isDataForMixed"],
             apply_MvD=self.apply_MvD,
