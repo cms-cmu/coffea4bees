@@ -15,5 +15,3 @@ config:
   run_SvB: true
   run_dilep_ttbar_crosscheck: true
   hist_cuts: []
-  #SvB   : 'coffea4bees/analysis/weights/pytorch_models/2024_HHUL/SvB_HCR_8_np753_seed13_lr0.01_epochs20_offset*_epoch20.pkl'
-  #SvB_MA: 'coffea4bees/analysis/weights/pytorch_models/2024_HHUL/SvB_MA_HCR+attention_8_np1061_seed13_lr0.01_epochs20_offset*_epoch20.pkl'

@@ -1,0 +1,9 @@
+weights:
+  UL16_preVFP: &weights_lowpt_Run2
+    JCM_file: "coffea4bees/metadata/weights/JCM/Run2_lowpt_v1/jetCombinatoricModel_SB_2024_v2.yml"
+    SvB_MA:
+      - path: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/lowpt_sel_LWP/classifier/lowpt_SvB_LWP/result.json"
+        name: Final
+  UL16_postVFP: *weights_lowpt_Run2
+  UL17: *weights_lowpt_Run2
+  UL18: *weights_lowpt_Run2

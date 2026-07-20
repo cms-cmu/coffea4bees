@@ -46,7 +46,8 @@ run_command python src/scripts/memory/perf_profile.py \
         --friends coffea4bees/metadata/friends/friends_HH4b.yml \
         -op "${OUTPUT_DIR}" \
         -m "$DATASETS" \
-        -c coffea4bees/analysis/metadata/HH4b_signals.yml
+        -c coffea4bees/analysis/metadata/HH4b_signals.yml \
+        --weights coffea4bees/metadata/weights/weights_HH4b.yml
 
 # --- Stage 2: mprof overall memory timeline (optional) ---
 display_section_header "Stage 2: mprof memory timeline"
@@ -59,7 +60,8 @@ if command -v mprof &> /dev/null; then
         --friends coffea4bees/metadata/friends/friends_HH4b.yml \
         -op "${OUTPUT_DIR}" \
         -m "$DATASETS" \
-        -c coffea4bees/analysis/metadata/HH4b_signals.yml
+        -c coffea4bees/analysis/metadata/HH4b_signals.yml \
+        --weights coffea4bees/metadata/weights/weights_HH4b.yml
 
     mprof plot -o "$OUTPUT_DIR/mprofile.png" "$OUTPUT_DIR/mprofile.dat" 2>/dev/null
     mprof peak "$OUTPUT_DIR/mprofile.dat"

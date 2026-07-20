@@ -3,6 +3,8 @@ runner:
   worker_memory: 5GB
 
 config:
+  SvB: true
+  SvB_MA: true
   blind: false
   apply_FvT: false
   apply_trigWeight: true
@@ -10,9 +12,6 @@ config:
   apply_boosted_veto: false
   run_SvB: false
   run_SvB_FeynNet_comparison: false  # set true to add 2D/3D SvB_MA vs SvB_FeynNet hists for the comparison study (off by default — adds storage)
-  SvB   : 'coffea4bees/analysis/weights/pytorch_models/2024_HHUL/SvB_HCR_8_np753_seed13_lr0.01_epochs20_offset*_epoch20.pkl'
-  SvB_MA: 'coffea4bees/analysis/weights/pytorch_models/2024_HHUL/SvB_MA_HCR+attention_8_np1061_seed13_lr0.01_epochs20_offset*_epoch20.pkl'
-  JCM_file : 'coffea4bees/analysis/weights/JCM/Run3/jetCombinatoricModel_SB_v2.yml'
   apply_MvD: false
   apply_MvD_weight: false
   plot_ttbar_with_weights: true

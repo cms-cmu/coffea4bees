@@ -454,7 +454,7 @@ class analysis(HH4bBaseProcessor):
         # Need to figure this out...
 
         return filling_FSR_recovery_histograms(selev,
-                                               self.apply_JCM,
+                                               self.jcm_model,
                                                processName=self.processName,
                                                year=self.year,
                                                isMC=self.config["isMC"],

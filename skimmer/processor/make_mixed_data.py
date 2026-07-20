@@ -38,7 +38,8 @@ class HemiMixer(Skimmer4b):
                 subtract_ttbar_with_weights = False,
                 friends: dict[str, str|FriendTemplate] = None,
                 apply_JCM: bool = True,
-                JCM_file: str = "coffea4bees/analysis/weights/JCM/AN_24_089_v3/jetCombinatoricModel_SB_6771c35.yml",
+                JCM_file: str | None = None,
+                weights: str | None = None,
                 hemi_library_yaml: str = None,
                 hemi_stats_path: str = None,
                 corrections_metadata: dict = None,
@@ -57,8 +58,28 @@ class HemiMixer(Skimmer4b):
         )
 
         logging.info(f"\nRunning HemiMixer with these parameters: , subtract_ttbar_with_weights = {subtract_ttbar_with_weights}, args = {args}, kwargs = {kwargs}")
-        logging.info(f"\nLoading JCM from file: {JCM_file} , apply_JCM = {apply_JCM}\n")
-        self.apply_JCM = jetCombinatoricModel(JCM_file) if apply_JCM else None
+        
+        import os
+        self.weights_data = {}
+        if weights and os.path.exists(weights):
+            logging.info(f"Loading weights metadata in skimmer from: {weights}")
+            self.weights_data = yaml.safe_load(open(weights, 'r')).get('weights', {})
+
+        self.apply_JCM = {}
+        if apply_JCM:
+            if isinstance(JCM_file, str):
+                self.apply_JCM = {"default": jetCombinatoricModel(JCM_file)}
+            elif self.weights_data:
+                for year, year_cfg in self.weights_data.items():
+                    jcm_path = year_cfg.get("JCM_file") or year_cfg.get("JCM")
+                    if jcm_path:
+                        self.apply_JCM[year] = jetCombinatoricModel(jcm_path)
+                if not self.apply_JCM:
+                    raise ValueError("apply_JCM is True, but no JCM_file found in weights file.")
+            else:
+                raise ValueError("apply_JCM is True, but JCM_file is not specified and no weights file is provided.")
+        else:
+            self.apply_JCM = None
 
         self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
 
@@ -197,10 +218,11 @@ class HemiMixer(Skimmer4b):
         # Apply JCM
         #
         event["weight"] = weights.weight()
+        jcm_model = self.apply_JCM.get(year) if isinstance(self.apply_JCM, dict) else self.apply_JCM
         weights, list_weight_names = add_pseudotagweights(
             event,
             weights,
-            JCM=self.apply_JCM,
+            JCM=jcm_model,
             apply_FvT=False,
             isDataForMixed=False,
             list_weight_names=list_weight_names,
