@@ -1206,6 +1206,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         """
         if not (self.config["isMC"] and self.apply_btagSF):
             return weights, list_weight_names
+        # 2024 uses UParT tagger; only WP-based SFs (UParTAK4_wp_values) are                                                                       
+        # available — no shape SF exists yet. Skip btag SFs for this year.                                                                         
+        if self.year == "2024":                                                                                                                    
+            return weights, list_weight_names
 
         weights, list_weight_names = add_btagweights(
             event,

@@ -3,7 +3,7 @@ import os
 include: "rules/run3_variants.smk"
 
 config.setdefault('datasets', ['TTToSemiLeptonic', 'TTToHadronic', 'TTTo2L2Nu', 'data'])
-config.setdefault('years', ['2022_EE', '2022_preEE', '2023_BPix', '2023_preBPix'])
+config.setdefault('years', ['2022_EE', '2022_preEE', '2023_BPix', '2023_preBPix', '2024'])
 
 if config["mode"] == "nominal":
     config.setdefault('output_path', "output/Run3/")
