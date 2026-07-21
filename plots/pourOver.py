@@ -1032,9 +1032,11 @@ def _save_interactive_item(png_url, pdf_url, cmd):
 
 @app.route("/cli/history")
 def cli_history():
-    """Return saved CLI history (newest first) if --reuse-gallery was set."""
-    if not reuse_gallery:
-        return jsonify([])
+    """Return saved CLI history (newest first).
+
+    Always served from output_dir: a clean session deletes the file at startup,
+    so mid-session reloads (e.g. gallery page and back) restore correctly.
+    """
     path = _history_path()
     if not path.exists():
         return jsonify([])
@@ -1047,9 +1049,11 @@ def cli_history():
 
 @app.route("/interactive/history")
 def interactive_history():
-    """Return saved interactive plot items (newest first) if --reuse-gallery was set."""
-    if not reuse_gallery:
-        return jsonify([])
+    """Return saved interactive plot items (newest first).
+
+    Always served from output_dir: a clean session deletes the file at startup,
+    so mid-session reloads (e.g. gallery page and back) restore correctly.
+    """
     path = _interactive_manifest_path()
     if not path.exists():
         return jsonify([])

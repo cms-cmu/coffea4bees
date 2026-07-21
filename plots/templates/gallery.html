@@ -109,7 +109,7 @@
 </header>
 
 <div id="gallery-toolbar">
-  <input id="gallery-filter" type="text" placeholder="Filter by variable name..."
+  <input id="gallery-filter" type="text" placeholder="Filter by variable or command..."
          oninput="filterGallery()" />
   <div id="region-jumps"></div>
   <span id="gallery-count"></span>
@@ -129,7 +129,8 @@
 </div>
 
 <script>
-let galleryData = [];
+let galleryData     = [];
+let interactiveData = [];   // plots made in the interactive console, newest first
 let regionOrder = [];   // ordered list of region strings after sort
 
 function regionPriority(r) {
@@ -139,8 +140,18 @@ function regionPriority(r) {
 }
 
 async function init() {
-  const res = await fetch('/gallery');
+  const [res, ires] = await Promise.all([
+    fetch('/gallery'), fetch('/interactive/history')
+  ]);
   galleryData = await res.json();
+
+  // Dedup on exact command, keeping the newest render of each
+  const seen = new Set();
+  for (const item of await ires.json()) {   // newest-first from server
+    if (!item.cmd || seen.has(item.cmd)) continue;
+    seen.add(item.cmd);
+    interactiveData.push(item);
+  }
 
   galleryData.sort((a, b) => {
     const rp = regionPriority(a.region) - regionPriority(b.region);
@@ -151,12 +162,30 @@ async function init() {
   buildGallery();
 }
 
+// DOM-built thumb (labels may contain quotes, e.g. plot("selJets.pt"))
+function makeThumb(pngUrl, pdfUrl, label) {
+  const div = document.createElement('div');
+  div.className = 'thumb';
+  const img = document.createElement('img');
+  img.src = pngUrl; img.alt = label; img.loading = 'lazy';
+  img.onclick = () => openLb(pngUrl, pdfUrl);
+  const lbl = document.createElement('div');
+  lbl.className = 'thumb-label';
+  lbl.textContent = label;
+  const a = document.createElement('a');
+  a.className = 'thumb-pdf'; a.href = pdfUrl; a.download = '';
+  a.textContent = '⬇ PDF';
+  a.onclick = e => e.stopPropagation();
+  div.append(img, lbl, a);
+  return div;
+}
+
 function buildGallery(filter) {
   const scroll = document.getElementById('gallery-scroll');
   scroll.innerHTML = '';
   const q = (filter || '').toLowerCase();
 
-  if (galleryData.length === 0) {
+  if (galleryData.length === 0 && interactiveData.length === 0) {
     scroll.innerHTML = `
       <div id="gallery-loading" style="padding:60px 40px; text-align:center; line-height:2;">
         <div style="font-size:15px; color:var(--text-primary); margin-bottom:8px;">No plots generated yet.</div>
@@ -171,6 +200,37 @@ function buildGallery(filter) {
     return;
   }
 
+  let visible = 0;
+  const visibleRegions = [];
+
+  // Pinned section: plots made in the interactive console (newest first)
+  const iItems = interactiveData.filter(it => !q || it.cmd.toLowerCase().includes(q));
+  if (iItems.length) {
+    visibleRegions.push('Interactive');
+
+    const section = document.createElement('div');
+    section.className = 'region-section';
+
+    const anchor = document.createElement('span');
+    anchor.className = 'region-anchor';
+    anchor.id = 'region-Interactive';
+    section.appendChild(anchor);
+
+    const hdr = document.createElement('div');
+    hdr.className = 'region-header';
+    hdr.innerHTML = `Interactive <span class="region-count">${iItems.length} plots</span>`;
+    section.appendChild(hdr);
+
+    const grid = document.createElement('div');
+    grid.className = 'region-grid';
+    for (const item of iItems) {
+      grid.appendChild(makeThumb(item.png_url, item.pdf_url, item.cmd));
+      visible++;
+    }
+    section.appendChild(grid);
+    scroll.appendChild(section);
+  }
+
   // Group by region preserving sorted order
   const groups  = [];
   const byRegion = {};
@@ -178,9 +238,6 @@ function buildGallery(filter) {
     if (!(item.region in byRegion)) { byRegion[item.region] = []; groups.push(item.region); }
     byRegion[item.region].push(item);
   }
-
-  let visible = 0;
-  const visibleRegions = [];
 
   for (const region of groups) {
     const items = byRegion[region].filter(it => !q || it.label.toLowerCase().includes(q));
@@ -220,7 +277,7 @@ function buildGallery(filter) {
   }
 
   buildJumpButtons(visibleRegions);
-  updateCount(visible, galleryData.length);
+  updateCount(visible, galleryData.length + interactiveData.length);
 }
 
 function buildJumpButtons(regions) {
