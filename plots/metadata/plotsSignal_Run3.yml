@@ -1,0 +1,59 @@
+hists:
+        # ZH4b:
+        #         process: ZH4b
+        #         tag: fourTag
+        #         year: RunII
+        #         fillcolor: b
+        #         edgecolor: b
+        #         histtype: step
+        #         label: ZH4b
+
+        HH4b_lowpt:
+                # process: GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00
+                # process: GluGluToHHTo4B_cHHH1
+                process: data
+                tag: lowpt_threeTag
+                year: RunII
+                histtype: step
+                fillcolor: g
+                edgecolor: g
+                label: Multijet lowpt
+   
+        HH4b_nominal:
+                # process: GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00
+                # process: GluGluToHHTo4B_cHHH1
+                process: data
+                tag: threeTag
+                year: RunII
+                histtype: step
+                fillcolor: r
+                edgecolor: r
+                label: Multijet nominal
+
+
+# ratios:
+#         dataToBkg:
+#                 numerator:
+#                         type: hists
+#                         key: ZH4b
+#                 denominator:
+#                         type: hists
+#                         key: HH4b
+#                 uncertianty:
+#                         nominal
+#                 color: k
+#                 marker: "o"
+
+
+# codes:
+#    region:
+#       SR: 2
+#       SB: 1
+#       other: 0
+#    tag:
+#       threeTag: 3
+#       fourTag: 4
+#       other: 0
+
+doRatio:
+    0

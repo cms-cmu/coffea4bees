@@ -19,7 +19,7 @@ Options:
   --year "YEAR1 ..."              Space-separated analysis years
   --output-filename FILE         Output filename
   --output-subdir DIR            Output subdirectory
-  --friends PATH                 Path to friends metadata file (default: coffea4bees/metadata/friends_HH4b.yml)
+  --friends PATH                 Path to friends metadata file (default: coffea4bees/metadata/friends/friends_HH4b.yml)
   --additional-flags FLAGS       Additional flags for runner.py
   --no-test                      Disable test mode
   --condor                       Enable condor mode
@@ -60,11 +60,12 @@ display_config() {
 declare -A DEFAULTS=(
     ["OUTPUT_BASE"]="output/"
     ["PROCESSOR_PATH"]="coffea4bees/analysis/processors/processor_HH4b.py"
-    ["METADATA_PATH"]="${DATASET:-coffea4bees/metadata/datasets_HH4b_Run2/}"
+    ["METADATA_PATH"]="${DATASET:-coffea4bees/metadata/datasets/}"
     ["CONFIG_PATH"]="coffea4bees/analysis/metadata/HH4b.yml"
     ["TRIGGERS_PATH"]="coffea4bees/metadata/triggers_HH4b.yml"
     ["LUMINOSITIES_PATH"]="coffea4bees/metadata/luminosities_HH4b.yml"
-    ["FRIENDS_PATH"]="coffea4bees/metadata/friends_HH4b.yml"
+    ["FRIENDS_PATH"]="coffea4bees/metadata/friends/friends_HH4b.yml"
+    ["WEIGHTS_PATH"]="coffea4bees/metadata/weights/weights_HH4b.yml"
     ["DATASETS"]="TTToSemiLeptonic"
     ["YEAR"]="UL18"
     ["OUTPUT_FILENAME"]="test.coffea"
@@ -87,6 +88,7 @@ CONFIG_PATH="${DEFAULTS[CONFIG_PATH]}"
 TRIGGERS_PATH="${DEFAULTS[TRIGGERS_PATH]}"
 LUMINOSITIES_PATH="${DEFAULTS[LUMINOSITIES_PATH]}"
 FRIENDS_PATH="${DEFAULTS[FRIENDS_PATH]}"
+WEIGHTS_PATH="${DEFAULTS[WEIGHTS_PATH]}"
 DATASETS="${DEFAULTS[DATASETS]}"
 YEAR="${DEFAULTS[YEAR]}"
 OUTPUT_FILENAME="${DEFAULTS[OUTPUT_FILENAME]}"
@@ -129,6 +131,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --friends)
             FRIENDS_PATH="$2"
+            shift 2
+            ;;
+        --weights)
+            WEIGHTS_PATH="$2"
             shift 2
             ;;
         --datasets)
@@ -210,6 +216,7 @@ declare -A SAVED_VARS=(
     ["TRIGGERS_PATH"]="$TRIGGERS_PATH"
     ["LUMINOSITIES_PATH"]="$LUMINOSITIES_PATH"
     ["FRIENDS_PATH"]="$FRIENDS_PATH"
+    ["WEIGHTS_PATH"]="$WEIGHTS_PATH"
     ["DATASETS"]="$DATASETS"
     ["YEAR"]="$YEAR"
     ["OUTPUT_FILENAME"]="$OUTPUT_FILENAME"
@@ -232,6 +239,7 @@ CONFIG_PATH="${SAVED_VARS[CONFIG_PATH]}"
 TRIGGERS_PATH="${SAVED_VARS[TRIGGERS_PATH]}"
 LUMINOSITIES_PATH="${SAVED_VARS[LUMINOSITIES_PATH]}"
 FRIENDS_PATH="${SAVED_VARS[FRIENDS_PATH]}"
+WEIGHTS_PATH="${SAVED_VARS[WEIGHTS_PATH]}"
 DATASETS="${SAVED_VARS[DATASETS]}"
 YEAR="${SAVED_VARS[YEAR]}"
 OUTPUT_FILENAME="${SAVED_VARS[OUTPUT_FILENAME]}"
@@ -319,6 +327,7 @@ cmd=(python runner.py
     --triggers "$TRIGGERS_PATH"
     --luminosities "$LUMINOSITIES_PATH"
     --friends "$FRIENDS_PATH"
+    --weights "$WEIGHTS_PATH"
     -d $DATASETS
     -y $YEAR
     -op "$OUTPUT_DIR"

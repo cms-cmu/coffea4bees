@@ -11,7 +11,7 @@ does not include rules/run3_variants.smk and has no `mode` config.
 
 Three upstream artifacts are consumed but not produced here (they are
 committed to git and rarely change):
-  - coffea4bees/analysis/weights/JCM/Run3/jetCombinatoricModel_SB_v2.yml
+  - coffea4bees/metadata/weights/JCM/Run3/jetCombinatoricModel_SB_v2.yml
       produced by JCM fitting (see Snakefile_Run3.smk:make_JCM_Run3 +
       install_JCM, fed from histAll_Run3.coffea)
   - coffea4bees/skimmer/metadata/hemisphere_library_Run3_noTT.yml
@@ -120,7 +120,7 @@ config['run_on_condor'] = str(_roc).lower() not in ('false', '0', 'no')
 
 out         = config['output_path']
 SKIMMER_CFG    = "coffea4bees/skimmer/metadata/mixeddata_Run3.yml"
-JCM_FILE       = "coffea4bees/analysis/weights/JCM/Run3/jetCombinatoricModel_SB_v2.yml"
+JCM_FILE       = "coffea4bees/metadata/weights/JCM/Run3/jetCombinatoricModel_SB_v2.yml"
 # Hemisphere library + statistics. Defaults to the 25-GeV-2023 (pt25) build,
 # which is now the production selection (object_selection_thresholds.yml sets
 # run3 selected pt_min=25 for the 2023 eras via era_overrides). To fall back to
@@ -234,7 +234,7 @@ use rule analysis_processor from analysis as make_mixeddata with:
         datasets_file         = config['dataset_location'],
         blind                 = False,
         run_performance       = False,
-        friends               = "coffea4bees/metadata/friends_HH4b.yml",
+        friends               = "coffea4bees/metadata/friends/friends_HH4b.yml",
         run_on_condor         = config['run_on_condor'],
         extra_arguments       = "-s",
         run_container_wrapper = "./run_container",
@@ -305,7 +305,7 @@ use rule analysis_processor from analysis as study_mixeddata with:
         datasets_file         = config['dataset_location'],
         blind                 = False,
         run_performance       = False,
-        friends               = "coffea4bees/metadata/friends_HH4b.yml",
+        friends               = "coffea4bees/metadata/friends/friends_HH4b.yml",
         run_on_condor         = config['run_on_condor'],
         extra_arguments       = "",
         run_container_wrapper = "./run_container",
@@ -387,7 +387,7 @@ use rule analysis_processor from analysis as make_histograms_shared with:
         datasets_file         = config['dataset_location'],
         blind                 = False,
         run_performance       = False,
-        friends               = "coffea4bees/metadata/friends_HH4b.yml",
+        friends               = "coffea4bees/metadata/friends/friends_HH4b.yml",
         run_on_condor         = config['run_on_condor'],
         extra_arguments       = "",
         run_container_wrapper = "./run_container",
@@ -412,7 +412,7 @@ use rule analysis_processor from analysis as make_histograms_mixeddata with:
         datasets_file         = config['dataset_location'],
         blind                 = False,
         run_performance       = False,
-        friends               = "coffea4bees/metadata/friends_HH4b.yml",
+        friends               = "coffea4bees/metadata/friends/friends_HH4b.yml",
         run_on_condor         = config['run_on_condor'],
         extra_arguments       = "",
         run_container_wrapper = "./run_container",

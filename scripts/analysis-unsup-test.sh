@@ -24,5 +24,6 @@ bash coffea4bees/scripts/run-analysis-processor.sh \
     --output-filename "test_unsup.coffea" \
     --output-subdir "$JOB" \
     --config coffea4bees/analysis/metadata/unsup4b.yml \
+    --weights coffea4bees/metadata/weights/weights_unsupervised.yml \
     # --additional-flags "--debug"
     

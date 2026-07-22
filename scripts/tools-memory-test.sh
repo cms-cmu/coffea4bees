@@ -16,7 +16,7 @@ OUTPUT_DIR="$OUTPUT_BASE_DIR/tools_memory_test"
 create_output_directory "$OUTPUT_DIR"
 
 display_section_header "Input Datasets"
-DATASETS="coffea4bees/metadata/datasets_HH4b_Run2/"
+DATASETS="coffea4bees/metadata/datasets/"
 echo "Using datasets file: $DATASETS"
 
 run_command python src/scripts/memory/memory_test.py \
@@ -29,4 +29,5 @@ run_command python src/scripts/memory/memory_test.py \
         -y UL18 \
         -op ${OUTPUT_DIR} \
         -m $DATASETS \
-        -c coffea4bees/analysis/metadata/HH4b_signals.yml
+        -c coffea4bees/analysis/metadata/HH4b_signals.yml \
+        --weights coffea4bees/metadata/weights/weights_HH4b.yml

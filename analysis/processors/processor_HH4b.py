@@ -95,8 +95,12 @@ def _init_classfier(path: str | list[HCRModelMetadata] | None | _Unset):
 def _init_classfier_FvT(path: str | list[HCRModelMetadata]):
     if path is None:
         return None
-    from ..helpers.classifier.HCR import Legacy_HCREnsemble_FvT
-    return Legacy_HCREnsemble_FvT(path)
+    if isinstance(path, str):
+        from ..helpers.classifier.HCR import Legacy_HCREnsemble_FvT
+        return Legacy_HCREnsemble_FvT(path)
+    else:
+        from ..helpers.classifier.HCR import HCREnsemble
+        return HCREnsemble(path)
 
 def _init_feynnet(cfg):
     """Construct a FeynNet classifier from config.
@@ -202,7 +206,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         FvT: str|list[HCRModelMetadata] = None,
         blind: bool = False,
         apply_JCM: bool = True,
-        JCM_file: str = "coffea4bees/analysis/weights/JCM/AN_24_089_v3/jetCombinatoricModel_SB_6771c35.yml",
+        JCM_file: str | None = None,
+        weights: str | None = None,
         corrections_metadata: dict = None,
         apply_trigWeight: bool = True,
         apply_btagSF: bool = True,
@@ -245,11 +250,29 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.cand_cfg = load_candidates_selection_config(candidates_selection_cfg) if candidates_selection_cfg else None
         self.blind = blind
         self.fourTag_use_tight = fourTag_use_tight
+
+        import os
+        self.weights_data = {}
+        if weights and os.path.exists(weights):
+            logging.info(f"Loading weights metadata in processor from: {weights}")
+            self.weights_data = yaml.safe_load(open(weights, 'r')).get('weights', {})
+
+        self.apply_JCM = {}
         if apply_JCM:
-            logging.info(f"\nUsing JCM from {JCM_file}")
-            self.apply_JCM = jetCombinatoricModel(JCM_file)
+            if isinstance(JCM_file, str):
+                self.apply_JCM = {"default": jetCombinatoricModel(JCM_file)}
+            elif self.weights_data:
+                for year, year_cfg in self.weights_data.items():
+                    jcm_path = year_cfg.get("JCM_file") or year_cfg.get("JCM")
+                    if jcm_path:
+                        self.apply_JCM[year] = jetCombinatoricModel(jcm_path)
+                if not self.apply_JCM:
+                    raise ValueError("apply_JCM is True, but no JCM_file found in weights file.")
+            else:
+                raise ValueError("apply_JCM is True, but JCM_file is not specified and no weights file is provided.")
         else:
-            self.apply_JCM =  None
+            self.apply_JCM = None
+
         self.apply_trigWeight = apply_trigWeight
         self.apply_btagSF = apply_btagSF
         self.apply_FvT = apply_FvT
@@ -260,8 +283,23 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.fill_histograms = fill_histograms
         self.run_dilep_ttbar_crosscheck = run_dilep_ttbar_crosscheck
         self.apply_boosted_veto = apply_boosted_veto
-        self.classifier_SvB = _init_classfier(SvB)
-        self.classifier_SvB_MA = _init_classfier(SvB_MA)
+
+        self.classifier_SvB = {}
+        if SvB is True and self.weights_data:
+            for year, year_cfg in self.weights_data.items():
+                if "SvB" in year_cfg:
+                    self.classifier_SvB[year] = _init_classfier(year_cfg["SvB"])
+        else:
+            self.classifier_SvB = _init_classfier(SvB)
+
+        self.classifier_SvB_MA = {}
+        if SvB_MA is True and self.weights_data:
+            for year, year_cfg in self.weights_data.items():
+                if "SvB_MA" in year_cfg:
+                    self.classifier_SvB_MA[year] = _init_classfier(year_cfg["SvB_MA"])
+        else:
+            self.classifier_SvB_MA = _init_classfier(SvB_MA)
+
         self.classifier_SvB_FeynNet = _init_feynnet(SvB_FeynNet)
         # Skip legacy ROOT fallback only when the key was explicitly set to null
         # in the config (SvB=None). When the key is absent (_UNSET), the legacy
@@ -271,7 +309,15 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             self._skip_svb_legacy.add("SvB")
         if SvB_MA is None:
             self._skip_svb_legacy.add("SvB_MA")
-        self.classifier_FvT = _init_classfier_FvT(FvT)
+
+        self.classifier_FvT = {}
+        if FvT is True and self.weights_data:
+            for year, year_cfg in self.weights_data.items():
+                if "FvT" in year_cfg:
+                    self.classifier_FvT[year] = _init_classfier_FvT(year_cfg["FvT"])
+        else:
+            self.classifier_FvT = _init_classfier_FvT(FvT)
+
         self.corrections_metadata = corrections_metadata
         self.run_systematics = ['others', 'jes'] if 'all' in run_systematics else run_systematics
         self.make_top_reconstruction = make_top_reconstruction
@@ -361,6 +407,17 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             self.chunk   = f'{self.dataset}::{self.estart:6d}:{self.estop:6d} >>> '
             self.year    = event.metadata['year']
             self.year_label = self.corrections_metadata[self.year]['year_label']
+            weights_era = self.year
+            if weights_era == "2018":
+                weights_era = "UL18"
+            elif weights_era == "2017":
+                weights_era = "UL17"
+            elif weights_era == "2016":
+                weights_era = "UL16_preVFP"
+            self.clf_SvB = self.classifier_SvB.get(weights_era) or self.classifier_SvB.get(self.year_label) or self.classifier_SvB.get(self.year) if isinstance(self.classifier_SvB, dict) else self.classifier_SvB
+            self.clf_SvB_MA = self.classifier_SvB_MA.get(weights_era) or self.classifier_SvB_MA.get(self.year_label) or self.classifier_SvB_MA.get(self.year) if isinstance(self.classifier_SvB_MA, dict) else self.classifier_SvB_MA
+            self.clf_FvT = self.classifier_FvT.get(weights_era) or self.classifier_FvT.get(self.year_label) or self.classifier_FvT.get(self.year) if isinstance(self.classifier_FvT, dict) else self.classifier_FvT
+            self.jcm_model = self.apply_JCM.get(weights_era) or self.apply_JCM.get(self.year_label) or self.apply_JCM.get(self.year) if isinstance(self.apply_JCM, dict) else self.apply_JCM
             self.processName = event.metadata['processName']
 
             if (self.processName.find("mix") != -1 or self.dataset.find("syn") != -1) and not self.processName.startswith("mixeddata_all"):
@@ -409,7 +466,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self._log_memory("before_friend_trees")
         self.path = self.fname.replace(self.fname.split("/")[-1], "")
         with self._stage("load_friend_FvT"):
-            if self.apply_FvT and self.classifier_FvT is None:
+            if self.apply_FvT and self.clf_FvT is None:
                 self.load_FvT(event)
 
         with self._stage("load_friend_MvD"):
@@ -424,7 +481,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 # classifier is configured (its field is created later in
                 # candidates_selection). Only disable when nothing is available.
                 has_any_svb = any(f.startswith("SvB") for f in event.fields)
-                if not has_any_svb and self.classifier_SvB_MA is None and self.classifier_SvB_FeynNet is None:
+                if not has_any_svb and self.clf_SvB_MA is None and self.classifier_SvB_FeynNet is None:
                     logging.warning("No SvB-like friend or classifier available after load_SvB — disabling run_SvB for this chunk.")
                     self.run_SvB = False
 
@@ -1200,11 +1257,11 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         return create_cand_jet_dijet_quadjet(
             selev,
             apply_FvT=self.apply_FvT,
-            classifier_FvT=self.classifier_FvT,
+            classifier_FvT=self.clf_FvT,
             run_SvB=self.run_SvB,
             run_systematics=self.run_systematics,
-            classifier_SvB=self.classifier_SvB,
-            classifier_SvB_MA=self.classifier_SvB_MA,
+            classifier_SvB=self.clf_SvB,
+            classifier_SvB_MA=self.clf_SvB_MA,
             classifier_SvB_FeynNet=self.classifier_SvB_FeynNet,
             processOutput=processOutput,
             isRun3=self.config["isRun3"],
@@ -1388,8 +1445,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         if self.make_friend_SvB is not None:
             from ..helpers.dump_friendtrees import dump_SvB
-            friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB", analysis_selections)
-            friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB_MA", analysis_selections)
+            if "SvB" in selev.fields and self.clf_SvB is not None:
+                friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB", analysis_selections)
+            if "SvB_MA" in selev.fields and self.clf_SvB_MA is not None:
+                friends["friends"] |= dump_SvB(selev, self.make_friend_SvB, "SvB_MA", analysis_selections)
 
         if self.make_friend_SvB_FeynNet is not None:
             from ..helpers.dump_friendtrees import dump_SvB_FeynNet
@@ -1446,11 +1505,14 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         Returns:
             Updated weights object
         """
+        # When FvT is evaluated on-the-fly via classifier, it hasn't run yet at
+        # this point in the pipeline — weights are added later in _apply_ml_scores.
+        apply_FvT = self.apply_FvT and self.clf_FvT is None
         return add_pseudotagweights(
             event,
             weights,
-            JCM=self.apply_JCM,
-            apply_FvT=self.apply_FvT,
+            JCM=self.jcm_model,
+            apply_FvT=apply_FvT,
             isDataForMixed=self.config["isDataForMixed"],
             apply_MvD=self.apply_MvD,
             apply_MvD_weight=self.apply_MvD_weight,
@@ -1574,7 +1636,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             ## this can be simplified
             hist_nom = filling_nominal_histograms(
                 selev,
-                self.apply_JCM,
+                self.jcm_model,
                 processName=self.processName,
                 year=self.year,
                 isMC=self.config["isMC"],
@@ -1601,7 +1663,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             if self.plot_ttbar_with_weights and self.processName == "data":
                 hist_t4 = filling_nominal_histograms(
                     selev,
-                    self.apply_JCM,
+                    self.jcm_model,
                     processName="TTbar4b_from_d3",
                     year=self.year,
                     isMC=self.config["isMC"],
@@ -1621,7 +1683,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
                 hist_t3 = filling_nominal_histograms(
                     selev,
-                    self.apply_JCM,
+                    self.jcm_model,
                     processName="TTbar3b_from_d3",
                     year=self.year,
                     isMC=self.config["isMC"],
@@ -1643,7 +1705,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             if self.plot_ttbar_with_MvD_weights and self.apply_MvD_weight and self.config["isMixedDataAll"]:
                 hist_mvd_t4 = filling_nominal_histograms(
                     selev,
-                    self.apply_JCM,
+                    self.jcm_model,
                     processName="TTbar4b_from_MvD",
                     year=self.year,
                     isMC=self.config["isMC"],

@@ -1,18 +1,31 @@
-# Info about metadata
+# Metadata
 
-## In HH4b
+This directory houses the unified dataset configurations, trigger definitions, luminosities, and friend tree mappings used by the analysis framework.
 
-### Run 2
+## Directory Structure
 
-- `datasets_HH4b_Run2` contains datasets for Run2 analysis, including trigger weights. The nomenclature for the folders inside:
-  - Data, TTbar and mixdata samples are from the C++ code. The different in versions are only in signal samples.
-  - **`2024_v1p2` is the version used in HIG-24-011.** Use this one for any Run2 analysis.
-  - `2024_v1p1` is the first pico production from this code, but without removing the events with huge genweights. 
-  - `2024_v1` is a mix of datasets between the old C++ framework and the first pico from this code. Mainly for archives
-  - `2024_v2` is the one where all the picos are produced with the new code, but it was not used in any analysis.
+- **`datasets/`**: The unified database containing all active dataset definition files (e.g. `TT.yml`, `data.yml`, `GluGluToHHTo4B.yml`).
+  - **Cross-Section Format (`xs`)**: To support multi-run execution without key collisions, every dataset defines cross-sections in a run-dependent mapping structure:
+    ```yaml
+    xs:
+      Run2: <run2_cross_section>
+      Run3: <run3_cross_section>
+    ```
+    If a dataset only exists in a single Run (such as Run-specific signals), the other Run defaults to a placeholder `1`.
+  - **`datasets/archive/`**: Contains legacy/archived dataset definitions (e.g. older versions such as `Run2_2024_v1`, `Run2_2024_v2`, and `Run3_archive`).
+- **`friends/`**: Centralized repository for friend tree configs and lookup maps.
+  - Houses active `friends_HH4b.yml`, `friends_empty.yml`, and `friends_HH4b_none.yml`.
+  - Holds active trigger weights and classifier lookup JSON files (`trigweights_2024_v1p2.json`, `data_SvBfriend.json`, etc.).
+  - **`friends/archive/`**: Contains legacy/unused friend tree JSON lookup files.
+- **`triggers_HH4b.yml`** & **`boosted_triggers_HH4b.yml`**: Trigger path definitions per year/era.
+- **`luminosities_HH4b.yml`**: Integrated luminosity values per year/era.
 
-- Files in '/store/user/algomez/XX4b/20231115/' and '/store/user/jda102/condor/ZH4b/ULTrig/' were produced before Nov 2023 and with the old framework.
+---
 
-### Run 3
+## Historical Context & Versions (Archived in `datasets/archive/`)
 
-- `datasets_HH4b_Run3` contains datasets for Run3 analysis. It is still under development.
+### Run 2 (Archived in `datasets/archive/Run2_2024_v*`)
+- **`2024_v1p2`**: The version used in `HIG-24-011`. This is the reference version for Run 2 analysis.
+- **`2024_v1p1`**: The first picoAOD production from the Python framework, containing events with un-filtered huge genweights.
+- **`2024_v1`**: A hybrid dataset combination between the C++ framework and the first Python framework picoAODs.
+- **`2024_v2`**: A test version where all picoAODs were generated using the new framework but was not utilized for any publication.

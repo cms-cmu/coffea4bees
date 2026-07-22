@@ -1661,7 +1661,7 @@ class HCREnsemble(nn.Module):
             ancillaryFeatures = ['year', 'nSelJets', 'xW', 'xbW']
             for attempt in range(3):
                 try:
-                    state_dict = torch.load(path, map_location=torch.device('cpu'))
+                    state_dict = torch.load(path, map_location=torch.device('cpu'), weights_only=False)
                     break
                 except EOFError:
                     if attempt < 2:

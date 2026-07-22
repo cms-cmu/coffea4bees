@@ -18,9 +18,9 @@ model:
 dataset:
   - module: HCR.SvB.Eval
     option:
-      - --metadata coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/
+      - --metadata coffea4bees/metadata/datasets/archive/Run2_2024_v2/
       - --max-workers 8
-      - --friends "" coffea4bees/metadata/datasets_HH4b_Run2/2024_v2/classifier_inputs_nominal.json@@HCR_input 
+      - --friends "" coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_nominal.json@@HCR_input 
 
 analysis:
   - module: kfold.Merge

@@ -11,8 +11,8 @@ if [ $? -ne 0 ]; then
 fi
 
 display_section_header "Input Datasets"
-# DATASETS=${DATASET_RUN3:-"coffea4bees/metadata/datasets_synthetic_test_Run3.yml"}
-DATASETS="coffea4bees/metadata/datasets_synthetic_test_Run3.yml"
+# DATASETS=${DATASET:-"coffea4bees/metadata/datasets/archive/Run3_archive/datasets_synthetic_test_Run3.yml"}
+DATASETS="coffea4bees/metadata/datasets/archive/Run3_archive/datasets_synthetic_test_Run3.yml"
 echo "Using datasets file: $DATASETS"
 
 # Setup proxy if needed
@@ -43,7 +43,7 @@ cmd=(python runner.py -s \
     -o picoaod_datasets_declustered_test_2023_BPix.yml \
     -m $DATASETS)
 time run_command "${cmd[@]}"
-# time python runner.py -s -p coffea4bees/skimmer/processor/make_declustered_data_4b.py -c $OUTPUT_DIR/declustering_for_test.yml -y UL18  -d GluGluToHHTo4B_cHHH1 -op $OUTPUT_DIR -o picoaod_datasets_declustered_GluGluToHHTo4B_cHHH1_test_UL18.yml -m coffea4bees/metadata/datasets_HH4b_Run2/
+# time python runner.py -s -p coffea4bees/skimmer/processor/make_declustered_data_4b.py -c $OUTPUT_DIR/declustering_for_test.yml -y UL18  -d GluGluToHHTo4B_cHHH1 -op $OUTPUT_DIR -o picoaod_datasets_declustered_GluGluToHHTo4B_cHHH1_test_UL18.yml -m coffea4bees/metadata/datasets/
 ls -R $OUTPUT_DIR
 
 

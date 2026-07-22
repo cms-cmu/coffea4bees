@@ -30,13 +30,22 @@ class _mc_selection(_common_selection):
     ntags = "lowpt_fourTag"
 
 
+class add_nSelJets_total:
+    def __call__(self, df):
+        df.loc[:, "nSelJets_total"] = df["nSelJets"] + df["nSelJets_lowpt"]
+        return df
+
+    def __repr__(self):
+        return "<add_nSelJets_total>"
+
+
 class _Train(_TrainSvB):
     def ntag_columns(self):
         return {"lowpt_fourTag": int(NTag.fourTag), "lowpt_threeTag": int(NTag.threeTag)}
 
     def other_branches(self):
         branches = CommonTrain.other_branches(self)
-        return (branches - {"fourTag", "threeTag"}) | {"lowpt_fourTag", "lowpt_threeTag"}
+        return (branches - {"fourTag", "threeTag"}) | {"lowpt_fourTag", "lowpt_threeTag", "nSelJets_lowpt", "nSelJets"}
 
     def preprocess_by_group(self):
         import numpy as np
@@ -44,6 +53,15 @@ class _Train(_TrainSvB):
 
         # Handle JCM weights with lowpt-specific column name (avoids default "threeTag")
         ps = []
+        ps.append(
+            _group.fullmatch(
+                (),
+                processors=[
+                    lambda: add_nSelJets_total(),
+                ],
+                name="add total jets",
+            )
+        )
         if self.opts.JCM_weight:
             from coffea4bees.classifier.compatibility.JCM.fit import apply_JCM_from_list
 

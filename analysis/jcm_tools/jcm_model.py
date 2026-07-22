@@ -330,7 +330,7 @@ class jetCombinatoricModel:
         Lowpt mode (lowpt=True):
             nj: Number of lowpt jets (≥1)
             Returns: Probability that N lowpt jets become lowpt tags
-            Pair enhancement when total tags (3 regular + N lowpt) is even
+            Enhancement compounds with each lowpt tag: factor (1 + e/N^d)^k for k tags
 
         Args:
             nj: Number of jets (standard mode) or lowpt jets (lowpt mode)
@@ -347,25 +347,24 @@ class jetCombinatoricModel:
             # Lowpt mode: nj is number of lowpt jets, all can potentially be tagged
             nLowptJets = nj
             nPseudoTagProb = np.zeros(nLowptJets + 1)
-            nRegularTags = 3  # Always 3 regular tags
 
             for nLowptTags in range(0, nLowptJets + 1):
                 nNotTagged = nLowptJets - nLowptTags
-                totalTags = nRegularTags + nLowptTags  # Total = 3 regular + N lowpt
 
                 # Combinatorial probability
                 w_npt = norm * comb(nLowptJets, nLowptTags, exact=True) * f**nLowptTags * (1 - f)**nNotTagged
 
-                # Apply pair enhancement when TOTAL tags is even
-                # Physics: decay to (1 regular + 1 lowpt) pairs
-                # 3 regular + 1 lowpt = 4 total ✓ (enhanced)
-                # 3 regular + 2 lowpt = 5 total ✗ (not enhanced)
-                # 3 regular + 3 lowpt = 6 total ✓ (enhanced)
-                if (totalTags % 2) == 0:
-                    w_npt *= 1 + e / nLowptJets**d
+                # Apply pair enhancement that compounds with each lowpt tag.
+                # Each additional lowpt tag multiplies the weight by (1 + e/N^d),
+                # so the full enhancement for k lowpt tags is (1 + e/N^d)^k.
+                # This naturally captures the growing correlation between lowpt jets:
+                # soft b-jets from the same gluon->bb pair are increasingly likely
+                # to all be tagged together.  k=0 gives factor 1 (no change).
+                if nLowptTags > 0:
+                    w_npt *= (1 + e / nLowptJets**d) ** nLowptTags
 
-                logger.debug(f"lowpt mode: nLowptTags: {nLowptTags}, totalTags: {totalTags}, " +
-                           f"w_npt: {w_npt:.6f}, enhanced: {totalTags % 2 == 0}")
+                logger.debug(f"lowpt mode: nLowptTags: {nLowptTags}, " +
+                           f"w_npt: {w_npt:.6f}, enhancement: {(1 + e / nLowptJets**d) ** nLowptTags if nLowptTags > 0 else 1.0:.4f}")
                 nPseudoTagProb[nLowptTags] += w_npt
         else:
             # Standard mode: original implementation

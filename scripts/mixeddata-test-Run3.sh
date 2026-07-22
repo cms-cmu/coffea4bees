@@ -18,7 +18,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-DATASETS=${DATASET_RUN3:-"coffea4bees/metadata/datasets_HH4b_Run3/"}
+DATASETS=${DATASET:-"coffea4bees/metadata/datasets/"}
 echo "Using datasets file: $DATASETS"
 
 setup_proxy

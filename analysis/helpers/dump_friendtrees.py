@@ -21,7 +21,7 @@ def dump_input_friend(
     weight: str = "weight",
     threeTag_label: str = "threeTag",
     fourTag_label: str = "fourTag",
-    seljet_label: str = "nSelJets",
+    seljet_label: str | list[str] = "nSelJets",
     dump_naming: str = _NAMING,
 ):
     selection = _build_cutflow(*selections)
@@ -66,23 +66,22 @@ def dump_input_friend(
         ),
     }
     # Add numpy fields
+    seljet_labels = [seljet_label] if isinstance(seljet_label, str) else list(seljet_label)
+    fields = [
+        "ZZSR",
+        "ZHSR",
+        "HHSR",
+        "SR",
+        "SB",
+        fourTag_label,
+        threeTag_label,
+        "passHLT",
+        "xbW",
+        "xW",
+    ] + seljet_labels
     numpy_fields = akext.to_numpy(
         padded(
-            events[
-                [
-                    "ZZSR",
-                    "ZHSR",
-                    "HHSR",
-                    "SR",
-                    "SB",
-                    fourTag_label,
-                    threeTag_label,
-                    seljet_label,
-                    "passHLT",
-                    "xbW",
-                    "xW",
-                ]
-            ],
+            events[fields],
             selection,
         )
     )

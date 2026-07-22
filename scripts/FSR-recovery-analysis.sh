@@ -31,7 +31,7 @@ bash coffea4bees/scripts/run-analysis-processor.sh \
     --processor "coffea4bees/analysis/processors/processor_FSR_recovery.py" \
     --output-base "$OUTPUT_BASE_DIR" \
     --datasets "GluGluToHHTo4B_cHHH1" \
-    --dataset-metadata "coffea4bees/metadata/datasets_HH4b_Run2/" \
+    --dataset-metadata "coffea4bees/metadata/datasets/" \
     --year $YEARS \
     --output-filename "test_FSR_recovery.coffea" \
     --output-subdir "$JOB" \

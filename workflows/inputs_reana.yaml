@@ -81,4 +81,4 @@ combine_container: "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-analysis
 
 output_path: "output"
 # output_path: "reana_outputs/output"
-dataset_location: "coffea4bees/metadata/datasets_HH4b_Run2/"
+dataset_location: "coffea4bees/metadata/datasets/"

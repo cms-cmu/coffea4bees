@@ -1,0 +1,20 @@
+weights:
+  UL16_preVFP: &weights_Run2
+    JCM_file: "coffea4bees/metadata/weights/JCM/AN_24_089_v3/jetCombinatoricModel_SB_6771c35.yml"
+    SvB: "coffea4bees/metadata/weights/pytorch_models/2024_HHUL/SvB_HCR_8_np753_seed13_lr0.01_epochs20_offset*_epoch20.pkl"
+    SvB_MA: "coffea4bees/metadata/weights/pytorch_models/2024_HHUL/SvB_MA_HCR+attention_8_np1061_seed13_lr0.01_epochs20_offset*_epoch20.pkl"
+    FvT: "coffea4bees/metadata/weights/pytorch_models/2023/FvT_HCR+attention_8_np1052_seed0_lr0.01_epochs20_offset*_epoch20.pkl"
+  UL16_postVFP: *weights_Run2
+  UL17: *weights_Run2
+  UL18: *weights_Run2
+
+  2022_preEE: &weights_Run3
+    JCM_file: "coffea4bees/metadata/weights/JCM/Run3/jetCombinatoricModel_SB_v2.yml"
+    SvB: "coffea4bees/metadata/weights/pytorch_models/2024_HHUL/SvB_HCR_8_np753_seed13_lr0.01_epochs20_offset*_epoch20.pkl"
+    SvB_MA: "coffea4bees/metadata/weights/pytorch_models/2024_HHUL/SvB_MA_HCR+attention_8_np1061_seed13_lr0.01_epochs20_offset*_epoch20.pkl"
+  2022_EE: *weights_Run3
+  2023_preBPix: *weights_Run3
+  2023_BPix: *weights_Run3
+  "2024": *weights_Run3
+
+# Skip friends logic added to barista runner

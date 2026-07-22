@@ -19,12 +19,9 @@ config:
   apply_boosted_veto: false
   run_SvB: true
   hist_cuts: []
-  # SvB_MA: 'coffea4bees/analysis/weights/pytorch_models/2024_HHUL/SvB_MA_HCR+attention_8_np1061_seed13_lr0.01_epochs20_offset*_epoch20.pkl'
   # SvB_MA:
   #   - path: 'coffea4bees/analysis/weights/pytorch_models/2024_HHUL_all_kl/result.json'
   #     name: Final
-  SvB: null
-  SvB_MA: null
   SvB_FeynNet:
   - path: coffea4bees/analysis/weights/pytorch_models/FeynNet/Run3/preparking_svb/model.onnx
     preprocess: coffea4bees/analysis/weights/pytorch_models/FeynNet/Run3/preparking_svb/preprocess.json

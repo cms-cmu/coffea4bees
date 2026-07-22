@@ -33,7 +33,7 @@ OUTPUT_DIR=$OUTPUT_BASE_DIR/$JOB
 create_output_directory "$OUTPUT_DIR"
 
 display_section_header "Input Datasets"
-DATASETS=${DATASET_RUN3:-"coffea4bees/metadata/datasets_HH4b_Run3/"}
+DATASETS=${DATASET:-"coffea4bees/metadata/datasets/"}
 echo "Using datasets file: $DATASETS"
 
 display_section_header "Modifying config"
@@ -60,7 +60,7 @@ if [ -n "$DO_TEST" ]; then
         --output-filename "test_classifier_inputs_mixeddata_all.coffea" \
         --output-subdir "$JOB" \
         --config $JOB_CONFIG \
-        # --additional-flags "--friends coffea4bees/metadata/friends_empty.yml"
+        # --additional-flags "--friends coffea4bees/metadata/friends/friends_empty.yml"
 else
     time bash coffea4bees/scripts/run-analysis-processor.sh \
         --output-base "$OUTPUT_BASE_DIR" \
@@ -71,5 +71,5 @@ else
         --output-subdir "$JOB" \
         --config $JOB_CONFIG \
         --no-test \
-        --additional-flags "--condor --friends coffea4bees/metadata/friends_empty.yml"
+        --additional-flags "--condor --friends coffea4bees/metadata/friends/friends_empty.yml"
 fi

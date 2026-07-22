@@ -67,7 +67,7 @@ config.setdefault('svb_ma_path',
 
 rule create_friends_wSvB:
     input:
-        friends_yml    = "coffea4bees/metadata/friends_HH4b.yml",
+        friends_yml    = "coffea4bees/metadata/friends/friends_HH4b.yml",
         svb_json       = "coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data.json",
         feynet_json    = "coffea4bees/metadata/datasets_HH4b_Run3/SvBFeynNetfriend_mixeddata_data.json",
     output: f"{out}friends_wSvB.yml"
@@ -247,7 +247,7 @@ rule make_plots_wJCM:
 
 rule create_friends_FvT:
     input:
-        friends_yml = "coffea4bees/metadata/friends_HH4b.yml",
+        friends_yml = "coffea4bees/metadata/friends/friends_HH4b.yml",
         svb_json    = "coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data.json",
         feynet_json = "coffea4bees/metadata/datasets_HH4b_Run3/SvBFeynNetfriend_mixeddata_data.json",
     output: f"{out}friends_FvT.yml"

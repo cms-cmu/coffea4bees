@@ -1,19 +1,16 @@
 inputs:
-  git: 
-    - repo: git@github.com:cms-cmu/barista.git
-      branch: "master"
-      target: "."
-    - repo: git@github.com:cms-cmu/coffea4bees.git
-      branch: "master"
-      target: "coffea4bees"
+  files:
+    - bootstrap.smk
+    - workspace.tar.gz
   parameters:
     input: coffea4bees/workflows/inputs_reana.yaml
 workflow:
   type: snakemake
-  file: coffea4bees/workflows/Snakefile_reana.smk
+  file: bootstrap.smk
   resources:
     compute_backend: slurmcern
     voms_proxy: true
+    slurm_time: 480
 workspace:
   retention_days:
     output_test/*: 30
