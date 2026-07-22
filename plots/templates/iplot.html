@@ -257,6 +257,16 @@ let tabPage          = 0;    // current page when cycling through overflow compl
 
 const CLI_FUNCS = ['plot(', 'plot2d(', 'plot_roc(', 'ls(', 'info(', 'examples(', 'yield(', 'yields('];
 
+// Example commands seeded into the recallable ↑-history at startup, below any
+// saved history. Order = recall order: first entry is the first ↑ press.
+const SEED_CMDS = [
+  'plot("selJets.pt")',
+  'plot("selJets.pt", rebin=4)',
+  'plot("selJets.pt", yscale="log")',
+  'plot("selJets.pt", region="sum")',
+  'plot("selJets.pt", rebin=4, yscale="log", region="sum")',
+];
+
 // ---------------------------------------------------------------------------
 // Init
 // ---------------------------------------------------------------------------
@@ -276,6 +286,13 @@ async function init() {
   if (savedPlots.length) restoreInteractiveHistory(savedPlots);
 
   buildWelcome();
+
+  // Seed example commands into ↑-recallable history (after buildWelcome so the
+  // welcome screen still reflects only real saved history).
+  for (const c of SEED_CMDS) {
+    if (!cmdHistory.includes(c)) cmdHistory.push(c);
+  }
+
   document.getElementById('cli-input').focus();
 }
 

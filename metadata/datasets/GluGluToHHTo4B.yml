@@ -327,6 +327,7 @@ GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00:
     Run2: 1
     Run3: 1
 GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00:
+  xs: 0.01168   # ggF HH (13.6 TeV, NNLO 34.43 fb) x BR(HH->4b)=0.339, in pb
   2022_EE:
     PFNano:
     - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/mc_2022EE/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v1_DAZSLE_PFNano/250618_221857/0000/MC_postEE2022_1-1.root
@@ -660,9 +661,6 @@ GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00:
       sumw2_raw: 2185.0093876400724
       sumw_raw: 58893.33705250001
       total_events: 1988270
-  xs:
-    Run2: 1
-    Run3: 1
 GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p10:
   '2024':
     nanoAOD: /GluGluHHto4B_Par-c2-0p10-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM

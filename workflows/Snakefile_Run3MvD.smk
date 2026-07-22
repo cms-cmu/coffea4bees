@@ -436,6 +436,28 @@ rule create_histogram_config_MvD:
         grep -E "run_SvB|plot_extra_canjet_vars|JCM_file|apply_MvD|plot_ttbar_with_MvD|compute_hemi_mixing_diagnostics" {output}
         """
 
+rule create_histogram_config_MvD_signal:
+    # Signal (GluGluHH) hist config: same as the MvD config but apply_MvD stays
+    # FALSE. The MvD friend covers only data+mixeddata, so applying it to signal
+    # crashes ("no field named 'MvD'"). Signal still gets run_SvB (the SvB_mixedMvD
+    # collections) + the extra canJet vars — just no MvD reweighting.
+    input:
+        jcm_file    = config['jcm_install_path'],
+        config_file = config['histogram_config']
+    output: f"{out}histogram_config_MvD_signal.yml"
+    params:
+        extra_canjet = str(config.get('plot_extra_canjet_vars', False)).lower()
+    shell:
+        """
+        sed \
+            -e 's|  run_SvB:.*|  run_SvB: true\\n  plot_extra_canjet_vars: {params.extra_canjet}|' \
+            -e 's|  JCM_file.*|  JCM_file: {input.jcm_file}|' \
+            -e 's|  worker_memory:.*|  worker_memory: 8GB|' \
+            {input.config_file} > {output}
+        echo "Patched signal config (apply_MvD stays false):"
+        grep -E "run_SvB|plot_extra_canjet_vars|JCM_file|apply_MvD" {output}
+        """
+
 use rule analysis_processor from analysis as make_histograms_data_MvD with:
     input:
         config_file   = f"{out}histogram_config_MvD.yml",
@@ -485,7 +507,7 @@ use rule analysis_processor from analysis as make_histograms_mixeddata_MvD with:
 # they don't apply here (signal just carries its MC weight).
 use rule analysis_processor from analysis as make_histograms_signal_MvD with:
     input:
-        config_file   = f"{out}histogram_config_MvD.yml",
+        config_file   = f"{out}histogram_config_MvD_signal.yml",
         friends_file  = f"{out}friends_MvD.yml",
         evaluate_done = ancient(expand(f"{out}{{classifier}}/evaluate.done", classifier=["MvD"])),
     output: f"{out}histograms_MvD/hist_{{signal}}__{{year}}.coffea"
