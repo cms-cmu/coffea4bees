@@ -70,11 +70,11 @@ counts4:
         SB: 0.32
 
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024:
-        passJetMult: 0.58
-        passPreSel: 0.22
-        passDiJetMass: 0.19
-        SR: 0.11
-        SB: 0.06
+        passJetMult: 0.52
+        passPreSel: 0.19
+        passDiJetMass: 0.17
+        SR: 0.1
+        SB: 0.05
 
 
 
@@ -150,11 +150,11 @@ counts3:
         SB: 0.33
 
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024:
-        passJetMult: 0.58
+        passJetMult: 0.52
         passPreSel: 0.02
         passDiJetMass: 0.01
         SR: 0.01
-        SB: 0.01
+        SB: 0.0
 
 
 
@@ -315,5 +315,4 @@ counts3_unit:
         passDiJetMass: 313.0
         SR: 155.0
         SB: 124.0
-
 
