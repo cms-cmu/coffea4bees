@@ -97,7 +97,7 @@ setup_coffea4bees:
     # For coffea4bees repository, use 'coffea4bees'. For coffea4bees, use 'coffea4bees'.
     - mkdir -p coffea4bees 
     - echo "Copying content of $CI_PROJECT_NAME into barista_framework/coffea4bees/"
-    - cp -r $CI_PROJECT_DIR/* coffea4bees/ 2>/dev/null || true
+    - cp -r $CI_PROJECT_DIR/. coffea4bees/ 2>/dev/null || true
     - ls -la coffea4bees/
 
     # Copy the proxy if it exists
