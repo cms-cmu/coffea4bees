@@ -207,7 +207,7 @@ def _norm(df: pd.DataFrame, norms: dict[int, float]):
     return df / (df.sum() / norms.get(df.name, 1.0))
 
 
-class Signal(_picoAOD.Signal, _Train):
+class Signal(_Train, _picoAOD.Signal):
     argparser = ArgParser()
     argparser.add_argument(
         "--norm-ignore-kl",
@@ -255,7 +255,7 @@ class Signal(_picoAOD.Signal, _Train):
 
 
 class Eval(
+    CommonEval,
     _picoAOD.Background,
     _picoAOD.Signal,
-    CommonEval,
 ): ...
