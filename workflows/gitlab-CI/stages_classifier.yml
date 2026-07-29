@@ -12,6 +12,7 @@ classifier_generate_dataset:
   needs:
     - setup_coffea4bees
   script:
+    - mkdir -p $CI_PROJECT_DIR/output && ln -snf $CI_PROJECT_DIR/output output
     - export CLASSIFIER_CONFIG_PATHS="coffea4bees"
     - python -m src.classifier.task.main from ${CLASSIFIER_WFS}/generate_dataset.yml ${CLASSIFIER_WFS}/common.yml
   artifacts:
@@ -25,6 +26,7 @@ classifier_train:
   needs:
     - classifier_generate_dataset
   script:
+    - mkdir -p $CI_PROJECT_DIR/output && ln -snf $CI_PROJECT_DIR/output output
     - export CLASSIFIER_CONFIG_PATHS="coffea4bees"
     - python -m src.classifier.task.main from ${CLASSIFIER_WFS}/main_train.yml ${CLASSIFIER_WFS}/common.yml
   artifacts:
@@ -37,10 +39,13 @@ classifier_evaluate:
   stage: classifier
   extends: .base_analysis_coffea4bees
   needs:
+    - classifier_generate_dataset
     - classifier_train
   script:
+    - mkdir -p $CI_PROJECT_DIR/output && ln -snf $CI_PROJECT_DIR/output output
     - export CLASSIFIER_CONFIG_PATHS="coffea4bees"
     - python -m src.classifier.task.main from ${CLASSIFIER_WFS}/main_evaluate.yml ${CLASSIFIER_WFS}/common.yml
   artifacts:
     paths:
       - output/main_evaluate/chunks/*.root
+
