@@ -36,7 +36,7 @@ display_section_header "Running test processor make_mixed_data"
 cmd=(python runner.py -s \
     -p coffea4bees/skimmer/processor/make_mixed_data.py \
     -c $JOB_CONFIG \
-    --friends coffea4bees/metadata/friends_HH4b.yml \
+    --friends coffea4bees/metadata/friends/friends_HH4b.yml \
     -y UL18   -d data  \
     -op $OUTPUT_DIR \
     -o picoaod_datasets_mixeddata_test_UL18.yml \
