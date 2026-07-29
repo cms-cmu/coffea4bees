@@ -35,7 +35,8 @@ class TestClassifierImports(unittest.TestCase):
         x_can = torch.randn(4, 16)
         x_notcan = torch.randn(4, 20)
         out = model(x_can, x_notcan, x_anc)
-        self.assertEqual(out.shape[0], 4)
+        c_score = out[0] if isinstance(out, tuple) else out
+        self.assertEqual(c_score.shape[0], 4)
 
     def test_dataset_configs_mro(self):
         """Verify dataset config classes (SvB, FvT, MvD) inherit cleanly without metaclass conflict."""
