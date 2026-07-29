@@ -16,8 +16,8 @@ classifier_generate_dataset:
     - python -m src.classifier.task.main from ${CLASSIFIER_WFS}/generate_dataset.yml ${CLASSIFIER_WFS}/common.yml
   artifacts:
     paths:
-      - barista_framework/output/dataset/sparse.root
-      - barista_framework/output/dataset/dense.root
+      - output/dataset/sparse.root
+      - output/dataset/dense.root
 
 classifier_train:
   stage: classifier
@@ -29,9 +29,9 @@ classifier_train:
     - python -m src.classifier.task.main from ${CLASSIFIER_WFS}/main_train.yml ${CLASSIFIER_WFS}/common.yml
   artifacts:
     paths:
-      - barista_framework/output/main_train/result.json
-      - barista_framework/output/main_train/states.pkl
-      - barista_framework/output/main_train/model_test-SvD__*.pkl
+      - output/main_train/result.json
+      - output/main_train/states.pkl
+      - output/main_train/model_test-SvD__*.pkl
 
 classifier_evaluate:
   stage: classifier
@@ -43,4 +43,4 @@ classifier_evaluate:
     - python -m src.classifier.task.main from ${CLASSIFIER_WFS}/main_evaluate.yml ${CLASSIFIER_WFS}/common.yml
   artifacts:
     paths:
-      - barista_framework/output/main_evaluate/chunks/*.root
+      - output/main_evaluate/chunks/*.root
