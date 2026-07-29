@@ -147,19 +147,18 @@ setup_coffea4bees:
     - k8s-cvmfs
   retry: 2
 
-# .base_classifier_coffea4bees:
-#   needs:
-#     - voms_proxy
-#     - setup_coffea4bees
-#   image: registry.hub.docker.com/chuyuanliu/heptools:ml-cpu # TODO change to central repo
-#   before_script:
-#     - source /entrypoint.sh
-#     - cd $CI_PROJECT_DIR/
-#     - pwd && ls -la
-#     - cd barista_framework/
-#     - pwd && ls -la
-#     - ls -la coffea4bees/
-#   tags:
-#     - k8s-cvmfs
-#   artifacts:
-#     expire_in: 1 day
+.base_classifier_coffea4bees:
+  needs:
+    - setup_coffea4bees
+  image: gitlab-registry.cern.ch/cms-cmu/barista:classifier_cpu_latest
+  before_script:
+    - echo "Add error handling flags"
+    - set -e
+    - set -o pipefail
+    - cd barista_framework/
+    - pwd && ls -la
+    - ls -la coffea4bees/
+  tags:
+    - k8s-cvmfs
+  retry: 2
+
