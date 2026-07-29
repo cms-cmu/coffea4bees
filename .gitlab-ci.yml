@@ -59,7 +59,7 @@ include:
   - local: workflows/gitlab-CI/stages_plots.yml
   - local: workflows/gitlab-CI/stages_reana.yml
   - project: 'cms-cmu/barista'
-    ref: 'classifier-decouple'
+    ref: 'master'
     file: 'src/workflows/gitlab-CI/stages_proxy.yml'
 
 stages:  
@@ -151,7 +151,7 @@ setup_coffea4bees:
 .base_classifier_coffea4bees:
   needs:
     - setup_coffea4bees
-  image: gitlab-registry.cern.ch/cms-cmu/barista:classifier_cpu_latest
+  image: gitlab-registry.cern.ch/cms-cmu/barista:${ANALYSIS_IMAGE_TAG}
   before_script:
     - echo "Add error handling flags"
     - set -e
