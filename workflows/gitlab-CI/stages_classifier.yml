@@ -1,6 +1,6 @@
 classifier_unit_tests:
   stage: classifier
-  extends: .base_classifier_coffea4bees
+  extends: .base_analysis_coffea4bees
   script:
     - export CLASSIFIER_CONFIG_PATHS="coffea4bees"
     - python -m unittest coffea4bees.classifier.tests.test_imports
@@ -8,7 +8,7 @@ classifier_unit_tests:
 
 classifier_generate_dataset:
   stage: classifier
-  extends: .base_classifier_coffea4bees
+  extends: .base_analysis_coffea4bees
   needs:
     - setup_coffea4bees
   script:
@@ -21,7 +21,7 @@ classifier_generate_dataset:
 
 classifier_train:
   stage: classifier
-  extends: .base_classifier_coffea4bees
+  extends: .base_analysis_coffea4bees
   needs:
     - classifier_generate_dataset
   script:
@@ -35,7 +35,7 @@ classifier_train:
 
 classifier_evaluate:
   stage: classifier
-  extends: .base_classifier_coffea4bees
+  extends: .base_analysis_coffea4bees
   needs:
     - classifier_train
   script:
