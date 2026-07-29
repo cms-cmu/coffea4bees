@@ -24,6 +24,39 @@ class TestClassifierImports(unittest.TestCase):
         model = HCR(16, 16, ["year", "xW"])
         self.assertIsNotNone(model)
 
+    def test_hcr_forward_pass(self):
+        """Verify HCR forward pass computes outputs without error."""
+        import torch
+        from coffea4bees.classifier.nn.blocks.HCR import HCR
+
+        model = HCR(16, 16, ["year", "xW"])
+        x_anc = torch.randn(4, 2)
+        x_can = torch.randn(4, 4, 4)
+        x_notcan = torch.randn(4, 2, 4)
+        out = model(x_anc, x_can, x_notcan)
+        self.assertEqual(out.shape[0], 4)
+
+    def test_dataset_configs_mro(self):
+        """Verify dataset config classes (SvB, FvT, MvD) inherit cleanly without metaclass conflict."""
+        from coffea4bees.classifier.config.dataset.HCR.SvB import Signal as SvBSignal, Eval as SvBEval
+        from coffea4bees.classifier.config.dataset.HCR.FvT import TrainBaseline as FvTTrain, Eval as FvTEval
+        from coffea4bees.classifier.config.dataset.HCR.MvD import TrainBaseline as MvDTrain, Eval as MvDEval
+
+        self.assertTrue(issubclass(SvBSignal, object))
+        self.assertTrue(issubclass(SvBEval, object))
+        self.assertTrue(issubclass(FvTTrain, object))
+        self.assertTrue(issubclass(FvTEval, object))
+        self.assertTrue(issubclass(MvDTrain, object))
+        self.assertTrue(issubclass(MvDEval, object))
+
+    def test_hcr_settings(self):
+        """Verify HCR settings module defines expected feature branches."""
+        from coffea4bees.classifier.config.setting.HCR import InputBranch
+        self.assertTrue(hasattr(InputBranch, "feature_ancillary"))
+        self.assertTrue(hasattr(InputBranch, "feature_CanJet"))
+        self.assertTrue(hasattr(InputBranch, "feature_NotCanJet"))
+
 
 if __name__ == "__main__":
     unittest.main()
+
