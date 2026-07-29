@@ -33,7 +33,7 @@ class TestClassifierImports(unittest.TestCase):
         x_anc = torch.randn(4, 2)
         x_can = torch.randn(4, 16)
         x_notcan = torch.randn(4, 20)
-        out = model(x_anc, x_can, x_notcan)
+        out = model(x_can, x_notcan, x_anc)
         self.assertEqual(out.shape[0], 4)
 
     def test_dataset_configs_mro(self):
