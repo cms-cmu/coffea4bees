@@ -284,12 +284,25 @@ rule analysis_test_Run3:
     container: analysis_container
     shell: "source coffea4bees/scripts/analysis-test-Run3.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
+rule analysis_test_Run3_2024:
+    output: f"{output_dir}/analysis_test_Run3_2024/test.coffea"
+    log: f"{output_dir}/analysis_test_Run3_2024.log"
+    container: analysis_container
+    shell: "source coffea4bees/scripts/analysis-test-Run3-2024.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
+
 rule analysis_cutflow_Run3:
     input: f"{output_dir}/analysis_test_Run3/test.coffea"
     output: f"{output_dir}/analysis_cutflow_Run3/test_dump_cutflow.yml"
     log: f"{output_dir}/analysis_cutflow_Run3.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/analysis-cutflow-Run3.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
+
+rule analysis_cutflow_Run3_2024:
+    input: f"{output_dir}/analysis_test_Run3_2024/test.coffea"
+    output: f"{output_dir}/analysis_cutflow_Run3_2024/test_dump_cutflow.yml"
+    log: f"{output_dir}/analysis_cutflow_Run3_2024.log"
+    container: analysis_container
+    shell: "source coffea4bees/scripts/analysis-cutflow-Run3-2024.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
 rule synthetic_dataset_make_dataset_Run3:
     output: f"{output_dir}/synthetic_dataset_make_dataset_Run3/picoaod_datasets_declustered_test_2023_BPix.yml"
@@ -367,6 +380,13 @@ rule mixeddata_study_hemispheres:
     log: f"{output_dir}/mixeddata_study_hemispheres.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/mixeddata-study-hemispheres.sh --output-base {output_dir} 2>&1 | tee -a {log}"
+
+rule mixeddata_test_Run3:
+    output: f"{output_dir}/test_mixeddata_Run3/test_dump_MixedData_Run3.yml"
+    container: analysis_container
+    log: f"{output_dir}/mixeddata_test_Run3.log"
+    container: analysis_container
+    shell: "source coffea4bees/scripts/mixeddata-test-Run3.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
 rule analysis_test_lowpt_data_Run2:
     output: f"{output_dir}/analysis_test_lowpt_data_Run2/test_data_lowpt.coffea" 

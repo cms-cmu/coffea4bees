@@ -1,0 +1,6 @@
+weights:
+  UL16_preVFP: &weights_unsup_Run2
+    JCM: "coffea4bees/metadata/weights/dataRunII/jetCombinatoricModel_SB_00-00-02.txt"
+  UL16_postVFP: *weights_unsup_Run2
+  UL17: *weights_unsup_Run2
+  UL18: *weights_unsup_Run2

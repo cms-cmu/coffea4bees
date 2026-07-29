@@ -78,6 +78,15 @@ hists:
                 fillcolor: k            
 
 
+        mix_all_rank0:
+                process: mixeddata_all_rank0
+                tag: fourTag
+                year: RunII
+                label: Mixed Data (before subsample)
+                edgecolor: k
+                fillcolor: k            
+
+
 
 
 

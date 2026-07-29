@@ -1,29 +1,19 @@
-version: 0.9.4
 inputs:
-  directories:
-    - src/
-    - coffea4bees/analysis/
-    - coffea4bees/metadata/
-    - coffea4bees/plots/
-    - coffea4bees/scripts/
-    - coffea4bees/skimmer/processor/
-    - coffea4bees/stats_analysis/
-    - coffea4bees/workflows/
+  files:
+    - bootstrap.smk
+    - workspace.tar.gz
   parameters:
     input: coffea4bees/workflows/inputs_reana.yaml
-  files:
-    - gitdiff.txt
-    - runner.py
-    - run_container
 workflow:
   type: snakemake
-  file: coffea4bees/workflows/Snakefile_reana.smk
+  file: bootstrap.smk
   resources:
     compute_backend: slurmcern
     voms_proxy: true
+    slurm_time: 480
 workspace:
   retention_days:
-    output/*: 30
+    output_test/*: 30
 outputs:
   directories:
-    - output/
+    - output_test/

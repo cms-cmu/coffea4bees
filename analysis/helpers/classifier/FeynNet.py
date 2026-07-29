@@ -72,7 +72,9 @@ def _forward_jet_inputs(event) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.n
     f_pt, f_eta, f_phi, f_mass : ndarray, each shape (N, 2), float32
     """
     n = len(event)
-    nj = ak.max(ak.num(event.fwdJet_feynnet.pt)) if ak.num(event.fwdJet_feynnet.pt, axis=0) > 0 else 0
+    # int(): ak.max returns a numpy scalar, which awkward v2 rejects as the
+    # ak.pad_none target below ("expected None or int type"). Cast to Python int.
+    nj = int(ak.max(ak.num(event.fwdJet_feynnet.pt))) if ak.num(event.fwdJet_feynnet.pt, axis=0) > 0 else 0
 
     if nj == 0:
         return (
@@ -332,6 +334,9 @@ class FeynNetEnsemble:
         n = len(event)
         n_classes = len(self.classes)
 
+        if n == 0:
+            return np.zeros((0, n_classes), dtype="float32"), np.zeros((0, 3), dtype="float32")
+
         c_score = np.zeros((n, n_classes), dtype="float32")
         q_score = np.zeros((n, 3), dtype="float32")
 
@@ -449,6 +454,8 @@ class FeynNetParkingDispatcher:
 
         n = len(event)
         n_classes = len(self.classes)
+        if n == 0:
+            return np.zeros((0, n_classes), dtype="float32"), np.zeros((0, 3), dtype="float32")
         c_score = np.zeros((n, n_classes), dtype="float32")
         q_score = np.zeros((n, 3), dtype="float32")
 

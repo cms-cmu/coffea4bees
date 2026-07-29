@@ -3,10 +3,8 @@ runner:
   worker_memory: 8GB
 
 config:
-  JCM: 'coffea4bees/analysis/weights/dataRunII/jetCombinatoricModel_SB_00-00-02.txt'
   SRno: '4'
   make_classifier_input: coffea4bees/analysis/hists/newFriendTrees
-
 datasets:
   data:
     'UL16_preVFP':

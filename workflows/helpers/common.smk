@@ -1,28 +1,5 @@
-
-def additional_poi(analysis_key):
-    """Generate string to define all othersignal POIs"""
-    othersignal = config['channels'][analysis_key]["othersignal"]
-    if othersignal.strip():
-        return " ".join([f"--PO 'map=.*/{sig}:r{sig}[1,-10,10]'" for sig in othersignal.split()])
-    return ""
-
-def set_parameters(analysis_key, value=0):
-    """Generate string to set all othersignal POIs to zero for a given analysis"""
-    othersignal = config['channels'][analysis_key]["othersignal"]
-    if othersignal.strip():
-        return "--setParameters " + ",".join([f"r{sig}={value}" for sig in othersignal.split()]) 
-    return ""
-
-def set_parameters_ranges(analysis_key):
-    """Generate string to set all othersignal POIs to zero for a given analysis"""
-    othersignal = config['channels'][analysis_key]["othersignal"]
-    if othersignal.strip():
-        return ":" + ":".join([f"r{sig}=0,0" for sig in othersignal.split()]) 
-    return ""
-
-def freeze_parameters(analysis_key):
-    """Generate string to set all othersignal POIs to zero for a given analysis"""
-    othersignal = config['channels'][analysis_key]["othersignal"]
-    if othersignal.strip():
-        return "--freezeParameters " + ",".join([f"r{sig}" for sig in othersignal.split()])
-    return ""
+import sys
+import os
+if os.getcwd() not in sys.path:
+    sys.path.insert(0, os.getcwd())
+from src.stat_analysis.helpers import make_poi_maps, get_default_othersignals, get_grid_split_points, get_likelihood_scan_chunks

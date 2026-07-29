@@ -1,5 +1,3 @@
-from datetime import datetime
-
 config.setdefault('output_path', "output/trigger_weights/")
 config.setdefault('dataset_location', "coffea4bees/metadata/datasets_HH4b_Run3/")
 config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
@@ -14,9 +12,7 @@ module analysis:
 
 rule final_outputs:
     input:
-        f"{config['output_path']}plots_noJCMlowpt/RunII/passPreSel/region_SB/nPVs.pdf",
-        f"{config['output_path']}plots_wlowptJCM/RunII/passPreSel/region_SB/nPVs.pdf",
-        f"{config['output_path']}classifier_inputs_lowpt_wlowptJCM.json"
+        f"{config['output_path']}trigger_weights_friends.json"
 
 rule create_config:
     output: f"{config['output_path']}trigger_weights_config.yml"
@@ -57,15 +53,6 @@ use rule analysis_processor from analysis as analysis_trigger_weights with:
         extra_arguments = "",
         run_container_wrapper = "./run_container"
 
-rule merge_json_trigger_weights:
-    output: f"{config['output_path']}classifier_inputs_trigger_weights.json"
-    log: f"{config['output_path']}logs/merge_json_trigger_weights.log"
-    container: config['analysis_container']
-    shell:
-        """
-        echo "Merging JSON files for trigger weights analysis"
-        python -m coffea4bees.scripts.merge_json_files -i {" ".join(input)} --output {output}
-        """
 rule merge_friendtree_json:
     input: expand(f"{config['output_path']}trigger_weights__{{dataset}}__{{year}}.json", dataset=config['dataset'], year=config['year'])
     output: f"{config['output_path']}trigger_weights_friends.json"

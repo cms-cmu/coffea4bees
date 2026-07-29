@@ -53,12 +53,19 @@ CLASSIFIER_CPU = f"/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/baris
 # Entrypoint sourced inside the container before running commands
 INIT = "set -e && set +u && source /entrypoint.sh && set -u && export PYTHONUNBUFFERED=1"
 
-# Per-classifier configuration.
-SvB_MODEL  = f"{BASE}/classifier/SvB"
-SvB_FRIEND = f"{BASE}/friend/SvB"
+# Per-variant configuration.
+# `svb_variant` selects the study variant: it names the WFS config subdir
+# (e.g. HH4b_Run3/SvB_SRSB), the model/friend EOS subdir, and the plot/report
+# name. Default 'SvB' reproduces the nominal training exactly. The FvT friend
+# stays at the shared nominal base regardless of variant.
+config.setdefault('svb_variant', 'SvB')
+VARIANT = config['svb_variant']
+
+SvB_MODEL  = f"{BASE}/classifier/{VARIANT}"
+SvB_FRIEND = f"{BASE}/friend/{VARIANT}"
 FvT_FRIEND = f"{BASE}/friend/FvT"      # soft reference — assumed pre-existing
 CLASSIFIERS = {
-    "SvB": {
+    VARIANT: {
         "model":          SvB_MODEL,
         "friend":         SvB_FRIEND,
         # SvB train.yml needs both {model} and {FvT}.
@@ -67,9 +74,9 @@ CLASSIFIERS = {
     },
 }
 
-# Single-target Snakefile; classifier=SvB always. Kept structurally
+# Single-target Snakefile; classifier=VARIANT always. Kept structurally
 # consistent with the FvT/MvD Snakefiles so it's easy to extend later.
-CLASSIFIER = config.get("classifier", "SvB")
+CLASSIFIER = config.get("classifier", VARIANT)
 if CLASSIFIER not in CLASSIFIERS:
     raise ValueError(f"Unknown classifier '{CLASSIFIER}'. Choose from: {list(CLASSIFIERS.keys())}")
 TARGETS = [CLASSIFIER]
@@ -89,8 +96,8 @@ config.setdefault('output_path', "output/Run3_quadjet_run2/")
 out = config['output_path']
 LABEL = config.get('label', '')
 
-TRAIN_YML_TEMPLATE    = f"{WFS_BASE}/SvB/train.yml"
-EVALUATE_YML_TEMPLATE = f"{WFS_BASE}/SvB/evaluate.yml"
+TRAIN_YML_TEMPLATE    = f"{WFS_BASE}/{VARIANT}/train.yml"
+EVALUATE_YML_TEMPLATE = f"{WFS_BASE}/{VARIANT}/evaluate.yml"
 
 
 rule create_train_yml:
@@ -109,7 +116,7 @@ rule create_train_yml:
         template = TRAIN_YML_TEMPLATE,
         jcm      = config['jcm_install_path'],
         json     = config['classifier_inputs_install_path'],
-    output: f"{out}SvB_train.yml"
+    output: f"{out}{VARIANT}_train.yml"
     shell:
         """
         sed \
@@ -127,7 +134,7 @@ rule create_evaluate_yml:
     input:
         template = EVALUATE_YML_TEMPLATE,
         json     = config['classifier_inputs_install_path'],
-    output: f"{out}SvB_evaluate.yml"
+    output: f"{out}{VARIANT}_evaluate.yml"
     shell:
         """
         sed \
@@ -146,16 +153,33 @@ rule all_training:
 
 rule train:
     input:
-        train_yml = f"{out}SvB_train.yml",
+        train_yml = f"{out}{VARIANT}_train.yml",
     output:
         flag = f"{out}{{classifier}}/train.done",
     log:
         f"{out}{{classifier}}/train.log",
     container: CLASSIFIER_GPU
     resources:
-        runtime = 240,
-        mem_mb  = 32000,
-        gres    = "mps:25",
+        # mem/runtime sized for the SR+SB variant: the sideband keeps many more
+        # events than SR-only, so peak RSS exceeds the old 32 GB cgroup cap and
+        # the job swap-thrashes to a standstill (same failure mode the eval rule
+        # hit — see SvB-Run3 notes). 56 GB + 8 h matches the eval-rule tuning.
+        # The nominal SR-only training fits in 32 GB/52 min; these are upper
+        # bounds with margin, the scheduler only charges what is used.
+        # 100x nets (SR+SB esp.) are slow at the capped batch -> 16h; others 8h.
+        runtime = 960 if "100x" in VARIANT else 480,
+        mem_mb  = 56000,
+        # MPS = fraction of the A100 (mps:N = N% SMs). The admin reaper kills a
+        # job whose actual GPU SM usage exceeds its mps:N request. The wide 30x
+        # net (n_features=54) peaks above 30% and got reaped at mps:30, so wide
+        # nets need mps:50 (medium's per-job max) for headroom; smaller nets fit
+        # mps:30. (mps:50 also runs ~faster: 50% SMs vs 30%.)
+        gres    = "mps:50" if ("30x" in VARIANT or "100x" in VARIANT) else "mps:30",
+        # >25 MPS/job requires the 'medium' QoS (CMS-CMU SLURM guide); jobs left
+        # on the default 'light' QoS get reaped by the admin (CANCELLED by 0 at
+        # ~5 min). NB: medium MaxWall is 8h, so the 100x variant (runtime 960=16h)
+        # would be DenyOnLimit-rejected here — 100x needs a separate QoS/time plan.
+        qos     = "medium",
     threads: 4
     params:
         init                    = INIT,
@@ -220,15 +244,19 @@ rule analyze:
 rule evaluate:
     input:
         train_done = f"{out}{{classifier}}/train.done",
-        eval_yml   = f"{out}SvB_evaluate.yml",
+        eval_yml   = f"{out}{VARIANT}_evaluate.yml",
     output:
         flag = f"{out}{{classifier}}/evaluate.done",
     log:
         f"{out}{{classifier}}/evaluate.log",
     container: CLASSIFIER_GPU
     resources:
-        runtime = 240,
-        mem_mb  = 32000,
+        # SvB eval with max-evaluators=1 does 3 sequential passes (one per fold);
+        # 4h SLURM limit isn't enough. Bumped to 8h. Memory sized to fit rogue01's
+        # free RAM (58 GB) without swap; max-evaluators bumped back to 2 to
+        # complete in ~3-4h while staying under the 56 GB cap.
+        runtime = 480,
+        mem_mb  = 56000,
         gres    = "mps:25",
     threads: 4
     params:

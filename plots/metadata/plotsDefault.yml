@@ -92,6 +92,15 @@ hists:
                 edgecolor: gray
                 fillcolor: gray
 
+        mix_all_pt25_rank0:
+                process: mixeddata_all_pt25_rank0
+                tag: fourTag
+                year: RunII
+                label: Mixed Data rank-0 pt25
+                edgecolor: blue
+                fillcolor: blue
+
+
         mix_all_rank3_3:
                 process: mixeddata_all_rank3_3
                 tag: fourTag
@@ -134,6 +143,16 @@ hists:
                 fillcolor: "#e42536"
                 histtype: step
                 scalefactor: 100
+
+        HH4bRun3:
+                process: GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00
+                tag: fourTag
+                label: HH4b (x100)
+                edgecolor: "#e42536"
+                fillcolor: "#e42536"
+                histtype: step
+                scalefactor: 100
+
 
         ZH4b:
                 process: [ZH4b, ggZH4b]

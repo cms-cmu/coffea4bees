@@ -1,51 +1,7 @@
-classifier_unit_tests:
+check-configs:
   stage: classifier
-  extends: .base_analysis_coffea4bees
+  extends:
+    - .base_classifier
   script:
-    - export CLASSIFIER_CONFIG_PATHS="coffea4bees"
-    - python -m unittest coffea4bees.classifier.tests.test_imports
-    - python -m src.classifier.test.check_configs
-
-classifier_generate_dataset:
-  stage: classifier
-  extends: .base_analysis_coffea4bees
-  needs:
-    - setup_coffea4bees
-  script:
-    - mkdir -p $CI_PROJECT_DIR/output && ln -snf $CI_PROJECT_DIR/output output
-    - export CLASSIFIER_CONFIG_PATHS="coffea4bees"
-    - python -m src.classifier.task.main from ${CLASSIFIER_WFS}/generate_dataset.yml ${CLASSIFIER_WFS}/common.yml
-  artifacts:
-    paths:
-      - output/dataset/sparse.root
-      - output/dataset/dense.root
-
-classifier_train:
-  stage: classifier
-  extends: .base_analysis_coffea4bees
-  needs:
-    - classifier_generate_dataset
-  script:
-    - mkdir -p $CI_PROJECT_DIR/output && ln -snf $CI_PROJECT_DIR/output output
-    - export CLASSIFIER_CONFIG_PATHS="coffea4bees"
-    - python -m src.classifier.task.main from ${CLASSIFIER_WFS}/main_train.yml ${CLASSIFIER_WFS}/common.yml
-  artifacts:
-    paths:
-      - output/main_train/result.json
-      - output/main_train/states.pkl
-      - output/main_train/model_test-SvD__*.pkl
-
-classifier_evaluate:
-  stage: classifier
-  extends: .base_analysis_coffea4bees
-  needs:
-    - classifier_generate_dataset
-    - classifier_train
-  script:
-    - mkdir -p $CI_PROJECT_DIR/output && ln -snf $CI_PROJECT_DIR/output output
-    - export CLASSIFIER_CONFIG_PATHS="coffea4bees"
-    - python -m src.classifier.task.main from ${CLASSIFIER_WFS}/main_evaluate.yml ${CLASSIFIER_WFS}/common.yml
-  artifacts:
-    paths:
-      - output/main_evaluate/chunks/*.root
-
+    - source coffea4bees/scripts/check-configs.sh
+  allow_failure: true

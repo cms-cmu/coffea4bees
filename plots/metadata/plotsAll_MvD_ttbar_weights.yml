@@ -6,15 +6,16 @@ hists:
                 edgecolor: k
                 fillcolor: k            
 
-#        HH4b:
-#                process: GluGluToHHTo4B_cHHH1
-#                tag: fourTag
-#                label: HH4b (x100)
-#                edgecolor: "#e42536"
-#                fillcolor: "#e42536"            
-#                histtype: step
-#                scalefactor: 100
-#                
+        HH4b:
+                #process: GluGluToHHTo4B_cHHH1
+                process: GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00
+                tag: fourTag
+                label: HH4b (x100)
+                edgecolor: "#e42536"
+                fillcolor: "#e42536"            
+                histtype: step
+                scalefactor: 0.01168
+                
 #        ZH4b:
 #                process: [ZH4b, ggZH4b]
 #                tag: fourTag
@@ -52,7 +53,7 @@ stack:
                 label: $t\bar{t}$
 
         Multijet:
-                process: mixeddata_all
+                process: mixeddata_all_rank0_0
                 tag: fourTag
                 fillcolor: "#FFDF7Fff"
                 edgecolor: k

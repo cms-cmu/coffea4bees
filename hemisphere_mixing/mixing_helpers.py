@@ -14,69 +14,74 @@ from src.math_tools.random import Squares
 
 
 @nb.njit(cache=True)
-def _thrust_event_numba(px_i, py_i, n_steps=720):
-    phis = np.linspace(0.0, 2.0*np.pi, n_steps)
+def _thrust_all_events_numba(px_flat, py_flat, offsets, n_steps):
+    # Coarse transverse-thrust scan for every event in one compiled pass.
+    # px_flat/py_flat are the jets of all events concatenated; offsets[e]:offsets[e+1]
+    # delimits event e. Per-event math is identical to the old per-event kernel
+    # (build |px*cos + py*sin|, sum over jets, argmax over angles) so results are
+    # bit-for-bit unchanged — this just removes the Python-level per-event loop.
+    n_events = len(offsets) - 1
+    phis  = np.linspace(0.0, 2.0*np.pi, n_steps)
     cos_t = np.cos(phis)
     sin_t = np.sin(phis)
 
-    pTi = np.hypot(px_i, py_i)
-    #denom = pTi.sum()
-    #if denom == 0.0:
-    #    return np.nan, 0.0, 0.0, 0.0, 0.0
+    out_phi = np.empty(n_events)
+    out_nx  = np.empty(n_events); out_ny = np.empty(n_events)
+    out_mx  = np.empty(n_events); out_my = np.empty(n_events)
 
-    proj = np.abs(px_i[:, None]*cos_t[None,:] + py_i[:, None]*sin_t[None,:])
-    sums = proj.sum(axis=0)
-    best_idx = np.argmax(sums)
-    best_phi = phis[best_idx]
-    best_sum = sums[best_idx]
+    for e in range(n_events):
+        start = offsets[e]; stop = offsets[e + 1]
+        if stop == start:
+            out_phi[e] = np.nan
+            out_nx[e] = np.nan; out_ny[e] = np.nan
+            out_mx[e] = np.nan; out_my[e] = np.nan
+            continue
 
-    nx, ny = np.cos(best_phi), np.sin(best_phi)
-    mx, my = -ny, nx
-    #T = best_sum/denom
-    #T_minor = np.sum(np.abs(-px_i*ny + py_i*nx))/denom
-    return best_phi, nx, ny, mx, my
+        px_i = px_flat[start:stop]
+        py_i = py_flat[start:stop]
+        proj = np.abs(px_i[:, None]*cos_t[None, :] + py_i[:, None]*sin_t[None, :])
+        sums = proj.sum(axis=0)
+        best_idx = np.argmax(sums)
+        best_phi = phis[best_idx]
 
+        out_phi[e] = best_phi
+        out_nx[e] = np.cos(best_phi); out_ny[e] =  np.sin(best_phi)
+        out_mx[e] = -np.sin(best_phi); out_my[e] = np.cos(best_phi)
+
+    return out_phi, out_nx, out_ny, out_mx, out_my
 
 
 def transverse_thrust_awkward_fast(p4, n_steps=720, refine_rounds=0, refine_factor=6):
     """
-    Fully Awkward-1.x–compatible computation of transverse thrust (T)
-    and thrust minor (T_minor) for jagged Momentum4D objects.
-    Works directly on e.g. events.Jet.
+    Coarse transverse-thrust axis for jagged Momentum4D objects (e.g. events.Jet).
 
-    n_steps number of coarse angular steps (default: 720->0.5 degree granularity)
-    refine_rounds: how many times to zoom in around the best angle (optional)
-    refine_factor: how much denser each refinement grid is
+    n_steps: number of coarse angular steps (default 720 -> 0.5 degree granularity).
+    refine_rounds/refine_factor: accepted for signature compatibility but unused
+    (this "fast" path is coarse-only; see transverse_thrust_awkward for refinement).
+
+    Vectorized over events: the per-event scan runs in a single numba pass over the
+    flattened jets instead of a Python loop, with identical numerics.
     """
-    #if not (hasattr(p4, "px") and hasattr(p4, "py")):
-    #    raise ValueError("Input must have Momentum4D behavior (with .px/.py).")
-
     px, py = p4.px, p4.py
 
-    # Precompute angular grid
-    phis = np.linspace(0.0, 2.0 * np.pi, num=n_steps, endpoint=False)
-    cos_t = np.cos(phis)
-    sin_t = np.sin(phis)
+    # Flatten jagged jets to 1D + per-event offsets for the numba kernel. Keep the
+    # native float dtype (no cast) so the scan is bit-identical to the old path.
+    counts  = ak.to_numpy(ak.num(px, axis=1)).astype(np.int64)
+    offsets = np.empty(len(counts) + 1, dtype=np.int64)
+    offsets[0] = 0
+    np.cumsum(counts, out=offsets[1:])
+    px_flat = np.ascontiguousarray(ak.to_numpy(ak.flatten(px, axis=1)))
+    py_flat = np.ascontiguousarray(ak.to_numpy(ak.flatten(py, axis=1)))
 
-    # loop on events
-    all_phi, all_nx, all_ny, all_mx, all_my = [], [], [], [], []
-    for px_i, py_i in zip(px, py):
-        px_np, py_np = np.asarray(px_i), np.asarray(py_i)
-        if len(px_np) == 0:
-            all_phi.append(np.nan)
-            all_nx.append(np.nan); all_ny.append(np.nan)
-            all_mx.append(np.nan); all_my.append(np.nan)
-            continue
-        th, nx, ny, mx, my = _thrust_event_numba(px_np, py_np, n_steps)
-        all_phi.append(th)
-        all_nx.append(nx); all_ny.append(ny)
-        all_mx.append(mx); all_my.append(my)
+    out_phi, out_nx, out_ny, out_mx, out_my = _thrust_all_events_numba(
+        px_flat, py_flat, offsets, n_steps
+    )
 
     # pack back into an Awkward array of records
     return ak.zip({
-        "phi": np.array(all_phi),
-        "axis": ak.zip({"nx": np.array(all_nx), "ny": np.array(all_ny)}),
-        "minor": ak.zip({"nx": np.array(all_mx), "ny": np.array(all_my)}),
+        "phi": out_phi,
+        "axis": ak.zip({"nx": out_nx, "ny": out_ny}),
+        "minor": ak.zip({"nx": out_mx, "ny": out_my}),
     })
 
 
@@ -288,21 +293,11 @@ def split_events_into_hemispheres(event, tagged_key="tagJet"):
     jets = event.Jet
     drop = {"muonIdxG", "electronIdxG","NOTTHERE",'electronIdx1G', 'electronIdx2G','muonIdx1G', 'muonIdx2G'}
     keep = [f for f in jets.fields if f not in drop]
-    thinned = jets[keep]
 
-    # the original record name, e.g. "PtEtaPhiMLorentzVector"
-    record = ak.parameters(jets).get("__record__")
-
-    # the behavior dictionary (vector mixin functions)
-    behavior = jets.behavior
-
-    # restore it
-    thinned = ak.Array(thinned.layout, behavior=behavior)
-    thinned_jets = ak.with_name(
-        thinned,
-        "PtEtaPhiMLorentzVector",
-        behavior=jets.behavior
-    )
+    # Field selection drops the __record__ name, so restore the Lorentz-vector
+    # behavior. ak.with_name reattaches both the record name and behavior in one
+    # step (no need to round-trip through ak.Array(layout, behavior=...)).
+    thinned_jets = ak.with_name(jets[keep], "PtEtaPhiMLorentzVector", behavior=jets.behavior)
 
     #
     #  For outputs
@@ -363,41 +358,24 @@ def read_hemi_files(hemi_files_yaml, year, tree_name="Events", branch_list=None)
         # print("Hemi files:", type(hemi_files), hemi_files)
 
 
-    hemi_vars = { var_name: [] for var_name in branch_list }
+    # Read with library="ak" so jagged jet branches come back as native awkward
+    # arrays (not numpy object-dtype). This lets the matchers index them with a
+    # vectorized gather (hemi_data["Jet_pt"][match_idx]) instead of the slow
+    # per-chunk ak.from_iter conversion the object-dtype path required.
+    source = f"{hemi_files}:{tree_name}" if isinstance(hemi_files, str) else {f: tree_name for f in hemi_files}
 
-    if isinstance(hemi_files, str):
-        for batch in uproot.iterate(
-                f"{hemi_files}:{tree_name}",
-                branch_list,
-                step_size=200_000,  # entries per chunk
-                library="np",
-        ):
+    batches = { var_name: [] for var_name in branch_list }
+    for batch in uproot.iterate(
+            source,
+            branch_list,
+            step_size=200_000,  # entries per chunk
+            library="ak",
+    ):
+        for var_name in branch_list:
+            batches[var_name].append(batch[var_name])
 
-            if hemi_vars[branch_list[0]] is None:
-                for var_name in branch_list:
-                    hemi_vars[var_name] = batch[var_name]
-            else:
-                for var_name in branch_list:
-                    hemi_vars[var_name] = np.concatenate( (hemi_vars[var_name], batch[var_name]) )
-        print(f"\tread_hemi_files: Read n hemispheres: {len(hemi_vars[branch_list[0]])}")
-
-    elif isinstance(hemi_files, list):
-        #print("Reading hemisphere files:", hemifiles)
-        file_spec = {f: tree_name for f in hemi_files}
-
-        for batch in uproot.iterate(
-                file_spec,
-                branch_list,
-                step_size=200_000,
-                library="np",
-        ):
-            if hemi_vars[branch_list[0]] is None:
-                for var_name in branch_list:
-                    hemi_vars[var_name] = batch[var_name]
-            else:
-                for var_name in branch_list:
-                    hemi_vars[var_name] = np.concatenate( (hemi_vars[var_name], batch[var_name]) )
-        print(f"\tread_hemi_files: Read n hemispheres: {len(hemi_vars[branch_list[0]])}")
+    hemi_vars = { var_name: ak.concatenate(batches[var_name]) for var_name in branch_list }
+    print(f"\tread_hemi_files: Read n hemispheres: {len(hemi_vars[branch_list[0]])}")
 
     return hemi_vars
 
@@ -424,7 +402,14 @@ def iter_hemi_filters(hemi_ranges, hemi_data):
         (tag, sel, jet, mask, tag_filter, sel_filter, jet_filter)
     where jet = -1 indicates the special 'no jet bins' case.
     """
-    tag_keys = list(hemi_ranges.keys())
+    # Use only POPULATED tag bins. A tag that passed the tag-count threshold but
+    # whose sel sub-bins were all pruned ends up as an empty dict (e.g. tag=5).
+    # If left in the key list it would be the last key and steal the `>=`
+    # high_edge overflow, then get `continue`d — so every hemisphere with
+    # nTagJet above the last populated tag is dropped instead of folding into it.
+    # Filtering empties here puts the overflow back on the last populated tag, so
+    # high-multiplicity hemispheres merge into the nearest populated bin.
+    tag_keys = [t for t in hemi_ranges.keys() if hemi_ranges[t]]
 
     for itag, tag in enumerate(tag_keys):
 
@@ -435,11 +420,6 @@ def iter_hemi_filters(hemi_ranges, hemi_data):
             low_edge=(itag == 0),
             high_edge=(itag == len(tag_keys) - 1)
         )
-
-        # Skip empty tag bins
-        if not hemi_ranges[tag]:
-            print(f"ERROR: no sel jets for tag = {tag}")
-            continue
 
         # Selected-jet multiplicity loop
         sel_keys = list(hemi_ranges[tag].keys())
@@ -602,10 +582,10 @@ def replace_hemis(*, all_hemis, hemi_kd_trees, hemi_stats, hemi_data, hemi_jet_r
         #
         new_Jets = ak.zip(
             {
-                "pt":   ak.Array(hemi_data[jet_mult_key]["Jet_pt"]  [match_idx]),
-                "eta":  ak.Array(hemi_data[jet_mult_key]["Jet_eta"] [match_idx]),
-                "phi": (ak.Array(hemi_data[jet_mult_key]["Jet_phi"] [match_idx]) + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
-                "mass": ak.Array(hemi_data[jet_mult_key]["Jet_mass"][match_idx]),
+                "pt":   hemi_data[jet_mult_key]["Jet_pt"]  [match_idx],
+                "eta":  hemi_data[jet_mult_key]["Jet_eta"] [match_idx],
+                "phi": (hemi_data[jet_mult_key]["Jet_phi"] [match_idx] + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
+                "mass": hemi_data[jet_mult_key]["Jet_mass"][match_idx],
             },
             with_name="PtEtaPhiMLorentzVector",
             behavior=vector.behavior,
@@ -616,15 +596,15 @@ def replace_hemis(*, all_hemis, hemi_kd_trees, hemi_stats, hemi_data, hemi_jet_r
             var_key = var_name.replace("Jet_", "")
             if var_key in ["pt", "eta", "phi", "mass"]:
                 continue
-            new_Jets[var_key] = ak.Array(hemi_data[jet_mult_key][var_name][match_idx])
+            new_Jets[var_key] = hemi_data[jet_mult_key][var_name][match_idx]
 
         # fill event data
-        subset_hemis_new = ak.zip({"thrust_phi":       ak.Array(hemi_data[jet_mult_key]["thrust_phi"]     [match_idx]),
-                                   "event":            ak.Array(hemi_data[jet_mult_key]["event"]          [match_idx]),
-                                   "run":              ak.Array(hemi_data[jet_mult_key]["run"]            [match_idx]),
-                                   "luminosityBlock" : ak.Array(hemi_data[jet_mult_key]["luminosityBlock"][match_idx]),
-                                   "hemisphereId":     ak.Array(hemi_data[jet_mult_key]["hemisphereId"]   [match_idx]),
-                                   "weight":           ak.Array(hemi_data[jet_mult_key]["weight"]         [match_idx]),
+        subset_hemis_new = ak.zip({"thrust_phi":       hemi_data[jet_mult_key]["thrust_phi"]     [match_idx],
+                                   "event":            hemi_data[jet_mult_key]["event"]          [match_idx],
+                                   "run":              hemi_data[jet_mult_key]["run"]            [match_idx],
+                                   "luminosityBlock" : hemi_data[jet_mult_key]["luminosityBlock"][match_idx],
+                                   "hemisphereId":     hemi_data[jet_mult_key]["hemisphereId"]   [match_idx],
+                                   "weight":           hemi_data[jet_mult_key]["weight"]         [match_idx],
                                    "nSelJet":          subset_hemis["nSelJet"],
                                    "nTagJet":          subset_hemis["nTagJet"],
                                    "nJet" :            ak.num(new_Jets, axis=1),
@@ -727,10 +707,10 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
         #
         new_Jets = ak.zip(
             {
-                "pt":   ak.from_iter(hemi_lib_data["Jet_pt"]  [match_idx]),
-                "eta":  ak.from_iter(hemi_lib_data["Jet_eta"] [match_idx]),
-                "phi": (ak.from_iter(hemi_lib_data["Jet_phi"] [match_idx]) + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
-                "mass": ak.from_iter(hemi_lib_data["Jet_mass"][match_idx]),
+                "pt":   hemi_lib_data["Jet_pt"]  [match_idx],
+                "eta":  hemi_lib_data["Jet_eta"] [match_idx],
+                "phi": (hemi_lib_data["Jet_phi"] [match_idx] + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
+                "mass": hemi_lib_data["Jet_mass"][match_idx],
             },
             with_name="PtEtaPhiMLorentzVector",
             behavior=vector.behavior,
@@ -773,16 +753,16 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
             var_key = var_name.replace("Jet_", "")
             if var_key in ["pt", "eta", "phi", "mass"]:
                 continue
-            new_Jets[var_key] = ak.from_iter(hemi_lib_data[var_name][match_idx])
+            new_Jets[var_key] = hemi_lib_data[var_name][match_idx]
 
 
         # fill event data
-        subset_hemis_new = ak.zip({"thrust_phi":       ak.Array(hemi_lib_data["thrust_phi"]     [match_idx]),
-                                   "event":            ak.Array(hemi_lib_data["event"]          [match_idx]),
-                                   "run":              ak.Array(hemi_lib_data["run"]            [match_idx]),
-                                   "luminosityBlock" : ak.Array(hemi_lib_data["luminosityBlock"][match_idx]),
-                                   "hemisphereId":     ak.Array(hemi_lib_data["hemisphereId"]   [match_idx]),
-                                   "weight":           ak.Array(hemi_lib_data["weight"]         [match_idx]),
+        subset_hemis_new = ak.zip({"thrust_phi":       hemi_lib_data["thrust_phi"]     [match_idx],
+                                   "event":            hemi_lib_data["event"]          [match_idx],
+                                   "run":              hemi_lib_data["run"]            [match_idx],
+                                   "luminosityBlock" : hemi_lib_data["luminosityBlock"][match_idx],
+                                   "hemisphereId":     hemi_lib_data["hemisphereId"]   [match_idx],
+                                   "weight":           hemi_lib_data["weight"]         [match_idx],
                                    "nSelJet":          subset_hemis["nSelJet"],
                                    "nTagJet":          subset_hemis["nTagJet"],
                                    "nJet" :            ak.num(new_Jets, axis=1),
@@ -1009,10 +989,10 @@ def replace_hemis_topk_kdTrees(
 
         new_Jets = ak.zip(
             {
-                "pt":   ak.Array(hemi_lib_data["Jet_pt"]  [match_idx_chosen]),
-                "eta":  ak.Array(hemi_lib_data["Jet_eta"] [match_idx_chosen]),
-                "phi": (ak.Array(hemi_lib_data["Jet_phi"] [match_idx_chosen]) + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
-                "mass": ak.Array(hemi_lib_data["Jet_mass"][match_idx_chosen]),
+                "pt":   hemi_lib_data["Jet_pt"]  [match_idx_chosen],
+                "eta":  hemi_lib_data["Jet_eta"] [match_idx_chosen],
+                "phi": (hemi_lib_data["Jet_phi"] [match_idx_chosen] + dphi[:, None] + np.pi) % (2 * np.pi) - np.pi,
+                "mass": hemi_lib_data["Jet_mass"][match_idx_chosen],
             },
             with_name="PtEtaPhiMLorentzVector",
             behavior=vector.behavior,
@@ -1031,16 +1011,16 @@ def replace_hemis_topk_kdTrees(
             var_key = var_name.replace("Jet_", "")
             if var_key in ["pt", "eta", "phi", "mass"]:
                 continue
-            new_Jets[var_key] = ak.Array(hemi_lib_data[var_name][match_idx_chosen])
+            new_Jets[var_key] = hemi_lib_data[var_name][match_idx_chosen]
 
         subset_hemis_new = ak.zip(
             {
-                "thrust_phi":      ak.Array(hemi_lib_data["thrust_phi"]     [match_idx_chosen]),
-                "event":           ak.Array(hemi_lib_data["event"]          [match_idx_chosen]),
-                "run":             ak.Array(hemi_lib_data["run"]            [match_idx_chosen]),
-                "luminosityBlock": ak.Array(hemi_lib_data["luminosityBlock"][match_idx_chosen]),
-                "hemisphereId":    ak.Array(hemi_lib_data["hemisphereId"]   [match_idx_chosen]),
-                "weight":          ak.Array(hemi_lib_data["weight"]         [match_idx_chosen]),
+                "thrust_phi":      hemi_lib_data["thrust_phi"]     [match_idx_chosen],
+                "event":           hemi_lib_data["event"]          [match_idx_chosen],
+                "run":             hemi_lib_data["run"]            [match_idx_chosen],
+                "luminosityBlock": hemi_lib_data["luminosityBlock"][match_idx_chosen],
+                "hemisphereId":    hemi_lib_data["hemisphereId"]   [match_idx_chosen],
+                "weight":          hemi_lib_data["weight"]         [match_idx_chosen],
                 "nSelJet":         subset_hemis["nSelJet"],
                 "nTagJet":         subset_hemis["nTagJet"],
                 "nJet":            ak.num(new_Jets, axis=1),

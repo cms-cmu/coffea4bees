@@ -3,7 +3,7 @@ username = os.getenv("USER")
 
 # Use provided config or fall back to defaults
 config.setdefault('output_path', 'output/computeJCM/')
-config.setdefault('dataset_location', "coffea4bees/metadata/datasets_HH4b_Run2/")
+config.setdefault('dataset_location', "coffea4bees/metadata/datasets/")
 config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
 config.setdefault('dataset', ['data', 'TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic'])
 config.setdefault('year', 'UL18')

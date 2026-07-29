@@ -23,11 +23,11 @@ display_section_header "Running SvB_FeynNet friend tree test (local, test mode)"
 bash coffea4bees/scripts/run-analysis-processor.sh \
     --output-base "$OUTPUT_BASE_DIR" \
     --datasets "data" \
-    --dataset-metadata "coffea4bees/metadata/datasets_HH4b_Run3/" \
+    --dataset-metadata "coffea4bees/metadata/datasets/" \
     --year "2022_EE" \
     --output-filename "test_SvBFeynNet_friendtree.coffea" \
     --output-subdir "$JOB" \
     --config coffea4bees/analysis/metadata/HH4b_make_friend_SvBFeynNet_Run3.yml \
-    --friends "coffea4bees/metadata/friends_HH4b.yml"
+    --friends "coffea4bees/metadata/friends/friends_HH4b.yml"
     # No --condor: runs locally with Dask
     # No --no-test: keeps -t flag (processes ~1 chunk)

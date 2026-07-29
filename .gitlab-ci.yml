@@ -21,8 +21,8 @@ workflow:
       variables:
         ANALYSIS_IMAGE_TAG: "dev_coffea2025_latest"
       when: always
-    # Run for pushes to feature branches (with or without open merge requests)
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH'
+    # Run for pushes to branches WITHOUT open merge requests
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_OPEN_MERGE_REQUESTS == null'
       variables:
         ANALYSIS_IMAGE_TAG: "dev_coffea2025_latest"
       when: always
@@ -40,9 +40,7 @@ workflow:
 variables:
   BARISTA_REPO: 'https://${DEPLOY_TOKEN_USERNAME}:${DEPLOY_TOKEN_PASSWORD}@gitlab.cern.ch/cms-cmu/barista.git'
   BARISTA_BRANCH: '$CI_COMMIT_REF_NAME'
-  DATASET: coffea4bees/metadata/datasets_HH4b_Run2/
-  DATASET_RUN3: coffea4bees/metadata/datasets_HH4b_Run3/
-  CLASSIFIER_WFS: src/classifier/test/config/workflow/CI
+  DATASET: coffea4bees/metadata/datasets/
   ANALYSIS_IMAGE_TAG: "latest"
   # DATASET: metadata/datasets_HH4b_cernbox.yml
   # DATASET_RUN3: metadata/datasets_HH4b_Run3_cernbox.yml
@@ -52,7 +50,7 @@ include:
   - local: workflows/gitlab-CI/stages_code.yml
   - local: workflows/gitlab-CI/stages_skimmer.yml
   - local: workflows/gitlab-CI/stages_analysis.yml
-  - local: workflows/gitlab-CI/stages_classifier.yml
+  # - local: workflows/gitlab-CI/stages_classifier.yml
   - local: workflows/gitlab-CI/stages_cutflow.yml
   - local: workflows/gitlab-CI/stages_tools.yml
   - local: workflows/gitlab-CI/stages_friendtree.yml
@@ -71,7 +69,7 @@ stages:
   - tools
   - plot
   - cutflow
-  - classifier
+  # - classifier
   - reana
 
 
@@ -97,7 +95,7 @@ setup_coffea4bees:
     # For coffea4bees repository, use 'coffea4bees'. For coffea4bees, use 'coffea4bees'.
     - mkdir -p coffea4bees 
     - echo "Copying content of $CI_PROJECT_NAME into barista_framework/coffea4bees/"
-    - tar -cf - -C $CI_PROJECT_DIR --exclude=barista_framework . | tar -xf - -C coffea4bees/
+    - cp -r $CI_PROJECT_DIR/* coffea4bees/ 2>/dev/null || true
     - ls -la coffea4bees/
 
     # Copy the proxy if it exists
@@ -148,5 +146,19 @@ setup_coffea4bees:
     - k8s-cvmfs
   retry: 2
 
-
-
+# .base_classifier_coffea4bees:
+#   needs:
+#     - voms_proxy
+#     - setup_coffea4bees
+#   image: registry.hub.docker.com/chuyuanliu/heptools:ml-cpu # TODO change to central repo
+#   before_script:
+#     - source /entrypoint.sh
+#     - cd $CI_PROJECT_DIR/
+#     - pwd && ls -la
+#     - cd barista_framework/
+#     - pwd && ls -la
+#     - ls -la coffea4bees/
+#   tags:
+#     - k8s-cvmfs
+#   artifacts:
+#     expire_in: 1 day

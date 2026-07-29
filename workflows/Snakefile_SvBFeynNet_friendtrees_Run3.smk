@@ -68,7 +68,7 @@ use rule analysis_processor from analysis as make_SvBFeynNet_friendtrees_data wi
         datasets_file         = config['dataset_location'],
         blind                 = False,
         run_performance       = False,
-        friends               = "coffea4bees/metadata/friends_HH4b.yml",
+        friends               = config.get("friend_gen_friends", "coffea4bees/metadata/friends/friends_HH4b.yml"),
         run_on_condor         = True,
         extra_arguments       = "",
         run_container_wrapper = "./run_container",
@@ -91,7 +91,7 @@ use rule analysis_processor from analysis as make_SvBFeynNet_friendtrees_mixedda
         datasets_file         = config['dataset_location'],
         blind                 = False,
         run_performance       = False,
-        friends               = "coffea4bees/metadata/friends_HH4b.yml",
+        friends               = config.get("friend_gen_friends", "coffea4bees/metadata/friends/friends_HH4b.yml"),
         run_on_condor         = True,
         extra_arguments       = "",
         run_container_wrapper = "./run_container",
@@ -112,7 +112,7 @@ use rule analysis_processor from analysis as make_SvBFeynNet_friendtrees_ttbar w
         datasets_file         = config['dataset_location'],
         blind                 = False,
         run_performance       = False,
-        friends               = "coffea4bees/metadata/friends_HH4b.yml",
+        friends               = config.get("friend_gen_friends", "coffea4bees/metadata/friends/friends_HH4b.yml"),
         run_on_condor         = True,
         extra_arguments       = "",
         run_container_wrapper = "./run_container",
@@ -133,7 +133,7 @@ use rule analysis_processor from analysis as make_SvBFeynNet_friendtrees_HH with
         datasets_file         = config['dataset_location'],
         blind                 = False,
         run_performance       = False,
-        friends               = "coffea4bees/metadata/friends_HH4b.yml",
+        friends               = config.get("friend_gen_friends", "coffea4bees/metadata/friends/friends_HH4b.yml"),
         run_on_condor         = True,
         extra_arguments       = "",
         run_container_wrapper = "./run_container",
@@ -165,7 +165,7 @@ if config['reuse_legacy_friends']:
             ]
         shell:
             """
-            PYTHONPATH=. python src/friendtrees/merge_friend_meta.py \
+            ./run_container env PYTHONPATH=. python src/friendtrees/merge_friend_meta.py \
                 -i {params.all_jsons} {input.legacy_json} \
                 -o {output} \
                 2>&1 | tee -a {log}
@@ -209,7 +209,7 @@ else:
             ]
         shell:
             """
-            PYTHONPATH=. python src/friendtrees/merge_friend_meta.py \
+            ./run_container env PYTHONPATH=. python src/friendtrees/merge_friend_meta.py \
                 -i {params.all_jsons} \
                 -o {output} \
                 2>&1 | tee -a {log}

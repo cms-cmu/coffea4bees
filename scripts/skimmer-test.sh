@@ -28,10 +28,10 @@ cat $JOB_CONFIG; echo
 
 display_section_header "Changing datasets"
 #nanoAOD_file="root://cms-xrd-global.cern.ch//store/mc/RunIISummer20UL18NanoAODv9/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/70000/92D0BDF3-91AE-514F-88B5-8F591450B8AD.root"
-#sed -e "s#/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv9.*#[ '${nanoAOD_file}' ]#" coffea4bees/metadata/datasets_HH4b_Run2/ > $OUTPUT_DIR/datasets_HH4b.yml
+#sed -e "s#/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv9.*#[ '${nanoAOD_file}' ]#" coffea4bees/metadata/datasets/ > $OUTPUT_DIR/datasets_HH4b.yml
 #python runner.py -s -p coffea4bees/skimmer/processor/skimmer_4b.py -c $OUTPUT_DIR/datasets_HH4b.yml -y UL18 -d TTToSemiLeptonic -op $OUTPUT_DIR -o picoaod_datasets_TTToSemiLeptonic_UL18.yml -m $OUTPUT_DIR/datasets_HH4b.yml  -t 
 nanoAOD_file="root://cmseos.fnal.gov//store/mc/RunIISummer20UL18NanoAODv9/GluGluToHHTo4B_cHHH0_TuneCP5_PSWeights_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/70000/3F95108D-84D2-CD4D-A0D2-324A7D15E691.root"
-sed -e 's/^/  /' -e '1s/^/datasets:\n/' -e "s|/GluGluToHHTo4B_cHHH0_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv9.*|[ '${nanoAOD_file}' ]|" coffea4bees/metadata/datasets_HH4b_Run2/GluGluToHHTo4B.yml > $OUTPUT_DIR/datasets_HH4b.yml
+sed -e 's/^/  /' -e '1s/^/datasets:\n/' -e "s|/GluGluToHHTo4B_cHHH0_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv9.*|[ '${nanoAOD_file}' ]|" coffea4bees/metadata/datasets/GluGluToHHTo4B.yml > $OUTPUT_DIR/datasets_HH4b.yml
 
 display_section_header "Running test processor"
 cmd=(python runner.py -s \

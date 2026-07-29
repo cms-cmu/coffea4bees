@@ -33,7 +33,7 @@ OUTPUT_DIR=$OUTPUT_BASE_DIR/$JOB
 create_output_directory "$OUTPUT_DIR"
 
 display_section_header "Input Datasets"
-DATASETS=${DATASET_RUN3:-"coffea4bees/metadata/datasets_HH4b_Run3/"}
+DATASETS=${DATASET:-"coffea4bees/metadata/datasets/"}
 echo "Using datasets file: $DATASETS"
 
 #2022_preEE 2023_BPix 2023_preBPix

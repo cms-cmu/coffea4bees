@@ -21,6 +21,17 @@ _dsn_tag     = "" if config['dataset_name'] == "mixeddata_all" \
                else config['dataset_name'].removeprefix("mixeddata_all_") or config['dataset_name']
 _install_tag = "_".join(filter(None, [_mode_tag, _dsn_tag]))
 
+# Optional campaign tag (e.g. 'pt25') distinguishing object-selection /
+# threshold variants. Folded into the shared data+TT histogram dir
+# (SHARED_OUT_MvD below) so a different jet-pT acceptance — e.g. the 25 GeV
+# 2023 acceptance applied via the committed era_overrides resolver — neither
+# reuses nor clobbers the untagged-threshold shared hists. The per-rank
+# outputs are already pt-distinct via _dsn_tag, so only the rank-shared
+# data+TT dir needs this. Matches the `tag` knob in
+# Snakefile_Run3_make_mixeddata.smk. Empty by default.
+config.setdefault('tag', '')
+_tag_suffix  = f"_{config['tag']}" if config['tag'] else ''
+
 # When running on a non-legacy dataset_name (e.g. mixeddata_all_rank0),
 # default to reusing the legacy data/TT classifier inputs instead of
 # regenerating them. data/TT inputs don't change with rank, so this saves
@@ -40,6 +51,18 @@ config.setdefault('jcm_install_path',
 config.setdefault('classifier_inputs_install_path',
     f"coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3"
     f"{'_' + _install_tag if _install_tag else ''}.json")
+
+# HH signal in the MvD hists. The SvB_mixedMvD friends cover signal + detector
+# data, so the signal picoAODs get the same SvB collections filled. Off by
+# default; enable with --config include_signal=True.
+config.setdefault('include_signal', False)
+config.setdefault('signal_datasets', ['GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00'])
+# TT MC in the MvD histAll. Off by default: the MvD ttbar background is the
+# data-derived weighted collections (TTbar4b_from_d3 / TTbar3b_from_d3 /
+# TTbar4b_from_MvD, built inside the data/mixeddata hist jobs), not TT MC — and
+# the shared TT MC hists are often stale / axis-incompatible with the current
+# hist structure. Set include_tt_mc=True to include the shared TT MC hists.
+config.setdefault('include_tt_mc', False)
 
 out = config['output_path']
 
@@ -114,7 +137,7 @@ use rule install_classifier_inputs    from classifier_inputs
 # (pre-JCM, pre-MvD-weight) data + TT outputs only depend on (mode); they're
 # identical across ranks, so sharing them avoids 16 redundant condor jobs
 # per rank run. mixeddata stays rank-specific in {out}histograms/.
-SHARED_OUT_MvD = f"output/Run3_MvD_shared_{config['mode']}/"
+SHARED_OUT_MvD = f"output/Run3_MvD_shared_{config['mode']}{_tag_suffix}/"
 SHARED_DATASETS = ['TTToSemiLeptonic', 'TTToHadronic', 'TTTo2L2Nu', 'data']
 
 
@@ -122,7 +145,7 @@ rule create_friends_wSvB:
     """Patched friends file for the rank-specific mixeddata histogram.
     Points SvB / SvB_FeynNet at the rank-suffixed friend JSONs."""
     input:
-        friends_yml    = "coffea4bees/metadata/friends_HH4b.yml",
+        friends_yml    = "coffea4bees/metadata/friends/friends_HH4b.yml",
         svb_json       = config['svb_friend_json'],
         feynet_json    = config['feynet_friend_json'],
     output: f"{out}friends_wSvB.yml"
@@ -176,7 +199,7 @@ use rule analysis_processor from analysis as make_histograms_shared with:
         datasets_file = config['dataset_location'],
         blind = False,
         run_performance = False,
-        friends = "coffea4bees/metadata/friends_HH4b.yml",
+        friends = "coffea4bees/metadata/friends/friends_HH4b.yml",
         run_on_condor = config['run_on_condor'],
         extra_arguments = "",
         run_container_wrapper = "./run_container",
@@ -373,7 +396,7 @@ rule install_JCM:
 
 rule create_friends_MvD:
     input:
-        friends_yml = "coffea4bees/metadata/friends_HH4b.yml",
+        friends_yml = "coffea4bees/metadata/friends/friends_HH4b.yml",
         svb_json    = config['svb_friend_json'],
         feynet_json = config['feynet_friend_json'],
     output: f"{out}friends_MvD.yml"
@@ -382,7 +405,7 @@ rule create_friends_MvD:
     shell:
         """
         sed \
-            -e 's|    MvD:.*|    MvD: {params.mvd_path}|' \
+            -e 's|    #*MvD:.*|    MvD: {params.mvd_path}|' \
             -e 's|    SvB:.*|    SvB: "{input.svb_json}@@SvB"|' \
             -e 's|    SvB_MA:.*|    SvB_MA: "{input.svb_json}@@SvB_MA"|' \
             -e 's|    SvB_FeynNet:.*|    SvB_FeynNet: "{input.feynet_json}@@SvB_FeynNet"|' \
@@ -397,11 +420,12 @@ rule create_histogram_config_MvD:
         config_file = config['histogram_config']
     output: f"{out}histogram_config_MvD.yml"
     params:
-        hemi_diag = str(config.get('compute_hemi_mixing_diagnostics', False)).lower()
+        hemi_diag = str(config.get('compute_hemi_mixing_diagnostics', False)).lower(),
+        extra_canjet = str(config.get('plot_extra_canjet_vars', False)).lower()
     shell:
         """
         sed \
-            -e 's|  run_SvB.*|  run_SvB: true|' \
+            -e 's|  run_SvB:.*|  run_SvB: true\\n  plot_extra_canjet_vars: {params.extra_canjet}|' \
             -e 's|  JCM_file.*|  JCM_file: {input.jcm_file}|' \
             -e 's|  apply_MvD_weight.*|  apply_MvD_weight: true\\n  plot_ttbar_with_MvD_weights: true|' \
             -e 's|  apply_MvD:[^_].*|  apply_MvD: true|' \
@@ -409,7 +433,29 @@ rule create_histogram_config_MvD:
             -e 's|  compute_hemi_mixing_diagnostics:.*|  compute_hemi_mixing_diagnostics: {params.hemi_diag}|' \
             {input.config_file} > {output}
         echo "Patched config:"
-        grep -E "run_SvB|JCM_file|apply_MvD|plot_ttbar_with_MvD|compute_hemi_mixing_diagnostics" {output}
+        grep -E "run_SvB|plot_extra_canjet_vars|JCM_file|apply_MvD|plot_ttbar_with_MvD|compute_hemi_mixing_diagnostics" {output}
+        """
+
+rule create_histogram_config_MvD_signal:
+    # Signal (GluGluHH) hist config: same as the MvD config but apply_MvD stays
+    # FALSE. The MvD friend covers only data+mixeddata, so applying it to signal
+    # crashes ("no field named 'MvD'"). Signal still gets run_SvB (the SvB_mixedMvD
+    # collections) + the extra canJet vars — just no MvD reweighting.
+    input:
+        jcm_file    = config['jcm_install_path'],
+        config_file = config['histogram_config']
+    output: f"{out}histogram_config_MvD_signal.yml"
+    params:
+        extra_canjet = str(config.get('plot_extra_canjet_vars', False)).lower()
+    shell:
+        """
+        sed \
+            -e 's|  run_SvB:.*|  run_SvB: true\\n  plot_extra_canjet_vars: {params.extra_canjet}|' \
+            -e 's|  JCM_file.*|  JCM_file: {input.jcm_file}|' \
+            -e 's|  worker_memory:.*|  worker_memory: 8GB|' \
+            {input.config_file} > {output}
+        echo "Patched signal config (apply_MvD stays false):"
+        grep -E "run_SvB|plot_extra_canjet_vars|JCM_file|apply_MvD" {output}
         """
 
 use rule analysis_processor from analysis as make_histograms_data_MvD with:
@@ -454,6 +500,34 @@ use rule analysis_processor from analysis as make_histograms_mixeddata_MvD with:
         run_container_wrapper = "./run_container",
         dashboard_address     = 0
 
+# HH signal MvD hists (optional, --config include_signal=True). Same config +
+# friends as data/mixeddata: run_SvB fills the SvB_mixedMvD collections (those
+# friends cover signal), plot_extra_canjet_vars fills the extra canJet hists.
+# Signal is 4b MC — the JCM / MvD-weight config settings are source-gated so
+# they don't apply here (signal just carries its MC weight).
+use rule analysis_processor from analysis as make_histograms_signal_MvD with:
+    input:
+        config_file   = f"{out}histogram_config_MvD_signal.yml",
+        friends_file  = f"{out}friends_MvD.yml",
+        evaluate_done = ancient(expand(f"{out}{{classifier}}/evaluate.done", classifier=["MvD"])),
+    output: f"{out}histograms_MvD/hist_{{signal}}__{{year}}.coffea"
+    log: f"{out}logs/hist_MvD_{{signal}}__{{year}}.log"
+    wildcard_constraints:
+        signal = "|".join(config['signal_datasets'])
+    params:
+        datasets              = "{signal}",
+        years                 = "{year}",
+        config                = lambda wildcards, input: input.config_file,
+        processor             = "coffea4bees/analysis/processors/processor_HH4b.py",
+        datasets_file         = config['dataset_location'],
+        blind                 = False,
+        run_performance       = False,
+        friends               = lambda wildcards, input: input.friends_file,
+        run_on_condor         = config['run_on_condor'],
+        extra_arguments       = "",
+        run_container_wrapper = "./run_container",
+        dashboard_address     = 0
+
 use rule merging_coffea_files from analysis as merge_histograms_MvD with:
     input:
         expand(
@@ -467,13 +541,21 @@ use rule merging_coffea_files from analysis as merge_histograms_MvD with:
             dataset_name=config['dataset_name'],
             year=config['years']
         ),
-        # TT first-pass hists are rank-independent → read from the shared dir.
-        expand(
+        # HH signal (optional; SvB_mixedMvD friends cover signal).
+        (expand(
+            "{out}histograms_MvD/hist_{signal}__{year}.coffea",
+            out=out,
+            signal=config['signal_datasets'],
+            year=config['years']
+        ) if config['include_signal'] else []),
+        # TT MC (optional, off by default — MvD uses data-derived ttbar weights,
+        # and the shared TT MC hists are often stale/axis-incompatible).
+        (expand(
             "{shared}histograms/hist_{dataset}__{year}.coffea",
             shared=SHARED_OUT_MvD,
             dataset=['TTToSemiLeptonic', 'TTToHadronic', 'TTTo2L2Nu'],
             year=config['years']
-        )
+        ) if config['include_tt_mc'] else [])
     output: f"{out}histAll_MvD{config['label']}.coffea"
     container: config['analysis_container']
     params:

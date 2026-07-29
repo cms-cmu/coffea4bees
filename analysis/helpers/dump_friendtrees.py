@@ -21,22 +21,35 @@ def dump_input_friend(
     weight: str = "weight",
     threeTag_label: str = "threeTag",
     fourTag_label: str = "fourTag",
-    seljet_label: str = "nSelJets",
+    seljet_label: str | list[str] = "nSelJets",
     dump_naming: str = _NAMING,
 ):
     selection = _build_cutflow(*selections)
     padded = akext.pad.selected()
     # Build the dictionary step by step, then pass to ak.Array
+    canjet_fields = {
+        "pt": events[CanJet].pt,
+        "eta": events[CanJet].eta,
+        "phi": events[CanJet].phi,
+        "mass": events[CanJet].mass,
+    }
+    # Extra per-jet classifier-input features, included when attached to the
+    # candidate jets (see cand_jet_selection). Kept in sync with what is
+    # available so Run2/Run3 inputs both dump cleanly.
+    for _feat in (
+        "btagScore",
+        "btagPNetCvB", "btagPNetCvL", "btagPNetQvG", "btagPNetTauVJet",
+        "PNetRegPtRawRes", "nSVs",
+        "chHEF", "neHEF", "chEmEF", "neEmEF", "muEF",
+        "nConstituents", "area", "rawFactor",
+    ):
+        if _feat in events[CanJet].fields:
+            canjet_fields[_feat] = events[CanJet][_feat]
+        else:
+            canjet_fields[_feat] = ak.zeros_like(events[CanJet].pt)
     base_dict = {
         "CanJet": padded(
-            ak.zip(
-                {
-                    "pt": events[CanJet].pt,
-                    "eta": events[CanJet].eta,
-                    "phi": events[CanJet].phi,
-                    "mass": events[CanJet].mass,
-                }
-            ),
+            ak.zip(canjet_fields),
             selection,
         ),
         "NotCanJet": padded(
@@ -53,23 +66,22 @@ def dump_input_friend(
         ),
     }
     # Add numpy fields
+    seljet_labels = [seljet_label] if isinstance(seljet_label, str) else list(seljet_label)
+    fields = [
+        "ZZSR",
+        "ZHSR",
+        "HHSR",
+        "SR",
+        "SB",
+        fourTag_label,
+        threeTag_label,
+        "passHLT",
+        "xbW",
+        "xW",
+    ] + seljet_labels
     numpy_fields = akext.to_numpy(
         padded(
-            events[
-                [
-                    "ZZSR",
-                    "ZHSR",
-                    "HHSR",
-                    "SR",
-                    "SB",
-                    fourTag_label,
-                    threeTag_label,
-                    seljet_label,
-                    "passHLT",
-                    "xbW",
-                    "xW",
-                ]
-            ],
+            events[fields],
             selection,
         )
     )

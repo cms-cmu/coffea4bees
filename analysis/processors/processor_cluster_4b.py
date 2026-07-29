@@ -19,10 +19,14 @@ from coffea4bees.jet_clustering.declustering import (
     get_splitting_name,
 )
 
+# Placeholder jet/pileup ID bit written to reclustered (synthetic) jets, which
+# carry no detector-level ID. 7 = "passes tight".
+_SYNTHETIC_JET_ID_BIT = 7
+
 
 class analysis(HH4bBaseProcessor):
     def __init__(self, **kwargs):
-        self.clustering_pdfs_file = kwargs.pop("clustering_pdfs_file", "jet_clustering/jet-splitting-PDFs-00-07-02/clustering_pdfs_vs_pT_XXX.yml")
+        self.clustering_pdfs_file = kwargs.pop("clustering_pdfs_file", "coffea4bees/jet_clustering/jet-splitting-PDFs-00-11-01/clustering_pdfs_vs_pT_XXX.yml")
         self.do_declustering      = kwargs.pop("do_declustering", False)
 
         kwargs.setdefault("apply_JCM",    False)
@@ -121,10 +125,10 @@ class analysis(HH4bBaseProcessor):
             canJet_re    = declustered_jets[is_b_mask]
             notCanJet_re = declustered_jets[~is_b_mask]
 
-            canJet_re["puId"]    = 7
-            canJet_re["jetId"]   = 7
-            notCanJet_re["puId"]  = 7
-            notCanJet_re["jetId"] = 7
+            canJet_re["puId"]    = _SYNTHETIC_JET_ID_BIT
+            canJet_re["jetId"]   = _SYNTHETIC_JET_ID_BIT
+            notCanJet_re["puId"]  = _SYNTHETIC_JET_ID_BIT
+            notCanJet_re["jetId"] = _SYNTHETIC_JET_ID_BIT
 
             selev["canJet_re"]           = canJet_re
             selev["notCanJet_coffea_re"] = notCanJet_re

@@ -7,6 +7,21 @@ from src.compat import nano_from_root
 from coffea4bees.jet_clustering.clustering   import cluster_bs
 from coffea4bees.jet_clustering.declustering import make_synthetic_event, clean_ISR
 from coffea4bees.analysis.helpers.SvB_helpers import setFvTVars, subtract_ttbar_with_FvT
+from coffea4bees.analysis.helpers.object_selection import resolve_object_selection_config
+
+# Placeholder values written to the synthetic picoAOD jet branches. The
+# declustered jets have no detector-level ID/regression info, so we write a
+# passing jet/pileup ID bit and unit regression/PNet correction factors.
+_SYNTHETIC_JET_ID_BIT = 7   # Jet_jetId / Jet_puId "passes tight" bitmask
+_UNIT_CORRECTION      = 1    # bRegCorr / PNetRegPtRawCorr(+Neutrino) = no correction
+
+# Fallback declustering thresholds if neither the config nor the object-selection
+# config supplies them. b-jet pT floor tracks the selected-jet pt_min (Run3 2022 /
+# Run2); dr_threshold is the minimum angular separation of declustered jets.
+_DEFAULT_B_PT_THRESHOLD_RUN3 = 30
+_DEFAULT_B_PT_THRESHOLD_RUN2 = 40
+_DEFAULT_DR_THRESHOLD        = 0.4
+_DEFAULT_MAX_RETRY           = 8
 
 from src.friendtrees.FriendTreeSchema import FriendTreeSchema
 from src.math_tools.random import Squares
@@ -33,6 +48,10 @@ class DeClusterer(Skimmer4b):
     def __init__(self, clustering_pdfs_file = "None",
                 subtract_ttbar_with_weights = False,
                 declustering_rand_seed=5,
+                b_pt_threshold=None,
+                dr_threshold=_DEFAULT_DR_THRESHOLD,
+                max_jet_retry=_DEFAULT_MAX_RETRY,
+                max_event_retry=_DEFAULT_MAX_RETRY,
                 friends: dict[str, str|FriendTemplate] = None,
                 corrections_metadata: dict = None,
                 object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
@@ -45,14 +64,37 @@ class DeClusterer(Skimmer4b):
             *args, **kwargs,
         )
 
-        logging.info(f"\nRunning Declusterer with these parameters: clustering_pdfs_file = {clustering_pdfs_file}, subtract_ttbar_with_weights = {subtract_ttbar_with_weights}, declustering_rand_seed = {declustering_rand_seed}, args = {args}, kwargs = {kwargs}")
+        logging.info(f"\nRunning Declusterer with these parameters: clustering_pdfs_file = {clustering_pdfs_file}, subtract_ttbar_with_weights = {subtract_ttbar_with_weights}, declustering_rand_seed = {declustering_rand_seed}, b_pt_threshold = {b_pt_threshold}, dr_threshold = {dr_threshold}, max_jet_retry = {max_jet_retry}, max_event_retry = {max_event_retry}, args = {args}, kwargs = {kwargs}")
         self.clustering_pdfs_file = clustering_pdfs_file
 
         self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
         self.declustering_rand_seed = declustering_rand_seed
+        # b_pt_threshold=None -> derive per-year from the selected-jet pt_min in
+        # the object-selection config (era-aware; e.g. 25 GeV for 2023). An
+        # explicit value here overrides that (escape hatch for studies).
+        self.b_pt_threshold  = b_pt_threshold
+        self.dr_threshold    = dr_threshold
+        self.max_jet_retry   = max_jet_retry
+        self.max_event_retry = max_event_retry
 
         self.skip_collections = kwargs["skip_collections"]
         self.skip_branches    = kwargs["skip_branches"]
+
+    def _resolve_b_pt_threshold(self, year, isRun3):
+        """The declustered b-jet pT floor. Defaults to the selected-jet pt_min
+        from the object-selection config (era-resolved, so 2023 gets 25 GeV),
+        keeping the declustering floor in sync with the analysis selection. An
+        explicit ``b_pt_threshold`` in the config overrides."""
+        if self.b_pt_threshold is not None:
+            return self.b_pt_threshold
+        if not self.sel_cfg:
+            return _DEFAULT_B_PT_THRESHOLD_RUN3 if isRun3 else _DEFAULT_B_PT_THRESHOLD_RUN2
+        jet_cfg = resolve_object_selection_config(self.sel_cfg, year).get('jet', {})
+        if isRun3:
+            return jet_cfg.get('run3', {}).get('selected', {}).get(
+                'pt_min', _DEFAULT_B_PT_THRESHOLD_RUN3)
+        return jet_cfg.get('run2', {}).get('default', {}).get('selected', {}).get(
+            'pt_min', _DEFAULT_B_PT_THRESHOLD_RUN2)
 
 
     def select(self, event):
@@ -224,8 +266,14 @@ class DeClusterer(Skimmer4b):
         # from coffea4bees.analysis.helpers.write_debug_info import add_debug_info_to_output_clustering_outputs
         # add_debug_info_to_output_clustering_outputs(selev, clustered_jets, processOutput)
 
-        b_pt_threshold = 30 if config["isRun3"] else 40
-        declustered_jets = make_synthetic_event(clustered_jets, clustering_pdfs, declustering_rand_seed=self.declustering_rand_seed, b_pt_threshold=b_pt_threshold, chunk=chunk)
+        b_pt_threshold = self._resolve_b_pt_threshold(year, config["isRun3"])
+        declustered_jets = make_synthetic_event(clustered_jets, clustering_pdfs,
+                                                declustering_rand_seed=self.declustering_rand_seed,
+                                                b_pt_threshold=b_pt_threshold,
+                                                dr_threshold=self.dr_threshold,
+                                                max_jet_retry=self.max_jet_retry,
+                                                max_event_retry=self.max_event_retry,
+                                                chunk=chunk)
 
         declustered_jets = declustered_jets[ak.argsort(declustered_jets.pt, axis=1, ascending=False)]
 
@@ -244,8 +292,8 @@ class DeClusterer(Skimmer4b):
                 "Jet_phi":             declustered_jets.phi,
                 "Jet_mass":            declustered_jets.mass,
                 "Jet_jet_flavor_bit":  declustered_jets.jet_flavor_bit,
-                "Jet_jetId":           ak.unflatten(np.full(total_jet, 7), n_jet),
-                "Jet_puId":            ak.unflatten(np.full(total_jet, 7), n_jet),
+                "Jet_jetId":           ak.unflatten(np.full(total_jet, _SYNTHETIC_JET_ID_BIT), n_jet),
+                "Jet_puId":            ak.unflatten(np.full(total_jet, _SYNTHETIC_JET_ID_BIT), n_jet),
                 # create new regular branch
                 "nClusteredJets":      selev.nClusteredJets,
             }
@@ -255,13 +303,13 @@ class DeClusterer(Skimmer4b):
             out_branches["trigWeight_MC"]   = selev.trigWeight_MC
             out_branches["CMSbtag"]        = weights.partial_weight(include=["CMS_btag"])[selections.all(*cumulative_cuts)]
 
-        if '202' in dataset:
-            out_branches["Jet_PNetRegPtRawCorr"]         = ak.unflatten(np.full(total_jet, 1), n_jet)
-            out_branches["Jet_PNetRegPtRawCorrNeutrino"] = ak.unflatten(np.full(total_jet, 1), n_jet)
+        if config["isRun3"]:
+            out_branches["Jet_PNetRegPtRawCorr"]         = ak.unflatten(np.full(total_jet, _UNIT_CORRECTION), n_jet)
+            out_branches["Jet_PNetRegPtRawCorrNeutrino"] = ak.unflatten(np.full(total_jet, _UNIT_CORRECTION), n_jet)
             out_branches["Jet_btagPNetB"]                = declustered_jets.btagScore
 
         else:
-            out_branches["Jet_bRegCorr"] = ak.unflatten(np.full(total_jet, 1), n_jet)
+            out_branches["Jet_bRegCorr"] = ak.unflatten(np.full(total_jet, _UNIT_CORRECTION), n_jet)
             out_branches["Jet_btagDeepFlavB"] = declustered_jets.btagScore
 
         #
