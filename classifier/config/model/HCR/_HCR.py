@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Callable, Iterable
 from src.classifier.config.setting.HCR import Input, Output
 from src.classifier.task import ArgParser, parse
 
-from .._kfold import KFoldEval, KFoldTrain
+from src.classifier.config.model._kfold import KFoldEval, KFoldTrain
 
 _SCHEDULER = "src.classifier.config.scheduler"
 
