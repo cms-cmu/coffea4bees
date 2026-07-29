@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 
 from src.classifier.task.special import Deprecated
 
-from ...setting.df import Columns
-from ...setting.HCR import Input, InputBranch
+from src.classifier.config.setting.df import Columns
+from coffea4bees.classifier.config.setting.HCR import Input, InputBranch
 from . import _common, _group
 
 if TYPE_CHECKING:

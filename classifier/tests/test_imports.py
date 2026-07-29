@@ -31,8 +31,8 @@ class TestClassifierImports(unittest.TestCase):
 
         model = HCR(16, 16, ["year", "xW"])
         x_anc = torch.randn(4, 2)
-        x_can = torch.randn(4, 4, 4)
-        x_notcan = torch.randn(4, 2, 4)
+        x_can = torch.randn(4, 16)
+        x_notcan = torch.randn(4, 10)
         out = model(x_anc, x_can, x_notcan)
         self.assertEqual(out.shape[0], 4)
 

@@ -10,12 +10,12 @@ from typing import TYPE_CHECKING, Iterable
 from src.classifier.task import ArgParser, parse
 from src.classifier.typetools import enum_dict
 
-from ...setting.df import Columns
-from ...setting.HCR import Input, InputBranch, MassRegion, NTag
-from ...setting.ml import KFold
-from ...state import Flags
-from ...state.label import MultiClass
-from .._root import LoadGroupedRoot
+from src.classifier.config.setting.df import Columns
+from coffea4bees.classifier.config.setting.HCR import Input, InputBranch, MassRegion, NTag
+from src.classifier.config.setting.ml import KFold
+from src.classifier.config.state import Flags
+from src.classifier.config.state.label import MultiClass
+from src.classifier.config.dataset._root import LoadGroupedRoot
 from . import _group
 
 if TYPE_CHECKING:
