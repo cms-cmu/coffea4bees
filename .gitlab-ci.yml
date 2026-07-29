@@ -59,7 +59,7 @@ include:
   - local: workflows/gitlab-CI/stages_plots.yml
   - local: workflows/gitlab-CI/stages_reana.yml
   - project: 'cms-cmu/barista'
-    ref: 'master'
+    ref: 'classifier-decouple'
     file: 'src/workflows/gitlab-CI/stages_proxy.yml'
 
 stages:  
