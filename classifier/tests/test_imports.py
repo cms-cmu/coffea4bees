@@ -30,6 +30,7 @@ class TestClassifierImports(unittest.TestCase):
         from coffea4bees.classifier.nn.blocks.HCR import HCR
 
         model = HCR(16, 16, ["year", "xW"])
+        model.eval()
         x_anc = torch.randn(4, 2)
         x_can = torch.randn(4, 16)
         x_notcan = torch.randn(4, 20)
