@@ -11,6 +11,10 @@ setting:
       - forward_exception: false
       - exit_on_exception: true
 
+  - module: monitor.Monitor
+    option:
+      - enable: false
+
   - module: test.Randomness
     option:
       - seed: 0
