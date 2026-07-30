@@ -60,8 +60,8 @@ class Main(Main):
 
         import torch
 
-        from coffea4bees.classifier.monitor.progress import Progress
-        from coffea4bees.classifier.process import pool, status
+        from src.classifier.monitor.progress import Progress
+        from src.classifier.process import pool, status
 
         target_groups = [parse.intervals(g) for g in self.opts.target_groups or ()]
 
