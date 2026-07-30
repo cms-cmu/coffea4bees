@@ -5,8 +5,8 @@ from datetime import datetime
 from itertools import chain
 from typing import TYPE_CHECKING
 
-from coffea4bees.classifier.config.main._utils import _load_dataset, progress_advance
-from coffea4bees.classifier.task import (
+from src.classifier.config.main._utils import _load_dataset, progress_advance
+from src.classifier.task import (
     ArgParser,
     Dataset,
     EntryPoint,

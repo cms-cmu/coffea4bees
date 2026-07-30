@@ -1,14 +1,14 @@
 from functools import cache, cached_property
 
-from coffea4bees.classifier.config.dataset._root import LoadGroupedRoot
+from src.classifier.config.dataset._root import LoadGroupedRoot
 try:
     from coffea4bees.classifier.config.dataset.HCR._group import add_single_label
 except ImportError:
     from coffea4bees.classifier.config.dataset.HCR._group import add_single_label
-from coffea4bees.classifier.config.setting.df import Columns
+from src.classifier.config.setting.df import Columns
 from coffea4bees.classifier.config.setting.HCR import Input, InputBranch
-from coffea4bees.classifier.config.setting.ml import KFold
-from coffea4bees.classifier.task import ArgParser
+from src.classifier.config.setting.ml import KFold
+from src.classifier.task import ArgParser
 
 
 class SimplifiedTrain(LoadGroupedRoot):
@@ -18,7 +18,7 @@ class SimplifiedTrain(LoadGroupedRoot):
 
     def __init__(self):
         super().__init__()
-        from coffea4bees.classifier.df.io import ToTensor
+        from src.classifier.df.io import ToTensor
 
         self._preprocessors_by_group = [add_single_label()]
         self._to_tensor = ToTensor()
@@ -46,7 +46,7 @@ class SimplifiedTrain(LoadGroupedRoot):
 
     @cache
     def from_root(self, groups: frozenset[str]):
-        from coffea4bees.classifier.df.io import FromRoot
+        from src.classifier.df.io import FromRoot
 
         pres = []
         for g in self._preprocessors_by_group:

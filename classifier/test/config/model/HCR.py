@@ -19,7 +19,7 @@ except ImportError:
 from coffea4bees.classifier.config.setting.HCR import Input, Output
 
 if TYPE_CHECKING:
-    from coffea4bees.classifier.ml import BatchType
+    from src.classifier.ml import BatchType
 
 
 class SparseDenseTrain(HCRTrain):
@@ -40,7 +40,7 @@ class SparseDenseTrain(HCRTrain):
 
     @property
     def rocs(self):
-        from coffea4bees.classifier.ml.benchmarks.multiclass import ROC
+        from src.classifier.ml.benchmarks.multiclass import ROC
 
         rocs = [
             ROC(

@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING
 
 import yaml
 
-from coffea4bees.classifier.config.analysis.HCR._loss_roc import _collect_loss_roc
-from coffea4bees.classifier.task import Analysis, ArgParser, parse
+from src.classifier.config.analysis.HCR._loss_roc import _collect_loss_roc
+from src.classifier.task import Analysis, ArgParser, parse
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -31,7 +31,7 @@ class CompareResults(Analysis):
     )
 
     def _get_result(self, result):
-        from coffea4bees.classifier.task.parse._dict import _fetch_key
+        from src.classifier.task.parse._dict import _fetch_key
 
         if result is None:
             result = parse.mapping(self.opts.result)

@@ -1,7 +1,7 @@
 import sys
 
-from coffea4bees.classifier.config.dataset import _root
-from coffea4bees.classifier.task import ArgParser, converter
+from src.classifier.config.dataset import _root
+from src.classifier.task import ArgParser, converter
 
 
 class LoadGroupedRootForTest(_root.LoadGroupedRoot):

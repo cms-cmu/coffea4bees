@@ -1,6 +1,6 @@
 import random
 
-from coffea4bees.classifier.task import GlobalSetting
+from src.classifier.task import GlobalSetting
 
 from coffea4bees.classifier.test.config.state.torch import DefaultSetting
 
