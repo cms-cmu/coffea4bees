@@ -120,6 +120,7 @@ setup_coffea4bees:
     - echo "Add error handling flags"
     - set -e
     - set -o pipefail
+    - pip install awkward-pandas --quiet
     - echo "Checking output directory"
     - ls $CI_PROJECT_PATH/output/ || true
     - echo "Setting analysis framework"
