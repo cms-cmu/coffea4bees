@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable
 
-from coffea4bees.classifier.config.setting import IO
+from src.classifier.config.setting import IO
 from src.classifier.config.setting.cms import CollisionData
 from coffea4bees.classifier.config.setting.HCR import InputBranch
 from src.classifier.task import Analysis, ArgParser, converter
