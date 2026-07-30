@@ -1,6 +1,8 @@
 generate_dataset_coffea4bees:
   stage: classifier
   extends: .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
   script:
     - python -c "from pathlib import Path; print('resolved:', Path('coffea4bees').resolve(strict=True))"
     - python -c "from src.classifier.config.state import Extensions; print('extensions:', Extensions.get_extensions())"
@@ -14,6 +16,7 @@ cache_coffea4bees:
   stage: classifier
   extends: .base_analysis_coffea4bees
   needs:
+    - setup_coffea4bees
     - generate_dataset_coffea4bees
   script:
     - python -m src.classifier.task.main from ${CLASSIFIER_WFS}/main_cache.yml ${CLASSIFIER_WFS}/common.yml
@@ -26,6 +29,7 @@ train_coffea4bees:
   stage: classifier
   extends: .base_analysis_coffea4bees
   needs:
+    - setup_coffea4bees
     - generate_dataset_coffea4bees
   script:
     - python -m src.classifier.task.main from ${CLASSIFIER_WFS}/main_train.yml ${CLASSIFIER_WFS}/common.yml
@@ -41,6 +45,7 @@ evaluate_coffea4bees:
   stage: classifier
   extends: .base_analysis_coffea4bees
   needs:
+    - setup_coffea4bees
     - generate_dataset_coffea4bees
     - train_coffea4bees
   script:
