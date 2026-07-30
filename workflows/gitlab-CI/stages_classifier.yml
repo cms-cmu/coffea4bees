@@ -2,7 +2,8 @@ generate_dataset_coffea4bees:
   stage: classifier
   extends: .base_analysis_coffea4bees
   script:
-    - python -c "import sys, os; print('PYTHONPATH:', os.environ.get('PYTHONPATH')); print('sys.path:', sys.path); print('CWD:', os.getcwd()); print('CWD contents:', os.listdir('.')); print('coffea4bees contents:', os.listdir('coffea4bees') if os.path.exists('coffea4bees') else 'none')"
+    - python -c "from pathlib import Path; print('resolved:', Path('coffea4bees').resolve(strict=True))"
+    - python -c "from src.classifier.config.state import Extensions; print('extensions:', Extensions.get_extensions())"
     - python -m src.classifier.task.main from ${CLASSIFIER_WFS}/generate_dataset.yml ${CLASSIFIER_WFS}/common.yml
   artifacts:
     paths:
