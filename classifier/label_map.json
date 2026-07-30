@@ -1,0 +1,7 @@
+{
+  "^data_": "multijet",
+  "^TTTo": "ttbar",
+  "^ZZ4b": "ZZ",
+  "^(ZH4b|ggZH4b)": "ZH",
+  "^GluGluToHHTo4B": "ggF"
+}
