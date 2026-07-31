@@ -7,9 +7,8 @@ generate_dataset_coffea4bees:
   needs:
     - setup_coffea4bees
   script:
-    - cd $CI_PROJECT_DIR
-    - ln -s . coffea4bees || true
-    - PYTHONPATH=barista_framework python -m src.classifier.task.main from ${CLASSIFIER_WFS}/generate_dataset.yml ${CLASSIFIER_WFS}/common.yml
+    - if [ "$(basename $(pwd))" = "barista_framework" ]; then mkdir -p ../output && ln -s ../output output || true; fi
+    - python -m src.classifier.task.main from ${CLASSIFIER_WFS}/generate_dataset.yml ${CLASSIFIER_WFS}/common.yml
   artifacts:
     paths:
       - output/dataset/sparse.root
@@ -22,10 +21,9 @@ cache_coffea4bees:
     - setup_coffea4bees
     - generate_dataset_coffea4bees
   script:
-    - cd $CI_PROJECT_DIR
-    - ln -s . coffea4bees || true
-    - PYTHONPATH=barista_framework python -m src.classifier.task.main from ${CLASSIFIER_WFS}/main_cache.yml ${CLASSIFIER_WFS}/common.yml
-    - PYTHONPATH=barista_framework python -m src.classifier.task.main from ${CLASSIFIER_WFS}/main_cache_compare.yml ${CLASSIFIER_WFS}/common.yml
+    - if [ "$(basename $(pwd))" = "barista_framework" ]; then mkdir -p ../output && ln -s ../output output || true; fi
+    - python -m src.classifier.task.main from ${CLASSIFIER_WFS}/main_cache.yml ${CLASSIFIER_WFS}/common.yml
+    - python -m src.classifier.task.main from ${CLASSIFIER_WFS}/main_cache_compare.yml ${CLASSIFIER_WFS}/common.yml
   artifacts:
     paths:
       - output/main_cache/diagnostics/logs.html
@@ -37,9 +35,8 @@ train_coffea4bees:
     - setup_coffea4bees
     - generate_dataset_coffea4bees
   script:
-    - cd $CI_PROJECT_DIR
-    - ln -s . coffea4bees || true
-    - PYTHONPATH=barista_framework python -m src.classifier.task.main from ${CLASSIFIER_WFS}/main_train.yml ${CLASSIFIER_WFS}/common.yml
+    - if [ "$(basename $(pwd))" = "barista_framework" ]; then mkdir -p ../output && ln -s ../output output || true; fi
+    - python -m src.classifier.task.main from ${CLASSIFIER_WFS}/main_train.yml ${CLASSIFIER_WFS}/common.yml
   artifacts:
     paths:
       - output/main_train/result.json
@@ -56,9 +53,8 @@ evaluate_coffea4bees:
     - generate_dataset_coffea4bees
     - train_coffea4bees
   script:
-    - cd $CI_PROJECT_DIR
-    - ln -s . coffea4bees || true
-    - PYTHONPATH=barista_framework python -m src.classifier.task.main from ${CLASSIFIER_WFS}/main_evaluate.yml ${CLASSIFIER_WFS}/common.yml
+    - if [ "$(basename $(pwd))" = "barista_framework" ]; then mkdir -p ../output && ln -s ../output output || true; fi
+    - python -m src.classifier.task.main from ${CLASSIFIER_WFS}/main_evaluate.yml ${CLASSIFIER_WFS}/common.yml
   artifacts:
     paths:
       - output/main_evaluate/diagnostics/logs.html
