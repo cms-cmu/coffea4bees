@@ -7,13 +7,10 @@ generate_dataset_coffea4bees:
   needs:
     - setup_coffea4bees
   script:
-    - python -c "from pathlib import Path; print('resolved:', Path('coffea4bees').resolve(strict=True))"
-    - python -c "from src.classifier.config.state import Extensions; print('extensions:', Extensions.get_extensions())"
-    - python -m src.classifier.task.main from ${CLASSIFIER_WFS}/generate_dataset.yml ${CLASSIFIER_WFS}/common.yml
+    - cd $CI_PROJECT_DIR
+    - PYTHONPATH=barista_framework python -m src.classifier.task.main from ${CLASSIFIER_WFS}/generate_dataset.yml ${CLASSIFIER_WFS}/common.yml
   artifacts:
     paths:
-      - barista_framework/output/dataset/sparse.root
-      - barista_framework/output/dataset/dense.root
       - output/dataset/sparse.root
       - output/dataset/dense.root
 
@@ -24,11 +21,11 @@ cache_coffea4bees:
     - setup_coffea4bees
     - generate_dataset_coffea4bees
   script:
-    - python -m src.classifier.task.main from ${CLASSIFIER_WFS}/main_cache.yml ${CLASSIFIER_WFS}/common.yml
-    - python -m src.classifier.task.main from ${CLASSIFIER_WFS}/main_cache_compare.yml ${CLASSIFIER_WFS}/common.yml
+    - cd $CI_PROJECT_DIR
+    - PYTHONPATH=barista_framework python -m src.classifier.task.main from ${CLASSIFIER_WFS}/main_cache.yml ${CLASSIFIER_WFS}/common.yml
+    - PYTHONPATH=barista_framework python -m src.classifier.task.main from ${CLASSIFIER_WFS}/main_cache_compare.yml ${CLASSIFIER_WFS}/common.yml
   artifacts:
     paths:
-      - barista_framework/output/main_cache/diagnostics/logs.html
       - output/main_cache/diagnostics/logs.html
 
 train_coffea4bees:
@@ -38,14 +35,10 @@ train_coffea4bees:
     - setup_coffea4bees
     - generate_dataset_coffea4bees
   script:
-    - python -m src.classifier.task.main from ${CLASSIFIER_WFS}/main_train.yml ${CLASSIFIER_WFS}/common.yml
+    - cd $CI_PROJECT_DIR
+    - PYTHONPATH=barista_framework python -m src.classifier.task.main from ${CLASSIFIER_WFS}/main_train.yml ${CLASSIFIER_WFS}/common.yml
   artifacts:
     paths:
-      - barista_framework/output/main_train/result.json
-      - barista_framework/output/main_train/states.pkl
-      - barista_framework/output/main_train/model_test-SvD__*.pkl
-      - barista_framework/output/main_train/diagnostics/logs.html
-      - barista_framework/output/main_train/report/
       - output/main_train/result.json
       - output/main_train/states.pkl
       - output/main_train/model_test-SvD__*.pkl
@@ -60,10 +53,9 @@ evaluate_coffea4bees:
     - generate_dataset_coffea4bees
     - train_coffea4bees
   script:
-    - python -m src.classifier.task.main from ${CLASSIFIER_WFS}/main_evaluate.yml ${CLASSIFIER_WFS}/common.yml
+    - cd $CI_PROJECT_DIR
+    - PYTHONPATH=barista_framework python -m src.classifier.task.main from ${CLASSIFIER_WFS}/main_evaluate.yml ${CLASSIFIER_WFS}/common.yml
   artifacts:
     paths:
-      - barista_framework/output/main_evaluate/diagnostics/logs.html
-      - barista_framework/output/main_evaluate/chunks/*.root
       - output/main_evaluate/diagnostics/logs.html
       - output/main_evaluate/chunks/*.root
