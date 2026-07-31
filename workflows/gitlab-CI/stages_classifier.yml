@@ -14,6 +14,8 @@ generate_dataset_coffea4bees:
     paths:
       - barista_framework/output/dataset/sparse.root
       - barista_framework/output/dataset/dense.root
+      - output/dataset/sparse.root
+      - output/dataset/dense.root
 
 cache_coffea4bees:
   stage: classifier
@@ -27,6 +29,7 @@ cache_coffea4bees:
   artifacts:
     paths:
       - barista_framework/output/main_cache/diagnostics/logs.html
+      - output/main_cache/diagnostics/logs.html
 
 train_coffea4bees:
   stage: classifier
@@ -43,6 +46,11 @@ train_coffea4bees:
       - barista_framework/output/main_train/model_test-SvD__*.pkl
       - barista_framework/output/main_train/diagnostics/logs.html
       - barista_framework/output/main_train/report/
+      - output/main_train/result.json
+      - output/main_train/states.pkl
+      - output/main_train/model_test-SvD__*.pkl
+      - output/main_train/diagnostics/logs.html
+      - output/main_train/report/
 
 evaluate_coffea4bees:
   stage: classifier
@@ -57,3 +65,5 @@ evaluate_coffea4bees:
     paths:
       - barista_framework/output/main_evaluate/diagnostics/logs.html
       - barista_framework/output/main_evaluate/chunks/*.root
+      - output/main_evaluate/diagnostics/logs.html
+      - output/main_evaluate/chunks/*.root
