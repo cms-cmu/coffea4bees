@@ -1,3 +1,6 @@
+variables:
+  CLASSIFIER_WFS: "coffea4bees/classifier/test/config/workflow/CI"
+
 generate_dataset_coffea4bees:
   stage: classifier
   extends: .base_analysis_coffea4bees
