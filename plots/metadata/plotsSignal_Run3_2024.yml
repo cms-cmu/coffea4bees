@@ -1,0 +1,21 @@
+hists:
+        data:
+                process: data
+                tag: fourTag
+
+        TTBar:
+                process: [TTTo2L2Nu, TTToHadronic, TTToSemiLeptonic]
+                tag: fourTag
+
+codes:
+    region:
+        SR: 2
+        SB: 1
+        other: 0
+    tag:
+        threeTag: 3
+        fourTag: 4
+        other: 0
+
+doRatio:
+    0
