@@ -124,7 +124,7 @@ rule train:
         {params.init} && \
         PORT=$(shuf -i 10000-60000 -n 1) && \
         CLASSIFIER_CONFIG_PATHS={params.classifier_config_paths} \
-        ./src/pyml.py \
+        python -m src.classifier.task.main \
             template "{{{params.template_str}}}" {input.train_yml} \
             -from {params.wfs_base}/common.yml \
             -setting Monitor "address: '127.0.0.1:$PORT'" \
@@ -162,7 +162,7 @@ rule analyze:
         {params.init} && \
         PORT=$(shuf -i 10000-60000 -n 1) && \
         CLASSIFIER_CONFIG_PATHS={params.classifier_config_paths} \
-        ./src/pyml.py analyze \
+        python -m src.classifier.task.main analyze \
             --results {params.model}/result.json \
             -analysis HCR.LossROC \
             -setting IO "output: {params.plot}" \
@@ -197,7 +197,7 @@ rule evaluate:
         {params.init} && \
         PORT=$(shuf -i 10000-60000 -n 1) && \
         CLASSIFIER_CONFIG_PATHS={params.classifier_config_paths} \
-        ./src/pyml.py \
+        python -m src.classifier.task.main \
             template "{{{params.template_str}}}" {input.eval_yml} \
             -from {params.wfs_base}/common.yml \
             -setting Monitor "address: '127.0.0.1:$PORT'" \
