@@ -11,31 +11,44 @@ Usage:
 """
 
 config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
-config.setdefault('dataset_location',   "coffea4bees/metadata/datasets_HH4b_Run3/")
+# Base datasets + friend JSONs were moved out of metadata/datasets_HH4b_Run3/
+# by the repo reorg: dataset ymls now live in metadata/datasets/ and the
+# committed friend JSONs in metadata/friends/ (see friends_HH4b.yml). Point
+# everything at the new locations.
+config.setdefault('dataset_location',   "coffea4bees/metadata/datasets/")
 config.setdefault('years', ['2022_EE', '2022_preEE', '2023_BPix', '2023_preBPix'])
 config.setdefault('dataset_name', 'mixeddata_all')
 # Path to the installed dataset metadata yaml — declared as input to
 # make_SvBFeynNet_friendtrees_mixeddata so snakemake schedules the install
 # step (when invoked from Snakefile_Run3_make_mixeddata.smk) before this.
 config.setdefault('install_path',
-    f"coffea4bees/metadata/datasets_HH4b_Run3/{config['dataset_name']}.yml")
+    f"coffea4bees/metadata/datasets/{config['dataset_name']}.yml")
 
 # When True, skip the data, ttbar, and HH per-year jobs and reuse the legacy
 # combined SvB_FeynNet JSON (which already contains all four sources) as a
-# merge input. Only the new mixed-data per-year jobs run. Reasonable for
-# rank-suffixed runs where data/TT/HH friends are unchanged from the legacy
-# build. Default False preserves backward-compatible standalone behavior.
+# merge input. Only the new background-dataset per-year jobs run. Reasonable for
+# rank-suffixed / synthetic runs where data/TT/HH friends are unchanged from the
+# legacy build. Default False preserves backward-compatible standalone behavior.
 config.setdefault('reuse_legacy_friends', False)
-LEGACY_FEYNET_JSON = "coffea4bees/metadata/datasets_HH4b_Run3/SvBFeynNetfriend_mixeddata_data.json"
+LEGACY_FEYNET_JSON = "coffea4bees/metadata/friends/SvBFeynNetfriend_mixeddata_data.json"
 
-# Rank/variant suffix derived from dataset_name. Empty for legacy
-# 'mixeddata_all' so historical install paths stay byte-for-byte unchanged.
-_dsn_tag     = "" if config['dataset_name'] == "mixeddata_all" \
-               else config['dataset_name'].removeprefix("mixeddata_all_") or config['dataset_name']
-_install_tag = f"_{_dsn_tag}" if _dsn_tag else ""
+# Friend-JSON name stub + output-dir tag, derived from dataset_name.
+#   * mixeddata_all family  -> legacy 'mixeddata_data' stub (+ _rank tag), so
+#     historical install paths and snakemake outputs are preserved byte-for-byte.
+#   * any other background dataset (e.g. synthetic_data_noTT_ns1) -> the dataset
+#     name itself, giving a clean SvBFeynNetfriend_<dataset_name>.json install.
+if config['dataset_name'].startswith("mixeddata_all"):
+    _dsn_tag     = "" if config['dataset_name'] == "mixeddata_all" \
+                   else config['dataset_name'].removeprefix("mixeddata_all_")
+    _install_tag = f"_{_dsn_tag}" if _dsn_tag else ""
+    _friend_stub = f"mixeddata_data{_install_tag}"
+    _out_tag     = _install_tag
+else:
+    _friend_stub = config['dataset_name']
+    _out_tag     = f"_{config['dataset_name']}"
 
-FEYNNET_OUT = f"output/Run3_FeynNet{_install_tag}/feynnet_friendtrees/"
-INSTALL     = f"coffea4bees/metadata/datasets_HH4b_Run3/SvBFeynNetfriend_mixeddata_data{_install_tag}.json"
+FEYNNET_OUT = f"output/Run3_FeynNet{_out_tag}/feynnet_friendtrees/"
+INSTALL     = f"coffea4bees/metadata/friends/SvBFeynNetfriend_{_friend_stub}.json"
 
 TT_DATASETS = ['TTTo2L2Nu', 'TTToHadronic', 'TTToSemiLeptonic']
 # Only this HH coupling point currently has 2022/2023 picoAODs.
@@ -156,7 +169,8 @@ if config['reuse_legacy_friends']:
             ),
             legacy_json = LEGACY_FEYNET_JSON,
         output: f"{FEYNNET_OUT}SvBFeynNetfriend_mixeddata_data.json"
-        container: config['analysis_container']
+        # container: None -> avoid nested apptainer under --profile lpc; ./run_container in the shell provides the container (see merge_cluster in Snakefile_Run3_make_synthetic).
+        container: None
         log: f"{FEYNNET_OUT}logs/merge_SvBFeynNet_friendtrees.log"
         params:
             all_jsons = lambda wildcards, input: [
@@ -200,7 +214,8 @@ else:
                 year=config['years']
             ),
         output: f"{FEYNNET_OUT}SvBFeynNetfriend_mixeddata_data.json"
-        container: config['analysis_container']
+        # container: None -> avoid nested apptainer under --profile lpc; ./run_container in the shell provides the container (see merge_cluster in Snakefile_Run3_make_synthetic).
+        container: None
         log: f"{FEYNNET_OUT}logs/merge_SvBFeynNet_friendtrees.log"
         params:
             all_jsons = lambda wildcards, input: [

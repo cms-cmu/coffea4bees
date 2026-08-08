@@ -4,13 +4,17 @@ runner:
   workers: 4
   min_workers: 1
   max_workers: 200
-  chunksize: 100000
+  # runner.py reads `worker_memory` (not `condor_memory`) for the dask/condor
+  # worker size; `condor_memory` was silently ignored, leaving workers at the
+  # 4GB default. Declustering the 2023 pt25 selection (more jets) OOMs 4GB on
+  # dense chunks (KilledWorker). Bump the worker and shrink the chunk.
+  worker_memory: 8GB
+  chunksize: 25000
   picosize: 100000
   basketsize: 10000
   class_name: DeClusterer
   data_tier: picoAOD
   condor_cores: 1
-  condor_memory: 4GB
   condor_transfer_input_files:
     - src
     - coffea4bees

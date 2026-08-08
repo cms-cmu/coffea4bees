@@ -201,6 +201,7 @@ rule patch_skimmer_config:
         default_rank   = (f"[{_rank[0]}, {_rank[1]}]"
                           if isinstance(_rank, (list, tuple))
                           else str(int(_rank))),
+        boost_match    = str(config.get('use_boost_corrected_matching', True)).lower(),
     shell:
         """
         sed -e 's|  base_path:.*|  base_path: {params.base_path}|' \
@@ -210,9 +211,10 @@ rule patch_skimmer_config:
             -e 's|  worker_memory:.*|  worker_memory: {params.worker_memory}|' \
             -e 's|  chunksize:.*|  chunksize: {params.chunksize}|' \
             -e 's|  step:.*|  step: {params.chunksize}|' \
+            -e 's|  use_boost_corrected_matching:.*|  use_boost_corrected_matching: {params.boost_match}|' \
             {input} > {output}
         echo "Patched skimmer config:"
-        grep -E "base_path|default_rank|hemi_library_yaml|hemi_stats_path|worker_memory|chunksize|step" {output}
+        grep -E "base_path|default_rank|hemi_library_yaml|hemi_stats_path|worker_memory|chunksize|step|use_boost_corrected_matching" {output}
         """
 
 

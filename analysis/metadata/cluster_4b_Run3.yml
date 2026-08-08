@@ -1,6 +1,12 @@
 runner:
   workers: 4
-  condor_memory: 8GB
+  # runner.py reads `worker_memory` (not `condor_memory`) for the dask/condor
+  # worker size (see runner.py LPCCondorCluster setup). The old `condor_memory`
+  # key was silently ignored, leaving workers at the 4GB default, which OOMs on
+  # the 2023 pt25 clustering (lower jet pT admits many more jets -> the O(n^3)
+  # numba clustering blows up). Bump the worker and shrink the chunk to cut peak.
+  worker_memory: 8GB
+  chunksize: 20000
 
 config:
   clustering_pdfs_file: None

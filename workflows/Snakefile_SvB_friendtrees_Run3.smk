@@ -10,33 +10,46 @@ Usage:
 """
 
 config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
-config.setdefault('dataset_location',   "coffea4bees/metadata/datasets_HH4b_Run3/")
+# Base datasets + friend JSONs were moved out of metadata/datasets_HH4b_Run3/
+# by the repo reorg: dataset ymls now live in metadata/datasets/ and the
+# committed friend JSONs (data_SvBfriend.json, SvB*friend_mixeddata_data.json)
+# in metadata/friends/ (see friends_HH4b.yml). Point everything at the new
+# locations.
+config.setdefault('dataset_location',   "coffea4bees/metadata/datasets/")
 config.setdefault('years', ['2022_EE', '2022_preEE', '2023_BPix', '2023_preBPix'])
 config.setdefault('dataset_name', 'mixeddata_all')
 # Path to the installed dataset metadata yaml. Declared as an input to
 # make_SvB_friendtrees_mixeddata so snakemake schedules the install step
 # (when invoked from Snakefile_Run3_make_mixeddata.smk) before the SvB job.
-# In standalone mode this just points at the legacy committed yaml.
+# In standalone mode this just points at the committed yaml.
 config.setdefault('install_path',
-    f"coffea4bees/metadata/datasets_HH4b_Run3/{config['dataset_name']}.yml")
+    f"coffea4bees/metadata/datasets/{config['dataset_name']}.yml")
 
 # When True, skip the HH per-year jobs and reuse the legacy combined SvB JSON
 # (which already contains data + HH + legacy mixeddata friend mappings) as a
-# merge input. Only the new mixed-data per-year jobs run. Reasonable for
-# rank-suffixed runs where HH and data friends are unchanged from the legacy
-# build. Default False preserves backward-compatible standalone behavior.
+# merge input. Only the new background-dataset per-year jobs run. Reasonable for
+# rank-suffixed / synthetic runs where HH and data friends are unchanged from
+# the legacy build. Default False preserves backward-compatible standalone behavior.
 config.setdefault('reuse_legacy_friends', False)
-LEGACY_SVB_JSON = "coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data.json"
+LEGACY_SVB_JSON = "coffea4bees/metadata/friends/SvBfriend_mixeddata_data.json"
 
-# Rank/variant suffix derived from dataset_name. Empty for the legacy
-# 'mixeddata_all' so historical install paths and snakemake outputs are
-# preserved byte-for-byte.
-_dsn_tag     = "" if config['dataset_name'] == "mixeddata_all" \
-               else config['dataset_name'].removeprefix("mixeddata_all_") or config['dataset_name']
-_install_tag = f"_{_dsn_tag}" if _dsn_tag else ""
+# Friend-JSON name stub + output-dir tag, derived from dataset_name.
+#   * mixeddata_all family  -> legacy 'mixeddata_data' stub (+ _rank tag), so
+#     historical install paths and snakemake outputs are preserved byte-for-byte.
+#   * any other background dataset (e.g. synthetic_data_noTT_ns1) -> the dataset
+#     name itself, giving a clean SvBfriend_<dataset_name>.json install.
+if config['dataset_name'].startswith("mixeddata_all"):
+    _dsn_tag     = "" if config['dataset_name'] == "mixeddata_all" \
+                   else config['dataset_name'].removeprefix("mixeddata_all_")
+    _install_tag = f"_{_dsn_tag}" if _dsn_tag else ""
+    _friend_stub = f"mixeddata_data{_install_tag}"
+    _out_tag     = _install_tag
+else:
+    _friend_stub = config['dataset_name']
+    _out_tag     = f"_{config['dataset_name']}"
 
-SvB_OUT = f"output/Run3_MvD{_install_tag}/svb_friendtrees/"
-INSTALL = f"coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data{_install_tag}.json"
+SvB_OUT = f"output/Run3_MvD{_out_tag}/svb_friendtrees/"
+INSTALL = f"coffea4bees/metadata/friends/SvBfriend_{_friend_stub}.json"
 
 # Only this HH coupling point currently has 2022/2023 picoAODs.
 HH_DATASETS = ['GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00']
@@ -118,7 +131,8 @@ if config['reuse_legacy_friends']:
             ),
             legacy_json = LEGACY_SVB_JSON,
         output: f"{SvB_OUT}SvBfriend_mixeddata_data.json"
-        container: config['analysis_container']
+        # container: None -> avoid nested apptainer under --profile lpc; ./run_container in the shell provides the container (see merge_cluster in Snakefile_Run3_make_synthetic).
+        container: None
         log: f"{SvB_OUT}logs/merge_SvB_friendtrees_mixeddata.log"
         params:
             all_jsons = lambda wildcards, input: [
@@ -152,9 +166,10 @@ else:
                 hh_dataset=HH_DATASETS,
                 year=config['years']
             ),
-            data_json = "coffea4bees/metadata/datasets_HH4b_Run3/data_SvBfriend.json",
+            data_json = "coffea4bees/metadata/friends/data_SvBfriend.json",
         output: f"{SvB_OUT}SvBfriend_mixeddata_data.json"
-        container: config['analysis_container']
+        # container: None -> avoid nested apptainer under --profile lpc; ./run_container in the shell provides the container (see merge_cluster in Snakefile_Run3_make_synthetic).
+        container: None
         log: f"{SvB_OUT}logs/merge_SvB_friendtrees_mixeddata.log"
         params:
             all_jsons = lambda wildcards, input: [
