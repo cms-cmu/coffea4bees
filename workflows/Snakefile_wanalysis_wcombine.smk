@@ -11,6 +11,8 @@ config.setdefault('friend_file', "coffea4bees/metadata/datasets/archive/Run2_202
 config.setdefault('plot_config', "coffea4bees/plots/metadata/plotsAll_ttbarWeights.yml")
 config.setdefault('combine_flags', "--blind")
 config.setdefault('dataset_location', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/")
+config.setdefault('closure_base', "coffea4bees/stats_analysis/files/HIG-24-010/")
+
 
 config.setdefault('dataset', ['GluGluToHHTo4B_cHHH1', 'GluGluToHHTo4B_cHHH0', 'GluGluToHHTo4B_cHHH2p45', 'GluGluToHHTo4B_cHHH5', 'ZH4b', 'ZZ4b', 'ggZH4b'])
 config.setdefault('year_eras', {
@@ -174,13 +176,12 @@ use rule convert_hist_to_json from stat_analysis with:
         syst_flag=lambda wildcards, input: "--histos " + " ".join([ch_config['variable'].replace(".ps_", "_ps_") for ch_config in config['channels'].values()]) if config['channels'] else ""
     log: f"{config['output_path']}logs/convert_hist_to_json_{config['label']}.log"
 
-CLOSURE_BASE = "reana_outputs/coffea4bees_20250605_0dc846dc_unblinded_ext_ZZZH/closureFits/ULHH_kfold/3bDvTMix4bDvT/SvB_MA/rebin1/SR"
 
 use rule make_combine_inputs from stat_analysis as make_combine_inputs_channel with:
     input:
         injson = f"{config['output_path']}histAll_{config['label']}.json",
         injsonsyst = list([]),
-        bkgsyst = lambda wildcards: f"{CLOSURE_BASE}/{config['channels'][wildcards.channel]['closure_subdir']}/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_{config['channels'][wildcards.channel]['closure_subdir']}_rebin1.pkl",
+        bkgsyst = lambda wildcards: f"{config['closure_base']}/{config['channels'][wildcards.channel]['closure_subdir']}/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_{config['channels'][wildcards.channel]['closure_subdir']}_rebin1.pkl",
         script = "coffea4bees/stats_analysis/make_combine_inputs.py",
         metadata_file = lambda wildcards: f"coffea4bees/stats_analysis/metadata/{wildcards.channel}.yml"
     output: f"{config['output_path']}stat_analysis/{{channel}}/datacards/datacard__{{channel}}.txt"

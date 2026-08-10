@@ -412,10 +412,9 @@ rule analysis_cutflow_lowpt_Run2:
 
 rule workflow_validation:
     log: f"{output_dir}/workflow_validation.log"
-    container: analysis_container
     shell:
         """
-        snakemake -s coffea4bees/workflows/Snakefile_wanalysis_wcombine.smk --configfile coffea4bees/workflows/config/nominal_run2.yml -n 2>&1 | tee -a {log}
-        snakemake -s coffea4bees/workflows/Snakefile_wanalysis_wcombine.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml -n 2>&1 | tee -a {log}
-        snakemake -s coffea4bees/workflows/Snakefile_wanalysis_wcombine.smk --configfile coffea4bees/workflows/config/nominal_run3.yml -n 2>&1 | tee -a {log}
+        pixi run snakemake -s coffea4bees/workflows/Snakefile_wanalysis_wcombine.smk --configfile coffea4bees/workflows/config/nominal_run2.yml -n 2>&1 | tee -a {log}
+        pixi run snakemake -s coffea4bees/workflows/Snakefile_wanalysis_wcombine.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml -n 2>&1 | tee -a {log}
+        pixi run snakemake -s coffea4bees/workflows/Snakefile_wanalysis_wcombine.smk --configfile coffea4bees/workflows/config/nominal_run3.yml -n 2>&1 | tee -a {log}
         """
