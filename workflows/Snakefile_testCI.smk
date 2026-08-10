@@ -409,3 +409,13 @@ rule analysis_cutflow_lowpt_Run2:
     log: f"{output_dir}/analysis_cutflow_lowpt_Run2.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/analysis-cutflow-lowpt-Run2.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
+
+rule workflow_validation:
+    log: f"{output_dir}/workflow_validation.log"
+    container: analysis_container
+    shell:
+        """
+        snakemake -s coffea4bees/workflows/Snakefile_wanalysis_wcombine.smk --configfile coffea4bees/workflows/config/nominal_run2.yml -n 2>&1 | tee -a {log}
+        snakemake -s coffea4bees/workflows/Snakefile_wanalysis_wcombine.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml -n 2>&1 | tee -a {log}
+        snakemake -s coffea4bees/workflows/Snakefile_wanalysis_wcombine.smk --configfile coffea4bees/workflows/config/nominal_run3.yml -n 2>&1 | tee -a {log}
+        """
