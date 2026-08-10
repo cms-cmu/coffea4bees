@@ -90,7 +90,7 @@ config.setdefault('classifier_inputs_install_path',
     # Produced by Snakefile_classifier_inputs_Run3.smk with
     #   dataset_name=GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00,
     #   reuse_legacy_classifier_inputs=true.
-    "coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_SvB_Run3_quadjet_run2.json")
+    "coffea4bees/metadata/datasets/classifier_inputs_SvB_Run3_quadjet_run2.json")
 
 config.setdefault('output_path', "output/Run3_quadjet_run2/")
 out = config['output_path']

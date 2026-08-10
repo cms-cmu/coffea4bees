@@ -16,7 +16,7 @@ config.setdefault('mode', 'nominal')
 config.setdefault('analysis_container',
     "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
 config.setdefault('dataset_location',
-    "coffea4bees/metadata/datasets_HH4b_Run3/")
+    "coffea4bees/metadata/datasets/")
 
 # Whether the analysis_processor rule submits to HTCondor. Auto-detects by
 # probing for condor_submit on PATH: present on LPC, absent on falcon. Override

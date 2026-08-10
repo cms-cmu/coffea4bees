@@ -49,7 +49,7 @@ config.setdefault('output_path', f"output/{_output_subdir}/")
 config.setdefault('jcm_install_path',
     f"coffea4bees/analysis/weights/JCM/Run3_MvD/jetCombinatoricModel_SB_{_install_tag}.yml")
 config.setdefault('classifier_inputs_install_path',
-    f"coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3"
+    f"coffea4bees/metadata/datasets/classifier_inputs_MvD_Run3"
     f"{'_' + _install_tag if _install_tag else ''}.json")
 
 # HH signal in the MvD hists. The SvB_mixedMvD friends cover signal + detector
@@ -63,6 +63,8 @@ config.setdefault('signal_datasets', ['GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00'])
 # the shared TT MC hists are often stale / axis-incompatible with the current
 # hist structure. Set include_tt_mc=True to include the shared TT MC hists.
 config.setdefault('include_tt_mc', False)
+
+config.setdefault('label', f"_{config['mode']}{'_' + _dsn_tag if _dsn_tag else ''}")
 
 out = config['output_path']
 
@@ -88,9 +90,9 @@ config.setdefault('plots_metadata', "coffea4bees/plots/metadata/plotsAll_MvD.yml
 # Snakefile_SvB_friendtrees_Run3.smk and Snakefile_SvBFeynNet_friendtrees_Run3.smk.
 _svb_install_tag = f"_{_dsn_tag}" if _dsn_tag else ""
 config.setdefault('svb_friend_json',
-    f"coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data{_svb_install_tag}.json")
+    f"coffea4bees/metadata/friends/data_SvBfriend{_svb_install_tag}.json")
 config.setdefault('feynet_friend_json',
-    f"coffea4bees/metadata/datasets_HH4b_Run3/SvBFeynNetfriend_mixeddata_data{_svb_install_tag}.json")
+    f"coffea4bees/metadata/friends/SvBFeynNetfriend_mixeddata_data{_svb_install_tag}.json")
 
 rule all:
     input:
@@ -186,6 +188,7 @@ rule create_histogram_config_wSvB:
 use rule analysis_processor from analysis as make_histograms_shared with:
     input:
         config_file  = f"{SHARED_OUT_MvD}histogram_config_wSvB.yml",
+        friends_file = "coffea4bees/metadata/friends/friends_HH4b.yml",
     output: f"{SHARED_OUT_MvD}histograms/hist_{{dataset}}__{{year}}.coffea"
     log:    f"{SHARED_OUT_MvD}logs/hist_{{dataset}}__{{year}}.log"
     wildcard_constraints:
@@ -199,7 +202,7 @@ use rule analysis_processor from analysis as make_histograms_shared with:
         datasets_file = config['dataset_location'],
         blind = False,
         run_performance = False,
-        friends = "coffea4bees/metadata/friends/friends_HH4b.yml",
+        friends = lambda wildcards, input: input.friends_file,
         run_on_condor = config['run_on_condor'],
         extra_arguments = "",
         run_container_wrapper = "./run_container",

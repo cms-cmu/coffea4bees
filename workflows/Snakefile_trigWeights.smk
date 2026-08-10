@@ -1,5 +1,5 @@
 config.setdefault('output_path', "output/trigger_weights/")
-config.setdefault('dataset_location', "coffea4bees/metadata/datasets_HH4b_Run3/")
+config.setdefault('dataset_location', "coffea4bees/metadata/datasets/")
 config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
 config.setdefault('dataset', ['TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic'])
 config.setdefault('year', [ '2024' ])

@@ -11,14 +11,14 @@ Usage:
 """
 
 config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
-config.setdefault('dataset_location',   "coffea4bees/metadata/datasets_HH4b_Run3/")
+config.setdefault('dataset_location',   "coffea4bees/metadata/datasets/")
 config.setdefault('years', ['2022_EE', '2022_preEE', '2023_BPix', '2023_preBPix'])
 config.setdefault('dataset_name', 'mixeddata_all')
 # Path to the installed dataset metadata yaml — declared as input to
 # make_SvBFeynNet_friendtrees_mixeddata so snakemake schedules the install
 # step (when invoked from Snakefile_Run3_make_mixeddata.smk) before this.
 config.setdefault('install_path',
-    f"coffea4bees/metadata/datasets_HH4b_Run3/{config['dataset_name']}.yml")
+    f"coffea4bees/metadata/datasets/{config['dataset_name']}.yml")
 
 # When True, skip the data, ttbar, and HH per-year jobs and reuse the legacy
 # combined SvB_FeynNet JSON (which already contains all four sources) as a
@@ -26,7 +26,7 @@ config.setdefault('install_path',
 # rank-suffixed runs where data/TT/HH friends are unchanged from the legacy
 # build. Default False preserves backward-compatible standalone behavior.
 config.setdefault('reuse_legacy_friends', False)
-LEGACY_FEYNET_JSON = "coffea4bees/metadata/datasets_HH4b_Run3/SvBFeynNetfriend_mixeddata_data.json"
+LEGACY_FEYNET_JSON = "coffea4bees/metadata/friends/SvBFeynNetfriend_mixeddata_data.json"
 
 # Rank/variant suffix derived from dataset_name. Empty for legacy
 # 'mixeddata_all' so historical install paths stay byte-for-byte unchanged.
@@ -35,7 +35,7 @@ _dsn_tag     = "" if config['dataset_name'] == "mixeddata_all" \
 _install_tag = f"_{_dsn_tag}" if _dsn_tag else ""
 
 FEYNNET_OUT = f"output/Run3_FeynNet{_install_tag}/feynnet_friendtrees/"
-INSTALL     = f"coffea4bees/metadata/datasets_HH4b_Run3/SvBFeynNetfriend_mixeddata_data{_install_tag}.json"
+INSTALL     = f"coffea4bees/metadata/friends/SvBFeynNetfriend_mixeddata_data{_install_tag}.json"
 
 TT_DATASETS = ['TTTo2L2Nu', 'TTToHadronic', 'TTToSemiLeptonic']
 # Only this HH coupling point currently has 2022/2023 picoAODs.

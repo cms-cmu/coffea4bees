@@ -44,7 +44,7 @@ import shutil
 config.setdefault('analysis_container',
     "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
 config.setdefault('dataset_location',
-    "coffea4bees/metadata/datasets_HH4b_Run3/")
+    "coffea4bees/metadata/datasets/")
 config.setdefault('years',
     ['2022_EE', '2022_preEE', '2023_BPix', '2023_preBPix'])
 

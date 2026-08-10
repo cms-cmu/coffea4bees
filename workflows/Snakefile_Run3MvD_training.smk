@@ -53,7 +53,7 @@ TARGETS = [CLASSIFIER] if CLASSIFIER else list(CLASSIFIERS.keys())
 # Inputs produced by Snakefile_classifier_inputs_Run3MvD.smk and installed to git.
 # These paths are also hardcoded in train.yml.
 config.setdefault('jcm_install_path', "coffea4bees/analysis/weights/JCM/Run3_MvD/jetCombinatoricModel_SB_.yml")
-config.setdefault('classifier_inputs_install_path', "coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3.json")
+config.setdefault('classifier_inputs_install_path', "coffea4bees/metadata/datasets/classifier_inputs_MvD_Run3.json")
 
 config.setdefault('output_path', "output/Run3_MvD/")
 config.setdefault('dataset_name', 'mixeddata_all')
@@ -69,8 +69,8 @@ EVALUATE_YML_TEMPLATE = f"{WFS_BASE}/MvD/evaluate.yml"
 # alongside data.yml and TT.yml. Don't use parent dir for legacy because
 # the parent's mixeddata_all.yml has top-key `mixeddata_all_noTT`, which
 # wouldn't match the trainer's `mixeddata_all` lookup.
-LEGACY_METADATA = "coffea4bees/metadata/datasets_HH4b_Run3/archive/datasets_HH4b_Run3_2025_Run3_skims"
-RANK_METADATA   = "coffea4bees/metadata/datasets_HH4b_Run3/"
+LEGACY_METADATA = "coffea4bees/metadata/datasets/archive/Run3_archive/datasets_HH4b_Run3_2025_Run3_skims"
+RANK_METADATA   = "coffea4bees/metadata/datasets/"
 _metadata_path  = LEGACY_METADATA if config['dataset_name'] == 'mixeddata_all' else RANK_METADATA
 
 
@@ -92,7 +92,7 @@ rule create_train_yml:
         sed \
             -e 's|--JCM-weight.*|--JCM-weight "source:mixed_all" {input.jcm}@@JCM_weights|' \
             -e 's|--friends.*|--friends "" {input.json}@@HCR_input|' \
-            -e 's|--metadata coffea4bees/metadata/datasets_HH4b_Run3/archive/datasets_HH4b_Run3_2025_Run3_skims|--metadata {params.metadata_path}|' \
+            -e 's|--metadata coffea4bees/metadata/datasets/archive/Run3_archive/datasets_HH4b_Run3_2025_Run3_skims|--metadata {params.metadata_path}|' \
             -e '/--data-source mixed_all detector/a\\      - --data-mixed-all-name {params.dataset_name}' \
             {input.template} > {output}
         echo "Patched train.yml:"
@@ -118,7 +118,7 @@ rule create_evaluate_yml:
     shell:
         """
         sed \
-            -e 's|--metadata coffea4bees/metadata/datasets_HH4b_Run3/archive/datasets_HH4b_Run3_2025_Run3_skims|--metadata {params.metadata_path}|' \
+            -e 's|--metadata coffea4bees/metadata/datasets/archive/Run3_archive/datasets_HH4b_Run3_2025_Run3_skims|--metadata {params.metadata_path}|' \
             -e 's|--friends.*|--friends "" {input.json}@@HCR_input|' \
             -e '/--data-source detector mixed_all/a\\      - --data-mixed-all-name {params.dataset_name}' \
             {input.template} > {output}

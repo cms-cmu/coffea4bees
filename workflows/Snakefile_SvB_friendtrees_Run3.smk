@@ -10,7 +10,7 @@ Usage:
 """
 
 config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
-config.setdefault('dataset_location',   "coffea4bees/metadata/datasets_HH4b_Run3/")
+config.setdefault('dataset_location',   "coffea4bees/metadata/datasets/")
 config.setdefault('years', ['2022_EE', '2022_preEE', '2023_BPix', '2023_preBPix'])
 config.setdefault('dataset_name', 'mixeddata_all')
 # Path to the installed dataset metadata yaml. Declared as an input to
@@ -18,7 +18,7 @@ config.setdefault('dataset_name', 'mixeddata_all')
 # (when invoked from Snakefile_Run3_make_mixeddata.smk) before the SvB job.
 # In standalone mode this just points at the legacy committed yaml.
 config.setdefault('install_path',
-    f"coffea4bees/metadata/datasets_HH4b_Run3/{config['dataset_name']}.yml")
+    f"coffea4bees/metadata/datasets/{config['dataset_name']}.yml")
 
 # When True, skip the HH per-year jobs and reuse the legacy combined SvB JSON
 # (which already contains data + HH + legacy mixeddata friend mappings) as a
@@ -26,7 +26,7 @@ config.setdefault('install_path',
 # rank-suffixed runs where HH and data friends are unchanged from the legacy
 # build. Default False preserves backward-compatible standalone behavior.
 config.setdefault('reuse_legacy_friends', False)
-LEGACY_SVB_JSON = "coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data.json"
+LEGACY_SVB_JSON = "coffea4bees/metadata/friends/data_SvBfriend.json"
 
 # Rank/variant suffix derived from dataset_name. Empty for the legacy
 # 'mixeddata_all' so historical install paths and snakemake outputs are
@@ -36,7 +36,7 @@ _dsn_tag     = "" if config['dataset_name'] == "mixeddata_all" \
 _install_tag = f"_{_dsn_tag}" if _dsn_tag else ""
 
 SvB_OUT = f"output/Run3_MvD{_install_tag}/svb_friendtrees/"
-INSTALL = f"coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data{_install_tag}.json"
+INSTALL = f"coffea4bees/metadata/friends/data_SvBfriend{_install_tag}.json"
 
 # Only this HH coupling point currently has 2022/2023 picoAODs.
 HH_DATASETS = ['GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00']
@@ -152,7 +152,7 @@ else:
                 hh_dataset=HH_DATASETS,
                 year=config['years']
             ),
-            data_json = "coffea4bees/metadata/datasets_HH4b_Run3/data_SvBfriend.json",
+            data_json = "coffea4bees/metadata/friends/data_SvBfriend.json",
         output: f"{SvB_OUT}SvBfriend_mixeddata_data.json"
         container: config['analysis_container']
         log: f"{SvB_OUT}logs/merge_SvB_friendtrees_mixeddata.log"

@@ -54,7 +54,7 @@ TARGETS = [CLASSIFIER] if CLASSIFIER else list(CLASSIFIERS.keys())
 # Inputs produced by Snakefile_Run3.smk and installed to git.
 # These paths are also hardcoded in train.yml.
 config.setdefault('jcm_install_path', "coffea4bees/analysis/weights/JCM/Run3/jetCombinatoricModel_SB_.yml")
-config.setdefault('classifier_inputs_install_path', "coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_Run3.json")
+config.setdefault('classifier_inputs_install_path', "coffea4bees/metadata/datasets/classifier_inputs_Run3.json")
 
 config.setdefault('output_path', "output/Run3/")
 out = config['output_path']
