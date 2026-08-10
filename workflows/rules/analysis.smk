@@ -1,4 +1,10 @@
 rule analysis_processor:
+    input:
+        runner_script = "runner.py",
+        config_file = lambda wildcards, params: params.config,
+        processor_script = lambda wildcards, params: params.processor,
+        friend_metadata = lambda wildcards, params: params.friends if params.friends else [],
+        datasets_dir = lambda wildcards, params: params.datasets_file
     output: "{output_file}"
     # container: config.get("analysis_container", "")
     retries: 3
@@ -11,6 +17,7 @@ rule analysis_processor:
         blind = False,
         run_performance = False,
         friends = "",
+        weights = "",
         run_on_condor = False,
         not_do_proxy = False,
         extra_arguments = "",
@@ -19,29 +26,28 @@ rule analysis_processor:
     log: "output/logs/analysis_processor_{output_file}.log"
     shell:
         """
-        {params.run_container_wrapper} bash coffea4bees/scripts/run-analysis-processor.sh \
+        {params.run_container_wrapper} python runner.py -c {params.config} \
             --processor {params.processor} \
-            --config {params.config} \
-            --dataset-metadata {params.datasets_file} \
+            --metadata {params.datasets_file} \
             --datasets "{params.datasets}" \
             --friends "{params.friends}" \
-            --year "{params.years}" \
-            --output-filename $(basename {output}) \
-            --output-base $(dirname {output}) \
-            --log {log} \
-            --no-test \
+            --years "{params.years}" \
+            --output-path $(dirname {output})/ \
+            --output $(basename {output}) \
             $([ "{params.not_do_proxy}" = "True" ] && echo "--not-do-proxy") \
             $([ "{params.blind}" = "True" ] && echo "--blind") \
             $([ "{params.run_on_condor}" = "True" ] && echo "--condor") \
             $([ "{params.run_performance}" = "True" ] && echo "--run-performance") \
             $([ -n "{params.dashboard_address}" ] && echo "--dashboard-address {params.dashboard_address}") \
-            --additional-flags {params.extra_arguments}
+            {params.extra_arguments} > {log} 2>&1
         """
             # --tmpdir {resources.tmpdir} \
 
 
 rule merging_coffea_files:
-    input: "{input_files}"
+    input:
+        files = "{input_files}",
+        script = "src/tools/merge_coffea_files.py"
     output: "{output_file}"
     container: config["analysis_container"]
     params:
@@ -104,7 +110,10 @@ rule make_JCM:
         """
 
 rule make_plots:
-    input: "output/histAll.coffea"
+    input:
+        coffea_file = "output/histAll.coffea",
+        metadata_file = lambda wildcards, params: params.metadata,
+        plot_script = "coffea4bees/plots/makePlots.py"
     output: "output/plots/RunII/passPreSel/fourTag/SB/nPVs.pdf"
     container: config["analysis_container"]
     params:
@@ -112,6 +121,7 @@ rule make_plots:
         metadata = "coffea4bees/plots/metadata/plotsAll.yml",
         extra_arguments = "-s xW",
         png_cores = 4,
+        run_container_wrapper = ""
     log: "logs/make_plots.log"
     shell:
         """
@@ -120,8 +130,8 @@ rule make_plots:
         mkdir -p $MPLCONFIGDIR
 
         echo "Making plots" 2>&1 | tee -a {log}
-        python coffea4bees/plots/makePlots.py {input} -o {params.output_dir} -m {params.metadata} {params.extra_arguments} 2>&1 | tee -a {log}
+        {params.run_container_wrapper} python coffea4bees/plots/makePlots.py {input} -o {params.output_dir} -m {params.metadata} {params.extra_arguments} 2>&1 | tee -a {log}
 
         echo "Converting plots to png format" 2>&1 | tee -a {log}
-        python src/plotting/pb_pdf_to_png.py -r -j {params.png_cores} {params.output_dir} 2>&1 | tee -a {log}
+        {params.run_container_wrapper} python src/plotting/pb_pdf_to_png.py -r -j {params.png_cores} {params.output_dir} 2>&1 | tee -a {log}
         """

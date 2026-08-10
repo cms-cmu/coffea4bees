@@ -1,0 +1,57 @@
+label: "TEST"
+output_path: "output/TEST/"
+analysis_config: "coffea4bees/analysis/metadata/HH4b_2024_v2.yml"
+processor: "coffea4bees/analysis/processors/processor_HH4b.py"
+friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b.yml"
+plot_config: "coffea4bees/plots/metadata/plotsAll_ttbarWeights.yml"
+combine_flags: "--blind"
+dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
+dataset:
+  - "GluGluToHHTo4B_cHHH1"
+  - "GluGluToHHTo4B_cHHH0"
+  - "GluGluToHHTo4B_cHHH2p45"
+  - "GluGluToHHTo4B_cHHH5"
+  - "ZH4b"
+  - "ZZ4b"
+  - "ggZH4b"
+year_eras:
+  UL16_preVFP:
+    - "C"
+    - "D"
+    - "E"
+    - "F"
+  UL16_postVFP:
+    - "F"
+    - "G"
+    - "H"
+  UL17:
+    - "C"
+    - "D"
+    - "E"
+    - "F"
+  UL18:
+    - "A"
+    - "B"
+    - "C"
+    - "D"
+combine_outdir: "datacards/HH4b_fine"
+channels:
+  HH4b:
+    signallabel: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb"
+    othersignal: "ggHH_kl_0_kt_1_13p0TeV_hbbhbb ggHH_kl_2p45_kt_1_13p0TeV_hbbhbb ggHH_kl_5_kt_1_13p0TeV_hbbhbb"
+    variable: "SvB_MA.ps_hh_fine"
+    signal: "GluGluToHHTo4B_cHHH1"
+    closure_subdir: "hh"
+  ZZ4b:
+    signallabel: "ZZ_bbbb"
+    othersignal: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb ZH_bbbb"
+    variable: "SvB_MA.ps_zz"
+    signal: "ZZ4b"
+    closure_subdir: "zz"
+  ZH4b:
+    signallabel: "ZH_bbbb"
+    othersignal: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb ZZ_bbbb"
+    variable: "SvB_MA.ps_zh"
+    signal: "ZH4b"
+    closure_subdir: "zh"
+metadata_template: "coffea4bees/stats_analysis/metadata/{channel}.yml"

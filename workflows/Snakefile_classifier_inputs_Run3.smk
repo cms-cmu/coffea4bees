@@ -18,7 +18,7 @@ _dsn_tag     = "" if config['dataset_name'] == "mixeddata_all" \
                else config['dataset_name'].removeprefix("mixeddata_all_") or config['dataset_name']
 _install_tag = "_".join(filter(None, [_mode_tag, _dsn_tag]))
 config.setdefault('classifier_inputs_install_path',
-    f"coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3"
+    f"coffea4bees/metadata/datasets/classifier_inputs_MvD_Run3"
     f"{'_' + _install_tag if _install_tag else ''}.json")
 
 # When True, skip the data/TT classifier-inputs jobs and merge the new
@@ -28,7 +28,7 @@ config.setdefault('classifier_inputs_install_path',
 # standalone behavior.
 config.setdefault('reuse_legacy_classifier_inputs', False)
 LEGACY_CI_JSON = (
-    f"coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3"
+    f"coffea4bees/metadata/datasets/classifier_inputs_MvD_Run3"
     f"{'_' + _mode_tag if _mode_tag else ''}.json"
 )
 
@@ -46,17 +46,20 @@ rule all:
 # ambiguous wildcard matching, since both dataset names and years contain _.
 
 use rule analysis_processor from analysis as classifier_inputs with:
+    input:
+        config_file = config['classifier_config'],
+        friends_file = "coffea4bees/metadata/friends/friends_HH4b.yml",
     output: f"{out}classifier_inputs/classifier_inputs_{{dataset}}__{{year}}.coffea"
     log: f"{out}logs/classifier_inputs_{{dataset}}__{{year}}.log"
     params:
         datasets = "{dataset}",
         years = "{year}",
-        config = config['classifier_config'],
+        config = lambda wildcards, input: input.config_file,
         processor = "coffea4bees/analysis/processors/processor_HH4b.py",
         datasets_file = config['dataset_location'],
         blind = False,
         run_performance = False,
-        friends = "coffea4bees/metadata/friends/friends_HH4b.yml",
+        friends = lambda wildcards, input: input.friends_file,
         run_on_condor = config['run_on_condor'],
         extra_arguments = "",
         run_container_wrapper = "./run_container",

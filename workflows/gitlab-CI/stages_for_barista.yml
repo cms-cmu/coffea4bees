@@ -7,3 +7,4 @@ include:
   - local: workflows/gitlab-CI/stages_tools.yml
   - local: workflows/gitlab-CI/stages_plots.yml
   - local: workflows/gitlab-CI/stages_cutflow.yml
+  - local: workflows/gitlab-CI/stages_workflows.yml

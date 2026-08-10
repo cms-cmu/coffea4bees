@@ -34,7 +34,7 @@ import shutil
 config.setdefault('analysis_container',
     "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
 config.setdefault('dataset_location',
-    "coffea4bees/metadata/datasets_HH4b_Run3/")
+    "coffea4bees/metadata/datasets/")
 config.setdefault('years',
     ['2022_EE', '2022_preEE', '2023_BPix', '2023_preBPix'])
 config.setdefault('default_rank', 0)  # int (same rank both sides) or [rp, rn]; 0 = nearest neighbor
@@ -68,18 +68,18 @@ else:
     _rank = _rank_raw
 
 if isinstance(_rank, (list, tuple)):
-    _rp, _rn = _rank
-    _rank_suffix = f"{_tag_suffix}_rank{_rp}_{_rn}"
+    _rank_suffix = f"{_tag_suffix}_rank{int(_rank[0])}_{int(_rank[1])}"
+    _dsn_tag     = f"{config['tag'] + '_' if config['tag'] else ''}rank{int(_rank[0])}_{int(_rank[1])}"
 else:
-    # Render the single-int rank as _rank{N}_{N} so it matches the per-side
-    # list form (_rank{rp}_{rn}); default_rank=0 -> _rank0_0.
     _rank_suffix = f"{_tag_suffix}_rank{int(_rank)}_{int(_rank)}"
+    _dsn_tag     = f"{config['tag'] + '_' if config['tag'] else ''}rank{int(_rank)}_{int(_rank)}"
+
 config.setdefault('output_path', f"output/Run3_mixeddata{_rank_suffix}/")
 config.setdefault('base_path',
     f"root://cmseos.fnal.gov//store/user/jda102/XX4b/mixed_data_all_noTT_pz{_rank_suffix}")
 config.setdefault('dataset_name',  f"mixeddata_all{_rank_suffix}")
 config.setdefault('install_path',
-    f"coffea4bees/metadata/datasets_HH4b_Run3/mixeddata_all{_rank_suffix}.yml")
+    f"coffea4bees/metadata/datasets/mixeddata_all{_rank_suffix}.yml")
 
 # Histogram-making variant. The skim/study upstream is variant-independent, but
 # the histograms feeding JCM differ by quadjet strategy. 'nominal' uses the
@@ -154,8 +154,8 @@ module feynet_friends:
 # Rank-suffixed friend-JSON install paths (mode-independent, computed the
 # same way the producer snakefiles do). Targeting these in `rule all` makes
 # the friend trees build automatically after install_mixeddata_dataset.
-SVB_FRIEND_JSON    = f"coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data{_rank_suffix}.json"
-FEYNET_FRIEND_JSON = f"coffea4bees/metadata/datasets_HH4b_Run3/SvBFeynNetfriend_mixeddata_data{_rank_suffix}.json"
+SVB_FRIEND_JSON    = f"coffea4bees/metadata/friends/data_SvBfriend{_rank_suffix}.json"
+FEYNET_FRIEND_JSON = f"coffea4bees/metadata/friends/SvBFeynNetfriend_mixeddata_data{_rank_suffix}.json"
 
 
 rule all:

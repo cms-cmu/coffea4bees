@@ -9,13 +9,13 @@ if config["mode"] == "nominal":
     config.setdefault('output_path', "output/Run3/")
     config.setdefault('jcm_install_path', "coffea4bees/analysis/weights/JCM/Run3/jetCombinatoricModel_SB_.yml")
     # FvT training reuses the existing committed Run3 classifier inputs JSON
-    config.setdefault('classifier_inputs_install_path', "coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_Run3.json")
+    config.setdefault('classifier_inputs_install_path', "coffea4bees/metadata/datasets/classifier_inputs_Run3.json")
 
 elif config["mode"] == "quadjet_run2":
     config.setdefault('output_path', "output/Run3_quadjet_run2/")
     config.setdefault('jcm_install_path', "coffea4bees/analysis/weights/JCM/Run3/jetCombinatoricModel_SB_quadjet_run2.yml")
     # FvT training for quadjet_run2 reuses the MvD-produced classifier inputs JSON
-    config.setdefault('classifier_inputs_install_path', "coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3_quadjet_run2.json")
+    config.setdefault('classifier_inputs_install_path', "coffea4bees/metadata/datasets/classifier_inputs_MvD_Run3_quadjet_run2.json")
 
 out = config['output_path']
 
@@ -68,8 +68,8 @@ config.setdefault('svb_ma_path',
 rule create_friends_wSvB:
     input:
         friends_yml    = "coffea4bees/metadata/friends/friends_HH4b.yml",
-        svb_json       = "coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data.json",
-        feynet_json    = "coffea4bees/metadata/datasets_HH4b_Run3/SvBFeynNetfriend_mixeddata_data.json",
+        svb_json       = "coffea4bees/metadata/friends/data_SvBfriend.json",
+        feynet_json    = "coffea4bees/metadata/friends/SvBFeynNetfriend_mixeddata_data.json",
     output: f"{out}friends_wSvB.yml"
     params:
         svb_ma_path = config['svb_ma_path']
@@ -248,8 +248,8 @@ rule make_plots_wJCM:
 rule create_friends_FvT:
     input:
         friends_yml = "coffea4bees/metadata/friends/friends_HH4b.yml",
-        svb_json    = "coffea4bees/metadata/datasets_HH4b_Run3/SvBfriend_mixeddata_data.json",
-        feynet_json = "coffea4bees/metadata/datasets_HH4b_Run3/SvBFeynNetfriend_mixeddata_data.json",
+        svb_json    = "coffea4bees/metadata/friends/data_SvBfriend.json",
+        feynet_json = "coffea4bees/metadata/friends/SvBFeynNetfriend_mixeddata_data.json",
     output: f"{out}friends_FvT.yml"
     params:
         fvt_path    = f"{config['eos_base']}/friend/FvT/result.json@@analysis.0.merged",

@@ -12,27 +12,26 @@ rule all:
         f"{config['output_path']}trigger_weights/trigger_weights_friends_allDatasets.json"
 
 rule skimms:
+    input:
+        config_file = "coffea4bees/skimmer/metadata/HH4b.yml",
+        processor_script = "coffea4bees/skimmer/processor/skimmer_4b.py"
     output: f"{config['output_path']}skimmer/picoaod_dataset_{{dataset}}__{{year}}.yml"
     params:
         output_path = config['output_path'],
-        config = "coffea4bees/skimmer/metadata/HH4b.yml",
         dataset_location = config['dataset_location'],
         condor_mode = "--condor"
     log: f"{config['output_path']}logs/skimmer_dataset_{{dataset}}__{{year}}.log"
     shell:
         """
-        ./run_container bash coffea4bees/scripts/run-analysis-processor.sh \
-            --processor coffea4bees/skimmer/processor/skimmer_4b.py \
-            --output-filename "picoaod_dataset_{wildcards.dataset}__{wildcards.year}.yml" \
-            --output-subdir "skimmer" \
-            --output-base {params.output_path} \
+        ./run_container python runner.py {input.config_file} \
+            --processor {input.processor_script} \
+            -s \
+            --output "picoaod_dataset_{wildcards.dataset}__{wildcards.year}.yml" \
+            --output-path "{params.output_path}/skimmer/" \
             --datasets "{wildcards.dataset}" \
-            --year "{wildcards.year}" \
-            --dataset-metadata "{params.dataset_location}" \
-            --config {params.config} \
-            {params.condor_mode} \
-            --no-test \
-            --additional-flags '-s' 
+            --years "{wildcards.year}" \
+            --metadata "{params.dataset_location}" \
+            {params.condor_mode} > {log} 2>&1
         """        
 
 rule modify_datasets:
@@ -51,26 +50,25 @@ rule modify_datasets:
         """
 
 rule trigger_weights:
-    input: f"{config['output_path']}modified_datasets/modified_datasets.yml"
+    input:
+        modified_datasets = f"{config['output_path']}modified_datasets/modified_datasets.yml",
+        config_file = "coffea4bees/analysis/metadata/trigger_weights.yml",
+        processor_script = "coffea4bees/analysis/processors/processor_trigger_weights.py"
     output: f"{config['output_path']}trigger_weights/trigger_weights_friends_{{dataset}}__{{year}}.json"
     params:
         output_path = config['output_path'],
-        config = "coffea4bees/analysis/metadata/trigger_weights.yml",
         condor_mode = "--condor"
     log: f"{config['output_path']}logs/trigger_weights_{{dataset}}__{{year}}.log"
     shell:
         """
-        ./run_container bash coffea4bees/scripts/run-analysis-processor.sh \
-            --processor "coffea4bees/analysis/processors/processor_trigger_weights.py" \
-            --output-base {params.output_path} \
+        ./run_container python runner.py {input.config_file} \
+            --processor {input.processor_script} \
+            --output-path "{params.output_path}/trigger_weights/" \
             --datasets {wildcards.dataset} \
-            --dataset-metadata {input} \
-            --year "{wildcards.year}" \
-            --output-filename "trigger_weights_friends_{wildcards.dataset}__{wildcards.year}.json" \
-            --output-subdir trigger_weights \
-            --config {params.config} \
-            {params.condor_mode} \
-            --no-test
+            --metadata {input.modified_datasets} \
+            --years "{wildcards.year}" \
+            --output "trigger_weights_friends_{wildcards.dataset}__{wildcards.year}.json" \
+            {params.condor_mode} > {log} 2>&1
         """
 
 rule merge_friendtree_json:

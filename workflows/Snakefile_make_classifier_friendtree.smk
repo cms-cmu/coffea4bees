@@ -43,17 +43,15 @@ rule make_all_other_friendtrees:
         f"{config['output_path']}/logs/make_all_other_friendtrees_{{sample}}_{{year}}_{{era}}.log"
     shell:
         """
-        ./run_container bash coffea4bees/scripts/run-analysis-processor.sh \
+        ./run_container python runner.py {input.config_file} \
             --processor {input.script} \
-            --config {input.config_file} \
-            --dataset-metadata {params.dataset_location} \
-            --year {wildcards.year} \
+            --metadata {params.dataset_location} \
+            --years {wildcards.year} \
             --datasets {wildcards.sample} \
-            --output-base {params.output_base}/singlefiles \
-            --output-filename all_friends_{wildcards.sample}_{wildcards.year}_{wildcards.era}.coffea \
+            --output-path {params.output_base}/singlefiles/ \
+            --output all_friends_{wildcards.sample}_{wildcards.year}_{wildcards.era}.coffea \
             --condor \
-            --no-test \
-            --additional-flags --eras {wildcards.era} \
+            --eras {wildcards.era} \
             2>&1 | tee -a {log}
         """
 
@@ -70,16 +68,14 @@ rule make_all_other_friendtrees_mc:
         f"{config['output_path']}/logs/make_all_other_friendtrees_{{sample}}_{{year}}.log"
     shell:
         """
-        ./run_container bash coffea4bees/scripts/run-analysis-processor.sh \
+        ./run_container python runner.py {input.config_file} \
             --processor {input.script} \
-            --config {input.config_file} \
-            --dataset-metadata {params.dataset_location} \
-            --year {wildcards.year} \
+            --metadata {params.dataset_location} \
+            --years {wildcards.year} \
             --datasets {wildcards.sample} \
-            --output-base {params.output_base}/singlefiles \
-            --output-filename all_friends_{wildcards.sample}_{wildcards.year}.coffea \
+            --output-path {params.output_base}/singlefiles/ \
+            --output all_friends_{wildcards.sample}_{wildcards.year}.coffea \
             --condor \
-            --no-test \
             2>&1 | tee -a {log}
         """
 

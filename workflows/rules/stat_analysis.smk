@@ -1,16 +1,19 @@
 rule convert_hist_to_json:
-    input: "{input_file}"
+    input:
+        coffea_file = "{input_file}",
+        script = "coffea4bees/stats_analysis/convert_hist_to_json.py"
     output: "{output_file}"
     container: config["analysis_container"]
     params:
-        syst_flag = " "
+        syst_flag = " ",
+        container_wrapper = config.get("container_wrapper", "./run_container combine")
     log:
         "logs/{output_file}.log"
     shell:
         """
         mkdir -p $(dirname {log})
         echo "[$(date)] Starting convert_hist_to_json for {input}" > {log}
-        python3 coffea4bees/stats_analysis/convert_hist_to_json.py -o {output} -i {input} {params.syst_flag} 2>&1 | tee -a {log}
+        {params.container_wrapper} python3 coffea4bees/stats_analysis/convert_hist_to_json.py -o {output} -i {input} {params.syst_flag} 2>&1 | tee -a {log}
         echo "[$(date)] Completed convert_hist_to_json for {input}" >> {log}
         """
 
@@ -87,7 +90,9 @@ rule make_combine_inputs:
     input:
         injson = "output/histAll.json",
         injsonsyst = "output/histAll_signals_cHHHX.json",
-        bkgsyst = "output/closureFits/ULHH_kfold/3bDvTMix4bDvT/SvB_MA/varrebin2/SR/hh/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_hh_fine_varrebin2.pkl"
+        bkgsyst = "output/closureFits/ULHH_kfold/3bDvTMix4bDvT/SvB_MA/varrebin2/SR/hh/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_hh_fine_varrebin2.pkl",
+        script = "coffea4bees/stats_analysis/make_combine_inputs.py",
+        metadata_file = lambda wildcards, params: params.metadata
     output:
         "output/datacards/datacard__HHbb.txt"
     params:
@@ -111,7 +116,7 @@ rule make_combine_inputs:
 
         echo "[$(date)] Making combine inputs with full stats" | tee -a {log}
         {params.container_wrapper} \
-            python3 coffea4bees/stats_analysis/make_combine_inputs.py \
+            python3 {input.script} \
                 --var {params.variable} \
                 -f {input.injson} \
                 {params.syst_file} \
@@ -119,7 +124,7 @@ rule make_combine_inputs:
                 --output_dir {params.output_dir} \
                 --rebin {params.rebin} \
                 {params.variable_binning} \
-                --metadata {params.metadata} \
+                --metadata {input.metadata_file} \
                 {params.stat_only} \
                 {params.tag_flags} 2>&1 | tee -a {log}
 
