@@ -7,6 +7,7 @@ runner:
     - coffea4bees/analysis
     - coffea4bees/skimmer
     - coffea4bees/jet_clustering    
+    - coffea4bees/classifier/
   
 config:
   clustering_pdfs_file: None

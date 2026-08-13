@@ -41,4 +41,6 @@ ttHbb:
       sumw2_raw: 2298570.8774399287
       sumw_raw: 4399585.860852001
       total_events: 8782000
-  xs: 0.5269
+  xs: 
+    Run2: 0.2953
+    Run3: 1

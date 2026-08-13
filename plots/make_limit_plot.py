@@ -65,8 +65,9 @@ if __name__ == '__main__':
     ax.set_xlabel(fr"95% CL limit on $\sigma(\mathrm{{pp}} \to \mathrm{{{args.x_label}}}) / \sigma_{{\mathrm{{Theory}}}}$")
     # ax.set_xlim([0, 10])
     ax.set_ylim([0, len(ticks)+1])
+    hep.cms.label("Work in Progress", data=True, loc=1, ax=ax, rlabel="62 fb$^{-1}$ (13.6 TeV)")
     # hep.cms.label("Supplementary", data=True, loc=1, ax=ax, rlabel="135 fb$^{-1}$ (13 TeV) & 62 fb$^{-1}$ (13.6 TeV)")
-    hep.cms.label("Work in Progress", data=True, loc=1, ax=ax, rlabel="135 fb$^{-1}$ (13 TeV)")
+    # hep.cms.label("Work in Progress", data=True, loc=1, ax=ax, rlabel="135 fb$^{-1}$ (13 TeV)")
     fig.tight_layout()
 
     # Style

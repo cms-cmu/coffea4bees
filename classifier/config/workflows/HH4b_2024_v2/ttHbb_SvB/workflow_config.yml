@@ -1,0 +1,20 @@
+# coffea4bees/classifier/config/workflows/HH4b_2024_v2/ttHbb_test/workflow_config.yml
+#
+# Dedicated test config for ttHbb single-signal classifier training (UL18, SR+SB).
+
+eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/nominal_sel"
+plot_base: "tmp/plots"
+
+classifier_config_paths: coffea4bees
+wfs_base: coffea4bees/classifier/config/workflows/HH4b_2024_v2/ttHbb_test
+label: SvB_ttHbb_test
+output_dir: output/{label}/
+
+plot_inputs: true
+evaluate: false
+
+model: "{eos_base}/classifier/{label}"
+friend: "{eos_base}/friend/{label}"
+train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_nominal"
+eval_template: "model: {eos_base}/classifier/{label}, SvB: {eos_base}/friend/{label}"
+metadata: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_nominal.json@@HCR_input"

@@ -634,7 +634,7 @@ def _execute_text_cmd(func, args, kwargs, req=None):
 
                 from src.plotting.helpers_make_plot_dict import get_plot_dict_from_config, get_plot_dict_from_list
                 with plot_lock:
-                    is_list = (isinstance(cut, list)) or (any(isinstance(v, list) for v in axis_opts.values())) or (len(cfg.hists) > 1 and not cfg.combine_input_files) or (isinstance(var, list)) or (isinstance(kwargs_plot.get("process"), list)) or (isinstance(kwargs_plot.get("year"), list))
+                    is_list = (isinstance(cut, list) and kwargs_plot.get("process") is not None) or (any(isinstance(v, list) for v in axis_opts.values())) or (len(cfg.hists) > 1 and not cfg.combine_input_files) or (isinstance(var, list)) or (isinstance(kwargs_plot.get("process"), list)) or (isinstance(kwargs_plot.get("year"), list))
                     if is_list:
                         plot_data = get_plot_dict_from_list(cfg=cfg, var=var, cut=cut, axis_opts=axis_opts, **kwargs_plot)
                     else:

@@ -2,7 +2,7 @@ import numpy as np
 import awkward as ak
 import logging
 from src.math_tools.random import Squares
-from python.analysis.helpers.SvB_helpers import compute_SvB
+from python.analysis.helpers.SvB_helpers import compute_SvB, compute_SvB_ttHbb
 from python.analysis.helpers.FvT_helpers import compute_FvT
 from coffea.nanoevents.methods import vector
 from coffea.analysis_tools import Weights
@@ -290,11 +290,23 @@ def create_cand_jet_dijet_quadjet(
             
             if run_systematics: tmp_mask = (selev.fourTag & quadJet[quadJet.selected][:, 0].SR)
             else: tmp_mask = np.full(len(selev), True)
-            compute_SvB(selev,
-                        tmp_mask,
-                        SvB=classifier_SvB,
-                        SvB_MA=classifier_SvB_MA,
-                        doCheck=False)
+            is_ttHbb = False
+            for clf in [classifier_SvB, classifier_SvB_MA]:
+                if clf is not None and hasattr(clf, "classes") and "ttHbb" in clf.classes:
+                    is_ttHbb = True
+                    break
+            if is_ttHbb:
+                compute_SvB_ttHbb(selev,
+                                  tmp_mask,
+                                  SvB=classifier_SvB,
+                                  SvB_MA=classifier_SvB_MA,
+                                  doCheck=False)
+            else:
+                compute_SvB(selev,
+                            tmp_mask,
+                            SvB=classifier_SvB,
+                            SvB_MA=classifier_SvB_MA,
+                            doCheck=False)
 
         quadJet["SvB_q_score"] = np.concatenate( [
             selev.SvB.q_1234[:, np.newaxis],
