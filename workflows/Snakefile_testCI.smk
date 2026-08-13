@@ -181,14 +181,14 @@ rule twoStageClosure_test:
 
 rule analysis_plot:
     input: f"{output_dir}/tools_merge_test/test.coffea"
-    output: f"{output_dir}/analysis_plot/RunII/passPreSel/region_SR/SvB_MA_ps_zz.pdf"
+    output: f"{output_dir}/analysis_plot/RunII/region_SR/SvB_MA_ps_zz.pdf"
     log: f"{output_dir}/analysis_plot.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/analysis-plot.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
 rule analysis_unsup_plot:
     input: f"{output_dir}/analysis_unsup_test/test_unsup.coffea"
-    output: f"{output_dir}/analysis_unsup_plot/RunII/passPreSel/fourTag/SR/mix_v0/v4j_mass.pdf"
+    output: f"{output_dir}/analysis_plot_unsup/RunII/failSvB_vs_passSvB/region_SR/mix_v0/v4j_mass.pdf"
     log: f"{output_dir}/analysis_unsup_plot.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/analysis-unsup-plot.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
