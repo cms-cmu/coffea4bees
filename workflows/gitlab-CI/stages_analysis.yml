@@ -198,17 +198,23 @@ analysis_test_lowpt_data_Run2_coffea4bees:
   extends:
     - .base_analysis_coffea4bees
   script:
-    - source coffea4bees/scripts/analysis-test-lowpt-data-Run2.sh --output-base /builds/$CI_PROJECT_PATH/output
+    - python -m pip install snakemake --quiet
+    - python -m snakemake -s coffea4bees/workflows/Snakefile_analysis.smk \
+        --configfile coffea4bees/workflows/config/lowpt_run2.yml \
+        --config test=true --jobs 4 all_data
   artifacts: 
     paths:
-      - output/analysis_test_lowpt_data_Run2/test_data_lowpt.coffea
+      - output/run2_lowpt/singlefiles/
 
 analysis_test_lowpt_signal_Run2_coffea4bees:
   stage: analysis   
   extends:
     - .base_analysis_coffea4bees
   script:
-    - source coffea4bees/scripts/analysis-test-lowpt-signal-Run2.sh --output-base /builds/$CI_PROJECT_PATH/output
+    - python -m pip install snakemake --quiet
+    - python -m snakemake -s coffea4bees/workflows/Snakefile_analysis.smk \
+        --configfile coffea4bees/workflows/config/lowpt_run2.yml \
+        --config test=true --jobs 4 all_signals
   artifacts: 
     paths:
-      - output/analysis_test_lowpt_signal_Run2/test_signal_lowpt.coffea
+      - output/run2_lowpt/singlefiles/

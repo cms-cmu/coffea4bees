@@ -178,7 +178,12 @@ analysis_cutflow_lowpt_Run2_coffea4bees:
     - analysis_test_lowpt_data_Run2_coffea4bees
     - analysis_test_lowpt_signal_Run2_coffea4bees
   script:
-    - source coffea4bees/scripts/analysis-cutflow-lowpt-Run2.sh --output-base /builds/$CI_PROJECT_PATH/output
+    - python -m pip install snakemake --quiet
+    - python -m snakemake -s coffea4bees/workflows/Snakefile_analysis.smk \
+        --configfile coffea4bees/workflows/config/lowpt_run2.yml \
+        --config test=true --jobs 4 all_analysis
   artifacts:
     paths:
-      - output/analysis_cutflow_lowpt_Run2/test_dump_cutflow.yml
+      - output/run2_lowpt/histAll_run2_lowpt.coffea
+      - output/run2_lowpt/plots_run2_lowpt/
+      - output/run2_lowpt/cutflow_validation_run2_lowpt.txt
