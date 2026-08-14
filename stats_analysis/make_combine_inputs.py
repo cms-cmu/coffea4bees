@@ -14,11 +14,43 @@ import CombineHarvester.CombineTools.ch as ch
 ROOT.gROOT.SetBatch(True)
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
-def make_trigger_syst( json_input, root_output, name, rebin, four_tag='fourTag' ):
+def get_hist_from_dict(d, keys, region_key):
+    """
+    Navigate dictionary `d` using `keys`, then lookup `region_key`.
+    If region_key is directly in the dict, returns it. Otherwise, if region_key
+    starts with 'sum', lookup and sum 'SR' and 'SB' key variants instead.
+    """
+    curr = d
+    for k in keys:
+        curr = curr[k]
+        
+    if region_key in curr:
+        return curr[region_key]
+        
+    if region_key.startswith("sum"):
+        sr_key = region_key.replace("sum", "SR")
+        sb_key = region_key.replace("sum", "SB")
+        sr_data = curr[sr_key]
+        sb_data = curr[sb_key]
+        return {
+            'edges': sr_data['edges'],
+            'centers': sr_data['centers'],
+            'values': (np.array(sr_data['values']) + np.array(sb_data['values'])).tolist(),
+            'variances': (np.array(sr_data['variances']) + np.array(sb_data['variances'])).tolist(),
+            'underflow_value': sr_data['underflow_value'] + sb_data['underflow_value'],
+            'underflow_variance': sr_data['underflow_variance'] + sb_data['underflow_variance'],
+            'overflow_value': sr_data['overflow_value'] + sb_data['overflow_value'],
+            'overflow_variance': sr_data['overflow_variance'] + sb_data['overflow_variance'],
+        }
+    else:
+        return curr[region_key]
 
-    hData = json_input['nominal'][four_tag]['SR']
-    hMC = json_input['CMS_bbbb_resolved_ggf_triggerEffSFUp'][four_tag]['SR']
-    nominal = json_input['CMS_bbbb_resolved_ggf_triggerEffSFDown'][four_tag]['SR']
+
+def make_trigger_syst( json_input, root_output, name, rebin, four_tag='fourTag', region='SR' ):
+
+    hData = get_hist_from_dict(json_input, ['nominal', four_tag], region)
+    hMC = get_hist_from_dict(json_input, ['CMS_bbbb_resolved_ggf_triggerEffSFUp', four_tag], region)
+    nominal = get_hist_from_dict(json_input, ['CMS_bbbb_resolved_ggf_triggerEffSFDown', four_tag], region)
 
     # Previous way
     # for num, denom, ivar in [ (nominal, hData, 'Up'), (nominal, hMC, 'Down')]:
@@ -52,9 +84,14 @@ def create_combine_root_file( file_to_convert,
                                 stat_only=False,
                                 three_tag='threeTag',
                                 four_tag='fourTag',
-                                blind=False ):
+                                blind=False,
+                                region='SR',
+                                multijet_process='data',
+                                tt_processes=['TTTo', 'TTbar4b_from_d3'],
+                                cut='' ):
 
     logging.info(f"Reading {metadata_file}")
+    region_key = region if cut in ["sum", ""] or not cut else f"{region}_{cut}"
     metadata = yaml.safe_load(open(metadata_file, 'r'))
     metadata['processes']['all'] = { **metadata['processes']['signal'], **metadata['processes']['background'] }
     logging.info(f"Reading {file_to_convert}")
@@ -73,36 +110,38 @@ def create_combine_root_file( file_to_convert,
 
     root_hists = {}
     mcSysts, closureSysts = [], []
-    for iyear in coffea_hists[var]['data'].keys():
+    key_process = 'data' if 'data' in coffea_hists[var] else multijet_process
+    for iyear in coffea_hists[var][key_process].keys():
         root_hists[iyear] = {}
 
         ### For multijets
+        multijet_tag = three_tag if multijet_process == 'data' else four_tag
         root_hists[iyear]['multijet'] = {}
         root_hists[iyear]['multijet']['nominal'] = json_to_TH1(
-            coffea_hists[var]['data'][iyear][three_tag]['SR'], 'multijet_'+iyear+var, rebin )
+            get_hist_from_dict(coffea_hists, [var, multijet_process, iyear, multijet_tag], region_key), 'multijet_'+iyear+var, rebin )
 
         for iprocess in coffea_hists[var].keys():
 
-            if iprocess.startswith(('TTTo', 'TTbar4b_from_d3', 'data')):
+            if iprocess.startswith(tuple(tt_processes)) or iprocess.startswith('data'):
                 
                 if iprocess.startswith('TTTo') and mixeddata_file:
-                    coffea_hist = mixedbkg_tt[var][f"{iprocess}_for_mixed"][iyear][four_tag]['SR']
+                    coffea_hist = get_hist_from_dict(mixedbkg_tt, [var, f"{iprocess}_for_mixed", iyear, four_tag], region_key)
                 else:
                     tag_to_use = three_tag if iprocess.startswith('TTbar4b_from_d3') else four_tag
-                    coffea_hist = coffea_hists[var][iprocess][iyear][tag_to_use]['SR']
+                    coffea_hist = get_hist_from_dict(coffea_hists, [var, iprocess, iyear, tag_to_use], region_key)
                 root_hists[iyear][iprocess] = json_to_TH1( coffea_hist, 
                                                             f'{iprocess.split("4b")[0]}_{iyear}', rebin )
             else:
                 root_hists[iyear][iprocess] = {}
                 root_hists[iyear][iprocess]['nominal'] = json_to_TH1(
-                    coffea_hists[var][iprocess][iyear][four_tag]['SR'], iprocess+'_'+iyear, rebin )
+                    get_hist_from_dict(coffea_hists, [var, iprocess, iyear, four_tag], region_key), iprocess+'_'+iyear, rebin )
                 
         if systematics_file:
             for iprocess in metadata['processes']['signal']:
                 root_hists[iyear][iprocess] = {}
                 if stat_only:
                     root_hists[iyear][iprocess]["nominal"] = json_to_TH1(
-                                                        coffea_hists_syst[var][iprocess][iyear]["nominal"][four_tag]['SR'],
+                                                        get_hist_from_dict(coffea_hists_syst, [var, iprocess, iyear, "nominal", four_tag], region_key),
                                                         f'{iprocess}_nominal_{iyear}', rebin )
                 else:
                     for ivar in coffea_hists_syst[var][iprocess][iyear].keys():
@@ -131,11 +170,11 @@ def create_combine_root_file( file_to_convert,
                         if 'triggerEffSFUp' in namevar:
                             make_trigger_syst(coffea_hists_syst[var][iprocess][iyear],
                                                 root_hists[iyear][iprocess],
-                                                f'{iprocess}_{ivar}_{iyear}', rebin, four_tag=four_tag)
+                                                f'{iprocess}_{ivar}_{iyear}', rebin, four_tag=four_tag, region=region_key)
                         elif 'triggerEffSFDown' in namevar: continue
                         else:
                             root_hists[iyear][iprocess][namevar] = json_to_TH1(
-                                                            coffea_hists_syst[var][iprocess][iyear][ivar][four_tag]['SR'],
+                                                            get_hist_from_dict(coffea_hists_syst, [var, iprocess, iyear, ivar, four_tag], region_key),
                                                             f'{iprocess}_{ivar}_{iyear}', rebin )
         if 'ggZH4b' in root_hists[iyear].keys():
             for ih in root_hists[iyear]['ggZH4b'].keys():
@@ -159,8 +198,11 @@ def create_combine_root_file( file_to_convert,
     ### renaming histos for final combine inputs
     for iy in list(root_hists.keys()):
         for jy in metadata['bin']:
-            if ''.join(iy[-2:]) == ''.join(jy[-2:]):
+            iy_clean = iy.replace('UL', '')
+            jy_clean = '_'.join(jy.split('_')[1:])
+            if iy_clean in jy_clean or jy_clean in iy_clean:
                 root_hists[jy] = root_hists.pop(iy)
+                break
 
     ### checking one-sided signal systematics
     for iy in root_hists.keys():
@@ -221,10 +263,10 @@ def create_combine_root_file( file_to_convert,
         root_hists[channel][tt_label].SetTitle(f"{tt_label}_{channel}")
         root_hists[channel][tt_label].Reset()
         for ip, _ in list(root_hists[channel].items()):
-            if ip.startswith(('TTTo', 'TTbar4b_from_d3')):
+            if ip.startswith(tuple(tt_processes)):
                 root_hists[channel][tt_label].Add( root_hists[channel][ip] )
                 del root_hists[channel][ip]
-            elif 'data' in ip:
+            elif ip.startswith('data'):
                 if mixeddata_file:
                     logging.info(f"Using mixeddata for data_obs")
                     root_hists[channel]['data_obs'] = json_to_TH1(
@@ -426,6 +468,14 @@ if __name__ == '__main__':
                         default='fourTag', help="Label for the four-tag category")
     parser.add_argument('--blind', dest='blind', action="store_true",
                         default=False, help="Replace data_obs with sum of backgrounds (blind analysis)")
+    parser.add_argument('--region', dest='region',
+                        default='SR', help="Region to use (e.g. SR, sum)")
+    parser.add_argument('--cut', dest='cut', nargs='?',
+                        default='', const='', help="Cut to use (e.g. pass_nSelJets_gt6, sum)")
+    parser.add_argument('--multijet_process', dest="multijet_process",
+                        default='data', help='Process to use for multijet background')
+    parser.add_argument('--tt_processes', dest="tt_processes", nargs="+",
+                        default=['TTTo', 'TTbar4b_from_d3'], help='List of processes/prefixes to merge into ttbar')
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
@@ -454,4 +504,8 @@ if __name__ == '__main__':
         three_tag=args.three_tag,
         four_tag=args.four_tag,
         blind=args.blind,
+        region=args.region,
+        cut=args.cut,
+        multijet_process=args.multijet_process,
+        tt_processes=args.tt_processes,
     )

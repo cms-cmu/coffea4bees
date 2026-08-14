@@ -8,6 +8,7 @@ runner:
   condor_transfer_input_files: 
     - coffea4bees/analysis/
     - coffea4bees/metadata/
+    - coffea4bees/classifier/
     - src/
 
 

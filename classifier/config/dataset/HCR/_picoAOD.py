@@ -117,6 +117,22 @@ class _ZZ_ZH(_MCDataset):
         return filelists
 
 
+class _ttHbb(_MCDataset):
+    processes = ("ttHbb",)
+
+    def __new__(cls, self: MC, metadata: str):
+        filelists = []
+        if "ttHbb" in self.mc_processes:
+            for year in CollisionData.eras:
+                filelists.append(
+                    [
+                        f"label:ttHbb,year:{year}",
+                        metadata + f".ttHbb.{year}.picoAOD.files",
+                    ]
+                )
+        return filelists
+
+
 class _ggF(_MCDataset):
     processes = ("ggF",)
 

@@ -13,5 +13,6 @@ config:
   apply_btagSF: true
   apply_boosted_veto: false
   run_SvB: true
+  SvB: null
   top_reconstruction: fast
   plot_ttbar_with_weights: true

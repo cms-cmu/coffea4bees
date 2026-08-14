@@ -9,11 +9,11 @@ hists:
   ttHbb:
       process: ttHbb
       tag: fourTag
-      label: ttHbb (x100)
+      label: ttHbb
       edgecolor: "#e42536"
       fillcolor: "#e42536"            
       histtype: step
-      scalefactor: 100
+      scalefactor: 1
 
 stack:
   TTbar:
@@ -30,6 +30,15 @@ stack:
     fillcolor: "#FFDF7Fff"
     edgecolor: k
     label: Multijet
+
+
+  ttHbb:
+      process: ttHbb
+      tag: fourTag
+      label: None
+      edgecolor: "#e42536"
+      fillcolor: "#e42536"
+      scalefactor: 1
 
 ratios:
   dataToBkg:

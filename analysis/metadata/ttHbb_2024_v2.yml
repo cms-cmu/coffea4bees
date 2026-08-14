@@ -4,7 +4,7 @@ runner:
   dashboard_address: 0
 
 config:
-  blind: true
+  blind: false
   apply_FvT: true
   apply_JCM: true
   apply_trigWeight: true
@@ -13,5 +13,6 @@ config:
   run_SvB: true
   SvB_MA: true
   SvB: null
+  hist_cuts: ["pass_nSelJets_gt6", "fail_nSelJets_le6"]
   top_reconstruction: fast
   plot_ttbar_with_weights: true

@@ -9,9 +9,10 @@ processes:
     GluGluToHHTo4B_cHHH0:
       label: ggHH_kl_0_kt_1_13p0TeV_hbbhbb
       process: -1
-    GluGluToHHTo4B_cHHH1:
+    GluGluToHHTo4B_cHHH1: &kl-1_kt-1_c2-0
       label: ggHH_kl_1_kt_1_13p0TeV_hbbhbb
       process: 0
+    GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00: *kl-1_kt-1_c2-0
     # VBFHHTo4B_kl_1p00_cv_1p00_c2v_0p00:
     #   label: qqHH_CV_1_C2V_0_kl_1_13p0TeV_hbbhbb
     #   process: -4

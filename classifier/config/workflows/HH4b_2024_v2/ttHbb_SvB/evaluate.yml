@@ -1,0 +1,39 @@
+# template:
+# - model: path to model
+# - SvB: path to friend tree
+
+main:
+  module: evaluate
+  option:
+    - --max-evaluators 3
+    - --device cuda cpu # use GPU if available, fall back to CPU
+
+model:
+  - module: HCR.SvB.ttHbb.baseline.Eval
+    option:
+      - --models
+      - Final
+      - "{model}/result.json"
+
+dataset:
+  - module: HCR.SvB.Eval
+    option:
+      - --metadata coffea4bees/metadata/datasets/archive/Run2_2024_v2/
+      - --max-workers 8
+      - --friends "" coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_nominal.json@@HCR_input 
+
+analysis:
+  - module: kfold.Merge
+    option:
+      - --name SvB
+      - --step 100000
+      - --workers 5
+      - --clean
+
+setting:
+  - module: IO
+    option:
+      - output: "{SvB}"
+  - module: ml.DataLoader
+    option:
+      - num_workers: 8

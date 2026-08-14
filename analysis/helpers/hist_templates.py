@@ -32,6 +32,14 @@ class SvBHists(Template):
     phh_fine      = H((240, 0, 1, ('phh', "Regressed P(HH)  ")))
 
 
+class ttHbbSvBHists(Template):
+    ps      = H((50, 0, 1, ('ps', "Regressed P(Signal)")))
+    ptt     = H((50, 0, 1, ('ptt', "Regressed P(tT)")))
+    tt_vs_mj     = H((50, 0, 1, ('tt_vs_mj', "P(tT) | Background")))
+
+    ps_ttHbb_fine   = H((240, 0, 1, ('ps_ttHbb', "Regressed P(Signal) $|$ P(ttHbb) is largest ")))
+
+
 class FeynNetSvBHists(Template):
     p_ggHH_vs_bkg  = H((50, 0, 1, ('p_ggHH_vs_bkg',  "FeynNet P(ggF vs bkg)")))
     p_qqHH_vs_bkg  = H((50, 0, 1, ('p_qqHH_vs_bkg',  "FeynNet P(VBF vs bkg)")))
