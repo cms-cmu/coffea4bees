@@ -8,11 +8,18 @@ config.setdefault('analysis_config', "coffea4bees/analysis/metadata/HH4b_2024_v2
 config.setdefault('processor', "coffea4bees/analysis/processors/processor_HH4b.py")
 config.setdefault('friend_file', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b.yml")
 config.setdefault('weights_file', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/weights_HH4b.yml")
-config.setdefault('additional_parameters', "--shared-dask --condor --run-performance")
 config.setdefault('plot_config', "coffea4bees/plots/metadata/plotsAll_ttbarWeights.yml")
 config.setdefault('dataset_location', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/")
 config.setdefault('test', False)
 config.setdefault('known_counts', "")
+
+container_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
+config.setdefault('container_wrapper', container_wrapper)
+
+if config.get('test', False) or os.getenv("CI"):
+    config.setdefault('additional_parameters', "")
+else:
+    config.setdefault('additional_parameters', "--shared-dask --condor --run-performance")
 
 config.setdefault('dataset', ['GluGluToHHTo4B_cHHH1', 'GluGluToHHTo4B_cHHH0', 'GluGluToHHTo4B_cHHH2p45', 'GluGluToHHTo4B_cHHH5', 'ZH4b', 'ZZ4b', 'ggZH4b'])
 config.setdefault('year_eras', {
@@ -105,7 +112,7 @@ use rule analysis_processor from analysis as analysis_data with:
             "-t" if config.get("test", False) else "",
             config["additional_parameters"]
         ])),
-        run_container_wrapper = "./run_container"
+        run_container_wrapper = config['container_wrapper']
 
 use rule analysis_processor from analysis as analysis_MC with:
     input: 
@@ -128,7 +135,7 @@ use rule analysis_processor from analysis as analysis_MC with:
             "-t" if config.get("test", False) else "",
             config["additional_parameters"]
         ])),
-        run_container_wrapper = "./run_container"
+        run_container_wrapper = config['container_wrapper']
 
 use rule merging_coffea_files from analysis as merging_files with:
     input:
@@ -137,7 +144,7 @@ use rule merging_coffea_files from analysis as merging_files with:
     output: f"{config['output_path']}histAll_{config['label']}.coffea"
     params:
         run_performance = False,
-        run_container_wrapper = "./run_container"
+        run_container_wrapper = config['container_wrapper']
     container: None
     log: f"{config['output_path']}logs/merging_files.log" 
 
@@ -153,7 +160,7 @@ use rule make_plots from analysis with:
         metadata = config['plot_config'],
         extra_arguments = "-s xW " + (" ".join([f"--year {y}" for y in DATA_YEARS]) if len(DATA_YEARS) == 1 else ""),
         png_cores = 4,
-        run_container_wrapper = "./run_container"
+        run_container_wrapper = config['container_wrapper']
     container: None
 
 use rule check_cutflow from analysis with:
@@ -164,7 +171,7 @@ use rule check_cutflow from analysis with:
     params:
         known_counts = lambda wildcards: config.get("known_counts", ""),
         error_threshold = lambda wildcards: config.get("error_threshold", "0.001"),
-        run_container_wrapper = "./run_container"
+        run_container_wrapper = config['container_wrapper']
     container: None
 
 localrules: modify_config_file, analysis_data, analysis_MC, merging_files, make_plots, check_cutflow
