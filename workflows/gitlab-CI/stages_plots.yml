@@ -104,9 +104,9 @@ make_plots_lowpt_Run2_coffea4bees:
     - merging_files_lowpt_Run2_coffea4bees
   script:
     - python -m pip install snakemake --quiet
-    - python -m snakemake -s coffea4bees/workflows/Snakefile_analysis.smk \
+    - python -m snakemake output/run2_lowpt/plots_run2_lowpt/plots_done.txt -s coffea4bees/workflows/Snakefile_analysis.smk \
         --configfile coffea4bees/workflows/config/lowpt_run2.yml \
-        --config test=true output/run2_lowpt/plots_run2_lowpt/plots_done.txt
+        --config test=true
   artifacts:
     paths:
       - barista_framework/output/run2_lowpt/plots_run2_lowpt/
