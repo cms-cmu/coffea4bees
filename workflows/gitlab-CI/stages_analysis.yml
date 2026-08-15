@@ -193,7 +193,7 @@ mixeddata_analyze_coffea4bees:
     paths:
       - output/mixeddata_analyze/test_mixeddata.coffea
 
-analysis_test_lowpt_data_Run2_coffea4bees:
+analysis_data_lowpt_Run2_coffea4bees:
   stage: analysis   
   extends:
     - .base_analysis_coffea4bees
@@ -204,9 +204,9 @@ analysis_test_lowpt_data_Run2_coffea4bees:
         --config test=true --jobs 4 all_data
   artifacts: 
     paths:
-      - output/run2_lowpt/singlefiles/
+      - barista_framework/output/run2_lowpt/singlefiles/
 
-analysis_test_lowpt_signal_Run2_coffea4bees:
+analysis_MC_lowpt_Run2_coffea4bees:
   stage: analysis   
   extends:
     - .base_analysis_coffea4bees
@@ -217,4 +217,4 @@ analysis_test_lowpt_signal_Run2_coffea4bees:
         --config test=true --jobs 4 all_signals
   artifacts: 
     paths:
-      - output/run2_lowpt/singlefiles/
+      - barista_framework/output/run2_lowpt/singlefiles/

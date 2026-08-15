@@ -169,21 +169,18 @@ mixeddata_analyze_cutflow_coffea4bees:
     paths:
       - output//mixeddata_analyze_cutflow/test_dump_cutflow_mixeddata.yml
 
-analysis_cutflow_lowpt_Run2_coffea4bees:
+check_cutflow_lowpt_Run2_coffea4bees:
   stage: cutflow
   extends:
     - .base_analysis_coffea4bees
   needs: 
     - setup_coffea4bees
-    - analysis_test_lowpt_data_Run2_coffea4bees
-    - analysis_test_lowpt_signal_Run2_coffea4bees
+    - merging_files_lowpt_Run2_coffea4bees
   script:
     - python -m pip install snakemake --quiet
     - python -m snakemake -s coffea4bees/workflows/Snakefile_analysis.smk \
         --configfile coffea4bees/workflows/config/lowpt_run2.yml \
-        --config test=true --jobs 4 all_analysis
+        --config test=true output/run2_lowpt/cutflow_validation_run2_lowpt.txt
   artifacts:
     paths:
-      - output/run2_lowpt/histAll_run2_lowpt.coffea
-      - output/run2_lowpt/plots_run2_lowpt/
-      - output/run2_lowpt/cutflow_validation_run2_lowpt.txt
+      - barista_framework/output/run2_lowpt/cutflow_validation_run2_lowpt.txt
