@@ -29,6 +29,7 @@ rule analysis_processor:
     log: "output/logs/analysis_processor_{output_file}.log"
     shell:
         """
+        mkdir -p $(dirname {output}) $(dirname {log})
         {params.run_container_wrapper} python runner.py -c {params.config} \
             --processor {params.processor} \
             --metadata {params.datasets_file} \
@@ -38,7 +39,7 @@ rule analysis_processor:
             --years "{params.years}" \
             --output-path $(dirname {output})/ \
             --output $(basename {output}) \
-            {params.extra_arguments} > {log} 2>&1
+            {params.extra_arguments} 2>&1 | tee {log}
         """
             # --tmpdir {resources.tmpdir} \
 

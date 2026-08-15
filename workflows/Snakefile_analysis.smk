@@ -13,6 +13,12 @@ config.setdefault('dataset_location', "coffea4bees/metadata/datasets/archive/Run
 config.setdefault('test', False)
 config.setdefault('known_counts', "")
 
+# Parse boolean for test flag
+is_test = config.get('test', False)
+if isinstance(is_test, str):
+    is_test = is_test.lower() in ("true", "1", "yes")
+config['test'] = is_test
+
 container_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
 config.setdefault('container_wrapper', container_wrapper)
 
@@ -61,13 +67,6 @@ def get_analysis_targets(wildcards):
 rule all_analysis:
     input: get_analysis_targets
 
-rule all_data:
-    input: [f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{yr}_{era}.coffea" for yr, era in DATA_YEAR_ERA]
-
-rule all_signals:
-    input: expand("{output_path}singlefiles/histAll_" + config['label'] + "__{dataset}__{year}.coffea", output_path=config['output_path'], dataset=config['dataset'], year=DATA_YEARS)
-
-
 rule modify_config_file:
     input: config['analysis_config']
     output: signal_config_path
@@ -90,63 +89,137 @@ rule modify_config_file:
         with open(output[0], 'w') as f:
             yaml.dump(data, f, default_flow_style=False)
 
-use rule analysis_processor from analysis as analysis_data with:
-    input: 
-        runner_script = "runner.py",
-        config_file = config['analysis_config'],
-        processor_script = config['processor'],
-        friend_metadata = config['friend_file'],
-        datasets_dir = config['dataset_location']
-    output: f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{{year}}_{{era}}.coffea"
-    log: f"{config['output_path']}logs/analysis_{config['label']}_data__{{year}}_{{era}}.log"
-    params:
-        datasets = "data",
-        years = lambda wildcards: wildcards.year,
-        config = lambda wildcards, input: input.config_file,
-        processor = config['processor'],
-        datasets_file = config['dataset_location'],
-        friends = config['friend_file'],
-        weights = config['weights_file'],
-        extra_arguments = lambda wildcards: " ".join(filter(None, [
-            f"--era {wildcards.era}",
-            "-t" if config.get("test", False) else "",
-            config["additional_parameters"]
-        ])),
-        run_container_wrapper = config['container_wrapper']
+if config.get("test", False):
+    # Quick Test / CI Mode: single command for all data years/eras and single command for all signals
+    use rule analysis_processor from analysis as analysis_data with:
+        input: 
+            runner_script = "runner.py",
+            config_file = config['analysis_config'],
+            processor_script = config['processor'],
+            friend_metadata = config['friend_file'],
+            datasets_dir = config['dataset_location']
+        output: f"{config['output_path']}singlefiles/histAll_{config['label']}_data.coffea"
+        log: f"{config['output_path']}logs/analysis_{config['label']}_data.log"
+        params:
+            datasets = "data",
+            years = " ".join(DATA_YEARS),
+            config = lambda wildcards, input: input.config_file,
+            processor = config['processor'],
+            datasets_file = config['dataset_location'],
+            friends = config['friend_file'],
+            weights = config['weights_file'],
+            extra_arguments = lambda wildcards: " ".join(filter(None, [
+                "-t",
+                config.get("additional_parameters", "")
+            ])),
+            run_container_wrapper = config['container_wrapper']
 
-use rule analysis_processor from analysis as analysis_MC with:
-    input: 
-        runner_script = "runner.py",
-        config_file = signal_config_path,
-        processor_script = config['processor'],
-        friend_metadata = config['friend_file'],
-        datasets_dir = config['dataset_location']
-    output: f"{config['output_path']}singlefiles/histAll_{config['label']}__{{dataset}}__{{year}}.coffea"
-    log: f"{config['output_path']}logs/analysis_{config['label']}_{{dataset}}__{{year}}.log"
-    params:
-        datasets = "{dataset}",
-        years = lambda wildcards: wildcards.year,
-        config = lambda wildcards, input: input.config_file,
-        processor = config['processor'],
-        datasets_file = config['dataset_location'],
-        friends = config['friend_file'],
-        weights = config['weights_file'],
-        extra_arguments = lambda wildcards: " ".join(filter(None, [
-            "-t" if config.get("test", False) else "",
-            config["additional_parameters"]
-        ])),
-        run_container_wrapper = config['container_wrapper']
+    use rule analysis_processor from analysis as analysis_MC with:
+        input: 
+            runner_script = "runner.py",
+            config_file = signal_config_path,
+            processor_script = config['processor'],
+            friend_metadata = config['friend_file'],
+            datasets_dir = config['dataset_location']
+        output: f"{config['output_path']}singlefiles/histAll_{config['label']}_signals.coffea"
+        log: f"{config['output_path']}logs/analysis_{config['label']}_signals.log"
+        params:
+            datasets = " ".join(config['dataset']),
+            years = " ".join(DATA_YEARS),
+            config = lambda wildcards, input: input.config_file,
+            processor = config['processor'],
+            datasets_file = config['dataset_location'],
+            friends = config['friend_file'],
+            weights = config['weights_file'],
+            extra_arguments = lambda wildcards: " ".join(filter(None, [
+                "-t",
+                config.get("additional_parameters", "")
+            ])),
+            run_container_wrapper = config['container_wrapper']
 
-use rule merging_coffea_files from analysis as merging_files with:
-    input:
-        files = [f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{yr}_{era}.coffea" for yr, era in DATA_YEAR_ERA] + expand("{output_path}singlefiles/histAll_" + config['label'] + "__{dataset}__{year}.coffea", output_path=config['output_path'], dataset=config['dataset'], year=DATA_YEARS),
-        script = "src/tools/merge_coffea_files.py"
-    output: f"{config['output_path']}histAll_{config['label']}.coffea"
-    params:
-        run_performance = False,
-        run_container_wrapper = config['container_wrapper']
-    container: None
-    log: f"{config['output_path']}logs/merging_files.log" 
+    use rule merging_coffea_files from analysis as merging_files with:
+        input:
+            files = [
+                f"{config['output_path']}singlefiles/histAll_{config['label']}_data.coffea",
+                f"{config['output_path']}singlefiles/histAll_{config['label']}_signals.coffea"
+            ],
+            script = "src/tools/merge_coffea_files.py"
+        output: f"{config['output_path']}histAll_{config['label']}.coffea"
+        params:
+            run_performance = False,
+            run_container_wrapper = config['container_wrapper']
+        container: None
+        log: f"{config['output_path']}logs/merging_files.log"
+
+    rule all_data:
+        input: f"{config['output_path']}singlefiles/histAll_{config['label']}_data.coffea"
+
+    rule all_signals:
+        input: f"{config['output_path']}singlefiles/histAll_{config['label']}_signals.coffea"
+
+else:
+    # Production Mode: granular split per year/era and dataset for distributed cluster batching
+    use rule analysis_processor from analysis as analysis_data with:
+        input: 
+            runner_script = "runner.py",
+            config_file = config['analysis_config'],
+            processor_script = config['processor'],
+            friend_metadata = config['friend_file'],
+            datasets_dir = config['dataset_location']
+        output: f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{{year}}_{{era}}.coffea"
+        log: f"{config['output_path']}logs/analysis_{config['label']}_data__{{year}}_{{era}}.log"
+        params:
+            datasets = "data",
+            years = lambda wildcards: wildcards.year,
+            config = lambda wildcards, input: input.config_file,
+            processor = config['processor'],
+            datasets_file = config['dataset_location'],
+            friends = config['friend_file'],
+            weights = config['weights_file'],
+            extra_arguments = lambda wildcards: " ".join(filter(None, [
+                f"--era {wildcards.era}",
+                config.get("additional_parameters", "")
+            ])),
+            run_container_wrapper = config['container_wrapper']
+
+    use rule analysis_processor from analysis as analysis_MC with:
+        input: 
+            runner_script = "runner.py",
+            config_file = signal_config_path,
+            processor_script = config['processor'],
+            friend_metadata = config['friend_file'],
+            datasets_dir = config['dataset_location']
+        output: f"{config['output_path']}singlefiles/histAll_{config['label']}__{{dataset}}__{{year}}.coffea"
+        log: f"{config['output_path']}logs/analysis_{config['label']}_{{dataset}}__{{year}}.log"
+        params:
+            datasets = "{dataset}",
+            years = lambda wildcards: wildcards.year,
+            config = lambda wildcards, input: input.config_file,
+            processor = config['processor'],
+            datasets_file = config['dataset_location'],
+            friends = config['friend_file'],
+            weights = config['weights_file'],
+            extra_arguments = lambda wildcards: " ".join(filter(None, [
+                config.get("additional_parameters", "")
+            ])),
+            run_container_wrapper = config['container_wrapper']
+
+    use rule merging_coffea_files from analysis as merging_files with:
+        input:
+            files = [f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{yr}_{era}.coffea" for yr, era in DATA_YEAR_ERA] + expand("{output_path}singlefiles/histAll_" + config['label'] + "__{dataset}__{year}.coffea", output_path=config['output_path'], dataset=config['dataset'], year=DATA_YEARS),
+            script = "src/tools/merge_coffea_files.py"
+        output: f"{config['output_path']}histAll_{config['label']}.coffea"
+        params:
+            run_performance = False,
+            run_container_wrapper = config['container_wrapper']
+        container: None
+        log: f"{config['output_path']}logs/merging_files.log"
+
+    rule all_data:
+        input: [f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{yr}_{era}.coffea" for yr, era in DATA_YEAR_ERA]
+
+    rule all_signals:
+        input: expand("{output_path}singlefiles/histAll_" + config['label'] + "__{dataset}__{year}.coffea", output_path=config['output_path'], dataset=config['dataset'], year=DATA_YEARS)
 
 use rule make_plots from analysis with:
     input:
