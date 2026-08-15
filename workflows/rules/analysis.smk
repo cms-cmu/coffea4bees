@@ -33,10 +33,10 @@ rule analysis_processor:
         {params.run_container_wrapper} python runner.py -c {params.config} \
             --processor {params.processor} \
             --metadata {params.datasets_file} \
-            --datasets "{params.datasets}" \
+            --datasets {params.datasets} \
             --friends "{params.friends}" \
             --weights "{params.weights}" \
-            --years "{params.years}" \
+            --years {params.years} \
             --output-path $(dirname {output})/ \
             --output $(basename {output}) \
             {params.extra_arguments} 2>&1 | tee {log}
