@@ -1,30 +1,39 @@
-label: "run3_SvB_c6mvd"
-output_path: "output/run3_SvB_c6mvd/"
-analysis_config: "coffea4bees/analysis/metadata/HH4b_2024_v2.yml"  #### to be updated
+email: ""
+label: "run3_nominal"
+output_path: "output/run3_nominal/"
 processor: "coffea4bees/analysis/processors/processor_HH4b.py"
 friend_file: "coffea4bees/metadata/friends/friends_HH4b.yml"
 weights_file: "coffea4bees/metadata/weights/weights_HH4b.yml"
-plot_config: "coffea4bees/plots/metadata/plotsAll_MvD_ttbar_weights.yml"
+known_counts: "coffea4bees/analysis/tests/known_Counts_Run3.yml"
+plot_config: "coffea4bees/plots/metadata/plotsAll.yml"
 combine_flags: "--blind"
 dataset_location: "coffea4bees/metadata/datasets/"
-# convert_hist_to_json:
-#   histos: 
-#     - "SvB_c6mvd_C2.ps_hh"
-#     - "SvB_c6mvd_C5.ps_hh"
-#     - "SvB_c6mvd_C5b.ps_hh"
-#     - "SvB_c6mvd_C6.ps_hh"
-#     - "SvB_c6mvd_C2.ps"
-#     - "SvB_c6mvd_C5.ps"
-#     - "SvB_c6mvd_C5b.ps"
-#     - "SvB_c6mvd_C6.ps"
-make_combine_inputs:
-  multijet_process: "mixeddata_all_rank0_0"
-  tt_processes:
-    - "TTbar4b_from_MvD"
+
+runner:
+  workers: 4
+  worker_memory: 8GB
+  dashboard_address: 0
+
+config:
+  blind: false
+  apply_FvT: false
+  apply_trigWeight: true
+  apply_btagSF: true
+  apply_boosted_veto: false
+  run_SvB: true
+  top_reconstruction: fast
+  fourTag_use_tight: true
+  plot_ttbar_with_weights: false
+
 dataset:
   - "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"
+  - "TTTo2L2Nu"
+  - "TTToSemiLeptonic"
+  - "TTToHadronic"
+
 year_eras:
   2022_preEE:
+    - "B"
     - "C"
     - "D"
   2022_EE:
@@ -34,24 +43,19 @@ year_eras:
   2023_preBPix:
     - "C01"
     - "C02"
-    - "C03"
-    - "C04"
+    - "C11"
+    - "C12"
+    - "C3"
+    - "C4"
   2023_BPix:
-    - "D01"
-    - "D02"
-  # "2024":
-  #   - "C"
-  #   - "D"
-  #   - "E"
-  #   - "F"
-  #   - "G"
-  #   - "H"
-  #   - "I"
+    - "D1"
+    - "D2"
+
 combine_outdir: "datacards/HH4b"
 channels:
   HH4b_C2:
     signallabel: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb"
-    othersignal: "" #ggHH_kl_0_kt_1_13p0TeV_hbbhbb ggHH_kl_2p45_kt_1_13p0TeV_hbbhbb ggHH_kl_5_kt_1_13p0TeV_hbbhbb"
+    othersignal: ""
     variable: "SvB_c6mvd_C2.ps"
     signal: "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"
     closure_subdir: "hh"
@@ -73,16 +77,5 @@ channels:
     variable: "SvB_c6mvd_C6.ps"
     signal: "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"
     closure_subdir: "hh"
-  # ZZ4b:
-  #   signallabel: "ZZ_bbbb"
-  #   othersignal: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb ZH_bbbb"
-  #   variable: "SvB_MA.ps_zz"
-  #   signal: "ZZ4b"
-  #   closure_subdir: "zz"
-  # ZH4b:
-  #   signallabel: "ZH_bbbb"
-  #   othersignal: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb ZZ_bbbb"
-  #   variable: "SvB_MA.ps_zh"
-  #   signal: "ZH4b"
-  #   closure_subdir: "zh"
 metadata_template: "coffea4bees/stats_analysis/metadata/{channel}_run3.yml"
+
