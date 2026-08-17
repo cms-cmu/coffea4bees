@@ -22,6 +22,9 @@ config['test'] = is_test
 container_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
 config.setdefault('container_wrapper', container_wrapper)
 
+python_bin = os.getenv("CONTAINER_PYTHON", "python")
+config.setdefault('python_bin', python_bin)
+
 if config.get('test', False) or os.getenv("CI"):
     config.setdefault('additional_parameters', "")
 else:
