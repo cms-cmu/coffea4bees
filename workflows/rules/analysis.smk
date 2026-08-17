@@ -2,20 +2,13 @@ rule analysis_processor:
     input:
         runner_script = "runner.py",
         config_file = lambda wildcards, params: params.config,
-        processor_script = lambda wildcards, params: params.processor,
-        friend_metadata = lambda wildcards, params: params.friends if params.friends else [],
-        datasets_dir = lambda wildcards, params: params.datasets_file
     output: "{output_file}"
     # container: config.get("analysis_container", "")
     retries: 3
     params:
         datasets = "",
         years = "",
-        config = "coffea4bees/analysis/metadata/HH4b_noJCM.yml",
-        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
-        datasets_file = config.get("datasets", "datasets/"),
-        friends = "",
-        weights = "",
+        config = lambda wildcards: workflow.configfiles[0] if workflow.configfiles else "coffea4bees/workflows/config/lowpt_run2.yml",
         extra_arguments = lambda wildcards: " ".join(filter(None, [
             "--not-do-proxy" if config.get("not_do_proxy", False) else "",
             "--blind" if config.get("blind", False) else "",
@@ -31,12 +24,8 @@ rule analysis_processor:
     shell:
         """
         mkdir -p $(dirname {output}) $(dirname {log})
-        {params.run_container_wrapper} {params.python_bin} runner.py -c {params.config} \
-            --processor {params.processor} \
-            --metadata {params.datasets_file} \
+        {params.run_container_wrapper} {params.python_bin} runner.py {params.config} \
             --datasets {params.datasets} \
-            --friends "{params.friends}" \
-            --weights "{params.weights}" \
             --years {params.years} \
             --output-path $(dirname {output})/ \
             --output $(basename {output}) \

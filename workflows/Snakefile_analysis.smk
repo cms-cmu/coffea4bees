@@ -44,8 +44,8 @@ config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry
 
 DATA_YEAR_ERA = [(str(yr), era) for yr, eras in config['year_eras'].items() for era in eras]
 DATA_YEARS = [str(y) for y in config['year_eras'].keys()]
-
-original_basename = os.path.basename(config['analysis_config'])
+original_config = workflow.configfiles[0] if workflow.configfiles else config.get('analysis_config', 'coffea4bees/workflows/config/lowpt_run2.yml')
+original_basename = os.path.basename(original_config)
 original_name, _ = os.path.splitext(original_basename)
 signal_config_path = f"{config['output_path']}{original_name}_signal.yml"
 
@@ -71,7 +71,7 @@ rule all_analysis:
     input: get_analysis_targets
 
 rule modify_config_file:
-    input: config['analysis_config']
+    input: original_config
     output: signal_config_path
     run:
         import yaml
@@ -97,20 +97,13 @@ if config.get("test", False):
     use rule analysis_processor from analysis as analysis_data with:
         input: 
             runner_script = "runner.py",
-            config_file = config['analysis_config'],
-            processor_script = config['processor'],
-            friend_metadata = config['friend_file'],
-            datasets_dir = config['dataset_location']
+            config_file = original_config
         output: f"{config['output_path']}singlefiles/histAll_{config['label']}_data.coffea"
         log: f"{config['output_path']}logs/analysis_{config['label']}_data.log"
         params:
             datasets = "data",
             years = " ".join(DATA_YEARS),
             config = lambda wildcards, input: input.config_file,
-            processor = config['processor'],
-            datasets_file = config['dataset_location'],
-            friends = config['friend_file'],
-            weights = config['weights_file'],
             extra_arguments = lambda wildcards: " ".join(filter(None, [
                 "-t",
                 config.get("additional_parameters", "")
@@ -120,20 +113,13 @@ if config.get("test", False):
     use rule analysis_processor from analysis as analysis_MC with:
         input: 
             runner_script = "runner.py",
-            config_file = signal_config_path,
-            processor_script = config['processor'],
-            friend_metadata = config['friend_file'],
-            datasets_dir = config['dataset_location']
+            config_file = signal_config_path
         output: f"{config['output_path']}singlefiles/histAll_{config['label']}_signals.coffea"
         log: f"{config['output_path']}logs/analysis_{config['label']}_signals.log"
         params:
             datasets = " ".join(config['dataset']),
             years = " ".join(DATA_YEARS),
             config = lambda wildcards, input: input.config_file,
-            processor = config['processor'],
-            datasets_file = config['dataset_location'],
-            friends = config['friend_file'],
-            weights = config['weights_file'],
             extra_arguments = lambda wildcards: " ".join(filter(None, [
                 "-t",
                 config.get("additional_parameters", "")
@@ -165,20 +151,13 @@ else:
     use rule analysis_processor from analysis as analysis_data with:
         input: 
             runner_script = "runner.py",
-            config_file = config['analysis_config'],
-            processor_script = config['processor'],
-            friend_metadata = config['friend_file'],
-            datasets_dir = config['dataset_location']
+            config_file = original_config
         output: f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{{year}}_{{era}}.coffea"
         log: f"{config['output_path']}logs/analysis_{config['label']}_data__{{year}}_{{era}}.log"
         params:
             datasets = "data",
             years = lambda wildcards: wildcards.year,
             config = lambda wildcards, input: input.config_file,
-            processor = config['processor'],
-            datasets_file = config['dataset_location'],
-            friends = config['friend_file'],
-            weights = config['weights_file'],
             extra_arguments = lambda wildcards: " ".join(filter(None, [
                 f"--era {wildcards.era}",
                 config.get("additional_parameters", "")
@@ -188,20 +167,13 @@ else:
     use rule analysis_processor from analysis as analysis_MC with:
         input: 
             runner_script = "runner.py",
-            config_file = signal_config_path,
-            processor_script = config['processor'],
-            friend_metadata = config['friend_file'],
-            datasets_dir = config['dataset_location']
+            config_file = signal_config_path
         output: f"{config['output_path']}singlefiles/histAll_{config['label']}__{{dataset}}__{{year}}.coffea"
-        log: f"{config['output_path']}logs/analysis_{config['label']}_{{dataset}}__{{year}}.log"
+        log: f"{config['output_path']}logs/analysis_{config['label']}_{{dataset}}_{{year}}.log"
         params:
-            datasets = "{dataset}",
+            datasets = lambda wildcards: wildcards.dataset,
             years = lambda wildcards: wildcards.year,
             config = lambda wildcards, input: input.config_file,
-            processor = config['processor'],
-            datasets_file = config['dataset_location'],
-            friends = config['friend_file'],
-            weights = config['weights_file'],
             extra_arguments = lambda wildcards: " ".join(filter(None, [
                 config.get("additional_parameters", "")
             ])),
