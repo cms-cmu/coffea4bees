@@ -75,8 +75,7 @@ merging_files_lowpt_Run2_coffea4bees:
     - analysis_data_lowpt_Run2_coffea4bees
     - analysis_MC_lowpt_Run2_coffea4bees
   script:
-    - python -m pip install snakemake --quiet
-    - python -m snakemake output/run2_lowpt/histAll_run2_lowpt.coffea -s coffea4bees/workflows/Snakefile_analysis.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml --config test=true --jobs 4
+    - pixi run snakemake output/run2_lowpt/histAll_run2_lowpt.coffea -s coffea4bees/workflows/Snakefile_analysis.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml --config test=true --jobs 4
   artifacts:
     paths:
       - barista_framework/output/run2_lowpt/histAll_run2_lowpt.coffea

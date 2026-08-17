@@ -198,19 +198,17 @@ analysis_data_lowpt_Run2_coffea4bees:
   extends:
     - .base_analysis_coffea4bees
   script:
-    - python -m pip install snakemake --quiet
-    - python -m snakemake all_data -s coffea4bees/workflows/Snakefile_analysis.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml --config test=true --jobs 4
+    - pixi run snakemake all_data -s coffea4bees/workflows/Snakefile_analysis.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml --config test=true --jobs 4
   artifacts: 
     paths:
-      - barista_framework/output/run2_lowpt/singlefiles/
+      - barista_framework/output/run2_lowpt/singlefiles/histAll_run2_lowpt_data.coffea
 
 analysis_MC_lowpt_Run2_coffea4bees:
   stage: analysis   
   extends:
     - .base_analysis_coffea4bees
   script:
-    - python -m pip install snakemake --quiet
-    - python -m snakemake all_signals -s coffea4bees/workflows/Snakefile_analysis.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml --config test=true --jobs 4
+    - pixi run snakemake all_signals -s coffea4bees/workflows/Snakefile_analysis.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml --config test=true --jobs 4
   artifacts: 
     paths:
-      - barista_framework/output/run2_lowpt/singlefiles/
+      - barista_framework/output/run2_lowpt/singlefiles/histAll_run2_lowpt_signals.coffea

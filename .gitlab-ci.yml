@@ -19,12 +19,12 @@ workflow:
     # Run for merge requests
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       variables:
-        ANALYSIS_IMAGE_TAG: "dev_coffea2025_latest"
+        ANALYSIS_IMAGE_TAG: "latest"
       when: always
     # Run for pushes to branches WITHOUT open merge requests
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_OPEN_MERGE_REQUESTS == null'
       variables:
-        ANALYSIS_IMAGE_TAG: "dev_coffea2025_latest"
+        ANALYSIS_IMAGE_TAG: "latest"
       when: always
     # Run for scheduled pipelines
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
@@ -80,7 +80,7 @@ stages:
 # Setup job that clones barista once
 setup_coffea4bees:
   stage: setup
-  image: alpine/git:latest
+  image: gitlab-registry.cern.ch/cms-cmu/barista:${ANALYSIS_IMAGE_TAG}
   needs:
     - voms_proxy
   script:
@@ -105,6 +105,13 @@ setup_coffea4bees:
     # Copy the proxy if it exists
     - echo "Checking for proxy directory in $CI_PROJECT_DIR/proxy"
     - if [ -d "$CI_PROJECT_DIR/proxy" ]; then cp -r $CI_PROJECT_DIR/proxy/ .; fi
+
+    # Bootstrap Pixi environment
+    - echo "Installing Pixi and dependencies"
+    - export PIXI_NO_PATH_UPDATE=1
+    - curl -fsSL https://pixi.sh/install.sh | PIXI_HOME=$CI_PROJECT_DIR/barista_framework/.pixi-bin bash
+    - export PATH="$CI_PROJECT_DIR/barista_framework/.pixi-bin/bin:$PATH"
+    - pixi install
   artifacts:
     paths:
       - barista_framework/
@@ -127,6 +134,7 @@ setup_coffea4bees:
     - ls $CI_PROJECT_PATH/output/ || true
     - echo "Setting analysis framework"
     - cd barista_framework/
+    - export PATH="$PWD/.pixi-bin/bin:$PATH"
     - pwd && ls -la
     - ls -la coffea4bees/
   retry: 2
