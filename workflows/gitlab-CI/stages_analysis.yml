@@ -193,22 +193,22 @@ mixeddata_analyze_coffea4bees:
     paths:
       - output/mixeddata_analyze/test_mixeddata.coffea
 
-analysis_test_lowpt_data_Run2_coffea4bees:
+analysis_data_lowpt_Run2_coffea4bees:
   stage: analysis   
   extends:
     - .base_analysis_coffea4bees
   script:
-    - source coffea4bees/scripts/analysis-test-lowpt-data-Run2.sh --output-base /builds/$CI_PROJECT_PATH/output
+    - pixi run snakemake all_data -s coffea4bees/workflows/Snakefile_analysis.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml --config test=true --jobs 4
   artifacts: 
     paths:
-      - output/analysis_test_lowpt_data_Run2/test_data_lowpt.coffea
+      - barista_framework/output/run2_lowpt/singlefiles/histAll_run2_lowpt_data.coffea
 
-analysis_test_lowpt_signal_Run2_coffea4bees:
+analysis_MC_lowpt_Run2_coffea4bees:
   stage: analysis   
   extends:
     - .base_analysis_coffea4bees
   script:
-    - source coffea4bees/scripts/analysis-test-lowpt-signal-Run2.sh --output-base /builds/$CI_PROJECT_PATH/output
+    - pixi run snakemake all_signals -s coffea4bees/workflows/Snakefile_analysis.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml --config test=true --jobs 4
   artifacts: 
     paths:
-      - output/analysis_test_lowpt_signal_Run2/test_signal_lowpt.coffea
+      - barista_framework/output/run2_lowpt/singlefiles/histAll_run2_lowpt_signals.coffea

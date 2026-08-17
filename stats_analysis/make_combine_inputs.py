@@ -356,8 +356,9 @@ def create_combine_root_file( file_to_convert,
 
         cats = [(i, ibin)]
         cb.AddObservations(['*'], [''], ['13TeV'], ['*'], cats)
-        cb.AddProcesses(['*'], [''], ['13TeV'], ['*'], [ metadata['processes']['all'][ibin]['label'] for ibin in metadata['processes']['background'] ], cats, False)
-        signals = [ metadata['processes']['all'][ibin]['label'] for ibin in metadata['processes']['signal'] ]
+        backgrounds = list(dict.fromkeys([ metadata['processes']['background'][k]['label'] for k in metadata['processes']['background'] ]))
+        cb.AddProcesses(['*'], [''], ['13TeV'], ['*'], backgrounds, cats, False)
+        signals = list(dict.fromkeys([ metadata['processes']['signal'][k]['label'] for k in metadata['processes']['signal'] ]))
         cb.AddProcesses(['*'], [''], ['13TeV'], ['*'], signals, cats, True)
 
         if stat_only:
