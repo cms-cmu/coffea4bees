@@ -235,7 +235,6 @@ analysis/plots_synthetic_datasets/
 jet_clustering/*/*pdf
 *png 
 *pdf 
-stats_analysis/*
 stats_analysis/archive/
 stats_analysis/tmp*
 hists/
