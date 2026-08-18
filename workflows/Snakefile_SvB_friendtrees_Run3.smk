@@ -48,8 +48,9 @@ else:
     _friend_stub = config['dataset_name']
     _out_tag     = f"_{config['dataset_name']}"
 
-SvB_OUT = f"output/Run3_MvD{_out_tag}/svb_friendtrees/"
-INSTALL = f"coffea4bees/metadata/friends/SvBfriend_{_friend_stub}.json"
+SvB_OUT = f"output/Run3_MvD{_install_tag}/svb_friendtrees/"
+INSTALL = f"coffea4bees/metadata/friends/data_SvBfriend{_install_tag}.json"
+
 
 # Only this HH coupling point currently has 2022/2023 picoAODs.
 HH_DATASETS = ['GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00']

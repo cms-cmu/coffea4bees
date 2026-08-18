@@ -66,16 +66,16 @@ tools_perf_profile_coffea4bees:
       - output/perf_profile/perf_profile.txt
       - output/perf_profile/perf_profile.csv
 
-# Needs review
-# histtojson-test-job:   
-#   stage: tools
-#   extends:
-#     - .base_analysis_coffea4bees
-#   needs: 
-#     - tools_merge_test_coffea4bees
-#   script:
-#     - cd stats_analysis/
-#     - python convert_hist_to_json.py -o hists/histAll.json -i ../analysis/hists/test.coffea
-#   artifacts: 
-#     paths:
-#       - stats_analysis/hists/histAll.json
+merging_files_lowpt_Run2_coffea4bees:
+  stage: tools
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - analysis_data_lowpt_Run2_coffea4bees
+    - analysis_MC_lowpt_Run2_coffea4bees
+  script:
+    - pixi run snakemake output/run2_lowpt/histAll_run2_lowpt.coffea -s coffea4bees/workflows/Snakefile_analysis.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml --config test=true --jobs 4
+  artifacts:
+    paths:
+      - barista_framework/output/run2_lowpt/histAll_run2_lowpt.coffea

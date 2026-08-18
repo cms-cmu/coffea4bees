@@ -181,14 +181,14 @@ rule twoStageClosure_test:
 
 rule analysis_plot:
     input: f"{output_dir}/tools_merge_test/test.coffea"
-    output: f"{output_dir}/analysis_plot/RunII/passPreSel/region_SR/SvB_MA_ps_zz.pdf"
+    output: f"{output_dir}/analysis_plot/RunII/region_SR/SvB_MA_ps_zz.pdf"
     log: f"{output_dir}/analysis_plot.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/analysis-plot.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
 rule analysis_unsup_plot:
     input: f"{output_dir}/analysis_unsup_test/test_unsup.coffea"
-    output: f"{output_dir}/analysis_unsup_plot/RunII/passPreSel/fourTag/SR/mix_v0/v4j_mass.pdf"
+    output: f"{output_dir}/analysis_plot_unsup/RunII/failSvB_vs_passSvB/region_SR/mix_v0/v4j_mass.pdf"
     log: f"{output_dir}/analysis_unsup_plot.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/analysis-unsup-plot.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
@@ -284,12 +284,25 @@ rule analysis_test_Run3:
     container: analysis_container
     shell: "source coffea4bees/scripts/analysis-test-Run3.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
+rule analysis_test_Run3_2024:
+    output: f"{output_dir}/analysis_test_Run3_2024/test.coffea"
+    log: f"{output_dir}/analysis_test_Run3_2024.log"
+    container: analysis_container
+    shell: "source coffea4bees/scripts/analysis-test-Run3-2024.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
+
 rule analysis_cutflow_Run3:
     input: f"{output_dir}/analysis_test_Run3/test.coffea"
     output: f"{output_dir}/analysis_cutflow_Run3/test_dump_cutflow.yml"
     log: f"{output_dir}/analysis_cutflow_Run3.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/analysis-cutflow-Run3.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
+
+rule analysis_cutflow_Run3_2024:
+    input: f"{output_dir}/analysis_test_Run3_2024/test.coffea"
+    output: f"{output_dir}/analysis_cutflow_Run3_2024/test_dump_cutflow.yml"
+    log: f"{output_dir}/analysis_cutflow_Run3_2024.log"
+    container: analysis_container
+    shell: "source coffea4bees/scripts/analysis-cutflow-Run3-2024.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
 rule synthetic_dataset_make_dataset_Run3:
     output: f"{output_dir}/synthetic_dataset_make_dataset_Run3/picoaod_datasets_declustered_test_2023_BPix.yml"
@@ -396,3 +409,12 @@ rule analysis_cutflow_lowpt_Run2:
     log: f"{output_dir}/analysis_cutflow_lowpt_Run2.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/analysis-cutflow-lowpt-Run2.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
+
+rule workflow_validation:
+    log: f"{output_dir}/workflow_validation.log"
+    shell:
+        """
+        pixi run snakemake -s coffea4bees/workflows/Snakefile_wanalysis_wcombine.smk --configfile coffea4bees/workflows/config/nominal_run2.yml -n 2>&1 | tee -a {log}
+        pixi run snakemake -s coffea4bees/workflows/Snakefile_wanalysis_wcombine.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml -n 2>&1 | tee -a {log}
+        pixi run snakemake -s coffea4bees/workflows/Snakefile_wanalysis_wcombine.smk --configfile coffea4bees/workflows/config/nominal_run3.yml -n 2>&1 | tee -a {log}
+        """

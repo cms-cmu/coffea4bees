@@ -21,7 +21,7 @@ Datasets covered:
 After running, copy the merged result.json into friends_HH4b.yml under the
 2023_preBPix entry:
 
-    is_parking: "coffea4bees/metadata/datasets_HH4b_Run3/isParkingfriend_2023_preBPix.json@@is_parking"
+    is_parking: "coffea4bees/metadata/friends/isParkingfriend_2023_preBPix.json@@is_parking"
 
 The Run3 SvB_FeynNet friend tree generation will then load this and
 dispatch parking/preparking per event.
@@ -33,7 +33,7 @@ Usage:
 """
 
 config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
-config.setdefault('dataset_location',   "coffea4bees/metadata/datasets_HH4b_Run3/")
+config.setdefault('dataset_location',   "coffea4bees/metadata/datasets/")
 
 ISPARKING_OUT = "output/Run3_isParking/isParking_friendtrees/"
 YEAR          = "2023_preBPix"
@@ -48,12 +48,12 @@ module analysis:
 
 rule all:
     input:
-        f"coffea4bees/metadata/datasets_HH4b_Run3/isParkingfriend_{YEAR}.json"
+        f"coffea4bees/metadata/friends/isParkingfriend_{YEAR}.json"
 
 
 rule install_isParking_friend_json:
     input:  f"{ISPARKING_OUT}isParkingfriend_{YEAR}.json"
-    output: f"coffea4bees/metadata/datasets_HH4b_Run3/isParkingfriend_{YEAR}.json"
+    output: f"coffea4bees/metadata/friends/isParkingfriend_{YEAR}.json"
     shell:  "cp {input} {output}"
 
 

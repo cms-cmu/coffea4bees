@@ -19,12 +19,12 @@ workflow:
     # Run for merge requests
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       variables:
-        ANALYSIS_IMAGE_TAG: "dev_coffea2025_latest"
+        ANALYSIS_IMAGE_TAG: "latest"
       when: always
     # Run for pushes to branches WITHOUT open merge requests
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_OPEN_MERGE_REQUESTS == null'
       variables:
-        ANALYSIS_IMAGE_TAG: "dev_coffea2025_latest"
+        ANALYSIS_IMAGE_TAG: "latest"
       when: always
     # Run for scheduled pipelines
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
@@ -45,17 +45,20 @@ variables:
   # DATASET: metadata/datasets_HH4b_cernbox.yml
   # DATASET_RUN3: metadata/datasets_HH4b_Run3_cernbox.yml
   RUN_REANA: "false"
+  CLASSIFIER_CONFIG_PATHS: coffea4bees
+  CLASSIFIER_WFS: coffea4bees/classifier/test/config/workflow/CI/
 
 include:
   - local: workflows/gitlab-CI/stages_code.yml
   - local: workflows/gitlab-CI/stages_skimmer.yml
   - local: workflows/gitlab-CI/stages_analysis.yml
-  # - local: workflows/gitlab-CI/stages_classifier.yml
+  - local: workflows/gitlab-CI/stages_classifier.yml
   - local: workflows/gitlab-CI/stages_cutflow.yml
   - local: workflows/gitlab-CI/stages_tools.yml
   - local: workflows/gitlab-CI/stages_friendtree.yml
   - local: workflows/gitlab-CI/stages_plots.yml
   - local: workflows/gitlab-CI/stages_reana.yml
+  - local: workflows/gitlab-CI/stages_workflows.yml
   - project: 'cms-cmu/barista'
     ref: 'master'
     file: 'src/workflows/gitlab-CI/stages_proxy.yml'
@@ -69,14 +72,15 @@ stages:
   - tools
   - plot
   - cutflow
-  # - classifier
+  - classifier
+  - workflows
   - reana
 
 
 # Setup job that clones barista once
 setup_coffea4bees:
   stage: setup
-  image: alpine/git:latest
+  image: gitlab-registry.cern.ch/cms-cmu/barista:${ANALYSIS_IMAGE_TAG}
   needs:
     - voms_proxy
   script:
@@ -101,6 +105,13 @@ setup_coffea4bees:
     # Copy the proxy if it exists
     - echo "Checking for proxy directory in $CI_PROJECT_DIR/proxy"
     - if [ -d "$CI_PROJECT_DIR/proxy" ]; then cp -r $CI_PROJECT_DIR/proxy/ .; fi
+
+    # Bootstrap Pixi environment
+    - echo "Installing Pixi and dependencies"
+    - export PIXI_NO_PATH_UPDATE=1
+    - curl -fsSL https://pixi.sh/install.sh | PIXI_HOME=$CI_PROJECT_DIR/barista_framework/.pixi-bin bash
+    - export PATH="$CI_PROJECT_DIR/barista_framework/.pixi-bin/bin:$PATH"
+    - pixi install
   artifacts:
     paths:
       - barista_framework/
@@ -118,10 +129,12 @@ setup_coffea4bees:
     - echo "Add error handling flags"
     - set -e
     - set -o pipefail
+    - export CONTAINER_PYTHON=$(which python)
     - echo "Checking output directory"
     - ls $CI_PROJECT_PATH/output/ || true
     - echo "Setting analysis framework"
     - cd barista_framework/
+    - export PATH="$PWD/.pixi-bin/bin:$PATH"
     - pwd && ls -la
     - ls -la coffea4bees/
   retry: 2

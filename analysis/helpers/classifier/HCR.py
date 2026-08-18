@@ -3,6 +3,7 @@ from typing import TypedDict
 
 import awkward as ak
 import fsspec
+import logging
 import numpy.typing as npt
 import torch
 import torch.nn.functional as F
@@ -104,6 +105,7 @@ class _HCRKFoldModel:
 
     def __call__(self, j, o, a):
         c_logits, q_logits = self._model(j, o, a)
+        logging.debug("DEBUG Raw c_logits mean:", torch.mean(c_logits, dim=0).tolist(), "min:", torch.min(c_logits, dim=0)[0].tolist(), "max:", torch.max(c_logits, dim=0)[0].tolist())
         if self._reindex is not None:
             c_logits = c_logits[:, self._reindex]
         return c_logits, q_logits
@@ -162,7 +164,10 @@ class HCREnsemble:
             )
         # ancillary features
         a = batch[Input.ancillary]
-        for i, k in enumerate(self.ancillary):
+        # Mismatch fix: The GBN parameter scaling in the trained HCR model expects
+        # the inputs in the order ['xW', 'nSelJets', 'xbW', 'year'].
+        model_features = ["xW", "nSelJets", "xbW", "year"]
+        for i, k in enumerate(model_features):
             match k:
                 case "year":
                     a[:, i] = self.get_year(event.metadata["year"])

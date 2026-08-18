@@ -787,14 +787,18 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             event: Event array
         """
 
+        FvT_loaded = False
         if "FvT" in self.friends:
-            event["FvT"] = rename_FvT_friend(self.target, self.friends["FvT"])
-            if self.config["isDataForMixed"] or self.config["isTTForMixed"]:
-                for _FvT_name in event.metadata["FvT_names"]:
-                    event[_FvT_name] = rename_FvT_friend(self.target, self.friends[_FvT_name])
-                    event[_FvT_name, _FvT_name] = event[_FvT_name].FvT
+            FvT_arr = rename_FvT_friend(self.target, self.friends["FvT"])
+            if FvT_arr is not None:
+                event["FvT"] = FvT_arr
+                FvT_loaded = True
+                if self.config["isDataForMixed"] or self.config["isTTForMixed"]:
+                    for _FvT_name in event.metadata["FvT_names"]:
+                        event[_FvT_name] = rename_FvT_friend(self.target, self.friends[_FvT_name])
+                        event[_FvT_name, _FvT_name] = event[_FvT_name].FvT
 
-        else:
+        if not FvT_loaded:
             # TODO: remove backward compatibility in the future
             if self.config["isMixedData"]:
 

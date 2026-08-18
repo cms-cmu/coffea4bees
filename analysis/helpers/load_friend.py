@@ -59,6 +59,8 @@ def rename_FvT_friend(chunk: Chunk, friend: Friend):
         chunk,
         reader_options={"branch_filter": set().union(kept, rename).intersection},
     )
+    if FvT is None:
+        return None
     return _rename(FvT, kept, rename)
 
 

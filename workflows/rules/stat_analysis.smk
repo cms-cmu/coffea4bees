@@ -1,17 +1,20 @@
 rule convert_hist_to_json:
-    input: "{input_file}"
+    input:
+        coffea_file = "{input_file}",
+        script = "src/tools/convert_hist_to_json.py"
     output: "{output_file}"
     container: config["analysis_container"]
     params:
-        syst_flag = " "
+        syst_flag = " ",
+        container_wrapper = config.get("container_wrapper", "./run_container combine")
     log:
         "logs/{output_file}.log"
     shell:
         """
         mkdir -p $(dirname {log})
-        echo "[$(date)] Starting convert_hist_to_json for {input}" > {log}
-        python3 coffea4bees/stats_analysis/convert_hist_to_json.py -o {output} -i {input} {params.syst_flag} 2>&1 | tee -a {log}
-        echo "[$(date)] Completed convert_hist_to_json for {input}" >> {log}
+        echo "[$(date)] Starting convert_hist_to_json for {input.coffea_file}" > {log}
+        {params.container_wrapper} python3 src/tools/convert_hist_to_json.py -o {output} -i {input.coffea_file} {params.syst_flag} 2>&1 | tee -a {log}
+        echo "[$(date)] Completed convert_hist_to_json for {input.coffea_file}" >> {log}
         """
 
 rule convert_hist_to_json_closure:
@@ -29,7 +32,9 @@ rule convert_hist_to_json_closure:
         """
 
 rule convert_json_to_root:
-    input: "output/histMixedBkg_TT.json"
+    input:
+        injson = "output/histMixedBkg_TT.json",
+        script = "coffea4bees/stats_analysis/convert_json_to_root.py"
     output: "output/histMixedBkg_TT.root"
     params:
         output_dir = config.get("output_path", "output/"),
@@ -39,13 +44,13 @@ rule convert_json_to_root:
     shell:
         """
         mkdir -p $(dirname {log})
-        echo "[$(date)] Starting convert_json_to_root for {input}" > {log}
+        echo "[$(date)] Starting convert_json_to_root for {input.injson}" > {log}
         {params.container_wrapper} \
-            python3 coffea4bees/stats_analysis/convert_json_to_root.py \
-            -f {input} \
+            python3 {input.script} \
+            -f {input.injson} \
             --output {params.output_dir} 2>&1 | tee -a {log}
 
-        echo "[$(date)] Completed convert_json_to_root for {input}" >> {log}
+        echo "[$(date)] Completed convert_json_to_root for {input.injson}" >> {log}
         """
 
 rule run_two_stage_closure:
@@ -53,7 +58,8 @@ rule run_two_stage_closure:
         file_TT = "output/histMixedBkg_TT.root",
         file_mix = "output/histMixedData.root",
         file_sig = "output/histAll.root",
-        file_data3b = "output/histMixedBkg_data_3b_for_mixed.root"
+        file_data3b = "output/histMixedBkg_data_3b_for_mixed.root",
+        script = "coffea4bees/stats_analysis/runTwoStageClosure.py"
     output: "output/closureFits/ULHH_kfold/3bDvTMix4bDvT/SvB_MA/varrebin2/SR/hh/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_hh_fine_varrebin2.pkl"
     params:
         outputPath = "output/closureFits/ULHH_kfold",
@@ -70,7 +76,7 @@ rule run_two_stage_closure:
         echo "[$(date)] Input files: TT={input.file_TT}, mix={input.file_mix}, sig={input.file_sig}, data3b={input.file_data3b}" >> {log}
         
         {params.container_wrapper} \
-            python3 coffea4bees/stats_analysis/runTwoStageClosure.py  \
+            python3 {input.script}  \
             --var {params.variable} --rebin {params.rebin} \
             {params.extra_arguments} \
             --outputPath {params.outputPath} \
@@ -87,7 +93,9 @@ rule make_combine_inputs:
     input:
         injson = "output/histAll.json",
         injsonsyst = "output/histAll_signals_cHHHX.json",
-        bkgsyst = "output/closureFits/ULHH_kfold/3bDvTMix4bDvT/SvB_MA/varrebin2/SR/hh/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_hh_fine_varrebin2.pkl"
+        bkgsyst = "output/closureFits/ULHH_kfold/3bDvTMix4bDvT/SvB_MA/varrebin2/SR/hh/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_hh_fine_varrebin2.pkl",
+        script = "coffea4bees/stats_analysis/make_combine_inputs.py",
+        metadata_file = lambda wildcards, params: params.metadata
     output:
         "output/datacards/datacard__HHbb.txt"
     params:
@@ -100,6 +108,7 @@ rule make_combine_inputs:
         stat_only = "--stat_only",
         signal = "HH4b",
         tag_flags = "",
+        years = config.get('years', '2016 2017 2018'),
         container_wrapper = config.get("container_wrapper", "./run_container combine")
     log:
         "logs/make_combine_inputs_HH4b.log"
@@ -111,7 +120,7 @@ rule make_combine_inputs:
 
         echo "[$(date)] Making combine inputs with full stats" | tee -a {log}
         {params.container_wrapper} \
-            python3 coffea4bees/stats_analysis/make_combine_inputs.py \
+            python3 {input.script} \
                 --var {params.variable} \
                 -f {input.injson} \
                 {params.syst_file} \
@@ -119,15 +128,23 @@ rule make_combine_inputs:
                 --output_dir {params.output_dir} \
                 --rebin {params.rebin} \
                 {params.variable_binning} \
-                --metadata {params.metadata} \
+                --metadata {input.metadata_file} \
                 {params.stat_only} \
                 {params.tag_flags} 2>&1 | tee -a {log}
 
         echo "[$(date)] Combining datacards" | tee -a {log}
-        {params.container_wrapper} "cd $OUTPUT_DIR && \
-            combineCards.py {params.signal}_2016=datacard_{params.signal}_2016.txt \
-            {params.signal}_2017=datacard_{params.signal}_2017.txt \
-            {params.signal}_2018=datacard_{params.signal}_2018.txt > datacard__{params.signal}.txt" 2>&1 | tee -a {log}
+        args=""
+        for file in $(find "$OUTPUT_DIR" -maxdepth 1 -name "datacard_*.txt" ! -name "datacard__*.txt" | sort); do
+            base=$(basename "$file")
+            bin_name=$(echo "$base" | sed 's/^datacard_//; s/\\.txt$//')
+            args="$args $bin_name=$base"
+        done
+        if [ -n "$args" ]; then
+            {params.container_wrapper} "cd $OUTPUT_DIR && combineCards.py $args > datacard__{params.signal}.txt" 2>&1 | tee -a {log}
+        else
+            echo "Error: No datacards found to combine in $OUTPUT_DIR!" | tee -a {log}
+            exit 1
+        fi
 
         echo "[$(date)] Completed make_combine_inputs for signal {params.signal}" >> {log}
         """

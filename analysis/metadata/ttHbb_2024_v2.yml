@@ -1,0 +1,18 @@
+runner:
+  workers: 4
+  worker_memory: 8GB
+  dashboard_address: 0
+
+config:
+  blind: false
+  apply_FvT: true
+  apply_JCM: true
+  apply_trigWeight: true
+  apply_btagSF: true
+  apply_boosted_veto: false
+  run_SvB: true
+  SvB_MA: true
+  SvB: null
+  hist_cuts: ["pass_nSelJets_gt6", "fail_nSelJets_le6"]
+  top_reconstruction: fast
+  plot_ttbar_with_weights: true

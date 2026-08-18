@@ -20,6 +20,7 @@ Options:
   --output-filename FILE         Output filename
   --output-subdir DIR            Output subdirectory
   --friends PATH                 Path to friends metadata file (default: coffea4bees/metadata/friends/friends_HH4b.yml)
+  --weights PATH                 Path to weights metadata file (default: coffea4bees/metadata/weights/weights_HH4b.yml)
   --additional-flags FLAGS       Additional flags for runner.py
   --no-test                      Disable test mode
   --condor                       Enable condor mode
@@ -42,6 +43,7 @@ display_config() {
     echo "Triggers:           $TRIGGERS_PATH"
     echo "Luminosities:       $LUMINOSITIES_PATH"
     echo "Friends:            $FRIENDS_PATH"
+    echo "Weights:            $WEIGHTS_PATH"
     echo "Datasets:           $DATASETS"
     echo "Year:               $YEAR"
     echo "Output filename:    ${OUTPUT_BASE}/${OUTPUT_SUBDIR}/${OUTPUT_FILENAME}"

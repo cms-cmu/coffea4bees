@@ -11,10 +11,13 @@ Usage:
 """
 
 config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
+<<<<<<< HEAD
 # Base datasets + friend JSONs were moved out of metadata/datasets_HH4b_Run3/
 # by the repo reorg: dataset ymls now live in metadata/datasets/ and the
 # committed friend JSONs in metadata/friends/ (see friends_HH4b.yml). Point
 # everything at the new locations.
+=======
+>>>>>>> origin/master
 config.setdefault('dataset_location',   "coffea4bees/metadata/datasets/")
 config.setdefault('years', ['2022_EE', '2022_preEE', '2023_BPix', '2023_preBPix'])
 config.setdefault('dataset_name', 'mixeddata_all')
@@ -47,8 +50,13 @@ else:
     _friend_stub = config['dataset_name']
     _out_tag     = f"_{config['dataset_name']}"
 
+<<<<<<< HEAD
 FEYNNET_OUT = f"output/Run3_FeynNet{_out_tag}/feynnet_friendtrees/"
 INSTALL     = f"coffea4bees/metadata/friends/SvBFeynNetfriend_{_friend_stub}.json"
+=======
+FEYNNET_OUT = f"output/Run3_FeynNet{_install_tag}/feynnet_friendtrees/"
+INSTALL     = f"coffea4bees/metadata/friends/SvBFeynNetfriend_mixeddata_data{_install_tag}.json"
+>>>>>>> origin/master
 
 TT_DATASETS = ['TTTo2L2Nu', 'TTToHadronic', 'TTToSemiLeptonic']
 # Only this HH coupling point currently has 2022/2023 picoAODs.
