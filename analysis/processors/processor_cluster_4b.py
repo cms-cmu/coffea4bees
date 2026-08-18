@@ -25,7 +25,12 @@ _SYNTHETIC_JET_ID_BIT = 7
 
 
 class analysis(HH4bBaseProcessor):
-    def __init__(self, **kwargs):
+    # `friends` is an explicit parameter (not folded into **kwargs) because
+    # runner.py only injects the per-year friend trees when the processor
+    # __init__ signature names `friends` explicitly. Without it the FvT friend
+    # is never supplied and the ttbar-subtraction path falls back to a
+    # nonexistent sibling FvT.root next to each picoAOD.
+    def __init__(self, friends: dict = None, **kwargs):
         self.clustering_pdfs_file = kwargs.pop("clustering_pdfs_file", "coffea4bees/jet_clustering/jet-splitting-PDFs-00-11-01/clustering_pdfs_vs_pT_XXX.yml")
         self.do_declustering      = kwargs.pop("do_declustering", False)
 
@@ -33,7 +38,7 @@ class analysis(HH4bBaseProcessor):
         kwargs.setdefault("run_SvB",      False)
         kwargs.setdefault("apply_btagSF", False)
 
-        super().__init__(**kwargs)
+        super().__init__(friends=friends, **kwargs)
         logging.info("\nInitialize cluster 4b Processor")
         logging.info(f"subtract_ttbar_with_weights = {self.subtract_ttbar_with_weights}")
 

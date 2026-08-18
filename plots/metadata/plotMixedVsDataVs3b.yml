@@ -2,26 +2,39 @@ hists:
         data:
                 process: data
                 tag: fourTag
-                year: RunII
+                year: Run3
                 label: Four-tag Data
                 edgecolor: k
                 fillcolor: k            
 
+#        mix_v0:
+#                process: mixeddata_all_rank0_0
+#                tag: fourTag
+#                year: Run3
+#                label: Mixed Data (v0)
+#                edgecolor: r
+#                fillcolor: r
+#                linewidth: 2
+#                histtype: step
+
         mix_v0:
-                process: mix_v0
+                process: [mixeddata_all_nopz_rank0_0, TTTo2L2Nu, TTToSemiLeptonic, TTToHadronic]
                 tag: fourTag
-                year: RunII
-                label: Mixed Data (v0)
-                edgecolor: r
+                year: Run3
                 fillcolor: r
+                edgecolor: r            
+                label: Mixed Data
                 linewidth: 2
                 histtype: step
+
+
+
 
 stack:
         TTTo2L2Nu:
                 process: TTTo2L2Nu
                 tag: fourTag
-                year: RunII
+                year: Run3
                 fillcolor: "#85D1FBff"
                 edgecolor: "#85D1FBff"
                 label: None
@@ -29,7 +42,7 @@ stack:
         TTToSemiLeptonic:
                 process: TTToSemiLeptonic
                 tag: fourTag
-                year: RunII
+                year: Run3
                 fillcolor: "#85D1FBff"
                 edgecolor: "#85D1FBff"
                 label: None
@@ -37,13 +50,13 @@ stack:
         TTToHadronic:
                 process: TTToHadronic
                 tag: fourTag
-                year: RunII
+                year: Run3
                 fillcolor: "#85D1FBff"
                 edgecolor: k
                 label: TTbar
 
         MultiJet:
-                year: RunII
+                year: Run3
                 fillcolor: "#FFDF7Fff"
                 edgecolor: k
                 label: Multijet
@@ -84,7 +97,7 @@ ratios:
                         type: band
                         hatch: \\\
                         
-        mixToBkg:
+        mixToBkg_0:
                 numerator:
                         type: hists
                         key: data
@@ -99,6 +112,8 @@ ratios:
                         color: r
                         type: band
                         hatch: ///
+
+
 
 
 

@@ -14,7 +14,7 @@ hists:
                 edgecolor: "#e42536"
                 fillcolor: "#e42536"            
                 histtype: step
-                scalefactor: 0.01168
+                scalefactor: 100
                 
 #        ZH4b:
 #                process: [ZH4b, ggZH4b]
