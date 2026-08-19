@@ -2,9 +2,6 @@ runner:
   workers: 4
   worker_memory: 8GB
   data_tier: nanoAOD
-  allowlist_sites:
-    - T1_IT_CNAF_Disk
-    - T2_US_Nebraska
-    - T2_US_Purdue
-    - T2_CH_CSCS
+  rucio_regex_sites: "T[123]"
+  allowlist_sites: []
 
