@@ -420,7 +420,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             self.clf_SvB = self.classifier_SvB.get(weights_era) or self.classifier_SvB.get(self.year_label) or self.classifier_SvB.get(self.year) if isinstance(self.classifier_SvB, dict) else self.classifier_SvB
             self.clf_SvB_MA = self.classifier_SvB_MA.get(weights_era) or self.classifier_SvB_MA.get(self.year_label) or self.classifier_SvB_MA.get(self.year) if isinstance(self.classifier_SvB_MA, dict) else self.classifier_SvB_MA
             self.clf_FvT = self.classifier_FvT.get(weights_era) or self.classifier_FvT.get(self.year_label) or self.classifier_FvT.get(self.year) if isinstance(self.classifier_FvT, dict) else self.classifier_FvT
-            self.jcm_model = self.apply_JCM.get(weights_era) or self.apply_JCM.get(self.year_label) or self.apply_JCM.get(self.year) if isinstance(self.apply_JCM, dict) else self.apply_JCM
+            self.jcm_model = self.apply_JCM.get(weights_era) or self.apply_JCM.get(self.year_label) or self.apply_JCM.get(self.year) or self.apply_JCM.get("default") if isinstance(self.apply_JCM, dict) else self.apply_JCM
             self.processName = event.metadata['processName']
 
             if (self.processName.find("mix") != -1 or self.dataset.find("syn") != -1) and not self.processName.startswith("mixeddata_all"):

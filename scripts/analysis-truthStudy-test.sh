@@ -18,7 +18,7 @@ display_section_header "Running test processor"
 bash coffea4bees/scripts/run-analysis-processor.sh \
     --processor "coffea4bees/analysis/processors/processor_genmatch_HH4b.py" \
     --output-base "$OUTPUT_BASE_DIR" \
-    --datasets "GluGluToHHTo4B_cHHH1" \
+    --datasets "GluGluToHHTo4B_cHHH0" \
     --year "UL18" \
     --output-filename "testTruth.coffea" \
     --output-subdir "$JOB" \
