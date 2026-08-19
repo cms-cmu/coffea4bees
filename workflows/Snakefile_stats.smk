@@ -17,6 +17,7 @@ config.setdefault('make_combine_inputs', {})
 config['make_combine_inputs'].setdefault('rebin', 1)
 config['make_combine_inputs'].setdefault('variable_binning', "")
 config['make_combine_inputs'].setdefault('stat_only', "--stat_only")
+config['make_combine_inputs'].setdefault('bkgsyst', "")
 config['make_combine_inputs'].setdefault('syst_file', "")
 config['make_combine_inputs'].setdefault('metadata_template', config.get('metadata_template', "coffea4bees/stats_analysis/metadata/{channel}.yml"))
 config['make_combine_inputs'].setdefault('multijet_process', "data")
@@ -38,12 +39,39 @@ config.setdefault('combine_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.
 config.setdefault('container_wrapper', "./run_container combine")
 
 # Decoupled config definitions and path resolution
+def get_bkgsyst_for_channel(channel):
+    ch_config = config['channels'].get(channel, {})
+    if 'bkgsyst' in ch_config and ch_config['bkgsyst']:
+        return ch_config['bkgsyst']
+    global_bkgsyst = config.get('make_combine_inputs', {}).get('bkgsyst') or config.get('bkgsyst')
+    if global_bkgsyst:
+        return global_bkgsyst.format(
+            output_path=config.get('output_path', 'output/'),
+            channel=channel,
+            closure_subdir=ch_config.get('closure_subdir', channel)
+        )
+    closure_subdir = ch_config.get('closure_subdir', channel)
+    closure_base = config.get('closure_base', "coffea4bees/stats_analysis/files/HIG-24-010")
+    return f"{closure_base}/{closure_subdir}/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_{closure_subdir}_rebin1.pkl"
+
 for channel, ch_config in config.get('channels', {}).items():
-    ch_config.setdefault('bkgsyst', f"{config['closure_base']}/{ch_config['closure_subdir']}/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_{ch_config['closure_subdir']}_rebin1.pkl")
+    ch_config.setdefault('bkgsyst', get_bkgsyst_for_channel(channel))
 
 # Constrain channel wildcard
 wildcard_constraints:
     channel = "|".join(config['channels'].keys()) if config['channels'] else "[a-zA-Z0-9_]+"
+
+def get_stat_only_flag():
+    val = config.get('make_combine_inputs', {}).get('stat_only', '--stat_only')
+    if isinstance(val, bool):
+        return '--stat_only' if val else ''
+    if val in ['--stat_only', '']:
+        return val
+    if str(val).lower() in ['true', '1']:
+        return '--stat_only'
+    if str(val).lower() in ['false', '0', 'none', '']:
+        return ''
+    return str(val)
 
 def get_region_for_channel(channel):
     # 1. Check channel-specific setting
@@ -114,7 +142,7 @@ use rule make_combine_inputs from stat_analysis with:
         metadata = lambda wildcards: config['make_combine_inputs']['metadata_template'].format(channel=wildcards.channel.split('_')[0]),
         output_dir = lambda wildcards: f"{config['output_path']}stat_analysis/{wildcards.channel}/datacards/",
         variable_binning = lambda wildcards, input: config['make_combine_inputs']['variable_binning'],
-        stat_only = lambda wildcards, input: config['make_combine_inputs']['stat_only'],
+        stat_only = lambda wildcards, input: get_stat_only_flag(),
         signal = lambda wildcards: wildcards.channel,
         tag_flags = lambda wildcards: (
             f"{config['combine_flags']} "

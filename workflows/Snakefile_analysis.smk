@@ -62,9 +62,9 @@ def get_analysis_targets(wildcards):
     targets = [
         f"{config['output_path']}histAll_{config['label']}.coffea",
         f"{config['output_path']}plots_{config['label']}/plots_done.txt",
+        f"{config['output_path']}cutflow_validation_{config['label']}.txt",
+        f"{config['output_path']}cutflow_{config['label']}.yml",
     ]
-    if config.get("known_counts"):
-        targets.append(f"{config['output_path']}cutflow_validation_{config['label']}.txt")
     return targets
 
 rule all_analysis:
@@ -206,7 +206,7 @@ use rule make_plots from analysis with:
     params:
         output_dir = f"{config['output_path']}plots_{config['label']}/",
         metadata = config['plot_config'],
-        extra_arguments = "-s xW " + (" ".join([f"--year {y}" for y in DATA_YEARS]) if len(DATA_YEARS) == 1 else ""),
+        extra_arguments = "-s xW --year " + (DATA_YEARS[0] if len(DATA_YEARS) == 1 else ("Run3" if any("202" in y for y in DATA_YEARS) else "RunII")),
         png_cores = 4,
         run_container_wrapper = config['container_wrapper']
     container: None
@@ -214,11 +214,14 @@ use rule make_plots from analysis with:
 use rule check_cutflow from analysis with:
     input:
         coffea_file = f"{config['output_path']}histAll_{config['label']}.coffea"
-    output: f"{config['output_path']}cutflow_validation_{config['label']}.txt"
+    output:
+        validation_txt = f"{config['output_path']}cutflow_validation_{config['label']}.txt",
+        cutflow_yml = f"{config['output_path']}cutflow_{config['label']}.yml"
     log: f"{config['output_path']}logs/cutflow_validation_{config['label']}.log"
     params:
         known_counts = lambda wildcards: config.get("known_counts", ""),
         error_threshold = lambda wildcards: config.get("error_threshold", "0.001"),
+        cutflow_list = lambda wildcards: config.get("cutflow_list", "passJetMult,passPreSel,passDiJetMass,SR,SB"),
         run_container_wrapper = config['container_wrapper']
     container: None
 

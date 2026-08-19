@@ -37,6 +37,7 @@ config.setdefault('make_combine_inputs', {})
 config['make_combine_inputs'].setdefault('rebin', 1)
 config['make_combine_inputs'].setdefault('variable_binning', "")
 config['make_combine_inputs'].setdefault('stat_only', "--stat_only")
+config['make_combine_inputs'].setdefault('bkgsyst', "")
 config['make_combine_inputs'].setdefault('syst_file', "")
 config['make_combine_inputs'].setdefault('metadata_template', config.get('metadata_template', "coffea4bees/stats_analysis/metadata/{channel}.yml"))
 config['make_combine_inputs'].setdefault('multijet_process', "data")
@@ -69,6 +70,8 @@ def get_master_targets(wildcards):
     master_targets = [
         f"{config['output_path']}histAll_{config['label']}.coffea",
         f"{config['output_path']}plots_{config['label']}/plots_done.txt",
+        f"{config['output_path']}cutflow_validation_{config['label']}.txt",
+        f"{config['output_path']}cutflow_{config['label']}.yml",
     ]
     for channel, ch_config in config.get('channels', {}).items():
         signallabel = ch_config.get('signallabel')

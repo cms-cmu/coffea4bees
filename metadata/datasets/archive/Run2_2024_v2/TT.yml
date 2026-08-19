@@ -57,7 +57,6 @@ TTTo2L2Nu:
       sumw2: 766436910175.5074
       total_events: 145020000
   xs: 88.3419033256
-
 TTTo2L2Nu_for_mixed:
   UL16_postVFP:
     picoAOD:
@@ -97,7 +96,6 @@ TTTo2L2Nu_for_mixed:
       total_events: 148470000.0
   nSamples: 15
   xs: 88.3419033256
-
 TTToHadronic:
   UL16_postVFP:
     nanoAOD: /TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v1/NANOAODSIM
@@ -338,7 +336,6 @@ TTToHadronic:
       sumw_raw: 104496073061.0
       total_events: 332886000
   xs: 377.9607353256
-
 TTToHadronic_for_mixed:
   UL16_postVFP:
     picoAOD:
@@ -378,7 +375,6 @@ TTToHadronic_for_mixed:
       total_events: 344028000.0
   nSamples: 15
   xs: 377.9607353256
-
 TTToSemiLeptonic:
   UL16_postVFP:
     nanoAOD: /TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v1/NANOAODSIM
@@ -561,7 +557,6 @@ TTToSemiLeptonic:
       sumw_raw: 142678950398.0
       total_events: 474164000
   xs: 365.7826460496
-
 TTToSemiLeptonic_for_mixed:
   UL16_postVFP:
     picoAOD:
@@ -601,3 +596,23 @@ TTToSemiLeptonic_for_mixed:
       total_events: 486770000.0
   nSamples: 15
   xs: 365.7826460496
+TTbb_Hadronic:
+  UL18:
+    nanoAOD: /TTbb_4f_TTToHadronic_TuneCP5-Powheg-Openloops-Pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1/NANOAODSIM
+    picoAOD:
+      count: 8049064
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk7.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk8.root
+      saved_events: 836110
+      sumw: 160749266.875
+      sumw2: 4128147996.0
+      total_events: 8049064
+  xs: 1

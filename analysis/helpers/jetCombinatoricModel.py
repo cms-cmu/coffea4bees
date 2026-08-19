@@ -33,7 +33,7 @@ class jetCombinatoricModel:
         self.read_parameter_file()
         self._rng = Squares(("JCM", "pseudo tag"))
 
-        logging.info(f"JCM initialized in {'lowpt' if lowpt_mode else 'standard'} mode with cut={cut}")
+        logging.debug(f"JCM initialized in {'lowpt' if lowpt_mode else 'standard'} mode with cut={cut}")
 
     def read_parameter_file(self):
 

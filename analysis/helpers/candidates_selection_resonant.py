@@ -266,7 +266,7 @@ def create_cand_jet_dijet_quadjet(
         quadJet["SB"] = quadJet.passDiJetMass & ~quadJet.SR & (quadJet.rank >= 12) #& passabovecurve
 
     if classifier_FvT is not None:
-        logging.info("Computing FvT scores with classifier")
+        logging.debug("Computing FvT scores with classifier")
 
         compute_FvT(selev, selev[label3b], FvT=classifier_FvT)
         weight_FvT = np.ones(len(weights.weight()), dtype=float)

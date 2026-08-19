@@ -360,7 +360,7 @@ def _apply_ml_scores(
     Returns updated ``apply_FvT`` flag (set True if classifier_FvT is provided).
     """
     if classifier_FvT is not None:
-        logging.info("Computing FvT scores with classifier")
+        logging.debug("Computing FvT scores with classifier")
         compute_FvT(selev, selev[label3b], FvT=classifier_FvT)
         weight_FvT = np.ones(len(weights.weight()), dtype=float)
         weight_FvT[analysis_selections] *= ak.to_numpy(selev.FvT.FvT)

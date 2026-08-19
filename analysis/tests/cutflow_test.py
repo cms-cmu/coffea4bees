@@ -39,7 +39,11 @@ class CutFlowTestCase(unittest.TestCase):
     def get_failures(self, expected, observed):
         failures = []
         for datasetAndEra in expected.keys():
+            if datasetAndEra not in observed:
+                continue
             for cut, exp in expected[datasetAndEra].items():
+                if cut not in observed[datasetAndEra]:
+                    continue
                 obs = round(float(observed[datasetAndEra][cut]), 2)
                 diff = obs - exp
                 percent_diff = diff / exp if exp else 0

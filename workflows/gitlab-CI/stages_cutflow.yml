@@ -23,6 +23,7 @@ check_cutflow_Run3_coffea4bees:
   artifacts:
     paths:
       - barista_framework/output/run3_nominal/cutflow_validation_run3_nominal.txt
+      - barista_framework/output/run3_nominal/cutflow_run3_nominal.yml
 
 analysis_cutflow_Run3_2024_coffea4bees:
   stage: cutflow
@@ -181,3 +182,4 @@ check_cutflow_lowpt_Run2_coffea4bees:
   artifacts:
     paths:
       - barista_framework/output/run2_lowpt/cutflow_validation_run2_lowpt.txt
+      - barista_framework/output/run2_lowpt/cutflow_run2_lowpt.yml

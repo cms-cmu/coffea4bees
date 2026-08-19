@@ -5,7 +5,7 @@ processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
 friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b.yml"
 weights_file: "coffea4bees/metadata/weights/weights_HH4b_2024_v2.yml"
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
-combine_flags: "--blind --three_tag threeTag --four_tag fourTag --region sum"
+combine_flags: "--three_tag threeTag --four_tag fourTag --region sum"
 cern_user: "algomez"
 cern_path: "www/HH4b/Plots/"
 dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
@@ -22,6 +22,9 @@ convert_hist_to_json:
     - "SvB_MA.ps_ttHbb"
     - "SvB_MA.ps"
 combine_outdir: "datacards/"
+make_combine_inputs:
+  stat_only: ""
+  bkgsyst: "coffea4bees/stats_analysis/files/HIG-24-010/hh/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_hh_rebin1.pkl"
 channels:
   ttHbb:
     signallabel: "ttHbb"
