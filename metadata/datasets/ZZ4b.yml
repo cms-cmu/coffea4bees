@@ -106,6 +106,15 @@ ZZ4b:
       sumw2_raw: 31992486.365234375
       sumw_raw: 22702526.780517578
       total_events: 39650048
+  2022_preEE:
+    nanoAOD: root://cmsxrootd.fnal.gov//store/user/ekoenig/Run3_private_production/2021/mc/ZZTo4B01j_5f_NLO_FXFX_2022-preEE/
+  2022_postEE:
+    nanoAOD: root://cmsxrootd.fnal.gov//store/user/ekoenig/Run3_private_production/2022/mc/ZZTo4B01j_5f_NLO_FXFX_2022-postEE/
+  2023_preBPIX:
+    nanoAOD: root://cmsxrootd.fnal.gov//store/user/ekoenig/Run3_private_production/2023/mc/ZZTo4B01j_5f_NLO_FXFX_2023-preBPIX/
+  2023_postBPIX:
+    nanoAOD: root://cmsxrootd.fnal.gov//store/user/ekoenig/Run3_private_production/2020/mc/ZZTo4B01j_5f_NLO_FXFX_2023-postBPIX/
   xs:
     Run2: 15.5   *0.1512*0.1512
     Run3: 1
+
