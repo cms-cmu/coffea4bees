@@ -147,7 +147,119 @@ class TrigEmulatorTool:
 
         return weight
 
+    def GetWeightsOR_vectorized(
+        self,
+        offline_jet_pts,
+        offline_btagged_jet_pts,
+        ht=-1,
+        smearFactor=0.0,
+        rng=None,
+    ):
+        """
+        Vectorized evaluation of the OR of all configured triggers across nToys.
+
+        Parameters
+        ----------
+        offline_jet_pts : awkward array or np.ndarray
+            pTs of selected jets per event (jagged or (N, n_jets)).
+        offline_btagged_jet_pts : awkward array or np.ndarray
+            pTs of candidate / tagged jets per event (e.g. (N, 4)).
+        ht : awkward array or np.ndarray or float
+            Event trigger HT values (N,).
+        smearFactor : float, default 0.0
+        rng : np.random.Generator, optional
+
+        Returns
+        -------
+        weights : np.ndarray of shape (N,)
+        """
+        import numpy as np
+        import awkward as ak
+
+        nEvents = len(offline_jet_pts)
+        if nEvents == 0:
+            return np.empty(0, dtype=np.float64)
+
+        # 1. Format jet arrays
+        if hasattr(offline_jet_pts, "layout"):
+            max_jets = int(ak.max(ak.num(offline_jet_pts))) if nEvents > 0 else 0
+            if max_jets == 0:
+                jet_pts = np.zeros((nEvents, 1), dtype=np.float64)
+                jet_mask = np.zeros((nEvents, 1), dtype=bool)
+            else:
+                padded_jets = ak.pad_none(offline_jet_pts, target=max_jets, axis=1)
+                jet_mask = ak.to_numpy(~ak.is_none(padded_jets, axis=1))
+                jet_pts = ak.to_numpy(ak.fill_none(padded_jets, 0.0)).astype(np.float64)
+        else:
+            jet_pts = np.asarray(offline_jet_pts, dtype=np.float64)
+            if jet_pts.ndim == 1:
+                jet_pts = jet_pts[:, np.newaxis]
+            jet_mask = np.ones_like(jet_pts, dtype=bool)
+
+        # 2. Format b-jet arrays
+        if hasattr(offline_btagged_jet_pts, "layout"):
+            max_bjets = int(ak.max(ak.num(offline_btagged_jet_pts))) if nEvents > 0 else 0
+            if max_bjets == 0:
+                bjet_pts = np.zeros((nEvents, 1), dtype=np.float64)
+                bjet_mask = np.zeros((nEvents, 1), dtype=bool)
+            else:
+                padded_bjets = ak.pad_none(offline_btagged_jet_pts, target=max_bjets, axis=1)
+                bjet_mask = ak.to_numpy(~ak.is_none(padded_bjets, axis=1))
+                bjet_pts = ak.to_numpy(ak.fill_none(padded_bjets, 0.0)).astype(np.float64)
+        else:
+            bjet_pts = np.asarray(offline_btagged_jet_pts, dtype=np.float64)
+            if bjet_pts.ndim == 1:
+                bjet_pts = bjet_pts[:, np.newaxis]
+            bjet_mask = np.ones_like(bjet_pts, dtype=bool)
+
+        # 3. Format HT array
+        if hasattr(ht, "layout"):
+            ht_array = ak.to_numpy(ht).astype(np.float64)
+        elif np.isscalar(ht):
+            ht_array = np.full(nEvents, ht, dtype=np.float64)
+        else:
+            ht_array = np.asarray(ht, dtype=np.float64)
+
+        if rng is None:
+            rng = np.random.default_rng()
+
+        nToys = self.m_nToys
+        n_bjets = bjet_pts.shape[1]
+
+        # Draw correlated random numbers for all toys
+        btag_rand = rng.random((nToys, nEvents, n_bjets, 2))
+        ht_rand = rng.random((nToys, nEvents, 3))
+
+        pass_any = np.zeros((nToys, nEvents), dtype=bool)
+        for trigName, trigEmulator in self.m_emulatedTrigMenu.items():
+            pass_trig = trigEmulator.passTrigVectorized(
+                jet_pts=jet_pts,
+                jet_mask=jet_mask,
+                bjet_pts=bjet_pts,
+                bjet_mask=bjet_mask,
+                ht_array=ht_array,
+                btag_rand=btag_rand,
+                ht_rand=ht_rand,
+                rng=rng,
+                smearFactor=smearFactor,
+            )
+            pass_any = pass_any | pass_trig
+
+        weight = np.mean(pass_any, axis=0)
+
+        # 3b correction factor
+        if self.m_is3b:
+            if self.m_year == "2018":
+                weight *= 0.600
+            elif self.m_year == "2017":
+                weight *= 0.558
+            elif self.m_year == "2016":
+                weight *= 0.857
+
+        return weight
+
     def dumpResults(self):
+
         for trigName, trigEmulator in self.m_emulatedTrigMenu.items():
             logging.info(f"{trigName}")
             trigEmulator.dumpResults()
