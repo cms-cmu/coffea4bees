@@ -14,6 +14,7 @@ class Skimmer(Skimmer4b):
             self,
             loosePtForSkim=False,
             skim4b=False,
+            split_tag_categories=False,
             mc_outlier_threshold=200,
             corrections_metadata=None,
             object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
@@ -29,6 +30,7 @@ class Skimmer(Skimmer4b):
         )
         self.loosePtForSkim = loosePtForSkim
         self.skim4b = skim4b
+        self.split_tag_categories = split_tag_categories
 
     def select(self, events):
         m = self._parse_event_metadata(events)
@@ -71,6 +73,26 @@ class Skimmer(Skimmer4b):
         selections.add("passNoiseFilter", np.full(len(events), True)) #events.passNoiseFilter)
         selections.add("passHLT", (events.passHLT if config["cut_on_HLT_decision"] else np.full(len(events), True)))
 
+        events["weight"] = weights.weight()
+
+        if self.split_tag_categories:
+            selections.add('passJetMult', events.passJetMult)
+            selections.add("passPreSel", events.passPreSel)
+            selections.add("passFourTag", events.fourTag)
+            selections.add("passThreeTag", events.threeTag)
+
+            sel_4b = selections.require(lumimask=True, passNoiseFilter=True, passHLT=True, passJetMult=True, passPreSel=True, passFourTag=True)
+            sel_3b = selections.require(lumimask=True, passNoiseFilter=True, passHLT=True, passJetMult=True, passPreSel=True, passThreeTag=True)
+
+            self._cutFlow.fill("all", events, allTag=True)
+            for cut in ["passNoiseFilter", "passHLT", "passJetMult", "passPreSel", "passFourTag"]:
+                self._cutFlow.fill(cut, events[sel_4b], allTag=True)
+
+            return {
+                "fourTag": (sel_4b, None, {}),
+                "threeTag": (sel_3b, None, {}),
+            }
+
         if self.loosePtForSkim:
             selections.add('passJetMult_lowpt_forskim', events.passJetMult_lowpt_forskim)
             selections.add("passPreSel_lowpt_forskim", events.passPreSel_lowpt_forskim)
@@ -84,8 +106,6 @@ class Skimmer(Skimmer4b):
             selections.add('passJetMult', events.passJetMult)
             selections.add("passPreSel", events.passPreSel)
             final_selection = selections.require(lumimask=True, passNoiseFilter=True, passHLT=True, passJetMult=True, passPreSel=True)
-
-        events["weight"] = weights.weight()
 
         self._cutFlow.fill("all", events, allTag=True)
         cumulative_cuts = []

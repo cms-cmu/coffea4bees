@@ -28,42 +28,26 @@ from coffea4bees.analysis.helpers.load_friend import (
 )
 
 
-class SubSampler(PicoAOD):
-    def __init__(self, sub_sampling_rand_seed=5, corrections_metadata: dict = None, apply_trigWeight: bool = True, friends: dict[str, str|FriendTemplate] = None, object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml", *args, **kwargs):
+from coffea4bees.skimmer.processor.skimmer_4b_base import Skimmer4b
+
+
+class SubSampler(Skimmer4b):
+    def __init__(self, sub_sampling_rand_seed=5, apply_trigWeight: bool = True, *args, **kwargs):
         kwargs["pico_base_name"] = f'picoAOD_PSData'
         super().__init__(*args, **kwargs)
 
         logging.info(f"\nRunning SubSampler with these parameters: sub_sampling_rand_seed = {sub_sampling_rand_seed} args = {args}, kwargs = {kwargs}")
-        # Always use cutflow_4b unless explicitly overridden
-        self._cutFlow = cutflow_4b()
-
         self.sub_sampling_rand_seed = sub_sampling_rand_seed
-        self.corrections_metadata = corrections_metadata
         self.apply_trigWeight = apply_trigWeight
-        self.friends = parse_friends(friends)
-        self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
 
     def select(self, event):
-
-        year    = event.metadata['year']
-        dataset = event.metadata['dataset']
-        fname   = event.metadata['filename']
-        estart  = event.metadata['entrystart']
-        estop   = event.metadata['entrystop']
-        processName = event.metadata['processName']
-        nEvent = len(event)
-        year_label = self.corrections_metadata[year]['year_label']
-        chunk   = f'{dataset}::{estart:6d}:{estop:6d} >>> '
-        logging.debug( f"{chunk} file is {fname}\n" )
+        m = self._parse_event_metadata(event)
+        year, dataset, fname, estart, estop = m.year, m.dataset, m.fname, m.estart, m.estop
+        processName, nEvent, year_label, chunk, config = m.processName, m.nEvent, m.year_label, m.chunk, m.config
+        logging.debug(f"{chunk} file is {fname}\n")
 
         ### target is for new friend trees
         target = Chunk.from_coffea_events(event)
-
-
-        #
-        # Set process and datset dependent flags
-        #
-        config = processor_config(processName, dataset, event)
         logging.debug(f'{chunk} config={config}, for file {fname}\n')
 
         path = fname.replace(fname.split("/")[-1], "")
@@ -87,7 +71,7 @@ class SubSampler(PicoAOD):
         #
         if config["do_jet_calibration"]:
             jets = apply_jerc_corrections_jsonpog(event,
-                                    corrections_metadata=self.corrections_metadata[self.year],
+                                    corrections_metadata=self.corrections_metadata[year],
                                     isMC=config["isMC"],
                                     dataset=dataset
                                     )
