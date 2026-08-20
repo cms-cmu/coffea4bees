@@ -28,12 +28,7 @@ cat $JOB_CONFIG; echo
 
 display_section_header "Creating test dataset"
 nanoAOD_file="root://cmseos.fnal.gov//store/mc/RunIISummer20UL18NanoAODv9/GluGluToHHTo4B_cHHH0_TuneCP5_PSWeights_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/70000/3F95108D-84D2-CD4D-A0D2-324A7D15E691.root"
-cat << EOF > "$OUTPUT_DIR/datasets_HH4b.yml"
-datasets:
-  GluGluToHHTo4B_cHHH0:
-    UL18:
-      nanoAOD: [ '$nanoAOD_file' ]
-EOF
+sed -e 's/^/  /' -e '1s/^/datasets:\n/' -e "s|/GluGluToHHTo4B_cHHH0_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv9.*|[ '${nanoAOD_file}' ]|" coffea4bees/metadata/datasets/GluGluToHHTo4B.yml > $OUTPUT_DIR/datasets_HH4b.yml
 
 display_section_header "Running test processor"
 cmd=(python runner.py -s \
