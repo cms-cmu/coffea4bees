@@ -21,6 +21,7 @@ config['test'] = is_test
 
 container_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
 config.setdefault('container_wrapper', container_wrapper)
+config.setdefault('analysis_container_wrapper', config.get('container_wrapper', container_wrapper))
 
 python_bin = os.getenv("CONTAINER_PYTHON", "python")
 config.setdefault('python_bin', python_bin)
@@ -78,6 +79,17 @@ rule modify_config_file:
         with open(input[0], 'r') as f:
             data = yaml.safe_load(f)
         
+        # If analysis_config is specified, load and merge its config block first, then remove the reference
+        if 'analysis_config' in data and data['analysis_config'] and os.path.exists(data['analysis_config']):
+            with open(data['analysis_config'], 'r') as f_meta:
+                meta = yaml.safe_load(f_meta) or {}
+            if 'config' in meta:
+                base_cfg = meta['config']
+                if 'config' in data:
+                    base_cfg.update(data['config'])
+                data['config'] = base_cfg
+            data.pop('analysis_config', None)
+
         # Apply signal MC modifications at both root level and nested config block
         if 'apply_FvT' in data: data['apply_FvT'] = False
         if 'config' in data and 'apply_FvT' in data['config']: data['config']['apply_FvT'] = False
@@ -108,7 +120,7 @@ if config.get("test", False):
                 "-t",
                 config.get("additional_parameters", "")
             ])),
-            run_container_wrapper = config['container_wrapper']
+            run_container_wrapper = config['analysis_container_wrapper']
 
     use rule analysis_processor from analysis as analysis_MC with:
         input: 
@@ -124,7 +136,7 @@ if config.get("test", False):
                 "-t",
                 config.get("additional_parameters", "")
             ])),
-            run_container_wrapper = config['container_wrapper']
+            run_container_wrapper = config['analysis_container_wrapper']
 
     use rule merging_coffea_files from analysis as merging_files with:
         input:
@@ -136,7 +148,7 @@ if config.get("test", False):
         output: f"{config['output_path']}histAll_{config['label']}.coffea"
         params:
             run_performance = False,
-            run_container_wrapper = config['container_wrapper']
+            run_container_wrapper = config['analysis_container_wrapper']
         container: None
         log: f"{config['output_path']}logs/merging_files.log"
 
@@ -162,7 +174,7 @@ else:
                 f"--era {wildcards.era}",
                 config.get("additional_parameters", "")
             ])),
-            run_container_wrapper = config['container_wrapper']
+            run_container_wrapper = config['analysis_container_wrapper']
 
     use rule analysis_processor from analysis as analysis_MC with:
         input: 
@@ -177,7 +189,7 @@ else:
             extra_arguments = lambda wildcards: " ".join(filter(None, [
                 config.get("additional_parameters", "")
             ])),
-            run_container_wrapper = config['container_wrapper']
+            run_container_wrapper = config['analysis_container_wrapper']
 
     use rule merging_coffea_files from analysis as merging_files with:
         input:
@@ -186,7 +198,7 @@ else:
         output: f"{config['output_path']}histAll_{config['label']}.coffea"
         params:
             run_performance = False,
-            run_container_wrapper = config['container_wrapper']
+            run_container_wrapper = config['analysis_container_wrapper']
         container: None
         log: f"{config['output_path']}logs/merging_files.log"
 
@@ -208,7 +220,7 @@ use rule make_plots from analysis with:
         metadata = config['plot_config'],
         extra_arguments = "-s xW --year " + (DATA_YEARS[0] if len(DATA_YEARS) == 1 else ("Run3" if any("202" in y for y in DATA_YEARS) else "RunII")),
         png_cores = 4,
-        run_container_wrapper = config['container_wrapper']
+        run_container_wrapper = config['analysis_container_wrapper']
     container: None
 
 use rule check_cutflow from analysis with:
@@ -222,7 +234,7 @@ use rule check_cutflow from analysis with:
         known_counts = lambda wildcards: config.get("known_counts", ""),
         error_threshold = lambda wildcards: config.get("error_threshold", "0.001"),
         cutflow_list = lambda wildcards: config.get("cutflow_list", "passJetMult,passPreSel,passDiJetMass,SR,SB"),
-        run_container_wrapper = config['container_wrapper']
+        run_container_wrapper = config['analysis_container_wrapper']
     container: None
 
 localrules: modify_config_file, analysis_data, analysis_MC, merging_files, make_plots, check_cutflow

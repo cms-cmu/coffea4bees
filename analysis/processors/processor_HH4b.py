@@ -694,10 +694,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         # Blind data in fourTag SR
         if not (self.config["isMC"] or "mix_v" in self.dataset) and self.blind:
             with self._stage(f"{label}:blinding"):
-                if "SvB_MA" not in selev.fields:
-                    logging.warning("Blinding requires SvB_MA but it is not available — skipping blinding for this chunk.")
+                blind_flag = self._get_blind_flag(selev)
+                if blind_flag is None:
+                    pass  # warning already emitted inside _get_blind_flag
                 else:
-                    blind_flag = ~(selev["quadJet_selected"].SR & (selev["SvB_MA"].ps_hh > 0.5) & selev[self._fourtag_label()])
                     blind_sel = np.full(len(event), True)
                     blind_sel[analysis_selections] = blind_flag
                     selections.add('blind', blind_sel)
@@ -1465,6 +1465,30 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
     def _fourtag_label(self):
         return "fourTag"
+
+    def _get_blind_flag(self, selev):
+        """Return a boolean mask (True = keep, False = blind/remove) for data blinding.
+
+        Scans all SvB-like fields (any field starting with 'SvB') and removes SR events
+        where *any* ps_* score from *any* such classifier exceeds 0.8.
+        Returns None if no usable SvB field with ps_* scores is found (blinding skipped).
+        """
+        svb_names = [f for f in selev.fields if f.startswith("SvB")]
+        usable = [name for name in svb_names if any(f.startswith("ps_") for f in selev[name].fields)]
+        if not usable:
+            logging.warning(
+                f"Blinding requires at least one SvB field with ps_* scores, "
+                f"but none found among {svb_names} — skipping blinding for this chunk."
+            )
+            return None
+        in_sr = selev["quadJet_selected"].SR
+        # Blind if the event is in SR and ANY ps_* score from ANY SvB classifier > 0.8
+        is_signal = np.zeros(len(selev), dtype=bool)
+        for name in usable:
+            for field in selev[name].fields:
+                if field.startswith("ps_"):
+                    is_signal |= (selev[name][field] > 0.8)
+        return ~(in_sr & is_signal)
 
     def apply_selection(self, event):
         """Apply selection to the events"""

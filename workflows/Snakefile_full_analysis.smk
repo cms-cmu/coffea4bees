@@ -43,6 +43,12 @@ config['make_combine_inputs'].setdefault('metadata_template', config.get('metada
 config['make_combine_inputs'].setdefault('multijet_process', "data")
 config['make_combine_inputs'].setdefault('tt_processes', ["TTTo", "TTbar4b_from_d3"])
 
+# Likelihood scan defaults
+config.setdefault('likelihood_scan_points', 20)
+config.setdefault('likelihood_scan_split_size', 10)
+config.setdefault('likelihood_scan_r_min', -10)
+config.setdefault('likelihood_scan_r_max', 10)
+
 # Shared/Common Options
 config.setdefault('year_eras', {
     'UL16_preVFP':  ['C', 'D', 'E', 'F'],
@@ -56,6 +62,8 @@ config.setdefault('container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/
 config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
 config.setdefault('combine_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-analysis/general/combine-container:CMSSW_14_1_0_pre4-combine_v10.6.0-harvester_v3.1.0")
 config.setdefault('container_wrapper', "./run_container combine")
+config.setdefault('analysis_container_wrapper', "./run_container")
+config.setdefault('stats_container_wrapper', "./run_container combine")
 
 
 # Resolve absolute CERNBox destination path
@@ -80,6 +88,7 @@ def get_master_targets(wildcards):
                 f"{config['output_path']}stat_analysis/{channel}/limits/datacard_limits__{signallabel}.json",
                 f"{config['output_path']}stat_analysis/{channel}/postfit/datacard_postfit__{signallabel}.pdf",
                 f"{config['output_path']}stat_analysis/{channel}/significance/datacard_significance__{signallabel}.log",
+                f"{config['output_path']}stat_analysis/{channel}/likelihood_scan/datacard_likelihood_scan__{signallabel}.pdf",
             ])
     return master_targets
 

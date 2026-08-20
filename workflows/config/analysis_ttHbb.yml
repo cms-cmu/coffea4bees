@@ -5,7 +5,6 @@ processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
 friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b.yml"
 weights_file: "coffea4bees/metadata/weights/weights_HH4b_2024_v2.yml"
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
-combine_flags: "--three_tag threeTag --four_tag fourTag --region sum"
 cern_user: "algomez"
 cern_path: "www/HH4b/Plots/"
 dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
@@ -17,6 +16,28 @@ year_eras:
     - "B"
     - "C"
     - "D"
+
+runner:
+  workers: 4
+  worker_memory: 8GB
+  dashboard_address: 0
+  chunksize: 40000
+
+config:
+  blind: true
+  apply_FvT: true
+  apply_JCM: true
+  apply_trigWeight: true
+  apply_btagSF: true
+  apply_boosted_veto: false
+  run_SvB: true
+  SvB_MA: true
+  SvB: null
+  hist_cuts: ["pass_nSelJets_gt6", "fail_nSelJets_le6"]
+  top_reconstruction: fast
+  plot_ttbar_with_weights: true
+
+
 convert_hist_to_json:
   histos: 
     - "SvB_MA.ps_ttHbb"
@@ -42,3 +63,8 @@ channels:
     closure_subdir: "hh"
     region: "sum"
     cut: "pass_nSelJets_gt6"
+
+combine_flags: "--three_tag threeTag --four_tag fourTag --region sum --blind"
+likelihood_scan_points: 20
+likelihood_scan_r_min: -10
+likelihood_scan_r_max: 10

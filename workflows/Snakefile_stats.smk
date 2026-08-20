@@ -23,6 +23,12 @@ config['make_combine_inputs'].setdefault('metadata_template', config.get('metada
 config['make_combine_inputs'].setdefault('multijet_process', "data")
 config['make_combine_inputs'].setdefault('tt_processes', ["TTTo", "TTbar4b_from_d3"])
 
+# Likelihood scan defaults
+config.setdefault('likelihood_scan_points', 20)
+config.setdefault('likelihood_scan_split_size', 10)
+config.setdefault('likelihood_scan_r_min', -10)
+config.setdefault('likelihood_scan_r_max', 10)
+
 config.setdefault('year_eras', {
     'UL16_preVFP':  ['C', 'D', 'E', 'F'],
     'UL16_postVFP': ['F', 'G', 'H'],
@@ -37,6 +43,7 @@ config.setdefault('container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/
 config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
 config.setdefault('combine_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-analysis/general/combine-container:CMSSW_14_1_0_pre4-combine_v10.6.0-harvester_v3.1.0")
 config.setdefault('container_wrapper', "./run_container combine")
+config.setdefault('stats_container_wrapper', config.get('container_wrapper', "./run_container combine"))
 
 # Decoupled config definitions and path resolution
 def get_bkgsyst_for_channel(channel):
@@ -110,6 +117,9 @@ rule all_stats:
         ] + [
             f"{config['output_path']}stat_analysis/{channel}/significance/datacard_significance__{ch_config['signallabel']}.log"
             for channel, ch_config in config['channels'].items() if ch_config.get('signallabel')
+        ] + [
+            f"{config['output_path']}stat_analysis/{channel}/likelihood_scan/datacard_likelihood_scan__{ch_config['signallabel']}.pdf"
+            for channel, ch_config in config['channels'].items() if ch_config.get('signallabel')
         ]
 
 use rule convert_hist_to_json from stat_analysis with:
@@ -151,7 +161,7 @@ use rule make_combine_inputs from stat_analysis with:
             + f"--multijet_process {config['make_combine_inputs']['multijet_process']} "
             f"--tt_processes {' '.join(config['make_combine_inputs']['tt_processes'])}"
         ),
-        container_wrapper = config['container_wrapper']
+        container_wrapper = config['stats_container_wrapper']
     log: f"{config['output_path']}logs/make_combine_inputs_{{channel}}.log"
 
 # Import all rules from combine module
