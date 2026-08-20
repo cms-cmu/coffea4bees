@@ -26,46 +26,37 @@ import awkward as ak
 import uproot
 from coffea.nanoevents.methods import vector
 
-class DeClustererBoosted(PicoAOD):
-    def __init__(self, clustering_pdfs_file = "None",
-                declustering_rand_seed=5,
-                friends: dict[str, str|FriendTemplate] = None,
-                corrections_metadata: dict = None,
-                *args, **kwargs):
+from coffea4bees.skimmer.processor.skimmer_4b_base import Skimmer4b
+
+
+class DeClustererBoosted(Skimmer4b):
+    def __init__(self, clustering_pdfs_file="None",
+                 declustering_rand_seed=5,
+                 *args, **kwargs):
         kwargs["pico_base_name"] = f'picoAOD_seed{declustering_rand_seed}'
         super().__init__(*args, **kwargs)
 
         logging.info(f"\nRunning Declusterer with these parameters: clustering_pdfs_file = {clustering_pdfs_file}, declustering_rand_seed = {declustering_rand_seed}, args = {args}, kwargs = {kwargs}")
         self.clustering_pdfs_file = clustering_pdfs_file
-
-        self.friends = parse_friends(friends)
         self.declustering_rand_seed = declustering_rand_seed
-        self.corrections_metadata = corrections_metadata
 
         self.skip_collections = kwargs["skip_collections"]
         self.skip_branches    = kwargs["skip_branches"]
-        self.cutFlow = cutflow_4b()
-
+        self._clustering_pdfs_cache = {}
 
     def select(self, event):
-
-        year    = event.metadata['year']
-        dataset = event.metadata['dataset']
-        fname   = event.metadata['filename']
-        estart  = event.metadata['entrystart']
-        estop   = event.metadata['entrystop']
-        nEvent = len(event)
-        year_label = self.corrections_metadata[year]['year_label']
-        chunk   = f'{dataset}::{estart:6d}:{estop:6d} >>> '
-        processName = event.metadata['processName']
-        isMC    = True if event.run[0] == 1 else False
+        m = self._parse_event_metadata(event)
+        year, dataset, fname, estart, estop = m.year, m.dataset, m.fname, m.estart, m.estop
+        processName, nEvent, year_label, chunk, config = m.processName, m.nEvent, m.year_label, m.chunk, m.config
 
         clustering_pdfs_file = self.clustering_pdfs_file.replace("XXX", year)
 
-        print(f"clustering_pdfs_file is {clustering_pdfs_file}\n")
-        if not clustering_pdfs_file == "None":
-            clustering_pdfs = yaml.safe_load(open(clustering_pdfs_file, "r"))
-            logging.info(f"Loaded {len(clustering_pdfs.keys())} PDFs from {clustering_pdfs_file}\n")
+        if clustering_pdfs_file != "None":
+            if clustering_pdfs_file not in self._clustering_pdfs_cache:
+                with open(clustering_pdfs_file, "r") as f:
+                    self._clustering_pdfs_cache[clustering_pdfs_file] = yaml.safe_load(f)
+                logging.info(f"Loaded {len(self._clustering_pdfs_cache[clustering_pdfs_file].keys())} PDFs from {clustering_pdfs_file}\n")
+            clustering_pdfs = self._clustering_pdfs_cache[clustering_pdfs_file]
         else:
             clustering_pdfs = None
 

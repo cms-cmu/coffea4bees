@@ -12,21 +12,17 @@ from src.physics.event_selection import apply_event_selection
 from coffea4bees.analysis.helpers.jetCombinatoricModel import jetCombinatoricModel
 
 from coffea.analysis_tools import PackedSelection, Weights
-from src.skimmer.picoaod import PicoAOD
-from coffea4bees.analysis.helpers.cutflow import cutflow_4b
-from coffea4bees.hemisphere_mixing.mixing_helpers   import assign_mixed_subsamples, update_pseudoTagWeight_of_mixed_data
+from coffea4bees.skimmer.processor.skimmer_4b_base import Skimmer4b
+from coffea4bees.hemisphere_mixing.mixing_helpers import assign_mixed_subsamples, update_pseudoTagWeight_of_mixed_data
 
-class MixedDataSplitter(PicoAOD):
+class MixedDataSplitter(Skimmer4b):
     def __init__(
             self,
             skim4b=False,
             n_subsamples=16,
             mixed_subsample=0,
-            mc_outlier_threshold: int | None = 200,
-            corrections_metadata=None,
             apply_JCM: bool = True,
             JCM_file: str = "coffea4bees/skimmer/metadata/jetCombinatoricModel_for_mixed_splitting.txt",
-            object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
             *args, **kwargs
         ):
 
@@ -35,25 +31,14 @@ class MixedDataSplitter(PicoAOD):
         self.apply_JCM = jetCombinatoricModel(JCM_file) if apply_JCM else None
         self.n_subsamples = n_subsamples
         self.mixed_subsample = mixed_subsample
-        self.mc_outlier_threshold = mc_outlier_threshold
-        self.corrections_metadata = corrections_metadata if corrections_metadata is not None else {}
-        self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
-        # Always use cutflow_4b unless explicitly overridden
-        self._cutFlow = cutflow_4b()
+        self.skim4b = skim4b
         self.histCuts = ["passPreSel"] #, "pass0OthJets", "pass1OthJets", "pass2OthJets"]
 
     def select(self, events):
-        year    = events.metadata['year']
-        dataset = events.metadata['dataset']
-        processName = events.metadata['processName']
-        estart  = events.metadata['entrystart']
-        estop   = events.metadata['entrystop']
-        chunk_str  = f'{dataset}::{estart:6d}:{estop:6d} >>> '
+        m = self._parse_event_metadata(events)
+        year, dataset, processName, config, chunk_str = m.year, m.dataset, m.processName, m.config, m.chunk
 
         logging.debug(f'Processing dataset: {dataset}, processName: {processName}, year: {year}\n')
-
-        # Set process and datset dependent flags
-        config = processor_config(processName, dataset, events)
         logging.debug(f'config={config}\n')
 
         events = apply_event_selection(
@@ -136,10 +121,3 @@ class MixedDataSplitter(PicoAOD):
 
         processOutput = {}
         return final_selection, None, processOutput
-
-    def preselect(self, events):
-        dataset = events.metadata['dataset']
-        processName = events.metadata['processName']
-        config = processor_config(processName, dataset, events)
-        if config["isMC"] and self.mc_outlier_threshold is not None and "genWeight" in events.fields:
-            return OutlierByMedian(self.mc_outlier_threshold)(events.genWeight)
