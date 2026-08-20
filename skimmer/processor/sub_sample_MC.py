@@ -87,7 +87,7 @@ class SubSampler(PicoAOD):
         #
         if config["do_jet_calibration"]:
             jets = apply_jerc_corrections_jsonpog(event,
-                                    corrections_metadata=self.corrections_metadata[self.year],
+                                    corrections_metadata=self.corrections_metadata[year],
                                     isMC=config["isMC"],
                                     dataset=dataset
                                     )

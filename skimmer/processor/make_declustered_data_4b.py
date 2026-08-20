@@ -315,12 +315,16 @@ class DeClusterer(Skimmer4b):
         #
         #  Need to skip all the other jet branches to make sure they have the same number of jets
         #
-        for f in event.Jet.fields:
-            bname = f"Jet_{f}"
-            if bname not in out_branches:
-                self.skip_branches.append(bname)
+        if not hasattr(self, "_branch_filter_initialized") or not self._branch_filter_initialized:
+            skip_branches = set(self.skip_branches or [])
+            for f in event.Jet.fields:
+                bname = f"Jet_{f}"
+                if bname not in out_branches:
+                    skip_branches.add(bname)
+            self.skip_branches = list(skip_branches)
+            self.update_branch_filter(self.skip_collections, self.skip_branches)
+            self._branch_filter_initialized = True
 
-        self.update_branch_filter(self.skip_collections, self.skip_branches)
         branches = ak.Array(out_branches)
 
         processOutput["total_jet"] = total_jet

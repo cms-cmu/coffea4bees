@@ -22,6 +22,7 @@ class MixedDataSplitter(PicoAOD):
             skim4b=False,
             n_subsamples=16,
             mixed_subsample=0,
+            mc_outlier_threshold: int | None = 200,
             corrections_metadata=None,
             apply_JCM: bool = True,
             JCM_file: str = "coffea4bees/skimmer/metadata/jetCombinatoricModel_for_mixed_splitting.txt",
@@ -34,6 +35,7 @@ class MixedDataSplitter(PicoAOD):
         self.apply_JCM = jetCombinatoricModel(JCM_file) if apply_JCM else None
         self.n_subsamples = n_subsamples
         self.mixed_subsample = mixed_subsample
+        self.mc_outlier_threshold = mc_outlier_threshold
         self.corrections_metadata = corrections_metadata if corrections_metadata is not None else {}
         self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
         # Always use cutflow_4b unless explicitly overridden
@@ -139,3 +141,5 @@ class MixedDataSplitter(PicoAOD):
         dataset = events.metadata['dataset']
         processName = events.metadata['processName']
         config = processor_config(processName, dataset, events)
+        if config["isMC"] and self.mc_outlier_threshold is not None and "genWeight" in events.fields:
+            return OutlierByMedian(self.mc_outlier_threshold)(events.genWeight)

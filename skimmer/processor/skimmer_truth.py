@@ -9,14 +9,14 @@ from coffea4bees.skimmer.processor.skimmer_4b_base import Skimmer4b
 
 class Skimmer(Skimmer4b):
     def __init__(self, loosePtForSkim=False, mc_outlier_threshold: int | None = 200, corrections_metadata: dict = None, *args, **kwargs):
+        self.skip_collections = kwargs.get("skip_collections", [])
+        self.skip_branches    = kwargs.get("skip_branches", [])
         super().__init__(
             mc_outlier_threshold=mc_outlier_threshold,
             corrections_metadata=corrections_metadata,
             object_selection_cfg=None,
             *args, **kwargs,
         )
-        self.skip_collections = kwargs["skip_collections"]
-        self.skip_branches    = kwargs["skip_branches"]
 
 
     def select(self, event):
@@ -37,71 +37,37 @@ class Skimmer(Skimmer4b):
         event['matchedGenBJet'] = event.bfromHorZ.nearest( event.selGenBJet, threshold=10 )
         event["matchedGenBJet"] = event.matchedGenBJet[~ak.is_none(event.matchedGenBJet, axis=1)]
 
-        print("nselGenBJet",ak.num(event.selGenBJet),"\n")
-        print("selGenBJet",event.selGenBJet.pt[0:2].tolist(),"\n")
-        print("nbsfromHorZ",ak.num(event.bfromHorZ),"\n")
-        print("bsfromHorZ",event.bfromHorZ.pt[0:2].tolist(),"\n")
-        print("nmatchGenBJet",ak.num(event.matchedGenBJet),"\n")
-        print("matchedGenBJet",event.matchedGenBJet.pt[0:2].tolist(),"\n")
-
         event['pass4GenBJets'] = (ak.num(event.matchedGenBJet) == 4)
 
-        #event['pass4GenBJets'] = event.event % 11 == 0
-
-        ### weights = Weights(len(event), storeIndividual=True)
-
-        #
-        # general event weights
-        #
-        ### if config["isMC"]:
-        ###     weights.add( "genweight_", event.genWeight )
-
-        ### selections = PackedSelection()
-        ### selections.add( 'pass4GenBJets',   event.pass4GenBJets )
-
-        ### event["weight"] = weights.weight()
-
-        ### cumulative_cuts = []
-        ### self._cutFlow.fill( "all",             event[selections.all(*cumulative_cuts)], allTag=True )
-        ###
-        ### all_cuts = ["pass4GenBJets"]
-        ###
-        ### for cut in all_cuts:
-        ###     cumulative_cuts.append(cut)
-        ###     self._cutFlow.fill( cut, event[selections.all(*cumulative_cuts)], allTag=True )
-
-        selection = event.pass4GenBJets & self.preselect(event) # & event.passPreSel
+        selection = event.pass4GenBJets
         event = event[selection]
 
-        n_genJets = ak.num(event.GenJet)
-        total_genJets = int(ak.sum(n_genJets))
-
-        n_selGenJets = ak.num(event.matchedGenBJet)
-
         out_branches = {
-            "GenJet_eta":             ak.unflatten(ak.flatten(event.matchedGenBJet.eta          ).tolist(), n_selGenJets),
-            "GenJet_pt":              ak.unflatten(ak.flatten(event.matchedGenBJet.pt           ).tolist(), n_selGenJets),
-            "GenJet_mass":            ak.unflatten(ak.flatten(event.matchedGenBJet.mass         ).tolist(), n_selGenJets),
-            "GenJet_phi":             ak.unflatten(ak.flatten(event.matchedGenBJet.phi          ).tolist(), n_selGenJets),
-            "GenJet_hadronFlavour":   ak.unflatten(ak.flatten(event.matchedGenBJet.hadronFlavour).tolist(), n_selGenJets),
-            "GenJet_partonFlavour":   ak.unflatten(ak.flatten(event.matchedGenBJet.partonFlavour).tolist(), n_selGenJets),
+            "GenJet_eta":             event.matchedGenBJet.eta,
+            "GenJet_pt":              event.matchedGenBJet.pt,
+            "GenJet_mass":            event.matchedGenBJet.mass,
+            "GenJet_phi":             event.matchedGenBJet.phi,
+            "GenJet_hadronFlavour":   event.matchedGenBJet.hadronFlavour,
+            "GenJet_partonFlavour":   event.matchedGenBJet.partonFlavour,
         }
 
         #
         #  Need to skip all the other jet branches to make sure they have the same number of jets
         #
-        for f in event.GenJet.fields:
-            bname = f"GenJet_{f}"
-            if bname not in out_branches:
-                self.skip_branches.append(bname)
+        if not hasattr(self, "_branch_filter_initialized") or not self._branch_filter_initialized:
+            skip_branches = set(self.skip_branches or [])
+            for f in event.GenJet.fields:
+                bname = f"GenJet_{f}"
+                if bname not in out_branches:
+                    skip_branches.add(bname)
+            self.skip_branches = list(skip_branches)
+            self.update_branch_filter(self.skip_collections, self.skip_branches)
+            self._branch_filter_initialized = True
 
-        self.update_branch_filter(self.skip_collections, self.skip_branches)
         branches = ak.Array(out_branches)
-
 
         processOutput = {}
         processOutput["total_event"] = len(event)
-        #processOutput["sel_event"] = len(selev)
         return (selection,
                 branches,
                 processOutput)
