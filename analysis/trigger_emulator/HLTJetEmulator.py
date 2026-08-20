@@ -34,3 +34,22 @@ class HLTJetEmulator:
             return True
 
         return False
+
+    def get_eff_vectorized(self, pt, smearFactor=0.0):
+        """Vectorized efficiency lookup for an array of jet pTs."""
+        pt_arr = np.asarray(pt)
+        orig_shape = pt_arr.shape
+        pt_flat = pt_arr.reshape(-1)
+
+        idx = np.searchsorted(self.m_highBinEdge, pt_flat, side='right')
+        idx = np.clip(idx, 0, self.m_nBins - 1)
+
+        eff_arr = np.array(self.m_eff, dtype=np.float64)
+        eff = np.maximum(eff_arr[idx], 0.0)
+
+        if smearFactor != 0.0:
+            err_arr = np.array(self.m_effErr, dtype=np.float64)
+            eff = np.clip(eff + err_arr[idx] * smearFactor, 0.0, 1.0)
+
+        return eff.reshape(orig_shape)
+

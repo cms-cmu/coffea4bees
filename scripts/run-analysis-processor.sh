@@ -340,7 +340,9 @@ cmd=(python runner.py
 # Add optional flags
 [ -n "$TEST_MODE" ] && cmd+=( $TEST_MODE )
 [ -n "$CONDOR_MODE" ] && cmd+=( $CONDOR_MODE )
+[ "$DO_PROXY" = false ] && cmd+=( --not-do-proxy )
 [ -n "$ADDITIONAL_FLAGS" ] && cmd+=( $ADDITIONAL_FLAGS )
+
 
 # Wrap with mprof if performance monitoring is enabled
 USERNAME=$(whoami 2>/dev/null || echo "barista")

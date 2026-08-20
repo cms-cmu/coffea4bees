@@ -107,12 +107,66 @@ class TrigEmulator:
         # logging.info(f"TrigEmulator::calcWeight is {weight}")
         return weight
 
-    # #  For doing global run counting (Eg: in rate prediction)
-    # def Fill(self, offline_jet_pts, offline_btagged_jet_pts, ht):
-    #     for iToy in range(self.m_nToys):
-    #         # Count all events
-    #         self.m_nTotal += 1
-    #         if self.passTrig(offline_jet_pts, offline_btagged_jet_pts, ht, iToy):
-    #             self.m_nPass += 1
-    #
-    #     return
+    def passTrigVectorized(
+        self,
+        jet_pts,
+        jet_mask,
+        bjet_pts,
+        bjet_mask,
+        ht_array,
+        btag_rand,
+        ht_rand,
+        rng,
+        smearFactor=0.0,
+    ):
+        """
+        Vectorized evaluation of trigger decision across nToys for N events.
+
+        Parameters
+        ----------
+        jet_pts : np.ndarray (N, n_jets)
+        jet_mask : np.ndarray (N, n_jets)
+        bjet_pts : np.ndarray (N, n_bjets)
+        bjet_mask : np.ndarray (N, n_bjets)
+        ht_array : np.ndarray (N,)
+        btag_rand : np.ndarray (nToys, N, n_bjets, max_bcuts)
+        ht_rand : np.ndarray (nToys, N, max_htcuts)
+        rng : np.random.Generator
+        smearFactor : float
+
+        Returns
+        -------
+        pass_trig : np.ndarray (nToys, N) of bool
+        """
+        import numpy as np
+
+        nToys, nEvents = ht_rand.shape[0], ht_rand.shape[1]
+        pass_trig = np.ones((nToys, nEvents), dtype=bool)
+
+        # 1. HT Cuts
+        for iThres, HLTHtCut in enumerate(self.m_htThresholds):
+            if HLTHtCut is not None:
+                eff_ht = HLTHtCut.get_eff_vectorized(ht_array, smearFactor=smearFactor)
+                pass_ht = eff_ht[np.newaxis, :] > ht_rand[:, :, iThres]
+                ht_active = (ht_array > 0)[np.newaxis, :]
+                pass_trig = pass_trig & np.where(ht_active, pass_ht, True)
+
+        # 2. Jet Pt Cuts
+        for iThres, HLTJet in enumerate(self.m_jetThresholds):
+            mult = self.m_jetMultiplicities[iThres]
+            eff_jets = HLTJet.get_eff_vectorized(jet_pts, smearFactor=smearFactor)
+            rand_jets = rng.random((nToys, nEvents, jet_pts.shape[1]))
+            passed_jets = (eff_jets[np.newaxis, :, :] > rand_jets) & jet_mask[np.newaxis, :, :]
+            nJetsPassed = np.sum(passed_jets, axis=2)
+            pass_trig = pass_trig & (nJetsPassed >= mult)
+
+        # 3. BTag Operating Points
+        for iThres, HLTBTag in enumerate(self.m_bTagOpPoints):
+            mult = self.m_bTagMultiplicities[iThres]
+            eff_bjets = HLTBTag.get_eff_vectorized(bjet_pts, smearFactor=smearFactor)
+            passed_bjets = (eff_bjets[np.newaxis, :, :] > btag_rand[:, :, :, iThres]) & bjet_mask[np.newaxis, :, :]
+            nJetsPassBTag = np.sum(passed_bjets, axis=2)
+            pass_trig = pass_trig & (nJetsPassBTag >= mult)
+
+        return pass_trig
+
