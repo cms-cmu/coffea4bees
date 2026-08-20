@@ -37,7 +37,38 @@ class Skimmer(Skimmer4b):
         event['matchedGenBJet'] = event.bfromHorZ.nearest( event.selGenBJet, threshold=10 )
         event["matchedGenBJet"] = event.matchedGenBJet[~ak.is_none(event.matchedGenBJet, axis=1)]
 
+        logging.info(f"nselGenBJet {ak.num(event.selGenBJet)}\n")
+        logging.info(f"selGenBJet {event.selGenBJet.pt[0:2].tolist()}\n")
+        logging.info(f"nbsfromHorZ {ak.num(event.bfromHorZ)}\n")
+        logging.info(f"bsfromHorZ {event.bfromHorZ.pt[0:2].tolist()}\n")
+        logging.info(f"nmatchGenBJet {ak.num(event.matchedGenBJet)}\n")
+        logging.info(f"matchedGenBJet {event.matchedGenBJet.pt[0:2].tolist()}\n")
+
         event['pass4GenBJets'] = (ak.num(event.matchedGenBJet) == 4)
+
+        #event['pass4GenBJets'] = event.event % 11 == 0
+
+        ### weights = Weights(len(event), storeIndividual=True)
+
+        #
+        # general event weights
+        #
+        ### if config["isMC"]:
+        ###     weights.add( "genweight_", event.genWeight )
+
+        ### selections = PackedSelection()
+        ### selections.add( 'pass4GenBJets',   event.pass4GenBJets )
+
+        ### event["weight"] = weights.weight()
+
+        ### cumulative_cuts = []
+        ### self._cutFlow.fill( "all",             event[selections.all(*cumulative_cuts)], allTag=True )
+        ###
+        ### all_cuts = ["pass4GenBJets"]
+        ###
+        ### for cut in all_cuts:
+        ###     cumulative_cuts.append(cut)
+        ###     self._cutFlow.fill( cut, event[selections.all(*cumulative_cuts)], allTag=True )
 
         selection = event.pass4GenBJets
         event = event[selection]

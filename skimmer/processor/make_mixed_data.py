@@ -108,6 +108,7 @@ class HemiMixer(Skimmer4b):
 
         self.hemi_library_yaml = hemi_library_yaml
         self.hemi_stats_path = hemi_stats_path
+        self._hemi_cache = {}
 
 
     def select(self, event):
@@ -138,27 +139,32 @@ class HemiMixer(Skimmer4b):
         #
         year_str = year.replace("_preVFP", "").replace("_postVFP", "")
 
-        yaml_file = f'{self.hemi_stats_path}/hemi_statistics_{year_str}.yml'
-        logging.info(f"\nLoading hemisphere libraries = {yaml_file}\n")
-
-        logging.info(f"\nLoading hemisphere library file: {self.hemi_library_yaml} for year {year_str}\b")
-
         test_load_hemi_kdTrees = True
         if test_load_hemi_kdTrees:
-            hemi_data, hemi_jet_ranges, hemi_stats  = init_hemi_data(hemi_metadata_yaml = yaml_file,
-                                                                     hemi_files_yaml = self.hemi_library_yaml,
-                                                                     year = year_str,
-                                                                     hemi_summary_vars = self.hemi_load_vars,
-                                                                     jet_branches = self.jet_branches,
-                                                                     )
+            if year_str not in self._hemi_cache:
+                yaml_file = f'{self.hemi_stats_path}/hemi_statistics_{year_str}.yml'
+                logging.info(f"\nLoading hemisphere libraries = {yaml_file}\n")
+                logging.info(f"\nLoading hemisphere library file: {self.hemi_library_yaml} for year {year_str}\n")
+                self._hemi_cache[year_str] = init_hemi_data(
+                    hemi_metadata_yaml = yaml_file,
+                    hemi_files_yaml = self.hemi_library_yaml,
+                    year = year_str,
+                    hemi_summary_vars = self.hemi_load_vars,
+                    jet_branches = self.jet_branches,
+                )
+            hemi_data, hemi_jet_ranges, hemi_stats = self._hemi_cache[year_str]
 
         else:
-            hemi_kd_trees, _, hemi_jet_ranges, hemi_stats, hemi_data = build_hemi_kdtrees(hemi_metadata_yaml = yaml_file,
-                                                                                          hemi_files_yaml = self.hemi_library_yaml,
-                                                                                          year = year_str,
-                                                                                          hemi_summary_vars = self.hemi_summary_vars,
-                                                                                          jet_branches = self.jet_branches,
-                                                                                          )
+            if year_str not in self._hemi_cache:
+                yaml_file = f'{self.hemi_stats_path}/hemi_statistics_{year_str}.yml'
+                self._hemi_cache[year_str] = build_hemi_kdtrees(
+                    hemi_metadata_yaml = yaml_file,
+                    hemi_files_yaml = self.hemi_library_yaml,
+                    year = year_str,
+                    hemi_summary_vars = self.hemi_summary_vars,
+                    jet_branches = self.jet_branches,
+                )
+            hemi_kd_trees, _, hemi_jet_ranges, hemi_stats, hemi_data = self._hemi_cache[year_str]
 
 
 

@@ -79,6 +79,7 @@ class DeClusterer(Skimmer4b):
 
         self.skip_collections = kwargs["skip_collections"]
         self.skip_branches    = kwargs["skip_branches"]
+        self._clustering_pdfs_cache = {}
 
     def _resolve_b_pt_threshold(self, year, isRun3):
         """The declustered b-jet pT floor. Defaults to the selected-jet pt_min
@@ -108,10 +109,12 @@ class DeClusterer(Skimmer4b):
 
         clustering_pdfs_file = self.clustering_pdfs_file.replace("XXX", year)
 
-        print(f"clustering_pdfs_file is {clustering_pdfs_file}\n")
-        if not clustering_pdfs_file == "None":
-            clustering_pdfs = yaml.safe_load(open(clustering_pdfs_file, "r"))
-            logging.info(f"Loaded {len(clustering_pdfs.keys())} PDFs from {clustering_pdfs_file}\n")
+        if clustering_pdfs_file != "None":
+            if clustering_pdfs_file not in self._clustering_pdfs_cache:
+                with open(clustering_pdfs_file, "r") as f:
+                    self._clustering_pdfs_cache[clustering_pdfs_file] = yaml.safe_load(f)
+                logging.info(f"Loaded {len(self._clustering_pdfs_cache[clustering_pdfs_file].keys())} PDFs from {clustering_pdfs_file}\n")
+            clustering_pdfs = self._clustering_pdfs_cache[clustering_pdfs_file]
         else:
             clustering_pdfs = None
 

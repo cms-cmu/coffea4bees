@@ -87,9 +87,9 @@ class MixedDataSplitter(PicoAOD):
         #
         # Update pseudoTagWeight for mixed data
         #
-        print(f"{chunk_str} event.pseudoTagWeight was {events.pseudoTagWeight[:10]} \n")
+        logging.debug(f"{chunk_str} event.pseudoTagWeight was {events.pseudoTagWeight[:10]} \n")
         update_pseudoTagWeight_of_mixed_data( events, self.apply_JCM )
-        print(f"{chunk_str} event.pseudoTagWeight is now {events.pseudoTagWeight[:10]} \n")
+        logging.debug(f"{chunk_str} event.pseudoTagWeight is now {events.pseudoTagWeight[:10]} \n")
 
 
         #
