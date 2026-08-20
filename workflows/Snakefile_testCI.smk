@@ -414,7 +414,7 @@ rule workflow_validation:
     log: f"{output_dir}/workflow_validation.log"
     shell:
         """
-        pixi run snakemake -s coffea4bees/workflows/Snakefile_wanalysis_wcombine.smk --configfile coffea4bees/workflows/config/nominal_run2.yml -n 2>&1 | tee -a {log}
-        pixi run snakemake -s coffea4bees/workflows/Snakefile_wanalysis_wcombine.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml -n 2>&1 | tee -a {log}
-        pixi run snakemake -s coffea4bees/workflows/Snakefile_wanalysis_wcombine.smk --configfile coffea4bees/workflows/config/nominal_run3.yml -n 2>&1 | tee -a {log}
+        pixi run snakemake -s coffea4bees/workflows/Snakefile_master.smk --configfile coffea4bees/workflows/config/nominal_run2.yml -n 2>&1 | tee -a {log}
+        pixi run snakemake -s coffea4bees/workflows/Snakefile_master.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml -n 2>&1 | tee -a {log}
+        pixi run snakemake -s coffea4bees/workflows/Snakefile_master.smk --configfile coffea4bees/workflows/config/nominal_run3.yml -n 2>&1 | tee -a {log}
         """
