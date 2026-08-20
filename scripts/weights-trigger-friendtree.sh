@@ -17,7 +17,7 @@ create_output_directory "$OUTPUT_DIR"
 # Modify the config file
 display_section_header "Modifying config"
 JOB_CONFIG=$OUTPUT_DIR/trigger_weights.yml
-sed -e "s|make_.*|make_classifier_input: $OUTPUT_DIR|" \
+sed -e "s|^[[:space:]]*make_classifier_input:.*|  make_classifier_input: $OUTPUT_DIR/|" \
     coffea4bees/analysis/metadata/trigger_weights.yml > $JOB_CONFIG
 cat $JOB_CONFIG; echo
 
@@ -27,7 +27,8 @@ bash coffea4bees/scripts/run-analysis-processor.sh \
     --datasets "GluGluToHHTo4B_cHHH1" \
     --year "UL18" \
     --output-filename "trigger_weights_friends.json" \
-    --output-subdir $JOB \
-    --config $JOB_CONFIG \
-    # --additional-flags "--debug"
+    --output-subdir "$JOB" \
+    --config "$JOB_CONFIG" \
+    "$@"
+
 

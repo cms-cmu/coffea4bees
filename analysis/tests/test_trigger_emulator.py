@@ -221,18 +221,60 @@ class trigger_emulator_TestCase(unittest.TestCase):
 
 
 
-    def test_trig_weight_18_3b(self):
-        emulator_test_tool_data_2018_3b = TrigEmulatorTool("Test", year="2018", is3b=True)
-        emulator_test_tool_mc_2018_3b   = TrigEmulatorTool("Test", year="2018", useMCTurnOns=True, is3b=True)
+    def test_vectorized_vs_scalar_18(self):
+        import numpy as np
+        import awkward as ak
+        em_scalar = TrigEmulatorTool("Test", year="2018", nToys=5000)
+        em_vect   = TrigEmulatorTool("Test", year="2018", nToys=5000)
 
-        print("test_trig_weight_18_3b\n")
+        sel_jets = ak.Array(self.sel_jet_pt_18_4b[:5])
+        can_jets = ak.Array(self.can_jet_pt_18_4b[:5])
+        hts      = ak.Array(self.hT_18_4b[:5])
 
-        self._test_trig_weights(emulator_test_tool_data_2018_3b, emulator_test_tool_mc_2018_3b,
-                                self.sel_jet_pt_18_3b, self.can_jet_pt_18_3b, self.hT_18_3b,
-                                self.trigWeightData_18_3b, self.trigWeightMC_18_3b)
+        scalar_weights = np.array([
+            em_scalar.GetWeightOR(s, c, h) for s, c, h in zip(sel_jets, can_jets, hts)
+        ])
+        vect_weights = em_vect.GetWeightsOR_vectorized(sel_jets, can_jets, hts)
+
+        self.assertTrue(np.all(np.abs(scalar_weights - vect_weights) < 0.05))
+
+    def test_vectorized_vs_scalar_17(self):
+        import numpy as np
+        import awkward as ak
+        em_scalar = TrigEmulatorTool("Test", year="2017", nToys=5000)
+        em_vect   = TrigEmulatorTool("Test", year="2017", nToys=5000)
+
+        sel_jets = ak.Array(self.sel_jet_pt_17_4b[:5])
+        can_jets = ak.Array(self.can_jet_pt_17_4b[:5])
+        hts      = ak.Array(self.hT_17_4b[:5])
+
+        scalar_weights = np.array([
+            em_scalar.GetWeightOR(s, c, h) for s, c, h in zip(sel_jets, can_jets, hts)
+        ])
+        vect_weights = em_vect.GetWeightsOR_vectorized(sel_jets, can_jets, hts)
+
+        self.assertTrue(np.all(np.abs(scalar_weights - vect_weights) < 0.05))
+
+    def test_vectorized_vs_scalar_16_3b(self):
+        import numpy as np
+        import awkward as ak
+        em_scalar = TrigEmulatorTool("Test", year="2016", is3b=True, nToys=5000)
+        em_vect   = TrigEmulatorTool("Test", year="2016", is3b=True, nToys=5000)
+
+        sel_jets = ak.Array(self.sel_jet_pt_16_3b[:5])
+        can_jets = ak.Array(self.can_jet_pt_16_3b[:5])
+        hts      = ak.Array(self.hT_16_3b[:5])
+
+        scalar_weights = np.array([
+            em_scalar.GetWeightOR(s, c, h) for s, c, h in zip(sel_jets, can_jets, hts)
+        ])
+        vect_weights = em_vect.GetWeightsOR_vectorized(sel_jets, can_jets, hts)
+
+        self.assertTrue(np.all(np.abs(scalar_weights - vect_weights) < 0.05))
 
 
 if __name__ == '__main__':
     # wrapper.parse_args()
     # unittest.main(argv=sys.argv)
     unittest.main()
+

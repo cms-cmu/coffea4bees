@@ -43,3 +43,22 @@ class HLTHtEmulator:
         if debug:
             logging.debug(f"thisTagEff {thisTagEff} for ht = {ht}")
         return thisTagEff > htRand
+
+    def get_eff_vectorized(self, ht, smearFactor=0.0):
+        """Vectorized efficiency lookup for an array of HT values."""
+        ht_arr = np.asarray(ht)
+        orig_shape = ht_arr.shape
+        ht_flat = ht_arr.reshape(-1)
+
+        idx = np.searchsorted(self.m_highBinEdge, ht_flat, side='right')
+        idx = np.clip(idx, 0, self.m_nBins - 1)
+
+        eff_arr = np.array(self.m_eff, dtype=np.float64)
+        eff = np.maximum(eff_arr[idx], 0.0)
+
+        if smearFactor != 0.0:
+            err_arr = np.array(self.m_effErr, dtype=np.float64)
+            eff = np.clip(eff + err_arr[idx] * smearFactor, 0.0, 1.0)
+
+        return eff.reshape(orig_shape)
+

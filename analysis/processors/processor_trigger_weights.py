@@ -6,7 +6,9 @@ import numpy as np
 from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
 from coffea4bees.analysis.trigger_emulator.TrigEmulatorTool   import TrigEmulatorTool
 from coffea4bees.analysis.trigger_emulator.TriggerSFVectorized import TriggerSFVectorized
+from coffea4bees.analysis.trigger_emulator.helpers import compute_emulation_vars
 from src.physics.event_selection import apply_event_selection
+
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
 from coffea4bees.analysis.helpers.object_selection import load_object_selection_config
 from coffea4bees.analysis.helpers.candidates_selection import create_cand_jet_dijet_quadjet
@@ -27,7 +29,7 @@ class analysis(processor.ProcessorABC):
         self,
         *,
         make_classifier_input: str = None,
-        corrections_metadata: str ="src/physics/corrections.yml",
+        corrections_metadata: dict = None,
         use_vectorized: bool = False,
         tagger: str = "DeepJet",
         object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
@@ -39,7 +41,9 @@ class analysis(processor.ProcessorABC):
         self.use_vectorized = use_vectorized
         self.tagger = tagger
         self.trig_sfs_vect = {}
+        self.emulators = {}
         self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
+
 
         self.cutFlowCuts = [
             "all",
@@ -103,13 +107,17 @@ class analysis(processor.ProcessorABC):
             classifier_SvB_MA=None,
         )
 
+        self.emulators = getattr(self, "emulators", {})
         year_label = self.corrections_metadata[self.year]['year_label'].replace("UL", "20").split("_")[0]
         event['trigWeight'] = {}
 
         if self.use_vectorized:
             year_int = int(year_label)
             if year_int not in self.trig_sfs_vect:
-                self.trig_sfs_vect[year_int] = TriggerSFVectorized(year_int, map_path="coffea4bees/analysis/trigger_emulator/data/",tagger=self.tagger)
+                self.trig_sfs_vect[year_int] = TriggerSFVectorized(year_int, map_path="coffea4bees/analysis/trigger_emulator/data/", tagger=self.tagger)
+
+            if "trigEm" not in event.fields:
+                compute_emulation_vars(event, useOnlyTop4=(year_int <= 2018))
 
             trig_helper = self.trig_sfs_vect[year_int]
             data_eff, mc_eff, sf = trig_helper.calculate_event_sf(event)
@@ -117,10 +125,18 @@ class analysis(processor.ProcessorABC):
             event['trigWeight', "MC"] = mc_eff
 
         else:
-            emulator_data = TrigEmulatorTool("Test", year=year_label)
-            emulator_mc   = TrigEmulatorTool("Test", year=year_label, useMCTurnOns=True)
-            event['trigWeight', "Data"] = ak.Array([ emulator_data.GetWeightOR(selJet_pt, tagJet_pt, hT_trigger) for selJet_pt, tagJet_pt, hT_trigger in zip(event.selJet.pt, event.canJet.pt, event.hT_trigger) ])
-            event['trigWeight', 'MC' ] = ak.Array([ emulator_mc.GetWeightOR(selJet_pt, tagJet_pt, hT_trigger) for selJet_pt, tagJet_pt, hT_trigger in zip(event.selJet.pt, event.canJet.pt, event.hT_trigger) ])
+            if year_label not in self.emulators:
+                self.emulators[year_label] = {
+                    "Data": TrigEmulatorTool("Data", year=year_label),
+                    "MC": TrigEmulatorTool("MC", year=year_label, useMCTurnOns=True),
+                }
+
+            em_data = self.emulators[year_label]["Data"]
+            em_mc = self.emulators[year_label]["MC"]
+
+            event['trigWeight', "Data"] = em_data.GetWeightsOR_vectorized(event.selJet.pt, event.canJet.pt, event.hT_trigger)
+            event['trigWeight', "MC"] = em_mc.GetWeightsOR_vectorized(event.selJet.pt, event.canJet.pt, event.hT_trigger)
+
 
         logging.debug(f"trigger weight data: {event['trigWeight'].Data}")
         logging.debug(f"trigger weight mc: {event['trigWeight'].MC}")
