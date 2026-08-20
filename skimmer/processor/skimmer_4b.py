@@ -67,8 +67,8 @@ class Skimmer(Skimmer4b):
             weights.add("genweight_", events.genWeight)
 
         selections = PackedSelection()
-        selections.add("lumimask", events.lumimask)
-        selections.add("passNoiseFilter", events.passNoiseFilter)
+        selections.add("lumimask", np.full(len(events), True)) #events.lumimask)
+        selections.add("passNoiseFilter", np.full(len(events), True)) #events.passNoiseFilter)
         selections.add("passHLT", (events.passHLT if config["cut_on_HLT_decision"] else np.full(len(events), True)))
 
         if self.loosePtForSkim:
