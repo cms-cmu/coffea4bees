@@ -11,7 +11,7 @@ rule analysis_processor:
         config = lambda wildcards: workflow.configfiles[0] if workflow.configfiles else "coffea4bees/workflows/config/lowpt_run2.yml",
         extra_arguments = lambda wildcards: " ".join(filter(None, [
             "--not-do-proxy" if config.get("not_do_proxy", False) else "",
-            "--blind" if config.get("blind", False) else "",
+            "--blind" if (config.get("blind", False) or config.get("config", {}).get("blind", False)) else "",
             "--condor" if config.get("run_on_condor", False) else "",
             "--run-performance" if config.get("run_performance", False) else "",
             "-t" if config.get("test", False) else "",

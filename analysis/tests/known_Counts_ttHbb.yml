@@ -1,0 +1,246 @@
+counts4:
+    ttHbb_UL18:
+        passJetMult: 5547.84
+        passPreSel: 586.35
+        passDiJetMass: 328.87
+        SR: 160.65
+        SB: 168.21
+
+    data_UL18D:
+        passJetMult: 1657657.0
+        passPreSel: 62903.0
+        passDiJetMass: 26152.0
+        SR: 9837.0
+        SB: 16315.0
+
+    data_UL18C:
+        passJetMult: 361214.0
+        passPreSel: 13520.0
+        passDiJetMass: 5561.0
+        SR: 2085.0
+        SB: 3476.0
+
+    data_UL18B:
+        passJetMult: 387547.0
+        passPreSel: 14499.0
+        passDiJetMass: 5934.0
+        SR: 2266.0
+        SB: 3668.0
+
+    data_UL18A:
+        passJetMult: 804940.0
+        passPreSel: 29861.0
+        passDiJetMass: 12347.0
+        SR: 4687.0
+        SB: 7660.0
+
+    TTbar_from_d3_UL18D:
+        passPreSel: 3416.57
+        passDiJetMass: 1325.84
+        SR: 596.26
+        SB: 729.58
+
+    TTbar_from_d3_UL18C:
+        passPreSel: 715.92
+        passDiJetMass: 274.84
+        SR: 121.86
+        SB: 152.98
+
+    TTbar_from_d3_UL18B:
+        passPreSel: 775.21
+        passDiJetMass: 297.78
+        SR: 134.99
+        SB: 162.79
+
+    TTbar_from_d3_UL18A:
+        passPreSel: 1545.01
+        passDiJetMass: 588.17
+        SR: 266.52
+        SB: 321.66
+
+
+
+counts3:
+    ttHbb_UL18:
+        passJetMult: 5547.84
+        passPreSel: 360.92
+        passDiJetMass: 206.09
+        SR: 102.26
+        SB: 103.84
+
+    data_UL18D:
+        passJetMult: 1657657.0
+        passPreSel: 57480.18
+        passDiJetMass: 24645.52
+        SR: 9316.82
+        SB: 15328.7
+
+    data_UL18C:
+        passJetMult: 361214.0
+        passPreSel: 12255.54
+        passDiJetMass: 5196.11
+        SR: 1968.94
+        SB: 3227.17
+
+    data_UL18B:
+        passJetMult: 387547.0
+        passPreSel: 13217.4
+        passDiJetMass: 5619.53
+        SR: 2144.54
+        SB: 3474.99
+
+    data_UL18A:
+        passJetMult: 804940.0
+        passPreSel: 27015.86
+        passDiJetMass: 11570.3
+        SR: 4419.01
+        SB: 7151.28
+
+    TTbar_from_d3_UL18D:
+        passPreSel: 18881.32
+        passDiJetMass: 10850.95
+        SR: 5617.12
+        SB: 5233.83
+
+    TTbar_from_d3_UL18C:
+        passPreSel: 3922.35
+        passDiJetMass: 2229.19
+        SR: 1144.84
+        SB: 1084.35
+
+    TTbar_from_d3_UL18B:
+        passPreSel: 4243.95
+        passDiJetMass: 2419.56
+        SR: 1260.97
+        SB: 1158.59
+
+    TTbar_from_d3_UL18A:
+        passPreSel: 8475.15
+        passDiJetMass: 4818.42
+        SR: 2495.59
+        SB: 2322.84
+
+
+
+counts4_unit:
+    ttHbb_UL18:
+        passJetMult: 2776827.0
+        passPreSel: 368801.0
+        passDiJetMass: 204011.0
+        SR: 99591.0
+        SB: 104420.0
+
+    data_UL18D:
+        passJetMult: 1657657.0
+        passPreSel: 62903.0
+        passDiJetMass: 26152.0
+        SR: 9837.0
+        SB: 16315.0
+
+    data_UL18C:
+        passJetMult: 361214.0
+        passPreSel: 13520.0
+        passDiJetMass: 5561.0
+        SR: 2085.0
+        SB: 3476.0
+
+    data_UL18B:
+        passJetMult: 387547.0
+        passPreSel: 14499.0
+        passDiJetMass: 5934.0
+        SR: 2266.0
+        SB: 3668.0
+
+    data_UL18A:
+        passJetMult: 804940.0
+        passPreSel: 29861.0
+        passDiJetMass: 12347.0
+        SR: 4687.0
+        SB: 7660.0
+
+    TTbar_from_d3_UL18D:
+        passPreSel: 1580591.0
+        passDiJetMass: 486131.0
+        SR: 190171.0
+        SB: 295960.0
+
+    TTbar_from_d3_UL18C:
+        passPreSel: 344662.0
+        passDiJetMass: 103287.0
+        SR: 40273.0
+        SB: 63014.0
+
+    TTbar_from_d3_UL18B:
+        passPreSel: 369741.0
+        passDiJetMass: 111462.0
+        SR: 44009.0
+        SB: 67453.0
+
+    TTbar_from_d3_UL18A:
+        passPreSel: 768066.0
+        passDiJetMass: 234254.0
+        SR: 92037.0
+        SB: 142217.0
+
+
+
+counts3_unit:
+    ttHbb_UL18:
+        passJetMult: 2776827.0
+        passPreSel: 2220745.0
+        passDiJetMass: 1291083.0
+        SR: 640063.0
+        SB: 651020.0
+
+    data_UL18D:
+        passJetMult: 1657657.0
+        passPreSel: 1580591.0
+        passDiJetMass: 486131.0
+        SR: 190171.0
+        SB: 295960.0
+
+    data_UL18C:
+        passJetMult: 361214.0
+        passPreSel: 344662.0
+        passDiJetMass: 103287.0
+        SR: 40273.0
+        SB: 63014.0
+
+    data_UL18B:
+        passJetMult: 387547.0
+        passPreSel: 369741.0
+        passDiJetMass: 111462.0
+        SR: 44009.0
+        SB: 67453.0
+
+    data_UL18A:
+        passJetMult: 804940.0
+        passPreSel: 768066.0
+        passDiJetMass: 234254.0
+        SR: 92037.0
+        SB: 142217.0
+
+    TTbar_from_d3_UL18D:
+        passPreSel: 1580591.0
+        passDiJetMass: 486131.0
+        SR: 190171.0
+        SB: 295960.0
+
+    TTbar_from_d3_UL18C:
+        passPreSel: 344662.0
+        passDiJetMass: 103287.0
+        SR: 40273.0
+        SB: 63014.0
+
+    TTbar_from_d3_UL18B:
+        passPreSel: 369741.0
+        passDiJetMass: 111462.0
+        SR: 44009.0
+        SB: 67453.0
+
+    TTbar_from_d3_UL18A:
+        passPreSel: 768066.0
+        passDiJetMass: 234254.0
+        SR: 92037.0
+        SB: 142217.0
+

@@ -5,6 +5,8 @@ processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
 friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b.yml"
 weights_file: "coffea4bees/metadata/weights/weights_HH4b_2024_v2.yml"
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
+blind: true
+known_counts: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"
 cern_user: "algomez"
 cern_path: "www/HH4b/Plots/"
 dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"

@@ -4,7 +4,7 @@ runner:
   dashboard_address: 0
 
 config:
-  blind: false
+  blind: true
   apply_FvT: true
   apply_JCM: true
   apply_trigWeight: true
