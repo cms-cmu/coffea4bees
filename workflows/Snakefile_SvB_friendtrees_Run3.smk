@@ -70,13 +70,32 @@ rule install_SvB_friend_json:
     shell:  "cp {input} {output}"
 
 
+rule create_SvB_friend_config:
+    input: "coffea4bees/analysis/metadata/HH4b_make_friend_SvB_Run3.yml"
+    output: f"{SvB_OUT}analysis_config_make_friend_SvB.yml"
+    params:
+        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
+        dataset_location = config['dataset_location'],
+        friends = config.get("friend_gen_friends", "coffea4bees/metadata/friends/friends_HH4b.yml")
+    run:
+        import yaml
+        with open(input[0], 'r') as f:
+            cfg = yaml.safe_load(f) or {}
+        cfg['processor'] = params.processor
+        cfg['dataset_location'] = params.dataset_location
+        cfg['friend_file'] = params.friends
+        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
+        with open(output[0], 'w') as f:
+            yaml.dump(cfg, f, default_flow_style=False)
+
+
 use rule analysis_processor from analysis as make_SvB_friendtrees_mixeddata with:
     # runner.py writes a matching .json metafile alongside each .coffea output,
     # which merge_SvB_friendtrees_mixeddata picks up via the .coffea → .json swap.
     # install_path is the installed dataset yaml — required so this rule waits
     # for install_mixeddata_dataset when run inside the make-mixeddata pipeline.
     input:
-        config_yml   = "coffea4bees/analysis/metadata/HH4b_make_friend_SvB_Run3.yml",
+        config_yml   = f"{SvB_OUT}analysis_config_make_friend_SvB.yml",
         install_path = config['install_path'],
     output: f"{SvB_OUT}SvB_{config['dataset_name']}__{{year}}.coffea"
     log: f"{SvB_OUT}logs/SvB_{config['dataset_name']}__{{year}}.log"
@@ -88,7 +107,7 @@ use rule analysis_processor from analysis as make_SvB_friendtrees_mixeddata with
 
 
 use rule analysis_processor from analysis as make_SvB_friendtrees_HH with:
-    input: "coffea4bees/analysis/metadata/HH4b_make_friend_SvB_Run3.yml"
+    input: f"{SvB_OUT}analysis_config_make_friend_SvB.yml"
     output: f"{SvB_OUT}SvB_{{hh_dataset}}__{{year}}.coffea"
     log: f"{SvB_OUT}logs/SvB_{{hh_dataset}}__{{year}}.log"
     wildcard_constraints:

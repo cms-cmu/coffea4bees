@@ -1,7 +1,3 @@
-processor: "coffea4bees/analysis/processors/processor_HH4b.py"
-dataset_location: "coffea4bees/metadata/datasets/"
-friend_file: "coffea4bees/metadata/friends/friends_HH4b.yml"
-
 runner:
   workers: 4
   worker_memory: 5GB

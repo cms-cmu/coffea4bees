@@ -93,18 +93,24 @@ rule create_histogram_config_wSvB:
         # Pass --config enable_SvB_FeynNet_comparison=true to also fill the
         # 2D/3D SvB_MA vs SvB_FeynNet comparison histograms.
         svb_fn_cmp = str(config.get('enable_SvB_FeynNet_comparison', False)).lower(),
-        hemi_diag  = str(config.get('compute_hemi_mixing_diagnostics', False)).lower()
-    shell:
-        """
-        sed \
-            -e 's|  run_SvB:.*|  run_SvB: true|' \
-            -e 's|  run_SvB_FeynNet_comparison:.*|  run_SvB_FeynNet_comparison: {params.svb_fn_cmp}|' \
-            -e 's|  compute_hemi_mixing_diagnostics:.*|  compute_hemi_mixing_diagnostics: {params.hemi_diag}|' \
-            -e 's|friend_file:.*|friend_file: {input.friends_file}|' \
-            {input.config_file} > {output}
-        echo "Patched config:"
-        grep -E "run_SvB|compute_hemi_mixing_diagnostics|friend_file" {output}
-        """
+        hemi_diag  = str(config.get('compute_hemi_mixing_diagnostics', False)).lower(),
+        processor  = "coffea4bees/analysis/processors/processor_HH4b.py",
+        dataset_location = config['dataset_location']
+    run:
+        import yaml
+        with open(input.config_file, 'r') as f:
+            cfg = yaml.safe_load(f) or {}
+        cfg['processor'] = params.processor
+        cfg['dataset_location'] = params.dataset_location
+        cfg['friend_file'] = input.friends_file
+        if 'config' not in cfg:
+            cfg['config'] = {}
+        cfg['config']['run_SvB'] = True
+        cfg['config']['run_SvB_FeynNet_comparison'] = (params.svb_fn_cmp == 'true')
+        cfg['config']['compute_hemi_mixing_diagnostics'] = (params.hemi_diag == 'true')
+        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
+        with open(output[0], 'w') as f:
+            yaml.dump(cfg, f, default_flow_style=False)
 
 use rule analysis_processor from analysis as make_histograms with:
     input:
@@ -187,19 +193,25 @@ rule create_histogram_config_wJCM:
     output: f"{out}histogram_config_wJCM.yml"
     params:
         svb_fn_cmp = str(config.get('enable_SvB_FeynNet_comparison', False)).lower(),
-        hemi_diag  = str(config.get('compute_hemi_mixing_diagnostics', False)).lower()
-    shell:
-        """
-        sed \
-            -e 's|  run_SvB:.*|  run_SvB: true|' \
-            -e 's|  run_SvB_FeynNet_comparison:.*|  run_SvB_FeynNet_comparison: {params.svb_fn_cmp}|' \
-            -e 's|  JCM_file.*|  JCM_file: {input.jcm_file}|' \
-            -e 's|  compute_hemi_mixing_diagnostics:.*|  compute_hemi_mixing_diagnostics: {params.hemi_diag}|' \
-            -e 's|friend_file:.*|friend_file: {input.friends_file}|' \
-            {input.config_file} > {output}
-        echo "Patched config:"
-        grep -E "run_SvB|JCM_file|compute_hemi_mixing_diagnostics|friend_file" {output}
-        """
+        hemi_diag  = str(config.get('compute_hemi_mixing_diagnostics', False)).lower(),
+        processor  = "coffea4bees/analysis/processors/processor_HH4b.py",
+        dataset_location = config['dataset_location']
+    run:
+        import yaml
+        with open(input.config_file, 'r') as f:
+            cfg = yaml.safe_load(f) or {}
+        cfg['processor'] = params.processor
+        cfg['dataset_location'] = params.dataset_location
+        cfg['friend_file'] = input.friends_file
+        if 'config' not in cfg:
+            cfg['config'] = {}
+        cfg['config']['run_SvB'] = True
+        cfg['config']['run_SvB_FeynNet_comparison'] = (params.svb_fn_cmp == 'true')
+        cfg['config']['compute_hemi_mixing_diagnostics'] = (params.hemi_diag == 'true')
+        cfg['config']['JCM_file'] = input.jcm_file
+        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
+        with open(output[0], 'w') as f:
+            yaml.dump(cfg, f, default_flow_style=False)
 
 use rule analysis_processor from analysis as make_histograms_wJCM with:
     input:
@@ -279,21 +291,27 @@ rule create_histogram_config_FvT:
     output: f"{out}histogram_config_FvT.yml"
     params:
         svb_fn_cmp = str(config.get('enable_SvB_FeynNet_comparison', False)).lower(),
-        hemi_diag  = str(config.get('compute_hemi_mixing_diagnostics', False)).lower()
-    shell:
-        """
-        sed \
-            -e 's|  run_SvB:.*|  run_SvB: true|' \
-            -e 's|  run_SvB_FeynNet_comparison:.*|  run_SvB_FeynNet_comparison: {params.svb_fn_cmp}|' \
-            -e 's|  JCM_file.*|  JCM_file: {input.jcm_file}|' \
-            -e 's|  apply_FvT:.*|  apply_FvT: true|' \
-            -e 's|  plot_ttbar_with_weights.*|  plot_ttbar_with_weights: true|' \
-            -e 's|  compute_hemi_mixing_diagnostics:.*|  compute_hemi_mixing_diagnostics: {params.hemi_diag}|' \
-            -e 's|friend_file:.*|friend_file: {input.friends_file}|' \
-            {input.config_file} > {output}
-        echo "Patched config:"
-        grep -E "run_SvB|JCM_file|apply_FvT|plot_ttbar_with_weights|compute_hemi_mixing_diagnostics|friend_file" {output}
-        """
+        hemi_diag  = str(config.get('compute_hemi_mixing_diagnostics', False)).lower(),
+        processor  = "coffea4bees/analysis/processors/processor_HH4b.py",
+        dataset_location = config['dataset_location']
+    run:
+        import yaml
+        with open(input.config_file, 'r') as f:
+            cfg = yaml.safe_load(f) or {}
+        cfg['processor'] = params.processor
+        cfg['dataset_location'] = params.dataset_location
+        cfg['friend_file'] = input.friends_file
+        if 'config' not in cfg:
+            cfg['config'] = {}
+        cfg['config']['run_SvB'] = True
+        cfg['config']['run_SvB_FeynNet_comparison'] = (params.svb_fn_cmp == 'true')
+        cfg['config']['compute_hemi_mixing_diagnostics'] = (params.hemi_diag == 'true')
+        cfg['config']['JCM_file'] = input.jcm_file
+        cfg['config']['apply_FvT'] = True
+        cfg['config']['plot_ttbar_with_weights'] = True
+        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
+        with open(output[0], 'w') as f:
+            yaml.dump(cfg, f, default_flow_style=False)
 
 # Only data is re-run with FvT — TT estimate comes from 3b data × FvT.d3_to_t4
 # (plot_ttbar_with_weights=true), so re-running TT MC samples is redundant.

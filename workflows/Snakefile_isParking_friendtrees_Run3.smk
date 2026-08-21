@@ -57,8 +57,27 @@ rule install_isParking_friend_json:
     shell:  "cp {input} {output}"
 
 
+rule create_isParking_friend_config:
+    input: "coffea4bees/analysis/metadata/HH4b_make_friend_isParking.yml"
+    output: f"{ISPARKING_OUT}analysis_config_make_friend_isParking.yml"
+    params:
+        processor = "coffea4bees/analysis/processors/processor_isParking_friend.py",
+        dataset_location = config['dataset_location'],
+        friends = "coffea4bees/metadata/friends/friends_empty.yml"
+    run:
+        import yaml
+        with open(input[0], 'r') as f:
+            cfg = yaml.safe_load(f) or {}
+        cfg['processor'] = params.processor
+        cfg['dataset_location'] = params.dataset_location
+        cfg['friend_file'] = params.friends
+        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
+        with open(output[0], 'w') as f:
+            yaml.dump(cfg, f, default_flow_style=False)
+
+
 use rule analysis_processor from analysis as make_isParking_friendtrees_ttbar with:
-    input:  "coffea4bees/analysis/metadata/HH4b_make_friend_isParking.yml"
+    input:  f"{ISPARKING_OUT}analysis_config_make_friend_isParking.yml"
     output: f"{ISPARKING_OUT}isParking_{{tt_dataset}}__{YEAR}.coffea"
     log:    f"{ISPARKING_OUT}logs/isParking_{{tt_dataset}}__{YEAR}.log"
     wildcard_constraints:
@@ -71,7 +90,7 @@ use rule analysis_processor from analysis as make_isParking_friendtrees_ttbar wi
 
 
 use rule analysis_processor from analysis as make_isParking_friendtrees_HH with:
-    input:  "coffea4bees/analysis/metadata/HH4b_make_friend_isParking.yml"
+    input:  f"{ISPARKING_OUT}analysis_config_make_friend_isParking.yml"
     output: f"{ISPARKING_OUT}isParking_{{hh_dataset}}__{YEAR}.coffea"
     log:    f"{ISPARKING_OUT}logs/isParking_{{hh_dataset}}__{YEAR}.log"
     wildcard_constraints:

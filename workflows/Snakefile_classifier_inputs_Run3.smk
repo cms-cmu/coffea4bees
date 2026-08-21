@@ -45,9 +45,27 @@ rule all:
 # Use __ (double underscore) as separator between dataset and year to avoid
 # ambiguous wildcard matching, since both dataset names and years contain _.
 
+rule create_classifier_inputs_config:
+    input: config['classifier_config']
+    output: f"{out}analysis_config_classifier_inputs.yml"
+    params:
+        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
+        dataset_location = config['dataset_location'],
+        friends = "coffea4bees/metadata/friends/friends_HH4b.yml"
+    run:
+        import yaml
+        with open(input[0], 'r') as f:
+            cfg = yaml.safe_load(f) or {}
+        cfg['processor'] = params.processor
+        cfg['dataset_location'] = params.dataset_location
+        cfg['friend_file'] = params.friends
+        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
+        with open(output[0], 'w') as f:
+            yaml.dump(cfg, f, default_flow_style=False)
+
 use rule analysis_processor from analysis as classifier_inputs with:
     input:
-        config_file = config['classifier_config']
+        config_file = f"{out}analysis_config_classifier_inputs.yml"
     output: f"{out}classifier_inputs/classifier_inputs_{{dataset}}__{{year}}.coffea"
     log: f"{out}logs/classifier_inputs_{{dataset}}__{{year}}.log"
     params:
