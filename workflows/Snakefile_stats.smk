@@ -167,4 +167,4 @@ use rule make_combine_inputs from stat_analysis with:
 # Import all rules from combine module
 use rule * from combine as *
 
-localrules: convert_hist_to_json, make_combine_inputs_channel
+localrules: convert_hist_to_json, make_combine_inputs

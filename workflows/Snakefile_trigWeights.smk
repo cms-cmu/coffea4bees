@@ -17,11 +17,15 @@ rule final_outputs:
 rule create_config:
     output: f"{config['output_path']}trigger_weights_config.yml"
     params:
-        eos_path = config['eos_path']
+        eos_path = config['eos_path'],
+        dataset_location = config['dataset_location']
     shell:
         """
         echo "Creating config file for trigger weights analysis"
         cat > {output} <<EOL
+processor: "coffea4bees/analysis/processors/processor_trigger_weights.py"
+dataset_location: "{params.dataset_location}"
+
 runner:
   condor_cores: 2
   worker_memory: 6GB
@@ -44,13 +48,6 @@ use rule analysis_processor from analysis as analysis_trigger_weights with:
         datasets = config['dataset'],
         years = config['year'],
         config = lambda wildcards, input: input[0],
-        processor = "coffea4bees/analysis/processors/processor_trigger_weights.py",
-        datasets_file = config['dataset_location'],
-        blind = False,
-        run_performance = False,
-        friends = "",
-        run_on_condor = True,
-        extra_arguments = "",
         run_container_wrapper = "./run_container"
 
 rule merge_friendtree_json:

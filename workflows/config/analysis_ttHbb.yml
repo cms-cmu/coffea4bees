@@ -1,15 +1,35 @@
 label: "ttHbb"
 output_path: "output/ttHbb/"
-analysis_config: "coffea4bees/analysis/metadata/ttHbb_2024_v2.yml"
-processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
-friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b.yml"
-weights_file: "coffea4bees/metadata/weights/weights_HH4b_2024_v2.yml"
+analysis_config:
+  processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+  dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
+  friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b.yml"
+  weights_file: "coffea4bees/metadata/weights/weights_HH4b_2024_v2.yml"
+  runner:
+    workers: 4
+    worker_memory: 8GB
+    chunksize: 10000
+    condor: true
+    shared_dask: true
+    run_performance: true
+  config:
+    blind: true
+    apply_FvT: true
+    apply_JCM: true
+    apply_trigWeight: true
+    apply_btagSF: true
+    apply_boosted_veto: false
+    run_SvB: true
+    SvB_MA: true
+    SvB: null
+    hist_cuts: ["pass_nSelJets_gt6", "fail_nSelJets_le6"]
+    top_reconstruction: fast
+    plot_ttbar_with_weights: true
+
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
-blind: true
 known_counts: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"
 cern_user: "algomez"
 cern_path: "www/HH4b/Plots/"
-dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
 dataset:
   - "ttHbb"
 year_eras:
@@ -18,26 +38,6 @@ year_eras:
     - "B"
     - "C"
     - "D"
-
-runner:
-  workers: 4
-  worker_memory: 8GB
-  dashboard_address: 0
-  chunksize: 40000
-
-config:
-  blind: true
-  apply_FvT: true
-  apply_JCM: true
-  apply_trigWeight: true
-  apply_btagSF: true
-  apply_boosted_veto: false
-  run_SvB: true
-  SvB_MA: true
-  SvB: null
-  hist_cuts: ["pass_nSelJets_gt6", "fail_nSelJets_le6"]
-  top_reconstruction: fast
-  plot_ttbar_with_weights: true
 
 
 convert_hist_to_json:

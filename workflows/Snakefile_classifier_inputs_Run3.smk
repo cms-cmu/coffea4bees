@@ -47,23 +47,14 @@ rule all:
 
 use rule analysis_processor from analysis as classifier_inputs with:
     input:
-        config_file = config['classifier_config'],
-        friends_file = "coffea4bees/metadata/friends/friends_HH4b.yml",
+        config_file = config['classifier_config']
     output: f"{out}classifier_inputs/classifier_inputs_{{dataset}}__{{year}}.coffea"
     log: f"{out}logs/classifier_inputs_{{dataset}}__{{year}}.log"
     params:
         datasets = "{dataset}",
         years = "{year}",
         config = lambda wildcards, input: input.config_file,
-        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
-        datasets_file = config['dataset_location'],
-        blind = False,
-        run_performance = False,
-        friends = lambda wildcards, input: input.friends_file,
-        run_on_condor = config['run_on_condor'],
-        extra_arguments = "",
-        run_container_wrapper = "./run_container",
-        dashboard_address = 0
+        run_container_wrapper = "./run_container"
 
 if config['reuse_legacy_classifier_inputs']:
     rule merge_json_classifier_inputs:

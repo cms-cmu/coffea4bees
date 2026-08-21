@@ -1,0 +1,31 @@
+configs: coffea4bees/analysis/metadata/HH4b.yml
+triggers: coffea4bees/metadata/triggers_HH4b.yml
+luminosities: coffea4bees/metadata/luminosities_HH4b.yml
+friends: coffea4bees/metadata/friends/friends_HH4b.yml
+datasets:
+  - data
+  - TTToHadronic
+  - TTToSemiLeptonic
+  - TTTo2L2Nu
+years:
+  - UL17
+  - UL18
+  - UL16_preVFP
+  - UL16_postVFP
+output_path: tmp/post_change_analysis_test2_out/analysis_test
+output_file: test_databkgs.coffea
+test: true
+
+# In-memory overrides
+config_overrides:
+  hist_cuts: []
+
+# In-memory dataset merging
+datasets_metadata_files:
+  - coffea4bees/metadata/datasets/data.yml
+  - coffea4bees/metadata/datasets/TT.yml
+
+# In-memory dataset exclusions
+datasets_filter:
+  exclude:
+    - data.UL17.picoAOD.B

@@ -67,15 +67,7 @@ use rule analysis_processor from analysis as make_isParking_friendtrees_ttbar wi
         datasets              = "{tt_dataset}",
         years                 = YEAR,
         config                = lambda wildcards, input: input[0],
-        processor             = "coffea4bees/analysis/processors/processor_isParking_friend.py",
-        datasets_file         = config['dataset_location'],
-        blind                 = False,
-        run_performance       = False,
-        friends               = "coffea4bees/metadata/friends/friends_empty.yml",
-        run_on_condor         = True,
-        extra_arguments       = "",
-        run_container_wrapper = "./run_container",
-        dashboard_address     = 0
+        run_container_wrapper = "./run_container"
 
 
 use rule analysis_processor from analysis as make_isParking_friendtrees_HH with:
@@ -88,15 +80,7 @@ use rule analysis_processor from analysis as make_isParking_friendtrees_HH with:
         datasets              = "{hh_dataset}",
         years                 = YEAR,
         config                = lambda wildcards, input: input[0],
-        processor             = "coffea4bees/analysis/processors/processor_isParking_friend.py",
-        datasets_file         = config['dataset_location'],
-        blind                 = False,
-        run_performance       = False,
-        friends               = "coffea4bees/metadata/friends/friends_empty.yml",
-        run_on_condor         = True,
-        extra_arguments       = "",
-        run_container_wrapper = "./run_container",
-        dashboard_address     = 0
+        run_container_wrapper = "./run_container"
 
 
 rule merge_isParking_friendtrees:

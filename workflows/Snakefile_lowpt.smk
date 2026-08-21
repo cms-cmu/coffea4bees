@@ -28,22 +28,25 @@ rule all_lowpt:
         bash src/tools/copy_files_to_cernbox.sh -s {config[output_path]} -d www/HH4b/{config[eos_path]}/ -t
         """
 
+rule create_noJCM_config_lowpt:
+    input: "coffea4bees/analysis/metadata/HH4b_noJCM.yml"
+    output: f"{config['output_path']}HH4b_noJCM_lowpt.yml"
+    shell:
+        """
+        sed -e 's|processor_HH4b.py|processor_HH4b_lowpt.py|' \
+            -e 's|friends_HH4b.yml|friends_HH4b_lowpt.yml|' \
+            -e 's|coffea4bees/metadata/datasets/|coffea4bees/metadata/datasets/archive/Run2_2024_v2/|' \
+            {input} > {output}
+        """
+
 use rule analysis_processor from analysis as analysis_nojcm_lowpt with:
-    input: f"coffea4bees/analysis/metadata/HH4b_noJCM.yml"
+    input: f"{config['output_path']}HH4b_noJCM_lowpt.yml"
     output: f"{config['output_path']}histAll_lowpt_noJCM.coffea"
     log: f"{config['output_path']}logs/analysis_nojcm_lowpt.log"
-    # container: ""
     params:
         datasets = config['dataset'],
         years = config['year'],
         config = lambda wildcards, input: input[0],
-        processor = "coffea4bees/analysis/processors/processor_HH4b_lowpt.py",
-        datasets_file = config['dataset_location'],
-        blind = False,
-        run_performance = False,
-        friends = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b_lowpt.yml",
-        run_on_condor = True,
-        extra_arguments = "",
         run_container_wrapper = "./run_container"
 
 use rule make_plots from analysis as make_plots_noJCMlowpt with:
@@ -86,13 +89,7 @@ use rule analysis_processor from analysis as analysis_lowpt_classifier_inputs wi
     params:
         datasets = "{dataset}",
         years = "{year}",
-        processor = "coffea4bees/analysis/processors/processor_HH4b_lowpt.py",
         config = lambda wildcards, input: input[0],
-        datasets_file = config['dataset_location'],
-        blind = False,
-        run_performance = False,
-        friends = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b_lowpt.yml",
-        run_on_condor = True,
         extra_arguments = "--shared-dask",
         run_container_wrapper = "./run_container"
 

@@ -18,17 +18,12 @@ module analysis:
     config: config
 
 use rule analysis_processor from analysis as analysis_noJCM with:
+    input: "coffea4bees/analysis/metadata/HH4b_noJCM.yml"
     output: f"{config['output_path']}histAll_NoJCM.coffea"
     params:
         datasets = config['dataset'],
         years = config['year'],
-        metadata = "coffea4bees/analysis/metadata/HH4b_noJCM.yml",
-        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
-        datasets_file = config['dataset_location'],
-        blind = False,
-        run_performance = False,
-        extra_arguments = "",
-        username = username
+        config = lambda wildcards, input: input[0]
     log: f"{config['output_path']}logs/analysis_all.log"
 
 

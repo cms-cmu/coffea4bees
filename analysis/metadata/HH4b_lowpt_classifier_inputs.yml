@@ -1,7 +1,10 @@
+processor: "coffea4bees/analysis/processors/processor_HH4b_lowpt.py"
+dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
+friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b_lowpt.yml"
+
 runner:
   workers: 4
   worker_memory: 4GB
-  # friend_base: output/ 
   chunksize: 10000
 
 config:

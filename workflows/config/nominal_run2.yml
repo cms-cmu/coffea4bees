@@ -1,11 +1,29 @@
 label: "TEST"
 output_path: "output/TEST/"
-analysis_config: "coffea4bees/analysis/metadata/HH4b_2024_v2.yml"
-processor: "coffea4bees/analysis/processors/processor_HH4b.py"
-friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b.yml"
+analysis_config:
+  processor: "coffea4bees/analysis/processors/processor_HH4b.py"
+  dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
+  friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b.yml"
+  weights_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/weights_HH4b.yml"
+  runner:
+    workers: 4
+    worker_memory: 8GB
+    dashboard_address: 0
+  config:
+    blind: true
+    apply_FvT: true
+    apply_JCM: true
+    apply_trigWeight: true
+    apply_btagSF: true
+    apply_boosted_veto: false
+    run_SvB: true
+    SvB_MA: true
+    SvB: null
+    top_reconstruction: fast
+    plot_ttbar_with_weights: true
+
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttbarWeights.yml"
 combine_flags: "--blind"
-dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
 dataset:
   - "GluGluToHHTo4B_cHHH1"
   - "GluGluToHHTo4B_cHHH0"
