@@ -1481,13 +1481,14 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 f"but none found among {svb_names} — skipping blinding for this chunk."
             )
             return None
-        in_sr = selev["quadJet_selected"].SR
+        in_sr = ak.to_numpy(selev["quadJet_selected"].SR)
         # Blind if the event is in SR and ANY ps score from ANY SvB classifier > 0.8
         is_signal = np.zeros(len(selev), dtype=bool)
         for name in usable:
             for field in selev[name].fields:
                 if field.startswith("ps"):
-                    is_signal |= (selev[name][field] > 0.8)
+                    score = ak.to_numpy(selev[name][field])
+                    is_signal = is_signal | (score > 0.8)
         return ~(in_sr & is_signal)
 
     def apply_selection(self, event):

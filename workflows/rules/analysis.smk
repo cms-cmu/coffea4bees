@@ -131,6 +131,7 @@ rule check_cutflow:
             --output-file "{output.cutflow_yml}" \
             {params.known_flag} \
             --error-threshold "{params.error_threshold}" \
-            --cutflow-list "{params.cutflow_list}" 2>&1 | tee -a {log}
+            --cutflow-list "{params.cutflow_list}" \
+            --python-bin "{params.python_bin}" 2>&1 | tee -a {log}
         touch {output.validation_txt}
         """

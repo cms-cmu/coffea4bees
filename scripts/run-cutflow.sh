@@ -98,6 +98,10 @@ while [[ $# -gt 0 ]]; do
             CUTFLOW_LIST="$2"
             shift 2
             ;;
+        --python-bin)
+            PYTHON_BIN="$2"
+            shift 2
+            ;;
         --help)
             usage
             ;;
@@ -107,6 +111,19 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# Select python binary with coffea
+if [ -n "$PYTHON_BIN" ]; then
+    PYTHON_CMD="$PYTHON_BIN"
+elif [ -n "$CONTAINER_PYTHON" ]; then
+    PYTHON_CMD="$CONTAINER_PYTHON"
+elif [ -x "/opt/conda/bin/python" ]; then
+    PYTHON_CMD="/opt/conda/bin/python"
+elif command -v python3 &>/dev/null; then
+    PYTHON_CMD="python3"
+else
+    PYTHON_CMD="python"
+fi
 
 # Save our parsed values before sourcing the initial variables script
 declare -A SAVED_VARS=(
@@ -151,10 +168,10 @@ display_config
 # Create output directory if it doesn't exist
 create_output_directory "$OUTPUT_DIR"
 
-echo "############### Running cutflow analysis"
+echo "############### Running cutflow analysis with python: $PYTHON_CMD"
 # Run the Python script to dump cutflow
 IFS=',' read -ra cutflows <<< "$CUTFLOW_LIST"
-cmd=(python coffea4bees/analysis/tests/dumpCutFlow.py --inputFile "$INPUT_FILE" -o "$OUTPUT_FILE" -c )
+cmd=("$PYTHON_CMD" coffea4bees/analysis/tests/dumpCutFlow.py --inputFile "$INPUT_FILE" -o "$OUTPUT_FILE" -c )
 for cf in "${cutflows[@]}"; do
     cmd+=("$cf")
 done
@@ -172,7 +189,7 @@ cat "$OUTPUT_FILE"
 if [ -n "$KNOWN_CUTFLOW" ] && [ "$KNOWN_CUTFLOW" != "none" ] && [ -f "$KNOWN_CUTFLOW" ]; then
     echo "############### Running cutflow comparison"
     # Run the cutflow unit test
-    cmd=(python coffea4bees/analysis/tests/cutflow_test.py --inputFile "$INPUT_FILE" --knownCounts "$KNOWN_CUTFLOW" --error_threshold "$ERROR_THRESHOLD")
+    cmd=("$PYTHON_CMD" coffea4bees/analysis/tests/cutflow_test.py --inputFile "$INPUT_FILE" --knownCounts "$KNOWN_CUTFLOW" --error_threshold "$ERROR_THRESHOLD")
     run_command "${cmd[@]}"
 
     # Check if the command was successful
