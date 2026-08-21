@@ -105,6 +105,19 @@ rule make_plots:
         touch {output}
         """
 
+def get_known_cutflow_flag(wildcards):
+    import os
+    label = getattr(wildcards, 'label', config.get('label', ''))
+    is_test = config.get("test", False)
+    if is_test:
+        counts_file = config.get("known_counts_test") or config.get("known_counts") or f"coffea4bees/analysis/tests/known_Counts_{label}.yml"
+    else:
+        counts_file = config.get("known_counts_full") or config.get("known_counts") or f"coffea4bees/analysis/tests/known_fullCounts_{label}.yml"
+    
+    if counts_file and os.path.exists(counts_file):
+        return f'--known-cutflow "{counts_file}"'
+    return ""
+
 rule check_cutflow:
     input:
         coffea_file = "{output_path}histAll_{label}.coffea"
@@ -113,7 +126,7 @@ rule check_cutflow:
         cutflow_yml = "{output_path}cutflow_{label}.yml"
     container: config.get("analysis_container", "")
     params:
-        known_flag = lambda wildcards: f'--known-cutflow "{config["known_counts"]}"' if config.get("known_counts") else "",
+        known_flag = get_known_cutflow_flag,
         error_threshold = lambda wildcards: config.get("error_threshold", "0.001"),
         cutflow_list = lambda wildcards: config.get("cutflow_list", "passJetMult,passPreSel,passDiJetMass,SR,SB"),
         run_container_wrapper = "",

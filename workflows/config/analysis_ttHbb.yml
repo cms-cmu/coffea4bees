@@ -27,7 +27,8 @@ analysis_config:
     plot_ttbar_with_weights: true
 
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
-known_counts: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"
+known_counts_test: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"
+known_counts_full: "coffea4bees/analysis/tests/known_fullCounts_ttHbb.yml"
 cern_user: "algomez"
 cern_path: "www/HH4b/Plots/"
 dataset:
@@ -67,6 +68,8 @@ channels:
     cut: "pass_nSelJets_gt6"
 
 combine_flags: "--three_tag threeTag --four_tag fourTag --region sum --blind"
-likelihood_scan_points: 20
-likelihood_scan_r_min: -10
-likelihood_scan_r_max: 10
+likelihood_scan_points: 40
+likelihood_scan_r_min: -1
+likelihood_scan_r_max: 1
+likelihood_scan_y_cut: 100
+likelihood_scan_y_max: 100
