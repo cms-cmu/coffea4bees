@@ -85,8 +85,23 @@ def get_analysis_targets(wildcards):
 rule all_analysis:
     input: get_analysis_targets
 
+def get_analysis_config_inputs(wildcards):
+    cfg = get_raw_analysis_config()
+    inputs = []
+    if workflow.configfiles:
+        inputs.extend(workflow.configfiles)
+    if 'processor' in cfg and cfg['processor']:
+        inputs.append(cfg['processor'])
+    if 'friend_file' in cfg and cfg['friend_file']:
+        inputs.append(cfg['friend_file'])
+    if 'weights_file' in cfg and cfg['weights_file']:
+        inputs.append(cfg['weights_file'])
+    if 'config' in cfg and isinstance(cfg['config'], dict) and 'JCM_file' in cfg['config'] and cfg['config']['JCM_file']:
+        inputs.append(cfg['config']['JCM_file'])
+    return inputs
+
 rule create_analysis_config_data:
-    input: workflow.configfiles if workflow.configfiles else []
+    input: get_analysis_config_inputs
     output: data_config_path
     run:
         import yaml
@@ -102,7 +117,7 @@ rule create_analysis_config_data:
             yaml.dump(cfg, f, default_flow_style=False)
 
 rule create_analysis_config_signal:
-    input: workflow.configfiles if workflow.configfiles else []
+    input: get_analysis_config_inputs
     output: signal_config_path
     run:
         import yaml, copy

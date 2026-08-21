@@ -87,20 +87,20 @@ rule create_friends_wSvB:
 rule create_histogram_config_wSvB:
     input:
         config_file  = config['histogram_config'],
-        friends_file = f"{out}friends_wSvB.yml"
+        friends_file = f"{out}friends_wSvB.yml",
+        processor    = "coffea4bees/analysis/processors/processor_HH4b.py"
     output: f"{out}histogram_config_wSvB.yml"
     params:
         # Pass --config enable_SvB_FeynNet_comparison=true to also fill the
         # 2D/3D SvB_MA vs SvB_FeynNet comparison histograms.
         svb_fn_cmp = str(config.get('enable_SvB_FeynNet_comparison', False)).lower(),
         hemi_diag  = str(config.get('compute_hemi_mixing_diagnostics', False)).lower(),
-        processor  = "coffea4bees/analysis/processors/processor_HH4b.py",
         dataset_location = config['dataset_location']
     run:
         import yaml
         with open(input.config_file, 'r') as f:
             cfg = yaml.safe_load(f) or {}
-        cfg['processor'] = params.processor
+        cfg['processor'] = input.processor
         cfg['dataset_location'] = params.dataset_location
         cfg['friend_file'] = input.friends_file
         if 'config' not in cfg:
@@ -189,18 +189,18 @@ rule create_histogram_config_wJCM:
     input:
         jcm_file     = f"{out}jcm/jetCombinatoricModel_SB_.yml",
         config_file  = config['histogram_config'],
-        friends_file = f"{out}friends_wSvB.yml"
+        friends_file = f"{out}friends_wSvB.yml",
+        processor    = "coffea4bees/analysis/processors/processor_HH4b.py"
     output: f"{out}histogram_config_wJCM.yml"
     params:
         svb_fn_cmp = str(config.get('enable_SvB_FeynNet_comparison', False)).lower(),
         hemi_diag  = str(config.get('compute_hemi_mixing_diagnostics', False)).lower(),
-        processor  = "coffea4bees/analysis/processors/processor_HH4b.py",
         dataset_location = config['dataset_location']
     run:
         import yaml
         with open(input.config_file, 'r') as f:
             cfg = yaml.safe_load(f) or {}
-        cfg['processor'] = params.processor
+        cfg['processor'] = input.processor
         cfg['dataset_location'] = params.dataset_location
         cfg['friend_file'] = input.friends_file
         if 'config' not in cfg:
@@ -287,18 +287,18 @@ rule create_histogram_config_FvT:
     input:
         jcm_file     = config['jcm_install_path'],
         config_file  = config['histogram_config'],
-        friends_file = f"{out}friends_FvT.yml"
+        friends_file = f"{out}friends_FvT.yml",
+        processor    = "coffea4bees/analysis/processors/processor_HH4b.py"
     output: f"{out}histogram_config_FvT.yml"
     params:
         svb_fn_cmp = str(config.get('enable_SvB_FeynNet_comparison', False)).lower(),
         hemi_diag  = str(config.get('compute_hemi_mixing_diagnostics', False)).lower(),
-        processor  = "coffea4bees/analysis/processors/processor_HH4b.py",
         dataset_location = config['dataset_location']
     run:
         import yaml
         with open(input.config_file, 'r') as f:
             cfg = yaml.safe_load(f) or {}
-        cfg['processor'] = params.processor
+        cfg['processor'] = input.processor
         cfg['dataset_location'] = params.dataset_location
         cfg['friend_file'] = input.friends_file
         if 'config' not in cfg:

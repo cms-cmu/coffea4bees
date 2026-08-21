@@ -18,19 +18,20 @@ module analysis:
     config: config
 
 rule create_noJCM_config:
-    input: "coffea4bees/analysis/metadata/HH4b_noJCM.yml"
+    input:
+        config_file = "coffea4bees/analysis/metadata/HH4b_noJCM.yml",
+        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
+        friend_file = "coffea4bees/metadata/friends/friends_HH4b.yml"
     output: f"{config['output_path']}analysis_config_noJCM.yml"
     params:
-        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
-        dataset_location = config['dataset_location'],
-        friend_file = "coffea4bees/metadata/friends/friends_HH4b.yml"
+        dataset_location = config['dataset_location']
     run:
         import yaml
-        with open(input[0], 'r') as f:
+        with open(input.config_file, 'r') as f:
             cfg = yaml.safe_load(f) or {}
-        cfg['processor'] = params.processor
+        cfg['processor'] = input.processor
         cfg['dataset_location'] = params.dataset_location
-        cfg['friend_file'] = params.friend_file
+        cfg['friend_file'] = input.friend_file
         os.makedirs(os.path.dirname(output[0]), exist_ok=True)
         with open(output[0], 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False)

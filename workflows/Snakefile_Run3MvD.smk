@@ -127,9 +127,10 @@ rule all_with_training:
 
 # Re-export classifier-inputs rules from the module after `rule all` so
 # the wildcard `classifier_inputs` rule isn't picked as default target.
-use rule classifier_inputs            from classifier_inputs
-use rule merge_json_classifier_inputs from classifier_inputs
-use rule install_classifier_inputs    from classifier_inputs
+use rule create_classifier_inputs_config from classifier_inputs
+use rule classifier_inputs               from classifier_inputs
+use rule merge_json_classifier_inputs    from classifier_inputs
+use rule install_classifier_inputs       from classifier_inputs
 
 # ── Histograms ────────────────────────────────────────────────────────────────
 # Use __ (double underscore) as separator between dataset and year to avoid
@@ -166,20 +167,20 @@ rule create_histogram_config_wSvB:
     """Patched histogram config; mode-specific only (no rank deps), so
     output goes to the shared dir for reuse across rank runs."""
     input:
-        config_file = config['histogram_config']
+        config_file = config['histogram_config'],
+        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
+        friends = "coffea4bees/metadata/friends/friends_HH4b.yml"
     output: f"{SHARED_OUT_MvD}histogram_config_wSvB.yml"
     params:
         hemi_diag = str(config.get('compute_hemi_mixing_diagnostics', False)).lower(),
-        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
-        dataset_location = config['dataset_location'],
-        friends = "coffea4bees/metadata/friends/friends_HH4b.yml"
+        dataset_location = config['dataset_location']
     run:
         import yaml
         with open(input.config_file, 'r') as f:
             cfg = yaml.safe_load(f) or {}
-        cfg['processor'] = params.processor
+        cfg['processor'] = input.processor
         cfg['dataset_location'] = params.dataset_location
-        cfg['friend_file'] = params.friends
+        cfg['friend_file'] = input.friends
         if 'config' not in cfg:
             cfg['config'] = {}
         cfg['config']['run_SvB'] = True
@@ -307,16 +308,16 @@ rule create_histogram_config_wJCM:
     input:
         jcm_file     = f"{out}jcm_for_mixed_all/jetCombinatoricModel_SB_.yml",
         config_file  = config['histogram_config'],
-        friends_file = f"{out}friends_wSvB.yml"
+        friends_file = f"{out}friends_wSvB.yml",
+        processor    = "coffea4bees/analysis/processors/processor_HH4b.py"
     output: f"{out}histogram_config_wJCM.yml"
     params:
-        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
         dataset_location = config['dataset_location']
     run:
         import yaml
         with open(input.config_file, 'r') as f:
             cfg = yaml.safe_load(f) or {}
-        cfg['processor'] = params.processor
+        cfg['processor'] = input.processor
         cfg['dataset_location'] = params.dataset_location
         cfg['friend_file'] = input.friends_file
         if 'config' not in cfg:
@@ -429,18 +430,18 @@ rule create_histogram_config_MvD:
     input:
         jcm_file     = config['jcm_install_path'],
         config_file  = config['histogram_config'],
-        friends_file = f"{out}friends_MvD.yml"
+        friends_file = f"{out}friends_MvD.yml",
+        processor    = "coffea4bees/analysis/processors/processor_HH4b.py"
     output: f"{out}histogram_config_MvD.yml"
     params:
         hemi_diag = str(config.get('compute_hemi_mixing_diagnostics', False)).lower(),
         extra_canjet = str(config.get('plot_extra_canjet_vars', False)).lower(),
-        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
         dataset_location = config['dataset_location']
     run:
         import yaml
         with open(input.config_file, 'r') as f:
             cfg = yaml.safe_load(f) or {}
-        cfg['processor'] = params.processor
+        cfg['processor'] = input.processor
         cfg['dataset_location'] = params.dataset_location
         cfg['friend_file'] = input.friends_file
         if 'config' not in cfg:
@@ -467,17 +468,17 @@ rule create_histogram_config_MvD_signal:
     input:
         jcm_file     = config['jcm_install_path'],
         config_file  = config['histogram_config'],
-        friends_file = f"{out}friends_MvD.yml"
+        friends_file = f"{out}friends_MvD.yml",
+        processor    = "coffea4bees/analysis/processors/processor_HH4b.py"
     output: f"{out}histogram_config_MvD_signal.yml"
     params:
         extra_canjet = str(config.get('plot_extra_canjet_vars', False)).lower(),
-        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
         dataset_location = config['dataset_location']
     run:
         import yaml
         with open(input.config_file, 'r') as f:
             cfg = yaml.safe_load(f) or {}
-        cfg['processor'] = params.processor
+        cfg['processor'] = input.processor
         cfg['dataset_location'] = params.dataset_location
         cfg['friend_file'] = input.friends_file
         if 'config' not in cfg:

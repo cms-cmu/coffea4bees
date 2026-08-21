@@ -29,15 +29,18 @@ rule all_lowpt:
         """
 
 rule create_noJCM_config_lowpt:
-    input: "coffea4bees/analysis/metadata/HH4b_noJCM.yml"
+    input:
+        config_file = "coffea4bees/analysis/metadata/HH4b_noJCM.yml",
+        processor = "coffea4bees/analysis/processors/processor_HH4b_lowpt.py",
+        friend_file = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b_lowpt.yml"
     output: f"{config['output_path']}HH4b_noJCM_lowpt.yml"
     run:
         import yaml
-        with open(input[0], 'r') as f:
+        with open(input.config_file, 'r') as f:
             cfg = yaml.safe_load(f) or {}
-        cfg['processor'] = "coffea4bees/analysis/processors/processor_HH4b_lowpt.py"
+        cfg['processor'] = input.processor
         cfg['dataset_location'] = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
-        cfg['friend_file'] = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b_lowpt.yml"
+        cfg['friend_file'] = input.friend_file
         os.makedirs(os.path.dirname(output[0]), exist_ok=True)
         with open(output[0], 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False)
@@ -73,15 +76,17 @@ use rule make_JCM from analysis as make_new_JCM_lowpt with:
 rule create_metadata_lowpt:
     input: 
         jcm_file = f"{config['output_path']}JCM_lowpt_2024_v2/jetCombinatoricModel_SB_2024_v2.yml",
-        config_file = "coffea4bees/analysis/metadata/HH4b_lowpt_classifier_inputs.yml"
+        config_file = "coffea4bees/analysis/metadata/HH4b_lowpt_classifier_inputs.yml",
+        processor = "coffea4bees/analysis/processors/processor_HH4b_lowpt.py",
+        friend_file = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b_lowpt.yml"
     output: f"{config['output_path']}HH4b_wlowptJCM.yml"
     run:
         import yaml
         with open(input.config_file, 'r') as f:
             cfg = yaml.safe_load(f) or {}
-        cfg['processor'] = "coffea4bees/analysis/processors/processor_HH4b_lowpt.py"
+        cfg['processor'] = input.processor
         cfg['dataset_location'] = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
-        cfg['friend_file'] = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b_lowpt.yml"
+        cfg['friend_file'] = input.friend_file
         if 'config' not in cfg:
             cfg['config'] = {}
         cfg['config']['JCM_file'] = input.jcm_file

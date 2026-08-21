@@ -1,6 +1,7 @@
 rule analysis_processor:
     input:
         runner_script = "runner.py",
+        corrections_file = "src/physics/corrections.yml",
         config_file = lambda wildcards: workflow.configfiles[0] if workflow.configfiles else "coffea4bees/workflows/config/nominal_run2.yml"
     output: "{output_file}"
     retries: 3
@@ -33,7 +34,7 @@ rule merging_coffea_files:
     input:
         files = "{input_files}"
     output: "{output_file}"
-    container: config["analysis_container"]
+    container: config.get("analysis_container", None)
     params:
         run_performance = False,
         run_container_wrapper = "",
@@ -58,7 +59,7 @@ rule merging_coffea_files:
 rule make_JCM:
     input: "output/histNoJCM.coffea"
     output: "output/JCM/jetCombinatoricModel_SB_reana.yml"
-    container: config["analysis_container"]
+    container: config.get("analysis_container", None)
     params:
         extra_arguments = "",
         tag = "2024_v2",
@@ -82,7 +83,7 @@ rule make_plots:
         metadata_file = lambda wildcards, params: params.metadata,
         plot_script = "coffea4bees/plots/makePlots.py"
     output: "output/plots/plots_done.txt"
-    container: config["analysis_container"]
+    container: config.get("analysis_container", None)
     params:
         output_dir = "output/plots/",
         metadata = "coffea4bees/plots/metadata/plotsAll.yml",
