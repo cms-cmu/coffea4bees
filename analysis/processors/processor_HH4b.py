@@ -268,6 +268,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                         self.apply_JCM[year] = jetCombinatoricModel(jcm_path)
                 if not self.apply_JCM:
                     raise ValueError("apply_JCM is True, but no JCM_file found in weights file.")
+                logging.info(f"Loaded JCM models for {len(self.apply_JCM)} eras: {list(self.apply_JCM.keys())}")
             else:
                 raise ValueError("apply_JCM is True, but JCM_file is not specified and no weights file is provided.")
         else:
@@ -338,6 +339,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.plot_ttbar_with_weights = plot_ttbar_with_weights
         self.plot_ttbar_with_MvD_weights = plot_ttbar_with_MvD_weights
         self.friends = parse_friends(friends)
+        if self.friends:
+            logging.info(f"Loaded friend tree definitions: {list(self.friends.keys())}")
         self.histCuts = hist_cuts
         self.apply_mixeddata_sel = apply_mixeddata_sel
         self.return_events_for_display = return_events_for_display
@@ -422,7 +425,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
             if (self.processName.find("mix") != -1 or self.dataset.find("syn") != -1) and not self.processName.startswith("mixeddata_all"):
                 new_processName = self.dataset.replace(f'_{self.year}','')
-                logging.info(f"Overridding processName: {self.processName} to {new_processName} for dataset {self.dataset}")
+                logging.debug(f"Overriding processName: {self.processName} to {new_processName} for dataset {self.dataset}")
                 self.processName = new_processName
 
             ### target is for new friend trees
@@ -691,10 +694,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         # Blind data in fourTag SR
         if not (self.config["isMC"] or "mix_v" in self.dataset) and self.blind:
             with self._stage(f"{label}:blinding"):
-                if "SvB_MA" not in selev.fields:
-                    logging.warning("Blinding requires SvB_MA but it is not available — skipping blinding for this chunk.")
+                blind_flag = self._get_blind_flag(selev)
+                if blind_flag is None:
+                    pass  # warning already emitted inside _get_blind_flag
                 else:
-                    blind_flag = ~(selev["quadJet_selected"].SR & (selev["SvB_MA"].ps_hh > 0.5) & selev[self._fourtag_label()])
                     blind_sel = np.full(len(event), True)
                     blind_sel[analysis_selections] = blind_flag
                     selections.add('blind', blind_sel)
@@ -911,7 +914,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         # Source 1: Load from friend tree arrays
         for k in self.friends:
             if k.startswith("SvB") and not k.startswith("SvB_FeynNet"):
-                logging.info(f"Loading SvB friend tree ")
+                logging.debug(f"Loading SvB friend tree for {k}")
                 try:
                     result = rename_SvB_friend(self.target, self.friends[k])
                     if result is None:
@@ -936,7 +939,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                         logging.warning(f"No SvB_FeynNet friend tree entries found (target not in friend mapping). Skipping.")
                         continue
                     event[k] = result
-                    logging.info(f"Loaded SvB_FeynNet friend tree for {k}")
+                    logging.debug(f"Loaded SvB_FeynNet friend tree for {k}")
                 except Exception as e:
                     logging.warning(f"Failed to load SvB_FeynNet friend tree for {k}: {e}. Skipping.")
 
@@ -950,7 +953,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             if svb_name in event.fields or classifier is not None:
                 continue
             if svb_name in self._skip_svb_legacy:
-                logging.info(f"{svb_name} explicitly set to null in config — skipping legacy ROOT fallback.")
+                logging.debug(f"{svb_name} explicitly set to null in config — skipping legacy ROOT fallback.")
                 continue
             # Legacy ROOT file fallback
             svb_file = f'{self.path}/{svb_name}{SvB_suffix}.root' if 'mix' in self.dataset else f'{self.fname.replace("picoAOD", f"{svb_name}{SvB_suffix}")}'
@@ -968,7 +971,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     raise ValueError(f"ERROR: {svb_name} events do not match events ttree")
                 setSvBVars(svb_name, event)
             except (FileNotFoundError, OSError):
-                logging.info(f"No {svb_name} source configured (no friend, classifier, or ROOT file at {svb_file}). Skipping.")
+                logging.debug(f"No {svb_name} source configured (no friend, classifier, or ROOT file at {svb_file}). Skipping.")
 
     def boosted_veto(self, event):
         """Apply veto for events selected in boosted analysis. This is for Run2 UL only.
@@ -1001,7 +1004,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             event_tuples = zip(event.run.to_numpy(), event.luminosityBlock.to_numpy(), event.event.to_numpy())
             event['notInBoostedSel'] = np.array([t not in boosted_events_set for t in event_tuples])
         else:
-            logging.info(f"Boosted veto not applied for dataset {self.dataset}")
+            logging.debug(f"Boosted veto not applied for dataset {self.dataset}")
 
     def build_selections(self, event, weights):
         """Build PackedSelection object with all cuts.
@@ -1462,6 +1465,31 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
     def _fourtag_label(self):
         return "fourTag"
+
+    def _get_blind_flag(self, selev):
+        """Return a boolean mask (True = keep, False = blind/remove) for data blinding.
+
+        Scans all SvB-like fields (any field starting with 'SvB') and removes SR events
+        where *any* ps score (e.g. ps, ps_hh, ps_ttHbb, etc.) from *any* such classifier exceeds 0.8.
+        Returns None if no usable SvB field with ps scores is found (blinding skipped).
+        """
+        svb_names = [f for f in selev.fields if f.startswith("SvB")]
+        usable = [name for name in svb_names if any(f.startswith("ps") for f in selev[name].fields)]
+        if not usable:
+            logging.warning(
+                f"Blinding requires at least one SvB field with ps scores, "
+                f"but none found among {svb_names} — skipping blinding for this chunk."
+            )
+            return None
+        in_sr = ak.to_numpy(selev["quadJet_selected"].SR)
+        # Blind if the event is in SR and ANY ps score from ANY SvB classifier > 0.8
+        is_signal = np.zeros(len(selev), dtype=bool)
+        for name in usable:
+            for field in selev[name].fields:
+                if field.startswith("ps"):
+                    score = ak.to_numpy(selev[name][field])
+                    is_signal = is_signal | (score > 0.8)
+        return ~(in_sr & is_signal)
 
     def apply_selection(self, event):
         """Apply selection to the events"""

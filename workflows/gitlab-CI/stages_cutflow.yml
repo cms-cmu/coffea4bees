@@ -11,18 +11,19 @@ analysis_cutflow_coffea4bees:
     paths:
       - output/analysis_cutflow/test_dump_cutflow.yml
 
-analysis_cutflow_Run3_coffea4bees:
+check_cutflow_Run3_coffea4bees:
   stage: cutflow
   extends:
     - .base_analysis_coffea4bees
   needs: 
     - setup_coffea4bees
-    - analysis_test_Run3_coffea4bees
+    - merging_files_Run3_coffea4bees
   script:
-    - source coffea4bees/scripts/analysis-cutflow-Run3.sh --output-base /builds/$CI_PROJECT_PATH/output
+    - pixi run snakemake output/run3_nominal/cutflow_validation_run3_nominal.txt -s coffea4bees/workflows/Snakefile_analysis.smk --configfile coffea4bees/workflows/config/nominal_run3.yml --config test=true --jobs 4
   artifacts:
     paths:
-      - output/analysis_cutflow_Run3/test_dump_cutflow.yml
+      - barista_framework/output/run3_nominal/cutflow_validation_run3_nominal.txt
+      - barista_framework/output/run3_nominal/cutflow_run3_nominal.yml
 
 analysis_cutflow_Run3_2024_coffea4bees:
   stage: cutflow
@@ -181,3 +182,4 @@ check_cutflow_lowpt_Run2_coffea4bees:
   artifacts:
     paths:
       - barista_framework/output/run2_lowpt/cutflow_validation_run2_lowpt.txt
+      - barista_framework/output/run2_lowpt/cutflow_run2_lowpt.yml

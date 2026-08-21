@@ -1,0 +1,64 @@
+processes:
+  signal:
+    GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00:
+      label: ggHH_kl_1_kt_1_13p0TeV_hbbhbb
+      process: 0
+  background:
+    multijet:
+      label: 'multijet'
+      process: 1
+    tt:
+      label: 'tt'
+      process: 2
+bin:
+  - &22pre HH4b_2022_preEE
+  - &22post HH4b_2022_EE
+  - &23pre HH4b_2023_preBPix
+  - &23post HH4b_2023_BPix
+
+# https://twiki.cern.ch/twiki/bin/view/CMS/TWikiLUM?rev=167#LumiComb  # https://gitlab.cern.ch/hh/naming-conventions
+uncertainty:
+  lumi_13TeV_correlated: 
+    type: 'lnN'
+    years:
+      *22pre: 1.006
+      *22post: 1.006
+      *23pre: 1.006
+      *23post: 1.006
+
+  lumi_13TeV_1718:
+    type: 'lnN'
+    years:
+      *23pre: 1.006
+      *23post: 1.006
+
+  lumi_13TeV_2016:
+    type: 'lnN'
+    years:
+      *22pre: 1.010
+
+  lumi_13TeV_2017:
+    type: 'lnN'
+    years:
+      *22post: 1.020
+
+  lumi_13TeV_2018: 
+    type: 'lnN'
+    years:
+      *23post: 1.015
+
+  BR_hbb:
+    type: 'lnN'
+    years:
+      *22pre: [0.9748, 1.0248]
+      *22post: [0.9748, 1.0248]
+      *23pre: [0.9748, 1.0248]
+      *23post: [0.9748, 1.0248]
+
+  pdf_Higgs_ggHH:
+    type: 'lnN'
+    years:
+      *22pre: 1.030
+      *22post: 1.030
+      *23pre: 1.030
+      *23post: 1.030

@@ -18,15 +18,25 @@ analysis_signals_test_coffea4bees:
     paths:
       - output/analysis_signals_test/test_signal.coffea
 
-analysis_test_Run3_coffea4bees:
+analysis_data_Run3_coffea4bees:
   stage: analysis   
   extends:
     - .base_analysis_coffea4bees
   script:
-    - source coffea4bees/scripts/analysis-test-Run3.sh --output-base /builds/$CI_PROJECT_PATH/output
+    - pixi run snakemake all_data -s coffea4bees/workflows/Snakefile_analysis.smk --configfile coffea4bees/workflows/config/nominal_run3.yml --config test=true --jobs 4
   artifacts: 
     paths:
-      - output/analysis_test_Run3/test.coffea
+      - barista_framework/output/run3_nominal/singlefiles/histAll_run3_nominal_data.coffea
+
+analysis_MC_Run3_coffea4bees:
+  stage: analysis   
+  extends:
+    - .base_analysis_coffea4bees
+  script:
+    - pixi run snakemake all_signals -s coffea4bees/workflows/Snakefile_analysis.smk --configfile coffea4bees/workflows/config/nominal_run3.yml --config test=true --jobs 4
+  artifacts: 
+    paths:
+      - barista_framework/output/run3_nominal/singlefiles/histAll_run3_nominal_signals.coffea
 
 analysis_test_Run3_2024_coffea4bees:
   stage: analysis

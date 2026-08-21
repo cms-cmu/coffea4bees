@@ -21,6 +21,7 @@ config['test'] = is_test
 
 container_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
 config.setdefault('container_wrapper', container_wrapper)
+config.setdefault('analysis_container_wrapper', config.get('container_wrapper', container_wrapper))
 
 python_bin = os.getenv("CONTAINER_PYTHON", "python")
 config.setdefault('python_bin', python_bin)
@@ -44,8 +45,8 @@ config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry
 
 DATA_YEAR_ERA = [(str(yr), era) for yr, eras in config['year_eras'].items() for era in eras]
 DATA_YEARS = [str(y) for y in config['year_eras'].keys()]
-
-original_basename = os.path.basename(config['analysis_config'])
+original_config = workflow.configfiles[0] if workflow.configfiles else config.get('analysis_config', 'coffea4bees/workflows/config/lowpt_run2.yml')
+original_basename = os.path.basename(original_config)
 original_name, _ = os.path.splitext(original_basename)
 signal_config_path = f"{config['output_path']}{original_name}_signal.yml"
 
@@ -62,22 +63,33 @@ def get_analysis_targets(wildcards):
     targets = [
         f"{config['output_path']}histAll_{config['label']}.coffea",
         f"{config['output_path']}plots_{config['label']}/plots_done.txt",
+        f"{config['output_path']}cutflow_validation_{config['label']}.txt",
+        f"{config['output_path']}cutflow_{config['label']}.yml",
     ]
-    if config.get("known_counts"):
-        targets.append(f"{config['output_path']}cutflow_validation_{config['label']}.txt")
     return targets
 
 rule all_analysis:
     input: get_analysis_targets
 
 rule modify_config_file:
-    input: config['analysis_config']
+    input: original_config
     output: signal_config_path
     run:
         import yaml
         with open(input[0], 'r') as f:
             data = yaml.safe_load(f)
         
+        # If analysis_config is specified, load and merge its config block first, then remove the reference
+        if 'analysis_config' in data and data['analysis_config'] and os.path.exists(data['analysis_config']):
+            with open(data['analysis_config'], 'r') as f_meta:
+                meta = yaml.safe_load(f_meta) or {}
+            if 'config' in meta:
+                base_cfg = meta['config']
+                if 'config' in data:
+                    base_cfg.update(data['config'])
+                data['config'] = base_cfg
+            data.pop('analysis_config', None)
+
         # Apply signal MC modifications at both root level and nested config block
         if 'apply_FvT' in data: data['apply_FvT'] = False
         if 'config' in data and 'apply_FvT' in data['config']: data['config']['apply_FvT'] = False
@@ -97,48 +109,34 @@ if config.get("test", False):
     use rule analysis_processor from analysis as analysis_data with:
         input: 
             runner_script = "runner.py",
-            config_file = config['analysis_config'],
-            processor_script = config['processor'],
-            friend_metadata = config['friend_file'],
-            datasets_dir = config['dataset_location']
+            config_file = original_config
         output: f"{config['output_path']}singlefiles/histAll_{config['label']}_data.coffea"
         log: f"{config['output_path']}logs/analysis_{config['label']}_data.log"
         params:
             datasets = "data",
             years = " ".join(DATA_YEARS),
             config = lambda wildcards, input: input.config_file,
-            processor = config['processor'],
-            datasets_file = config['dataset_location'],
-            friends = config['friend_file'],
-            weights = config['weights_file'],
             extra_arguments = lambda wildcards: " ".join(filter(None, [
                 "-t",
                 config.get("additional_parameters", "")
             ])),
-            run_container_wrapper = config['container_wrapper']
+            run_container_wrapper = config['analysis_container_wrapper']
 
     use rule analysis_processor from analysis as analysis_MC with:
         input: 
             runner_script = "runner.py",
-            config_file = signal_config_path,
-            processor_script = config['processor'],
-            friend_metadata = config['friend_file'],
-            datasets_dir = config['dataset_location']
+            config_file = signal_config_path
         output: f"{config['output_path']}singlefiles/histAll_{config['label']}_signals.coffea"
         log: f"{config['output_path']}logs/analysis_{config['label']}_signals.log"
         params:
             datasets = " ".join(config['dataset']),
             years = " ".join(DATA_YEARS),
             config = lambda wildcards, input: input.config_file,
-            processor = config['processor'],
-            datasets_file = config['dataset_location'],
-            friends = config['friend_file'],
-            weights = config['weights_file'],
             extra_arguments = lambda wildcards: " ".join(filter(None, [
                 "-t",
                 config.get("additional_parameters", "")
             ])),
-            run_container_wrapper = config['container_wrapper']
+            run_container_wrapper = config['analysis_container_wrapper']
 
     use rule merging_coffea_files from analysis as merging_files with:
         input:
@@ -150,7 +148,7 @@ if config.get("test", False):
         output: f"{config['output_path']}histAll_{config['label']}.coffea"
         params:
             run_performance = False,
-            run_container_wrapper = config['container_wrapper']
+            run_container_wrapper = config['analysis_container_wrapper']
         container: None
         log: f"{config['output_path']}logs/merging_files.log"
 
@@ -165,47 +163,33 @@ else:
     use rule analysis_processor from analysis as analysis_data with:
         input: 
             runner_script = "runner.py",
-            config_file = config['analysis_config'],
-            processor_script = config['processor'],
-            friend_metadata = config['friend_file'],
-            datasets_dir = config['dataset_location']
+            config_file = original_config
         output: f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{{year}}_{{era}}.coffea"
         log: f"{config['output_path']}logs/analysis_{config['label']}_data__{{year}}_{{era}}.log"
         params:
             datasets = "data",
             years = lambda wildcards: wildcards.year,
             config = lambda wildcards, input: input.config_file,
-            processor = config['processor'],
-            datasets_file = config['dataset_location'],
-            friends = config['friend_file'],
-            weights = config['weights_file'],
             extra_arguments = lambda wildcards: " ".join(filter(None, [
                 f"--era {wildcards.era}",
                 config.get("additional_parameters", "")
             ])),
-            run_container_wrapper = config['container_wrapper']
+            run_container_wrapper = config['analysis_container_wrapper']
 
     use rule analysis_processor from analysis as analysis_MC with:
         input: 
             runner_script = "runner.py",
-            config_file = signal_config_path,
-            processor_script = config['processor'],
-            friend_metadata = config['friend_file'],
-            datasets_dir = config['dataset_location']
+            config_file = signal_config_path
         output: f"{config['output_path']}singlefiles/histAll_{config['label']}__{{dataset}}__{{year}}.coffea"
-        log: f"{config['output_path']}logs/analysis_{config['label']}_{{dataset}}__{{year}}.log"
+        log: f"{config['output_path']}logs/analysis_{config['label']}_{{dataset}}_{{year}}.log"
         params:
-            datasets = "{dataset}",
+            datasets = lambda wildcards: wildcards.dataset,
             years = lambda wildcards: wildcards.year,
             config = lambda wildcards, input: input.config_file,
-            processor = config['processor'],
-            datasets_file = config['dataset_location'],
-            friends = config['friend_file'],
-            weights = config['weights_file'],
             extra_arguments = lambda wildcards: " ".join(filter(None, [
                 config.get("additional_parameters", "")
             ])),
-            run_container_wrapper = config['container_wrapper']
+            run_container_wrapper = config['analysis_container_wrapper']
 
     use rule merging_coffea_files from analysis as merging_files with:
         input:
@@ -214,7 +198,7 @@ else:
         output: f"{config['output_path']}histAll_{config['label']}.coffea"
         params:
             run_performance = False,
-            run_container_wrapper = config['container_wrapper']
+            run_container_wrapper = config['analysis_container_wrapper']
         container: None
         log: f"{config['output_path']}logs/merging_files.log"
 
@@ -234,20 +218,23 @@ use rule make_plots from analysis with:
     params:
         output_dir = f"{config['output_path']}plots_{config['label']}/",
         metadata = config['plot_config'],
-        extra_arguments = "-s xW " + (" ".join([f"--year {y}" for y in DATA_YEARS]) if len(DATA_YEARS) == 1 else ""),
+        extra_arguments = "-s xW --year " + (DATA_YEARS[0] if len(DATA_YEARS) == 1 else ("Run3" if any("202" in y for y in DATA_YEARS) else "RunII")),
         png_cores = 4,
-        run_container_wrapper = config['container_wrapper']
+        run_container_wrapper = config['analysis_container_wrapper']
     container: None
 
 use rule check_cutflow from analysis with:
     input:
         coffea_file = f"{config['output_path']}histAll_{config['label']}.coffea"
-    output: f"{config['output_path']}cutflow_validation_{config['label']}.txt"
+    output:
+        validation_txt = f"{config['output_path']}cutflow_validation_{config['label']}.txt",
+        cutflow_yml = f"{config['output_path']}cutflow_{config['label']}.yml"
     log: f"{config['output_path']}logs/cutflow_validation_{config['label']}.log"
     params:
         known_counts = lambda wildcards: config.get("known_counts", ""),
         error_threshold = lambda wildcards: config.get("error_threshold", "0.001"),
-        run_container_wrapper = config['container_wrapper']
+        cutflow_list = lambda wildcards: config.get("cutflow_list", "passJetMult,passPreSel,passDiJetMass,SR,SB"),
+        run_container_wrapper = config['analysis_container_wrapper']
     container: None
 
 localrules: modify_config_file, analysis_data, analysis_MC, merging_files, make_plots, check_cutflow

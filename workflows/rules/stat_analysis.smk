@@ -6,7 +6,7 @@ rule convert_hist_to_json:
     container: config["analysis_container"]
     params:
         syst_flag = " ",
-        container_wrapper = config.get("container_wrapper", "./run_container combine")
+        container_wrapper = config.get("stats_container_wrapper", config.get("container_wrapper", "./run_container combine"))
     log:
         "logs/{output_file}.log"
     shell:
@@ -38,7 +38,7 @@ rule convert_json_to_root:
     output: "output/histMixedBkg_TT.root"
     params:
         output_dir = config.get("output_path", "output/"),
-        container_wrapper = config.get("container_wrapper", "./run_container combine")
+        container_wrapper = config.get("stats_container_wrapper", config.get("container_wrapper", "./run_container combine"))
     log:
         "logs/convert_json_to_root.log"
     shell:
@@ -66,7 +66,7 @@ rule run_two_stage_closure:
         rebin = "2",
         variable = "SvB_MA_ps_hh_fine",
         extra_arguments = "",
-        container_wrapper = config.get("container_wrapper", "./run_container combine")
+        container_wrapper = config.get("stats_container_wrapper", config.get("container_wrapper", "./run_container combine"))
     log:
         "logs/run_two_stage_closure_SvB_MA_ps_hh_fine.log"
     shell:
@@ -109,7 +109,7 @@ rule make_combine_inputs:
         signal = "HH4b",
         tag_flags = "",
         years = config.get('years', '2016 2017 2018'),
-        container_wrapper = config.get("container_wrapper", "./run_container combine")
+        container_wrapper = config.get("stats_container_wrapper", config.get("container_wrapper", "./run_container combine"))
     log:
         "logs/make_combine_inputs_HH4b.log"
     shell:
@@ -157,7 +157,7 @@ rule make_syst_plots:
         output_dir="{output_dir}",
         channel="{channel}",
         signal="{signal}",
-        container_wrapper = config.get("container_wrapper", "./run_container combine")
+        container_wrapper = config.get("stats_container_wrapper", config.get("container_wrapper", "./run_container combine"))
     log: "{output_dir}/logs/make_syst_plots_{variable}.log"
     shell:
         """

@@ -74,6 +74,10 @@ while [[ $# -gt 0 ]]; do
             INPUT_SUBDIR="$2"
             shift 2
             ;;
+        --output-file|-o)
+            OUTPUT_FILE="$2"
+            shift 2
+            ;;
         --output-filename)
             OUTPUT_FILENAME="$2"
             shift 2
@@ -94,6 +98,10 @@ while [[ $# -gt 0 ]]; do
             CUTFLOW_LIST="$2"
             shift 2
             ;;
+        --python-bin)
+            PYTHON_BIN="$2"
+            shift 2
+            ;;
         --help)
             usage
             ;;
@@ -104,6 +112,19 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Select python binary with coffea
+if [ -n "$PYTHON_BIN" ]; then
+    PYTHON_CMD="$PYTHON_BIN"
+elif [ -n "$CONTAINER_PYTHON" ]; then
+    PYTHON_CMD="$CONTAINER_PYTHON"
+elif [ -x "/opt/conda/bin/python" ]; then
+    PYTHON_CMD="/opt/conda/bin/python"
+elif command -v python3 &>/dev/null; then
+    PYTHON_CMD="python3"
+else
+    PYTHON_CMD="python"
+fi
+
 # Save our parsed values before sourcing the initial variables script
 declare -A SAVED_VARS=(
     ["OUTPUT_BASE"]="$OUTPUT_BASE"
@@ -111,6 +132,7 @@ declare -A SAVED_VARS=(
     ["INPUT_FILENAME"]="$INPUT_FILENAME"
     ["INPUT_FILE"]="$INPUT_FILE"
     ["OUTPUT_FILENAME"]="$OUTPUT_FILENAME"
+    ["OUTPUT_FILE"]="$OUTPUT_FILE"
     ["OUTPUT_SUBDIR"]="$OUTPUT_SUBDIR"
     ["KNOWN_CUTFLOW"]="$KNOWN_CUTFLOW"
     ["ERROR_THRESHOLD"]="$ERROR_THRESHOLD"
@@ -123,6 +145,7 @@ INPUT_SUBDIR="${SAVED_VARS[INPUT_SUBDIR]}"
 INPUT_FILENAME="${SAVED_VARS[INPUT_FILENAME]}"
 INPUT_FILE="${SAVED_VARS[INPUT_FILE]}"
 OUTPUT_FILENAME="${SAVED_VARS[OUTPUT_FILENAME]}"
+OUTPUT_FILE="${SAVED_VARS[OUTPUT_FILE]}"
 OUTPUT_SUBDIR="${SAVED_VARS[OUTPUT_SUBDIR]}"
 KNOWN_CUTFLOW="${SAVED_VARS[KNOWN_CUTFLOW]}"
 ERROR_THRESHOLD="${SAVED_VARS[ERROR_THRESHOLD]}"
@@ -132,8 +155,12 @@ CUTFLOW_LIST="${SAVED_VARS[CUTFLOW_LIST]}"
 if [[ -z "$INPUT_FILE" ]]; then
     INPUT_FILE="${OUTPUT_BASE}/${INPUT_SUBDIR}/${INPUT_FILENAME}"
 fi
-OUTPUT_DIR="${OUTPUT_BASE}/${OUTPUT_SUBDIR}/"
-OUTPUT_FILE="${OUTPUT_DIR}${OUTPUT_FILENAME}"
+if [[ -z "$OUTPUT_FILE" ]]; then
+    OUTPUT_DIR="${OUTPUT_BASE}/${OUTPUT_SUBDIR}/"
+    OUTPUT_FILE="${OUTPUT_DIR}${OUTPUT_FILENAME}"
+else
+    OUTPUT_DIR="$(dirname "$OUTPUT_FILE")"
+fi
 
 # Display configuration
 display_config
@@ -141,10 +168,10 @@ display_config
 # Create output directory if it doesn't exist
 create_output_directory "$OUTPUT_DIR"
 
-echo "############### Running cutflow analysis"
+echo "############### Running cutflow analysis with python: $PYTHON_CMD"
 # Run the Python script to dump cutflow
 IFS=',' read -ra cutflows <<< "$CUTFLOW_LIST"
-cmd=(python coffea4bees/analysis/tests/dumpCutFlow.py --input "$INPUT_FILE" -o "$OUTPUT_FILE" -c )
+cmd=("$PYTHON_CMD" coffea4bees/analysis/tests/dumpCutFlow.py --inputFile "$INPUT_FILE" -o "$OUTPUT_FILE" -c )
 for cf in "${cutflows[@]}"; do
     cmd+=("$cf")
 done
@@ -159,17 +186,21 @@ ls -lh "$OUTPUT_FILE"
 echo "############### Generated cutflow:"
 cat "$OUTPUT_FILE"
 
-echo "############### Running cutflow comparison"
-# Run the cutflow unit test
-cmd=(python coffea4bees/analysis/tests/cutflow_test.py --inputFile "$INPUT_FILE" --knownCounts "$KNOWN_CUTFLOW" --error_threshold "$ERROR_THRESHOLD")
-run_command "${cmd[@]}"
+if [ -n "$KNOWN_CUTFLOW" ] && [ "$KNOWN_CUTFLOW" != "none" ] && [ -f "$KNOWN_CUTFLOW" ]; then
+    echo "############### Running cutflow comparison"
+    # Run the cutflow unit test
+    cmd=("$PYTHON_CMD" coffea4bees/analysis/tests/cutflow_test.py --inputFile "$INPUT_FILE" --knownCounts "$KNOWN_CUTFLOW" --error_threshold "$ERROR_THRESHOLD")
+    run_command "${cmd[@]}"
 
-# Check if the command was successful
-if [ $? -eq 0 ]; then
-    echo "############### SUCCESS: Cutflow analysis completed successfully!"
+    # Check if the command was successful
+    if [ $? -eq 0 ]; then
+        echo "############### SUCCESS: Cutflow analysis completed successfully!"
+    else
+        echo "############### FAILED: Cutflow comparison failed."
+        exit 1
+    fi
 else
-    echo "############### FAILED: Cutflow comparison failed."
-    exit 1
+    echo "############### Skipping cutflow comparison (no known counts file provided)"
 fi
 
 echo "############### Final output"

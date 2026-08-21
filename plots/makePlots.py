@@ -80,6 +80,8 @@ def doPlots(varList, debug=False):
                     plot_args["cut"] = category
                 plot_args["axis_opts"] = {"region": region}
                 plot_args["outputFolder"] = outputFolder
+                if args.year:
+                    plot_args["year"] = args.year
                 plot_args = plot_args | vDict
                 if debug: print(plot_args)
                 try:
@@ -120,6 +122,8 @@ def doPlots(varList, debug=False):
                         plot_args["cut"] = category
                     plot_args["axis_opts"] = {"region": region}
                     plot_args["outputFolder"] = outputFolder
+                    if args.year:
+                        plot_args["year"] = args.year
                     plot_args = plot_args | vDict
 
                     if debug: print("process is ",process)
@@ -170,6 +174,8 @@ def doPlots(varList, debug=False):
                         plot_args["outputFolder"] = outputFolder
                         plot_args["process"] = process
                         plot_args["norm"] = True
+                        if args.year:
+                            plot_args["year"] = args.year
                         plot_args = plot_args | vDict
 
                         if debug: print(plot_args)
@@ -187,14 +193,17 @@ def doPlots(varList, debug=False):
                     #
                     comp_regions = [r for r in regions if r != "sum"]
                     try:
-                        fig = makePlot(cfg,
-                                       var=v,
-                                       cut=None,
-                                       axis_opts = {"region": comp_regions},
-                                       process=process,
-                                       outputFolder=outputFolder,
-                                       **vDict
-                                       )
+                        comp_plot_args = {
+                            "var": v,
+                            "cut": None,
+                            "axis_opts": {"region": comp_regions},
+                            "process": process,
+                            "outputFolder": outputFolder,
+                        }
+                        if args.year:
+                            comp_plot_args["year"] = args.year
+                        comp_plot_args = comp_plot_args | vDict
+                        fig = makePlot(cfg, **comp_plot_args)
                     except Exception as e:
                         print(f"Error plotting {v} (comp regions): {str(e)}")
                         pass
@@ -204,16 +213,41 @@ def doPlots(varList, debug=False):
 
 if __name__ == '__main__':
 
+    import logging
+    try:
+        from src.runner.logging import CustomFormatter
+        formatter = CustomFormatter()
+    except ImportError:
+        formatter = logging.Formatter("[%(levelname)s] %(message)s")
+
+    root_logger = logging.getLogger()
+    if not root_logger.handlers:
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(formatter)
+        root_logger.addHandler(handler)
+        root_logger.setLevel(logging.INFO)
+    else:
+        for h in root_logger.handlers:
+            h.setFormatter(formatter)
+
     args = parse_args()
 
+    logging.info("Running with these parameters:")
+    for arg, value in vars(args).items():
+        logging.info(f"  {arg}: {value}")
+
+    logging.info(f"Loading metadata from: {args.metadata}")
     cfg.plotConfig = load_config_4b(args.metadata)
     cfg.outputFolder = args.outputFolder
     if cfg.outputFolder:
+        logging.info(f"Output directory: {cfg.outputFolder}")
         if not os.path.exists(cfg.outputFolder):
             os.makedirs(cfg.outputFolder)
 
+    logging.info(f"Loading modifiers from: {args.modifiers}")
     cfg.plotModifiers = yaml.safe_load(open(args.modifiers, 'r'))
 
+    logging.info(f"Loading histograms from: {args.inputFile}")
     cfg.hists = load_hists(args.inputFile)
     cfg.fileLabels = args.fileLabels
 
@@ -235,6 +269,23 @@ if __name__ == '__main__':
                     if p_cfg.get("process") in available_processes
                 }
 
+    # Auto-infer year if not explicitly provided
+    if not args.year and cfg.hists and isinstance(cfg.hists, list) and len(cfg.hists) > 0 and 'hists' in cfg.hists[0]:
+        hists_dict = cfg.hists[0]['hists']
+        if hists_dict:
+            first_hist = next(iter(hists_dict.values()))
+            if "year" in first_hist.axes.name:
+                available_years = list(first_hist.axes["year"])
+                if len(available_years) == 1:
+                    args.year = available_years[0]
+                elif any("202" in str(y) for y in available_years):
+                    args.year = "Run3"
+                else:
+                    args.year = "RunII"
+
+    if args.year:
+        logging.info(f"Plotting for year: {args.year}")
+
     cfg.axisLabelsDict, cfg.cutListDict = read_axes_and_cuts(cfg.hists, cfg.plotConfig)
     cfg.set_hist_key("hists")
 
@@ -242,5 +293,6 @@ if __name__ == '__main__':
         varList = args.list_of_hists
     else:
         varList = [h for h in cfg.hists[0]['hists'].keys() if not any(skip in h for skip in args.skip_hists)]
-    # print(len(cfg.hists))
+
+    logging.info(f"Plotting {len(varList)} variables")
     doPlots(varList, debug=args.debug)
