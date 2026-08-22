@@ -205,7 +205,7 @@ class analysis(HH4bBaseProcessor):
         """
 
         if self.classifier_FvT: apply_FvT = True
-        else: apply_FvT = self.apply_FvT
+        else: apply_FvT = self.apply_FvT and ("FvT" in event.fields)
 
         if self.run_SvB and "SvB_MA" in selev.fields and "passMinPs" not in selev.fields:
             selev["passMinPs"] = selev.SvB_MA.passMinPs

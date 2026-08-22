@@ -789,6 +789,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         Args:
             event: Event array
         """
+        if self.config["isMC"]:
+            return
 
         FvT_loaded = False
         if "FvT" in self.friends:
@@ -800,6 +802,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     for _FvT_name in event.metadata["FvT_names"]:
                         event[_FvT_name] = rename_FvT_friend(self.target, self.friends[_FvT_name])
                         event[_FvT_name, _FvT_name] = event[_FvT_name].FvT
+            else:
+                logging.debug(f"No FvT friend tree entries found for {self.target}. Skipping.")
+                return
 
         if not FvT_loaded:
             # TODO: remove backward compatibility in the future
@@ -1659,7 +1664,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         """
 
         if self.classifier_FvT: apply_FvT = True
-        else: apply_FvT = self.apply_FvT
+        else: apply_FvT = self.apply_FvT and ("FvT" in event.fields)
 
         if self.compute_hemi_mixing_diagnostics:
             selev = self._attach_hemi_mixing_diagnostics(selev)
