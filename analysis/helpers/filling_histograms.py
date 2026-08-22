@@ -569,7 +569,7 @@ def filling_ttHbb_histograms(
         process=[processName],
         year=[year],
         tag=tag_list,
-        region=['SR', "SB"],
+        region=['inclusive', 'SR', "SB"],
         **dict((s, ...) for s in histCuts)
     )
 

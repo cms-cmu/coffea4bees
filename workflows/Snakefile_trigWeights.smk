@@ -4,8 +4,13 @@ import yaml
 
 # Fallback defaults for backwards compatibility or running direct
 config.setdefault('output_path', "output/trigger_weights/")
-config.setdefault('dataset', ['ttHbb'])
 config.setdefault('test', False)
+
+datasets = config.get('dataset', config.get('datasets', ['ttHbb']))
+if isinstance(datasets, str):
+    # Support comma-separated or single dataset strings
+    datasets = [d.strip() for d in datasets.split(",") if d.strip()]
+config['dataset'] = datasets
 
 # Parse boolean for test flag
 is_test = config.get('test', False)
@@ -25,27 +30,36 @@ if config.get('test', False) or os.getenv("CI"):
 else:
     config.setdefault('additional_parameters', "--shared-dask --condor --run-performance")
 
-years = list(config['year_eras'].keys()) if 'year_eras' in config and isinstance(config['year_eras'], dict) else config.get('years', config.get('year', ['UL18']))
-if isinstance(years, str):
-    years = [years]
+raw_years = config.get('years', config.get('year', None))
+if raw_years is not None:
+    if isinstance(raw_years, str):
+        years = [y.strip() for y in raw_years.split(",") if y.strip()]
+    else:
+        years = list(raw_years)
+elif 'year_eras' in config and isinstance(config['year_eras'], dict):
+    years = list(config['year_eras'].keys())
+else:
+    years = ['UL18']
+config['years'] = years
+config['year'] = years
 
 is_run2 = any(str(y).startswith("UL") for y in years)
 
+include: "helpers/common.smk"
+
 def get_raw_trigger_weights_config():
     # Read from trigger_weights block or analysis_config block if provided in YAML
-    raw = config.get('trigger_weights', config.get('analysis_config', {}))
-    if isinstance(raw, str) and os.path.exists(raw):
-        with open(raw, 'r') as f:
-            raw = yaml.safe_load(f) or {}
-    elif not isinstance(raw, dict):
-        raw = {}
-
-    res = copy.deepcopy(raw)
+    res = resolve_config_section(config, primary_key='trigger_weights', fallback_keys=['analysis_config', 'analysis'])
     res.setdefault('processor', "coffea4bees/analysis/processors/processor_trigger_weights.py")
     
-    # Dataset location
-    default_ds_loc = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/" if is_run2 else "coffea4bees/metadata/datasets/"
-    res.setdefault('dataset_location', config.get('dataset_location', default_ds_loc))
+    # Dataset location: prioritize explicit trigger_weights_dataset_location, then config['dataset_location']
+    if config.get('trigger_weights_dataset_location'):
+        res['dataset_location'] = config['trigger_weights_dataset_location']
+    elif config.get('dataset_location') and config['dataset_location'].endswith(('.yml', '.yaml')):
+        res['dataset_location'] = config['dataset_location']
+    elif 'dataset_location' not in res or not res['dataset_location']:
+        default_ds_loc = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/" if is_run2 else "coffea4bees/metadata/datasets/"
+        res['dataset_location'] = config.get('dataset_location', default_ds_loc)
 
     # Runner settings
     if 'runner' not in res or not isinstance(res['runner'], dict):
@@ -74,8 +88,15 @@ rule all_trigger_weights:
     input:
         f"{config['output_path']}trigger_weights/trigger_weights_friends.json"
 
+def get_trigger_weights_config_inputs(wildcards):
+    inputs = list(workflow.configfiles) if workflow.configfiles else []
+    ds_loc = config.get('trigger_weights_dataset_location', config.get('dataset_location', ''))
+    if isinstance(ds_loc, str) and ds_loc.endswith(('.yml', '.yaml')):
+        inputs.append(ds_loc)
+    return inputs
+
 rule create_trigger_weights_config:
-    input: workflow.configfiles if workflow.configfiles else []
+    input: get_trigger_weights_config_inputs
     output: trig_config_path
     run:
         import yaml, os

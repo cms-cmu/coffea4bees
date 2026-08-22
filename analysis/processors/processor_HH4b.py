@@ -82,8 +82,8 @@ class _Unset:
 _UNSET = _Unset()
 
 
-def _init_classfier(path: str | list[HCRModelMetadata] | None | _Unset):
-    if path is None or isinstance(path, _Unset):
+def _init_classfier(path: str | list[HCRModelMetadata] | None | _Unset | bool):
+    if path is None or isinstance(path, _Unset) or path is False:
         return None
     if isinstance(path, str):
         from ..helpers.classifier.HCR import Legacy_HCREnsemble
@@ -92,8 +92,8 @@ def _init_classfier(path: str | list[HCRModelMetadata] | None | _Unset):
         from ..helpers.classifier.HCR import HCREnsemble
         return HCREnsemble(path)
 
-def _init_classfier_FvT(path: str | list[HCRModelMetadata]):
-    if path is None:
+def _init_classfier_FvT(path: str | list[HCRModelMetadata] | None | bool):
+    if path is None or path is False:
         return None
     if isinstance(path, str):
         from ..helpers.classifier.HCR import Legacy_HCREnsemble_FvT

@@ -33,6 +33,7 @@ cern_user: "algomez"
 cern_path: "www/HH4b/Plots/"
 dataset:
   - "ttHbb"
+  - "data"
 year_eras:
   UL18:
     - "A"
@@ -40,9 +41,25 @@ year_eras:
     - "C"
     - "D"
 
+skimmer:
+  processor: "coffea4bees/skimmer/processor/skimmer_4b.py"
+  dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
+  runner:
+    condor_cores: 1
+    worker_memory: 8GB
+    chunksize: 10000
+    picosize: 10000
+    basketsize: 10000
+    condor: true
+    shared_dask: true
+    run_performance: true
+  config:
+    base_path: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/
+    step: 100000
+    loosePtForSkim: true
+
 trigger_weights:
   processor: "coffea4bees/analysis/processors/processor_trigger_weights.py"
-  dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
   runner:
     condor_cores: 1
     worker_memory: 8GB

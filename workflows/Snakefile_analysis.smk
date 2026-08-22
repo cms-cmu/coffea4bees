@@ -46,20 +46,10 @@ config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry
 DATA_YEAR_ERA = [(str(yr), era) for yr, eras in config['year_eras'].items() for era in eras]
 DATA_YEARS = [str(y) for y in config['year_eras'].keys()]
 
+include: "helpers/common.smk"
+
 def get_raw_analysis_config():
-    import yaml
-    raw = config.get('analysis_config', config.get('analysis', {}))
-    if isinstance(raw, str) and os.path.exists(raw):
-        with open(raw, 'r') as f:
-            raw = yaml.safe_load(f) or {}
-    elif not isinstance(raw, dict):
-        raw = {}
-    
-    res = dict(raw)
-    for k in ['processor', 'dataset_location', 'friend_file', 'weights_file', 'runner', 'config']:
-        if k not in res and k in config:
-            res[k] = config[k]
-    return res
+    return resolve_config_section(config, primary_key='analysis_config', fallback_keys=['analysis'])
 
 original_config = workflow.configfiles[0] if workflow.configfiles else "coffea4bees/workflows/config/nominal_run2.yml"
 
@@ -69,8 +59,6 @@ wildcard_constraints:
 module analysis:
     snakefile: "rules/analysis.smk"
     config: config
-
-include: "helpers/common.smk"
 
 def get_analysis_targets(wildcards):
     targets = [
