@@ -45,35 +45,25 @@ rule all:
 # Use __ (double underscore) as separator between dataset and year to avoid
 # ambiguous wildcard matching, since both dataset names and years contain _.
 
-rule create_classifier_inputs_config:
-    input:
-        config_file = config['classifier_config'],
-        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
-        friends = "coffea4bees/metadata/friends/friends_HH4b.yml"
-    output: f"{out}analysis_config_classifier_inputs.yml"
-    params:
-        dataset_location = config['dataset_location']
-    run:
-        import yaml
-        with open(input.config_file, 'r') as f:
-            cfg = yaml.safe_load(f) or {}
-        cfg['processor'] = input.processor
-        cfg['dataset_location'] = params.dataset_location
-        cfg['friend_file'] = input.friends
-        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
-        with open(output[0], 'w') as f:
-            yaml.dump(cfg, f, default_flow_style=False)
-
 use rule analysis_processor from analysis as classifier_inputs with:
     input:
-        config_file = f"{out}analysis_config_classifier_inputs.yml"
+        config_file = config['classifier_config'],
+        friends_file = "coffea4bees/metadata/friends/friends_HH4b.yml",
     output: f"{out}classifier_inputs/classifier_inputs_{{dataset}}__{{year}}.coffea"
     log: f"{out}logs/classifier_inputs_{{dataset}}__{{year}}.log"
     params:
         datasets = "{dataset}",
         years = "{year}",
         config = lambda wildcards, input: input.config_file,
-        run_container_wrapper = "./run_container"
+        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
+        datasets_file = config['dataset_location'],
+        blind = False,
+        run_performance = False,
+        friends = lambda wildcards, input: input.friends_file,
+        run_on_condor = config['run_on_condor'],
+        extra_arguments = "",
+        run_container_wrapper = "./run_container",
+        dashboard_address = 0
 
 if config['reuse_legacy_classifier_inputs']:
     rule merge_json_classifier_inputs:

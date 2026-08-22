@@ -57,28 +57,8 @@ rule install_isParking_friend_json:
     shell:  "cp {input} {output}"
 
 
-rule create_isParking_friend_config:
-    input:
-        config_file = "coffea4bees/analysis/metadata/HH4b_make_friend_isParking.yml",
-        processor = "coffea4bees/analysis/processors/processor_isParking_friend.py",
-        friends = "coffea4bees/metadata/friends/friends_empty.yml"
-    output: f"{ISPARKING_OUT}analysis_config_make_friend_isParking.yml"
-    params:
-        dataset_location = config['dataset_location']
-    run:
-        import yaml
-        with open(input.config_file, 'r') as f:
-            cfg = yaml.safe_load(f) or {}
-        cfg['processor'] = input.processor
-        cfg['dataset_location'] = params.dataset_location
-        cfg['friend_file'] = input.friends
-        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
-        with open(output[0], 'w') as f:
-            yaml.dump(cfg, f, default_flow_style=False)
-
-
 use rule analysis_processor from analysis as make_isParking_friendtrees_ttbar with:
-    input:  f"{ISPARKING_OUT}analysis_config_make_friend_isParking.yml"
+    input:  "coffea4bees/analysis/metadata/HH4b_make_friend_isParking.yml"
     output: f"{ISPARKING_OUT}isParking_{{tt_dataset}}__{YEAR}.coffea"
     log:    f"{ISPARKING_OUT}logs/isParking_{{tt_dataset}}__{YEAR}.log"
     wildcard_constraints:
@@ -87,11 +67,19 @@ use rule analysis_processor from analysis as make_isParking_friendtrees_ttbar wi
         datasets              = "{tt_dataset}",
         years                 = YEAR,
         config                = lambda wildcards, input: input[0],
-        run_container_wrapper = "./run_container"
+        processor             = "coffea4bees/analysis/processors/processor_isParking_friend.py",
+        datasets_file         = config['dataset_location'],
+        blind                 = False,
+        run_performance       = False,
+        friends               = "coffea4bees/metadata/friends/friends_empty.yml",
+        run_on_condor         = True,
+        extra_arguments       = "",
+        run_container_wrapper = "./run_container",
+        dashboard_address     = 0
 
 
 use rule analysis_processor from analysis as make_isParking_friendtrees_HH with:
-    input:  f"{ISPARKING_OUT}analysis_config_make_friend_isParking.yml"
+    input:  "coffea4bees/analysis/metadata/HH4b_make_friend_isParking.yml"
     output: f"{ISPARKING_OUT}isParking_{{hh_dataset}}__{YEAR}.coffea"
     log:    f"{ISPARKING_OUT}logs/isParking_{{hh_dataset}}__{YEAR}.log"
     wildcard_constraints:
@@ -100,7 +88,15 @@ use rule analysis_processor from analysis as make_isParking_friendtrees_HH with:
         datasets              = "{hh_dataset}",
         years                 = YEAR,
         config                = lambda wildcards, input: input[0],
-        run_container_wrapper = "./run_container"
+        processor             = "coffea4bees/analysis/processors/processor_isParking_friend.py",
+        datasets_file         = config['dataset_location'],
+        blind                 = False,
+        run_performance       = False,
+        friends               = "coffea4bees/metadata/friends/friends_empty.yml",
+        run_on_condor         = True,
+        extra_arguments       = "",
+        run_container_wrapper = "./run_container",
+        dashboard_address     = 0
 
 
 rule merge_isParking_friendtrees:

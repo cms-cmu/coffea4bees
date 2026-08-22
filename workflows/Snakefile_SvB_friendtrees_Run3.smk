@@ -70,33 +70,13 @@ rule install_SvB_friend_json:
     shell:  "cp {input} {output}"
 
 
-rule create_SvB_friend_config:
-    input:
-        config_file = "coffea4bees/analysis/metadata/HH4b_make_friend_SvB_Run3.yml",
-        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
-        friends = config.get("friend_gen_friends", "coffea4bees/metadata/friends/friends_HH4b.yml")
-    output: f"{SvB_OUT}analysis_config_make_friend_SvB.yml"
-    params:
-        dataset_location = config['dataset_location']
-    run:
-        import yaml
-        with open(input.config_file, 'r') as f:
-            cfg = yaml.safe_load(f) or {}
-        cfg['processor'] = input.processor
-        cfg['dataset_location'] = params.dataset_location
-        cfg['friend_file'] = input.friends
-        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
-        with open(output[0], 'w') as f:
-            yaml.dump(cfg, f, default_flow_style=False)
-
-
 use rule analysis_processor from analysis as make_SvB_friendtrees_mixeddata with:
     # runner.py writes a matching .json metafile alongside each .coffea output,
     # which merge_SvB_friendtrees_mixeddata picks up via the .coffea → .json swap.
     # install_path is the installed dataset yaml — required so this rule waits
     # for install_mixeddata_dataset when run inside the make-mixeddata pipeline.
     input:
-        config_yml   = f"{SvB_OUT}analysis_config_make_friend_SvB.yml",
+        config_yml   = "coffea4bees/analysis/metadata/HH4b_make_friend_SvB_Run3.yml",
         install_path = config['install_path'],
     output: f"{SvB_OUT}SvB_{config['dataset_name']}__{{year}}.coffea"
     log: f"{SvB_OUT}logs/SvB_{config['dataset_name']}__{{year}}.log"
@@ -104,11 +84,19 @@ use rule analysis_processor from analysis as make_SvB_friendtrees_mixeddata with
         datasets              = config['dataset_name'],
         years                 = "{year}",
         config                = lambda wildcards, input: input.config_yml,
-        run_container_wrapper = "./run_container"
+        processor             = "coffea4bees/analysis/processors/processor_HH4b.py",
+        datasets_file         = config['dataset_location'],
+        blind                 = False,
+        run_performance       = False,
+        friends               = config.get("friend_gen_friends", "coffea4bees/metadata/friends/friends_HH4b.yml"),
+        run_on_condor         = True,
+        extra_arguments       = "",
+        run_container_wrapper = "./run_container",
+        dashboard_address     = 0
 
 
 use rule analysis_processor from analysis as make_SvB_friendtrees_HH with:
-    input: f"{SvB_OUT}analysis_config_make_friend_SvB.yml"
+    input: "coffea4bees/analysis/metadata/HH4b_make_friend_SvB_Run3.yml"
     output: f"{SvB_OUT}SvB_{{hh_dataset}}__{{year}}.coffea"
     log: f"{SvB_OUT}logs/SvB_{{hh_dataset}}__{{year}}.log"
     wildcard_constraints:
@@ -117,7 +105,15 @@ use rule analysis_processor from analysis as make_SvB_friendtrees_HH with:
         datasets              = "{hh_dataset}",
         years                 = "{year}",
         config                = lambda wildcards, input: input[0],
-        run_container_wrapper = "./run_container"
+        processor             = "coffea4bees/analysis/processors/processor_HH4b.py",
+        datasets_file         = config['dataset_location'],
+        blind                 = False,
+        run_performance       = False,
+        friends               = config.get("friend_gen_friends", "coffea4bees/metadata/friends/friends_HH4b.yml"),
+        run_on_condor         = True,
+        extra_arguments       = "",
+        run_container_wrapper = "./run_container",
+        dashboard_address     = 0
 
 
 if config['reuse_legacy_friends']:

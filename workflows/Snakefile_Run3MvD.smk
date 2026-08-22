@@ -127,10 +127,9 @@ rule all_with_training:
 
 # Re-export classifier-inputs rules from the module after `rule all` so
 # the wildcard `classifier_inputs` rule isn't picked as default target.
-use rule create_classifier_inputs_config from classifier_inputs
-use rule classifier_inputs               from classifier_inputs
-use rule merge_json_classifier_inputs    from classifier_inputs
-use rule install_classifier_inputs       from classifier_inputs
+use rule classifier_inputs            from classifier_inputs
+use rule merge_json_classifier_inputs from classifier_inputs
+use rule install_classifier_inputs    from classifier_inputs
 
 # ── Histograms ────────────────────────────────────────────────────────────────
 # Use __ (double underscore) as separator between dataset and year to avoid
@@ -167,30 +166,20 @@ rule create_histogram_config_wSvB:
     """Patched histogram config; mode-specific only (no rank deps), so
     output goes to the shared dir for reuse across rank runs."""
     input:
-        config_file = config['histogram_config'],
-        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
-        friends = "coffea4bees/metadata/friends/friends_HH4b.yml"
+        config_file = config['histogram_config']
     output: f"{SHARED_OUT_MvD}histogram_config_wSvB.yml"
     params:
-        hemi_diag = str(config.get('compute_hemi_mixing_diagnostics', False)).lower(),
-        dataset_location = config['dataset_location']
-    run:
-        import yaml
-        with open(input.config_file, 'r') as f:
-            cfg = yaml.safe_load(f) or {}
-        cfg['processor'] = input.processor
-        cfg['dataset_location'] = params.dataset_location
-        cfg['friend_file'] = input.friends
-        if 'config' not in cfg:
-            cfg['config'] = {}
-        cfg['config']['run_SvB'] = True
-        cfg['config']['compute_hemi_mixing_diagnostics'] = (params.hemi_diag == 'true')
-        if 'runner' not in cfg:
-            cfg['runner'] = {}
-        cfg['runner']['worker_memory'] = "8GB"
-        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
-        with open(output[0], 'w') as f:
-            yaml.dump(cfg, f, default_flow_style=False)
+        hemi_diag = str(config.get('compute_hemi_mixing_diagnostics', False)).lower()
+    shell:
+        """
+        sed \
+            -e 's|  run_SvB.*|  run_SvB: true|' \
+            -e 's|  worker_memory:.*|  worker_memory: 8GB|' \
+            -e 's|  compute_hemi_mixing_diagnostics:.*|  compute_hemi_mixing_diagnostics: {params.hemi_diag}|' \
+            {input.config_file} > {output}
+        echo "Patched config:"
+        grep -E "run_SvB|compute_hemi_mixing_diagnostics" {output}
+        """
 
 # data + TT histograms — first pass, rank-independent. Output to shared dir.
 # Friends file is the legacy committed friends_HH4b.yml (no rank-specific
@@ -198,7 +187,8 @@ rule create_histogram_config_wSvB:
 # `data_SvBfriend.json@@SvB` regardless of rank).
 use rule analysis_processor from analysis as make_histograms_shared with:
     input:
-        config_file  = f"{SHARED_OUT_MvD}histogram_config_wSvB.yml"
+        config_file  = f"{SHARED_OUT_MvD}histogram_config_wSvB.yml",
+        friends_file = "coffea4bees/metadata/friends/friends_HH4b.yml",
     output: f"{SHARED_OUT_MvD}histograms/hist_{{dataset}}__{{year}}.coffea"
     log:    f"{SHARED_OUT_MvD}logs/hist_{{dataset}}__{{year}}.log"
     wildcard_constraints:
@@ -208,27 +198,22 @@ use rule analysis_processor from analysis as make_histograms_shared with:
         datasets = "{dataset}",
         years = "{year}",
         config = lambda wildcards, input: input.config_file,
-        run_container_wrapper = "./run_container"
-
-rule create_histogram_config_wSvB_mixeddata:
-    input:
-        config_file  = f"{SHARED_OUT_MvD}histogram_config_wSvB.yml",
-        friends_file = f"{out}friends_wSvB.yml"
-    output: f"{out}histogram_config_wSvB_mixeddata.yml"
-    run:
-        import yaml
-        with open(input.config_file, 'r') as f:
-            cfg = yaml.safe_load(f) or {}
-        cfg['friend_file'] = input.friends_file
-        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
-        with open(output[0], 'w') as f:
-            yaml.dump(cfg, f, default_flow_style=False)
+        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
+        datasets_file = config['dataset_location'],
+        blind = False,
+        run_performance = False,
+        friends = lambda wildcards, input: input.friends_file,
+        run_on_condor = config['run_on_condor'],
+        extra_arguments = "",
+        run_container_wrapper = "./run_container",
+        dashboard_address = 0
 
 # mixeddata histogram — first pass, rank-specific. Uses the patched
 # friends_wSvB.yml so SvB lookups go to the rank-suffixed friend JSON.
 use rule analysis_processor from analysis as make_histograms_mixeddata with:
     input:
-        config_file  = f"{out}histogram_config_wSvB_mixeddata.yml"
+        config_file  = f"{SHARED_OUT_MvD}histogram_config_wSvB.yml",
+        friends_file = f"{out}friends_wSvB.yml",
     output: f"{out}histograms/hist_{{dataset}}__{{year}}.coffea"
     log:    f"{out}logs/hist_{{dataset}}__{{year}}.log"
     wildcard_constraints:
@@ -238,7 +223,15 @@ use rule analysis_processor from analysis as make_histograms_mixeddata with:
         datasets = "{dataset}",
         years = "{year}",
         config = lambda wildcards, input: input.config_file,
-        run_container_wrapper = "./run_container"
+        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
+        datasets_file = config['dataset_location'],
+        blind = False,
+        run_performance = False,
+        friends = lambda wildcards, input: input.friends_file,
+        run_on_condor = config['run_on_condor'],
+        extra_arguments = "",
+        run_container_wrapper = "./run_container",
+        dashboard_address = 0
 
 use rule merging_coffea_files from analysis as merge_histograms with:
     input:
@@ -306,43 +299,41 @@ rule make_JCM_Run3MvD:
 
 rule create_histogram_config_wJCM:
     input:
-        jcm_file     = f"{out}jcm_for_mixed_all/jetCombinatoricModel_SB_.yml",
-        config_file  = config['histogram_config'],
-        friends_file = f"{out}friends_wSvB.yml",
-        processor    = "coffea4bees/analysis/processors/processor_HH4b.py"
+        jcm_file = f"{out}jcm_for_mixed_all/jetCombinatoricModel_SB_.yml",
+        config_file = config['histogram_config']
     output: f"{out}histogram_config_wJCM.yml"
-    params:
-        dataset_location = config['dataset_location']
-    run:
-        import yaml
-        with open(input.config_file, 'r') as f:
-            cfg = yaml.safe_load(f) or {}
-        cfg['processor'] = input.processor
-        cfg['dataset_location'] = params.dataset_location
-        cfg['friend_file'] = input.friends_file
-        if 'config' not in cfg:
-            cfg['config'] = {}
-        cfg['config']['run_SvB'] = True
-        cfg['config']['JCM_file'] = input.jcm_file
-        cfg['config']['apply_MvD_weight'] = False
-        cfg['config']['apply_MvD'] = True
-        if 'runner' not in cfg:
-            cfg['runner'] = {}
-        cfg['runner']['worker_memory'] = "8GB"
-        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
-        with open(output[0], 'w') as f:
-            yaml.dump(cfg, f, default_flow_style=False)
+    shell:
+        """
+        sed \
+            -e 's|  run_SvB.*|  run_SvB: true|' \
+            -e 's|  JCM_file.*|  JCM_file: {input.jcm_file}|' \
+            -e 's|  apply_MvD_weight.*|  apply_MvD_weight: false|' \
+            -e 's|  apply_MvD:[^_].*|  apply_MvD: true|' \
+            -e 's|  worker_memory:.*|  worker_memory: 8GB|' \
+            {input.config_file} > {output}
+        echo "Patched config:"
+        grep -E "run_SvB|JCM_file|apply_MvD" {output}
+        """
 
 use rule analysis_processor from analysis as make_histograms_mixeddata_wJCM with:
     input:
-        config_file  = f"{out}histogram_config_wJCM.yml"
+        config_file  = f"{out}histogram_config_wJCM.yml",
+        friends_file = f"{out}friends_wSvB.yml",
     output: f"{out}histograms_wJCM/hist_{config['dataset_name']}__{{year}}.coffea"
     log: f"{out}logs/hist_wJCM_{config['dataset_name']}__{{year}}.log"
     params:
         datasets = config['dataset_name'],
         years = "{year}",
         config = lambda wildcards, input: input.config_file,
-        run_container_wrapper = "./run_container"
+        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
+        datasets_file = config['dataset_location'],
+        blind = False,
+        run_performance = False,
+        friends = lambda wildcards, input: input.friends_file,
+        run_on_condor = config['run_on_condor'],
+        extra_arguments = "",
+        run_container_wrapper = "./run_container",
+        dashboard_address = 0
 
 use rule merging_coffea_files from analysis as merge_histograms_mixeddata_wJCM with:
     input:
@@ -428,37 +419,25 @@ rule create_friends_MvD:
 
 rule create_histogram_config_MvD:
     input:
-        jcm_file     = config['jcm_install_path'],
-        config_file  = config['histogram_config'],
-        friends_file = f"{out}friends_MvD.yml",
-        processor    = "coffea4bees/analysis/processors/processor_HH4b.py"
+        jcm_file    = config['jcm_install_path'],
+        config_file = config['histogram_config']
     output: f"{out}histogram_config_MvD.yml"
     params:
         hemi_diag = str(config.get('compute_hemi_mixing_diagnostics', False)).lower(),
-        extra_canjet = str(config.get('plot_extra_canjet_vars', False)).lower(),
-        dataset_location = config['dataset_location']
-    run:
-        import yaml
-        with open(input.config_file, 'r') as f:
-            cfg = yaml.safe_load(f) or {}
-        cfg['processor'] = input.processor
-        cfg['dataset_location'] = params.dataset_location
-        cfg['friend_file'] = input.friends_file
-        if 'config' not in cfg:
-            cfg['config'] = {}
-        cfg['config']['run_SvB'] = True
-        cfg['config']['plot_extra_canjet_vars'] = (params.extra_canjet == 'true')
-        cfg['config']['JCM_file'] = input.jcm_file
-        cfg['config']['apply_MvD_weight'] = True
-        cfg['config']['plot_ttbar_with_MvD_weights'] = True
-        cfg['config']['apply_MvD'] = True
-        cfg['config']['compute_hemi_mixing_diagnostics'] = (params.hemi_diag == 'true')
-        if 'runner' not in cfg:
-            cfg['runner'] = {}
-        cfg['runner']['worker_memory'] = "8GB"
-        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
-        with open(output[0], 'w') as f:
-            yaml.dump(cfg, f, default_flow_style=False)
+        extra_canjet = str(config.get('plot_extra_canjet_vars', False)).lower()
+    shell:
+        """
+        sed \
+            -e 's|  run_SvB:.*|  run_SvB: true\\n  plot_extra_canjet_vars: {params.extra_canjet}|' \
+            -e 's|  JCM_file.*|  JCM_file: {input.jcm_file}|' \
+            -e 's|  apply_MvD_weight.*|  apply_MvD_weight: true\\n  plot_ttbar_with_MvD_weights: true|' \
+            -e 's|  apply_MvD:[^_].*|  apply_MvD: true|' \
+            -e 's|  worker_memory:.*|  worker_memory: 8GB|' \
+            -e 's|  compute_hemi_mixing_diagnostics:.*|  compute_hemi_mixing_diagnostics: {params.hemi_diag}|' \
+            {input.config_file} > {output}
+        echo "Patched config:"
+        grep -E "run_SvB|plot_extra_canjet_vars|JCM_file|apply_MvD|plot_ttbar_with_MvD|compute_hemi_mixing_diagnostics" {output}
+        """
 
 rule create_histogram_config_MvD_signal:
     # Signal (GluGluHH) hist config: same as the MvD config but apply_MvD stays
@@ -466,36 +445,26 @@ rule create_histogram_config_MvD_signal:
     # crashes ("no field named 'MvD'"). Signal still gets run_SvB (the SvB_mixedMvD
     # collections) + the extra canJet vars — just no MvD reweighting.
     input:
-        jcm_file     = config['jcm_install_path'],
-        config_file  = config['histogram_config'],
-        friends_file = f"{out}friends_MvD.yml",
-        processor    = "coffea4bees/analysis/processors/processor_HH4b.py"
+        jcm_file    = config['jcm_install_path'],
+        config_file = config['histogram_config']
     output: f"{out}histogram_config_MvD_signal.yml"
     params:
-        extra_canjet = str(config.get('plot_extra_canjet_vars', False)).lower(),
-        dataset_location = config['dataset_location']
-    run:
-        import yaml
-        with open(input.config_file, 'r') as f:
-            cfg = yaml.safe_load(f) or {}
-        cfg['processor'] = input.processor
-        cfg['dataset_location'] = params.dataset_location
-        cfg['friend_file'] = input.friends_file
-        if 'config' not in cfg:
-            cfg['config'] = {}
-        cfg['config']['run_SvB'] = True
-        cfg['config']['plot_extra_canjet_vars'] = (params.extra_canjet == 'true')
-        cfg['config']['JCM_file'] = input.jcm_file
-        if 'runner' not in cfg:
-            cfg['runner'] = {}
-        cfg['runner']['worker_memory'] = "8GB"
-        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
-        with open(output[0], 'w') as f:
-            yaml.dump(cfg, f, default_flow_style=False)
+        extra_canjet = str(config.get('plot_extra_canjet_vars', False)).lower()
+    shell:
+        """
+        sed \
+            -e 's|  run_SvB:.*|  run_SvB: true\\n  plot_extra_canjet_vars: {params.extra_canjet}|' \
+            -e 's|  JCM_file.*|  JCM_file: {input.jcm_file}|' \
+            -e 's|  worker_memory:.*|  worker_memory: 8GB|' \
+            {input.config_file} > {output}
+        echo "Patched signal config (apply_MvD stays false):"
+        grep -E "run_SvB|plot_extra_canjet_vars|JCM_file|apply_MvD" {output}
+        """
 
 use rule analysis_processor from analysis as make_histograms_data_MvD with:
     input:
         config_file   = f"{out}histogram_config_MvD.yml",
+        friends_file  = f"{out}friends_MvD.yml",
         evaluate_done = ancient(expand(f"{out}{{classifier}}/evaluate.done", classifier=["MvD"])),
     output: f"{out}histograms_MvD/hist_data__{{year}}.coffea"
     log: f"{out}logs/hist_MvD_data__{{year}}.log"
@@ -503,11 +472,20 @@ use rule analysis_processor from analysis as make_histograms_data_MvD with:
         datasets              = "data",
         years                 = "{year}",
         config                = lambda wildcards, input: input.config_file,
-        run_container_wrapper = "./run_container"
+        processor             = "coffea4bees/analysis/processors/processor_HH4b.py",
+        datasets_file         = config['dataset_location'],
+        blind                 = False,
+        run_performance       = False,
+        friends               = lambda wildcards, input: input.friends_file,
+        run_on_condor         = config['run_on_condor'],
+        extra_arguments       = "",
+        run_container_wrapper = "./run_container",
+        dashboard_address     = 0
 
 use rule analysis_processor from analysis as make_histograms_mixeddata_MvD with:
     input:
         config_file   = f"{out}histogram_config_MvD.yml",
+        friends_file  = f"{out}friends_MvD.yml",
         evaluate_done = ancient(expand(f"{out}{{classifier}}/evaluate.done", classifier=["MvD"])),
     output: f"{out}histograms_MvD/hist_{config['dataset_name']}__{{year}}.coffea"
     log: f"{out}logs/hist_MvD_{config['dataset_name']}__{{year}}.log"
@@ -515,7 +493,15 @@ use rule analysis_processor from analysis as make_histograms_mixeddata_MvD with:
         datasets              = config['dataset_name'],
         years                 = "{year}",
         config                = lambda wildcards, input: input.config_file,
-        run_container_wrapper = "./run_container"
+        processor             = "coffea4bees/analysis/processors/processor_HH4b.py",
+        datasets_file         = config['dataset_location'],
+        blind                 = False,
+        run_performance       = False,
+        friends               = lambda wildcards, input: input.friends_file,
+        run_on_condor         = config['run_on_condor'],
+        extra_arguments       = "",
+        run_container_wrapper = "./run_container",
+        dashboard_address     = 0
 
 # HH signal MvD hists (optional, --config include_signal=True). Same config +
 # friends as data/mixeddata: run_SvB fills the SvB_mixedMvD collections (those
@@ -525,6 +511,7 @@ use rule analysis_processor from analysis as make_histograms_mixeddata_MvD with:
 use rule analysis_processor from analysis as make_histograms_signal_MvD with:
     input:
         config_file   = f"{out}histogram_config_MvD_signal.yml",
+        friends_file  = f"{out}friends_MvD.yml",
         evaluate_done = ancient(expand(f"{out}{{classifier}}/evaluate.done", classifier=["MvD"])),
     output: f"{out}histograms_MvD/hist_{{signal}}__{{year}}.coffea"
     log: f"{out}logs/hist_MvD_{{signal}}__{{year}}.log"
@@ -534,7 +521,15 @@ use rule analysis_processor from analysis as make_histograms_signal_MvD with:
         datasets              = "{signal}",
         years                 = "{year}",
         config                = lambda wildcards, input: input.config_file,
-        run_container_wrapper = "./run_container"
+        processor             = "coffea4bees/analysis/processors/processor_HH4b.py",
+        datasets_file         = config['dataset_location'],
+        blind                 = False,
+        run_performance       = False,
+        friends               = lambda wildcards, input: input.friends_file,
+        run_on_condor         = config['run_on_condor'],
+        extra_arguments       = "",
+        run_container_wrapper = "./run_container",
+        dashboard_address     = 0
 
 use rule merging_coffea_files from analysis as merge_histograms_MvD with:
     input:

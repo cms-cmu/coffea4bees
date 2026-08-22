@@ -86,42 +86,43 @@ rule create_friends_wSvB:
 
 rule create_histogram_config_wSvB:
     input:
-        config_file  = config['histogram_config'],
-        friends_file = f"{out}friends_wSvB.yml",
-        processor    = "coffea4bees/analysis/processors/processor_HH4b.py"
+        config_file = config['histogram_config']
     output: f"{out}histogram_config_wSvB.yml"
     params:
         # Pass --config enable_SvB_FeynNet_comparison=true to also fill the
         # 2D/3D SvB_MA vs SvB_FeynNet comparison histograms.
         svb_fn_cmp = str(config.get('enable_SvB_FeynNet_comparison', False)).lower(),
-        hemi_diag  = str(config.get('compute_hemi_mixing_diagnostics', False)).lower(),
-        dataset_location = config['dataset_location']
-    run:
-        import yaml
-        with open(input.config_file, 'r') as f:
-            cfg = yaml.safe_load(f) or {}
-        cfg['processor'] = input.processor
-        cfg['dataset_location'] = params.dataset_location
-        cfg['friend_file'] = input.friends_file
-        if 'config' not in cfg:
-            cfg['config'] = {}
-        cfg['config']['run_SvB'] = True
-        cfg['config']['run_SvB_FeynNet_comparison'] = (params.svb_fn_cmp == 'true')
-        cfg['config']['compute_hemi_mixing_diagnostics'] = (params.hemi_diag == 'true')
-        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
-        with open(output[0], 'w') as f:
-            yaml.dump(cfg, f, default_flow_style=False)
+        hemi_diag  = str(config.get('compute_hemi_mixing_diagnostics', False)).lower()
+    shell:
+        """
+        sed \
+            -e 's|  run_SvB:.*|  run_SvB: true|' \
+            -e 's|  run_SvB_FeynNet_comparison:.*|  run_SvB_FeynNet_comparison: {params.svb_fn_cmp}|' \
+            -e 's|  compute_hemi_mixing_diagnostics:.*|  compute_hemi_mixing_diagnostics: {params.hemi_diag}|' \
+            {input.config_file} > {output}
+        echo "Patched config:"
+        grep -E "run_SvB|compute_hemi_mixing_diagnostics" {output}
+        """
 
 use rule analysis_processor from analysis as make_histograms with:
     input:
-        config_file  = f"{out}histogram_config_wSvB.yml"
+        config_file  = f"{out}histogram_config_wSvB.yml",
+        friends_file = f"{out}friends_wSvB.yml",
     output: f"{out}histograms/hist_{{dataset}}__{{year}}.coffea"
     log: f"{out}logs/hist_{{dataset}}__{{year}}.log"
     params:
         datasets = "{dataset}",
         years = "{year}",
         config = lambda wildcards, input: input.config_file,
-        run_container_wrapper = "./run_container"
+        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
+        datasets_file = config['dataset_location'],
+        blind = False,
+        run_performance = False,
+        friends = lambda wildcards, input: input.friends_file,
+        run_on_condor = config['run_on_condor'],
+        extra_arguments = "",
+        run_container_wrapper = "./run_container",
+        dashboard_address = 0
 
 use rule merging_coffea_files from analysis as merge_histograms with:
     input:
@@ -136,25 +137,6 @@ use rule merging_coffea_files from analysis as merge_histograms with:
     params:
         run_performance = False
     log: f"{out}logs/merge_histograms.log"
-
-rule make_plots:
-    input: f"{out}histAll_Run3{config['label']}.coffea"
-    output: f"{out}plots/plots_done.txt"
-    container: config['analysis_container']
-    params:
-        output_dir = f"{out}plots/",
-        metadata = config['plots_metadata'],
-        extra_arguments = "",
-    log: f"{out}logs/make_plots.log"
-    shell:
-        """
-        export MPLCONFIGDIR="/tmp/matplotlib"
-        mkdir -p $MPLCONFIGDIR
-        echo "Making plots" 2>&1 | tee -a {log}
-        python coffea4bees/plots/makePlots.py {input} -o {params.output_dir} -m {params.metadata} {params.extra_arguments} 2>&1 | tee -a {log}
-        python src/plotting/pb_pdf_to_png.py -r -j 4 {params.output_dir} 2>&1 | tee -a {log}
-        touch {output}
-        """
 
 # ── JCM fitting ───────────────────────────────────────────────────────────────
 
@@ -187,42 +169,43 @@ rule make_JCM_Run3:
 
 rule create_histogram_config_wJCM:
     input:
-        jcm_file     = f"{out}jcm/jetCombinatoricModel_SB_.yml",
-        config_file  = config['histogram_config'],
-        friends_file = f"{out}friends_wSvB.yml",
-        processor    = "coffea4bees/analysis/processors/processor_HH4b.py"
+        jcm_file = f"{out}jcm/jetCombinatoricModel_SB_.yml",
+        config_file = config['histogram_config']
     output: f"{out}histogram_config_wJCM.yml"
     params:
         svb_fn_cmp = str(config.get('enable_SvB_FeynNet_comparison', False)).lower(),
-        hemi_diag  = str(config.get('compute_hemi_mixing_diagnostics', False)).lower(),
-        dataset_location = config['dataset_location']
-    run:
-        import yaml
-        with open(input.config_file, 'r') as f:
-            cfg = yaml.safe_load(f) or {}
-        cfg['processor'] = input.processor
-        cfg['dataset_location'] = params.dataset_location
-        cfg['friend_file'] = input.friends_file
-        if 'config' not in cfg:
-            cfg['config'] = {}
-        cfg['config']['run_SvB'] = True
-        cfg['config']['run_SvB_FeynNet_comparison'] = (params.svb_fn_cmp == 'true')
-        cfg['config']['compute_hemi_mixing_diagnostics'] = (params.hemi_diag == 'true')
-        cfg['config']['JCM_file'] = input.jcm_file
-        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
-        with open(output[0], 'w') as f:
-            yaml.dump(cfg, f, default_flow_style=False)
+        hemi_diag  = str(config.get('compute_hemi_mixing_diagnostics', False)).lower()
+    shell:
+        """
+        sed \
+            -e 's|  run_SvB:.*|  run_SvB: true|' \
+            -e 's|  run_SvB_FeynNet_comparison:.*|  run_SvB_FeynNet_comparison: {params.svb_fn_cmp}|' \
+            -e 's|  JCM_file.*|  JCM_file: {input.jcm_file}|' \
+            -e 's|  compute_hemi_mixing_diagnostics:.*|  compute_hemi_mixing_diagnostics: {params.hemi_diag}|' \
+            {input.config_file} > {output}
+        echo "Patched config:"
+        grep -E "run_SvB|JCM_file|compute_hemi_mixing_diagnostics" {output}
+        """
 
 use rule analysis_processor from analysis as make_histograms_wJCM with:
     input:
-        config_file  = f"{out}histogram_config_wJCM.yml"
+        config_file  = f"{out}histogram_config_wJCM.yml",
+        friends_file = f"{out}friends_wSvB.yml",
     output: f"{out}histograms_wJCM/hist_{{dataset}}__{{year}}.coffea"
     log: f"{out}logs/hist_wJCM_{{dataset}}__{{year}}.log"
     params:
         datasets = "{dataset}",
         years = "{year}",
         config = lambda wildcards, input: input.config_file,
-        run_container_wrapper = "./run_container"
+        processor = "coffea4bees/analysis/processors/processor_HH4b.py",
+        datasets_file = config['dataset_location'],
+        blind = False,
+        run_performance = False,
+        friends = lambda wildcards, input: input.friends_file,
+        run_on_condor = config['run_on_condor'],
+        extra_arguments = "",
+        run_container_wrapper = "./run_container",
+        dashboard_address = 0
 
 use rule merging_coffea_files from analysis as merge_histograms_wJCM with:
     input:
@@ -285,39 +268,32 @@ rule create_friends_FvT:
 
 rule create_histogram_config_FvT:
     input:
-        jcm_file     = config['jcm_install_path'],
-        config_file  = config['histogram_config'],
-        friends_file = f"{out}friends_FvT.yml",
-        processor    = "coffea4bees/analysis/processors/processor_HH4b.py"
+        jcm_file    = config['jcm_install_path'],
+        config_file = config['histogram_config']
     output: f"{out}histogram_config_FvT.yml"
     params:
         svb_fn_cmp = str(config.get('enable_SvB_FeynNet_comparison', False)).lower(),
-        hemi_diag  = str(config.get('compute_hemi_mixing_diagnostics', False)).lower(),
-        dataset_location = config['dataset_location']
-    run:
-        import yaml
-        with open(input.config_file, 'r') as f:
-            cfg = yaml.safe_load(f) or {}
-        cfg['processor'] = input.processor
-        cfg['dataset_location'] = params.dataset_location
-        cfg['friend_file'] = input.friends_file
-        if 'config' not in cfg:
-            cfg['config'] = {}
-        cfg['config']['run_SvB'] = True
-        cfg['config']['run_SvB_FeynNet_comparison'] = (params.svb_fn_cmp == 'true')
-        cfg['config']['compute_hemi_mixing_diagnostics'] = (params.hemi_diag == 'true')
-        cfg['config']['JCM_file'] = input.jcm_file
-        cfg['config']['apply_FvT'] = True
-        cfg['config']['plot_ttbar_with_weights'] = True
-        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
-        with open(output[0], 'w') as f:
-            yaml.dump(cfg, f, default_flow_style=False)
+        hemi_diag  = str(config.get('compute_hemi_mixing_diagnostics', False)).lower()
+    shell:
+        """
+        sed \
+            -e 's|  run_SvB:.*|  run_SvB: true|' \
+            -e 's|  run_SvB_FeynNet_comparison:.*|  run_SvB_FeynNet_comparison: {params.svb_fn_cmp}|' \
+            -e 's|  JCM_file.*|  JCM_file: {input.jcm_file}|' \
+            -e 's|  apply_FvT:.*|  apply_FvT: true|' \
+            -e 's|  plot_ttbar_with_weights.*|  plot_ttbar_with_weights: true|' \
+            -e 's|  compute_hemi_mixing_diagnostics:.*|  compute_hemi_mixing_diagnostics: {params.hemi_diag}|' \
+            {input.config_file} > {output}
+        echo "Patched config:"
+        grep -E "run_SvB|JCM_file|apply_FvT|plot_ttbar_with_weights|compute_hemi_mixing_diagnostics" {output}
+        """
 
 # Only data is re-run with FvT — TT estimate comes from 3b data × FvT.d3_to_t4
 # (plot_ttbar_with_weights=true), so re-running TT MC samples is redundant.
 use rule analysis_processor from analysis as make_histograms_FvT with:
     input:
         config_file   = f"{out}histogram_config_FvT.yml",
+        friends_file  = f"{out}friends_FvT.yml",
         evaluate_done = ancient(expand(f"{out}{{classifier}}/evaluate.done", classifier=["FvT"])),
     output: f"{out}histograms_FvT/hist_data__{{year}}.coffea"
     log: f"{out}logs/hist_FvT_data__{{year}}.log"
@@ -325,7 +301,15 @@ use rule analysis_processor from analysis as make_histograms_FvT with:
         datasets              = "data",
         years                 = "{year}",
         config                = lambda wildcards, input: input.config_file,
-        run_container_wrapper = "./run_container"
+        processor             = "coffea4bees/analysis/processors/processor_HH4b.py",
+        datasets_file         = config['dataset_location'],
+        blind                 = False,
+        run_performance       = False,
+        friends               = lambda wildcards, input: input.friends_file,
+        run_on_condor         = config['run_on_condor'],
+        extra_arguments       = "",
+        run_container_wrapper = "./run_container",
+        dashboard_address     = 0
 
 use rule merging_coffea_files from analysis as merge_histograms_FvT with:
     input:
