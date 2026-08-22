@@ -1,7 +1,6 @@
 rule analysis_processor:
     input:
         runner_script = "runner.py",
-        corrections_file = "src/physics/corrections.yml",
         config_file = lambda wildcards: workflow.configfiles[0] if workflow.configfiles else "coffea4bees/workflows/config/nominal_run2.yml"
     output: "{output_file}"
     retries: 3

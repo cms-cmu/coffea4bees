@@ -3,7 +3,7 @@ output_path: "output/ttHbb/"
 analysis_config:
   processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
   dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
-  friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b.yml"
+  friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb.yml"
   weights_file: "coffea4bees/metadata/weights/weights_HH4b_2024_v2.yml"
   runner:
     workers: 4

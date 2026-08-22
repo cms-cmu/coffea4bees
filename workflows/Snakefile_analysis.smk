@@ -61,8 +61,7 @@ def get_raw_analysis_config():
             res[k] = config[k]
     return res
 
-data_config_path = f"{config['output_path']}analysis_config_data.yml"
-signal_config_path = f"{config['output_path']}analysis_config_signal.yml"
+original_config = workflow.configfiles[0] if workflow.configfiles else "coffea4bees/workflows/config/nominal_run2.yml"
 
 wildcard_constraints:
     year = "|".join([str(y) for y in config['year_eras'].keys()])
@@ -85,64 +84,12 @@ def get_analysis_targets(wildcards):
 rule all_analysis:
     input: get_analysis_targets
 
-def get_analysis_config_inputs(wildcards):
-    cfg = get_raw_analysis_config()
-    inputs = []
-    if workflow.configfiles:
-        inputs.extend(workflow.configfiles)
-    if 'processor' in cfg and cfg['processor']:
-        inputs.append(cfg['processor'])
-    if 'friend_file' in cfg and cfg['friend_file']:
-        inputs.append(cfg['friend_file'])
-    if 'weights_file' in cfg and cfg['weights_file']:
-        inputs.append(cfg['weights_file'])
-    if 'config' in cfg and isinstance(cfg['config'], dict) and 'JCM_file' in cfg['config'] and cfg['config']['JCM_file']:
-        inputs.append(cfg['config']['JCM_file'])
-    return inputs
-
-rule create_analysis_config_data:
-    input: get_analysis_config_inputs
-    output: data_config_path
-    run:
-        import yaml
-        cfg = get_raw_analysis_config()
-        if config.get("test", False):
-            if 'runner' not in cfg or not isinstance(cfg['runner'], dict):
-                cfg['runner'] = {}
-            cfg['runner']['condor'] = False
-            cfg['runner']['shared_dask'] = False
-            cfg['runner']['run_performance'] = False
-        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
-        with open(output[0], 'w') as f:
-            yaml.dump(cfg, f, default_flow_style=False)
-
-rule create_analysis_config_signal:
-    input: get_analysis_config_inputs
-    output: signal_config_path
-    run:
-        import yaml, copy
-        cfg = copy.deepcopy(get_raw_analysis_config())
-        if 'config' not in cfg or not isinstance(cfg['config'], dict):
-            cfg['config'] = {}
-        cfg['config']['apply_FvT'] = False
-        cfg['config']['blind'] = False
-        cfg['config']['plot_ttbar_with_weights'] = False
-        if config.get("test", False):
-            if 'runner' not in cfg or not isinstance(cfg['runner'], dict):
-                cfg['runner'] = {}
-            cfg['runner']['condor'] = False
-            cfg['runner']['shared_dask'] = False
-            cfg['runner']['run_performance'] = False
-        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
-        with open(output[0], 'w') as f:
-            yaml.dump(cfg, f, default_flow_style=False)
-
 if config.get("test", False):
     # Quick Test / CI Mode: single command for all data years/eras and single command for all signals
     use rule analysis_processor from analysis as analysis_data with:
         input: 
             runner_script = "runner.py",
-            config_file = data_config_path
+            config_file = original_config
         output: f"{config['output_path']}singlefiles/histAll_{config['label']}_data.coffea"
         log: f"{config['output_path']}logs/analysis_{config['label']}_data.log"
         params:
@@ -158,7 +105,7 @@ if config.get("test", False):
     use rule analysis_processor from analysis as analysis_MC with:
         input: 
             runner_script = "runner.py",
-            config_file = signal_config_path
+            config_file = original_config
         output: f"{config['output_path']}singlefiles/histAll_{config['label']}_signals.coffea"
         log: f"{config['output_path']}logs/analysis_{config['label']}_signals.log"
         params:
@@ -196,7 +143,7 @@ else:
     use rule analysis_processor from analysis as analysis_data with:
         input: 
             runner_script = "runner.py",
-            config_file = data_config_path
+            config_file = original_config
         output: f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{{year}}_{{era}}.coffea"
         log: f"{config['output_path']}logs/analysis_{config['label']}_data__{{year}}_{{era}}.log"
         params:
@@ -212,7 +159,7 @@ else:
     use rule analysis_processor from analysis as analysis_MC with:
         input: 
             runner_script = "runner.py",
-            config_file = signal_config_path
+            config_file = original_config
         output: f"{config['output_path']}singlefiles/histAll_{config['label']}__{{dataset}}__{{year}}.coffea"
         log: f"{config['output_path']}logs/analysis_{config['label']}_{{dataset}}_{{year}}.log"
         params:
@@ -270,4 +217,4 @@ use rule check_cutflow from analysis with:
         run_container_wrapper = config['analysis_container_wrapper']
     container: None
 
-localrules: create_analysis_config_data, create_analysis_config_signal, analysis_data, analysis_MC, merging_files, make_plots, check_cutflow
+localrules: analysis_data, analysis_MC, merging_files, make_plots, check_cutflow
