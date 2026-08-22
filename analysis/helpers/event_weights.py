@@ -317,7 +317,7 @@ def add_pseudotagweights(
         logging.debug( f"weight_noFvT {event.weight_noFvT[:10]}\n" )
 
         # Apply FvT weights if required
-        if apply_FvT:
+        if apply_FvT and ("FvT" in event.fields):
             if isDataForMixed:
                 for _JCM_load, _FvT_name in zip(event_metadata["JCM_loads"], event_metadata["FvT_names"]):
                     event[f"weight_{_FvT_name}"] = np.where(
