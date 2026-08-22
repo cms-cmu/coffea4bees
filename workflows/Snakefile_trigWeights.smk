@@ -1,11 +1,69 @@
-# Fallback defaults
+import os
+import copy
+import yaml
+
+# Fallback defaults for backwards compatibility or running direct
 config.setdefault('output_path', "output/trigger_weights/")
 config.setdefault('dataset', ['ttHbb'])
-config.setdefault('config_file', "coffea4bees/analysis/metadata/trigger_weights.yml")
+config.setdefault('test', False)
+
+# Parse boolean for test flag
+is_test = config.get('test', False)
+if isinstance(is_test, str):
+    is_test = is_test.lower() in ("true", "1", "yes")
+config['test'] = is_test
+
+# Container and python bin
+container_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
+config.setdefault('container_wrapper', container_wrapper)
+config.setdefault('analysis_container_wrapper', config.get('container_wrapper', container_wrapper))
+python_bin = os.getenv("CONTAINER_PYTHON", "python")
+config.setdefault('python_bin', python_bin)
+
+if config.get('test', False) or os.getenv("CI"):
+    config.setdefault('additional_parameters', "")
+else:
+    config.setdefault('additional_parameters', "--shared-dask --condor --run-performance")
 
 years = list(config['year_eras'].keys()) if 'year_eras' in config and isinstance(config['year_eras'], dict) else config.get('years', config.get('year', ['UL18']))
 if isinstance(years, str):
     years = [years]
+
+is_run2 = any(str(y).startswith("UL") for y in years)
+
+def get_raw_trigger_weights_config():
+    # Read from trigger_weights block or analysis_config block if provided in YAML
+    raw = config.get('trigger_weights', config.get('analysis_config', {}))
+    if isinstance(raw, str) and os.path.exists(raw):
+        with open(raw, 'r') as f:
+            raw = yaml.safe_load(f) or {}
+    elif not isinstance(raw, dict):
+        raw = {}
+
+    res = copy.deepcopy(raw)
+    res.setdefault('processor', "coffea4bees/analysis/processors/processor_trigger_weights.py")
+    
+    # Dataset location
+    default_ds_loc = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/" if is_run2 else "coffea4bees/metadata/datasets/"
+    res.setdefault('dataset_location', config.get('dataset_location', default_ds_loc))
+
+    # Runner settings
+    if 'runner' not in res or not isinstance(res['runner'], dict):
+        res['runner'] = copy.deepcopy(config.get('runner', {}))
+    res['runner'].setdefault('write_coffea_output', False)
+
+    # Config block for processor
+    if 'config' not in res or not isinstance(res['config'], dict):
+        res['config'] = {}
+    res['config'].setdefault('make_classifier_input', f"{config['output_path']}trigger_weights/")
+    if 'use_vectorized' not in res['config']:
+        res['config']['use_vectorized'] = not is_run2
+    if 'tagger' not in res['config']:
+        res['config']['tagger'] = "DeepJet" if is_run2 else "PNet"
+
+    return res
+
+trig_config_path = f"{config['output_path']}trigger_weights/trigger_weights_config.yml"
 
 # Import analysis module
 module analysis:
@@ -14,21 +72,20 @@ module analysis:
 
 rule all_trigger_weights:
     input:
-        f"{config['output_path']}trigger_weights_friends.json"
+        f"{config['output_path']}trigger_weights/trigger_weights_friends.json"
 
 rule create_trigger_weights_config:
-    input:
-        config_file = config['config_file'],
-        processor = "coffea4bees/analysis/processors/processor_trigger_weights.py"
-    output: f"{config['output_path']}trigger_weights_config.yml"
-    params:
-        dataset_location = config.get('dataset_location', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/")
+    input: workflow.configfiles if workflow.configfiles else []
+    output: trig_config_path
     run:
-        import yaml
-        with open(input.config_file, 'r') as f:
-            cfg = yaml.safe_load(f) or {}
-        cfg['processor'] = input.processor
-        cfg['dataset_location'] = params.dataset_location
+        import yaml, os
+        cfg = get_raw_trigger_weights_config()
+        if config.get("test", False):
+            if 'runner' not in cfg or not isinstance(cfg['runner'], dict):
+                cfg['runner'] = {}
+            cfg['runner']['condor'] = False
+            cfg['runner']['shared_dask'] = False
+            cfg['runner']['run_performance'] = False
         os.makedirs(os.path.dirname(output[0]), exist_ok=True)
         with open(output[0], 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False)
@@ -36,18 +93,22 @@ rule create_trigger_weights_config:
 use rule analysis_processor from analysis as analysis_trigger_weights with:
     input:
         runner_script = "runner.py",
-        config_file = f"{config['output_path']}trigger_weights_config.yml"
-    output: f"{config['output_path']}singlefiles/trigger_weights__{{dataset}}__{{year}}.json"
+        config_file = trig_config_path
+    output: f"{config['output_path']}trigger_weights/trigger_weights__{{dataset}}__{{year}}.json"
     log: f"{config['output_path']}logs/analysis_trigger_weights__{{dataset}}__{{year}}.log"
     params:
         datasets = lambda wildcards: wildcards.dataset,
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
-        run_container_wrapper = "./run_container"
+        extra_arguments = lambda wildcards: " ".join(filter(None, [
+            "-t" if config.get("test", False) else "",
+            config.get("additional_parameters", "")
+        ])),
+        run_container_wrapper = config['analysis_container_wrapper']
 
 rule merge_friendtree_json:
-    input: expand(f"{config['output_path']}singlefiles/trigger_weights__{{dataset}}__{{year}}.json", dataset=config['dataset'], year=years)
-    output: f"{config['output_path']}trigger_weights_friends.json"
+    input: expand(f"{config['output_path']}trigger_weights/trigger_weights__{{dataset}}__{{year}}.json", dataset=config['dataset'], year=years)
+    output: f"{config['output_path']}trigger_weights/trigger_weights_friends.json"
     log: f"{config['output_path']}logs/merge_friendtree_json.log"
     shell:
         """

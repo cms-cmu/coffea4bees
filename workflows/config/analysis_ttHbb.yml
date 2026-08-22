@@ -13,7 +13,7 @@ analysis_config:
     shared_dask: true
     run_performance: true
   config:
-    blind: true
+    blind: false  #### until we properly defined SR
     apply_FvT: true
     apply_JCM: true
     apply_trigWeight: true
@@ -44,8 +44,8 @@ trigger_weights:
   processor: "coffea4bees/analysis/processors/processor_trigger_weights.py"
   dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
   runner:
-    condor_cores: 2
-    worker_memory: 4GB
+    condor_cores: 1
+    worker_memory: 8GB
     chunksize: 10000
     condor: true
     shared_dask: true
@@ -53,7 +53,8 @@ trigger_weights:
   config:
     use_vectorized: false
     tagger: DeepJet
-
+    make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/
+    # make_classifier_input: output/trigger_weights/   ### local
 
 convert_hist_to_json:
   histos: 
