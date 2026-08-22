@@ -84,7 +84,8 @@ analysis_unsup_cutflow_coffea4bees:
     - .base_analysis_coffea4bees
   needs: 
     - setup_coffea4bees
-    - analysis_unsup_test_coffea4bees
+    - job: analysis_unsup_test_coffea4bees
+      optional: true
   script:
     - source coffea4bees/scripts/analysis-unsup-cutflow.sh --output-base /builds/$CI_PROJECT_PATH/output
   artifacts:

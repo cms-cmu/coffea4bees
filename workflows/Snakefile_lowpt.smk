@@ -28,22 +28,31 @@ rule all_lowpt:
         bash src/tools/copy_files_to_cernbox.sh -s {config[output_path]} -d www/HH4b/{config[eos_path]}/ -t
         """
 
+rule create_noJCM_config_lowpt:
+    input:
+        config_file = "coffea4bees/analysis/metadata/HH4b_noJCM.yml",
+        processor = "coffea4bees/analysis/processors/processor_HH4b_lowpt.py",
+        friend_file = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b_lowpt.yml"
+    output: f"{config['output_path']}HH4b_noJCM_lowpt.yml"
+    run:
+        import yaml
+        with open(input.config_file, 'r') as f:
+            cfg = yaml.safe_load(f) or {}
+        cfg['processor'] = input.processor
+        cfg['dataset_location'] = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
+        cfg['friend_file'] = input.friend_file
+        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
+        with open(output[0], 'w') as f:
+            yaml.dump(cfg, f, default_flow_style=False)
+
 use rule analysis_processor from analysis as analysis_nojcm_lowpt with:
-    input: f"coffea4bees/analysis/metadata/HH4b_noJCM.yml"
+    input: f"{config['output_path']}HH4b_noJCM_lowpt.yml"
     output: f"{config['output_path']}histAll_lowpt_noJCM.coffea"
     log: f"{config['output_path']}logs/analysis_nojcm_lowpt.log"
-    # container: ""
     params:
         datasets = config['dataset'],
         years = config['year'],
         config = lambda wildcards, input: input[0],
-        processor = "coffea4bees/analysis/processors/processor_HH4b_lowpt.py",
-        datasets_file = config['dataset_location'],
-        blind = False,
-        run_performance = False,
-        friends = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b_lowpt.yml",
-        run_on_condor = True,
-        extra_arguments = "",
         run_container_wrapper = "./run_container"
 
 use rule make_plots from analysis as make_plots_noJCMlowpt with:
@@ -67,16 +76,24 @@ use rule make_JCM from analysis as make_new_JCM_lowpt with:
 rule create_metadata_lowpt:
     input: 
         jcm_file = f"{config['output_path']}JCM_lowpt_2024_v2/jetCombinatoricModel_SB_2024_v2.yml",
-        config_file = "coffea4bees/analysis/metadata/HH4b_lowpt_classifier_inputs.yml"
+        config_file = "coffea4bees/analysis/metadata/HH4b_lowpt_classifier_inputs.yml",
+        processor = "coffea4bees/analysis/processors/processor_HH4b_lowpt.py",
+        friend_file = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b_lowpt.yml"
     output: f"{config['output_path']}HH4b_wlowptJCM.yml"
-    shell:
-        """
-        echo "Modifying metadata file to include new JCM"
-        sed -e 's|  JCM_file.*|  JCM_file: {input.jcm_file}|' \
-            -e 's|make_classifier_input: .*|make_classifier_input: {config[classifier_path]}|' \
-            {input.config_file} > {output}
-        cat {output}
-        """
+    run:
+        import yaml
+        with open(input.config_file, 'r') as f:
+            cfg = yaml.safe_load(f) or {}
+        cfg['processor'] = input.processor
+        cfg['dataset_location'] = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
+        cfg['friend_file'] = input.friend_file
+        if 'config' not in cfg:
+            cfg['config'] = {}
+        cfg['config']['JCM_file'] = input.jcm_file
+        cfg['config']['make_classifier_input'] = config['classifier_path']
+        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
+        with open(output[0], 'w') as f:
+            yaml.dump(cfg, f, default_flow_style=False)
 
 use rule analysis_processor from analysis as analysis_lowpt_classifier_inputs with:
     input: f"{config['output_path']}HH4b_wlowptJCM.yml"
@@ -86,13 +103,7 @@ use rule analysis_processor from analysis as analysis_lowpt_classifier_inputs wi
     params:
         datasets = "{dataset}",
         years = "{year}",
-        processor = "coffea4bees/analysis/processors/processor_HH4b_lowpt.py",
         config = lambda wildcards, input: input[0],
-        datasets_file = config['dataset_location'],
-        blind = False,
-        run_performance = False,
-        friends = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b_lowpt.yml",
-        run_on_condor = True,
         extra_arguments = "--shared-dask",
         run_container_wrapper = "./run_container"
 

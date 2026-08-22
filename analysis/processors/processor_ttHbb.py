@@ -8,6 +8,7 @@ from coffea import processor
 from coffea4bees.analysis.processors.processor_HH4b import HH4bBaseProcessor, _UNSET
 from coffea4bees.analysis.helpers.filling_histograms import filling_ttHbb_histograms
 from coffea4bees.analysis.helpers.SvB_helpers import set_ttHbb_SvB_vars
+from coffea4bees.analysis.helpers.candidates_selection_ttHbb import create_cand_jet_dijet_quadjet_ttHbb
 
 class ttHbbProcessor(HH4bBaseProcessor):
     """
@@ -64,6 +65,44 @@ class ttHbbProcessor(HH4bBaseProcessor):
             if k.startswith("SvB") and not k.startswith("SvB_FeynNet"):
                 if getattr(event, k, None) is not None:
                     set_ttHbb_SvB_vars(k, event)
+
+    def build_candidates(self, selev, weights, list_weight_names, analysis_selections, processOutput):
+        """Build unconstrained di-jets and quad-jets candidates for ttHbb."""
+        return create_cand_jet_dijet_quadjet_ttHbb(
+            selev,
+            apply_FvT=self.apply_FvT,
+            classifier_FvT=self.clf_FvT,
+            run_SvB=self.run_SvB,
+            run_systematics=self.run_systematics,
+            classifier_SvB=self.clf_SvB,
+            classifier_SvB_MA=self.clf_SvB_MA,
+            classifier_SvB_FeynNet=self.classifier_SvB_FeynNet,
+            processOutput=processOutput,
+            isRun3=self.config["isRun3"],
+            weights=weights,
+            list_weight_names=list_weight_names,
+            analysis_selections=analysis_selections,
+            cand_cfg=self.cand_cfg,
+        )
+
+    def fill_detailed_cutflows(self, selev):
+        """Fill detailed cutflow histograms after ttHbb candidate building."""
+        self.fill_cutflow_with_and_without_trig("passPreSel", selev)
+        self.fill_cutflow_with_and_without_trig("passDiJetMass", selev[selev.passDiJetMass])
+        self.fill_cutflow_with_and_without_trig("boosted_veto_passPreSel", selev[selev.notInBoostedSel])
+        self._cutFlow.fill("boosted_veto_SR", selev[selev.notInBoostedSel & selev["quadJet_selected"].SR])
+
+        selev['passSR'] = selev.passDiJetMass & selev["quadJet_selected"].SR
+        self.fill_cutflow_with_and_without_trig("SR", selev[selev.passSR])
+
+        selev['passSB'] = selev.passDiJetMass & selev["quadJet_selected"].SB
+        self.fill_cutflow_with_and_without_trig("SB", selev[selev.passSB])
+
+        self._cutFlow.fill("passVBFSel", selev[selev.passVBFSel])
+
+        if self.run_SvB and "passSvB" in selev.fields:
+            self.fill_cutflow_with_and_without_trig("passSvB", selev[selev.passSvB])
+            self.fill_cutflow_with_and_without_trig("failSvB", selev[selev.failSvB])
 
     def build_selections(self, event, weights):
         """Build PackedSelection object with all cuts and add selJets.n > 6 categorization."""

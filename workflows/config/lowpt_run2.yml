@@ -1,32 +1,32 @@
 email: "tgomezes@andrew.cmu.edu"
 label: "run2_lowpt"
 output_path: "output/run2_lowpt/"
-processor: "coffea4bees/analysis/processors/processor_HH4b_lowpt.py"
-friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b_lowpt.yml"
-weights_file: "coffea4bees/metadata/weights/weights_HH4b_lowpt.yml"
+analysis_config:
+  processor: "coffea4bees/analysis/processors/processor_HH4b_lowpt.py"
+  dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
+  friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b_lowpt.yml"
+  weights_file: "coffea4bees/metadata/weights/weights_HH4b_lowpt.yml"
+  runner:
+    chunksize: 10000
+    workers: 4
+    worker_memory: 4GB
+    dashboard_address: 0
+  config:
+    SvB_MA: true
+    blind: true
+    apply_FvT: true
+    apply_JCM: true
+    apply_trigWeight: true
+    apply_btagSF: true
+    apply_boosted_veto: false
+    run_SvB: true
+    SvB: null
+    top_reconstruction: fast
+    plot_ttbar_with_weights: true
+
 known_counts: "coffea4bees/analysis/tests/known_Counts_lowpt_Run2.yml"
 plot_config: "coffea4bees/plots/metadata/plotsAll_lowpt.yml"
 combine_flags: "--three_tag lowpt_threeTag --four_tag lowpt_fourTag --blind"
-dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
-
-runner:
-  chunksize: 10000
-  workers: 4
-  worker_memory: 4GB
-  dashboard_address: 0
-
-config:
-  SvB_MA: true
-  blind: true
-  apply_FvT: true
-  apply_JCM: true
-  apply_trigWeight: true
-  apply_btagSF: true
-  apply_boosted_veto: false
-  run_SvB: true
-  SvB: null
-  top_reconstruction: fast
-  plot_ttbar_with_weights: true
 dataset:
   - "GluGluToHHTo4B_cHHH1"
   - "GluGluToHHTo4B_cHHH0"

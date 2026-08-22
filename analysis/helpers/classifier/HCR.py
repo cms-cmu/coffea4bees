@@ -12,7 +12,7 @@ from src.classifier.config.setting.HCR import Input
 from src.classifier.config.setting.ml import KFold, SplitterKeys
 from src.classifier.ml import BatchType
 from src.classifier.ml.skimmer import Splitter
-from src.classifier.nn.blocks.HCR import HCR
+from coffea4bees.classifier.nn.blocks.HCR import HCR
 
 from .. import networks
 

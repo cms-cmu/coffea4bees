@@ -110,7 +110,7 @@ def filling_nominal_histograms(
     ]
 
     # Make classifier hists
-    if apply_FvT:
+    if apply_FvT and ("FvT" in selev.fields):
         FvT_skip = []
         if "pt" not in selev.FvT.fields:
             FvT_skip = ["pt", "pm3", "pm4"]
@@ -124,7 +124,7 @@ def filling_nominal_histograms(
             fill += hist.add("FvT_noFvT", (100, 0, 5, ("FvT.FvT", "FvT reweight")), weight=noFvT_weight)
 
 
-    if apply_MvD:
+    if apply_MvD and ("MvD" in selev.fields):
         if apply_MvD_weight:
             fill += MvDHists(("MvD", "MvD Classifier"), "MvD")
             #fill += hist.add("quadJet_selected.MvD_score", (100, 0, 1, ("quadJet_selected.MvD_q_score", "Selected Quad Jet Diboson MvD q score")))
@@ -569,7 +569,7 @@ def filling_ttHbb_histograms(
         process=[processName],
         year=[year],
         tag=tag_list,
-        region=['SR', "SB"],
+        region=['inclusive', 'SR', "SB"],
         **dict((s, ...) for s in histCuts)
     )
 

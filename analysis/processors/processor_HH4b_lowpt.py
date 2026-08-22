@@ -42,7 +42,7 @@ class analysis(HH4bBaseProcessor):
         # Initialize parent without JCM (we'll handle it ourselves).
         # Pass SvB_MA through so the parent's _skip_svb_legacy logic fires correctly,
         # then replace classifier_SvB_MA with the lowpt-aware variant below.
-        super().__init__(apply_JCM=False, friends={}, SvB_MA=SvB_MA, weights=weights, **kwargs)
+        super().__init__(apply_JCM=False, friends=friends, SvB_MA=SvB_MA, weights=weights, **kwargs)
 
         # Replace with lowpt-aware ensemble (reads nSelJets_lowpt instead of nJet_selected)
         self.classifier_SvB_MA = {}
@@ -205,7 +205,7 @@ class analysis(HH4bBaseProcessor):
         """
 
         if self.classifier_FvT: apply_FvT = True
-        else: apply_FvT = self.apply_FvT
+        else: apply_FvT = self.apply_FvT and ("FvT" in event.fields)
 
         if self.run_SvB and "SvB_MA" in selev.fields and "passMinPs" not in selev.fields:
             selev["passMinPs"] = selev.SvB_MA.passMinPs

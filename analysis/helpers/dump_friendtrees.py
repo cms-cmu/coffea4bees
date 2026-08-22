@@ -204,13 +204,15 @@ def dump_trigger_weight(
     *selections: ak.Array,
     dump_naming: str = _NAMING,
 ):
+    selection = _build_cutflow(*selections)
     data = ak.zip(
         {
             "MC": events["trigWeight"].MC,
             "Data": events["trigWeight"].Data,
         }
     )
-    selection = _build_cutflow(*selections)
+    if len(data) == len(selection):
+        data = data[selection]
     padded = akext.pad.selected()
     data = padded(data, selection)
     return dump_friend(

@@ -1,17 +1,39 @@
 label: "ttHbb"
 output_path: "output/ttHbb/"
-analysis_config: "coffea4bees/analysis/metadata/ttHbb_2024_v2.yml"
-processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
-friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b.yml"
-weights_file: "coffea4bees/metadata/weights/weights_HH4b_2024_v2.yml"
+analysis_config:
+  processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+  dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
+  friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb.yml"
+  weights_file: "coffea4bees/metadata/weights/weights_HH4b_2024_v2.yml"
+  runner:
+    workers: 4
+    worker_memory: 8GB
+    chunksize: 10000
+    condor: true
+    shared_dask: true
+    run_performance: true
+  config:
+    blind: false  #### until we properly defined SR
+    apply_FvT: true
+    apply_JCM: true
+    apply_trigWeight: true
+    apply_btagSF: true
+    apply_boosted_veto: false
+    run_SvB: true
+    SvB_MA: true
+    SvB: null
+    hist_cuts: ["pass_nSelJets_gt6", "fail_nSelJets_le6"]
+    top_reconstruction: fast
+    plot_ttbar_with_weights: true
+
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
-blind: true
-known_counts: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"
+known_counts_test: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"
+known_counts_full: "coffea4bees/analysis/tests/known_fullCounts_ttHbb.yml"
 cern_user: "algomez"
 cern_path: "www/HH4b/Plots/"
-dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
 dataset:
   - "ttHbb"
+  - "data"
 year_eras:
   UL18:
     - "A"
@@ -19,26 +41,37 @@ year_eras:
     - "C"
     - "D"
 
-runner:
-  workers: 4
-  worker_memory: 8GB
-  dashboard_address: 0
-  chunksize: 40000
+skimmer:
+  processor: "coffea4bees/skimmer/processor/skimmer_4b.py"
+  dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
+  runner:
+    condor_cores: 1
+    worker_memory: 8GB
+    chunksize: 10000
+    picosize: 10000
+    basketsize: 10000
+    condor: true
+    shared_dask: true
+    run_performance: true
+  config:
+    base_path: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/
+    step: 100000
+    loosePtForSkim: true
 
-config:
-  blind: true
-  apply_FvT: true
-  apply_JCM: true
-  apply_trigWeight: true
-  apply_btagSF: true
-  apply_boosted_veto: false
-  run_SvB: true
-  SvB_MA: true
-  SvB: null
-  hist_cuts: ["pass_nSelJets_gt6", "fail_nSelJets_le6"]
-  top_reconstruction: fast
-  plot_ttbar_with_weights: true
-
+trigger_weights:
+  processor: "coffea4bees/analysis/processors/processor_trigger_weights.py"
+  runner:
+    condor_cores: 1
+    worker_memory: 8GB
+    chunksize: 10000
+    condor: true
+    shared_dask: true
+    run_performance: true
+  config:
+    use_vectorized: false
+    tagger: DeepJet
+    make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/
+    # make_classifier_input: output/trigger_weights/   ### local
 
 convert_hist_to_json:
   histos: 
@@ -67,6 +100,8 @@ channels:
     cut: "pass_nSelJets_gt6"
 
 combine_flags: "--three_tag threeTag --four_tag fourTag --region sum --blind"
-likelihood_scan_points: 20
-likelihood_scan_r_min: -10
-likelihood_scan_r_max: 10
+likelihood_scan_points: 40
+likelihood_scan_r_min: -1
+likelihood_scan_r_max: 1
+likelihood_scan_y_cut: 100
+likelihood_scan_y_max: 100

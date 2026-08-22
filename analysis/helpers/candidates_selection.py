@@ -118,9 +118,10 @@ def cand_jet_selection(
     # twice (once as canJet, once as forward jet). Without this, a 3b event's
     # 4th canJet (untagged by construction) leaks into fwd_feynnet, breaking
     # FvT closure for SvB_FeynNet.
-    local_idx = ak.local_index(selev.Jet, axis=1)
-    is_canJet = ak.any(local_idx[:, :, np.newaxis] == canJet_idx[:, np.newaxis, :], axis=-1)
-    selev["fwdJet_feynnet"] = selev.Jet[selev.Jet.fwd_feynnet & ~is_canJet]
+    if "fwd_feynnet" in selev.Jet.fields:
+        local_idx = ak.local_index(selev.Jet, axis=1)
+        is_canJet = ak.any(local_idx[:, :, np.newaxis] == canJet_idx[:, np.newaxis, :], axis=-1)
+        selev["fwdJet_feynnet"] = selev.Jet[selev.Jet.fwd_feynnet & ~is_canJet]
 
     # Release indexing intermediates
     del sorted_idx, canJet_idx, notCanJet_idx, notCanJet

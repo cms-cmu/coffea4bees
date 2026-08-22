@@ -45,10 +45,13 @@ config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry
 
 DATA_YEAR_ERA = [(str(yr), era) for yr, eras in config['year_eras'].items() for era in eras]
 DATA_YEARS = [str(y) for y in config['year_eras'].keys()]
-original_config = workflow.configfiles[0] if workflow.configfiles else config.get('analysis_config', 'coffea4bees/workflows/config/lowpt_run2.yml')
-original_basename = os.path.basename(original_config)
-original_name, _ = os.path.splitext(original_basename)
-signal_config_path = f"{config['output_path']}{original_name}_signal.yml"
+
+include: "helpers/common.smk"
+
+def get_raw_analysis_config():
+    return resolve_config_section(config, primary_key='analysis_config', fallback_keys=['analysis'])
+
+original_config = workflow.configfiles[0] if workflow.configfiles else "coffea4bees/workflows/config/nominal_run2.yml"
 
 wildcard_constraints:
     year = "|".join([str(y) for y in config['year_eras'].keys()])
@@ -56,8 +59,6 @@ wildcard_constraints:
 module analysis:
     snakefile: "rules/analysis.smk"
     config: config
-
-include: "helpers/common.smk"
 
 def get_analysis_targets(wildcards):
     targets = [
@@ -70,39 +71,6 @@ def get_analysis_targets(wildcards):
 
 rule all_analysis:
     input: get_analysis_targets
-
-rule modify_config_file:
-    input: original_config
-    output: signal_config_path
-    run:
-        import yaml
-        with open(input[0], 'r') as f:
-            data = yaml.safe_load(f)
-        
-        # If analysis_config is specified, load and merge its config block first, then remove the reference
-        if 'analysis_config' in data and data['analysis_config'] and os.path.exists(data['analysis_config']):
-            with open(data['analysis_config'], 'r') as f_meta:
-                meta = yaml.safe_load(f_meta) or {}
-            if 'config' in meta:
-                base_cfg = meta['config']
-                if 'config' in data:
-                    base_cfg.update(data['config'])
-                data['config'] = base_cfg
-            data.pop('analysis_config', None)
-
-        # Apply signal MC modifications at both root level and nested config block
-        if 'apply_FvT' in data: data['apply_FvT'] = False
-        if 'config' in data and 'apply_FvT' in data['config']: data['config']['apply_FvT'] = False
-
-        if 'blind' in data: data['blind'] = False
-        if 'config' in data and 'blind' in data['config']: data['config']['blind'] = False
-
-        if 'plot_ttbar_with_weights' in data: data['plot_ttbar_with_weights'] = False
-        if 'config' in data and 'plot_ttbar_with_weights' in data['config']: data['config']['plot_ttbar_with_weights'] = False
-        
-        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
-        with open(output[0], 'w') as f:
-            yaml.dump(data, f, default_flow_style=False)
 
 if config.get("test", False):
     # Quick Test / CI Mode: single command for all data years/eras and single command for all signals
@@ -125,7 +93,7 @@ if config.get("test", False):
     use rule analysis_processor from analysis as analysis_MC with:
         input: 
             runner_script = "runner.py",
-            config_file = signal_config_path
+            config_file = original_config
         output: f"{config['output_path']}singlefiles/histAll_{config['label']}_signals.coffea"
         log: f"{config['output_path']}logs/analysis_{config['label']}_signals.log"
         params:
@@ -179,7 +147,7 @@ else:
     use rule analysis_processor from analysis as analysis_MC with:
         input: 
             runner_script = "runner.py",
-            config_file = signal_config_path
+            config_file = original_config
         output: f"{config['output_path']}singlefiles/histAll_{config['label']}__{{dataset}}__{{year}}.coffea"
         log: f"{config['output_path']}logs/analysis_{config['label']}_{{dataset}}_{{year}}.log"
         params:
@@ -237,4 +205,4 @@ use rule check_cutflow from analysis with:
         run_container_wrapper = config['analysis_container_wrapper']
     container: None
 
-localrules: modify_config_file, analysis_data, analysis_MC, merging_files, make_plots, check_cutflow
+localrules: analysis_data, analysis_MC, merging_files, make_plots, check_cutflow
