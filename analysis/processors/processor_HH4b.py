@@ -789,7 +789,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         Args:
             event: Event array
         """
-        if self.config["isMC"]:
+        if self.config["isMC"] and not (self.config["isDataForMixed"] or self.config["isTTForMixed"]):
             return
 
         FvT_loaded = False
