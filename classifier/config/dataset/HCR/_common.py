@@ -122,6 +122,12 @@ class Common(LoadGroupedRoot):
 class CommonTrain(Common):
     trainable = True
 
+    # Column flagging which events the JCM pseudo-tag weights apply to.
+    # Detector-3b background is threeTag (default); the mixeddata_all + MvD
+    # background is fourTag, so BackgroundMixed overrides this to "fourTag"
+    # (matching the MvD training, which uses selected_col="fourTag").
+    _jcm_selected_col: str = "threeTag"
+
     argparser = ArgParser()
     argparser.add_argument(
         "--JCM-weight",
@@ -191,7 +197,13 @@ class CommonTrain(Common):
                 ps.append(
                     _group.fullmatch(
                         parse.split_nonempty(opts[0], ","),
-                        processors=[partial(apply_JCM_from_list, path=opts[1])],
+                        processors=[
+                            partial(
+                                apply_JCM_from_list,
+                                path=opts[1],
+                                columns={"selected": self._jcm_selected_col},
+                            )
+                        ],
                     )
                 )
         return ps

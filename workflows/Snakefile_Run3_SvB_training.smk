@@ -62,7 +62,10 @@ config.setdefault('svb_variant', 'SvB')
 VARIANT = config['svb_variant']
 
 SvB_MODEL  = f"{BASE}/classifier/{VARIANT}"
-SvB_FRIEND = f"{BASE}/friend/{VARIANT}"
+# friend_suffix lets an eval write to a FRESH friend dir (e.g. _reeval) instead of
+# overwriting/merging into an existing one — the eval merge is not crash-safe
+# (a killed+retried eval merges stale chunks and silently corrupts the friend).
+SvB_FRIEND = f"{BASE}/friend/{VARIANT}{config.get('friend_suffix', '')}"
 FvT_FRIEND = f"{BASE}/friend/FvT"      # soft reference — assumed pre-existing
 CLASSIFIERS = {
     VARIANT: {
@@ -120,7 +123,7 @@ rule create_train_yml:
     shell:
         """
         sed \
-            -e 's|^      - --JCM-weight.*|      - --JCM-weight "" {input.jcm}@@JCM_weights|' \
+            -e 's|^      - --JCM-weight \\("[^"]*"\\).*|      - --JCM-weight \\1 {input.jcm}@@JCM_weights|' \
             -e 's|^      - --friends "" .*HCR_input.*|      - --friends "" {input.json}@@HCR_input|' \
             {input.template} > {output}
         echo "Patched SvB train.yml:"
@@ -192,7 +195,7 @@ rule train:
         {params.init} && \
         PORT=$(shuf -i 10000-60000 -n 1) && \
         CLASSIFIER_CONFIG_PATHS={params.classifier_config_paths} \
-        ./src/pyml.py \
+        python -m src.classifier.task.main \
             template "{{{params.template_str}}}" {input.train_yml} \
             -from {params.wfs_base}/common.yml \
             -setting Monitor "address: '127.0.0.1:$PORT'" \
@@ -230,7 +233,7 @@ rule analyze:
         {params.init} && \
         PORT=$(shuf -i 10000-60000 -n 1) && \
         CLASSIFIER_CONFIG_PATHS={params.classifier_config_paths} \
-        ./src/pyml.py analyze \
+        python -m src.classifier.task.main analyze \
             --results {params.model}/result.json \
             -analysis HCR.LossROC \
             -setting IO "output: {params.plot}" \
@@ -269,7 +272,7 @@ rule evaluate:
         {params.init} && \
         PORT=$(shuf -i 10000-60000 -n 1) && \
         CLASSIFIER_CONFIG_PATHS={params.classifier_config_paths} \
-        ./src/pyml.py \
+        python -m src.classifier.task.main \
             template "{{{params.template_str}}}" {input.eval_yml} \
             -from {params.wfs_base}/common.yml \
             -setting Monitor "address: '127.0.0.1:$PORT'" \
