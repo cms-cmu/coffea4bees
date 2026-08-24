@@ -47,6 +47,16 @@ ttHbb:
       sumw2_raw: 2298570.8774399287
       sumw_raw: 4399585.860852001
       total_events: 8782000
-  xs: 
+  2022_preEE:
+    nanoAOD: /TTH_Hto2B_M-125_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22NanoAODv12-130X_mcRun3_2022_realistic_v5-v3/NANOAODSIM
+  2022_EE:
+    nanoAOD: /TTH_Hto2B_M-125_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EENanoAODv12-130X_mcRun3_2022_realistic_postEE_v6-v3/NANOAODSIM
+  2023_preBPix:
+    nanoAOD: /TTHto2B_M-125_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23NanoAODv12-130X_mcRun3_2023_realistic_v14-v3/NANOAODSIM
+  2023_BPix:
+    nanoAOD: /TTHto2B_M-125_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixNanoAODv12-130X_mcRun3_2023_realistic_postBPix_v2-v3/NANOAODSIM
+  "2024":
+    nanoAOD: /TTH-Hto2B_Par-M-125_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
+  xs:
     Run2: 0.2953
-    Run3: 1
+    Run3: 0.3257
