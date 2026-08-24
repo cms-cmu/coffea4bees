@@ -474,11 +474,12 @@ use rule analysis_processor from analysis as make_histograms_data_MvD with:
         config                = lambda wildcards, input: input.config_file,
         processor             = "coffea4bees/analysis/processors/processor_HH4b.py",
         datasets_file         = config['dataset_location'],
+        weights               = config.get('weights_file', "coffea4bees/metadata/weights/weights_HH4b.yml"),
         blind                 = False,
         run_performance       = False,
         friends               = lambda wildcards, input: input.friends_file,
         run_on_condor         = config['run_on_condor'],
-        extra_arguments       = "",
+        extra_arguments       = "--condor" if config['run_on_condor'] else "",
         run_container_wrapper = "./run_container",
         dashboard_address     = 0
 
@@ -495,11 +496,12 @@ use rule analysis_processor from analysis as make_histograms_mixeddata_MvD with:
         config                = lambda wildcards, input: input.config_file,
         processor             = "coffea4bees/analysis/processors/processor_HH4b.py",
         datasets_file         = config['dataset_location'],
+        weights               = config.get('weights_file', "coffea4bees/metadata/weights/weights_HH4b.yml"),
         blind                 = False,
         run_performance       = False,
         friends               = lambda wildcards, input: input.friends_file,
         run_on_condor         = config['run_on_condor'],
-        extra_arguments       = "",
+        extra_arguments       = "--condor" if config['run_on_condor'] else "",
         run_container_wrapper = "./run_container",
         dashboard_address     = 0
 
@@ -523,11 +525,12 @@ use rule analysis_processor from analysis as make_histograms_signal_MvD with:
         config                = lambda wildcards, input: input.config_file,
         processor             = "coffea4bees/analysis/processors/processor_HH4b.py",
         datasets_file         = config['dataset_location'],
+        weights               = config.get('weights_file', "coffea4bees/metadata/weights/weights_HH4b.yml"),
         blind                 = False,
         run_performance       = False,
         friends               = lambda wildcards, input: input.friends_file,
         run_on_condor         = config['run_on_condor'],
-        extra_arguments       = "",
+        extra_arguments       = "--condor" if config['run_on_condor'] else "",
         run_container_wrapper = "./run_container",
         dashboard_address     = 0
 
