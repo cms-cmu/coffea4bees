@@ -53,8 +53,22 @@ skimmer:
     condor: true
     shared_dask: true
     run_performance: true
+    allowlist_sites:
+      - T3_US_FNALLPC
+      - T2_US_Nebraska
+    #   - T3_US_NotreDame
+    #   - T2_US_Caltech
+    #   - T1_US_FNAL_Disk
+    #   - T2_US_MIT
+      - T2_US_Purdue
+      - T3_US_Baylor
+      - T2_US_Wisconsin
+    # blocklist_sites:
+    #   - T2_US_MIT
+    #   - T2_US_Purdue
+
   config:
-    base_path: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/
+    base_path: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/
     step: 100000
     loosePtForSkim: true
 
