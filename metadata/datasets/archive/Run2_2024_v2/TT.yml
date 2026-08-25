@@ -596,49 +596,725 @@ TTToSemiLeptonic_for_mixed:
       total_events: 486770000.0
   nSamples: 15
   xs: 365.7826460496
+TTbb_2L2Nu:
+  UL16_postVFP:
+    nanoAOD: /TTbb_4f_TTTo2L2Nu_TuneCP5-Powheg-Openloops-Pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v1/NANOAODSIM
+    picoAOD:
+      count: 1571799
+      cutFlowTwoTag:
+        all: 7163975.86186409
+        lumimask: 7163975.86186409
+        passHLT: 7163975.86186409
+        passJetMult_lowpt_forskim: 5179750.261293411
+        passNoiseFilter: 7163975.86186409
+        passPreSel_lowpt_forskim: 318915.69596385956
+      cutFlowTwoTagUnitWeight:
+        all: 1561842
+        lumimask: 1561842
+        passHLT: 1561842
+        passJetMult_lowpt_forskim: 1089970
+        passNoiseFilter: 1561842
+        passPreSel_lowpt_forskim: 64862
+      files:
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL16_postVFP/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL16_postVFP/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL16_postVFP/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL16_postVFP/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL16_postVFP/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL16_postVFP/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL16_postVFP/picoAOD.chunk6.root
+      saved_events: 65258
+      sumw: 7209377.015625
+      sumw2: 42540203.9375
+      total_events: 1571799
+  UL16_preVFP:
+    nanoAOD: /TTbb_4f_TTTo2L2Nu_TuneCP5-Powheg-Openloops-Pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v1/NANOAODSIM
+    picoAOD:
+      count: 1388348
+      cutFlowTwoTag:
+        all: 6367617.846214294
+        lumimask: 6367617.846214294
+        passHLT: 6367617.846214294
+        passJetMult_lowpt_forskim: 4685769.606847286
+        passNoiseFilter: 6367617.846214294
+        passPreSel_lowpt_forskim: 264613.3561630249
+      cutFlowTwoTagUnitWeight:
+        all: 1388348
+        lumimask: 1388348
+        passHLT: 1388348
+        passJetMult_lowpt_forskim: 989029
+        passNoiseFilter: 1388348
+        passPreSel_lowpt_forskim: 53634
+      files:
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL16_preVFP/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL16_preVFP/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL16_preVFP/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL16_preVFP/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL16_preVFP/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL16_preVFP/picoAOD.chunk5.root
+      saved_events: 53634
+      sumw: 6367617.9326171875
+      sumw2: 37575167.03125
+      total_events: 1388348
+  UL17:
+    nanoAOD: /TTbb_4f_TTTo2L2Nu_TuneCP5-Powheg-Openloops-Pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v1/NANOAODSIM
+    picoAOD:
+      count: 3472503
+      cutFlowTwoTag:
+        all: 15885015.912274837
+        lumimask: 15885015.912274837
+        passHLT: 15885015.912274837
+        passJetMult_lowpt_forskim: 11803886.575691223
+        passNoiseFilter: 15885015.912274837
+        passPreSel_lowpt_forskim: 947003.0485692024
+      cutFlowTwoTagUnitWeight:
+        all: 3462503
+        lumimask: 3462503
+        passHLT: 3462503
+        passJetMult_lowpt_forskim: 2493634
+        passNoiseFilter: 3462503
+        passPreSel_lowpt_forskim: 192287
+      files:
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL17/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL17/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL17/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL17/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL17/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL17/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL17/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL17/picoAOD.chunk7.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL17/picoAOD.chunk8.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL17/picoAOD.chunk9.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL17/picoAOD.chunk10.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL17/picoAOD.chunk11.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL17/picoAOD.chunk12.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL17/picoAOD.chunk13.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL17/picoAOD.chunk14.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL17/picoAOD.chunk15.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL17/picoAOD.chunk16.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL17/picoAOD.chunk17.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL17/picoAOD.chunk18.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL17/picoAOD.chunk19.root
+      saved_events: 192897
+      sumw: 15930890.5546875
+      sumw2: 93982110.125
+      total_events: 3472503
+  UL18:
+    nanoAOD: /TTbb_4f_TTTo2L2Nu_TuneCP5-Powheg-Openloops-Pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1/NANOAODSIM
+    picoAOD:
+      count: 4792850
+      cutFlowTwoTag:
+        all: 21941147.047123432
+        lumimask: 21941147.047123432
+        passHLT: 21941147.047123432
+        passJetMult_lowpt_forskim: 15912281.534318924
+        passNoiseFilter: 21941147.047123432
+        passPreSel_lowpt_forskim: 1241894.1991028786
+      cutFlowTwoTagUnitWeight:
+        all: 4782887
+        lumimask: 4782887
+        passHLT: 4782887
+        passJetMult_lowpt_forskim: 3353374
+        passNoiseFilter: 4782887
+        passPreSel_lowpt_forskim: 252357
+      files:
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk7.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk8.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk9.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk10.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk11.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk12.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk13.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk14.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk15.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk16.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk17.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk18.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk19.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk20.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk21.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk22.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk23.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk24.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_2L2Nu_UL18/picoAOD.chunk25.root
+      saved_events: 252832
+      sumw: 21986496.3671875
+      sumw2: 129716852.03125
+      total_events: 4792850
+  xs: 1
 TTbb_Hadronic:
   UL16_postVFP:
     nanoAOD: /TTbb_4f_TTToHadronic_TuneCP5-Powheg-Openloops-Pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v1/NANOAODSIM
+    picoAOD:
+      count: 2597868
+      cutFlowTwoTag:
+        all: 51913709.594135284
+        lumimask: 51913709.594135284
+        passHLT: 51913709.594135284
+        passJetMult_lowpt_forskim: 51192072.50164986
+        passNoiseFilter: 51913709.594135284
+        passPreSel_lowpt_forskim: 4433952.081077576
+      cutFlowTwoTagUnitWeight:
+        all: 2597868
+        lumimask: 2597868
+        passHLT: 2597868
+        passJetMult_lowpt_forskim: 2560301
+        passNoiseFilter: 2597868
+        passPreSel_lowpt_forskim: 218322
+      files:
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_postVFP/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_postVFP/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_postVFP/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_postVFP/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_postVFP/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_postVFP/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_postVFP/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_postVFP/picoAOD.chunk7.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_postVFP/picoAOD.chunk8.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_postVFP/picoAOD.chunk9.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_postVFP/picoAOD.chunk10.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_postVFP/picoAOD.chunk11.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_postVFP/picoAOD.chunk12.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_postVFP/picoAOD.chunk13.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_postVFP/picoAOD.chunk14.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_postVFP/picoAOD.chunk15.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_postVFP/picoAOD.chunk16.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_postVFP/picoAOD.chunk17.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_postVFP/picoAOD.chunk18.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_postVFP/picoAOD.chunk19.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_postVFP/picoAOD.chunk20.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_postVFP/picoAOD.chunk21.root
+      saved_events: 218322
+      sumw: 51913709.96875
+      sumw2: 1332376439.0
+      total_events: 2597868
   UL16_preVFP:
     nanoAOD: /TTbb_4f_TTToHadronic_TuneCP5-Powheg-Openloops-Pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v1/NANOAODSIM
+    picoAOD:
+      count: 2303410
+      cutFlowTwoTag:
+        all: 46015104.84337616
+        lumimask: 46015104.84337616
+        passHLT: 46015104.84337616
+        passJetMult_lowpt_forskim: 45407063.597616196
+        passNoiseFilter: 46015104.84337616
+        passPreSel_lowpt_forskim: 3700742.5249404907
+      cutFlowTwoTagUnitWeight:
+        all: 2303410
+        lumimask: 2303410
+        passHLT: 2303410
+        passJetMult_lowpt_forskim: 2271857
+        passNoiseFilter: 2303410
+        passPreSel_lowpt_forskim: 182750
+      files:
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_preVFP/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_preVFP/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_preVFP/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_preVFP/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_preVFP/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_preVFP/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_preVFP/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_preVFP/picoAOD.chunk7.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_preVFP/picoAOD.chunk8.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_preVFP/picoAOD.chunk9.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_preVFP/picoAOD.chunk10.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_preVFP/picoAOD.chunk11.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_preVFP/picoAOD.chunk12.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_preVFP/picoAOD.chunk13.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_preVFP/picoAOD.chunk14.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_preVFP/picoAOD.chunk15.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_preVFP/picoAOD.chunk16.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_preVFP/picoAOD.chunk17.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL16_preVFP/picoAOD.chunk18.root
+      saved_events: 182750
+      sumw: 46015105.546875
+      sumw2: 1181356882.5
+      total_events: 2303410
   UL17:
     nanoAOD: /TTbb_4f_TTToHadronic_TuneCP5-Powheg-Openloops-Pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v1/NANOAODSIM
+    picoAOD:
+      count: 5694656
+      cutFlowTwoTag:
+        all: 113736165.6780777
+        lumimask: 113736165.6780777
+        passHLT: 113736165.6780777
+        passJetMult_lowpt_forskim: 112180292.10117722
+        passNoiseFilter: 113736165.6780777
+        passPreSel_lowpt_forskim: 12745358.886457443
+      cutFlowTwoTagUnitWeight:
+        all: 5694656
+        lumimask: 5694656
+        passHLT: 5694656
+        passJetMult_lowpt_forskim: 5613846
+        passNoiseFilter: 5694656
+        passPreSel_lowpt_forskim: 626571
+      files:
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk7.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk8.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk9.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk10.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk11.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk12.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk13.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk14.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk15.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk16.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk17.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk18.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk19.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk20.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk21.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk22.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk23.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk24.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk25.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk26.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk27.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk28.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk29.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk30.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk31.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk32.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk33.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk34.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk35.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk36.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk37.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk38.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk39.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk40.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk41.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk42.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk43.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk44.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk45.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk46.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk47.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk48.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk49.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk50.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk51.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk52.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk53.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk54.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk55.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk56.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk57.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk58.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk59.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk60.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk61.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL17/picoAOD.chunk62.root
+      saved_events: 626571
+      sumw: 113736166.94140625
+      sumw2: 2920635583.625
+      total_events: 5694656
   UL18:
     nanoAOD: /TTbb_4f_TTToHadronic_TuneCP5-Powheg-Openloops-Pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1/NANOAODSIM
     picoAOD:
       count: 8049064
+      cutFlowTwoTag:
+        all: 160749265.29288483
+        lumimask: 160749265.29288483
+        passHLT: 160749265.29288483
+        passJetMult_lowpt_forskim: 158341536.0990429
+        passNoiseFilter: 160749265.29288483
+        passPreSel_lowpt_forskim: 16998431.775390625
+      cutFlowTwoTagUnitWeight:
+        all: 8049064
+        lumimask: 8049064
+        passHLT: 8049064
+        passJetMult_lowpt_forskim: 7924181
+        passNoiseFilter: 8049064
+        passPreSel_lowpt_forskim: 836110
       files:
-      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk0.root
-      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk1.root
-      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk2.root
-      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk3.root
-      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk4.root
-      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk5.root
-      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk6.root
-      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk7.root
-      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk8.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk7.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk8.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk9.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk10.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk11.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk12.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk13.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk14.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk15.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk16.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk17.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk18.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk19.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk20.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk21.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk22.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk23.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk24.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk25.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk26.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk27.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk28.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk29.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk30.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk31.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk32.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk33.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk34.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk35.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk36.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk37.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk38.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk39.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk40.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk41.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk42.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk43.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk44.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk45.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk46.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk47.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk48.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk49.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk50.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk51.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk52.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk53.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk54.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk55.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk56.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk57.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk58.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk59.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk60.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk61.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk62.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk63.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk64.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk65.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk66.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk67.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk68.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk69.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk70.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk71.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk72.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk73.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk74.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk75.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk76.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk77.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk78.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk79.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk80.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk81.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk82.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_Hadronic_UL18/picoAOD.chunk83.root
       saved_events: 836110
       sumw: 160749266.875
-      sumw2: 4128147996.0
+      sumw2: 4128147944.5
       total_events: 8049064
   xs: 1
 TTbb_SemiLeptonic:
   UL16_postVFP:
     nanoAOD: /TTbb_4f_TTToSemiLeptonic_TuneCP5-Powheg-Openloops-Pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v1/NANOAODSIM
+    picoAOD:
+      count: 3223118
+      cutFlowTwoTag:
+        all: 61706980.26180267
+        lumimask: 61706980.26180267
+        passHLT: 61706980.26180267
+        passJetMult_lowpt_forskim: 57404207.34261513
+        passNoiseFilter: 61706980.26180267
+        passPreSel_lowpt_forskim: 4264044.59806633
+      cutFlowTwoTagUnitWeight:
+        all: 3223118
+        lumimask: 3223118
+        passHLT: 3223118
+        passJetMult_lowpt_forskim: 2978607
+        passNoiseFilter: 3223118
+        passPreSel_lowpt_forskim: 216263
+      files:
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_postVFP/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_postVFP/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_postVFP/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_postVFP/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_postVFP/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_postVFP/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_postVFP/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_postVFP/picoAOD.chunk7.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_postVFP/picoAOD.chunk8.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_postVFP/picoAOD.chunk9.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_postVFP/picoAOD.chunk10.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_postVFP/picoAOD.chunk11.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_postVFP/picoAOD.chunk12.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_postVFP/picoAOD.chunk13.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_postVFP/picoAOD.chunk14.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_postVFP/picoAOD.chunk15.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_postVFP/picoAOD.chunk16.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_postVFP/picoAOD.chunk17.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_postVFP/picoAOD.chunk18.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_postVFP/picoAOD.chunk19.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_postVFP/picoAOD.chunk20.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_postVFP/picoAOD.chunk21.root
+      saved_events: 216263
+      sumw: 61706976.4375
+      sumw2: 1518951112.0
+      total_events: 3223118
   UL16_preVFP:
     nanoAOD: /TTbb_4f_TTToSemiLeptonic_TuneCP5-Powheg-Openloops-Pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v1/NANOAODSIM
+    picoAOD:
+      count: 2991789
+      cutFlowTwoTag:
+        all: 57255372.49418068
+        lumimask: 57255372.49418068
+        passHLT: 57255372.49418068
+        passJetMult_lowpt_forskim: 53461082.45931053
+        passNoiseFilter: 57255372.49418068
+        passPreSel_lowpt_forskim: 3696796.2623615265
+      cutFlowTwoTagUnitWeight:
+        all: 2991789
+        lumimask: 2991789
+        passHLT: 2991789
+        passJetMult_lowpt_forskim: 2776045
+        passNoiseFilter: 2991789
+        passPreSel_lowpt_forskim: 187705
+      files:
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_preVFP/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_preVFP/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_preVFP/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_preVFP/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_preVFP/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_preVFP/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_preVFP/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_preVFP/picoAOD.chunk7.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_preVFP/picoAOD.chunk8.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_preVFP/picoAOD.chunk9.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_preVFP/picoAOD.chunk10.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_preVFP/picoAOD.chunk11.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_preVFP/picoAOD.chunk12.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_preVFP/picoAOD.chunk13.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_preVFP/picoAOD.chunk14.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_preVFP/picoAOD.chunk15.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_preVFP/picoAOD.chunk16.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_preVFP/picoAOD.chunk17.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL16_preVFP/picoAOD.chunk18.root
+      saved_events: 187705
+      sumw: 57255369.109375
+      sumw2: 1409933287.0
+      total_events: 2991789
   UL17:
     nanoAOD: /TTbb_4f_TTToSemiLeptonic_TuneCP5-Powheg-Openloops-Pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v1/NANOAODSIM
+    picoAOD:
+      count: 7318891
+      cutFlowTwoTag:
+        all: 153797755.7116127
+        lumimask: 153797755.7116127
+        passHLT: 153797755.7116127
+        passJetMult_lowpt_forskim: 143678462.680727
+        passNoiseFilter: 153797755.7116127
+        passPreSel_lowpt_forskim: 13937895.82084465
+      cutFlowTwoTagUnitWeight:
+        all: 7318891
+        lumimask: 7318891
+        passHLT: 7318891
+        passJetMult_lowpt_forskim: 6795882
+        passNoiseFilter: 7318891
+        passPreSel_lowpt_forskim: 642186
+      files:
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk7.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk8.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk9.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk10.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk11.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk12.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk13.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk14.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk15.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk16.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk17.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk18.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk19.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk20.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk21.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk22.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk23.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk24.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk25.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk26.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk27.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk28.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk29.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk30.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk31.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk32.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk33.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk34.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk35.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk36.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk37.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk38.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk39.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk40.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk41.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk42.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk43.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk44.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk45.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk46.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk47.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk48.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk49.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk50.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk51.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk52.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk53.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk54.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk55.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk56.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk57.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk58.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk59.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk60.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk61.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk62.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk63.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL17/picoAOD.chunk64.root
+      saved_events: 642186
+      sumw: 153797752.828125
+      sumw2: 4550383897.0
+      total_events: 7318891
   UL18:
     nanoAOD: /TTbb_4f_TTToSemiLeptonic_TuneCP5-Powheg-Openloops-Pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1/NANOAODSIM
-  xs: 1
-TTbb_2L2Nu:
-  UL16_postVFP:
-    nanoAOD: /TTbb_4f_TTTo2L2Nu_TuneCP5-Powheg-Openloops-Pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v1/NANOAODSIM
-  UL16_preVFP:
-    nanoAOD: /TTbb_4f_TTTo2L2Nu_TuneCP5-Powheg-Openloops-Pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v1/NANOAODSIM
-  UL17:
-    nanoAOD: /TTbb_4f_TTTo2L2Nu_TuneCP5-Powheg-Openloops-Pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v1/NANOAODSIM
-  UL18:
-    nanoAOD: /TTbb_4f_TTTo2L2Nu_TuneCP5-Powheg-Openloops-Pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1/NANOAODSIM
+    picoAOD:
+      count: 10378681
+      cutFlowTwoTag:
+        all: 233964943.74181175
+        lumimask: 233964943.74181175
+        passHLT: 233964943.74181175
+        passJetMult_lowpt_forskim: 217301313.81441498
+        passNoiseFilter: 233964943.74181175
+        passPreSel_lowpt_forskim: 20042316.82697487
+      cutFlowTwoTagUnitWeight:
+        all: 10378681
+        lumimask: 10378681
+        passHLT: 10378681
+        passJetMult_lowpt_forskim: 9576341
+        passNoiseFilter: 10378681
+        passPreSel_lowpt_forskim: 861411
+      files:
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk7.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk8.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk9.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk10.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk11.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk12.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk13.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk14.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk15.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk16.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk17.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk18.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk19.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk20.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk21.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk22.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk23.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk24.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk25.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk26.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk27.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk28.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk29.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk30.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk31.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk32.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk33.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk34.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk35.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk36.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk37.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk38.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk39.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk40.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk41.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk42.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk43.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk44.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk45.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk46.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk47.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk48.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk49.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk50.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk51.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk52.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk53.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk54.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk55.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk56.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk57.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk58.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk59.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk60.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk61.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk62.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk63.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk64.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk65.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk66.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk67.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk68.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk69.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk70.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk71.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk72.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk73.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk74.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk75.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk76.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk77.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk78.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk79.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk80.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk81.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk82.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk83.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk84.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk85.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/TTbb_SemiLeptonic_UL18/picoAOD.chunk86.root
+      saved_events: 861411
+      sumw: 233964945.5
+      sumw2: 7743357856.5
+      total_events: 10378681
   xs: 1
