@@ -13,7 +13,8 @@ if TYPE_CHECKING:
 def setSvBVars(SvBName, event):
     """Derive analysis-level SvB fields from the raw friend-tree branches.
 
-    Supports two friend-tree schemas:
+    Supports three friend-tree schemas:
+      * **ttHbb schema** (p_ttHbb / pttHbb — delegates to set_ttHbb_SvB_vars)
       * **legacy multi-class** (5-class SvB / SvB_MA — phh/pzh/pzz/pmj/ptt/ps)
       * **new binary ggF-vs-bkg** (p_ggF/p_multijet/p_ttbar/p_sig — produced by
         the Run3 SvB training with `--mc-processes ggF` which doesn't load
@@ -21,6 +22,10 @@ def setSvBVars(SvBName, event):
         "HH-channel" (ps_hh = p_ggF); ps_zh and ps_zz are set to -2 (n/a).
     """
     sv = getattr(event, SvBName)
+    if "p_ttHbb" in sv.fields or "pttHbb" in sv.fields:
+        set_ttHbb_SvB_vars(SvBName, event)
+        return
+
     is_legacy = "phh" in sv.fields
 
     if is_legacy:
@@ -99,23 +104,36 @@ def set_ttHbb_SvB_vars(SvBName: str, event: ak.Array):
 
     if "p_ttHbb" in fields:
         pttHbb = sv.p_ttHbb
-        pmj = sv.p_multijet if "p_multijet" in fields else sv.pmj
-        ptt = sv.p_ttbar if "p_ttbar" in fields else sv.ptt
     elif "pttHbb" in fields:
         pttHbb = sv.pttHbb
-        pmj = sv.pmj
-        ptt = sv.ptt
+    elif "p_sig" in fields:
+        pttHbb = sv.p_sig
+    elif "ps" in fields:
+        pttHbb = sv.ps
     else:
         pttHbb = np.zeros(len(event), dtype=float)
+
+    if "p_multijet" in fields:
+        pmj = sv.p_multijet
+    elif "pmj" in fields:
+        pmj = sv.pmj
+    else:
         pmj = np.zeros(len(event), dtype=float)
+
+    if "p_ttbar" in fields:
+        ptt = sv.p_ttbar
+    elif "ptt" in fields:
+        ptt = sv.ptt
+    else:
         ptt = np.zeros(len(event), dtype=float)
 
-    ps_ttHbb = pttHbb / np.maximum(pmj + ptt + pttHbb, 1e-10)
-    tt_vs_mj = ptt / np.maximum(ptt + pmj, 1e-10)
+    ps_ttHbb = ak.nan_to_num(pttHbb / np.maximum(pmj + ptt + pttHbb, 1e-10), nan=0.0)
+    tt_vs_mj = ak.nan_to_num(ptt / np.maximum(ptt + pmj, 1e-10), nan=0.0)
 
     event[SvBName, "pmj"] = pmj
     event[SvBName, "ptt"] = ptt
     event[SvBName, "pttHbb"] = pttHbb
+    event[SvBName, "ps"] = ps_ttHbb
     event[SvBName, "ps_ttHbb"] = ps_ttHbb
     event[SvBName, "tt_vs_mj"] = tt_vs_mj
 

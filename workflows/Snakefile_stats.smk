@@ -68,7 +68,19 @@ for channel, ch_config in config.get('channels', {}).items():
 wildcard_constraints:
     channel = "|".join(config['channels'].keys()) if config['channels'] else "[a-zA-Z0-9_]+"
 
-def get_stat_only_flag():
+def get_stat_only_flag(channel=None):
+    if channel and channel in config.get('channels', {}):
+        ch_val = config['channels'][channel].get('stat_only', None)
+        if ch_val is not None:
+            if isinstance(ch_val, bool):
+                return '--stat_only' if ch_val else ''
+            if str(ch_val).lower() in ['true', '1', '--stat_only']:
+                return '--stat_only'
+            if str(ch_val).lower() in ['false', '0', 'none', '']:
+                return ''
+            return str(ch_val)
+        if '_stat_only' in channel or channel.endswith('_stat'):
+            return '--stat_only'
     val = config.get('make_combine_inputs', {}).get('stat_only', '--stat_only')
     if isinstance(val, bool):
         return '--stat_only' if val else ''
@@ -118,6 +130,9 @@ rule all_stats:
             f"{config['output_path']}stat_analysis/{channel}/significance/datacard_significance__{ch_config['signallabel']}.log"
             for channel, ch_config in config['channels'].items() if ch_config.get('signallabel')
         ] + [
+            f"{config['output_path']}stat_analysis/{channel}/significance/datacard_significance__{ch_config['signallabel']}.json"
+            for channel, ch_config in config['channels'].items() if ch_config.get('signallabel')
+        ] + [
             f"{config['output_path']}stat_analysis/{channel}/likelihood_scan/datacard_likelihood_scan__{ch_config['signallabel']}.pdf"
             for channel, ch_config in config['channels'].items() if ch_config.get('signallabel')
         ]
@@ -141,7 +156,7 @@ use rule make_combine_inputs from stat_analysis with:
     input:
         injson = f"{config['output_path']}histAll_{config['label']}.json",
         injsonsyst = list([]),
-        bkgsyst = lambda wildcards: config['channels'][wildcards.channel]['bkgsyst'],
+        bkgsyst = lambda wildcards: get_bkgsyst_for_channel(wildcards.channel),
         script = "coffea4bees/stats_analysis/make_combine_inputs.py",
         metadata_file = lambda wildcards: config['make_combine_inputs']['metadata_template'].format(channel=wildcards.channel.split('_')[0])
     output: f"{config['output_path']}stat_analysis/{{channel}}/datacards/datacard__{{channel}}.txt"
@@ -152,14 +167,15 @@ use rule make_combine_inputs from stat_analysis with:
         metadata = lambda wildcards: config['make_combine_inputs']['metadata_template'].format(channel=wildcards.channel.split('_')[0]),
         output_dir = lambda wildcards: f"{config['output_path']}stat_analysis/{wildcards.channel}/datacards/",
         variable_binning = lambda wildcards, input: config['make_combine_inputs']['variable_binning'],
-        stat_only = lambda wildcards, input: get_stat_only_flag(),
+        stat_only = lambda wildcards, input: get_stat_only_flag(wildcards.channel),
         signal = lambda wildcards: wildcards.channel,
         tag_flags = lambda wildcards: (
-            f"{config['combine_flags']} "
+            f"{config['channels'][wildcards.channel].get('combine_flags', config['combine_flags'])} "
             f"--region {get_region_for_channel(wildcards.channel)} "
             + (f"--cut {config['channels'][wildcards.channel]['cut']} " if 'cut' in config['channels'][wildcards.channel] and config['channels'][wildcards.channel]['cut'] not in ['', 'sum'] else '')
-            + f"--multijet_process {config['make_combine_inputs']['multijet_process']} "
-            f"--tt_processes {' '.join(config['make_combine_inputs']['tt_processes'])}"
+            + (f"--data_process {config['channels'][wildcards.channel]['data_process']} " if 'data_process' in config['channels'][wildcards.channel] else '')
+            + f"--multijet_process {config['channels'][wildcards.channel].get('multijet_process', config['make_combine_inputs']['multijet_process'])} "
+            f"--tt_processes {' '.join(config['channels'][wildcards.channel].get('tt_processes', config['make_combine_inputs']['tt_processes']))}"
         ),
         container_wrapper = config['stats_container_wrapper']
     log: f"{config['output_path']}logs/make_combine_inputs_{{channel}}.log"

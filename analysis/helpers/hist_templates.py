@@ -87,11 +87,11 @@ class QuadJetHistsBasic(Template):
     xZH             = H((50, 0, 10,     ("xZH",         'Diboson Candidate zZH')))
     xHH             = H((50, 0, 10,     ("xHH",         'Diboson Candidate zHH')))
 
-    lead_vs_subl_m   = H((50, 0, 250, ('lead.mass', 'Lead Boson Candidate Mass')),
-                         (50, 0, 250, ('subl.mass', 'Subl Boson Candidate Mass')))
+    lead_vs_subl_m   = H((100, 0, 1000, ('lead.mass', 'Lead Boson Candidate Mass')),
+                         (100, 0, 1000, ('subl.mass', 'Subl Boson Candidate Mass')))
 
-    close_vs_other_m = H((50, 0, 250, ('close.mass', 'Close Boson Candidate Mass')),
-                         (50, 0, 250, ('other.mass', 'Other Boson Candidate Mass')))
+    close_vs_other_m = H((100, 0, 1000, ('close.mass', 'Close Boson Candidate Mass')),
+                         (100, 0, 1000, ('other.mass', 'Other Boson Candidate Mass')))
 
 class QuadJetHistsSelected(QuadJetHistsBasic):
 

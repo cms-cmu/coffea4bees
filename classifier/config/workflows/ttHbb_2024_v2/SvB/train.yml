@@ -1,7 +1,3 @@
-# template:
-# - model: path to model
-# - FvT: path to FvT friend tree
-
 main:
   module: train
   option:
@@ -29,16 +25,14 @@ dataset:
     option:
       - --metadata coffea4bees/metadata/datasets/archive/Run2_2024_v2/
       - --norm 3
-      - --regions SR SB
-      - --JCM-weight "" coffea4bees/metadata/weights/JCM/2024_v2_nominal/jetCombinatoricModel_SB_2024_v2.yml@@JCM_weights
-      - --friends "" coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_nominal.json@@HCR_input 
+      - --JCM-weight "" coffea4bees/metadata/weights/JCM/Run2_ttHbb/jetCombinatoricModel_SB_2024_v2.yml@@JCM_weights
+      - --friends "" coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_ttHbb.json@@HCR_input 
       - --friends label:data {FvT}/result.json@@analysis.0.merged # setup the path to FvT friend tree
 
   - module: HCR.ttHbb.Signal # load ttHbb signal dataset
     option:
       - --metadata coffea4bees/metadata/datasets/archive/Run2_2024_v2/
-      - --regions SR SB
-      - --friends "" coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_nominal.json@@HCR_input 
+      - --friends "" coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_ttHbb.json@@HCR_input 
 
 setting:
   - module: IO

@@ -45,6 +45,7 @@ config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry
 
 DATA_YEAR_ERA = [(str(yr), era) for yr, eras in config['year_eras'].items() for era in eras]
 DATA_YEARS = [str(y) for y in config['year_eras'].keys()]
+MC_DATASETS = [d for d in config['dataset'] if d != 'data']
 
 include: "helpers/common.smk"
 
@@ -54,7 +55,8 @@ def get_raw_analysis_config():
 original_config = workflow.configfiles[0] if workflow.configfiles else "coffea4bees/workflows/config/nominal_run2.yml"
 
 wildcard_constraints:
-    year = "|".join([str(y) for y in config['year_eras'].keys()])
+    year = "|".join([str(y) for y in config['year_eras'].keys()]),
+    dataset = "|".join(MC_DATASETS) if MC_DATASETS else "none"
 
 module analysis:
     snakefile: "rules/analysis.smk"
@@ -67,6 +69,8 @@ def get_analysis_targets(wildcards):
         f"{config['output_path']}cutflow_validation_{config['label']}.txt",
         f"{config['output_path']}cutflow_{config['label']}.yml",
     ]
+    if has_mixeddata:
+        targets.append(f"{config['output_path']}plots_{config['label']}_mixeddata_vs_data/plots_done.txt")
     return targets
 
 rule all_analysis:
@@ -97,7 +101,7 @@ if config.get("test", False):
         output: f"{config['output_path']}singlefiles/histAll_{config['label']}_signals.coffea"
         log: f"{config['output_path']}logs/analysis_{config['label']}_signals.log"
         params:
-            datasets = " ".join(config['dataset']),
+            datasets = " ".join(MC_DATASETS),
             years = " ".join(DATA_YEARS),
             config = lambda wildcards, input: input.config_file,
             extra_arguments = lambda wildcards: " ".join(filter(None, [
@@ -161,7 +165,10 @@ else:
 
     use rule merging_coffea_files from analysis as merging_files with:
         input:
-            files = [f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{yr}_{era}.coffea" for yr, era in DATA_YEAR_ERA] + expand("{output_path}singlefiles/histAll_" + config['label'] + "__{dataset}__{year}.coffea", output_path=config['output_path'], dataset=config['dataset'], year=DATA_YEARS),
+            files = (
+                [f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{yr}_{era}.coffea" for yr, era in DATA_YEAR_ERA]
+                + expand("{output_path}singlefiles/histAll_" + config['label'] + "__{dataset}__{year}.coffea", output_path=config['output_path'], dataset=MC_DATASETS, year=DATA_YEARS)
+            ),
             script = "src/tools/merge_coffea_files.py"
         output: f"{config['output_path']}histAll_{config['label']}.coffea"
         params:
@@ -174,7 +181,7 @@ else:
         input: [f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{yr}_{era}.coffea" for yr, era in DATA_YEAR_ERA]
 
     rule all_signals:
-        input: expand("{output_path}singlefiles/histAll_" + config['label'] + "__{dataset}__{year}.coffea", output_path=config['output_path'], dataset=config['dataset'], year=DATA_YEARS)
+        input: expand("{output_path}singlefiles/histAll_" + config['label'] + "__{dataset}__{year}.coffea", output_path=config['output_path'], dataset=MC_DATASETS, year=DATA_YEARS)
 
 use rule make_plots from analysis with:
     input:

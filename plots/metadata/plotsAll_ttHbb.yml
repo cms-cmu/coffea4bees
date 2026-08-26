@@ -32,13 +32,13 @@ stack:
     label: Multijet
 
 
-  ttHbb:
-      process: ttHbb
-      tag: fourTag
-      label: None
-      edgecolor: "#e42536"
-      fillcolor: "#e42536"
-      scalefactor: 1
+  # ttHbb:
+  #     process: ttHbb
+  #     tag: fourTag
+  #     label: None
+  #     edgecolor: "#e42536"
+  #     fillcolor: "#e42536"
+  #     scalefactor: 1
 
 ratios:
   dataToBkg:
@@ -52,4 +52,13 @@ ratios:
     color: k
     marker: "o"
 
-doRatio: 1
+doRatio: 0
+
+categories:
+  - "inclusive"
+  - "pass_nSelJets_gt6"
+  - "fail_nSelJets_le6"
+
+regions:
+  - "SR"
+  - "SB"

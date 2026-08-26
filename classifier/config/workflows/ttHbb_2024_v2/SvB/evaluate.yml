@@ -1,7 +1,3 @@
-# template:
-# - model: path to model
-# - SvB: path to friend tree
-
 main:
   module: evaluate
   option:
@@ -16,11 +12,11 @@ model:
       - "{model}/result.json"
 
 dataset:
-  - module: HCR.SvB.Eval
+  - module: HCR.ttHbb.Eval
     option:
       - --metadata coffea4bees/metadata/datasets/archive/Run2_2024_v2/
       - --max-workers 8
-      - --friends "" coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_nominal.json@@HCR_input 
+      - --friends "" coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_ttHbb.json@@HCR_input 
 
 analysis:
   - module: kfold.Merge
