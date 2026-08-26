@@ -238,7 +238,8 @@ use rule analysis_processor from analysis as make_mixeddata with:
         run_performance       = False,
         friends               = "coffea4bees/metadata/friends/friends_HH4b.yml",
         run_on_condor         = config['run_on_condor'],
-        extra_arguments       = "-s",
+        weights               = config.get('weights_file', "coffea4bees/metadata/weights/weights_HH4b.yml"),
+        extra_arguments       = "-s --shared-dask --condor" if config['run_on_condor'] else "-s",
         run_container_wrapper = "./run_container",
         dashboard_address     = 0
 
@@ -309,7 +310,8 @@ use rule analysis_processor from analysis as study_mixeddata with:
         run_performance       = False,
         friends               = "coffea4bees/metadata/friends/friends_HH4b.yml",
         run_on_condor         = config['run_on_condor'],
-        extra_arguments       = "",
+        weights               = config.get('weights_file', "coffea4bees/metadata/weights/weights_HH4b.yml"),
+        extra_arguments       = "--shared-dask --condor" if config['run_on_condor'] else "",
         run_container_wrapper = "./run_container",
         dashboard_address     = 0
 
@@ -391,7 +393,8 @@ use rule analysis_processor from analysis as make_histograms_shared with:
         run_performance       = False,
         friends               = "coffea4bees/metadata/friends/friends_HH4b.yml",
         run_on_condor         = config['run_on_condor'],
-        extra_arguments       = "",
+        weights               = config.get('weights_file', "coffea4bees/metadata/weights/weights_HH4b.yml"),
+        extra_arguments       = "--shared-dask --condor" if config['run_on_condor'] else "",
         run_container_wrapper = "./run_container",
         dashboard_address     = 0
 
@@ -416,7 +419,8 @@ use rule analysis_processor from analysis as make_histograms_mixeddata with:
         run_performance       = False,
         friends               = "coffea4bees/metadata/friends/friends_HH4b.yml",
         run_on_condor         = config['run_on_condor'],
-        extra_arguments       = "",
+        weights               = config.get('weights_file', "coffea4bees/metadata/weights/weights_HH4b.yml"),
+        extra_arguments       = "--shared-dask --condor" if config['run_on_condor'] else "",
         run_container_wrapper = "./run_container",
         dashboard_address     = 0
 
