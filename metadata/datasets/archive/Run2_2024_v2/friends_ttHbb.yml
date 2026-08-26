@@ -1,6 +1,11 @@
 friends:
   UL18:
-    trigWeight: &trigWeight "coffea4bees/metadata/datasets/archive/Run2_2024_v2/trigweights_2024_v2.json@@trigWeight"
+    # trigweights_2024_v2_stitched.json = trigweights_2024_v2.json (510 targets:
+    # ttHbb, ZZ4b, ZH4b, ggZH4b, HH, and the original TT picoAODs) merged with
+    # the 320 targets of the tt+bb stitched picoAODs. Friend trees are keyed by
+    # picoAOD uuid, so the stitched files need their own entries; the original
+    # ones must stay, or the ttHbb signal loses its trigger weight.
+    trigWeight: &trigWeight "coffea4bees/metadata/datasets/archive/Run2_2024_v2/trigweights_2024_v2_stitched.json@@trigWeight"
     FvT: &FvT "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/nominal_sel/friend/FvT_nominal/result.json@@analysis.0.merged"
     # SvB_MA: &SvB_MA "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/nominal_sel/friend/SvB_nominal/result.json@@analysis.0.merged"
   UL16_preVFP:

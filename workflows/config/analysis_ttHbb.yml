@@ -81,10 +81,19 @@ trigger_weights:
     condor: true
     shared_dask: true
     run_performance: true
+    # Without this the default is ['coffea4bees/', 'src/'] = ~490MB, which is
+    # gzipped once per cluster and then transferred to every condor worker.
+    # The trigger-weights processor only reaches into coffea4bees.analysis and
+    # src, so list just what is needed (~160MB).
+    condor_transfer_input_files:
+      - src/
+      - coffea4bees/analysis/
+      - coffea4bees/metadata/
   config:
     use_vectorized: false
     tagger: DeepJet
-    make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/
+    make_classifier_input: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/stitched/
+    # make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/
     # make_classifier_input: output/trigger_weights/   ### local
 
 convert_hist_to_json:
