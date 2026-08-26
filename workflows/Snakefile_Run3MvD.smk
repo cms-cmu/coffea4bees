@@ -479,7 +479,7 @@ use rule analysis_processor from analysis as make_histograms_data_MvD with:
         run_performance       = False,
         friends               = lambda wildcards, input: input.friends_file,
         run_on_condor         = config['run_on_condor'],
-        extra_arguments       = "--condor" if config['run_on_condor'] else "",
+        extra_arguments       = "--shared-dask --condor" if config['run_on_condor'] else "",
         run_container_wrapper = "./run_container",
         dashboard_address     = 0
 
@@ -501,7 +501,7 @@ use rule analysis_processor from analysis as make_histograms_mixeddata_MvD with:
         run_performance       = False,
         friends               = lambda wildcards, input: input.friends_file,
         run_on_condor         = config['run_on_condor'],
-        extra_arguments       = "--condor" if config['run_on_condor'] else "",
+        extra_arguments       = "--shared-dask --condor" if config['run_on_condor'] else "",
         run_container_wrapper = "./run_container",
         dashboard_address     = 0
 
@@ -530,7 +530,7 @@ use rule analysis_processor from analysis as make_histograms_signal_MvD with:
         run_performance       = False,
         friends               = lambda wildcards, input: input.friends_file,
         run_on_condor         = config['run_on_condor'],
-        extra_arguments       = "--condor" if config['run_on_condor'] else "",
+        extra_arguments       = "--shared-dask --condor" if config['run_on_condor'] else "",
         run_container_wrapper = "./run_container",
         dashboard_address     = 0
 

@@ -120,7 +120,8 @@ use rule analysis_processor from analysis as make_histograms with:
         run_performance = False,
         friends = lambda wildcards, input: input.friends_file,
         run_on_condor = config['run_on_condor'],
-        extra_arguments = "",
+        weights = config.get('weights_file', "coffea4bees/metadata/weights/weights_HH4b.yml"),
+        extra_arguments = "--shared-dask --condor" if config['run_on_condor'] else "",
         run_container_wrapper = "./run_container",
         dashboard_address = 0
 
@@ -203,7 +204,8 @@ use rule analysis_processor from analysis as make_histograms_wJCM with:
         run_performance = False,
         friends = lambda wildcards, input: input.friends_file,
         run_on_condor = config['run_on_condor'],
-        extra_arguments = "",
+        weights = config.get('weights_file', "coffea4bees/metadata/weights/weights_HH4b.yml"),
+        extra_arguments = "--shared-dask --condor" if config['run_on_condor'] else "",
         run_container_wrapper = "./run_container",
         dashboard_address = 0
 
@@ -307,7 +309,8 @@ use rule analysis_processor from analysis as make_histograms_FvT with:
         run_performance       = False,
         friends               = lambda wildcards, input: input.friends_file,
         run_on_condor         = config['run_on_condor'],
-        extra_arguments       = "",
+        weights               = config.get('weights_file', "coffea4bees/metadata/weights/weights_HH4b.yml"),
+        extra_arguments       = "--shared-dask --condor" if config['run_on_condor'] else "",
         run_container_wrapper = "./run_container",
         dashboard_address     = 0
 
