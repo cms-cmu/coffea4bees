@@ -1,0 +1,9 @@
+friends:
+  2022_preEE: &friends_Run3
+    FvT: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_Run3/friend/FvT/result.json@@analysis.0.merged
+    SvB_MA: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_Run3/friend/SvB/result.json@@analysis.0.merged
+  2022_EE: *friends_Run3
+  2023_preBPix: *friends_Run3
+  2023_BPix: *friends_Run3
+  '2022': *friends_Run3
+  '2023': *friends_Run3

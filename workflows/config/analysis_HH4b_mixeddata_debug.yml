@@ -1,0 +1,30 @@
+label: "HH4b_mixeddata_debug"
+output_path: "output/HH4b_mixeddata_debug/"
+dataset:
+  - "mixeddata"
+datasets_file: "coffea4bees/metadata/datasets/mixeddata_single_debug.yml"
+year_eras:
+  2018: []
+
+analysis_config:
+  processor: "coffea4bees/analysis/processors/processor_HH4b.py"
+  dataset_location: "coffea4bees/metadata/datasets/mixeddata_single_debug.yml"
+  datasets_file: "coffea4bees/metadata/datasets/mixeddata_single_debug.yml"
+  weights_file: "coffea4bees/metadata/weights/weights_HH4b.yml"
+  runner:
+    workers: 4
+    worker_memory: 8GB
+    chunksize: 10000
+    condor: true
+    shared_dask: true
+    run_performance: false
+  config:
+    blind: false
+    apply_FvT: true
+    apply_trigWeight: true
+    apply_btagSF: true
+    apply_boosted_veto: false
+    run_SvB: true
+    SvB_MA: true
+    SvB: null
+    hist_cuts: []

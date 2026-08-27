@@ -43,9 +43,29 @@ config.setdefault('year_eras', {
 config.setdefault('container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
 config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
 
-DATA_YEAR_ERA = [(str(yr), era) for yr, eras in config['year_eras'].items() for era in eras]
+SYNTHETIC_DATA_PREFIXES = ('mixeddata', 'synthetic_data', 'datamixed', 'data_3b_for_mixed')
+DATA_DATASETS = [d for d in config['dataset'] if d == 'data' or any(d.startswith(p) for p in SYNTHETIC_DATA_PREFIXES)]
+MC_DATASETS = [d for d in config['dataset'] if d not in DATA_DATASETS]
+
 DATA_YEARS = [str(y) for y in config['year_eras'].keys()]
-MC_DATASETS = [d for d in config['dataset'] if d != 'data']
+DATA_YEAR_ERA = [(str(yr), era) for yr, eras in config['year_eras'].items() for era in eras] if 'data' in DATA_DATASETS else []
+DATA_ERA_FILES = [f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{yr}_{era}.coffea" for yr, era in DATA_YEAR_ERA]
+
+DATA_NOERA_DATASETS = [d for d in DATA_DATASETS if d != 'data']
+DATA_NOERA_FILES = expand(
+    "{output_path}singlefiles/histAll_" + config['label'] + "__{dataset}__{year}.coffea",
+    output_path=config['output_path'],
+    dataset=DATA_NOERA_DATASETS,
+    year=DATA_YEARS
+) if DATA_NOERA_DATASETS else []
+
+ALL_DATA_FILES = DATA_ERA_FILES + DATA_NOERA_FILES
+MC_FILES = expand(
+    "{output_path}singlefiles/histAll_" + config['label'] + "__{dataset}__{year}.coffea",
+    output_path=config['output_path'],
+    dataset=MC_DATASETS,
+    year=DATA_YEARS
+) if MC_DATASETS else []
 
 include: "helpers/common.smk"
 
@@ -56,66 +76,67 @@ original_config = workflow.configfiles[0] if workflow.configfiles else "coffea4b
 
 wildcard_constraints:
     year = "|".join([str(y) for y in config['year_eras'].keys()]),
-    dataset = "|".join(MC_DATASETS) if MC_DATASETS else "none"
+    dataset = "|".join(DATA_NOERA_DATASETS + MC_DATASETS) if (DATA_NOERA_DATASETS + MC_DATASETS) else "none"
 
 module analysis:
     snakefile: "rules/analysis.smk"
     config: config
 
 def get_analysis_targets(wildcards):
-    targets = [
+    return [
         f"{config['output_path']}histAll_{config['label']}.coffea",
         f"{config['output_path']}plots_{config['label']}/plots_done.txt",
         f"{config['output_path']}cutflow_validation_{config['label']}.txt",
         f"{config['output_path']}cutflow_{config['label']}.yml",
     ]
-    if has_mixeddata:
-        targets.append(f"{config['output_path']}plots_{config['label']}_mixeddata_vs_data/plots_done.txt")
-    return targets
 
 rule all_analysis:
     input: get_analysis_targets
 
 if config.get("test", False):
     # Quick Test / CI Mode: single command for all data years/eras and single command for all signals
-    use rule analysis_processor from analysis as analysis_data with:
-        input: 
-            runner_script = "runner.py",
-            config_file = original_config
-        output: f"{config['output_path']}singlefiles/histAll_{config['label']}_data.coffea"
-        log: f"{config['output_path']}logs/analysis_{config['label']}_data.log"
-        params:
-            datasets = "data",
-            years = " ".join(DATA_YEARS),
-            config = lambda wildcards, input: input.config_file,
-            extra_arguments = lambda wildcards: " ".join(filter(None, [
-                "-t",
-                config.get("additional_parameters", "")
-            ])),
-            run_container_wrapper = config['analysis_container_wrapper']
+    DATA_TEST_TARGETS = []
+    MC_TEST_TARGETS = []
 
-    use rule analysis_processor from analysis as analysis_MC with:
-        input: 
-            runner_script = "runner.py",
-            config_file = original_config
-        output: f"{config['output_path']}singlefiles/histAll_{config['label']}_signals.coffea"
-        log: f"{config['output_path']}logs/analysis_{config['label']}_signals.log"
-        params:
-            datasets = " ".join(MC_DATASETS),
-            years = " ".join(DATA_YEARS),
-            config = lambda wildcards, input: input.config_file,
-            extra_arguments = lambda wildcards: " ".join(filter(None, [
-                "-t",
-                config.get("additional_parameters", "")
-            ])),
-            run_container_wrapper = config['analysis_container_wrapper']
+    if DATA_DATASETS:
+        DATA_TEST_TARGETS.append(f"{config['output_path']}singlefiles/histAll_{config['label']}_data.coffea")
+        use rule analysis_processor from analysis as analysis_data with:
+            input: 
+                runner_script = "runner.py",
+                config_file = original_config
+            output: f"{config['output_path']}singlefiles/histAll_{config['label']}_data.coffea"
+            log: f"{config['output_path']}logs/analysis_{config['label']}_data.log"
+            params:
+                datasets = " ".join(DATA_DATASETS),
+                years = " ".join(DATA_YEARS),
+                config = lambda wildcards, input: input.config_file,
+                extra_arguments = lambda wildcards: " ".join(filter(None, [
+                    "-t",
+                    config.get("additional_parameters", "")
+                ])),
+                run_container_wrapper = config['analysis_container_wrapper']
+
+    if MC_DATASETS:
+        MC_TEST_TARGETS.append(f"{config['output_path']}singlefiles/histAll_{config['label']}_signals.coffea")
+        use rule analysis_processor from analysis as analysis_MC with:
+            input: 
+                runner_script = "runner.py",
+                config_file = original_config
+            output: f"{config['output_path']}singlefiles/histAll_{config['label']}_signals.coffea"
+            log: f"{config['output_path']}logs/analysis_{config['label']}_signals.log"
+            params:
+                datasets = " ".join(MC_DATASETS),
+                years = " ".join(DATA_YEARS),
+                config = lambda wildcards, input: input.config_file,
+                extra_arguments = lambda wildcards: " ".join(filter(None, [
+                    "-t",
+                    config.get("additional_parameters", "")
+                ])),
+                run_container_wrapper = config['analysis_container_wrapper']
 
     use rule merging_coffea_files from analysis as merging_files with:
         input:
-            files = [
-                f"{config['output_path']}singlefiles/histAll_{config['label']}_data.coffea",
-                f"{config['output_path']}singlefiles/histAll_{config['label']}_signals.coffea"
-            ],
+            files = DATA_TEST_TARGETS + MC_TEST_TARGETS,
             script = "src/tools/merge_coffea_files.py"
         output: f"{config['output_path']}histAll_{config['label']}.coffea"
         params:
@@ -125,50 +146,49 @@ if config.get("test", False):
         log: f"{config['output_path']}logs/merging_files.log"
 
     rule all_data:
-        input: f"{config['output_path']}singlefiles/histAll_{config['label']}_data.coffea"
+        input: DATA_TEST_TARGETS
 
     rule all_signals:
-        input: f"{config['output_path']}singlefiles/histAll_{config['label']}_signals.coffea"
+        input: MC_TEST_TARGETS
 
 else:
     # Production Mode: granular split per year/era and dataset for distributed cluster batching
-    use rule analysis_processor from analysis as analysis_data with:
-        input: 
-            runner_script = "runner.py",
-            config_file = original_config
-        output: f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{{year}}_{{era}}.coffea"
-        log: f"{config['output_path']}logs/analysis_{config['label']}_data__{{year}}_{{era}}.log"
-        params:
-            datasets = "data",
-            years = lambda wildcards: wildcards.year,
-            config = lambda wildcards, input: input.config_file,
-            extra_arguments = lambda wildcards: " ".join(filter(None, [
-                f"--era {wildcards.era}",
-                config.get("additional_parameters", "")
-            ])),
-            run_container_wrapper = config['analysis_container_wrapper']
+    if DATA_YEAR_ERA:
+        use rule analysis_processor from analysis as analysis_data with:
+            input: 
+                runner_script = "runner.py",
+                config_file = original_config
+            output: f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{{year}}_{{era}}.coffea"
+            log: f"{config['output_path']}logs/analysis_{config['label']}_data__{{year}}_{{era}}.log"
+            params:
+                datasets = "data",
+                years = lambda wildcards: wildcards.year,
+                config = lambda wildcards, input: input.config_file,
+                extra_arguments = lambda wildcards: " ".join(filter(None, [
+                    f"--era {wildcards.era}",
+                    config.get("additional_parameters", "")
+                ])),
+                run_container_wrapper = config['analysis_container_wrapper']
 
-    use rule analysis_processor from analysis as analysis_MC with:
-        input: 
-            runner_script = "runner.py",
-            config_file = original_config
-        output: f"{config['output_path']}singlefiles/histAll_{config['label']}__{{dataset}}__{{year}}.coffea"
-        log: f"{config['output_path']}logs/analysis_{config['label']}_{{dataset}}_{{year}}.log"
-        params:
-            datasets = lambda wildcards: wildcards.dataset,
-            years = lambda wildcards: wildcards.year,
-            config = lambda wildcards, input: input.config_file,
-            extra_arguments = lambda wildcards: " ".join(filter(None, [
-                config.get("additional_parameters", "")
-            ])),
-            run_container_wrapper = config['analysis_container_wrapper']
+    if DATA_NOERA_DATASETS or MC_DATASETS:
+        use rule analysis_processor from analysis as analysis_dataset with:
+            input: 
+                runner_script = "runner.py",
+                config_file = original_config
+            output: f"{config['output_path']}singlefiles/histAll_{config['label']}__{{dataset}}__{{year}}.coffea"
+            log: f"{config['output_path']}logs/analysis_{config['label']}_{{dataset}}_{{year}}.log"
+            params:
+                datasets = lambda wildcards: wildcards.dataset,
+                years = lambda wildcards: wildcards.year,
+                config = lambda wildcards, input: input.config_file,
+                extra_arguments = lambda wildcards: " ".join(filter(None, [
+                    config.get("additional_parameters", "")
+                ])),
+                run_container_wrapper = config['analysis_container_wrapper']
 
     use rule merging_coffea_files from analysis as merging_files with:
         input:
-            files = (
-                [f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{yr}_{era}.coffea" for yr, era in DATA_YEAR_ERA]
-                + expand("{output_path}singlefiles/histAll_" + config['label'] + "__{dataset}__{year}.coffea", output_path=config['output_path'], dataset=MC_DATASETS, year=DATA_YEARS)
-            ),
+            files = ALL_DATA_FILES + MC_FILES,
             script = "src/tools/merge_coffea_files.py"
         output: f"{config['output_path']}histAll_{config['label']}.coffea"
         params:
@@ -178,10 +198,10 @@ else:
         log: f"{config['output_path']}logs/merging_files.log"
 
     rule all_data:
-        input: [f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{yr}_{era}.coffea" for yr, era in DATA_YEAR_ERA]
+        input: ALL_DATA_FILES
 
     rule all_signals:
-        input: expand("{output_path}singlefiles/histAll_" + config['label'] + "__{dataset}__{year}.coffea", output_path=config['output_path'], dataset=MC_DATASETS, year=DATA_YEARS)
+        input: MC_FILES
 
 use rule make_plots from analysis with:
     input:
@@ -212,4 +232,4 @@ use rule check_cutflow from analysis with:
         run_container_wrapper = config['analysis_container_wrapper']
     container: None
 
-localrules: analysis_data, analysis_MC, merging_files, make_plots, check_cutflow
+localrules: merging_files, make_plots, check_cutflow

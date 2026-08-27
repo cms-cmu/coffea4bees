@@ -1,0 +1,124 @@
+label: "ttHbb_Run3"
+output_path: "output/ttHbb_Run3/"
+email: ""
+
+friend_file: "coffea4bees/metadata/friends/friends_ttHbb_Run3.yml"
+
+analysis_config:
+  processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+  dataset_location: "coffea4bees/metadata/datasets/"
+  friend_file: "coffea4bees/metadata/friends/friends_ttHbb_Run3.yml"
+  weights_file: "coffea4bees/metadata/weights/weights_ttHbb_Run3.yml"
+  runner:
+    workers: 4
+    worker_memory: 8GB
+    chunksize: 100000
+    condor: true
+    shared_dask: true
+    run_performance: true
+  config:
+    blind: false
+    apply_FvT: true
+    apply_trigWeight: false
+    apply_btagSF: true
+    apply_boosted_veto: false
+    run_SvB: true
+    top_reconstruction: fast
+    plot_ttbar_with_weights: false
+    apply_lepton_veto: false
+    apply_JCM: true
+
+dataset_location: "coffea4bees/metadata/datasets/"
+dataset:
+  - "ttHbb"
+  - "data"
+
+year_eras:
+  2022_preEE:
+    - "B"
+    - "C"
+    - "D"
+  2022_EE:
+    - "E"
+    - "F"
+    - "G"
+  2023_preBPix:
+    - "C01"
+    - "C02"
+    - "C11"
+    - "C12"
+    - "C3"
+    - "C4"
+  2023_BPix:
+    - "D1"
+    - "D2"
+
+plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
+combine_flags: "--three_tag threeTag --four_tag fourTag --region sum"
+combine_outdir: "datacards/ttHbb_Run3/"
+
+make_combine_inputs:
+  metadata_template: "coffea4bees/stats_analysis/metadata/{channel}.yml"
+  bkgsyst: "coffea4bees/stats_analysis/files/HIG-24-010/hh/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_hh_rebin1.pkl"
+  stat_only: ""
+
+channels:
+  ttHbb:
+    variable: "SvB_MA.ps"
+    signal: "ttHbb"
+    signallabel: "ttHbb"
+    region: "sum"
+    cut: "sum"
+    closure_subdir: "hh"
+    othersignal: ""
+
+  ttHbb_stat_only:
+    variable: "SvB_MA.ps"
+    signal: "ttHbb"
+    signallabel: "ttHbb"
+    region: "sum"
+    cut: "sum"
+    closure_subdir: "hh"
+    othersignal: ""
+
+  ttHbb_nSelJets_gt6:
+    variable: "SvB_MA.ps"
+    signal: "ttHbb"
+    signallabel: "ttHbb"
+    region: "sum"
+    cut: "pass_nSelJets_gt6"
+    closure_subdir: "hh"
+    othersignal: ""
+
+  ttHbb_nSelJets_gt6_stat_only:
+    variable: "SvB_MA.ps"
+    signal: "ttHbb"
+    signallabel: "ttHbb"
+    region: "sum"
+    cut: "pass_nSelJets_gt6"
+    closure_subdir: "hh"
+    othersignal: ""
+
+  ttHbb_sum_inclusive:
+    variable: "SvB_MA.ps"
+    signal: "ttHbb"
+    signallabel: "ttHbb"
+    region: "sum"
+    cut: "inclusive"
+    closure_subdir: "hh"
+    othersignal: ""
+
+  ttHbb_sum_inclusive_stat_only:
+    variable: "SvB_MA.ps"
+    signal: "ttHbb"
+    signallabel: "ttHbb"
+    region: "sum"
+    cut: "inclusive"
+    closure_subdir: "hh"
+    othersignal: ""
+
+convert_hist_to_json:
+  histos:
+    - "SvB_MA.ps"
+    - "SvB_MA.ps_ttHbb"
+    - "SvB_MA.ps_ttHbb_fine"

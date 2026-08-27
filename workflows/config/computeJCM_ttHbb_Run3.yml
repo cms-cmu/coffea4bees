@@ -1,0 +1,58 @@
+email: ""
+label: "computeJCM_ttHbb_Run3"
+output_path: "output/ttHbb_Run3/"
+tag: "Run3_ttHbb"
+
+analysis_config:
+  processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+  dataset_location: "coffea4bees/metadata/datasets/"
+  runner:
+    workers: 4
+    worker_memory: 8GB
+    dashboard_address: 0
+  config:
+    blind: false
+    apply_FvT: false
+    apply_trigWeight: false
+    apply_btagSF: true
+    apply_boosted_veto: false
+    run_SvB: false
+    top_reconstruction: fast
+    plot_ttbar_with_weights: false
+    apply_lepton_veto: false
+    apply_JCM: false
+
+jcm_datasets:
+  - "data"
+  - "TTTo2L2Nu"
+  - "TTToSemiLeptonic"
+  - "TTToHadronic"
+
+jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb_jcm_config.yml"
+jcm_plot_config: "coffea4bees/plots/metadata/plots_JCM_ttHbb.yml"
+
+dataset:
+  - "data"
+  - "TTTo2L2Nu"
+  - "TTToSemiLeptonic"
+  - "TTToHadronic"
+
+year_eras:
+  2022_preEE:
+    - "B"
+    - "C"
+    - "D"
+  2022_EE:
+    - "E"
+    - "F"
+    - "G"
+  2023_preBPix:
+    - "C01"
+    - "C02"
+    - "C11"
+    - "C12"
+    - "C3"
+    - "C4"
+  2023_BPix:
+    - "D1"
+    - "D2"

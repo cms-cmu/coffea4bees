@@ -213,6 +213,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         apply_btagSF: bool = True,
         apply_FvT: bool = True,
         apply_boosted_veto: bool = False,
+        apply_lepton_veto: bool = False,
         run_dilep_ttbar_crosscheck: bool = False,
         fill_histograms: bool = True,
         hist_cuts = [],
@@ -284,6 +285,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.fill_histograms = fill_histograms
         self.run_dilep_ttbar_crosscheck = run_dilep_ttbar_crosscheck
         self.apply_boosted_veto = apply_boosted_veto
+        self.apply_lepton_veto = apply_lepton_veto
 
         self.classifier_SvB = {}
         if SvB is True and self.weights_data:
@@ -1032,6 +1034,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         selections.add('passJetMult', event.passJetMult)
         allcuts = ['lumimask', 'passNoiseFilter', 'passHLT', 'passJetMult']
 
+        if self.apply_lepton_veto:
+            selections.add("passLeptonVeto", event.passLeptonVeto if "passLeptonVeto" in event.fields else np.full(len(event), True))
+            allcuts.append("passLeptonVeto")
+
         # Add MC-specific selections
         if self.config["isMC"]:
             self.add_genweight_check(event, selections, weights)
@@ -1116,6 +1122,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             'passNoiseFilter': selections.require(lumimask=True, passCleanGenWeight=True, passNoiseFilter=True),
             'passHLT': selections.require(lumimask=True, passCleanGenWeight=True, passNoiseFilter=True, passHLT=True),
         })
+        if self.apply_lepton_veto:
+            sel_dict['passLeptonVeto'] = selections.require(lumimask=True, passCleanGenWeight=True, passNoiseFilter=True, passHLT=True, passLeptonVeto=True)
         sel_dict['passJetMult'] = selections.all(*allcuts)
 
         # Fill cutflow histograms

@@ -1,5 +1,5 @@
 label: "ttHbb_mixeddata"
-output_path: "output/ttHbb/"
+output_path: "output/ttHbb_mixeddata/"
 dataset:
   - "mixeddata"
 datasets_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/synthetic_datasets.yml"
@@ -23,9 +23,9 @@ analysis_config:
     run_performance: true
   config:
     blind: false
-    apply_FvT: true
-    apply_JCM: true
-    apply_trigWeight: true
+    apply_FvT: false
+    apply_JCM: false
+    apply_trigWeight: false
     apply_btagSF: true
     apply_boosted_veto: false
     run_SvB: true
