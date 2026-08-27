@@ -263,11 +263,17 @@ if __name__ == '__main__':
     if available_processes:
         for key in ["hists", "stack"]:
             if key in cfg.plotConfig:
-                cfg.plotConfig[key] = {
-                    name: p_cfg
-                    for name, p_cfg in cfg.plotConfig[key].items()
-                    if p_cfg.get("process") in available_processes
-                }
+                new_dict = {}
+                for name, p_cfg in cfg.plotConfig[key].items():
+                    proc = p_cfg.get("process")
+                    if isinstance(proc, list):
+                        valid_procs = [p for p in proc if p in available_processes]
+                        if valid_procs:
+                            p_cfg["process"] = valid_procs if len(valid_procs) > 1 else valid_procs[0]
+                            new_dict[name] = p_cfg
+                    elif proc in available_processes:
+                        new_dict[name] = p_cfg
+                cfg.plotConfig[key] = new_dict
 
     # Auto-infer year if not explicitly provided
     if not args.year and cfg.hists and isinstance(cfg.hists, list) and len(cfg.hists) > 0 and 'hists' in cfg.hists[0]:
