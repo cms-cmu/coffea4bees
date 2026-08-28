@@ -4,7 +4,7 @@ workflow_validation_coffea4bees:
     - .base_analysis_coffea4bees
   script:
     - python -m pip install snakemake --quiet
-    - python -m snakemake -s coffea4bees/workflows/Snakefile_analysis.smk --configfile coffea4bees/workflows/config/nominal_run2.yml -n
-    - python -m snakemake -s coffea4bees/workflows/Snakefile_analysis.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml -n
-    - python -m snakemake -s coffea4bees/workflows/Snakefile_analysis.smk --configfile coffea4bees/workflows/config/nominal_run3.yml -n
-    - python -m snakemake -s coffea4bees/workflows/Snakefile_analysis.smk --configfile coffea4bees/workflows/config/analysis_ttHbb.yml -n
+    - python -m snakemake -s coffea4bees/workflows/Snakefile_PhaseE_1_analysis.smk --configfile coffea4bees/workflows/config/nominal_run2.yml -n
+    - python -m snakemake -s coffea4bees/workflows/Snakefile_PhaseE_1_analysis.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml -n
+    - python -m snakemake -s coffea4bees/workflows/Snakefile_PhaseE_1_analysis.smk --configfile coffea4bees/workflows/config/nominal_run3.yml -n
+    - python -m snakemake -s coffea4bees/workflows/Snakefile_PhaseE_1_analysis.smk --configfile coffea4bees/workflows/config/analysis_ttHbb.yml -n

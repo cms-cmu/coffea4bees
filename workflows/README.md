@@ -237,10 +237,10 @@ pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseD_3_evaluate.smk \
 
 ### Phase E: Analysis & Statistical Interpretation
 * **Target Machine:** **`cmslpc`** (CPU batching with HTCondor/Dask + Combine container)
-* **Coordinator:** `Snakefile_PhaseE.smk` (aliased by `Snakefile_full_analysis.smk`)
+* **Coordinator:** `Snakefile_PhaseE.smk`
 * **Sub-workflows:**
-  * `Snakefile_PhaseE_1_analysis.smk` (aliased by `Snakefile_analysis.smk`): Runs main Coffea analysis processor (`processor_HH4b.py`), merges histogram files, checks cutflow agreement against reference files, and generates data/MC comparison plots.
-  * `Snakefile_PhaseE_2_stats.smk` (aliased by `Snakefile_stats.smk`): Converts histogram distributions to Combine JSON format, generates CMS Combine datacards, builds workspaces, and computes expected limits, signal significance, and likelihood profile scans.
+  * `Snakefile_PhaseE_1_analysis.smk`: Runs main Coffea analysis processor (`processor_HH4b.py`), merges histogram files, checks cutflow agreement against reference files, and generates data/MC comparison plots.
+  * `Snakefile_PhaseE_2_stats.smk`: Converts histogram distributions to Combine JSON format, generates CMS Combine datacards, builds workspaces, and computes expected limits, signal significance, and likelihood profile scans.
 
 ```mermaid
 flowchart TD
@@ -322,13 +322,3 @@ pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseE_1_analysis.smk \
     --config test=true \
     --dag | dot -Tpng -o job_dag_PhaseE1.png
 ```
-
-### Backwards Compatibility
-Existing legacy workflow entry points are preserved as thin wrappers:
-* `Snakefile_computeJCM.smk` $\to$ includes `Snakefile_PhaseB_computeJCM.smk`
-* `Snakefile_make_classifier_friendtree.smk` $\to$ includes `Snakefile_PhaseC_1_inputs.smk`
-* `Snakefile_analysis.smk` $\to$ includes `Snakefile_PhaseE_1_analysis.smk`
-* `Snakefile_stats.smk` $\to$ includes `Snakefile_PhaseE_2_stats.smk`
-* `Snakefile_full_analysis.smk` $\to$ includes `Snakefile_PhaseE.smk`
-
-Legacy standalone exploratory files (e.g. `Snakefile_lowpt.smk`, `Snakefile_combinations_ZZ_ZH.smk`, `Snakefile_ZZ_ZH.smk`, `Snakefile_addingVBF.smk`) have been archived into `coffea4bees/workflows/archive/`.

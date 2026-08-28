@@ -28,8 +28,8 @@ config.setdefault('eval_template', f"model: {config['eos_base']}/classifier/{con
 CLASSIFIER = "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:classifier_latest"
 INIT = "set -e && set +u && { [ -f /entrypoint.sh ] && source /entrypoint.sh || true; } && set -u && export PYTHONUNBUFFERED=1"
 
-OUTPUT_DIR = config["output_dir"].rstrip("/")
 LABEL = config["label"]
+OUTPUT_DIR = config["output_dir"].format(label=LABEL).rstrip("/")
 EOS_BASE = config["eos_base"]
 EVAL_TEMPLATE = config["eval_template"].format(eos_base=EOS_BASE, label=LABEL)
 WFS_BASE = config["wfs_base"]
