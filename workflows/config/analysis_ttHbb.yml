@@ -1,7 +1,7 @@
 label: "ttHbb_v2"
 output_path: "output/ttHbb_v2/"
 cern_user: "algomez"
-cern_path: "www/HH4b/Plots/"
+cern_path: "www/ttHbb/Plots/"
 dataset:
   - "ttHbb"
   - "data"
@@ -62,6 +62,7 @@ analysis_config:
     plot_ttbar_with_weights: true
 
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
+known_counts: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"
 known_counts_test: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"
 known_counts_full: "none"
 

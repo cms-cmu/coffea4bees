@@ -184,3 +184,17 @@ check_cutflow_lowpt_Run2_coffea4bees:
     paths:
       - barista_framework/output/run2_lowpt/cutflow_validation_run2_lowpt.txt
       - barista_framework/output/run2_lowpt/cutflow_run2_lowpt.yml
+
+check_cutflow_ttHbb_coffea4bees:
+  stage: cutflow
+  extends:
+    - .base_analysis_coffea4bees
+  needs: 
+    - setup_coffea4bees
+    - merging_files_ttHbb_coffea4bees
+  script:
+    - pixi run snakemake output/ttHbb_v2/cutflow_validation_ttHbb_v2.txt -s coffea4bees/workflows/Snakefile_analysis.smk --configfile coffea4bees/workflows/config/analysis_ttHbb.yml --config test=true --jobs 4
+  artifacts:
+    paths:
+      - barista_framework/output/ttHbb_v2/cutflow_validation_ttHbb_v2.txt
+      - barista_framework/output/ttHbb_v2/cutflow_ttHbb_v2.yml
