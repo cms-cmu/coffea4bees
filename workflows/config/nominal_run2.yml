@@ -1,5 +1,42 @@
+# ==============================================================================
+# GLOBAL WORKFLOW CONFIGURATION
+# ==============================================================================
 label: "TEST"
 output_path: "output/TEST/"
+
+dataset:
+  - "GluGluToHHTo4B_cHHH1"
+  - "GluGluToHHTo4B_cHHH0"
+  - "GluGluToHHTo4B_cHHH2p45"
+  - "GluGluToHHTo4B_cHHH5"
+  - "ZH4b"
+  - "ZZ4b"
+  - "ggZH4b"
+
+year_eras:
+  UL16_preVFP:
+    - "C"
+    - "D"
+    - "E"
+    - "F"
+  UL16_postVFP:
+    - "F"
+    - "G"
+    - "H"
+  UL17:
+    - "C"
+    - "D"
+    - "E"
+    - "F"
+  UL18:
+    - "A"
+    - "B"
+    - "C"
+    - "D"
+
+# ==============================================================================
+# PHASE E.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
+# ==============================================================================
 analysis_config:
   processor: "coffea4bees/analysis/processors/processor_HH4b.py"
   dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
@@ -23,36 +60,14 @@ analysis_config:
     plot_ttbar_with_weights: true
 
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttbarWeights.yml"
+
+# ==============================================================================
+# PHASE E.2: COMBINE STATISTICAL INTERPRETATION & LIMITS
+# ==============================================================================
 combine_flags: "--blind"
-dataset:
-  - "GluGluToHHTo4B_cHHH1"
-  - "GluGluToHHTo4B_cHHH0"
-  - "GluGluToHHTo4B_cHHH2p45"
-  - "GluGluToHHTo4B_cHHH5"
-  - "ZH4b"
-  - "ZZ4b"
-  - "ggZH4b"
-year_eras:
-  UL16_preVFP:
-    - "C"
-    - "D"
-    - "E"
-    - "F"
-  UL16_postVFP:
-    - "F"
-    - "G"
-    - "H"
-  UL17:
-    - "C"
-    - "D"
-    - "E"
-    - "F"
-  UL18:
-    - "A"
-    - "B"
-    - "C"
-    - "D"
 combine_outdir: "datacards/HH4b_fine"
+metadata_template: "coffea4bees/stats_analysis/metadata/{channel}.yml"
+
 channels:
   HH4b:
     signallabel: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb"
@@ -72,4 +87,3 @@ channels:
     variable: "SvB_MA.ps_zh"
     signal: "ZH4b"
     closure_subdir: "zh"
-metadata_template: "coffea4bees/stats_analysis/metadata/{channel}.yml"
