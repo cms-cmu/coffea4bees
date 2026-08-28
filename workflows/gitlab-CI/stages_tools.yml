@@ -80,6 +80,20 @@ merging_files_lowpt_Run2_coffea4bees:
     paths:
       - barista_framework/output/run2_lowpt/histAll_run2_lowpt.coffea
 
+merging_files_ttHbb_coffea4bees:
+  stage: tools
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - analysis_data_ttHbb_coffea4bees
+    - analysis_MC_ttHbb_coffea4bees
+  script:
+    - pixi run snakemake output/ttHbb_v2/histAll_ttHbb_v2.coffea -s coffea4bees/workflows/Snakefile_analysis.smk --configfile coffea4bees/workflows/config/analysis_ttHbb.yml --config test=true --jobs 4
+  artifacts:
+    paths:
+      - barista_framework/output/ttHbb_v2/histAll_ttHbb_v2.coffea
+
 merging_files_Run3_coffea4bees:
   stage: tools
   extends:

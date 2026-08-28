@@ -87,6 +87,7 @@ def create_combine_root_file( file_to_convert,
                                 blind=False,
                                 region='SR',
                                 multijet_process='data',
+                                data_process='data',
                                 tt_processes=['TTTo', 'TTbar4b_from_d3'],
                                 cut='' ):
 
@@ -108,9 +109,14 @@ def create_combine_root_file( file_to_convert,
         with open(f"{os.path.dirname(mixeddata_file)}/histMixedBkg_TT.json", 'r') as f: mixedbkg_tt = json.load(f)
         with open(f"{os.path.dirname(mixeddata_file)}/histMixedBkg_data_3b_for_mixed.json", 'r') as f: mixedBkg_data3b = json.load(f)
 
+    if data_process in ['mixeddata', 'mix_v0'] and 'mix_v0' in coffea_hists[var]:
+        data_process = 'mix_v0'
+    if multijet_process in ['data', 'mixeddata', 'mix_v0'] and 'data' not in coffea_hists[var] and 'mix_v0' in coffea_hists[var]:
+        multijet_process = 'mix_v0'
+
     root_hists = {}
     mcSysts, closureSysts = [], []
-    key_process = 'data' if 'data' in coffea_hists[var] else multijet_process
+    key_process = 'data' if 'data' in coffea_hists[var] else (data_process if data_process in coffea_hists[var] else (multijet_process if multijet_process in coffea_hists[var] else list(coffea_hists[var].keys())[0]))
     for iyear in coffea_hists[var][key_process].keys():
         root_hists[iyear] = {}
 
@@ -122,7 +128,7 @@ def create_combine_root_file( file_to_convert,
 
         for iprocess in coffea_hists[var].keys():
 
-            if iprocess.startswith(tuple(tt_processes)) or iprocess.startswith('data'):
+            if iprocess.startswith(tuple(tt_processes)) or iprocess.startswith('data') or iprocess.startswith('mix_'):
                 
                 if iprocess.startswith('TTTo') and mixeddata_file:
                     coffea_hist = get_hist_from_dict(mixedbkg_tt, [var, f"{iprocess}_for_mixed", iyear, four_tag], region_key)
@@ -195,13 +201,27 @@ def create_combine_root_file( file_to_convert,
             root_hists['_'.join(iy.split('_')[:-1])] = root_hists.pop(iy)
 
 
-    ### renaming histos for final combine inputs
+    ### renaming and merging histos for final combine inputs
     for iy in list(root_hists.keys()):
         for jy in metadata['bin']:
-            iy_clean = iy.replace('UL', '')
+            iy_clean = iy.replace('UL', '').replace('_preVFP', '').replace('_postVFP', '')
             jy_clean = '_'.join(jy.split('_')[1:])
-            if iy_clean in jy_clean or jy_clean in iy_clean:
-                root_hists[jy] = root_hists.pop(iy)
+            if iy_clean == jy_clean or iy_clean in jy_clean or jy_clean in iy_clean:
+                if jy not in root_hists:
+                    root_hists[jy] = root_hists.pop(iy)
+                elif jy != iy:
+                    source_dict = root_hists.pop(iy)
+                    for ip, ih in source_dict.items():
+                        if ip not in root_hists[jy]:
+                            root_hists[jy][ip] = ih
+                        elif isinstance(ih, dict):
+                            for ivar, ivar_h in ih.items():
+                                if ivar in root_hists[jy][ip]:
+                                    root_hists[jy][ip][ivar].Add(ivar_h)
+                                else:
+                                    root_hists[jy][ip][ivar] = ivar_h
+                        else:
+                            root_hists[jy][ip].Add(ih)
                 break
 
     ### checking one-sided signal systematics
@@ -243,7 +263,8 @@ def create_combine_root_file( file_to_convert,
     if not stat_only:
         for channel in metadata['bin']:
             for ibin, ivalues in bkg_syst_file.items():
-                bkg_name_syst = f"CMS_bbbb_resolved_bkg_datadriven_{ibin.replace('_hh', '').replace('vari', 'variance')}"
+                clean_ibin = ibin.replace('_hh', '').replace('_ttHbb', '').replace('_zh', '').replace('_zz', '').replace('vari', 'variance')
+                bkg_name_syst = f"CMS_bbbb_resolved_bkg_datadriven_{clean_ibin}"
                 root_hists[channel]['multijet'][bkg_name_syst] = root_hists[channel]['multijet']['nominal'].Clone()
                 root_hists[channel]['multijet'][bkg_name_syst].SetName(f'multijet_{bkg_name_syst}')
                 for i in range(len(ivalues)):
@@ -258,7 +279,8 @@ def create_combine_root_file( file_to_convert,
     ### renaming histos for final combine inputs
     for channel in root_hists.keys():
         tt_label = metadata['processes']['background']['tt']['label']
-        root_hists[channel][tt_label] = root_hists[channel]['data'].Clone()
+        ref_proc = data_process if data_process in root_hists[channel] else ('data' if 'data' in root_hists[channel] else multijet_process)
+        root_hists[channel][tt_label] = root_hists[channel][ref_proc].Clone()
         root_hists[channel][tt_label].SetName(tt_label)
         root_hists[channel][tt_label].SetTitle(f"{tt_label}_{channel}")
         root_hists[channel][tt_label].Reset()
@@ -266,7 +288,7 @@ def create_combine_root_file( file_to_convert,
             if ip.startswith(tuple(tt_processes)):
                 root_hists[channel][tt_label].Add( root_hists[channel][ip] )
                 del root_hists[channel][ip]
-            elif ip.startswith('data'):
+            elif ip == data_process or (data_process == 'data' and ip.startswith('data')):
                 if mixeddata_file:
                     logging.info(f"Using mixeddata for data_obs")
                     root_hists[channel]['data_obs'] = json_to_TH1(
@@ -475,6 +497,8 @@ if __name__ == '__main__':
                         default='', const='', help="Cut to use (e.g. pass_nSelJets_gt6, sum)")
     parser.add_argument('--multijet_process', dest="multijet_process",
                         default='data', help='Process to use for multijet background')
+    parser.add_argument('--data_process', dest="data_process",
+                        default='data', help='Process to use for data_obs')
     parser.add_argument('--tt_processes', dest="tt_processes", nargs="+",
                         default=['TTTo', 'TTbar4b_from_d3'], help='List of processes/prefixes to merge into ttbar')
     args = parser.parse_args()
@@ -508,5 +532,6 @@ if __name__ == '__main__':
         region=args.region,
         cut=args.cut,
         multijet_process=args.multijet_process,
+        data_process=args.data_process,
         tt_processes=args.tt_processes,
     )

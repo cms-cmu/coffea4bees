@@ -43,8 +43,10 @@ def doPlots(varList, debug=False):
         )
 
         cfg.plotConfig = copy.deepcopy(original_plotConfig)
-        if is_cut_category:
-            outputFolder = args.outputFolder
+        if category in ("inclusive", ""):
+            outputFolder = os.path.join(args.outputFolder, "inclusive") if category == "inclusive" else args.outputFolder
+        elif is_cut_category:
+            outputFolder = os.path.join(args.outputFolder, category.strip("_"))
         else:
             if category:
                 for key in ["hists", "stack"]:
@@ -67,6 +69,8 @@ def doPlots(varList, debug=False):
             vDict["ylabel"] = "Entries"
             vDict["doRatio"] = cfg.plotConfig.get("doRatio", True)
             vDict["legend"] = True
+            if v.startswith("SvB"):
+                vDict.setdefault("yscale", "log")
 
             if args.doTest:
                 vDict["write_yaml"] = True
@@ -80,6 +84,8 @@ def doPlots(varList, debug=False):
                     plot_args["cut"] = category
                 plot_args["axis_opts"] = {"region": region}
                 plot_args["outputFolder"] = outputFolder
+                if hasattr(args, "fmt") and args.fmt:
+                    plot_args["fmt"] = args.fmt
                 if args.year:
                     plot_args["year"] = args.year
                 plot_args = plot_args | vDict
@@ -122,6 +128,8 @@ def doPlots(varList, debug=False):
                         plot_args["cut"] = category
                     plot_args["axis_opts"] = {"region": region}
                     plot_args["outputFolder"] = outputFolder
+                    if hasattr(args, "fmt") and args.fmt:
+                        plot_args["fmt"] = args.fmt
                     if args.year:
                         plot_args["year"] = args.year
                     plot_args = plot_args | vDict
@@ -174,6 +182,8 @@ def doPlots(varList, debug=False):
                         plot_args["outputFolder"] = outputFolder
                         plot_args["process"] = process
                         plot_args["norm"] = True
+                        if hasattr(args, "fmt") and args.fmt:
+                            plot_args["fmt"] = args.fmt
                         if args.year:
                             plot_args["year"] = args.year
                         plot_args = plot_args | vDict
@@ -200,6 +210,8 @@ def doPlots(varList, debug=False):
                             "process": process,
                             "outputFolder": outputFolder,
                         }
+                        if hasattr(args, "fmt") and args.fmt:
+                            comp_plot_args["fmt"] = args.fmt
                         if args.year:
                             comp_plot_args["year"] = args.year
                         comp_plot_args = comp_plot_args | vDict
@@ -263,11 +275,17 @@ if __name__ == '__main__':
     if available_processes:
         for key in ["hists", "stack"]:
             if key in cfg.plotConfig:
-                cfg.plotConfig[key] = {
-                    name: p_cfg
-                    for name, p_cfg in cfg.plotConfig[key].items()
-                    if p_cfg.get("process") in available_processes
-                }
+                new_dict = {}
+                for name, p_cfg in cfg.plotConfig[key].items():
+                    proc = p_cfg.get("process")
+                    if isinstance(proc, list):
+                        valid_procs = [p for p in proc if p in available_processes]
+                        if valid_procs:
+                            p_cfg["process"] = valid_procs if len(valid_procs) > 1 else valid_procs[0]
+                            new_dict[name] = p_cfg
+                    elif proc in available_processes:
+                        new_dict[name] = p_cfg
+                cfg.plotConfig[key] = new_dict
 
     # Auto-infer year if not explicitly provided
     if not args.year and cfg.hists and isinstance(cfg.hists, list) and len(cfg.hists) > 0 and 'hists' in cfg.hists[0]:

@@ -108,6 +108,19 @@ make_plots_lowpt_Run2_coffea4bees:
     paths:
       - barista_framework/output/run2_lowpt/plots_run2_lowpt/plots_done.txt
 
+make_plots_ttHbb_coffea4bees:
+  stage: plot
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - merging_files_ttHbb_coffea4bees
+  script:
+    - pixi run snakemake output/ttHbb_v2/plots_ttHbb_v2/plots_done.txt -s coffea4bees/workflows/Snakefile_analysis.smk --configfile coffea4bees/workflows/config/analysis_ttHbb.yml --config test=true --jobs 4
+  artifacts:
+    paths:
+      - barista_framework/output/ttHbb_v2/plots_ttHbb_v2/plots_done.txt
+
 make_plots_Run3_coffea4bees:
   stage: plot
   extends:

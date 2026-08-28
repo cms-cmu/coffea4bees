@@ -8,9 +8,12 @@ canJet3.eta  : {"xlim":[-3,3]}
 canJets.mass : {"xlim":[0,100]}
 othJets.mass : {"xlim":[0,100]}
 othJets.n    : {"xlim":[0,15]}
-SvB_MA_ps_zh : {"rebin":5}
-SvB_MA_ps_zz : {"rebin":4}
-SvB_MA_ps_hh : {"rebin":10}
+SvB_MA_ps_zh : {"rebin":5, "yscale":"log"}
+SvB_MA_ps_zz : {"rebin":4, "yscale":"log"}
+SvB_MA_ps_hh : {"rebin":10, "yscale":"log"}
+SvB_MA_ps_ttHbb : {"yscale":"log"}
+SvB_MA_ps : {"yscale":"log"}
+SvB_MA_ptt : {"yscale":"log"}
 
 
 quadJet_selected.lead_vs_subl_m : {"2d":True}
