@@ -7,4 +7,4 @@ workflow_validation_coffea4bees:
     - python -m snakemake -s coffea4bees/workflows/Snakefile_full_analysis.smk --configfile coffea4bees/workflows/config/nominal_run2.yml -n
     - python -m snakemake -s coffea4bees/workflows/Snakefile_full_analysis.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml -n
     - python -m snakemake -s coffea4bees/workflows/Snakefile_full_analysis.smk --configfile coffea4bees/workflows/config/nominal_run3.yml -n
-    - python -m snakemake -s coffea4bees/workflows/Snakefile_full_analysis.smk --configfile coffea4bees/workflows/config/analysis_ttHbb.yml -n
+    - python -m snakemake -s coffea4bees/workflows/Snakefile_analysis.smk --configfile coffea4bees/workflows/config/analysis_ttHbb.yml --config test=true -n
