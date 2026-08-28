@@ -18,7 +18,8 @@ if __name__ == '__main__':
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--hist_key', nargs="+",
                         default=['ps_zz',      'ps_zh',      'ps_hh',
-                                 'ps_zz_fine', 'ps_zh_fine', 'ps_hh_fine', 'm4j'],
+                                 'ps_zz_fine', 'ps_zh_fine', 'ps_hh_fine',
+                                 'ps_ttHbb_fine', 'ps', 'm4j'],
                         help='List of histograms to convert')
 
     parser.add_argument('-o', '--output', dest="output",
@@ -73,12 +74,17 @@ if __name__ == '__main__':
         save_dict[f"mix_v{sub_sample}"] = [('fourTag','SR')]
 
     save_dict["data_3b_for_mixed"]          = [('threeTag','SR')]
+    save_dict["data_3b"]                    = [('threeTag','SR')]
+    save_dict["data"]                       = [('threeTag','SR'), ('fourTag','SR')]
     save_dict["TTTo2L2Nu_for_mixed"]        = [('fourTag','SR')]
     save_dict["TTToSemiLeptonic_for_mixed"] = [('fourTag','SR')]
     save_dict["TTToHadronic_for_mixed"]     = [('fourTag','SR')]
-    save_dict["ZZ4b"]     = [('fourTag','SR')]
-    save_dict["ZH4b"]     = [('fourTag','SR')]
-    save_dict["GluGluToHHTo4B_cHHH1"]     = [('fourTag','SR')]
+    save_dict["TTbar4b_from_d3"]            = [('fourTag','SR')]
+    save_dict["TTbar3b_from_d3"]            = [('threeTag','SR')]
+    save_dict["ZZ4b"]                       = [('fourTag','SR')]
+    save_dict["ZH4b"]                       = [('fourTag','SR')]
+    save_dict["GluGluToHHTo4B_cHHH1"]       = [('fourTag','SR')]
+    save_dict["ttHbb"]                      = [('fourTag','SR')]
 
 
     json_dict = {}

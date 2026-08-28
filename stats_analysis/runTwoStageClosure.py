@@ -180,22 +180,19 @@ def combine_hists(input_file, hist_template, procs, years, debug=False):
             if debug: print(f"y is {y} {years}")
             hist_name = hist_name_proc.replace("YEAR", y)
 
-            if hist is None:
-                print(f"reading {hist_name}")
-                if type(input_file) is list:
-                    hist =  input_file[iy].Get(hist_name).Clone()
-                else:
-                    if debug: print(f"getting {hist_name} from {input_file}")
-                    if debug: input_file.ls()
-                    hist =  input_file.Get(hist_name).Clone()
+            if type(input_file) is list:
+                h_obj = input_file[iy].Get(hist_name) if iy < len(input_file) else None
             else:
-                # print(f"reading {hist_name}")
-                if type(input_file) is list:
-                    hist.Add( input_file[iy].Get(hist_name).Clone() )
-                else:
-                    hist.Add( input_file.Get(hist_name).Clone() )
+                h_obj = input_file.Get(hist_name)
 
-    if 'm4j' in hist_template:
+            if h_obj and not h_obj.IsZombie():
+                if hist is None:
+                    if debug: print(f"reading {hist_name}")
+                    hist = h_obj.Clone()
+                else:
+                    hist.Add(h_obj.Clone())
+
+    if hist is not None and 'm4j' in hist_template:
         hist = rescale_x_axis(hist, xMin_old = float(args.m4j_xmin), xMax_old = float(args.m4j_xmax), xMin_new = 0, xMax_new = 1)
 
     return hist
@@ -247,11 +244,22 @@ def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel
         else:
             var_name_multijet = var_name_multijet.replace(f"{SvB}_ps", f"{SvB}_FvT_{mix}_newSBDef_ps")
 
+        year_map = {
+            "2016": ["UL16_preVFP", "UL16_postVFP", "2016"],
+            "2017": ["UL17", "2017"],
+            "2018": ["UL18", "2018"],
+        }
         hist_multijet = combine_hists(input_file_data3b,
                                       f"{var_name_multijet}_PROC_YEAR_threeTag_SR",
-                                      years=[y],
-                                      procs=["data_3b_for_mixed"],
+                                      years=year_map.get(y, [y]),
+                                      procs=["data_3b_for_mixed", "data", "data_3b"],
                                       debug=args.debug)
+        if hist_multijet is None:
+            hist_multijet = combine_hists(input_file_data3b,
+                                          f"{var_name}_PROC_YEAR_threeTag_SR",
+                                          years=year_map.get(y, [y]),
+                                          procs=["data_3b_for_mixed", "data", "data_3b"],
+                                          debug=args.debug)
 
         f.cd(directory)
         hist_multijet.SetName("multijet")
@@ -264,8 +272,11 @@ def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel
 #
 #    hist_ttbar = combine_hists(input_file_TT,
 #                               f"{var_name}_PROC_YEAR_fourTag_SR",
-#                               years=["UL16_preVFP", "UL16_postVFP", "UL17", "UL18"],
-#                               procs=["TTTo2L2Nu_for_mixed", "TTToHadronic_for_mixed", "TTToSemiLeptonic_for_mixed"])
+#                               years=year_map.get(y, [y]),
+#                               procs=["TTTo2L2Nu_for_mixed", "TTToHadronic_for_mixed", "TTToSemiLeptonic_for_mixed", "TTbar4b_from_d3", "TTbar3b_from_d3"])
+#    if hist_ttbar is None and hist_multijet is not None:
+#        hist_ttbar = hist_multijet.Clone()
+#        hist_ttbar.Reset()
 #
 #    f.cd(directory)
 #    hist_ttbar.SetName("ttbar")
@@ -319,9 +330,15 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel):
 
     hist_multijet = combine_hists(input_file_data3b,
                                   f"{var_name_multijet}_PROC_YEAR_threeTag_SR",
-                                  years=["2016", "2017", "2018"],
-                                  procs=["data_3b_for_mixed"],
+                                  years=["UL16_preVFP", "UL16_postVFP", "UL17", "UL18", "2016", "2017", "2018"],
+                                  procs=["data_3b_for_mixed", "data", "data_3b"],
                                   debug=args.debug)
+    if hist_multijet is None:
+        hist_multijet = combine_hists(input_file_data3b,
+                                      f"{var_name}_PROC_YEAR_threeTag_SR",
+                                      years=["UL16_preVFP", "UL16_postVFP", "UL17", "UL18", "2016", "2017", "2018"],
+                                      procs=["data_3b_for_mixed", "data", "data_3b"],
+                                      debug=args.debug)
 
     f.cd(directory)
     hist_multijet.SetName("multijet")
@@ -334,9 +351,12 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel):
 
     hist_ttbar = combine_hists(input_file_TT,
                                f"{var_name}_PROC_YEAR_fourTag_SR",
-                               years=["UL16_preVFP", "UL16_postVFP", "UL17", "UL18"],
-                               procs=["TTTo2L2Nu_for_mixed", "TTToHadronic_for_mixed", "TTToSemiLeptonic_for_mixed"],
+                               years=["UL16_preVFP", "UL16_postVFP", "UL17", "UL18", "2016", "2017", "2018"],
+                               procs=["TTTo2L2Nu_for_mixed", "TTToHadronic_for_mixed", "TTToSemiLeptonic_for_mixed", "TTbar4b_from_d3", "TTbar3b_from_d3"],
                                debug=args.debug)
+    if hist_ttbar is None and hist_multijet is not None:
+        hist_ttbar = hist_multijet.Clone()
+        hist_ttbar.Reset()
 
     f.cd(directory)
     hist_ttbar.SetName("ttbar")
@@ -409,10 +429,11 @@ def prepInput():
     #
     #  Signal
     #
+    sig_procs = ["ttHbb"] if channel in ["ttHbb", "tth"] else ["GluGluToHHTo4B_cHHH1", "ZZ4b", "ZH4b"]
     hist_signal = combine_hists(input_file_sig,
                                 f"{var_name}_PROC_YEAR_fourTag_SR",
-                                years=["UL16_preVFP", "UL16_postVFP", "UL17", "UL18"],
-                                procs=["GluGluToHHTo4B_cHHH1", "ZZ4b", "ZH4b"], 
+                                years=["UL16_preVFP", "UL16_postVFP", "UL17", "UL18", "2016", "2017", "2018"],
+                                procs=sig_procs, 
                                 debug=args.debug)
 #    hist_signal_preUL = combine_hists(input_file_sig_preUL,
 #                                f"{var_name}_PROC_YEAR_fourTag_SR",
@@ -2157,6 +2178,7 @@ if __name__ == "__main__":
     parser.add_argument('--input_file_mix',   default="hists/histMixedData.root")
     parser.add_argument('--input_file_sig',   default="hists/histSignal.root")
     #parser.add_argument('--input_file_sig_preUL',   default="analysis/hists/histSignal_preUL.root")
+    parser.add_argument('--channel', default=None, help="Channel: ttHbb, hh, zh, zz")
     parser.add_argument('--var', default="SvB_MA_ps_hh", help="SvB_MA_ps_XX or SvB_MA_ps_XX_fine")
     parser.add_argument('--rebin', default=1)
     parser.add_argument('--m4j_xmin', default=390)
@@ -2177,15 +2199,18 @@ if __name__ == "__main__":
     #
     #  Parse channel
     #
-    if not args.var.find("hh") == -1:
+    if args.channel is not None:
+        channel = args.channel
+    elif not args.var.find("ttHbb") == -1 or not args.var.find("tth") == -1:
+        channel = "ttHbb"
+    elif not args.var.find("hh") == -1:
         channel = "hh"
     elif not args.var.find("zh") == -1:
         channel = "zh"
     elif not args.var.find("zz") == -1:
         channel = "zz"
     else:
-        print(f"ERROR cannot parse chanel from {args.var}")
-        sys.exit(-1)
+        channel = "ttHbb"
 
     #
     #  Parse classifier

@@ -1,5 +1,5 @@
-label: "ttHbb"
-output_path: "output/ttHbb/"
+label: "ttHbb_v2"
+output_path: "output/ttHbb_v2/"
 cern_user: "algomez"
 cern_path: "www/HH4b/Plots/"
 dataset:
@@ -134,7 +134,7 @@ convert_hist_to_json:
 combine_outdir: "datacards/"
 make_combine_inputs:
   stat_only: ""
-  bkgsyst: "coffea4bees/stats_analysis/files/HIG-24-010/hh/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_hh_rebin1.pkl"
+  bkgsyst: "output/ttHbb_mixeddata_closure/closure_fits/3bDvTMix4bDvT/SvB_MA/rebin1/SR/ttHbb/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_rebin1.pkl"
 channels:
   ttHbb:
     signallabel: "ttHbb"

@@ -180,22 +180,12 @@ def filling_nominal_histograms(
             # final-fit discriminant). The extra SvB_mixedMvD study classifiers
             # get the coarse hists only — drop the 5 240-bin _fine hists (large
             # storage, not needed for classifier comparison).
-            is_ttHbb = "ps_ttHbb" in selev[name].fields
-            if is_ttHbb:
-                fine_skip = [] if name in ("SvB", "SvB_MA") else [
-                    "ps_ttHbb_fine", "pttHbb_hh_fine", "pttHbb_fine"
-                ]
-                fill += ttHbbSvBHists((name, f"{name} Classifier"), name, skip=fine_skip)
-            else:
-                fine_skip = [] if name in ("SvB", "SvB_MA") else [
-                    "ps_zz_fine", "ps_zh_fine", "ps_hh_fine", "phh_hh_fine", "phh_fine"]
-                fill += SvBHists((name, f"{name} Classifier"), name, skip=fine_skip)
+            fine_skip = [] if name in ("SvB", "SvB_MA") else [
+                "ps_zz_fine", "ps_zh_fine", "ps_hh_fine", "phh_hh_fine", "phh_fine"]
+            fill += SvBHists((name, f"{name} Classifier"), name, skip=fine_skip)
         if has_SvB_MA:
             #fill += SvBHists(("SvB_noFvT", "SvB Classifier"), "SvB", weight="weight_noFvT")
-            if "ps_ttHbb" in selev["SvB_MA"].fields:
-                fill += ttHbbSvBHists(("SvB_MA_noFvT", "SvB MA Classifier"), "SvB_MA", weight=noFvT_weight)
-            else:
-                fill += SvBHists(("SvB_MA_noFvT", "SvB MA Classifier"), "SvB_MA", weight=noFvT_weight)
+            fill += SvBHists(("SvB_MA_noFvT", "SvB MA Classifier"), "SvB_MA", weight=noFvT_weight)
             #fill += SvBHists(("SvB_MA_noFvT_noJCM", "SvB MA Classifier"), "SvB_MA", weight="weight_noJCM_noFvT")
         if "SvB_FeynNet" in selev.fields:
             fill += FeynNetSvBHists(("SvB_FeynNet", "FeynNet SvB Classifier"), "SvB_FeynNet")
@@ -206,15 +196,9 @@ def filling_nominal_histograms(
         if isDataForMixed:
             for _FvT_name in event_metadata["FvT_names"]:
                 if has_SvB:
-                    if "ps_ttHbb" in selev["SvB"].fields:
-                        fill += ttHbbSvBHists((f"SvB_{_FvT_name}", "SvB Classifier"), "SvB", weight=f"weight_{_FvT_name}")
-                    else:
-                        fill += SvBHists((f"SvB_{_FvT_name}", "SvB Classifier"), "SvB", weight=f"weight_{_FvT_name}")
+                    fill += SvBHists((f"SvB_{_FvT_name}", "SvB Classifier"), "SvB", weight=f"weight_{_FvT_name}")
                 if has_SvB_MA:
-                    if "ps_ttHbb" in selev["SvB_MA"].fields:
-                        fill += ttHbbSvBHists((f"SvB_MA_{_FvT_name}", "SvB MA Classifier"), "SvB_MA", weight=f"weight_{_FvT_name}")
-                    else:
-                        fill += SvBHists((f"SvB_MA_{_FvT_name}", "SvB MA Classifier"), "SvB_MA", weight=f"weight_{_FvT_name}")
+                    fill += SvBHists((f"SvB_MA_{_FvT_name}", "SvB MA Classifier"), "SvB_MA", weight=f"weight_{_FvT_name}")
             for _FvT_name in event_metadata["FvT_names"]:
                 fill += hist.add(f"m4j_{_FvT_name}", (120, 0, 1200, ("m4j", "m4j [GeV]")), weight=f"weight_{_FvT_name}")
                 fill += hist.add(f"m4j_hh_{_FvT_name}", (120, 0, 1200, ("m4j_HHSR", "m4j HHSR [GeV]")), weight=f"weight_{_FvT_name}")
@@ -516,17 +500,10 @@ def filling_syst_histograms(selev, weights, analysis_selections,
     ]
     for name in svb_fields:
         # Coarse-only for the extra SvB_mixedMvD study classifiers (drop the 5
-        is_ttHbb = "ps_ttHbb" in selev[name].fields
-        if is_ttHbb:
-            _skip = ["ps", "ptt"] if name in ("SvB", "SvB_MA") else [
-                "ps", "ptt", "ps_ttHbb_fine", "pttHbb_hh_fine", "pttHbb_fine"
-            ]
-            fill_SvB += ttHbbSvBHists((name, f"{name} Classifier"), name, skip=_skip)
-        else:
-            _skip = ["ps", "ptt"] if name in ("SvB", "SvB_MA") else [
-                "ps", "ptt", "ps_zz_fine", "ps_zh_fine", "ps_hh_fine", "phh_hh_fine", "phh_fine"
-            ]
-            fill_SvB += SvBHists((name, f"{name} Classifier"), name, skip=_skip)
+        _skip = ["ps", "ptt"] if name in ("SvB", "SvB_MA") else [
+            "ps", "ptt", "ps_zz_fine", "ps_zh_fine", "ps_hh_fine", "phh_hh_fine", "phh_fine"
+        ]
+        fill_SvB += SvBHists((name, f"{name} Classifier"), name, skip=_skip)
 
     fill_SvB(selev, hist_SvB, variation=shift_name, weight="weight")
 

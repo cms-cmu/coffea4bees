@@ -1,5 +1,11 @@
 label: "ttHbb_mixeddata"
-output_path: "output/ttHbb_mixeddata/"
+output_path: "output/ttHbb_mixeddata_closure/coffea_outputs/"
+datasets:
+  - "mixeddata"
+years:
+  - "2016"
+  - "2017"
+  - "2018"
 dataset:
   - "mixeddata"
 datasets_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/synthetic_datasets.yml"
@@ -31,6 +37,7 @@ analysis_config:
     run_SvB: true
     SvB_MA: true
     SvB: null
+    apply_lepton_veto: false
     hist_cuts: ["pass_nSelJets_gt6", "fail_nSelJets_le6"]
     top_reconstruction: fast
     plot_ttbar_with_weights: true

@@ -13,8 +13,7 @@ if TYPE_CHECKING:
 def setSvBVars(SvBName, event):
     """Derive analysis-level SvB fields from the raw friend-tree branches.
 
-    Supports three friend-tree schemas:
-      * **ttHbb schema** (p_ttHbb / pttHbb — delegates to set_ttHbb_SvB_vars)
+    Supports two friend-tree schemas:
       * **legacy multi-class** (5-class SvB / SvB_MA — phh/pzh/pzz/pmj/ptt/ps)
       * **new binary ggF-vs-bkg** (p_ggF/p_multijet/p_ttbar/p_sig — produced by
         the Run3 SvB training with `--mc-processes ggF` which doesn't load
@@ -22,10 +21,6 @@ def setSvBVars(SvBName, event):
         "HH-channel" (ps_hh = p_ggF); ps_zh and ps_zz are set to -2 (n/a).
     """
     sv = getattr(event, SvBName)
-    if "p_ttHbb" in sv.fields or "pttHbb" in sv.fields:
-        set_ttHbb_SvB_vars(SvBName, event)
-        return
-
     is_legacy = "phh" in sv.fields
 
     if is_legacy:

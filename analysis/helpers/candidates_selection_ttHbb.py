@@ -9,8 +9,9 @@ from coffea.analysis_tools import Weights
 from coffea4bees.analysis.helpers.candidates_selection import (
     cand_jet_selection,
     _compute_vbf_variables,
-    _apply_ml_scores,
 )
+from coffea4bees.analysis.helpers.SvB_helpers import compute_SvB_ttHbb, compute_SvB_FeynNet
+from coffea4bees.analysis.helpers.FvT_helpers import compute_FvT
 
 
 def _build_dijets_ttHbb(selev, cand_cfg=None, isRun3=False):
@@ -171,6 +172,74 @@ def _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB=False, cand_cfg=Non
             selev["failSvB"] = svb_ps < svb_cfg.get('failSvB_max', 0.05)
 
 
+def _apply_ml_scores_ttHbb(
+    selev,
+    quadJet,
+    apply_FvT: bool,
+    classifier_FvT,
+    run_SvB: bool,
+    run_systematics: bool,
+    classifier_SvB,
+    classifier_SvB_MA,
+    classifier_SvB_FeynNet,
+    weights: Weights,
+    list_weight_names: list[str],
+    analysis_selections: ak.Array,
+    label3b: str,
+):
+    if classifier_FvT is not None:
+        compute_FvT(
+            selev,
+            FvT=classifier_FvT,
+            weights=weights,
+            list_weight_names=list_weight_names,
+            analysis_selections=analysis_selections,
+            label3b=label3b,
+        )
+        apply_FvT = True
+
+    if run_SvB:
+        need_svb = (classifier_SvB is not None and "SvB" not in selev.fields)
+        need_svb_ma = (classifier_SvB_MA is not None and "SvB_MA" not in selev.fields)
+        if need_svb or need_svb_ma:
+            clf_svb = classifier_SvB if need_svb else None
+            clf_svb_ma = classifier_SvB_MA if need_svb_ma else None
+            tmp_mask = (
+                (selev.fourTag & quadJet[quadJet.selected][:, 0].SR)
+                if run_systematics
+                else np.full(len(selev), True)
+            )
+            compute_SvB_ttHbb(selev, tmp_mask, SvB=clf_svb, SvB_MA=clf_svb_ma, doCheck=False)
+
+        if "SvB" in selev.fields:
+            quadJet["SvB_q_score"] = np.concatenate([
+                selev.SvB.q_1234[:, np.newaxis],
+                selev.SvB.q_1324[:, np.newaxis],
+                selev.SvB.q_1423[:, np.newaxis],
+            ], axis=1)
+        if "SvB_MA" in selev.fields:
+            quadJet["SvB_MA_q_score"] = np.concatenate([
+                selev.SvB_MA.q_1234[:, np.newaxis],
+                selev.SvB_MA.q_1324[:, np.newaxis],
+                selev.SvB_MA.q_1423[:, np.newaxis],
+            ], axis=1)
+
+    if run_SvB and classifier_SvB_FeynNet is not None:
+        tmp_mask_fn = (
+            (selev.fourTag & quadJet[quadJet.selected][:, 0].SR)
+            if run_systematics
+            else np.full(len(selev), True)
+        )
+        compute_SvB_FeynNet(
+            selev,
+            tmp_mask_fn,
+            SvB_FeynNet=classifier_SvB_FeynNet,
+            doCheck=False,
+        )
+
+    return apply_FvT
+
+
 def create_cand_jet_dijet_quadjet_ttHbb(
     selev,
     apply_FvT: bool = False,
@@ -199,7 +268,7 @@ def create_cand_jet_dijet_quadjet_ttHbb(
     quadJet = _build_quadjets_ttHbb(selev, diJet, diJetDr, cand_cfg, isRun3)
     del diJetDr
 
-    apply_FvT = _apply_ml_scores(
+    apply_FvT = _apply_ml_scores_ttHbb(
         selev, quadJet, apply_FvT, classifier_FvT,
         run_SvB, run_systematics, classifier_SvB, classifier_SvB_MA, classifier_SvB_FeynNet,
         weights, list_weight_names, analysis_selections, label3b,

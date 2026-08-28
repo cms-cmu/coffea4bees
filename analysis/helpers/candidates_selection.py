@@ -3,7 +3,7 @@ import awkward as ak
 import logging
 import yaml
 from src.math_tools.random import Squares
-from coffea4bees.analysis.helpers.SvB_helpers import compute_SvB, compute_SvB_ttHbb, compute_SvB_FeynNet
+from coffea4bees.analysis.helpers.SvB_helpers import compute_SvB, compute_SvB_FeynNet
 from coffea4bees.analysis.helpers.FvT_helpers import compute_FvT
 from coffea.nanoevents.methods import vector
 from coffea.analysis_tools import Weights
@@ -388,15 +388,7 @@ def _apply_ml_scores(
                 if run_systematics
                 else np.full(len(selev), True)
             )
-            is_ttHbb = False
-            for clf in [clf_svb, clf_svb_ma]:
-                if clf is not None and hasattr(clf, "classes") and "ttHbb" in clf.classes:
-                    is_ttHbb = True
-                    break
-            if is_ttHbb:
-                compute_SvB_ttHbb(selev, tmp_mask, SvB=clf_svb, SvB_MA=clf_svb_ma, doCheck=False)
-            else:
-                compute_SvB(selev, tmp_mask, SvB=clf_svb, SvB_MA=clf_svb_ma, doCheck=False)
+            compute_SvB(selev, tmp_mask, SvB=clf_svb, SvB_MA=clf_svb_ma, doCheck=False)
 
         if "SvB" in selev.fields:
             quadJet["SvB_q_score"] = np.concatenate([
