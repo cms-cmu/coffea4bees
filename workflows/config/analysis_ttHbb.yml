@@ -64,7 +64,6 @@ trigger_weights:
     use_vectorized: false
     tagger: DeepJet
     make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/
-    # make_classifier_input: output/trigger_weights/   ### local
 
 # ==============================================================================
 # PHASE B: JET COMBINATORIC MODEL (JCM) — [One-time / Initial Setup]
@@ -79,7 +78,7 @@ jcm_datasets:
 jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb_jcm_config.yml"
 
 # ==============================================================================
-# PHASE C & D: CLASSIFIER INPUTS & TRAINING (FvT / SvB)
+# PHASE C & D: CLASSIFIER SETTINGS (Entirely on falcon / PSC)
 # ==============================================================================
 classifier_inputs:
   processor: "coffea4bees/analysis/processors/processor_HH4b.py"
@@ -109,6 +108,53 @@ classifier_inputs:
     top_reconstruction: slow
     fill_histograms: true
     make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_v2/
+
+classifier_setting:
+  - module: ml.DataLoader
+    option:
+      - optimize_sliceable_dataset: true
+  - module: ROOT
+    option:
+      - friend_allow_missing: false
+  - module: cms.CollisionData
+    option:
+      - eras:
+          UL16_preVFP: [C, D, E, F]
+          UL16_postVFP: [F, G, H]
+          UL17: [B, C, D, E, F]
+          UL18: [A, B, C, D]
+  - module: HCR.InputBranch
+    option:
+      - feature_ancillary: [xW, nSelJets, xbW, year]
+
+fvt:
+  eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_v2"
+  plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
+  classifier_config_paths: "coffea4bees"
+  wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_2024_v2/FvT"
+  label: "FvT_ttHbb_v2"
+  output_dir: "output/FvT_ttHbb_v2/"
+  plot_inputs: true
+  model: "{eos_base}/classifier/{label}"
+  friend: "{eos_base}/friend/{label}"
+  train_template: "model: {eos_base}/classifier/{label}"
+  eval_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/{label}"
+  metadata: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_ttHbb.json@@HCR_input"
+
+svb:
+  eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_v2"
+  plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
+  classifier_config_paths: "coffea4bees"
+  wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_2024_v2/SvB"
+  label: "SvB_ttHbb_v2"
+  output_dir: "output/SvB_ttHbb_v2/"
+  plot_inputs: true
+  evaluate: true
+  model: "{eos_base}/classifier/{label}"
+  friend: "{eos_base}/friend/{label}"
+  train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_ttHbb_v2"
+  eval_template: "model: {eos_base}/classifier/{label}, SvB: {eos_base}/friend/{label}"
+  metadata: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_ttHbb.json@@HCR_input"
 
 # ==============================================================================
 # PHASE E.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING

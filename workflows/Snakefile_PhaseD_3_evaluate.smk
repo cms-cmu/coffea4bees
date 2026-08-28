@@ -3,7 +3,16 @@
 # Supports full evaluation or single-dataset evaluation via --config dataset=<dataset_name>
 
 import os
+import copy
+import yaml
 from datetime import datetime
+
+include: "helpers/common.smk"
+
+# Resolve SvB configuration block from master config or fallback keys
+svb_cfg = resolve_config_section(config, primary_key='svb', fallback_keys=['svb_classifier', 'classifier'])
+for k, v in svb_cfg.items():
+    config.setdefault(k, v)
 
 # Fallback default configuration
 config.setdefault('eos_base', "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/nominal_sel")
@@ -25,6 +34,16 @@ EOS_BASE = config["eos_base"]
 EVAL_TEMPLATE = config["eval_template"].format(eos_base=EOS_BASE, label=LABEL)
 WFS_BASE = config["wfs_base"]
 CLASSIFIER_CONFIG_PATHS = config["classifier_config_paths"]
+
+# Handle classifier_setting embedded in master config
+if 'classifier_setting' in config:
+    common_path = f"{OUTPUT_DIR}/common.yml"
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    with open(common_path, 'w') as f:
+        yaml.dump({'setting': config['classifier_setting']}, f, default_flow_style=False)
+    COMMON_PATH = common_path
+else:
+    COMMON_PATH = config.get("common", f"{WFS_BASE}/../common.yml")
 
 target_datasets = config.get('dataset', config.get('datasets', None))
 if target_datasets and isinstance(target_datasets, str):
@@ -54,6 +73,7 @@ if target_datasets:
             classifier_config_paths = CLASSIFIER_CONFIG_PATHS,
             wfs_base                = WFS_BASE,
             template_str            = EVAL_TEMPLATE,
+            common                  = COMMON_PATH,
             dataset                 = "{dataset}"
         shell:
             """
@@ -62,7 +82,7 @@ if target_datasets:
             CLASSIFIER_CONFIG_PATHS={params.classifier_config_paths} \
             python -m src.classifier.task.main \
                 template "{{{params.template_str}}}" {params.wfs_base}/evaluate.yml \
-                -from {params.wfs_base}/../common.yml \
+                -from {params.common} \
                 -setting dataset "{params.dataset}" \
                 -setting Monitor "address: '127.0.0.1:$PORT'" \
                 -flag debug \
@@ -90,6 +110,7 @@ else:
             classifier_config_paths = CLASSIFIER_CONFIG_PATHS,
             wfs_base                = WFS_BASE,
             template_str            = EVAL_TEMPLATE,
+            common                  = COMMON_PATH,
         shell:
             """
             {params.init} && \
@@ -97,7 +118,7 @@ else:
             CLASSIFIER_CONFIG_PATHS={params.classifier_config_paths} \
             python -m src.classifier.task.main \
                 template "{{{params.template_str}}}" {params.wfs_base}/evaluate.yml \
-                -from {params.wfs_base}/../common.yml \
+                -from {params.common} \
                 -setting Monitor "address: '127.0.0.1:$PORT'" \
                 -flag debug \
                 2>&1 | tee -a {log}
