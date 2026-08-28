@@ -44,9 +44,7 @@ analysis_config:
     workers: 4
     worker_memory: 8GB
     chunksize: 10000
-    condor: true
-    shared_dask: true
-    run_performance: true
+    dashboard_address: 0
   config:
     blind: true
     apply_FvT: true
