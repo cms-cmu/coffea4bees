@@ -103,7 +103,7 @@ make_plots_lowpt_Run2_coffea4bees:
     - setup_coffea4bees
     - merging_files_lowpt_Run2_coffea4bees
   script:
-    - pixi run snakemake output/run2_lowpt/plots_run2_lowpt/plots_done.txt -s coffea4bees/workflows/Snakefile_PhaseE_1_analysis.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml --config test=true --jobs 4
+    - pixi run snakemake output/run2_lowpt/plots_run2_lowpt/plots_done.txt -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml --config test=true --jobs 4
   artifacts:
     paths:
       - barista_framework/output/run2_lowpt/plots_run2_lowpt/plots_done.txt
@@ -116,7 +116,7 @@ make_plots_ttHbb_coffea4bees:
     - setup_coffea4bees
     - merging_files_ttHbb_coffea4bees
   script:
-    - pixi run snakemake output/ttHbb_v2/plots_ttHbb_v2/plots_done.txt -s coffea4bees/workflows/Snakefile_PhaseE_1_analysis.smk --configfile coffea4bees/workflows/config/analysis_ttHbb.yml --config test=true --jobs 4
+    - pixi run snakemake output/ttHbb_v2/plots_ttHbb_v2/plots_done.txt -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/analysis_ttHbb.yml --config test=true --jobs 4
   artifacts:
     paths:
       - barista_framework/output/ttHbb_v2/plots_ttHbb_v2/plots_done.txt
@@ -129,7 +129,7 @@ make_plots_Run3_coffea4bees:
     - setup_coffea4bees
     - merging_files_Run3_coffea4bees
   script:
-    - pixi run snakemake output/run3_nominal/plots_run3_nominal/plots_done.txt -s coffea4bees/workflows/Snakefile_PhaseE_1_analysis.smk --configfile coffea4bees/workflows/config/nominal_run3.yml --config test=true --jobs 4
+    - pixi run snakemake output/run3_nominal/plots_run3_nominal/plots_done.txt -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/nominal_run3.yml --config test=true --jobs 4
   artifacts:
     paths:
       - barista_framework/output/run3_nominal/plots_run3_nominal/plots_done.txt
