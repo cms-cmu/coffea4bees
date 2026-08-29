@@ -61,7 +61,7 @@ flowchart TD
 ```
 
 > [!NOTE]
-> *See the [Phase-by-Phase Technical Specifications](#3-phase-by-phase-technical-specification) below for detailed conditions regarding optional (one-time setup or retraining) versus routine execution steps.*
+> *See the [Phase-by-Phase Technical Specifications](#3-phase-by-phase-technical-specification) below for detailed conditions regarding optional (one-time setup or retraining) versus routine execution steps, along with intermediate metadata updates.*
 
 ---
 
@@ -74,12 +74,25 @@ flowchart TD
   * `Snakefile_PhaseA_1_skimmer.smk`: Runs `skimmer_4b.py` on nanoAOD datasets, applies baseline object selections, and writes skimmed picoAOD root files.
   * `Snakefile_PhaseA_2_trigWeights.smk`: Calculates trigger efficiency scale factors and outputs a trigger weights friend tree JSON.
 
+#### Key Artifacts & Required Downstream Updates:
+* **After Phase A.1 (Skimmer)**:
+  * *Outputs Produced*: Skimmed picoAOD ROOT files (`picoAOD_*.root`) on EOS.
+  * *Files to Add/Modify*: Create or update dataset manifest files in `metadata/datasets/` (e.g. `picoaod_datasets_<analysis>.yml`) so downstream processors find the skimmed files.
+* **After Phase A.2 (Trigger Weights)**:
+  * *Outputs Produced*: Trigger weight friend trees and manifest `trigWeights_nominal.json` on EOS.
+  * *Files to Add/Modify*: Register the trigger weight friend path in the analysis friend file (e.g. `friends_<analysis>.yml`):
+    ```yaml
+    trigWeight:
+      - path: 'root://cmseos.fnal.gov//store/user/.../trigWeights_nominal.json'
+        name: Final
+    ```
+
 #### Snakemake Rulegraph DAG:
 <p align="center">
   <img src="docs/figures/rulegraph_PhaseA.svg" alt="Phase A Rulegraph DAG" width="380"/>
 </p>
 
-**Execution Examples (using recommended config file):**
+**Execution Examples:**
 ```bash
 # Run full Phase A (Skim + Trigger Weights) via config file on cmslpc
 ./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseA.smk \
@@ -102,6 +115,14 @@ flowchart TD
 * **Sub-workflows:**
   * `Snakefile_PhaseB_1_computeJCM.smk`: **[New Analysis Only / One-Time]** Derives jet combinatoric model weights by running the Coffea processor with `apply_JCM: false` and fitting the resulting histograms to compute transfer factors between jet multiplicities. Done once when establishing a new analysis baseline, and reused thereafter.
   * `Snakefile_PhaseB_2_make_classifier_friendtree.smk`: **[Required for All Analyses]** Runs the Coffea processor (`processor_HH4b.py make_classifier_input`) on datasets to create the ROOT friend tree files used as input features for classifier training and evaluation.
+
+#### Key Artifacts & Required Downstream Updates:
+* **After Phase B.1 (computeJCM)**:
+  * *Outputs Produced*: Fitted JCM YAML file (`jetCombinatoricModel_SB_<tag>.yml`).
+  * *Files to Add/Modify*: Store the JCM file in `metadata/weights/JCM/<analysis>/` and update `weights_<analysis>.yml` (e.g. `weights_ttHbb.yml` or `weights_HH4b.yml`) to point `JCM_file:` to this new file.
+* **After Phase B.2 (make_classifier_friendtree)**:
+  * *Outputs Produced*: Classifier input friend tree ROOT files on EOS + `classifier_inputs_friends.json` manifest.
+  * *Files to Add/Modify*: Create the classifier dataset manifest in `metadata/datasets/.../classifier_inputs_<analysis>.json` with the `@@HCR_input` / `@@HCR_input_lowpt` dataset configuration block for PyTorch dataloaders. Ensure `fvt.metadata` and `svb.metadata` in the master config point to this JSON.
 
 #### Snakemake Rulegraph DAG:
 <p align="center">
@@ -135,6 +156,19 @@ flowchart TD
   * `Snakefile_PhaseC_1_plot_inputs.smk`: *(Optional / Diagnostics)* Generates raw feature distributions, preprocessed data distributions, and learned event weights plots (`plot_inputs_raw`, `plot_inputs_dataprep`, `plot_weights`).
   * `Snakefile_PhaseC_2_train.smk`: *(Optional — If Retraining FvT)* Trains multi-fold FvT neural networks using PyTorch/HCR (`train`) and produces training loss and ROC curve diagnostics (`analyze`).
   * `Snakefile_PhaseC_3_evaluate.smk`: *(Run If Background Estimation / JCM Changed)* Evaluates trained models on datasets to produce FvT friend tree ntuples (`evaluate`). Flexible to run standalone or chained after training.
+
+#### Key Artifacts & Required Downstream Updates:
+* **After Phase C.2 (Train)**:
+  * *Outputs Produced*: PyTorch checkpoint weights (`model.pt`, `model_fold_*.pt`) and `result.json` on EOS.
+* **After Phase C.3 (Evaluate)**:
+  * *Outputs Produced*: Evaluated FvT friend tree ROOT files (`FvT_*.root`) on EOS and manifest `result.json`.
+  * *Files to Add/Modify*: Register the FvT friend tree path in `weights_<analysis>.yml`:
+    ```yaml
+    FvT:
+      - path: 'root://cmseos.fnal.gov//store/user/.../classifier/FvT_<label>/result.json'
+        name: Final
+    ```
+    Ensure `svb.train_template` in the master config references this FvT friend path.
 
 #### Snakemake Rulegraph DAG:
 <p align="center">
@@ -180,6 +214,18 @@ pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseC_3_evaluate.smk \
   * `Snakefile_PhaseD_2_train.smk`: *(Optional — If Retraining SvB)* Trains multiclass / binary SvB classifiers (`train`) and generates ROC curves (`analyze`).
   * `Snakefile_PhaseD_3_evaluate.smk`: **[Required for All Analyses]** Evaluates trained SvB models across all analysis datasets to generate the final `SvB_nominal.root` / `.json` friend tree ntuples (`evaluate`) required for downstream event selection in Phase F.
 
+#### Key Artifacts & Required Downstream Updates:
+* **After Phase D.2 (Train)**:
+  * *Outputs Produced*: PyTorch checkpoint weights (`model.pt`, `model_fold_*.pt`) and `result.json` on EOS.
+* **After Phase D.3 (Evaluate)**:
+  * *Outputs Produced*: Evaluated SvB friend tree ROOT files (`SvB_*.root`) on EOS and manifest `result.json`.
+  * *Files to Add/Modify*: Register the SvB friend tree path in `weights_<analysis>.yml`:
+    ```yaml
+    SvB_MA:
+      - path: 'root://cmseos.fnal.gov//store/user/.../classifier/SvB_<label>/result.json'
+        name: Final
+    ```
+
 #### Snakemake Rulegraph DAG:
 <p align="center">
   <img src="docs/figures/rulegraph_PhaseD.svg" alt="Phase D Rulegraph DAG" width="400"/>
@@ -219,7 +265,12 @@ pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseD_3_evaluate.smk \
 ### Phase E: Background Uncertainties & Systematics
 * **Target Machine:** **`cmslpc`**
 * **Coordinator:** `Snakefile_PhaseE.smk`
-* **Note on Scope:** **Phase E is optional/one-off.** It is executed when establishing background model closure, hemisphere mixing, and transfer factor systematic uncertainty derivations. Once the background uncertainty inputs are generated, they are stored and reused in subsequent analysis runs.
+* **Sub-workflows:** `mixeddata_closure`, `synthetic_closure`.
+
+#### Key Artifacts & Required Downstream Updates:
+* **Outputs Produced**: Background model closure fit histograms, hemisphere mixing transfer factors, and systematic uncertainty pickle/root files (e.g. `hists_closure_3bDvTMix4bDvT_SvB_MA_ps_rebin1.pkl`).
+* **Files to Add/Modify**: Update `make_combine_inputs.bkgsyst` in the master config (`analysis_ttHbb.yml` or `nominal_run2.yml`) pointing to the generated background closure fit file.
+* **Note on Scope:** **Phase E is optional/one-off.** It is executed when establishing background model closure and systematic uncertainty derivations, then stored and reused in subsequent analysis runs.
 
 ---
 
@@ -229,6 +280,13 @@ pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseD_3_evaluate.smk \
 * **Sub-workflows:**
   * `Snakefile_PhaseF_1_analysis.smk`: Runs main Coffea analysis processor (`processor_HH4b.py`), merges histogram files, checks cutflow agreement against reference counts, and generates data/MC comparison plots.
   * `Snakefile_PhaseF_2_stats.smk`: Converts histogram distributions to Combine JSON format, generates CMS Combine datacards, builds workspaces, and computes expected limits, signal significance, and likelihood profile scans.
+
+#### Key Artifacts & Required Downstream Updates:
+* **After Phase F.1 (Analysis Processor)**:
+  * *Outputs Produced*: `histAll_<label>.coffea`, cutflow summary `cutflow_<label>.yml`, and data/MC plots on EOS/web.
+  * *Files to Add/Modify*: Update reference cutflow counts file (`known_Counts_<analysis>.yml`) if this run establishes a new validated baseline.
+* **After Phase F.2 (Combine Stats)**:
+  * *Outputs Produced*: Combine JSON histograms, datacards (`datacard_*.txt`), workspaces (`datacard_*.root`), limit outputs (`datacard_limits_*.json`), and likelihood profile scan PDFs/ROOT snapshots.
 
 #### Snakemake Rulegraph DAG:
 <p align="center">
