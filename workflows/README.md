@@ -11,7 +11,7 @@ The pipeline is organized into modular **Phases (A through F)** reflecting the f
 | Phase | Purpose | Target Execution Environment | Compute Requirements |
 | :--- | :--- | :--- | :--- |
 | **Phase A** | Skimmer & Trigger Weights | **`cmslpc`** | CPU (Condor / Dask batching) |
-| **Phase B** | Calibration (JCM) & Classifier Input Friendtrees | **`cmslpc`** | CPU (Condor / Dask batching) |
+| **Phase B** | **Phase B.1**: Compute JCM *(New Analysis Only)*<br>**Phase B.2**: Make Classifier Friend Trees *(All Analyses)* | **`cmslpc`** | CPU (Condor / Dask batching) |
 | **Phase C** | FvT Classifier (Plot Inputs $\to$ Train $\to$ Evaluate) | **`falcon`** (GPU cluster) / **PSC Bridges-2** | GPU (NVIDIA MPS/CUDA for training & inference) |
 | **Phase D** | SvB Classifier (Plot Inputs $\to$ Train $\to$ Evaluate) | **`falcon`** (GPU cluster) / **PSC Bridges-2** | GPU (NVIDIA MPS/CUDA for training & inference) |
 | **Phase E** | Background Uncertainties *(Reserved for Mixed Data)* | **`cmslpc`** | CPU (Condor / Dask batching) |
@@ -31,7 +31,8 @@ flowchart TD
     end
 
     subgraph PhaseB["Phase B: Calibration & Classifier Inputs (cmslpc)"]
-        B1["PhaseB_1_computeJCM.smk\n(JCM Weights — [One-time / Optional])"] --> B2["PhaseB_2_make_classifier_friendtree.smk\n(Classifier Input Friend Trees)"]
+        B1["PhaseB_1_computeJCM.smk\n(JCM Weights — [New Analysis Only])"]
+        B2["PhaseB_2_make_classifier_friendtree.smk\n(Classifier Input Friend Trees — [Required for All Analyses])"]
     end
 
     subgraph PhaseC["Phase C: FvT Classifier Pipeline (falcon / PSC)"]
@@ -52,8 +53,10 @@ flowchart TD
         F1["PhaseF_1_analysis.smk\n(Main Processor, Cutflows, Plots)"] --> F2["PhaseF_2_stats.smk\n(Datacards, Workspaces, Fits & Limits)"]
     end
 
-    PhaseA --> PhaseB
-    PhaseB --> PhaseC
+    PhaseA -->|New Analysis Only| B1
+    PhaseA -->|All Analyses| B2
+    B1 -.->|JCM Weights| B2
+    B2 --> PhaseC
     PhaseC --> PhaseD
     PhaseD --> PhaseE
     PhaseE --> PhaseF
@@ -96,8 +99,8 @@ flowchart TD
 * **Target Machine:** **`cmslpc`**
 * **Coordinator:** `Snakefile_PhaseB.smk`
 * **Sub-workflows:**
-  * `Snakefile_PhaseB_1_computeJCM.smk` (aliased by `Snakefile_computeJCM.smk`): *(One-time / Initial Calibration)* Derives jet combinatoric model weights by running the Coffea processor with `apply_JCM: false` and fitting the resulting histograms to compute transfer factors between jet multiplicities.
-  * `Snakefile_PhaseB_2_make_classifier_friendtree.smk` (aliased by `Snakefile_make_classifier_friendtree.smk`): Runs the Coffea processor (`processor_HH4b.py make_classifier_input`) on datasets to create the ROOT friend tree files used as input features for classifier training and evaluation.
+  * `Snakefile_PhaseB_1_computeJCM.smk` (aliased by `Snakefile_computeJCM.smk`): **[New Analysis Only]** Derives jet combinatoric model weights by running the Coffea processor with `apply_JCM: false` and fitting the resulting histograms to compute transfer factors between jet multiplicities. Done once when establishing a new analysis baseline, and reused thereafter.
+  * `Snakefile_PhaseB_2_make_classifier_friendtree.smk` (aliased by `Snakefile_make_classifier_friendtree.smk`): **[Required for All Analyses]** Runs the Coffea processor (`processor_HH4b.py make_classifier_input`) on datasets to create the ROOT friend tree files used as input features for classifier training and evaluation.
 
 #### Snakemake Rulegraph DAG:
 <p align="center">
@@ -111,12 +114,12 @@ flowchart TD
     --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
     --cores 8
 
-# Run only Phase B.1 JCM computation
+# Run only Phase B.1 JCM computation (New analysis only)
 ./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseB_1_computeJCM.smk \
     --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
     --cores 4
 
-# Run only Phase B.2 Classifier friend tree inputs creation
+# Run only Phase B.2 Classifier friend tree inputs creation (All analyses)
 ./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseB_2_make_classifier_friendtree.smk \
     --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
     --cores 8
