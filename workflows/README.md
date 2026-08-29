@@ -11,9 +11,9 @@ The pipeline is organized into modular **Phases (A through F)** reflecting the f
 | Phase | Purpose | Target Execution Environment | Compute Requirements |
 | :--- | :--- | :--- | :--- |
 | **Phase A** | Skimmer & Trigger Weights | **`cmslpc`** | CPU (Condor / Dask batching) |
-| **Phase B** | **Phase B.1**: Compute JCM *(New Analysis Only)*<br>**Phase B.2**: Make Classifier Friend Trees *(All Analyses)* | **`cmslpc`** | CPU (Condor / Dask batching) |
-| **Phase C** | FvT Classifier (Plot Inputs $\to$ Train $\to$ Evaluate) | **`falcon`** (GPU cluster) / **PSC Bridges-2** | GPU (NVIDIA MPS/CUDA for training & inference) |
-| **Phase D** | SvB Classifier (Plot Inputs $\to$ Train $\to$ Evaluate) | **`falcon`** (GPU cluster) / **PSC Bridges-2** | GPU (NVIDIA MPS/CUDA for training & inference) |
+| **Phase B** | **Phase B.1**: Compute JCM *(New Analysis Only)*<br>**Phase B.2**: Make Classifier Friend Trees *(Required for All Analyses)* | **`cmslpc`** | CPU (Condor / Dask batching) |
+| **Phase C** | **Phase C.1/C.2**: Plot Inputs & Train *(If Retraining FvT)*<br>**Phase C.3**: Evaluate *(If Bkg Estimation / JCM Changed)* | **`falcon`** (GPU cluster) / **PSC Bridges-2** | GPU (NVIDIA MPS/CUDA for training & inference) |
+| **Phase D** | **Phase D.1/D.2**: Plot Inputs & Train *(If Retraining SvB)*<br>**Phase D.3**: Evaluate *(Required for All Analyses)* | **`falcon`** (GPU cluster) / **PSC Bridges-2** | GPU (NVIDIA MPS/CUDA for training & inference) |
 | **Phase E** | Background Uncertainties *(Reserved for Mixed Data)* | **`cmslpc`** | CPU (Condor / Dask batching) |
 | **Phase F** | Analysis Processor & CMS Combine Stats | **`cmslpc`** | CPU (Condor + Dask + Combine container) |
 
@@ -37,12 +37,12 @@ flowchart TD
 
     subgraph PhaseC["Phase C: FvT Classifier Pipeline (falcon / PSC)"]
         C1["PhaseC_1_plot_inputs.smk\n(Input/Weight Diagnostics — [Optional])"]
-        C2["PhaseC_2_train.smk\n(FvT Model Training & ROC — [Optional])"] --> C3["PhaseC_3_evaluate.smk\n(FvT Inference & Friend Trees)"]
+        C2["PhaseC_2_train.smk\n(FvT Training & ROC — [If Retraining FvT])"] --> C3["PhaseC_3_evaluate.smk\n(FvT Inference — [If Bkg Estimation Changed])"]
     end
 
     subgraph PhaseD["Phase D: SvB Classifier Pipeline (falcon / PSC)"]
         D1["PhaseD_1_plot_inputs.smk\n(Input/Weight Diagnostics — [Optional])"]
-        D2["PhaseD_2_train.smk\n(SvB Model Training & ROC — [Optional])"] --> D3["PhaseD_3_evaluate.smk\n(SvB Inference & Friend Trees)"]
+        D2["PhaseD_2_train.smk\n(SvB Training & ROC — [If Retraining SvB])"] --> D3["PhaseD_3_evaluate.smk\n(SvB Inference — [Required for All Analyses])"]
     end
 
     subgraph PhaseE["Phase E: Background Uncertainties (cmslpc)"]
@@ -56,9 +56,16 @@ flowchart TD
     PhaseA -->|New Analysis Only| B1
     PhaseA -->|All Analyses| B2
     B1 -.->|JCM Weights| B2
-    B2 --> PhaseC
-    PhaseC --> PhaseD
-    PhaseD --> PhaseE
+    
+    B2 -->|If Retraining FvT| C2
+    B2 -->|If Bkg Estimation Changed| C3
+    B2 -->|If Retraining SvB| D2
+    B2 -->|Routine Run| D3
+    
+    C3 -.->|New FvT Weights| D2
+    C3 -.->|New FvT Weights| D3
+    
+    D3 --> PhaseE
     PhaseE --> PhaseF
 ```
 
@@ -131,9 +138,9 @@ flowchart TD
 * **Target Machine:** **`falcon`** (GPU cluster) or **PSC Bridges-2** (Entire Phase on GPU)
 * **Coordinator:** `Snakefile_PhaseC.smk`
 * **Sub-workflows:**
-  * `Snakefile_PhaseC_1_plot_inputs.smk`: *(Optional)* Generates raw feature distributions, preprocessed data distributions, and learned event weights plots (`plot_inputs_raw`, `plot_inputs_dataprep`, `plot_weights`).
-  * `Snakefile_PhaseC_2_train.smk`: *(Optional when retraining)* Trains multi-fold FvT neural networks using PyTorch/HCR (`train`) and produces training loss and ROC curve diagnostics (`analyze`).
-  * `Snakefile_PhaseC_3_evaluate.smk`: Evaluates trained models on datasets to produce FvT friend tree ntuples (`evaluate`). Flexible to run standalone or chained after training.
+  * `Snakefile_PhaseC_1_plot_inputs.smk`: *(Optional / Diagnostics)* Generates raw feature distributions, preprocessed data distributions, and learned event weights plots (`plot_inputs_raw`, `plot_inputs_dataprep`, `plot_weights`).
+  * `Snakefile_PhaseC_2_train.smk`: *(Optional — If Retraining FvT)* Trains multi-fold FvT neural networks using PyTorch/HCR (`train`) and produces training loss and ROC curve diagnostics (`analyze`).
+  * `Snakefile_PhaseC_3_evaluate.smk`: *(Run If Background Estimation / JCM Changed)* Evaluates trained models on datasets to produce FvT friend tree ntuples (`evaluate`). Flexible to run standalone or chained after training.
 
 #### Snakemake Rulegraph DAG:
 <p align="center">
@@ -152,12 +159,12 @@ pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseC_1_plot_inputs.smk \
     --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
     --cores 4
 
-# Run only Phase C.2 Model training & loss/ROC analysis
+# Run only Phase C.2 Model training & loss/ROC analysis (If retraining FvT)
 pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseC_2_train.smk \
     --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
     --cores 8
 
-# Run Phase C.3 evaluation on ALL datasets
+# Run Phase C.3 evaluation on ALL datasets (If background estimation changed)
 pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseC_3_evaluate.smk \
     --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
     --cores 8
@@ -175,9 +182,9 @@ pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseC_3_evaluate.smk \
 * **Target Machine:** **`falcon`** (GPU cluster) or **PSC Bridges-2** (Entire Phase on GPU)
 * **Coordinator:** `Snakefile_PhaseD.smk`
 * **Sub-workflows:**
-  * `Snakefile_PhaseD_1_plot_inputs.smk`: *(Optional)* Generates raw and preprocessed feature distributions and weight plots.
-  * `Snakefile_PhaseD_2_train.smk`: *(Optional when retraining)* Trains multiclass / binary SvB classifiers (`train`) and generates ROC curves (`analyze`).
-  * `Snakefile_PhaseD_3_evaluate.smk`: Evaluates trained SvB models across analysis datasets to generate SvB friend tree ntuples (`evaluate`).
+  * `Snakefile_PhaseD_1_plot_inputs.smk`: *(Optional / Diagnostics)* Generates raw and preprocessed feature distributions and weight plots.
+  * `Snakefile_PhaseD_2_train.smk`: *(Optional — If Retraining SvB)* Trains multiclass / binary SvB classifiers (`train`) and generates ROC curves (`analyze`).
+  * `Snakefile_PhaseD_3_evaluate.smk`: **[Required for All Analyses]** Evaluates trained SvB models across all analysis datasets to generate the final `SvB_nominal.root` / `.json` friend tree ntuples (`evaluate`) required for downstream event selection in Phase F.
 
 #### Snakemake Rulegraph DAG:
 <p align="center">
@@ -196,12 +203,17 @@ pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseD_1_plot_inputs.smk \
     --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
     --cores 4
 
-# Run only Phase D.2 SvB training & analysis
+# Run only Phase D.2 SvB training & analysis (If retraining SvB)
 pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseD_2_train.smk \
     --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
     --cores 8
 
-# Run Phase D.3 SvB evaluation on a specific dataset or list of datasets
+# Run Phase D.3 SvB evaluation on ALL datasets (Required for All Analyses)
+pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseD_3_evaluate.smk \
+    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
+    --cores 8
+
+# Run Phase D.3 SvB evaluation on a single dataset (e.g. ttHbb)
 pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseD_3_evaluate.smk \
     --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
     --config dataset=ttHbb \
