@@ -100,8 +100,8 @@ flowchart TD
 * **Target Machine:** **`cmslpc`**
 * **Coordinator:** `Snakefile_PhaseB.smk`
 * **Sub-workflows:**
-  * `Snakefile_PhaseB_1_computeJCM.smk` (aliased by `Snakefile_computeJCM.smk`): **[New Analysis Only / One-Time]** Derives jet combinatoric model weights by running the Coffea processor with `apply_JCM: false` and fitting the resulting histograms to compute transfer factors between jet multiplicities. Done once when establishing a new analysis baseline, and reused thereafter.
-  * `Snakefile_PhaseB_2_make_classifier_friendtree.smk` (aliased by `Snakefile_make_classifier_friendtree.smk`): **[Required for All Analyses]** Runs the Coffea processor (`processor_HH4b.py make_classifier_input`) on datasets to create the ROOT friend tree files used as input features for classifier training and evaluation.
+  * `Snakefile_PhaseB_1_computeJCM.smk`: **[New Analysis Only / One-Time]** Derives jet combinatoric model weights by running the Coffea processor with `apply_JCM: false` and fitting the resulting histograms to compute transfer factors between jet multiplicities. Done once when establishing a new analysis baseline, and reused thereafter.
+  * `Snakefile_PhaseB_2_make_classifier_friendtree.smk`: **[Required for All Analyses]** Runs the Coffea processor (`processor_HH4b.py make_classifier_input`) on datasets to create the ROOT friend tree files used as input features for classifier training and evaluation.
 
 #### Snakemake Rulegraph DAG:
 <p align="center">
@@ -225,10 +225,10 @@ pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseD_3_evaluate.smk \
 
 ### Phase F: Analysis & Statistical Interpretation
 * **Target Machine:** **`cmslpc`** (CPU batching with HTCondor/Dask + Combine container)
-* **Coordinator:** `Snakefile_PhaseF.smk` (aliased by `Snakefile_full_analysis.smk`)
+* **Coordinator:** `Snakefile_PhaseF.smk`
 * **Sub-workflows:**
-  * `Snakefile_PhaseF_1_analysis.smk` (aliased by `Snakefile_analysis.smk`): Runs main Coffea analysis processor (`processor_HH4b.py`), merges histogram files, checks cutflow agreement against reference counts, and generates data/MC comparison plots.
-  * `Snakefile_PhaseF_2_stats.smk` (aliased by `Snakefile_stats.smk`): Converts histogram distributions to Combine JSON format, generates CMS Combine datacards, builds workspaces, and computes expected limits, signal significance, and likelihood profile scans.
+  * `Snakefile_PhaseF_1_analysis.smk`: Runs main Coffea analysis processor (`processor_HH4b.py`), merges histogram files, checks cutflow agreement against reference counts, and generates data/MC comparison plots.
+  * `Snakefile_PhaseF_2_stats.smk`: Converts histogram distributions to Combine JSON format, generates CMS Combine datacards, builds workspaces, and computes expected limits, signal significance, and likelihood profile scans.
 
 #### Snakemake Rulegraph DAG:
 <p align="center">
@@ -265,13 +265,3 @@ pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk \
     --config test=true \
     -np
 ```
-
-### Backwards Compatibility
-Existing legacy workflow entry points are preserved as thin wrappers:
-* `Snakefile_computeJCM.smk` $\to$ includes `Snakefile_PhaseB_1_computeJCM.smk`
-* `Snakefile_make_classifier_friendtree.smk` $\to$ includes `Snakefile_PhaseB_2_make_classifier_friendtree.smk`
-* `Snakefile_analysis.smk` $\to$ includes `Snakefile_PhaseF_1_analysis.smk`
-* `Snakefile_stats.smk` $\to$ includes `Snakefile_PhaseF_2_stats.smk`
-* `Snakefile_full_analysis.smk` $\to$ includes `Snakefile_PhaseF.smk`
-
-Legacy standalone exploratory files (e.g. `Snakefile_lowpt.smk`, `Snakefile_combinations_ZZ_ZH.smk`, `Snakefile_ZZ_ZH.smk`, `Snakefile_addingVBF.smk`) have been archived into `coffea4bees/workflows/archive/`.
