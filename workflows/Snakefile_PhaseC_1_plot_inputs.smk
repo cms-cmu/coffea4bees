@@ -1,5 +1,5 @@
-# coffea4bees/workflows/Snakefile_PhaseC_2_train.smk
-# Phase C.2: FvT Classifier Training & Analysis Workflow (train + analyze)
+# coffea4bees/workflows/Snakefile_PhaseC_1_plot_inputs.smk
+# Phase C.1: FvT Classifier Diagnostic Plotting Workflow (plot_inputs & plot_weights)
 
 import os
 import yaml
@@ -16,8 +16,8 @@ config.setdefault('classifier_config_paths', "coffea4bees")
 config.setdefault('wfs_base', "coffea4bees/classifier/config/workflows/HH4b_2024_v2/FvT")
 config.setdefault('label', "FvT_nominal")
 config.setdefault('output_dir', f"output/{config['label']}/")
-config.setdefault('plot_inputs', False)
-config.setdefault('plot_weights', False)
+config.setdefault('plot_inputs', True)
+config.setdefault('plot_weights', True)
 config.setdefault('evaluate', False)
 
 config.setdefault('model', f"{config['eos_base']}/classifier/{config['label']}")
@@ -35,7 +35,8 @@ if 'classifier_setting' in config:
 
 include: "../../src/classifier/workflow/Snakefile"
 
-rule all_fvt_training:
+rule all_fvt_plot_inputs:
     input:
-        f"{OUTPUT_DIR}/train.done",
-        f"{OUTPUT_DIR}/analyze.done"
+        f"{OUTPUT_DIR}/plot_inputs_raw.done",
+        f"{OUTPUT_DIR}/plot_inputs_dataprep.done",
+        f"{OUTPUT_DIR}/plot_weights.done"

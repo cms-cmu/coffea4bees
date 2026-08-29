@@ -85,7 +85,7 @@ svb:
   metadata: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_nominal.json@@HCR_input"
 
 # ==============================================================================
-# PHASE E.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
+# PHASE F.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
 # ==============================================================================
 analysis_config:
   processor: "coffea4bees/analysis/processors/processor_HH4b.py"
@@ -112,7 +112,7 @@ analysis_config:
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttbarWeights.yml"
 
 # ==============================================================================
-# PHASE E.2: COMBINE STATISTICAL INTERPRETATION & LIMITS
+# PHASE F.2: COMBINE STATISTICAL INTERPRETATION & LIMITS
 # ==============================================================================
 combine_flags: "--blind"
 combine_outdir: "datacards/HH4b_fine"

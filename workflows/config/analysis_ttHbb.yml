@@ -66,7 +66,7 @@ trigger_weights:
     make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/
 
 # ==============================================================================
-# PHASE B: JET COMBINATORIC MODEL (JCM) — [One-time / Initial Setup]
+# PHASE B: CALIBRATION & CLASSIFIER INPUTS (JCM & Friendtrees)
 # ==============================================================================
 jcm_plot_config: "coffea4bees/plots/metadata/plots_JCM_ttHbb.yml"
 jcm_datasets:
@@ -77,9 +77,6 @@ jcm_datasets:
 
 jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb_jcm_config.yml"
 
-# ==============================================================================
-# PHASE C & D: CLASSIFIER SETTINGS (Entirely on falcon / PSC)
-# ==============================================================================
 classifier_inputs:
   processor: "coffea4bees/analysis/processors/processor_HH4b.py"
   friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb.yml"
@@ -109,6 +106,9 @@ classifier_inputs:
     fill_histograms: true
     make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_v2/
 
+# ==============================================================================
+# PHASE C & D: CLASSIFIER SETTINGS (Entirely on falcon / PSC)
+# ==============================================================================
 classifier_setting:
   - module: ml.DataLoader
     option:
@@ -157,7 +157,7 @@ svb:
   metadata: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_ttHbb.json@@HCR_input"
 
 # ==============================================================================
-# PHASE E.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
+# PHASE F.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
 # ==============================================================================
 analysis_config:
   processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
@@ -189,7 +189,7 @@ known_counts_test: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"
 known_counts_full: "none"
 
 # ==============================================================================
-# PHASE E.2: COMBINE STATISTICAL INTERPRETATION & LIMITS
+# PHASE F.2: COMBINE STATISTICAL INTERPRETATION & LIMITS
 # ==============================================================================
 convert_hist_to_json:
   histos: 
@@ -199,7 +199,7 @@ convert_hist_to_json:
 combine_outdir: "datacards/"
 make_combine_inputs:
   stat_only: ""
-  bkgsyst: "output/ttHbb_synthetic/closure_fits/syn/SvB_MA/rebin1/SR/ttHbb/hists_closure_syn_SvB_MA_ps_ttHbb_fine_rebin1.pkl"
+  bkgsyst: "output/ttHbb_mixeddata_closure/closure_fits/3bDvTMix4bDvT/SvB_MA/rebin1/SR/ttHbb/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_rebin1.pkl"
 
 combine_flags: "--three_tag threeTag --four_tag fourTag --region sum --blind"
 likelihood_scan_points: 40
