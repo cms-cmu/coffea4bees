@@ -74,11 +74,11 @@ def get_stat_only_flag(channel=None):
         if ch_val is not None:
             if isinstance(ch_val, bool):
                 return '--stat_only' if ch_val else ''
-            if str(ch_val).lower() in ['true', '1', '--stat_only']:
+            if str(ch_val).lower() in ['true', '1', '--stat_only', '--stat-only']:
                 return '--stat_only'
             if str(ch_val).lower() in ['false', '0', 'none', '']:
                 return ''
-            return str(ch_val)
+            return '--stat_only' if str(ch_val) == '--stat-only' else str(ch_val)
         if '_stat_only' in channel or channel.endswith('_stat'):
             return '--stat_only'
     val = config.get('make_combine_inputs', {}).get('stat_only', '--stat_only')
@@ -86,11 +86,11 @@ def get_stat_only_flag(channel=None):
         return '--stat_only' if val else ''
     if val in ['--stat_only', '']:
         return val
-    if str(val).lower() in ['true', '1']:
+    if str(val).lower() in ['true', '1', '--stat_only', '--stat-only']:
         return '--stat_only'
     if str(val).lower() in ['false', '0', 'none', '']:
         return ''
-    return str(val)
+    return '--stat_only' if str(val) == '--stat-only' else str(val)
 
 def get_region_for_channel(channel):
     # 1. Check channel-specific setting

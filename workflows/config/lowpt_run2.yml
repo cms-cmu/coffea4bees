@@ -86,7 +86,7 @@ svb:
   metadata: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_lowpt_wlowptJCM.json@@HCR_input_lowpt"
 
 # ==============================================================================
-# PHASE E.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
+# PHASE F.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
 # ==============================================================================
 analysis_config:
   processor: "coffea4bees/analysis/processors/processor_HH4b_lowpt.py"
@@ -115,7 +115,7 @@ known_counts: "coffea4bees/analysis/tests/known_Counts_lowpt_Run2.yml"
 plot_config: "coffea4bees/plots/metadata/plotsAll_lowpt.yml"
 
 # ==============================================================================
-# PHASE E.2: COMBINE STATISTICAL INTERPRETATION & LIMITS
+# PHASE F.2: COMBINE STATISTICAL INTERPRETATION & LIMITS
 # ==============================================================================
 combine_flags: "--three_tag lowpt_threeTag --four_tag lowpt_fourTag --blind"
 combine_outdir: "datacards/HH4b_fine"

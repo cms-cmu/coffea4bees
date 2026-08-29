@@ -23,7 +23,7 @@ module analysis:
     snakefile: "rules/analysis.smk"
     config: config
 
-include: "Snakefile_stats.smk"
+include: "Snakefile_PhaseE_2_stats.smk"
 
 rule all:
     input:
