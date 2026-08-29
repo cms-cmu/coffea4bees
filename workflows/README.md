@@ -11,10 +11,10 @@ The pipeline is organized into modular **Phases (A through F)** reflecting the f
 | Phase | Purpose | Target Execution Environment | Compute Requirements |
 | :--- | :--- | :--- | :--- |
 | **Phase A** | Skimmer & Trigger Weights | **`cmslpc`** | CPU (Condor / Dask batching) |
-| **Phase B** | **Phase B.1**: Compute JCM *(New Analysis Only)*<br>**Phase B.2**: Make Classifier Friend Trees *(Required for All Analyses)* | **`cmslpc`** | CPU (Condor / Dask batching) |
-| **Phase C** | **Phase C.1/C.2**: Plot Inputs & Train *(If Retraining FvT)*<br>**Phase C.3**: Evaluate *(If Bkg Estimation / JCM Changed)* | **`falcon`** (GPU cluster) / **PSC Bridges-2** | GPU (NVIDIA MPS/CUDA for training & inference) |
-| **Phase D** | **Phase D.1/D.2**: Plot Inputs & Train *(If Retraining SvB)*<br>**Phase D.3**: Evaluate *(Required for All Analyses)* | **`falcon`** (GPU cluster) / **PSC Bridges-2** | GPU (NVIDIA MPS/CUDA for training & inference) |
-| **Phase E** | Background Uncertainties *(Reserved for Mixed Data)* | **`cmslpc`** | CPU (Condor / Dask batching) |
+| **Phase B** | **Phase B.1**: Compute JCM *(New Analysis Only)*<br>**Phase B.2**: Make Classifier Friend Trees *(Required)* | **`cmslpc`** | CPU (Condor / Dask batching) |
+| **Phase C** | **Phase C.1 / C.2**: Plot Inputs & Train *(Optional)*<br>**Phase C.3**: Evaluate *(If Bkg Model Changed)* | **`falcon`** (GPU cluster) / **PSC Bridges-2** | GPU (NVIDIA MPS/CUDA for training & inference) |
+| **Phase D** | **Phase D.1 / D.2**: Plot Inputs & Train *(Optional)*<br>**Phase D.3**: Evaluate *(Required)* | **`falcon`** (GPU cluster) / **PSC Bridges-2** | GPU (NVIDIA MPS/CUDA for training & inference) |
+| **Phase E** | Background Uncertainties *(One-Time / Optional)* | **`cmslpc`** | CPU (Condor / Dask batching) |
 | **Phase F** | Analysis Processor & CMS Combine Stats | **`cmslpc`** | CPU (Condor + Dask + Combine container) |
 
 > [!TIP]
@@ -32,42 +32,36 @@ flowchart TD
 
     subgraph PhaseB["Phase B: Calibration & Classifier Inputs (cmslpc)"]
         B1["PhaseB_1_computeJCM.smk\n(JCM Weights — [New Analysis Only])"]
-        B2["PhaseB_2_make_classifier_friendtree.smk\n(Classifier Input Friend Trees — [Required for All Analyses])"]
+        B2["PhaseB_2_make_classifier_friendtree.smk\n(Classifier Input Friend Trees — [Required])"]
     end
 
     subgraph PhaseC["Phase C: FvT Classifier Pipeline (falcon / PSC)"]
-        C1["PhaseC_1_plot_inputs.smk\n(Input/Weight Diagnostics — [Optional])"]
-        C2["PhaseC_2_train.smk\n(FvT Training & ROC — [If Retraining FvT])"] --> C3["PhaseC_3_evaluate.smk\n(FvT Inference — [If Bkg Estimation Changed])"]
+        C1["PhaseC_1_plot_inputs.smk\nPhaseC_2_train.smk\n(Diagnostics & Training — [Optional])"]
+        C2["PhaseC_3_evaluate.smk\n(FvT Inference — [If Bkg Model Changed])"]
     end
 
     subgraph PhaseD["Phase D: SvB Classifier Pipeline (falcon / PSC)"]
-        D1["PhaseD_1_plot_inputs.smk\n(Input/Weight Diagnostics — [Optional])"]
-        D2["PhaseD_2_train.smk\n(SvB Training & ROC — [If Retraining SvB])"] --> D3["PhaseD_3_evaluate.smk\n(SvB Inference — [Required for All Analyses])"]
+        D1["PhaseD_1_plot_inputs.smk\nPhaseD_2_train.smk\n(Diagnostics & Training — [Optional])"]
+        D2["PhaseD_3_evaluate.smk\n(SvB Inference — [Required])"]
     end
 
-    subgraph PhaseE["Phase E: Background Uncertainties (cmslpc)"]
-        E1["PhaseE.smk\n(Mixed Data Closure & Systematics — [Reserved])"]
+    subgraph PhaseE["Phase E: Background Uncertainties (cmslpc) — [One-Time / Optional]"]
+        E1["PhaseE.smk\n(Mixed Data Closure & Systematics)"]
     end
 
     subgraph PhaseF["Phase F: Analysis & Statistical Interpretation (cmslpc)"]
         F1["PhaseF_1_analysis.smk\n(Main Processor, Cutflows, Plots)"] --> F2["PhaseF_2_stats.smk\n(Datacards, Workspaces, Fits & Limits)"]
     end
 
-    PhaseA -->|New Analysis Only| B1
-    PhaseA -->|All Analyses| B2
-    B1 -.->|JCM Weights| B2
-    
-    B2 -->|If Retraining FvT| C2
-    B2 -->|If Bkg Estimation Changed| C3
-    B2 -->|If Retraining SvB| D2
-    B2 -->|Routine Run| D3
-    
-    C3 -.->|New FvT Weights| D2
-    C3 -.->|New FvT Weights| D3
-    
-    D3 --> PhaseE
+    PhaseA --> PhaseB
+    PhaseB --> PhaseC
+    PhaseC --> PhaseD
+    PhaseD --> PhaseE
     PhaseE --> PhaseF
 ```
+
+> [!NOTE]
+> *See the [Phase-by-Phase Technical Specifications](#3-phase-by-phase-technical-specification) below for detailed conditions regarding optional (one-time setup or retraining) versus routine execution steps.*
 
 ---
 
@@ -106,7 +100,7 @@ flowchart TD
 * **Target Machine:** **`cmslpc`**
 * **Coordinator:** `Snakefile_PhaseB.smk`
 * **Sub-workflows:**
-  * `Snakefile_PhaseB_1_computeJCM.smk` (aliased by `Snakefile_computeJCM.smk`): **[New Analysis Only]** Derives jet combinatoric model weights by running the Coffea processor with `apply_JCM: false` and fitting the resulting histograms to compute transfer factors between jet multiplicities. Done once when establishing a new analysis baseline, and reused thereafter.
+  * `Snakefile_PhaseB_1_computeJCM.smk` (aliased by `Snakefile_computeJCM.smk`): **[New Analysis Only / One-Time]** Derives jet combinatoric model weights by running the Coffea processor with `apply_JCM: false` and fitting the resulting histograms to compute transfer factors between jet multiplicities. Done once when establishing a new analysis baseline, and reused thereafter.
   * `Snakefile_PhaseB_2_make_classifier_friendtree.smk` (aliased by `Snakefile_make_classifier_friendtree.smk`): **[Required for All Analyses]** Runs the Coffea processor (`processor_HH4b.py make_classifier_input`) on datasets to create the ROOT friend tree files used as input features for classifier training and evaluation.
 
 #### Snakemake Rulegraph DAG:
@@ -225,7 +219,7 @@ pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseD_3_evaluate.smk \
 ### Phase E: Background Uncertainties & Systematics
 * **Target Machine:** **`cmslpc`**
 * **Coordinator:** `Snakefile_PhaseE.smk`
-* **Note:** Reserved for mixed data background model closure, hemisphere mixing, and transfer factor systematic uncertainty derivations.
+* **Note on Scope:** **Phase E is optional/one-off.** It is executed when establishing background model closure, hemisphere mixing, and transfer factor systematic uncertainty derivations. Once the background uncertainty inputs are generated, they are stored and reused in subsequent analysis runs.
 
 ---
 
