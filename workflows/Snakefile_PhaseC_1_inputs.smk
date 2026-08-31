@@ -97,10 +97,10 @@ def get_raw_classifier_inputs_config():
     elif config.get('dataset_location') and config['dataset_location'].endswith(('.yml', '.yaml')):
         res['dataset_location'] = config['dataset_location']
     elif 'dataset_location' not in res or not res['dataset_location']:
-        default_ds_loc = \"coffea4bees/metadata/datasets/\"
+        default_ds_loc = "coffea4bees/metadata/datasets/"
         res['dataset_location'] = config.get('dataset_location', default_ds_loc)
 
-    res.setdefault('friend_file', config.get('friend_file', \"coffea4bees/metadata/friends/friends_ttHbb.yml\" if is_run2 else \"coffea4bees/metadata/friends/friends_HH4b.yml\"))
+    res.setdefault('friend_file', config.get('friend_file', "coffea4bees/metadata/friends/friends_ttHbb.yml" if is_run2 else "coffea4bees/metadata/friends/friends_HH4b.yml"))
     res.setdefault('weights_file', config.get('weights_file', "coffea4bees/metadata/weights/weights_HH4b_2024_v2.yml" if is_run2 else "coffea4bees/metadata/weights/weights_HH4b.yml"))
 
     # Runner settings
