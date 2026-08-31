@@ -10,7 +10,8 @@ from coffea4bees.analysis.helpers.candidates_selection import (
     cand_jet_selection,
     _compute_vbf_variables,
 )
-from coffea4bees.analysis.helpers.SvB_helpers import compute_SvB_ttHbb, compute_SvB_FeynNet
+from coffea4bees.analysis.helpers.SvB_helpers import compute_SvB_FeynNet
+from coffea4bees.analysis.helpers.SvB_helpers_ttHbb import compute_SvB_ttHbb
 from coffea4bees.analysis.helpers.FvT_helpers import compute_FvT
 
 
