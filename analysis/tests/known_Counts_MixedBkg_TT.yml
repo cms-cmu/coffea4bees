@@ -178,45 +178,45 @@ counts3:
         passPreSel: 0.05
         passDiJetMass: 0.03
         SR: 0.02
-        SB: 0.02
+        SB: 0.05
         passSvB: 0.0
-        failSvB: 0.02
+        failSvB: 0.05
 
     TTTo2L2Nu_for_mixed_UL18:
         passJetMult: 23.32
-        passPreSel: 0.02
+        passPreSel: 0.03
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
         passSvB: 0.0
-        failSvB: 0.01
+        failSvB: 0.02
 
     TTTo2L2Nu_for_mixed_UL17:
         passJetMult: 23.61
-        passPreSel: 0.04
+        passPreSel: 0.05
         passDiJetMass: 0.01
         SR: 0.0
         SB: 0.01
         passSvB: 0.0
-        failSvB: 0.02
+        failSvB: 0.04
 
     TTTo2L2Nu_for_mixed_UL16_preVFP:
         passJetMult: 40.61
-        passPreSel: 0.04
-        passDiJetMass: 0.01
+        passPreSel: 0.07
+        passDiJetMass: 0.02
         SR: 0.0
-        SB: 0.01
+        SB: 0.02
         passSvB: 0.0
-        failSvB: 0.03
+        failSvB: 0.05
 
     TTTo2L2Nu_for_mixed_UL16_postVFP:
         passJetMult: 29.63
-        passPreSel: 0.03
-        passDiJetMass: 0.01
+        passPreSel: 0.05
+        passDiJetMass: 0.03
         SR: 0.0
-        SB: 0.01
+        SB: 0.02
         passSvB: 0.0
-        failSvB: 0.02
+        failSvB: 0.04
 
 
 
