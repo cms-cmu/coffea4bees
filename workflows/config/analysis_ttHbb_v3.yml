@@ -1,10 +1,17 @@
 # ==============================================================================
 # GLOBAL WORKFLOW CONFIGURATION
 # ==============================================================================
-label: "ttHbb_v2"
-output_path: "output/ttHbb_v2/"
+label: "ttHbb_v3"
+tag: "ttHbb_v3"
+output_path: "output/ttHbb_v3/"
 cern_user: "algomez"
 cern_path: "www/ttHbb/Plots/"
+
+processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb_v3.yml"
+weights_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/weights_ttHbb_v3.yml"
+dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
+candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
 
 dataset:
   - "ttHbb"
@@ -66,7 +73,7 @@ trigger_weights:
     make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/
 
 # ==============================================================================
-# PHASE B: CALIBRATION & CLASSIFIER INPUTS (JCM & Friendtrees)
+# PHASE B: JET COMBINATORIC MODEL (JCM) — [One-time / Initial Setup]
 # ==============================================================================
 jcm_plot_config: "coffea4bees/plots/metadata/plots_JCM_ttHbb.yml"
 jcm_datasets:
@@ -77,10 +84,14 @@ jcm_datasets:
 
 jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb_jcm_config.yml"
 
+# ==============================================================================
+# PHASE C & D: CLASSIFIER SETTINGS (Entirely on falcon / PSC)
+# ==============================================================================
 classifier_inputs:
-  processor: "coffea4bees/analysis/processors/processor_HH4b.py"
+  processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
   friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb.yml"
-  weights_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/weights_ttHbb.yml"
+  weights_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/weights_ttHbb_v3.yml"
+  candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
   datasets:
     - "ttHbb"
     - "data"
@@ -104,11 +115,9 @@ classifier_inputs:
     run_SvB: false
     top_reconstruction: slow
     fill_histograms: true
-    make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_v2/
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
+    make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_v3/
 
-# ==============================================================================
-# PHASE C & D: CLASSIFIER SETTINGS (Entirely on falcon / PSC)
-# ==============================================================================
 classifier_setting:
   - module: ml.DataLoader
     option:
@@ -128,42 +137,46 @@ classifier_setting:
       - feature_ancillary: [xW, nSelJets, xbW, year]
 
 fvt:
-  eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_v2"
+  eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_v3"
   plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
-  classifier_config_paths: "coffea4bees"
-  wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_2024_v2/FvT"
-  label: "FvT_ttHbb_v2"
-  output_dir: "output/FvT_ttHbb_v2/"
-  plot_inputs: true
+  classifier_config_paths: coffea4bees
+  wfs_base: coffea4bees/classifier/config/workflows/ttHbb_v3/FvT
+  label: FvT_ttHbb_v3
+  output_dir: output/FvT_ttHbb_v3/
+  plot_inputs: false
+  plot_weights: false
+  evaluate: false
   model: "{eos_base}/classifier/{label}"
   friend: "{eos_base}/friend/{label}"
   train_template: "model: {eos_base}/classifier/{label}"
   eval_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/{label}"
-  metadata: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_ttHbb.json@@HCR_input"
+  metadata: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_ttHbb_v3.json@@HCR_input"
 
 svb:
-  eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_v2"
+  eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_v3"
   plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
-  classifier_config_paths: "coffea4bees"
-  wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_2024_v2/SvB"
-  label: "SvB_ttHbb_v2"
-  output_dir: "output/SvB_ttHbb_v2/"
-  plot_inputs: true
-  evaluate: true
+  classifier_config_paths: coffea4bees
+  wfs_base: coffea4bees/classifier/config/workflows/ttHbb_v3/SvB
+  label: SvB_ttHbb_v3
+  output_dir: output/SvB_ttHbb_v3/
+  plot_inputs: false
+  plot_weights: false
+  evaluate: false
   model: "{eos_base}/classifier/{label}"
   friend: "{eos_base}/friend/{label}"
-  train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_ttHbb_v2"
+  train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_ttHbb_v3"
   eval_template: "model: {eos_base}/classifier/{label}, SvB: {eos_base}/friend/{label}"
-  metadata: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_ttHbb.json@@HCR_input"
+  metadata: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_ttHbb_v3.json@@HCR_input"
 
 # ==============================================================================
-# PHASE F.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
+# PHASE E.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
 # ==============================================================================
 analysis_config:
   processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
   dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
-  friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb.yml"
-  weights_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/weights_ttHbb.yml"
+  friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb_v3.yml"
+  weights_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/weights_ttHbb_v3.yml"
+  candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
   runner:
     workers: 4
     worker_memory: 8GB
@@ -182,6 +195,7 @@ analysis_config:
     hist_cuts: ["pass_nSelJets_gt6"]
     top_reconstruction: fast
     plot_ttbar_with_weights: true
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
 
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
 known_counts: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"
@@ -189,7 +203,7 @@ known_counts_test: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"
 known_counts_full: "none"
 
 # ==============================================================================
-# PHASE F.2: COMBINE STATISTICAL INTERPRETATION & LIMITS
+# PHASE E.2: COMBINE STATISTICAL INTERPRETATION & LIMITS
 # ==============================================================================
 convert_hist_to_json:
   histos: 
@@ -199,7 +213,8 @@ convert_hist_to_json:
 combine_outdir: "datacards/"
 make_combine_inputs:
   stat_only: ""
-  bkgsyst: "output/ttHbb_mixeddata_closure/closure_fits/3bDvTMix4bDvT/SvB_MA/rebin1/SR/ttHbb/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_rebin1.pkl"
+  bkgsyst: "output/ttHbb_v3/closure_studies/closure_fits/3bDvTMix4bDvT/SvB_MA/rebin1/SR/ttHbb/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_rebin1.pkl"
+  # bkgsyst: "output/ttHbb_v3/closure_studies/closure_fits/3bDvTMix4bDvT/SvB_MA/rebin1/SR/ttHbb/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_rebin1.pkl"
 
 combine_flags: "--three_tag threeTag --four_tag fourTag --region sum --blind"
 likelihood_scan_points: 40
@@ -266,50 +281,3 @@ channels:
     cut: "sum"
     stat_only: true
     combine_flags: "--three_tag threeTag --four_tag fourTag --region sum --blind"
-
-# ==============================================================================
-# PHASE E: BACKGROUND SYSTEMATICS & TWO-STAGE CLOSURE (Mixed Data / Synthetic Data)
-# ==============================================================================
-phase_e:
-  data_type: "mixeddata" # "mixeddata" or "synthetic_data"
-  label: "ttHbb_mixeddata"
-  output_path: "output/ttHbb_v2/closure_studies/"
-  datasets_file: "coffea4bees/metadata/datasets_HH4b_v1.yml"
-  
-  # Phase E_1: Only runs processor on pseudo-data
-  phase_e_dataset:
-    - "mixeddata"
-    - "data_3b_for_mixed"
-  years: "2016 2017 2018"
-  
-  # Singlefiles from Phase F to include in merging
-  phase_f_output_path: "output/ttHbb_v2/"
-  phase_f_label: "ttHbb_v2"
-  include_real_data_from_phase_f: true
-  
-  # E_1: Analysis processor with SvB
-  processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
-  metadata: "coffea4bees/analysis/metadata/HH4b_2024_v2.yml"
-  additional_parameters: "--shared-dask --condor --run-performance"
-  
-  # E_2: Plotting
-  plot_script: "coffea4bees/plots/makePlots.py"
-  comparison_plot_config: "coffea4bees/plots/metadata/plots_mixeddata_vs_data.yml"
-  comparison_extra_args: "-s xW --year RunII"
-  analysis_plot_config: "coffea4bees/plots/metadata/plotsAll_mixeddata.yml"
-  analysis_extra_args: "-s xW --year RunII"
-  
-  # E_3: Two-Stage Closure
-  mix_name: "3bDvTMix4bDvT" # "3bDvTMix4bDvT" for mixeddata, "syn" for synthetic
-  nMixes: 15 # 15 for mixeddata, 1 for synthetic
-  classifier: "SvB_MA"
-  variable: "SvB_MA_ps_ttHbb_fine"
-  channel: "ttHbb"
-  rebin: "1"
-  years_closure: "2016 2017 2018" # e.g. "2016 2017 2018" or "2017 2018"
-  closure_extra_args: ""
-  input_file_data3b: "output/ttHbb_mixeddata_closure/root_inputs/histMixedBkg_data_3b_for_mixed.root"
-  input_file_TT: "output/ttHbb_mixeddata_closure/root_inputs/histMixedBkg_TT.root"
-  input_file_sig: "output/ttHbb_mixeddata_closure/root_inputs/histAll.root"
-
-

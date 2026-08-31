@@ -69,6 +69,21 @@ class quadJetTTHbbTestCase(unittest.TestCase):
         self.assertTrue(ak.all(selev.passDiJetMass))
         self.assertTrue(len(selev.quadJet_selected.lead.mass) == 2)
 
+    def test_quadJets_ttHbb_optimal_balance(self):
+        cand_cfg = {"sr_ttHbb": {"mode": "optimal_balance"}}
+        selev = create_cand_jet_dijet_quadjet_ttHbb(self.event, cand_cfg=cand_cfg)
+        self.assertIn("quadJet_selected", selev.fields)
+        self.assertIn("SR", selev.region.fields)
+        self.assertIn("SB", selev.region.fields)
+
+    def test_quadJets_ttHbb_sr_mode_flag(self):
+        cand_cfg = {"sr_mode": "optimal_balance"}
+        selev = create_cand_jet_dijet_quadjet_ttHbb(self.event, cand_cfg=cand_cfg)
+        self.assertIn("quadJet_selected", selev.fields)
+        self.assertIn("SR", selev.region.fields)
+        self.assertIn("SB", selev.region.fields)
+
 
 if __name__ == '__main__':
     unittest.main()
+

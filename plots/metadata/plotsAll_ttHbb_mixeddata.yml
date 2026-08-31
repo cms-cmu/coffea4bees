@@ -2,36 +2,18 @@ hists:
   mixeddata:
     process: mix_v0
     tag: fourTag
-    label: Mixed data (4b)
+    label: "Mixed data (4b)"
     edgecolor: k
-    fillcolor: k
+    fillcolor: k            
 
-  HH4b:
-    process: GluGluToHHTo4B_cHHH1
+  ttHbb:
+    process: ttHbb
     tag: fourTag
-    label: HH4b (x100)
+    label: ttHbb
     edgecolor: "#e42536"
-    fillcolor: "#e42536"
+    fillcolor: "#e42536"            
     histtype: step
-    scalefactor: 100
-
-  ZH4b:
-    process: [ZH4b, ggZH4b]
-    tag: fourTag
-    label: ZH4b (x100)
-    edgecolor: "#964a8b"
-    fillcolor: "#964a8b"
-    histtype: step
-    scalefactor: 100
-
-  ZZ4b:
-    process: ZZ4b
-    tag: fourTag
-    label: ZZ4b (x100)
-    edgecolor: "#7a21dd"
-    fillcolor: "#7a21dd"
-    histtype: step
-    scalefactor: 100
+    scalefactor: 1
 
 stack:
   TTbar:
@@ -41,15 +23,23 @@ stack:
     edgecolor: k
     label: $t\bar{t}$
 
-  Multijet:
+  MultiJet:
     process: data
     tag: threeTag
     fillcolor: "#FFDF7Fff"
     edgecolor: k
-    label: QCD multijet
+    label: Multijet
+
+  ttHbb:
+    process: ttHbb
+    tag: fourTag
+    label: None
+    edgecolor: "#e42536"
+    fillcolor: "#e42536"
+    scalefactor: 1
 
 ratios:
-  mixeddataToBkg:
+  mixedToBkg:
     numerator:
       type: hists
       key: mixeddata

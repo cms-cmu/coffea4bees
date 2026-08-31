@@ -773,8 +773,11 @@ def create_plots(
         plt.text(6 if args.lowpt else 10, 5.15, fit_text, fontsize=15, color='black',
                 horizontalalignment='left', verticalalignment='center')
 
-        fig.savefig(os.path.join(args.outputDir, "selJets_noJCM_n.pdf"))
-        logger.info(f"Saved jet multiplicity plot to {os.path.join(args.outputDir, 'selJets_noJCM_n.pdf')}")
+        fmts = [f.strip() for f in getattr(args, 'fmt', 'png').split(',') if f.strip()]
+        for ext in fmts:
+            plot_file = os.path.join(args.outputDir, f"selJets_noJCM_n.{ext}")
+            fig.savefig(plot_file)
+            logger.info(f"Saved jet multiplicity plot to {plot_file}")
     except Exception as e:
         logger.error(f"Failed to create jet multiplicity plot: {e}")
 
@@ -846,8 +849,10 @@ def create_plots(
             **plot_options
         )
 
-        fig.savefig(os.path.join(args.outputDir, "tagJets_noJCM_n.pdf"))
-        logger.info(f"Saved tagged jets plot to {os.path.join(args.outputDir, 'tagJets_noJCM_n.pdf')}")
+        for ext in fmts:
+            plot_file = os.path.join(args.outputDir, f"tagJets_noJCM_n.{ext}")
+            fig.savefig(plot_file)
+            logger.info(f"Saved tagged jets plot to {plot_file}")
 
     except Exception as e:
         logger.warning(f"Failed to create tagged jets plot: {e}")
@@ -895,6 +900,8 @@ def main():
     parser.add_argument('--jcm_config', default="coffea4bees/analysis/jcm_tools/metadata/nominal_jcm_config.yml")
     parser.add_argument('--zero_pseudotag', dest="zero_pseudotag", action="store_true",
                         help='Compute zero pseudotag probabilities and weights in output')
+    parser.add_argument('-f', '--format', dest="fmt", default="png",
+                        help='Output format(s), comma-separated (e.g. png, pdf, or pdf,png)')
     parser.add_argument('--lowpt', dest="lowpt", action="store_true",
                         help='Use low pt selection for 4b data')
     args = parser.parse_args()

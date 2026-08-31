@@ -1,8 +1,8 @@
 hists:
-  mixeddata:
-    process: mix_v0
+  synthetic_data:
+    process: syn_v0
     tag: fourTag
-    label: Mixed data (4b)
+    label: Synthetic data (4b)
     edgecolor: k
     fillcolor: k
 
@@ -49,23 +49,22 @@ stack:
     label: QCD multijet
 
 ratios:
-  mixeddataToBkg:
+  syntheticToBkg:
     numerator:
       type: hists
-      key: mixeddata
+      key: synthetic_data
     denominator:
       type: stack
     uncertianty:
       nominal
     color: k
-    marker: "o"
 
 doRatio: 1
 
 categories:
-  - "inclusive"
-  - "pass_nSelJets_gt6"
+  - inclusive
+  - pass_nSelJets_gt6
 
 regions:
-  - "SR"
-  - "SB"
+  - SR
+  - SB

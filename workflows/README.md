@@ -14,7 +14,7 @@ The pipeline is organized into modular **Phases (A through F)** reflecting the f
 | **Phase B** | **Phase B.1**: Compute JCM *(New Analysis Only)*<br>**Phase B.2**: Make Classifier Friend Trees *(Required)* | **`cmslpc`** | CPU (Condor / Dask batching) |
 | **Phase C** | **Phase C.1 / C.2**: Plot Inputs & Train *(Optional)*<br>**Phase C.3**: Evaluate *(If Bkg Model Changed)* | **`falcon`** (GPU cluster) / **PSC Bridges-2** | GPU (NVIDIA MPS/CUDA for training & inference) |
 | **Phase D** | **Phase D.1 / D.2**: Plot Inputs & Train *(Optional)*<br>**Phase D.3**: Evaluate *(Required)* | **`falcon`** (GPU cluster) / **PSC Bridges-2** | GPU (NVIDIA MPS/CUDA for training & inference) |
-| **Phase E** | Background Uncertainties *(One-Time / Optional)* | **`cmslpc`** | CPU (Condor / Dask batching) |
+| **Phase E** | Background Uncertainties & Closure *(Optional — Skip if Stat-Only; Requires Phase F.1 Singlefiles)* | **`cmslpc`** | CPU (Condor / Dask batching) |
 | **Phase F** | Analysis Processor & CMS Combine Stats | **`cmslpc`** | CPU (Condor + Dask + Combine container) |
 
 > [!TIP]
@@ -45,8 +45,8 @@ flowchart TD
         D2["PhaseD_3_evaluate.smk\n(SvB Inference — [Required])"]
     end
 
-    subgraph PhaseE["Phase E: Background Uncertainties (cmslpc) — [One-Time / Optional]"]
-        E1["PhaseE.smk\n(Mixed Data Closure & Systematics)"]
+    subgraph PhaseE["Phase E: Background Uncertainties (cmslpc) — [Optional / Skip if Stat-Only]"]
+        E1["PhaseE.smk\n(Mixed Data Closure & Systematics — [Needs Phase F.1])"]
     end
 
     subgraph PhaseF["Phase F: Analysis & Statistical Interpretation (cmslpc)"]
@@ -262,17 +262,54 @@ pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseD_3_evaluate.smk \
 
 ---
 
-### Phase E: Background Uncertainties & Systematics
-* **Target Machine:** **`cmslpc`**
+### Phase E: Background Systematics & Two-Stage Closure
+* **Target Machine:** **`cmslpc`** (CPU batching with HTCondor/Dask + Combine container)
 * **Coordinator:** `Snakefile_PhaseE.smk`
-* **Sub-workflows:** `mixeddata_closure`, `synthetic_closure`.
+* **Sub-workflows:**
+  * `Snakefile_PhaseE_1_analysis.smk`: Runs the analysis processor with SvB ML inference **only on pseudo-data** (`mixeddata` / `synthetic_data` / `data_3b_for_mixed`), and merges the resulting singlefiles with existing signal MC, background MC, and real data singlefiles from **Phase F.1**.
+  * `Snakefile_PhaseE_2_1_plots_comparison.smk`: Generates 1D comparison and ratio validation plots (e.g. Data vs Mixed Data vs Synthetic Data).
+  * `Snakefile_PhaseE_2_2_plots_analysis.smk`: Generates standard analysis stack plots where Mixed / Synthetic data acts as pseudo-data (`data_obs`) alongside background and signal distributions.
+  * `Snakefile_PhaseE_3_closure.smk`: Converts `.coffea` histograms to ROOT format and runs `runTwoStageClosure.py` to extract background shape systematics (`.pkl` file containing `basis<k>_vari`, `basis<k>_bias`, and `spurious_signal`) and diagnostic fit plots.
 
 #### Key Artifacts & Required Downstream Updates:
-* **Outputs Produced**: Background model closure fit histograms, hemisphere mixing transfer factors, and systematic uncertainty pickle/root files (e.g. `hists_closure_3bDvTMix4bDvT_SvB_MA_ps_rebin1.pkl`).
-* **Files to Add/Modify**: Update `make_combine_inputs.bkgsyst` in the master config (`analysis_ttHbb.yml` or `nominal_run2.yml`) pointing to the generated background closure fit file.
-* **Note on Scope:** **Phase E is optional/one-off.** It is executed when establishing background model closure and systematic uncertainty derivations, then stored and reused in subsequent analysis runs.
+* **Outputs Produced**: Background model closure fit histograms, diagnostic plots, and systematic uncertainty pickle file (e.g. `output/<analysis>/closure_studies/closure_fits/.../hists_closure_*.pkl`).
+* **Files to Add/Modify**: Set `make_combine_inputs.bkgsyst` in the master config (`analysis_ttHbb.yml` or `nominal_run2.yml`) pointing to the generated background closure `.pkl` file for full systematic Combine fits in **Phase F.2**.
+
+> [!IMPORTANT]
+> **Phase E Scope & Prerequisites**:
+> 1. **Phase E is Optional / Not for Stat-Only**: If you are running a **stat-only analysis** (`make_combine_inputs.stat_only: "--stat_only"`), Phase E should **NOT** be run.
+> 2. **Dependency on Phase F.1**: **`PhaseE_1` must be run AFTER `PhaseF_1`** has completed, because Phase E only runs inference on pseudo-data and requires the Phase F singlefiles (`output/<analysis>/singlefiles/`) to perform the merge.
+
+**Execution Examples (on cmslpc):**
+```bash
+# Run full Phase E pipeline (Analysis -> Plots -> Closure) on cmslpc
+./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseE.smk \
+    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
+    --cores 4
+
+# Run only Phase E.1 Analysis processor (pseudo-data inference + Phase F merge)
+./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseE_1_analysis.smk \
+    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
+    --cores 4
+
+# Run only Phase E.2.1 Comparison plots (Data vs Mixed vs Synthetic)
+./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseE_2_1_plots_comparison.smk \
+    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
+    --cores 4
+
+# Run only Phase E.2.2 Standard analysis stack plots with Mixed/Synthetic as Data
+./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseE_2_2_plots_analysis.smk \
+    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
+    --cores 4
+
+# Run only Phase E.3 Two-stage closure statistical fits & .pkl generation
+./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseE_3_closure.smk \
+    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
+    --cores 4
+```
 
 ---
+
 
 ### Phase F: Analysis & Statistical Interpretation
 * **Target Machine:** **`cmslpc`** (CPU batching with HTCondor/Dask + Combine container)

@@ -21,8 +21,44 @@ cfg = plot_config()
 np.seterr(divide='ignore', invalid='ignore')
 warnings.filterwarnings('ignore', message='.*All sumw are zero.*')
 
+_GLOBAL_CFG = None
+
+def _init_worker(shared_cfg):
+    global _GLOBAL_CFG
+    _GLOBAL_CFG = shared_cfg
+
+def _render_1d_task(task):
+    global _GLOBAL_CFG
+    cat_plotConfig, plot_args, v, region, desc = task
+    try:
+        import copy
+        worker_cfg = copy.copy(_GLOBAL_CFG)
+        worker_cfg.plotConfig = cat_plotConfig
+        makePlot(worker_cfg, **plot_args)
+    except Exception as e:
+        print(f"Error plotting {v} {region} {desc}: {str(e)}")
+    finally:
+        plt.close("all")
+
+
+def _render_2d_task(task):
+    global _GLOBAL_CFG
+    cat_plotConfig, process, plot_args, v, region = task
+    try:
+        import copy
+        worker_cfg = copy.copy(_GLOBAL_CFG)
+        worker_cfg.plotConfig = cat_plotConfig
+        make2DPlot(worker_cfg, process, **plot_args)
+    except Exception as e:
+        print(f"Error plotting {v} {region} {process}: {str(e)}")
+    finally:
+        plt.close("all")
+
+
 def doPlots(varList, debug=False):
     import copy
+    import multiprocessing as mp
+    from concurrent.futures import ProcessPoolExecutor
 
     if args.doTest:
         varList = ["SvB_MA.ps_zz", "SvB_MA.ps_zh", "SvB_MA.ps_hh", "quadJet_selected.lead_vs_subl_m", "quadJet_min_dr.close_vs_other_m"]
@@ -34,6 +70,11 @@ def doPlots(varList, debug=False):
     categories = cfg.plotConfig.get("categories", [""])
 
     original_plotConfig = copy.deepcopy(cfg.plotConfig)
+    num_workers = getattr(args, "num_workers", 8)
+
+    tasks_1d = []
+    tasks_2d = []
+    tasks_comp = []
 
     for category in categories:
         is_cut_category = (
@@ -42,7 +83,7 @@ def doPlots(varList, debug=False):
             or category.startswith("~")
         )
 
-        cfg.plotConfig = copy.deepcopy(original_plotConfig)
+        cat_plotConfig = copy.deepcopy(original_plotConfig)
         if category in ("inclusive", ""):
             outputFolder = os.path.join(args.outputFolder, "inclusive") if category == "inclusive" else args.outputFolder
         elif is_cut_category:
@@ -50,8 +91,8 @@ def doPlots(varList, debug=False):
         else:
             if category:
                 for key in ["hists", "stack"]:
-                    if key in cfg.plotConfig:
-                        for name, p_cfg in cfg.plotConfig[key].items():
+                    if key in cat_plotConfig:
+                        for name, p_cfg in cat_plotConfig[key].items():
                             p_cfg["process"] = p_cfg["process"] + category
             outputFolder = os.path.join(args.outputFolder, category.strip("_")) if category else args.outputFolder
 
@@ -59,15 +100,12 @@ def doPlots(varList, debug=False):
         #  Nominal 1D Plots
         #
         for v in varList:
-            if debug: print(f"plotting 1D ...{v}")
-
-            vDict = cfg.plotModifiers.get(v, {})
-            if debug: print(v, vDict, vDict.get("2d", False))
+            vDict = copy.deepcopy(cfg.plotModifiers.get(v, {}))
             if vDict.get("2d", False):
                 continue
 
             vDict["ylabel"] = "Entries"
-            vDict["doRatio"] = cfg.plotConfig.get("doRatio", True)
+            vDict["doRatio"] = cat_plotConfig.get("doRatio", True)
             vDict["legend"] = True
             if v.startswith("SvB"):
                 vDict.setdefault("yscale", "log")
@@ -76,9 +114,7 @@ def doPlots(varList, debug=False):
                 vDict["write_yaml"] = True
 
             for region in regions:
-
-                if debug: print(f"plotting 1D ...{v}")
-                plot_args  = {}
+                plot_args = {}
                 plot_args["var"] = v
                 if is_cut_category:
                     plot_args["cut"] = category
@@ -89,40 +125,29 @@ def doPlots(varList, debug=False):
                 if args.year:
                     plot_args["year"] = args.year
                 plot_args = plot_args | vDict
-                if debug: print(plot_args)
-                try:
-                    fig = makePlot(cfg, **plot_args)
-                except Exception as e:
-                    print(f"Error plotting {v} {region}: {str(e)}")
-                    pass
-
-                plt.close()
+                tasks_1d.append((cat_plotConfig, plot_args, v, region, ""))
 
         #
         #  2D Plots
         #
         for v in varList:
-            print(v)
-
-            vDict = cfg.plotModifiers.get(v, {})
-
+            vDict = copy.deepcopy(cfg.plotModifiers.get(v, {}))
             if not vDict.get("2d", False):
                 continue
 
             vDict["ylabel"] = "Entries"
-            vDict["doRatio"] = cfg.plotConfig.get("doRatio", True)
+            vDict["doRatio"] = cat_plotConfig.get("doRatio", True)
             vDict["legend"] = True
 
             if args.doTest:
                 vDict["write_yaml"] = True
 
-            processes = list(cfg.plotConfig.get("hists", {}).keys()) + list(cfg.plotConfig.get("stack", {}).keys())
+            processes = list(cat_plotConfig.get("hists", {}).keys()) + list(cat_plotConfig.get("stack", {}).keys())
             processes = list(dict.fromkeys(processes))
 
             for process in processes:
                 for region in regions:
-
-                    plot_args  = {}
+                    plot_args = {}
                     plot_args["var"] = v
                     if is_cut_category:
                         plot_args["cut"] = category
@@ -133,49 +158,26 @@ def doPlots(varList, debug=False):
                     if args.year:
                         plot_args["year"] = args.year
                     plot_args = plot_args | vDict
-
-                    if debug: print("process is ",process)
-                    if debug: print(plot_args)
-
-                    try:
-                        fig = make2DPlot(cfg, process,
-                                         **plot_args)
-                    except Exception as e:
-                        print(f"Error plotting {v} {region} {process}: {str(e)}")
-                        pass
-
-                    plt.close()
+                    tasks_2d.append((cat_plotConfig, process, plot_args, v, region))
 
         #
-        #  Comparison Plots
+        #  Comparison Plots (doTest only)
         #
-        varListComp = []
         if args.doTest:
             varListComp = ["v4j.mass", "SvB_MA.ps", "quadJet_selected.xHH"]
-
             for v in varListComp:
-                print(v)
-
-                vDict = cfg.plotModifiers.get(v, {})
-
+                vDict = copy.deepcopy(cfg.plotModifiers.get(v, {}))
                 vDict["ylabel"] = "Entries"
-                vDict["doRatio"] = cfg.plotConfig.get("doRatio", True)
+                vDict["doRatio"] = cat_plotConfig.get("doRatio", True)
                 vDict["legend"] = True
+                vDict["write_yaml"] = True
 
-                if args.doTest:
-                    vDict["write_yaml"] = True
-
-                processes = list(cfg.plotConfig.get("hists", {}).keys()) + list(cfg.plotConfig.get("stack", {}).keys())
+                processes = list(cat_plotConfig.get("hists", {}).keys()) + list(cat_plotConfig.get("stack", {}).keys())
                 processes = list(dict.fromkeys(processes))
 
                 for process in processes:
-
-                    #
-                    # Comp Cuts
-                    #
                     for region in regions:
-
-                        plot_args  = {}
+                        plot_args = {}
                         plot_args["var"] = v
                         plot_args["cut"] = ["failSvB", "passSvB"]
                         plot_args["axis_opts"] = {"region": region}
@@ -187,40 +189,39 @@ def doPlots(varList, debug=False):
                         if args.year:
                             plot_args["year"] = args.year
                         plot_args = plot_args | vDict
+                        tasks_comp.append((cat_plotConfig, plot_args, v, region, "(comp cuts)"))
 
-                        if debug: print(plot_args)
-
-                        try:
-                            fig = makePlot(cfg, **plot_args)
-                        except Exception as e:
-                            print(f"Error plotting {v} {region} (comp cuts): {str(e)}")
-                            pass
-
-                        plt.close()
-
-                    #
-                    # Comp Regions
-                    #
                     comp_regions = [r for r in regions if r != "sum"]
-                    try:
-                        comp_plot_args = {
-                            "var": v,
-                            "cut": None,
-                            "axis_opts": {"region": comp_regions},
-                            "process": process,
-                            "outputFolder": outputFolder,
-                        }
-                        if hasattr(args, "fmt") and args.fmt:
-                            comp_plot_args["fmt"] = args.fmt
-                        if args.year:
-                            comp_plot_args["year"] = args.year
-                        comp_plot_args = comp_plot_args | vDict
-                        fig = makePlot(cfg, **comp_plot_args)
-                    except Exception as e:
-                        print(f"Error plotting {v} (comp regions): {str(e)}")
-                        pass
+                    comp_plot_args = {
+                        "var": v,
+                        "cut": None,
+                        "axis_opts": {"region": comp_regions},
+                        "process": process,
+                        "outputFolder": outputFolder,
+                    }
+                    if hasattr(args, "fmt") and args.fmt:
+                        comp_plot_args["fmt"] = args.fmt
+                    if args.year:
+                        comp_plot_args["year"] = args.year
+                    comp_plot_args = comp_plot_args | vDict
+                    tasks_comp.append((cat_plotConfig, comp_plot_args, v, "comp_regions", "(comp regions)"))
 
-                    plt.close()
+    all_tasks_1d = tasks_1d + tasks_comp
+    logging.info(f"Total plots to render: {len(all_tasks_1d)} 1D plots, {len(tasks_2d)} 2D plots (using {num_workers} worker processes)")
+
+    if num_workers > 1 and not debug and (len(all_tasks_1d) + len(tasks_2d)) > 1:
+        ctx = mp.get_context("fork") if hasattr(mp, "get_context") else None
+        with ProcessPoolExecutor(max_workers=num_workers, mp_context=ctx, initializer=_init_worker, initargs=(cfg,)) as executor:
+            if all_tasks_1d:
+                list(executor.map(_render_1d_task, all_tasks_1d))
+            if tasks_2d:
+                list(executor.map(_render_2d_task, tasks_2d))
+    else:
+        _init_worker(cfg)
+        for t in all_tasks_1d:
+            _render_1d_task(t)
+        for t in tasks_2d:
+            _render_2d_task(t)
 
 
 if __name__ == '__main__':
@@ -262,15 +263,17 @@ if __name__ == '__main__':
     logging.info(f"Loading histograms from: {args.inputFile}")
     cfg.hists = load_hists(args.inputFile)
     cfg.fileLabels = args.fileLabels
+    cfg.combine_input_files = args.combine_input_files if args.combine_input_files else (len(args.inputFile) > 1 and not args.fileLabels)
 
     # Filter plotConfig to only include processes that are available in the input histograms
     available_processes = []
-    if cfg.hists and isinstance(cfg.hists, list) and len(cfg.hists) > 0 and 'hists' in cfg.hists[0]:
-        hists_dict = cfg.hists[0]['hists']
-        if hists_dict:
-            first_hist = next(iter(hists_dict.values()))
-            if "process" in first_hist.axes.name:
-                available_processes = list(first_hist.axes["process"])
+    if cfg.hists and isinstance(cfg.hists, list):
+        for file_data in cfg.hists:
+            if 'hists' in file_data:
+                for h in file_data['hists'].values():
+                    if "process" in h.axes.name:
+                        available_processes.extend(list(h.axes["process"]))
+    available_processes = list(dict.fromkeys(available_processes))
 
     if available_processes:
         for key in ["hists", "stack"]:
