@@ -15,7 +15,7 @@ counts4:
 
 
 
- counts3:
+counts3:
      synthetic_mc_GluGluToHHTo4B_cHHH1_UL18:
          passJetMult: 11.2
          passPreSel: 0.0
@@ -32,7 +32,7 @@ counts4:
 
 
 
- counts4_unit:
+counts4_unit:
      synthetic_mc_GluGluToHHTo4B_cHHH1_UL18:
          passJetMult: 179.0
          passPreSel: 178.0
@@ -49,7 +49,7 @@ counts4:
 
 
 
- counts3_unit:
+counts3_unit:
      synthetic_mc_GluGluToHHTo4B_cHHH1_UL18:
          passJetMult: 179.0
          passPreSel: 0.0
