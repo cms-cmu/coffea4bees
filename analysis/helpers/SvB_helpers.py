@@ -21,7 +21,14 @@ def setSvBVars(SvBName, event):
         "HH-channel" (ps_hh = p_ggF); ps_zh and ps_zz are set to -2 (n/a).
     """
     sv = getattr(event, SvBName)
-    is_legacy = "phh" in sv.fields
+    fields = sv.fields
+
+    is_tthbb = any(k in fields for k in ("p_ttHbb", "pttHbb", "ps_ttHbb"))
+    if is_tthbb:
+        set_ttHbb_SvB_vars(SvBName, event)
+        return
+
+    is_legacy = "phh" in fields
 
     if is_legacy:
         event[SvBName, "passMinPs"] = ( (sv.pzz > 0.01) | (sv.pzh > 0.01) | (sv.phh > 0.01) )

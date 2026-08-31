@@ -571,6 +571,19 @@ def filling_ttHbb_histograms(
     fill += QuadJetHistsSelected(("quadJet_selected", "Selected Quad Jet"), "quadJet_selected")
     fill += QuadJetHistsMinDr(("quadJet_min_dr", "Min dR Quad Jet"), "quadJet_min_dr")
 
+    # Make FvT classifier hists
+    if apply_FvT and ("FvT" in selev.fields):
+        FvT_skip = []
+        if "pt" not in selev.FvT.fields:
+            FvT_skip = ["pt", "pm3", "pm4"]
+
+        fill += FvTHists(("FvT", "FvT Classifier"), "FvT", skip=FvT_skip)
+        fill += hist.add("quadJet_selected.FvT_score", (100, 0, 1, ("quadJet_selected.FvT_q_score", "Selected Quad Jet Diboson FvT q score")))
+        fill += hist.add("quadJet_min_dr.FvT_score", (100, 0, 1, ("quadJet_min_dr.FvT_q_score", "Min dR Quad Jet Diboson FvT q score")))
+
+        if jcm_model:
+            fill += hist.add("FvT_noFvT", (100, 0, 5, ("FvT.FvT", "FvT reweight")), weight="weight_noFvT")
+
     svb_fields = [f for f in selev.fields if f.startswith("SvB") and not f.startswith("SvB_FeynNet")]
     for name in svb_fields:
         if "ps_ttHbb" in selev[name].fields:
