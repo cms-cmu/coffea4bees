@@ -7,7 +7,7 @@ from coffea.analysis_tools import PackedSelection
 from coffea import processor
 from coffea4bees.analysis.processors.processor_HH4b import HH4bBaseProcessor, _UNSET
 from coffea4bees.analysis.helpers.filling_histograms import filling_ttHbb_histograms
-from coffea4bees.analysis.helpers.SvB_helpers import set_ttHbb_SvB_vars
+from coffea4bees.analysis.helpers.SvB_helpers_ttHbb import set_ttHbb_SvB_vars
 from coffea4bees.analysis.helpers.candidates_selection_ttHbb import create_cand_jet_dijet_quadjet_ttHbb
 
 class ttHbbProcessor(HH4bBaseProcessor):
@@ -59,12 +59,17 @@ class ttHbbProcessor(HH4bBaseProcessor):
         )
 
     def load_SvB(self, event):
-        """Load SvB scores and derive native ttHbb fields without fake HH/ZH/ZZ assignments."""
-        super().load_SvB(event)
+        """Load SvB scores and derive native ttHbb fields without running HH4b setSvBVars."""
         for k in self.friends:
             if k.startswith("SvB") and not k.startswith("SvB_FeynNet"):
-                if getattr(event, k, None) is not None:
-                    set_ttHbb_SvB_vars(k, event)
+                logging.debug(f"Loading ttHbb SvB friend tree for {k}")
+                try:
+                    result = self.friends[k].arrays(self.target)
+                    if result is not None:
+                        event[k] = result
+                        set_ttHbb_SvB_vars(k, event)
+                except Exception as e:
+                    logging.warning(f"Failed loading SvB friend tree {k} in ttHbbProcessor: {e}")
 
     def build_candidates(self, selev, weights, list_weight_names, analysis_selections, processOutput):
         """Build unconstrained di-jets and quad-jets candidates for ttHbb."""
@@ -108,23 +113,20 @@ class ttHbbProcessor(HH4bBaseProcessor):
         """Build PackedSelection object with all cuts and add selJets.n > 6 categorization."""
         selections, allcuts = super().build_selections(event, weights)
 
-        # Define jet multiplicity pass/fail masks
+        # Define jet multiplicity pass mask
         n_selJets = ak.num(event.selJets) if "selJets" in event.fields else ak.num(event.selJet)
         event["pass_nSelJets_gt6"] = n_selJets > 6
-        event["fail_nSelJets_le6"] = n_selJets <= 6
         event["all_selJets"] = np.full(len(event), True)
 
         selections.add("pass_nSelJets_gt6", event.pass_nSelJets_gt6)
-        selections.add("fail_nSelJets_le6", event.fail_nSelJets_le6)
         selections.add("all_selJets", event.all_selJets)
 
         return selections, allcuts
 
     def histograms(self, event, selev, weights, analysis_selections, shift_name):
-        """Fill nominal ttHbb histograms as well as pass/fail selJets.n > 6 sub-categories."""
+        """Fill nominal ttHbb histograms as well as pass selJets.n > 6 sub-category."""
         n_selJets = ak.num(selev.selJets) if "selJets" in selev.fields else ak.num(selev.selJet)
         selev["pass_nSelJets_gt6"] = n_selJets > 6
-        selev["fail_nSelJets_le6"] = n_selJets <= 6
 
         if self.classifier_FvT:
             apply_FvT = True

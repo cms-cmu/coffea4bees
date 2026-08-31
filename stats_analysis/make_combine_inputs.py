@@ -263,6 +263,9 @@ def create_combine_root_file( file_to_convert,
     if not stat_only:
         for channel in metadata['bin']:
             for ibin, ivalues in bkg_syst_file.items():
+                if np.max(np.abs(np.array(ivalues, dtype=float) - 1.0)) < 1e-6:
+                    logging.info(f"Skipping flat systematic {ibin}")
+                    continue
                 clean_ibin = ibin.replace('_hh', '').replace('_ttHbb', '').replace('_zh', '').replace('_zz', '').replace('vari', 'variance')
                 bkg_name_syst = f"CMS_bbbb_resolved_bkg_datadriven_{clean_ibin}"
                 root_hists[channel]['multijet'][bkg_name_syst] = root_hists[channel]['multijet']['nominal'].Clone()
