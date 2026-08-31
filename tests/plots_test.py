@@ -94,7 +94,7 @@ class PlotTestCase(unittest.TestCase):
             region = v["region"]
             counts = v["counts"]
 
-            fig, axes = makePlot(cfg, var=var, cut=cut, axis_opts={"region":region},
+            fig, axes = makePlot(cfg, var=var, cut=cut, region=region,
                                  outputFolder=cfg.outputFolder, **default_args)
 
             ax = axes[0]
