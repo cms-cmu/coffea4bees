@@ -55,6 +55,7 @@ ZH4b:
       sumw2_raw: 1706115.3683013916
       sumw_raw: 2686413.082397461
       total_events: 4776217
+  xs: 0.7612*0.5824*0.1512
   2022_preEE:
     nanoAOD: root://cmsxrootd.fnal.gov//store/user/ekoenig/Run3_private_production/2021/mc/ZH_ZToBB_HToBB_M-125_2022-preEE/
     picoAOD:
@@ -129,8 +130,6 @@ ZH4b:
     picoAOD:
       files:
       - dummy
-=======
->>>>>>> e3dae116 (10/2/2026: Adding picoAOD files to ZZ4b.yml and ZH4b.yml, adding trigger weights and friend trees for ZX4b)
   xs:
     Run2: '0.7612*0.5824*0.1512'
     Run3: '0.9361 * 0.576 * 0.1512'
@@ -211,6 +210,7 @@ ggZH4b:
       sumw: 200515.34817499993
       sumw2: 8661.160206745039
       total_events: 4642150
+  xs: 0.1227*0.5824*0.1512
   2022_preEE:
     nanoAOD: root://cmsxrootd.fnal.gov//store/user/ekoenig/Run3_private_production/2021/mc/ggZH_HToBB_ZToBB_M-125_2022-preEE/
     picoAOD:

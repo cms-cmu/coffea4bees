@@ -341,7 +341,7 @@ make_combine_inputs:
 # point in GluGluToHHTo4B.yml is 2024-only. SvB_MA.ps_hh_fine is correct for the binary ggF
 # friend too — setSvBVars aliases ps_hh = p_sig for that schema.
 channels:
-  HH4b:
+  HH4b_C2:
     signallabel: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb"
     othersignal: ""
     variable: "SvB_MA.ps_hh_fine"

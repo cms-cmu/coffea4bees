@@ -20,26 +20,23 @@ mixeddata:
   nSamples: 15
 
 synthetic_data:
-  UL16_postVFP:
-    picoAOD:
-      files_template:
-      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/data_UL16_postVFPF/picoAOD_seedXXX.root
-      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/data_UL16_postVFPG/picoAOD_seedXXX.root
-      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/data_UL16_postVFPH/picoAOD_seedXXX.root
-      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_UL16_postVFP/picoAOD_PSData.root
-      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_UL16_postVFP/picoAOD_PSData.root
-      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_UL16_postVFP/picoAOD_PSData.root
-  UL16_preVFP:
+  '2016':
     picoAOD:
       files_template:
       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/data_UL16_preVFPB/picoAOD_seedXXX.root
       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/data_UL16_preVFPC/picoAOD_seedXXX.root
       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/data_UL16_preVFPD/picoAOD_seedXXX.root
       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/data_UL16_preVFPE/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/data_UL16_postVFPF/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/data_UL16_postVFPG/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/data_UL16_postVFPH/picoAOD_seedXXX.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_UL16_postVFP/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_UL16_postVFP/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_UL16_postVFP/picoAOD_PSData.root
       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_UL16_preVFP/picoAOD_PSData.root
       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_UL16_preVFP/picoAOD_PSData.root
       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_UL16_preVFP/picoAOD_PSData.root
-  UL17:
+  '2017':
     picoAOD:
       files_template:
       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/data_UL17C/picoAOD_seedXXX.root
@@ -49,7 +46,7 @@ synthetic_data:
       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTTo2L2Nu_UL17/picoAOD_PSData.root
       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToHadronic_UL17/picoAOD_PSData.root
       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/TTToSemiLeptonic_UL17/picoAOD_PSData.root
-  UL18:
+  '2018':
     picoAOD:
       files_template:
       - root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v1/data_UL18A/picoAOD_seedXXX.root
