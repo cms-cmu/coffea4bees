@@ -13,11 +13,11 @@ config.setdefault('email', "")
 # Analysis Sub-workflow Options
 config.setdefault('analysis_config', "coffea4bees/analysis/metadata/HH4b_2024_v2.yml")
 config.setdefault('processor', "coffea4bees/analysis/processors/processor_HH4b.py")
-config.setdefault('friend_file', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b.yml")
-config.setdefault('weights_file', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/weights_HH4b.yml")
+config.setdefault('friend_file', "coffea4bees/metadata/friends/friends_HH4b.yml")
+config.setdefault('weights_file', "coffea4bees/metadata/weights/weights_HH4b.yml")
 config.setdefault('additional_parameters', "--shared-dask --condor --run-performance")
 config.setdefault('plot_config', "coffea4bees/plots/metadata/plotsAll_ttbarWeights.yml")
-config.setdefault('dataset_location', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/")
+config.setdefault('dataset_location', "coffea4bees/metadata/datasets/")
 config.setdefault('dataset', ['GluGluToHHTo4B_cHHH1', 'GluGluToHHTo4B_cHHH0', 'GluGluToHHTo4B_cHHH2p45', 'GluGluToHHTo4B_cHHH5', 'ZH4b', 'ZZ4b', 'ggZH4b'])
 
 # Stats Sub-workflow Options

@@ -68,7 +68,7 @@ fvt:
   friend: "{eos_base}/friend/{label}"
   train_template: "model: {eos_base}/classifier/{label}"
   eval_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/{label}"
-  metadata: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_lowpt_wlowptJCM.json@@HCR_input_lowpt"
+  metadata: "coffea4bees/metadata/datasets/classifier_inputs_lowpt_wlowptJCM.json@@HCR_input_lowpt"
 
 svb:
   eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/lowpt_sel_LWP"
@@ -83,15 +83,15 @@ svb:
   friend: "{eos_base}/friend/{label}"
   train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/lowpt_FvT"
   eval_template: "model: {eos_base}/classifier/{label}, SvB: {eos_base}/friend/{label}"
-  metadata: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_lowpt_wlowptJCM.json@@HCR_input_lowpt"
+  metadata: "coffea4bees/metadata/datasets/classifier_inputs_lowpt_wlowptJCM.json@@HCR_input_lowpt"
 
 # ==============================================================================
 # PHASE F.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
 # ==============================================================================
 analysis_config:
   processor: "coffea4bees/analysis/processors/processor_HH4b_lowpt.py"
-  dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
-  friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b_lowpt.yml"
+  dataset_location: "coffea4bees/metadata/datasets/"
+  friend_file: "coffea4bees/metadata/friends/friends_HH4b_lowpt.yml"
   weights_file: "coffea4bees/metadata/weights/weights_HH4b_lowpt.yml"
   runner:
     chunksize: 10000

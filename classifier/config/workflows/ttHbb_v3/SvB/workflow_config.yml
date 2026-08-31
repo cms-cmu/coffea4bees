@@ -1,0 +1,16 @@
+eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_v3"
+plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
+
+classifier_config_paths: coffea4bees
+wfs_base: coffea4bees/classifier/config/workflows/ttHbb_v3/SvB
+label: SvB_ttHbb_v3
+output_dir: output/{label}/
+
+plot_inputs: true
+evaluate: true
+
+model: "{eos_base}/classifier/{label}"
+friend: "{eos_base}/friend/{label}"
+train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/ttHbb_v3"
+eval_template: "model: {eos_base}/classifier/{label}, SvB: {eos_base}/friend/{label}"
+metadata: "coffea4bees/metadata/datasets/classifier_inputs_ttHbb_v3.json@@HCR_input"

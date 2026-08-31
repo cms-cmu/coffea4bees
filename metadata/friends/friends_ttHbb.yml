@@ -1,8 +1,8 @@
 friends:
   UL18:
-    trigWeight: &trigWeight "coffea4bees/metadata/datasets/archive/Run2_2024_v2/trigweights_2024_v2.json@@trigWeight"
+    trigWeight: &trigWeight "coffea4bees/metadata/datasets/trigweights_2024_v2.json@@trigWeight"
     FvT: &FvT "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_v2/friend/FvT_ttHbb_v2/result.json@@analysis.0.merged"
-    SvB_MA: &SvB_MA "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_SvB_ttHbb_all.json@@analysis.0.merged"
+    SvB_MA: &SvB_MA "coffea4bees/metadata/friends/friends_SvB_ttHbb_all.json@@analysis.0.merged"
   UL16_preVFP:
     trigWeight: *trigWeight
     FvT: *FvT

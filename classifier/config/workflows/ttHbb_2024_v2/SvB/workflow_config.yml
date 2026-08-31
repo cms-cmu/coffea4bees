@@ -2,7 +2,7 @@ eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_v2"
 plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
 
 classifier_config_paths: coffea4bees
-wfs_base: coffea4bees/classifier/config/workflows/ttHbb_2024_v2/SvB_v2
+wfs_base: coffea4bees/classifier/config/workflows/ttHbb_2024_v2/SvB
 label: SvB_ttHbb_v2
 output_dir: output/{label}/
 
@@ -13,4 +13,4 @@ model: "{eos_base}/classifier/{label}"
 friend: "{eos_base}/friend/{label}"
 train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_ttHbb_v2"
 eval_template: "model: {eos_base}/classifier/{label}, SvB: {eos_base}/friend/{label}"
-metadata: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_ttHbb.json@@HCR_input"
+metadata: "coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json@@HCR_input"

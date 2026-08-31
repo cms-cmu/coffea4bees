@@ -60,7 +60,7 @@ Contains all data and MC dataset definition YAML files (e.g. `TT.yml`, `GluGluTo
     Run3: <run3_cross_section_value>
   ```
   If a dataset is specific to only one Run, the other Run's cross-section is set to a placeholder `1`.
-- **Dataset Archive (`metadata/datasets/archive/`)**: Holds older dataset definitions and versions (e.g. `Run2_2024_v1`, `Run2_2024_v2`, `Run3_archive`).
+- **Dataset Archive (`metadata/datasets/archive/`)**: Holds older dataset definitions and versions (e.g. `HIG-24-010`, `Run3_archive`).
 
 ### 2. Friend Trees & Trigger Weights (`metadata/friends/`)
 Contains friend tree configurations (`friends_HH4b.yml`, `friends_empty.yml`) and their corresponding active JSON lookups:

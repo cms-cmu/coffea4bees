@@ -871,17 +871,30 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     event[_FvT_name, _FvT_name] = getattr(event[_FvT_name], _FvT_name)
 
             else:
-                event["FvT"] = (
-                    nano_from_root(
+                fvt_file = f'{self.fname.replace("picoAOD", "FvT_weight")}' if ("seed" in self.fname or "PSData" in self.fname) else f'{self.fname.replace("picoAOD", "FvT")}'
+                try:
+                    fvt_events = nano_from_root(
+                        {fvt_file: "Events"},
+                        entry_start=self.estart,
+                        entry_stop=self.estop,
+                        schemaclass=FriendTreeSchema
+                    ).events()
+                except (FileNotFoundError, OSError):
+                    fvt_events = nano_from_root(
                         {f'{self.fname.replace("picoAOD", "FvT")}': "Events"},
                         entry_start=self.estart,
                         entry_stop=self.estop,
                         schemaclass=FriendTreeSchema
-                    ).events().FvT
-                )
+                    ).events()
 
+                if "FvT" in fvt_events.fields:
+                    event["FvT"] = fvt_events.FvT
+                    if "q_1234" not in event.FvT.fields:
+                        event["FvT", "q_1234"] = np.full(len(event), -1, dtype=int)
+                        event["FvT", "q_1324"] = np.full(len(event), -1, dtype=int)
+                        event["FvT", "q_1423"] = np.full(len(event), -1, dtype=int)
 
-            if not ak.all(event.FvT.event == event.event):
+            if hasattr(event.FvT, "event") and not ak.all(event.FvT.event == event.event):
                 raise ValueError("ERROR: FvT events do not match events ttree")
 
         setFvTVars("FvT", event)

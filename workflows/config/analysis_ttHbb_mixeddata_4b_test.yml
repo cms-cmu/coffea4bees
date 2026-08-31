@@ -1,0 +1,62 @@
+label: "ttHbb_mixeddata_4b_test"
+output_path: "output/ttHbb_mixeddata_4b_test/"
+
+dataset:
+  - "mixeddata_4b"
+
+years:
+  - "UL16_preVFP"
+  - "UL16_postVFP"
+  - "UL17"
+  - "UL18"
+
+year_eras:
+  UL16_preVFP: []
+  UL16_postVFP: []
+  UL17: []
+  UL18: []
+
+analysis_config:
+  processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+  dataset_location: "coffea4bees/metadata/datasets/mixeddata_4b.yml"
+  friend_file: "coffea4bees/metadata/friends/friends_ttHbb.yml"
+  weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
+  runner:
+    workers: 4
+    worker_memory: 8GB
+    chunksize: 50000
+    condor: true
+    shared_dask: true
+    run_performance: true
+  config:
+    blind: false
+    apply_FvT: false
+    apply_JCM: false
+    apply_trigWeight: false
+    apply_btagSF: true
+    apply_boosted_veto: false
+    run_SvB: true
+    SvB_MA: true
+    SvB: null
+    apply_lepton_veto: false
+    hist_cuts: ["pass_nSelJets_gt6"]
+    top_reconstruction: fast
+    plot_ttbar_with_weights: false
+
+phase_e:
+  data_type: "mixeddata_4b"
+  label: "ttHbb_mixeddata_4b_test"
+  output_path: "output/ttHbb_mixeddata_4b_test/"
+  datasets_file: "coffea4bees/metadata/datasets/mixeddata_4b.yml"
+  phase_e_dataset:
+    - "mixeddata_4b"
+  years: "UL16_preVFP UL16_postVFP UL17 UL18"
+  n_samples: 1
+  phase_f_output_path: "output/ttHbb_v3/"
+  phase_f_label: "ttHbb_v3"
+  processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+  additional_parameters: "--shared-dask --condor --run-performance"
+  plot_script: "coffea4bees/plots/makePlots.py"
+  comparison_plot_config: "coffea4bees/plots/metadata/plots_mixeddata_vs_data_test.yml"
+  comparison_extra_args: "-s xW --year RunII"
+  png_cores: 4

@@ -23,7 +23,7 @@ config.setdefault('evaluate', False)
 config.setdefault('model', f"{config['eos_base']}/classifier/{config['label']}")
 config.setdefault('friend', f"{config['eos_base']}/friend/{config['label']}")
 config.setdefault('train_template', f"model: {config['eos_base']}/classifier/{config['label']}")
-config.setdefault('metadata', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_nominal.json@@HCR_input")
+config.setdefault('metadata', "coffea4bees/metadata/datasets/classifier_inputs_nominal.json@@HCR_input")
 
 if 'classifier_setting' in config:
     output_dir = config['output_dir'].rstrip('/')
