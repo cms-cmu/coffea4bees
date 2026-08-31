@@ -32,6 +32,57 @@ def _reweight_bkg(df: pd.DataFrame, branch: str = "FvT"):
     return df
 
 
+def _fill_nan(df: pd.DataFrame):
+    """Fill NaN in the feature columns with 0 (mirrors ``MvD._fill_nan``).
+
+    The mixeddata_all background carries NaN in ``xW``/``xbW`` (scalar) and in
+    the jagged ``NotCanJet_mass`` for some events (e.g. the extreme-MvD-weight
+    events kept once ``--weight-outlier-max`` is loosened). NaN makes those
+    chunks' awkward columns optional-typed, which mismatches the non-NaN chunks
+    and forces the loader's final ``pd.concat`` onto ``ak.concatenate``'s
+    ``ak.from_iter`` fallback — element-by-element iteration over ~180M events
+    that never finishes. Filling NaN->0 keeps all chunks' types consistent so
+    the concat stays on the fast buffer path. Applied to ``source:mixed_all``
+    only, exactly like the MvD training.
+
+    MUST stay a module-level function (used with a group processor); a closure
+    would not pickle and would hang the loader's process pool.
+    """
+    import logging
+
+    import numpy as np
+
+    for col in ["xW", "xbW"]:
+        if col in df.columns:
+            n_nan = df[col].isna().sum()
+            if n_nan > 0:
+                logging.warning(f"SvB fill_nan: filling {n_nan} NaN in '{col}' with 0")
+                df[col] = df[col].fillna(0)
+
+    for col in ["NotCanJet_mass"]:
+        if col not in df.columns:
+            continue
+        if df[col].dtype == "awkward":
+            import awkward as ak
+
+            ak_arr = df[col].ak.array
+            flat = ak.to_numpy(ak.flatten(ak_arr))
+            n_nan = int(np.isnan(flat).sum())
+            if n_nan > 0:
+                logging.warning(f"SvB fill_nan: filling {n_nan} NaN in jagged '{col}' with 0")
+                from awkward_pandas import AwkwardExtensionArray
+
+                filled_flat = np.where(np.isnan(flat), np.float32(0), flat)
+                df[col] = AwkwardExtensionArray(ak.unflatten(filled_flat, ak.num(ak_arr)))
+        else:
+            n_nan = df[col].isna().sum()
+            if n_nan > 0:
+                logging.warning(f"SvB fill_nan: filling {n_nan} NaN in '{col}' with 0")
+                df[col] = df[col].fillna(0)
+
+    return df
+
+
 class _common_selection:
     ntags: str
     passHLT: bool = False
@@ -69,17 +120,17 @@ class _mixed_selection(_common_selection):
     ntags = "fourTag"
 
 
-def _remove_outlier(df: pd.DataFrame):
+def _remove_outlier(df: pd.DataFrame, lo: float = 0.0, hi: float = 1.0):
     import logging
     n_total = len(df)
-    n_neg = (df["weight"] < 0).sum()
-    n_pos = (df["weight"] >= 1).sum()
+    n_neg = (df["weight"] < lo).sum()
+    n_pos = (df["weight"] >= hi).sum()
     if n_neg > 0 or n_pos > 0:
         logging.info(
-            f"Outlier removal: removing {n_neg} events with negative weights (< 0) and "
-            f"{n_pos} events with extreme weights (>= 1) out of {n_total} total events."
+            f"Outlier removal: removing {n_neg} events with weight < {lo} and "
+            f"{n_pos} events with weight >= {hi} out of {n_total} total events."
         )
-    return df.loc[(df["weight"] >= 0) & (df["weight"] < 1)]
+    return df.loc[(df["weight"] >= lo) & (df["weight"] < hi)]
 
 
 def _subsample(df: pd.DataFrame, fraction: float, seed: int):
@@ -124,6 +175,20 @@ class _Train(CommonTrain):
         default=0,
         help="random seed for --subsample (reproducible subset)",
     )
+    argparser.add_argument(
+        "--weight-outlier-min",
+        type=float,
+        default=0.0,
+        help="lower bound for outlier removal on the (reweighted) event weight",
+    )
+    argparser.add_argument(
+        "--weight-outlier-max",
+        type=float,
+        default=1.0,
+        help="upper bound (exclusive) for outlier removal on the (reweighted) "
+        "event weight. Default 1.0 reproduces the historical cut; loosen "
+        "(e.g. 10) to keep large-MvD-weight events instead of discarding them.",
+    )
 
     def __init__(self):
         super().__init__()
@@ -133,6 +198,16 @@ class _Train(CommonTrain):
         import numpy as np
 
         ps = [
+            # Fill NaN in the feature columns for the mixeddata_all background
+            # before anything concatenates the loaded chunks (mirrors MvD). See
+            # _fill_nan: NaN -> optional-typed awkward chunks -> pd.concat falls
+            # back to ak.from_iter and hangs on ~180M events. No-op for groups
+            # without the source:mixed_all tag (detector/ttbar/signal).
+            _group.fullmatch(
+                ("source:mixed_all",),
+                processors=[lambda: _fill_nan],
+                name="mixed_all fill NaN",
+            ),
             _group.regex(
                 "label:data",
                 [
@@ -151,7 +226,11 @@ class _Train(CommonTrain):
             _group.regex(
                 r"label:.*",
                 [
-                    lambda: _remove_outlier,
+                    lambda: partial(
+                        _remove_outlier,
+                        lo=self.opts.weight_outlier_min,
+                        hi=self.opts.weight_outlier_max,
+                    ),
                     lambda: partial(
                         _subsample,
                         fraction=float(Fraction(self.opts.subsample)),
@@ -201,6 +280,11 @@ class BackgroundMixed(Background):
 
     _data_selection_cls = _mixed_selection
     _weight_branch = "MvD"
+    # mixeddata_all events are fourTag, so the JCM pseudo-tag weights must be
+    # applied on the fourTag flag (the default "threeTag" is a no-op here, which
+    # previously left the mixed background un-JCM-weighted). Matches the MvD
+    # training's selected_col="fourTag".
+    _jcm_selected_col = "fourTag"
 
 
 def _norm(df: pd.DataFrame, norms: dict[int, float]):

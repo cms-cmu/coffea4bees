@@ -213,6 +213,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         apply_btagSF: bool = True,
         apply_FvT: bool = True,
         apply_boosted_veto: bool = False,
+        apply_lepton_veto: bool = False,
         run_dilep_ttbar_crosscheck: bool = False,
         fill_histograms: bool = True,
         hist_cuts = [],
@@ -284,6 +285,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.fill_histograms = fill_histograms
         self.run_dilep_ttbar_crosscheck = run_dilep_ttbar_crosscheck
         self.apply_boosted_veto = apply_boosted_veto
+        self.apply_lepton_veto = apply_lepton_veto
 
         self.classifier_SvB = {}
         if SvB is True and self.weights_data:
@@ -691,8 +693,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         if self.return_events_for_display:
             self.events_for_display(selev, processOutput)
 
-        # Blind data in fourTag SR
-        if not (self.config["isMC"] or "mix_v" in self.dataset) and self.blind:
+        # Blind data in fourTag SR (mixeddata, synthetic data, and MC are never blinded)
+        if not (self.config["isMC"] or self.config["isMixedData"] or self.config["isSyntheticData"] or "mix" in self.dataset) and self.blind:
             with self._stage(f"{label}:blinding"):
                 blind_flag = self._get_blind_flag(selev)
                 if blind_flag is None:
@@ -1032,6 +1034,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         selections.add('passJetMult', event.passJetMult)
         allcuts = ['lumimask', 'passNoiseFilter', 'passHLT', 'passJetMult']
 
+        if self.apply_lepton_veto:
+            selections.add("passLeptonVeto", event.passLeptonVeto if "passLeptonVeto" in event.fields else np.full(len(event), True))
+            allcuts.append("passLeptonVeto")
+
         # Add MC-specific selections
         if self.config["isMC"]:
             self.add_genweight_check(event, selections, weights)
@@ -1116,6 +1122,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             'passNoiseFilter': selections.require(lumimask=True, passCleanGenWeight=True, passNoiseFilter=True),
             'passHLT': selections.require(lumimask=True, passCleanGenWeight=True, passNoiseFilter=True, passHLT=True),
         })
+        if self.apply_lepton_veto:
+            sel_dict['passLeptonVeto'] = selections.require(lumimask=True, passCleanGenWeight=True, passNoiseFilter=True, passHLT=True, passLeptonVeto=True)
         sel_dict['passJetMult'] = selections.all(*allcuts)
 
         # Fill cutflow histograms
@@ -1474,7 +1482,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
     def _get_blind_flag(self, selev):
         """Return a boolean mask (True = keep, False = blind/remove) for data blinding.
 
-        Scans all SvB-like fields (any field starting with 'SvB') and removes SR events
+        Scans all SvB-like fields (any field starting with 'SvB') and removes fourTag SR events
         where *any* ps score (e.g. ps, ps_hh, ps_ttHbb, etc.) from *any* such classifier exceeds 0.8.
         Returns None if no usable SvB field with ps scores is found (blinding skipped).
         """
@@ -1486,15 +1494,17 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 f"but none found among {svb_names} — skipping blinding for this chunk."
             )
             return None
+        tag_field = self._fourtag_label()
+        in_fourtag = ak.to_numpy(selev[tag_field]) if tag_field in selev.fields else ak.to_numpy(selev.fourTag)
         in_sr = ak.to_numpy(selev["quadJet_selected"].SR)
-        # Blind if the event is in SR and ANY ps score from ANY SvB classifier > 0.8
+        # Blind if the event is in fourTag SR and ANY ps score from ANY SvB classifier > 0.8
         is_signal = np.zeros(len(selev), dtype=bool)
         for name in usable:
             for field in selev[name].fields:
                 if field.startswith("ps"):
                     score = ak.to_numpy(selev[name][field])
                     is_signal = is_signal | (score > 0.8)
-        return ~(in_sr & is_signal)
+        return ~(in_fourtag & in_sr & is_signal)
 
     def apply_selection(self, event):
         """Apply selection to the events"""

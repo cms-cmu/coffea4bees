@@ -21,9 +21,9 @@ run_command python coffea4bees/plots/makePlots.py \
     -m coffea4bees/plots/metadata/plotsAll.yml
 
 display_section_header "Checking if pdf files exist"
-ls $OUTPUT_DIR/RunII/region_SR/SvB_MA_ps_zz.pdf
-ls $OUTPUT_DIR/RunII/region_SR/SvB_MA_ps_zh.pdf
-ls $OUTPUT_DIR/RunII/region_SR/SvB_MA_ps_hh.pdf
+ls $OUTPUT_DIR/RunII/region_SR/SvB_MA_ps_zz_logy.pdf
+ls $OUTPUT_DIR/RunII/region_SR/SvB_MA_ps_zh_logy.pdf
+ls $OUTPUT_DIR/RunII/region_SR/SvB_MA_ps_hh_logy.pdf
 ls $OUTPUT_DIR/RunII/region_SR_vs_SB/data/SvB_MA_ps.pdf
 ls $OUTPUT_DIR/RunII/region_SR_vs_SB/HH4b/SvB_MA_ps.pdf
 ls $OUTPUT_DIR/RunII/failSvB_vs_passSvB/region_SR/data/v4j_mass.pdf
@@ -35,9 +35,9 @@ ls $OUTPUT_DIR/RunII/region_SR/Multijet/quadJet_min_dr_close_vs_other_m.pdf
 
 display_section_header "check making the plots from yaml "
 run_command python coffea4bees/plots/plot_from_yaml.py \
-    --input_yaml $OUTPUT_DIR/RunII/region_SR/SvB_MA_ps_zz.yaml \
-        $OUTPUT_DIR/RunII/region_SR/SvB_MA_ps_zh.yaml \
-        $OUTPUT_DIR/RunII/region_SR/SvB_MA_ps_hh.yaml \
+    --input_yaml $OUTPUT_DIR/RunII/region_SR/SvB_MA_ps_zz_logy.yaml \
+        $OUTPUT_DIR/RunII/region_SR/SvB_MA_ps_zh_logy.yaml \
+        $OUTPUT_DIR/RunII/region_SR/SvB_MA_ps_hh_logy.yaml \
         $OUTPUT_DIR/RunII/region_SR_vs_SB/data/SvB_MA_ps.yaml \
         $OUTPUT_DIR/RunII/region_SR_vs_SB/HH4b/SvB_MA_ps.yaml \
         $OUTPUT_DIR/RunII/failSvB_vs_passSvB/region_SR/data/v4j_mass.yaml \
@@ -48,9 +48,9 @@ run_command python coffea4bees/plots/plot_from_yaml.py \
         --out $OUTPUT_DIR/test_plots_from_yaml
 
 display_section_header "Checking if pdf files exist"
-ls $OUTPUT_DIR/test_plots_from_yaml/RunII/region_SR/SvB_MA_ps_zz.pdf
-ls $OUTPUT_DIR/test_plots_from_yaml/RunII/region_SR/SvB_MA_ps_zh.pdf
-ls $OUTPUT_DIR/test_plots_from_yaml/RunII/region_SR/SvB_MA_ps_hh.pdf
+ls $OUTPUT_DIR/test_plots_from_yaml/RunII/region_SR/SvB_MA_ps_zz_logy.pdf
+ls $OUTPUT_DIR/test_plots_from_yaml/RunII/region_SR/SvB_MA_ps_zh_logy.pdf
+ls $OUTPUT_DIR/test_plots_from_yaml/RunII/region_SR/SvB_MA_ps_hh_logy.pdf
 ls $OUTPUT_DIR/test_plots_from_yaml/RunII/region_SR_vs_SB/data/SvB_MA_ps.pdf
 ls $OUTPUT_DIR/test_plots_from_yaml/RunII/region_SR_vs_SB/HH4b/SvB_MA_ps.pdf
 ls $OUTPUT_DIR/test_plots_from_yaml/RunII/failSvB_vs_passSvB/region_SR/data/v4j_mass.pdf

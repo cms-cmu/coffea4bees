@@ -18,15 +18,17 @@ def parse_friends(args: dict[str, str | FriendTemplate]) -> dict[str, Friend]:
 
     for name, path in args.items():
         if isinstance(path, str):
-            friends[name] = Friend.from_json(parse.mapping(path, "file"))
+            mapping = parse.mapping(path, "file")
+            if mapping is not None:
+                friends[name] = Friend.from_json(mapping)
         else:
             keys = path["keys"]
             if isinstance(keys, str):
                 keys = eval(keys)
             for key in keys:
-                friends[name.format(**key)] = Friend.from_json(
-                    parse.mapping(path["path"].format(**key), "file")
-                )
+                mapping = parse.mapping(path["path"].format(**key), "file")
+                if mapping is not None:
+                    friends[name.format(**key)] = Friend.from_json(mapping)
 
     return friends
 
@@ -70,7 +72,7 @@ def read_MvD_friend(chunk: Chunk, friend: Friend):
 
 
 def rename_SvB_friend(chunk: Chunk, friend: Friend):
-    kept = ["q_1234", "q_1324", "q_1423"]
+    kept = ["q_1234", "q_1324", "q_1423", "p_ttHbb", "pttHbb", "p_bkg"]
     renames = {
         "p_sig": "ps",
         "p_ttbar": "ptt",
@@ -78,6 +80,7 @@ def rename_SvB_friend(chunk: Chunk, friend: Friend):
         "p_ZH": "pzh",
         "p_ggF": "phh",
         "p_multijet": "pmj",
+        "p_ttHbb": "p_ttHbb",
     }
     SvB = friend.arrays(
         chunk,

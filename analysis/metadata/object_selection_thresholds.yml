@@ -10,10 +10,31 @@ muon:
     endcap_dz_max: 0.2
     endcap_dxy_max: 0.1
 
+tight_muon:
+  tight_pt_min: 10
+  tight_eta_max: 2.4
+  tight_iso_max: 0.15   # pfRelIso04_all
+  ip_cuts:
+    barrel_eta_boundary: 1.479
+    barrel_dz_max: 0.1
+    barrel_dxy_max: 0.05
+    endcap_dz_max: 0.2
+    endcap_dxy_max: 0.1
+
 electron:
   pt_min: 15
   eta_max: 2.5
   iso_max: 0.15        # pfRelIso03_all
+  ip_cuts:
+    barrel_eta_boundary: 1.479
+    barrel_dz_max: 0.1
+    barrel_dxy_max: 0.05
+    endcap_dz_max: 0.2
+    endcap_dxy_max: 0.1
+
+tight_electron:
+  tight_pt_min: 15
+  tight_eta_max: 2.5
   ip_cuts:
     barrel_eta_boundary: 1.479
     barrel_dz_max: 0.1

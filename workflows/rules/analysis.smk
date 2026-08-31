@@ -63,6 +63,7 @@ rule make_JCM:
         extra_arguments = "",
         tag = "2024_v2",
         output_dir = "output/JCM/",
+        run_container_wrapper = "",
         python_bin = lambda wildcards: config.get("python_bin", "python")
     log: "logs/make_JCM.log"
     shell:
@@ -72,7 +73,7 @@ rule make_JCM:
         mkdir -p $MPLCONFIGDIR
         
         echo "Computing JCM" 2>&1 | tee -a {log}
-        {params.python_bin} coffea4bees/analysis/jcm_tools/make_jcm_weights.py -o {params.output_dir} -r SB -i {input} {params.extra_arguments} -w {params.tag} 2>&1 | tee -a {log}
+        {params.run_container_wrapper} {params.python_bin} coffea4bees/analysis/jcm_tools/make_jcm_weights.py -o {params.output_dir} -r SB -i {input} {params.extra_arguments} -w {params.tag} 2>&1 | tee -a {log}
         ls {params.output_dir}
         """
 
@@ -86,8 +87,7 @@ rule make_plots:
     params:
         output_dir = "output/plots/",
         metadata = "coffea4bees/plots/metadata/plotsAll.yml",
-        extra_arguments = "-s xW",
-        png_cores = 4,
+        extra_arguments = "-s xW -f pdf,png",
         run_container_wrapper = "",
         python_bin = lambda wildcards: config.get("python_bin", "python")
     log: "logs/make_plots.log"
@@ -99,9 +99,6 @@ rule make_plots:
 
         echo "Making plots" 2>&1 | tee -a {log}
         {params.run_container_wrapper} {params.python_bin} coffea4bees/plots/makePlots.py {input[0]} -o {params.output_dir} -m {params.metadata} {params.extra_arguments} 2>&1 | tee -a {log}
-
-        echo "Converting plots to png format" 2>&1 | tee -a {log}
-        {params.run_container_wrapper} {params.python_bin} src/plotting/pb_pdf_to_png.py -r -j {params.png_cores} {params.output_dir} 2>&1 | tee -a {log}
         touch {output}
         """
 
@@ -116,7 +113,7 @@ def get_known_cutflow_flag(wildcards):
     
     if counts_file and os.path.exists(counts_file):
         return f'--known-cutflow "{counts_file}"'
-    return ""
+    return '--known-cutflow "none"'
 
 rule check_cutflow:
     input:

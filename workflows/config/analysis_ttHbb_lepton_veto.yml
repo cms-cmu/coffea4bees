@@ -1,0 +1,203 @@
+label: "ttHbb_v2_lepton_veto"
+output_path: "output/ttHbb_v2_lepton_veto/"
+cern_user: "algomez"
+cern_path: "www/HH4b/Plots/"
+dataset:
+  - "ttHbb"
+  - "data"
+year_eras:
+  UL16_preVFP:
+    - "C"
+    - "D"
+    - "E"
+    - "F"
+  UL16_postVFP:
+    - "F"
+    - "G"
+    - "H"
+  UL17:
+    - "C"
+    - "D"
+    - "E"
+    - "F"
+  UL18:
+    - "A"
+    - "B"
+    - "C"
+    - "D"
+
+jcm_plot_config: "coffea4bees/plots/metadata/plots_JCM_ttHbb.yml"
+jcm_datasets:
+  - "data"
+  - "TTTo2L2Nu"
+  - "TTToSemiLeptonic"
+  - "TTToHadronic"
+
+jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb_jcm_config.yml"
+
+analysis_config:
+  processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+  dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
+  friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb.yml"
+  weights_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/weights_ttHbb.yml"
+  runner:
+    workers: 4
+    worker_memory: 8GB
+    chunksize: 10000
+    condor: true
+    shared_dask: true
+    run_performance: true
+  config:
+    blind: true
+    apply_FvT: true
+    apply_JCM: true
+    apply_trigWeight: true
+    apply_btagSF: true
+    apply_boosted_veto: false
+    apply_lepton_veto: true
+    run_SvB: true
+    SvB_MA: true
+    SvB: null
+    hist_cuts: ["pass_nSelJets_gt6", "fail_nSelJets_le6"]
+    top_reconstruction: fast
+    plot_ttbar_with_weights: true
+
+plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
+known_counts_test: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"
+known_counts_full: "none"
+
+skimmer:
+  processor: "coffea4bees/skimmer/processor/skimmer_4b.py"
+  dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
+  runner:
+    condor_cores: 1
+    worker_memory: 8GB
+    chunksize: 10000
+    picosize: 100000
+    basketsize: 10000
+    condor: true
+    shared_dask: true
+    run_performance: true
+  config:
+    base_path: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/
+    step: 100000
+    loosePtForSkim: true
+
+trigger_weights:
+  processor: "coffea4bees/analysis/processors/processor_trigger_weights.py"
+  runner:
+    condor_cores: 1
+    worker_memory: 8GB
+    chunksize: 10000
+    condor: true
+    shared_dask: true
+    run_performance: true
+  config:
+    use_vectorized: false
+    tagger: DeepJet
+    make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/
+
+classifier_inputs:
+  processor: "coffea4bees/analysis/processors/processor_HH4b.py"
+  friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb.yml"
+  weights_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/weights_ttHbb.yml"
+  datasets:
+    - "ttHbb"
+    - "data"
+    - "TTTo2L2Nu"
+    - "TTToSemiLeptonic"
+    - "TTToHadronic"
+  runner:
+    condor_cores: 1
+    worker_memory: 8GB
+    chunksize: 10000
+    condor: true
+    shared_dask: true
+    run_performance: true
+  config:
+    blind: true
+    apply_JCM: true
+    apply_FvT: false
+    apply_trigWeight: true
+    apply_btagSF: true
+    apply_boosted_veto: false
+    apply_lepton_veto: true
+    run_SvB: false
+    top_reconstruction: slow
+    fill_histograms: true
+    make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_v2/
+
+convert_hist_to_json:
+  histos: 
+    - "SvB_MA.ps_ttHbb"
+    - "SvB_MA.ps"
+combine_outdir: "datacards/ttHbb_v2_lepton_veto/"
+make_combine_inputs:
+  stat_only: ""
+  bkgsyst: "coffea4bees/stats_analysis/files/HIG-24-010/hh/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_hh_rebin1.pkl"
+channels:
+  ttHbb:
+    signallabel: "ttHbb"
+    othersignal: ""
+    variable: "SvB_MA.ps"
+    signal: "ttHbb"
+    closure_subdir: "hh"
+    region: "SR"
+    cut: "sum"
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_stat_only:
+    signallabel: "ttHbb"
+    othersignal: ""
+    variable: "SvB_MA.ps"
+    signal: "ttHbb"
+    closure_subdir: "hh"
+    region: "SR"
+    cut: "sum"
+    stat_only: true
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_nSelJets_gt6:
+    signallabel: "ttHbb"
+    othersignal: ""
+    variable: "SvB_MA.ps"
+    signal: "ttHbb"
+    closure_subdir: "hh"
+    region: "SR"
+    cut: "pass_nSelJets_gt6"
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_nSelJets_gt6_stat_only:
+    signallabel: "ttHbb"
+    othersignal: ""
+    variable: "SvB_MA.ps"
+    signal: "ttHbb"
+    closure_subdir: "hh"
+    region: "SR"
+    cut: "pass_nSelJets_gt6"
+    stat_only: true
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_sum_inclusive:
+    signallabel: "ttHbb"
+    othersignal: ""
+    variable: "SvB_MA.ps"
+    signal: "ttHbb"
+    closure_subdir: "hh"
+    region: "sum"
+    cut: "sum"
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region sum --blind"
+  ttHbb_sum_inclusive_stat_only:
+    signallabel: "ttHbb"
+    othersignal: ""
+    variable: "SvB_MA.ps"
+    signal: "ttHbb"
+    closure_subdir: "hh"
+    region: "sum"
+    cut: "sum"
+    stat_only: true
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region sum --blind"
+
+combine_flags: "--three_tag threeTag --four_tag fourTag --region sum --blind"
+
+likelihood_scan_points: 40
+likelihood_scan_r_min: 0
+likelihood_scan_r_max: 2
+likelihood_scan_y_cut: 30
+likelihood_scan_y_max: 30

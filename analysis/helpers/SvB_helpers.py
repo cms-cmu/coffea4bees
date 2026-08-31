@@ -99,23 +99,36 @@ def set_ttHbb_SvB_vars(SvBName: str, event: ak.Array):
 
     if "p_ttHbb" in fields:
         pttHbb = sv.p_ttHbb
-        pmj = sv.p_multijet if "p_multijet" in fields else sv.pmj
-        ptt = sv.p_ttbar if "p_ttbar" in fields else sv.ptt
     elif "pttHbb" in fields:
         pttHbb = sv.pttHbb
-        pmj = sv.pmj
-        ptt = sv.ptt
+    elif "p_sig" in fields:
+        pttHbb = sv.p_sig
+    elif "ps" in fields:
+        pttHbb = sv.ps
     else:
         pttHbb = np.zeros(len(event), dtype=float)
+
+    if "p_multijet" in fields:
+        pmj = sv.p_multijet
+    elif "pmj" in fields:
+        pmj = sv.pmj
+    else:
         pmj = np.zeros(len(event), dtype=float)
+
+    if "p_ttbar" in fields:
+        ptt = sv.p_ttbar
+    elif "ptt" in fields:
+        ptt = sv.ptt
+    else:
         ptt = np.zeros(len(event), dtype=float)
 
-    ps_ttHbb = pttHbb / np.maximum(pmj + ptt + pttHbb, 1e-10)
-    tt_vs_mj = ptt / np.maximum(ptt + pmj, 1e-10)
+    ps_ttHbb = ak.nan_to_num(pttHbb / np.maximum(pmj + ptt + pttHbb, 1e-10), nan=0.0)
+    tt_vs_mj = ak.nan_to_num(ptt / np.maximum(ptt + pmj, 1e-10), nan=0.0)
 
     event[SvBName, "pmj"] = pmj
     event[SvBName, "ptt"] = ptt
     event[SvBName, "pttHbb"] = pttHbb
+    event[SvBName, "ps"] = ps_ttHbb
     event[SvBName, "ps_ttHbb"] = ps_ttHbb
     event[SvBName, "tt_vs_mj"] = tt_vs_mj
 

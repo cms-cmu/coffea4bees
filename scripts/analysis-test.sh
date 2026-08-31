@@ -47,5 +47,5 @@ bash coffea4bees/scripts/run-analysis-processor.sh \
     --output-filename "test_databkgs.coffea" \
     --output-subdir "$JOB" \
     --config $JOB_CONFIG \
-    --dataset-metadata "$OUTPUT_DIR/datasets_temp.yml" \
+    --dataset-metadata "$OUTPUT_DIR/datasets_temp.yml"
     # --additional-flags "--slurm --debug"

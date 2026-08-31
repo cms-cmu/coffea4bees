@@ -2,6 +2,14 @@ from enum import IntEnum
 
 from src.classifier.task import GlobalSetting
 
+# Exported names. REQUIRED: src/classifier/config/setting/HCR.py is a compat shim
+# that does `from coffea4bees...setting.HCR import *` then `import __all__`. Without
+# this list that second import raises ImportError, the shim falls back to its stale
+# local definitions (feature_CanJet=["pt","eta","phi","mass"]), and any module that
+# imports InputBranch from src.* (e.g. the HCR model) silently gets the 4-feature
+# defaults instead of the configured features -> "shape '[N,4,4]' is invalid".
+__all__ = ["InputBranch", "Input", "Output", "MassRegion", "NTag"]
+
 
 class InputBranch(GlobalSetting):
     "Name of branches in the input root file"

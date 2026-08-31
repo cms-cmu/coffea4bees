@@ -20,10 +20,10 @@ rule all_skim_trigWeights:
         f"{config['output_path']}trigger_weights/trigger_weights_friends.json"
 
 # 1. Include skimmer subworkflow
-include: "Snakefile_skimmer.smk"
+include: "Snakefile_PhaseA_1_skimmer.smk"
 
 # 2. Point trigger_weights dataset_location to the modified_datasets.yml produced by skimmer
 config['trigger_weights_dataset_location'] = modified_datasets_file
 
 # 3. Include trigger weights subworkflow
-include: "Snakefile_trigWeights.smk"
+include: "Snakefile_PhaseA_2_trigWeights.smk"

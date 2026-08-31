@@ -9,8 +9,9 @@ from coffea.analysis_tools import Weights
 from coffea4bees.analysis.helpers.candidates_selection import (
     cand_jet_selection,
     _compute_vbf_variables,
-    _apply_ml_scores,
 )
+from coffea4bees.analysis.helpers.SvB_helpers import compute_SvB_ttHbb, compute_SvB_FeynNet
+from coffea4bees.analysis.helpers.FvT_helpers import compute_FvT
 
 
 def _build_dijets_ttHbb(selev, cand_cfg=None, isRun3=False):
@@ -62,19 +63,28 @@ def _build_dijets_ttHbb(selev, cand_cfg=None, isRun3=False):
 
 
 def _select_quadjet_ttHbb(quadJet, cand_cfg=None):
-    """Pick best quadjet pairing and assign ttHbb SR/SB regions."""
-    # Compute distance to (125, 125) in dijet mass plane
-    cLead = 125.0
-    cSubl = 125.0
-    sr_cfg = (cand_cfg or {}).get('sr_ttHbb', {})
-    sr_radius = sr_cfg.get('SR_radius', 35.0)
-    cr_radius = sr_cfg.get('CR_radius', 65.0)
+    """Pick best quadjet pairing and assign ttHbb SR/SB regions.
+    
+    SR: Shape 2 (Resonant Single-Higgs L-Shape up to 1000 GeV):
+        Horizontal arm: m_subl in [85, 185] GeV, m_lead in [25, 1000] GeV
+        Vertical arm:   m_lead in [90, 185] GeV, m_subl in [25, 1000] GeV
+        SR = in_h_arm | in_v_arm
+        
+    SB: Full preselection phase space excluding SR:
+        m_lead in [25, 1000] GeV and m_subl in [25, 1000] GeV and (~SR)
+    """
+    m_lead = quadJet["lead"].mass
+    m_subl = quadJet["subl"].mass
 
-    quadJet["rH"] = np.sqrt(
-        (quadJet["lead"].mass - cLead)**2 + (quadJet["subl"].mass - cSubl)**2
-    )
-    quadJet["SR"] = quadJet.rH < sr_radius
-    quadJet["SB"] = (~quadJet.SR) & (quadJet.rH < cr_radius)
+    in_h_arm = (m_subl >= 85.0) & (m_subl <= 185.0) & (m_lead >= 25.0) & (m_lead <= 1000.0)
+    in_v_arm = (m_lead >= 90.0) & (m_lead <= 185.0) & (m_subl >= 25.0) & (m_subl <= 1000.0)
+    quadJet["SR"] = in_h_arm | in_v_arm
+
+    in_analysis_box = (m_lead >= 25.0) & (m_lead <= 1000.0) & (m_subl >= 25.0) & (m_subl <= 1000.0)
+    quadJet["SB"] = in_analysis_box & (~quadJet["SR"])
+
+    # Compute Euclidean radial distance for monitoring
+    quadJet["rH"] = np.sqrt((m_lead - 125.0)**2 + (m_subl - 125.0)**2)
 
     # Ranking: prioritize MDR passing pairings, with random tie-breaker
     quadJet["rank"] = (
@@ -137,7 +147,7 @@ def _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB=False, cand_cfg=Non
     })
 
     selev["region"] = ak.zip({
-        "inclusive": np.full(len(selev), True),
+        "inclusive": np.full(len(selev.event), True),
         "SR": selev["quadJet_selected"].SR,
         "SB": selev["quadJet_selected"].SB,
     })
@@ -145,7 +155,14 @@ def _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB=False, cand_cfg=Non
     svb_cfg = (cand_cfg or {}).get('svb', {})
     if run_SvB:
         if "SvB_MA" in selev.fields:
-            svb_ps = getattr(selev["SvB_MA"], "ps_ttHbb", selev["SvB_MA"].ps)
+            if "ps_ttHbb" in selev["SvB_MA"].fields:
+                svb_ps = selev["SvB_MA"].ps_ttHbb
+            elif "pttHbb" in selev["SvB_MA"].fields:
+                svb_ps = selev["SvB_MA"].pttHbb
+            elif "ps" in selev["SvB_MA"].fields:
+                svb_ps = selev["SvB_MA"].ps
+            else:
+                svb_ps = None
         elif "SvB_FeynNet" in selev.fields:
             svb_ps = 1.0 - selev["SvB_FeynNet"].p_bkg
         else:
@@ -153,6 +170,74 @@ def _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB=False, cand_cfg=Non
         if svb_ps is not None:
             selev["passSvB"] = svb_ps > svb_cfg.get('passSvB_min', 0.80)
             selev["failSvB"] = svb_ps < svb_cfg.get('failSvB_max', 0.05)
+
+
+def _apply_ml_scores_ttHbb(
+    selev,
+    quadJet,
+    apply_FvT: bool,
+    classifier_FvT,
+    run_SvB: bool,
+    run_systematics: bool,
+    classifier_SvB,
+    classifier_SvB_MA,
+    classifier_SvB_FeynNet,
+    weights: Weights,
+    list_weight_names: list[str],
+    analysis_selections: ak.Array,
+    label3b: str,
+):
+    if classifier_FvT is not None:
+        compute_FvT(
+            selev,
+            FvT=classifier_FvT,
+            weights=weights,
+            list_weight_names=list_weight_names,
+            analysis_selections=analysis_selections,
+            label3b=label3b,
+        )
+        apply_FvT = True
+
+    if run_SvB:
+        need_svb = (classifier_SvB is not None and "SvB" not in selev.fields)
+        need_svb_ma = (classifier_SvB_MA is not None and "SvB_MA" not in selev.fields)
+        if need_svb or need_svb_ma:
+            clf_svb = classifier_SvB if need_svb else None
+            clf_svb_ma = classifier_SvB_MA if need_svb_ma else None
+            tmp_mask = (
+                (selev.fourTag & quadJet[quadJet.selected][:, 0].SR)
+                if run_systematics
+                else np.full(len(selev), True)
+            )
+            compute_SvB_ttHbb(selev, tmp_mask, SvB=clf_svb, SvB_MA=clf_svb_ma, doCheck=False)
+
+        if "SvB" in selev.fields:
+            quadJet["SvB_q_score"] = np.concatenate([
+                selev.SvB.q_1234[:, np.newaxis],
+                selev.SvB.q_1324[:, np.newaxis],
+                selev.SvB.q_1423[:, np.newaxis],
+            ], axis=1)
+        if "SvB_MA" in selev.fields:
+            quadJet["SvB_MA_q_score"] = np.concatenate([
+                selev.SvB_MA.q_1234[:, np.newaxis],
+                selev.SvB_MA.q_1324[:, np.newaxis],
+                selev.SvB_MA.q_1423[:, np.newaxis],
+            ], axis=1)
+
+    if run_SvB and classifier_SvB_FeynNet is not None:
+        tmp_mask_fn = (
+            (selev.fourTag & quadJet[quadJet.selected][:, 0].SR)
+            if run_systematics
+            else np.full(len(selev), True)
+        )
+        compute_SvB_FeynNet(
+            selev,
+            tmp_mask_fn,
+            SvB_FeynNet=classifier_SvB_FeynNet,
+            doCheck=False,
+        )
+
+    return apply_FvT
 
 
 def create_cand_jet_dijet_quadjet_ttHbb(
@@ -183,7 +268,7 @@ def create_cand_jet_dijet_quadjet_ttHbb(
     quadJet = _build_quadjets_ttHbb(selev, diJet, diJetDr, cand_cfg, isRun3)
     del diJetDr
 
-    apply_FvT = _apply_ml_scores(
+    apply_FvT = _apply_ml_scores_ttHbb(
         selev, quadJet, apply_FvT, classifier_FvT,
         run_SvB, run_systematics, classifier_SvB, classifier_SvB_MA, classifier_SvB_FeynNet,
         weights, list_weight_names, analysis_selections, label3b,

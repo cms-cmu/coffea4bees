@@ -1,0 +1,34 @@
+label: "ttHbb_mixeddata_single_debug"
+output_path: "output/ttHbb_mixeddata_single_debug/"
+dataset:
+  - "mixeddata"
+datasets_file: "coffea4bees/metadata/datasets/mixeddata_single_debug.yml"
+year_eras:
+  2018: []
+
+analysis_config:
+  processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+  dataset_location: "coffea4bees/metadata/datasets/mixeddata_single_debug.yml"
+  datasets_file: "coffea4bees/metadata/datasets/mixeddata_single_debug.yml"
+  friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb.yml"
+  weights_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/weights_ttHbb.yml"
+  runner:
+    workers: 4
+    worker_memory: 8GB
+    chunksize: 10000
+    condor: true
+    shared_dask: false
+    run_performance: false
+  config:
+    blind: false
+    apply_FvT: true
+    apply_JCM: false
+    apply_trigWeight: true
+    apply_btagSF: true
+    apply_boosted_veto: false
+    run_SvB: true
+    SvB_MA: true
+    SvB: null
+    hist_cuts: ["pass_nSelJets_gt6", "fail_nSelJets_le6"]
+    top_reconstruction: fast
+    plot_ttbar_with_weights: true

@@ -39,6 +39,8 @@ class CutFlowTestCase(unittest.TestCase):
     def get_failures(self, expected, observed):
         failures = []
         for datasetAndEra in expected.keys():
+            if not expected.get(datasetAndEra):
+                continue
             if datasetAndEra not in observed:
                 continue
             for cut, exp in expected[datasetAndEra].items():
