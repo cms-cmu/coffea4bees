@@ -581,7 +581,7 @@ def filling_ttHbb_histograms(
         fill += hist.add("quadJet_selected.FvT_score", (100, 0, 1, ("quadJet_selected.FvT_q_score", "Selected Quad Jet Diboson FvT q score")))
         fill += hist.add("quadJet_min_dr.FvT_score", (100, 0, 1, ("quadJet_min_dr.FvT_q_score", "Min dR Quad Jet Diboson FvT q score")))
 
-        if jcm_model:
+        if JCM:
             fill += hist.add("FvT_noFvT", (100, 0, 5, ("FvT.FvT", "FvT reweight")), weight="weight_noFvT")
 
     svb_fields = [f for f in selev.fields if f.startswith("SvB") and not f.startswith("SvB_FeynNet")]

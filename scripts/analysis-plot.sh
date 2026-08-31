@@ -18,7 +18,8 @@ run_command python coffea4bees/plots/makePlots.py \
     $INPUT_DIR/test.coffea \
     --doTest \
     -o $OUTPUT_DIR \
-    -m coffea4bees/plots/metadata/plotsAll.yml
+    -m coffea4bees/plots/metadata/plotsAll.yml \
+    -f pdf,png
 
 display_section_header "Checking if pdf files exist"
 ls $OUTPUT_DIR/RunII/region_SR/SvB_MA_ps_zz_logy.pdf
