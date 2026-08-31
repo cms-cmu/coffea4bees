@@ -4,7 +4,7 @@ import yaml
 
 # Fallback defaults for backwards compatibility or running direct
 config.setdefault('output_path', "output/skimmer/")
-config.setdefault('dataset_location', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/")
+config.setdefault('dataset_location', "coffea4bees/metadata/datasets/")
 config.setdefault('skimmer_config', "coffea4bees/skimmer/metadata/HH4b.yml")
 config.setdefault('processor', "coffea4bees/skimmer/processor/skimmer_4b.py")
 config.setdefault('test', False)
@@ -80,7 +80,7 @@ data_year_era_pairs = [
 
 is_run2 = any(str(y).startswith("UL") for y in years)
 
-skimmer_dataset_location = config.get('skimmer_dataset_location', config.get('dataset_location', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/" if is_run2 else "coffea4bees/metadata/datasets/"))
+skimmer_dataset_location = config.get('skimmer_dataset_location', config.get('dataset_location', \"coffea4bees/metadata/datasets/\"))
 
 def get_raw_skimmer_config():
     skimmer_file = config.get('skimmer_config', "coffea4bees/skimmer/metadata/HH4b.yml")

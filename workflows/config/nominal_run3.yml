@@ -1,6 +1,8 @@
 email: ""
-label: "run3_nominal"
-output_path: "output/run3_nominal/"
+label: "run3_SvB_c6mvd"
+# label: "run3_nominal"
+output_path: "output/run3_SvB_c6mvd/"
+# output_path: "output/run3_nominal/"
 analysis_config:
   processor: "coffea4bees/analysis/processors/processor_HH4b.py"
   dataset_location: "coffea4bees/metadata/datasets/"
@@ -52,31 +54,33 @@ year_eras:
   #   - "D2"
 
 combine_outdir: "datacards/HH4b"
+make_combine_inputs:
+  stat_only: "--stat_only"
 channels:
-  HH4b:
+  HH4b_C2:
     signallabel: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb"
     othersignal: ""
-    variable: "SvB_MA.ps"
-    # variable: "SvB_c6mvd_C2.ps"
+    # variable: "SvB_MA.ps"
+    variable: "SvB_c6mvd_C2.ps"
     signal: "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"
     closure_subdir: "hh"
-  # HH4b_C5:
-  #   signallabel: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb"
-  #   othersignal: ""
-  #   variable: "SvB_c6mvd_C5.ps"
-  #   signal: "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"
-  #   closure_subdir: "hh"
-  # HH4b_C5b:
-  #   signallabel: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb"
-  #   othersignal: ""
-  #   variable: "SvB_c6mvd_C5b.ps"
-  #   signal: "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"
-  #   closure_subdir: "hh"
-  # HH4b_C6:
-  #   signallabel: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb"
-  #   othersignal: ""
-  #   variable: "SvB_c6mvd_C6.ps"
-  #   signal: "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"
-  #   closure_subdir: "hh"
+  HH4b_C5:
+    signallabel: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb"
+    othersignal: ""
+    variable: "SvB_c6mvd_C5.ps"
+    signal: "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"
+    closure_subdir: "hh"
+  HH4b_C5b:
+    signallabel: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb"
+    othersignal: ""
+    variable: "SvB_c6mvd_C5b.ps"
+    signal: "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"
+    closure_subdir: "hh"
+  HH4b_C6:
+    signallabel: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb"
+    othersignal: ""
+    variable: "SvB_c6mvd_C6.ps"
+    signal: "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"
+    closure_subdir: "hh"
 metadata_template: "coffea4bees/stats_analysis/metadata/HH4b_run3.yml"
 

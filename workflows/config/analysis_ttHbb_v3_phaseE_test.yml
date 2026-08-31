@@ -10,9 +10,9 @@ cern_user: "algomez"
 cern_path: "www/ttHbb/Plots/"
 
 processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
-friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb_v3.yml"
-weights_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/weights_ttHbb_v3.yml"
-dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/datasets_phaseE_test.yml"
+friend_file: "coffea4bees/metadata/friends/friends_ttHbb_v3.yml"
+weights_file: "coffea4bees/metadata/weights/weights_ttHbb_v3.yml"
+dataset_location: "coffea4bees/metadata/datasets/datasets_phaseE_test.yml"
 candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
 
 phase_e_dataset:
@@ -48,9 +48,9 @@ comparison_extra_args: "-s xW --year RunII"
 
 analysis_config:
   processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
-  dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/datasets_phaseE_test.yml"
-  friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb_v3.yml"
-  weights_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/weights_ttHbb_v3.yml"
+  dataset_location: "coffea4bees/metadata/datasets/datasets_phaseE_test.yml"
+  friend_file: "coffea4bees/metadata/friends/friends_ttHbb_v3.yml"
+  weights_file: "coffea4bees/metadata/weights/weights_ttHbb_v3.yml"
   candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
   runner:
     workers: 4

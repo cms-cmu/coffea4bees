@@ -23,7 +23,8 @@ config.setdefault('additional_parameters', "--shared-dask --condor --run-perform
 
 # Phase E datasets (only pseudo-data runs processor in Phase E)
 PHASE_E_DATASETS = config.get('phase_e_dataset', [config.get('data_type', 'mixeddata')])
-YEARS = [str(y) for y in config.get('years', '2016 2017 2018').split()]
+years_val = config.get('years', '2016 2017 2018')
+YEARS = [str(y) for y in (years_val.split() if isinstance(years_val, str) else years_val)]
 N_SAMPLES = int(config.get('n_samples', 15))
 SAMPLES = [f"v{i}" for i in range(N_SAMPLES)]
 
@@ -66,6 +67,8 @@ def get_phase_e_merge_inputs(wildcards):
     if existing_phase_f:
         valid_phase_f = [f for f in existing_phase_f if not f.endswith('.png') and not f.endswith('.dat')]
         files.extend(valid_phase_f)
+    elif os.path.exists(f"{config['phase_f_output_path'].rstrip('/')}/histAll_{phase_f_label}.coffea"):
+        files.append(f"{config['phase_f_output_path'].rstrip('/')}/histAll_{phase_f_label}.coffea")
     return files
 
 original_config = workflow.configfiles[0] if workflow.configfiles else "coffea4bees/workflows/config/analysis_ttHbb.yml"

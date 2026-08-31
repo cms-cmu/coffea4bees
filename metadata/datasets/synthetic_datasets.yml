@@ -18,7 +18,6 @@ mixeddata:
       files_template:
       - root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig/mixed2018_3bDvTMix4bDvT_vXXX/picoAOD_3bDvTMix4bDvT_4b_wJCM_vXXX_newSBDef.root
   nSamples: 15
-
 synthetic_data:
   UL16_postVFP:
     picoAOD:

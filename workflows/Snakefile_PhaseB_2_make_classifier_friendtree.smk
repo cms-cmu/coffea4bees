@@ -4,7 +4,7 @@ import yaml
 
 # Fallback defaults for backwards compatibility or running direct
 config.setdefault('output_path', "output/classifier_inputs/")
-config.setdefault('dataset_location', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/")
+config.setdefault('dataset_location', "coffea4bees/metadata/datasets/")
 config.setdefault('processor', "coffea4bees/analysis/processors/processor_HH4b.py")
 config.setdefault('test', False)
 
@@ -26,7 +26,7 @@ if config.get('additional_parameters') is not None:
 elif config.get('test', False) or os.getenv("CI"):
     config.setdefault('additional_parameters', "")
 elif "bridges2" in os.uname().nodename or "psc" in os.uname().nodename or "/ocean/" in os.getcwd():
-    config.setdefault('additional_parameters', "--workers 4")
+    config.setdefault('additional_parameters', "")
 else:
     config.setdefault('additional_parameters', "--shared-dask --condor --run-performance")
 
@@ -101,15 +101,20 @@ def get_raw_classifier_inputs_config():
     elif config.get('dataset_location') and config['dataset_location'].endswith(('.yml', '.yaml')):
         res['dataset_location'] = config['dataset_location']
     elif 'dataset_location' not in res or not res['dataset_location']:
-        default_ds_loc = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/" if is_run2 else "coffea4bees/metadata/datasets/"
+        default_ds_loc = \"coffea4bees/metadata/datasets/\"
         res['dataset_location'] = config.get('dataset_location', default_ds_loc)
 
-    res.setdefault('friend_file', config.get('friend_file', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb.yml" if is_run2 else "coffea4bees/metadata/datasets/friends_HH4b.yml"))
+    res.setdefault('friend_file', config.get('friend_file', \"coffea4bees/metadata/friends/friends_ttHbb.yml\" if is_run2 else \"coffea4bees/metadata/friends/friends_HH4b.yml\"))
     res.setdefault('weights_file', config.get('weights_file', "coffea4bees/metadata/weights/weights_HH4b_2024_v2.yml" if is_run2 else "coffea4bees/metadata/weights/weights_HH4b.yml"))
 
     # Runner settings
     if 'runner' not in res or not isinstance(res['runner'], dict):
         res['runner'] = copy.deepcopy(config.get('runner', {}))
+    is_bridges = ("bridges2" in os.uname().nodename or "psc" in os.uname().nodename or "/ocean/" in os.getcwd())
+    if is_bridges:
+        res['runner']['condor'] = False
+        res['runner']['shared_dask'] = False
+        res['runner']['workers'] = 4
 
     # Config block for processor
     if 'config' not in res or not isinstance(res['config'], dict):
@@ -143,7 +148,8 @@ def get_classifier_inputs_config_inputs(wildcards):
     ds_loc = config.get('classifier_inputs_dataset_location', config.get('dataset_location', ''))
     if isinstance(ds_loc, str) and ds_loc.endswith(('.yml', '.yaml')):
         inputs.append(ds_loc)
-    if hasattr(rules, 'output_computeJCM'):
+    rule_names = {r.name for r in workflow.rules}
+    if 'output_computeJCM' in rule_names:
         inputs.append(rules.output_computeJCM.input[0])
     return inputs
 
@@ -153,7 +159,8 @@ rule create_classifier_inputs_config:
     run:
         import yaml, os
         cfg = get_raw_classifier_inputs_config()
-        if hasattr(rules, 'output_computeJCM'):
+        rule_names = {r.name for r in workflow.rules}
+        if 'output_computeJCM' in rule_names:
             new_jcm_file = str(rules.output_computeJCM.input[0])
             if 'config' not in cfg or not isinstance(cfg['config'], dict):
                 cfg['config'] = {}

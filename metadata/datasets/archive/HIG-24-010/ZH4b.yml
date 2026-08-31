@@ -55,8 +55,17 @@ ZH4b:
       sumw2_raw: 1706115.3683013916
       sumw_raw: 2686413.082397461
       total_events: 4776217
-  xs: 0.7612*0.5824*0.1512
-
+  2022_preEE:
+    nanoAOD: root://cmsxrootd.fnal.gov//store/user/ekoenig/Run3_private_production/2021/mc/ZH_ZToBB_HToBB_M-125_2022-preEE/
+  2022_postEE:
+    nanoAOD: root://cmsxrootd.fnal.gov//store/user/ekoenig/Run3_private_production/2022/mc/ZH_ZToBB_HToBB_M-125_2022-postEE/
+  2023_preBPIX:
+    nanoAOD: root://cmsxrootd.fnal.gov//store/user/ekoenig/Run3_private_production/2023/mc/ZH_ZToBB_HToBB_M-125_2023-preBPIX/
+  2023_postBPIX:
+    nanoAOD: root://cmsxrootd.fnal.gov//store/user/ekoenig/Run3_private_production/2020/mc/ZH_ZToBB_HToBB_M-125_2023-postBPIX/
+  xs:
+    Run2: 0.7612*0.5824*0.1512
+    Run3: 1
 ggZH4b:
   UL16_postVFP:
     nanoAOD: /ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM
@@ -134,4 +143,15 @@ ggZH4b:
       sumw: 200515.34817499993
       sumw2: 8661.160206745039
       total_events: 4642150
-  xs: 0.1227*0.5824*0.1512
+  2022_preEE:
+    nanoAOD: root://cmsxrootd.fnal.gov//store/user/ekoenig/Run3_private_production/2021/mc/ggZH_HToBB_ZToBB_M-125_2022-preEE/
+  2022_postEE:
+    nanoAOD: root://cmsxrootd.fnal.gov//store/user/ekoenig/Run3_private_production/2022/mc/ggZH_HToBB_ZToBB_M-125_2022-postEE/
+  2023_preBPIX:
+    nanoAOD: root://cmsxrootd.fnal.gov//store/user/ekoenig/Run3_private_production/2023/mc/ggZH_HToBB_ZToBB_M-125_2023-preBPIX/
+  2023_postBPIX:
+    nanoAOD: root://cmsxrootd.fnal.gov//store/user/ekoenig/Run3_private_production/2020/mc/ggZH_HToBB_ZToBB_M-125_2023-postBPIX/
+  xs:
+    Run2: 0.1227*0.5824*0.1512
+    Run3: 1
+

@@ -8,9 +8,9 @@ cern_user: "algomez"
 cern_path: "www/ttHbb/Plots/"
 
 processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
-friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb_v3.yml"
-weights_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/weights_ttHbb_v3.yml"
-dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
+friend_file: "coffea4bees/metadata/friends/friends_ttHbb_v3.yml"
+weights_file: "coffea4bees/metadata/weights/weights_ttHbb_v3.yml"
+dataset_location: "coffea4bees/metadata/datasets/"
 candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
 
 dataset:
@@ -43,7 +43,7 @@ year_eras:
 # ==============================================================================
 skimmer:
   processor: "coffea4bees/skimmer/processor/skimmer_4b.py"
-  dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
+  dataset_location: "coffea4bees/metadata/datasets/"
   runner:
     condor_cores: 1
     worker_memory: 8GB
@@ -89,8 +89,8 @@ jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb
 # ==============================================================================
 classifier_inputs:
   processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
-  friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb.yml"
-  weights_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/weights_ttHbb_v3.yml"
+  friend_file: "coffea4bees/metadata/friends/friends_ttHbb.yml"
+  weights_file: "coffea4bees/metadata/weights/weights_ttHbb_v3.yml"
   candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
   datasets:
     - "ttHbb"
@@ -150,7 +150,7 @@ fvt:
   friend: "{eos_base}/friend/{label}"
   train_template: "model: {eos_base}/classifier/{label}"
   eval_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/{label}"
-  metadata: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_ttHbb_v3.json@@HCR_input"
+  metadata: "coffea4bees/metadata/datasets/classifier_inputs_ttHbb_v3.json@@HCR_input"
 
 svb:
   eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_v3"
@@ -166,16 +166,16 @@ svb:
   friend: "{eos_base}/friend/{label}"
   train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_ttHbb_v3"
   eval_template: "model: {eos_base}/classifier/{label}, SvB: {eos_base}/friend/{label}"
-  metadata: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_ttHbb_v3.json@@HCR_input"
+  metadata: "coffea4bees/metadata/datasets/classifier_inputs_ttHbb_v3.json@@HCR_input"
 
 # ==============================================================================
 # PHASE E.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
 # ==============================================================================
 analysis_config:
   processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
-  dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
-  friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb_v3.yml"
-  weights_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/weights_ttHbb_v3.yml"
+  dataset_location: "coffea4bees/metadata/datasets/"
+  friend_file: "coffea4bees/metadata/friends/friends_ttHbb_v3.yml"
+  weights_file: "coffea4bees/metadata/weights/weights_ttHbb_v3.yml"
   candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
   runner:
     workers: 4
@@ -213,7 +213,7 @@ convert_hist_to_json:
 combine_outdir: "datacards/"
 make_combine_inputs:
   stat_only: ""
-  bkgsyst: "output/ttHbb_v3/closure_studies/closure_fits/3bDvTMix4bDvT/SvB_MA/rebin1/SR/ttHbb/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_rebin1.pkl"
+  bkgsyst: "coffea4bees/stats_analysis/files/HIG-24-010/zz/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_zz_rebin1.pkl"
   # bkgsyst: "output/ttHbb_v3/closure_studies/closure_fits/3bDvTMix4bDvT/SvB_MA/rebin1/SR/ttHbb/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_rebin1.pkl"
 
 combine_flags: "--three_tag threeTag --four_tag fourTag --region sum --blind"
