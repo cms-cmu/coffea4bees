@@ -1,0 +1,36 @@
+processes:
+  signal:
+    ttHbb:
+      label: ttHbb
+      process: 0
+  background:
+    multijet:
+      label: 'multijet'
+      process: 1
+    tt:
+      label: 'tt'
+      process: 2
+bin:
+  - &23post ttHbb_2023_BPix
+
+# https://twiki.cern.ch/twiki/bin/view/CMS/TWikiLUM?rev=167#LumiComb  # https://gitlab.cern.ch/hh/naming-conventions
+uncertainty:
+  lumi_13TeV_correlated: 
+    type: 'lnN'
+    years:
+      *23post: 1.006
+
+  lumi_13TeV_1718:
+    type: 'lnN'
+    years:
+      *23post: 1.006
+
+  lumi_13TeV_2018: 
+    type: 'lnN'
+    years:
+      *23post: 1.015
+
+  BR_hbb:
+    type: 'lnN'
+    years:
+      *23post: [0.9748, 1.0248]
