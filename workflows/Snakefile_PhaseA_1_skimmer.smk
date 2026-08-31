@@ -80,7 +80,7 @@ data_year_era_pairs = [
 
 is_run2 = any(str(y).startswith("UL") for y in years)
 
-skimmer_dataset_location = config.get('skimmer_dataset_location', config.get('dataset_location', \"coffea4bees/metadata/datasets/\"))
+skimmer_dataset_location = config.get('skimmer_dataset_location', config.get('dataset_location', "coffea4bees/metadata/datasets/"))
 
 def get_raw_skimmer_config():
     skimmer_file = config.get('skimmer_config', "coffea4bees/skimmer/metadata/HH4b.yml")

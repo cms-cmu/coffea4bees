@@ -1,8 +1,6 @@
 email: ""
-label: "run3_SvB_c6mvd"
-# label: "run3_nominal"
-output_path: "output/run3_SvB_c6mvd/"
-# output_path: "output/run3_nominal/"
+label: "run3_nominal"
+output_path: "output/run3_nominal/"
 analysis_config:
   processor: "coffea4bees/analysis/processors/processor_HH4b.py"
   dataset_location: "coffea4bees/metadata/datasets/"
