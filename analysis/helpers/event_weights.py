@@ -33,12 +33,16 @@ def add_weights(
         if "trigWeight" in event.fields:
             trigWeight = event.trigWeight
         elif friend_trigWeight:
-            trigWeight = friend_trigWeight.arrays(target)
+            try:
+                trigWeight = friend_trigWeight.arrays(target)
+            except Exception as e:
+                logging.warning(f"Could not load trigWeight friend for {target}: {e}")
+                trigWeight = None
         else:
             trigWeight = None
 
         if trigWeight is None:
-            logging.error("No trigWeight found (not in event fields, no friend tree provided). Skipping trigger weight.")
+            logging.warning("No trigWeight found (not in event fields, no friend tree provided). Skipping trigger weight.")
             return weights, list_weight_names
 
         if run_systematics:
