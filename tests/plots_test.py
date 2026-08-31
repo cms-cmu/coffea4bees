@@ -98,11 +98,13 @@ class PlotTestCase(unittest.TestCase):
                                  outputFolder=cfg.outputFolder, **default_args)
 
             ax = axes[0]
-            for i in range(len(ax.lines)):
-
-                if hasattr(ax.lines[i], "get_label") and ax.lines[i].get_label() == '_nolegend_':
-                    y_plot = ax.lines[i].get_ydata()
+            y_plot = np.array([])
+            for line in ax.lines:
+                if hasattr(line, "get_label") and line.get_label() == '_nolegend_':
+                    y_plot = line.get_ydata()
                     break
+            if len(y_plot) == 0 and len(ax.lines) > 0:
+                y_plot = ax.lines[0].get_ydata()
 
             np.testing.assert_allclose(y_plot, counts,
                                        rtol=1e-10, atol=0)

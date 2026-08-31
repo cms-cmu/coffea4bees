@@ -67,11 +67,13 @@ if __name__ == '__main__':
                              outputFolder=cfg.outputFolder, **default_args)
 
         ax = axes[0]
-        for i in range(len(ax.lines)):
-
-            if hasattr(ax.lines[i], "get_label") and ax.lines[i].get_label() == '_nolegend_':
-                counts = ax.lines[i].get_ydata()
+        counts = np.array([])
+        for line in ax.lines:
+            if hasattr(line, "get_label") and line.get_label() == '_nolegend_':
+                counts = line.get_ydata()
                 break
+        if len(counts) == 0 and len(ax.lines) > 0:
+            counts = ax.lines[0].get_ydata()
 
         print_counts_yaml(var, cut, region, counts)
         plt.close()
