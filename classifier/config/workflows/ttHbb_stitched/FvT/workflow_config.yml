@@ -1,0 +1,39 @@
+# coffea4bees/classifier/config/workflows/ttHbb_stitched/FvT/workflow_config.yml
+#
+# FvT training for the ttHbb analysis on the tt+bb stitched ttbar sample.
+# Config for src/classifier/workflow/Snakefile.
+#
+# Differences from HH4b_2024_v2/FvT/workflow_config.yml:
+#   - eos_base / plot_base point at mmarcheg (the HH4b one points at algomez's
+#     area, which is not writable by anyone else)
+#   - wfs_base points at ttHbb_stitched, whose common.yml switches
+#     MC_TTbar.datasets to the *_stitched entries and whose train.yml fixes the
+#     dead JCM path and uses the stitched HCR_input index
+#
+# Run on an LPC GPU node (cmslpcgpu*), where run_container selects the lpc_gpu
+# profile (apptainer --nv) and the Snakefile picks barista:classifier_lpc_latest
+# for the P100s automatically:
+#
+#   ssh cmslpcgpu1
+#   cd <this barista workspace>
+#   ./run_container snakemake \
+#       --snakefile src/classifier/workflow/Snakefile \
+#       --configfile coffea4bees/classifier/config/workflows/ttHbb_stitched/FvT/workflow_config.yml \
+#       --cores 1 -p
+
+eos_base: "root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/stitched_sel"
+# Local plots by default: no assumption about a CERN www area existing.
+plot_base: "output/ttbb_stitch/classifier_plots"
+
+classifier_config_paths: coffea4bees
+wfs_base: coffea4bees/classifier/config/workflows/ttHbb_stitched/FvT
+label: FvT_stitched
+output_dir: output/ttbb_stitch/{label}/
+
+plot_inputs: true
+
+model: "{eos_base}/classifier/{label}"
+friend: "{eos_base}/friend/{label}"
+train_template: "model: {eos_base}/classifier/{label}"
+eval_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/{label}"
+metadata: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_nominal_stitched.json@@HCR_input"
