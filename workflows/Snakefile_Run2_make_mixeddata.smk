@@ -188,5 +188,5 @@ use rule merging_coffea_files from analysis as merge_study_mixeddata with:
     container: config['analysis_container']
     params:
         run_performance = False,
-        run_container_wrapper = "./run_container"
+        run_container_wrapper = ""
     log: f"{out}logs/merge_study_mixeddata.log"
