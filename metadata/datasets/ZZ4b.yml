@@ -103,5 +103,3 @@ ZZ4b:
       sumw_raw: 22702526.780517578
       total_events: 39650048
   xs: 15.5   *0.1512*0.1512
-  2022_preEE:
-    nanoAOD: root://cmsxrootd.fnal.gov//store/user/ekoenig/Run3_private_production/2021/mc/ZZTo4B01j_5f_NLO_FXFX_2022-preEE/
