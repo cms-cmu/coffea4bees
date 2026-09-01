@@ -8,7 +8,7 @@ include: "helpers/common.smk"
 
 fvt_cfg = resolve_config_section(config, primary_key='fvt', fallback_keys=['fvt_classifier', 'classifier'])
 for k, v in fvt_cfg.items():
-    config.setdefault(k, v)
+    config[k] = v
 
 config.setdefault('eos_base', "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/nominal_sel")
 config.setdefault('plot_base', "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots")
@@ -23,7 +23,7 @@ config.setdefault('evaluate', False)
 config.setdefault('model', f"{config['eos_base']}/classifier/{config['label']}")
 config.setdefault('friend', f"{config['eos_base']}/friend/{config['label']}")
 config.setdefault('train_template', f"model: {config['eos_base']}/classifier/{config['label']}")
-config.setdefault('metadata', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_nominal.json@@HCR_input")
+config.setdefault('metadata', "coffea4bees/metadata/datasets/classifier_inputs_nominal.json@@HCR_input")
 
 if 'classifier_setting' in config:
     output_dir = config['output_dir'].rstrip('/')

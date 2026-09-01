@@ -8,6 +8,8 @@ runner:
     - src/
 
 config:
+  SvB: true
+  SvB_MA: true
   blind: false
   apply_FvT: true
   apply_trigWeight: true
@@ -19,3 +21,4 @@ config:
   SvB_MA: true
   top_reconstruction: fast
   hist_cuts: []
+  top_reconstruction: fast

@@ -1,10 +1,16 @@
 # ==============================================================================
 # GLOBAL WORKFLOW CONFIGURATION
 # ==============================================================================
-label: "ttHbb_v2"
-output_path: "output/ttHbb_v2/"
+label: "ttHbb"
+output_path: "output/ttHbb/"
 cern_user: "algomez"
 cern_path: "www/ttHbb/Plots/"
+
+processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+friend_file: "coffea4bees/metadata/friends/friends_ttHbb.yml"
+weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
+dataset_location: "coffea4bees/metadata/datasets/"
+candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
 
 dataset:
   - "ttHbb"
@@ -78,9 +84,10 @@ jcm_datasets:
 jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb_jcm_config.yml"
 
 classifier_inputs:
-  processor: "coffea4bees/analysis/processors/processor_HH4b.py"
+  processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
   friend_file: "coffea4bees/metadata/friends/friends_ttHbb.yml"
   weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
+  candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
   datasets:
     - "ttHbb"
     - "data"
@@ -104,7 +111,8 @@ classifier_inputs:
     run_SvB: false
     top_reconstruction: slow
     fill_histograms: true
-    make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_v2/
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
+    make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb/
 
 # ==============================================================================
 # PHASE C & D: CLASSIFIER SETTINGS (Entirely on falcon / PSC)
@@ -128,12 +136,12 @@ classifier_setting:
       - feature_ancillary: [xW, nSelJets, xbW, year]
 
 fvt:
-  eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_v2"
+  eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb"
   plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_2024_v2/FvT"
-  label: "FvT_ttHbb_v2"
-  output_dir: "output/FvT_ttHbb_v2/"
+  label: "FvT_ttHbb"
+  output_dir: "output/FvT_ttHbb/"
   plot_inputs: true
   model: "{eos_base}/classifier/{label}"
   friend: "{eos_base}/friend/{label}"
@@ -142,17 +150,17 @@ fvt:
   metadata: "coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json@@HCR_input"
 
 svb:
-  eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_v2"
+  eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb"
   plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_2024_v2/SvB"
-  label: "SvB_ttHbb_v2"
-  output_dir: "output/SvB_ttHbb_v2/"
+  label: "SvB_ttHbb"
+  output_dir: "output/SvB_ttHbb/"
   plot_inputs: true
   evaluate: true
   model: "{eos_base}/classifier/{label}"
   friend: "{eos_base}/friend/{label}"
-  train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_ttHbb_v2"
+  train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_ttHbb"
   eval_template: "model: {eos_base}/classifier/{label}, SvB: {eos_base}/friend/{label}"
   metadata: "coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json@@HCR_input"
 
@@ -199,7 +207,7 @@ convert_hist_to_json:
 combine_outdir: "datacards/"
 make_combine_inputs:
   stat_only: ""
-  bkgsyst: "output/ttHbb_mixeddata_closure/closure_fits/3bDvTMix4bDvT/SvB_MA/rebin1/SR/ttHbb/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_rebin1.pkl"
+  bkgsyst: "output/ttHbb/closure_studies/closure_fits/3bDvTMix4bDvT/SvB_MA/rebin1/SR/ttHbb/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_ttHbb_fine_rebin1.pkl"
 
 combine_flags: "--three_tag threeTag --four_tag fourTag --region sum --blind"
 likelihood_scan_points: 40
@@ -271,25 +279,25 @@ channels:
 # PHASE E: BACKGROUND SYSTEMATICS & TWO-STAGE CLOSURE (Mixed Data / Synthetic Data)
 # ==============================================================================
 phase_e:
-  data_type: "mixeddata" # "mixeddata" or "synthetic_data"
+  data_type: "mixeddata_4b" # "mixeddata_4b" or "synthetic_data"
   label: "ttHbb_mixeddata"
-  output_path: "output/ttHbb_v2/closure_studies/"
-  datasets_file: "coffea4bees/metadata/datasets_HH4b_v1.yml"
+  output_path: "output/ttHbb/closure_studies/"
+  datasets_file: "coffea4bees/metadata/datasets/mixeddata_4b.yml"
   
   # Phase E_1: Only runs processor on pseudo-data
   phase_e_dataset:
-    - "mixeddata"
-    - "data_3b_for_mixed"
-  years: "2016 2017 2018"
+    - "mixeddata_4b"
+  years: "UL16_preVFP UL16_postVFP UL17 UL18"
+  n_samples: 15
   
   # Singlefiles from Phase F to include in merging
-  phase_f_output_path: "output/ttHbb_v2/"
-  phase_f_label: "ttHbb_v2"
+  phase_f_output_path: "output/ttHbb/"
+  phase_f_label: "ttHbb"
   include_real_data_from_phase_f: true
   
   # E_1: Analysis processor with SvB
   processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
-  metadata: "coffea4bees/analysis/metadata/HH4b_2024_v2.yml"
+  metadata: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
   additional_parameters: "--shared-dask --condor --run-performance"
   
   # E_2: Plotting
@@ -308,8 +316,7 @@ phase_e:
   rebin: "1"
   years_closure: "2016 2017 2018" # e.g. "2016 2017 2018" or "2017 2018"
   closure_extra_args: ""
-  input_file_data3b: "output/ttHbb_mixeddata_closure/root_inputs/histMixedBkg_data_3b_for_mixed.root"
-  input_file_TT: "output/ttHbb_mixeddata_closure/root_inputs/histMixedBkg_TT.root"
-  input_file_sig: "output/ttHbb_mixeddata_closure/root_inputs/histAll.root"
-
-
+  scale_mixed: 0.7
+  input_file_data3b: "output/ttHbb/closure_studies/root_inputs/histAll_ttHbb_mixeddata.root"
+  input_file_TT: "output/ttHbb/closure_studies/root_inputs/histAll_ttHbb_mixeddata.root"
+  input_file_sig: "output/ttHbb/closure_studies/root_inputs/histAll_ttHbb_mixeddata.root"

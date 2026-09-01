@@ -4,13 +4,13 @@ import yaml
 
 # Global configuration defaults
 config.setdefault('output_path', "output/skim_trigWeights/")
-config.setdefault('dataset_location', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/")
+config.setdefault('dataset_location', "coffea4bees/metadata/datasets/")
 config.setdefault('dataset', ['ttHbb'])
 config.setdefault('year', ['UL18'])
 config.setdefault('test', False)
 
 # Save original baseline dataset location for skimmer
-original_dataset_location = config.get('dataset_location', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/")
+original_dataset_location = config.get('dataset_location', "coffea4bees/metadata/datasets/")
 modified_datasets_file = f"{config['output_path']}modified_datasets/modified_datasets.yml"
 
 # Top target rule

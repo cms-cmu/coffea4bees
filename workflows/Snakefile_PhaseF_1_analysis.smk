@@ -6,10 +6,10 @@ config.setdefault('label', "nominal_wNewSvB")
 config.setdefault('output_path', "output/nominal_wNewSvB/")
 config.setdefault('analysis_config', "coffea4bees/analysis/metadata/HH4b_2024_v2.yml")
 config.setdefault('processor', "coffea4bees/analysis/processors/processor_HH4b.py")
-config.setdefault('friend_file', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b.yml")
-config.setdefault('weights_file', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/weights_HH4b.yml")
+config.setdefault('friend_file', "coffea4bees/metadata/friends/friends_HH4b.yml")
+config.setdefault('weights_file', "coffea4bees/metadata/weights/weights_HH4b.yml")
 config.setdefault('plot_config', "coffea4bees/plots/metadata/plotsAll_ttbarWeights.yml")
-config.setdefault('dataset_location', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/")
+config.setdefault('dataset_location', "coffea4bees/metadata/datasets/")
 config.setdefault('test', False)
 config.setdefault('known_counts', "")
 
@@ -26,7 +26,11 @@ config.setdefault('analysis_container_wrapper', config.get('container_wrapper', 
 python_bin = os.getenv("CONTAINER_PYTHON", "python")
 config.setdefault('python_bin', python_bin)
 
-if config.get('test', False) or os.getenv("CI"):
+if config.get('additional_parameters') is not None:
+    pass
+elif config.get('test', False) or os.getenv("CI"):
+    config.setdefault('additional_parameters', "")
+elif "bridges2" in os.uname().nodename or "psc" in os.uname().nodename or "/ocean/" in os.getcwd():
     config.setdefault('additional_parameters', "")
 else:
     config.setdefault('additional_parameters', "--shared-dask --condor --run-performance")

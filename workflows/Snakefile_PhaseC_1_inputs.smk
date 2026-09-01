@@ -21,11 +21,7 @@ config.setdefault('analysis_container_wrapper', config.get('container_wrapper', 
 python_bin = os.getenv("CONTAINER_PYTHON", "python")
 config.setdefault('python_bin', python_bin)
 
-if config.get('additional_parameters') is not None:
-    pass
-elif config.get('test', False) or os.getenv("CI"):
-    config.setdefault('additional_parameters', "")
-elif "bridges2" in os.uname().nodename or "psc" in os.uname().nodename or "/ocean/" in os.getcwd():
+if config.get('test', False) or os.getenv("CI"):
     config.setdefault('additional_parameters', "")
 else:
     config.setdefault('additional_parameters', "--shared-dask --condor --run-performance")
@@ -110,11 +106,6 @@ def get_raw_classifier_inputs_config():
     # Runner settings
     if 'runner' not in res or not isinstance(res['runner'], dict):
         res['runner'] = copy.deepcopy(config.get('runner', {}))
-    is_bridges = ("bridges2" in os.uname().nodename or "psc" in os.uname().nodename or "/ocean/" in os.getcwd())
-    if is_bridges:
-        res['runner']['condor'] = False
-        res['runner']['shared_dask'] = False
-        res['runner']['workers'] = 4
 
     # Config block for processor
     if 'config' not in res or not isinstance(res['config'], dict):
@@ -148,9 +139,6 @@ def get_classifier_inputs_config_inputs(wildcards):
     ds_loc = config.get('classifier_inputs_dataset_location', config.get('dataset_location', ''))
     if isinstance(ds_loc, str) and ds_loc.endswith(('.yml', '.yaml')):
         inputs.append(ds_loc)
-    rule_names = {r.name for r in workflow.rules}
-    if 'output_computeJCM' in rule_names:
-        inputs.append(rules.output_computeJCM.input[0])
     return inputs
 
 rule create_classifier_inputs_config:
@@ -159,12 +147,6 @@ rule create_classifier_inputs_config:
     run:
         import yaml, os
         cfg = get_raw_classifier_inputs_config()
-        rule_names = {r.name for r in workflow.rules}
-        if 'output_computeJCM' in rule_names:
-            new_jcm_file = str(rules.output_computeJCM.input[0])
-            if 'config' not in cfg or not isinstance(cfg['config'], dict):
-                cfg['config'] = {}
-            cfg['config']['JCM_file'] = new_jcm_file
         if config.get("test", False):
             if 'runner' not in cfg or not isinstance(cfg['runner'], dict):
                 cfg['runner'] = {}
