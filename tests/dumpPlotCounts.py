@@ -74,6 +74,11 @@ if __name__ == '__main__':
                 break
         if len(counts) == 0 and len(ax.lines) > 0:
             counts = ax.lines[0].get_ydata()
+        if len(counts) == 0 and len(ax.patches) > 0:
+            for patch in ax.patches:
+                if hasattr(patch, "get_data"):
+                    counts = np.array(patch.get_data()[0])
+                    break
 
         print_counts_yaml(var, cut, region, counts)
         plt.close()
