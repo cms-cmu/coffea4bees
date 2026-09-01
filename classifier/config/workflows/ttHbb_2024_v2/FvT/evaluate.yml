@@ -7,10 +7,10 @@ main:
 dataset:
   - module: HCR.FvT.Eval
     option:
-      - --metadata coffea4bees/metadata/datasets/archive/Run2_2024_v2/
+      - --metadata coffea4bees/metadata/datasets/
       - --max-workers 8 # use 8 workers to fetch metadatas for ROOT files
       - --data-source detector
-      - --friends "" coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_ttHbb.json@@HCR_input
+      - --friends "" coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json@@HCR_input
 
 model:
   - module: HCR.FvT.baseline.Eval

@@ -10,8 +10,8 @@ analysis_config:
   processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
   dataset_location: "coffea4bees/metadata/datasets/mixeddata_single_debug.yml"
   datasets_file: "coffea4bees/metadata/datasets/mixeddata_single_debug.yml"
-  friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb.yml"
-  weights_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/weights_ttHbb.yml"
+  friend_file: "coffea4bees/metadata/friends/friends_ttHbb.yml"
+  weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
   runner:
     workers: 4
     worker_memory: 8GB
