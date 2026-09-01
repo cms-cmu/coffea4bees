@@ -105,6 +105,11 @@ class PlotTestCase(unittest.TestCase):
                     break
             if len(y_plot) == 0 and len(ax.lines) > 0:
                 y_plot = ax.lines[0].get_ydata()
+            if len(y_plot) == 0 and len(ax.patches) > 0:
+                for patch in ax.patches:
+                    if hasattr(patch, "get_data"):
+                        y_plot = np.array(patch.get_data()[0])
+                        break
 
             np.testing.assert_allclose(y_plot, counts,
                                        rtol=1e-10, atol=0)
