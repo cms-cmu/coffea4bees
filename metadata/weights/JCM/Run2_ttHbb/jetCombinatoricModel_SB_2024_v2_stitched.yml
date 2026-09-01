@@ -1,0 +1,46 @@
+pseudoTagProb:
+        0.04392246879071104
+pseudoTagProb_err:
+        0.0006094088754636618
+pseudoTagProb_pererr:
+        1.3874649860131336
+pairEnhancement:
+        0.22115526570792468
+pairEnhancement_err:
+        0.018312464486619752
+pairEnhancement_pererr:
+        8.280365573933318
+pairEnhancementDecay:
+        1.1295879597249048
+pairEnhancementDecay_err:
+        0.15595257399653814
+pairEnhancementDecay_pererr:
+        13.806146980755548
+tt4bSF:
+        1.0
+tt4bSF_err:
+        0
+tt4bSF_pererr:
+        0.0
+threeTightTagFraction:
+        0.4606787987821525
+threeTightTagFraction_err:
+        0
+threeTightTagFraction_pererr:
+        0.0
+mu_qcd:
+        0.036820949416705495
+chi^2:
+        20.89434953530254
+ndf:
+        12
+chi^2/ndf:
+        1.7411957946085448
+p-value:
+        0.051949107235074315
+n5b_pred:
+        2619.5239153960238
+n5b_true:
+        2609.0
+JCM_weights:
+        [0.024709039017513857, 0.043490365554380905, 0.06162541822989871, 0.07903321881435338, 0.09571320819112988, 0.11168334039993716, 0.12696748171757435, 0.14159146275823659, 0.1555815333228308, 0.1689636726792277, 0.1817632575698575, 0.1940048977413888]

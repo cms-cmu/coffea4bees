@@ -107,7 +107,7 @@ jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb
 classifier_inputs:
   processor: "coffea4bees/analysis/processors/processor_HH4b.py"
   friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb_stitched.yml"
-  weights_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/weights_ttHbb.yml"
+  weights_file: "coffea4bees/metadata/weights/weights_ttHbb_stitched.yml"
   datasets:
     - "ttHbb"
     - "data"
@@ -201,8 +201,8 @@ svb:
 analysis_config:
   processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
   dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
-  friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb.yml"
-  weights_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/weights_ttHbb.yml"
+  friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb_stitched.yml"
+  weights_file: "coffea4bees/metadata/weights/weights_ttHbb_stitched.yml"
   runner:
     workers: 4
     worker_memory: 8GB
