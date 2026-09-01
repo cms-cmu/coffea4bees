@@ -22,3 +22,7 @@ quadJet_selected.close_vs_other_m : {"2d":True}
 
 quadJet_min_dr.lead_vs_subl_m : {"2d":True}
 quadJet_min_dr.close_vs_other_m : {"2d":True}
+
+FvT.FvT : {"yscale": "log"}
+FvT.frac_err : {"xlim": [0, 2]}
+FvT.std : {"xlim": [0, 2]}

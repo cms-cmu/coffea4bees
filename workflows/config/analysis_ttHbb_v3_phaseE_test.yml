@@ -1,0 +1,88 @@
+# ==============================================================================
+# PHASE E TEST WORKFLOW CONFIGURATION: MIXED & SYNTHETIC DATA VS REAL DATA
+# ==============================================================================
+label: "ttHbb_v3_phaseE_test"
+tag: "ttHbb_v3"
+output_path: "output/ttHbb_v3/closure_studies/"
+phase_f_output_path: "output/ttHbb_v3/"
+phase_f_label: "ttHbb_v3"
+cern_user: "algomez"
+cern_path: "www/ttHbb/Plots/"
+
+processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+friend_file: "coffea4bees/metadata/datasets/friends_ttHbb_v3.yml"
+weights_file: "coffea4bees/metadata/datasets/weights_ttHbb_v3.yml"
+dataset_location: "coffea4bees/metadata/datasets/datasets_phaseE_test.yml"
+candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
+
+phase_e_dataset:
+  - "mixeddata"
+n_samples: 15
+variable: "SvB_MA_ps"
+
+years: "2016 2017 2018"
+year_eras:
+  UL16_preVFP:
+    - "C"
+    - "D"
+    - "E"
+    - "F"
+  UL16_postVFP:
+    - "F"
+    - "G"
+    - "H"
+  UL17:
+    - "C"
+    - "D"
+    - "E"
+    - "F"
+  UL18:
+    - "A"
+    - "B"
+    - "C"
+    - "D"
+
+additional_parameters: "--shared-dask --condor --run-performance"
+comparison_plot_config: "coffea4bees/plots/metadata/plots_data_vs_mixed_vs_synthetic.yml"
+comparison_extra_args: "-s xW --year RunII"
+
+analysis_config:
+  processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+  dataset_location: "coffea4bees/metadata/datasets/datasets_phaseE_test.yml"
+  friend_file: "coffea4bees/metadata/datasets/friends_ttHbb_v3.yml"
+  weights_file: "coffea4bees/metadata/datasets/weights_ttHbb_v3.yml"
+  candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
+  runner:
+    workers: 4
+    worker_memory: 8GB
+    chunksize: 100000
+    dashboard_address: 0
+  config:
+    blind: true
+    apply_FvT: true
+    apply_JCM: true
+    apply_trigWeight: true
+    apply_btagSF: true
+    apply_boosted_veto: false
+    run_SvB: true
+    SvB_MA: true
+    SvB: null
+    hist_cuts: ["pass_nSelJets_gt6"]
+    top_reconstruction: fast
+    plot_ttbar_with_weights: true
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
+
+config:
+  blind: true
+  apply_FvT: true
+  apply_JCM: true
+  apply_trigWeight: true
+  apply_btagSF: true
+  apply_boosted_veto: false
+  run_SvB: true
+  SvB_MA: true
+  SvB: null
+  hist_cuts: ["pass_nSelJets_gt6"]
+  top_reconstruction: fast
+  plot_ttbar_with_weights: true
+  candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"

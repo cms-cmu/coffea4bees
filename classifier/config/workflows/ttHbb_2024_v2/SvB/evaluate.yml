@@ -14,9 +14,9 @@ model:
 dataset:
   - module: HCR.ttHbb.Eval
     option:
-      - --metadata coffea4bees/metadata/datasets/archive/Run2_2024_v2/
+      - --metadata coffea4bees/metadata/datasets/
       - --max-workers 8
-      - --friends "" coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_ttHbb.json@@HCR_input 
+      - --friends "" coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json@@HCR_input 
 
 analysis:
   - module: kfold.Merge

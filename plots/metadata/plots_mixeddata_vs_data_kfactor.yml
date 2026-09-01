@@ -1,0 +1,38 @@
+hists:
+  data:
+    process: data
+    tag: fourTag
+    label: Four-tag data
+    edgecolor: k
+    fillcolor: k
+
+stack:
+  mixeddata:
+    process: mix_v0
+    tag: fourTag
+    fillcolor: "#85D1FBff"
+    edgecolor: k
+    label: Mixed data (4b) (k=0.706)
+    scalefactor: 0.706192
+
+ratios:
+  dataToMixed:
+    numerator:
+      type: hists
+      key: data
+    denominator:
+      type: stack
+    uncertianty:
+      nominal
+    color: k
+    marker: "o"
+
+doRatio: 1
+
+categories:
+  - "inclusive"
+  - "pass_nSelJets_gt6"
+
+regions:
+  - "SR"
+  - "SB"

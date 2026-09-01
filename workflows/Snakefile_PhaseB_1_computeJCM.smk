@@ -162,7 +162,7 @@ use rule make_plots from analysis as make_plots_noJCM with:
     params:
         output_dir = f"{JCM_OUTPUT_PATH}plots_noJCM/",
         metadata = config.get('jcm_plot_config', config.get('jcm', {}).get('plot_config', config.get('plot_config', "coffea4bees/plots/metadata/plots_JCM_ttHbb.yml"))),
-        extra_arguments = "-s xW -f pdf,png",
+        extra_arguments = "-s xW -f png",
         run_container_wrapper = config['analysis_container_wrapper'],
         python_bin = lambda wildcards: config.get("python_bin", "python")
     log: f"{JCM_OUTPUT_PATH}logs/make_plots_noJCM.log"

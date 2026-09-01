@@ -21,7 +21,7 @@ analysis_config:
   dataset_location: "coffea4bees/metadata/datasets/"
   datasets_file: "coffea4bees/metadata/datasets/synthetic_data.yml"
   friend_file: "tmp/friends_synthetic.yml"
-  weights_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/weights_ttHbb.yml"
+  weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
   runner:
     workers: 16
     worker_memory: 8GB
@@ -39,6 +39,6 @@ analysis_config:
     SvB_MA: true
     SvB: null
     apply_lepton_veto: false
-    hist_cuts: ["pass_nSelJets_gt6", "fail_nSelJets_le6"]
+    hist_cuts: ["pass_nSelJets_gt6"]
     top_reconstruction: fast
     plot_ttbar_with_weights: true

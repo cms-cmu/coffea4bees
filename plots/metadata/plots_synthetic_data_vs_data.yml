@@ -1,0 +1,37 @@
+hists:
+  data:
+    process: data
+    tag: fourTag
+    label: Four-tag data
+    edgecolor: k
+    fillcolor: k
+
+stack:
+  synthetic_data:
+    process: syn_v0
+    tag: fourTag
+    fillcolor: "#85D1FBff"
+    edgecolor: k
+    label: Synthetic data (4b)
+
+ratios:
+  dataToSynthetic:
+    numerator:
+      type: hists
+      key: data
+    denominator:
+      type: stack
+    uncertianty:
+      nominal
+    color: k
+    marker: "o"
+
+doRatio: 1
+
+categories:
+  - "inclusive"
+  - "pass_nSelJets_gt6"
+
+regions:
+  - "SR"
+  - "SB"
