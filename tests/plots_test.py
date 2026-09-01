@@ -92,11 +92,9 @@ class PlotTestCase(unittest.TestCase):
             var = v["var"]
             cut = v["cut"]
             region = v["region"]
-            if region and not region.startswith("region_"):
-                region = f"region_{region}"
             counts = v["counts"]
 
-            fig, axes = makePlot(cfg, var=var, cut=cut, region=region,
+            fig, axes = makePlot(cfg, var=var, cut=cut, axis_opts={"region": region},
                                  outputFolder=cfg.outputFolder, **default_args)
 
             ax = axes[0]
