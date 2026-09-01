@@ -18,3 +18,4 @@ config:
   run_SvB: true
   run_dilep_ttbar_crosscheck: true
   hist_cuts: []
+  top_reconstruction: fast
