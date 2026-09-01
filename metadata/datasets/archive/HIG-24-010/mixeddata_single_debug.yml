@@ -1,0 +1,9 @@
+datasets:
+  mixeddata:
+    '2018':
+      picoAOD:
+        FvT_file_template: root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig//mixed2018_3bDvTMix4bDvT_vXXX/FvT_3bDvTMix4bDvT_vXXX_newSBDef.root
+        FvT_name_template: FvT_3bDvTMix4bDvT_vXXX_newSBDef
+        files_template:
+        - root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/ULTrig/mixed2018_3bDvTMix4bDvT_vXXX/picoAOD_3bDvTMix4bDvT_4b_wJCM_vXXX_newSBDef.root
+    nSamples: 1

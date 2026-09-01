@@ -1,444 +1,441 @@
 counts4:
-    data_UL18D:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL18D:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL18C:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL18C:
+         passMuMu: 0.0
+         passElMu: 1.0
 
-    data_UL18B:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL18B:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL18A:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL18A:
+         passMuMu: 0.0
+         passElMu: 1.0
 
-    data_UL17F:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL17F:
+         passMuMu: 0.0
+         passElMu: 1.0
 
-    data_UL17E:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL17E:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL17D:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL17D:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL17C:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL17C:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL16_preVFPE:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL16_preVFPF:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL16_preVFPD:
-        passMuMu: 2.0
-        passElMu: 0.0
+     data_UL16_preVFPE:
+         passMuMu: 0.0
+         passElMu: 1.0
 
-    data_UL16_preVFPC:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL16_preVFPD:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL16_preVFPB:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL16_preVFPC:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL16_postVFPH:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL16_postVFPH:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL16_postVFPG:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL16_postVFPG:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL16_postVFPF:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL16_postVFPF:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToSemiLeptonic_UL18:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToSemiLeptonic_UL18:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToSemiLeptonic_UL17:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToSemiLeptonic_UL17:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToSemiLeptonic_UL16_preVFP:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToSemiLeptonic_UL16_preVFP:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToSemiLeptonic_UL16_postVFP:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToSemiLeptonic_UL16_postVFP:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToHadronic_UL18:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToHadronic_UL18:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToHadronic_UL17:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToHadronic_UL17:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToHadronic_UL16_preVFP:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToHadronic_UL16_preVFP:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToHadronic_UL16_postVFP:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToHadronic_UL16_postVFP:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTTo2L2Nu_UL18:
-        passMuMu: 0.12
-        passElMu: 0.35
+     TTTo2L2Nu_UL18:
+         passMuMu: 0.26
+         passElMu: 0.95
 
-    TTTo2L2Nu_UL17:
-        passMuMu: 0.17
-        passElMu: 0.5
+     TTTo2L2Nu_UL17:
+         passMuMu: 0.4
+         passElMu: 1.06
 
-    TTTo2L2Nu_UL16_preVFP:
-        passMuMu: 0.27
-        passElMu: 0.69
+     TTTo2L2Nu_UL16_preVFP:
+         passMuMu: 0.56
+         passElMu: 2.19
 
-    TTTo2L2Nu_UL16_postVFP:
-        passMuMu: 0.48
-        passElMu: 0.78
+     TTTo2L2Nu_UL16_postVFP:
+         passMuMu: 0.85
+         passElMu: 1.57
 
 
 
 counts3:
-    data_UL18D:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL18D:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL18C:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL18C:
+         passMuMu: 0.0
+         passElMu: 1.0
 
-    data_UL18B:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL18B:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL18A:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL18A:
+         passMuMu: 0.0
+         passElMu: 1.0
 
-    data_UL17F:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL17F:
+         passMuMu: 0.0
+         passElMu: 1.0
 
-    data_UL17E:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL17E:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL17D:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL17D:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL17C:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL17C:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL16_preVFPE:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL16_preVFPF:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL16_preVFPD:
-        passMuMu: 2.0
-        passElMu: 0.0
+     data_UL16_preVFPE:
+         passMuMu: 0.0
+         passElMu: 1.0
 
-    data_UL16_preVFPC:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL16_preVFPD:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL16_preVFPB:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL16_preVFPC:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL16_postVFPH:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL16_postVFPH:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL16_postVFPG:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL16_postVFPG:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL16_postVFPF:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL16_postVFPF:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToSemiLeptonic_UL18:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToSemiLeptonic_UL18:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToSemiLeptonic_UL17:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToSemiLeptonic_UL17:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToSemiLeptonic_UL16_preVFP:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToSemiLeptonic_UL16_preVFP:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToSemiLeptonic_UL16_postVFP:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToSemiLeptonic_UL16_postVFP:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToHadronic_UL18:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToHadronic_UL18:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToHadronic_UL17:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToHadronic_UL17:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToHadronic_UL16_preVFP:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToHadronic_UL16_preVFP:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToHadronic_UL16_postVFP:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToHadronic_UL16_postVFP:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTTo2L2Nu_UL18:
-        passMuMu: 0.12
-        passElMu: 0.35
+     TTTo2L2Nu_UL18:
+         passMuMu: 0.26
+         passElMu: 0.95
 
-    TTTo2L2Nu_UL17:
-        passMuMu: 0.17
-        passElMu: 0.5
+     TTTo2L2Nu_UL17:
+         passMuMu: 0.4
+         passElMu: 1.06
 
-    TTTo2L2Nu_UL16_preVFP:
-        passMuMu: 0.27
-        passElMu: 0.69
+     TTTo2L2Nu_UL16_preVFP:
+         passMuMu: 0.56
+         passElMu: 2.19
 
-    TTTo2L2Nu_UL16_postVFP:
-        passMuMu: 0.48
-        passElMu: 0.78
+     TTTo2L2Nu_UL16_postVFP:
+         passMuMu: 0.85
+         passElMu: 1.57
 
 
 
 counts4_unit:
-    data_UL18D:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL18D:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL18C:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL18C:
+         passMuMu: 0.0
+         passElMu: 1.0
 
-    data_UL18B:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL18B:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL18A:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL18A:
+         passMuMu: 0.0
+         passElMu: 1.0
 
-    data_UL17F:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL17F:
+         passMuMu: 0.0
+         passElMu: 1.0
 
-    data_UL17E:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL17E:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL17D:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL17D:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL17C:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL17C:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL16_preVFPE:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL16_preVFPF:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL16_preVFPD:
-        passMuMu: 2.0
-        passElMu: 0.0
+     data_UL16_preVFPE:
+         passMuMu: 0.0
+         passElMu: 1.0
 
-    data_UL16_preVFPC:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL16_preVFPD:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL16_preVFPB:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL16_preVFPC:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL16_postVFPH:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL16_postVFPH:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL16_postVFPG:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL16_postVFPG:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL16_postVFPF:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL16_postVFPF:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToSemiLeptonic_UL18:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToSemiLeptonic_UL18:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToSemiLeptonic_UL17:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToSemiLeptonic_UL17:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToSemiLeptonic_UL16_preVFP:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToSemiLeptonic_UL16_preVFP:
+         passMuMu: 0.0
+         passElMu: 1.0
 
-    TTToSemiLeptonic_UL16_postVFP:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToSemiLeptonic_UL16_postVFP:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToHadronic_UL18:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToHadronic_UL18:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToHadronic_UL17:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToHadronic_UL17:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToHadronic_UL16_preVFP:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToHadronic_UL16_preVFP:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToHadronic_UL16_postVFP:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToHadronic_UL16_postVFP:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTTo2L2Nu_UL18:
-        passMuMu: 10.0
-        passElMu: 31.0
+     TTTo2L2Nu_UL18:
+         passMuMu: 16.0
+         passElMu: 40.0
 
-    TTTo2L2Nu_UL17:
-        passMuMu: 13.0
-        passElMu: 35.0
+     TTTo2L2Nu_UL17:
+         passMuMu: 21.0
+         passElMu: 53.0
 
-    TTTo2L2Nu_UL16_preVFP:
-        passMuMu: 11.0
-        passElMu: 26.0
+     TTTo2L2Nu_UL16_preVFP:
+         passMuMu: 14.0
+         passElMu: 56.0
 
-    TTTo2L2Nu_UL16_postVFP:
-        passMuMu: 17.0
-        passElMu: 32.0
+     TTTo2L2Nu_UL16_postVFP:
+         passMuMu: 22.0
+         passElMu: 39.0
 
 
 
 counts3_unit:
-    data_UL18D:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL18D:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL18C:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL18C:
+         passMuMu: 0.0
+         passElMu: 1.0
 
-    data_UL18B:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL18B:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL18A:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL18A:
+         passMuMu: 0.0
+         passElMu: 1.0
 
-    data_UL17F:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL17F:
+         passMuMu: 0.0
+         passElMu: 1.0
 
-    data_UL17E:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL17E:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL17D:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL17D:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL17C:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL17C:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL16_preVFPE:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL16_preVFPF:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL16_preVFPD:
-        passMuMu: 2.0
-        passElMu: 0.0
+     data_UL16_preVFPE:
+         passMuMu: 0.0
+         passElMu: 1.0
 
-    data_UL16_preVFPC:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL16_preVFPD:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL16_preVFPB:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL16_preVFPC:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL16_postVFPH:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL16_postVFPH:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL16_postVFPG:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL16_postVFPG:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    data_UL16_postVFPF:
-        passMuMu: 0.0
-        passElMu: 0.0
+     data_UL16_postVFPF:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToSemiLeptonic_UL18:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToSemiLeptonic_UL18:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToSemiLeptonic_UL17:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToSemiLeptonic_UL17:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToSemiLeptonic_UL16_preVFP:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToSemiLeptonic_UL16_preVFP:
+         passMuMu: 0.0
+         passElMu: 1.0
 
-    TTToSemiLeptonic_UL16_postVFP:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToSemiLeptonic_UL16_postVFP:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToHadronic_UL18:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToHadronic_UL18:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToHadronic_UL17:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToHadronic_UL17:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToHadronic_UL16_preVFP:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToHadronic_UL16_preVFP:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTToHadronic_UL16_postVFP:
-        passMuMu: 0.0
-        passElMu: 0.0
+     TTToHadronic_UL16_postVFP:
+         passMuMu: 0.0
+         passElMu: 0.0
 
-    TTTo2L2Nu_UL18:
-        passMuMu: 10.0
-        passElMu: 31.0
+     TTTo2L2Nu_UL18:
+         passMuMu: 16.0
+         passElMu: 40.0
 
-    TTTo2L2Nu_UL17:
-        passMuMu: 13.0
-        passElMu: 35.0
+     TTTo2L2Nu_UL17:
+         passMuMu: 21.0
+         passElMu: 53.0
 
-    TTTo2L2Nu_UL16_preVFP:
-        passMuMu: 11.0
-        passElMu: 26.0
+     TTTo2L2Nu_UL16_preVFP:
+         passMuMu: 14.0
+         passElMu: 56.0
 
-    TTTo2L2Nu_UL16_postVFP:
-        passMuMu: 17.0
-        passElMu: 32.0
-
-
-
+     TTTo2L2Nu_UL16_postVFP:
+         passMuMu: 22.0
+         passElMu: 39.0

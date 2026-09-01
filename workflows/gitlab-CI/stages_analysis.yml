@@ -78,10 +78,7 @@ mixeddata_cluster_coffea4bees:
   artifacts:
     paths:
       - output/mixeddata_cluster/test_mixed_datasets.coffea
-      - output/mixeddata_cluster/data_UL18C/hemisphereLib_27c58f3a-05bd-11ee-b80a-3ebde183beef_0_1002.root
-      - output/mixeddata_cluster/data_UL18D/hemisphereLib_e850b3fc-05bc-11ee-a472-0ebce183beef_0_1000.root
-      - output/mixeddata_cluster/data_UL18A/hemisphereLib_109efe9a-05bd-11ee-a1fc-9ebde183beef_0_1001.root
-      - output/mixeddata_cluster/data_UL18B/hemisphereLib_eb8f6c84-05bc-11ee-affb-c7bce183beef_0_1000.root
+      - output/mixeddata_cluster/data_UL18*/*.root
 
 analysis_unsup_test_coffea4bees:   
   stage: analysis   

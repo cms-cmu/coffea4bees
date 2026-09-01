@@ -11,51 +11,48 @@ from src.plotting.iPlot_config import plot_config
 cfg = plot_config()
 import matplotlib.pyplot as plt
 
-def print_counts_yaml(var, cut, region, counts):
+def print_counts_yaml(var, cut, region, counts, out_handle):
+    out_handle.write(f"{var}_{region}:\n")
+    out_handle.write("    var:\n")
+    out_handle.write(f"        {var}\n")
+    out_handle.write("    cut:\n")
+    if cut is not None:
+        out_handle.write(f"        {cut}\n")
+    out_handle.write("    region:\n")
+    out_handle.write(f"           {region}\n")
+    out_handle.write("    counts:\n")
+    out_handle.write(f"           {list(counts.tolist())}\n")
+    out_handle.write("\n\n")
 
-    key_parts = [var] + ([cut] if cut is not None else []) + [region]
-    outputFile.write(f"{'_'.join(key_parts)}:\n")
-    outputFile.write(f"    var:\n")
-    outputFile.write(f"        {var}\n")
-    outputFile.write(f"    cut:\n")
-    outputFile.write(f"        {cut}\n")
-    outputFile.write(f"    region:\n")
-    outputFile.write(f"           {region}\n")
-    outputFile.write(f"    counts:\n")
-    outputFile.write(f"           {counts.tolist()}\n")
-    outputFile.write("\n\n")
 
-
-if __name__ == '__main__':
-
-    parser = argparse.ArgumentParser(description='uproot_plots')
-    parser.add_argument('-i','--inputFile', default='hists.pkl', help='Input File. Default: hists.pkl')
-    parser.add_argument('-o','--outputFile', default='knownCounts.yml', help='Input File. Default: hists.pkl')
+def main():
+    parser = argparse.ArgumentParser(description="Test")
+    parser.add_argument("-i", "--inputFile", help="Input file")
+    parser.add_argument("-o", "--output", help="Output file")
     args = parser.parse_args()
 
-    outputFile = open(f'{args.outputFile}', 'w')
-
-    metadata = "coffea4bees/plots/metadata/plotsAll.yml"
-    cfg.plotConfig = load_config_4b(metadata)
+    cfg.plotConfig = load_config_4b("coffea4bees/plots/metadata/plotsAll.yml")
     cfg.hists = load_hists([args.inputFile])
     cfg.axisLabelsDict, cfg.cutListDict = read_axes_and_cuts(cfg.hists, cfg.plotConfig)
     cfg.set_hist_key("hists")
 
     default_args = {"doRatio":0, "rebin":4, "norm":0, "process":"Multijet"}
 
-    test_vectors = [("SvB_MA.ps", None, "region_SR"),
-                    ("SvB_MA.ps", None, "region_SB"),
+    test_vectors = [("SvB_MA.ps", None, "SR"),
+                    ("SvB_MA.ps", None, "SB"),
 
-                    ("SvB_MA.ps_hh", None, "region_SR"),
-                    ("SvB_MA.ps_hh", None, "region_SB"),
+                    ("SvB_MA.ps_hh", None, "SR"),
+                    ("SvB_MA.ps_hh", None, "SB"),
 
-                    ("SvB_MA.ps_zh", None, "region_SR"),
-                    ("SvB_MA.ps_zh", None, "region_SB"),
+                    ("SvB_MA.ps_zh", None, "SR"),
+                    ("SvB_MA.ps_zh", None, "SB"),
 
-                    ("SvB_MA.ps_zz", None, "region_SR"),
-                    ("SvB_MA.ps_zz", None, "region_SB"),
+                    ("SvB_MA.ps_zz", None, "SR"),
+                    ("SvB_MA.ps_zz", None, "SB"),
 
                     ]
+
+    out_handle = open(args.output, "w") if args.output else sys.stdout
 
     for tv in test_vectors:
 
@@ -63,15 +60,29 @@ if __name__ == '__main__':
         cut    = tv[1]
         region = tv[2]
         print(f"testing {var}, {cut}, {region}")
-        fig, axes = makePlot(cfg, var=var, cut=cut, region=region,
+        fig, axes = makePlot(cfg, var=var, cut=cut, axis_opts={"region": region},
                              outputFolder=cfg.outputFolder, **default_args)
 
         ax = axes[0]
-        for i in range(len(ax.lines)):
-
-            if hasattr(ax.lines[i], "get_label") and ax.lines[i].get_label() == '_nolegend_':
-                counts = ax.lines[i].get_ydata()
+        counts = np.array([])
+        for line in ax.lines:
+            if hasattr(line, "get_label") and line.get_label() == '_nolegend_':
+                counts = line.get_ydata()
                 break
+        if len(counts) == 0 and len(ax.lines) > 0:
+            counts = ax.lines[0].get_ydata()
+        if len(counts) == 0 and len(ax.patches) > 0:
+            for patch in ax.patches:
+                if hasattr(patch, "get_data"):
+                    counts = np.array(patch.get_data()[0])
+                    break
 
-        print_counts_yaml(var, cut, region, counts)
+        print_counts_yaml(var, cut, region, counts, out_handle)
         plt.close()
+
+    if args.output:
+        out_handle.close()
+
+
+if __name__ == "__main__":
+    main()
