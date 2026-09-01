@@ -1,0 +1,51 @@
+hists:
+  data:
+    process: data
+    tag: fourTag
+    label: "Four-tag Data"
+    edgecolor: k
+    fillcolor: k
+
+stack:
+  TTToHadronic:
+    process: TTToHadronic_stitched
+    tag: fourTag
+    fillcolor: "#85D1FBff"
+    edgecolor: k
+    label: "$t\\bar{t}$ Hadronic (5FS + 4FS)"
+
+  TTToSemiLeptonic:
+    process: TTToSemiLeptonic_stitched
+    tag: fourTag
+    fillcolor: "#5790FCff"
+    edgecolor: k
+    label: "$t\\bar{t}$ Semi-Leptonic (5FS + 4FS)"
+
+  TTTo2L2Nu:
+    process: TTTo2L2Nu_stitched
+    tag: fourTag
+    fillcolor: "#964A8Bff"
+    edgecolor: k
+    label: "$t\\bar{t}$ Dileptonic (5FS + 4FS)"
+
+ratios:
+  dataToBkg:
+    numerator:
+      type: hists
+      key: data
+    denominator:
+      type: stack
+    uncertainty:
+      nominal
+    color: k
+    marker: "o"
+
+doRatio: 1
+
+categories:
+  - "inclusive"
+  - "pass_nSelJets_gt6"
+
+regions:
+  - "SR"
+  - "SB"

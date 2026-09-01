@@ -1,0 +1,18 @@
+data4bName: data
+taglabel4b:   fourTag
+
+data3bName: data
+taglabel3b:   threeTag
+
+taglabel3b_tt: threeTag
+
+selJets: selJets.n
+tagJets: tagJets.n
+
+ignoreTT: False
+subtract3bTT: True
+
+ttbarProcesses:
+  - TTTo2L2Nu_stitched
+  - TTToSemiLeptonic_stitched
+  - TTToHadronic_stitched
