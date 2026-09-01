@@ -1,0 +1,137 @@
+ZH4b:
+  UL16_postVFP:
+    nanoAOD: /ZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM
+    picoAOD:
+      count: 2205393
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ZH4b_UL16_postVFP/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ZH4b_UL16_postVFP/picoAOD.chunk1.root
+      missing: {}
+      saved_events: 162808
+      sumw: 1240904.2533430003
+      sumw2: 787789.8102267316
+      total_events: 2205393
+  UL16_preVFP:
+    nanoAOD: /ZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v2/NANOAODSIM
+    picoAOD:
+      count: 2569411
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ZH4b_UL16_preVFP/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ZH4b_UL16_preVFP/picoAOD.chunk1.root
+      missing: {}
+      saved_events: 175900
+      sumw: 1445784.6768010005
+      sumw2: 917820.9072416916
+      total_events: 2569411
+  UL17:
+    nanoAOD: /ZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v2/NANOAODSIM
+    picoAOD:
+      count: 4734791
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ZH4b_UL17/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ZH4b_UL17/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ZH4b_UL17/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ZH4b_UL17/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ZH4b_UL17/picoAOD.chunk4.root
+      missing: {}
+      saved_events: 456213
+      sumw: 2663486.7442530007
+      sumw2: 1691317.6487606685
+      total_events: 4734778
+  UL18:
+    nanoAOD: /ZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2/NANOAODSIM
+    picoAOD:
+      count: 4776217
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ZH4b_UL18/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ZH4b_UL18/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ZH4b_UL18/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ZH4b_UL18/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ZH4b_UL18/picoAOD.chunk4.root
+      missing: {}
+      saved_events: 431527
+      sumw: 2686413.4038129994
+      sumw2: 1706115.4560804763
+      sumw2_raw: 1706115.3683013916
+      sumw_raw: 2686413.082397461
+      total_events: 4776217
+  xs: 0.7612*0.5824*0.1512
+
+ggZH4b:
+  UL16_postVFP:
+    nanoAOD: /ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM
+    picoAOD:
+      count: 2150794
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL16_postVFP/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL16_postVFP/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL16_postVFP/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL16_postVFP/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL16_postVFP/picoAOD.chunk4.root
+      missing: {}
+      saved_events: 443095
+      sumw: 92902.471433
+      sumw2: 4012.8758023127193
+      total_events: 2150794
+  UL16_preVFP:
+    nanoAOD: /ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v2/NANOAODSIM
+    picoAOD:
+      count: 2421518
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL16_preVFP/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL16_preVFP/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL16_preVFP/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL16_preVFP/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL16_preVFP/picoAOD.chunk4.root
+      missing: {}
+      saved_events: 471397
+      sumw: 104596.25925099997
+      sumw2: 4517.983120217322
+      total_events: 2421518
+  UL17:
+    nanoAOD: /ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v2/NANOAODSIM
+    picoAOD:
+      count: 4703492
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL17/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL17/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL17/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL17/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL17/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL17/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL17/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL17/picoAOD.chunk7.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL17/picoAOD.chunk8.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL17/picoAOD.chunk9.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL17/picoAOD.chunk10.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL17/picoAOD.chunk11.root
+      missing: {}
+      saved_events: 1170719
+      sumw: 203164.98519400004
+      sumw2: 8775.609952962232
+      sumw2_raw: 8775.610416412354
+      sumw_raw: 203164.96450805664
+      total_events: 4703492
+  UL18:
+    nanoAOD: /ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2/NANOAODSIM
+    picoAOD:
+      count: 4642150
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL18/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL18/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL18/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL18/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL18/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL18/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL18/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL18/picoAOD.chunk7.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL18/picoAOD.chunk8.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL18/picoAOD.chunk9.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL18/picoAOD.chunk10.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ggZH4b_UL18/picoAOD.chunk11.root
+      missing: {}
+      saved_events: 1110594
+      sumw: 200515.34817499993
+      sumw2: 8661.160206745039
+      total_events: 4642150
+  xs: 0.1227*0.5824*0.1512
