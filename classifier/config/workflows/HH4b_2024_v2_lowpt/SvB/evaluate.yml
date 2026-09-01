@@ -18,9 +18,9 @@ model:
 dataset:
   - module: HCR.SvB_lowpt.Eval
     option:
-      - --metadata coffea4bees/metadata/datasets/archive/Run2_2024_v2/
+      - --metadata coffea4bees/metadata/datasets/
       - --max-workers 8
-      - --friends "" coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_lowpt_wlowptJCM.json@@HCR_input_lowpt
+      - --friends "" coffea4bees/metadata/datasets/classifier_inputs_lowpt_wlowptJCM.json@@HCR_input_lowpt
 
 analysis:
   - module: kfold.Merge

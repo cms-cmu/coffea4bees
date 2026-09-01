@@ -16,10 +16,13 @@ create_output_directory "$OUTPUT_DIR"
 
 display_section_header "Changing hemisphere library metadata"
 HEMI_LIB="$OUTPUT_DIR/hemisphere_library_for_test.yml"
-sed -e "s|output|$INPUT_DIR|" \
-    coffea4bees/skimmer/metadata/hemisphere_library_test.yml > $HEMI_LIB
-[[ $(hostname) = *runner* ]] && sed -i "s|T3_US_FNALLPC|T3_CH_PSI|" $HEMI_LIB
-cat $HEMI_LIB; echo
+echo "UL18:" > "$HEMI_LIB"
+find "$INPUT_DIR/mixeddata_cluster" -name "hemisphereLib_*.root" 2>/dev/null | sort | sed 's/^/    - /' >> "$HEMI_LIB"
+if [ $(grep -c "    - " "$HEMI_LIB") -eq 0 ]; then
+    sed -e "s|output|$INPUT_DIR|" coffea4bees/skimmer/metadata/hemisphere_library_test.yml > "$HEMI_LIB"
+fi
+[[ $(hostname) = *runner* ]] && sed -i "s|T3_US_FNALLPC|T3_CH_PSI|" "$HEMI_LIB"
+cat "$HEMI_LIB"; echo
 
 
 

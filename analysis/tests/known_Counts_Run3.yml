@@ -1,422 +1,58 @@
 counts4:
-    data_2023_preBPixC4:
-        passJetMult: 968.0
-        passPreSel: 13.0
-        passDiJetMass: 3.0
-        SR: 0.0
-        SB: 3.0
+     TTToSemiLeptonic_2022_preEE:
+         passJetMult: 16.38
+         passPreSel: 0.25
+         passDiJetMass: 0.05
+         SR: 0.0
+         SB: 0.05
 
-    data_2023_preBPixC3:
-        passJetMult: 972.0
-        passPreSel: 12.0
-        passDiJetMass: 7.0
-        SR: 1.0
-        SB: 3.0
+     TTToHadronic_2022_preEE:
+         passJetMult: 26.97
+         passPreSel: 0.53
+         passDiJetMass: 0.08
+         SR: 0.0
+         SB: 0.03
 
-    data_2023_preBPixC12:
-        passJetMult: 985.0
-        passPreSel: 28.0
-        passDiJetMass: 12.0
-        SR: 7.0
-        SB: 1.0
+     TTTo2L2Nu_2022_preEE:
+         passJetMult: 12.69
+         passPreSel: 0.22
+         passDiJetMass: 0.08
+         SR: 0.03
+         SB: 0.04
 
-    data_2023_preBPixC11:
-        passJetMult: 981.0
-        passPreSel: 20.0
-        passDiJetMass: 8.0
-        SR: 0.0
-        SB: 6.0
-
-    data_2023_preBPixC02:
-        passJetMult: 973.0
-        passPreSel: 30.0
-        passDiJetMass: 14.0
-        SR: 3.0
-        SB: 6.0
-
-    data_2023_preBPixC01:
-        passJetMult: 977.0
-        passPreSel: 24.0
-        passDiJetMass: 10.0
-        SR: 3.0
-        SB: 5.0
-
-    data_2023_BPixD2:
-        passJetMult: 974.0
-        passPreSel: 14.0
-        passDiJetMass: 5.0
-        SR: 2.0
-        SB: 3.0
-
-    data_2023_BPixD1:
-        passJetMult: 971.0
-        passPreSel: 13.0
-        passDiJetMass: 4.0
-        SR: 0.0
-        SB: 3.0
-
-    data_2022_preEED:
-        passJetMult: 969.0
-        passPreSel: 23.0
-        passDiJetMass: 8.0
-        SR: 0.0
-        SB: 5.0
-
-    data_2022_preEEC:
-        passJetMult: 970.0
-        passPreSel: 25.0
-        passDiJetMass: 10.0
-        SR: 0.0
-        SB: 7.0
-
-    data_2022_preEEB:
-        passJetMult: 972.0
-        passPreSel: 22.0
-        passDiJetMass: 8.0
-        SR: 2.0
-        SB: 3.0
-
-    data_2022_EEG:
-        passJetMult: 977.0
-        passPreSel: 17.0
-        passDiJetMass: 6.0
-        SR: 0.0
-        SB: 3.0
-
-    data_2022_EEF:
-        passJetMult: 964.0
-        passPreSel: 13.0
-        passDiJetMass: 2.0
-        SR: 0.0
-        SB: 1.0
-
-    data_2022_EEE:
-        passJetMult: 972.0
-        passPreSel: 22.0
-        passDiJetMass: 9.0
-        SR: 4.0
-        SB: 5.0
-
-    TTToSemiLeptonic_2023_preBPix:
-        passJetMult: 19.62
-        passPreSel: 0.04
-        passDiJetMass: 0.0
-        SR: 0.0
-        SB: 0.0
-
-    TTToSemiLeptonic_2023_BPix:
-        passJetMult: 18.93
-        passPreSel: 0.55
-        passDiJetMass: 0.08
-        SR: 0.0
-        SB: 0.08
-
-    TTToSemiLeptonic_2022_preEE:
-        passJetMult: 17.65
-        passPreSel: 0.28
-        passDiJetMass: 0.06
-        SR: 0.0
-        SB: 0.06
-
-    TTToSemiLeptonic_2022_EE:
-        passJetMult: 15.45
-        passPreSel: 0.18
-        passDiJetMass: 0.03
-        SR: 0.03
-        SB: 0.0
-
-    TTToHadronic_2023_preBPix:
-        passJetMult: 31.04
-        passPreSel: 0.37
-        passDiJetMass: 0.27
-        SR: 0.02
-        SB: 0.24
-
-    TTToHadronic_2023_BPix:
-        passJetMult: 36.14
-        passPreSel: 0.26
-        passDiJetMass: 0.09
-        SR: 0.08
-        SB: 0.01
-
-    TTToHadronic_2022_preEE:
-        passJetMult: 28.14
-        passPreSel: 0.57
-        passDiJetMass: 0.09
-        SR: 0.0
-        SB: 0.04
-
-    TTToHadronic_2022_EE:
-        passJetMult: 27.26
-        passPreSel: 0.06
-        passDiJetMass: 0.0
-        SR: 0.0
-        SB: 0.0
-
-    TTTo2L2Nu_2023_preBPix:
-        passJetMult: 16.15
-        passPreSel: 0.76
-        passDiJetMass: 0.06
-        SR: 0.05
-        SB: 0.0
-
-    TTTo2L2Nu_2023_BPix:
-        passJetMult: 16.95
-        passPreSel: 0.21
-        passDiJetMass: 0.05
-        SR: 0.0
-        SB: 0.05
-
-    TTTo2L2Nu_2022_preEE:
-        passJetMult: 14.19
-        passPreSel: 0.26
-        passDiJetMass: 0.09
-        SR: 0.04
-        SB: 0.05
-
-    TTTo2L2Nu_2022_EE:
-        passJetMult: 12.57
-        passPreSel: 0.15
-        passDiJetMass: 0.02
-        SR: 0.0
-        SB: 0.02
-
-    GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix:
-        passJetMult: 0.02
-        passPreSel: 0.01
-        passDiJetMass: 0.01
-        SR: 0.0
-        SB: 0.0
-
-    GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_BPix:
-        passJetMult: 0.02
-        passPreSel: 0.01
-        passDiJetMass: 0.01
-        SR: 0.0
-        SB: 0.0
-
-    GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_preEE:
-        passJetMult: 0.02
-        passPreSel: 0.01
-        passDiJetMass: 0.01
-        SR: 0.01
-        SB: 0.0
-
-    GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE:
-        passJetMult: 0.03
-        passPreSel: 0.01
-        passDiJetMass: 0.01
-        SR: 0.01
-        SB: 0.0
+     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_preEE:
+         passJetMult: 0.02
+         passPreSel: 0.01
+         passDiJetMass: 0.01
+         SR: 0.01
+         SB: 0.0
 
 
 
 counts3:
-    data_2023_preBPixC4:
-        passJetMult: 968.0
-        passPreSel: 30.18
-        passDiJetMass: 12.11
-        SR: 3.13
-        SB: 5.87
-
-    data_2023_preBPixC3:
-        passJetMult: 972.0
-        passPreSel: 29.28
-        passDiJetMass: 12.75
-        SR: 3.51
-        SB: 5.21
-
-    data_2023_preBPixC12:
-        passJetMult: 985.0
-        passPreSel: 33.16
-        passDiJetMass: 14.19
-        SR: 3.27
-        SB: 7.28
-
-    data_2023_preBPixC11:
-        passJetMult: 981.0
-        passPreSel: 33.84
-        passDiJetMass: 13.45
-        SR: 3.04
-        SB: 7.5
-
-    data_2023_preBPixC02:
-        passJetMult: 973.0
-        passPreSel: 30.53
-        passDiJetMass: 12.27
-        SR: 2.3
-        SB: 6.81
-
-    data_2023_preBPixC01:
-        passJetMult: 977.0
-        passPreSel: 32.99
-        passDiJetMass: 13.26
-        SR: 3.76
-        SB: 5.95
-
-    data_2023_BPixD2:
-        passJetMult: 974.0
-        passPreSel: 26.74
-        passDiJetMass: 9.19
-        SR: 2.57
-        SB: 4.1
-
-    data_2023_BPixD1:
-        passJetMult: 971.0
-        passPreSel: 28.49
-        passDiJetMass: 9.51
-        SR: 2.94
-        SB: 4.49
-
-    data_2022_preEED:
-        passJetMult: 969.0
-        passPreSel: 30.73
-        passDiJetMass: 10.67
-        SR: 2.73
-        SB: 4.58
-
-    data_2022_preEEC:
-        passJetMult: 970.0
-        passPreSel: 30.23
-        passDiJetMass: 11.89
-        SR: 2.66
-        SB: 5.98
-
-    data_2022_preEEB:
-        passJetMult: 972.0
-        passPreSel: 31.93
-        passDiJetMass: 12.06
-        SR: 3.55
-        SB: 5.25
-
-    data_2022_EEG:
-        passJetMult: 977.0
-        passPreSel: 32.0
-        passDiJetMass: 10.38
-        SR: 2.7
-        SB: 5.07
-
-    data_2022_EEF:
-        passJetMult: 964.0
-        passPreSel: 27.59
-        passDiJetMass: 9.38
-        SR: 3.07
-        SB: 4.02
-
-    data_2022_EEE:
-        passJetMult: 972.0
-        passPreSel: 32.59
-        passDiJetMass: 10.55
-        SR: 3.46
-        SB: 5.54
-
-    TTToSemiLeptonic_2023_preBPix:
-        passJetMult: 19.62
-        passPreSel: 0.92
-        passDiJetMass: 0.53
-        SR: 0.17
-        SB: 0.28
-
-    TTToSemiLeptonic_2023_BPix:
-        passJetMult: 18.93
-        passPreSel: 0.85
-        passDiJetMass: 0.52
-        SR: 0.19
+    TTToSemiLeptonic_2022_preEE:
+        passJetMult: 16.38
+        passPreSel: 0.67
+        passDiJetMass: 0.38
+        SR: 0.1
         SB: 0.19
 
-    TTToSemiLeptonic_2022_preEE:
-        passJetMult: 17.65
-        passPreSel: 0.73
-        passDiJetMass: 0.41
-        SR: 0.11
-        SB: 0.21
-
-    TTToSemiLeptonic_2022_EE:
-        passJetMult: 15.45
-        passPreSel: 0.61
-        passDiJetMass: 0.36
-        SR: 0.12
-        SB: 0.17
-
-    TTToHadronic_2023_preBPix:
-        passJetMult: 31.04
-        passPreSel: 1.26
-        passDiJetMass: 0.86
-        SR: 0.26
-        SB: 0.43
-
-    TTToHadronic_2023_BPix:
-        passJetMult: 36.14
-        passPreSel: 1.74
-        passDiJetMass: 1.16
-        SR: 0.31
-        SB: 0.56
-
     TTToHadronic_2022_preEE:
-        passJetMult: 28.14
-        passPreSel: 1.1
-        passDiJetMass: 0.66
+        passJetMult: 26.97
+        passPreSel: 1.05
+        passDiJetMass: 0.64
         SR: 0.21
-        SB: 0.31
-
-    TTToHadronic_2022_EE:
-        passJetMult: 27.26
-        passPreSel: 1.15
-        passDiJetMass: 0.82
-        SR: 0.28
-        SB: 0.36
-
-    TTTo2L2Nu_2023_preBPix:
-        passJetMult: 16.15
-        passPreSel: 0.9
-        passDiJetMass: 0.42
-        SR: 0.15
-        SB: 0.17
-
-    TTTo2L2Nu_2023_BPix:
-        passJetMult: 16.95
-        passPreSel: 0.83
-        passDiJetMass: 0.42
-        SR: 0.1
-        SB: 0.22
+        SB: 0.3
 
     TTTo2L2Nu_2022_preEE:
-        passJetMult: 14.19
-        passPreSel: 0.44
-        passDiJetMass: 0.16
+        passJetMult: 12.69
+        passPreSel: 0.39
+        passDiJetMass: 0.14
         SR: 0.03
-        SB: 0.09
-
-    TTTo2L2Nu_2022_EE:
-        passJetMult: 12.57
-        passPreSel: 0.66
-        passDiJetMass: 0.15
-        SR: 0.04
         SB: 0.08
-
-    GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix:
-        passJetMult: 0.02
-        passPreSel: 0.0
-        passDiJetMass: 0.0
-        SR: 0.0
-        SB: 0.0
-
-    GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_BPix:
-        passJetMult: 0.02
-        passPreSel: 0.0
-        passDiJetMass: 0.0
-        SR: 0.0
-        SB: 0.0
 
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_preEE:
         passJetMult: 0.02
-        passPreSel: 0.0
-        passDiJetMass: 0.0
-        SR: 0.0
-        SB: 0.0
-
-    GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE:
-        passJetMult: 0.03
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
@@ -425,118 +61,6 @@ counts3:
 
 
 counts4_unit:
-    data_2023_preBPixC4:
-        passJetMult: 968.0
-        passPreSel: 13.0
-        passDiJetMass: 3.0
-        SR: 0.0
-        SB: 3.0
-
-    data_2023_preBPixC3:
-        passJetMult: 972.0
-        passPreSel: 12.0
-        passDiJetMass: 7.0
-        SR: 1.0
-        SB: 3.0
-
-    data_2023_preBPixC12:
-        passJetMult: 985.0
-        passPreSel: 28.0
-        passDiJetMass: 12.0
-        SR: 7.0
-        SB: 1.0
-
-    data_2023_preBPixC11:
-        passJetMult: 981.0
-        passPreSel: 20.0
-        passDiJetMass: 8.0
-        SR: 0.0
-        SB: 6.0
-
-    data_2023_preBPixC02:
-        passJetMult: 973.0
-        passPreSel: 30.0
-        passDiJetMass: 14.0
-        SR: 3.0
-        SB: 6.0
-
-    data_2023_preBPixC01:
-        passJetMult: 977.0
-        passPreSel: 24.0
-        passDiJetMass: 10.0
-        SR: 3.0
-        SB: 5.0
-
-    data_2023_BPixD2:
-        passJetMult: 974.0
-        passPreSel: 14.0
-        passDiJetMass: 5.0
-        SR: 2.0
-        SB: 3.0
-
-    data_2023_BPixD1:
-        passJetMult: 971.0
-        passPreSel: 13.0
-        passDiJetMass: 4.0
-        SR: 0.0
-        SB: 3.0
-
-    data_2022_preEED:
-        passJetMult: 969.0
-        passPreSel: 23.0
-        passDiJetMass: 8.0
-        SR: 0.0
-        SB: 5.0
-
-    data_2022_preEEC:
-        passJetMult: 970.0
-        passPreSel: 25.0
-        passDiJetMass: 10.0
-        SR: 0.0
-        SB: 7.0
-
-    data_2022_preEEB:
-        passJetMult: 972.0
-        passPreSel: 22.0
-        passDiJetMass: 8.0
-        SR: 2.0
-        SB: 3.0
-
-    data_2022_EEG:
-        passJetMult: 977.0
-        passPreSel: 17.0
-        passDiJetMass: 6.0
-        SR: 0.0
-        SB: 3.0
-
-    data_2022_EEF:
-        passJetMult: 964.0
-        passPreSel: 13.0
-        passDiJetMass: 2.0
-        SR: 0.0
-        SB: 1.0
-
-    data_2022_EEE:
-        passJetMult: 972.0
-        passPreSel: 22.0
-        passDiJetMass: 9.0
-        SR: 4.0
-        SB: 5.0
-
-    TTToSemiLeptonic_2023_preBPix:
-        passJetMult: 481.0
-        passPreSel: 3.0
-        passDiJetMass: 0.0
-        SR: 0.0
-        SB: 0.0
-
-    TTToSemiLeptonic_2023_BPix:
-        passJetMult: 488.0
-        passPreSel: 11.0
-        passDiJetMass: 1.0
-        SR: 0.0
-        SB: 1.0
-
     TTToSemiLeptonic_2022_preEE:
         passJetMult: 422.0
         passPreSel: 5.0
@@ -544,54 +68,12 @@ counts4_unit:
         SR: 0.0
         SB: 2.0
 
-    TTToSemiLeptonic_2022_EE:
-        passJetMult: 394.0
-        passPreSel: 3.0
-        passDiJetMass: 1.0
-        SR: 1.0
-        SB: 0.0
-
-    TTToHadronic_2023_preBPix:
-        passJetMult: 519.0
-        passPreSel: 6.0
-        passDiJetMass: 4.0
-        SR: 1.0
-        SB: 2.0
-
-    TTToHadronic_2023_BPix:
-        passJetMult: 544.0
-        passPreSel: 6.0
-        passDiJetMass: 3.0
-        SR: 2.0
-        SB: 1.0
-
     TTToHadronic_2022_preEE:
         passJetMult: 446.0
         passPreSel: 9.0
         passDiJetMass: 2.0
         SR: 0.0
         SB: 1.0
-
-    TTToHadronic_2022_EE:
-        passJetMult: 451.0
-        passPreSel: 1.0
-        passDiJetMass: 0.0
-        SR: 0.0
-        SB: 0.0
-
-    TTTo2L2Nu_2023_preBPix:
-        passJetMult: 504.0
-        passPreSel: 8.0
-        passDiJetMass: 2.0
-        SR: 1.0
-        SB: 0.0
-
-    TTTo2L2Nu_2023_BPix:
-        passJetMult: 501.0
-        passPreSel: 9.0
-        passDiJetMass: 2.0
-        SR: 0.0
-        SB: 2.0
 
     TTTo2L2Nu_2022_preEE:
         passJetMult: 412.0
@@ -600,27 +82,6 @@ counts4_unit:
         SR: 2.0
         SB: 1.0
 
-    TTTo2L2Nu_2022_EE:
-        passJetMult: 363.0
-        passPreSel: 8.0
-        passDiJetMass: 1.0
-        SR: 0.0
-        SB: 1.0
-
-    GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix:
-        passJetMult: 710.0
-        passPreSel: 280.0
-        passDiJetMass: 252.0
-        SR: 177.0
-        SB: 66.0
-
-    GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_BPix:
-        passJetMult: 727.0
-        passPreSel: 261.0
-        passDiJetMass: 238.0
-        SR: 177.0
-        SB: 48.0
-
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_preEE:
         passJetMult: 669.0
         passPreSel: 256.0
@@ -628,128 +89,9 @@ counts4_unit:
         SR: 169.0
         SB: 49.0
 
-    GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE:
-        passJetMult: 659.0
-        passPreSel: 264.0
-        passDiJetMass: 237.0
-        SR: 169.0
-        SB: 61.0
-
 
 
 counts3_unit:
-    data_2023_preBPixC4:
-        passJetMult: 968.0
-        passPreSel: 405.0
-        passDiJetMass: 148.0
-        SR: 35.0
-        SB: 80.0
-
-    data_2023_preBPixC3:
-        passJetMult: 972.0
-        passPreSel: 397.0
-        passDiJetMass: 156.0
-        SR: 43.0
-        SB: 67.0
-
-    data_2023_preBPixC12:
-        passJetMult: 985.0
-        passPreSel: 440.0
-        passDiJetMass: 171.0
-        SR: 39.0
-        SB: 89.0
-
-    data_2023_preBPixC11:
-        passJetMult: 981.0
-        passPreSel: 440.0
-        passDiJetMass: 163.0
-        SR: 39.0
-        SB: 88.0
-
-    data_2023_preBPixC02:
-        passJetMult: 973.0
-        passPreSel: 422.0
-        passDiJetMass: 155.0
-        SR: 34.0
-        SB: 84.0
-
-    data_2023_preBPixC01:
-        passJetMult: 977.0
-        passPreSel: 424.0
-        passDiJetMass: 152.0
-        SR: 43.0
-        SB: 72.0
-
-    data_2023_BPixD2:
-        passJetMult: 974.0
-        passPreSel: 369.0
-        passDiJetMass: 114.0
-        SR: 32.0
-        SB: 52.0
-
-    data_2023_BPixD1:
-        passJetMult: 971.0
-        passPreSel: 407.0
-        passDiJetMass: 127.0
-        SR: 34.0
-        SB: 64.0
-
-    data_2022_preEED:
-        passJetMult: 969.0
-        passPreSel: 413.0
-        passDiJetMass: 127.0
-        SR: 36.0
-        SB: 56.0
-
-    data_2022_preEEC:
-        passJetMult: 970.0
-        passPreSel: 441.0
-        passDiJetMass: 161.0
-        SR: 40.0
-        SB: 81.0
-
-    data_2022_preEEB:
-        passJetMult: 972.0
-        passPreSel: 467.0
-        passDiJetMass: 161.0
-        SR: 46.0
-        SB: 72.0
-
-    data_2022_EEG:
-        passJetMult: 977.0
-        passPreSel: 440.0
-        passDiJetMass: 131.0
-        SR: 41.0
-        SB: 61.0
-
-    data_2022_EEF:
-        passJetMult: 964.0
-        passPreSel: 412.0
-        passDiJetMass: 131.0
-        SR: 42.0
-        SB: 63.0
-
-    data_2022_EEE:
-        passJetMult: 972.0
-        passPreSel: 456.0
-        passDiJetMass: 143.0
-        SR: 49.0
-        SB: 75.0
-
-    TTToSemiLeptonic_2023_preBPix:
-        passJetMult: 481.0
-        passPreSel: 224.0
-        passDiJetMass: 130.0
-        SR: 38.0
-        SB: 60.0
-
-    TTToSemiLeptonic_2023_BPix:
-        passJetMult: 488.0
-        passPreSel: 232.0
-        passDiJetMass: 137.0
-        SR: 41.0
-        SB: 57.0
-
     TTToSemiLeptonic_2022_preEE:
         passJetMult: 422.0
         passPreSel: 212.0
@@ -757,53 +99,11 @@ counts3_unit:
         SR: 30.0
         SB: 61.0
 
-    TTToSemiLeptonic_2022_EE:
-        passJetMult: 394.0
-        passPreSel: 185.0
-        passDiJetMass: 108.0
-        SR: 30.0
-        SB: 59.0
-
-    TTToHadronic_2023_preBPix:
-        passJetMult: 519.0
-        passPreSel: 204.0
-        passDiJetMass: 146.0
-        SR: 40.0
-        SB: 76.0
-
-    TTToHadronic_2023_BPix:
-        passJetMult: 544.0
-        passPreSel: 225.0
-        passDiJetMass: 154.0
-        SR: 42.0
-        SB: 76.0
-
     TTToHadronic_2022_preEE:
         passJetMult: 446.0
         passPreSel: 184.0
         passDiJetMass: 121.0
         SR: 41.0
-        SB: 56.0
-
-    TTToHadronic_2022_EE:
-        passJetMult: 451.0
-        passPreSel: 200.0
-        passDiJetMass: 144.0
-        SR: 47.0
-        SB: 68.0
-
-    TTTo2L2Nu_2023_preBPix:
-        passJetMult: 504.0
-        passPreSel: 272.0
-        passDiJetMass: 117.0
-        SR: 45.0
-        SB: 50.0
-
-    TTTo2L2Nu_2023_BPix:
-        passJetMult: 501.0
-        passPreSel: 243.0
-        passDiJetMass: 105.0
-        SR: 26.0
         SB: 56.0
 
     TTTo2L2Nu_2022_preEE:
@@ -813,37 +113,9 @@ counts3_unit:
         SR: 20.0
         SB: 39.0
 
-    TTTo2L2Nu_2022_EE:
-        passJetMult: 363.0
-        passPreSel: 164.0
-        passDiJetMass: 62.0
-        SR: 16.0
-        SB: 37.0
-
-    GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_preBPix:
-        passJetMult: 710.0
-        passPreSel: 307.0
-        passDiJetMass: 168.0
-        SR: 80.0
-        SB: 72.0
-
-    GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_BPix:
-        passJetMult: 727.0
-        passPreSel: 302.0
-        passDiJetMass: 155.0
-        SR: 75.0
-        SB: 64.0
-
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_preEE:
         passJetMult: 669.0
         passPreSel: 334.0
         passDiJetMass: 170.0
         SR: 85.0
         SB: 70.0
-
-    GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE:
-        passJetMult: 659.0
-        passPreSel: 300.0
-        passDiJetMass: 172.0
-        SR: 71.0
-        SB: 78.0
