@@ -91,7 +91,7 @@ analysis_config:
   processor: "coffea4bees/analysis/processors/processor_HH4b.py"
   dataset_location: "coffea4bees/metadata/datasets/"
   friend_file: "coffea4bees/metadata/friends/friends_HH4b.yml"
-  weights_file: "coffea4bees/metadata/weights/weights_HH4b.yml"
+  weights_file: "coffea4bees/metadata/weights/weights_HH4b_2024_v2.yml"
   runner:
     workers: 4
     worker_memory: 8GB
