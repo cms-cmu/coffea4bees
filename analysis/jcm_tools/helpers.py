@@ -83,7 +83,7 @@ def loadHistograms(inputFile: str, jcm_config: dict, format: str = 'coffea', cfg
     fourTag_data_dict = {"process": data4bName} | fourTag_dict | region_year_dict | cutDict
     threeTag_data_dict = {"process": data3bName} | threeTag_dict | region_year_dict | cutDict
 
-    ttbar_list = ['TTTo2L2Nu', 'TTToSemiLeptonic', 'TTToHadronic']
+    ttbar_list = jcm_config.get("ttbarProcesses", ['TTTo2L2Nu', 'TTToSemiLeptonic', 'TTToHadronic'])
     fourTag_ttbar_dict  = {"process": ttbar_list} | fourTag_dict | region_year_dict | cutDict
     threeTag_ttbar_dict = {"process": ttbar_list} | threeTag_tt_dict | region_year_dict | cutDict
 
@@ -100,7 +100,7 @@ def loadHistograms(inputFile: str, jcm_config: dict, format: str = 'coffea', cfg
             if (data3bName in _input_data['hists'][selJets].axes["process"]):
                 hists_data_3b = _input_data['hists']
 
-            if ("TTTo2L2Nu" in _input_data['hists'][selJets].axes["process"]):
+            if (ttbar_list[0] in _input_data['hists'][selJets].axes["process"]):
                 hists_tt = _input_data['hists']
 
 
@@ -112,7 +112,7 @@ def loadHistograms(inputFile: str, jcm_config: dict, format: str = 'coffea', cfg
         raise ValueError(f"Could not find histograms for data3bName={data3bName}")
 
     if (not ignoreTT) and (hists_tt is None):
-        raise ValueError(f"Could not find histograms for TTTo2L2Nu")
+        raise ValueError(f"Could not find histograms for {ttbar_list[0]}")
 
 
 
