@@ -25,7 +25,7 @@ dataset:
     option:
       - --metadata coffea4bees/metadata/datasets/
       - --norm 3
-      - --JCM-weight "" coffea4bees/metadata/weights/JCM/Run2_ttHbb/jetCombinatoricModel_SB_2024_v2.yml@@JCM_weights
+      - --JCM-weight "" coffea4bees/metadata/weights/JCM/Run2_ttHbb/jetCombinatoricModel_SB_ttHbb.yml@@JCM_weights
       - --friends "" coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json@@HCR_input 
       - --friends label:data {FvT}/result.json@@analysis.0.merged # setup the path to FvT friend tree
 

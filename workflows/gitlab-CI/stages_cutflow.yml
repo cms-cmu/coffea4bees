@@ -193,8 +193,8 @@ check_cutflow_ttHbb_coffea4bees:
     - setup_coffea4bees
     - merging_files_ttHbb_coffea4bees
   script:
-    - pixi run snakemake output/ttHbb_v2/cutflow_validation_ttHbb_v2.txt -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/analysis_ttHbb.yml --config test=true --jobs 4
+    - pixi run snakemake output/ttHbb/cutflow_validation_ttHbb.txt -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/analysis_ttHbb.yml --config test=true --jobs 4
   artifacts:
     paths:
-      - barista_framework/output/ttHbb_v2/cutflow_validation_ttHbb_v2.txt
-      - barista_framework/output/ttHbb_v2/cutflow_ttHbb_v2.yml
+      - barista_framework/output/ttHbb/cutflow_validation_ttHbb.txt
+      - barista_framework/output/ttHbb/cutflow_ttHbb.yml

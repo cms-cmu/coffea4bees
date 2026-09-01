@@ -1,6 +1,6 @@
 weights:
   UL16_preVFP: &weights_Run2
-    JCM_file: "coffea4bees/metadata/weights/JCM/Run2_ttHbb/jetCombinatoricModel_SB_ttHbb_v3.yml"
+    JCM_file: "coffea4bees/metadata/weights/JCM/Run2_ttHbb/jetCombinatoricModel_SB_ttHbb.yml"
     SvB_MA: 
       - path: 'root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_v3/classifier/SvB_ttHbb_v3/result.json'
         name: Final
