@@ -79,7 +79,6 @@ mixeddata_cluster_coffea4bees:
     paths:
       - output/mixeddata_cluster/test_mixed_datasets.coffea
       - output/mixeddata_cluster/data_UL18*/*.root
-      - output/mixeddata_cluster/*/*.root
 
 analysis_unsup_test_coffea4bees:   
   stage: analysis   

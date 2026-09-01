@@ -58,7 +58,6 @@ ZH4b:
   xs: 0.7612*0.5824*0.1512
   2022_preEE:
     nanoAOD: root://cmsxrootd.fnal.gov//store/user/ekoenig/Run3_private_production/2021/mc/ZH_ZToBB_HToBB_M-125_2022-preEE/
-<<<<<<< HEAD
     picoAOD:
       count: 7794428
       files:
@@ -208,7 +207,6 @@ ggZH4b:
   xs: 0.1227*0.5824*0.1512
   2022_preEE:
     nanoAOD: root://cmsxrootd.fnal.gov//store/user/ekoenig/Run3_private_production/2021/mc/ggZH_HToBB_ZToBB_M-125_2022-preEE/
-<<<<<<< HEAD
     picoAOD:
       count: 7741015
       files:

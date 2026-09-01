@@ -17,5 +17,8 @@ config:
   apply_boosted_veto: false
   run_SvB: true
   run_dilep_ttbar_crosscheck: true
+  SvB: true
+  SvB_MA: true
+  top_reconstruction: fast
   hist_cuts: []
   top_reconstruction: fast
