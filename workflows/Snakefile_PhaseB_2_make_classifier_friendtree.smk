@@ -143,6 +143,18 @@ rule all_classifier_inputs:
     input:
         f"{config['output_path']}classifier_inputs/classifier_inputs_friends.json"
 
+def _has_rule(name):
+    # hasattr(rules, name) doesn't work here: when Phase B.2 is run standalone
+    # (i.e. not chained after Phase B.1's computeJCM via Snakefile_PhaseB.smk),
+    # Snakemake's `rules` proxy raises WorkflowError -- not AttributeError --
+    # for an undefined rule name, so hasattr's except-AttributeError doesn't
+    # suppress it and the whole DAG build crashes.
+    try:
+        getattr(rules, name)
+        return True
+    except Exception:
+        return False
+
 def get_classifier_inputs_config_inputs(wildcards):
     inputs = list(workflow.configfiles) if workflow.configfiles else []
     ds_loc = config.get('classifier_inputs_dataset_location', config.get('dataset_location', ''))
