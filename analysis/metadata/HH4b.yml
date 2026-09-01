@@ -8,6 +8,8 @@ runner:
     - src/
 
 config:
+  SvB: true
+  SvB_MA: true
   blind: false
   apply_FvT: true
   apply_trigWeight: true
