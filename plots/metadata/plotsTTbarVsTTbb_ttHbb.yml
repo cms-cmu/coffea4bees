@@ -1,0 +1,43 @@
+hists:
+        ttbar:
+                process: [TTTo2L2Nu, TTToSemiLeptonic, TTToHadronic]
+                tag: fourTag
+                year: RunII
+                label: "$t\\bar{t}$ (inclusive)"
+                fillcolor: k
+                edgecolor: k
+
+        ttbar_ttbb:
+                process: [TTTo2L2Nu_stitched, TTToSemiLeptonic_stitched, TTToHadronic_stitched]
+                tag: fourTag
+                year: RunII
+                label: "$t\\bar{t}$ + $t\\bar{t}b\\bar{b}$ (stitched)"
+                fillcolor: r
+                edgecolor: r
+
+
+ratios:
+        stitchedToInclusive:
+                numerator:
+                        type: hists
+                        key: ttbar_ttbb
+                denominator:
+                        type: hists
+                        key: ttbar
+                uncertianty:
+                        nominal
+                color: r
+                marker: "o"
+
+
+codes:
+   region:
+      SR: 2
+      SB: 1
+      other: 0
+   tag:
+      threeTag: 3
+      fourTag: 4
+      other: 0
+
+doRatio: 1

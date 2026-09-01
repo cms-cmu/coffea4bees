@@ -103,7 +103,7 @@ jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb
 
 classifier_inputs:
   processor: "coffea4bees/analysis/processors/processor_HH4b.py"
-  friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb.yml"
+  friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb_stitched.yml"
   weights_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/weights_ttHbb.yml"
   datasets:
     - "ttHbb"
