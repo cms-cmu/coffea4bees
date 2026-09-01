@@ -7,15 +7,15 @@ hists:
     fillcolor: k
 
 stack:
-  mixeddata:
-    process: mix_v0
+  synthetic_data:
+    process: syn_v0
     tag: fourTag
     fillcolor: "#85D1FBff"
     edgecolor: k
-    label: Mixed data (4b)
+    label: Synthetic data (4b)
 
 ratios:
-  dataToMixed:
+  dataToSynthetic:
     numerator:
       type: hists
       key: data

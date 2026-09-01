@@ -12,7 +12,8 @@ stack:
     tag: fourTag
     fillcolor: "#85D1FBff"
     edgecolor: k
-    label: Mixed data (4b)
+    label: Mixed data (4b) (k=0.706)
+    scalefactor: 0.706192
 
 ratios:
   dataToMixed:
