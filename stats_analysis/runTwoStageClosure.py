@@ -381,22 +381,29 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, 
     #
     # TTBar
     #
-    ttbar_procs = ["TTTo2L2Nu", "TTToHadronic", "TTToSemiLeptonic"]
+    if getattr(args, 'pure_qcd', False):
+        if hist_multijet is not None:
+            hist_ttbar = hist_multijet.Clone()
+            hist_ttbar.Reset()
+        else:
+            hist_ttbar = None
+    else:
+        ttbar_procs = ["TTTo2L2Nu", "TTToHadronic", "TTToSemiLeptonic"]
 
-    hist_ttbar = combine_hists(input_file_TT,
-                               f"{var_name}_PROC_YEAR_threeTag_SR",
-                               years=all_years,
-                               procs=["TTbar4b_from_d3"],
-                               debug=args.debug)
-    if hist_ttbar is None:
         hist_ttbar = combine_hists(input_file_TT,
-                                   f"{var_name}_PROC_YEAR_fourTag_SR",
+                                   f"{var_name}_PROC_YEAR_threeTag_SR",
                                    years=all_years,
-                                   procs=["TTTo2L2Nu_for_mixed", "TTToHadronic_for_mixed", "TTToSemiLeptonic_for_mixed"],
+                                   procs=["TTbar4b_from_d3"],
                                    debug=args.debug)
-    if hist_ttbar is None and hist_multijet is not None:
-        hist_ttbar = hist_multijet.Clone()
-        hist_ttbar.Reset()
+        if hist_ttbar is None:
+            hist_ttbar = combine_hists(input_file_TT,
+                                       f"{var_name}_PROC_YEAR_fourTag_SR",
+                                       years=all_years,
+                                       procs=["TTTo2L2Nu_for_mixed", "TTToHadronic_for_mixed", "TTToSemiLeptonic_for_mixed"],
+                                       debug=args.debug)
+        if hist_ttbar is None and hist_multijet is not None:
+            hist_ttbar = hist_multijet.Clone()
+            hist_ttbar.Reset()
 
     f.cd(directory)
     hist_ttbar.SetName("ttbar")
@@ -2246,11 +2253,11 @@ if __name__ == "__main__":
     parser.add_argument('--nMixes', type=int, default=15, help="Number of mixes or synthetic datasets")
     parser.add_argument('--classifier', help="SvB or SvB_MA")
     parser.add_argument('--region', default="SR", help="SR or SB")
-    parser.add_argument('--input_file_data3b',default="hists/histMixedBkg_data_3b_for_mixed.root")
-    parser.add_argument('--input_file_TT',    default="hists/histMixedBkg_TT.root")
-    parser.add_argument('--input_file_mix',   default="hists/histMixedData.root")
-    parser.add_argument('--input_file_sig',   default="hists/histSignal.root")
-    #parser.add_argument('--input_file_sig_preUL',   default="analysis/hists/histSignal_preUL.root")
+    parser.add_argument('--input_file_data3b',default="output/histMixedBkg_data_3b_for_mixed.root")
+    parser.add_argument('--input_file_TT',    default="output/histMixedBkg_TT.root")
+    parser.add_argument('--input_file_mix',   default="output/histMixedData.root")
+    parser.add_argument('--input_file_sig',   default="output/histSignal.root")
+    #parser.add_argument('--input_file_sig_preUL',   default="output/histSignal_preUL.root")
     parser.add_argument('--channel', default=None, help="Channel: ttHbb, hh, zh, zz")
     parser.add_argument('--var', default="SvB_MA_ps_hh", help="SvB_MA_ps_XX or SvB_MA_ps_XX_fine")
     parser.add_argument('--rebin', default=1)
@@ -2266,6 +2273,8 @@ if __name__ == "__main__":
     #parser.add_argument('--skip_plots',   dest="do_plots",    action="store_false")
     parser.add_argument('--years', nargs='+', default=["2016", "2017", "2018"], help="List of years (e.g. 2017 2018 or UL17 UL18)")
     parser.add_argument('--do_CI',   action="store_true")
+    parser.add_argument('--pure_qcd', '--no_ttbar', dest='pure_qcd', action="store_true", default=False, help="Pure QCD closure mode with zero ttbar")
+    parser.add_argument('--auto_scale_mixed', action="store_true", default=False, help="Auto scale mixed flag (passed from pipeline)")
 
     args = parser.parse_args()
     print(f"\nRunning with these parameters: {args}")

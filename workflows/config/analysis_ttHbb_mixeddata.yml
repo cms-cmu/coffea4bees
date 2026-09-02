@@ -1,29 +1,42 @@
 label: "ttHbb_mixeddata"
-output_path: "output/ttHbb_mixeddata_closure/coffea_outputs/"
-datasets:
-  - "mixeddata"
+output_path: "output/ttHbb_mixeddata_closure/"
+dataset_location: "coffea4bees/metadata/datasets/"
+datasets_file: "coffea4bees/metadata/datasets/mixeddata_4b.yml"
+friend_file: "coffea4bees/metadata/friends/friends_ttHbb_mixeddata.yml"
+weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
+phase_e_dataset:
+  - "mixeddata_4b"
 years:
-  - "2016"
-  - "2017"
-  - "2018"
-dataset:
-  - "mixeddata"
-datasets_file: "coffea4bees/metadata/datasets/synthetic_datasets.yml"
-year_eras:
-  2016: []
-  2017: []
-  2018: []
+  - "UL16_preVFP"
+  - "UL16_postVFP"
+  - "UL17"
+  - "UL18"
+n_samples: 15
+
+phase_f_output_path: "output/ttHbb_v3/"
+phase_f_label: "ttHbb_v3"
+
+# Phase E_3 closure settings
+phase_e:
+  mix_name: "3bDvTMix4bDvT"
+  nMixes: 15
+  classifier: "SvB_MA"
+  variable: "SvB_MA_ps"
+  channel: "ttHbb"
+  rebin: "1"
+  years_closure: "2016 2017 2018"
+  closure_extra_args: "--pure_qcd --auto_scale_mixed"
+  scale_mixed: 1.0
 
 analysis_config:
   processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
   dataset_location: "coffea4bees/metadata/datasets/"
-  datasets_file: "coffea4bees/metadata/datasets/synthetic_datasets.yml"
-  friend_file: "coffea4bees/metadata/friends/friends_ttHbb.yml"
+  datasets_file: "coffea4bees/metadata/datasets/mixeddata_4b.yml"
+  friend_file: "coffea4bees/metadata/friends/friends_ttHbb_mixeddata.yml"
   weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
   runner:
     workers: 4
     worker_memory: 8GB
-    chunksize: 10000
     condor: true
     shared_dask: true
     run_performance: true
@@ -38,40 +51,11 @@ analysis_config:
     SvB_MA: true
     SvB: null
     apply_lepton_veto: false
-    hist_cuts: ["pass_nSelJets_gt6"]
+    hist_cuts: ["pass_nSelJets_gt6", "fail_nSelJets_le6"]
     top_reconstruction: fast
     plot_ttbar_with_weights: true
 
-additional_parameters: "--condor --shared-dask --run-performance"
-
-plot_config_mixeddata: "coffea4bees/plots/metadata/plots_mixeddata_vs_data.yml"
-
-convert_hist_to_json:
-  histos: 
-    - "SvB_MA.ps_ttHbb"
-    - "SvB_MA.ps"
-combine_outdir: "datacards/"
-make_combine_inputs:
-  stat_only: ""
-  bkgsyst: "coffea4bees/stats_analysis/files/HIG-24-010/hh/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_hh_rebin1.pkl"
 channels:
-  ttHbb_mixeddata:
-    signallabel: "ttHbb"
-    othersignal: ""
+  ttHbb:
     variable: "SvB_MA.ps"
     signal: "ttHbb"
-    closure_subdir: "hh"
-    region: "sum"
-    cut: "sum"
-    combine_flags: "--three_tag threeTag --four_tag fourTag --region sum"
-    data_process: "mixeddata"
-    multijet_process: "data"
-    tt_processes: ["TTTo", "TTbar4b_from_d3"]
-
-combine_flags: "--three_tag threeTag --four_tag fourTag --region sum"
-
-likelihood_scan_points: 40
-likelihood_scan_r_min: -1
-likelihood_scan_r_max: 1
-likelihood_scan_y_cut: 100
-likelihood_scan_y_max: 100

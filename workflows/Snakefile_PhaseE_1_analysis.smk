@@ -14,12 +14,21 @@ for k, v in phase_e_cfg.items():
     config.setdefault(k, v)
 
 config.setdefault('label', "ttHbb_mixeddata")
-config.setdefault('output_path', "output/ttHbb_v2/closure_studies/")
-config.setdefault('processor', "coffea4bees/analysis/processors/processor_ttHbb.py")
-config.setdefault('analysis_config', "coffea4bees/analysis/metadata/HH4b_2024_v2.yml")
-config.setdefault('datasets_file', "coffea4bees/metadata/datasets_HH4b_v1.yml")
-config.setdefault('years', "2016 2017 2018")
+config.setdefault('output_path', "output/ttHbb/closure_studies/")
+config.setdefault('phase_e_dataset', ["mixeddata_4b"])
+config.setdefault('years', "UL16_preVFP UL16_postVFP UL17 UL18")
+config.setdefault('n_samples', 15)
 config.setdefault('additional_parameters', "--shared-dask --condor --run-performance")
+config.setdefault('metadata', "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml")
+config.setdefault('datasets_file', "coffea4bees/metadata/datasets/mixeddata_4b.yml")
+config.setdefault('processor', "coffea4bees/analysis/processors/processor_ttHbb.py")
+config.setdefault('weights_file', "coffea4bees/metadata/weights/weights_ttHbb.yml")
+config.setdefault('friend_file', "coffea4bees/metadata/friends/friends_ttHbb.yml")
+config.setdefault('dataset_location', "coffea4bees/metadata/datasets/")
+
+config.setdefault('include_real_data_from_phase_f', True)
+config.setdefault('phase_f_output_path', config.get('output_path', "output/ttHbb/"))
+config.setdefault('phase_f_label', "ttHbb")
 
 # Phase E datasets (only pseudo-data runs processor in Phase E)
 PHASE_E_DATASETS = config.get('phase_e_dataset', [config.get('data_type', 'mixeddata')])
@@ -29,7 +38,6 @@ N_SAMPLES = int(config.get('n_samples', 15))
 SAMPLES = [f"v{i}" for i in range(N_SAMPLES)]
 
 # Phase F singlefiles source
-config.setdefault('phase_f_output_path', config.get('output_path', "output/ttHbb_v2/"))
 config.setdefault('phase_f_label', "ttHbb_v2")
 
 container_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
