@@ -2,7 +2,7 @@ runner:
   workers: 4
   worker_memory: 5GB
   # worker_memory: 7GB
-  # friend_base: hists/local/ 
+  # friend_base: output/local/ 
   # chunksize: 10000
   chunksize: 100000
 
@@ -17,8 +17,8 @@ config:
   fill_histograms: false 
   make_classifier_input: root://cmseos.fnal.gov//store/user/jda102/XX4b/Run3ClassiferInputs
   #make_friend_FvT_weight: root://cmseos.fnal.gov//store/user/jda102/XX4b/Run3ClassiferInputs
-  #make_classifier_input: hists/local/   ### local
-  #make_friend_FvT_weight: hists/local/   ### local
+  #make_classifier_input: output/local/   ### local
+  #make_friend_FvT_weight: output/local/   ### local
 
 
   

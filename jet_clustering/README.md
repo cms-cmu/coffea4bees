@@ -256,7 +256,7 @@ python -m unittest jet_clustering.tests.test_clustering.clusteringTestCase.test_
 
 ```bash
 python jet_clustering/compare_datasets.py \
-    --combine_input_files analysis/hists/histData.coffea analysis/hists/test_synthetic_data_seedXXX.coffea \
+    --combine_input_files output/histData.coffea output/test_synthetic_data_seedXXX.coffea \
     --out analysis/plots_synthetic_datasets_all_00-07-02-wPSData \
     -m analysis/metadata/plotsSyntheticVsData2.yml
 ```
@@ -267,7 +267,7 @@ Compare splittings:
 
 ```bash
 python jet_clustering/splitting_comparison_plots.py \
-    analysis/hists/test_synthetic_datasets_4j_and_5j.coffea \
+    output/test_synthetic_datasets_4j_and_5j.coffea \
     --out jet_clustering/jet-splitting-PDFs-00-02-00/comparison
 ```
 
@@ -276,7 +276,7 @@ Check the reclustered splittings (needs `processor_cluster_4b.py` run with the
 
 ```bash
 python jet_clustering/check_reclusted_splittings.py \
-    analysis/hists/test_synthetic_datasets_4j_and_5j.coffea \
+    output/test_synthetic_datasets_4j_and_5j.coffea \
     --out jet_clustering/jet-splitting-PDFs-00-02-00/reclustering
 ```
 

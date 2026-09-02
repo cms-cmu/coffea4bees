@@ -13,7 +13,7 @@ for k, v in phase_e_cfg.items():
     config.setdefault(k, v)
 
 config.setdefault('label', "ttHbb_mixeddata")
-config.setdefault('output_path', "output/ttHbb_v2/closure_studies/")
+config.setdefault('output_path', "output/ttHbb/closure_studies/")
 config.setdefault('plot_script', "coffea4bees/plots/makePlots.py")
 config.setdefault('comparison_plot_config', "coffea4bees/plots/metadata/plots_mixeddata_vs_data.yml")
 config.setdefault('comparison_extra_args', "-s xW --year RunII")

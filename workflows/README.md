@@ -178,27 +178,27 @@ flowchart TD
 **Execution Examples (on falcon / PSC):**
 ```bash
 # Run full Phase C master pipeline
-pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseC.smk \
+./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseC.smk \
     --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
     --cores 8
 
 # Run only Phase C.1 Diagnostic plotting
-pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseC_1_plot_inputs.smk \
+./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseC_1_plot_inputs.smk \
     --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
     --cores 4
 
 # Run only Phase C.2 Model training & loss/ROC analysis (If retraining FvT)
-pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseC_2_train.smk \
+./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseC_2_train.smk \
     --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
     --cores 8
 
 # Run Phase C.3 evaluation on ALL datasets (If background estimation changed)
-pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseC_3_evaluate.smk \
+./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseC_3_evaluate.smk \
     --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
     --cores 8
 
 # Run Phase C.3 evaluation on a SINGLE dataset (e.g. ttHbb)
-pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseC_3_evaluate.smk \
+./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseC_3_evaluate.smk \
     --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
     --config dataset=ttHbb \
     --cores 4
@@ -234,27 +234,27 @@ pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseC_3_evaluate.smk \
 **Execution Examples (on falcon / PSC):**
 ```bash
 # Run full Phase D master pipeline
-pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseD.smk \
+./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseD.smk \
     --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
     --cores 8
 
 # Run only Phase D.1 Diagnostic plotting
-pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseD_1_plot_inputs.smk \
+./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseD_1_plot_inputs.smk \
     --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
     --cores 4
 
 # Run only Phase D.2 SvB training & analysis (If retraining SvB)
-pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseD_2_train.smk \
+./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseD_2_train.smk \
     --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
     --cores 8
 
 # Run Phase D.3 SvB evaluation on ALL datasets (Required for All Analyses)
-pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseD_3_evaluate.smk \
+./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseD_3_evaluate.smk \
     --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
     --cores 8
 
 # Run Phase D.3 SvB evaluation on a single dataset (e.g. ttHbb)
-pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseD_3_evaluate.smk \
+./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseD_3_evaluate.smk \
     --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
     --config dataset=ttHbb \
     --cores 4
@@ -355,7 +355,7 @@ pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseD_3_evaluate.smk \
 ### Local & Dry-Run Mode
 Always dry-run (`-n` or `-np`) before launching large jobs:
 ```bash
-pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk \
+./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk \
     --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
     --config test=true \
     -np

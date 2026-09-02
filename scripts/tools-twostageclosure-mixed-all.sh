@@ -2,7 +2,7 @@
 # 
 # To run:
 # (from coffea4bees/)
-# ./shell_combine source coffea4bees/scripts//analysis-runTwoStageClosure-all-ROOT.sh hists/ hists/
+# ./shell_combine source coffea4bees/scripts//analysis-runTwoStageClosure-all-ROOT.sh output/ output/
 # (first argument is input directory, second argument is output directory, both from the python directory)
 #
 
@@ -18,7 +18,7 @@ fi
 # Check if the first argument is provided
 if [[ $# -lt 1 ]]; then
     # No first argument provided, set a default value
-    INPUT_DIR="hists/"
+    INPUT_DIR="output/"
 else
     # First argument provided, use the provided value
     INPUT_DIR=$1
@@ -27,7 +27,7 @@ fi
 # Check if the second argument is provided
 if [[ $# -lt 2 ]]; then
     # No second argument provided, set a default value
-    OUTPUT_DIR="hists/"
+    OUTPUT_DIR="output/"
 else
     # Second argument provided, use the provided value
     OUTPUT_DIR=$2
