@@ -25,12 +25,14 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--output', dest="output",
                         default=None, help='Output file and directory.')
 
-    parser.add_argument('-i', '--input_file', dest='input_file',
-                        default="../hists/histAll.coffea", help="File with coffea hists")
+    parser.add_argument('-i', '--input_file', dest='input_file', nargs='+',
+                        default=["../output/histAll.coffea"], help="File(s) with coffea hists")
     parser.add_argument('--scale_mixed', type=float, default=1.0,
                         help="Scale factor to apply to mixed datasets (k-factor)")
     parser.add_argument('--auto_scale_mixed', action="store_true", default=False,
                         help="Automatically normalize mixed data to match total background prediction (Data 3b + TTbar4b 3b) in SR")
+    parser.add_argument('--pure_qcd', '--no_ttbar', dest='pure_qcd', action="store_true", default=False,
+                        help="Pure QCD closure mode where mixed data is already ttbar-subtracted (do not include or require ttbar)")
 
     parser.add_argument("--debug", action="store_true")
     #parser.add_argument("--signal", action="store_true")
@@ -53,14 +55,23 @@ if __name__ == '__main__':
     }
 
 
-    coffea_hists = load(args.input_file)["hists"]
+    input_files = args.input_file if isinstance(args.input_file, list) else [args.input_file]
+    coffea_hists_list = {}
+    for f in input_files:
+        logging.info(f"Loading {f}")
+        f_hists = load(f)["hists"]
+        for k, v in f_hists.items():
+            if k not in coffea_hists_list:
+                coffea_hists_list[k] = [v]
+            else:
+                coffea_hists_list[k].append(v)
 
 
     #
     # Collect the histogram names
     #
     hists_to_save = []
-    for k in coffea_hists.keys():
+    for k in coffea_hists_list.keys():
         for _hist_key in args.hist_key:
             if not k.find(_hist_key) == -1:
                 hists_to_save.append(k)
@@ -103,77 +114,79 @@ if __name__ == '__main__':
             bkg_sr_sum = 0.0
             mix_sr_sum = 0.0
             try:
-                for proc in ['data', 'data_3b_for_mixed', 'data_3b']:
-                    if proc in coffea_hists[ih].axes[0]:
-                        for iy in coffea_hists[ih].axes[1]:
-                            sel = {'process': proc, 'year': iy, 'tag': 0, 'region': 0}
-                            for ax in coffea_hists[ih].axes:
+                for h in coffea_hists_list[ih]:
+                    for proc in ['data', 'data_3b_for_mixed', 'data_3b']:
+                        if proc in h.axes[0]:
+                            for iy in h.axes[1]:
+                                sel = {'process': proc, 'year': iy, 'tag': 0, 'region': 0}
+                                for ax in h.axes:
+                                    if ax.name.startswith(('pass', 'fail')) and ax.name not in sel:
+                                        sel[ax.name] = sum
+                                bkg_sr_sum += float(np.sum(h[sel].values()))
+                            break
+                    if not args.pure_qcd and 'TTbar4b_from_d3' in h.axes[0]:
+                        for iy in h.axes[1]:
+                            sel = {'process': 'TTbar4b_from_d3', 'year': iy, 'tag': 0, 'region': 0}
+                            for ax in h.axes:
                                 if ax.name.startswith(('pass', 'fail')) and ax.name not in sel:
                                     sel[ax.name] = sum
-                            bkg_sr_sum += float(np.sum(coffea_hists[ih][sel].values()))
-                        break
-                if 'TTbar4b_from_d3' in coffea_hists[ih].axes[0]:
-                    for iy in coffea_hists[ih].axes[1]:
-                        sel = {'process': 'TTbar4b_from_d3', 'year': iy, 'tag': 0, 'region': 0}
-                        for ax in coffea_hists[ih].axes:
-                            if ax.name.startswith(('pass', 'fail')) and ax.name not in sel:
-                                sel[ax.name] = sum
-                        bkg_sr_sum += float(np.sum(coffea_hists[ih][sel].values()))
-                if 'mix_v0' in coffea_hists[ih].axes[0]:
-                    for iy in coffea_hists[ih].axes[1]:
-                        sel = {'process': 'mix_v0', 'year': iy, 'tag': 1, 'region': 0}
-                        for ax in coffea_hists[ih].axes:
-                            if ax.name.startswith(('pass', 'fail')) and ax.name not in sel:
-                                sel[ax.name] = sum
-                        mix_sr_sum += float(np.sum(coffea_hists[ih][sel].values()))
+                            bkg_sr_sum += float(np.sum(h[sel].values()))
+                    if 'mix_v0' in h.axes[0]:
+                        for iy in h.axes[1]:
+                            sel = {'process': 'mix_v0', 'year': iy, 'tag': 1, 'region': 0}
+                            for ax in h.axes:
+                                if ax.name.startswith(('pass', 'fail')) and ax.name not in sel:
+                                    sel[ax.name] = sum
+                            mix_sr_sum += float(np.sum(h[sel].values()))
                 if mix_sr_sum > 0 and bkg_sr_sum > 0:
                     eff_scale_mixed = bkg_sr_sum / mix_sr_sum
                     logging.info(f"[{ih}] Auto-scale mixed factor: {eff_scale_mixed:.6f} (Bkg SR: {bkg_sr_sum:.1f}, Mix SR: {mix_sr_sum:.1f})")
             except Exception as e:
                 logging.warning(f"Failed to auto-calculate scale_mixed for {ih}: {e}")
 
-        for iprocess in coffea_hists[ih].axes[0]:
-            if iprocess not in save_dict:
-                print(f"skipping process {iprocess}")
-                continue
+        for h in coffea_hists_list[ih]:
+            for iprocess in h.axes[0]:
+                if iprocess not in save_dict:
+                    continue
+                if iprocess in json_dict[ih]:
+                    continue
 
-            json_dict[ih][iprocess] = {}
+                json_dict[ih][iprocess] = {}
 
-            for iy in coffea_hists[ih].axes[1]:
-                json_dict[ih][iprocess][iy] = {}
+                for iy in h.axes[1]:
+                    json_dict[ih][iprocess][iy] = {}
 
-                for itag in range(len(coffea_hists[ih].axes[2])):
-                    json_dict[ih][iprocess][iy][codes['tag'][itag]] = {}
+                    for itag in range(len(h.axes[2])):
+                        json_dict[ih][iprocess][iy][codes['tag'][itag]] = {}
 
+                        for iregion in range(len(h.axes[3])):
 
-                    for iregion in range(len(coffea_hists[ih].axes[3])):
+                            tag_region_pair = (codes['tag'][itag], codes['region'][iregion])
 
-                        tag_region_pair = (codes['tag'][itag], codes['region'][iregion])
+                            if tag_region_pair not in save_dict[iprocess]:
+                                if args.debug:
+                                    print(f"skipping {iprocess} {tag_region_pair}")
+                                continue
 
-                        if tag_region_pair not in save_dict[iprocess]:
-                            if args.debug:
-                                print(f"skipping {iprocess} {tag_region_pair}")
-                            continue
-
-                        this_hist = {
-                            'process' : iprocess,
-                            'year' : iy,
-                            'tag' : itag,
-                            'region' : iregion,
-                        }
-                        for iaxis in coffea_hists[ih].axes:
+                            this_hist = {
+                                'process' : iprocess,
+                                'year' : iy,
+                                'tag' : itag,
+                                'region' : iregion,
+                            }
+                            for iaxis in h.axes:
                                 if iaxis.name.startswith(('pass', 'fail')) and iaxis.name not in this_hist:
                                     this_hist[iaxis.name] = sum
-                        logging.info(f"Converting hist {ih} {this_hist}")
-                        h_data = hist_to_json( coffea_hists[ih][this_hist] )
-                        if (iprocess.startswith('mix_') or iprocess.startswith('syn_') or iprocess == 'synthetic_data') and eff_scale_mixed != 1.0:
-                            h_data['values'] = [v * eff_scale_mixed for v in h_data['values']]
-                            h_data['variances'] = [v * (eff_scale_mixed ** 2) for v in h_data['variances']]
-                            h_data['underflow_value'] *= eff_scale_mixed
-                            h_data['underflow_variance'] *= (eff_scale_mixed ** 2)
-                            h_data['overflow_value'] *= eff_scale_mixed
-                            h_data['overflow_variance'] *= (eff_scale_mixed ** 2)
-                        json_dict[ih][iprocess][iy][codes['tag'][itag]][codes['region'][iregion]] = h_data
+                            logging.info(f"Converting hist {ih} {this_hist}")
+                            h_data = hist_to_json( h[this_hist] )
+                            if (iprocess.startswith('mix_') or iprocess.startswith('syn_') or iprocess == 'synthetic_data') and eff_scale_mixed != 1.0:
+                                h_data['values'] = [v * eff_scale_mixed for v in h_data['values']]
+                                h_data['variances'] = [v * (eff_scale_mixed ** 2) for v in h_data['variances']]
+                                h_data['underflow_value'] *= eff_scale_mixed
+                                h_data['underflow_variance'] *= (eff_scale_mixed ** 2)
+                                h_data['overflow_value'] *= eff_scale_mixed
+                                h_data['overflow_variance'] *= (eff_scale_mixed ** 2)
+                            json_dict[ih][iprocess][iy][codes['tag'][itag]][codes['region'][iregion]] = h_data
 
     if args.output is None:
         output = args.input_file.replace(".coffea",".json")

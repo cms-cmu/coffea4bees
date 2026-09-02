@@ -54,7 +54,7 @@ python -i plots/iPlot.py  output/hists.coffea  -o testPlotsNew
 ### To plot the same process from two different inputs
 
 ```
-> py  -i plots/iPlot.py hists/histAll_file1.coffea hists/histAll_file1.coffea -l file1 file2
+> py  -i plots/iPlot.py output/histAll_file1.coffea output/histAll_file1.coffea -l file1 file2
 ```
 
 ```

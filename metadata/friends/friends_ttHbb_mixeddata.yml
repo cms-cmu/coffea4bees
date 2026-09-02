@@ -1,0 +1,9 @@
+friends:
+  UL18:
+    SvB_MA: &SvB_MA "coffea4bees/metadata/friends/friends_ttHbb_mixeddata_4b.json@@SvB_MA"
+  UL16_preVFP:
+    SvB_MA: *SvB_MA
+  UL16_postVFP:
+    SvB_MA: *SvB_MA
+  UL17:
+    SvB_MA: *SvB_MA

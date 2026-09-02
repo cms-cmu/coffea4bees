@@ -1638,7 +1638,7 @@ if __name__ == "__main__":
     parser.add_argument('-l', '--lumi',                 dest="lumi",          default="133",    help="Luminosity for MC normalization: units [pb]")
     parser.add_argument('--classifier', help="SvB or SvB_MA")
     parser.add_argument('--region', default="SR", help="SR or SB")
-    parser.add_argument('--input_file',default="analysis/hists/histAll.root")
+    parser.add_argument('--input_file',default="output/histAll.root")
     parser.add_argument('--var', default="SvB_MA_ps_hh", help="SvB_MA_ps_XX or SvB_MA_ps_XX_fine")
     parser.add_argument('--rebin', default=1)
     parser.add_argument('--outputPath', default="stats_analysis/fitBiasData")

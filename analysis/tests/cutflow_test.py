@@ -9,7 +9,7 @@ import sys
 #_PERCENT_ERROR_THRESHOLD =  0.01
 
 #
-# python3 analysis/tests/cutflow_test.py   --inputFile hists/test.coffea --knownCounts analysis/tests/known_Counts.yml
+# python3 analysis/tests/cutflow_test.py   --inputFile output/test.coffea --knownCounts analysis/tests/known_Counts.yml
 #
 class CutFlowTestCase(unittest.TestCase):
 
@@ -30,7 +30,7 @@ class CutFlowTestCase(unittest.TestCase):
 
         #  Make these numbers with:
         #  >  python     analysis/tests/dumpCutFlow.py --input [inputFileName] -o [outputFielName]
-        #       (python analysis/tests/dumpCutFlow.py --input hists/histAll.coffea -o analysis/tests/histAllCounts.yml )
+        #       (python analysis/tests/dumpCutFlow.py --input output/histAll.coffea -o analysis/tests/histAllCounts.yml )
         #
         knownCountFile = wrapper.args["knownCounts"]
         self.knownCounts = yaml.safe_load(open(knownCountFile, 'r'))

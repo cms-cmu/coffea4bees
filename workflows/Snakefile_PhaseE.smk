@@ -10,10 +10,10 @@ include: "helpers/common.smk"
 
 phase_e_cfg = resolve_config_section(config, primary_key='phase_e', fallback_keys=['phaseE', 'closure'])
 for k, v in phase_e_cfg.items():
-    config.setdefault(k, v)
+    config[k] = v
 
 config.setdefault('label', "ttHbb_mixeddata")
-config.setdefault('output_path', "output/ttHbb_v2/closure_studies/")
+config.setdefault('output_path', "output/ttHbb/closure_studies/")
 config.setdefault('mix_name', "3bDvTMix4bDvT")
 config.setdefault('classifier', "SvB_MA")
 config.setdefault('variable', "SvB_MA_ps")
@@ -33,6 +33,6 @@ rule all_PhaseE:
 include: "Snakefile_PhaseE_1_analysis.smk"
 include: "Snakefile_PhaseE_2_1_plots_comparison.smk"
 include: "Snakefile_PhaseE_2_2_plots_analysis.smk"
-include: "Snakefile_PhaseE_3_closure.smk"
+include: "Snakefile_PhaseE_2_closure.smk"
 
 localrules: all_PhaseE

@@ -546,7 +546,7 @@ def filling_ttHbb_histograms(
         process=[processName],
         year=[year],
         tag=tag_list,
-        region=['inclusive', 'SR', "SB"],
+        region=['SR', "SB"],
         **dict((s, ...) for s in histCuts)
     )
 
@@ -560,6 +560,8 @@ def filling_ttHbb_histograms(
     skip_jet_list = ['energy', 'deepjet_c']
     fill += Jet.plot(("selJets", "Selected Jets"), "selJet", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
     fill += Jet.plot(("tagJets", "Tag Jets"), "tagJet", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
+    fill += Jet.plot(("selJets_noJCM", "Selected Jets"), "selJet", weight="weight_noJCM_noFvT", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
+    fill += Jet.plot(("tagJets_noJCM", "Tag Jets"), "tagJet", weight="weight_noJCM_noFvT", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
     fill += Jet.plot(("canJets", "Higgs Candidate Jets"), "canJet", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
     fill += Jet.plot(("othJets", "Other Jets"), "notCanJet_coffea", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
 

@@ -1106,8 +1106,11 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         tmp_weights = weights.weight()
         mean_weights = np.mean(tmp_weights)
         std_weights = np.std(tmp_weights)
-        z_scores = np.abs((tmp_weights - mean_weights) / std_weights)
-        pass_outliers = z_scores < 30
+        if std_weights > 0:
+            z_scores = np.abs((tmp_weights - mean_weights) / std_weights)
+            pass_outliers = z_scores < 30
+        else:
+            pass_outliers = np.full(len(tmp_weights), True)
         event["passCleanGenWeight"] = pass_outliers
         if np.any(~pass_outliers) and std_weights > 0:
             logging.warning(f"Outliers in weights:{tmp_weights[~pass_outliers]}, while mean is {mean_weights} and std is {std_weights} for event {event[~pass_outliers].event} in {self.dataset}\n")

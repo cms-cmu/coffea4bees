@@ -17,7 +17,7 @@ runner:
     - T2_US_Purdue
 
 config:
-  file_wEvents: output/analysis/hists/histAll_UL_signal_SREvents.coffea
+  file_wEvents: output/histAll_UL_signal_SREvents.coffea
   base_path: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v1/boosted/
     #base_path: /srv/output/python/skimmer/test/   ### local
   step: 100000

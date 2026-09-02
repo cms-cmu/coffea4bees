@@ -11,6 +11,9 @@ processes:
       label: 'tt'
       process: 2
 bin:
+  - &22pre ttHbb_2022_preEE
+  - &22post ttHbb_2022_EE
+  - &23pre ttHbb_2023_preBPix
   - &23post ttHbb_2023_BPix
 
 # https://twiki.cern.ch/twiki/bin/view/CMS/TWikiLUM?rev=167#LumiComb  # https://gitlab.cern.ch/hh/naming-conventions
@@ -18,12 +21,26 @@ uncertainty:
   lumi_13TeV_correlated: 
     type: 'lnN'
     years:
+      *22pre: 1.006
+      *22post: 1.006
+      *23pre: 1.006
       *23post: 1.006
 
   lumi_13TeV_1718:
     type: 'lnN'
     years:
+      *23pre: 1.006
       *23post: 1.006
+
+  lumi_13TeV_2016:
+    type: 'lnN'
+    years:
+      *22pre: 1.010
+
+  lumi_13TeV_2017:
+    type: 'lnN'
+    years:
+      *22post: 1.020
 
   lumi_13TeV_2018: 
     type: 'lnN'
@@ -33,4 +50,7 @@ uncertainty:
   BR_hbb:
     type: 'lnN'
     years:
+      *22pre: [0.9748, 1.0248]
+      *22post: [0.9748, 1.0248]
+      *23pre: [0.9748, 1.0248]
       *23post: [0.9748, 1.0248]

@@ -262,6 +262,8 @@ def create_combine_root_file( file_to_convert,
 
     if not stat_only:
         for channel in metadata['bin']:
+            if channel not in root_hists:
+                continue
             for ibin, ivalues in bkg_syst_file.items():
                 if np.max(np.abs(np.array(ivalues, dtype=float) - 1.0)) < 1e-6:
                     logging.info(f"Skipping flat systematic {ibin}")
@@ -277,7 +279,7 @@ def create_combine_root_file( file_to_convert,
                         factor = 1.0
                     root_hists[channel]['multijet'][bkg_name_syst].SetBinContent( i+1, nom_val * factor )
 
-        closureSysts = [ i.replace('Up', '') for i in root_hists[next(iter(root_hists))]['multijet'].keys() if i.endswith('Up') ]
+        closureSysts = [ i.replace('Up', '') for i in root_hists[next(iter(root_hists))]['multijet'].keys() if i.endswith('Up') ] if root_hists else []
 
     ### renaming histos for final combine inputs
     for channel in root_hists.keys():
@@ -374,6 +376,8 @@ def create_combine_root_file( file_to_convert,
 
     #### make datacard
     for i, ibin in enumerate(metadata['bin']):
+        if ibin not in root_hists:
+            continue
 
         ibin_label = ibin.split("_")[0]
         cb = ch.CombineHarvester()
@@ -425,23 +429,25 @@ def create_combine_root_file( file_to_convert,
             for isyst in metadata['uncertainty']:
                 if 'mtop' in isyst: mtopSysts.append(isyst)
                 else: othersSysts.append(isyst)
+                syst_years = metadata['uncertainty'][isyst].get('years', {})
                 if ('2016' in isyst):
-                    if ('2016' in ibin):
-                        cb.cp().signals().AddSyst(cb, isyst, metadata['uncertainty'][isyst]['type'], ch.SystMap('bin')([f'{ibin_label}_2016'],metadata['uncertainty'][isyst]['years'][f'{ibin_label}_2016']))
+                    if ('2016' in ibin and f'{ibin_label}_2016' in syst_years):
+                        cb.cp().signals().AddSyst(cb, isyst, metadata['uncertainty'][isyst]['type'], ch.SystMap('bin')([f'{ibin_label}_2016'],syst_years[f'{ibin_label}_2016']))
                 elif ('2017' in isyst):
-                    if ('2017' in ibin):
-                        cb.cp().signals().AddSyst(cb, isyst, metadata['uncertainty'][isyst]['type'], ch.SystMap('bin')([f'{ibin_label}_2017'],metadata['uncertainty'][isyst]['years'][f'{ibin_label}_2017']))
+                    if ('2017' in ibin and f'{ibin_label}_2017' in syst_years):
+                        cb.cp().signals().AddSyst(cb, isyst, metadata['uncertainty'][isyst]['type'], ch.SystMap('bin')([f'{ibin_label}_2017'],syst_years[f'{ibin_label}_2017']))
                 elif ('2018' in isyst):
-                    if ('2018' in ibin):
-                        cb.cp().signals().AddSyst(cb, isyst, metadata['uncertainty'][isyst]['type'], ch.SystMap('bin')([f'{ibin_label}_2018'],metadata['uncertainty'][isyst]['years'][f'{ibin_label}_2018']))
+                    if ('2018' in ibin and f'{ibin_label}_2018' in syst_years):
+                        cb.cp().signals().AddSyst(cb, isyst, metadata['uncertainty'][isyst]['type'], ch.SystMap('bin')([f'{ibin_label}_2018'],syst_years[f'{ibin_label}_2018']))
                 elif ('1718' in isyst):
-                    if '2017' in ibin or '2018' in ibin:
+                    if ('2017' in ibin or '2018' in ibin) and ibin in syst_years:
                         cb.cp().signals().AddSyst(cb, isyst, metadata['uncertainty'][isyst]['type'], ch.SystMap('bin')
-                                            ([ibin],metadata['uncertainty'][isyst]['years'][ibin]))
+                                            ([ibin],syst_years[ibin]))
                 else:
-                    cb.cp().signals().AddSyst(cb, isyst, metadata['uncertainty'][isyst]['type'], ch.SystMap('bin')
-                                            ([ibin], metadata['uncertainty'][isyst]['years'][ibin])
-                                            )
+                    if ibin in syst_years:
+                        cb.cp().signals().AddSyst(cb, isyst, metadata['uncertainty'][isyst]['type'], ch.SystMap('bin')
+                                                ([ibin], syst_years[ibin])
+                                                )
             cb.SetGroup("others", othersSysts)
             if ibin_label.startswith('hh'):    
                 cb.SetGroup("mtop", mtopSysts)
