@@ -833,17 +833,12 @@ class multijetEnsemble:
     
     def getParameterDistribution(self, basis):
         n = basis + 1
-        parMean    = np.array([0 for i in range(n)], dtype=float)
-        parMeanErr = np.array([0 for i in range(n)], dtype=float)
-        parMean2   = np.array([0 for i in range(n)], dtype=float)
-        for m in range(nMixes):
-            parMean    += self.fit_parameters[basis][m]    / nMixes
-            parMean2   += self.fit_parameters[basis][m]**2 / nMixes
-            parMeanErr += self.fit_parameters_error[basis][m] / nMixes
+        params = np.array([self.fit_parameters[basis][m] for m in range(nMixes)])
+        params_err = np.array([self.fit_parameters_error[basis][m] for m in range(nMixes)])
+        parMean = np.mean(params, axis=0)
+        parMeanErr = np.mean(params_err, axis=0)
         if nMixes > 1:
-            var = parMean2 - parMean**2
-            parStd  = var**0.5
-            parStd *= nMixes / (nMixes - 1)  # bessel's correction https://en.wikipedia.org/wiki/Bessel's_correction
+            parStd = np.std(params, axis=0, ddof=1)
         else:
             parStd = np.zeros_like(parMean)
         print('Parameter Mean:', parMean)
@@ -898,15 +893,8 @@ class multijetEnsemble:
         # check bin to bin correlations using pearson R test
         xs = np.array([self.pulls[basis][m * self.nBins_fit  : (m + 1) * self.nBins_fit - 1] for m in range(nMixes)])
         ys = np.array([self.pulls[basis][m * self.nBins_fit + 1: (m + 1) * self.nBins_fit  ] for m in range(nMixes)])
-        # x1s = np.array([self.pulls[basis][m * self.nBins_fit  : (m + 1) * self.nBins_fit-1] for m in range(nMixes)])
-        # y1s = np.array([self.pulls[basis][m * self.nBins_fit + 1: (m + 1) * self.nBins_fit  ] for m in range(nMixes)])
-        # x2s = np.array([self.pulls[basis][m * self.nBins_fit  : (m + 1) * self.nBins_fit - 2] for m in range(nMixes)])
-        # y2s = np.array([self.pulls[basis][m * self.nBins_fit+2: (m + 1) * self.nBins_fit  ] for m in range(nMixes)])
-        # x3s = np.array([self.pulls[basis][m * self.nBins_fit  : (m + 1) * self.nBins_fit-3] for m in range(nMixes)])
-        # y3s = np.array([self.pulls[basis][m * self.nBins_fit+3: (m + 1) * self.nBins_fit  ] for m in range(nMixes)])
-        # xs, ys = np.concatenate((x1s,x2s,x3s), axis=1), np.concatenate((y1s,y2s,y3s), axis=1)
-        x, y = xs.flatten(), ys.flatten()
-        r, p = pearsonr(x, y, n=len(x) - nMixes * (basis + 1))
+
+        r, p = pearsonr(xs.flatten(), ys.flatten(), n=self.nBins_fit * nMixes - nMixes * (basis + 1))
 
         self.pearsonr[basis] = {'total': (r, p),
                                 'mixes': [pearsonr(xs[m], ys[m], n=len(xs[m]) - basis - 1) for m in range(nMixes)]}
@@ -927,7 +915,7 @@ class multijetEnsemble:
         self.output_yml.write(str(basis) + ":\n")
 
         write_pairs = [("chi2", self.chi2[basis]), ("ndf", self.ndf[basis]), ("pvalue", self.pvalue[basis]),
-                       ("pearson_r", self.pearsonr[basis]['total'][0]), ("pearson_pvalue", self.pearsonr[basis]['total'][0]),
+                       ("pearson_r", self.pearsonr[basis]['total'][0]), ("pearson_pvalue", self.pearsonr[basis]['total'][1]),
                        ("variance", self.cUp[basis])]
 
         for wp in write_pairs:
@@ -968,6 +956,7 @@ class multijetEnsemble:
 
         plt.tight_layout()
         fig.savefig( f"{output_dir}/{name}_basis{rebin_name}{basis}.pdf" )
+        fig.savefig( f"{output_dir}/{name}_basis{rebin_name}{basis}.png" )
         plt.close(fig)
 
         fig, (ax) = plt.subplots(nrows=1)
@@ -996,6 +985,7 @@ class multijetEnsemble:
 
         plt.tight_layout()
         fig.savefig( f"{output_dir}/{name}_additive_basis{rebin_name}{basis}.pdf" )
+        fig.savefig( f"{output_dir}/{name}_additive_basis{rebin_name}{basis}.png" )
         plt.close(fig)
 
     
@@ -1036,6 +1026,7 @@ class multijetEnsemble:
 
         plt.tight_layout()
         fig.savefig( f"{output_dir}/0_variance_pearsonr_multijet_variance.pdf" )
+        fig.savefig( f"{output_dir}/0_variance_pearsonr_multijet_variance.png" )
         plt.close(fig)
 
     
@@ -1201,6 +1192,7 @@ class multijetEnsemble:
         projection = '_'.join([str(d) for d in projection])
         try:
             fig.savefig( f"{output_dir}/0_variance_parameters_basis{basis}_projection_{projection}.pdf" )
+            fig.savefig( f"{output_dir}/0_variance_parameters_basis{basis}_projection_{projection}.png" )
             plt.close(fig)
         except IndexError:
             print('Weird index error...')
@@ -1263,6 +1255,7 @@ class multijetEnsemble:
 
         plt.legend(fontsize='small', loc='upper left', ncol=2, title='Overall r=%0.2f (%2.0f%s)' % (r, p * 100, '\%'))
         fig.savefig( f'{output_dir}/0_variance_pull_correlation_basis{basis}.pdf' )
+        fig.savefig( f'{output_dir}/0_variance_pull_correlation_basis{basis}.png' )
         plt.close(fig)
 
     
@@ -1313,6 +1306,7 @@ class multijetEnsemble:
                       # 'rTitle'     : 'Model / Average',
                       'xTitle'    : xTitle,
                       'yTitle'    : 'Events',
+                      'logY'      : True,
                       'yMax'      : self.ymax[0] * 1.6,  # *ymaxScale, # make room to show fit parameters
                       'xleg'      : [0.13, 0.13 + 0.4],
                       'legendSubText' : ['#bf{Adjacent Bin Pull Correlation:}',
@@ -1974,6 +1968,7 @@ class closure:
         # print('fig.savefig( ' + name+' )')
         plt.tight_layout()
         fig.savefig( name )
+        fig.savefig( name.replace('.pdf', '.png') )
         plt.close(fig)
 
     
@@ -2011,6 +2006,7 @@ class closure:
 
         plt.tight_layout()
         fig.savefig( f'{output_dir}/1_bias_pvalues.pdf' )
+        fig.savefig( f'{output_dir}/1_bias_pvalues.png' )
         plt.close(fig)
 
     
@@ -2053,14 +2049,16 @@ class closure:
                 'ratio' : 'denom A',
                 'color' : color_multijet} #ffdf7f
                 #'color' : 'ROOT.kYellow'}
-        samples[closure_file_out]['%s/ttbar' % self.channel] = {
-            'label' : '#lower[0.10]{t#bar{t}}',
-            'legend': 3,
-            'stack' : 2,
-            'ratio' : 'denom A',
-            'color' : color_TTbar}
+        if not getattr(args, 'pure_qcd', False):
+            samples[closure_file_out]['%s/ttbar' % self.channel] = {
+                'label' : '#lower[0.10]{t#bar{t}}',
+                'legend': 3,
+                'stack' : 2,
+                'ratio' : 'denom A',
+                'color' : color_TTbar}
+        sig_label = 't#bar{t}H(#times100)' if self.channel in ['ttHbb', 'tth'] else 'ZZ+ZH+HH(#times100)'
         samples[closure_file_out]['%s/signal' % self.channel] = {
-            'label' : 'ZZ+ZH+HH(#times100)',
+            'label' : sig_label,
             'legend': 4,
             'weight': 100,
             'color' : 'ROOT.kViolet'}
@@ -2079,13 +2077,7 @@ class closure:
                       'rTitle'    : 'Data / Bkgd.',
                       'xTitle'    : xTitle,
                       'yTitle'    : 'Events',
-                    #   'logY'      : True,
-                    #   'yMax'      : 1.4 * (self.ymax[0]),  # *ymaxScale, # make room to show fit parameters
-                      # 'xleg'      : [0.13, 0.13 + 0.5] if 'SR' in region else ,
-                      #  'legendSubText' : ['#bf{Fit:}',
-                      #                     '#chi^{2}/DoF = %2.1f/%d = %1.2f'%(self.chi2[basis],self.ndf[basis],self.chi2[basis]/self.ndf[basis]),
-                      #                     'p-value = %2.0f%%'%(self.pvalue[basis] * 100),
-                      #                     ],
+                      'logY'      : True,
                       'lstLocation' : 'right',
                       'outputName': 'mix_%s' % (str(mix))}
 
@@ -2111,12 +2103,13 @@ class closure:
             'ratio' : 'denom A',
             'color' : color_multijet} #ffdf7f
             #'color' : 'ROOT.kYellow'}
-        samples[closure_file_out]['%s/ttbar_closure' % self.channel] = {
-            'label' : '#lower[0.10]{t#bar{t}}',
-            'legend': 3,
-            'stack' : 2,
-            'ratio' : 'denom A',
-            'color' : color_TTbar}
+        if not getattr(args, 'pure_qcd', False):
+            samples[closure_file_out]['%s/ttbar_closure' % self.channel] = {
+                'label' : '#lower[0.10]{t#bar{t}}',
+                'legend': 3,
+                'stack' : 2,
+                'ratio' : 'denom A',
+                'color' : color_TTbar}
         if not plotSpuriousSignal:
             samples[closure_file_out]['%s/closure_TH1_basis%d' % (self.channel, basis)] = {
                 'label' : 'Fit (%d unconstrained parameter%s)' % (basis + 1, 's' if basis else ''),
@@ -2134,8 +2127,9 @@ class closure:
                 'legend': 6,
                 'ratio': 'denom A',
                 'color' : 'ROOT.kViolet'}
+            sig_label = 't#bar{t}H(#times100)' if self.channel in ['ttHbb', 'tth'] else 'ZZ+ZH+HH(#times100)'
             samples[closure_file_out][f'{self.channel}/signal_closure'] = {
-                'label' : 'ZZ+ZH+HH(#times100)',
+                'label' : sig_label,
                 'legend': 7,
                 'weight': 100,
                 'color' : 'ROOT.kViolet+7'}
@@ -2169,6 +2163,7 @@ class closure:
                       # 'rTitle'     : 'Model / Average',
                       'xTitle'    : xTitle,
                       'yTitle'    : 'Events',
+                      'logY'      : True,
                       'yMax'      : self.ymax[0] * ymaxScale,   # *ymaxScale, # make room to show fit parameters
                       'xleg'      : [0.13, 0.13 + 0.42],
                       'lstLocation': 'right',

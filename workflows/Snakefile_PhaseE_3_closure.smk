@@ -13,15 +13,16 @@ for k, v in phase_e_cfg.items():
     config.setdefault(k, v)
 
 config.setdefault('label', "ttHbb_mixeddata")
-config.setdefault('output_path', "output/ttHbb_v2/closure_studies/")
+config.setdefault('output_path', "output/ttHbb/closure_studies/")
 config.setdefault('mix_name', "3bDvTMix4bDvT")
 config.setdefault('nMixes', 15)
 config.setdefault('classifier', "SvB_MA")
-config.setdefault('variable', "SvB_MA_ps")
+config.setdefault('variable', "SvB_MA_ps_ttHbb_fine")
 config.setdefault('channel', "ttHbb")
 config.setdefault('rebin', "1")
 config.setdefault('years_closure', "2016 2017 2018")
 config.setdefault('closure_extra_args', "")
+config.setdefault('scale_mixed', 0.7)
 
 config.setdefault('input_file_data3b', f"{config['output_path']}root_inputs/histAll_{config['label']}.root")
 config.setdefault('input_file_TT', f"{config['output_path']}root_inputs/histAll_{config['label']}.root")
@@ -39,14 +40,34 @@ rule all_PhaseE_3:
     input:
         f"{config['output_path']}closure_fits/{config['mix_name']}/{config['classifier']}/rebin{config['rebin']}/SR/{config['channel']}/hists_closure_{config['mix_name']}_{config['variable']}_rebin{config['rebin']}.pkl"
 
+def get_hist_to_json_inputs(wildcards):
+    files = []
+    mix_single = f"{config['output_path']}singlefiles/histAll_{config['label']}__mixeddata_4b.coffea"
+    mix_main = f"{config['output_path']}histAll_{config['label']}.coffea"
+    if os.path.exists(mix_single):
+        files.append(mix_single)
+    elif os.path.exists(mix_main):
+        files.append(mix_main)
+    else:
+        files.append(mix_main)
+
+    phase_f_path = config.get('phase_f_output_path', 'output/ttHbb_v3/').rstrip('/')
+    phase_f_label = config.get('phase_f_label', 'ttHbb_v3')
+    phase_f_file = f"{phase_f_path}/histAll_{phase_f_label}.coffea"
+    if os.path.exists(phase_f_file):
+        files.append(phase_f_file)
+    return files
+
 rule hist_to_json_closure:
     input:
-        f"{config['output_path']}histAll_{config['label']}.coffea"
+        get_hist_to_json_inputs
     output:
         f"{config['output_path']}json_inputs/histAll_{config['label']}.json"
     params:
         container_wrapper = config['analysis_container_wrapper'],
-        python_bin = config['python_bin']
+        python_bin = config['python_bin'],
+        scale_mixed = config.get('scale_mixed', 1.0),
+        extra_args = config.get('closure_extra_args', '')
     log:
         f"{config['output_path']}logs/hist_to_json_closure.log"
     shell:
@@ -55,7 +76,8 @@ rule hist_to_json_closure:
         mkdir -p $(dirname {output}) $(dirname {log})
         {params.container_wrapper} {params.python_bin} coffea4bees/stats_analysis/convert_hist_to_json_closure.py \
             -i {input} \
-            --auto_scale_mixed \
+            --scale_mixed {params.scale_mixed} \
+            {params.extra_args} \
             -o {output} 2>&1 | tee {log}
         """
 

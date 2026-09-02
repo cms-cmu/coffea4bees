@@ -1179,6 +1179,7 @@ def plot(sampleDictionary, plotParameters,debug=False):
     logstr = "_logy" if logY else ""
     if debug: print("SaveAs("+plotParameters["outputDir"]+plotParameters["outputName"]+logstr+".pdf)")
     canvas.SaveAs(plotParameters["outputDir"]+plotParameters["outputName"]+logstr+".pdf")
+    canvas.SaveAs(plotParameters["outputDir"]+plotParameters["outputName"]+logstr+".png")
     canvas.SaveAs(plotParameters["outputDir"]+plotParameters["outputName"]+logstr+".C")
     #canvas.SaveAs(plotParameters["outputDir"]+plotParameters["outputName"]+".root")
     return canvas

@@ -25,7 +25,7 @@ phase_e:
   channel: "ttHbb"
   rebin: "1"
   years_closure: "2016 2017 2018"
-  closure_extra_args: "--pure_qcd --auto_scale_mixed"
+  closure_extra_args: "--pure_qcd"
   scale_mixed: 1.0
 
 analysis_config:
