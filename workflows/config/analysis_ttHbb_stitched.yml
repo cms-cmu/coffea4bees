@@ -102,7 +102,7 @@ jcm_datasets:
   - "TTToSemiLeptonic_stitched"
   - "TTToHadronic_stitched"
 
-jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb_stitched_jcm_config.yml"
+jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb_stitched_jcm_config.yml -m coffea4bees/plots/metadata/plotsJCM_ttHbb_stitched.yml"
 
 classifier_inputs:
   processor: "coffea4bees/analysis/processors/processor_HH4b.py"
