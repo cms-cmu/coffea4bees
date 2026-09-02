@@ -894,7 +894,8 @@ class multijetEnsemble:
         xs = np.array([self.pulls[basis][m * self.nBins_fit  : (m + 1) * self.nBins_fit - 1] for m in range(nMixes)])
         ys = np.array([self.pulls[basis][m * self.nBins_fit + 1: (m + 1) * self.nBins_fit  ] for m in range(nMixes)])
 
-        r, p = pearsonr(xs.flatten(), ys.flatten(), n=self.nBins_fit * nMixes - nMixes * (basis + 1))
+        x, y = xs.flatten(), ys.flatten()
+        r, p = pearsonr(x, y, n=len(x) - nMixes * (basis + 1))
 
         self.pearsonr[basis] = {'total': (r, p),
                                 'mixes': [pearsonr(xs[m], ys[m], n=len(xs[m]) - basis - 1) for m in range(nMixes)]}
@@ -915,7 +916,7 @@ class multijetEnsemble:
         self.output_yml.write(str(basis) + ":\n")
 
         write_pairs = [("chi2", self.chi2[basis]), ("ndf", self.ndf[basis]), ("pvalue", self.pvalue[basis]),
-                       ("pearson_r", self.pearsonr[basis]['total'][0]), ("pearson_pvalue", self.pearsonr[basis]['total'][1]),
+                       ("pearson_r", self.pearsonr[basis]['total'][0]), ("pearson_pvalue", self.pearsonr[basis]['total'][0]),
                        ("variance", self.cUp[basis])]
 
         for wp in write_pairs:
