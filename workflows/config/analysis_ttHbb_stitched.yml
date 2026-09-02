@@ -3,8 +3,8 @@
 # ==============================================================================
 label: "ttHbb_v2"
 output_path: "output/ttHbb_v2/"
-cern_user: "algomez"
-cern_path: "www/ttHbb/Plots/"
+cern_user: "mmarcheg"
+cern_path: "www/plots/ttHbb/analysis/run2/4b/"
 
 dataset:
   - "ttHbb"
@@ -168,7 +168,7 @@ classifier_setting:
 
 fvt:
   eos_base: "root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/stitched/"
-  plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
+  plot_base: "root://eosuser.cern.ch//eos/user/m/mmarcheg/www/plots/ttHbb/analysis/run2/4b/"
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_2024_v2/FvT"
   label: "FvT_ttHbb_v2"
@@ -178,11 +178,11 @@ fvt:
   friend: "{eos_base}/friend/{label}"
   train_template: "model: {eos_base}/classifier/{label}"
   eval_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/{label}"
-  metadata: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_ttHbb.json@@HCR_input"
+  metadata: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_ttHbb_stitched.json@@HCR_input"
 
 svb:
   eos_base: "root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/stitched/"
-  plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
+  plot_base: "root://eosuser.cern.ch//eos/user/m/mmarcheg/www/plots/ttHbb/analysis/run2/4b/"
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_2024_v2/SvB"
   label: "SvB_ttHbb_v2"
@@ -193,7 +193,7 @@ svb:
   friend: "{eos_base}/friend/{label}"
   train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_ttHbb_v2"
   eval_template: "model: {eos_base}/classifier/{label}, SvB: {eos_base}/friend/{label}"
-  metadata: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_ttHbb.json@@HCR_input"
+  metadata: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_ttHbb_stitched.json@@HCR_input"
 
 # ==============================================================================
 # PHASE F.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
