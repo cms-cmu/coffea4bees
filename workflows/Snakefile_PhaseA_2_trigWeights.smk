@@ -58,7 +58,7 @@ def get_raw_trigger_weights_config():
     elif config.get('dataset_location') and config['dataset_location'].endswith(('.yml', '.yaml')):
         res['dataset_location'] = config['dataset_location']
     elif 'dataset_location' not in res or not res['dataset_location']:
-        default_ds_loc = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/" if is_run2 else "coffea4bees/metadata/datasets/"
+        default_ds_loc = "coffea4bees/metadata/datasets/"
         res['dataset_location'] = config.get('dataset_location', default_ds_loc)
 
     # Runner settings

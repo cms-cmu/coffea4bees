@@ -1,9 +1,12 @@
+# coffea4bees/workflows/Snakefile_PhaseD_1_inputs.smk
+# Phase D.1: SvB Classifier Inputs Generation Workflow
+
 import os
 import copy
 import yaml
 
 # Fallback defaults for backwards compatibility or running direct
-config.setdefault('output_path', "output/classifier_inputs/")
+config.setdefault('output_path', "output/classifier_inputs_SvB/")
 config.setdefault('dataset_location', "coffea4bees/metadata/datasets/")
 config.setdefault('processor', "coffea4bees/analysis/processors/processor_HH4b.py")
 config.setdefault('test', False)
@@ -21,11 +24,7 @@ config.setdefault('analysis_container_wrapper', config.get('container_wrapper', 
 python_bin = os.getenv("CONTAINER_PYTHON", "python")
 config.setdefault('python_bin', python_bin)
 
-if config.get('additional_parameters') is not None:
-    pass
-elif config.get('test', False) or os.getenv("CI"):
-    config.setdefault('additional_parameters', "")
-elif "bridges2" in os.uname().nodename or "psc" in os.uname().nodename or "/ocean/" in os.getcwd():
+if config.get('test', False) or os.getenv("CI"):
     config.setdefault('additional_parameters', "")
 else:
     config.setdefault('additional_parameters', "--shared-dask --condor --run-performance")
@@ -90,12 +89,10 @@ is_run2 = any(str(y).startswith("UL") for y in years)
 
 include: "helpers/common.smk"
 
-def get_raw_classifier_inputs_config():
-    # Read from classifier_inputs block or analysis_config block if provided in YAML
-    res = resolve_config_section(config, primary_key='classifier_inputs', fallback_keys=['analysis_config', 'analysis'])
+def get_raw_svb_inputs_config():
+    res = resolve_config_section(config, primary_key='classifier_inputs_svb', fallback_keys=['classifier_inputs', 'analysis_config', 'analysis'])
     res.setdefault('processor', config.get('processor', "coffea4bees/analysis/processors/processor_HH4b.py"))
     
-    # Dataset location
     if config.get('classifier_inputs_dataset_location'):
         res['dataset_location'] = config['classifier_inputs_dataset_location']
     elif config.get('dataset_location') and config['dataset_location'].endswith(('.yml', '.yaml')):
@@ -107,19 +104,13 @@ def get_raw_classifier_inputs_config():
     res.setdefault('friend_file', config.get('friend_file', "coffea4bees/metadata/friends/friends_ttHbb.yml" if is_run2 else "coffea4bees/metadata/friends/friends_HH4b.yml"))
     res.setdefault('weights_file', config.get('weights_file', "coffea4bees/metadata/weights/weights_HH4b_2024_v2.yml" if is_run2 else "coffea4bees/metadata/weights/weights_HH4b.yml"))
 
-    # Runner settings
     if 'runner' not in res or not isinstance(res['runner'], dict):
         res['runner'] = copy.deepcopy(config.get('runner', {}))
-    is_bridges = ("bridges2" in os.uname().nodename or "psc" in os.uname().nodename or "/ocean/" in os.getcwd())
-    if is_bridges:
-        res['runner']['condor'] = False
-        res['runner']['shared_dask'] = False
-        res['runner']['workers'] = 4
 
-    # Config block for processor
     if 'config' not in res or not isinstance(res['config'], dict):
         res['config'] = {}
     res['config'].setdefault('make_classifier_input', f"{config['output_path']}classifier_inputs/")
+    res['config'].setdefault('apply_FvT', True)
     res['config'].setdefault('fill_histograms', False)
 
     return res
@@ -139,112 +130,92 @@ data_json_targets = [
 
 all_ci_json_files = mc_json_targets + data_json_targets
 
-rule all_classifier_inputs:
+rule all_svb_classifier_inputs:
     input:
         f"{config['output_path']}classifier_inputs/classifier_inputs_friends.json"
 
-def get_classifier_inputs_config_inputs(wildcards):
+def get_svb_inputs_config_inputs(wildcards):
     inputs = list(workflow.configfiles) if workflow.configfiles else []
     ds_loc = config.get('classifier_inputs_dataset_location', config.get('dataset_location', ''))
     if isinstance(ds_loc, str) and ds_loc.endswith(('.yml', '.yaml')):
         inputs.append(ds_loc)
-    rule_names = {r.name for r in workflow.rules}
-    if 'output_computeJCM' in rule_names:
-        inputs.append(rules.output_computeJCM.input[0])
     return inputs
 
-rule create_classifier_inputs_config:
-    input: get_classifier_inputs_config_inputs
+rule create_svb_inputs_config:
+    input: get_svb_inputs_config_inputs
     output: ci_config_path
     run:
         import yaml, os
-        cfg = get_raw_classifier_inputs_config()
-        rule_names = {r.name for r in workflow.rules}
-        if 'output_computeJCM' in rule_names:
-            new_jcm_file = str(rules.output_computeJCM.input[0])
-            if 'config' not in cfg or not isinstance(cfg['config'], dict):
-                cfg['config'] = {}
-            cfg['config']['JCM_file'] = new_jcm_file
-        if config.get("test", False):
-            if 'runner' not in cfg or not isinstance(cfg['runner'], dict):
-                cfg['runner'] = {}
-            cfg['runner']['condor'] = False
-            cfg['runner']['shared_dask'] = False
-            cfg['runner']['run_performance'] = False
+        cfg = get_raw_svb_inputs_config()
         os.makedirs(os.path.dirname(output[0]), exist_ok=True)
         with open(output[0], 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False)
 
-rule classifier_inputs_mc:
-    input:
-        runner_script = "runner.py",
-        config_file = ci_config_path
-    output: f"{config['output_path']}classifier_inputs/classifier_inputs_dataset_{{dataset}}__{{year}}.json"
-    log: f"{config['output_path']}logs/classifier_inputs_dataset_{{dataset}}__{{year}}.log"
-    params:
-        output_dir = f"{config['output_path']}classifier_inputs/",
-        extra_arguments = lambda wildcards: " ".join(filter(None, [
-            "-t" if config.get("test", False) else "",
-            config.get("additional_parameters", "")
-        ])),
-        run_container_wrapper = config['analysis_container_wrapper'],
-        python_bin = config['python_bin']
-    shell:
-        """
-        set -eo pipefail
-        mkdir -p {params.output_dir} $(dirname {log})
+if include_data:
+    rule svb_inputs_data:
+        input:
+            runner_script = "runner.py",
+            config_file = ci_config_path
+        output: f"{config['output_path']}classifier_inputs/classifier_inputs_data__{{year}}_{{era}}.json"
+        log: f"{config['output_path']}logs/classifier_inputs_data__{{year}}_{{era}}.log"
+        params:
+            datasets = "data",
+            years = lambda wildcards: wildcards.year,
+            config = lambda wildcards, input: input.config_file,
+            extra_arguments = lambda wildcards: " ".join(filter(None, [
+                f"--era {wildcards.era}",
+                "-t" if config.get("test", False) else "",
+                config.get("additional_parameters", "")
+            ])),
+            run_container_wrapper = config['analysis_container_wrapper']
+        shell:
+            """
+            {params.run_container_wrapper} python {input.runner_script} \
+                -d {params.datasets} \
+                -y {params.years} \
+                -c {params.config} \
+                {params.extra_arguments} \
+                2>&1 | tee -a {log}
+            """
 
-        {params.run_container_wrapper} {params.python_bin} runner.py {input.config_file} \
-            --processor coffea4bees/analysis/processors/processor_HH4b.py \
-            --datasets {wildcards.dataset} \
-            --years {wildcards.year} \
-            --output-path {params.output_dir} \
-            --output $(basename {output} .json).coffea \
-            {params.extra_arguments} 2>&1 | tee {log}
-        """
+if mc_datasets:
+    rule svb_inputs_mc:
+        input:
+            runner_script = "runner.py",
+            config_file = ci_config_path
+        output: f"{config['output_path']}classifier_inputs/classifier_inputs_dataset_{{dataset}}__{{year}}.json"
+        log: f"{config['output_path']}logs/classifier_inputs_dataset_{{dataset}}_{{year}}.log"
+        params:
+            datasets = lambda wildcards: wildcards.dataset,
+            years = lambda wildcards: wildcards.year,
+            config = lambda wildcards, input: input.config_file,
+            extra_arguments = lambda wildcards: " ".join(filter(None, [
+                "-t" if config.get("test", False) else "",
+                config.get("additional_parameters", "")
+            ])),
+            run_container_wrapper = config['analysis_container_wrapper']
+        shell:
+            """
+            {params.run_container_wrapper} python {input.runner_script} \
+                -d {params.datasets} \
+                -y {params.years} \
+                -c {params.config} \
+                {params.extra_arguments} \
+                2>&1 | tee -a {log}
+            """
 
-rule classifier_inputs_data:
-    input:
-        runner_script = "runner.py",
-        config_file = ci_config_path
-    output: f"{config['output_path']}classifier_inputs/classifier_inputs_data__{{year}}_{{era}}.json"
-    log: f"{config['output_path']}logs/classifier_inputs_data__{{year}}_{{era}}.log"
-    params:
-        output_dir = f"{config['output_path']}classifier_inputs/",
-        extra_arguments = lambda wildcards: " ".join(filter(None, [
-            "-t" if config.get("test", False) else "",
-            config.get("additional_parameters", "")
-        ])),
-        run_container_wrapper = config['analysis_container_wrapper'],
-        python_bin = config['python_bin']
-    shell:
-        """
-        set -eo pipefail
-        mkdir -p {params.output_dir} $(dirname {log})
-
-        {params.run_container_wrapper} {params.python_bin} runner.py {input.config_file} \
-            --processor coffea4bees/analysis/processors/processor_HH4b.py \
-            --datasets data \
-            --years {wildcards.year} \
-            --eras {wildcards.era} \
-            --output-path {params.output_dir} \
-            --output $(basename {output} .json).coffea \
-            {params.extra_arguments} 2>&1 | tee {log}
-        """
-
-rule merge_classifier_inputs_friends:
+rule merge_svb_inputs_friends:
     input: all_ci_json_files
     output: f"{config['output_path']}classifier_inputs/classifier_inputs_friends.json"
-    log: f"{config['output_path']}logs/merge_classifier_inputs_friends.log"
-    params:
-        run_container_wrapper = config['analysis_container_wrapper'],
-        python_bin = config['python_bin']
-    shell:
-        """
-        set -eo pipefail
-        mkdir -p $(dirname {output}) $(dirname {log})
-        echo "Merging classifier inputs friend tree JSON files" 2>&1 | tee {log}
-        {params.run_container_wrapper} {params.python_bin} -m src.friendtrees.merge_friend_meta \
-            -i {input} \
-            -o {output} 2>&1 | tee -a {log}
-        """
+    log: f"{config['output_path']}logs/merge_svb_inputs_friends.log"
+    run:
+        import json, os
+        merged = {}
+        for fn in input:
+            if os.path.exists(fn):
+                with open(fn, 'r') as f:
+                    data = json.load(f)
+                    merged.update(data)
+        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
+        with open(output[0], 'w') as f:
+            json.dump(merged, f, indent=4)

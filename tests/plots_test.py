@@ -94,15 +94,22 @@ class PlotTestCase(unittest.TestCase):
             region = v["region"]
             counts = v["counts"]
 
-            fig, axes = makePlot(cfg, var=var, cut=cut, axis_opts={"region":region},
+            fig, axes = makePlot(cfg, var=var, cut=cut, axis_opts={"region": region},
                                  outputFolder=cfg.outputFolder, **default_args)
 
             ax = axes[0]
-            for i in range(len(ax.lines)):
-
-                if hasattr(ax.lines[i], "get_label") and ax.lines[i].get_label() == '_nolegend_':
-                    y_plot = ax.lines[i].get_ydata()
+            y_plot = np.array([])
+            for line in ax.lines:
+                if hasattr(line, "get_label") and line.get_label() == '_nolegend_':
+                    y_plot = line.get_ydata()
                     break
+            if len(y_plot) == 0 and len(ax.lines) > 0:
+                y_plot = ax.lines[0].get_ydata()
+            if len(y_plot) == 0 and len(ax.patches) > 0:
+                for patch in ax.patches:
+                    if hasattr(patch, "get_data"):
+                        y_plot = np.array(patch.get_data()[0])
+                        break
 
             np.testing.assert_allclose(y_plot, counts,
                                        rtol=1e-10, atol=0)

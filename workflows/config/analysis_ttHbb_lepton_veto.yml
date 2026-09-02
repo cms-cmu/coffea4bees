@@ -1,5 +1,5 @@
-label: "ttHbb_v2_lepton_veto"
-output_path: "output/ttHbb_v2_lepton_veto/"
+label: "ttHbb_lepton_veto"
+output_path: "output/ttHbb_lepton_veto/"
 cern_user: "algomez"
 cern_path: "www/HH4b/Plots/"
 dataset:
@@ -125,13 +125,13 @@ classifier_inputs:
     run_SvB: false
     top_reconstruction: slow
     fill_histograms: true
-    make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_v2/
+    make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb/
 
 convert_hist_to_json:
   histos: 
     - "SvB_MA.ps_ttHbb"
     - "SvB_MA.ps"
-combine_outdir: "datacards/ttHbb_v2_lepton_veto/"
+combine_outdir: "datacards/ttHbb_lepton_veto/"
 make_combine_inputs:
   stat_only: ""
   bkgsyst: "coffea4bees/stats_analysis/files/HIG-24-010/hh/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_hh_rebin1.pkl"

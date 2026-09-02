@@ -89,10 +89,10 @@ merging_files_ttHbb_coffea4bees:
     - analysis_data_ttHbb_coffea4bees
     - analysis_MC_ttHbb_coffea4bees
   script:
-    - pixi run snakemake output/ttHbb_v2/histAll_ttHbb_v2.coffea -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/analysis_ttHbb.yml --config test=true --jobs 4
+    - pixi run snakemake output/ttHbb/histAll_ttHbb.coffea -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/analysis_ttHbb.yml --config test=true --jobs 4
   artifacts:
     paths:
-      - barista_framework/output/ttHbb_v2/histAll_ttHbb_v2.coffea
+      - barista_framework/output/ttHbb/histAll_ttHbb.coffea
 
 merging_files_Run3_coffea4bees:
   stage: tools
