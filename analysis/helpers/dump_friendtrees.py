@@ -325,27 +325,20 @@ def dump_SvB(
     *selections: ak.Array,
     dump_naming: str = _NAMING,
 ):
-    data = ak.zip({
-        'pmj': events[name].pmj,
-        'ptt': events[name].ptt,
-        "pzz": events[name].pzz,
-        "pzh": events[name].pzh,
-        "phh": events[name].phh,
-        "q_1234": events[name].q_1234,
-        "q_1324": events[name].q_1324,
-        "q_1423": events[name].q_1423,
-        "ps": events[name].ps,
-        "passMinPs": events[name].passMinPs,
-        "zz": events[name].zz,
-        "zh": events[name].zh,
-        "hh": events[name].hh,
-        "ps_zz": events[name].ps_zz,
-        "ps_zh": events[name].ps_zh,
-        "ps_hh": events[name].ps_hh,
-        # "largest": events[name].largest,
-        # "weight": events.weight,
-        "tt_vs_mj": events[name].tt_vs_mj
-        })
+    ev_name = events[name]
+    fields = ev_name.fields
+    data_dict = {}
+    for f in [
+        'pmj', 'ptt', 'pzz', 'pzh', 'phh', 'pttHbb',
+        'q_1234', 'q_1324', 'q_1423',
+        'ps', 'passMinPs', 'zz', 'zh', 'hh',
+        'ps_zz', 'ps_zh', 'ps_hh', 'ps_ttHbb',
+        'tt_vs_mj'
+    ]:
+        if f in fields:
+            data_dict[f] = getattr(ev_name, f)
+
+    data = ak.zip(data_dict)
     selection = _build_cutflow(*selections)
     padded = akext.pad.selected()
     data = padded(data, selection)

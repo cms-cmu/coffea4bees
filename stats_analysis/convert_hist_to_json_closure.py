@@ -116,24 +116,24 @@ if __name__ == '__main__':
             try:
                 for h in coffea_hists_list[ih]:
                     for proc in ['data', 'data_3b_for_mixed', 'data_3b']:
-                        if proc in h.axes[0]:
-                            for iy in h.axes[1]:
-                                sel = {'process': proc, 'year': iy, 'tag': 0, 'region': 0}
+                        if proc in h.axes['process']:
+                            for iy in h.axes['year']:
+                                sel = {'process': proc, 'year': iy, 'tag': 'threeTag', 'region': 'SR'}
                                 for ax in h.axes:
                                     if ax.name.startswith(('pass', 'fail')) and ax.name not in sel:
                                         sel[ax.name] = sum
                                 bkg_sr_sum += float(np.sum(h[sel].values()))
                             break
-                    if not args.pure_qcd and 'TTbar4b_from_d3' in h.axes[0]:
-                        for iy in h.axes[1]:
-                            sel = {'process': 'TTbar4b_from_d3', 'year': iy, 'tag': 0, 'region': 0}
+                    if not args.pure_qcd and 'TTbar4b_from_d3' in h.axes['process']:
+                        for iy in h.axes['year']:
+                            sel = {'process': 'TTbar4b_from_d3', 'year': iy, 'tag': 'threeTag', 'region': 'SR'}
                             for ax in h.axes:
                                 if ax.name.startswith(('pass', 'fail')) and ax.name not in sel:
                                     sel[ax.name] = sum
                             bkg_sr_sum += float(np.sum(h[sel].values()))
-                    if 'mix_v0' in h.axes[0]:
-                        for iy in h.axes[1]:
-                            sel = {'process': 'mix_v0', 'year': iy, 'tag': 1, 'region': 0}
+                    if 'mix_v0' in h.axes['process']:
+                        for iy in h.axes['year']:
+                            sel = {'process': 'mix_v0', 'year': iy, 'tag': 'fourTag', 'region': 'SR'}
                             for ax in h.axes:
                                 if ax.name.startswith(('pass', 'fail')) and ax.name not in sel:
                                     sel[ax.name] = sum
@@ -145,7 +145,7 @@ if __name__ == '__main__':
                 logging.warning(f"Failed to auto-calculate scale_mixed for {ih}: {e}")
 
         for h in coffea_hists_list[ih]:
-            for iprocess in h.axes[0]:
+            for iprocess in h.axes['process']:
                 if iprocess not in save_dict:
                     continue
                 if iprocess in json_dict[ih]:
@@ -153,15 +153,14 @@ if __name__ == '__main__':
 
                 json_dict[ih][iprocess] = {}
 
-                for iy in h.axes[1]:
+                for iy in h.axes['year']:
                     json_dict[ih][iprocess][iy] = {}
 
-                    for itag in range(len(h.axes[2])):
-                        json_dict[ih][iprocess][iy][codes['tag'][itag]] = {}
+                    for itag in h.axes['tag']:
+                        json_dict[ih][iprocess][iy][itag] = {}
 
-                        for iregion in range(len(h.axes[3])):
-
-                            tag_region_pair = (codes['tag'][itag], codes['region'][iregion])
+                        for iregion in h.axes['region']:
+                            tag_region_pair = (itag, iregion)
 
                             if tag_region_pair not in save_dict[iprocess]:
                                 if args.debug:
@@ -186,10 +185,10 @@ if __name__ == '__main__':
                                 h_data['underflow_variance'] *= (eff_scale_mixed ** 2)
                                 h_data['overflow_value'] *= eff_scale_mixed
                                 h_data['overflow_variance'] *= (eff_scale_mixed ** 2)
-                            json_dict[ih][iprocess][iy][codes['tag'][itag]][codes['region'][iregion]] = h_data
+                            json_dict[ih][iprocess][iy][itag][iregion] = h_data
 
     if args.output is None:
-        output = args.input_file.replace(".coffea",".json")
+        output = input_files[0].replace(".coffea",".json")
     else:
         output = args.output
 

@@ -183,7 +183,7 @@ local_test.py
 */*/*/*/#*
 bootstrap.sh
 proxy/
-analysis/hists/
+output/
 runCITests.sh
 .bashrc
 *output*/

@@ -33,6 +33,7 @@ class analysis(processor.ProcessorABC):
         use_vectorized: bool = False,
         tagger: str = "DeepJet",
         object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
+        **kwargs,
     ):
 
         logging.debug("\nInitialize Analysis Processor")
