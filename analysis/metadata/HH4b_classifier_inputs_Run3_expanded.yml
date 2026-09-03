@@ -3,7 +3,7 @@ runner:
   # Expanded canJet feature set makes each event heavier; 5GB/100k OOM'd
   # (KilledWorker on TTToSemiLeptonic). Bump memory + halve chunksize.
   worker_memory: 8GB
-  # friend_base: hists/local/
+  # friend_base: output/local/
   chunksize: 50000
 
 config:
@@ -21,5 +21,5 @@ config:
   # Classifier-agnostic: usable for SvB, FvT, and MvD training alike.
   make_classifier_input: root://cmseos.fnal.gov//store/user/jda102/XX4b/Run3ClassiferInputs_expanded
   #make_friend_FvT_weight: root://cmseos.fnal.gov//store/user/jda102/XX4b/Run3ClassiferInputs_expanded
-  #make_classifier_input: hists/local/   ### local
-  #make_friend_FvT_weight: hists/local/   ### local
+  #make_classifier_input: output/local/   ### local
+  #make_friend_FvT_weight: output/local/   ### local

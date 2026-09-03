@@ -180,22 +180,12 @@ def filling_nominal_histograms(
             # final-fit discriminant). The extra SvB_mixedMvD study classifiers
             # get the coarse hists only — drop the 5 240-bin _fine hists (large
             # storage, not needed for classifier comparison).
-            is_ttHbb = "ps_ttHbb" in selev[name].fields
-            if is_ttHbb:
-                fine_skip = [] if name in ("SvB", "SvB_MA") else [
-                    "ps_ttHbb_fine", "pttHbb_hh_fine", "pttHbb_fine"
-                ]
-                fill += ttHbbSvBHists((name, f"{name} Classifier"), name, skip=fine_skip)
-            else:
-                fine_skip = [] if name in ("SvB", "SvB_MA") else [
-                    "ps_zz_fine", "ps_zh_fine", "ps_hh_fine", "phh_hh_fine", "phh_fine"]
-                fill += SvBHists((name, f"{name} Classifier"), name, skip=fine_skip)
+            fine_skip = [] if name in ("SvB", "SvB_MA") else [
+                "ps_zz_fine", "ps_zh_fine", "ps_hh_fine", "phh_hh_fine", "phh_fine"]
+            fill += SvBHists((name, f"{name} Classifier"), name, skip=fine_skip)
         if has_SvB_MA:
             #fill += SvBHists(("SvB_noFvT", "SvB Classifier"), "SvB", weight="weight_noFvT")
-            if "ps_ttHbb" in selev["SvB_MA"].fields:
-                fill += ttHbbSvBHists(("SvB_MA_noFvT", "SvB MA Classifier"), "SvB_MA", weight=noFvT_weight)
-            else:
-                fill += SvBHists(("SvB_MA_noFvT", "SvB MA Classifier"), "SvB_MA", weight=noFvT_weight)
+            fill += SvBHists(("SvB_MA_noFvT", "SvB MA Classifier"), "SvB_MA", weight=noFvT_weight)
             #fill += SvBHists(("SvB_MA_noFvT_noJCM", "SvB MA Classifier"), "SvB_MA", weight="weight_noJCM_noFvT")
         if "SvB_FeynNet" in selev.fields:
             fill += FeynNetSvBHists(("SvB_FeynNet", "FeynNet SvB Classifier"), "SvB_FeynNet")
@@ -206,15 +196,9 @@ def filling_nominal_histograms(
         if isDataForMixed:
             for _FvT_name in event_metadata["FvT_names"]:
                 if has_SvB:
-                    if "ps_ttHbb" in selev["SvB"].fields:
-                        fill += ttHbbSvBHists((f"SvB_{_FvT_name}", "SvB Classifier"), "SvB", weight=f"weight_{_FvT_name}")
-                    else:
-                        fill += SvBHists((f"SvB_{_FvT_name}", "SvB Classifier"), "SvB", weight=f"weight_{_FvT_name}")
+                    fill += SvBHists((f"SvB_{_FvT_name}", "SvB Classifier"), "SvB", weight=f"weight_{_FvT_name}")
                 if has_SvB_MA:
-                    if "ps_ttHbb" in selev["SvB_MA"].fields:
-                        fill += ttHbbSvBHists((f"SvB_MA_{_FvT_name}", "SvB MA Classifier"), "SvB_MA", weight=f"weight_{_FvT_name}")
-                    else:
-                        fill += SvBHists((f"SvB_MA_{_FvT_name}", "SvB MA Classifier"), "SvB_MA", weight=f"weight_{_FvT_name}")
+                    fill += SvBHists((f"SvB_MA_{_FvT_name}", "SvB MA Classifier"), "SvB_MA", weight=f"weight_{_FvT_name}")
             for _FvT_name in event_metadata["FvT_names"]:
                 fill += hist.add(f"m4j_{_FvT_name}", (120, 0, 1200, ("m4j", "m4j [GeV]")), weight=f"weight_{_FvT_name}")
                 fill += hist.add(f"m4j_hh_{_FvT_name}", (120, 0, 1200, ("m4j_HHSR", "m4j HHSR [GeV]")), weight=f"weight_{_FvT_name}")
@@ -516,17 +500,10 @@ def filling_syst_histograms(selev, weights, analysis_selections,
     ]
     for name in svb_fields:
         # Coarse-only for the extra SvB_mixedMvD study classifiers (drop the 5
-        is_ttHbb = "ps_ttHbb" in selev[name].fields
-        if is_ttHbb:
-            _skip = ["ps", "ptt"] if name in ("SvB", "SvB_MA") else [
-                "ps", "ptt", "ps_ttHbb_fine", "pttHbb_hh_fine", "pttHbb_fine"
-            ]
-            fill_SvB += ttHbbSvBHists((name, f"{name} Classifier"), name, skip=_skip)
-        else:
-            _skip = ["ps", "ptt"] if name in ("SvB", "SvB_MA") else [
-                "ps", "ptt", "ps_zz_fine", "ps_zh_fine", "ps_hh_fine", "phh_hh_fine", "phh_fine"
-            ]
-            fill_SvB += SvBHists((name, f"{name} Classifier"), name, skip=_skip)
+        _skip = ["ps", "ptt"] if name in ("SvB", "SvB_MA") else [
+            "ps", "ptt", "ps_zz_fine", "ps_zh_fine", "ps_hh_fine", "phh_hh_fine", "phh_fine"
+        ]
+        fill_SvB += SvBHists((name, f"{name} Classifier"), name, skip=_skip)
 
     fill_SvB(selev, hist_SvB, variation=shift_name, weight="weight")
 
@@ -569,7 +546,7 @@ def filling_ttHbb_histograms(
         process=[processName],
         year=[year],
         tag=tag_list,
-        region=['inclusive', 'SR', "SB"],
+        region=['SR', "SB"],
         **dict((s, ...) for s in histCuts)
     )
 
@@ -583,6 +560,8 @@ def filling_ttHbb_histograms(
     skip_jet_list = ['energy', 'deepjet_c']
     fill += Jet.plot(("selJets", "Selected Jets"), "selJet", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
     fill += Jet.plot(("tagJets", "Tag Jets"), "tagJet", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
+    fill += Jet.plot(("selJets_noJCM", "Selected Jets"), "selJet", weight="weight_noJCM_noFvT", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
+    fill += Jet.plot(("tagJets_noJCM", "Tag Jets"), "tagJet", weight="weight_noJCM_noFvT", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
     fill += Jet.plot(("canJets", "Higgs Candidate Jets"), "canJet", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
     fill += Jet.plot(("othJets", "Other Jets"), "notCanJet_coffea", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
 
@@ -593,6 +572,19 @@ def filling_ttHbb_histograms(
 
     fill += QuadJetHistsSelected(("quadJet_selected", "Selected Quad Jet"), "quadJet_selected")
     fill += QuadJetHistsMinDr(("quadJet_min_dr", "Min dR Quad Jet"), "quadJet_min_dr")
+
+    # Make FvT classifier hists
+    if apply_FvT and ("FvT" in selev.fields):
+        FvT_skip = []
+        if "pt" not in selev.FvT.fields:
+            FvT_skip = ["pt", "pm3", "pm4"]
+
+        fill += FvTHists(("FvT", "FvT Classifier"), "FvT", skip=FvT_skip)
+        fill += hist.add("quadJet_selected.FvT_score", (100, 0, 1, ("quadJet_selected.FvT_q_score", "Selected Quad Jet Diboson FvT q score")))
+        fill += hist.add("quadJet_min_dr.FvT_score", (100, 0, 1, ("quadJet_min_dr.FvT_q_score", "Min dR Quad Jet Diboson FvT q score")))
+
+        if JCM:
+            fill += hist.add("FvT_noFvT", (100, 0, 5, ("FvT.FvT", "FvT reweight")), weight="weight_noFvT")
 
     svb_fields = [f for f in selev.fields if f.startswith("SvB") and not f.startswith("SvB_FeynNet")]
     for name in svb_fields:

@@ -1,0 +1,45 @@
+canJet:
+  isSelJet_pt_min:  40
+  isSelJet_eta_max: 2.4
+
+vbf:
+  mjj_min:    400
+  detajj_min: 3.5
+
+dijet:
+  mass_min: [52, 50]      # [lead_min, subl_min] GeV
+  mass_max: [180, 173]    # [lead_max, subl_max] GeV
+
+mdr:
+  min_m4j_scale: [360, 235]
+  min_dr_offset: [-0.5, 0.0]
+  max_m4j_scale: [650, 650]
+  max_dr_offset: [0.5, 0.7]
+  max_dr:        [1.5, 1.5]
+
+sr_run2:
+  mZ:      91.0
+  mH:      125.0
+  st_bias: [1.02, 0.98]
+  max_xZZ: 2.6
+  max_xZH: 1.9
+  max_xHH: 1.9
+
+sr_run3:
+  diagonalXoYo: 1.04
+  delta_dhh_max: 30
+  cLead:     125
+  cSubl:     120
+  SR_radius: 30
+  CR_radius: 55
+
+svb:
+  passSvB_min: 0.80
+  failSvB_max: 0.05
+
+sr_ttHbb:
+  mode: optimal_balance
+  h_min: 95.0
+  h_max: 180.0
+  m_min: 25.0
+  arm_max: 400.0

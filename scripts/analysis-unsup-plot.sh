@@ -19,7 +19,8 @@ run_command python coffea4bees/plots/makePlots_unsup.py \
     $INPUT_DIR/test_unsup.coffea \
     --doTest   \
     -o $OUTPUT_DIR/ \
-    -m coffea4bees/plots/metadata/plotsAll_unsup.yml 
+    -m coffea4bees/plots/metadata/plotsAll_unsup.yml \
+    -f pdf,png 
 
 display_section_header "Checking if pdf files exist"
 ls $OUTPUT_DIR/RunII/failSvB_vs_passSvB/region_SR/mix_v0/v4j_mass.pdf

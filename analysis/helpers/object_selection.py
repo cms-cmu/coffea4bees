@@ -124,6 +124,90 @@ def muon_selection(muon: ak.Array, isRun3: bool = False, sel_cfg: dict = None) -
     return muon[muon.selected]
 
 
+def tight_muon_selection(muon: ak.Array, isRun3: bool = False, sel_cfg: dict = None) -> ak.Array:
+    """
+    Selects tight muons based on kinematic, isolation, and tightId criteria.
+
+    Parameters:
+    -----------
+    muon : ak.Array
+        The muon collection containing fields such as `pt`, `eta`, `pfRelIso04_all`, `tightId`, `dz`, and `dxy`.
+    isRun3 : bool, optional
+        Whether to apply Run 3 selection criteria. Defaults to False.
+    sel_cfg : dict, optional
+        Dictionary of threshold overrides loaded from ``object_selection_thresholds.yml``.
+
+    Returns:
+    --------
+    ak.Array
+        A collection of tight muons.
+    """
+    cfg = (sel_cfg or {}).get('tight_muon', (sel_cfg or {}).get('muon', {}))
+    pt_min    = cfg.get('tight_pt_min', cfg.get('pt_min', 10))
+    eta_max   = cfg.get('tight_eta_max', 2.4)
+    iso_max   = cfg.get('tight_iso_max', cfg.get('iso_max', 0.15))
+    ip        = cfg.get('ip_cuts', {})
+    barrel_eta = ip.get('barrel_eta_boundary', 1.479)
+    barrel_dz  = ip.get('barrel_dz_max', 0.1)
+    barrel_dxy = ip.get('barrel_dxy_max', 0.05)
+    endcap_dz  = ip.get('endcap_dz_max', 0.2)
+    endcap_dxy = ip.get('endcap_dxy_max', 0.1)
+
+    muon_kin    = (muon.pt > pt_min) & (abs(muon.eta) < eta_max)
+    muon_iso_ID = (muon.pfRelIso04_all < iso_max) & muon.tightId
+
+    if isRun3:
+        muon_IP = (
+            ((abs(muon.eta) < barrel_eta) & (abs(muon.dz) < barrel_dz) & (abs(muon.dxy) < barrel_dxy)) |
+            ((abs(muon.eta) >= barrel_eta) & (abs(muon.dz) < endcap_dz) & (abs(muon.dxy) < endcap_dxy))
+        )
+    else:
+        muon_IP = True
+
+    muon_tight = muon_kin & muon_iso_ID & muon_IP
+    return muon[muon_tight]
+
+
+def tight_electron_selection(electron: ak.Array, isRun3: bool = False, sel_cfg: dict = None) -> ak.Array:
+    """
+    Selects tight electrons based on kinematic and cutBased ID criteria (cutBased >= 4).
+
+    Parameters:
+    -----------
+    electron : ak.Array
+        The electron collection containing fields such as `pt`, `eta`, `cutBased`, `dz`, and `dxy`.
+    isRun3 : bool, optional
+        Whether to apply Run 3 selection criteria. Defaults to False.
+    sel_cfg : dict, optional
+        Dictionary of threshold overrides loaded from ``object_selection_thresholds.yml``.
+
+    Returns:
+    --------
+    ak.Array
+        A collection of tight electrons.
+    """
+    cfg = (sel_cfg or {}).get('tight_electron', (sel_cfg or {}).get('electron', {}))
+    pt_min  = cfg.get('tight_pt_min', cfg.get('pt_min', 15))
+    eta_max = cfg.get('tight_eta_max', cfg.get('eta_max', 2.5))
+    ip      = cfg.get('ip_cuts', {})
+    barrel_eta = ip.get('barrel_eta_boundary', 1.479)
+    barrel_dz  = ip.get('barrel_dz_max', 0.1)
+    barrel_dxy = ip.get('barrel_dxy_max', 0.05)
+    endcap_dz  = ip.get('endcap_dz_max', 0.2)
+    endcap_dxy = ip.get('endcap_dxy_max', 0.1)
+
+    electron_kin = (electron.pt > pt_min) & (abs(electron.eta) < eta_max)
+    electron_ID  = electron.cutBased >= 4 if 'cutBased' in electron.fields else np.full(len(electron), False)
+
+    electron_IP = (
+        ((abs(electron.eta) < barrel_eta) & (abs(electron.dz) < barrel_dz) & (abs(electron.dxy) < barrel_dxy)) |
+        ((abs(electron.eta) >= barrel_eta) & (abs(electron.dz) < endcap_dz) & (abs(electron.dxy) < endcap_dxy))
+    ) if isRun3 else True
+
+    electron_tight = electron_kin & electron_ID & electron_IP
+    return electron[electron_tight]
+
+
 def electron_selection(electron: ak.Array, isRun3: bool = False, sel_cfg: dict = None) -> ak.Array:
     """
     Selects electrons based on kinematic, isolation, and identification criteria.
@@ -188,16 +272,24 @@ def lepton_selection(event: ak.Array, isRun3: bool = False, sel_cfg: dict = None
         The input event data with additional fields:
         - `selMuon`: Selected muons.
         - `selElec`: Selected electrons (if present).
+        - `tightMuon`: Selected tight muons.
+        - `tightElec`: Selected tight electrons (if present).
+        - `passLeptonVeto`: True if event contains 0 tight muons and 0 tight electrons.
     """
     # Select muons
     event['selMuon'] = muon_selection(event.Muon, isRun3, sel_cfg)
+    event['tightMuon'] = tight_muon_selection(event.Muon, isRun3, sel_cfg)
 
     # Select electrons if present
     if 'Electron' in event.fields:
         event['selElec'] = electron_selection(event.Electron, isRun3, sel_cfg)
+        event['tightElec'] = tight_electron_selection(event.Electron, isRun3, sel_cfg)
         event['selLepton'] = ak.with_name(ak.concatenate([event.selElec, event.selMuon], axis=1), name="PtEtaPhiMCandidate")
+        event['passLeptonVeto'] = (ak.num(event.tightMuon) == 0) & (ak.num(event.tightElec) == 0)
     else:
+        event['tightElec'] = ak.Array([[]] * len(event))
         event['selLepton'] = event.selMuon
+        event['passLeptonVeto'] = (ak.num(event.tightMuon) == 0)
 
     return event
 

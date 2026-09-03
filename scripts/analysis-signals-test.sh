@@ -30,5 +30,5 @@ bash coffea4bees/scripts/run-analysis-processor.sh \
     --year "UL17 UL18 UL16_preVFP UL16_postVFP" \
     --output-filename "test_signal.coffea" \
     --output-subdir "$JOB" \
-    --config $JOB_CONFIG \
+    --config $JOB_CONFIG
     # --additional-flags "--debug"

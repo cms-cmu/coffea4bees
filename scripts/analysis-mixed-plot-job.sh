@@ -10,11 +10,11 @@ if [ ! -d $OUTPUT_DIR ]; then
 fi
 
 display_section_header "Running test processor"
-python coffea4bees/plots/makePlotsMixed.py coffea4bees/analysis/hists/testMixedBkg_master.coffea coffea4bees/analysis/hists/testMixedData_master.coffea --combine_input_files -m coffea4bees/plots/metadata/plotsMixed.yml   -o ${OUTPUT_DIR}
+python coffea4bees/plots/makePlotsMixed.py coffea4bees/output/testMixedBkg_master.coffea coffea4bees/output/testMixedData_master.coffea --combine_input_files -m coffea4bees/plots/metadata/plotsMixed.yml   -o ${OUTPUT_DIR}
 display_section_header "Checking if pdf files exist"
 ls ${OUTPUT_DIR}/RunII/passPreSel/fourTag/SR/
 
-#python coffea4bees/plots/makePlots.py coffea4bees/analysis/hists/test.coffea    -o ${OUTPUT_DIR} -m coffea4bees/plots/metadata/plotsAll.yml
+#python coffea4bees/plots/makePlots.py coffea4bees/output/test.coffea    -o ${OUTPUT_DIR} -m coffea4bees/plots/metadata/plotsAll.yml
 #ls ${OUTPUT_DIR}/RunII/passPreSel/fourTag/SR/SvB_MA_ps_zh.pdf
 #ls ${OUTPUT_DIR}/RunII/passPreSel/fourTag/SR/SvB_MA_ps_hh.pdf
 #ls ${OUTPUT_DIR}/RunII/passPreSel/fourTag/SR_vs_SB/data/SvB_MA_ps.pdf

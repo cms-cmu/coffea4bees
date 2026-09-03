@@ -18,15 +18,17 @@ def parse_friends(args: dict[str, str | FriendTemplate]) -> dict[str, Friend]:
 
     for name, path in args.items():
         if isinstance(path, str):
-            friends[name] = Friend.from_json(parse.mapping(path, "file"))
+            mapping = parse.mapping(path, "file")
+            if mapping is not None:
+                friends[name] = Friend.from_json(mapping)
         else:
             keys = path["keys"]
             if isinstance(keys, str):
                 keys = eval(keys)
             for key in keys:
-                friends[name.format(**key)] = Friend.from_json(
-                    parse.mapping(path["path"].format(**key), "file")
-                )
+                mapping = parse.mapping(path["path"].format(**key), "file")
+                if mapping is not None:
+                    friends[name.format(**key)] = Friend.from_json(mapping)
 
     return friends
 
@@ -55,10 +57,13 @@ def rename_FvT_friend(chunk: Chunk, friend: Friend):
         "p_m3": "pm3",
         "p_ttbar": "pt",
     }
-    FvT = friend.arrays(
-        chunk,
-        reader_options={"branch_filter": set().union(kept, rename).intersection},
-    )
+    try:
+        FvT = friend.arrays(
+            chunk,
+            reader_options={"branch_filter": set().union(kept, rename).intersection},
+        )
+    except Exception:
+        return None
     if FvT is None:
         return None
     return _rename(FvT, kept, rename)
@@ -66,11 +71,18 @@ def rename_FvT_friend(chunk: Chunk, friend: Friend):
 
 def read_MvD_friend(chunk: Chunk, friend: Friend):
     wanted = {"MvD", "q_1234", "q_1324", "q_1423", "p_mix4", "p_d4", "p_t4", "p_4b"}
-    return friend.arrays(chunk, reader_options={"branch_filter": wanted.intersection})
+    try:
+        MvD = friend.arrays(
+            chunk,
+            reader_options={"branch_filter": wanted.intersection},
+        )
+    except Exception:
+        return None
+    return MvD
 
 
 def rename_SvB_friend(chunk: Chunk, friend: Friend):
-    kept = ["q_1234", "q_1324", "q_1423"]
+    kept = ["q_1234", "q_1324", "q_1423", "p_ttHbb", "pttHbb", "p_bkg"]
     renames = {
         "p_sig": "ps",
         "p_ttbar": "ptt",
@@ -78,11 +90,15 @@ def rename_SvB_friend(chunk: Chunk, friend: Friend):
         "p_ZH": "pzh",
         "p_ggF": "phh",
         "p_multijet": "pmj",
+        "p_ttHbb": "p_ttHbb",
     }
-    SvB = friend.arrays(
-        chunk,
-        reader_options={"branch_filter": set().union(kept, renames).intersection},
-    )
+    try:
+        SvB = friend.arrays(
+            chunk,
+            reader_options={"branch_filter": set().union(kept, renames).intersection},
+        )
+    except Exception:
+        return None
     if SvB is None:
         return None
     # Binary ggF-vs-bkg schema (no ZZ/ZH channels): keep the raw branch names

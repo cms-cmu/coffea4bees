@@ -283,6 +283,16 @@ class TestParseCliCmd(unittest.TestCase):
         r = _parse_cli_cmd('plot("selJets.pt", region=["SR","SB"])')
         self.assertEqual(r["kwargs"]["region"], ["SR", "SB"])
 
+    def test_plot_blind_bool(self):
+        r = _parse_cli_cmd('plot("SvB_MA.ps", region="sum", yscale="log", blind=True)')
+        self.assertTrue(r["kwargs"]["blind"])
+        self.assertTrue(r["req"]["blind"])
+
+    def test_plot_blind_float(self):
+        r = _parse_cli_cmd('plot("SvB_MA.ps", region="sum", yscale="log", blind=0.8)')
+        self.assertEqual(r["kwargs"]["blind"], 0.8)
+        self.assertEqual(r["req"]["blind"], 0.8)
+
     def test_plot_req_var(self):
         r = _parse_cli_cmd('plot("selJets.pt")')
         self.assertEqual(r["req"]["var"], "selJets.pt")

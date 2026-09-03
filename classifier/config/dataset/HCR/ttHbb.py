@@ -109,3 +109,16 @@ class Signal(_picoAOD.MC, _Train):
         return df
 
 
+class _PicoAOD_ttHbb(_picoAOD.MC):
+    pico_filelists = (_picoAOD._ttHbb,)
+
+
+class Eval(
+    CommonEval,
+    _picoAOD.Background,
+    _PicoAOD_ttHbb,
+): ...
+
+
+
+

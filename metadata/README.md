@@ -12,20 +12,21 @@ This directory houses the unified dataset configurations, trigger definitions, l
       Run3: <run3_cross_section>
     ```
     If a dataset only exists in a single Run (such as Run-specific signals), the other Run defaults to a placeholder `1`.
-  - **`datasets/archive/`**: Contains legacy/archived dataset definitions (e.g. older versions such as `Run2_2024_v1`, `Run2_2024_v2`, and `Run3_archive`).
+  - **`datasets/archive/HIG-24-010/`**: Archived pre-2024 dataset definitions used for HIG-24-010 analysis.
+  - **`datasets/archive/Run2_2024_v2/`**: Preserved reference copy of the Run2 2024_v2 datasets.
 - **`friends/`**: Centralized repository for friend tree configs and lookup maps.
-  - Houses active `friends_HH4b.yml`, `friends_empty.yml`, and `friends_HH4b_none.yml`.
-  - Holds active trigger weights and classifier lookup JSON files (`trigweights_2024_v1p2.json`, `data_SvBfriend.json`, etc.).
+  - Houses active `friends_HH4b.yml`, `friends_ttHbb.yml`, `friends_empty.yml`, and `friends_HH4b_none.yml`.
+  - Holds active trigger weights and classifier lookup JSON files (`trigweights_2024_v2.json`, `data_SvBfriend.json`, etc.).
   - **`friends/archive/`**: Contains legacy/unused friend tree JSON lookup files.
 - **`triggers_HH4b.yml`** & **`boosted_triggers_HH4b.yml`**: Trigger path definitions per year/era.
 - **`luminosities_HH4b.yml`**: Integrated luminosity values per year/era.
 
 ---
 
-## Historical Context & Versions (Archived in `datasets/archive/`)
+## Dataset Versions & Current Canonical Metadata
 
-### Run 2 (Archived in `datasets/archive/Run2_2024_v*`)
-- **`2024_v1p2`**: The version used in `HIG-24-011`. This is the reference version for Run 2 analysis.
-- **`2024_v1p1`**: The first picoAOD production from the Python framework, containing events with un-filtered huge genweights.
-- **`2024_v1`**: A hybrid dataset combination between the C++ framework and the first Python framework picoAODs.
-- **`2024_v2`**: A test version where all picoAODs were generated using the new framework but was not utilized for any publication.
+- **Run 2 (Canonical)**: Promoted `2024_v2` picoAODs with unified schema, updated trigger weights, and JCM configurations.
+- **Run 3 (Canonical)**: Consolidated into 500k-event chunks under `/store/user/algomez/XX4b/Run3_nanov12/`.
+- **Archived Versions**:
+  - `HIG-24-010`: Preserved in `datasets/archive/HIG-24-010/`.
+  - `Run2_2024_v2`: Preserved in `datasets/archive/Run2_2024_v2/` for backwards compatibility.

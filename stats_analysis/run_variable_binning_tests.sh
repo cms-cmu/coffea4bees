@@ -14,8 +14,8 @@ rm -rf ${limits_folder}
 
 tmp=local_outputs/analysis
 tmp_data3b=${tmp}/histMixedBkg_data_3b_for_mixed_kfold.root  ##--use_kfold
-# tmp_data3b=hists/tmp/histMixedBkg_data_3b_for_mixed_ZZinSB.root  ##--use_ZZinSB
-# tmp_data3b=hists/tmp/histMixedBkg_data_3b_for_mixed_ZZandZHinSB.root  ##--use_ZZandZHinSB
+# tmp_data3b=output/tmp/histMixedBkg_data_3b_for_mixed_ZZinSB.root  ##--use_ZZinSB
+# tmp_data3b=output/tmp/histMixedBkg_data_3b_for_mixed_ZZandZHinSB.root  ##--use_ZZandZHinSB
 echo "Running TwoStageClosure"
 python3 stats_analysis/runTwoStageClosure.py --var ${var//./_} \
         --outputPath ${bkg_syst_folder} \
@@ -29,8 +29,8 @@ python3 stats_analysis/runTwoStageClosure.py --var ${var//./_} \
 
 echo "Making combine inputs"
 python3 stats_analysis/make_combine_inputs.py --var ${var} \
-        -f hists/test_coffea4bees/histAll.json \
-        --syst_file hists/test_coffea4bees/histAll_signals_cHHHX.json  \
+        -f output/test_coffea4bees/histAll.json \
+        --syst_file output/test_coffea4bees/histAll_signals_cHHHX.json  \
         --bkg_syst_file ${bkg_syst_folder}/3bDvTMix4bDvT/SvB_MA/${rebin_folder}/SR/hh/hists_closure_3bDvTMix4bDvT_${var//./_}_${rebin_folder}.pkl \
         --output_dir ${limits_folder} --rebin ${rebin} \
         --metadata stats_analysis/metadata/HH4b.yml \

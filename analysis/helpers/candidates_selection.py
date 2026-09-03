@@ -3,7 +3,7 @@ import awkward as ak
 import logging
 import yaml
 from src.math_tools.random import Squares
-from coffea4bees.analysis.helpers.SvB_helpers import compute_SvB, compute_SvB_ttHbb, compute_SvB_FeynNet
+from coffea4bees.analysis.helpers.SvB_helpers import compute_SvB, compute_SvB_FeynNet
 from coffea4bees.analysis.helpers.FvT_helpers import compute_FvT
 from coffea.nanoevents.methods import vector
 from coffea.analysis_tools import Weights
@@ -378,21 +378,17 @@ def _apply_ml_scores(
         ], axis=1)
 
     if run_SvB:
-        if (classifier_SvB is not None) or (classifier_SvB_MA is not None):
+        need_svb = (classifier_SvB is not None and "SvB" not in selev.fields)
+        need_svb_ma = (classifier_SvB_MA is not None and "SvB_MA" not in selev.fields)
+        if need_svb or need_svb_ma:
+            clf_svb = classifier_SvB if need_svb else None
+            clf_svb_ma = classifier_SvB_MA if need_svb_ma else None
             tmp_mask = (
                 (selev.fourTag & quadJet[quadJet.selected][:, 0].SR)
                 if run_systematics
                 else np.full(len(selev), True)
             )
-            is_ttHbb = False
-            for clf in [classifier_SvB, classifier_SvB_MA]:
-                if clf is not None and hasattr(clf, "classes") and "ttHbb" in clf.classes:
-                    is_ttHbb = True
-                    break
-            if is_ttHbb:
-                compute_SvB_ttHbb(selev, tmp_mask, SvB=classifier_SvB, SvB_MA=classifier_SvB_MA, doCheck=False)
-            else:
-                compute_SvB(selev, tmp_mask, SvB=classifier_SvB, SvB_MA=classifier_SvB_MA, doCheck=False)
+            compute_SvB(selev, tmp_mask, SvB=clf_svb, SvB_MA=clf_svb_ma, doCheck=False)
 
         if "SvB" in selev.fields:
             quadJet["SvB_q_score"] = np.concatenate([

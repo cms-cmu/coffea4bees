@@ -1,0 +1,59 @@
+hists:
+  data:
+    process: data
+    tag: fourTag
+    label: "Data (4b)"
+    histtype: errorbar
+    edgecolor: k
+    fillcolor: k
+
+  mixeddata:
+    process: mix_v0
+    tag: fourTag
+    label: "Mixed data (v0)"
+    histtype: step
+    edgecolor: "#1E88E5"
+    fillcolor: "#1E88E5"
+    linewidth: 2
+
+  synthetic_data:
+    process: syn_v0
+    tag: fourTag
+    label: "Synthetic data (v0)"
+    histtype: step
+    edgecolor: "#D32F2F"
+    fillcolor: "#D32F2F"
+    linewidth: 2
+
+ratios:
+  dataToMixed:
+    numerator:
+      type: hists
+      key: data
+    denominator:
+      type: hists
+      key: mixeddata
+    uncertianty: nominal
+    color: "#1E88E5"
+    marker: "s"
+
+  dataToSynth:
+    numerator:
+      type: hists
+      key: data
+    denominator:
+      type: hists
+      key: synthetic_data
+    uncertianty: nominal
+    color: "#D32F2F"
+    marker: "o"
+
+doRatio: 1
+
+categories:
+  - "inclusive"
+  - "pass_nSelJets_gt6"
+
+regions:
+  - "SR"
+  - "SB"

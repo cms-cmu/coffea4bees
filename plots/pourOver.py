@@ -608,7 +608,7 @@ def _execute_text_cmd(func, args, kwargs, req=None):
 
                 kwargs_plot = {}
                 for k in ["rebin", "norm", "yscale", "xscale", "add_flow", "uniform_bins",
-                          "year", "year_str", "CMSText",
+                          "year", "year_str", "CMSText", "blind",
                           "xlabel", "ylabel", "rlabel",
                           "legend", "legend_loc", "ratio_legend_loc",
                           "do_title",
@@ -716,7 +716,7 @@ def _execute_plot(req):
 
     kwargs = {}
     for k in ["doRatio", "rebin", "norm", "yscale", "xscale", "add_flow", "uniform_bins",
-              "year", "year_str", "CMSText",
+              "year", "year_str", "CMSText", "blind",
               "xlabel", "ylabel", "rlabel",
               "legend", "legend_loc", "ratio_legend_loc",
               "do_title",

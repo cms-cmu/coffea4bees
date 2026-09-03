@@ -53,3 +53,11 @@ ratios:
     marker: "o"
 
 doRatio: 1
+
+categories:
+  - "inclusive"
+  - "pass_nSelJets_gt6"
+
+regions:
+  - "SR"
+  - "SB"

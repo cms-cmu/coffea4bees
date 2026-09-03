@@ -669,43 +669,29 @@ def create_plots(
         nJet_pred[0:4] = 0
 
     # Add dummy values to register the JCM process
+    hist_axes = cfg.hists[0]['hists'][selJets].axes
+    axis_names = [axis.name for axis in hist_axes]
+    logger.debug(f"Histogram axes names: {axis_names}")
+
     dummy_data = {
         'process': ['JCM'],
         'year': ['UL18'],
-        'tag': "lowpt_fourTag" if args.lowpt else "fourTag",
-        'region': "SB",
+        'tag': ["lowpt_fourTag" if args.lowpt else "fourTag"],
+        'region': ["SB"],
         'n': [0],
     }
 
-    # Check if we have the passPreSel and SvB variables and handle accordingly
+    for ax in hist_axes:
+        if ax.name not in dummy_data:
+            if isinstance(ax[0], (bool, np.bool_)):
+                dummy_data[ax.name] = [True if ax.name == "passPreSel" else False]
+            else:
+                dummy_data[ax.name] = [ax[0]]
+
     try:
-        hist_axes = cfg.hists[0]['hists'][selJets].axes
-        axis_names = [axis.name for axis in hist_axes]
-
-        logger.debug(f"Histogram axes names: {axis_names}")
-
-        has_passPreSel = 'passPreSel' in axis_names
-        has_passSvB = 'passSvB' in axis_names
-        has_failSvB = 'failSvB' in axis_names
-
-        if has_passPreSel:
-            dummy_data['passPreSel'] = [True]
-            logger.debug("passPreSel variable found in histogram")
-        if has_passSvB or has_failSvB:
-            dummy_data['passSvB'] = [False]
-            dummy_data['failSvB'] = [False]
-            logger.debug("SvB variables found in histogram")
-        else:
-            logger.debug("No SvB variables in histogram")
-
         cfg.hists[0]['hists'][selJets].fill(**dummy_data)
-
     except Exception as e:
-        logger.warning(f"Error analyzing histogram structure: {e}")
-        cfg.hists[0]['hists'][selJets].fill(**dummy_data)
-        has_passPreSel = False
-        has_passSvB = False
-        has_failSvB = False
+        logger.warning(f"Error filling dummy JCM data: {e}")
 
     # Overwrite with predicted values
     logger.debug("Setting predicted jet multiplicity values")
@@ -717,12 +703,12 @@ def create_plots(
             "tag": "lowpt_fourTag" if args.lowpt else "fourTag",
             "region": "SB",
         }
-        if has_passPreSel:
-            index_dict["passPreSel"] = True
-        if has_passSvB:
-            index_dict["passSvB"] = False
-        if has_failSvB:
-            index_dict["failSvB"] = False
+        for ax in hist_axes:
+            if ax.name not in index_dict and ax.name != "n":
+                if isinstance(ax[0], (bool, np.bool_)):
+                    index_dict[ax.name] = True if ax.name == "passPreSel" else False
+                else:
+                    index_dict[ax.name] = ax[0]
 
         for iBin in range(14):
             index_dict["n"] = iBin
@@ -787,8 +773,11 @@ def create_plots(
         plt.text(6 if args.lowpt else 10, 5.15, fit_text, fontsize=15, color='black',
                 horizontalalignment='left', verticalalignment='center')
 
-        fig.savefig(os.path.join(args.outputDir, "selJets_noJCM_n.pdf"))
-        logger.info(f"Saved jet multiplicity plot to {os.path.join(args.outputDir, 'selJets_noJCM_n.pdf')}")
+        fmts = [f.strip() for f in getattr(args, 'fmt', 'png').split(',') if f.strip()]
+        for ext in fmts:
+            plot_file = os.path.join(args.outputDir, f"selJets_noJCM_n.{ext}")
+            fig.savefig(plot_file)
+            logger.info(f"Saved jet multiplicity plot to {plot_file}")
     except Exception as e:
         logger.error(f"Failed to create jet multiplicity plot: {e}")
 
@@ -806,7 +795,7 @@ def create_plots(
         else:
             nTag_pred = JCM_model.nTagPred(bin_centers.astype(int) + 4, lowpt=False)["values"]
 
-        # Set values using the same approach
+        tag_axes = cfg.hists[0]['hists'][tagJets].axes
         try:
             index_dict = {
                 "process": "JCM",
@@ -814,17 +803,16 @@ def create_plots(
                 "tag": "lowpt_fourTag" if args.lowpt else "fourTag",
                 "region": "SB",
             }
-            if has_passPreSel:
-                index_dict["passPreSel"] = True
-            if has_passSvB:
-                index_dict["passSvB"] = False
-            if has_failSvB:
-                index_dict["failSvB"] = False
-
+            for ax in tag_axes:
+                if ax.name not in index_dict and ax.name != "n":
+                    if isinstance(ax[0], (bool, np.bool_)):
+                        index_dict[ax.name] = True if ax.name == "passPreSel" else False
+                    else:
+                        index_dict[ax.name] = ax[0]
 
             for iBin in range(15):
                 index_dict["n"] = iBin
-                cfg.hists[0]['hists'][tagJets][index_dict] = (nTag_pred[iBin], 0)
+                cfg.hists[0]['hists'][tagJets][tuple(index_dict.values())] = (nTag_pred[iBin], 0)
 
         except Exception as e:
             logger.warning(f"Error setting histogram values, trying alternative approach: {e}")
@@ -861,8 +849,10 @@ def create_plots(
             **plot_options
         )
 
-        fig.savefig(os.path.join(args.outputDir, "tagJets_noJCM_n.pdf"))
-        logger.info(f"Saved tagged jets plot to {os.path.join(args.outputDir, 'tagJets_noJCM_n.pdf')}")
+        for ext in fmts:
+            plot_file = os.path.join(args.outputDir, f"tagJets_noJCM_n.{ext}")
+            fig.savefig(plot_file)
+            logger.info(f"Saved tagged jets plot to {plot_file}")
 
     except Exception as e:
         logger.warning(f"Failed to create tagged jets plot: {e}")
@@ -910,6 +900,8 @@ def main():
     parser.add_argument('--jcm_config', default="coffea4bees/analysis/jcm_tools/metadata/nominal_jcm_config.yml")
     parser.add_argument('--zero_pseudotag', dest="zero_pseudotag", action="store_true",
                         help='Compute zero pseudotag probabilities and weights in output')
+    parser.add_argument('-f', '--format', dest="fmt", default="png",
+                        help='Output format(s), comma-separated (e.g. png, pdf, or pdf,png)')
     parser.add_argument('--lowpt', dest="lowpt", action="store_true",
                         help='Use low pt selection for 4b data')
     args = parser.parse_args()

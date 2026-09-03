@@ -116,13 +116,20 @@ def loadHistograms(inputFile: str, jcm_config: dict, format: str = 'coffea', cfg
 
 
 
-    data4b = hists_data_4b[selJets][fourTag_data_dict]
-    data4b_nTagJets = hists_data_4b[tagJets][fourTag_data_dict]
+    def _project_to_1d(h_obj):
+        if h_obj is None:
+            return None
+        while len(h_obj.axes) > 1:
+            h_obj = h_obj[{h_obj.axes[0].name: sum}]
+        return h_obj
+
+    data4b = _project_to_1d(hists_data_4b[selJets][fourTag_data_dict])
+    data4b_nTagJets = _project_to_1d(hists_data_4b[tagJets][fourTag_data_dict])
 
     qcd4b = copy(data4b)
 
-    data3b = hists_data_3b[selJets][threeTag_data_dict]
-    data3b_nTagJets_tight = hists_data_3b[tagJets][threeTag_data_dict]
+    data3b = _project_to_1d(hists_data_3b[selJets][threeTag_data_dict])
+    data3b_nTagJets_tight = _project_to_1d(hists_data_3b[tagJets][threeTag_data_dict])
 
     qcd3b = copy(data3b)
     qcd3b_nTightTags = copy(data3b_nTagJets_tight)
@@ -131,11 +138,11 @@ def loadHistograms(inputFile: str, jcm_config: dict, format: str = 'coffea', cfg
         return data4b, data3b, None, None, qcd4b, qcd3b, data4b_nTagJets, None, qcd3b_nTightTags
 
 
-    tt4b = hists_tt[selJets][fourTag_ttbar_dict][sum, :]
-    tt4b_nTagJets = hists_tt[tagJets][fourTag_ttbar_dict][sum, :]
+    tt4b = _project_to_1d(hists_tt[selJets][fourTag_ttbar_dict])
+    tt4b_nTagJets = _project_to_1d(hists_tt[tagJets][fourTag_ttbar_dict])
 
-    tt3b = hists_tt[selJets][threeTag_ttbar_dict][sum, :]
-    tt3b_nTagJets_tight = hists_tt[tagJets][threeTag_ttbar_dict][sum, :]
+    tt3b = _project_to_1d(hists_tt[selJets][threeTag_ttbar_dict])
+    tt3b_nTagJets_tight = _project_to_1d(hists_tt[tagJets][threeTag_ttbar_dict])
 
 
     qcd4b.view().value = data4b.values() - tt4b.values()

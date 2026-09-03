@@ -39,3 +39,10 @@ svb:
 
 #quadjet_selection:
 #  mode: run2   # run2 or run3; overrides the isRun3 processor flag when set
+
+sr_ttHbb:
+  mode: optimal_balance
+  h_min: 95.0
+  h_max: 180.0
+  m_min: 25.0
+  arm_max: 400.0

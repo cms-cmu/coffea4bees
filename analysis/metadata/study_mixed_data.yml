@@ -3,4 +3,4 @@ runner:
   worker_memory: 8GB
 
 config:
-  # base_path: root://cmseos.fnal.gov//store/user/jda102/XX4b/2024_v2
+  JCM_file: coffea4bees/skimmer/metadata/jetCombinatoricModel_for_mixed_splitting.txt
