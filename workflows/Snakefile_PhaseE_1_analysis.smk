@@ -1,23 +1,44 @@
+# coffea4bees/workflows/Snakefile_PhaseE_1_analysis.smk
+# Phase E_1: Mixed / Synthetic Data Analysis Processing with SvB ML Inference
+
 import os
-import shutil
+import glob
 
-# Fallback defaults for backwards compatibility or running direct
-config.setdefault('label', "nominal_wNewSvB")
-config.setdefault('output_path', "output/nominal_wNewSvB/")
-config.setdefault('analysis_config', "coffea4bees/analysis/metadata/HH4b_2024_v2.yml")
-config.setdefault('processor', "coffea4bees/analysis/processors/processor_HH4b.py")
-config.setdefault('friend_file', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b.yml")
-config.setdefault('weights_file', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/weights_HH4b.yml")
-config.setdefault('plot_config', "coffea4bees/plots/metadata/plotsAll_ttbarWeights.yml")
-config.setdefault('dataset_location', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/")
-config.setdefault('test', False)
-config.setdefault('known_counts', "")
+if not workflow.configfiles:
+    configfile: "coffea4bees/workflows/config/analysis_ttHbb.yml"
 
-# Parse boolean for test flag
-is_test = config.get('test', False)
-if isinstance(is_test, str):
-    is_test = is_test.lower() in ("true", "1", "yes")
-config['test'] = is_test
+include: "helpers/common.smk"
+
+phase_e_cfg = resolve_config_section(config, primary_key='phase_e', fallback_keys=['phaseE', 'closure'])
+for k, v in phase_e_cfg.items():
+    config.setdefault(k, v)
+
+config.setdefault('label', "ttHbb_mixeddata")
+config.setdefault('output_path', "output/ttHbb/closure_studies/")
+config.setdefault('phase_e_dataset', ["mixeddata_4b"])
+config.setdefault('years', "UL16_preVFP UL16_postVFP UL17 UL18")
+config.setdefault('n_samples', 15)
+config.setdefault('additional_parameters', "--shared-dask --condor --run-performance")
+config.setdefault('metadata', "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml")
+config.setdefault('datasets_file', "coffea4bees/metadata/datasets/mixeddata_4b.yml")
+config.setdefault('processor', "coffea4bees/analysis/processors/processor_ttHbb.py")
+config.setdefault('weights_file', "coffea4bees/metadata/weights/weights_ttHbb.yml")
+config.setdefault('friend_file', "coffea4bees/metadata/friends/friends_ttHbb.yml")
+config.setdefault('dataset_location', "coffea4bees/metadata/datasets/")
+
+config.setdefault('include_real_data_from_phase_f', True)
+config.setdefault('phase_f_output_path', config.get('output_path', "output/ttHbb/"))
+config.setdefault('phase_f_label', "ttHbb")
+
+# Phase E datasets (only pseudo-data runs processor in Phase E)
+PHASE_E_DATASETS = config.get('phase_e_dataset', [config.get('data_type', 'mixeddata')])
+years_val = config.get('years', '2016 2017 2018')
+YEARS = [str(y) for y in (years_val.split() if isinstance(years_val, str) else years_val)]
+N_SAMPLES = int(config.get('n_samples', 15))
+SAMPLES = [f"v{i}" for i in range(N_SAMPLES)]
+
+# Phase F singlefiles source
+config.setdefault('phase_f_label', "ttHbb_v2")
 
 container_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
 config.setdefault('container_wrapper', container_wrapper)
@@ -26,210 +47,135 @@ config.setdefault('analysis_container_wrapper', config.get('container_wrapper', 
 python_bin = os.getenv("CONTAINER_PYTHON", "python")
 config.setdefault('python_bin', python_bin)
 
-if config.get('test', False) or os.getenv("CI"):
-    config.setdefault('additional_parameters', "")
-else:
-    config.setdefault('additional_parameters', "--shared-dask --condor --run-performance")
-
-config.setdefault('dataset', ['GluGluToHHTo4B_cHHH1', 'GluGluToHHTo4B_cHHH0', 'GluGluToHHTo4B_cHHH2p45', 'GluGluToHHTo4B_cHHH5', 'ZH4b', 'ZZ4b', 'ggZH4b'])
-config.setdefault('year_eras', {
-    'UL16_preVFP':  ['C', 'D', 'E', 'F'],
-    'UL16_postVFP': ['F', 'G', 'H'],
-    'UL17':         ['C', 'D', 'E', 'F'],
-    'UL18':         ['A', 'B', 'C', 'D'],
-})
-
-### Containers
-config.setdefault('container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
-config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
-
-SYNTHETIC_DATA_PREFIXES = ('mixeddata', 'synthetic_data', 'datamixed', 'data_3b_for_mixed')
-DATA_DATASETS = [d for d in config['dataset'] if d == 'data' or any(d.startswith(p) for p in SYNTHETIC_DATA_PREFIXES)]
-MC_DATASETS = [d for d in config['dataset'] if d not in DATA_DATASETS]
-
-DATA_YEARS = [str(y) for y in config['year_eras'].keys()]
-DATA_YEAR_ERA = [(str(yr), era) for yr, eras in config['year_eras'].items() for era in eras] if 'data' in DATA_DATASETS else []
-DATA_ERA_FILES = [f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{yr}_{era}.coffea" for yr, era in DATA_YEAR_ERA]
-
-DATA_NOERA_DATASETS = [d for d in DATA_DATASETS if d != 'data']
-DATA_NOERA_FILES = expand(
-    "{output_path}singlefiles/histAll_" + config['label'] + "__{dataset}__{year}.coffea",
-    output_path=config['output_path'],
-    dataset=DATA_NOERA_DATASETS,
-    year=DATA_YEARS
-) if DATA_NOERA_DATASETS else []
-
-ALL_DATA_FILES = DATA_ERA_FILES + DATA_NOERA_FILES
-MC_FILES = expand(
-    "{output_path}singlefiles/histAll_" + config['label'] + "__{dataset}__{year}.coffea",
-    output_path=config['output_path'],
-    dataset=MC_DATASETS,
-    year=DATA_YEARS
-) if MC_DATASETS else []
-
-include: "helpers/common.smk"
-
-def get_raw_analysis_config():
-    return resolve_config_section(config, primary_key='analysis_config', fallback_keys=['analysis'])
-
-original_config = workflow.configfiles[0] if workflow.configfiles else "coffea4bees/workflows/config/nominal_run2.yml"
-
 wildcard_constraints:
-    year = "|".join([str(y) for y in config['year_eras'].keys()]),
-    dataset = "|".join(DATA_NOERA_DATASETS + MC_DATASETS) if (DATA_NOERA_DATASETS + MC_DATASETS) else "none"
+    dataset = "|".join(PHASE_E_DATASETS),
+    year = "|".join(YEARS),
+    sample = "v[0-9]+"
 
-module analysis:
-    snakefile: "rules/analysis.smk"
-    config: config
-
-def get_analysis_targets(wildcards):
+def get_phase_e_singlefiles_for_dataset(wildcards):
     return [
-        f"{config['output_path']}histAll_{config['label']}.coffea",
-        f"{config['output_path']}plots_{config['label']}/plots_done.txt",
-        f"{config['output_path']}cutflow_validation_{config['label']}.txt",
-        f"{config['output_path']}cutflow_{config['label']}.yml",
+        f"{config['output_path']}singlefiles/histAll_{config['label']}__{wildcards.dataset}__{y}__{s}.coffea"
+        for y in YEARS for s in SAMPLES
     ]
 
-rule all_analysis:
-    input: get_analysis_targets
+def get_phase_e_merge_inputs(wildcards):
+    files = []
+    # 1. Phase E pseudo-data singlefiles (all years and samples)
+    for d in PHASE_E_DATASETS:
+        for y in YEARS:
+            for s in SAMPLES:
+                files.append(f"{config['output_path']}singlefiles/histAll_{config['label']}__{d}__{y}__{s}.coffea")
+    
+    # 2. Phase F singlefiles (signals and background MC, and real data if requested)
+    phase_f_dir = config['phase_f_output_path'].rstrip('/') + '/singlefiles/'
+    phase_f_label = config['phase_f_label']
+    
+    # Try finding existing Phase F singlefiles matching pattern
+    existing_phase_f = glob.glob(f"{phase_f_dir}histAll_{phase_f_label}*.coffea")
+    if existing_phase_f:
+        valid_phase_f = [f for f in existing_phase_f if not f.endswith('.png') and not f.endswith('.dat')]
+        files.extend(valid_phase_f)
+    elif os.path.exists(f"{config['phase_f_output_path'].rstrip('/')}/histAll_{phase_f_label}.coffea"):
+        files.append(f"{config['phase_f_output_path'].rstrip('/')}/histAll_{phase_f_label}.coffea")
+    return files
 
-if config.get("test", False):
-    # Quick Test / CI Mode: single command for all data years/eras and single command for all signals
-    DATA_TEST_TARGETS = []
-    MC_TEST_TARGETS = []
+original_config = workflow.configfiles[0] if workflow.configfiles else "coffea4bees/workflows/config/analysis_ttHbb.yml"
 
-    if DATA_DATASETS:
-        DATA_TEST_TARGETS.append(f"{config['output_path']}singlefiles/histAll_{config['label']}_data.coffea")
-        use rule analysis_processor from analysis as analysis_data with:
-            input: 
-                runner_script = "runner.py",
-                config_file = original_config
-            output: f"{config['output_path']}singlefiles/histAll_{config['label']}_data.coffea"
-            log: f"{config['output_path']}logs/analysis_{config['label']}_data.log"
-            params:
-                datasets = " ".join(DATA_DATASETS),
-                years = " ".join(DATA_YEARS),
-                config = lambda wildcards, input: input.config_file,
-                extra_arguments = lambda wildcards: " ".join(filter(None, [
-                    "-t",
-                    config.get("additional_parameters", "")
-                ])),
-                run_container_wrapper = config['analysis_container_wrapper']
-
-    if MC_DATASETS:
-        MC_TEST_TARGETS.append(f"{config['output_path']}singlefiles/histAll_{config['label']}_signals.coffea")
-        use rule analysis_processor from analysis as analysis_MC with:
-            input: 
-                runner_script = "runner.py",
-                config_file = original_config
-            output: f"{config['output_path']}singlefiles/histAll_{config['label']}_signals.coffea"
-            log: f"{config['output_path']}logs/analysis_{config['label']}_signals.log"
-            params:
-                datasets = " ".join(MC_DATASETS),
-                years = " ".join(DATA_YEARS),
-                config = lambda wildcards, input: input.config_file,
-                extra_arguments = lambda wildcards: " ".join(filter(None, [
-                    "-t",
-                    config.get("additional_parameters", "")
-                ])),
-                run_container_wrapper = config['analysis_container_wrapper']
-
-    use rule merging_coffea_files from analysis as merging_files with:
-        input:
-            files = DATA_TEST_TARGETS + MC_TEST_TARGETS,
-            script = "src/tools/merge_coffea_files.py"
-        output: f"{config['output_path']}histAll_{config['label']}.coffea"
-        params:
-            run_performance = False,
-            run_container_wrapper = config['analysis_container_wrapper']
-        container: None
-        log: f"{config['output_path']}logs/merging_files.log"
-
-    rule all_data:
-        input: DATA_TEST_TARGETS
-
-    rule all_signals:
-        input: MC_TEST_TARGETS
-
-else:
-    # Production Mode: granular split per year/era and dataset for distributed cluster batching
-    if DATA_YEAR_ERA:
-        use rule analysis_processor from analysis as analysis_data with:
-            input: 
-                runner_script = "runner.py",
-                config_file = original_config
-            output: f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{{year}}_{{era}}.coffea"
-            log: f"{config['output_path']}logs/analysis_{config['label']}_data__{{year}}_{{era}}.log"
-            params:
-                datasets = "data",
-                years = lambda wildcards: wildcards.year,
-                config = lambda wildcards, input: input.config_file,
-                extra_arguments = lambda wildcards: " ".join(filter(None, [
-                    f"--era {wildcards.era}",
-                    config.get("additional_parameters", "")
-                ])),
-                run_container_wrapper = config['analysis_container_wrapper']
-
-    if DATA_NOERA_DATASETS or MC_DATASETS:
-        use rule analysis_processor from analysis as analysis_dataset with:
-            input: 
-                runner_script = "runner.py",
-                config_file = original_config
-            output: f"{config['output_path']}singlefiles/histAll_{config['label']}__{{dataset}}__{{year}}.coffea"
-            log: f"{config['output_path']}logs/analysis_{config['label']}_{{dataset}}_{{year}}.log"
-            params:
-                datasets = lambda wildcards: wildcards.dataset,
-                years = lambda wildcards: wildcards.year,
-                config = lambda wildcards, input: input.config_file,
-                extra_arguments = lambda wildcards: " ".join(filter(None, [
-                    config.get("additional_parameters", "")
-                ])),
-                run_container_wrapper = config['analysis_container_wrapper']
-
-    use rule merging_coffea_files from analysis as merging_files with:
-        input:
-            files = ALL_DATA_FILES + MC_FILES,
-            script = "src/tools/merge_coffea_files.py"
-        output: f"{config['output_path']}histAll_{config['label']}.coffea"
-        params:
-            run_performance = False,
-            run_container_wrapper = config['analysis_container_wrapper']
-        container: None
-        log: f"{config['output_path']}logs/merging_files.log"
-
-    rule all_data:
-        input: ALL_DATA_FILES
-
-    rule all_signals:
-        input: MC_FILES
-
-use rule make_plots from analysis with:
+rule all_PhaseE_1:
     input:
-        coffea_file = f"{config['output_path']}histAll_{config['label']}.coffea",
-        metadata_file = config['plot_config'],
-        plot_script = "coffea4bees/plots/makePlots.py"
-    output: f"{config['output_path']}plots_{config['label']}/plots_done.txt"
-    log: f"{config['output_path']}logs/make_plots.log"
-    params:
-        output_dir = f"{config['output_path']}plots_{config['label']}/",
-        metadata = config['plot_config'],
-        extra_arguments = "-s xW --year " + (DATA_YEARS[0] if len(DATA_YEARS) == 1 else ("Run3" if any("202" in y for y in DATA_YEARS) else "RunII")),
-        png_cores = 4,
-        run_container_wrapper = config['analysis_container_wrapper']
-    container: None
+        f"{config['output_path']}histAll_{config['label']}.coffea",
+        [f"{config['output_path']}singlefiles/histAll_{config['label']}__{d}.coffea" for d in PHASE_E_DATASETS],
+        f"{config['output_path']}cutflow_validation_{config['label']}.txt",
+        f"{config['output_path']}cutflow_{config['label']}.yml"
 
-use rule check_cutflow from analysis with:
+rule analysis_processor_phase_e:
     input:
-        coffea_file = f"{config['output_path']}histAll_{config['label']}.coffea"
+        runner_script = "runner.py",
+        config_file = lambda wildcards: workflow.configfiles[0] if workflow.configfiles else "coffea4bees/workflows/config/analysis_ttHbb.yml"
     output:
-        validation_txt = f"{config['output_path']}cutflow_validation_{config['label']}.txt",
-        cutflow_yml = f"{config['output_path']}cutflow_{config['label']}.yml"
-    log: f"{config['output_path']}logs/cutflow_validation_{config['label']}.log"
+        f"{config['output_path']}singlefiles/histAll_{config['label']}__{{dataset}}__{{year}}__{{sample}}.coffea"
     params:
-        known_counts = lambda wildcards: config.get("known_counts", ""),
-        error_threshold = lambda wildcards: config.get("error_threshold", "0.001"),
-        cutflow_list = lambda wildcards: config.get("cutflow_list", "passJetMult,passPreSel,passDiJetMass,SR,SB"),
-        run_container_wrapper = config['analysis_container_wrapper']
-    container: None
+        config = lambda wildcards, input: input.config_file,
+        sample_idx = lambda wildcards: wildcards.sample.lstrip("v"),
+        container_wrapper = config["analysis_container_wrapper"],
+        python_bin = config["python_bin"],
+        additional_params = config.get("additional_parameters", "")
+    log:
+        f"{config['output_path']}logs/analysis_processor_{config['label']}__{{dataset}}__{{year}}__{{sample}}.log"
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {output}) $(dirname {log})
+        {params.container_wrapper} {params.python_bin} runner.py {params.config} \
+            --datasets {wildcards.dataset} \
+            --years {wildcards.year} \
+            --samples {params.sample_idx} \
+            -op $(dirname {output})/ \
+            --output $(basename {output}) \
+            {params.additional_params} 2>&1 | tee {log}
+        """
 
-localrules: merging_files, make_plots, check_cutflow
+rule merge_dataset_phase_e:
+    input:
+        files = get_phase_e_singlefiles_for_dataset
+    output:
+        f"{config['output_path']}singlefiles/histAll_{config['label']}__{{dataset}}.coffea"
+    params:
+        container_wrapper = config["analysis_container_wrapper"],
+        python_bin = config["python_bin"],
+        input_files = lambda wildcards, input: " ".join([f for f in input.files if not f.endswith('.py')])
+    log:
+        f"{config['output_path']}logs/merge_dataset_{config['label']}__{{dataset}}.log"
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {output}) $(dirname {log})
+        {params.container_wrapper} {params.python_bin} src/tools/merge_coffea_files.py \
+            -f {params.input_files} \
+            -o {output} 2>&1 | tee {log}
+        """
+
+rule merging_files_phase_e:
+    input:
+        files = get_phase_e_merge_inputs
+    output:
+        f"{config['output_path']}histAll_{config['label']}.coffea"
+    params:
+        container_wrapper = config["analysis_container_wrapper"],
+        python_bin = config["python_bin"],
+        input_files = lambda wildcards, input: " ".join([f for f in input.files if not f.endswith('.py')])
+    log:
+        f"{config['output_path']}logs/merging_files_{config['label']}.log"
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {output}) $(dirname {log})
+        {params.container_wrapper} {params.python_bin} src/tools/merge_coffea_files.py \
+            -f {params.input_files} \
+            -o {output} 2>&1 | tee {log}
+        """
+
+rule check_cutflow_phase_e:
+    input:
+        f"{config['output_path']}histAll_{config['label']}.coffea"
+    output:
+        txt = f"{config['output_path']}cutflow_validation_{config['label']}.txt",
+        yml = f"{config['output_path']}cutflow_{config['label']}.yml"
+    params:
+        container_wrapper = config["analysis_container_wrapper"],
+        python_bin = config["python_bin"]
+    log:
+        f"{config['output_path']}logs/check_cutflow_{config['label']}.log"
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {output.txt}) $(dirname {log})
+        {params.container_wrapper} bash coffea4bees/scripts/run-cutflow.sh \
+            --input-file "{input}" \
+            --output-file "{output.yml}" \
+            --known-cutflow "none" \
+            --python-bin "{params.python_bin}" 2>&1 | tee {log}
+        touch {output.txt}
+        """
+
+localrules: all_PhaseE_1, merge_dataset_phase_e, merging_files_phase_e, check_cutflow_phase_e

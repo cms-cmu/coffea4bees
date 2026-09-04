@@ -12,7 +12,7 @@ include: "helpers/common.smk"
 # Resolve FvT configuration block from master config or fallback keys
 fvt_cfg = resolve_config_section(config, primary_key='fvt', fallback_keys=['fvt_classifier', 'classifier'])
 for k, v in fvt_cfg.items():
-    config.setdefault(k, v)
+    config[k] = v
 
 # Fallback default configuration
 config.setdefault('eos_base', "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/nominal_sel")
@@ -45,16 +45,16 @@ if 'classifier_setting' in config:
 else:
     COMMON_PATH = config.get("common", f"{WFS_BASE}/../common.yml")
 
-target_datasets = config.get('dataset', config.get('datasets', None))
-if target_datasets and isinstance(target_datasets, str):
-    target_datasets = [d.strip() for d in target_datasets.split(",") if d.strip()]
+eval_dataset = config.get('eval_dataset', config.get('evaluate_dataset', None))
 
-if target_datasets:
-    # Single or selected dataset evaluation targets
-    dataset_targets = [f"{OUTPUT_DIR}/evaluate_{d}.done" for d in target_datasets]
+if eval_dataset:
+    if isinstance(eval_dataset, str):
+        eval_datasets = [eval_dataset]
+    else:
+        eval_datasets = list(eval_dataset)
 
     rule all_fvt_evaluation:
-        input: dataset_targets
+        input: expand(f"{OUTPUT_DIR}/evaluate_{{dataset}}.done", dataset=eval_datasets)
 
     rule evaluate_single_dataset:
         output:
@@ -64,9 +64,7 @@ if target_datasets:
         container: CLASSIFIER
         resources:
             runtime = 240,
-            mem_mb  = 64000,
-            gres    = "mps:25",
-            qos     = "light",
+            mem_mb  = 20000,
         threads: 8
         params:
             init                    = INIT,
@@ -81,10 +79,9 @@ if target_datasets:
             PORT=$(shuf -i 10200-10300 -n 1) && \
             CLASSIFIER_CONFIG_PATHS={params.classifier_config_paths} \
             python -m src.classifier.task.main \
-                template "{{{params.template_str}}}" {params.wfs_base}/evaluate.yml \
+                template "{{{params.template_str}}}" {params.wfs_base}/evaluate_{params.dataset}.yml \
                 -from {params.common} \
-                -setting dataset "{params.dataset}" \
-                -setting Monitor "address: '127.0.0.1:$PORT'" \
+                -setting Monitor "enable: false" \
                 -flag debug \
                 2>&1 | tee -a {log}
             touch {output.flag}
@@ -101,9 +98,7 @@ else:
         container: CLASSIFIER
         resources:
             runtime = 240,
-            mem_mb  = 64000,
-            gres    = "mps:25",
-            qos     = "light",
+            mem_mb  = 20000,
         threads: 8
         params:
             init                    = INIT,
@@ -119,7 +114,7 @@ else:
             python -m src.classifier.task.main \
                 template "{{{params.template_str}}}" {params.wfs_base}/evaluate.yml \
                 -from {params.common} \
-                -setting Monitor "address: '127.0.0.1:$PORT'" \
+                -setting Monitor "enable: False" \
                 -flag debug \
                 2>&1 | tee -a {log}
             touch {output.flag}

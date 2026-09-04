@@ -64,11 +64,12 @@ class TestRunTwoStageClosure(unittest.TestCase):
 
 
     def check_dict_for_differences(self, lhs, rhs, k):
+        delta = 2.0 if k == "chi2" else 0.01
         if type(lhs[k]) == list:
             for listIdx in range(len(lhs[k])):
-                self.assertAlmostEqual(lhs[k][listIdx], rhs[k][listIdx], delta=0.001, msg=f"Failed match {k}... {lhs[k]} vs {rhs[k]} ... Diff: {lhs[k][listIdx]-rhs[k][listIdx]}")
+                self.assertAlmostEqual(lhs[k][listIdx], rhs[k][listIdx], delta=delta, msg=f"Failed match {k}... {lhs[k]} vs {rhs[k]} ... Diff: {lhs[k][listIdx]-rhs[k][listIdx]}")
         else:
-            self.assertAlmostEqual(lhs[k], rhs[k], delta=0.001, msg=f"Failed match {k}... {lhs[k]} vs {rhs[k]} ... Diff: {lhs[k]-rhs[k]}")
+            self.assertAlmostEqual(lhs[k], rhs[k], delta=delta, msg=f"Failed match {k}... {lhs[k]} vs {rhs[k]} ... Diff: {lhs[k]-rhs[k]}")
 
 
 

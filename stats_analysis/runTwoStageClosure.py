@@ -198,12 +198,33 @@ def combine_hists(input_file, hist_template, procs, years, debug=False):
     return hist
 
 
-def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel):
+def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, years=None):
 
-
-    years=["2016", "2017", "2018"]
-
+    if years is None:
+        years = args.years if hasattr(args, 'years') and args.years else ["2016", "2017", "2018"]
+    # Normalize year labels
+    norm_years = []
     for y in years:
+        if y in ["UL17", "2017"]:
+            norm_years.append("2017")
+        elif y in ["UL18", "2018"]:
+            norm_years.append("2018")
+        elif y in ["UL16_preVFP", "UL16_postVFP", "UL16", "2016"]:
+            norm_years.append("2016")
+        else:
+            norm_years.append(y)
+    norm_years = list(dict.fromkeys(norm_years))
+
+    year_map = {
+        "2016": ["UL16_preVFP", "UL16_postVFP", "2016"],
+        "2017": ["UL17", "2017"],
+        "2018": ["UL18", "2018"],
+        "UL16": ["UL16_preVFP", "UL16_postVFP", "2016"],
+        "UL17": ["UL17", "2017"],
+        "UL18": ["UL18", "2018"],
+    }
+
+    for y in norm_years:
         directory = f"{mix}/{channel}{y}"
         f.mkdir(directory)
 
@@ -217,8 +238,8 @@ def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel
 
         hist_data_obs = combine_hists(input_file_mix,
                                       f"{var_name}_PROC_YEAR_fourTag_SR",
-                                      years=[y],
-                                      procs=[f"mix_v{mix_number}"],
+                                      years=year_map.get(y, [y]),
+                                      procs=[f"mix_v{mix_number}", f"syn_v{mix_number}", f"{args.mix_name}_v{mix_number}"],
                                       debug=args.debug)
 
         f.cd(directory)
@@ -244,11 +265,6 @@ def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel
         else:
             var_name_multijet = var_name_multijet.replace(f"{SvB}_ps", f"{SvB}_FvT_{mix}_newSBDef_ps")
 
-        year_map = {
-            "2016": ["UL16_preVFP", "UL16_postVFP", "2016"],
-            "2017": ["UL17", "2017"],
-            "2018": ["UL18", "2018"],
-        }
         hist_multijet = combine_hists(input_file_data3b,
                                       f"{var_name_multijet}_PROC_YEAR_threeTag_SR",
                                       years=year_map.get(y, [y]),
@@ -286,7 +302,7 @@ def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel
 
 
 
-def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel):
+def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, years=None):
 
     directory = f"{mix}/{channel}"
     f.mkdir(directory)
@@ -298,10 +314,28 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel):
 
     mix_number = mix.replace(f"{args.mix_name}_v", "")
 
+    if years is None:
+        years = args.years if hasattr(args, 'years') and args.years else ["2016", "2017", "2018"]
+
+    year_map = {
+        "2016": ["UL16_preVFP", "UL16_postVFP", "2016"],
+        "2017": ["UL17", "2017"],
+        "2018": ["UL18", "2018"],
+        "UL16": ["UL16_preVFP", "UL16_postVFP", "2016"],
+        "UL17": ["UL17", "2017"],
+        "UL18": ["UL18", "2018"],
+        "UL16_preVFP": ["UL16_preVFP"],
+        "UL16_postVFP": ["UL16_postVFP"],
+    }
+    all_years = []
+    for y in years:
+        all_years.extend(year_map.get(y, [y]))
+    all_years = list(dict.fromkeys(all_years))
+
     hist_data_obs = combine_hists(input_file_mix,
                                   f"{var_name}_PROC_YEAR_fourTag_SR",
-                                  years=["2016", "2017", "2018"],
-                                  procs=[f"mix_v{mix_number}"],
+                                  years=all_years,
+                                  procs=[f"mix_v{mix_number}", f"syn_v{mix_number}", f"{args.mix_name}_v{mix_number}"],
                                   debug=args.debug)
 
     f.cd(directory)
@@ -330,13 +364,13 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel):
 
     hist_multijet = combine_hists(input_file_data3b,
                                   f"{var_name_multijet}_PROC_YEAR_threeTag_SR",
-                                  years=["UL16_preVFP", "UL16_postVFP", "UL17", "UL18", "2016", "2017", "2018"],
+                                  years=all_years,
                                   procs=["data_3b_for_mixed", "data", "data_3b"],
                                   debug=args.debug)
     if hist_multijet is None:
         hist_multijet = combine_hists(input_file_data3b,
                                       f"{var_name}_PROC_YEAR_threeTag_SR",
-                                      years=["UL16_preVFP", "UL16_postVFP", "UL17", "UL18", "2016", "2017", "2018"],
+                                      years=all_years,
                                       procs=["data_3b_for_mixed", "data", "data_3b"],
                                       debug=args.debug)
 
@@ -347,16 +381,29 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel):
     #
     # TTBar
     #
-    ttbar_procs = ["TTTo2L2Nu", "TTToHadronic", "TTToSemiLeptonic"]
+    if getattr(args, 'pure_qcd', False):
+        if hist_multijet is not None:
+            hist_ttbar = hist_multijet.Clone()
+            hist_ttbar.Reset()
+        else:
+            hist_ttbar = None
+    else:
+        ttbar_procs = ["TTTo2L2Nu", "TTToHadronic", "TTToSemiLeptonic"]
 
-    hist_ttbar = combine_hists(input_file_TT,
-                               f"{var_name}_PROC_YEAR_fourTag_SR",
-                               years=["UL16_preVFP", "UL16_postVFP", "UL17", "UL18", "2016", "2017", "2018"],
-                               procs=["TTTo2L2Nu_for_mixed", "TTToHadronic_for_mixed", "TTToSemiLeptonic_for_mixed", "TTbar4b_from_d3", "TTbar3b_from_d3"],
-                               debug=args.debug)
-    if hist_ttbar is None and hist_multijet is not None:
-        hist_ttbar = hist_multijet.Clone()
-        hist_ttbar.Reset()
+        hist_ttbar = combine_hists(input_file_TT,
+                                   f"{var_name}_PROC_YEAR_threeTag_SR",
+                                   years=all_years,
+                                   procs=["TTbar4b_from_d3"],
+                                   debug=args.debug)
+        if hist_ttbar is None:
+            hist_ttbar = combine_hists(input_file_TT,
+                                       f"{var_name}_PROC_YEAR_fourTag_SR",
+                                       years=all_years,
+                                       procs=["TTTo2L2Nu_for_mixed", "TTToHadronic_for_mixed", "TTToSemiLeptonic_for_mixed"],
+                                       debug=args.debug)
+        if hist_ttbar is None and hist_multijet is not None:
+            hist_ttbar = hist_multijet.Clone()
+            hist_ttbar.Reset()
 
     f.cd(directory)
     hist_ttbar.SetName("ttbar")
@@ -429,26 +476,47 @@ def prepInput():
     #
     #  Signal
     #
+    years = args.years if hasattr(args, 'years') and args.years else ["2016", "2017", "2018"]
+    norm_years = []
+    for y in years:
+        if y in ["UL17", "2017"]:
+            norm_years.append("2017")
+        elif y in ["UL18", "2018"]:
+            norm_years.append("2018")
+        elif y in ["UL16_preVFP", "UL16_postVFP", "UL16", "2016"]:
+            norm_years.append("2016")
+        else:
+            norm_years.append(y)
+    norm_years = list(dict.fromkeys(norm_years))
+
+    year_map = {
+        "2016": ["UL16_preVFP", "UL16_postVFP", "2016"],
+        "2017": ["UL17", "2017"],
+        "2018": ["UL18", "2018"],
+        "UL16": ["UL16_preVFP", "UL16_postVFP", "2016"],
+        "UL17": ["UL17", "2017"],
+        "UL18": ["UL18", "2018"],
+        "UL16_preVFP": ["UL16_preVFP"],
+        "UL16_postVFP": ["UL16_postVFP"],
+    }
+    all_years = []
+    for y in years:
+        all_years.extend(year_map.get(y, [y]))
+    all_years = list(dict.fromkeys(all_years))
+
     sig_procs = ["ttHbb"] if channel in ["ttHbb", "tth"] else ["GluGluToHHTo4B_cHHH1", "ZZ4b", "ZH4b"]
     hist_signal = combine_hists(input_file_sig,
                                 f"{var_name}_PROC_YEAR_fourTag_SR",
-                                years=["UL16_preVFP", "UL16_postVFP", "UL17", "UL18", "2016", "2017", "2018"],
+                                years=all_years,
                                 procs=sig_procs, 
                                 debug=args.debug)
-#    hist_signal_preUL = combine_hists(input_file_sig_preUL,
-#                                f"{var_name}_PROC_YEAR_fourTag_SR",
-#                                years=["2016", "2017", "2018"],
-#                                procs=["HH4b"])
-#
-#    hist_signal = hist_signal_UL.Clone()
-#    hist_signal.Add(hist_signal_preUL)
 
     f.cd(channel)
     hist_signal.SetName("signal")
     hist_signal.Write()
     
 
-    for year in ['2016', '2017', '2018']:
+    for year in norm_years:
         addMixes(f, channel+year, procs=['multijet', 'data_obs'])
 
 
@@ -765,16 +833,14 @@ class multijetEnsemble:
     
     def getParameterDistribution(self, basis):
         n = basis + 1
-        parMean    = np.array([0 for i in range(n)], dtype=float)
-        parMeanErr = np.array([0 for i in range(n)], dtype=float)
-        parMean2   = np.array([0 for i in range(n)], dtype=float)
-        for m in range(nMixes):
-            parMean    += self.fit_parameters[basis][m]    / nMixes
-            parMean2   += self.fit_parameters[basis][m]**2 / nMixes
-            parMeanErr += self.fit_parameters_error[basis][m] / nMixes
-        var = parMean2 - parMean**2
-        parStd  = var**0.5
-        parStd *= nMixes / (nMixes - 1)  # bessel's correction https://en.wikipedia.org/wiki/Bessel's_correction
+        params = np.array([self.fit_parameters[basis][m] for m in range(nMixes)])
+        params_err = np.array([self.fit_parameters_error[basis][m] for m in range(nMixes)])
+        parMean = np.mean(params, axis=0)
+        parMeanErr = np.mean(params_err, axis=0)
+        if nMixes > 1:
+            parStd = np.std(params, axis=0, ddof=1)
+        else:
+            parStd = np.zeros_like(parMean)
         print('Parameter Mean:', parMean)
         print('Parameter  Std:', parStd)
 
@@ -827,13 +893,7 @@ class multijetEnsemble:
         # check bin to bin correlations using pearson R test
         xs = np.array([self.pulls[basis][m * self.nBins_fit  : (m + 1) * self.nBins_fit - 1] for m in range(nMixes)])
         ys = np.array([self.pulls[basis][m * self.nBins_fit + 1: (m + 1) * self.nBins_fit  ] for m in range(nMixes)])
-        # x1s = np.array([self.pulls[basis][m * self.nBins_fit  : (m + 1) * self.nBins_fit-1] for m in range(nMixes)])
-        # y1s = np.array([self.pulls[basis][m * self.nBins_fit + 1: (m + 1) * self.nBins_fit  ] for m in range(nMixes)])
-        # x2s = np.array([self.pulls[basis][m * self.nBins_fit  : (m + 1) * self.nBins_fit - 2] for m in range(nMixes)])
-        # y2s = np.array([self.pulls[basis][m * self.nBins_fit+2: (m + 1) * self.nBins_fit  ] for m in range(nMixes)])
-        # x3s = np.array([self.pulls[basis][m * self.nBins_fit  : (m + 1) * self.nBins_fit-3] for m in range(nMixes)])
-        # y3s = np.array([self.pulls[basis][m * self.nBins_fit+3: (m + 1) * self.nBins_fit  ] for m in range(nMixes)])
-        # xs, ys = np.concatenate((x1s,x2s,x3s), axis=1), np.concatenate((y1s,y2s,y3s), axis=1)
+
         x, y = xs.flatten(), ys.flatten()
         r, p = pearsonr(x, y, n=len(x) - nMixes * (basis + 1))
 
@@ -897,6 +957,7 @@ class multijetEnsemble:
 
         plt.tight_layout()
         fig.savefig( f"{output_dir}/{name}_basis{rebin_name}{basis}.pdf" )
+        fig.savefig( f"{output_dir}/{name}_basis{rebin_name}{basis}.png" )
         plt.close(fig)
 
         fig, (ax) = plt.subplots(nrows=1)
@@ -925,6 +986,7 @@ class multijetEnsemble:
 
         plt.tight_layout()
         fig.savefig( f"{output_dir}/{name}_additive_basis{rebin_name}{basis}.pdf" )
+        fig.savefig( f"{output_dir}/{name}_additive_basis{rebin_name}{basis}.png" )
         plt.close(fig)
 
     
@@ -965,10 +1027,13 @@ class multijetEnsemble:
 
         plt.tight_layout()
         fig.savefig( f"{output_dir}/0_variance_pearsonr_multijet_variance.pdf" )
+        fig.savefig( f"{output_dir}/0_variance_pearsonr_multijet_variance.png" )
         plt.close(fig)
 
     
     def plotFitResults(self, basis, projection=(0, 1)):
+        if nMixes <= 1:
+            return
         n = basis + 1
         if n > 1:
             dims = tuple(list(projection) + [d for d in range(n) if d not in projection])
@@ -1128,6 +1193,7 @@ class multijetEnsemble:
         projection = '_'.join([str(d) for d in projection])
         try:
             fig.savefig( f"{output_dir}/0_variance_parameters_basis{basis}_projection_{projection}.pdf" )
+            fig.savefig( f"{output_dir}/0_variance_parameters_basis{basis}_projection_{projection}.png" )
             plt.close(fig)
         except IndexError:
             print('Weird index error...')
@@ -1190,6 +1256,7 @@ class multijetEnsemble:
 
         plt.legend(fontsize='small', loc='upper left', ncol=2, title='Overall r=%0.2f (%2.0f%s)' % (r, p * 100, '\%'))
         fig.savefig( f'{output_dir}/0_variance_pull_correlation_basis{basis}.pdf' )
+        fig.savefig( f'{output_dir}/0_variance_pull_correlation_basis{basis}.png' )
         plt.close(fig)
 
     
@@ -1240,6 +1307,7 @@ class multijetEnsemble:
                       # 'rTitle'     : 'Model / Average',
                       'xTitle'    : xTitle,
                       'yTitle'    : 'Events',
+                      'logY'      : True,
                       'yMax'      : self.ymax[0] * 1.6,  # *ymaxScale, # make room to show fit parameters
                       'xleg'      : [0.13, 0.13 + 0.4],
                       'legendSubText' : ['#bf{Adjacent Bin Pull Correlation:}',
@@ -1394,9 +1462,14 @@ class closure:
                     self.exit_message.append('>> SS f-test = %2.0f%%! STRONG EVIDENCE FOR SPURIOUS SIGNAL SYSTEMATIC' % (100 * self.fProb_ss[basis]))
                 self.exit_message.append('-' * 50)
 
-        self.plotPValues()
         if self.basis is None:
-            self.basis = self.bases[-1]
+            for i, b in enumerate(self.bases[:-1]):
+                next_b = self.bases[i + 1]
+                if self.fProb[next_b] < 0.95:
+                    self.basis = b
+                    break
+            if self.basis is None:
+                self.basis = self.bases[-1]
 
         self.writeClosureResults(self.basis)
 
@@ -1664,8 +1737,9 @@ class closure:
             if cDown != cDown_vari:
                 cDown_bias = -(cDown**2 - cDown_vari**2)**0.5
 
-            systematics['%s_vari_%sUp' % (nuissance, self.channel)] = 1 + cUp_vari * self.basis_element[i]
-            systematics['%s_vari_%sDown' % (nuissance, self.channel)] = 1 + cDown_vari * self.basis_element[i]
+            if cUp_vari or cDown_vari:
+                systematics['%s_vari_%sUp' % (nuissance, self.channel)] = 1 + cUp_vari * self.basis_element[i]
+                systematics['%s_vari_%sDown' % (nuissance, self.channel)] = 1 + cDown_vari * self.basis_element[i]
 
             if cUp_bias:
                 systematics['%s_bias_%sUp' % (nuissance, self.channel)] = 1 + cUp_bias * self.basis_element[i]
@@ -1895,6 +1969,7 @@ class closure:
         # print('fig.savefig( ' + name+' )')
         plt.tight_layout()
         fig.savefig( name )
+        fig.savefig( name.replace('.pdf', '.png') )
         plt.close(fig)
 
     
@@ -1932,6 +2007,7 @@ class closure:
 
         plt.tight_layout()
         fig.savefig( f'{output_dir}/1_bias_pvalues.pdf' )
+        fig.savefig( f'{output_dir}/1_bias_pvalues.png' )
         plt.close(fig)
 
     
@@ -1974,14 +2050,16 @@ class closure:
                 'ratio' : 'denom A',
                 'color' : color_multijet} #ffdf7f
                 #'color' : 'ROOT.kYellow'}
-        samples[closure_file_out]['%s/ttbar' % self.channel] = {
-            'label' : '#lower[0.10]{t#bar{t}}',
-            'legend': 3,
-            'stack' : 2,
-            'ratio' : 'denom A',
-            'color' : color_TTbar}
+        if not getattr(args, 'pure_qcd', False):
+            samples[closure_file_out]['%s/ttbar' % self.channel] = {
+                'label' : '#lower[0.10]{t#bar{t}}',
+                'legend': 3,
+                'stack' : 2,
+                'ratio' : 'denom A',
+                'color' : color_TTbar}
+        sig_label = 't#bar{t}H(#times100)' if self.channel in ['ttHbb', 'tth'] else 'ZZ+ZH+HH(#times100)'
         samples[closure_file_out]['%s/signal' % self.channel] = {
-            'label' : 'ZZ+ZH+HH(#times100)',
+            'label' : sig_label,
             'legend': 4,
             'weight': 100,
             'color' : 'ROOT.kViolet'}
@@ -2000,13 +2078,7 @@ class closure:
                       'rTitle'    : 'Data / Bkgd.',
                       'xTitle'    : xTitle,
                       'yTitle'    : 'Events',
-                    #   'logY'      : True,
-                    #   'yMax'      : 1.4 * (self.ymax[0]),  # *ymaxScale, # make room to show fit parameters
-                      # 'xleg'      : [0.13, 0.13 + 0.5] if 'SR' in region else ,
-                      #  'legendSubText' : ['#bf{Fit:}',
-                      #                     '#chi^{2}/DoF = %2.1f/%d = %1.2f'%(self.chi2[basis],self.ndf[basis],self.chi2[basis]/self.ndf[basis]),
-                      #                     'p-value = %2.0f%%'%(self.pvalue[basis] * 100),
-                      #                     ],
+                      'logY'      : True,
                       'lstLocation' : 'right',
                       'outputName': 'mix_%s' % (str(mix))}
 
@@ -2032,12 +2104,13 @@ class closure:
             'ratio' : 'denom A',
             'color' : color_multijet} #ffdf7f
             #'color' : 'ROOT.kYellow'}
-        samples[closure_file_out]['%s/ttbar_closure' % self.channel] = {
-            'label' : '#lower[0.10]{t#bar{t}}',
-            'legend': 3,
-            'stack' : 2,
-            'ratio' : 'denom A',
-            'color' : color_TTbar}
+        if not getattr(args, 'pure_qcd', False):
+            samples[closure_file_out]['%s/ttbar_closure' % self.channel] = {
+                'label' : '#lower[0.10]{t#bar{t}}',
+                'legend': 3,
+                'stack' : 2,
+                'ratio' : 'denom A',
+                'color' : color_TTbar}
         if not plotSpuriousSignal:
             samples[closure_file_out]['%s/closure_TH1_basis%d' % (self.channel, basis)] = {
                 'label' : 'Fit (%d unconstrained parameter%s)' % (basis + 1, 's' if basis else ''),
@@ -2055,8 +2128,9 @@ class closure:
                 'legend': 6,
                 'ratio': 'denom A',
                 'color' : 'ROOT.kViolet'}
+            sig_label = 't#bar{t}H(#times100)' if self.channel in ['ttHbb', 'tth'] else 'ZZ+ZH+HH(#times100)'
             samples[closure_file_out][f'{self.channel}/signal_closure'] = {
-                'label' : 'ZZ+ZH+HH(#times100)',
+                'label' : sig_label,
                 'legend': 7,
                 'weight': 100,
                 'color' : 'ROOT.kViolet+7'}
@@ -2090,6 +2164,7 @@ class closure:
                       # 'rTitle'     : 'Model / Average',
                       'xTitle'    : xTitle,
                       'yTitle'    : 'Events',
+                      'logY'      : True,
                       'yMax'      : self.ymax[0] * ymaxScale,   # *ymaxScale, # make room to show fit parameters
                       'xleg'      : [0.13, 0.13 + 0.42],
                       'lstLocation': 'right',
@@ -2171,13 +2246,14 @@ if __name__ == "__main__":
     parser.add_argument('--debug',                 action="store_true")
     parser.add_argument('-l', '--lumi',                 dest="lumi",          default="133",    help="Luminosity for MC normalization: units [pb]")
     parser.add_argument('--mix_name', default="3bDvTMix4bDvT")
+    parser.add_argument('--nMixes', type=int, default=15, help="Number of mixes or synthetic datasets")
     parser.add_argument('--classifier', help="SvB or SvB_MA")
     parser.add_argument('--region', default="SR", help="SR or SB")
-    parser.add_argument('--input_file_data3b',default="hists/histMixedBkg_data_3b_for_mixed.root")
-    parser.add_argument('--input_file_TT',    default="hists/histMixedBkg_TT.root")
-    parser.add_argument('--input_file_mix',   default="hists/histMixedData.root")
-    parser.add_argument('--input_file_sig',   default="hists/histSignal.root")
-    #parser.add_argument('--input_file_sig_preUL',   default="analysis/hists/histSignal_preUL.root")
+    parser.add_argument('--input_file_data3b',default="output/histMixedBkg_data_3b_for_mixed.root")
+    parser.add_argument('--input_file_TT',    default="output/histMixedBkg_TT.root")
+    parser.add_argument('--input_file_mix',   default="output/histMixedData.root")
+    parser.add_argument('--input_file_sig',   default="output/histSignal.root")
+    #parser.add_argument('--input_file_sig_preUL',   default="output/histSignal_preUL.root")
     parser.add_argument('--channel', default=None, help="Channel: ttHbb, hh, zh, zz")
     parser.add_argument('--var', default="SvB_MA_ps_hh", help="SvB_MA_ps_XX or SvB_MA_ps_XX_fine")
     parser.add_argument('--rebin', default=1)
@@ -2191,7 +2267,10 @@ if __name__ == "__main__":
     parser.add_argument('--use_ZZinSB',   action="store_true")
     parser.add_argument('--use_ZZandZHinSB',   action="store_true")
     #parser.add_argument('--skip_plots',   dest="do_plots",    action="store_false")
+    parser.add_argument('--years', nargs='+', default=["2016", "2017", "2018"], help="List of years (e.g. 2017 2018 or UL17 UL18)")
     parser.add_argument('--do_CI',   action="store_true")
+    parser.add_argument('--pure_qcd', '--no_ttbar', dest='pure_qcd', action="store_true", default=False, help="Pure QCD closure mode with zero ttbar")
+    parser.add_argument('--auto_scale_mixed', action="store_true", default=False, help="Auto scale mixed flag (passed from pipeline)")
 
     args = parser.parse_args()
     print(f"\nRunning with these parameters: {args}")
@@ -2288,7 +2367,7 @@ if __name__ == "__main__":
     ttAverage = False
     doSpuriousSignal = True
     dataAverage = True
-    nMixes = 15
+    nMixes = args.nMixes
 
     probThreshold = 0.05  # 0.045500263896 #0.682689492137 # 1sigma
 

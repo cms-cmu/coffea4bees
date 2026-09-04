@@ -10,7 +10,8 @@ from coffea4bees.analysis.helpers.candidates_selection import (
     cand_jet_selection,
     _compute_vbf_variables,
 )
-from coffea4bees.analysis.helpers.SvB_helpers import compute_SvB_ttHbb, compute_SvB_FeynNet
+from coffea4bees.analysis.helpers.SvB_helpers import compute_SvB_FeynNet
+from coffea4bees.analysis.helpers.SvB_helpers_ttHbb import compute_SvB_ttHbb
 from coffea4bees.analysis.helpers.FvT_helpers import compute_FvT
 
 
@@ -65,19 +66,37 @@ def _build_dijets_ttHbb(selev, cand_cfg=None, isRun3=False):
 def _select_quadjet_ttHbb(quadJet, cand_cfg=None):
     """Pick best quadjet pairing and assign ttHbb SR/SB regions.
     
-    SR: Shape 2 (Resonant Single-Higgs L-Shape up to 1000 GeV):
-        Horizontal arm: m_subl in [85, 185] GeV, m_lead in [25, 1000] GeV
-        Vertical arm:   m_lead in [90, 185] GeV, m_subl in [25, 1000] GeV
-        SR = in_h_arm | in_v_arm
-        
+    SR Modes:
+        - 'baseline' (default): Original cross [85, 185] / [90, 185] GeV up to 1000 GeV
+            Horizontal arm: m_subl in [85, 185] GeV, m_lead in [25, 1000] GeV
+            Vertical arm:   m_lead in [90, 185] GeV, m_subl in [25, 1000] GeV
+            
+        - 'optimal_balance': Optimal balanced L-shape ([95, 180] GeV, arm <= 400 GeV, m_min >= 25 GeV)
+            Horizontal arm: m_subl in [95, 180] GeV, m_lead in [25, 400] GeV
+            Vertical arm:   m_lead in [95, 180] GeV, m_subl in [25, 400] GeV
+            
     SB: Full preselection phase space excluding SR:
         m_lead in [25, 1000] GeV and m_subl in [25, 1000] GeV and (~SR)
     """
     m_lead = quadJet["lead"].mass
     m_subl = quadJet["subl"].mass
 
-    in_h_arm = (m_subl >= 85.0) & (m_subl <= 185.0) & (m_lead >= 25.0) & (m_lead <= 1000.0)
-    in_v_arm = (m_lead >= 90.0) & (m_lead <= 185.0) & (m_subl >= 25.0) & (m_subl <= 1000.0)
+    sr_cfg = (cand_cfg or {}).get("sr_ttHbb", {})
+    mode = (cand_cfg or {}).get("sr_mode") or sr_cfg.get("mode", "optimal_balance")
+
+    if mode in ["optimal_balance", "optimal"]:
+        h_min = sr_cfg.get("h_min", 95.0)
+        h_max = sr_cfg.get("h_max", 180.0)
+        m_min = sr_cfg.get("m_min", 25.0)
+        arm_max = sr_cfg.get("arm_max", 400.0)
+
+        in_h_arm = (m_subl >= h_min) & (m_subl <= h_max) & (m_lead >= m_min) & (m_lead <= arm_max)
+        in_v_arm = (m_lead >= h_min) & (m_lead <= h_max) & (m_subl >= m_min) & (m_subl <= arm_max)
+    else:
+        # Default baseline
+        in_h_arm = (m_subl >= 85.0) & (m_subl <= 185.0) & (m_lead >= 25.0) & (m_lead <= 1000.0)
+        in_v_arm = (m_lead >= 90.0) & (m_lead <= 185.0) & (m_subl >= 25.0) & (m_subl <= 1000.0)
+
     quadJet["SR"] = in_h_arm | in_v_arm
 
     in_analysis_box = (m_lead >= 25.0) & (m_lead <= 1000.0) & (m_subl >= 25.0) & (m_subl <= 1000.0)
@@ -197,6 +216,13 @@ def _apply_ml_scores_ttHbb(
             label3b=label3b,
         )
         apply_FvT = True
+
+    if apply_FvT and ("FvT" in selev.fields):
+        quadJet["FvT_q_score"] = np.concatenate([
+            selev.FvT.q_1234[:, np.newaxis],
+            selev.FvT.q_1324[:, np.newaxis],
+            selev.FvT.q_1423[:, np.newaxis],
+        ], axis=1)
 
     if run_SvB:
         need_svb = (classifier_SvB is not None and "SvB" not in selev.fields)

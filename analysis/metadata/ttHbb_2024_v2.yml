@@ -13,6 +13,6 @@ config:
   run_SvB: true
   SvB_MA: true
   SvB: null
-  hist_cuts: ["pass_nSelJets_gt6", "fail_nSelJets_le6"]
+  hist_cuts: ["pass_nSelJets_gt6"]
   top_reconstruction: fast
   plot_ttbar_with_weights: true

@@ -871,17 +871,30 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     event[_FvT_name, _FvT_name] = getattr(event[_FvT_name], _FvT_name)
 
             else:
-                event["FvT"] = (
-                    nano_from_root(
+                fvt_file = f'{self.fname.replace("picoAOD", "FvT_weight")}' if ("seed" in self.fname or "PSData" in self.fname) else f'{self.fname.replace("picoAOD", "FvT")}'
+                try:
+                    fvt_events = nano_from_root(
+                        {fvt_file: "Events"},
+                        entry_start=self.estart,
+                        entry_stop=self.estop,
+                        schemaclass=FriendTreeSchema
+                    ).events()
+                except (FileNotFoundError, OSError):
+                    fvt_events = nano_from_root(
                         {f'{self.fname.replace("picoAOD", "FvT")}': "Events"},
                         entry_start=self.estart,
                         entry_stop=self.estop,
                         schemaclass=FriendTreeSchema
-                    ).events().FvT
-                )
+                    ).events()
 
+                if "FvT" in fvt_events.fields:
+                    event["FvT"] = fvt_events.FvT
+                    if "q_1234" not in event.FvT.fields:
+                        event["FvT", "q_1234"] = np.full(len(event), -1, dtype=int)
+                        event["FvT", "q_1324"] = np.full(len(event), -1, dtype=int)
+                        event["FvT", "q_1423"] = np.full(len(event), -1, dtype=int)
 
-            if not ak.all(event.FvT.event == event.event):
+            if hasattr(event.FvT, "event") and not ak.all(event.FvT.event == event.event):
                 raise ValueError("ERROR: FvT events do not match events ttree")
 
         setFvTVars("FvT", event)
@@ -1093,8 +1106,11 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         tmp_weights = weights.weight()
         mean_weights = np.mean(tmp_weights)
         std_weights = np.std(tmp_weights)
-        z_scores = np.abs((tmp_weights - mean_weights) / std_weights)
-        pass_outliers = z_scores < 30
+        if std_weights > 0:
+            z_scores = np.abs((tmp_weights - mean_weights) / std_weights)
+            pass_outliers = z_scores < 30
+        else:
+            pass_outliers = np.full(len(tmp_weights), True)
         event["passCleanGenWeight"] = pass_outliers
         if np.any(~pass_outliers) and std_weights > 0:
             logging.warning(f"Outliers in weights:{tmp_weights[~pass_outliers]}, while mean is {mean_weights} and std is {std_weights} for event {event[~pass_outliers].event} in {self.dataset}\n")

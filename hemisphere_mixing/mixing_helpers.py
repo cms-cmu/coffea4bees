@@ -548,7 +548,8 @@ def replace_hemis(*, all_hemis, hemi_kd_trees, hemi_stats, hemi_data, hemi_jet_r
     #
     for jet_mult_key, mask in iter_hemi_filters(hemi_jet_ranges, all_hemis):
 
-        # print("Processing jet mult bin:", jet_mult_key, "with", np.sum(mask), "hemispheres to replace.")
+        if np.sum(mask) < 1:
+            continue
 
         subset_hemis = all_hemis[mask]
 
@@ -558,13 +559,9 @@ def replace_hemis(*, all_hemis, hemi_kd_trees, hemi_stats, hemi_data, hemi_jet_r
         subset_hemis_points = np.column_stack([ (subset_hemis[name] - hemi_stats[jet_mult_key][name]["mean"]) / hemi_stats[jet_mult_key][name]["RMS"] for name in hemi_summary_vars])
 
         #
-        #  Get the nearest neighbor hemisphere from the kd-tree
+        #  Get the nearest neighbor hemisphere from the kd-tree (multi-threaded query)
         #
-        match_dist, match_idx = hemi_kd_trees[jet_mult_key].query(subset_hemis_points, k=1)
-
-        if np.sum(mask) < 1:
-            continue
-
+        match_dist, match_idx = hemi_kd_trees[jet_mult_key].query(subset_hemis_points, k=1, workers=-1)
 
         #
         # Rotate Jets to match thrust axis
@@ -614,16 +611,15 @@ def replace_hemis(*, all_hemis, hemi_kd_trees, hemi_stats, hemi_data, hemi_jet_r
                                    },
                                   depth_limit=1
                                   )
-        #subset_hemis_new = compute_hemi_vars(all_hemis_new)
 
         mixed_hemis.append(subset_hemis_new)
-        all_hemis_new = ak.concatenate(mixed_hemis, axis=0)
-        sort_idx = ak.argsort(all_hemis_new.local_idx)
-        all_hemis_new = all_hemis_new[sort_idx]
 
-        #all_hemis = ak.where(mask, all_hemis_new, all_hemis)
+    if len(mixed_hemis) == 0:
+        return all_hemis
 
-    return all_hemis_new
+    all_hemis_new = ak.concatenate(mixed_hemis, axis=0)
+    sort_idx = ak.argsort(all_hemis_new.local_idx)
+    return all_hemis_new[sort_idx]
 
 
 
@@ -635,11 +631,14 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
     #
     #  Loop on hemisphere multiplcity bins
     #
+    if "_kd_trees" not in hemi_data:
+        hemi_data["_kd_trees"] = {}
+
     for (jet_mult_key, mask_3b), (jet_mult_key_4b, mask_4b) in zip(iter_hemi_filters(hemi_jet_ranges, all_hemis),
                                                                    iter_hemi_filters(hemi_jet_ranges, hemi_data)):
 
-
-        # print("Processing jet mult bin:", jet_mult_key, "with", np.sum(mask), "hemispheres to replace.")
+        if np.sum(mask_3b) < 1:
+            continue
 
         subset_hemis = all_hemis[mask_3b]
 
@@ -649,47 +648,32 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
         subset_hemis_points = np.column_stack([ (subset_hemis[name] - hemi_stats[jet_mult_key][name]["mean"]) / hemi_stats[jet_mult_key][name]["RMS"] for name in hemi_summary_vars])
 
         # Check for NaN values
-        has_nan = np.any(np.isnan(subset_hemis_points))
-        # Check for inf values (positive or negative)
-        has_inf = np.any(np.isinf(subset_hemis_points))
-        # Check for both NaN and inf
         has_bad_values = np.any(~np.isfinite(subset_hemis_points))
-
         if has_bad_values:
-            print(f"Warning: Found {np.sum(np.isnan(subset_hemis_points))} NaN and {np.sum(np.isinf(subset_hemis_points))} inf values in subset_hemis_points! filtering them out.\n")
-            # bad_points = subset_hemis_points[np.any(np.isnan(subset_hemis_points), axis=1)]
-            # print(f"bad points:\n{bad_points}\n")
-            # print(f"Nan is  {np.sum(np.isnan(subset_hemis_points))} NaN and {np.sum(np.isinf(subset_hemis_points))} inf values in subset_hemis_points! filtering them out.\n")
-            subset_hemis_points = np.nan_to_num(subset_hemis_points, nan=0.0) #subset_hemis_points[~np.any(np.isnan(subset_hemis_points), axis=1)]
-            # print(f"Now has_bad_values = {np.any(~np.isfinite(subset_hemis_points))}\n")
+            print(f"Warning: Found bad values in subset_hemis_points for {jet_mult_key}! Replacing with 0.\n")
+            subset_hemis_points = np.nan_to_num(subset_hemis_points, nan=0.0)
+
         #
-        #  Get the nearest neighbor hemisphere from the kd-tree
+        #  Get or build cached KD-tree for this multiplicity bin
         #
-        # Build list of variables to load - always include "pz" for boost correction even if not in matching vars
-        load_vars = event_branches + hemi_summary_vars + jet_branches
-        if use_boost_corrected_matching and "pz" not in hemi_summary_vars:
-            load_vars = load_vars + ["pz"]
+        if jet_mult_key not in hemi_data["_kd_trees"]:
+            load_vars = event_branches + hemi_summary_vars + jet_branches
+            if use_boost_corrected_matching and "pz" not in hemi_summary_vars:
+                load_vars = load_vars + ["pz"]
 
-        hemi_lib_data = get_hemispheres_data(mask_4b, hemi_data, load_vars, hemi_stats=hemi_stats[jet_mult_key])
-        hemi_lib_points = np.column_stack([ hemi_lib_data[name] for name in hemi_summary_vars])
+            hemi_lib_data = get_hemispheres_data(mask_4b, hemi_data, load_vars, hemi_stats=hemi_stats[jet_mult_key])
+            hemi_lib_points = np.column_stack([ hemi_lib_data[name] for name in hemi_summary_vars])
 
-        # Check for NaN values
-        has_nan = np.any(np.isnan(hemi_lib_points))
-        # Check for inf values (positive or negative)
-        has_inf = np.any(np.isinf(hemi_lib_points))
-        # Check for both NaN and inf
-        has_bad_values = np.any(~np.isfinite(hemi_lib_points))
+            if np.any(~np.isfinite(hemi_lib_points)):
+                print(f"Warning: Found bad values in hemi_lib_points for {jet_mult_key}! Filtering rows.\n")
+                hemi_lib_points = hemi_lib_points[~np.any(np.isnan(hemi_lib_points), axis=1)]
 
-        if has_bad_values:
-            print(f"Warning: Found {np.sum(np.isnan(hemi_lib_points))} NaN and {np.sum(np.isinf(hemi_lib_points))} inf values in hemi_lib_points! filtering them out.\n")
-            hemi_lib_points = hemi_lib_points[~np.any(np.isnan(hemi_lib_points), axis=1)]
+            kd_tree = cKDTree(hemi_lib_points)
+            hemi_data["_kd_trees"][jet_mult_key] = (kd_tree, hemi_lib_data)
+        else:
+            kd_tree, hemi_lib_data = hemi_data["_kd_trees"][jet_mult_key]
 
-
-        kd_tree = cKDTree(hemi_lib_points)
-        match_dist, match_idx = kd_tree.query(subset_hemis_points, k=1)
-
-        if np.sum(mask_3b) < 1:
-            continue
+        match_dist, match_idx = kd_tree.query(subset_hemis_points, k=1, workers=-1)
 
         #
         # Rotate Jets to match thrust axis
@@ -722,15 +706,11 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
         if use_boost_corrected_matching:
             # Get target hemisphere pz (from 3-tag event being processed)
             pz_target = subset_hemis["pz"]
-            # print("pz_target ",pz_target[0:20].tolist(),"\n")
 
             # Get matched hemisphere pz (from library, unnormalized)
             # Note: hemi_lib_data["pz"] is normalized, need to get raw value from hemi_data
             pz_matched_normalized = hemi_lib_data["pz"][match_idx]
             pz_matched = pz_matched_normalized * hemi_stats[jet_mult_key]["pz"]["RMS"] + hemi_stats[jet_mult_key]["pz"]["mean"]
-
-            # print("pz_matched_normalized ",pz_matched_normalized[0:20].tolist(),"\n")
-            # print("pz_matched ",pz_matched[0:20].tolist(),"\n")
 
             # Compute matched hemisphere energy from summed jets
             matched_hemi_sum = new_Jets.sum(axis=1)
@@ -738,12 +718,6 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
 
             # Apply boost
             new_Jets, delta_rapidity = boost_jets_along_z(new_Jets, pz_target, pz_matched, E_matched)
-
-            new_Jets_sumJet = new_Jets.sum(axis=1)
-            # print("pz_new ",new_Jets_sumJet.pz[0:20].tolist(),"\n")
-            pz_diff = new_Jets_sumJet.pz - pz_target
-            # print("pz_diff ",pz_diff[0:20].tolist(),"\n")
-
         else:
             delta_rapidity = np.zeros(len(subset_hemis))
 
@@ -769,20 +743,19 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
                                    "Jet":              new_Jets,
                                    "match_dist":       ak.Array(match_dist),
                                    "delta_rapidity":   ak.Array(delta_rapidity),
-                                   "local_idx":      subset_hemis["local_idx"],
+                                   "local_idx":        subset_hemis["local_idx"],
                                    },
                                   depth_limit=1
                                   )
-        #subset_hemis_new = compute_hemi_vars(all_hemis_new)
 
         mixed_hemis.append(subset_hemis_new)
-        all_hemis_new = ak.concatenate(mixed_hemis, axis=0)
-        sort_idx = ak.argsort(all_hemis_new.local_idx)
-        all_hemis_new = all_hemis_new[sort_idx]
 
-        #all_hemis = ak.where(mask, all_hemis_new, all_hemis)
+    if len(mixed_hemis) == 0:
+        return all_hemis
 
-    return all_hemis_new
+    all_hemis_new = ak.concatenate(mixed_hemis, axis=0)
+    sort_idx = ak.argsort(all_hemis_new.local_idx)
+    return all_hemis_new[sort_idx]
 
 
 def replace_hemis_topk_kdTrees(
@@ -848,6 +821,9 @@ def replace_hemis_topk_kdTrees(
     # ─── Stage 1: per-bin top-K query (no jet fetch) ──────────────────────
     bin_records = []
 
+    if "_topk_kd_trees" not in hemi_data:
+        hemi_data["_topk_kd_trees"] = {}
+
     for (jet_mult_key, mask_3b), (jet_mult_key_4b, mask_4b) in zip(
             iter_hemi_filters(hemi_jet_ranges, all_hemis),
             iter_hemi_filters(hemi_jet_ranges, hemi_data)):
@@ -866,23 +842,28 @@ def replace_hemis_topk_kdTrees(
             subset_hemis_points = np.nan_to_num(subset_hemis_points, nan=0.0)
 
         # Stage-1 only needs summary fields; jet branches deferred to Stage 3.
-        load_vars_summary = list(event_branches) + list(hemi_summary_vars)
-        if use_boost_corrected_matching and "pz" not in hemi_summary_vars:
-            load_vars_summary = load_vars_summary + ["pz"]
+        if jet_mult_key not in hemi_data["_topk_kd_trees"]:
+            load_vars_summary = list(event_branches) + list(hemi_summary_vars)
+            if use_boost_corrected_matching and "pz" not in hemi_summary_vars:
+                load_vars_summary = load_vars_summary + ["pz"]
 
-        hemi_lib_data_summary = get_hemispheres_data(
-            mask_4b, hemi_data, load_vars_summary, hemi_stats=hemi_stats[jet_mult_key]
-        )
-        hemi_lib_points = np.column_stack([hemi_lib_data_summary[name] for name in hemi_summary_vars])
+            hemi_lib_data_summary = get_hemispheres_data(
+                mask_4b, hemi_data, load_vars_summary, hemi_stats=hemi_stats[jet_mult_key]
+            )
+            hemi_lib_points = np.column_stack([hemi_lib_data_summary[name] for name in hemi_summary_vars])
 
-        if np.any(~np.isfinite(hemi_lib_points)):
-            print(f"Warning (topk): bad values in hemi_lib_points for {jet_mult_key}; filtering rows.")
-            hemi_lib_points = hemi_lib_points[~np.any(np.isnan(hemi_lib_points), axis=1)]
+            if np.any(~np.isfinite(hemi_lib_points)):
+                print(f"Warning (topk): bad values in hemi_lib_points for {jet_mult_key}; filtering rows.")
+                hemi_lib_points = hemi_lib_points[~np.any(np.isnan(hemi_lib_points), axis=1)]
 
-        kd_tree = cKDTree(hemi_lib_points)
+            kd_tree = cKDTree(hemi_lib_points)
+            hemi_data["_topk_kd_trees"][jet_mult_key] = (kd_tree, hemi_lib_data_summary, len(hemi_lib_points))
+        else:
+            kd_tree, hemi_lib_data_summary, n_points = hemi_data["_topk_kd_trees"][jet_mult_key]
+
         # cap K at library size; pad later so per-hemi shape stays (N, K).
-        K_eff = min(K, len(hemi_lib_points))
-        match_dist, match_idx = kd_tree.query(subset_hemis_points, k=K_eff)
+        K_eff = min(K, len(hemi_lib_data_summary[hemi_summary_vars[0]]))
+        match_dist, match_idx = kd_tree.query(subset_hemis_points, k=K_eff, workers=-1)
 
         if K_eff == 1:
             match_dist = match_dist[:, None]
@@ -962,6 +943,8 @@ def replace_hemis_topk_kdTrees(
 
     # ─── Stage 3: build matched hemis at chosen rank ──────────────────────
     mixed_hemis = []
+    if "_full_lib_data" not in hemi_data:
+        hemi_data["_full_lib_data"] = {}
 
     for rec in bin_records:
         m = np.asarray(rec["mask_3b"])
@@ -974,13 +957,16 @@ def replace_hemis_topk_kdTrees(
         match_dist_chosen = np.take_along_axis(match_dist_sub, chosen_rank_sub[:, None], axis=1).reshape(-1)
 
         # Now fetch full library payload (jets + summary) for this bin.
-        load_vars_full = list(event_branches) + list(hemi_summary_vars) + list(jet_branches)
-        if use_boost_corrected_matching and "pz" not in hemi_summary_vars:
-            load_vars_full = load_vars_full + ["pz"]
+        if rec["jet_mult_key"] not in hemi_data["_full_lib_data"]:
+            load_vars_full = list(event_branches) + list(hemi_summary_vars) + list(jet_branches)
+            if use_boost_corrected_matching and "pz" not in hemi_summary_vars:
+                load_vars_full = load_vars_full + ["pz"]
 
-        hemi_lib_data = get_hemispheres_data(
-            rec["mask_4b"], hemi_data, load_vars_full, hemi_stats=hemi_stats[rec["jet_mult_key"]]
-        )
+            hemi_data["_full_lib_data"][rec["jet_mult_key"]] = get_hemispheres_data(
+                rec["mask_4b"], hemi_data, load_vars_full, hemi_stats=hemi_stats[rec["jet_mult_key"]]
+            )
+
+        hemi_lib_data = hemi_data["_full_lib_data"][rec["jet_mult_key"]]
 
         new_thrust = hemi_lib_data["thrust_phi"][match_idx_chosen]
         dphi = subset_hemis["thrust_phi"] - new_thrust

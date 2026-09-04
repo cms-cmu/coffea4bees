@@ -1,3 +1,2 @@
-# coffea4bees/workflows/Snakefile_make_classifier_friendtree.smk
-# Backwards-compatibility wrapper for Phase C.1 classifier inputs workflow.
-include: "Snakefile_PhaseC_1_inputs.smk"
+# Backward-compatibility wrapper for Phase B.2
+include: "Snakefile_PhaseB_2_make_classifier_friendtree.smk"

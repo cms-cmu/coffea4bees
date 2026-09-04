@@ -41,8 +41,8 @@ BASE_CONFIG=coffea4bees/analysis/metadata/HH4b_classifier_inputs_Run3.yml
 if [ -n "$DO_TEST" ]; then
     JOB_CONFIG=/tmp/${USER}/HH4b_classifier_inputs_Run3_test.yml
     mkdir -p /tmp/${USER}
-    sed -e "s|make_classifier_input: .*|make_classifier_input: hists/local|" \
-        -e "s|make_friend_FvT_weight: .*|make_friend_FvT_weight: hists/local|" \
+    sed -e "s|make_classifier_input: .*|make_classifier_input: output/local|" \
+        -e "s|make_friend_FvT_weight: .*|make_friend_FvT_weight: output/local|" \
         "$BASE_CONFIG" > "$JOB_CONFIG"
     echo "Test mode: using output directory for classifier inputs"
 else

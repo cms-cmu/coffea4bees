@@ -112,6 +112,7 @@ class Common(LoadGroupedRoot):
             InputBranch.feature_ancillary,
             InputBranch.feature_CanJet,
             InputBranch.feature_NotCanJet,
+            (InputBranch.n_CanJet, InputBranch.n_NotCanJet),
             self.opts.branch,
         )
 

@@ -546,7 +546,7 @@ def filling_ttHbb_histograms(
         process=[processName],
         year=[year],
         tag=tag_list,
-        region=['inclusive', 'SR', "SB"],
+        region=['SR', "SB"],
         **dict((s, ...) for s in histCuts)
     )
 
@@ -560,6 +560,8 @@ def filling_ttHbb_histograms(
     skip_jet_list = ['energy', 'deepjet_c']
     fill += Jet.plot(("selJets", "Selected Jets"), "selJet", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
     fill += Jet.plot(("tagJets", "Tag Jets"), "tagJet", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
+    fill += Jet.plot(("selJets_noJCM", "Selected Jets"), "selJet", weight="weight_noJCM_noFvT", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
+    fill += Jet.plot(("tagJets_noJCM", "Tag Jets"), "tagJet", weight="weight_noJCM_noFvT", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
     fill += Jet.plot(("canJets", "Higgs Candidate Jets"), "canJet", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
     fill += Jet.plot(("othJets", "Other Jets"), "notCanJet_coffea", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
 
@@ -570,6 +572,19 @@ def filling_ttHbb_histograms(
 
     fill += QuadJetHistsSelected(("quadJet_selected", "Selected Quad Jet"), "quadJet_selected")
     fill += QuadJetHistsMinDr(("quadJet_min_dr", "Min dR Quad Jet"), "quadJet_min_dr")
+
+    # Make FvT classifier hists
+    if apply_FvT and ("FvT" in selev.fields):
+        FvT_skip = []
+        if "pt" not in selev.FvT.fields:
+            FvT_skip = ["pt", "pm3", "pm4"]
+
+        fill += FvTHists(("FvT", "FvT Classifier"), "FvT", skip=FvT_skip)
+        fill += hist.add("quadJet_selected.FvT_score", (100, 0, 1, ("quadJet_selected.FvT_q_score", "Selected Quad Jet Diboson FvT q score")))
+        fill += hist.add("quadJet_min_dr.FvT_score", (100, 0, 1, ("quadJet_min_dr.FvT_q_score", "Min dR Quad Jet Diboson FvT q score")))
+
+        if JCM:
+            fill += hist.add("FvT_noFvT", (100, 0, 5, ("FvT.FvT", "FvT reweight")), weight="weight_noFvT")
 
     svb_fields = [f for f in selev.fields if f.startswith("SvB") and not f.startswith("SvB_FeynNet")]
     for name in svb_fields:

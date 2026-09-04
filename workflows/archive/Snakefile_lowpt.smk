@@ -3,7 +3,7 @@ username = os.getenv("USER")
 from datetime import datetime
 
 config.setdefault('output_path', "output/lowpt_friendtrees_LWP/")
-config.setdefault('dataset_location', "coffea4bees/metadata/datasets/archive/Run2_2024_v2/")
+config.setdefault('dataset_location', "coffea4bees/metadata/datasets/")
 config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
 config.setdefault('dataset', ['data', 'TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic', 'GluGluToHHTo4B_cHHH1', 'GluGluToHHTo4B_cHHH0', 'GluGluToHHTo4B_cHHH2p45', 'GluGluToHHTo4B_cHHH5', 'ZH4b', 'ZZ4b', 'ggZH4b'])
 config.setdefault('year', [ 'UL16_preVFP', 'UL16_postVFP', 'UL17', 'UL18'])
@@ -32,14 +32,14 @@ rule create_noJCM_config_lowpt:
     input:
         config_file = "coffea4bees/analysis/metadata/HH4b_noJCM.yml",
         processor = "coffea4bees/analysis/processors/processor_HH4b_lowpt.py",
-        friend_file = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b_lowpt.yml"
+        friend_file = "coffea4bees/metadata/friends/friends_HH4b_lowpt.yml"
     output: f"{config['output_path']}HH4b_noJCM_lowpt.yml"
     run:
         import yaml
         with open(input.config_file, 'r') as f:
             cfg = yaml.safe_load(f) or {}
         cfg['processor'] = input.processor
-        cfg['dataset_location'] = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
+        cfg['dataset_location'] = "coffea4bees/metadata/datasets/"
         cfg['friend_file'] = input.friend_file
         os.makedirs(os.path.dirname(output[0]), exist_ok=True)
         with open(output[0], 'w') as f:
@@ -78,14 +78,14 @@ rule create_metadata_lowpt:
         jcm_file = f"{config['output_path']}JCM_lowpt_2024_v2/jetCombinatoricModel_SB_2024_v2.yml",
         config_file = "coffea4bees/analysis/metadata/HH4b_lowpt_classifier_inputs.yml",
         processor = "coffea4bees/analysis/processors/processor_HH4b_lowpt.py",
-        friend_file = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_HH4b_lowpt.yml"
+        friend_file = "coffea4bees/metadata/friends/friends_HH4b_lowpt.yml"
     output: f"{config['output_path']}HH4b_wlowptJCM.yml"
     run:
         import yaml
         with open(input.config_file, 'r') as f:
             cfg = yaml.safe_load(f) or {}
         cfg['processor'] = input.processor
-        cfg['dataset_location'] = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
+        cfg['dataset_location'] = "coffea4bees/metadata/datasets/"
         cfg['friend_file'] = input.friend_file
         if 'config' not in cfg:
             cfg['config'] = {}

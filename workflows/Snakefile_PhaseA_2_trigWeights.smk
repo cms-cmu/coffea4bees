@@ -6,11 +6,23 @@ import yaml
 config.setdefault('output_path', "output/trigger_weights/")
 config.setdefault('test', False)
 
-datasets = config.get('dataset', config.get('datasets', ['ttHbb']))
-if isinstance(datasets, str):
-    # Support comma-separated or single dataset strings
-    datasets = [d.strip() for d in datasets.split(",") if d.strip()]
-config['dataset'] = datasets
+trig_cfg = config.get('trigger_weights', {})
+if isinstance(trig_cfg, str) and os.path.exists(trig_cfg):
+    with open(trig_cfg, 'r') as f:
+        trig_cfg = yaml.safe_load(f) or {}
+elif not isinstance(trig_cfg, dict):
+    trig_cfg = {}
+
+raw_datasets = (
+    trig_cfg.get('datasets')
+    or trig_cfg.get('dataset')
+    or config.get('trigger_weights_datasets')
+    or [d for d in config.get('dataset', []) if d != 'data']
+    or config.get('datasets', ['ttHbb'])
+)
+if isinstance(raw_datasets, str):
+    raw_datasets = [d.strip() for d in raw_datasets.split(",") if d.strip()]
+config['dataset'] = raw_datasets
 
 # Parse boolean for test flag
 is_test = config.get('test', False)
@@ -48,8 +60,8 @@ is_run2 = any(str(y).startswith("UL") for y in years)
 include: "helpers/common.smk"
 
 def get_raw_trigger_weights_config():
-    # Read from trigger_weights block or analysis_config block if provided in YAML
-    res = resolve_config_section(config, primary_key='trigger_weights', fallback_keys=['analysis_config', 'analysis'])
+    # Read from trigger_weights block without inheriting analysis_config processor options
+    res = resolve_config_section(config, primary_key='trigger_weights', fallback_keys=[], inherit_keys=['runner'])
     res.setdefault('processor', "coffea4bees/analysis/processors/processor_trigger_weights.py")
     
     # Dataset location: prioritize explicit trigger_weights_dataset_location, then config['dataset_location']
@@ -58,7 +70,7 @@ def get_raw_trigger_weights_config():
     elif config.get('dataset_location') and config['dataset_location'].endswith(('.yml', '.yaml')):
         res['dataset_location'] = config['dataset_location']
     elif 'dataset_location' not in res or not res['dataset_location']:
-        default_ds_loc = "coffea4bees/metadata/datasets/archive/Run2_2024_v2/" if is_run2 else "coffea4bees/metadata/datasets/"
+        default_ds_loc = "coffea4bees/metadata/datasets/"
         res['dataset_location'] = config.get('dataset_location', default_ds_loc)
 
     # Runner settings

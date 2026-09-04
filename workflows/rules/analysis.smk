@@ -87,7 +87,7 @@ rule make_plots:
     params:
         output_dir = "output/plots/",
         metadata = "coffea4bees/plots/metadata/plotsAll.yml",
-        extra_arguments = "-s xW -f pdf,png",
+        extra_arguments = "-s xW -f png",
         run_container_wrapper = "",
         python_bin = lambda wildcards: config.get("python_bin", "python")
     log: "logs/make_plots.log"

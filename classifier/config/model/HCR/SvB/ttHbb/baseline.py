@@ -26,19 +26,18 @@ class Train(HCRTrain):
         from coffea4bees.classifier.config.model.HCR._HCR import ROC_BIN, roc_nominal_selection
         from coffea4bees.classifier.config.model.HCR.SvB.ggF.all_kl import roc_sr_selection
 
-        _BKG = ("multijet", "ttbar")
         return [
             ROC(
                 name="background vs signal",
                 selection=roc_nominal_selection,
                 bins=ROC_BIN,
-                pos=_BKG,
+                pos=("ttHbb",),
             ),
             ROC(
                 name="background vs signal (SR only)",
                 selection=roc_sr_selection,
                 bins=ROC_BIN,
-                pos=_BKG,
+                pos=("ttHbb",),
             ),
         ]
 
