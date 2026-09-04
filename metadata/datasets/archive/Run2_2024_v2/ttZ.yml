@@ -47,3 +47,5 @@ TTZToQQ:
       sumw: 10134246.74609375
       sumw2: 20958232.140625
       total_events: 19816000
+  xs:
+    Run2: 0.6012
