@@ -246,6 +246,8 @@ def plot2d(var: str = 'quadJet_selected.lead_vs_subl_m',
         axis_opts: Dictionary of axis options
         output_file: Name of the output file (default: "test.pdf")
         **kwargs: Additional plotting options
+            tag: Override the tag ("threeTag"/"fourTag") set for this
+                    process in the metadata YAML
 
     Returns:
         Optional tuple of (figure, axes) if debug mode is enabled
