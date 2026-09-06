@@ -1,8 +1,8 @@
 # ==============================================================================
 # GLOBAL WORKFLOW CONFIGURATION
 # ==============================================================================
-label: "ttHbb_v2"
-output_path: "output/ttHbb_v2/"
+label: "ttHbb_stitched"
+output_path: "output/ttHbb_stitched/"
 cern_user: "algomez"
 cern_path: "www/ttHbb/Plots/"
 
@@ -36,7 +36,7 @@ year_eras:
 # ==============================================================================
 skimmer:
   processor: "coffea4bees/skimmer/processor/skimmer_4b.py"
-  dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
+  dataset_location: "coffea4bees/metadata/datasets/"
   runner:
     condor_cores: 1
     worker_memory: 8GB
@@ -49,19 +49,12 @@ skimmer:
     allowlist_sites:
       - T3_US_FNALLPC
       - T2_US_Nebraska
-    #   - T3_US_NotreDame
-    #   - T2_US_Caltech
-    #   - T1_US_FNAL_Disk
-    #   - T2_US_MIT
       - T2_US_Purdue
       - T3_US_Baylor
       - T2_US_Wisconsin
-    # blocklist_sites:
-    #   - T2_US_MIT
-    #   - T2_US_Purdue
 
   config:
-    base_path: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/
+    base_path: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched/
     step: 100000
     loosePtForSkim: true
 
@@ -74,10 +67,6 @@ trigger_weights:
     condor: true
     shared_dask: true
     run_performance: true
-    # Without this the default is ['coffea4bees/', 'src/'] = ~490MB, which is
-    # gzipped once per cluster and then transferred to every condor worker.
-    # The trigger-weights processor only reaches into coffea4bees.analysis and
-    # src, so list just what is needed (~160MB).
     condor_transfer_input_files:
       - src/
       - coffea4bees/analysis/
@@ -85,9 +74,7 @@ trigger_weights:
   config:
     use_vectorized: false
     tagger: DeepJet
-    make_classifier_input: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/stitched/
-    # make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/
-    # make_classifier_input: output/trigger_weights/   ### local
+    make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched/
 
 # ==============================================================================
 # PHASE B: CALIBRATION & CLASSIFIER INPUTS (JCM & Friendtrees)
@@ -95,9 +82,6 @@ trigger_weights:
 jcm_plot_config: "coffea4bees/plots/metadata/plots_JCM_ttHbb_stitched.yml"
 jcm_datasets:
   - "data"
-#  - "TTTo2L2Nu"
-#  - "TTToSemiLeptonic"
-#  - "TTToHadronic"
   - "TTTo2L2Nu_stitched"
   - "TTToSemiLeptonic_stitched"
   - "TTToHadronic_stitched"
@@ -106,14 +90,11 @@ jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb
 
 classifier_inputs:
   processor: "coffea4bees/analysis/processors/processor_HH4b.py"
-  friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb_stitched.yml"
+  friend_file: "coffea4bees/metadata/datasets/friends_ttHbb_stitched.yml"
   weights_file: "coffea4bees/metadata/weights/weights_ttHbb_stitched.yml"
   datasets:
     - "ttHbb"
     - "data"
-#  - "TTTo2L2Nu"
-#  - "TTToSemiLeptonic"
-#  - "TTToHadronic"
     - "TTTo2L2Nu_stitched"
     - "TTToSemiLeptonic_stitched"
     - "TTToHadronic_stitched"
@@ -124,11 +105,6 @@ classifier_inputs:
     condor: true
     shared_dask: true
     run_performance: true
-    # Without this the default is ['coffea4bees/', 'src/'] = ~490MB, which is
-    # gzipped once per cluster and then transferred to every condor worker.
-    # This processor only reaches into coffea4bees.analysis and src, so list
-    # just what is needed (~160MB) -- with shared_dask, a slow tarball also
-    # risks the client's 15s wait for the daemon's scheduler file timing out.
     condor_transfer_input_files:
       - src/
       - coffea4bees/analysis/
@@ -143,7 +119,7 @@ classifier_inputs:
     run_SvB: false
     top_reconstruction: slow
     fill_histograms: true
-    make_classifier_input: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/stitched/
+    make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched/
 
 # ==============================================================================
 # PHASE C & D: CLASSIFIER SETTINGS (Entirely on falcon / PSC)
@@ -162,46 +138,55 @@ classifier_setting:
           UL16_postVFP: [F, G, H]
           UL17: [B, C, D, E, F]
           UL18: [A, B, C, D]
+  - module: cms.MC_TTbar
+    option:
+      - datasets:
+          - TTToSemiLeptonic_stitched
+          - TTToHadronic_stitched
+          - TTTo2L2Nu_stitched
   - module: HCR.InputBranch
     option:
       - feature_ancillary: [xW, nSelJets, xbW, year]
 
 fvt:
-  eos_base: "root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/stitched/"
+  eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched"
   plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
   classifier_config_paths: "coffea4bees"
-  wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_2024_v2/FvT"
-  label: "FvT_ttHbb_v2"
-  output_dir: "output/FvT_ttHbb_v2/"
+  wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_stitched/FvT"
+  label: "FvT_ttHbb_stitched"
+  output_dir: "output/FvT_ttHbb_stitched/"
   plot_inputs: true
+  plot_weights: true
+  evaluate: true
   model: "{eos_base}/classifier/{label}"
   friend: "{eos_base}/friend/{label}"
   train_template: "model: {eos_base}/classifier/{label}"
   eval_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/{label}"
-  metadata: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_ttHbb.json@@HCR_input"
+  metadata: "coffea4bees/metadata/datasets/classifier_inputs_ttHbb_stitched.json@@HCR_input"
 
 svb:
-  eos_base: "root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/stitched/"
+  eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched"
   plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
   classifier_config_paths: "coffea4bees"
-  wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_2024_v2/SvB"
-  label: "SvB_ttHbb_v2"
-  output_dir: "output/SvB_ttHbb_v2/"
+  wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_stitched/SvB"
+  label: "SvB_ttHbb_stitched"
+  output_dir: "output/SvB_ttHbb_stitched/"
   plot_inputs: true
+  plot_weights: true
   evaluate: true
   model: "{eos_base}/classifier/{label}"
   friend: "{eos_base}/friend/{label}"
-  train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_ttHbb_v2"
+  train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_ttHbb_stitched"
   eval_template: "model: {eos_base}/classifier/{label}, SvB: {eos_base}/friend/{label}"
-  metadata: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_ttHbb.json@@HCR_input"
+  metadata: "coffea4bees/metadata/datasets/classifier_inputs_ttHbb_stitched.json@@HCR_input"
 
 # ==============================================================================
 # PHASE F.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
 # ==============================================================================
 analysis_config:
   processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
-  dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
-  friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb_stitched.yml"
+  dataset_location: "coffea4bees/metadata/datasets/"
+  friend_file: "coffea4bees/metadata/datasets/friends_ttHbb_stitched.yml"
   weights_file: "coffea4bees/metadata/weights/weights_ttHbb_stitched.yml"
   runner:
     workers: 4
@@ -305,48 +290,3 @@ channels:
     cut: "sum"
     stat_only: true
     combine_flags: "--three_tag threeTag --four_tag fourTag --region sum --blind"
-
-# ==============================================================================
-# PHASE E: BACKGROUND SYSTEMATICS & TWO-STAGE CLOSURE (Mixed Data / Synthetic Data)
-# ==============================================================================
-phase_e:
-  data_type: "mixeddata" # "mixeddata" or "synthetic_data"
-  label: "ttHbb_mixeddata"
-  output_path: "output/ttHbb_v2/closure_studies/"
-  datasets_file: "coffea4bees/metadata/datasets_HH4b_v1.yml"
-
-  # Phase E_1: Only runs processor on pseudo-data
-  phase_e_dataset:
-    - "mixeddata"
-    - "data_3b_for_mixed"
-  years: "2016 2017 2018"
-
-  # Singlefiles from Phase F to include in merging
-  phase_f_output_path: "output/ttHbb_v2/"
-  phase_f_label: "ttHbb_v2"
-  include_real_data_from_phase_f: true
-
-  # E_1: Analysis processor with SvB
-  processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
-  metadata: "coffea4bees/analysis/metadata/HH4b_2024_v2.yml"
-  additional_parameters: "--shared-dask --condor --run-performance"
-
-  # E_2: Plotting
-  plot_script: "coffea4bees/plots/makePlots.py"
-  comparison_plot_config: "coffea4bees/plots/metadata/plots_mixeddata_vs_data.yml"
-  comparison_extra_args: "-s xW --year RunII"
-  analysis_plot_config: "coffea4bees/plots/metadata/plotsAll_mixeddata.yml"
-  analysis_extra_args: "-s xW --year RunII"
-
-  # E_3: Two-Stage Closure
-  mix_name: "3bDvTMix4bDvT" # "3bDvTMix4bDvT" for mixeddata, "syn" for synthetic
-  nMixes: 15 # 15 for mixeddata, 1 for synthetic
-  classifier: "SvB_MA"
-  variable: "SvB_MA_ps_ttHbb_fine"
-  channel: "ttHbb"
-  rebin: "1"
-  years_closure: "2016 2017 2018" # e.g. "2016 2017 2018" or "2017 2018"
-  closure_extra_args: ""
-  input_file_data3b: "output/ttHbb_mixeddata_closure/root_inputs/histMixedBkg_data_3b_for_mixed.root"
-  input_file_TT: "output/ttHbb_mixeddata_closure/root_inputs/histMixedBkg_TT.root"
-  input_file_sig: "output/ttHbb_mixeddata_closure/root_inputs/histAll.root"
