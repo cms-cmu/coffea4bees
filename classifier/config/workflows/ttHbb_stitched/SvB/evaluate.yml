@@ -1,0 +1,37 @@
+main:
+  module: evaluate
+  option:
+    - --max-evaluators 3
+    - --device cuda cpu # use GPU if available, fall back to CPU
+
+model:
+  - module: HCR.SvB.ttHbb.baseline.Eval
+    option:
+      - --models
+      - Final
+      - "{model}/result.json"
+
+dataset:
+  - module: HCR.ttHbb.Eval
+    option:
+      - --metadata coffea4bees/metadata/datasets/
+      - --data-source detector
+      - --mc-processes ttHbb
+      - --max-workers 8
+      - --friends "" coffea4bees/metadata/datasets/classifier_inputs_ttHbb_stitched.json@@HCR_input 
+
+analysis:
+  - module: kfold.Merge
+    option:
+      - --name SvB_MA
+      - --step 100000
+      - --workers 5
+      - --clean
+
+setting:
+  - module: IO
+    option:
+      - output: "{SvB}"
+  - module: ml.DataLoader
+    option:
+      - num_workers: 8

@@ -2,10 +2,10 @@ weights:
   UL16_preVFP: &weights_Run2
     JCM_file: "coffea4bees/metadata/weights/JCM/Run2_ttHbb/jetCombinatoricModel_SB_2024_v2_stitched.yml"
     SvB_MA: 
-      - path: 'root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_v3/classifier/SvB_ttHbb_v3/result.json'
+      - path: 'root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched/classifier/SvB_ttHbb_stitched/result.json'
         name: Final
     FvT: 
-      - path: 'root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_v3/classifier/FvT_ttHbb_v3/result.json'
+      - path: 'root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched/classifier/FvT_ttHbb_stitched/result.json'
         name: Final
   UL16_postVFP: *weights_Run2
   UL17: *weights_Run2
@@ -13,4 +13,3 @@ weights:
   2016: *weights_Run2
   2017: *weights_Run2
   2018: *weights_Run2
-
