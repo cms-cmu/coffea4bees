@@ -14,7 +14,7 @@ dataset:
       - --metadata coffea4bees/metadata/datasets/archive/Run2_2024_v2/
       - --max-workers 8 # use 8 workers to fetch metadatas for ROOT files
       - --data-source detector
-      - --friends "" coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_nominal_stitched.json@@HCR_input
+      - --friends "" coffea4bees/metadata/datasets/classifier_inputs_nominal_stitched.json@@HCR_input
 
 model:
   - module: HCR.FvT.baseline.Eval

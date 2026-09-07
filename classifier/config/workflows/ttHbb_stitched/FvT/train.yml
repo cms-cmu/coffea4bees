@@ -24,7 +24,7 @@ dataset:
       # HCR input friend trees. Must be the *stitched* index: it is
       # classifier_inputs_nominal.json plus the entries for the stitched
       # picoAODs, which the plain file does not have (friends are uuid-keyed).
-      - --friends "" coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_nominal_stitched.json@@HCR_input
+      - --friends "" coffea4bees/metadata/datasets/classifier_inputs_nominal_stitched.json@@HCR_input
 model:
   - module: HCR.FvT.baseline.Train # use the baseline model for FvT
     option:
