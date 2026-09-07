@@ -37,8 +37,8 @@ class ttHbbProcessor(HH4bBaseProcessor):
         **kwargs,
     ):
         logging.info("Initializing decoupled ttHbbProcessor")
-        if weights is None or weights == "coffea4bees/metadata/weights/weights_HH4b.yml":
-            weights = "coffea4bees/metadata/weights/weights_HH4b_2024_v2.yml"
+        if weights is None:
+            weights = "coffea4bees/metadata/weights/weights_ttHbb.yml"
         super().__init__(
             friends=friends,
             weights=weights,
@@ -127,6 +127,10 @@ class ttHbbProcessor(HH4bBaseProcessor):
         """Fill nominal ttHbb histograms as well as pass selJets.n > 6 sub-category."""
         n_selJets = ak.num(selev.selJets) if "selJets" in selev.fields else ak.num(selev.selJet)
         selev["pass_nSelJets_gt6"] = n_selJets > 6
+        selev["SR"] = selev.passSR
+        selev["SB"] = selev.passSB
+        selev["region"] = ak.zip({"SR": selev.passSR, "SB": selev.passSB})
+        selev["tag"] = ak.zip({"threeTag": selev.threeTag, "fourTag": selev.fourTag})
 
         if self.classifier_FvT:
             apply_FvT = True

@@ -18,7 +18,7 @@ from unittest.mock import MagicMock
 import matplotlib.pyplot as plt
 
 #
-# python3 coffea4bees/plots/tests/plot_test.py   --inputFile coffea4bees/analysis/hists/test.coffea --knownCounts src/tests/plotCounts.yml
+# python3 coffea4bees/plots/tests/plot_test.py   --inputFile coffea4bees/output/test.coffea --knownCounts src/tests/plotCounts.yml
 #
 
 class PlotTestCase(unittest.TestCase):
@@ -28,7 +28,7 @@ class PlotTestCase(unittest.TestCase):
 
         #self.plotsAllDict = yaml.safe_load(open(, 'r'))
         metadata = "coffea4bees/plots/metadata/plotsAll.yml"
-        #inputFile = "analysis/hists/test.coffea"
+        #inputFile = "output/test.coffea"
         inputFile = wrapper.args["inputFile"]
 
         cfg.plotConfig = load_config_4b(metadata)
@@ -38,7 +38,7 @@ class PlotTestCase(unittest.TestCase):
 
         #  Make these numbers with:
         #  >  python     src/tests/dumpPlotCounts.py --input [inputFileName] -o [outputFielName]
-        #       (python src/tests/dumpPlotCounts.py --input coffea4bees/analysis/hists/test.coffea --output src/tests/testPlotCounts.yml)
+        #       (python src/tests/dumpPlotCounts.py --input coffea4bees/output/test.coffea --output src/tests/testPlotCounts.yml)
         #
         knownCountFile = wrapper.args["knownCounts"]
         self.knownCounts = yaml.safe_load(open(knownCountFile, 'r'))

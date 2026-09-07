@@ -76,7 +76,30 @@ include: "helpers/common.smk"
 def get_raw_analysis_config():
     return resolve_config_section(config, primary_key='analysis_config', fallback_keys=['analysis'])
 
-original_config = workflow.configfiles[0] if workflow.configfiles else "coffea4bees/workflows/config/nominal_run2.yml"
+analysis_config_path = f"{config['output_path']}analysis_config.yml"
+
+def get_analysis_config_inputs(wildcards):
+    inputs = list(workflow.configfiles) if workflow.configfiles else []
+    ds_loc = config.get('analysis_dataset_location', config.get('dataset_location', ''))
+    if isinstance(ds_loc, str) and ds_loc.endswith(('.yml', '.yaml')):
+        inputs.append(ds_loc)
+    return inputs
+
+rule create_analysis_config:
+    input: get_analysis_config_inputs
+    output: analysis_config_path
+    run:
+        import yaml, os
+        cfg = get_raw_analysis_config()
+        if config.get("test", False):
+            if 'runner' not in cfg or not isinstance(cfg['runner'], dict):
+                cfg['runner'] = {}
+            cfg['runner']['condor'] = False
+            cfg['runner']['shared_dask'] = False
+            cfg['runner']['run_performance'] = False
+        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
+        with open(output[0], 'w') as f:
+            yaml.dump(cfg, f, default_flow_style=False)
 
 wildcard_constraints:
     year = "|".join([str(y) for y in config['year_eras'].keys()]),
@@ -107,7 +130,7 @@ if config.get("test", False):
         use rule analysis_processor from analysis as analysis_data with:
             input: 
                 runner_script = "runner.py",
-                config_file = original_config
+                config_file = analysis_config_path
             output: f"{config['output_path']}singlefiles/histAll_{config['label']}_data.coffea"
             log: f"{config['output_path']}logs/analysis_{config['label']}_data.log"
             params:
@@ -125,7 +148,7 @@ if config.get("test", False):
         use rule analysis_processor from analysis as analysis_MC with:
             input: 
                 runner_script = "runner.py",
-                config_file = original_config
+                config_file = analysis_config_path
             output: f"{config['output_path']}singlefiles/histAll_{config['label']}_signals.coffea"
             log: f"{config['output_path']}logs/analysis_{config['label']}_signals.log"
             params:
@@ -161,7 +184,7 @@ else:
         use rule analysis_processor from analysis as analysis_data with:
             input: 
                 runner_script = "runner.py",
-                config_file = original_config
+                config_file = analysis_config_path
             output: f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{{year}}_{{era}}.coffea"
             log: f"{config['output_path']}logs/analysis_{config['label']}_data__{{year}}_{{era}}.log"
             params:
@@ -178,7 +201,7 @@ else:
         use rule analysis_processor from analysis as analysis_dataset with:
             input: 
                 runner_script = "runner.py",
-                config_file = original_config
+                config_file = analysis_config_path
             output: f"{config['output_path']}singlefiles/histAll_{config['label']}__{{dataset}}__{{year}}.coffea"
             log: f"{config['output_path']}logs/analysis_{config['label']}_{{dataset}}_{{year}}.log"
             params:

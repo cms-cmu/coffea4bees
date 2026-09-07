@@ -381,22 +381,29 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, 
     #
     # TTBar
     #
-    ttbar_procs = ["TTTo2L2Nu", "TTToHadronic", "TTToSemiLeptonic"]
+    if getattr(args, 'pure_qcd', False):
+        if hist_multijet is not None:
+            hist_ttbar = hist_multijet.Clone()
+            hist_ttbar.Reset()
+        else:
+            hist_ttbar = None
+    else:
+        ttbar_procs = ["TTTo2L2Nu", "TTToHadronic", "TTToSemiLeptonic"]
 
-    hist_ttbar = combine_hists(input_file_TT,
-                               f"{var_name}_PROC_YEAR_threeTag_SR",
-                               years=all_years,
-                               procs=["TTbar4b_from_d3"],
-                               debug=args.debug)
-    if hist_ttbar is None:
         hist_ttbar = combine_hists(input_file_TT,
-                                   f"{var_name}_PROC_YEAR_fourTag_SR",
+                                   f"{var_name}_PROC_YEAR_threeTag_SR",
                                    years=all_years,
-                                   procs=["TTTo2L2Nu_for_mixed", "TTToHadronic_for_mixed", "TTToSemiLeptonic_for_mixed"],
+                                   procs=["TTbar4b_from_d3"],
                                    debug=args.debug)
-    if hist_ttbar is None and hist_multijet is not None:
-        hist_ttbar = hist_multijet.Clone()
-        hist_ttbar.Reset()
+        if hist_ttbar is None:
+            hist_ttbar = combine_hists(input_file_TT,
+                                       f"{var_name}_PROC_YEAR_fourTag_SR",
+                                       years=all_years,
+                                       procs=["TTTo2L2Nu_for_mixed", "TTToHadronic_for_mixed", "TTToSemiLeptonic_for_mixed"],
+                                       debug=args.debug)
+        if hist_ttbar is None and hist_multijet is not None:
+            hist_ttbar = hist_multijet.Clone()
+            hist_ttbar.Reset()
 
     f.cd(directory)
     hist_ttbar.SetName("ttbar")
@@ -826,17 +833,12 @@ class multijetEnsemble:
     
     def getParameterDistribution(self, basis):
         n = basis + 1
-        parMean    = np.array([0 for i in range(n)], dtype=float)
-        parMeanErr = np.array([0 for i in range(n)], dtype=float)
-        parMean2   = np.array([0 for i in range(n)], dtype=float)
-        for m in range(nMixes):
-            parMean    += self.fit_parameters[basis][m]    / nMixes
-            parMean2   += self.fit_parameters[basis][m]**2 / nMixes
-            parMeanErr += self.fit_parameters_error[basis][m] / nMixes
+        params = np.array([self.fit_parameters[basis][m] for m in range(nMixes)])
+        params_err = np.array([self.fit_parameters_error[basis][m] for m in range(nMixes)])
+        parMean = np.mean(params, axis=0)
+        parMeanErr = np.mean(params_err, axis=0)
         if nMixes > 1:
-            var = parMean2 - parMean**2
-            parStd  = var**0.5
-            parStd *= nMixes / (nMixes - 1)  # bessel's correction https://en.wikipedia.org/wiki/Bessel's_correction
+            parStd = np.std(params, axis=0, ddof=1)
         else:
             parStd = np.zeros_like(parMean)
         print('Parameter Mean:', parMean)
@@ -891,13 +893,7 @@ class multijetEnsemble:
         # check bin to bin correlations using pearson R test
         xs = np.array([self.pulls[basis][m * self.nBins_fit  : (m + 1) * self.nBins_fit - 1] for m in range(nMixes)])
         ys = np.array([self.pulls[basis][m * self.nBins_fit + 1: (m + 1) * self.nBins_fit  ] for m in range(nMixes)])
-        # x1s = np.array([self.pulls[basis][m * self.nBins_fit  : (m + 1) * self.nBins_fit-1] for m in range(nMixes)])
-        # y1s = np.array([self.pulls[basis][m * self.nBins_fit + 1: (m + 1) * self.nBins_fit  ] for m in range(nMixes)])
-        # x2s = np.array([self.pulls[basis][m * self.nBins_fit  : (m + 1) * self.nBins_fit - 2] for m in range(nMixes)])
-        # y2s = np.array([self.pulls[basis][m * self.nBins_fit+2: (m + 1) * self.nBins_fit  ] for m in range(nMixes)])
-        # x3s = np.array([self.pulls[basis][m * self.nBins_fit  : (m + 1) * self.nBins_fit-3] for m in range(nMixes)])
-        # y3s = np.array([self.pulls[basis][m * self.nBins_fit+3: (m + 1) * self.nBins_fit  ] for m in range(nMixes)])
-        # xs, ys = np.concatenate((x1s,x2s,x3s), axis=1), np.concatenate((y1s,y2s,y3s), axis=1)
+
         x, y = xs.flatten(), ys.flatten()
         r, p = pearsonr(x, y, n=len(x) - nMixes * (basis + 1))
 
@@ -961,6 +957,7 @@ class multijetEnsemble:
 
         plt.tight_layout()
         fig.savefig( f"{output_dir}/{name}_basis{rebin_name}{basis}.pdf" )
+        fig.savefig( f"{output_dir}/{name}_basis{rebin_name}{basis}.png" )
         plt.close(fig)
 
         fig, (ax) = plt.subplots(nrows=1)
@@ -989,6 +986,7 @@ class multijetEnsemble:
 
         plt.tight_layout()
         fig.savefig( f"{output_dir}/{name}_additive_basis{rebin_name}{basis}.pdf" )
+        fig.savefig( f"{output_dir}/{name}_additive_basis{rebin_name}{basis}.png" )
         plt.close(fig)
 
     
@@ -1029,6 +1027,7 @@ class multijetEnsemble:
 
         plt.tight_layout()
         fig.savefig( f"{output_dir}/0_variance_pearsonr_multijet_variance.pdf" )
+        fig.savefig( f"{output_dir}/0_variance_pearsonr_multijet_variance.png" )
         plt.close(fig)
 
     
@@ -1194,6 +1193,7 @@ class multijetEnsemble:
         projection = '_'.join([str(d) for d in projection])
         try:
             fig.savefig( f"{output_dir}/0_variance_parameters_basis{basis}_projection_{projection}.pdf" )
+            fig.savefig( f"{output_dir}/0_variance_parameters_basis{basis}_projection_{projection}.png" )
             plt.close(fig)
         except IndexError:
             print('Weird index error...')
@@ -1256,6 +1256,7 @@ class multijetEnsemble:
 
         plt.legend(fontsize='small', loc='upper left', ncol=2, title='Overall r=%0.2f (%2.0f%s)' % (r, p * 100, '\%'))
         fig.savefig( f'{output_dir}/0_variance_pull_correlation_basis{basis}.pdf' )
+        fig.savefig( f'{output_dir}/0_variance_pull_correlation_basis{basis}.png' )
         plt.close(fig)
 
     
@@ -1306,6 +1307,7 @@ class multijetEnsemble:
                       # 'rTitle'     : 'Model / Average',
                       'xTitle'    : xTitle,
                       'yTitle'    : 'Events',
+                      'logY'      : True,
                       'yMax'      : self.ymax[0] * 1.6,  # *ymaxScale, # make room to show fit parameters
                       'xleg'      : [0.13, 0.13 + 0.4],
                       'legendSubText' : ['#bf{Adjacent Bin Pull Correlation:}',
@@ -1967,6 +1969,7 @@ class closure:
         # print('fig.savefig( ' + name+' )')
         plt.tight_layout()
         fig.savefig( name )
+        fig.savefig( name.replace('.pdf', '.png') )
         plt.close(fig)
 
     
@@ -2004,6 +2007,7 @@ class closure:
 
         plt.tight_layout()
         fig.savefig( f'{output_dir}/1_bias_pvalues.pdf' )
+        fig.savefig( f'{output_dir}/1_bias_pvalues.png' )
         plt.close(fig)
 
     
@@ -2046,14 +2050,16 @@ class closure:
                 'ratio' : 'denom A',
                 'color' : color_multijet} #ffdf7f
                 #'color' : 'ROOT.kYellow'}
-        samples[closure_file_out]['%s/ttbar' % self.channel] = {
-            'label' : '#lower[0.10]{t#bar{t}}',
-            'legend': 3,
-            'stack' : 2,
-            'ratio' : 'denom A',
-            'color' : color_TTbar}
+        if not getattr(args, 'pure_qcd', False):
+            samples[closure_file_out]['%s/ttbar' % self.channel] = {
+                'label' : '#lower[0.10]{t#bar{t}}',
+                'legend': 3,
+                'stack' : 2,
+                'ratio' : 'denom A',
+                'color' : color_TTbar}
+        sig_label = 't#bar{t}H(#times100)' if self.channel in ['ttHbb', 'tth'] else 'ZZ+ZH+HH(#times100)'
         samples[closure_file_out]['%s/signal' % self.channel] = {
-            'label' : 'ZZ+ZH+HH(#times100)',
+            'label' : sig_label,
             'legend': 4,
             'weight': 100,
             'color' : 'ROOT.kViolet'}
@@ -2072,13 +2078,7 @@ class closure:
                       'rTitle'    : 'Data / Bkgd.',
                       'xTitle'    : xTitle,
                       'yTitle'    : 'Events',
-                    #   'logY'      : True,
-                    #   'yMax'      : 1.4 * (self.ymax[0]),  # *ymaxScale, # make room to show fit parameters
-                      # 'xleg'      : [0.13, 0.13 + 0.5] if 'SR' in region else ,
-                      #  'legendSubText' : ['#bf{Fit:}',
-                      #                     '#chi^{2}/DoF = %2.1f/%d = %1.2f'%(self.chi2[basis],self.ndf[basis],self.chi2[basis]/self.ndf[basis]),
-                      #                     'p-value = %2.0f%%'%(self.pvalue[basis] * 100),
-                      #                     ],
+                      'logY'      : True,
                       'lstLocation' : 'right',
                       'outputName': 'mix_%s' % (str(mix))}
 
@@ -2104,12 +2104,13 @@ class closure:
             'ratio' : 'denom A',
             'color' : color_multijet} #ffdf7f
             #'color' : 'ROOT.kYellow'}
-        samples[closure_file_out]['%s/ttbar_closure' % self.channel] = {
-            'label' : '#lower[0.10]{t#bar{t}}',
-            'legend': 3,
-            'stack' : 2,
-            'ratio' : 'denom A',
-            'color' : color_TTbar}
+        if not getattr(args, 'pure_qcd', False):
+            samples[closure_file_out]['%s/ttbar_closure' % self.channel] = {
+                'label' : '#lower[0.10]{t#bar{t}}',
+                'legend': 3,
+                'stack' : 2,
+                'ratio' : 'denom A',
+                'color' : color_TTbar}
         if not plotSpuriousSignal:
             samples[closure_file_out]['%s/closure_TH1_basis%d' % (self.channel, basis)] = {
                 'label' : 'Fit (%d unconstrained parameter%s)' % (basis + 1, 's' if basis else ''),
@@ -2127,8 +2128,9 @@ class closure:
                 'legend': 6,
                 'ratio': 'denom A',
                 'color' : 'ROOT.kViolet'}
+            sig_label = 't#bar{t}H(#times100)' if self.channel in ['ttHbb', 'tth'] else 'ZZ+ZH+HH(#times100)'
             samples[closure_file_out][f'{self.channel}/signal_closure'] = {
-                'label' : 'ZZ+ZH+HH(#times100)',
+                'label' : sig_label,
                 'legend': 7,
                 'weight': 100,
                 'color' : 'ROOT.kViolet+7'}
@@ -2162,6 +2164,7 @@ class closure:
                       # 'rTitle'     : 'Model / Average',
                       'xTitle'    : xTitle,
                       'yTitle'    : 'Events',
+                      'logY'      : True,
                       'yMax'      : self.ymax[0] * ymaxScale,   # *ymaxScale, # make room to show fit parameters
                       'xleg'      : [0.13, 0.13 + 0.42],
                       'lstLocation': 'right',
@@ -2246,11 +2249,11 @@ if __name__ == "__main__":
     parser.add_argument('--nMixes', type=int, default=15, help="Number of mixes or synthetic datasets")
     parser.add_argument('--classifier', help="SvB or SvB_MA")
     parser.add_argument('--region', default="SR", help="SR or SB")
-    parser.add_argument('--input_file_data3b',default="hists/histMixedBkg_data_3b_for_mixed.root")
-    parser.add_argument('--input_file_TT',    default="hists/histMixedBkg_TT.root")
-    parser.add_argument('--input_file_mix',   default="hists/histMixedData.root")
-    parser.add_argument('--input_file_sig',   default="hists/histSignal.root")
-    #parser.add_argument('--input_file_sig_preUL',   default="analysis/hists/histSignal_preUL.root")
+    parser.add_argument('--input_file_data3b',default="output/histMixedBkg_data_3b_for_mixed.root")
+    parser.add_argument('--input_file_TT',    default="output/histMixedBkg_TT.root")
+    parser.add_argument('--input_file_mix',   default="output/histMixedData.root")
+    parser.add_argument('--input_file_sig',   default="output/histSignal.root")
+    #parser.add_argument('--input_file_sig_preUL',   default="output/histSignal_preUL.root")
     parser.add_argument('--channel', default=None, help="Channel: ttHbb, hh, zh, zz")
     parser.add_argument('--var', default="SvB_MA_ps_hh", help="SvB_MA_ps_XX or SvB_MA_ps_XX_fine")
     parser.add_argument('--rebin', default=1)
@@ -2266,6 +2269,8 @@ if __name__ == "__main__":
     #parser.add_argument('--skip_plots',   dest="do_plots",    action="store_false")
     parser.add_argument('--years', nargs='+', default=["2016", "2017", "2018"], help="List of years (e.g. 2017 2018 or UL17 UL18)")
     parser.add_argument('--do_CI',   action="store_true")
+    parser.add_argument('--pure_qcd', '--no_ttbar', dest='pure_qcd', action="store_true", default=False, help="Pure QCD closure mode with zero ttbar")
+    parser.add_argument('--auto_scale_mixed', action="store_true", default=False, help="Auto scale mixed flag (passed from pipeline)")
 
     args = parser.parse_args()
     print(f"\nRunning with these parameters: {args}")

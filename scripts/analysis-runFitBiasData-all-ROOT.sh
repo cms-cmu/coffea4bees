@@ -12,7 +12,7 @@ fi
 #  In hist environment
 # 
 
-python coffea4bees/stats_analysis/convert_hist_to_json.py --input coffea4bees/analysis/hists/histAll.coffea --output ${OUTPUT_DIR}/histAll.json
+python coffea4bees/stats_analysis/convert_hist_to_json.py --input coffea4bees/output/histAll.coffea --output ${OUTPUT_DIR}/histAll.json
 
 ## In root envirornment
 #

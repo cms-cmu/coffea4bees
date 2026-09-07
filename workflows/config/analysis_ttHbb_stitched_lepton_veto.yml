@@ -1,8 +1,8 @@
 # ==============================================================================
 # GLOBAL WORKFLOW CONFIGURATION
 # ==============================================================================
-label: "ttHbb_stitched"
-output_path: "output/ttHbb_stitched/"
+label: "ttHbb_stitched_lepton_veto"
+output_path: "output/ttHbb_stitched_lepton_veto/"
 cern_user: "algomez"
 cern_path: "www/ttHbb/Plots/"
 
@@ -200,6 +200,7 @@ analysis_config:
     apply_trigWeight: true
     apply_btagSF: true
     apply_boosted_veto: false
+    apply_lepton_veto: true
     run_SvB: true
     SvB_MA: true
     SvB: null
@@ -220,7 +221,7 @@ convert_hist_to_json:
     - "SvB_MA.ps_ttHbb"
     - "SvB_MA.ps"
 
-combine_outdir: "datacards/"
+combine_outdir: "datacards/ttHbb_stitched_lepton_veto/"
 make_combine_inputs:
   stat_only: ""
   bkgsyst: "output/ttHbb_mixeddata_closure/closure_fits/3bDvTMix4bDvT/SvB_MA/rebin1/SR/ttHbb/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_rebin1.pkl"

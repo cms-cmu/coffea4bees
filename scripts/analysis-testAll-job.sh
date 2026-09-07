@@ -30,6 +30,6 @@ python runner.py -o hist_TTbkgs.coffea  -d  TTToHadronic TTToSemiLeptonic TTTo2L
 
 #python coffea4bees/analysis/tests/cutflow_test.py   --inputFile ${OUTPUT_DIR}/histAll.coffea --knownCounts coffea4bees/analysis/tests/histAllCounts.yml
 
-# python runner.py -d data TTToHadronic TTToSemiLeptonic TTTo2L2Nu ZZ4b ZH4b GluGluToHHTo4B_cHHH1 -c coffea4bees/analysis/metadata/HH4b_noFvT.yml   -p coffea4bees/analysis/processors/processor_HH4b.py  -y UL17 UL18 UL16_preVFP UL16_postVFP -o histAll_noFvT.coffea -op hists/
+# python runner.py -d data TTToHadronic TTToSemiLeptonic TTTo2L2Nu ZZ4b ZH4b GluGluToHHTo4B_cHHH1 -c coffea4bees/analysis/metadata/HH4b_noFvT.yml   -p coffea4bees/analysis/processors/processor_HH4b.py  -y UL17 UL18 UL16_preVFP UL16_postVFP -o histAll_noFvT.coffea -op output/
 
 

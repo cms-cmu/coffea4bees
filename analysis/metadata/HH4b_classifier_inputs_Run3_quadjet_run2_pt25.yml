@@ -2,7 +2,7 @@ runner:
   workers: 4
   worker_memory: 5GB
   # worker_memory: 7GB
-  # friend_base: hists/local/
+  # friend_base: output/local/
   # chunksize: 10000
   chunksize: 100000
   worker_log_directory: /uscms_data/d3/jda102/HH4b/Run3/barista/dask_logs
