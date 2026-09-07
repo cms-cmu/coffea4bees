@@ -57,6 +57,17 @@ This is a **separate git repository** from barista, cloned into `barista/coffea4
 | `scripts/` | CI and test shell scripts |
 | `tests/` | Python unit tests (`plots_test.py`, etc.) |
 
+### Metadata structure
+
+The analysis metadata is stored in the `metadata/` folder.
+The metadata files corresponding to each purpose should be stored in the corresponding subfolders:
+
+| Directory | Purpose |
+|-----------|---------|
+| `metadata/friends` | Stores YAML files containing metadata of friends |
+| `metadata/datasets` | Stores YAML files containing metadata of PicoAOD datasets |
+| `metadata/weights` | Stores YAML files containing metadata of weights |
+
 ### Running the Analysis
 
 ```bash
