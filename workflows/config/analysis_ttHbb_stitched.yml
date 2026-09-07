@@ -106,7 +106,7 @@ jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb
 
 classifier_inputs:
   processor: "coffea4bees/analysis/processors/processor_HH4b.py"
-  friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb_stitched.yml"
+  friend_file: "coffea4bees/metadata/friends/friends_ttHbb_stitched.yml"
   weights_file: "coffea4bees/metadata/weights/weights_ttHbb_stitched.yml"
   datasets:
     - "ttHbb"
@@ -178,7 +178,7 @@ fvt:
   friend: "{eos_base}/friend/{label}"
   train_template: "model: {eos_base}/classifier/{label}"
   eval_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/{label}"
-  metadata: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_ttHbb.json@@HCR_input"
+  metadata: "coffea4bees/metadata/datasets/classifier_inputs_nominal_stitched.json@@HCR_input"
 
 svb:
   eos_base: "root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/stitched/"
@@ -193,7 +193,7 @@ svb:
   friend: "{eos_base}/friend/{label}"
   train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_ttHbb_v2"
   eval_template: "model: {eos_base}/classifier/{label}, SvB: {eos_base}/friend/{label}"
-  metadata: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/classifier_inputs_ttHbb.json@@HCR_input"
+  metadata: "coffea4bees/metadata/datasets/classifier_inputs_nominal_stitched.json@@HCR_input"
 
 # ==============================================================================
 # PHASE F.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
@@ -201,7 +201,7 @@ svb:
 analysis_config:
   processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
   dataset_location: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/"
-  friend_file: "coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb_stitched.yml"
+  friend_file: "coffea4bees/metadata/friends/friends_ttHbb_stitched.yml"
   weights_file: "coffea4bees/metadata/weights/weights_ttHbb_stitched.yml"
   runner:
     workers: 4
