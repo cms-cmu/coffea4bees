@@ -121,6 +121,11 @@ def get_raw_classifier_inputs_config():
         res['config'] = {}
     res['config'].setdefault('make_classifier_input', f"{config['output_path']}classifier_inputs/")
     res['config'].setdefault('fill_histograms', False)
+    res['config']['apply_FvT'] = False
+    res['config']['run_SvB'] = False
+    for k in list(res['config'].keys()):
+        if k.startswith('SvB') or k == 'FvT':
+            res['config'][k] = None
 
     return res
 
