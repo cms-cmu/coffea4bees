@@ -126,6 +126,8 @@ ZH4b:
       total_events: 4703421
   xs:
     Run2: 0.7612*0.5824*0.1512
+  xs:
+    Run2: '0.7612*0.5824*0.1512'
     Run3: 1
 ggZH4b:
   UL16_postVFP:
