@@ -124,7 +124,6 @@ ZH4b:
       sumw2_raw: 1866307.7946118847
       sumw_raw: 2788033.462461001
       total_events: 4703421
-<<<<<<< HEAD
   '2024':
     nanoAOD: root://cmsio3.rc.ufl.edu//store/user/ekoenig/Run3_private_production/2024/mc/ZH_ZToBB_HToBB_M-125_2024/
     picoAOD:
