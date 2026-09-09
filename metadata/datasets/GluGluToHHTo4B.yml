@@ -44,7 +44,9 @@ GluGluToHHTo4B_cHHH0:
       sumw: 58023.9636257
       sumw2: 615626.6029922854
       total_events: 978000
-  xs: 0.07038*0.5824**2
+  xs:
+    Run2: '0.06856*0.5824**2'
+    Run3: '0.075766*0.5824**2'
 GluGluToHHTo4B_cHHH1:
   UL16_postVFP:
     nanoAOD: /GluGluToHHTo4B_cHHH1_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v1/NANOAODSIM
@@ -92,7 +94,9 @@ GluGluToHHTo4B_cHHH1:
       sumw: 28210.3267947
       sumw2: 1193909.4220537543
       total_events: 1000000
-  xs: 0.03105*0.5824**2
+  xs:
+    Run2: '0.03077*0.5824**2'
+    Run3: '0.034170*0.5824**2'
 GluGluToHHTo4B_cHHH2p45:
   UL16_postVFP:
     nanoAOD: /GluGluToHHTo4B_cHHH2p45_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v1/NANOAODSIM
@@ -140,7 +144,9 @@ GluGluToHHTo4B_cHHH2p45:
       sumw: 10752.851367299998
       sumw2: 357.94212966148234
       total_events: 950000
-  xs: 0.01310*0.5824**2
+  xs:
+    Run2: '0.01333*0.5824**2'
+    Run3: '0.014814*0.5824**2'
 GluGluToHHTo4B_cHHH5:
   UL16_postVFP:
     nanoAOD: /GluGluToHHTo4B_cHHH5_TuneCP5_PSWeights_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v1/NANOAODSIM
@@ -185,4 +191,6 @@ GluGluToHHTo4B_cHHH5:
       sumw: 78489.34013980003
       sumw2: 6400.488181203013
       total_events: 994000
-  xs: 0.09482*0.5824**2
+  xs:
+    Run2: '0.088012*0.5824**2'
+    Run3: '0.097259*0.5824**2'
