@@ -1,0 +1,51 @@
+### tt+bb stitching, stage 2: write the stitched picoAODs.
+###
+### Runs StitchTTbb over the *existing* picoAODs of both the inclusive ttbar and
+### the dedicated TTbb samples in a single pass:
+###   - inclusive (TTTo2L2Nu, TTToSemiLeptonic, TTToHadronic) -> keep tt+C, tt+LF
+###   - TTbb (TTbb_2L2Nu, TTbb_SemiLeptonic, TTbb_Hadronic)   -> keep tt+B, genWeight *= k
+###
+### The scale factors k must be produced first by
+###   coffea4bees/skimmer/tools/ttbb_stitch_factors.py
+###
+### Usage (from the barista root):
+###   ./run_container python runner.py -s \
+###     -p coffea4bees/skimmer/processor/stitch_ttbb.py \
+###     -c coffea4bees/skimmer/metadata/stitch_ttbb.yml \
+###     -m coffea4bees/metadata/datasets/archive/Run2_2024_v2/TT.yml \
+###     -y UL16_preVFP UL16_postVFP UL17 UL18 \
+###     -d TTTo2L2Nu TTToSemiLeptonic TTToHadronic \
+###        TTbb_2L2Nu TTbb_SemiLeptonic TTbb_Hadronic \
+###     -o picoaod_datasets_ttbb_stitched.yml \
+###     -op coffea4bees/skimmer/metadata/
+
+runner:
+  min_workers: 1
+  max_workers: 200
+  chunksize: 100000
+  picosize: 100000
+  basketsize: 10000
+  class_name: StitchTTbb
+  # Input is the already-skimmed picoAOD, not nanoAOD.
+  data_tier: picoAOD
+  condor_cores: 1
+  worker_memory: 4GB
+  condor_transfer_input_files:
+    - src/
+    - coffea4bees/analysis/
+    - coffea4bees/skimmer/
+    - coffea4bees/metadata/
+  allowlist_sites:
+    - T3_US_FNALLPC
+    - T2_US_Nebraska
+    - T2_US_Purdue
+
+config:
+  base_path: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/stitched/
+  step: 100000
+  stitch_factors: coffea4bees/skimmer/metadata/ttbb_stitch_factors.json
+  # Pinned (not auto-generated) so that re-running after a failure resumes from
+  # the chunks already written instead of redoing them.
+  campaign: ttbb-stitch-2024_v2
+  # No skip_collections / skip_branches on purpose: every branch of the input
+  # picoAOD is copied through untouched, except genWeight on the TTbb side.
