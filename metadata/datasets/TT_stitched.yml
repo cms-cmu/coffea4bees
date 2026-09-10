@@ -92,7 +92,9 @@ TTTo2L2Nu_stitched:
       sumw: 10457566706.558405
       sumw2: 766436910175.5074
       total_events: 145020000
-  xs: 88.3419033256
+  xs:
+    Run2: 88.3419033256
+    Run3: 1
 TTToHadronic_stitched:
   UL16_postVFP:
     picoAOD:
@@ -349,7 +351,9 @@ TTToHadronic_stitched:
       sumw: 104496070002.77995
       sumw2: 33338775625824.34
       total_events: 332886000
-  xs: 377.9607353256
+  xs:
+    Run2: 377.9607353256
+    Run3: 1
 TTToSemiLeptonic_stitched:
   UL16_postVFP:
     picoAOD:
@@ -551,4 +555,6 @@ TTToSemiLeptonic_stitched:
       sumw: 142678965755.2601
       sumw2: 43635452378226.8
       total_events: 474164000
-  xs: 365.7826460496
+  xs:
+    Run2: 365.7826460496
+    Run3: 1
