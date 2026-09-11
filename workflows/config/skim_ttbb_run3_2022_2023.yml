@@ -1,0 +1,116 @@
+# =============================================================================
+# Phase A.1 -- skim the Run 3 4FS TTbb samples, 2022 + 2023 eras
+# =============================================================================
+# Produces the picoAODs that the tt+bb stitching (Phase A.2) needs. There were
+# none for Run 3; TT.yml only carried nanoAOD DAS paths for TTbb_*.
+#
+# WHY THIS FILE IS SPLIT FROM THE 2024 ONE
+# ----------------------------------------
+# The stitch scale factor k = sumw_ttB(inclusive)/sumw_ttB(TTbb) is measured at
+# *picoAOD* level, so the TTbb half must be skimmed with the same acceptance as
+# the inclusive half it will be combined with. The two inclusive Run 3
+# productions do not agree on one cut:
+#
+#   inclusive 2022/2023 (skimmed 2025-09-02)  passHLT = 100%   -> NOT HLT-filtered
+#   inclusive 2024      (skimmed 2026-02-27)  passHLT = 26.5%  -> HLT-filtered
+#
+# Verified directly on the files: the analysis trigger OR passes 41.9% of
+# TTToSemiLeptonic_2022_preEE/picoAOD.chunk0.root but 100.0% of
+# TTToSemiLeptonic_2024/picoAOD.chunk0.root.
+#
+# The cause is analysis/helpers/processor_config.py, where the `isRun3` rule
+# re-enables cut_on_HLT_decision for MC after the `isMC` rule disabled it. That
+# line landed 2026-02-16 ("update Run3 configuration for jet calibration and HLT
+# decision") -- after the 2022/2023 skim, before 2024's. So today's code
+# reproduces the 2024 production, not the 2022/2023 one.
+#
+# Skimming TTbb 2022/2023 with the default would HLT-filter the TTbb half while
+# its inclusive partner is unfiltered, inflating k by ~1/0.265 ~ 3.8x and
+# over-normalising tt+B in the analysis region. Stage 3's closure gate and
+# stage 4's verification would both still pass -- they only test the
+# picoAOD-level identity k is built to satisfy -- so nothing downstream would
+# catch it. Hence the explicit override below.
+#
+# The HLT branches are retained in the picoAOD either way, so the analysis still
+# applies the trigger cut itself; the final analysis samples are equivalent.
+# =============================================================================
+
+label: "skim_ttbb_run3_2022_2023"
+output_path: "output/skim_ttbb_run3_2022_2023/"
+
+# Single file (the runner auto-wraps a bare dataset yml), so the write-back from
+# merge_yaml_datasets is a drop-in TT.yml rather than a monolith of every dataset.
+dataset_location: "coffea4bees/metadata/datasets/TT.yml"
+
+dataset:
+  - "TTbb_2L2Nu"
+  - "TTbb_SemiLeptonic"
+  - "TTbb_Hadronic"
+
+years:
+  - "2022_preEE"
+  - "2022_EE"
+  - "2023_preBPix"
+  - "2023_BPix"
+
+skimmer:
+  # skimmer_config is deliberately left at its default,
+  # coffea4bees/skimmer/metadata/HH4b.yml, so the selection (loosePtForSkim, the
+  # skip_collections/skip_branches lists, and genTtbarId's survival) is identical
+  # to the inclusive Run 3 production. Only the destination, the resume key and
+  # the HLT override are set here.
+  runner:
+    condor_cores: 1
+    worker_memory: 8GB
+    # 10000, not HH4b.yml's default 100000: at 100000 with 8GB workers the
+    # TTbb_SemiLeptonic_2023_BPix job died with KilledWorker (4 workers lost on
+    # the same chunk). The Run 2 TTbb skim used 10000 at the same worker_memory
+    # and completed, so this matches a configuration proven on these samples.
+    # picosize stays 100000 so output files are not needlessly fragmented
+    # (chunks accumulate into output files; only processing granularity changes).
+    chunksize: 10000
+    picosize: 100000
+    basketsize: 10000
+    condor: true
+    # false on purpose: each job builds its own condor cluster, which avoids the
+    # shared-dask scheduler-file race. Only 15 jobs, so the extra startup is cheap.
+    shared_dask: false
+    run_performance: true
+    condor_transfer_input_files:
+      - src/
+      - coffea4bees/skimmer/
+      - coffea4bees/analysis/
+      - coffea4bees/metadata/
+    # Site policy set from the measured replica map, not guessed. T1_US_FNAL_Disk
+    # holds a COMPLETE copy of 14 of the 15 TTbb dataset/eras -- the same site as
+    # the workers, so reads are local. The one exception,
+    # TTbb_Hadronic/2023_BPix, is complete at T2_US_Caltech.
+    # T1_US_FNAL_Disk must be listed: without it 10 of 15 fall back to foreign
+    # replicas (CNAF, JINR) or to T1_US_FNAL_Tape, and a first parity test lost
+    # 4 of 5 input files to silent read failures via T2_US_Purdue.
+    allowlist_sites:
+      - T1_US_FNAL_Disk
+      - T3_US_FNALLPC
+      - T2_US_Caltech
+      - T2_US_Wisconsin
+      - T2_US_Nebraska
+      - T2_US_Florida
+      - T2_US_MIT
+      - T3_US_Baylor
+      - T3_US_Rutgers
+  config:
+    base_path: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/
+    # Pinned, not auto-generated: lets a re-run after an eviction resume from the
+    # chunks already written instead of redoing the era.
+    campaign: ttbb-skim-run3-v1
+    step: 100000
+    loosePtForSkim: true
+    # Pin the object-selection thresholds to match the inclusive productions: the
+    # default file's era_overrides block sets the 2023 jet selected.pt_min to 25
+    # (added 2026-06-02), but the inclusive 2023 picoAODs were skimmed when it was
+    # hardcoded 30. Measured effect on the nJet>=4 gate: ~+5%. Identical to the
+    # default for 2022 and 2024. See that file's header.
+    object_selection_cfg: coffea4bees/analysis/metadata/object_selection_thresholds_run3_skim_parity.yml
+    # See the header. Matches the unfiltered inclusive 2022/2023 picoAODs.
+    config_overrides:
+      cut_on_HLT_decision: false

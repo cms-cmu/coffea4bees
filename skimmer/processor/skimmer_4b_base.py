@@ -23,6 +23,7 @@ class Skimmer4b(PicoAOD):
             corrections_metadata: dict = None,
             object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
             friends: dict[str, str | FriendTemplate] = None,
+            config_overrides: dict = None,
             *args, **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -31,6 +32,9 @@ class Skimmer4b(PicoAOD):
         self.sel_cfg = load_object_selection_config(object_selection_cfg) if object_selection_cfg else None
         self._cutFlow = cutflow_4b()
         self.friends = parse_friends(friends)
+        # Applied last by processor_config(); see its docstring. Needed to skim an
+        # input that must stay consistent with an earlier production.
+        self.config_overrides = dict(config_overrides) if config_overrides else None
 
     def _parse_event_metadata(self, event):
         """Extract common event metadata into a SimpleNamespace.
@@ -41,7 +45,7 @@ class Skimmer4b(PicoAOD):
         year = event.metadata['year']
         dataset = event.metadata['dataset']
         processName = event.metadata['processName']
-        config = processor_config(processName, dataset, event)
+        config = processor_config(processName, dataset, event, self.config_overrides)
         fname = event.metadata['filename']
         estart = event.metadata['entrystart']
         estop = event.metadata['entrystop']
@@ -57,6 +61,6 @@ class Skimmer4b(PicoAOD):
     def preselect(self, event):
         dataset = event.metadata['dataset']
         processName = event.metadata['processName']
-        config = processor_config(processName, dataset, event)
+        config = processor_config(processName, dataset, event, self.config_overrides)
         if config["isMC"] and self.mc_outlier_threshold is not None and "genWeight" in event.fields:
             return OutlierByMedian(self.mc_outlier_threshold)(event.genWeight)

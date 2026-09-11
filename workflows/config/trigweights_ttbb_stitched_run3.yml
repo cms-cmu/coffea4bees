@@ -1,0 +1,70 @@
+# =============================================================================
+# Phase A.3 -- trigger-weight friend trees for the Run 3 stitched ttbar samples
+# =============================================================================
+# Runs AFTER the stitch (Phase A.2), not on the raw TTbb picoAODs. Friend trees
+# are keyed by picoAOD file UUID + entry range
+# (src/friendtrees/dump_friend.py names them
+#  {path1}/{name}_{uuid}_{start}_{stop}_{path0}), and the stitch writes brand-new
+# picoAODs -- so friends made for the raw TTbb skim would never be found by the
+# stitched dataset.
+#
+# ALL datasets must go in ONE invocation: the merge rule writes a single
+# fixed-path trigger_weights_friends.json built from
+# expand(dataset=config['dataset'], ...), so a second run with a different
+# dataset list overwrites it with only that list's entries. The per-dataset
+# JSONs survive, so it looks complete but is not.
+# =============================================================================
+
+label: "trigweights_ttbb_stitched_run3"
+output_path: "output/trigweights_ttbb_stitched_run3/"
+
+# Directory, so TT_stitched.yml is picked up alongside TT.yml. Safe now that the
+# colliding TT_run2/TT_run3 files are gone (runner.py merges every yml here in
+# os.listdir order).
+dataset_location: "coffea4bees/metadata/datasets/"
+
+dataset:
+  - "TTTo2L2Nu_stitched"
+  - "TTToSemiLeptonic_stitched"
+  - "TTToHadronic_stitched"
+
+years:
+  - "2022_preEE"
+  - "2022_EE"
+  - "2023_preBPix"
+  - "2023_BPix"
+  - "2024"
+
+trigger_weights:
+  processor: "coffea4bees/analysis/processors/processor_trigger_weights.py"
+  runner:
+    condor_cores: 1
+    worker_memory: 8GB
+    chunksize: 10000
+    condor: true
+    # Own cluster per job: avoids the shared-dask scheduler-file race.
+    shared_dask: false
+    run_performance: true
+    # Trimmed on purpose. The default ['coffea4bees/', 'src/'] ships .git (~117 MB)
+    # and jet_clustering (~170 MB) to every worker -- cluster.py tars with no
+    # exclusions. processor_trigger_weights.py only reaches coffea4bees.analysis
+    # and src.
+    condor_transfer_input_files:
+      - src/
+      - coffea4bees/analysis/
+      - coffea4bees/metadata/
+    allowlist_sites:
+      - T1_US_FNAL_Disk
+      - T3_US_FNALLPC
+      - T2_US_Caltech
+      - T2_US_Wisconsin
+      - T2_US_Nebraska
+  config:
+    # MY OWN EOS area. The default here is the local output_path, and several
+    # shipped configs point at /store/user/algomez/... which is not writable --
+    # either way the failure only surfaces at the friend-merge step, after all the
+    # compute.
+    make_classifier_input: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/
+    # Run 3 defaults, stated explicitly rather than relying on the is_run2 branch.
+    use_vectorized: true
+    tagger: PNet
