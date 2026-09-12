@@ -45,7 +45,10 @@ runner:
   # Input is the already-skimmed picoAOD, not nanoAOD.
   data_tier: picoAOD
   condor_cores: 1
-  worker_memory: 4GB
+  # 8GB, not Run 2's 4GB: stage 2 copies every branch through, and Run 3
+  # picoAODs carry 411 (v12) to 575 (v15) branches. The Phase A.1 skim hit
+  # merge-step OOMs at 4GB-class limits, so this is cheap insurance.
+  worker_memory: 8GB
   condor_transfer_input_files:
     - src/
     - coffea4bees/analysis/
@@ -59,7 +62,16 @@ runner:
 config:
   base_path: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/stitched/
   step: 100000
-  stitch_factors: coffea4bees/skimmer/metadata/ttbb_stitch_factors_run3.json
+  # ANALYSIS-level k (stage 1 run with --selection analysis), not the picoAOD-level
+  # one. The inclusive and TTbb picoAODs were produced by different code
+  # generations, so their skim acceptances differ (measured 0.52 for 2022/2023 and
+  # 0.81 for 2024). A picoAOD-level k therefore mis-normalises tt+B once the
+  # analysis cut is applied, and the picoAOD-level closure test cannot see it
+  # because k is built to satisfy exactly that identity. Measuring k over the
+  # analysis preselection -- a region inside both skims -- makes the common
+  # inefficiency cancel and preserves the tt+B yield where the analysis operates.
+  # ttbb_stitch_factors_run3.json (picoAOD level) is kept for comparison.
+  stitch_factors: coffea4bees/skimmer/metadata/ttbb_stitch_factors_run3_analysis.json
   # Pinned (not auto-generated) so that re-running after a failure resumes from
   # the chunks already written instead of redoing them. Projected output is
   # ~500 GB over ~2500 chunks, so resumability matters more here than in Run 2.
