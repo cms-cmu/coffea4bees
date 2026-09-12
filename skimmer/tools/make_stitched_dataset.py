@@ -12,11 +12,28 @@ generator-level ``sumw``, so the analysis normalisation
 is numerically identical to running on the unmodified inclusive sample, while
 the tt+B events and their shapes come from the dedicated TTbb sample.
 
-The closure that is asserted here is the one that defines the stitching:
+Which closure is asserted depends on the region stage 1 measured k over, recorded
+as ``stitch[channel][era]["selection"]`` in the factors JSON:
 
-    sumw(stitched picoAOD) == sumw(inclusive picoAOD)
+``picoaod``
+    The identity that defines a picoAOD-level stitch:
 
-using the ``stitch_sumw_*`` counters that the processor emitted per dataset.
+        sumw(stitched picoAOD) == sumw(inclusive picoAOD)
+
+    checked from the ``stitch_sumw_*`` counters the processor emitted.
+
+``analysis``
+    k was measured over the analysis preselection, so the picoAOD-level identity
+    above is **deliberately not** satisfied and asserting it would reject a
+    correct sample. What holds instead is
+
+        k * sumw_ttB(TTbb, analysis sel) == sumw_ttB(inclusive, analysis sel)
+
+    i.e. the tt+B yield is preserved where the analysis operates. That identity is
+    exact by construction in stage 1, so what stage 3 can usefully verify here is
+    that stage 2 actually applied the intended factors: the TTbb side scaled by
+    exactly k and the inclusive side left unscaled. The picoAOD-level ratio is
+    still reported, as information rather than as a gate.
 
 Run from the barista root::
 
@@ -69,10 +86,38 @@ def build(factors, skim_out, datasets, suffix, tol=CLOSURE_TOL):
             sumw_before = a["stitch_sumw_in"]
             sumw_after = a["stitch_sumw_selected_scaled"] + b["stitch_sumw_selected_scaled"]
             rel = (sumw_after - sumw_before) / sumw_before
-            ok = abs(rel) <= tol
-            if not ok:
-                failures.append((channel, era, sumw_before, sumw_after, rel))
-            report.append((channel, era, sumw_before, sumw_after, rel, ok))
+
+            if spec.get("selection") == "analysis":
+                # picoAOD-level preservation is not the property being claimed;
+                # verify instead that stage 2 applied the intended scale factors.
+                for key, blob in ((incl_key, a), (ttbb_key, b)):
+                    if "stitch_sumw_selected_raw" not in blob:
+                        raise SystemExit(
+                            f"{key}: missing 'stitch_sumw_selected_raw', needed to "
+                            f"verify the applied scale for an analysis-level k"
+                        )
+                applied_ttbb = (
+                    b["stitch_sumw_selected_scaled"] / b["stitch_sumw_selected_raw"]
+                    if b["stitch_sumw_selected_raw"] else float("nan")
+                )
+                applied_incl = (
+                    a["stitch_sumw_selected_scaled"] / a["stitch_sumw_selected_raw"]
+                    if a["stitch_sumw_selected_raw"] else float("nan")
+                )
+                d_ttbb = abs(applied_ttbb / spec["scale"] - 1.0)
+                d_incl = abs(applied_incl - 1.0)
+                ok = d_ttbb <= tol and d_incl <= tol
+                if not ok:
+                    failures.append((channel, era, applied_ttbb, spec["scale"],
+                                     max(d_ttbb, d_incl)))
+                # report the scale check; keep the picoAOD ratio for the entry
+                report.append((channel, era, spec["scale"], applied_ttbb,
+                               max(d_ttbb, d_incl), ok))
+            else:
+                ok = abs(rel) <= tol
+                if not ok:
+                    failures.append((channel, era, sumw_before, sumw_after, rel))
+                report.append((channel, era, sumw_before, sumw_after, rel, ok))
 
             # --- the merged dataset entry ----------------------------------------
             src = datasets[incl_name]
@@ -105,6 +150,12 @@ def build(factors, skim_out, datasets, suffix, tol=CLOSURE_TOL):
                         "sumw_picoaod_inclusive_before": sumw_before,
                         "sumw_picoaod_stitched_after": sumw_after,
                         "closure_rel": rel,
+                        # region k was measured over; with "analysis" the
+                        # closure_rel above is expected to be non-zero by design
+                        "k_selection": spec.get("selection", "picoaod"),
+                        "closure_analysis_rel": spec.get("closure_analysis_rel"),
+                        "analysis_eff_inclusive": spec.get("analysis_eff_inclusive"),
+                        "analysis_eff_ttbb": spec.get("analysis_eff_ttbb"),
                         "n_from_inclusive": int(a["stitch_n_out"]),
                         "n_from_ttbb": int(b["stitch_n_out"]),
                     },
@@ -148,7 +199,17 @@ def main(argv=None):
         factors, skim_out, datasets, args.suffix, args.tolerance
     )
 
-    print(f"{'channel/era':30s} {'sumw before':>20s} {'sumw after':>20s} {'rel':>12s}  ok")
+    analysis_k = any(
+        e.get("selection") == "analysis"
+        for eras in factors.get("stitch", {}).values() for e in eras.values()
+    )
+    if analysis_k:
+        print("k measured over the ANALYSIS preselection: the gate below checks that")
+        print("stage 2 applied it (TTbb scaled by k, inclusive unscaled), not the")
+        print("picoAOD-level sumw identity, which is non-zero by design here.\n")
+        print(f"{'channel/era':30s} {'k expected':>20s} {'k applied':>20s} {'dev':>12s}  ok")
+    else:
+        print(f"{'channel/era':30s} {'sumw before':>20s} {'sumw after':>20s} {'rel':>12s}  ok")
     print("-" * 92)
     for channel, era, before, after, rel, ok in report:
         print(
@@ -157,8 +218,9 @@ def main(argv=None):
         )
 
     if failures and not args.allow_closure_failure:
+        what = "applied-scale check" if analysis_k else "genWeight closure"
         raise SystemExit(
-            f"\ngenWeight closure failed for {len(failures)} (channel, era) "
+            f"\n{what} failed for {len(failures)} (channel, era) "
             f"combination(s); refusing to write {args.output}"
         )
 
