@@ -13,3 +13,12 @@ workflow_validation_coffea4bees:
     - python -m snakemake -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml -n
     - python -m snakemake -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/nominal_run3.yml -n
     - python -m snakemake -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/analysis_ttHbb.yml -n
+    - mkdir -p output/ttHbb_stitched/computeJCM/ output/ttHbb_stitched/
+    - touch output/ttHbb_stitched/computeJCM/histAll_NoJCM.coffea output/ttHbb_stitched/histAll_ttHbb_stitched.json
+    - python -m snakemake -s coffea4bees/workflows/Snakefile_PhaseE.smk --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml -n
+    - python -m snakemake -s coffea4bees/workflows/Snakefile_PhaseE_1_make_mixeddata.smk --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml -n
+    - python -m snakemake -s coffea4bees/workflows/Snakefile_PhaseE_2_make_subsamples.smk --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml -n
+    - python -m snakemake -s coffea4bees/workflows/Snakefile_PhaseE_3_make_ttbar_psdata.smk --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml -n
+    - python -m snakemake -s coffea4bees/workflows/Snakefile_PhaseE_4_FvT_training.smk --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml -n
+    - python -m snakemake -s coffea4bees/workflows/Snakefile_PhaseE_5_analysis.smk --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml -n
+    - python -m snakemake -s coffea4bees/workflows/Snakefile_PhaseE_6_closure.smk --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml -n

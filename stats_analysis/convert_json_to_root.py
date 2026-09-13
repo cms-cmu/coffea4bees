@@ -4,6 +4,7 @@ import argparse
 import logging
 import json
 import array
+import numpy as np
 ROOT.gROOT.SetBatch(True)
 
 
@@ -19,7 +20,12 @@ def json_to_TH1( coffea_hist, iname, rebin ):
     overflow_value       = coffea_hist['overflow_value']  
     overflow_variance    = coffea_hist['overflow_variance']
 
-    rHist = ROOT.TH1F(iname, iname, len(centers), edges[0], edges[-1])
+    # Check if edges are non-uniform (variable binning)
+    widths = np.diff(edges)
+    if len(edges) > 1 and not np.allclose(widths, widths[0]):
+        rHist = ROOT.TH1F(iname, iname, len(edges) - 1, array.array('d', edges))
+    else:
+        rHist = ROOT.TH1F(iname, iname, len(centers), edges[0], edges[-1])
     rHist.Sumw2()
 
     rHist.SetBinContent(0, underflow_value)

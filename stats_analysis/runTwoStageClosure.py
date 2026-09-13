@@ -170,10 +170,21 @@ def rescale_x_axis(hist_old, xMin_old = 300, xMax_old = 1200, xMin_new = 0, xMax
     hist_new.SetBinError(n_bins_new + 1,  overflow_err_new)
     return hist_new
 
-def combine_hists(input_file, hist_template, procs, years, debug=False):
+def combine_hists(input_file, hist_template, procs, years, debug=False, as_aliases=False):
     hist = None
 
-    for p in procs:
+    # If as_aliases is True, or if procs contains common mutually exclusive alias sets,
+    # select the first process candidate that exists in the input file
+    candidate_procs = procs
+    if as_aliases:
+        for p in procs:
+            hist_name_test = hist_template.replace("PROC", p).replace("YEAR", years[0] if len(years) > 0 else "")
+            h_test = input_file[0].Get(hist_name_test) if type(input_file) is list and len(input_file) > 0 else (input_file.Get(hist_name_test) if hasattr(input_file, 'Get') else None)
+            if h_test and not h_test.IsZombie():
+                candidate_procs = [p]
+                break
+
+    for p in candidate_procs:
         hist_name_proc = hist_template.replace("PROC", p)
 
         for iy, y in enumerate(years):
@@ -240,7 +251,8 @@ def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel
                                       f"{var_name}_PROC_YEAR_fourTag_SR",
                                       years=year_map.get(y, [y]),
                                       procs=[f"mix_v{mix_number}", f"syn_v{mix_number}", f"{args.mix_name}_v{mix_number}"],
-                                      debug=args.debug)
+                                      debug=args.debug,
+                                      as_aliases=True)
 
         f.cd(directory)
         hist_data_obs.SetName("data_obs")
@@ -269,34 +281,51 @@ def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel
                                       f"{var_name_multijet}_PROC_YEAR_threeTag_SR",
                                       years=year_map.get(y, [y]),
                                       procs=["data_3b_for_mixed", "data", "data_3b"],
-                                      debug=args.debug)
+                                      debug=args.debug,
+                                      as_aliases=True)
         if hist_multijet is None:
             hist_multijet = combine_hists(input_file_data3b,
                                           f"{var_name}_PROC_YEAR_threeTag_SR",
                                           years=year_map.get(y, [y]),
                                           procs=["data_3b_for_mixed", "data", "data_3b"],
-                                          debug=args.debug)
+                                          debug=args.debug,
+                                          as_aliases=True)
 
         f.cd(directory)
         hist_multijet.SetName("multijet")
         hist_multijet.Write()
 
-#    #
-#    # TTBar
-#    #
-#    ttbar_procs = ["TTTo2L2Nu", "TTToHadronic", "TTToSemiLeptonic"]
-#
-#    hist_ttbar = combine_hists(input_file_TT,
-#                               f"{var_name}_PROC_YEAR_fourTag_SR",
-#                               years=year_map.get(y, [y]),
-#                               procs=["TTTo2L2Nu_for_mixed", "TTToHadronic_for_mixed", "TTToSemiLeptonic_for_mixed", "TTbar4b_from_d3", "TTbar3b_from_d3"])
-#    if hist_ttbar is None and hist_multijet is not None:
-#        hist_ttbar = hist_multijet.Clone()
-#        hist_ttbar.Reset()
-#
-#    f.cd(directory)
-#    hist_ttbar.SetName("ttbar")
-#    hist_ttbar.Write()
+        #
+        # TTBar
+        #
+        if getattr(args, 'pure_qcd', False):
+            if hist_multijet is not None:
+                hist_ttbar = hist_multijet.Clone()
+                hist_ttbar.Reset()
+            else:
+                hist_ttbar = None
+        else:
+            hist_ttbar = combine_hists(input_file_TT,
+                                       f"{var_name}_PROC_YEAR_threeTag_SR",
+                                       years=year_map.get(y, [y]),
+                                       procs=["TTbar4b_from_d3"],
+                                       debug=args.debug,
+                                       as_aliases=True)
+            if hist_ttbar is None:
+                hist_ttbar = combine_hists(input_file_TT,
+                                           f"{var_name}_PROC_YEAR_fourTag_SR",
+                                           years=year_map.get(y, [y]),
+                                           procs=["TTTo2L2Nu_for_mixed", "TTToHadronic_for_mixed", "TTToSemiLeptonic_for_mixed"],
+                                           debug=args.debug,
+                                           as_aliases=True)
+            if hist_ttbar is None and hist_multijet is not None:
+                hist_ttbar = hist_multijet.Clone()
+                hist_ttbar.Reset()
+
+        if hist_ttbar is not None:
+            f.cd(directory)
+            hist_ttbar.SetName("ttbar")
+            hist_ttbar.Write()
 
     return
 
@@ -336,7 +365,8 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, 
                                   f"{var_name}_PROC_YEAR_fourTag_SR",
                                   years=all_years,
                                   procs=[f"mix_v{mix_number}", f"syn_v{mix_number}", f"{args.mix_name}_v{mix_number}"],
-                                  debug=args.debug)
+                                  debug=args.debug,
+                                  as_aliases=True)
 
     f.cd(directory)
     hist_data_obs.SetName("data_obs")
@@ -366,13 +396,15 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, 
                                   f"{var_name_multijet}_PROC_YEAR_threeTag_SR",
                                   years=all_years,
                                   procs=["data_3b_for_mixed", "data", "data_3b"],
-                                  debug=args.debug)
+                                  debug=args.debug,
+                                  as_aliases=True)
     if hist_multijet is None:
         hist_multijet = combine_hists(input_file_data3b,
                                       f"{var_name}_PROC_YEAR_threeTag_SR",
                                       years=all_years,
                                       procs=["data_3b_for_mixed", "data", "data_3b"],
-                                      debug=args.debug)
+                                      debug=args.debug,
+                                      as_aliases=True)
 
     f.cd(directory)
     hist_multijet.SetName("multijet")
@@ -510,6 +542,16 @@ def prepInput():
                                 years=all_years,
                                 procs=sig_procs, 
                                 debug=args.debug)
+    if hist_signal is None:
+        hist_signal = combine_hists(input_file_mix,
+                                    f"{var_name}_PROC_YEAR_fourTag_SR",
+                                    years=all_years,
+                                    procs=["mix_v0"],
+                                    debug=args.debug)
+        if hist_signal is not None:
+            hist_signal.Reset()
+        else:
+            raise RuntimeError("Could not create fallback signal histogram!")
 
     f.cd(channel)
     hist_signal.SetName("signal")
@@ -1288,34 +1330,44 @@ class multijetEnsemble:
             'ratio' : 'numer A',
             'color' : 'ROOT.kBlue'}
 
-        xTitle = 'P(Signal) #(Bin) + #(Bins)#(Mix) #cbar P(%s) is largest' % (self.channel.upper())
+        lumi_title = f"{lumi} fb^{{-1}} (13 TeV)"
+        region_title = 'SR' if args.region == 'SR' else regionName.get(args.region, args.region)
+        classifier_name = classifier.replace('_', ' ')
+        xTitle = f'{classifier_name} P(Signal) #(Bin) + #(Bins)#(Mix) #cbar P({self.channel.upper()}) is largest'
 
-        parameters = {'titleLeft'   : '#bf{CMS} Internal',
-                      'titleCenter' : regionName[args.region],
-                      'titleRight'  : 'Pass #DeltaR(j,j)',
+        parameters = {'titleLeft'   : '#bf{CMS} #it{Internal}',
+                      'titleCenter' : region_title,
+                      'titleRight'  : lumi_title,
+                      'canvasSize'  : [800, 667],
                       'maxDigits'   : 4,
                       'drawLines'   : [[self.nBins_rebin * m + 0.5,  0, self.nBins_rebin * m + 0.5, self.ymax[0] * 1.1] for m in range(1, nMixes + 1)],
-                      'ratioErrors': False,
-                      'ratio'     : 'significance',  # True,
-                      'rMin'      : -3,  # 0.9,
-                      'rMax'      :  3,  # 1.1,
-                      'rTitle'    : 'Pulls',  # 'Data / Bkgd.',
+                      'ratioErrors' : False,
+                      'ratio'       : 'significance',  # True,
+                      'rMin'        : -3,  # 0.9,
+                      'rMax'        :  3,  # 1.1,
+                      'rTitle'      : 'Pulls',  # 'Data / Bkgd.',
                       # 'ratioErrors': True,
                       # 'ratio'      : True,
                       # 'rMin'       : 0.9,
                       # 'rMax'       : 1.1,
                       # 'rTitle'     : 'Model / Average',
-                      'xTitle'    : xTitle,
-                      'yTitle'    : 'Events',
-                      'logY'      : True,
-                      'yMax'      : self.ymax[0] * 1.6,  # *ymaxScale, # make room to show fit parameters
-                      'xleg'      : [0.13, 0.13 + 0.4],
+                      'xTitle'      : xTitle,
+                      'yTitle'      : 'Events',
+                      'logY'        : True,
+                      'yMax'        : self.ymax[0] * 35.0,  # make room to show fit parameters
+                      'xTitleOffset': 0.95,
+                      'xleg'        : [0.13, 0.13 + 0.40],
+                      'yleg'        : [0.74, 0.90],
                       'legendSubText' : ['#bf{Adjacent Bin Pull Correlation:}',
                                          'r = %1.2f' % (self.pearsonr[basis]['total'][0]),
                                          'p-value = %2.0f%%' % (self.pearsonr[basis]['total'][1] * 100),],
                       'lstLocation' : 'right',
+                      'lstx'        : 0.56,
+                      'lsty'        : 0.89,
+                      'lst_yspace'  : 0.036,
+                      'lst_textsize': 0.028,
                       'rPadFraction': 0.5,
-                      'outputName': '0_variance_multijet_ensemble_basis%d' % (basis)}
+                      'outputName'  : '0_variance_multijet_ensemble_basis%d' % (basis)}
 
         parameters['ratioLines'] = [[self.nBins_rebin * m + 0.5, parameters['rMin'], self.nBins_rebin * m + 0.5, parameters['rMax']] for m in range(1, nMixes + 1)]
 
@@ -1333,7 +1385,8 @@ class closure:
         self.multijet = multijet
         self.ttbar = f.Get('%s/ttbar' % self.channel)
         self.ttbar.SetName('%s_average_%s' % (self.ttbar.GetName(), self.channel))
-        self.data_obs = f.Get('%s/data_obs' % self.channel)
+        self.data_obs = f.Get('%s/data_obs' % self.channel).Clone()
+        self.data_obs.SetDirectory(0)
         self.data_obs.SetName('%s_average_%s' % (self.data_obs.GetName(), self.channel))
         self.nBins = self.data_obs.GetSize() - 2  # GetSize includes under/overflow bins
 
@@ -1404,6 +1457,49 @@ class closure:
         self.ttbar_closure   .Write()
         self.data_obs_closure.Write()
         self.signal_closure  .Write()
+
+        # Uniform binned histograms for plotMix
+        self.multijet_binned = ROOT.TH1F('multijet_binned', '', self.nBins_rebin, 0.5, 0.5 + self.nBins_rebin)
+        self.ttbar_binned    = ROOT.TH1F('ttbar_binned',    '', self.nBins_rebin, 0.5, 0.5 + self.nBins_rebin)
+        self.data_obs_binned = ROOT.TH1F('data_obs_binned', '', self.nBins_rebin, 0.5, 0.5 + self.nBins_rebin)
+        self.signal_binned   = ROOT.TH1F('signal_binned',   '', self.nBins_rebin, 0.5, 0.5 + self.nBins_rebin)
+
+        for _bin in range(1, self.nBins_rebin + 1):
+            self.multijet_binned.SetBinContent(_bin, self.multijet.average_rebin.GetBinContent(_bin))
+            self.multijet_binned.SetBinError  (_bin, self.multijet.average_rebin.GetBinError(_bin))
+            self.ttbar_binned   .SetBinContent(_bin, self.ttbar_rebin           .GetBinContent(_bin))
+            self.ttbar_binned   .SetBinError  (_bin, self.ttbar_rebin           .GetBinError(_bin))
+            self.signal_binned  .SetBinContent(_bin, self.multijet.signal       .GetBinContent(_bin))
+            self.signal_binned  .SetBinError  (_bin, self.multijet.signal       .GetBinError(_bin))
+            self.data_obs_binned.SetBinContent(_bin, self.data_obs_rebin        .GetBinContent(_bin))
+            self.data_obs_binned.SetBinError  (_bin, self.data_obs_rebin        .GetBinError(_bin))
+
+        self.f.cd(self.channel)
+        self.multijet_binned.Write()
+        self.ttbar_binned.Write()
+        self.data_obs_binned.Write()
+        self.signal_binned.Write()
+
+        for m, mix in enumerate(mixes):
+            h_data_mix = self.f.Get(f'{mix}/{self.channel}/data_obs')
+            if isinstance(self.rebin, array.array):
+                h_data_mix = rebin_histogram(h_data_mix, self.rebin)
+            elif int(self.rebin) > 1:
+                h_data_mix = h_data_mix.Clone()
+                h_data_mix.Rebin(int(self.rebin))
+            h_mj_mix = self.multijet.models_rebin[m]
+
+            h_d_b = ROOT.TH1F('data_obs_binned', '', self.nBins_rebin, 0.5, 0.5 + self.nBins_rebin)
+            h_m_b = ROOT.TH1F('multijet_binned', '', self.nBins_rebin, 0.5, 0.5 + self.nBins_rebin)
+            for _bin in range(1, self.nBins_rebin + 1):
+                h_d_b.SetBinContent(_bin, h_data_mix.GetBinContent(_bin))
+                h_d_b.SetBinError(_bin, h_data_mix.GetBinError(_bin))
+                h_m_b.SetBinContent(_bin, h_mj_mix.GetBinContent(_bin))
+                h_m_b.SetBinError(_bin, h_mj_mix.GetBinError(_bin))
+
+            self.f.cd(f'{mix}/{self.channel}')
+            h_d_b.Write()
+            h_m_b.Write()
 
         self.fit_result = {}
         self.fit_result_ss = {}
@@ -2014,17 +2110,23 @@ class closure:
     def plotMix(self, mix):
         samples = collections.OrderedDict()
         samples[closure_file_out] = collections.OrderedDict()
+        use_binned = self.data_obs.GetXaxis().IsVariableBinSize() or isinstance(self.rebin, array.array)
+        data_name = 'data_obs_binned' if use_binned else 'data_obs'
+        mj_name   = 'multijet_binned' if use_binned else 'multijet'
+        tt_name   = 'ttbar_binned' if use_binned else 'ttbar'
+        sig_name  = 'signal_binned' if use_binned else 'signal'
+
         if type(mix) is int:
-            samples[closure_file_out]['%s/%s/data_obs' % (mixes[mix], self.channel)] = {
-                'label' : f'Mixed Data Set {mix}, {lumi}/fb',
+            samples[closure_file_out][f'{mixes[mix]}/{self.channel}/{data_name}'] = {
+                'label' : f'Mixed Data Set {mix}',
                 'legend': 1,
                 'isData' : True,
                 # 'drawOptions': 'P ex0',
                 'ratio' : 'numer A',
                 'color' : 'ROOT.kBlack'}
         else:
-            samples[closure_file_out]['%s/data_obs' % (self.channel)] = {
-                'label' : f'#LTMixed Data#GT {lumi}/fb',
+            samples[closure_file_out][f'{self.channel}/{data_name}'] = {
+                'label' : '#LTMixed Data#GT',
                 'legend': 1,
                 'isData' : True,
                 # 'drawOptions': 'P ex0',
@@ -2035,7 +2137,7 @@ class closure:
             #     'drawOptions': 'HIST',
             #     'color' : 'ROOT.kYellow'}
         if type(mix) is int:
-            samples[closure_file_out]['%s/%s/multijet' % (mixes[mix], self.channel)] = {
+            samples[closure_file_out][f'{mixes[mix]}/{self.channel}/{mj_name}'] = {
                 'label' : 'Multijet Model %d' % mix,
                 'legend': 2,
                 'stack' : 3,
@@ -2043,7 +2145,7 @@ class closure:
                 'color' : color_multijet} #ffdf7f
                 #'color' : 'ROOT.kYellow'}
         else:
-            samples[closure_file_out]['%s/multijet' % self.channel] = {
+            samples[closure_file_out][f'{self.channel}/{mj_name}'] = {
                 'label' : '#LTMultijet#GT',
                 'legend': 2,
                 'stack' : 3,
@@ -2051,36 +2153,49 @@ class closure:
                 'color' : color_multijet} #ffdf7f
                 #'color' : 'ROOT.kYellow'}
         if not getattr(args, 'pure_qcd', False):
-            samples[closure_file_out]['%s/ttbar' % self.channel] = {
+            samples[closure_file_out][f'{self.channel}/{tt_name}'] = {
                 'label' : '#lower[0.10]{t#bar{t}}',
                 'legend': 3,
                 'stack' : 2,
                 'ratio' : 'denom A',
                 'color' : color_TTbar}
-        sig_label = 't#bar{t}H(#times100)' if self.channel in ['ttHbb', 'tth'] else 'ZZ+ZH+HH(#times100)'
-        samples[closure_file_out]['%s/signal' % self.channel] = {
+        sig_scale = getattr(args, 'signal_scale', None)
+        if sig_scale is None:
+            sig_scale = 1.0 if self.channel in ['ttHbb', 'tth'] else 100.0
+        if sig_scale == 1.0:
+            sig_label = 't#bar{t}H' if self.channel in ['ttHbb', 'tth'] else 'ZZ+ZH+HH'
+        else:
+            sig_label = f't#bar{{t}}H(#times{sig_scale:g})' if self.channel in ['ttHbb', 'tth'] else f'ZZ+ZH+HH(#times{sig_scale:g})'
+        samples[closure_file_out][f'{self.channel}/{sig_name}'] = {
             'label' : sig_label,
             'legend': 4,
-            'weight': 100,
+            'weight': sig_scale,
             'color' : 'ROOT.kViolet'}
 
-        xTitle = f'{classifier} P(Signal) #cbar P({self.channel.upper()}) is largest'
+        lumi_title = f"{lumi} fb^{{-1}} (13 TeV)"
+        region_title = 'SR' if args.region == 'SR' else regionName.get(args.region, args.region)
+        classifier_name = classifier.replace('_', ' ')
+        xTitle = f'{classifier_name} Classifier Regressed P(Signal)' + (' Bin' if use_binned else '')
 
-        parameters = {'titleLeft'   : '#bf{CMS} Internal',
-                      'titleCenter' : regionName[args.region],
-                      'titleRight'  : 'Pass #DeltaR(j,j)',
+        parameters = {'titleLeft'   : '#bf{CMS} #it{Internal}',
+                      'titleCenter' : region_title,
+                      'titleRight'  : lumi_title,
+                      'canvasSize'  : [800, 667],
                       'maxDigits'   : 4,
-                      'ratioErrors': True,
-                      'ratio'     : True,
-                      'rMin'      : 0.9,
-                      'rMax'      : 1.1,
-                      'rebin'     : list(self.rebin) if isinstance(self.rebin, array.array) else self.rebin,
-                      'rTitle'    : 'Data / Bkgd.',
-                      'xTitle'    : xTitle,
-                      'yTitle'    : 'Events',
-                      'logY'      : True,
+                      'ratioErrors' : True,
+                      'ratio'       : True,
+                      'rMin'        : 0.9,
+                      'rMax'        : 1.1,
+                      'rTitle'      : 'Ratio',
+                      'xTitle'      : xTitle,
+                      'yTitle'      : 'Events',
+                      'logY'        : True,
+                      'yMax'        : self.ymax[0] * 3.5,
                       'lstLocation' : 'right',
-                      'outputName': 'mix_%s' % (str(mix))}
+                      'outputName'  : 'mix_%s' % (str(mix))}
+
+        if not use_binned:
+            parameters['rebin'] = list(self.rebin) if isinstance(self.rebin, array.array) else self.rebin
 
         parameters['outputDir'] = output_dir
         # print('make ',parameters['outputDir'] + parameters['outputName']+'.pdf')
@@ -2091,7 +2206,7 @@ class closure:
         samples = collections.OrderedDict()
         samples[closure_file_out] = collections.OrderedDict()
         samples[closure_file_out]['%s/data_obs_closure' % self.channel] = {
-            'label' : f'#LTMixed Data#GT {lumi}/fb',
+            'label' : '#LTMixed Data#GT',
             'legend': 1,
             'isData' : True,
             # 'ratioDrawOptions': 'P ex0',
@@ -2128,11 +2243,17 @@ class closure:
                 'legend': 6,
                 'ratio': 'denom A',
                 'color' : 'ROOT.kViolet'}
-            sig_label = 't#bar{t}H(#times100)' if self.channel in ['ttHbb', 'tth'] else 'ZZ+ZH+HH(#times100)'
+            sig_scale = getattr(args, 'signal_scale', None)
+            if sig_scale is None:
+                sig_scale = 1.0 if self.channel in ['ttHbb', 'tth'] else 100.0
+            if sig_scale == 1.0:
+                sig_label = 't#bar{t}H' if self.channel in ['ttHbb', 'tth'] else 'ZZ+ZH+HH'
+            else:
+                sig_label = f't#bar{{t}}H(#times{sig_scale:g})' if self.channel in ['ttHbb', 'tth'] else f'ZZ+ZH+HH(#times{sig_scale:g})'
             samples[closure_file_out][f'{self.channel}/signal_closure'] = {
                 'label' : sig_label,
                 'legend': 7,
-                'weight': 100,
+                'weight': sig_scale,
                 'color' : 'ROOT.kViolet+7'}
             # samples[closure_file_out]['%s/signal_orthogonal_TH1_basis%d'%(self.channel, basis)] = {
             #     'label' : 'Orthogonalized Signal(#times100)',
@@ -2140,35 +2261,43 @@ class closure:
             #     'weight': 100,
             #     'color' : 'ROOT.kViolet-6'}
 
-        xTitle = f'{classifier} P(Signal) Bin #cbar P({self.channel.upper()}) is largest'
+        ymaxScale = 50.0
+        if plotSpuriousSignal:
+            ymaxScale = 120.0
+        lumi_title = f"{lumi} fb^{{-1}} (13 TeV)"
+        region_title = 'SR' if args.region == 'SR' else regionName.get(args.region, args.region)
+        classifier_name = classifier.replace('_', ' ')
+        xTitle = f'{classifier_name} Classifier Regressed P(Signal) Bin'
 
-        ymaxScale = 1.4  # + max(0, (basis - 2)/4.0)
-        if doSpuriousSignal:
-            ymaxScale = 1.7  # + max(0, (basis - 2)/4.0)
-
-        parameters = {'titleLeft'   : '#bf{CMS} Internal',
-                      'titleCenter' : regionName[args.region],
-                      'titleRight'  : 'Pass #DeltaR(j,j)',
+        parameters = {'titleLeft'   : '#bf{CMS} #it{Internal}',
+                      'titleCenter' : region_title,
+                      'titleRight'  : lumi_title,
+                      'canvasSize'  : [800, 667],
                       'maxDigits'   : 4,
                       'drawLines'   : [[self.fit_x_min,          0, self.fit_x_min,         self.ymax[0] / 2],
                                        [self.nBins_rebin + 0.5,  0, self.nBins_rebin + 0.5, self.ymax[0] / 2]],
-                      'ratioErrors': False,
-                      'ratio'     : 'significance',  # True,
-                      'rMin'      : -5,  # 0.9,
-                      'rMax'      : 5,  # 1.1,
-                      'rTitle'    : 'Pulls',  # 'Data / Bkgd.',
+                      'ratioErrors' : False,
+                      'ratio'       : 'significance',  # True,
+                      'rMin'        : -5,  # 0.9,
+                      'rMax'        : 5,  # 1.1,
+                      'rTitle'      : 'Pulls',  # 'Data / Bkgd.',
                       # 'ratioErrors': True,
                       # 'ratio'      : True,
                       # 'rMin'       : 0.9,
                       # 'rMax'       : 1.1,
                       # 'rTitle'     : 'Model / Average',
-                      'xTitle'    : xTitle,
-                      'yTitle'    : 'Events',
-                      'logY'      : True,
-                      'yMax'      : self.ymax[0] * ymaxScale,   # *ymaxScale, # make room to show fit parameters
-                      'xleg'      : [0.13, 0.13 + 0.42],
-                      'lstLocation': 'right',
-                      'outputName': '%s_basis%d' % ('2_spurious_signal' if plotSpuriousSignal else '1_bias', basis)}
+                      'xTitle'      : xTitle,
+                      'yTitle'      : 'Events',
+                      'logY'        : True,
+                      'yMax'        : self.ymax[0] * ymaxScale,   # make room to show fit parameters
+                      'xleg'        : [0.13, 0.13 + 0.40],
+                      'yleg'        : [0.73, 0.90],
+                      'lstLocation' : 'right',
+                      'lstx'        : 0.56,
+                      'lsty'        : 0.89,
+                      'lst_yspace'  : 0.033,
+                      'lst_textsize': 0.026,
+                      'outputName'  : '%s_basis%d' % ('2_spurious_signal' if plotSpuriousSignal else '1_bias', basis)}
 
         n = max(self.multijet.basis, basis) + 1
         if plotSpuriousSignal:
@@ -2205,6 +2334,206 @@ class closure:
             print_log(line)
 
 
+def plotSubsamplesOverlay():
+    """Plot an overlay of the 15 subsamples in the Signal Region (SR) for both:
+    1) 4-tag Mixed Data (data_obs)
+    2) 3-tag FvT-reweighted multijet predictions (multijet)
+    Both are plotted in shapes (normalized to unit area) with a lower ratio panel
+    relative to the ensemble mean, to verify that all 15 subsamples have consistent shape.
+    """
+    f = ROOT.TFile(closure_file_out, 'READ')
+    if f.IsZombie():
+        print_log(f"WARNING: Cannot open {closure_file_out} for plotSubsamplesOverlay")
+        return
+
+    classifier_str = "SvB_MA" if "SvB_MA" in args.var else "SvB"
+    x_title = f"{classifier_str.replace('_', ' ')} Classifier Regressed P(Signal)"
+
+    subsample_colors = [
+        ROOT.kBlack, ROOT.kRed+1, ROOT.kBlue+1, ROOT.kGreen+2, ROOT.kMagenta+1,
+        ROOT.kOrange+7, ROOT.kCyan+2, ROOT.kViolet+1, ROOT.kAzure+7, ROOT.kTeal+3,
+        ROOT.kPink+7, ROOT.kSpring+4, ROOT.kYellow+3, ROOT.kGray+2, ROOT.kOrange-3
+    ]
+
+    for target_proc, proc_title in [('data_obs', 'Mixed Data (4-tag SR)'), ('multijet', 'Multijet FvT (3-tag SR)')]:
+        h_ave_orig = f.Get(f"{channel}/{target_proc}")
+        if not h_ave_orig:
+            print_log(f"WARNING: {channel}/{target_proc} not found in {closure_file_out}")
+            continue
+
+        h_ave = h_ave_orig.Clone(f"{target_proc}_ave_overlay")
+        if isinstance(rebin, array.array):
+            h_ave = rebin_histogram(h_ave, rebin)
+        elif int(rebin) > 1:
+            h_ave.Rebin(int(rebin))
+
+        h_subsamples = []
+        for m, mix_name in enumerate(mixes):
+            h_sub_orig = f.Get(f"{mix_name}/{channel}/{target_proc}")
+            if not h_sub_orig:
+                print_log(f"WARNING: {mix_name}/{channel}/{target_proc} not found in {closure_file_out}")
+                continue
+            h_sub = h_sub_orig.Clone(f"{target_proc}_{mix_name}_overlay")
+            if isinstance(rebin, array.array):
+                h_sub = rebin_histogram(h_sub, rebin)
+            elif int(rebin) > 1:
+                h_sub.Rebin(int(rebin))
+            h_subsamples.append((m, h_sub))
+
+        if not h_subsamples:
+            continue
+
+        if isinstance(rebin, array.array) or h_ave.GetXaxis().IsVariableBinSize():
+            nb = h_ave.GetNbinsX()
+            h_ave_unif = ROOT.TH1F(f"{target_proc}_ave_overlay_unif", "", nb, 0.5, 0.5 + nb)
+            for b in range(1, nb + 1):
+                h_ave_unif.SetBinContent(b, h_ave.GetBinContent(b))
+                h_ave_unif.SetBinError(b, h_ave.GetBinError(b))
+            h_ave = h_ave_unif
+
+            h_sub_unifs = []
+            for m, h_sub in h_subsamples:
+                h_su = ROOT.TH1F(f"{target_proc}_{mixes[m]}_overlay_unif", "", nb, 0.5, 0.5 + nb)
+                for b in range(1, nb + 1):
+                    h_su.SetBinContent(b, h_sub.GetBinContent(b))
+                    h_su.SetBinError(b, h_sub.GetBinError(b))
+                h_sub_unifs.append((m, h_su))
+            h_subsamples = h_sub_unifs
+            x_title = f"{classifier_str.replace('_', ' ')} Classifier Regressed P(Signal) Bin"
+
+        # Build ROOT TCanvas with upper distribution pad and lower ratio pad
+        canv_name = f"canv_subsamples_{target_proc}"
+        canv = ROOT.TCanvas(canv_name, canv_name, 800, 800)
+        canv.Divide(1, 2)
+
+        p1 = canv.cd(1)
+        p1.SetPad(0.0, 0.3, 1.0, 1.0)
+        p1.SetTopMargin(0.08)
+        p1.SetBottomMargin(0.03)
+        p1.SetLeftMargin(0.12)
+        p1.SetRightMargin(0.05)
+
+        p2 = canv.cd(2)
+        p2.SetPad(0.0, 0.0, 1.0, 0.3)
+        p2.SetTopMargin(0.03)
+        p2.SetBottomMargin(0.32)
+        p2.SetLeftMargin(0.12)
+        p2.SetRightMargin(0.05)
+        p2.SetGridy()
+
+        p1.cd()
+        p1.SetTicks(1, 1)
+
+        # Legend with 2 columns
+        legend = ROOT.TLegend(0.48, 0.55, 0.93, 0.90)
+        legend.SetNColumns(2)
+        legend.SetBorderSize(0)
+        legend.SetFillColorAlpha(ROOT.kWhite, 0.0)
+        legend.SetTextFont(42)
+        legend.SetTextSize(0.032)
+
+        # Unnormalized ensemble average
+        h_ave.SetTitle("")
+        h_ave.SetLineWidth(3)
+        h_ave.SetLineColor(ROOT.kBlack)
+        h_ave.SetFillColor(0)
+        legend.AddEntry(h_ave, "Ensemble Mean", "l")
+
+        draw_subs = []
+        ratios = []
+        max_val = h_ave.GetMaximum()
+
+        for m, h_sub in h_subsamples:
+            h_sub.SetTitle("")
+            col = subsample_colors[m % len(subsample_colors)]
+            h_sub.SetLineColor(col)
+            h_sub.SetLineWidth(1)
+            h_sub.SetLineStyle(1)
+            h_sub.SetFillColor(0)
+            if h_sub.GetMaximum() > max_val:
+                max_val = h_sub.GetMaximum()
+            draw_subs.append(h_sub)
+            legend.AddEntry(h_sub, f"Subsample {m}", "l")
+
+            # Ratio to ensemble average
+            h_rat = h_sub.Clone(f"{h_sub.GetName()}_ratio")
+            h_rat.Divide(h_ave)
+            h_rat.SetTitle("")
+            h_rat.SetLineColor(col)
+            h_rat.SetLineWidth(1)
+            ratios.append(h_rat)
+
+        h_ave.SetMaximum(max_val * 1.35)
+        h_ave.SetMinimum(0.0)
+        h_ave.GetYaxis().SetTitle("Events")
+        h_ave.GetYaxis().SetTitleSize(0.045)
+        h_ave.GetYaxis().SetTitleOffset(1.2)
+        h_ave.GetYaxis().SetLabelSize(0.04)
+        h_ave.GetXaxis().SetLabelSize(0)
+        h_ave.GetXaxis().SetTitle("")
+        h_ave.Draw("HIST")
+
+        for h_sub in draw_subs:
+            h_sub.Draw("HIST SAME")
+        h_ave.Draw("HIST SAME")
+        legend.Draw("SAME")
+
+        # CMS / Region / Lumi labels
+        lumi_title = f"{lumi} fb^{{-1}} (13 TeV)"
+        latex = ROOT.TLatex()
+        latex.SetNDC()
+        latex.SetTextFont(61)
+        latex.SetTextSize(0.045)
+        latex.DrawLatex(0.12, 0.93, "CMS")
+        latex.SetTextFont(52)
+        latex.SetTextSize(0.035)
+        latex.DrawLatex(0.20, 0.93, "Internal")
+        latex.SetTextFont(42)
+        latex.SetTextSize(0.040)
+        latex.SetTextAlign(21)
+        latex.DrawLatex(0.50, 0.93, f"{proc_title}")
+        latex.SetTextAlign(31)
+        latex.DrawLatex(0.95, 0.93, f"#bf{{{lumi_title}}}")
+
+        # Draw ratio pad
+        p2.cd()
+        p2.SetTicks(1, 1)
+
+        # Base frame for ratio
+        h_ratio_base = h_ave.Clone(f"{target_proc}_ratio_base")
+        h_ratio_base.Reset()
+        for b in range(1, h_ratio_base.GetNbinsX() + 1):
+            h_ratio_base.SetBinContent(b, 1.0)
+            h_ratio_base.SetBinError(b, 0.0)
+        h_ratio_base.SetLineColor(ROOT.kBlack)
+        h_ratio_base.SetLineWidth(2)
+        h_ratio_base.SetLineStyle(2)
+        h_ratio_base.SetMinimum(0.5)
+        h_ratio_base.SetMaximum(1.5)
+        h_ratio_base.GetYaxis().SetTitle("Sub / Mean")
+        h_ratio_base.GetYaxis().SetNdivisions(505)
+        h_ratio_base.GetYaxis().SetTitleSize(0.10)
+        h_ratio_base.GetYaxis().SetTitleOffset(0.52)
+        h_ratio_base.GetYaxis().SetLabelSize(0.09)
+        h_ratio_base.GetXaxis().SetTitle(x_title)
+        h_ratio_base.GetXaxis().SetTitleSize(0.10)
+        h_ratio_base.GetXaxis().SetTitleOffset(1.15)
+        h_ratio_base.GetXaxis().SetLabelSize(0.09)
+        h_ratio_base.Draw("HIST")
+
+        for h_rat in ratios:
+            h_rat.Draw("HIST SAME")
+        h_ratio_base.Draw("HIST SAME")
+
+        out_base = f"{output_dir}/subsamples_15_{target_proc}_shape_overlay"
+        canv.SaveAs(f"{out_base}.png")
+        canv.SaveAs(f"{out_base}.pdf")
+        print_log(f"Saved subsamples shape overlay plot: {out_base}.png")
+        canv.Close()
+
+    f.Close()
+
+
 def run():
 
     f = ROOT.TFile(closure_file_out, 'UPDATE')
@@ -2234,6 +2563,11 @@ def run():
     for m in range(nMixes):
         closures[channel].plotMix(m)
     closures[channel].plotMix('ave')
+
+    #
+    # Overlay of all 15 subsamples to verify shape consistency
+    #
+    plotSubsamplesOverlay()
 
     multijetEnsembles[channel].print_exit_message()
     closures[channel].print_exit_message()
@@ -2271,6 +2605,7 @@ if __name__ == "__main__":
     parser.add_argument('--do_CI',   action="store_true")
     parser.add_argument('--pure_qcd', '--no_ttbar', dest='pure_qcd', action="store_true", default=False, help="Pure QCD closure mode with zero ttbar")
     parser.add_argument('--auto_scale_mixed', action="store_true", default=False, help="Auto scale mixed flag (passed from pipeline)")
+    parser.add_argument('--signal_scale', type=float, default=None, help="Scale factor for signal visualization on closure plots (default: 1.0 for ttHbb/tth, 100.0 for others)")
 
     args = parser.parse_args()
     print(f"\nRunning with these parameters: {args}")
