@@ -958,6 +958,80 @@ ttHbb:
       total_events: 5576000
   '2024':
     nanoAOD: /TTH-Hto2B_Par-M-125_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
+    picoAOD:
+      count: 2443910
+      cutFlowFourTag:
+        all: 1401766.8856467009
+        lumimask: 1401766.8856467009
+        passHLT: 1072451.4963057637
+        passJetMult_lowpt_forskim: 1063343.3727896214
+        passNoiseFilter: 1401766.8856467009
+        passPreSel_lowpt_forskim: 703521.7792136073
+      cutFlowFourTagUnitWeight:
+        all: 2443910
+        lumimask: 2443910
+        passHLT: 1874109
+        passJetMult_lowpt_forskim: 1858114
+        passNoiseFilter: 2443910
+        passPreSel_lowpt_forskim: 1230047
+      cutFlowThreeTag:
+        all: 1401766.8856467009
+        lumimask: 1401766.8856467009
+        passHLT: 1072451.4963057637
+        passJetMult_lowpt_forskim: 1063343.3727896214
+        passNoiseFilter: 1401766.8856467009
+        passPreSel_lowpt_forskim: 703521.7792136073
+      cutFlowThreeTagUnitWeight:
+        all: 2443910
+        lumimask: 2443910
+        passHLT: 1874109
+        passJetMult_lowpt_forskim: 1858114
+        passNoiseFilter: 2443910
+        passPreSel_lowpt_forskim: 1230047
+      cutFlowTwoTag:
+        all: 1401766.8856467009
+        lumimask: 1401766.8856467009
+        passHLT: 1072451.4963057637
+        passJetMult_lowpt_forskim: 1063343.3727896214
+        passNoiseFilter: 1401766.8856467009
+        passPreSel_lowpt_forskim: 703521.7792136073
+      cutFlowTwoTagUnitWeight:
+        all: 2443910
+        lumimask: 2443910
+        passHLT: 1874109
+        passJetMult_lowpt_forskim: 1858114
+        passNoiseFilter: 2443910
+        passPreSel_lowpt_forskim: 1230047
+      files:
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_2024/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_2024/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_2024/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_2024/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_2024/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_2024/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_2024/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_2024/picoAOD.chunk7.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_2024/picoAOD.chunk8.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_2024/picoAOD.chunk9.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_2024/picoAOD.chunk10.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_2024/picoAOD.chunk11.root
+      - root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_2024/picoAOD.chunk12.root
+      missing: {}
+      reproducible:
+        args: 'Namespace(processor=''coffea4bees/skimmer/processor/skimmer_4b.py'', configs=''output/skim_ttHbb_run3_2024/skimmer/skimmer_config.yml'', metadata=''coffea4bees/metadata/datasets/ttHbb.yml'', triggers=''coffea4bees/metadata/triggers_HH4b.yml'', luminosities=''coffea4bees/metadata/luminosities_HH4b.yml'', friends=''coffea4bees/metadata/friends/friends_HH4b.yml'', weights=''coffea4bees/metadata/weights/weights_HH4b.yml'', output_file=''picoaod_dataset_ttHbb__2024.yml'', output_path=''output/skim_ttHbb_run3_2024/skimmer/'', dashboard_address=None, storage_remap=None, years=[''2024''], datasets=[''ttHbb''], era=[''A'', ''B'', ''C'', ''D'', ''E'', ''F'', ''G'', ''H'', ''I'', ''C01'', ''C02'', ''C03'', ''C04'', ''C11'', ''C12'', ''C13'', ''C14'', ''C3'', ''C4'', ''D1'', ''D2'', ''D01'', ''D02'', ''D11'', ''D12'', ''F1'', ''F2'', ''F3'', ''G1'', ''G2'', ''I2'', ''I3''], samples=None, skimming=True, test=False, systematics=None, blind=False, run_dask=True, condor=True, slurm=False, worker_memory=''8GB'', slurm_qos=None, tmpdir=None, start_cluster_daemon=False, shared_dask=True, idle_timeout=600, scheduler_address=None, debug=False, check_input_files=False, not_do_proxy=False, run_performance=True, no_color=False, githash='''', gitdiff='''', config={''base_path'': ''root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/'', ''campaign'': ''tthbb-skim-run3-v1'', ''loosePtForSkim'': True, ''object_selection_cfg'': ''coffea4bees/analysis/metadata/object_selection_thresholds_run3_skim_parity.yml'', ''skip_branches'': [''btagWeight_.*'', ''^(?!HLT_QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65$)(?!HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepJet_4p5$)(?!HLT_PFHT1050$)(?!HLT_QuadPFJet70_50_40_35_PNet2BTagMean0p65$)(?!HLT_PFHT280_QuadPFJet30_PNet2BTagMean0p55$)(?!HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepJet_4p5$)(?!HLT_QuadJet45_TripleBTagCSV_p087$)(?!HLT_DoubleJet90_Double30_TripleBTagCSV_p087$)(?!HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0$)(?!HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5$)(?!HLT_PFHT250_QuadPFJet25_PNet2BTagMean0p55$)HLT_.*''], ''skip_collections'': [''Photon'', ''LHEPart'', ''LowPtElectron'', ''Tau'', ''L1'', ''SoftActivityJet'', ''IsoTrack'', ''boostedTau'', ''SubJet'', ''GenDressedLepton'', ''GenVtx'', ''OtherPV'', ''CaloMET'', ''TkMET'', ''GenVisTau'', ''FsrPhoton'', ''GenIsolatedPhoton'', ''SoftActivityJetNjets.*'', ''L1simulation'', ''L1Reco'', ''TrigObj'', ''SV'', ''HLTriggerFinalPath'', ''Proton'', ''HLTriggerFirstPath'', ''PPSLocalTrack''], ''step'': 100000}, dataset_location=''coffea4bees/metadata/datasets/ttHbb.yml'', runner={''allowlist_sites'': [''T1_US_FNAL_Disk'', ''T3_US_FNALLPC'', ''T2_US_Caltech'', ''T2_US_Wisconsin'', ''T2_US_Nebraska'', ''T2_US_Florida'', ''T2_US_MIT'', ''T3_US_Baylor'', ''T3_US_Rutgers''], ''basketsize'': 10000, ''chunksize'': 100000, ''class_name'': ''Skimmer'', ''condor'': True, ''condor_cores'': 1, ''condor_transfer_input_files'': [''src/'', ''coffea4bees/skimmer/'', ''coffea4bees/analysis/'', ''coffea4bees/metadata/''], ''data_tier'': ''nanoAOD'', ''max_workers'': 200, ''min_workers'': 1, ''picosize'': 100000, ''run_performance'': True, ''shared_dask'': False, ''worker_memory'': ''8GB''}, job_yaml_path=''output/skim_ttHbb_run3_2024/skimmer/skimmer_config.yml'')'
+        barista:
+          diff: ''
+          hash: 00276d9a0b4dc61e029a70acf9f52a434f41db82
+        coffea4bees:
+          diff: ''
+          hash: edc0ed1de25d32a63a287e36e420f42af2127ad6
+        date: '2026-09-12 08:06:02'
+      saved_events: 1230047
+      sumw: 1401766.7911987305
+      sumw2: 840079.6315917969
+      sumw2_raw: 840079.819903297
+      sumw_raw: 1401766.943954
+      total_events: 2443910
   xs:
     Run2: 0.2953
     Run3: 0.3257
