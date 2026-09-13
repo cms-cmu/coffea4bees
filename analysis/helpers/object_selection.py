@@ -78,6 +78,55 @@ def resolve_object_selection_config(cfg: dict, year) -> dict:
     return base
 
 
+#: Tagger used before ``btag_algo`` was configurable per era in corrections.yml.
+#: Only used as a fallback for metadata blocks that predate the key.
+_LEGACY_BTAG_ALGO = {True: 'btagPNetB', False: 'btagDeepFlavB'}
+
+
+def resolve_btag_algo(corrections_metadata: dict, jet: ak.Array, isRun3: bool = False) -> str:
+    """
+    Resolve the NanoAOD branch holding the b-tagging discriminant for one era.
+
+    The tagger is read from the ``btag_algo`` key of the era block in
+    ``corrections.yml``, i.e. from the same place as the ``btagWP`` thresholds,
+    which are only valid for the tagger they were derived against.
+
+    Parameters:
+    -----------
+    corrections_metadata : dict
+        The era block of ``corrections.yml`` (``corrections_metadata[year]``).
+    jet : ak.Array
+        Jet collection, used to check that the requested branch exists.
+    isRun3 : bool, optional
+        Only used to pick the legacy default when ``btag_algo`` is absent.
+
+    Returns:
+    --------
+    str
+        Name of the jet field holding the b-tag discriminant.
+
+    Raises:
+    -------
+    KeyError
+        If the configured branch is not present in the jet collection.
+    """
+    btag_algo = (corrections_metadata or {}).get('btag_algo')
+    if btag_algo is None:
+        btag_algo = _LEGACY_BTAG_ALGO[bool(isRun3)]
+        logging.warning(
+            f"No 'btag_algo' in corrections metadata; falling back to '{btag_algo}'. "
+            "Add btag_algo next to btagWP in src/physics/corrections.yml."
+        )
+    if btag_algo not in jet.fields:
+        raise KeyError(
+            f"b-tagging branch '{btag_algo}' (btag_algo in corrections.yml) not found in the "
+            f"Jet collection. Available b-tag branches: "
+            f"{sorted(f for f in jet.fields if f.startswith('btag'))}"
+        )
+    logging.debug(f"Using b-tagging discriminant Jet.{btag_algo}")
+    return btag_algo
+
+
 def muon_selection(muon: ak.Array, isRun3: bool = False, sel_cfg: dict = None) -> ak.Array:
     """
     Selects muons based on kinematic, isolation, and identification criteria.
@@ -315,7 +364,8 @@ def jet_selection(
     event : ak.Array
         The event data containing fields such as `Jet`.
     corrections_metadata : dict
-        Metadata containing corrections and configuration information, such as b-tagging working points.
+        Metadata containing corrections and configuration information, such as the
+        b-tagging algorithm (``btag_algo``) and its working points (``btagWP``).
     isRun3 : bool, optional
         Whether to apply Run 3-specific selection criteria. Defaults to False.
     isMC : bool, optional
@@ -345,7 +395,8 @@ def jet_selection(
         - `Jet['lepton_cleaned']`: Boolean mask for jets cleaned of leptons.
         - `Jet['jet_veto_maps']`: Boolean mask for jets passing veto maps (if applied).
         - `Jet['bRegCorr']`: Regression correction factor for jets (Run3 only).
-        - `Jet['btagScore']`: B-tagging score for jets.
+        - `Jet['btagScore']`: B-tagging score for jets, taken from the branch named
+          by ``corrections_metadata['btag_algo']``.
         - `Jet['pileup']`: Boolean mask for pileup jets.
         - `Jet['selected_loose']`: Boolean mask for loosely selected jets.
         - `Jet['selected']`: Boolean mask for selected jets.
@@ -370,6 +421,11 @@ def jet_selection(
     # Resolve jet thresholds from sel_cfg (or fall back to hardcoded defaults)
     jet_cfg = (sel_cfg or {}).get('jet', {})
 
+    # Resolve the b-tagging discriminant from the era metadata. The tagger is
+    # configured next to its working points in corrections.yml, since the btagWP
+    # thresholds are only meaningful for the tagger they were derived for.
+    event['Jet', 'btagScore'] = event.Jet[resolve_btag_algo(corrections_metadata, event.Jet, isRun3)]
+
     # Run3-specific jet selection
     if isRun3:
         r3 = jet_cfg.get('run3', {})
@@ -391,7 +447,6 @@ def jet_selection(
         r2_s_pt_min      = r3_s_run2.get('pt_min', 40)
 
         event['Jet', 'bRegCorr'] = 1.0
-        event['Jet', 'btagScore'] = event.Jet.btagPNetB
 
         if not isSyntheticData:
             #### temporary hack
@@ -445,7 +500,6 @@ def jet_selection(
     # Non-Run3 jet selection
     else:
         event['Jet', 'calibration'] = event.Jet.pt / (event.Jet.pt_raw if 'pt_raw' in event.Jet.fields else ak.full_like(event.Jet.pt, 1))
-        event['Jet', 'btagScore'] = event.Jet.btagDeepFlavB
 
         if apply_mixeddata_sel:
             r2 = jet_cfg.get('run2', {}).get('mixeddata', {})
@@ -618,7 +672,8 @@ def lowpt_jet_selection(
     event : ak.Array
         The event data containing fields such as `Jet` and `Lepton`.
     corrections_metadata : dict
-        Metadata containing corrections and configuration information, such as b-tagging working points.
+        Metadata containing corrections and configuration information, such as the
+        b-tagging algorithm (``btag_algo``) and its working points (``btagWP``).
     isRun3 : bool, optional
         Whether to apply Run 3-specific selection criteria. Defaults to False.
     isMC : bool, optional
