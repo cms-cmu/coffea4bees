@@ -59,6 +59,8 @@ def main():
                         help="Output ROOT file")
     parser.add_argument("--tt4bSF", type=float, default=1.4508,
                         help="Scale factor to calibrate TTbar4b_from_d3 transfer yield (default: 1.4508)")
+    parser.add_argument("--years", nargs="+", default=["UL16_preVFP", "UL16_postVFP", "UL17", "UL18"],
+                        help="Years to process (default: all Run 2 eras)")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
 
     args = parser.parse_args()
@@ -138,7 +140,7 @@ def main():
     # Keys:
     # f"{var_name_multijet}_data_{year}_threeTag_SR"
     # f"{var_name_multijet}_data_3b_for_mixed_{year}_threeTag_SR"
-    years = ["UL16_preVFP", "UL16_postVFP", "UL17", "UL18"]
+    years = args.years
 
     # 30-bin variable binning to make ttHbb signal flat in SR
     var_binning_ps_ttHbb = np.array([

@@ -129,6 +129,8 @@ rule create_ttbar_psdata_config:
 rule make_ttbar_pseudodata_per_year:
     input:
         config_file = f"{out}ttbar_psdata_config.yml",
+        datasets_file = config['datasets_file'],
+        friends = config['friends_file'],
     output:
         reg = f"{out}per_year/picoaod_datasets_{config['dataset_name']}__{{year}}.yml",
         done = f"{out}.make_ttbar_psdata_{{year}}.done",

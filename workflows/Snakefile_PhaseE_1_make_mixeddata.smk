@@ -88,10 +88,20 @@ module analysis:
     config: config
 
 jcm_source_coffea = jcm_cfg.get('source_coffea', config.get('jcm_source_coffea', "output/ttHbb_stitched/computeJCM/histAll_NoJCM.coffea"))
-jcm_input_coffea  = jcm_cfg.get('input_coffea', config.get('jcm_input_coffea', f"{out}inputs/histAll_NoJCM.coffea"))
-jcm_out_dir       = jcm_cfg.get('output_dir', config.get('jcm_output_dir', f"{out}JCM_inclusive/"))
+_raw_jcm_input = jcm_cfg.get('input_coffea', config.get('jcm_input_coffea', "inputs/histAll_NoJCM.coffea"))
+if not _raw_jcm_input.startswith("/") and not _raw_jcm_input.startswith("output/"):
+    jcm_input_coffea = os.path.join(out, _raw_jcm_input)
+else:
+    jcm_input_coffea = _raw_jcm_input
+
+_raw_jcm_out_dir = jcm_cfg.get('output_dir', config.get('jcm_output_dir', "JCM_inclusive/"))
+if not _raw_jcm_out_dir.startswith("/") and not _raw_jcm_out_dir.startswith("output/"):
+    jcm_out_dir = os.path.join(out, _raw_jcm_out_dir)
+else:
+    jcm_out_dir = _raw_jcm_out_dir
 if not jcm_out_dir.endswith('/'):
     jcm_out_dir += '/'
+
 jcm_tag           = jcm_cfg.get('tag', config.get('tag', "ttHbb_stitched_inclusive"))
 jcm_region        = jcm_cfg.get('region', config.get('jcm_region', "inclusive"))
 jcm_model_file    = f"{jcm_out_dir}jetCombinatoricModel_{jcm_region}_{jcm_tag}.yml"
@@ -143,7 +153,7 @@ rule stage_input_coffea:
         """
         set -eo pipefail
         mkdir -p $(dirname {output})
-        if [ ! -f "{output}" ]; then
+        if [ "{input}" != "{output}" ]; then
             echo "Staging copy of {input} -> {output} (non-destructive)"
             cp "{input}" "{output}"
         fi
@@ -237,6 +247,8 @@ rule make_mixed_data_picoAOD_per_year:
         config_file = f"{out}mixeddata_skimmer_config.yml",
         hemi_lib = config.get('hemi_library_yaml', 'coffea4bees/skimmer/metadata/hemisphere_library_noTT.yml'),
         hemi_stats = get_hemi_stats_file,
+        data_yml = os.path.join(config.get('dataset_location', 'coffea4bees/metadata/datasets/'), 'data.yml'),
+        friends = config.get('friends_file', 'coffea4bees/metadata/friends/friends_ttHbb.yml'),
     output:
         reg = f"{out}per_year/picoaod_datasets_{config['dataset_name']}__{{year}}.yml",
         done = f"{out}.make_mixed_data_{{year}}.done",

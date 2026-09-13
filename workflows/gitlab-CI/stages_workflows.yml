@@ -19,6 +19,7 @@ workflow_validation_coffea4bees:
     - touch output/ttHbb_mixeddata_stitched_closure/histAll_ttHbb_mixeddata_stitched.coffea output/ttHbb_mixeddata_stitched_closure/json_inputs/histAll_ttHbb_mixeddata_stitched.json output/ttHbb_mixeddata_stitched_closure/root_inputs/histAll_ttHbb_mixeddata_stitched.root output/ttHbb_mixeddata_stitched_closure/root_inputs/histMixedBkg_data_3b_for_mixed.root
     - for i in $(seq 0 15); do touch output/ttHbb_mixeddata_stitched_closure/JCM_subsamples/jetCombinatoricModel_SB_mix_v${i}.yml output/ttHbb_mixeddata_stitched_closure/FvT_training/friends/friends_FvT_ttHbb_mixeddata_stitched_v${i}.json; done
     - python -m snakemake -s coffea4bees/workflows/Snakefile_PhaseE.smk --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml -n
+    - python -m snakemake -s coffea4bees/workflows/Snakefile_PhaseE.smk --configfile coffea4bees/workflows/config/test_phaseE.yml -n
     - python -m snakemake -s coffea4bees/workflows/Snakefile_PhaseE_1_make_mixeddata.smk --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml -n
     - python -m snakemake -s coffea4bees/workflows/Snakefile_PhaseE_2_make_subsamples.smk --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml -n
     - python -m snakemake -s coffea4bees/workflows/Snakefile_PhaseE_3_make_ttbar_psdata.smk --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml -n

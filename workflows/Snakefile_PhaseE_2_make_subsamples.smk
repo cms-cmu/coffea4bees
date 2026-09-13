@@ -72,6 +72,10 @@ _tag_suffix = f"_{_tag}" if _tag else ''
 
 # Output paths
 config.setdefault('output_path', f"output/ttHbb_mixeddata_closure/")
+out = config['output_path']
+if not out.endswith("/"):
+    out += "/"
+
 config.setdefault('base_path',
     f"root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/{run_period}/{channel}_pz{_rank_suffix}")
 
@@ -80,10 +84,10 @@ config.setdefault('dataset_name', f"mixeddata_{channel}{_rank_suffix}")
 config.setdefault('install_path', f"coffea4bees/metadata/datasets/mixeddata_{channel}{_rank_suffix}.yml")
 
 # Subsampling configuration (16 datasets v0..v15)
-config.setdefault('n_subsamples', 16)
+config.setdefault('n_subsamples', config.get('n_models', config.get('n_samples', config.get('nMixes', 16))))
 config.setdefault('multisample_dataset_name', "mixeddata_4b")
 config.setdefault('multisample_install_path', "coffea4bees/metadata/datasets/mixeddata_4b.yml")
-config.setdefault('subsample_output_path', f"output/{channel}_mixeddata_subsamples/")
+config.setdefault('subsample_output_path', f"{out}subsamples/")
 N_SUBSAMPLES = int(config['n_subsamples'])
 SUBSAMPLES = [str(i) for i in range(N_SUBSAMPLES)]
 
@@ -95,11 +99,12 @@ config.setdefault('classifier_inputs_json',
 
 SVB_FRIEND_JSON = f"coffea4bees/metadata/friends/friends_{channel}_mixeddata_4b.json"
 
-out = config['output_path']
-if not out.endswith("/"):
-    out += "/"
 sub_out = config['subsample_output_path']
-jcm_input_coffea = jcm_cfg.get('input_coffea', config.get('jcm_input_coffea', f"{out}inputs/histAll_NoJCM.coffea"))
+_raw_jcm_input = jcm_cfg.get('input_coffea', config.get('jcm_input_coffea', "inputs/histAll_NoJCM.coffea"))
+if not _raw_jcm_input.startswith("/") and not _raw_jcm_input.startswith("output/"):
+    jcm_input_coffea = os.path.join(out, _raw_jcm_input)
+else:
+    jcm_input_coffea = _raw_jcm_input
 mixeddata_jcm_file = f"{out}JCM_mixeddata_inclusive/jetCombinatoricModel_inclusive_{channel}_mixeddata.yml"
 
 localrules: all_PhaseE_2, all_PhaseE_1b, all_subsamples, all_subsample_jcm, all_classifier_inputs_mixeddata, all_classifier_inputs_subsamples, all_friends_mixeddata, all_study_mixeddata, all_subsample_closure, prepare_data_noJCM, create_subsample_config, build_multisample_registry, create_noJCM_subsamples_config, create_subsample_jcm_config, make_subsample_jcm, create_study_mixeddata_config, plot_subsample_correlation, create_analysis_config_subsample, create_plot_config_v0_closure, make_plots_v0_closure, create_plot_config_v0_vs_mixeddata_all, make_plots_v0_vs_mixeddata_all, create_classifier_inputs_config_mixeddata, create_classifier_inputs_config_subsample, update_classifier_inputs_subsample_json, merge_all_classifier_inputs_subsamples_json, create_eval_config, merge_friends_json
@@ -151,6 +156,7 @@ rule all_subsample_closure:
 rule create_subsample_config:
     input:
         jcm_file = mixeddata_jcm_file,
+        ds_file = config['install_path'],
     output:
         f"{sub_out}configs/split_mixeddata_v{{v}}.yml"
     params:
@@ -285,6 +291,23 @@ rule build_multisample_registry:
 
 # ── Stage 2b: Data 3b and Subsample noJCM Histogramming ────────────────────────
 DATA_NOJCM_INPUT = config.get('data_nojcm_coffea', jcm_input_coffea)
+jcm_source_coffea = jcm_cfg.get('source_coffea', config.get('jcm_source_coffea', "output/ttHbb_stitched/computeJCM/histAll_NoJCM.coffea"))
+
+if "stage_input_coffea" not in [r.name for r in workflow.rules]:
+    rule stage_input_coffea:
+        input:
+            jcm_source_coffea
+        output:
+            jcm_input_coffea
+        shell:
+            """
+            set -eo pipefail
+            mkdir -p $(dirname {output})
+            if [ "{input}" != "{output}" ]; then
+                echo "Staging copy of {input} -> {output} (non-destructive)"
+                cp "{input}" "{output}"
+            fi
+            """
 
 rule prepare_data_noJCM:
     input:
