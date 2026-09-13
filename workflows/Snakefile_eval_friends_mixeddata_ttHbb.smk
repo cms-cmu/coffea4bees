@@ -4,18 +4,27 @@
 import os
 import shutil
 
-YEARS = ["UL16_preVFP", "UL16_postVFP", "UL17", "UL18"]
+raw_years = config.get('years', ['UL16_preVFP', 'UL16_postVFP', 'UL17', 'UL18'])
+if isinstance(raw_years, str):
+    YEARS = [str(y).strip() for y in raw_years.split() if str(y).strip()]
+else:
+    YEARS = [str(y) for y in raw_years]
 DATASETS = ["mixeddata_4b"]
 
 FRIEND_BASE = "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/friends/ttHbb/"
-OUT = "output/mixeddata_friends_ttHbb/"
-FINAL_FRIEND_JSON = "coffea4bees/metadata/friends/friends_ttHbb_mixeddata_4b.json"
+out_friends = config.get('output_path', "output/ttHbb_mixeddata_closure/")
+if not out_friends.endswith('/'):
+    out_friends += '/'
+OUT = config.get('mixeddata_friends_output_path', f"{out_friends}mixeddata_friends_ttHbb/")
+FINAL_FRIEND_JSON = config.get('mixeddata_friend_json', "coffea4bees/metadata/friends/friends_ttHbb_mixeddata_4b.json")
 
 rule all_eval_friends:
     input:
         FINAL_FRIEND_JSON
 
 rule create_eval_config:
+    input:
+        ds_file = config.get('multisample_install_path', config.get('datasets_file', "coffea4bees/metadata/datasets/mixeddata_4b.yml"))
     output: f"{OUT}eval_config.yml"
     run:
         import yaml
@@ -26,7 +35,7 @@ rule create_eval_config:
                 "friend_base": FRIEND_BASE,
             },
             "dataset_location": "coffea4bees/metadata/datasets/",
-            "datasets_file": "coffea4bees/metadata/datasets/mixeddata_4b.yml",
+            "datasets_file": str(input.ds_file),
             "weights": "coffea4bees/metadata/weights/weights_ttHbb.yml",
             "config": {
                 "blind": False,

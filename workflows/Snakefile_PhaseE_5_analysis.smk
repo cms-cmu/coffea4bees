@@ -62,14 +62,15 @@ rule closure_test_subsample:
 # ── Histogramming ─────────────────────────────────────────────────────────────
 rule run_analysis_mixeddata:
     input:
-        "coffea4bees/metadata/friends/friends_ttHbb_mixeddata_4b.json"
+        friend_json = config.get('mixeddata_friend_json', "coffea4bees/metadata/friends/friends_ttHbb_mixeddata_4b.json"),
+        dataset_yaml = config.get('multisample_install_path', config.get('datasets_file', "coffea4bees/metadata/datasets/mixeddata_4b.yml")),
     output:
         f"{out}histAll_{config['label']}.coffea"
     log:
         f"{out}logs/analysis_{config['label']}.log"
     params:
         processor = f"coffea4bees/analysis/processors/processor_{channel}.py",
-        config_file = "coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml",
+        config_file = config.get('analysis_config_file', "coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml"),
         datasets = "mixeddata_4b",
         output_path = out,
         output_name = f"histAll_{config['label']}.coffea",
@@ -192,18 +193,23 @@ rule run_closure_data:
         """
 
 rule create_closure_mixeddata_config:
+    input:
+        friend_json = config.get('mixeddata_friend_json', f"coffea4bees/metadata/friends/friends_{channel}_mixeddata_4b.json"),
+        dataset_file = config.get('multisample_install_path', config.get('datasets_file', "coffea4bees/metadata/datasets/mixeddata_4b.yml")),
     output:
         cfg = f"{out}closure_v{{v}}/analysis_config_mixeddata.yml",
         friends = f"{out}closure_v{{v}}/friends_mixeddata.yml",
     params:
         channel = channel,
+        friend_json = config.get('mixeddata_friend_json', f"coffea4bees/metadata/friends/friends_{channel}_mixeddata_4b.json"),
+        dataset_file = config.get('multisample_install_path', config.get('datasets_file', "coffea4bees/metadata/datasets/mixeddata_4b.yml")),
     run:
         import yaml
         os.makedirs(os.path.dirname(output.cfg), exist_ok=True)
         friends_dict = {
             "friends": {
                 y: {
-                    "SvB_MA": f"coffea4bees/metadata/friends/friends_{params.channel}_mixeddata_4b.json@@SvB_MA"
+                    "SvB_MA": f"{params.friend_json}@@SvB_MA"
                 } for y in YEARS
             }
         }
@@ -220,7 +226,7 @@ rule create_closure_mixeddata_config:
                 "shared_dask": True,
                 "run_performance": True,
                 "dataset_location": "coffea4bees/metadata/datasets/",
-                "datasets_file": "coffea4bees/metadata/datasets/mixeddata_4b.yml",
+                "datasets_file": str(params.dataset_file),
                 "friend_file": output.friends,
                 "weights_file": f"coffea4bees/metadata/weights/weights_{params.channel}.yml",
             },

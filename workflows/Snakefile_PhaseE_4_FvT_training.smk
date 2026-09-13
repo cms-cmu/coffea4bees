@@ -19,7 +19,7 @@ for k, v in fvt_cfg.items():
         config[k] = v
 
 config.setdefault('channel', "ttHbb")
-config.setdefault('n_models', 16)
+config.setdefault('n_models', config.get('n_subsamples', config.get('n_samples', config.get('nMixes', 16))))
 config.setdefault('mix_name', "3bDvTMix4bDvT")
 config.setdefault('eos_base', "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb")
 base_output_path = config.get('output_path', "output/ttHbb_mixeddata_closure/")
@@ -38,7 +38,7 @@ config.setdefault('disable_benchmark', True)
 # epochs it needs. EarlyStopStep requires validation benchmarks, so it also forces
 # Monitor on and benchmarks enabled. Set training_schedule: FixedStep to opt out.
 config.setdefault('jcm_template',
-    "output/ttHbb_mixeddata_stitched_closure/JCM_subsamples/jetCombinatoricModel_SB_mix_v{m}.yml")
+    os.path.join(base_output_path, "JCM_subsamples/jetCombinatoricModel_SB_mix_v{m}.yml"))
 config.setdefault('training_schedule', "EarlyStopStep")
 config.setdefault('early_stop', {})
 _es = config['early_stop'] or {}
@@ -55,7 +55,7 @@ config.setdefault('batch_eval', 65536)
 config.setdefault('nominal_classifier_inputs',
     "coffea4bees/metadata/datasets/classifier_inputs_ttHbb_stitched.json")
 config.setdefault('mixed_classifier_inputs',
-    "coffea4bees/metadata/datasets/classifier_inputs_mixeddata_ttHbb.json")
+    config.get('classifier_inputs_json', "coffea4bees/metadata/datasets/classifier_inputs_mixeddata_ttHbb.json"))
 
 # Run 2 CollisionData metadata
 RUN2_ERAS = {
@@ -86,7 +86,8 @@ def _optional_cache(wildcards):
 
 rule create_fvt_train_config:
     input:
-        cache_file = _optional_cache
+        cache_file = _optional_cache,
+        jcm_file = lambda w: config['jcm_template'].format(m=w.m),
     output:
         f"{out}configs/train_mix_{{m}}.yml"
     params:
