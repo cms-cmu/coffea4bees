@@ -46,6 +46,7 @@ Run from the barista root::
 
 import argparse
 import json
+import os
 import sys
 
 import yaml
@@ -54,6 +55,27 @@ import yaml
 # The scaled genWeight is stored as float32, so a small rounding drift is
 # expected; 1e-6 is far below it and far above float32 noise.
 CLOSURE_TOL = 1e-6
+
+
+def missing_on_disk(files):
+    """Return the subset of `files` that does not exist on the filesystem.
+
+    Stage 2's merge has twice reported success while silently failing to write
+    some of its output: the first Run 3 production left picoAOD.chunk143.root
+    absent from TTToHadronic_2024 (332 of 333), and a full regeneration ended
+    with 6 of 333 missing -- no KilledWorker, no MemoryError, every intermediate
+    cleaned, and "JOB EXECUTION COMPLETED SUCCESSFULLY" in the log. Because the
+    merge deletes the previous output before writing the new one, a failed write
+    leaves a hole rather than a stale file.
+
+    Nothing else catches this. The closure gate compares numbers carried in the
+    stage-2 metadata, which describe what the merge *intended* to write, so it
+    passes cleanly while the dataset on disk is short. A stitched entry inherits
+    the inclusive generator-level sumw, so every absent chunk biases that era's
+    yield low in direct proportion -- the 6 missing files were ~1.8% of the era.
+    """
+    return [f for f in files
+            if not os.path.exists(f.replace("root://cmseos.fnal.gov/", "/eos/uscms"))]
 
 
 def build(factors, skim_out, datasets, suffix, tol=CLOSURE_TOL):
@@ -189,6 +211,11 @@ def main(argv=None):
         "--allow-closure-failure", action="store_true",
         help="write the YAML even if the genWeight closure fails (debugging only)",
     )
+    ap.add_argument(
+        "--allow-missing-files", action="store_true",
+        help="write the YAML even if some stitched picoAODs are absent from disk "
+             "(debugging only; the entry will under-count that era)",
+    )
     args = ap.parse_args(argv)
 
     factors = json.load(open(args.factors))
@@ -223,6 +250,37 @@ def main(argv=None):
             f"\n{what} failed for {len(failures)} (channel, era) "
             f"combination(s); refusing to write {args.output}"
         )
+
+    # On-disk gate. The closure test above only reads stage-2's own bookkeeping;
+    # it cannot see a merge that silently dropped an output file. Check the
+    # filesystem before writing a dataset entry that claims those files.
+    absent = {}
+    for name, entry in out.items():
+        for era, blob in entry.items():
+            if era == "xs":
+                continue
+            miss = missing_on_disk(blob["picoAOD"]["files"])
+            if miss:
+                absent[f"{name}/{era}"] = miss
+    if absent:
+        total = sum(len(v) for v in absent.values())
+        print(f"\n{total} stitched picoAOD(s) listed in the metadata are NOT on disk:")
+        for key, miss in sorted(absent.items()):
+            n = len(out[key.split("/")[0]][key.split("/", 1)[1]]["picoAOD"]["files"])
+            print(f"  {key}: {len(miss)} of {n} missing")
+            for m in miss[:5]:
+                print(f"      {m.split('/')[-1]}")
+            if len(miss) > 5:
+                print(f"      ... and {len(miss) - 5} more")
+        if not args.allow_missing_files:
+            raise SystemExit(
+                f"\nrefusing to write {args.output}: re-run stage 2 for the affected "
+                f"dataset/era (the campaign pin makes it resume) and verify again"
+            )
+    else:
+        n = sum(len(b["picoAOD"]["files"])
+                for e in out.values() for k, b in e.items() if k != "xs")
+        print(f"\non-disk check: all {n} stitched picoAOD files present")
 
     if not out:
         raise SystemExit("nothing to write - no (channel, era) pair was complete")

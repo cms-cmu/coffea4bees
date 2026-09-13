@@ -1,0 +1,24 @@
+# Run 3 friend map -- trigger weights for the ttbar family and ttHbb.
+#
+# Produced by Phase A.2 (workflows/config/trigweights_run3.yml) over the
+# picoAODs that TT.yml / TT_stitched.yml / ttHbb.yml point at today. Covers
+# 7 datasets x 5 eras:
+#   TTTo{2L2Nu,SemiLeptonic,Hadronic}            (inclusive 5FS)
+#   TTTo{2L2Nu,SemiLeptonic,Hadronic}_stitched   (tt+bb stitched)
+#   ttHbb
+#
+# Friend trees are bound to a picoAOD's file UUID + entry range, so this index
+# is only valid for those exact files. It deliberately does NOT reuse
+# trigger_weights_TTbar_friends.json, which is keyed to a superseded copy of the
+# Run 3 skims (smurthy/XX4b/2025_Run3_skims) and matches nothing in the current
+# metadata -- that file is left in place for friends_HH4b.yml's history.
+#
+# '2024' MUST stay quoted: unquoted it parses as an int and the string-keyed
+# year lookup in runner.py misses it, silently dropping the friend for that era.
+friends:
+  2022_preEE: &trigWeight_Run3
+    trigWeight: "coffea4bees/metadata/friends/trigweights_Run3_v1.json@@trigWeight"
+  2022_EE: *trigWeight_Run3
+  2023_preBPix: *trigWeight_Run3
+  2023_BPix: *trigWeight_Run3
+  '2024': *trigWeight_Run3

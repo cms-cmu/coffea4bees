@@ -1,0 +1,92 @@
+# =============================================================================
+# Phase A.1 -- skim the Run 3 ttHbb sample, 2024
+# =============================================================================
+# ttHbb.yml carries picoAODs for 2022_preEE/2022_EE/2023_preBPix/2023_BPix (in
+# algomez/XX4b/2024_v2/ttHbb_<era>/) but only a nanoAOD DAS path for 2024. That
+# gap blocks Phase A.2: the trigWeights Snakefile expands the full
+# dataset x year cross product, so ttHbb cannot be run for five eras until 2024
+# has a picoAOD.
+#
+# DAS pre-flight (2026-09-12): 2,443,910 events in 22 files; complete DISK
+# replicas at T1_US_FNAL_Disk, T3_US_FNALLPC and T2_US_Caltech (100% each).
+# NanoAODv15 -- the same generation as the inclusive TT and TTbb 2024 samples,
+# so skim_ttbb_run3_2024.yml is the right template and is copied here.
+#
+# WHY THERE IS NO config_overrides (same reasoning as the TTbb 2024 config)
+# ------------------------------------------------------------------------
+# Today's default for Run 3 MC is cut_on_HLT_decision=True, which is what the
+# 2024 productions used. The 2022/2023 override exists only to match the older,
+# unfiltered 2022/2023 inclusive skims; applying it here would break the match
+# in the other direction.
+#
+# A NOTE ON SKIM-GENERATION PARITY
+# --------------------------------
+# This era is skimmed with today's (tighter) code while ttHbb 2022/2023 came
+# from an older, looser generation. Unlike the tt+bb stitch, nothing here takes
+# a ratio between two samples -- each era is normalised by its own sumw and xs
+# -- so the only requirement is that the skim stays a superset of the analysis
+# preselection. The measured Run 3 analysis efficiencies relative to the 2024
+# picoAOD content (0.76-0.95) confirm it does. Recorded, not a blocker.
+# =============================================================================
+
+label: "skim_ttHbb_run3_2024"
+output_path: "output/skim_ttHbb_run3_2024/"
+
+# Single file (the runner auto-wraps a bare dataset yml), so the write-back from
+# merge_yaml_datasets is a drop-in ttHbb.yml rather than a monolith.
+dataset_location: "coffea4bees/metadata/datasets/ttHbb.yml"
+
+dataset:
+  - "ttHbb"
+
+years:
+  - "2024"
+
+skimmer:
+  # skimmer_config left at its default, coffea4bees/skimmer/metadata/HH4b.yml,
+  # so the selection matches the other Run 3 productions.
+  runner:
+    condor_cores: 1
+    worker_memory: 8GB
+    # 100000, NOT the 10000 used for the 2022/2023 TTbb group. The two failure
+    # modes pull in opposite directions: too large -> the Skimmer task OOMs on a
+    # single chunk; too small -> the merge task OOMs because its cost scales with
+    # chunks-per-output-file. The 2024 TTbb group at 10000 hit the merge mode
+    # (TTbb_2L2Nu_2024 died with a merge- KilledWorker at ~83 chunks/file) and
+    # only completed after a rerun at 100000. At 100000 this sample is ~25 chunks
+    # total, comfortably clear of that.
+    chunksize: 100000
+    picosize: 100000
+    basketsize: 10000
+    condor: true
+    # Own cluster per job: avoids the shared-dask scheduler-file race.
+    shared_dask: false
+    run_performance: true
+    condor_transfer_input_files:
+      - src/
+      - coffea4bees/skimmer/
+      - coffea4bees/analysis/
+      - coffea4bees/metadata/
+    # T1_US_FNAL_Disk first: it is the workers' own site and holds a complete
+    # copy, so reads are local. Measured, not guessed -- see the header.
+    allowlist_sites:
+      - T1_US_FNAL_Disk
+      - T3_US_FNALLPC
+      - T2_US_Caltech
+      - T2_US_Wisconsin
+      - T2_US_Nebraska
+      - T2_US_Florida
+      - T2_US_MIT
+      - T3_US_Baylor
+      - T3_US_Rutgers
+  config:
+    base_path: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/
+    # Pinned so a re-run after an eviction resumes from the chunks already
+    # written instead of redoing the era.
+    campaign: tthbb-skim-run3-v1
+    step: 100000
+    loosePtForSkim: true
+    # Same pin as the TTbb configs. A no-op for 2024 (the default file's
+    # era_overrides block only matches "2023"), kept so all five Run 3 eras go
+    # through an identical thresholds file.
+    object_selection_cfg: coffea4bees/analysis/metadata/object_selection_thresholds_run3_skim_parity.yml

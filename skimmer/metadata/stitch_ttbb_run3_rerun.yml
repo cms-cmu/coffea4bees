@@ -1,0 +1,138 @@
+### STAGE-2 RE-RUN VARIANT of stitch_ttbb_run3.yml (max_workers 200 -> 100,
+### step 100000 -> 50000).
+###
+### Use for a stage-2 re-run, especially a merge-only one: the campaign pin
+### (ttbb-stitch-run3-v1) makes process() return cached metadata for every chunk
+### that already has a picoAOD_<uuid>_<start>_<stop>.root on disk, so only the
+### merge actually runs.
+###
+### THE MERGE CAN LOSE OUTPUT FILES SILENTLY. The first Run 3 production left
+### picoAOD.chunk143.root absent from TTToHadronic_2024 (332 of 333); a full
+### regeneration ended with 6 of 333 absent. Both times the runner logged
+### "JOB EXECUTION COMPLETED SUCCESSFULLY", every intermediate was cleaned, and
+### no error was surfaced. The merge deletes the previous output before writing
+### the replacement, so a dead merge task leaves a hole.
+###
+### The cause is merge tasks being killed (KilledWorker: "4 workers died while
+### trying to run it"). At 8GB this mostly succeeds and the occasional death is
+### swallowed; shrinking worker_memory to 2GB made the same fault loud enough to
+### diagnose. Nothing downstream catches the result -- stage 3's closure gate
+### compares numbers carried in stage-2's own metadata, which describe what the
+### merge INTENDED to write. make_stitched_dataset.py now stats every file
+### before writing an entry; always confirm the on-disk count after stage 2.
+###
+### DO NOT LOWER worker_memory TO WIN SLOTS -- it does not work, and the merge
+### does not fit in the one tier that is actually cheap. Measured, in order:
+###
+###   2GB  : ~560 unclaimed slots, but merge workers died at step=25000 AND at
+###          step=6000. Observed peak RSS of the merge is 2.4-2.7GB, so 2GB is
+###          simply below the floor regardless of `step`.
+###   4GB  : condor_q -better-analyze reported 1 slot "willing to run", with the
+###          SAME "502 slots are rejected by your job's requirements" as 8GB.
+###   8GB  : 2 slots willing, same 502 rejected.
+###
+### Identical rejection counts at 4GB and 8GB show memory is not the
+### discriminator. The binding clause is TARGET.Cpus >= RequestCpus, which
+### matched just 672 of 1183 slots -- i.e. the pool has no free CPUs, and no
+### request size fixes that. Wait for the pool instead.
+###
+### step is 20000, and this is the actual root cause of the silent losses.
+### Measured directly: a local merge at step=15000 peaked at 2.4-2.7GB RSS, i.e.
+### ~0.13 MB per entry on top of ~0.5GB fixed. That puts the stock step=100000 at
+### ~13GB against an 8GB worker -- always over the limit -- and step=50000 at
+### ~7GB, marginal enough to still kill workers intermittently (it did: another
+### "Task failed: merge-" after the change). step=20000 lands near 3GB, ~4x
+### headroom, so merge tasks stop dying and stop leaving holes.
+### Note these are genuine merges, not renames: resize() only short-circuits to
+### move() when a partition is exactly one whole source chunk, and the
+### intermediates hold ~90k selected events each against a 100k picosize, so
+### almost every output spans two of them. Measured cost ~2.5 min per output
+### single-threaded, i.e. ~14h for 333 outputs locally -- this needs the cluster.
+###
+### max_workers is 100 rather than 200 to keep concurrent ~350MB EOS writes
+### modest. Note that when the pool is saturated an 8GB request can match as few
+### as 1-2 slots (condor_q -better-analyze showed "Memory >= 7629" matching 475
+### of 1187 slots, and just 59 once a free CPU was also required), which looks
+### identical to a hang: one 350MB output per ~30 minutes. Check
+### `condor_status -constraint 'Memory >= 7629 && Cpus >= 1 && State == "Unclaimed"'`
+### before concluding the merge is stuck.
+### tt+bb stitching, stage 2: write the stitched picoAODs -- RUN 3.
+###
+### Run 3 counterpart of stitch_ttbb.yml (which is kept unchanged so the Run 2
+### recipe stays reproducible). Runs StitchTTbb over the *existing* picoAODs of
+### both sides in a single pass:
+###   - inclusive (TTTo2L2Nu, TTToSemiLeptonic, TTToHadronic) -> keep tt+C, tt+LF
+###   - TTbb (TTbb_2L2Nu, TTbb_SemiLeptonic, TTbb_Hadronic)   -> keep tt+B, genWeight *= k
+###
+### The scale factors k must be produced first by
+###   coffea4bees/skimmer/tools/ttbb_stitch_factors.py
+### with --eras covering all five Run 3 eras (its default ERAS is the Run 2 set,
+### and omitting --eras yields a JSON with an empty "stitch" block, which makes
+### this processor raise SkimmingError on its first chunk).
+###
+### The TTbb picoAODs this reads come from Phase A.1, skimmed per era to match the
+### HLT treatment of their inclusive partner -- see the header of
+### coffea4bees/workflows/config/skim_ttbb_run3_2022_2023.yml. Nothing in this
+### stage applies an event selection (only the genTtbarId category mask), so the
+### HLT question does not arise here; it is already baked into the inputs.
+###
+### Usage (from the barista root):
+###   ./run_container python runner.py -s \
+###     -p coffea4bees/skimmer/processor/stitch_ttbb.py \
+###     -c coffea4bees/skimmer/metadata/stitch_ttbb_run3.yml \
+###     -m coffea4bees/metadata/datasets/TT.yml \
+###     -y 2022_preEE 2022_EE 2023_preBPix 2023_BPix 2024 \
+###     -d TTTo2L2Nu TTToSemiLeptonic TTToHadronic \
+###        TTbb_2L2Nu TTbb_SemiLeptonic TTbb_Hadronic \
+###     --friends none --weights none \
+###     -o picoaod_datasets_ttbb_stitched_run3.yml \
+###     -op coffea4bees/skimmer/metadata/ \
+###     --condor --dashboard-address 0
+###
+### Pass the full dataset key names: find_matching_dataset() does substring
+### matching and errors on multiple hits, so a bare "TTbb" is now ambiguous
+### across the three channels.
+
+runner:
+  min_workers: 1
+  max_workers: 100
+  chunksize: 100000
+  picosize: 100000
+  basketsize: 10000
+  class_name: StitchTTbb
+  # Input is the already-skimmed picoAOD, not nanoAOD.
+  data_tier: picoAOD
+  condor_cores: 1
+  # 8GB, not Run 2's 4GB: stage 2 copies every branch through, and Run 3
+  # picoAODs carry 411 (v12) to 575 (v15) branches. The Phase A.1 skim hit
+  # merge-step OOMs at 4GB-class limits, so this is cheap insurance.
+  worker_memory: 8GB
+  condor_transfer_input_files:
+    - src/
+    - coffea4bees/analysis/
+    - coffea4bees/skimmer/
+    - coffea4bees/metadata/
+  allowlist_sites:
+    - T3_US_FNALLPC
+    - T2_US_Nebraska
+    - T2_US_Purdue
+
+config:
+  base_path: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/stitched/
+  step: 20000
+  # ANALYSIS-level k (stage 1 run with --selection analysis), not the picoAOD-level
+  # one. The inclusive and TTbb picoAODs were produced by different code
+  # generations, so their skim acceptances differ (measured 0.52 for 2022/2023 and
+  # 0.81 for 2024). A picoAOD-level k therefore mis-normalises tt+B once the
+  # analysis cut is applied, and the picoAOD-level closure test cannot see it
+  # because k is built to satisfy exactly that identity. Measuring k over the
+  # analysis preselection -- a region inside both skims -- makes the common
+  # inefficiency cancel and preserves the tt+B yield where the analysis operates.
+  # ttbb_stitch_factors_run3.json (picoAOD level) is kept for comparison.
+  stitch_factors: coffea4bees/skimmer/metadata/ttbb_stitch_factors_run3_analysis.json
+  # Pinned (not auto-generated) so that re-running after a failure resumes from
+  # the chunks already written instead of redoing them. Projected output is
+  # ~500 GB over ~2500 chunks, so resumability matters more here than in Run 2.
+  campaign: ttbb-stitch-run3-v1
+  # No skip_collections / skip_branches on purpose: every branch of the input
+  # picoAOD is copied through untouched, except genWeight on the TTbb side.
