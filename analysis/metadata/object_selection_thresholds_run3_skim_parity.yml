@@ -1,0 +1,133 @@
+# =============================================================================
+# Object-selection thresholds for the Run 3 TTbb skim (Phase A.1) -- PARITY COPY
+# =============================================================================
+# Identical to object_selection_thresholds.yml except that the `era_overrides`
+# block is REMOVED. That block currently holds one entry:
+#
+#     era_overrides:
+#       "2023":
+#         jet: {run3: {selected: {pt_min: 25}}}
+#
+# added 2026-06-02 ("Add era-specific jet pT threshold overrides via config
+# merging"). The inclusive 2023 picoAODs were skimmed 2025-09-02, when the Run 3
+# jet threshold was hardcoded `pt >= 30` (verified at that commit in
+# python/analysis/helpers/object_selection.py). So today's default would skim the
+# 2023 TTbb samples 5 pT-GeV looser than the inclusive samples they are stitched
+# with.
+#
+# Why that matters: the skim keeps
+#   passPreSel_lowpt_forskim = threeTag | fourTag_lowpt_forskim
+# and threeTag = (nJet_tagged_loose == 3) & (nJet_selected >= 4), where
+# nJet_selected uses this configurable threshold. Measured on
+# TTToSemiLeptonic_2023_preBPix/picoAOD.chunk0.root, moving 30 -> 25 shifts the
+# nJet>=4 gate by about +5%. Since the stitch scale factor
+# k = sumw_ttB(inclusive)/sumw_ttB(TTbb) is a picoAOD-level ratio, an acceptance
+# difference between the two halves biases the tt+B normalisation directly -- and
+# the stage 3 closure gate cannot see it, because it only tests the identity k is
+# constructed to satisfy.
+#
+# For 2022 and 2024 this file is byte-equivalent in effect to the default: the
+# override block only ever matched the 2023 eras. So one parity file serves all
+# five Run 3 eras.
+#
+# This pins the two drift mechanisms that were identified and measured (this one
+# and the HLT cut). It is NOT a proof that no other selection drift exists
+# between today's code and the 2025/2026 inclusive productions -- the empirical
+# check for that is to re-skim a few files of an inclusive era with today's code
+# and compare the acceptance against the value recorded in TT.yml.
+# =============================================================================
+
+muon:
+  pt_min: 10
+  eta_max_run2: 2.5
+  eta_max_run3: 2.4
+  iso_max: 0.15        # pfRelIso04_all
+  ip_cuts:
+    barrel_eta_boundary: 1.479
+    barrel_dz_max: 0.1
+    barrel_dxy_max: 0.05
+    endcap_dz_max: 0.2
+    endcap_dxy_max: 0.1
+
+tight_muon:
+  tight_pt_min: 10
+  tight_eta_max: 2.4
+  tight_iso_max: 0.15   # pfRelIso04_all
+  ip_cuts:
+    barrel_eta_boundary: 1.479
+    barrel_dz_max: 0.1
+    barrel_dxy_max: 0.05
+    endcap_dz_max: 0.2
+    endcap_dxy_max: 0.1
+
+electron:
+  pt_min: 15
+  eta_max: 2.5
+  iso_max: 0.15        # pfRelIso03_all
+  ip_cuts:
+    barrel_eta_boundary: 1.479
+    barrel_dz_max: 0.1
+    barrel_dxy_max: 0.05
+    endcap_dz_max: 0.2
+    endcap_dxy_max: 0.1
+
+tight_electron:
+  tight_pt_min: 15
+  tight_eta_max: 2.5
+  ip_cuts:
+    barrel_eta_boundary: 1.479
+    barrel_dz_max: 0.1
+    barrel_dxy_max: 0.05
+    endcap_dz_max: 0.2
+    endcap_dxy_max: 0.1
+
+jet:
+  run3:
+    pileup:
+      puId_threshold: 7
+      pt_threshold: 50
+      forward_eta_min: 2.4
+      forward_pt_threshold: 40
+    selected_loose:
+      pt_min: 20
+      eta_max: 4.7
+      jetId_tag: AK4PUPPI_TightLeptonVeto
+    selected:
+      pt_min: 30          # default applies to the 2022 eras
+      eta_max: 2.4
+      jetId_tag: AK4PUPPI_TightLeptonVeto
+  run2:
+    default:
+      pileup:
+        pt_threshold: 50
+        forward_eta_min: 2.4
+        forward_pt_threshold: 40
+      selected_loose:
+        pt_min: 20
+        jetId_min: 2
+      selected:
+        pt_min: 40
+        eta_max: 2.4
+        jetId_min: 2
+    mixeddata:
+      pileup:
+        puId_threshold: 6
+        pt_threshold: 50
+      selected_loose:
+        pt_min: 20
+      selected:
+        pt_min: 40
+        eta_max: 2.4
+  ht:
+    pt_min: 30
+    eta_max: 2.5
+  lowpt:
+    pt_min: 15
+    eta_max: 2.4
+    jetId_min: 2
+
+# Era-specific overrides. Each key is matched as a prefix of the era string
+# (event.metadata['year'], e.g. "2023_BPix"), and the partial tree below it is
+# deep-merged onto the base config above. Longer prefixes win, so a future
+# "2023_BPix" entry would take precedence over "2023". Eras with no matching
+# key (e.g. the 2022* eras) use the base thresholds unchanged.
