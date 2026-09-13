@@ -44,9 +44,12 @@ rule all_PhaseE_6:
         closure_pkl
 
 def get_hist_to_json_inputs(wildcards):
-    files = [f"{out}histAll_{config['label']}.coffea"]
-    if not os.path.exists(files[0]):
-        files = [f"{out}singlefiles/histAll_{config['label']}__mixeddata_4b.coffea"]
+    nominal = f"{out}histAll_{config['label']}.coffea"
+    single = f"{out}singlefiles/histAll_{config['label']}__mixeddata_4b.coffea"
+    if os.path.exists(single) and not os.path.exists(nominal):
+        files = [single]
+    else:
+        files = [nominal]
     v3_nominal = "output/ttHbb_v3/histAll_ttHbb_v3.coffea"
     if os.path.exists(v3_nominal):
         files.append(v3_nominal)
