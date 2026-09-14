@@ -52,7 +52,7 @@ phaseE_prep_test_coffea4bees:
       - output/test_phaseE/inputs/
     expire_in: 1 day
 
-phaseE_closure_validation_coffea4bees:
+phaseE_analysis_test_coffea4bees:
   stage: workflows
   extends:
     - .base_analysis_coffea4bees
@@ -64,13 +64,29 @@ phaseE_closure_validation_coffea4bees:
     - pixi run snakemake output/test_phaseE/cutflow_validation_test_phaseE.txt -s coffea4bees/workflows/Snakefile_PhaseE_5_analysis.smk --configfile coffea4bees/workflows/config/test_phaseE.yml --jobs 2
     - test -f output/test_phaseE/cutflow_test_phaseE.yml
     - cat output/test_phaseE/cutflow_test_phaseE.yml
+  artifacts:
+    paths:
+      - output/test_phaseE/cutflow_validation_test_phaseE.txt
+      - output/test_phaseE/cutflow_test_phaseE.yml
+      - output/test_phaseE/histAll_test_phaseE.coffea
+      - output/test_phaseE/histAll_test_phaseE.json
+    expire_in: 1 day
+
+phaseE_closure_validation_coffea4bees:
+  stage: workflows
+  extends:
+    - .base_combine_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseE_prep_test_coffea4bees
+    - phaseE_analysis_test_coffea4bees
+  script:
+    - export PATH="$PWD/.pixi-bin/bin:$PATH"
     - pixi run snakemake output/test_phaseE/closure_validation_test_phaseE.txt -s coffea4bees/workflows/Snakefile_PhaseE_6_closure.smk --configfile coffea4bees/workflows/config/test_phaseE.yml --jobs 2
     - test -f output/test_phaseE/closure_counts_test_phaseE.yml
     - cat output/test_phaseE/closure_counts_test_phaseE.yml
   artifacts:
     paths:
-      - output/test_phaseE/cutflow_validation_test_phaseE.txt
-      - output/test_phaseE/cutflow_test_phaseE.yml
       - output/test_phaseE/closure_validation_test_phaseE.txt
       - output/test_phaseE/closure_counts_test_phaseE.yml
     expire_in: 1 day

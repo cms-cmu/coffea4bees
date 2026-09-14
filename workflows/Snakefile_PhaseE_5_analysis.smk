@@ -23,7 +23,9 @@ if isinstance(raw_years, str):
 else:
     YEARS = [str(y) for y in raw_years]
 config['years'] = YEARS
-config.setdefault('analysis_container_wrapper', config.get('container_wrapper', "./run_container"))
+default_container_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
+config.setdefault('analysis_container_wrapper', config.get('container_wrapper', default_container_wrapper))
+condor_flags = "" if config.get("test", False) else "--shared-dask --condor"
 
 out = config['output_path']
 if not out.endswith("/"):
@@ -208,11 +210,13 @@ rule run_closure_data:
         output_path = f"{out}closure_v{{v}}/",
         years = " ".join(YEARS),
         channel = channel,
+        container_wrapper = config['analysis_container_wrapper'],
+        condor_flags = condor_flags,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
-        ./run_container python runner.py {input.cfg} \
+        {params.container_wrapper} python runner.py {input.cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
@@ -220,7 +224,7 @@ rule run_closure_data:
             --weights {input.weights} \
             --output-path {params.output_path} \
             --output $(basename {output.coffea_out}) \
-            --shared-dask --condor 2>&1 | tee {log}
+            {params.condor_flags} 2>&1 | tee {log}
         """
 
 rule create_closure_mixeddata_config:
@@ -294,11 +298,13 @@ rule run_closure_mixeddata:
         output_path = f"{out}closure_v{{v}}/",
         years = " ".join(YEARS),
         channel = channel,
+        container_wrapper = config['analysis_container_wrapper'],
+        condor_flags = condor_flags,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
-        ./run_container python runner.py {input.cfg} \
+        {params.container_wrapper} python runner.py {input.cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
@@ -306,7 +312,7 @@ rule run_closure_mixeddata:
             --weights coffea4bees/metadata/weights/weights_{params.channel}.yml \
             --output-path {params.output_path} \
             --output $(basename {output.coffea_out}) \
-            --shared-dask --condor 2>&1 | tee {log}
+            {params.condor_flags} 2>&1 | tee {log}
         """
 
 # ── Subsample Closure: Step 6 Comparison Plot (Data 3b vs Subsample 4b) ───────
@@ -368,11 +374,12 @@ rule make_plots_closure:
     params:
         plot_script = "coffea4bees/plots/makePlots.py",
         output_dir = f"{out}closure_v{{v}}/plots/",
+        container_wrapper = config['analysis_container_wrapper'],
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        ./run_container python {params.plot_script} \
+        {params.container_wrapper} python {params.plot_script} \
             {input.data_coffea} {input.mixed_coffea} \
             -o {params.output_dir} \
             -m {input.plot_cfg} \
@@ -468,11 +475,13 @@ rule run_closure_data_mode:
         output_path = f"{out}closure_v{{v}}_{{mode}}/",
         years = " ".join(YEARS),
         channel = channel,
+        container_wrapper = config['analysis_container_wrapper'],
+        condor_flags = condor_flags,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
-        ./run_container python runner.py {input.cfg} \
+        {params.container_wrapper} python runner.py {input.cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
@@ -480,7 +489,7 @@ rule run_closure_data_mode:
             --weights {input.weights} \
             --output-path {params.output_path} \
             --output $(basename {output.coffea_out}) \
-            --shared-dask --condor 2>&1 | tee {log}
+            {params.condor_flags} 2>&1 | tee {log}
         """
 
 rule create_closure_mixeddata_config_mode:
@@ -549,11 +558,13 @@ rule run_closure_mixeddata_mode:
         output_path = f"{out}closure_v{{v}}_{{mode}}/",
         years = " ".join(YEARS),
         channel = channel,
+        container_wrapper = config['analysis_container_wrapper'],
+        condor_flags = condor_flags,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
-        ./run_container python runner.py {input.cfg} \
+        {params.container_wrapper} python runner.py {input.cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
@@ -561,7 +572,7 @@ rule run_closure_mixeddata_mode:
             --weights coffea4bees/metadata/weights/weights_{params.channel}.yml \
             --output-path {params.output_path} \
             --output $(basename {output.coffea_out}) \
-            --shared-dask --condor 2>&1 | tee {log}
+            {params.condor_flags} 2>&1 | tee {log}
         """
 
 rule create_closure_plot_config_mode:
@@ -622,11 +633,12 @@ rule make_plots_closure_mode:
     params:
         plot_script = "coffea4bees/plots/makePlots.py",
         output_dir = f"{out}closure_v{{v}}_{{mode}}/plots/",
+        container_wrapper = config['analysis_container_wrapper'],
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        ./run_container python {params.plot_script} \
+        {params.container_wrapper} python {params.plot_script} \
             {input.data_coffea} {input.mixed_coffea} \
             -o {params.output_dir} \
             -m {input.plot_cfg} \
@@ -648,11 +660,12 @@ rule make_plots_comparison_mixeddata:
         plot_script = "coffea4bees/plots/makePlots.py",
         plot_config = "coffea4bees/plots/metadata/plots_mixeddata_vs_data.yml",
         output_dir = f"{out}plots_comparison/",
+        container_wrapper = config['analysis_container_wrapper'],
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        ./run_container python {params.plot_script} {input} \
+        {params.container_wrapper} python {params.plot_script} {input} \
             -o {params.output_dir} \
             -m {params.plot_config} \
             --year RunII 2>&1 | tee {log}
@@ -670,11 +683,12 @@ rule make_plots_analysis_mixeddata:
         plot_script = "coffea4bees/plots/makePlots.py",
         plot_config = "coffea4bees/plots/metadata/plotsAll_ttHbb_mixeddata.yml",
         output_dir = f"{out}plots_analysis/",
+        container_wrapper = config['analysis_container_wrapper'],
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        ./run_container python {params.plot_script} {input} \
+        {params.container_wrapper} python {params.plot_script} {input} \
             -o {params.output_dir} \
             -m {params.plot_config} \
             --year RunII 2>&1 | tee {log}
