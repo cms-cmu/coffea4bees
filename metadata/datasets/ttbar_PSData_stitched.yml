@@ -1,0 +1,25 @@
+ttbar_PSData_stitched:
+  UL16_postVFP:
+    picoAOD:
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2/ttbar_PSData_stitched/TTTo2L2Nu_stitched_UL16_postVFP/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2/ttbar_PSData_stitched/TTToHadronic_stitched_UL16_postVFP/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2/ttbar_PSData_stitched/TTToSemiLeptonic_stitched_UL16_postVFP/picoAOD_PSData.root
+  UL16_preVFP:
+    picoAOD:
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2/ttbar_PSData_stitched/TTTo2L2Nu_stitched_UL16_preVFP/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2/ttbar_PSData_stitched/TTToHadronic_stitched_UL16_preVFP/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2/ttbar_PSData_stitched/TTToSemiLeptonic_stitched_UL16_preVFP/picoAOD_PSData.root
+  UL17:
+    picoAOD:
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2/ttbar_PSData_stitched/TTTo2L2Nu_stitched_UL17/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2/ttbar_PSData_stitched/TTToHadronic_stitched_UL17/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2/ttbar_PSData_stitched/TTToSemiLeptonic_stitched_UL17/picoAOD_PSData.root
+  UL18:
+    picoAOD:
+      files:
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2/ttbar_PSData_stitched/TTTo2L2Nu_stitched_UL18/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2/ttbar_PSData_stitched/TTToHadronic_stitched_UL18/picoAOD_PSData.root
+      - root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2/ttbar_PSData_stitched/TTToSemiLeptonic_stitched_UL18/picoAOD_PSData.root
