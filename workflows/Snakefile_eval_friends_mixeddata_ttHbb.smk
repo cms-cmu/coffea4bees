@@ -64,17 +64,21 @@ rule eval_friends_subsamples:
     params:
         processor = "coffea4bees/analysis/processors/processor_ttHbb.py",
         output_path = f"{OUT}json/",
+        container_wrapper = config.get('analysis_container_wrapper', "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"),
+        python_bin = config.get('python_bin', os.getenv("CONTAINER_PYTHON", "python")),
+        condor_flags = "--condor" if config.get('condor', False) else "",
+        shared_dask_flags = "--shared-dask" if config.get('shared_dask', False) else "",
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        ./run_container python runner.py {input.eval_cfg} \
+        {params.container_wrapper} {params.python_bin} runner.py {input.eval_cfg} \
             --processor {params.processor} \
             --datasets {wildcards.dataset} \
             --years {wildcards.year} \
             --output-path {params.output_path} \
             --output $(basename {output} .json).coffea \
-            --shared-dask --condor 2>&1 | tee {log}
+            {params.shared_dask_flags} {params.condor_flags} 2>&1 | tee {log}
         """
 
 rule merge_friends_json:
@@ -86,9 +90,12 @@ rule merge_friends_json:
         FINAL_FRIEND_JSON
     log:
         f"{OUT}logs/merge_friends_json.log"
+    params:
+        container_wrapper = config.get('analysis_container_wrapper', "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"),
+        python_bin = config.get('python_bin', os.getenv("CONTAINER_PYTHON", "python")),
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        ./run_container python -m src.friendtrees.merge_friend_meta -i {input} -o {output} 2>&1 | tee {log}
+        {params.container_wrapper} {params.python_bin} -m src.friendtrees.merge_friend_meta -i {input} -o {output} 2>&1 | tee {log}
         """

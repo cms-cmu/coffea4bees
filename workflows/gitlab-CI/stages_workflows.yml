@@ -35,8 +35,6 @@ phaseE_prep_test_coffea4bees:
     - setup_coffea4bees
   script:
     - python -m pip install snakemake --quiet
-    - mkdir -p output/ttHbb_stitched/computeJCM/ output/test_phaseE/inputs/
-    - touch output/ttHbb_stitched/computeJCM/histAll_NoJCM.coffea output/test_phaseE/inputs/histAll_NoJCM.coffea
     - pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseE_2_make_subsamples.smk --configfile coffea4bees/workflows/config/test_phaseE.yml --config python_bin="${CONTAINER_PYTHON:-python}" --jobs 2
     # Validate JCM and subsample outputs exist and have expected structure
     - ls -la output/test_phaseE/JCM_subsamples/
