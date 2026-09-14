@@ -272,7 +272,7 @@ flowchart TD
   * `Snakefile_PhaseE_3_make_ttbar_psdata.smk`: Step 3 — Generates pseudo-data from $t\bar{t}$ MC to validate hemisphere subtraction.
   * `Snakefile_PhaseE_4_FvT_training.smk`: Step 4 — Trains 15 distinct FvT models (one per subsample) on Falcon GPU and evaluates friend trees on 3-tag collision data.
   * `Snakefile_PhaseE_5_analysis.smk`: Step 5 — Executes Coffea analysis processor (`processor_ttHbb.py`) over all 15 mixed-data subsamples across 4 Run 2 eras (`UL16_preVFP`, `UL16_postVFP`, `UL17`, `UL18`).
-  * `Snakefile_PhaseE_6_closure.smk`: Step 6 — Builds 3-tag background ROOT histograms with `make_fvt_data3b_hists.py` ($SF = 1.4508$, 30 variable bins), converts mixed-data and signal to ROOT, and executes `runTwoStageClosure.py`.
+  * `Snakefile_PhaseE_6_closure.smk`: Step 6 — Builds 3-tag background ROOT histograms with `coffea4bees/stats_analysis/make_fvt_data3b_hists.py` ($SF = 1.4508$, 30 variable bins), converts mixed-data and signal to ROOT, and executes `runTwoStageClosure.py`.
 
 #### Required Datasets and JCM Models per Step:
 Because Phase E mixes multiple data-driven and MC components, ensuring the correct dataset and JCM file at each step is critical:
@@ -284,7 +284,7 @@ Because Phase E mixes multiple data-driven and MC components, ensuring the corre
 | **Step 3** | `PhaseE_3_make_ttbar_psdata.smk` | `cmslpc` (CPU) | $t\bar{t}$ stitched MC (`TTTo2L2Nu_stitched`, `TTToSemiLeptonic_stitched`, `TTToHadronic_stitched`) | Nominal inclusive JCM | `ttbar_PSData_stitched.yml` |
 | **Step 4** | `PhaseE_4_FvT_training.smk` | `falcon` (GPU) | Subsample classifier inputs + 3-tag collision data (`data_3b_for_mixed`) | Subsample JCMs (`jetCombinatoricModel_SB_mix_v{m}.yml`) | 15 FvT model weights & friend JSONs (`friends_FvT_ttHbb_mixeddata_stitched_v{m}.json`) |
 | **Step 5** | `PhaseE_5_analysis.smk` | `cmslpc` (CPU) | `mixeddata_4b` (15 subsamples across 4 Run 2 eras) | Subsample JCMs + SvB friend trees from Step 2 | `histAll_ttHbb_mixeddata_stitched.coffea`, comparison & analysis plots |
-| **Step 6** | `PhaseE_6_closure.smk` | `cmslpc` (CPU) | 4-tag Mixed Data (`histAll_ttHbb_mixeddata_stitched.root`), 3-tag Data with 15 FvT friends (`histMixedBkg_data_3b_for_mixed.root`), Signal (`hist_signal_ttHbb.root`) | Subsample JCMs (used inside `make_fvt_data3b_hists.py`) | Closure results `.pkl`, 30-bin diagnostic fit plots, subsample overlay plots |
+| **Step 6** | `PhaseE_6_closure.smk` | `cmslpc` (CPU) | 4-tag Mixed Data (`histAll_ttHbb_mixeddata_stitched.root`), 3-tag Data with 15 FvT friends (`histMixedBkg_data_3b_for_mixed.root`), Signal (`hist_signal_ttHbb.root`) | Subsample JCMs (used inside `stats_analysis/make_fvt_data3b_hists.py`) | Closure results `.pkl`, 30-bin diagnostic fit plots, subsample overlay plots |
 
 #### Key Artifacts & Downstream Use:
 * **Outputs Produced**: Background closure fit histograms, diagnostic plots, and systematic uncertainty pickle file (`hists_closure_*.pkl`).

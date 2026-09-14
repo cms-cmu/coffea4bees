@@ -149,16 +149,25 @@ def main():
         0.676155, 0.701655, 0.725678, 0.748287, 0.769237, 0.789058, 0.807801, 0.825277,
         0.842108, 0.858199, 0.873818, 0.889481, 0.905978, 0.925386, 1.000000
     ])
+
+    # 15-bin variable binning to make ttHbb signal 100% flat in SR
+    var_binning_ps_ttHbb_2 = np.array([
+        0.000000, 0.102551, 0.206946, 0.306830, 0.398363, 0.480606, 0.554326,
+        0.619228, 0.676165, 0.725682, 0.769241, 0.807806, 0.842110, 0.873819,
+        0.905979, 1.000000
+    ])
     
     # Store histograms in nested dict: [var_type][model_idx][year]
     hists_50 = {m: {y: hist.Hist.new.Reg(50, 0, 1, name="ps").Weight() for y in years} for m in range(args.n_models)}
     hists_240 = {m: {y: hist.Hist.new.Reg(240, 0, 1, name="ps_fine").Weight() for y in years} for m in range(args.n_models)}
     hists_var = {m: {y: hist.Hist.new.Var(var_binning_ps_ttHbb, name="ps_ttHbb").Weight() for y in years} for m in range(args.n_models)}
+    hists_var2 = {m: {y: hist.Hist.new.Var(var_binning_ps_ttHbb_2, name="ps_ttHbb_2").Weight() for y in years} for m in range(args.n_models)}
 
     # TTbar histograms (w = weight * JCM * p_t4 / p_d3)
     tt_hists_50 = {m: {y: hist.Hist.new.Reg(50, 0, 1, name="ps").Weight() for y in years} for m in range(args.n_models)}
     tt_hists_240 = {m: {y: hist.Hist.new.Reg(240, 0, 1, name="ps_fine").Weight() for y in years} for m in range(args.n_models)}
     tt_hists_var = {m: {y: hist.Hist.new.Var(var_binning_ps_ttHbb, name="ps_ttHbb").Weight() for y in years} for m in range(args.n_models)}
+    tt_hists_var2 = {m: {y: hist.Hist.new.Var(var_binning_ps_ttHbb_2, name="ps_ttHbb_2").Weight() for y in years} for m in range(args.n_models)}
 
     total_events_selected = 0
     total_chunks_processed = 0
@@ -218,6 +227,7 @@ def main():
             hists_50[m][year].fill(p_sig, weight=event_weight)
             hists_240[m][year].fill(p_sig, weight=event_weight)
             hists_var[m][year].fill(p_sig, weight=event_weight)
+            hists_var2[m][year].fill(p_sig, weight=event_weight)
 
             # TTbar weight: p_t4 / p_d3 clamped to [0, 15] and scaled by tt4bSF
             d3_to_t4 = np.where(p_d3 > 0, p_t4 / p_d3, 0.0)
@@ -226,6 +236,7 @@ def main():
             tt_hists_50[m][year].fill(p_sig, weight=tt_weight)
             tt_hists_240[m][year].fill(p_sig, weight=tt_weight)
             tt_hists_var[m][year].fill(p_sig, weight=tt_weight)
+            tt_hists_var2[m][year].fill(p_sig, weight=tt_weight)
 
         if total_chunks_processed % 20 == 0:
             logging.info(f"Processed {total_chunks_processed}/{len(hcr_map)} chunks ({total_events_selected} selected 3b SR events)")
@@ -241,6 +252,7 @@ def main():
         for m in range(args.n_models):
             var_base = f"SvB_MA_FvT_{args.mix_name}_v{m}_newSBDef_ps"
             var_var = f"SvB_MA_FvT_{args.mix_name}_v{m}_newSBDef_ps_ttHbb"
+            var_var2 = f"SvB_MA_FvT_{args.mix_name}_v{m}_newSBDef_ps_ttHbb_2"
             var_fine = f"SvB_MA_FvT_{args.mix_name}_v{m}_newSBDef_ps_ttHbb_fine"
 
             for y in years:
@@ -252,6 +264,10 @@ def main():
                 key_var = f"{var_var}_data_3b_for_mixed_{y}_threeTag_SR"
                 f_out[key_var] = hists_var[m][y]
 
+                # 15 variable bins Multijet
+                key_var2 = f"{var_var2}_data_3b_for_mixed_{y}_threeTag_SR"
+                f_out[key_var2] = hists_var2[m][y]
+
                 # 240 bins Multijet
                 key_fine = f"{var_fine}_data_3b_for_mixed_{y}_threeTag_SR"
                 f_out[key_fine] = hists_240[m][y]
@@ -259,22 +275,26 @@ def main():
                 # Store per-model TTbar
                 f_out[f"{var_base}_TTbar4b_from_d3_{y}_threeTag_SR"] = tt_hists_50[m][y]
                 f_out[f"{var_var}_TTbar4b_from_d3_{y}_threeTag_SR"] = tt_hists_var[m][y]
+                f_out[f"{var_var2}_TTbar4b_from_d3_{y}_threeTag_SR"] = tt_hists_var2[m][y]
                 f_out[f"{var_fine}_TTbar4b_from_d3_{y}_threeTag_SR"] = tt_hists_240[m][y]
 
             # Print summary for model m
             sum_50 = sum(np.sum(hists_50[m][y].values()) for y in years)
             sum_var = sum(np.sum(hists_var[m][y].values()) for y in years)
+            sum_var2 = sum(np.sum(hists_var2[m][y].values()) for y in years)
             sum_tt = sum(np.sum(tt_hists_50[m][y].values()) for y in years)
-            logging.info(f"Model v{m}: Total Run 2 yield = Multijet: {sum_var:.2f}, TTbar: {sum_tt:.2f} ({sum_tt/sum_var*100:.2f}%)")
+            logging.info(f"Model v{m}: Total Run 2 yield = Multijet: {sum_var2:.2f}, TTbar: {sum_tt:.2f} ({sum_tt/sum_var2*100:.2f}%)")
 
         # Write ensemble average TTbar histograms as standard fallback
         for y in years:
             key_tt = f"SvB_MA_ps_TTbar4b_from_d3_{y}_threeTag_SR"
             key_tt_var = f"SvB_MA_ps_ttHbb_TTbar4b_from_d3_{y}_threeTag_SR"
+            key_tt_var2 = f"SvB_MA_ps_ttHbb_2_TTbar4b_from_d3_{y}_threeTag_SR"
             key_tt_fine = f"SvB_MA_ps_ttHbb_fine_TTbar4b_from_d3_{y}_threeTag_SR"
             avg_50 = hist.Hist.new.Reg(50, 0, 1, name="ps").Weight()
             avg_240 = hist.Hist.new.Reg(240, 0, 1, name="ps_fine").Weight()
             avg_var = hist.Hist.new.Var(var_binning_ps_ttHbb, name="ps_ttHbb").Weight()
+            avg_var2 = hist.Hist.new.Var(var_binning_ps_ttHbb_2, name="ps_ttHbb_2").Weight()
             vals_50 = np.mean([tt_hists_50[m][y].values() for m in range(args.n_models)], axis=0)
             vars_50 = np.mean([tt_hists_50[m][y].variances() for m in range(args.n_models)], axis=0)
             avg_50.view().value = vals_50
@@ -287,10 +307,15 @@ def main():
             vars_var = np.mean([tt_hists_var[m][y].variances() for m in range(args.n_models)], axis=0)
             avg_var.view().value = vals_var
             avg_var.view().variance = vars_var
+            vals_var2 = np.mean([tt_hists_var2[m][y].values() for m in range(args.n_models)], axis=0)
+            vars_var2 = np.mean([tt_hists_var2[m][y].variances() for m in range(args.n_models)], axis=0)
+            avg_var2.view().value = vals_var2
+            avg_var2.view().variance = vars_var2
             f_out[key_tt] = avg_50
             f_out[key_tt_var] = avg_var
+            f_out[key_tt_var2] = avg_var2
             f_out[key_tt_fine] = avg_240
-            logging.info(f"Ensemble average TTbar {y}: {np.sum(vals_var):.2f}")
+            logging.info(f"Ensemble average TTbar {y}: {np.sum(vals_var2):.2f}")
 
     logging.info(f"Successfully created {args.output}")
 
