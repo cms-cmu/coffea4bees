@@ -112,7 +112,7 @@ n_models_closure = int(config.get('n_subsamples', config.get('n_models', config.
 
 rule make_fvt_data3b_root:
     input:
-        script = "coffea4bees/workflows/make_fvt_data3b_hists.py",
+        script = "coffea4bees/stats_analysis/make_fvt_data3b_hists.py",
         ci = config.get('nominal_classifier_inputs', "coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json"),
         jcms = [f"{out}JCM_subsamples/jetCombinatoricModel_SB_mix_v{m}.yml" for m in range(n_models_closure)],
         friends = [f"{out}FvT_training/friends/friends_FvT_{mix_name}_v{m}.json" for m in range(n_models_closure)]
@@ -148,7 +148,7 @@ rule make_fvt_data3b_root:
 
 rule make_signal_root_closure:
     input:
-        script = "coffea4bees/workflows/scripts/make_signal_root.py",
+        script = "coffea4bees/stats_analysis/make_signal_root.py",
     output:
         f"{out}root_inputs/hist_signal_ttHbb.root"
     params:
