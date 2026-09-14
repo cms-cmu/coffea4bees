@@ -1037,11 +1037,14 @@ rule merge_all_classifier_inputs_subsamples_json:
 
         all_entries = [e for e in curr.get("HCR_input", {}).get("data", []) if not _is_any_subsample(e)]
 
-        for jf in input.jsons:
+        for v_idx, jf in enumerate(input.jsons):
             if not os.path.exists(jf):
                 continue
             with open(jf) as f:
                 d = json.load(f)
+            per_sub_target = target.replace(".json", f"_v{v_idx}.json")
+            with open(per_sub_target, "w") as f_sub:
+                json.dump(d, f_sub, indent=2)
             if "HCR_input" in d:
                 all_branches.update(d["HCR_input"].get("branches", []))
                 for entry in d["HCR_input"].get("data", []):
