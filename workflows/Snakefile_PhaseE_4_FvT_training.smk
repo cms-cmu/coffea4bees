@@ -276,6 +276,9 @@ rule train_fvt_mixed_model:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
+        if [ -z "$X509_USER_PROXY" ] && [ -f ./proxy/x509_proxy ]; then
+            export X509_USER_PROXY="$PWD/proxy/x509_proxy"
+        fi
         CLASSIFIER_CONFIG_PATHS=coffea4bees {params.classifier_container_wrapper} {params.python_bin} -m src.classifier.task.main from {input} 2>&1 | tee {log}
         touch {output}
         """
@@ -415,13 +418,16 @@ rule evaluate_fvt_mixed_model:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
+        if [ -z "$X509_USER_PROXY" ] && [ -f ./proxy/x509_proxy ]; then
+            export X509_USER_PROXY="$PWD/proxy/x509_proxy"
+        fi
         CLASSIFIER_CONFIG_PATHS=coffea4bees {params.classifier_container_wrapper} {params.python_bin} -m src.classifier.task.main from {input.cfg} 2>&1 | tee {log}
         TMP_RES=$(mktemp --suffix=.json)
         if [[ "{params.eos_base}" == root://* ]]; then
-            X509_USER_PROXY=$(pwd)/proxy/x509_proxy xrdcp -f '{params.eos_base}/friend/FvT/{params.mix_name}_v{params.mix}/result.json' "$TMP_RES"
+            xrdcp -f '{params.eos_base}/friend/FvT/{params.mix_name}_v{params.mix}/result.json' "$TMP_RES"
         else
             cp -f '{params.eos_base}/friend/FvT/{params.mix_name}_v{params.mix}/result.json' "$TMP_RES"
         fi
-        python3 -c "import json; data=json.load(open('$TMP_RES')); merged=data['analysis'][0]['merged']; json.dump({{'FvT': merged}}, open('{output}', 'w'))"
+        {params.python_bin} -c "import json; data=json.load(open('$TMP_RES')); merged=data['analysis'][0]['merged']; json.dump({{'FvT': merged}}, open('{output}', 'w'))"
         rm -f "$TMP_RES"
         """
