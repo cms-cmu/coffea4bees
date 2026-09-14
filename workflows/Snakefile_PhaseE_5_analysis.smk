@@ -45,6 +45,9 @@ def apply_test_runner_overrides(cfg):
             cfg["runner"]["maxchunks"] = 1
     return cfg
 
+python_bin = config.get('python_bin', os.getenv("CONTAINER_PYTHON", "python"))
+config.setdefault('python_bin', python_bin)
+
 out = config['output_path']
 if not out.endswith("/"):
     out += "/"
@@ -96,6 +99,7 @@ rule run_analysis_mixeddata:
         output_path = out,
         output_name = f"histAll_{config['label']}.coffea",
         container_wrapper = config['analysis_container_wrapper'],
+        python_bin = python_bin,
     resources:
         slurm_partition = "work",
         qos = "light",
@@ -106,7 +110,7 @@ rule run_analysis_mixeddata:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        {params.container_wrapper} python runner.py {params.config_file} \
+        {params.container_wrapper} {params.python_bin} runner.py {params.config_file} \
             --processor {params.processor} \
             --datasets {params.datasets} \
             --output-path {params.output_path} \
@@ -231,11 +235,12 @@ rule run_closure_data:
         channel = channel,
         container_wrapper = config['analysis_container_wrapper'],
         condor_flags = condor_flags,
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
-        {params.container_wrapper} python runner.py {input.cfg} \
+        {params.container_wrapper} {params.python_bin} runner.py {input.cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
@@ -320,11 +325,12 @@ rule run_closure_mixeddata:
         channel = channel,
         container_wrapper = config['analysis_container_wrapper'],
         condor_flags = condor_flags,
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
-        {params.container_wrapper} python runner.py {input.cfg} \
+        {params.container_wrapper} {params.python_bin} runner.py {input.cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
@@ -395,11 +401,12 @@ rule make_plots_closure:
         plot_script = "coffea4bees/plots/makePlots.py",
         output_dir = f"{out}closure_v{{v}}/plots/",
         container_wrapper = config['analysis_container_wrapper'],
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        {params.container_wrapper} python {params.plot_script} \
+        {params.container_wrapper} {params.python_bin} {params.plot_script} \
             {input.data_coffea} {input.mixed_coffea} \
             -o {params.output_dir} \
             -m {input.plot_cfg} \
@@ -498,11 +505,12 @@ rule run_closure_data_mode:
         channel = channel,
         container_wrapper = config['analysis_container_wrapper'],
         condor_flags = condor_flags,
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
-        {params.container_wrapper} python runner.py {input.cfg} \
+        {params.container_wrapper} {params.python_bin} runner.py {input.cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
@@ -582,11 +590,12 @@ rule run_closure_mixeddata_mode:
         channel = channel,
         container_wrapper = config['analysis_container_wrapper'],
         condor_flags = condor_flags,
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
-        {params.container_wrapper} python runner.py {input.cfg} \
+        {params.container_wrapper} {params.python_bin} runner.py {input.cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
@@ -656,11 +665,12 @@ rule make_plots_closure_mode:
         plot_script = "coffea4bees/plots/makePlots.py",
         output_dir = f"{out}closure_v{{v}}_{{mode}}/plots/",
         container_wrapper = config['analysis_container_wrapper'],
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        {params.container_wrapper} python {params.plot_script} \
+        {params.container_wrapper} {params.python_bin} {params.plot_script} \
             {input.data_coffea} {input.mixed_coffea} \
             -o {params.output_dir} \
             -m {input.plot_cfg} \
@@ -683,11 +693,12 @@ rule make_plots_comparison_mixeddata:
         plot_config = "coffea4bees/plots/metadata/plots_mixeddata_vs_data.yml",
         output_dir = f"{out}plots_comparison/",
         container_wrapper = config['analysis_container_wrapper'],
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        {params.container_wrapper} python {params.plot_script} {input} \
+        {params.container_wrapper} {params.python_bin} {params.plot_script} {input} \
             -o {params.output_dir} \
             -m {params.plot_config} \
             --year RunII 2>&1 | tee {log}
@@ -706,11 +717,12 @@ rule make_plots_analysis_mixeddata:
         plot_config = "coffea4bees/plots/metadata/plotsAll_ttHbb_mixeddata.yml",
         output_dir = f"{out}plots_analysis/",
         container_wrapper = config['analysis_container_wrapper'],
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        {params.container_wrapper} python {params.plot_script} {input} \
+        {params.container_wrapper} {params.python_bin} {params.plot_script} {input} \
             -o {params.output_dir} \
             -m {params.plot_config} \
             --year RunII 2>&1 | tee {log}

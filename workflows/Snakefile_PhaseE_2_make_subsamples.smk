@@ -54,6 +54,8 @@ def apply_test_runner_overrides(cfg):
             cfg["runner"]["maxchunks"] = 1
     return cfg
 
+python_bin = config.get('python_bin', os.getenv("CONTAINER_PYTHON", "python"))
+config.setdefault('python_bin', python_bin)
 config.setdefault('dataset_location', "coffea4bees/metadata/datasets/")
 config.setdefault('channel', "ttHbb")
 channel = config['channel']
@@ -239,11 +241,12 @@ rule run_split_mixeddata_per_subsample:
         years = " ".join(YEARS),
         container_wrapper = config['analysis_container_wrapper'],
         condor_flags = condor_flags,
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.reg}) $(dirname {log})
-        {params.container_wrapper} python runner.py {input.cfg} \
+        {params.container_wrapper} {params.python_bin} runner.py {input.cfg} \
             -p {params.processor} \
             -d {params.dataset} \
             --years {params.years} \
@@ -397,11 +400,12 @@ rule run_noJCM_subsamples:
         years = " ".join(YEARS),
         container_wrapper = config['analysis_container_wrapper'],
         condor_flags = condor_flags,
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
-        {params.container_wrapper} python runner.py {input.analysis_cfg} \
+        {params.container_wrapper} {params.python_bin} runner.py {input.analysis_cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
@@ -447,11 +451,12 @@ rule make_subsample_jcm:
         f"{out}JCM_subsamples/logs/make_jcm_v{{m}}.log"
     params:
         container_wrapper = config['analysis_container_wrapper'],
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        {params.container_wrapper} python coffea4bees/analysis/jcm_tools/make_jcm_weights.py \
+        {params.container_wrapper} {params.python_bin} coffea4bees/analysis/jcm_tools/make_jcm_weights.py \
             -i {input.data_coffea} {input.subsample_coffea} \
             --jcm_config {input.fit_cfg} \
             -w mix_v{wildcards.m} \
@@ -507,11 +512,12 @@ rule study_mixeddata:
         years = " ".join(YEARS),
         container_wrapper = config['analysis_container_wrapper'],
         condor_flags = condor_flags,
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
-        {params.container_wrapper} python runner.py {input.study_cfg} \
+        {params.container_wrapper} {params.python_bin} runner.py {input.study_cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
@@ -530,11 +536,12 @@ rule plot_subsample_correlation:
     params:
         out_dir = f"{out}plots_study_mixeddata/",
         container_wrapper = config['analysis_container_wrapper'],
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p {params.out_dir} $(dirname {log})
-        {params.container_wrapper} python scripts/plot_subsample_correlation.py \
+        {params.container_wrapper} {params.python_bin} scripts/plot_subsample_correlation.py \
             -i {input.coffea} \
             -o {params.out_dir} 2>&1 | tee {log}
         """
@@ -592,11 +599,12 @@ rule run_analysis_subsample:
         years = " ".join(YEARS),
         container_wrapper = config['analysis_container_wrapper'],
         condor_flags = condor_flags,
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
-        {params.container_wrapper} python runner.py {input.analysis_cfg} \
+        {params.container_wrapper} {params.python_bin} runner.py {input.analysis_cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
@@ -671,11 +679,12 @@ rule make_plots_v0_closure:
     params:
         output_dir = f"{out}plots_v0_closure/",
         container_wrapper = config['analysis_container_wrapper'],
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.done}) $(dirname {log})
-        {params.container_wrapper} python coffea4bees/plots/makePlots.py \
+        {params.container_wrapper} {params.python_bin} coffea4bees/plots/makePlots.py \
             {input.data_coffea} {input.subsample_coffea} \
             -o {params.output_dir} \
             -m {input.plot_cfg} \
@@ -745,11 +754,12 @@ rule make_plots_v0_vs_mixeddata_all:
     params:
         output_dir = f"{out}plots_v0_vs_mixeddata_all/",
         container_wrapper = config['analysis_container_wrapper'],
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.done}) $(dirname {log})
-        {params.container_wrapper} python coffea4bees/plots/makePlots.py \
+        {params.container_wrapper} {params.python_bin} coffea4bees/plots/makePlots.py \
             {input.mixed_coffea} {input.subsample_coffea} \
             -o {params.output_dir} \
             -m {input.plot_cfg} \
@@ -814,6 +824,7 @@ rule make_classifier_inputs_mixeddata:
         container_wrapper = config['analysis_container_wrapper'],
         condor_flags = condor_flags,
         inputs_base = config['classifier_inputs_base'],
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
@@ -821,7 +832,7 @@ rule make_classifier_inputs_mixeddata:
         if [[ "{params.inputs_base}" != root://* ]]; then
             mkdir -p {params.inputs_base}
         fi
-        {params.container_wrapper} python runner.py {input.analysis_cfg} \
+        {params.container_wrapper} {params.python_bin} runner.py {input.analysis_cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
@@ -884,6 +895,7 @@ rule make_classifier_inputs_subsample:
         container_wrapper = config['analysis_container_wrapper'],
         condor_flags = condor_flags,
         inputs_base = config['classifier_inputs_base'],
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
@@ -891,7 +903,7 @@ rule make_classifier_inputs_subsample:
         if [[ "{params.inputs_base}" != root://* ]]; then
             mkdir -p {params.inputs_base}
         fi
-        {params.container_wrapper} python runner.py {input.analysis_cfg} \
+        {params.container_wrapper} {params.python_bin} runner.py {input.analysis_cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
