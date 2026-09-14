@@ -212,11 +212,14 @@ def _data(self: Data, metadata: str):
 def _mixeddata(self: Data, metadata: str):
     files = []
     if "mixed" in self.data_sources:
+        ds_name = getattr(self.opts, "data_mixed_name", "mixeddata")
         samples = parse.intervals(self.opts.data_mixed_samples)
         for year in CollisionData.years:
             templates: list[str] = parse.mapping(
-                metadata + f".mixeddata.{year}.picoAOD.files_template", default="file"
+                metadata + f".{ds_name}.{year}.picoAOD.files_template", default="file"
             )
+            if not templates:
+                continue
             urls = []
             for template in templates:
                 template = template.replace("XXX", "{sample}").format
@@ -259,6 +262,8 @@ def _synthetic(self: Data, metadata: str):
                 metadata + f".synthetic_data.{year}.picoAOD.files_template",
                 default="file",
             )
+            if not templates:
+                continue
             urls = []
             for template in templates:
                 template = template.replace("XXX", "{sample}").format
@@ -301,6 +306,13 @@ class Data(_PicoAOD):
         nargs="+",
         default=[],
         help="index of synthetic samples",
+    )
+    argparser.add_argument(
+        "--data-mixed-name",
+        metavar="NAME",
+        default="mixeddata",
+        help="top-level dataset name in the metadata yaml for the mixed "
+             "data source. Default 'mixeddata'; set to e.g. 'mixeddata_4b'.",
     )
     argparser.add_argument(
         "--data-mixed-all-name",

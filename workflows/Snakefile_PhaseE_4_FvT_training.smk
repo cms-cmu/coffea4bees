@@ -69,6 +69,12 @@ RUN2_ERAS = {
     "UL18": ["A", "B", "C", "D"],
 }
 RUN2_YEARS = ["UL16_preVFP", "UL16_postVFP", "UL17", "UL18"]
+_config_years = config.get('years', None)
+if _config_years is not None:
+    if isinstance(_config_years, str):
+        _config_years = [_config_years]
+    RUN2_YEARS = [y for y in RUN2_YEARS if y in _config_years]
+    RUN2_ERAS = {y: RUN2_ERAS[y] for y in RUN2_YEARS if y in RUN2_ERAS}
 
 MIX_INDICES = list(range(int(config['n_models'])))
 out = fvt_out
@@ -118,11 +124,16 @@ rule create_fvt_train_config:
         # classifier_inputs_mixeddata_ttHbb_v<N>.json with --data-mixed-samples <N>.
         # Generate the per-subsample files with tmp/split_ci.py.
         mixed_ci = config['mixed_classifier_inputs'].replace(".json", f"_v{m}.json")
+        if not os.path.exists(mixed_ci):
+            candidate = os.path.join(base_output_path, f"classifier_inputs/histAll_{config['channel']}_mixeddata_v{m}.json")
+            if os.path.exists(candidate):
+                mixed_ci = candidate
         # IMPORTANT: each option must be ONE packed string, exactly as in the
         # validated train_v1.yml. Splitting a multi-arg option such as
         # "--JCM-weight" (nargs=2), "--friends" or "--data-source" across separate
         # YAML list items breaks argument grouping: the mixed dataset then resolves
         # no friends and the loader dies with "Dataset loaded 0 events".
+        data_mixed_name = config.get('multisample_dataset_name', 'mixeddata_4b')
         dataset_cfg = [
             {
                 "module": "HCR.FvT.TrainBaseline",
@@ -131,7 +142,7 @@ rule create_fvt_train_config:
                     "--max-workers 20",
                     "--data-source detector mixed",
                     "--no-detector-4b",
-                    "--data-mixed-name mixeddata_4b",
+                    f"--data-mixed-name {data_mixed_name}",
                     f"--data-mixed-samples {m}",
                     f'--JCM-weight "" {params.jcm_file}@@JCM_weights',
                     f'--friends "" {config["nominal_classifier_inputs"]}@@HCR_input {mixed_ci}@@HCR_input',
