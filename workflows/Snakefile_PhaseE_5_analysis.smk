@@ -27,6 +27,24 @@ default_container_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_
 config.setdefault('analysis_container_wrapper', config.get('container_wrapper', default_container_wrapper))
 condor_flags = "" if config.get("test", False) else "--shared-dask --condor"
 
+def apply_test_runner_overrides(cfg):
+    if config.get("test", False):
+        cfg.setdefault("runner", {})
+        cfg["runner"]["condor"] = False
+        cfg["runner"]["shared_dask"] = False
+        cfg["runner"]["workers"] = 2
+        cfg["runner"].pop("min_workers", None)
+        cfg["runner"].pop("max_workers", None)
+        if "chunksize" in config:
+            cfg["runner"]["chunksize"] = config["chunksize"]
+        elif "chunksize" not in cfg["runner"]:
+            cfg["runner"]["chunksize"] = 1000
+        if "maxchunks" in config:
+            cfg["runner"]["maxchunks"] = config["maxchunks"]
+        elif "maxchunks" not in cfg["runner"]:
+            cfg["runner"]["maxchunks"] = 1
+    return cfg
+
 out = config['output_path']
 if not out.endswith("/"):
     out += "/"
@@ -190,6 +208,7 @@ rule create_closure_data_config:
                 "hist_cuts": ["pass_nSelJets_gt6", "fail_nSelJets_le6"],
             }
         }
+        cfg = apply_test_runner_overrides(cfg)
         with open(output.cfg, 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False)
 
@@ -280,6 +299,7 @@ rule create_closure_mixeddata_config:
                 "hist_cuts": ["pass_nSelJets_gt6", "fail_nSelJets_le6"],
             }
         }
+        cfg = apply_test_runner_overrides(cfg)
         with open(output.cfg, 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False)
 
@@ -455,6 +475,7 @@ rule create_closure_data_config_mode:
                 "hist_cuts": ["pass_nSelJets_gt6", "fail_nSelJets_le6"],
             }
         }
+        cfg = apply_test_runner_overrides(cfg)
         with open(output.cfg, 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False)
 
@@ -540,6 +561,7 @@ rule create_closure_mixeddata_config_mode:
                 "hist_cuts": ["pass_nSelJets_gt6", "fail_nSelJets_le6"],
             }
         }
+        cfg = apply_test_runner_overrides(cfg)
         with open(output.cfg, 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False)
 

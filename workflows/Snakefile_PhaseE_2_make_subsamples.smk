@@ -35,6 +35,25 @@ config.setdefault('analysis_container',
 default_container_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
 config.setdefault('analysis_container_wrapper', config.get('container_wrapper', default_container_wrapper))
 condor_flags = "" if config.get("test", False) else "--shared-dask --condor"
+
+def apply_test_runner_overrides(cfg):
+    if config.get("test", False):
+        cfg.setdefault("runner", {})
+        cfg["runner"]["condor"] = False
+        cfg["runner"]["shared_dask"] = False
+        cfg["runner"]["workers"] = 2
+        cfg["runner"].pop("min_workers", None)
+        cfg["runner"].pop("max_workers", None)
+        if "chunksize" in config:
+            cfg["runner"]["chunksize"] = config["chunksize"]
+        elif "chunksize" not in cfg["runner"]:
+            cfg["runner"]["chunksize"] = 1000
+        if "maxchunks" in config:
+            cfg["runner"]["maxchunks"] = config["maxchunks"]
+        elif "maxchunks" not in cfg["runner"]:
+            cfg["runner"]["maxchunks"] = 1
+    return cfg
+
 config.setdefault('dataset_location', "coffea4bees/metadata/datasets/")
 config.setdefault('channel', "ttHbb")
 channel = config['channel']
@@ -199,6 +218,7 @@ rule create_subsample_config:
                 "skip_branches": None,
             }
         }
+        cfg = apply_test_runner_overrides(cfg)
         with open(output[0], 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False)
 
@@ -358,6 +378,7 @@ rule create_noJCM_subsamples_config:
                 "hist_cuts": ["pass_nSelJets_gt6", "fail_nSelJets_le6"],
             }
         }
+        cfg = apply_test_runner_overrides(cfg)
         with open(output[0], "w") as f:
             yaml.dump(cfg, f, default_flow_style=False)
 
@@ -466,6 +487,7 @@ rule create_study_mixeddata_config:
                 "JCM_file": params.jcm_file,
             }
         }
+        cfg = apply_test_runner_overrides(cfg)
         with open(output[0], "w") as f:
             yaml.dump(cfg, f, default_flow_style=False)
 
@@ -551,6 +573,7 @@ rule create_analysis_config_subsample:
                 "hist_cuts": ["pass_nSelJets_gt6", "fail_nSelJets_le6"],
             }
         }
+        cfg = apply_test_runner_overrides(cfg)
         with open(output[0], "w") as f:
             yaml.dump(cfg, f, default_flow_style=False)
 
@@ -770,6 +793,7 @@ rule create_classifier_inputs_config_mixeddata:
                 "make_classifier_input": params.inputs_base,
             }
         }
+        cfg = apply_test_runner_overrides(cfg)
         with open(output[0], "w") as f:
             yaml.dump(cfg, f, default_flow_style=False)
 
@@ -789,10 +813,14 @@ rule make_classifier_inputs_mixeddata:
         years = " ".join(YEARS),
         container_wrapper = config['analysis_container_wrapper'],
         condor_flags = condor_flags,
+        inputs_base = config['classifier_inputs_base'],
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
+        if [[ "{params.inputs_base}" != root://* ]]; then
+            mkdir -p {params.inputs_base}
+        fi
         {params.container_wrapper} python runner.py {input.analysis_cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
@@ -835,6 +863,7 @@ rule create_classifier_inputs_config_subsample:
                 "make_classifier_input": params.inputs_base,
             }
         }
+        cfg = apply_test_runner_overrides(cfg)
         with open(output[0], "w") as f:
             yaml.dump(cfg, f, default_flow_style=False)
 
@@ -854,10 +883,14 @@ rule make_classifier_inputs_subsample:
         years = " ".join(YEARS),
         container_wrapper = config['analysis_container_wrapper'],
         condor_flags = condor_flags,
+        inputs_base = config['classifier_inputs_base'],
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
+        if [[ "{params.inputs_base}" != root://* ]]; then
+            mkdir -p {params.inputs_base}
+        fi
         {params.container_wrapper} python runner.py {input.analysis_cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
