@@ -79,6 +79,7 @@ mixeddata:
   picosize: 10000
 
 classifier_inputs_base: "output/test_phaseE/classifier_inputs/"
+nominal_classifier_inputs: "coffea4bees/metadata/datasets/classifier_inputs_ttHbb_stitched.json"
 
 ttbar_psdata:
   datasets_file: "coffea4bees/metadata/datasets/TT_stitched.yml"
