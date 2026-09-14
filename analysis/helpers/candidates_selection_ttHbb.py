@@ -102,6 +102,11 @@ def _select_quadjet_ttHbb(quadJet, cand_cfg=None):
     in_analysis_box = (m_lead >= 25.0) & (m_lead <= 1000.0) & (m_subl >= 25.0) & (m_subl <= 1000.0)
     quadJet["SB"] = in_analysis_box & (~quadJet["SR"])
 
+    # For HCR classifier and friend tree dumping compatibility
+    quadJet["HHSR"] = quadJet["SR"]
+    quadJet["ZZSR"] = ak.zeros_like(quadJet["SR"], dtype=bool)
+    quadJet["ZHSR"] = ak.zeros_like(quadJet["SR"], dtype=bool)
+
     # Compute Euclidean radial distance for monitoring
     quadJet["rH"] = np.sqrt((m_lead - 125.0)**2 + (m_subl - 125.0)**2)
 

@@ -25,6 +25,7 @@ config.setdefault('scale_mixed', 1.0)
 default_combine_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container combine"
 config.setdefault('combine_container_wrapper', config.get('container_wrapper', default_combine_wrapper))
 default_analysis_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
+config.setdefault('analysis_container_wrapper', config.get('analysis_wrapper', default_analysis_wrapper))
 python_bin = config.get('python_bin', os.getenv("CONTAINER_PYTHON", "python"))
 config.setdefault('python_bin', python_bin)
 
