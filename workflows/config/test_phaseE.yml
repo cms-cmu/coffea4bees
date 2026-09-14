@@ -14,6 +14,16 @@ n_samples: 2
 n_subsamples: 2
 
 test: true
+chunksize: 1000
+maxchunks: 1
+runner:
+  workers: 2
+  chunksize: 1000
+  maxchunks: 1
+  test: true
+  condor: false
+  shared_dask: false
+  run_performance: false
 container_wrapper: ""
 analysis_container_wrapper: ""
 classifier_container_wrapper: ""
@@ -68,7 +78,7 @@ mixeddata:
   chunksize: 10000
   picosize: 10000
 
-classifier_inputs_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched/classifier_inputs/mixeddata/"
+classifier_inputs_base: "output/test_phaseE/classifier_inputs/"
 
 ttbar_psdata:
   datasets_file: "coffea4bees/metadata/datasets/TT_stitched.yml"
@@ -96,7 +106,7 @@ phase_e_fvt:
   kfolds: 1
   kfold_offset: 0
   training_schedule: "FixedStep"
-  eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2"
+  eos_base: "output/test_phaseE"
   output_path: "FvT_training/"
   precision: "fp32"
   disable_benchmark: true
