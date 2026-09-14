@@ -134,16 +134,23 @@ mixeddata_jcm_file = f"{out}JCM_mixeddata_inclusive/jetCombinatoricModel_inclusi
 localrules: all_PhaseE_2, all_PhaseE_1b, all_subsamples, all_subsample_jcm, all_classifier_inputs_mixeddata, all_classifier_inputs_subsamples, all_friends_mixeddata, all_study_mixeddata, all_subsample_closure, prepare_data_noJCM, create_subsample_config, build_multisample_registry, create_noJCM_subsamples_config, create_subsample_jcm_config, make_subsample_jcm, create_study_mixeddata_config, plot_subsample_correlation, create_analysis_config_subsample, create_plot_config_v0_closure, make_plots_v0_closure, create_plot_config_v0_vs_mixeddata_all, make_plots_v0_vs_mixeddata_all, create_classifier_inputs_config_mixeddata, create_classifier_inputs_config_subsample, update_classifier_inputs_subsample_json, merge_all_classifier_inputs_subsamples_json, create_eval_config, merge_friends_json
 
 # ── Default Master Target (Full Phase E2 End-to-End) ───────────────────────────
+def get_all_phaseE_2_inputs(wildcards):
+    inputs = [
+        config['multisample_install_path'],
+        *expand(f"{out}JCM_subsamples/jetCombinatoricModel_SB_mix_v{{m}}.yml", m=range(N_SUBSAMPLES)),
+        config['classifier_inputs_json'],
+    ]
+    if config.get('eval_svb_friends', False):
+        inputs.append(SVB_FRIEND_JSON)
+    return inputs
+
 rule all_PhaseE_2:
     input:
-        config['multisample_install_path'],
-        expand(f"{out}JCM_subsamples/jetCombinatoricModel_SB_mix_v{{m}}.yml", m=range(N_SUBSAMPLES)),
-        config['classifier_inputs_json'],
-        SVB_FRIEND_JSON,
+        get_all_phaseE_2_inputs
 
 rule all_PhaseE_1b:
     input:
-        rules.all_PhaseE_2.input
+        get_all_phaseE_2_inputs
 
 # ── Sub-Target Aliases ─────────────────────────────────────────────────────────
 rule all_subsamples:
@@ -440,11 +447,23 @@ rule create_subsample_jcm_config:
         with open(output[0], "w") as f:
             yaml.dump(fit_cfg, f, default_flow_style=False)
 
+def get_subsample_jcm_inputs(wildcards):
+    subsample_coffea = f"{out}classifier_inputs/histAll_{channel}_mixeddata_v{wildcards.m}.coffea"
+    fit_cfg = f"{out}JCM_subsamples/configs/config_v{wildcards.m}.yml"
+    data_coffea = (
+        config.get('dummy_jcm_file', "coffea4bees/metadata/weights/JCM/jetCombinatoricModel_SB_dummy.yml")
+        if config.get('test', False)
+        else f"{out}JCM_subsamples/histAll_NoJCM_data.coffea"
+    )
+    return {
+        "data_coffea": data_coffea,
+        "subsample_coffea": subsample_coffea,
+        "fit_cfg": fit_cfg,
+    }
+
 rule make_subsample_jcm:
     input:
-        data_coffea = f"{out}JCM_subsamples/histAll_NoJCM_data.coffea",
-        subsample_coffea = f"{out}classifier_inputs/histAll_{channel}_mixeddata_v{{m}}.coffea",
-        fit_cfg = f"{out}JCM_subsamples/configs/config_v{{m}}.yml",
+        unpack(get_subsample_jcm_inputs)
     output:
         f"{out}JCM_subsamples/jetCombinatoricModel_SB_mix_v{{m}}.yml"
     log:
@@ -452,18 +471,25 @@ rule make_subsample_jcm:
     params:
         container_wrapper = config['analysis_container_wrapper'],
         python_bin = python_bin,
+        test_mode = config.get('test', False),
+        dummy_jcm = config.get('dummy_jcm_file', "coffea4bees/metadata/weights/JCM/jetCombinatoricModel_SB_dummy.yml"),
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        {params.container_wrapper} {params.python_bin} coffea4bees/analysis/jcm_tools/make_jcm_weights.py \
-            -i {input.data_coffea} {input.subsample_coffea} \
-            --jcm_config {input.fit_cfg} \
-            -w mix_v{wildcards.m} \
-            -r SB \
-            -o $(dirname {output})/ \
-            --no-plots \
-            --year RunII 2>&1 | tee {log}
+        if [ "{params.test_mode}" = "True" ] || [ "{params.test_mode}" = "true" ]; then
+            echo "Test mode: deploying dummy JCM {params.dummy_jcm} -> {output}" > {log}
+            cp {params.dummy_jcm} {output}
+        else
+            {params.container_wrapper} {params.python_bin} coffea4bees/analysis/jcm_tools/make_jcm_weights.py \
+                -i {input.data_coffea} {input.subsample_coffea} \
+                --jcm_config {input.fit_cfg} \
+                -w mix_v{wildcards.m} \
+                -r SB \
+                -o $(dirname {output})/ \
+                --no-plots \
+                --year RunII 2>&1 | tee {log}
+        fi
         """
 
 # ── Stage 3: Subsample Correlation & Orthogonality Study ──────────────────────
@@ -839,6 +865,8 @@ rule make_classifier_inputs_mixeddata:
             --output-path {params.output_path} \
             --output $(basename {output.coffea_out}) \
             {params.condor_flags} 2>&1 | tee {log}
+        mkdir -p $(dirname {output.json_out})
+        cp {params.output_path}$(basename {output.coffea_out} .coffea).json {output.json_out}
         """
 
 rule create_classifier_inputs_config_subsample:
