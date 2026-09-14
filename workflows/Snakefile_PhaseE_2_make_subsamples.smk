@@ -138,7 +138,7 @@ def get_all_phaseE_2_inputs(wildcards):
     inputs = [
         config['multisample_install_path'],
         *expand(f"{out}JCM_subsamples/jetCombinatoricModel_SB_mix_v{{m}}.yml", m=range(N_SUBSAMPLES)),
-        config['classifier_inputs_json'],
+        f"{out}classifier_inputs/merge_all_subsamples.done",
     ]
     if config.get('eval_svb_friends', False):
         inputs.append(SVB_FRIEND_JSON)
