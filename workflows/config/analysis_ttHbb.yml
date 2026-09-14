@@ -549,6 +549,7 @@ channels:
     cut: "sum"
     rebin: 1
     stat_only: true
+    bkgsyst: "output/ttHbb_mixeddata_stitched_closure/closure_fits/ttHbb_mixeddata_stitched/SvB_MA/rebin1/SR/ttHbb/hists_closure_ttHbb_mixeddata_stitched_SvB_MA_ps_rebin1.pkl"
     combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
   ttHbb_SvB_MA_ps_ttHbb:
     signallabel: "ttHbb"
@@ -560,6 +561,7 @@ channels:
     cut: "sum"
     rebin: 12
     stat_only: true
+    bkgsyst: "output/ttHbb_mixeddata_stitched_closure_varbins/closure_fits/ttHbb_mixeddata_stitched/SvB_MA/rebin1/SR/ttHbb/hists_closure_ttHbb_mixeddata_stitched_SvB_MA_ps_ttHbb_rebin1.pkl"
     combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
 
 
