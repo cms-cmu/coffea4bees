@@ -27,3 +27,51 @@ workflow_validation_coffea4bees:
     - python -m snakemake -s coffea4bees/workflows/Snakefile_PhaseE_5_analysis.smk --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml -n
     - python -m snakemake -s coffea4bees/workflows/Snakefile_PhaseE_6_closure.smk --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml -n
 
+phaseE_prep_test_coffea4bees:
+  stage: workflows
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+  script:
+    - python -m pip install snakemake --quiet
+    - mkdir -p output/ttHbb_stitched/computeJCM/ output/test_phaseE/inputs/
+    - touch output/ttHbb_stitched/computeJCM/histAll_NoJCM.coffea output/test_phaseE/inputs/histAll_NoJCM.coffea
+    - pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseE_2_make_subsamples.smk --configfile coffea4bees/workflows/config/test_phaseE.yml --jobs 2
+    # Validate JCM and subsample outputs exist and have expected structure
+    - ls -la output/test_phaseE/JCM_subsamples/
+    - test -f output/test_phaseE/JCM_subsamples/jetCombinatoricModel_SB_mix_v0.yml
+    - grep -q "weights" output/test_phaseE/JCM_subsamples/jetCombinatoricModel_SB_mix_v0.yml
+    - pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseE_4_FvT_training.smk --configfile coffea4bees/workflows/config/test_phaseE.yml --jobs 2
+    - ls -la output/test_phaseE/FvT_training/friends/
+    - test -f output/test_phaseE/FvT_training/friends/friends_FvT_test_phaseE_v0.json
+  artifacts:
+    paths:
+      - output/test_phaseE/JCM_subsamples/
+      - output/test_phaseE/FvT_training/
+      - output/test_phaseE/inputs/
+    expire_in: 1 day
+
+phaseE_closure_validation_coffea4bees:
+  stage: workflows
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseE_prep_test_coffea4bees
+  script:
+    - python -m pip install snakemake --quiet
+    - pixi run snakemake output/test_phaseE/cutflow_validation_test_phaseE.txt -s coffea4bees/workflows/Snakefile_PhaseE_5_analysis.smk --configfile coffea4bees/workflows/config/test_phaseE.yml --jobs 2
+    - test -f output/test_phaseE/cutflow_test_phaseE.yml
+    - cat output/test_phaseE/cutflow_test_phaseE.yml
+    - pixi run snakemake output/test_phaseE/closure_validation_test_phaseE.txt -s coffea4bees/workflows/Snakefile_PhaseE_6_closure.smk --configfile coffea4bees/workflows/config/test_phaseE.yml --jobs 2
+    - test -f output/test_phaseE/closure_counts_test_phaseE.yml
+    - cat output/test_phaseE/closure_counts_test_phaseE.yml
+  artifacts:
+    paths:
+      - output/test_phaseE/cutflow_validation_test_phaseE.txt
+      - output/test_phaseE/cutflow_test_phaseE.yml
+      - output/test_phaseE/closure_validation_test_phaseE.txt
+      - output/test_phaseE/closure_counts_test_phaseE.yml
+    expire_in: 1 day
+

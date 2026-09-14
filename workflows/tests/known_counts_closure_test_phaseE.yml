@@ -1,0 +1,23 @@
+ttHbb_ttbar:
+    channel:
+        ttHbb
+    process:
+        ttbar
+    counts:
+        [0.0, 0.0]
+
+ttHbb_multijet:
+    channel:
+        ttHbb
+    process:
+        multijet
+    counts:
+        [0.0, 0.0]
+
+ttHbb_data_obs:
+    channel:
+        ttHbb
+    process:
+        data_obs
+    counts:
+        [0.0, 0.0]

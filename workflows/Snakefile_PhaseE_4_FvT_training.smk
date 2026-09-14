@@ -19,6 +19,7 @@ for k, v in fvt_cfg.items():
         config[k] = v
 
 config.setdefault('channel', "ttHbb")
+config.setdefault('classifier_container_wrapper', config.get('container_wrapper', "./run_container classifier"))
 config.setdefault('n_models', config.get('n_subsamples', config.get('n_samples', config.get('nMixes', 16))))
 config.setdefault('mix_name', "3bDvTMix4bDvT")
 config.setdefault('eos_base', "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb")
@@ -247,6 +248,7 @@ rule train_fvt_mixed_model:
         mix = "{m}",
         mix_name = config['mix_name'],
         eos_base = config['eos_base'],
+        classifier_container_wrapper = config['classifier_container_wrapper'],
     resources:
         slurm_partition = "work",
         qos = "light",
@@ -259,7 +261,7 @@ rule train_fvt_mixed_model:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        CLASSIFIER_CONFIG_PATHS=coffea4bees ./run_container classifier python -m src.classifier.task.main from {input} 2>&1 | tee {log}
+        CLASSIFIER_CONFIG_PATHS=coffea4bees {params.classifier_container_wrapper} python -m src.classifier.task.main from {input} 2>&1 | tee {log}
         touch {output}
         """
 
@@ -384,18 +386,20 @@ rule evaluate_fvt_mixed_model:
         eos_base = config['eos_base'],
         mix_name = config['mix_name'],
         mix = "{m}",
+        classifier_container_wrapper = config['classifier_container_wrapper'],
     resources:
         slurm_partition = "work",
         qos = "light",
         mem_mb = 24000,
         cpus_per_task = 4,
         gres = "mps:25",
+        runtime = 720,
     retries: 3
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        CLASSIFIER_CONFIG_PATHS=coffea4bees ./run_container classifier python -m src.classifier.task.main from {input.cfg} 2>&1 | tee {log}
+        CLASSIFIER_CONFIG_PATHS=coffea4bees {params.classifier_container_wrapper} python -m src.classifier.task.main from {input.cfg} 2>&1 | tee {log}
         TMP_RES=$(mktemp --suffix=.json)
         X509_USER_PROXY=$(pwd)/proxy/x509_proxy xrdcp -f '{params.eos_base}/friend/FvT/{params.mix_name}_v{params.mix}/result.json' "$TMP_RES"
         python3 -c "import json; data=json.load(open('$TMP_RES')); merged=data['analysis'][0]['merged']; json.dump({{'FvT': merged}}, open('{output}', 'w'))"

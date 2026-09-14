@@ -13,6 +13,11 @@ years:
 n_samples: 2
 n_subsamples: 2
 
+test: true
+analysis_container_wrapper: ""
+known_counts: "coffea4bees/workflows/tests/known_counts_test_phaseE.yml"
+known_counts_closure: "coffea4bees/workflows/tests/known_counts_closure_test_phaseE.yml"
+
 phase_f_output_path: "output/ttHbb_stitched/"
 phase_f_label: "ttHbb_stitched"
 
@@ -103,7 +108,9 @@ analysis_config:
   weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
   runner:
     workers: 2
-    chunksize: 10000
+    chunksize: 1000
+    maxchunks: 1
+    test: true
     condor: false
     shared_dask: false
     run_performance: false

@@ -23,6 +23,7 @@ if isinstance(raw_years, str):
 else:
     YEARS = [str(y) for y in raw_years]
 config['years'] = YEARS
+config.setdefault('analysis_container_wrapper', config.get('container_wrapper', "./run_container"))
 
 out = config['output_path']
 if not out.endswith("/"):
@@ -37,7 +38,7 @@ wildcard_constraints:
     v = r"\d+",
     mode = "(2class|4class)",
 
-localrules: all_PhaseE_5, all_closure_hists, closure_test_subsample, closure_test_subsample_mode, create_closure_data_config, create_closure_data_config_mode, create_closure_mixeddata_config, create_closure_mixeddata_config_mode, create_closure_plot_config, create_closure_plot_config_mode
+localrules: all_PhaseE_5, all_closure_hists, closure_test_subsample, closure_test_subsample_mode, create_closure_data_config, create_closure_data_config_mode, create_closure_mixeddata_config, create_closure_mixeddata_config_mode, create_closure_plot_config, create_closure_plot_config_mode, check_cutflow_mixeddata
 
 rule all_PhaseE_5:
     input:
@@ -70,10 +71,11 @@ rule run_analysis_mixeddata:
         f"{out}logs/analysis_{config['label']}.log"
     params:
         processor = f"coffea4bees/analysis/processors/processor_{channel}.py",
-        config_file = config.get('analysis_config_file', "coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml"),
+        config_file = config.get('analysis_config_file', workflow.configfiles[0] if workflow.configfiles else "coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml"),
         datasets = "mixeddata_4b",
         output_path = out,
         output_name = f"histAll_{config['label']}.coffea",
+        container_wrapper = config['analysis_container_wrapper'],
     resources:
         slurm_partition = "work",
         qos = "light",
@@ -84,11 +86,40 @@ rule run_analysis_mixeddata:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        ./run_container python runner.py {params.config_file} \
+        {params.container_wrapper} python runner.py {params.config_file} \
             --processor {params.processor} \
             --datasets {params.datasets} \
             --output-path {params.output_path} \
             --output {params.output_name} 2>&1 | tee {log}
+        """
+
+rule check_cutflow_mixeddata:
+    input:
+        coffea_file = f"{out}histAll_{config['label']}.coffea"
+    output:
+        validation_txt = f"{out}cutflow_validation_{config['label']}.txt",
+        cutflow_yml = f"{out}cutflow_{config['label']}.yml"
+    log:
+        f"{out}logs/cutflow_validation_{config['label']}.log"
+    params:
+        known_counts = lambda wildcards: config.get("known_counts", ""),
+        error_threshold = lambda wildcards: config.get("error_threshold", "0.001"),
+        cutflow_list = lambda wildcards: config.get("cutflow_list", "passJetMult,passPreSel,passDiJetMass,SR,SB"),
+        run_container_wrapper = config.get('analysis_container_wrapper', ""),
+        python_bin = config.get('python_bin', "python")
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {output.validation_txt}) $(dirname {log})
+        echo "Running cutflow analysis and verification for {input.coffea_file}" > {log}
+        {params.run_container_wrapper} bash coffea4bees/scripts/run-cutflow.sh \
+            --input-file "{input.coffea_file}" \
+            --output-file "{output.cutflow_yml}" \
+            $([ -n "{params.known_counts}" ] && [ "{params.known_counts}" != "none" ] && [ -f "{params.known_counts}" ] && echo "--known-cutflow {params.known_counts}") \
+            --error-threshold "{params.error_threshold}" \
+            --cutflow-list "{params.cutflow_list}" \
+            --python-bin "{params.python_bin}" 2>&1 | tee -a {log}
+        touch {output.validation_txt}
         """
 
 # ── Subsample Closure: Step 5 Data 3b (JCM * FvT) and Subsample 4b ─────────────
