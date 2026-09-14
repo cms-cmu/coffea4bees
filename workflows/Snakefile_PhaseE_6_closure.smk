@@ -44,7 +44,7 @@ var = config['variable']
 closure_output_dir = f"{out}closure_fits/{mix_name}/{classifier}/{rebin_str}/SR/{channel}/"
 closure_pkl = f"{closure_output_dir}hists_closure_{mix_name}_{var}_{rebin_str}.pkl"
 
-localrules: all_PhaseE_6, hist_to_json_closure, json_to_root_closure, make_fvt_data3b_root, make_signal_root_closure, run_two_stage_closure
+localrules: all_PhaseE_6, hist_to_json_closure, json_to_root_closure, make_fvt_data3b_root, make_signal_root_closure, run_two_stage_closure, check_closure_validation
 
 rule all_PhaseE_6:
     input:
@@ -206,4 +206,39 @@ rule run_two_stage_closure:
             --years {params.years} \
             --nMixes {params.nMixes} \
             {params.extra_args} 2>&1 | tee {log}
+        """
+
+rule check_closure_validation:
+    input:
+        closure_pkl = closure_pkl,
+        script = "coffea4bees/stats_analysis/tests/dumpTwoStageInputs.py"
+    output:
+        validation_txt = f"{out}closure_validation_{config['label']}.txt",
+        counts_yml = f"{out}closure_counts_{config['label']}.yml"
+    log:
+        f"{out}logs/closure_validation_{config['label']}.log"
+    params:
+        container_wrapper = config.get('analysis_container_wrapper', ""),
+        root_file = lambda wildcards: f"{closure_output_dir}hists_closure_{mix_name}_{var}_{rebin_str}.root",
+        known_counts = lambda wildcards: config.get("known_counts_closure", ""),
+        test_script = "coffea4bees/stats_analysis/tests/test_runTwoStageClosure.py",
+        output_dir = closure_output_dir,
+        channel = channel
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {output.validation_txt}) $(dirname {log})
+        echo "Dumping closure counts from {params.root_file}" > {log}
+        {params.container_wrapper} combine python3 {input.script} \
+            --inputFile {params.root_file} \
+            --outputFile {output.counts_yml} \
+            --channels {params.channel} 2>&1 | tee -a {log}
+        if [ -n "{params.known_counts}" ] && [ "{params.known_counts}" != "none" ] && [ -f "{params.known_counts}" ]; then
+            echo "Running closure comparison against {params.known_counts}" >> {log}
+            {params.container_wrapper} combine python3 {params.test_script} \
+                --output_path {params.output_dir} \
+                --inputFile {params.root_file} \
+                --knownCounts {params.known_counts} 2>&1 | tee -a {log}
+        fi
+        touch {output.validation_txt}
         """
