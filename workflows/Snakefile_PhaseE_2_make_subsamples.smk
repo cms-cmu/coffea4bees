@@ -1018,6 +1018,22 @@ rule merge_all_classifier_inputs_subsamples_json:
         else:
             curr = {"HCR_input": {"name": "HCR_input", "branches": [], "data": []}}
 
+        nominal_ci = config.get(
+            "nominal_classifier_inputs",
+            "coffea4bees/metadata/datasets/classifier_inputs_ttHbb_stitched.json"
+            if channel == "ttHbb" else
+            "coffea4bees/metadata/datasets/classifier_inputs.json"
+        )
+        ref_branches = None
+        if nominal_ci and os.path.exists(nominal_ci):
+            try:
+                with open(nominal_ci) as f_ref:
+                    ref_d = json.load(f_ref)
+                if "HCR_input" in ref_d and "branches" in ref_d["HCR_input"]:
+                    ref_branches = set(ref_d["HCR_input"]["branches"])
+            except Exception:
+                ref_branches = None
+
         all_branches = set(curr.get("HCR_input", {}).get("branches", []))
         # Keep non-mixeddata entries. As in update_classifier_inputs_subsample_json, the
         # subsample identity is carried by the friend-tree path (.../mixeddata/mix_v<N>_<era>/...);
@@ -1042,13 +1058,15 @@ rule merge_all_classifier_inputs_subsamples_json:
                 continue
             with open(jf) as f:
                 d = json.load(f)
-            per_sub_target = target.replace(".json", f"_v{v_idx}.json")
-            with open(per_sub_target, "w") as f_sub:
-                json.dump(d, f_sub, indent=2)
             if "HCR_input" in d:
+                if ref_branches is not None:
+                    d["HCR_input"]["branches"] = sorted(list(set(d["HCR_input"].get("branches", [])).intersection(ref_branches)))
                 all_branches.update(d["HCR_input"].get("branches", []))
                 for entry in d["HCR_input"].get("data", []):
                     all_entries.append(entry)
+            per_sub_target = target.replace(".json", f"_v{v_idx}.json")
+            with open(per_sub_target, "w") as f_sub:
+                json.dump(d, f_sub, indent=2)
 
         # Guard against the same (source file, friend chunk) pair being listed twice, which
         # would double-count those events in training.
@@ -1067,6 +1085,8 @@ rule merge_all_classifier_inputs_subsamples_json:
             _deduped.append(entry)
         all_entries = _deduped
 
+        if ref_branches is not None:
+            all_branches = all_branches.intersection(ref_branches)
         curr["HCR_input"]["branches"] = sorted(list(all_branches))
         curr["HCR_input"]["data"] = all_entries
 

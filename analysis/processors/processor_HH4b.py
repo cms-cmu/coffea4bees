@@ -1454,7 +1454,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             )
 
         if self.make_classifier_input is not None:
-            for k in ["ZZSR", "ZHSR", "HHSR", "SR", "SB"]:
+            region_keys = ["SR", "SB"]
+            if "ZZSR" in selev["quadJet_selected"].fields or "HHSR" in selev["quadJet_selected"].fields:
+                region_keys = ["ZZSR", "ZHSR", "HHSR", "SR", "SB"]
+            for k in region_keys:
                 if k in selev["quadJet_selected"].fields:
                     selev[k] = selev["quadJet_selected"][k]
                 elif k == "HHSR" and "SR" in selev["quadJet_selected"].fields:
