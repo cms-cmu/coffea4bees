@@ -32,6 +32,9 @@ for k, v in mixeddata_cfg.items():
 # Container and general configuration
 config.setdefault('analysis_container',
     "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
+default_container_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
+config.setdefault('analysis_container_wrapper', config.get('container_wrapper', default_container_wrapper))
+condor_flags = "" if config.get("test", False) else "--shared-dask --condor"
 config.setdefault('dataset_location', "coffea4bees/metadata/datasets/")
 config.setdefault('channel', "ttHbb")
 channel = config['channel']
@@ -214,17 +217,19 @@ rule run_split_mixeddata_per_subsample:
         dataset = config['dataset_name'],
         output_path = f"{sub_out}per_subsample/",
         years = " ".join(YEARS),
+        container_wrapper = config['analysis_container_wrapper'],
+        condor_flags = condor_flags,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.reg}) $(dirname {log})
-        ./run_container python runner.py {input.cfg} \
+        {params.container_wrapper} python runner.py {input.cfg} \
             -p {params.processor} \
             -d {params.dataset} \
             --years {params.years} \
             --output-path {params.output_path} \
             --output $(basename {output.reg}) \
-            -s --shared-dask --condor 2>&1 | tee {log}
+            -s {params.condor_flags} 2>&1 | tee {log}
         touch {output.done}
         """
 
@@ -369,17 +374,19 @@ rule run_noJCM_subsamples:
         dataset = config['multisample_dataset_name'],
         output_path = f"{out}JCM_subsamples/",
         years = " ".join(YEARS),
+        container_wrapper = config['analysis_container_wrapper'],
+        condor_flags = condor_flags,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
-        ./run_container python runner.py {input.analysis_cfg} \
+        {params.container_wrapper} python runner.py {input.analysis_cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
             --output-path {params.output_path} \
             --output $(basename {output.coffea_out}) \
-            --shared-dask --condor 2>&1 | tee {log}
+            {params.condor_flags} 2>&1 | tee {log}
         """
 
 # ── Stage 2c: Dedicated JCM Fits for Each Subsample (m=0..15) ─────────────────
@@ -417,11 +424,13 @@ rule make_subsample_jcm:
         f"{out}JCM_subsamples/jetCombinatoricModel_SB_mix_v{{m}}.yml"
     log:
         f"{out}JCM_subsamples/logs/make_jcm_v{{m}}.log"
+    params:
+        container_wrapper = config['analysis_container_wrapper'],
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        ./run_container python coffea4bees/analysis/jcm_tools/make_jcm_weights.py \
+        {params.container_wrapper} python coffea4bees/analysis/jcm_tools/make_jcm_weights.py \
             -i {input.data_coffea} {input.subsample_coffea} \
             --jcm_config {input.fit_cfg} \
             -w mix_v{wildcards.m} \
@@ -474,17 +483,19 @@ rule study_mixeddata:
         dataset = config['dataset_name'],
         output_path = out,
         years = " ".join(YEARS),
+        container_wrapper = config['analysis_container_wrapper'],
+        condor_flags = condor_flags,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
-        ./run_container python runner.py {input.study_cfg} \
+        {params.container_wrapper} python runner.py {input.study_cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
             --output-path {params.output_path} \
             --output $(basename {output.coffea_out}) \
-            --shared-dask --condor 2>&1 | tee {log}
+            {params.condor_flags} 2>&1 | tee {log}
         """
 
 rule plot_subsample_correlation:
@@ -496,11 +507,12 @@ rule plot_subsample_correlation:
         f"{out}plots_study_mixeddata/logs/plot_subsample_correlation.log"
     params:
         out_dir = f"{out}plots_study_mixeddata/",
+        container_wrapper = config['analysis_container_wrapper'],
     shell:
         """
         set -eo pipefail
         mkdir -p {params.out_dir} $(dirname {log})
-        ./run_container python scripts/plot_subsample_correlation.py \
+        {params.container_wrapper} python scripts/plot_subsample_correlation.py \
             -i {input.coffea} \
             -o {params.out_dir} 2>&1 | tee {log}
         """
@@ -555,17 +567,19 @@ rule run_analysis_subsample:
         dataset = lambda wildcards: f"{config['multisample_dataset_name']}:{wildcards.v}",
         output_path = out,
         years = " ".join(YEARS),
+        container_wrapper = config['analysis_container_wrapper'],
+        condor_flags = condor_flags,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
-        ./run_container python runner.py {input.analysis_cfg} \
+        {params.container_wrapper} python runner.py {input.analysis_cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
             --output-path {params.output_path} \
             --output $(basename {output.coffea_out}) \
-            --shared-dask --condor 2>&1 | tee {log}
+            {params.condor_flags} 2>&1 | tee {log}
         """
 
 # ── Stage 5: Subsample v0 Closure Validation Plots ────────────────────────────
@@ -633,11 +647,12 @@ rule make_plots_v0_closure:
         f"{out}logs/make_plots_v0_closure.log"
     params:
         output_dir = f"{out}plots_v0_closure/",
+        container_wrapper = config['analysis_container_wrapper'],
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.done}) $(dirname {log})
-        ./run_container python coffea4bees/plots/makePlots.py \
+        {params.container_wrapper} python coffea4bees/plots/makePlots.py \
             {input.data_coffea} {input.subsample_coffea} \
             -o {params.output_dir} \
             -m {input.plot_cfg} \
@@ -706,11 +721,12 @@ rule make_plots_v0_vs_mixeddata_all:
         f"{out}logs/make_plots_v0_vs_mixeddata_all.log"
     params:
         output_dir = f"{out}plots_v0_vs_mixeddata_all/",
+        container_wrapper = config['analysis_container_wrapper'],
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.done}) $(dirname {log})
-        ./run_container python coffea4bees/plots/makePlots.py \
+        {params.container_wrapper} python coffea4bees/plots/makePlots.py \
             {input.mixed_coffea} {input.subsample_coffea} \
             -o {params.output_dir} \
             -m {input.plot_cfg} \
@@ -771,17 +787,19 @@ rule make_classifier_inputs_mixeddata:
         dataset = config['multisample_dataset_name'],
         output_path = out,
         years = " ".join(YEARS),
+        container_wrapper = config['analysis_container_wrapper'],
+        condor_flags = condor_flags,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
-        ./run_container python runner.py {input.analysis_cfg} \
+        {params.container_wrapper} python runner.py {input.analysis_cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
             --output-path {params.output_path} \
             --output $(basename {output.coffea_out}) \
-            --shared-dask --condor 2>&1 | tee {log}
+            {params.condor_flags} 2>&1 | tee {log}
         """
 
 rule create_classifier_inputs_config_subsample:
@@ -834,17 +852,19 @@ rule make_classifier_inputs_subsample:
         dataset = lambda wildcards: f"{config['multisample_dataset_name']}:{wildcards.v}",
         output_path = f"{out}classifier_inputs/",
         years = " ".join(YEARS),
+        container_wrapper = config['analysis_container_wrapper'],
+        condor_flags = condor_flags,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
-        ./run_container python runner.py {input.analysis_cfg} \
+        {params.container_wrapper} python runner.py {input.analysis_cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
             --output-path {params.output_path} \
             --output $(basename {output.coffea_out}) \
-            --shared-dask --condor 2>&1 | tee {log}
+            {params.condor_flags} 2>&1 | tee {log}
         """
 
 rule update_classifier_inputs_subsample_json:

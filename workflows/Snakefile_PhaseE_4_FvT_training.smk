@@ -19,7 +19,8 @@ for k, v in fvt_cfg.items():
         config[k] = v
 
 config.setdefault('channel', "ttHbb")
-config.setdefault('classifier_container_wrapper', config.get('container_wrapper', "./run_container classifier"))
+default_classifier_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container classifier"
+config.setdefault('classifier_container_wrapper', config.get('container_wrapper', default_classifier_wrapper))
 config.setdefault('n_models', config.get('n_subsamples', config.get('n_samples', config.get('nMixes', 16))))
 config.setdefault('mix_name', "3bDvTMix4bDvT")
 config.setdefault('eos_base', "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb")

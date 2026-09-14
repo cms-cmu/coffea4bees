@@ -22,7 +22,10 @@ config.setdefault('rebin', "1")
 config.setdefault('years_closure', "2016 2017 2018")
 config.setdefault('closure_extra_args', "")
 config.setdefault('scale_mixed', 1.0)
-config.setdefault('analysis_container_wrapper', "./run_container")
+default_combine_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container combine"
+config.setdefault('combine_container_wrapper', config.get('container_wrapper', default_combine_wrapper))
+default_analysis_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
+config.setdefault('analysis_container_wrapper', config.get('container_wrapper', default_analysis_wrapper))
 config.setdefault('python_bin', "python")
 
 raw_years = config.get('years', ['UL16_preVFP', 'UL16_postVFP', 'UL17', 'UL18'])
@@ -94,7 +97,7 @@ rule json_to_root_closure:
     output:
         f"{out}root_inputs/histAll_{config['label']}.root"
     params:
-        container_wrapper = config['analysis_container_wrapper'],
+        combine_wrapper = config['combine_container_wrapper'],
         python_bin = config['python_bin'],
         sig_input = config.get('signal_input_json', '')
     log:
@@ -103,7 +106,7 @@ rule json_to_root_closure:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        {params.container_wrapper} combine python3 {input.script} \
+        {params.combine_wrapper} python3 {input.script} \
             -f {input.injson} \
             -o $(dirname {output}) 2>&1 | tee {log}
         """
@@ -152,7 +155,7 @@ rule make_signal_root_closure:
     output:
         f"{out}root_inputs/hist_signal_ttHbb.root"
     params:
-        container_wrapper = config['analysis_container_wrapper'],
+        combine_wrapper = config['combine_container_wrapper'],
         injson = config.get('nominal_json', "output/ttHbb_stitched/histAll_ttHbb_stitched.json"),
         var = var,
         years = " ".join(YEARS),
@@ -162,7 +165,7 @@ rule make_signal_root_closure:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        {params.container_wrapper} combine python3 {input.script} \
+        {params.combine_wrapper} python3 {input.script} \
             -i {params.injson} \
             --var {params.var} \
             --years {params.years} \
@@ -178,7 +181,7 @@ rule run_two_stage_closure:
     output:
         closure_pkl
     params:
-        container_wrapper = config['analysis_container_wrapper'],
+        combine_wrapper = config['combine_container_wrapper'],
         mix_name = mix_name,
         var = var,
         channel = channel,
@@ -193,7 +196,7 @@ rule run_two_stage_closure:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        {params.container_wrapper} combine python3 {input.script} \
+        {params.combine_wrapper} python3 {input.script} \
             --mix_name {params.mix_name} \
             --var {params.var} \
             --channel {params.channel} \
@@ -218,7 +221,7 @@ rule check_closure_validation:
     log:
         f"{out}logs/closure_validation_{config['label']}.log"
     params:
-        container_wrapper = config.get('analysis_container_wrapper', ""),
+        combine_wrapper = config.get('combine_container_wrapper', ""),
         root_file = lambda wildcards: f"{closure_output_dir}hists_closure_{mix_name}_{var}_{rebin_str}.root",
         known_counts = lambda wildcards: config.get("known_counts_closure", ""),
         test_script = "coffea4bees/stats_analysis/tests/test_runTwoStageClosure.py",
@@ -229,13 +232,13 @@ rule check_closure_validation:
         set -eo pipefail
         mkdir -p $(dirname {output.validation_txt}) $(dirname {log})
         echo "Dumping closure counts from {params.root_file}" > {log}
-        {params.container_wrapper} combine python3 {input.script} \
+        {params.combine_wrapper} python3 {input.script} \
             --inputFile {params.root_file} \
             --outputFile {output.counts_yml} \
             --channels {params.channel} 2>&1 | tee -a {log}
         if [ -n "{params.known_counts}" ] && [ "{params.known_counts}" != "none" ] && [ -f "{params.known_counts}" ]; then
             echo "Running closure comparison against {params.known_counts}" >> {log}
-            {params.container_wrapper} combine python3 {params.test_script} \
+            {params.combine_wrapper} python3 {params.test_script} \
                 --output_path {params.output_dir} \
                 --inputFile {params.root_file} \
                 --knownCounts {params.known_counts} 2>&1 | tee -a {log}

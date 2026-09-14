@@ -27,6 +27,9 @@ if isinstance(raw_years, str):
 else:
     YEARS = [str(y) for y in raw_years]
 config['years'] = YEARS
+default_container_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
+config.setdefault('analysis_container_wrapper', config.get('container_wrapper', default_container_wrapper))
+condor_flags = "" if config.get("test", False) else "--shared-dask --condor"
 
 config.setdefault('datasets_file', "coffea4bees/metadata/datasets/TT_stitched.yml")
 config.setdefault('datasets', [
@@ -142,11 +145,13 @@ rule make_ttbar_pseudodata_per_year:
         datasets = " ".join(ttbar_datasets),
         datasets_file = config['datasets_file'],
         output_path = f"{out}per_year/",
+        container_wrapper = config['analysis_container_wrapper'],
+        condor_flags = condor_flags,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.reg}) $(dirname {log})
-        ./run_container python runner.py {input.config_file} \
+        {params.container_wrapper} python runner.py {input.config_file} \
             -p {params.processor} \
             -d {params.datasets} \
             -c {params.datasets_file} \
@@ -154,7 +159,7 @@ rule make_ttbar_pseudodata_per_year:
             --years {wildcards.year} \
             --output-path {params.output_path} \
             --output $(basename {output.reg}) \
-            -s --shared-dask --condor 2>&1 | tee {log}
+            -s {params.condor_flags} 2>&1 | tee {log}
         touch {output.done}
         """
 
