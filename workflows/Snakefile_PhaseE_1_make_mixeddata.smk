@@ -31,6 +31,9 @@ for k, v in mixeddata_cfg.items():
 
 # Container and general configuration
 config.setdefault('analysis_container', None)
+default_container_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
+config.setdefault('analysis_container_wrapper', config.get('container_wrapper', default_container_wrapper))
+condor_flags = "" if config.get("test", False) else "--shared-dask --condor"
 config.setdefault('dataset_location', "coffea4bees/metadata/datasets/")
 config.setdefault('channel', "ttHbb")
 channel = config['channel']
@@ -76,7 +79,11 @@ config.setdefault('base_path',
 
 # Dataset naming
 config.setdefault('dataset_name', f"mixeddata_{channel}{_rank_suffix}")
-config.setdefault('install_path', f"coffea4bees/metadata/datasets/mixeddata_{channel}{_rank_suffix}.yml")
+_mixeddata_cfg = config.get('mixeddata', {})
+if isinstance(_mixeddata_cfg, dict) and 'install_path' in _mixeddata_cfg:
+    config.setdefault('install_path', _mixeddata_cfg['install_path'])
+else:
+    config.setdefault('install_path', f"coffea4bees/metadata/datasets/mixeddata_{channel}{_rank_suffix}.yml")
 
 out = config['output_path']
 if not out.endswith("/"):
@@ -88,10 +95,20 @@ module analysis:
     config: config
 
 jcm_source_coffea = jcm_cfg.get('source_coffea', config.get('jcm_source_coffea', "output/ttHbb_stitched/computeJCM/histAll_NoJCM.coffea"))
-jcm_input_coffea  = jcm_cfg.get('input_coffea', config.get('jcm_input_coffea', f"{out}inputs/histAll_NoJCM.coffea"))
-jcm_out_dir       = jcm_cfg.get('output_dir', config.get('jcm_output_dir', f"{out}JCM_inclusive/"))
+_raw_jcm_input = jcm_cfg.get('input_coffea', config.get('jcm_input_coffea', "inputs/histAll_NoJCM.coffea"))
+if not _raw_jcm_input.startswith("/") and not _raw_jcm_input.startswith("output/"):
+    jcm_input_coffea = os.path.join(out, _raw_jcm_input)
+else:
+    jcm_input_coffea = _raw_jcm_input
+
+_raw_jcm_out_dir = jcm_cfg.get('output_dir', config.get('jcm_output_dir', "JCM_inclusive/"))
+if not _raw_jcm_out_dir.startswith("/") and not _raw_jcm_out_dir.startswith("output/"):
+    jcm_out_dir = os.path.join(out, _raw_jcm_out_dir)
+else:
+    jcm_out_dir = _raw_jcm_out_dir
 if not jcm_out_dir.endswith('/'):
     jcm_out_dir += '/'
+
 jcm_tag           = jcm_cfg.get('tag', config.get('tag', "ttHbb_stitched_inclusive"))
 jcm_region        = jcm_cfg.get('region', config.get('jcm_region', "inclusive"))
 jcm_model_file    = f"{jcm_out_dir}jetCombinatoricModel_{jcm_region}_{jcm_tag}.yml"
@@ -143,7 +160,7 @@ rule stage_input_coffea:
         """
         set -eo pipefail
         mkdir -p $(dirname {output})
-        if [ ! -f "{output}" ]; then
+        if [ "{input}" != "{output}" ]; then
             echo "Staging copy of {input} -> {output} (non-destructive)"
             cp "{input}" "{output}"
         fi
@@ -237,6 +254,8 @@ rule make_mixed_data_picoAOD_per_year:
         config_file = f"{out}mixeddata_skimmer_config.yml",
         hemi_lib = config.get('hemi_library_yaml', 'coffea4bees/skimmer/metadata/hemisphere_library_noTT.yml'),
         hemi_stats = get_hemi_stats_file,
+        data_yml = os.path.join(config.get('dataset_location', 'coffea4bees/metadata/datasets/'), 'data.yml'),
+        friends = config.get('friends_file', 'coffea4bees/metadata/friends/friends_ttHbb.yml'),
     output:
         reg = f"{out}per_year/picoaod_datasets_{config['dataset_name']}__{{year}}.yml",
         done = f"{out}.make_mixed_data_{{year}}.done",
@@ -247,60 +266,65 @@ rule make_mixed_data_picoAOD_per_year:
         processor = "coffea4bees/skimmer/processor/make_mixed_data.py",
         dataset = "data",
         output_path = f"{out}per_year/",
+        container_wrapper = config['analysis_container_wrapper'],
+        condor_flags = condor_flags,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.reg}) $(dirname {log})
-        ./run_container python runner.py {input.config_file} \
+        {params.container_wrapper} python runner.py {input.config_file} \
             -p {params.processor} \
             -d {params.dataset} \
             --friends {params.friends} \
             --years {wildcards.year} \
             --output-path {params.output_path} \
             --output $(basename {output.reg}) \
-            -s --shared-dask --condor 2>&1 | tee {log}
+            -s {params.condor_flags} 2>&1 | tee {log}
         touch {output.done}
         """
 
+# ── Stage 2: Merge Registries & Install Dataset YAML ──────────────────────────
 rule merge_mixeddata_registries:
     input:
         expand(f"{out}per_year/picoaod_datasets_{config['dataset_name']}__{{year}}.yml", year=YEARS)
     output:
-        f"{out}picoaod_datasets_{config['dataset_name']}_combined.yml"
+        reg = f"{out}picoaod_datasets_{config['dataset_name']}.yml",
+        done = f"{out}.merge_mixeddata_registries.done",
     log:
-        f"{out}logs/merge_mixeddata_registries.log"
-    shell:
-        """
-        set -eo pipefail
-        mkdir -p $(dirname {output}) $(dirname {log})
-        python coffea4bees/workflows/scripts/merge_mixeddata_registries.py {input} {output} 2>&1 | tee -a {log}
-        """
+        f"{out}logs/merge_registries.log"
+    run:
+        import yaml
+        os.makedirs(os.path.dirname(output.reg), exist_ok=True)
+        merged = {}
+        for fn in input:
+            with open(fn, 'r') as f:
+                d = yaml.safe_load(f) or {}
+                for year_key, files in d.items():
+                    merged.setdefault(year_key, []).extend(files)
+        with open(output.reg, 'w') as f:
+            yaml.dump(merged, f, default_flow_style=False)
+        with open(output.done, 'w') as f:
+            f.write("done\n")
 
-rule install_mixeddata_dataset:
+rule install_mixeddata_dataset_yaml:
     input:
-        f"{out}picoaod_datasets_{config['dataset_name']}_combined.yml"
+        reg = f"{out}picoaod_datasets_{config['dataset_name']}.yml",
+        done = f"{out}.merge_mixeddata_registries.done",
     output:
-        config['install_path']
-    log:
-        f"{out}logs/install_mixeddata_dataset.log"
-    params:
-        name = config['dataset_name']
-    shell:
-        """
-        set -eo pipefail
-        mkdir -p $(dirname {output}) $(dirname {log})
-        python src/tools/make_dataset_yml.py -i {input} -o {output} -n {params.name} 2>&1 | tee -a {log}
-        echo "Installed {output} (dataset name: {params.name})" 2>&1 | tee -a {log}
-        """
+        installed_yaml = config['install_path'],
+    run:
+        import shutil
+        os.makedirs(os.path.dirname(output.installed_yaml), exist_ok=True)
+        shutil.copyfile(input.reg, output.installed_yaml)
 
-# ── Stage 3: Process Raw Mixed Data (Fill Unweighted Distributions) ───────────
+# ── Stage 3: Process All Mixed Data (Unweighted Unit Weights) ─────────────────
 rule create_analysis_config_mixeddata_all:
+    input:
+        ds_file = config['install_path'],
     output:
         f"{out}analysis_config_mixeddata_all.yml"
     params:
-        ds_file = config['install_path'],
         dataset_location = config['dataset_location'],
-        jcm_file = jcm_model_file,
     run:
         import yaml
         os.makedirs(os.path.dirname(output[0]), exist_ok=True)
@@ -311,14 +335,13 @@ rule create_analysis_config_mixeddata_all:
                 "condor": True,
                 "shared_dask": True,
                 "run_performance": True,
-                "datasets_file": params.ds_file,
+                "datasets_file": input.ds_file,
                 "dataset_location": params.dataset_location,
             },
             "config": {
                 "blind": False,
                 "apply_FvT": False,
-                "apply_JCM": True,
-                "JCM_file": params.jcm_file,
+                "apply_JCM": False,
                 "apply_trigWeight": False,
                 "apply_btagSF": True,
                 "apply_boosted_veto": False,
@@ -334,7 +357,6 @@ rule create_analysis_config_mixeddata_all:
 rule run_analysis_mixeddata_all:
     input:
         ds_ready = config['install_path'],
-        jcm_ready = jcm_model_file,
         analysis_cfg = f"{out}analysis_config_mixeddata_all.yml",
     output:
         coffea_out = f"{out}histAll_{channel}_mixeddata_all.coffea",
@@ -345,17 +367,19 @@ rule run_analysis_mixeddata_all:
         dataset = config['dataset_name'],
         output_path = out,
         years = " ".join(YEARS),
+        container_wrapper = config['analysis_container_wrapper'],
+        condor_flags = condor_flags,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
-        ./run_container python runner.py {input.analysis_cfg} \
+        {params.container_wrapper} python runner.py {input.analysis_cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
             --output-path {params.output_path} \
             --output $(basename {output.coffea_out}) \
-            --shared-dask --condor 2>&1 | tee {log}
+            {params.condor_flags} 2>&1 | tee {log}
         """
 
 # ── Stage 4: Mixed-Data Inclusive JCM Derivation ──────────────────────────────
@@ -487,6 +511,7 @@ rule make_mixeddata_JCM:
         output_dir = f"{out}JCM_mixeddata_inclusive/",
         region = "inclusive",
         tag = f"{channel}_mixeddata",
+        container_wrapper = config['analysis_container_wrapper'],
     shell:
         """
         set -eo pipefail
@@ -494,7 +519,7 @@ rule make_mixeddata_JCM:
         mkdir -p $MPLCONFIGDIR $(dirname {output.model_file}) $(dirname {log})
         
         echo "Computing JCM for ttbar + mixeddata vs data 4b inclusive" 2>&1 | tee {log}
-        ./run_container env PYTHONPATH=. python coffea4bees/analysis/jcm_tools/make_jcm_weights.py \
+        {params.container_wrapper} env PYTHONPATH=. python coffea4bees/analysis/jcm_tools/make_jcm_weights.py \
             -o {params.output_dir} \
             -r {params.region} \
             -i {input.data_tt_coffea} {input.mixed_coffea} \
@@ -557,17 +582,19 @@ rule run_analysis_mixeddata_all_with_mixeddata_JCM:
         dataset = config['dataset_name'],
         output_path = out,
         years = " ".join(YEARS),
+        container_wrapper = config['analysis_container_wrapper'],
+        condor_flags = condor_flags,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
-        ./run_container python runner.py {input.analysis_cfg} \
+        {params.container_wrapper} python runner.py {input.analysis_cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
             --output-path {params.output_path} \
             --output $(basename {output.coffea_out}) \
-            --shared-dask --condor 2>&1 | tee {log}
+            {params.condor_flags} 2>&1 | tee {log}
         """
 
 # ── Stage 6: Mixed-Data Closure Plots (Full Stack vs Data 4b) ─────────────────
@@ -645,11 +672,12 @@ rule make_plots_mixeddata_closure:
         f"{out}logs/make_plots_mixeddata_closure.log"
     params:
         output_dir = f"{out}plots_mixeddata_closure/",
+        container_wrapper = config['analysis_container_wrapper'],
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.done}) $(dirname {log})
-        ./run_container python coffea4bees/plots/makePlots.py \
+        {params.container_wrapper} python coffea4bees/plots/makePlots.py \
             {input.data_coffea} {input.mixed_coffea} \
             -o {params.output_dir} \
             -m {input.plot_cfg} \
@@ -719,11 +747,12 @@ rule make_plots_mixeddata_vs_data:
         f"{out}logs/make_plots_mixeddata_vs_data.log"
     params:
         output_dir = f"{out}plots_mixeddata_vs_data/",
+        container_wrapper = config['analysis_container_wrapper'],
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.done}) $(dirname {log})
-        ./run_container python coffea4bees/plots/makePlots.py \
+        {params.container_wrapper} python coffea4bees/plots/makePlots.py \
             {input.data_coffea} {input.mixed_coffea} \
             -o {params.output_dir} \
             -m {input.plot_cfg} \

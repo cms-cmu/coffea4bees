@@ -27,6 +27,9 @@ if isinstance(raw_years, str):
 else:
     YEARS = [str(y) for y in raw_years]
 config['years'] = YEARS
+default_container_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
+config.setdefault('analysis_container_wrapper', config.get('container_wrapper', default_container_wrapper))
+condor_flags = "" if config.get("test", False) else "--shared-dask --condor"
 
 config.setdefault('datasets_file', "coffea4bees/metadata/datasets/TT_stitched.yml")
 config.setdefault('datasets', [
@@ -52,7 +55,11 @@ if not psdata_out.endswith('/'):
 out = psdata_out
 config.setdefault('base_path', "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2/ttbar_PSData_stitched")
 config.setdefault('dataset_name', "ttbar_PSData_stitched")
-config.setdefault('install_path', f"coffea4bees/metadata/datasets/{config['dataset_name']}.yml")
+_ttbar_cfg = config.get('ttbar_psdata', {})
+if isinstance(_ttbar_cfg, dict) and 'install_path' in _ttbar_cfg:
+    config.setdefault('install_path', _ttbar_cfg['install_path'])
+else:
+    config.setdefault('install_path', f"coffea4bees/metadata/datasets/{config['dataset_name']}.yml")
 config.setdefault('seed', 5)
 config.setdefault('worker_memory', "6GB")
 config.setdefault('chunksize', 100000)
@@ -129,6 +136,8 @@ rule create_ttbar_psdata_config:
 rule make_ttbar_pseudodata_per_year:
     input:
         config_file = f"{out}ttbar_psdata_config.yml",
+        datasets_file = config['datasets_file'],
+        friends = config['friends_file'],
     output:
         reg = f"{out}per_year/picoaod_datasets_{config['dataset_name']}__{{year}}.yml",
         done = f"{out}.make_ttbar_psdata_{{year}}.done",
@@ -140,11 +149,13 @@ rule make_ttbar_pseudodata_per_year:
         datasets = " ".join(ttbar_datasets),
         datasets_file = config['datasets_file'],
         output_path = f"{out}per_year/",
+        container_wrapper = config['analysis_container_wrapper'],
+        condor_flags = condor_flags,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.reg}) $(dirname {log})
-        ./run_container python runner.py {input.config_file} \
+        {params.container_wrapper} python runner.py {input.config_file} \
             -p {params.processor} \
             -d {params.datasets} \
             -c {params.datasets_file} \
@@ -152,7 +163,7 @@ rule make_ttbar_pseudodata_per_year:
             --years {wildcards.year} \
             --output-path {params.output_path} \
             --output $(basename {output.reg}) \
-            -s --shared-dask --condor 2>&1 | tee {log}
+            -s {params.condor_flags} 2>&1 | tee {log}
         touch {output.done}
         """
 

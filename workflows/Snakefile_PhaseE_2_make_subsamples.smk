@@ -32,6 +32,30 @@ for k, v in mixeddata_cfg.items():
 # Container and general configuration
 config.setdefault('analysis_container',
     "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:latest")
+default_container_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
+config.setdefault('analysis_container_wrapper', config.get('container_wrapper', default_container_wrapper))
+condor_flags = "" if config.get("test", False) else "--shared-dask --condor"
+
+def apply_test_runner_overrides(cfg):
+    if config.get("test", False):
+        cfg.setdefault("runner", {})
+        cfg["runner"]["condor"] = False
+        cfg["runner"]["shared_dask"] = False
+        cfg["runner"]["workers"] = 2
+        cfg["runner"].pop("min_workers", None)
+        cfg["runner"].pop("max_workers", None)
+        if "chunksize" in config:
+            cfg["runner"]["chunksize"] = config["chunksize"]
+        elif "chunksize" not in cfg["runner"]:
+            cfg["runner"]["chunksize"] = 1000
+        if "maxchunks" in config:
+            cfg["runner"]["maxchunks"] = config["maxchunks"]
+        elif "maxchunks" not in cfg["runner"]:
+            cfg["runner"]["maxchunks"] = 1
+    return cfg
+
+python_bin = config.get('python_bin', os.getenv("CONTAINER_PYTHON", "python"))
+config.setdefault('python_bin', python_bin)
 config.setdefault('dataset_location', "coffea4bees/metadata/datasets/")
 config.setdefault('channel', "ttHbb")
 channel = config['channel']
@@ -72,18 +96,26 @@ _tag_suffix = f"_{_tag}" if _tag else ''
 
 # Output paths
 config.setdefault('output_path', f"output/ttHbb_mixeddata_closure/")
+out = config['output_path']
+if not out.endswith("/"):
+    out += "/"
+
 config.setdefault('base_path',
     f"root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/{run_period}/{channel}_pz{_rank_suffix}")
 
 # Dataset naming
 config.setdefault('dataset_name', f"mixeddata_{channel}{_rank_suffix}")
-config.setdefault('install_path', f"coffea4bees/metadata/datasets/mixeddata_{channel}{_rank_suffix}.yml")
+_mixeddata_cfg = config.get('mixeddata', {})
+if isinstance(_mixeddata_cfg, dict) and 'install_path' in _mixeddata_cfg:
+    config.setdefault('install_path', _mixeddata_cfg['install_path'])
+else:
+    config.setdefault('install_path', f"coffea4bees/metadata/datasets/mixeddata_{channel}{_rank_suffix}.yml")
 
 # Subsampling configuration (16 datasets v0..v15)
-config.setdefault('n_subsamples', 16)
+config.setdefault('n_subsamples', config.get('n_models', config.get('n_samples', config.get('nMixes', 16))))
 config.setdefault('multisample_dataset_name', "mixeddata_4b")
 config.setdefault('multisample_install_path', "coffea4bees/metadata/datasets/mixeddata_4b.yml")
-config.setdefault('subsample_output_path', f"output/{channel}_mixeddata_subsamples/")
+config.setdefault('subsample_output_path', f"{out}subsamples/")
 N_SUBSAMPLES = int(config['n_subsamples'])
 SUBSAMPLES = [str(i) for i in range(N_SUBSAMPLES)]
 
@@ -91,30 +123,39 @@ SUBSAMPLES = [str(i) for i in range(N_SUBSAMPLES)]
 config.setdefault('classifier_inputs_base',
     f"root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/{channel}/classifier_inputs/mixeddata/")
 config.setdefault('classifier_inputs_json',
-    f"coffea4bees/metadata/datasets/classifier_inputs_mixeddata_{channel}.json")
+    f"coffea4bees/metadata/datasets/classifier_inputs_mixeddata/classifier_inputs_mixeddata_{channel}.json")
 
-SVB_FRIEND_JSON = f"coffea4bees/metadata/friends/friends_{channel}_mixeddata_4b.json"
+config.setdefault('mixeddata_friend_json', f"coffea4bees/metadata/friends/friends_{channel}_mixeddata_4b.json")
+SVB_FRIEND_JSON = config['mixeddata_friend_json']
 
-out = config['output_path']
-if not out.endswith("/"):
-    out += "/"
 sub_out = config['subsample_output_path']
-jcm_input_coffea = jcm_cfg.get('input_coffea', config.get('jcm_input_coffea', f"{out}inputs/histAll_NoJCM.coffea"))
+_raw_jcm_input = jcm_cfg.get('input_coffea', config.get('jcm_input_coffea', "inputs/histAll_NoJCM.coffea"))
+if not _raw_jcm_input.startswith("/") and not _raw_jcm_input.startswith("output/"):
+    jcm_input_coffea = os.path.join(out, _raw_jcm_input)
+else:
+    jcm_input_coffea = _raw_jcm_input
 mixeddata_jcm_file = f"{out}JCM_mixeddata_inclusive/jetCombinatoricModel_inclusive_{channel}_mixeddata.yml"
 
 localrules: all_PhaseE_2, all_PhaseE_1b, all_subsamples, all_subsample_jcm, all_classifier_inputs_mixeddata, all_classifier_inputs_subsamples, all_friends_mixeddata, all_study_mixeddata, all_subsample_closure, prepare_data_noJCM, create_subsample_config, build_multisample_registry, create_noJCM_subsamples_config, create_subsample_jcm_config, make_subsample_jcm, create_study_mixeddata_config, plot_subsample_correlation, create_analysis_config_subsample, create_plot_config_v0_closure, make_plots_v0_closure, create_plot_config_v0_vs_mixeddata_all, make_plots_v0_vs_mixeddata_all, create_classifier_inputs_config_mixeddata, create_classifier_inputs_config_subsample, update_classifier_inputs_subsample_json, merge_all_classifier_inputs_subsamples_json, create_eval_config, merge_friends_json
 
 # ── Default Master Target (Full Phase E2 End-to-End) ───────────────────────────
+def get_all_phaseE_2_inputs(wildcards):
+    inputs = [
+        config['multisample_install_path'],
+        *expand(f"{out}JCM_subsamples/jetCombinatoricModel_SB_mix_v{{m}}.yml", m=range(N_SUBSAMPLES)),
+        f"{out}classifier_inputs/merge_all_subsamples.done",
+    ]
+    if config.get('eval_svb_friends', False):
+        inputs.append(SVB_FRIEND_JSON)
+    return inputs
+
 rule all_PhaseE_2:
     input:
-        config['multisample_install_path'],
-        expand(f"{out}JCM_subsamples/jetCombinatoricModel_SB_mix_v{{m}}.yml", m=range(N_SUBSAMPLES)),
-        config['classifier_inputs_json'],
-        SVB_FRIEND_JSON,
+        get_all_phaseE_2_inputs
 
 rule all_PhaseE_1b:
     input:
-        rules.all_PhaseE_2.input
+        get_all_phaseE_2_inputs
 
 # ── Sub-Target Aliases ─────────────────────────────────────────────────────────
 rule all_subsamples:
@@ -151,6 +192,7 @@ rule all_subsample_closure:
 rule create_subsample_config:
     input:
         jcm_file = mixeddata_jcm_file,
+        ds_file = config['install_path'],
     output:
         f"{sub_out}configs/split_mixeddata_v{{v}}.yml"
     params:
@@ -190,6 +232,7 @@ rule create_subsample_config:
                 "skip_branches": None,
             }
         }
+        cfg = apply_test_runner_overrides(cfg)
         with open(output[0], 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False)
 
@@ -208,17 +251,20 @@ rule run_split_mixeddata_per_subsample:
         dataset = config['dataset_name'],
         output_path = f"{sub_out}per_subsample/",
         years = " ".join(YEARS),
+        container_wrapper = config['analysis_container_wrapper'],
+        condor_flags = condor_flags,
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.reg}) $(dirname {log})
-        ./run_container python runner.py {input.cfg} \
+        {params.container_wrapper} {params.python_bin} runner.py {input.cfg} \
             -p {params.processor} \
             -d {params.dataset} \
             --years {params.years} \
             --output-path {params.output_path} \
             --output $(basename {output.reg}) \
-            -s --shared-dask --condor 2>&1 | tee {log}
+            -s {params.condor_flags} 2>&1 | tee {log}
         touch {output.done}
         """
 
@@ -285,6 +331,23 @@ rule build_multisample_registry:
 
 # ── Stage 2b: Data 3b and Subsample noJCM Histogramming ────────────────────────
 DATA_NOJCM_INPUT = config.get('data_nojcm_coffea', jcm_input_coffea)
+jcm_source_coffea = jcm_cfg.get('source_coffea', config.get('jcm_source_coffea', "output/ttHbb_stitched/computeJCM/histAll_NoJCM.coffea"))
+
+if "stage_input_coffea" not in [r.name for r in workflow.rules]:
+    rule stage_input_coffea:
+        input:
+            jcm_source_coffea
+        output:
+            jcm_input_coffea
+        shell:
+            """
+            set -eo pipefail
+            mkdir -p $(dirname {output})
+            if [ "{input}" != "{output}" ]; then
+                echo "Staging copy of {input} -> {output} (non-destructive)"
+                cp "{input}" "{output}"
+            fi
+            """
 
 rule prepare_data_noJCM:
     input:
@@ -330,6 +393,7 @@ rule create_noJCM_subsamples_config:
                 "hist_cuts": ["pass_nSelJets_gt6", "fail_nSelJets_le6"],
             }
         }
+        cfg = apply_test_runner_overrides(cfg)
         with open(output[0], "w") as f:
             yaml.dump(cfg, f, default_flow_style=False)
 
@@ -346,17 +410,20 @@ rule run_noJCM_subsamples:
         dataset = config['multisample_dataset_name'],
         output_path = f"{out}JCM_subsamples/",
         years = " ".join(YEARS),
+        container_wrapper = config['analysis_container_wrapper'],
+        condor_flags = condor_flags,
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
-        ./run_container python runner.py {input.analysis_cfg} \
+        {params.container_wrapper} {params.python_bin} runner.py {input.analysis_cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
             --output-path {params.output_path} \
             --output $(basename {output.coffea_out}) \
-            --shared-dask --condor 2>&1 | tee {log}
+            {params.condor_flags} 2>&1 | tee {log}
         """
 
 # ── Stage 2c: Dedicated JCM Fits for Each Subsample (m=0..15) ─────────────────
@@ -385,27 +452,49 @@ rule create_subsample_jcm_config:
         with open(output[0], "w") as f:
             yaml.dump(fit_cfg, f, default_flow_style=False)
 
+def get_subsample_jcm_inputs(wildcards):
+    subsample_coffea = f"{out}classifier_inputs/histAll_{channel}_mixeddata_v{wildcards.m}.coffea"
+    fit_cfg = f"{out}JCM_subsamples/configs/config_v{wildcards.m}.yml"
+    data_coffea = (
+        config.get('dummy_jcm_file', "coffea4bees/metadata/weights/JCM/jetCombinatoricModel_SB_dummy.yml")
+        if config.get('test', False)
+        else f"{out}JCM_subsamples/histAll_NoJCM_data.coffea"
+    )
+    return {
+        "data_coffea": data_coffea,
+        "subsample_coffea": subsample_coffea,
+        "fit_cfg": fit_cfg,
+    }
+
 rule make_subsample_jcm:
     input:
-        data_coffea = f"{out}JCM_subsamples/histAll_NoJCM_data.coffea",
-        subsample_coffea = f"{out}classifier_inputs/histAll_{channel}_mixeddata_v{{m}}.coffea",
-        fit_cfg = f"{out}JCM_subsamples/configs/config_v{{m}}.yml",
+        unpack(get_subsample_jcm_inputs)
     output:
         f"{out}JCM_subsamples/jetCombinatoricModel_SB_mix_v{{m}}.yml"
     log:
         f"{out}JCM_subsamples/logs/make_jcm_v{{m}}.log"
+    params:
+        container_wrapper = config['analysis_container_wrapper'],
+        python_bin = python_bin,
+        test_mode = config.get('test', False),
+        dummy_jcm = config.get('dummy_jcm_file', "coffea4bees/metadata/weights/JCM/jetCombinatoricModel_SB_dummy.yml"),
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        ./run_container python coffea4bees/analysis/jcm_tools/make_jcm_weights.py \
-            -i {input.data_coffea} {input.subsample_coffea} \
-            --jcm_config {input.fit_cfg} \
-            -w mix_v{wildcards.m} \
-            -r SB \
-            -o $(dirname {output})/ \
-            --no-plots \
-            --year RunII 2>&1 | tee {log}
+        if [ "{params.test_mode}" = "True" ] || [ "{params.test_mode}" = "true" ]; then
+            echo "Test mode: deploying dummy JCM {params.dummy_jcm} -> {output}" > {log}
+            cp {params.dummy_jcm} {output}
+        else
+            {params.container_wrapper} {params.python_bin} coffea4bees/analysis/jcm_tools/make_jcm_weights.py \
+                -i {input.data_coffea} {input.subsample_coffea} \
+                --jcm_config {input.fit_cfg} \
+                -w mix_v{wildcards.m} \
+                -r SB \
+                -o $(dirname {output})/ \
+                --no-plots \
+                --year RunII 2>&1 | tee {log}
+        fi
         """
 
 # ── Stage 3: Subsample Correlation & Orthogonality Study ──────────────────────
@@ -434,6 +523,7 @@ rule create_study_mixeddata_config:
                 "JCM_file": params.jcm_file,
             }
         }
+        cfg = apply_test_runner_overrides(cfg)
         with open(output[0], "w") as f:
             yaml.dump(cfg, f, default_flow_style=False)
 
@@ -451,17 +541,20 @@ rule study_mixeddata:
         dataset = config['dataset_name'],
         output_path = out,
         years = " ".join(YEARS),
+        container_wrapper = config['analysis_container_wrapper'],
+        condor_flags = condor_flags,
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
-        ./run_container python runner.py {input.study_cfg} \
+        {params.container_wrapper} {params.python_bin} runner.py {input.study_cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
             --output-path {params.output_path} \
             --output $(basename {output.coffea_out}) \
-            --shared-dask --condor 2>&1 | tee {log}
+            {params.condor_flags} 2>&1 | tee {log}
         """
 
 rule plot_subsample_correlation:
@@ -473,11 +566,13 @@ rule plot_subsample_correlation:
         f"{out}plots_study_mixeddata/logs/plot_subsample_correlation.log"
     params:
         out_dir = f"{out}plots_study_mixeddata/",
+        container_wrapper = config['analysis_container_wrapper'],
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p {params.out_dir} $(dirname {log})
-        ./run_container python scripts/plot_subsample_correlation.py \
+        {params.container_wrapper} {params.python_bin} scripts/plot_subsample_correlation.py \
             -i {input.coffea} \
             -o {params.out_dir} 2>&1 | tee {log}
         """
@@ -516,6 +611,7 @@ rule create_analysis_config_subsample:
                 "hist_cuts": ["pass_nSelJets_gt6", "fail_nSelJets_le6"],
             }
         }
+        cfg = apply_test_runner_overrides(cfg)
         with open(output[0], "w") as f:
             yaml.dump(cfg, f, default_flow_style=False)
 
@@ -532,17 +628,20 @@ rule run_analysis_subsample:
         dataset = lambda wildcards: f"{config['multisample_dataset_name']}:{wildcards.v}",
         output_path = out,
         years = " ".join(YEARS),
+        container_wrapper = config['analysis_container_wrapper'],
+        condor_flags = condor_flags,
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
-        ./run_container python runner.py {input.analysis_cfg} \
+        {params.container_wrapper} {params.python_bin} runner.py {input.analysis_cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
             --output-path {params.output_path} \
             --output $(basename {output.coffea_out}) \
-            --shared-dask --condor 2>&1 | tee {log}
+            {params.condor_flags} 2>&1 | tee {log}
         """
 
 # ── Stage 5: Subsample v0 Closure Validation Plots ────────────────────────────
@@ -610,11 +709,13 @@ rule make_plots_v0_closure:
         f"{out}logs/make_plots_v0_closure.log"
     params:
         output_dir = f"{out}plots_v0_closure/",
+        container_wrapper = config['analysis_container_wrapper'],
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.done}) $(dirname {log})
-        ./run_container python coffea4bees/plots/makePlots.py \
+        {params.container_wrapper} {params.python_bin} coffea4bees/plots/makePlots.py \
             {input.data_coffea} {input.subsample_coffea} \
             -o {params.output_dir} \
             -m {input.plot_cfg} \
@@ -683,11 +784,13 @@ rule make_plots_v0_vs_mixeddata_all:
         f"{out}logs/make_plots_v0_vs_mixeddata_all.log"
     params:
         output_dir = f"{out}plots_v0_vs_mixeddata_all/",
+        container_wrapper = config['analysis_container_wrapper'],
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.done}) $(dirname {log})
-        ./run_container python coffea4bees/plots/makePlots.py \
+        {params.container_wrapper} {params.python_bin} coffea4bees/plots/makePlots.py \
             {input.mixed_coffea} {input.subsample_coffea} \
             -o {params.output_dir} \
             -m {input.plot_cfg} \
@@ -731,6 +834,7 @@ rule create_classifier_inputs_config_mixeddata:
                 "make_classifier_input": params.inputs_base,
             }
         }
+        cfg = apply_test_runner_overrides(cfg)
         with open(output[0], "w") as f:
             yaml.dump(cfg, f, default_flow_style=False)
 
@@ -748,17 +852,26 @@ rule make_classifier_inputs_mixeddata:
         dataset = config['multisample_dataset_name'],
         output_path = out,
         years = " ".join(YEARS),
+        container_wrapper = config['analysis_container_wrapper'],
+        condor_flags = condor_flags,
+        inputs_base = config['classifier_inputs_base'],
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
-        ./run_container python runner.py {input.analysis_cfg} \
+        if [[ "{params.inputs_base}" != root://* ]]; then
+            mkdir -p {params.inputs_base}
+        fi
+        {params.container_wrapper} {params.python_bin} runner.py {input.analysis_cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
             --output-path {params.output_path} \
             --output $(basename {output.coffea_out}) \
-            --shared-dask --condor 2>&1 | tee {log}
+            {params.condor_flags} 2>&1 | tee {log}
+        mkdir -p $(dirname {output.json_out})
+        cp {params.output_path}$(basename {output.coffea_out} .coffea).json {output.json_out}
         """
 
 rule create_classifier_inputs_config_subsample:
@@ -794,6 +907,7 @@ rule create_classifier_inputs_config_subsample:
                 "make_classifier_input": params.inputs_base,
             }
         }
+        cfg = apply_test_runner_overrides(cfg)
         with open(output[0], "w") as f:
             yaml.dump(cfg, f, default_flow_style=False)
 
@@ -811,17 +925,24 @@ rule make_classifier_inputs_subsample:
         dataset = lambda wildcards: f"{config['multisample_dataset_name']}:{wildcards.v}",
         output_path = f"{out}classifier_inputs/",
         years = " ".join(YEARS),
+        container_wrapper = config['analysis_container_wrapper'],
+        condor_flags = condor_flags,
+        inputs_base = config['classifier_inputs_base'],
+        python_bin = python_bin,
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea_out}) $(dirname {log})
-        ./run_container python runner.py {input.analysis_cfg} \
+        if [[ "{params.inputs_base}" != root://* ]]; then
+            mkdir -p {params.inputs_base}
+        fi
+        {params.container_wrapper} {params.python_bin} runner.py {input.analysis_cfg} \
             --processor {params.processor} \
             --datasets {params.dataset} \
             --years {params.years} \
             --output-path {params.output_path} \
             --output $(basename {output.coffea_out}) \
-            --shared-dask --condor 2>&1 | tee {log}
+            {params.condor_flags} 2>&1 | tee {log}
         """
 
 rule update_classifier_inputs_subsample_json:
@@ -902,6 +1023,22 @@ rule merge_all_classifier_inputs_subsamples_json:
         else:
             curr = {"HCR_input": {"name": "HCR_input", "branches": [], "data": []}}
 
+        nominal_ci = config.get(
+            "nominal_classifier_inputs",
+            "coffea4bees/metadata/datasets/classifier_inputs_ttHbb_stitched.json"
+            if channel == "ttHbb" else
+            "coffea4bees/metadata/datasets/classifier_inputs.json"
+        )
+        ref_branches = None
+        if nominal_ci and os.path.exists(nominal_ci):
+            try:
+                with open(nominal_ci) as f_ref:
+                    ref_d = json.load(f_ref)
+                if "HCR_input" in ref_d and "branches" in ref_d["HCR_input"]:
+                    ref_branches = set(ref_d["HCR_input"]["branches"])
+            except Exception:
+                ref_branches = None
+
         all_branches = set(curr.get("HCR_input", {}).get("branches", []))
         # Keep non-mixeddata entries. As in update_classifier_inputs_subsample_json, the
         # subsample identity is carried by the friend-tree path (.../mixeddata/mix_v<N>_<era>/...);
@@ -921,15 +1058,21 @@ rule merge_all_classifier_inputs_subsamples_json:
 
         all_entries = [e for e in curr.get("HCR_input", {}).get("data", []) if not _is_any_subsample(e)]
 
-        for jf in input.jsons:
+        for v_idx, jf in enumerate(input.jsons):
             if not os.path.exists(jf):
                 continue
             with open(jf) as f:
                 d = json.load(f)
             if "HCR_input" in d:
+                if ref_branches is not None:
+                    d["HCR_input"]["branches"] = sorted(list(set(d["HCR_input"].get("branches", [])).intersection(ref_branches)))
                 all_branches.update(d["HCR_input"].get("branches", []))
                 for entry in d["HCR_input"].get("data", []):
                     all_entries.append(entry)
+            per_sub_target = target.replace(".json", f"_v{v_idx}.json")
+            os.makedirs(os.path.dirname(per_sub_target), exist_ok=True)
+            with open(per_sub_target, "w") as f_sub:
+                json.dump(d, f_sub, indent=2)
 
         # Guard against the same (source file, friend chunk) pair being listed twice, which
         # would double-count those events in training.
@@ -948,6 +1091,8 @@ rule merge_all_classifier_inputs_subsamples_json:
             _deduped.append(entry)
         all_entries = _deduped
 
+        if ref_branches is not None:
+            all_branches = all_branches.intersection(ref_branches)
         curr["HCR_input"]["branches"] = sorted(list(all_branches))
         curr["HCR_input"]["data"] = all_entries
 

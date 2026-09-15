@@ -19,7 +19,11 @@ for k, v in fvt_cfg.items():
         config[k] = v
 
 config.setdefault('channel', "ttHbb")
-config.setdefault('n_models', 16)
+default_classifier_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container classifier"
+config.setdefault('classifier_container_wrapper', config.get('container_wrapper', default_classifier_wrapper))
+python_bin = config.get('python_bin', os.getenv("CONTAINER_PYTHON", "python"))
+config.setdefault('python_bin', python_bin)
+config.setdefault('n_models', config.get('n_subsamples', config.get('n_samples', config.get('nMixes', 16))))
 config.setdefault('mix_name', "3bDvTMix4bDvT")
 config.setdefault('eos_base', "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb")
 base_output_path = config.get('output_path', "output/ttHbb_mixeddata_closure/")
@@ -38,7 +42,7 @@ config.setdefault('disable_benchmark', True)
 # epochs it needs. EarlyStopStep requires validation benchmarks, so it also forces
 # Monitor on and benchmarks enabled. Set training_schedule: FixedStep to opt out.
 config.setdefault('jcm_template',
-    "output/ttHbb_mixeddata_stitched_closure/JCM_subsamples/jetCombinatoricModel_SB_mix_v{m}.yml")
+    os.path.join(base_output_path, "JCM_subsamples/jetCombinatoricModel_SB_mix_v{m}.yml"))
 config.setdefault('training_schedule', "EarlyStopStep")
 config.setdefault('early_stop', {})
 _es = config['early_stop'] or {}
@@ -55,7 +59,7 @@ config.setdefault('batch_eval', 65536)
 config.setdefault('nominal_classifier_inputs',
     "coffea4bees/metadata/datasets/classifier_inputs_ttHbb_stitched.json")
 config.setdefault('mixed_classifier_inputs',
-    "coffea4bees/metadata/datasets/classifier_inputs_mixeddata_ttHbb.json")
+    config.get('classifier_inputs_json', "coffea4bees/metadata/datasets/classifier_inputs_mixeddata/classifier_inputs_mixeddata_ttHbb.json"))
 
 # Run 2 CollisionData metadata
 RUN2_ERAS = {
@@ -65,6 +69,12 @@ RUN2_ERAS = {
     "UL18": ["A", "B", "C", "D"],
 }
 RUN2_YEARS = ["UL16_preVFP", "UL16_postVFP", "UL17", "UL18"]
+_config_years = config.get('years', None)
+if _config_years is not None:
+    if isinstance(_config_years, str):
+        _config_years = [_config_years]
+    RUN2_YEARS = [y for y in RUN2_YEARS if y in _config_years]
+    RUN2_ERAS = {y: RUN2_ERAS[y] for y in RUN2_YEARS if y in RUN2_ERAS}
 
 MIX_INDICES = list(range(int(config['n_models'])))
 out = fvt_out
@@ -86,7 +96,8 @@ def _optional_cache(wildcards):
 
 rule create_fvt_train_config:
     input:
-        cache_file = _optional_cache
+        cache_file = _optional_cache,
+        jcm_file = lambda w: config['jcm_template'].format(m=w.m),
     output:
         f"{out}configs/train_mix_{{m}}.yml"
     params:
@@ -95,7 +106,7 @@ rule create_fvt_train_config:
         eos_base = config['eos_base'],
         epochs = config.get('epochs', 10),
         batch_size = config.get('batch_size', 1024),
-        kfolds = config.get('kfolds', 3),
+        kfolds = max(2, int(config.get('kfolds', 3))),
         offset = config.get('kfold_offset', 0),
         precision = config['precision'],
         disable_benchmark = config['disable_benchmark'],
@@ -113,24 +124,33 @@ rule create_fvt_train_config:
         # classifier_inputs_mixeddata_ttHbb_v<N>.json with --data-mixed-samples <N>.
         # Generate the per-subsample files with tmp/split_ci.py.
         mixed_ci = config['mixed_classifier_inputs'].replace(".json", f"_v{m}.json")
+        if not os.path.exists(mixed_ci):
+            candidate = os.path.join(base_output_path, f"classifier_inputs/histAll_{config['channel']}_mixeddata_v{m}.json")
+            if os.path.exists(candidate):
+                mixed_ci = candidate
         # IMPORTANT: each option must be ONE packed string, exactly as in the
         # validated train_v1.yml. Splitting a multi-arg option such as
         # "--JCM-weight" (nargs=2), "--friends" or "--data-source" across separate
         # YAML list items breaks argument grouping: the mixed dataset then resolves
         # no friends and the loader dies with "Dataset loaded 0 events".
+        data_mixed_name = config.get('multisample_dataset_name', 'mixeddata_4b')
+        dataset_options = [
+            "--metadata coffea4bees/metadata/datasets/",
+            "--max-workers 20",
+            "--data-source detector mixed",
+            "--no-detector-4b",
+            f"--data-mixed-name {data_mixed_name}",
+            f"--data-mixed-samples {m}",
+            f'--JCM-weight "" {params.jcm_file}@@JCM_weights',
+            f'--friends "" {config["nominal_classifier_inputs"]}@@HCR_input {mixed_ci}@@HCR_input',
+        ]
+        test_files = config.get('test_files', 1 if config.get('test', False) else None)
+        if test_files:
+            dataset_options.append(f"--test-files {test_files}")
         dataset_cfg = [
             {
                 "module": "HCR.FvT.TrainBaseline",
-                "option": [
-                    "--metadata coffea4bees/metadata/datasets/",
-                    "--max-workers 20",
-                    "--data-source detector mixed",
-                    "--no-detector-4b",
-                    "--data-mixed-name mixeddata_4b",
-                    f"--data-mixed-samples {m}",
-                    f'--JCM-weight "" {params.jcm_file}@@JCM_weights',
-                    f'--friends "" {config["nominal_classifier_inputs"]}@@HCR_input {mixed_ci}@@HCR_input',
-                ]
+                "option": dataset_options
             },
         ]
         if input.cache_file:
@@ -138,12 +158,14 @@ rule create_fvt_train_config:
                 {"module": "cache", "option": ["--input", os.path.abspath(str(input.cache_file[0]))]}
             )
 
+        device = config.get('device', 'cuda cpu')
         train_cfg = {
             "main": {
                 "module": "train",
                 "option": [
                     "--max-loaders 2",
-                    "--max-trainers 3"
+                    "--max-trainers 3",
+                    f"--device {device}",
                 ]
             },
             "model": [
@@ -246,6 +268,8 @@ rule train_fvt_mixed_model:
         mix = "{m}",
         mix_name = config['mix_name'],
         eos_base = config['eos_base'],
+        classifier_container_wrapper = config['classifier_container_wrapper'],
+        python_bin = python_bin,
     resources:
         slurm_partition = "work",
         qos = "light",
@@ -253,12 +277,15 @@ rule train_fvt_mixed_model:
         cpus_per_task = 4,
         gres = "mps:25",
         runtime = 720,
-    retries: 3
+    retries: 0 if config.get('test', False) else config.get('retries', 3)
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        CLASSIFIER_CONFIG_PATHS=coffea4bees ./run_container classifier python -m src.classifier.task.main from {input} 2>&1 | tee {log}
+        if [ -z "$X509_USER_PROXY" ] && [ -f ./proxy/x509_proxy ]; then
+            export X509_USER_PROXY="$PWD/proxy/x509_proxy"
+        fi
+        CLASSIFIER_CONFIG_PATHS=coffea4bees {params.classifier_container_wrapper} {params.python_bin} -m src.classifier.task.main from {input} 2>&1 | tee {log}
         touch {output}
         """
 
@@ -277,23 +304,28 @@ rule create_fvt_eval_config:
     run:
         out_path = os.path.abspath(str(output[0]))
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        test_files = config.get('test_files', 1 if config.get('test', False) else None)
+        eval_ds_options = [
+            "--metadata coffea4bees/metadata/datasets/",
+            "--max-workers 4",
+            "--data-source detector",
+            f'--friends "" {config["nominal_classifier_inputs"]}@@HCR_input',
+        ]
+        if test_files:
+            eval_ds_options.append(f"--test-files {test_files}")
+        device = config.get('device', 'cuda cpu')
         eval_cfg = {
             "main": {
                 "module": "evaluate",
                 "option": [
                     "--max-evaluators 3",
-                    "--device cuda cpu"
+                    f"--device {device}",
                 ]
             },
             "dataset": [
                 {
                     "module": "HCR.FvT.Eval",
-                    "option": [
-                        "--metadata", "coffea4bees/metadata/datasets/",
-                        "--max-workers 4",
-                        "--data-source", "detector",
-                        "--friends", "", f"{config['nominal_classifier_inputs']}@@HCR_input"
-                    ]
+                    "option": eval_ds_options,
                 }
             ],
             "model": [
@@ -383,20 +415,30 @@ rule evaluate_fvt_mixed_model:
         eos_base = config['eos_base'],
         mix_name = config['mix_name'],
         mix = "{m}",
+        classifier_container_wrapper = config['classifier_container_wrapper'],
+        python_bin = python_bin,
     resources:
         slurm_partition = "work",
         qos = "light",
         mem_mb = 24000,
         cpus_per_task = 4,
         gres = "mps:25",
-    retries: 3
+        runtime = 720,
+    retries: 0 if config.get('test', False) else config.get('retries', 3)
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        CLASSIFIER_CONFIG_PATHS=coffea4bees ./run_container classifier python -m src.classifier.task.main from {input.cfg} 2>&1 | tee {log}
+        if [ -z "$X509_USER_PROXY" ] && [ -f ./proxy/x509_proxy ]; then
+            export X509_USER_PROXY="$PWD/proxy/x509_proxy"
+        fi
+        CLASSIFIER_CONFIG_PATHS=coffea4bees {params.classifier_container_wrapper} {params.python_bin} -m src.classifier.task.main from {input.cfg} 2>&1 | tee {log}
         TMP_RES=$(mktemp --suffix=.json)
-        X509_USER_PROXY=$(pwd)/proxy/x509_proxy xrdcp -f '{params.eos_base}/friend/FvT/{params.mix_name}_v{params.mix}/result.json' "$TMP_RES"
-        python3 -c "import json; data=json.load(open('$TMP_RES')); merged=data['analysis'][0]['merged']; json.dump({{'FvT': merged}}, open('{output}', 'w'))"
+        if [[ "{params.eos_base}" == root://* ]]; then
+            xrdcp -f '{params.eos_base}/friend/FvT/{params.mix_name}_v{params.mix}/result.json' "$TMP_RES"
+        else
+            cp -f '{params.eos_base}/friend/FvT/{params.mix_name}_v{params.mix}/result.json' "$TMP_RES"
+        fi
+        {params.python_bin} -c "import json; data=json.load(open('$TMP_RES')); merged=data['analysis'][0]['merged']; json.dump({{'FvT': merged}}, open('{output}', 'w'))"
         rm -f "$TMP_RES"
         """
