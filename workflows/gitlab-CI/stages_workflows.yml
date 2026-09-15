@@ -46,9 +46,9 @@ phaseE_prep_test_coffea4bees:
     - test -f output/test_phaseE/FvT_training/friends/friends_FvT_test_phaseE_v0.json
   artifacts:
     paths:
-      - output/test_phaseE/JCM_subsamples/
-      - output/test_phaseE/FvT_training/
-      - output/test_phaseE/inputs/
+      - barista_framework/output/test_phaseE/JCM_subsamples/
+      - barista_framework/output/test_phaseE/FvT_training/
+      - barista_framework/output/test_phaseE/inputs/
     expire_in: 1 day
 
 phaseE_analysis_test_coffea4bees:
@@ -66,10 +66,10 @@ phaseE_analysis_test_coffea4bees:
     - cat output/test_phaseE/cutflow_test_phaseE.yml
   artifacts:
     paths:
-      - output/test_phaseE/cutflow_validation_test_phaseE.txt
-      - output/test_phaseE/cutflow_test_phaseE.yml
-      - output/test_phaseE/histAll_test_phaseE.coffea
-      - output/test_phaseE/histAll_test_phaseE.json
+      - barista_framework/output/test_phaseE/cutflow_validation_test_phaseE.txt
+      - barista_framework/output/test_phaseE/cutflow_test_phaseE.yml
+      - barista_framework/output/test_phaseE/histAll_test_phaseE.coffea
+      - barista_framework/output/test_phaseE/histAll_test_phaseE.json
     expire_in: 1 day
 
 phaseE_closure_validation_coffea4bees:
@@ -89,7 +89,7 @@ phaseE_closure_validation_coffea4bees:
     - cat output/test_phaseE/closure_counts_test_phaseE.yml
   artifacts:
     paths:
-      - output/test_phaseE/closure_validation_test_phaseE.txt
-      - output/test_phaseE/closure_counts_test_phaseE.yml
+      - barista_framework/output/test_phaseE/closure_validation_test_phaseE.txt
+      - barista_framework/output/test_phaseE/closure_counts_test_phaseE.yml
     expire_in: 1 day
 
