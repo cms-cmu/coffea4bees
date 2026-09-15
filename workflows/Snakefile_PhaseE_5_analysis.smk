@@ -312,7 +312,7 @@ rule run_closure_mixeddata:
     input:
         cfg = f"{out}closure_v{{v}}/analysis_config_mixeddata.yml",
         friends = f"{out}closure_v{{v}}/friends_mixeddata.yml",
-        friends_json = f"coffea4bees/metadata/friends/friends_{channel}_mixeddata_4b.json",
+        friends_json = config.get('mixeddata_friend_json', f"coffea4bees/metadata/friends/friends_{channel}_mixeddata_4b.json"),
     output:
         coffea_out = f"{out}closure_v{{v}}/histAll_mixeddata_v{{v}}.coffea",
     log:
@@ -527,13 +527,15 @@ rule create_closure_mixeddata_config_mode:
         friends = f"{out}closure_v{{v}}_{{mode}}/friends_mixeddata.yml",
     params:
         channel = channel,
+        friend_json = config.get('mixeddata_friend_json', f"coffea4bees/metadata/friends/friends_{channel}_mixeddata_4b.json"),
+        dataset_file = config.get('multisample_install_path', config.get('datasets_file', "coffea4bees/metadata/datasets/mixeddata_4b.yml")),
     run:
         import yaml
         os.makedirs(os.path.dirname(output.cfg), exist_ok=True)
         friends_dict = {
             "friends": {
                 y: {
-                    "SvB_MA": f"coffea4bees/metadata/friends/friends_{params.channel}_mixeddata_4b.json@@SvB_MA"
+                    "SvB_MA": f"{params.friend_json}@@SvB_MA"
                 } for y in YEARS
             }
         }
@@ -549,8 +551,8 @@ rule create_closure_mixeddata_config_mode:
                 "condor": True,
                 "shared_dask": True,
                 "run_performance": True,
-                "dataset_location": "coffea4bees/metadata/datasets/",
-                "datasets_file": "coffea4bees/metadata/datasets/mixeddata_4b.yml",
+                "dataset_location": config.get('dataset_location', "coffea4bees/metadata/datasets/"),
+                "datasets_file": str(params.dataset_file),
                 "friend_file": output.friends,
                 "weights_file": f"coffea4bees/metadata/weights/weights_{params.channel}.yml",
             },
@@ -577,7 +579,7 @@ rule run_closure_mixeddata_mode:
     input:
         cfg = f"{out}closure_v{{v}}_{{mode}}/analysis_config_mixeddata.yml",
         friends = f"{out}closure_v{{v}}_{{mode}}/friends_mixeddata.yml",
-        friends_json = f"coffea4bees/metadata/friends/friends_{channel}_mixeddata_4b.json",
+        friends_json = config.get('mixeddata_friend_json', f"coffea4bees/metadata/friends/friends_{channel}_mixeddata_4b.json"),
     output:
         coffea_out = f"{out}closure_v{{v}}_{{mode}}/histAll_mixeddata_v{{v}}.coffea",
     log:

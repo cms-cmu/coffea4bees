@@ -78,6 +78,9 @@ mixeddata:
   chunksize: 10000
   picosize: 10000
 
+multisample_install_path: "coffea4bees/metadata/datasets/mixeddata_4b.yml"
+mixeddata_friend_json: "coffea4bees/metadata/friends/friends_ttHbb_mixeddata_4b.json"
+
 classifier_inputs_base: "output/test_phaseE/classifier_inputs/"
 classifier_inputs_json: "output/test_phaseE/classifier_inputs/classifier_inputs_mixeddata_ttHbb.json"
 mixed_classifier_inputs: "output/test_phaseE/classifier_inputs/classifier_inputs_mixeddata_ttHbb.json"
@@ -93,7 +96,7 @@ ttbar_psdata:
   base_path: "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2/ttbar_PSData_stitched"
   output_path: "ttbar_PSData/"
   dataset_name: "ttbar_PSData_stitched"
-  install_path: "coffea4bees/metadata/datasets/ttbar_PSData_stitched.yml"
+  install_path: "output/test_phaseE/metadata/datasets/ttbar_PSData_stitched.yml"
   seed: 5
   worker_memory: "2GB"
   chunksize: 10000
