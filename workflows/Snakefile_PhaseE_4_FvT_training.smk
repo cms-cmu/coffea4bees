@@ -134,19 +134,23 @@ rule create_fvt_train_config:
         # YAML list items breaks argument grouping: the mixed dataset then resolves
         # no friends and the loader dies with "Dataset loaded 0 events".
         data_mixed_name = config.get('multisample_dataset_name', 'mixeddata_4b')
+        dataset_options = [
+            "--metadata coffea4bees/metadata/datasets/",
+            "--max-workers 20",
+            "--data-source detector mixed",
+            "--no-detector-4b",
+            f"--data-mixed-name {data_mixed_name}",
+            f"--data-mixed-samples {m}",
+            f'--JCM-weight "" {params.jcm_file}@@JCM_weights',
+            f'--friends "" {config["nominal_classifier_inputs"]}@@HCR_input {mixed_ci}@@HCR_input',
+        ]
+        test_files = config.get('test_files', 1 if config.get('test', False) else None)
+        if test_files:
+            dataset_options.append(f"--test-files {test_files}")
         dataset_cfg = [
             {
                 "module": "HCR.FvT.TrainBaseline",
-                "option": [
-                    "--metadata coffea4bees/metadata/datasets/",
-                    "--max-workers 20",
-                    "--data-source detector mixed",
-                    "--no-detector-4b",
-                    f"--data-mixed-name {data_mixed_name}",
-                    f"--data-mixed-samples {m}",
-                    f'--JCM-weight "" {params.jcm_file}@@JCM_weights',
-                    f'--friends "" {config["nominal_classifier_inputs"]}@@HCR_input {mixed_ci}@@HCR_input',
-                ]
+                "option": dataset_options
             },
         ]
         if input.cache_file:
@@ -298,6 +302,15 @@ rule create_fvt_eval_config:
     run:
         out_path = os.path.abspath(str(output[0]))
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        test_files = config.get('test_files', 1 if config.get('test', False) else None)
+        eval_ds_options = [
+            "--metadata coffea4bees/metadata/datasets/",
+            "--max-workers 4",
+            "--data-source detector",
+            f'--friends "" {config["nominal_classifier_inputs"]}@@HCR_input',
+        ]
+        if test_files:
+            eval_ds_options.append(f"--test-files {test_files}")
         eval_cfg = {
             "main": {
                 "module": "evaluate",
@@ -309,12 +322,7 @@ rule create_fvt_eval_config:
             "dataset": [
                 {
                     "module": "HCR.FvT.Eval",
-                    "option": [
-                        "--metadata", "coffea4bees/metadata/datasets/",
-                        "--max-workers 4",
-                        "--data-source", "detector",
-                        "--friends", "", f"{config['nominal_classifier_inputs']}@@HCR_input"
-                    ]
+                    "option": eval_ds_options,
                 }
             ],
             "model": [
