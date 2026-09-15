@@ -1,11 +1,17 @@
-import argparse
-import ROOT
+try:
+    import ROOT
+    ROOT.gROOT.SetBatch(True)
+    ROOT.gStyle.SetOptStat(0)
+    HAS_ROOT = True
+except ImportError:
+    ROOT = None
+    HAS_ROOT = False
 import array
 import numpy as np
-from convert_json_to_root import create_root_file
-
-ROOT.gROOT.SetBatch(True)
-ROOT.gStyle.SetOptStat(0)
+try:
+    from convert_json_to_root import create_root_file
+except ImportError:
+    from coffea4bees.stats_analysis.convert_json_to_root import create_root_file
 
 def compute_variable_binning(signal_hist):
     """
