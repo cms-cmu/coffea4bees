@@ -16,6 +16,8 @@ from src.classifier.config.setting.ml import KFold
 from src.classifier.config.state import Flags
 from src.classifier.config.state.label import MultiClass
 from src.classifier.config.dataset._root import LoadGroupedRoot
+from src.classifier.df.io import FromRoot
+from src.data_formats.root import Chunk
 from . import _group
 
 if TYPE_CHECKING:
@@ -96,9 +98,6 @@ class Common(LoadGroupedRoot):
 
     @cache
     def from_root(self, groups: frozenset[str]):
-        from src.classifier.df.io import FromRoot
-        from src.data_formats.root import Chunk
-
         friends = []
         for k, v in self.friends.items():
             if k <= groups:
