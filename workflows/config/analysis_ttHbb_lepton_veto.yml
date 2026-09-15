@@ -25,6 +25,36 @@ year_eras:
     - "B"
     - "C"
     - "D"
+  # --- Run 3 -----------------------------------------------------------------
+  # Era keys must match metadata/datasets/data.yml (and triggers_HH4b.yml):
+  # 2022_preEE / 2022_EE / 2023_preBPix / 2023_BPix / 2024
+  "2022_preEE":       # Run2022 C+D, 7980.4 pb-1. "B" is the JetHT PD of Run2022C,
+    - "B"             # "C" is the JetMET PD of the same era -- both are needed.
+    - "C"
+    - "D"
+  "2022_EE":          # Run2022 E+F+G, 26671.7 pb-1
+    - "E"
+    - "F"
+    - "G"
+  "2023_preBPix":     # Run2023 C, 17960 pb-1. Split over JetMET0/JetMET1
+    - "C01"           # (C01,C02,C11,C12) and ParkingHH (C3,C4).
+    - "C02"
+    - "C11"
+    - "C12"
+    - "C3"
+    - "C4"
+  "2023_BPix":        # Run2023 D, 9680 pb-1. ParkingHH v1+v2.
+    - "D1"
+    - "D2"
+  "2024":             # Run2024 C-I, 109950 pb-1. Era I is split into I2/I3.
+    - "C"
+    - "D"
+    - "E"
+    - "F"
+    - "G"
+    - "H"
+    - "I2"
+    - "I3"
 
 jcm_plot_config: "coffea4bees/plots/metadata/plots_JCM_ttHbb.yml"
 jcm_datasets:

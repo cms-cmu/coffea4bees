@@ -11,6 +11,13 @@ years:
   - "UL16_postVFP"
   - "UL17"
   - "UL18"
+  # Run 3 -- mixeddata_4b.yml has no era substructure (per-year files_template
+  # only), so these are years, not year_eras. 2024 is deliberately absent:
+  # metadata/datasets/mixeddata_4b.yml has no 2024 entry yet.
+  - "2022_preEE"
+  - "2022_EE"
+  - "2023_preBPix"
+  - "2023_BPix"
 n_samples: 15
 
 phase_f_output_path: "output/ttHbb_v3/"
