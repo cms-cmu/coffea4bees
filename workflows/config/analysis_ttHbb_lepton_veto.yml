@@ -98,7 +98,7 @@ trigger_weights:
     make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/
 
 classifier_inputs:
-  processor: "coffea4bees/analysis/processors/processor_HH4b.py"
+  processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
   friend_file: "coffea4bees/metadata/friends/friends_ttHbb.yml"
   weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
   datasets:

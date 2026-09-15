@@ -3,8 +3,8 @@
 # ==============================================================================
 label: "ttHbb_stitched"
 output_path: "output/ttHbb_stitched/"
-cern_user: "algomez"
-cern_path: "www/ttHbb/Plots/"
+cern_user: "mmarcheg"
+cern_path: "www/plots/ttHbb/analysis/4b"
 
 dataset:
   - "ttHbb"
@@ -30,7 +30,25 @@ year_eras:
     - "B"
     - "C"
     - "D"
-
+  "2022":
+    - "C"
+    - "D"
+  "2022_EE":
+    - "E"
+    - "F"
+    - "G"
+  "2023":
+    - "C"
+  "2023BPix":
+    - "D"
+  "2024":
+    - "C"
+    - "D"
+    - "E"
+    - "F"
+    - "G"
+    - "H"
+    - "I"
 # ==============================================================================
 # PHASE A: SKIMMING & TRIGGER WEIGHTS
 # ==============================================================================
@@ -54,7 +72,7 @@ skimmer:
       - T2_US_Wisconsin
 
   config:
-    base_path: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched/
+    base_path: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_stitched/
     step: 100000
     loosePtForSkim: true
 
@@ -74,7 +92,7 @@ trigger_weights:
   config:
     use_vectorized: false
     tagger: DeepJet
-    make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched/
+    make_classifier_input: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_stitched/
 
 # ==============================================================================
 # PHASE B: CALIBRATION & CLASSIFIER INPUTS (JCM & Friendtrees)
@@ -89,7 +107,7 @@ jcm_datasets:
 jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb_stitched_jcm_config.yml -m coffea4bees/plots/metadata/plotsJCM_ttHbb_stitched.yml"
 
 classifier_inputs:
-  processor: "coffea4bees/analysis/processors/processor_HH4b.py"
+  processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
   friend_file: "coffea4bees/metadata/datasets/friends_ttHbb_stitched_trigweight.yml"
   weights_file: "coffea4bees/metadata/weights/weights_ttHbb_stitched.yml"
   datasets:
@@ -119,7 +137,7 @@ classifier_inputs:
     run_SvB: false
     top_reconstruction: slow
     fill_histograms: true
-    make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched/
+    make_classifier_input: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_stitched/
 
 # ==============================================================================
 # PHASE C & D: CLASSIFIER SETTINGS (Entirely on falcon / PSC)
@@ -149,8 +167,8 @@ classifier_setting:
       - feature_ancillary: [xW, nSelJets, xbW, year]
 
 fvt:
-  eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched"
-  plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
+  eos_base: "root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_stitched"
+  plot_base: "root://eosuser.cern.ch//eos/user/a/mmarcheg/www/plots/ttHbb/analysis/4b"
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_stitched/FvT"
   label: "FvT_ttHbb_stitched"
@@ -165,8 +183,8 @@ fvt:
   metadata: "coffea4bees/metadata/datasets/classifier_inputs_ttHbb_stitched.json@@HCR_input"
 
 svb:
-  eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched"
-  plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
+  eos_base: "root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_stitched"
+  plot_base: "root://eosuser.cern.ch//eos/user/a/mmarcheg/www/plots/ttHbb/analysis/4b"
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_stitched/SvB"
   label: "SvB_ttHbb_stitched"
