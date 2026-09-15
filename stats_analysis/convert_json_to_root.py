@@ -11,6 +11,7 @@ try:
     HAS_ROOT = True
 except ImportError:
     ROOT = None
+    HAS_ROOT = False
 try:
     import uproot
     import hist
