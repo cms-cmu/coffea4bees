@@ -1,11 +1,25 @@
 import os
-import ROOT
 import argparse
 import logging
 import json
 import array
 import numpy as np
-ROOT.gROOT.SetBatch(True)
+
+try:
+    import ROOT
+    ROOT.gROOT.SetBatch(True)
+    HAS_ROOT = True
+except ImportError:
+    ROOT = None
+    HAS_ROOT = False
+try:
+    import uproot
+    import hist
+    HAS_UPROOT = True
+except ImportError:
+    uproot = None
+    hist = None
+    HAS_UPROOT = False
 
 
 def json_to_TH1( coffea_hist, iname, rebin ):
@@ -63,22 +77,40 @@ def create_root_file(file_to_convert, histos, output_dir):
         os.remove(output)
         logging.info(f"Deleted existing file: {output}")
 
-    root_file = ROOT.TFile(output, 'recreate')
-
-    for ih in coffea_hists.keys():
-        # if len(histos) > 0 and ((ih in histos) or (ih.replace(".", "_") in histos)):
-        for iprocess in coffea_hists[ih].keys():
-            for iy in coffea_hists[ih][iprocess].keys():
-                for itag in coffea_hists[ih][iprocess][iy].keys():
-                    for iregion in coffea_hists[ih][iprocess][iy][itag].keys():
-                        this_hist = json_to_TH1(
-                            coffea_hists[ih][iprocess][iy][itag][iregion],
-                            ih.replace(".", "_") + "_" + iprocess + "_" + iy + "_" + itag + "_" + iregion,
-                            1)
-                        print( 'Converting hist', ih, ih.replace(".", "_") + "_" + iprocess + "_" + iy + "_" + itag + "_" + iregion)
-                        this_hist.Write()
-
-    root_file.Close()
+    if HAS_ROOT:
+        root_file = ROOT.TFile(output, 'recreate')
+        for ih in coffea_hists.keys():
+            # if len(histos) > 0 and ((ih in histos) or (ih.replace(".", "_") in histos)):
+            for iprocess in coffea_hists[ih].keys():
+                for iy in coffea_hists[ih][iprocess].keys():
+                    for itag in coffea_hists[ih][iprocess][iy].keys():
+                        for iregion in coffea_hists[ih][iprocess][iy][itag].keys():
+                            this_hist = json_to_TH1(
+                                coffea_hists[ih][iprocess][iy][itag][iregion],
+                                ih.replace(".", "_") + "_" + iprocess + "_" + iy + "_" + itag + "_" + iregion,
+                                1)
+                            print( 'Converting hist', ih, ih.replace(".", "_") + "_" + iprocess + "_" + iy + "_" + itag + "_" + iregion)
+                            this_hist.Write()
+        root_file.Close()
+    elif HAS_UPROOT:
+        with uproot.recreate(output) as f_out:
+            for ih in coffea_hists.keys():
+                for iprocess in coffea_hists[ih].keys():
+                    for iy in coffea_hists[ih][iprocess].keys():
+                        for itag in coffea_hists[ih][iprocess][iy].keys():
+                            for iregion in coffea_hists[ih][iprocess][iy][itag].keys():
+                                h_data = coffea_hists[ih][iprocess][iy][itag][iregion]
+                                edges = np.array(h_data['edges'], dtype=np.float64)
+                                values = np.array(h_data['values'], dtype=np.float64)
+                                variances = np.array(h_data['variances'], dtype=np.float64)
+                                h = hist.Hist.new.Var(edges, name="h").Weight()
+                                h.view().value = values
+                                h.view().variance = variances
+                                key = ih.replace(".", "_") + "_" + iprocess + "_" + iy + "_" + itag + "_" + iregion
+                                print('Converting hist (uproot)', ih, key)
+                                f_out[key] = h
+    else:
+        raise ImportError("Neither ROOT nor uproot is available.")
     logging.info("\n File " + output + " created.")
 
 

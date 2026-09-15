@@ -4,18 +4,27 @@
 import os
 import shutil
 
-YEARS = ["UL16_preVFP", "UL16_postVFP", "UL17", "UL18"]
+raw_years = config.get('years', ['UL16_preVFP', 'UL16_postVFP', 'UL17', 'UL18'])
+if isinstance(raw_years, str):
+    YEARS = [str(y).strip() for y in raw_years.split() if str(y).strip()]
+else:
+    YEARS = [str(y) for y in raw_years]
 DATASETS = ["mixeddata_4b"]
 
 FRIEND_BASE = "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/friends/ttHbb/"
-OUT = "output/mixeddata_friends_ttHbb/"
-FINAL_FRIEND_JSON = "coffea4bees/metadata/friends/friends_ttHbb_mixeddata_4b.json"
+out_friends = config.get('output_path', "output/ttHbb_mixeddata_closure/")
+if not out_friends.endswith('/'):
+    out_friends += '/'
+OUT = config.get('mixeddata_friends_output_path', f"{out_friends}mixeddata_friends_ttHbb/")
+FINAL_FRIEND_JSON = config.get('mixeddata_friend_json', "coffea4bees/metadata/friends/friends_ttHbb_mixeddata_4b.json")
 
 rule all_eval_friends:
     input:
         FINAL_FRIEND_JSON
 
 rule create_eval_config:
+    input:
+        ds_file = config.get('multisample_install_path', config.get('datasets_file', "coffea4bees/metadata/datasets/mixeddata_4b.yml"))
     output: f"{OUT}eval_config.yml"
     run:
         import yaml
@@ -26,7 +35,7 @@ rule create_eval_config:
                 "friend_base": FRIEND_BASE,
             },
             "dataset_location": "coffea4bees/metadata/datasets/",
-            "datasets_file": "coffea4bees/metadata/datasets/mixeddata_4b.yml",
+            "datasets_file": str(input.ds_file),
             "weights": "coffea4bees/metadata/weights/weights_ttHbb.yml",
             "config": {
                 "blind": False,
@@ -55,17 +64,21 @@ rule eval_friends_subsamples:
     params:
         processor = "coffea4bees/analysis/processors/processor_ttHbb.py",
         output_path = f"{OUT}json/",
+        container_wrapper = config.get('analysis_container_wrapper', "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"),
+        python_bin = config.get('python_bin', os.getenv("CONTAINER_PYTHON", "python")),
+        condor_flags = "--condor" if config.get('condor', False) else "",
+        shared_dask_flags = "--shared-dask" if config.get('shared_dask', False) else "",
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        ./run_container python runner.py {input.eval_cfg} \
+        {params.container_wrapper} {params.python_bin} runner.py {input.eval_cfg} \
             --processor {params.processor} \
             --datasets {wildcards.dataset} \
             --years {wildcards.year} \
             --output-path {params.output_path} \
             --output $(basename {output} .json).coffea \
-            --shared-dask --condor 2>&1 | tee {log}
+            {params.shared_dask_flags} {params.condor_flags} 2>&1 | tee {log}
         """
 
 rule merge_friends_json:
@@ -77,9 +90,12 @@ rule merge_friends_json:
         FINAL_FRIEND_JSON
     log:
         f"{OUT}logs/merge_friends_json.log"
+    params:
+        container_wrapper = config.get('analysis_container_wrapper', "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"),
+        python_bin = config.get('python_bin', os.getenv("CONTAINER_PYTHON", "python")),
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        ./run_container python -m src.friendtrees.merge_friend_meta -i {input} -o {output} 2>&1 | tee {log}
+        {params.container_wrapper} {params.python_bin} -m src.friendtrees.merge_friend_meta -i {input} -o {output} 2>&1 | tee {log}
         """
