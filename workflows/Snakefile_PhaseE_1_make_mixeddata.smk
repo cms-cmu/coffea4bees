@@ -79,7 +79,11 @@ config.setdefault('base_path',
 
 # Dataset naming
 config.setdefault('dataset_name', f"mixeddata_{channel}{_rank_suffix}")
-config.setdefault('install_path', f"coffea4bees/metadata/datasets/mixeddata_{channel}{_rank_suffix}.yml")
+_mixeddata_cfg = config.get('mixeddata', {})
+if isinstance(_mixeddata_cfg, dict) and 'install_path' in _mixeddata_cfg:
+    config.setdefault('install_path', _mixeddata_cfg['install_path'])
+else:
+    config.setdefault('install_path', f"coffea4bees/metadata/datasets/mixeddata_{channel}{_rank_suffix}.yml")
 
 out = config['output_path']
 if not out.endswith("/"):

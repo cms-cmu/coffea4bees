@@ -74,6 +74,7 @@ stages:
   - cutflow
   - classifier
   - workflows
+  - mixeddata
   - reana
 
 

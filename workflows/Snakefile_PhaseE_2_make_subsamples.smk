@@ -105,7 +105,11 @@ config.setdefault('base_path',
 
 # Dataset naming
 config.setdefault('dataset_name', f"mixeddata_{channel}{_rank_suffix}")
-config.setdefault('install_path', f"coffea4bees/metadata/datasets/mixeddata_{channel}{_rank_suffix}.yml")
+_mixeddata_cfg = config.get('mixeddata', {})
+if isinstance(_mixeddata_cfg, dict) and 'install_path' in _mixeddata_cfg:
+    config.setdefault('install_path', _mixeddata_cfg['install_path'])
+else:
+    config.setdefault('install_path', f"coffea4bees/metadata/datasets/mixeddata_{channel}{_rank_suffix}.yml")
 
 # Subsampling configuration (16 datasets v0..v15)
 config.setdefault('n_subsamples', config.get('n_models', config.get('n_samples', config.get('nMixes', 16))))
@@ -121,7 +125,8 @@ config.setdefault('classifier_inputs_base',
 config.setdefault('classifier_inputs_json',
     f"coffea4bees/metadata/datasets/classifier_inputs_mixeddata_{channel}.json")
 
-SVB_FRIEND_JSON = f"coffea4bees/metadata/friends/friends_{channel}_mixeddata_4b.json"
+config.setdefault('mixeddata_friend_json', f"coffea4bees/metadata/friends/friends_{channel}_mixeddata_4b.json")
+SVB_FRIEND_JSON = config['mixeddata_friend_json']
 
 sub_out = config['subsample_output_path']
 _raw_jcm_input = jcm_cfg.get('input_coffea', config.get('jcm_input_coffea', "inputs/histAll_NoJCM.coffea"))

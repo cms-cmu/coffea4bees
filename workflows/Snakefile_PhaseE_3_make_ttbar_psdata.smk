@@ -55,7 +55,11 @@ if not psdata_out.endswith('/'):
 out = psdata_out
 config.setdefault('base_path', "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2/ttbar_PSData_stitched")
 config.setdefault('dataset_name', "ttbar_PSData_stitched")
-config.setdefault('install_path', f"coffea4bees/metadata/datasets/{config['dataset_name']}.yml")
+_ttbar_cfg = config.get('ttbar_psdata', {})
+if isinstance(_ttbar_cfg, dict) and 'install_path' in _ttbar_cfg:
+    config.setdefault('install_path', _ttbar_cfg['install_path'])
+else:
+    config.setdefault('install_path', f"coffea4bees/metadata/datasets/{config['dataset_name']}.yml")
 config.setdefault('seed', 5)
 config.setdefault('worker_memory', "6GB")
 config.setdefault('chunksize', 100000)
