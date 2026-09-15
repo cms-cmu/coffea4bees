@@ -50,19 +50,6 @@ def _debug_print_weight(df: pd.DataFrame):
     return df
 
 
-def _clean_missing_friends(df):
-    if df is None or len(df) == 0:
-        return df
-    if "threeTag" in df.columns and df["threeTag"].isna().any():
-        df = df.dropna(subset=["threeTag"])
-    elif df.isna().any().any():
-        df = df.dropna()
-    for col in ("threeTag", "fourTag", "SR", "SB", "passHLT", "ZZSR", "ZHSR", "HHSR"):
-        if col in df.columns and df[col].dtype == object:
-            df[col] = df[col].astype(bool)
-    return df
-
-
 class Common(LoadGroupedRoot):
     argparser = ArgParser()
     argparser.add_argument(
@@ -92,8 +79,6 @@ class Common(LoadGroupedRoot):
                 friends.extend(v)
 
         pres = []
-        if friends:
-            pres.append(_clean_missing_friends)
         for g in chain(self._preprocess_from_opts, self._preprocess_by_group):
             pres.extend(g(groups))
         pres.extend(self.preprocessors)

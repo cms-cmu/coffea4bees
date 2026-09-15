@@ -123,7 +123,7 @@ SUBSAMPLES = [str(i) for i in range(N_SUBSAMPLES)]
 config.setdefault('classifier_inputs_base',
     f"root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/{channel}/classifier_inputs/mixeddata/")
 config.setdefault('classifier_inputs_json',
-    f"coffea4bees/metadata/datasets/classifier_inputs_mixeddata_{channel}.json")
+    f"coffea4bees/metadata/datasets/classifier_inputs_mixeddata/classifier_inputs_mixeddata_{channel}.json")
 
 config.setdefault('mixeddata_friend_json', f"coffea4bees/metadata/friends/friends_{channel}_mixeddata_4b.json")
 SVB_FRIEND_JSON = config['mixeddata_friend_json']
@@ -1070,6 +1070,7 @@ rule merge_all_classifier_inputs_subsamples_json:
                 for entry in d["HCR_input"].get("data", []):
                     all_entries.append(entry)
             per_sub_target = target.replace(".json", f"_v{v_idx}.json")
+            os.makedirs(os.path.dirname(per_sub_target), exist_ok=True)
             with open(per_sub_target, "w") as f_sub:
                 json.dump(d, f_sub, indent=2)
 

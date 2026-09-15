@@ -59,7 +59,7 @@ config.setdefault('batch_eval', 65536)
 config.setdefault('nominal_classifier_inputs',
     "coffea4bees/metadata/datasets/classifier_inputs_ttHbb_stitched.json")
 config.setdefault('mixed_classifier_inputs',
-    config.get('classifier_inputs_json', "coffea4bees/metadata/datasets/classifier_inputs_mixeddata_ttHbb.json"))
+    config.get('classifier_inputs_json', "coffea4bees/metadata/datasets/classifier_inputs_mixeddata/classifier_inputs_mixeddata_ttHbb.json"))
 
 # Run 2 CollisionData metadata
 RUN2_ERAS = {
