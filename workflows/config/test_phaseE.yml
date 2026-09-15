@@ -29,7 +29,7 @@ analysis_container_wrapper: ""
 classifier_container_wrapper: ""
 combine_container_wrapper: ""
 known_counts: "coffea4bees/workflows/tests/known_counts_test_phaseE.yml"
-known_counts_closure: "coffea4bees/workflows/tests/known_counts_closure_test_phaseE.yml"
+known_counts_closure: "none"
 
 phase_f_output_path: "output/ttHbb_stitched/"
 phase_f_label: "ttHbb_stitched"
