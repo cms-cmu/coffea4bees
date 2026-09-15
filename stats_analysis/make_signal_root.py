@@ -56,9 +56,20 @@ def main():
         nbins = 30
         edges = [float(i) / nbins for i in range(nbins + 1)]
         for y in args.years:
-            h = ROOT.TH1F(f"{var_prefix}_ttHbb_{y}_fourTag_SR", f"{var_prefix}_ttHbb_{y}_fourTag_SR",
-                          nbins, array.array("d", edges))
-            h.Write()
+            target_years = [y]
+            if y == "UL18" and "2018" not in target_years:
+                target_years.append("2018")
+            elif y == "UL17" and "2017" not in target_years:
+                target_years.append("2017")
+            elif y.startswith("UL16") and "2016" not in target_years:
+                target_years.append("2016")
+            for yr in target_years:
+                h = ROOT.TH1F(f"{var_prefix}_ttHbb_{yr}_fourTag_SR", f"{var_prefix}_ttHbb_{yr}_fourTag_SR",
+                              nbins, array.array("d", edges))
+                for b in range(1, nbins + 1):
+                    h.SetBinContent(b, 1.0)
+                    h.SetBinError(b, 0.1)
+                h.Write()
         print(f"Successfully created fallback {args.output} for years {args.years}")
 
     f_out.Close()

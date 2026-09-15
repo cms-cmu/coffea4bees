@@ -84,7 +84,7 @@ phaseE_closure_validation_coffea4bees:
     - python -m pip install snakemake --quiet
     - export PATH="$PWD/.pixi-bin/bin:$PATH"
     - if [ -f ./proxy/x509_proxy ]; then export X509_USER_PROXY="$PWD/proxy/x509_proxy"; echo "Configured X509_USER_PROXY=$X509_USER_PROXY"; fi
-    - pixi run snakemake output/test_phaseE/closure_validation_test_phaseE.txt -s coffea4bees/workflows/Snakefile_PhaseE_6_closure.smk --configfile coffea4bees/workflows/config/test_phaseE.yml --jobs 2
+    - pixi run snakemake output/test_phaseE/closure_validation_test_phaseE.txt -s coffea4bees/workflows/Snakefile_PhaseE_6_closure.smk --configfile coffea4bees/workflows/config/test_phaseE.yml --config python_bin="${CONTAINER_PYTHON:-python}" --jobs 2
     - test -f output/test_phaseE/closure_counts_test_phaseE.yml
     - cat output/test_phaseE/closure_counts_test_phaseE.yml
   artifacts:
