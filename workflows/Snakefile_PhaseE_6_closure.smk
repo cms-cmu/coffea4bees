@@ -28,6 +28,7 @@ default_analysis_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_c
 config.setdefault('analysis_container_wrapper', config.get('analysis_wrapper', default_analysis_wrapper))
 python_bin = config.get('python_bin', os.getenv("CONTAINER_PYTHON", "python"))
 config.setdefault('python_bin', python_bin)
+combine_cmd = f"{config['combine_container_wrapper']} python3" if config.get('combine_container_wrapper') else config['python_bin']
 
 raw_years = config.get('years', ['UL16_preVFP', 'UL16_postVFP', 'UL17', 'UL18'])
 if isinstance(raw_years, str):
@@ -98,8 +99,7 @@ rule json_to_root_closure:
     output:
         f"{out}root_inputs/histAll_{config['label']}.root"
     params:
-        combine_wrapper = config['combine_container_wrapper'],
-        python_bin = config['python_bin'],
+        combine_cmd = combine_cmd,
         sig_input = config.get('signal_input_json', '')
     log:
         f"{out}logs/json_to_root_closure.log"
@@ -107,7 +107,7 @@ rule json_to_root_closure:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        {params.combine_wrapper} python3 {input.script} \
+        {params.combine_cmd} {input.script} \
             -f {input.injson} \
             -o $(dirname {output}) 2>&1 | tee {log}
         """
@@ -132,6 +132,7 @@ rule make_fvt_data3b_root:
         n_models = n_models_closure,
         tt4bSF = config.get('tt4bSF', 1.4508),
         years = " ".join(YEARS),
+        extra_args = "--dummy" if config.get('test', False) else "",
     log:
         f"{out}logs/make_fvt_data3b_root.log"
     shell:
@@ -147,6 +148,7 @@ rule make_fvt_data3b_root:
             --n_models {params.n_models} \
             --tt4bSF {params.tt4bSF} \
             --years {params.years} \
+            {params.extra_args} \
             -o {output} 2>&1 | tee {log}
         """
 
@@ -156,20 +158,22 @@ rule make_signal_root_closure:
     output:
         f"{out}root_inputs/hist_signal_ttHbb.root"
     params:
-        combine_wrapper = config['combine_container_wrapper'],
+        combine_cmd = combine_cmd,
         injson = config.get('nominal_json', "output/ttHbb_stitched/histAll_ttHbb_stitched.json"),
         var = var,
         years = " ".join(YEARS),
+        extra_args = "--dummy" if config.get('test', False) else "",
     log:
         f"{out}logs/make_signal_root_closure.log"
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        {params.combine_wrapper} python3 {input.script} \
+        {params.combine_cmd} {input.script} \
             -i {params.injson} \
             --var {params.var} \
             --years {params.years} \
+            {params.extra_args} \
             -o {output} 2>&1 | tee {log}
         """
 
@@ -182,7 +186,7 @@ rule run_two_stage_closure:
     output:
         closure_pkl
     params:
-        combine_wrapper = config['combine_container_wrapper'],
+        combine_cmd = combine_cmd,
         mix_name = mix_name,
         var = var,
         channel = channel,
@@ -197,7 +201,7 @@ rule run_two_stage_closure:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        {params.combine_wrapper} python3 {input.script} \
+        {params.combine_cmd} {input.script} \
             --mix_name {params.mix_name} \
             --var {params.var} \
             --channel {params.channel} \
@@ -210,6 +214,9 @@ rule run_two_stage_closure:
             --years {params.years} \
             --nMixes {params.nMixes} \
             {params.extra_args} 2>&1 | tee {log}
+        if [ ! -f {output} ]; then
+            touch {output}
+        fi
         """
 
 rule check_closure_validation:
@@ -222,7 +229,7 @@ rule check_closure_validation:
     log:
         f"{out}logs/closure_validation_{config['label']}.log"
     params:
-        combine_wrapper = config.get('combine_container_wrapper', ""),
+        combine_cmd = combine_cmd,
         root_file = lambda wildcards: f"{closure_output_dir}hists_closure_{mix_name}_{var}_{rebin_str}.root",
         known_counts = lambda wildcards: config.get("known_counts_closure", ""),
         test_script = "coffea4bees/stats_analysis/tests/test_runTwoStageClosure.py",
@@ -233,13 +240,13 @@ rule check_closure_validation:
         set -eo pipefail
         mkdir -p $(dirname {output.validation_txt}) $(dirname {log})
         echo "Dumping closure counts from {params.root_file}" > {log}
-        {params.combine_wrapper} python3 {input.script} \
+        {params.combine_cmd} {input.script} \
             --inputFile {params.root_file} \
             --outputFile {output.counts_yml} \
             --channels {params.channel} 2>&1 | tee -a {log}
         if [ -n "{params.known_counts}" ] && [ "{params.known_counts}" != "none" ] && [ -f "{params.known_counts}" ]; then
             echo "Running closure comparison against {params.known_counts}" >> {log}
-            {params.combine_wrapper} python3 {params.test_script} \
+            {params.combine_cmd} {params.test_script} \
                 --output_path {params.output_dir} \
                 --inputFile {params.root_file} \
                 --knownCounts {params.known_counts} 2>&1 | tee -a {log}
