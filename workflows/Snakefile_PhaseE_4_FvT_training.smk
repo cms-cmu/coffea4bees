@@ -158,12 +158,14 @@ rule create_fvt_train_config:
                 {"module": "cache", "option": ["--input", os.path.abspath(str(input.cache_file[0]))]}
             )
 
+        device = config.get('device', 'cuda cpu')
         train_cfg = {
             "main": {
                 "module": "train",
                 "option": [
                     "--max-loaders 2",
-                    "--max-trainers 3"
+                    "--max-trainers 3",
+                    f"--device {device}",
                 ]
             },
             "model": [
@@ -275,7 +277,7 @@ rule train_fvt_mixed_model:
         cpus_per_task = 4,
         gres = "mps:25",
         runtime = 720,
-    retries: 3
+    retries: 0 if config.get('test', False) else config.get('retries', 3)
     shell:
         """
         set -eo pipefail
@@ -311,12 +313,13 @@ rule create_fvt_eval_config:
         ]
         if test_files:
             eval_ds_options.append(f"--test-files {test_files}")
+        device = config.get('device', 'cuda cpu')
         eval_cfg = {
             "main": {
                 "module": "evaluate",
                 "option": [
                     "--max-evaluators 3",
-                    "--device cuda cpu"
+                    f"--device {device}",
                 ]
             },
             "dataset": [
@@ -421,7 +424,7 @@ rule evaluate_fvt_mixed_model:
         cpus_per_task = 4,
         gres = "mps:25",
         runtime = 720,
-    retries: 3
+    retries: 0 if config.get('test', False) else config.get('retries', 3)
     shell:
         """
         set -eo pipefail

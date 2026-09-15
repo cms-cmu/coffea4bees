@@ -116,6 +116,7 @@ phase_e_fvt:
   batch_eval: 1024
   fvt_mode: "2class"
   test_files: 1
+  device: "cuda cpu"
 
 analysis_config:
   processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
