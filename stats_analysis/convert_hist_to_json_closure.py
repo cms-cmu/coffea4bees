@@ -33,6 +33,8 @@ if __name__ == '__main__':
                         help="Automatically normalize mixed data to match total background prediction (Data 3b + TTbar4b 3b) in SR")
     parser.add_argument('--pure_qcd', '--no_ttbar', dest='pure_qcd', action="store_true", default=False,
                         help="Pure QCD closure mode where mixed data is already ttbar-subtracted (do not include or require ttbar)")
+    parser.add_argument('--do_CI', action="store_true", default=False,
+                        help="CI test flag")
     parser.add_argument('--n_subsamples', '--nMixes', type=int, default=15,
                         help="Number of mixed subsamples (default: 15)")
 
