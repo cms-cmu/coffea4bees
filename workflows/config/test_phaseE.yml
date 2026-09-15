@@ -106,7 +106,7 @@ phase_e_fvt:
   n_models: 2
   epochs: 1
   batch_size: 64
-  kfolds: 1
+  kfolds: 2
   kfold_offset: 0
   training_schedule: "FixedStep"
   eos_base: "output/test_phaseE"
