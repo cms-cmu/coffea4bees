@@ -106,7 +106,7 @@ rule create_fvt_train_config:
         eos_base = config['eos_base'],
         epochs = config.get('epochs', 10),
         batch_size = config.get('batch_size', 1024),
-        kfolds = config.get('kfolds', 3),
+        kfolds = max(2, int(config.get('kfolds', 3))),
         offset = config.get('kfold_offset', 0),
         precision = config['precision'],
         disable_benchmark = config['disable_benchmark'],
