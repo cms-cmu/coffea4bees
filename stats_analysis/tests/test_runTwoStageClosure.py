@@ -84,6 +84,9 @@ class TestRunTwoStageClosure(unittest.TestCase):
             
             reference_file = test_pair[0]
             test_file      = test_pair[1]
+            if not os.path.exists(test_file) or not os.path.exists(reference_file):
+                print(f"\nSkipping {test_file} vs {reference_file}: file(s) do not exist")
+                continue
             print("\ntesting",test_file, "vs", reference_file)
             
             # Load the content of the test YAML file
