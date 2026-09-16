@@ -13,7 +13,7 @@ from coffea4bees.analysis.helpers.event_weights import add_weights
 
 from coffea.analysis_tools import Weights, PackedSelection
 import numpy as np
-from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
+from coffea4bees.analysis.helpers.object_selection import apply_jet_calibration
 from src.physics.common import update_events
 from copy import copy
 import logging
@@ -70,7 +70,7 @@ class SubSampler(Skimmer4b):
         # Calculate and apply Jet Energy Calibration
         #
         if config["do_jet_calibration"]:
-            jets = apply_jerc_corrections_jsonpog(event,
+            jets = apply_jet_calibration(event,
                                     corrections_metadata=self.corrections_metadata[year],
                                     isMC=config["isMC"],
                                     dataset=dataset

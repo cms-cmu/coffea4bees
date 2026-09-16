@@ -1,7 +1,7 @@
 import logging
 
 import numpy as np
-from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
+from coffea4bees.analysis.helpers.object_selection import apply_jet_calibration
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
 from src.physics.event_selection import apply_event_selection
 
@@ -44,7 +44,7 @@ class Skimmer(Skimmer4b):
         )
 
         if config["do_jet_calibration"]:
-            jets = apply_jerc_corrections_jsonpog(
+            jets = apply_jet_calibration(
                 events,
                 corrections_metadata=self.corrections_metadata[year],
                 isMC=config["isMC"],

@@ -9,7 +9,7 @@ from coffea4bees.analysis.helpers.object_selection import apply_bRegCorr, muon_s
 from src.physics.common import drClean
 from src.physics.event_selection import apply_event_selection
 from src.skimmer.picoaod import PicoAOD
-from src.physics.objects.jet_corrections import apply_jet_veto_maps, apply_jerc_corrections, apply_jerc_corrections_jsonpog
+from src.physics.objects.jet_corrections import apply_jet_veto_maps, apply_jerc_corrections_jsonpog
 from src.skimmer.mc_weight_outliers import OutlierByMedian
 
 
@@ -255,7 +255,7 @@ class Skimmer(PicoAOD):
         )
 
         if config["do_jet_calibration"]:
-            jets = apply_jerc_corrections(
+            jets = apply_jerc_corrections_jsonpog(
                 events,
                 corrections_metadata=self.corrections_metadata[year],
                 isMC=config["isMC"],
