@@ -64,7 +64,9 @@ def processor_config(processName, dataset, event, overrides=None):
 
     if config["isRun3"]:
         config['do_jet_veto_maps'] = False
-        config['do_jet_calibration'] = False # Need a better name here (Jet calib is applied in Run3 by default !)
+        # Jets are calibrated up front by the processor (apply_jet_calibration),
+        # so the JES/JER variations are available to the shift loop in Run 3 too.
+        config['do_jet_calibration'] = True
         config["cut_on_HLT_decision"]  = True
 
 
