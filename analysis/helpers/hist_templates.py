@@ -33,11 +33,32 @@ class SvBHists(Template):
 
 
 class ttHbbSvBHists(Template):
-    ps      = H((50, 0, 1, ('ps', "Regressed P(Signal)")))
+    ps      = H((50, 0.01, 1, ('ps', "Regressed P(Signal)")))
     ptt     = H((50, 0, 1, ('ptt', "Regressed P(tT)")))
     tt_vs_mj     = H((50, 0, 1, ('tt_vs_mj', "P(tT) | Background")))
 
-    ps_ttHbb_fine   = H((240, 0, 1, ('ps_ttHbb', "Regressed P(Signal) $|$ P(ttHbb) is largest ")))
+    ### var_binning_ps_ttHbb defines the 20 quantile intervals (1.0 -> 0.01) for inclusive selection
+    var_binning_ps_ttHbb = np.array([
+        0.010000, 0.083503, 0.161465, 0.238368, 0.311703, 0.380425, 0.444212, 0.503283,
+        0.556983, 0.606003, 0.650395, 0.690644, 0.726810, 0.759942, 0.789774, 0.817306,
+        0.842514, 0.866324, 0.889676, 0.915283, 1.000000
+    ])
+    ps_ttHbb = H((20, 0, 1, ('ps_ttHbb', "Cumulative Signal Quantile (Inclusive)")))
+
+    ### var_binning_ps_ttHbb_gt6 defines the 20 quantile intervals (1.0 -> 0.01) for nSelJets > 6 selection
+    var_binning_ps_ttHbb_gt6 = np.array([
+        0.010000, 0.245186, 0.362469, 0.449253, 0.518553, 0.574762, 0.621929, 0.662470,
+        0.697837, 0.728395, 0.755545, 0.779284, 0.801199, 0.821162, 0.839527, 0.856502,
+        0.872399, 0.888174, 0.904485, 0.923441, 1.000000
+    ])
+    ps_ttHbb_gt6 = H((20, 0, 1, ('ps_ttHbb_gt6', "Cumulative Signal Quantile (gt6)")))
+
+
+class DijetSvBHists(Template):
+    lead_m         = H((50, 0, 250, ("lead_m", 'Lead DiJet Mass (SvB > 0.8) [GeV]')))
+    subl_m         = H((50, 0, 250, ("subl_m", 'Subl DiJet Mass (SvB > 0.8) [GeV]')))
+    lead_vs_subl_m = H((50, 0, 250, ('lead_m', 'Lead DiJet Mass [GeV]')),
+                       (50, 0, 250, ('subl_m', 'Subl DiJet Mass [GeV]')))
 
 
 class FeynNetSvBHists(Template):

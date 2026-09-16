@@ -209,6 +209,7 @@ analysis_config:
     plot_ttbar_with_weights: true
 
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
+plot_extra_arguments: "--only SvB_MA.ps SvB_MA.ps_ttHbb SvB_MA.ps_ttHbb_gt6 SvB_MA.ptt SvB_MA.tt_vs_mj dijet_both_SvB_gt_0p8 dijet_both_SvB_gt_0p9 dijet_both_qscore_SvB_gt_0p9"
 known_counts: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"
 known_counts_test: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"
 known_counts_full: "none"
