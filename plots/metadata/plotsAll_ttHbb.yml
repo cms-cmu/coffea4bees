@@ -57,6 +57,7 @@ doRatio: 1
 categories:
   - "inclusive"
   - "pass_nSelJets_gt6"
+  - "passLeptonVeto"
 
 regions:
   - "SR"

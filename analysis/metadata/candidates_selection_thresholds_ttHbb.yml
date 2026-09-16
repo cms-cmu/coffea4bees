@@ -36,6 +36,7 @@ sr_run3:
 svb:
   passSvB_min: 0.80
   failSvB_max: 0.05
+  ps_min: 0.01
 
 sr_ttHbb:
   mode: optimal_balance
