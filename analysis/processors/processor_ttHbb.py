@@ -34,9 +34,11 @@ class ttHbbProcessor(HH4bBaseProcessor):
         top_reconstruction="fast",
         plot_ttbar_with_weights=True,
         hist_cuts=[],
+        classify_Z_decay=False,
         **kwargs,
     ):
         logging.info("Initializing decoupled ttHbbProcessor")
+        self.classify_Z_decay = classify_Z_decay
         if weights is None:
             weights = "coffea4bees/metadata/weights/weights_ttHbb.yml"
         super().__init__(
@@ -154,6 +156,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
                 isDataForMixed=self.config['isDataForMixed'],
                 event_metadata=event.metadata,
                 year_override=self.year_override,
+                classify_Z_decay=self.classify_Z_decay,
             )
 
             if not self.plot_ttbar_with_weights or self.processName != "data":
