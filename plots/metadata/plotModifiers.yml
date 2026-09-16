@@ -12,13 +12,30 @@ SvB_MA_ps_zh : {"rebin":5, "yscale":"log"}
 SvB_MA_ps_zz : {"rebin":4, "yscale":"log"}
 SvB_MA_ps_hh : {"rebin":10, "yscale":"log"}
 SvB_MA_ps_ttHbb : {"yscale":"log"}
+SvB_MA_ps_ttHbb_gt6 : {"yscale":"log"}
 SvB_MA_ps : {"yscale":"log"}
+SvB_MA_ps_flat : {"yscale":"log"}
 SvB_MA_ptt : {"yscale":"log"}
+SvB_MA.ps_ttHbb : {"yscale":"log"}
+SvB_MA.ps_ttHbb_gt6 : {"yscale":"log"}
+SvB_MA.ps : {"yscale":"log"}
+SvB_MA.ptt : {"yscale":"log"}
+SvB_MA.tt_vs_mj : {"yscale":"log"}
 
 
 quadJet_selected.lead_vs_subl_m : {"2d":True}
 quadJet_selected.close_vs_other_m : {"2d":True}
 
+dijet_SvB_gt_0p8.lead_vs_subl_m : {"2d":True}
+dijet_SvB_gt_0p8.lead_m : {"xlim":[0,250]}
+dijet_SvB_gt_0p8.subl_m : {"xlim":[0,250]}
+dijet_both_SvB_gt_0p8 : {"xlim":[0,250]}
+
+dijet_SvB_gt_0p9.lead_vs_subl_m : {"2d":True}
+dijet_SvB_gt_0p9.lead_m : {"xlim":[0,250]}
+dijet_SvB_gt_0p9.subl_m : {"xlim":[0,250]}
+dijet_both_SvB_gt_0p9 : {"xlim":[0,250]}
+dijet_both_qscore_SvB_gt_0p9 : {"xlim":[0,250]}
 
 quadJet_min_dr.lead_vs_subl_m : {"2d":True}
 quadJet_min_dr.close_vs_other_m : {"2d":True}

@@ -57,6 +57,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
             top_reconstruction=top_reconstruction,
             plot_ttbar_with_weights=plot_ttbar_with_weights,
             hist_cuts=hist_cuts,
+            corrections_metadata=corrections_metadata,
             **kwargs,
         )
 
@@ -107,6 +108,9 @@ class ttHbbProcessor(HH4bBaseProcessor):
 
         self._cutFlow.fill("passVBFSel", selev[selev.passVBFSel])
 
+        if self.run_SvB and "pass_ps_min" in selev.fields:
+            self.fill_cutflow_with_and_without_trig("pass_ps_min", selev[selev.pass_ps_min])
+
         if self.run_SvB and "passSvB" in selev.fields:
             self.fill_cutflow_with_and_without_trig("passSvB", selev[selev.passSvB])
             self.fill_cutflow_with_and_without_trig("failSvB", selev[selev.failSvB])
@@ -118,10 +122,14 @@ class ttHbbProcessor(HH4bBaseProcessor):
         # Define jet multiplicity pass mask
         n_selJets = ak.num(event.selJets) if "selJets" in event.fields else ak.num(event.selJet)
         event["pass_nSelJets_gt6"] = n_selJets > 6
+        event["fail_nSelJets_le6"] = n_selJets <= 6
         event["all_selJets"] = np.full(len(event), True)
+        event["passLeptonVeto"] = event.passLeptonVeto if "passLeptonVeto" in event.fields else np.full(len(event), True)
 
         selections.add("pass_nSelJets_gt6", event.pass_nSelJets_gt6)
+        selections.add("fail_nSelJets_le6", event.fail_nSelJets_le6)
         selections.add("all_selJets", event.all_selJets)
+        selections.add("passLeptonVeto", event.passLeptonVeto)
 
         return selections, allcuts
 
@@ -129,6 +137,13 @@ class ttHbbProcessor(HH4bBaseProcessor):
         """Fill nominal ttHbb histograms as well as pass selJets.n > 6 sub-category."""
         n_selJets = ak.num(selev.selJets) if "selJets" in selev.fields else ak.num(selev.selJet)
         selev["pass_nSelJets_gt6"] = n_selJets > 6
+        selev["fail_nSelJets_le6"] = n_selJets <= 6
+        selev["passLeptonVeto"] = selev.passLeptonVeto if "passLeptonVeto" in selev.fields else np.full(len(selev), True)
+
+        # Filter out low-significance spike (ps < 0.01) everywhere from SvB histograms
+        if self.run_SvB and "pass_ps_min" in selev.fields:
+            selev = selev[selev.pass_ps_min]
+
         selev["SR"] = selev.passSR
         selev["SB"] = selev.passSB
         selev["region"] = ak.zip({"SR": selev.passSR, "SB": selev.passSB})

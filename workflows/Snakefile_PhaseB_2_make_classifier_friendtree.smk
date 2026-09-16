@@ -187,6 +187,7 @@ rule classifier_inputs_mc:
     output: f"{config['output_path']}classifier_inputs/classifier_inputs_dataset_{{dataset}}__{{year}}.json"
     log: f"{config['output_path']}logs/classifier_inputs_dataset_{{dataset}}__{{year}}.log"
     params:
+        processor = lambda wildcards: get_raw_classifier_inputs_config().get('processor', 'coffea4bees/analysis/processors/processor_HH4b.py'),
         output_dir = f"{config['output_path']}classifier_inputs/",
         extra_arguments = lambda wildcards: " ".join(filter(None, [
             "-t" if config.get("test", False) else "",
@@ -200,7 +201,7 @@ rule classifier_inputs_mc:
         mkdir -p {params.output_dir} $(dirname {log})
 
         {params.run_container_wrapper} {params.python_bin} runner.py {input.config_file} \
-            --processor coffea4bees/analysis/processors/processor_HH4b.py \
+            --processor {params.processor} \
             --datasets {wildcards.dataset} \
             --years {wildcards.year} \
             --output-path {params.output_dir} \
@@ -215,6 +216,7 @@ rule classifier_inputs_data:
     output: f"{config['output_path']}classifier_inputs/classifier_inputs_data__{{year}}_{{era}}.json"
     log: f"{config['output_path']}logs/classifier_inputs_data__{{year}}_{{era}}.log"
     params:
+        processor = lambda wildcards: get_raw_classifier_inputs_config().get('processor', 'coffea4bees/analysis/processors/processor_HH4b.py'),
         output_dir = f"{config['output_path']}classifier_inputs/",
         extra_arguments = lambda wildcards: " ".join(filter(None, [
             "-t" if config.get("test", False) else "",
@@ -228,7 +230,7 @@ rule classifier_inputs_data:
         mkdir -p {params.output_dir} $(dirname {log})
 
         {params.run_container_wrapper} {params.python_bin} runner.py {input.config_file} \
-            --processor coffea4bees/analysis/processors/processor_HH4b.py \
+            --processor {params.processor} \
             --datasets data \
             --years {wildcards.year} \
             --eras {wildcards.era} \
