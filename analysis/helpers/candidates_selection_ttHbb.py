@@ -191,20 +191,24 @@ def _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB=False, cand_cfg=Non
         if svb_ps is not None:
             selev["pass_ps_min"] = svb_ps >= svb_cfg.get('ps_min', 0.01)
             selev["passSvB"] = svb_ps > svb_cfg.get('passSvB_min', 0.90)
-            selev["failSvB"] = svb_ps < svb_cfg.get('failSvB_max', 0.05)
+            selev["failSvB"] = (svb_ps >= 0.0) & (svb_ps < svb_cfg.get('failSvB_max', 0.05))
 
             if "SvB_MA" in selev.fields:
+                if "ps" in selev["SvB_MA"].fields:
+                    selev["SvB_MA", "ps"] = ak.where(selev["SvB_MA"].ps < 0.01, -2.0, selev["SvB_MA"].ps)
                 ps_np = ak.to_numpy(svb_ps)
                 # Inclusive quantiles
                 n_bins = len(ttHbbSvBHists.var_binning_ps_ttHbb) - 1
                 bin_idx = np.clip(np.digitize(ps_np, ttHbbSvBHists.var_binning_ps_ttHbb) - 1, 0, n_bins - 1)
                 ps_quantile = (bin_idx + 0.5) / float(n_bins)
+                ps_quantile = np.where(ps_np < 0.01, -2.0, ps_quantile)
                 selev["SvB_MA", "ps_ttHbb"] = ak.Array(ps_quantile)
 
                 # gt6 quantiles
                 n_bins_gt6 = len(ttHbbSvBHists.var_binning_ps_ttHbb_gt6) - 1
                 bin_idx_gt6 = np.clip(np.digitize(ps_np, ttHbbSvBHists.var_binning_ps_ttHbb_gt6) - 1, 0, n_bins_gt6 - 1)
                 ps_quantile_gt6 = (bin_idx_gt6 + 0.5) / float(n_bins_gt6)
+                ps_quantile_gt6 = np.where(ps_np < 0.01, -2.0, ps_quantile_gt6)
                 selev["SvB_MA", "ps_ttHbb_gt6"] = ak.Array(ps_quantile_gt6)
 
             pass_mask = selev.passSvB

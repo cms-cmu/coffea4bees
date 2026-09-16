@@ -46,11 +46,14 @@ def set_ttHbb_SvB_vars(SvBName: str, event: ak.Array):
     ps_ttHbb = ak.nan_to_num(pttHbb / np.maximum(pmj + ptt + pttHbb, 1e-10), nan=0.0)
     tt_vs_mj = ak.nan_to_num(ptt / np.maximum(ptt + pmj, 1e-10), nan=0.0)
 
+    ps_val = ak.where(ps_ttHbb < 0.01, -2.0, ps_ttHbb)
+
     event[SvBName, "pmj"] = pmj
     event[SvBName, "ptt"] = ptt
     event[SvBName, "pttHbb"] = pttHbb
-    event[SvBName, "ps"] = ps_ttHbb
-    event[SvBName, "ps_ttHbb"] = ps_ttHbb
+    event[SvBName, "ps"] = ps_val
+    event[SvBName, "ps_ttHbb"] = ps_val
+    event[SvBName, "ps_flat"] = ps_val
     event[SvBName, "tt_vs_mj"] = tt_vs_mj
 
 
@@ -108,13 +111,14 @@ def compute_SvB_ttHbb(events, mask, doCheck=True, **models: HCREnsemble):
 
         ps = pttHbb / np.maximum(pmj + ptt + pttHbb, 1e-10)
         tt_vs_mj = ptt / np.maximum(ptt + pmj, 1e-10)
+        ps_val = ak.where(ps < 0.01, -2.0, ps)
 
         events[name] = ak.zip({
             "pmj": pmj,
             "ptt": ptt,
             "pttHbb": pttHbb,
-            "ps": ps,
-            "ps_ttHbb": ps,
+            "ps": ps_val,
+            "ps_ttHbb": ps_val,
             "tt_vs_mj": tt_vs_mj,
             "q_1234": q_score[:, 0],
             "q_1324": q_score[:, 1],
