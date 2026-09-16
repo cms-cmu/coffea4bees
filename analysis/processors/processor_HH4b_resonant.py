@@ -10,7 +10,7 @@ import awkward as ak
 import numpy as np
 import yaml
 import gc
-from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
+from coffea4bees.analysis.helpers.object_selection import apply_jet_calibration
 from src.physics.common import update_events
 from python.analysis.helpers.cutflow import cutflow_4b
 from python.analysis.helpers.event_weights import (
@@ -514,7 +514,7 @@ class analysis(processor.ProcessorABC):
         #
         if self.config["do_jet_calibration"]:
 
-            jets = apply_jerc_corrections_jsonpog(
+            jets = apply_jet_calibration(
                 event,
                 corrections_metadata=self.corrections_metadata[self.year],
                 isMC=self.config["isMC"],
@@ -530,7 +530,7 @@ class analysis(processor.ProcessorABC):
             shifts = []
             shifts.extend([({"Jet": jets.JER.up}, f"CMS_res_j_{self.year_label}Up"), ({"Jet": jets.JER.down}, f"CMS_res_j_{self.year_label}Down")])
 
-            for jesunc in self.corrections_metadata[self.year]["JES_uncertainties"]:
+            for jesunc in self.corrections_metadata[self.year]["jes_unc"]:
                 shifts.extend( [ ({"Jet": jets[f"JES_{jesunc}"].up}, f"CMS_scale_j_{jesunc}Up"),
                                  ({"Jet": jets[f"JES_{jesunc}"].down}, f"CMS_scale_j_{jesunc}Down"), ] )
             logging.info(f"\nJet variations {[name for _, name in shifts]}")

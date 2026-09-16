@@ -12,7 +12,7 @@ import awkward as ak
 import numpy as np
 import yaml
 import gc
-from src.physics.objects.jet_corrections import apply_jerc_corrections, apply_jerc_corrections_jsonpog
+from coffea4bees.analysis.helpers.object_selection import apply_jet_calibration
 from src.physics.common import update_events
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b
 from coffea4bees.analysis.helpers.event_weights import (
@@ -552,7 +552,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         with self._stage("jet_corrections"):
             if self.config["do_jet_calibration"]:
 
-                jets = apply_jerc_corrections_jsonpog(
+                jets = apply_jet_calibration(
                     event,
                     corrections_metadata=self.corrections_metadata[self.year],
                     isMC=self.config["isMC"],

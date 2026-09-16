@@ -3,7 +3,7 @@ import warnings
 import awkward as ak
 import yaml
 import numpy as np
-from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
+from coffea4bees.analysis.helpers.object_selection import apply_jet_calibration
 from coffea4bees.analysis.trigger_emulator.TrigEmulatorTool   import TrigEmulatorTool
 from coffea4bees.analysis.trigger_emulator.TriggerSFVectorized import TriggerSFVectorized
 from coffea4bees.analysis.trigger_emulator.helpers import compute_emulation_vars
@@ -81,7 +81,7 @@ class analysis(processor.ProcessorABC):
         #
         # Calculate and apply Jet Energy Calibration
         #
-        jets = apply_jerc_corrections_jsonpog(
+        jets = apply_jet_calibration(
             event,
             corrections_metadata=self.corrections_metadata[self.year],
             isMC=self.config["isMC"],
