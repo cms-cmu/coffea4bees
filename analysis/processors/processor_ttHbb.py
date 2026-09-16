@@ -34,7 +34,8 @@ class ttHbbProcessor(HH4bBaseProcessor):
         top_reconstruction="fast",
         plot_ttbar_with_weights=True,
         hist_cuts=[],
-        corrections_metadata=None,
+        classify_Z_decay=False,
+        corrections_metadata: dict = None,
         **kwargs,
     ):
         logging.info("Initializing decoupled ttHbbProcessor")
