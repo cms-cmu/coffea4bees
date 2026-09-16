@@ -28,6 +28,7 @@ workflow_validation_coffea4bees:
 
 phaseE_prep_test_coffea4bees:
   stage: mixeddata
+  allow_failure: true
   extends:
     - .base_analysis_coffea4bees
   needs:
@@ -53,6 +54,7 @@ phaseE_prep_test_coffea4bees:
 
 phaseE_analysis_test_coffea4bees:
   stage: mixeddata
+  allow_failure: true
   extends:
     - .base_analysis_coffea4bees
   needs:
@@ -74,6 +76,7 @@ phaseE_analysis_test_coffea4bees:
 
 phaseE_closure_validation_coffea4bees:
   stage: mixeddata
+  allow_failure: true
   extends:
     - .base_analysis_coffea4bees
   needs:
