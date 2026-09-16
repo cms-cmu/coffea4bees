@@ -79,7 +79,9 @@ def doPlots(varList, debug=False):
     for category in categories:
         is_cut_category = (
             category.startswith("pass_")
+            or category.startswith("pass")
             or category.startswith("fail_")
+            or category.startswith("fail")
             or category.startswith("~")
         )
 

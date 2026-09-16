@@ -209,6 +209,7 @@ analysis_config:
     plot_ttbar_with_weights: true
 
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
+plot_extra_arguments: ""
 known_counts: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"
 known_counts_test: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"
 known_counts_full: "none"
