@@ -263,49 +263,66 @@ flowchart TD
 ---
 
 ### Phase E: Background Systematics & Two-Stage Closure
-* **Target Machine:** **`cmslpc`** (CPU batching with HTCondor/Dask + Combine container)
+* **Target Machine:** **`cmslpc`** (Steps 1, 2, 3, 5, 6: CPU batching with HTCondor/Dask + Combine container) / **`falcon`** (Step 4: GPU cluster for FvT training & evaluation)
 * **Coordinator:** `Snakefile_PhaseE.smk`
+* **Dedicated In-Depth Guide:** See [PhaseE_MixedData_Closure.md](docs/PhaseE_MixedData_Closure.md) for full physics motivation, architecture, step-by-step instructions, and troubleshooting.
 * **Sub-workflows:**
-  * `Snakefile_PhaseE_1_analysis.smk`: Runs the analysis processor with SvB ML inference **only on pseudo-data** (`mixeddata` / `synthetic_data` / `data_3b_for_mixed`), and merges the resulting singlefiles with existing signal MC, background MC, and real data singlefiles from **Phase F.1**.
-  * `Snakefile_PhaseE_2_1_plots_comparison.smk`: Generates 1D comparison and ratio validation plots (e.g. Data vs Mixed Data vs Synthetic Data).
-  * `Snakefile_PhaseE_2_2_plots_analysis.smk`: Generates standard analysis stack plots where Mixed / Synthetic data acts as pseudo-data (`data_obs`) alongside background and signal distributions.
-  * `Snakefile_PhaseE_3_closure.smk`: Converts `.coffea` histograms to ROOT format and runs `runTwoStageClosure.py` to extract background shape systematics (`.pkl` file containing `basis<k>_vari`, `basis<k>_bias`, and `spurious_signal`) and diagnostic fit plots.
+  * `Snakefile_PhaseE_1_make_mixeddata.smk`: Step 1 — Generates mixed-data picoAODs from collision data using the hemisphere mixing library.
+  * `Snakefile_PhaseE_2_make_subsamples.smk`: Step 2 — Slices mixed data into 15 statistically independent subsamples (`mix_v0` .. `mix_v14`), fits subsample-specific JCM weights, creates classifier inputs, and evaluates SvB friend trees.
+  * `Snakefile_PhaseE_3_make_ttbar_psdata.smk`: Step 3 — Generates pseudo-data from $t\bar{t}$ MC to validate hemisphere subtraction.
+  * `Snakefile_PhaseE_4_FvT_training.smk`: Step 4 — Trains 15 distinct FvT models (one per subsample) on Falcon GPU and evaluates friend trees on 3-tag collision data.
+  * `Snakefile_PhaseE_5_analysis.smk`: Step 5 — Executes Coffea analysis processor (`processor_ttHbb.py`) over all 15 mixed-data subsamples across 4 Run 2 eras (`UL16_preVFP`, `UL16_postVFP`, `UL17`, `UL18`).
+  * `Snakefile_PhaseE_6_closure.smk`: Step 6 — Builds 3-tag background ROOT histograms with `coffea4bees/stats_analysis/make_fvt_data3b_hists.py` ($SF = 1.4508$, 30 variable bins), converts mixed-data and signal to ROOT, and executes `runTwoStageClosure.py`.
 
-#### Key Artifacts & Required Downstream Updates:
-* **Outputs Produced**: Background model closure fit histograms, diagnostic plots, and systematic uncertainty pickle file (e.g. `output/<analysis>/closure_studies/closure_fits/.../hists_closure_*.pkl`).
-* **Files to Add/Modify**: Set `make_combine_inputs.bkgsyst` in the master config (`analysis_ttHbb.yml` or `nominal_run2.yml`) pointing to the generated background closure `.pkl` file for full systematic Combine fits in **Phase F.2**.
+#### Required Datasets and JCM Models per Step:
+Because Phase E mixes multiple data-driven and MC components, ensuring the correct dataset and JCM file at each step is critical:
 
-> [!IMPORTANT]
-> **Phase E Scope & Prerequisites**:
-> 1. **Phase E is Optional / Not for Stat-Only**: If you are running a **stat-only analysis** (`make_combine_inputs.stat_only: "--stat_only"`), Phase E should **NOT** be run.
-> 2. **Dependency on Phase F.1**: **`PhaseE_1` must be run AFTER `PhaseF_1`** has completed, because Phase E only runs inference on pseudo-data and requires the Phase F singlefiles (`output/<analysis>/singlefiles/`) to perform the merge.
+| Step | Sub-Workflow | Target Machine | Input Datasets | Applied JCM Calibration | Outputs Produced |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Step 1** | `PhaseE_1_make_mixeddata.smk` | `cmslpc` (CPU) | Collision Data 3-tag/4-tag | Nominal inclusive JCM (`jetCombinatoricModel_SB_2024_v2_stitched.yml`) | `mixeddata_ttHbb_stitched_rank0_0.yml` & `JCM_mixeddata_inclusive/` |
+| **Step 2** | `PhaseE_2_make_subsamples.smk` | `cmslpc` (CPU) | `mixeddata_ttHbb_stitched_rank0_0.yml` | Subsample JCMs (`jetCombinatoricModel_SB_mix_v{m}.yml` fitted per subsample) | `mixeddata_4b.yml` (15 subsamples), `classifier_inputs_mixeddata_ttHbb.json`, `friends_ttHbb_mixeddata_4b.json` |
+| **Step 3** | `PhaseE_3_make_ttbar_psdata.smk` | `cmslpc` (CPU) | $t\bar{t}$ stitched MC (`TTTo2L2Nu_stitched`, `TTToSemiLeptonic_stitched`, `TTToHadronic_stitched`) | Nominal inclusive JCM | `ttbar_PSData_stitched.yml` |
+| **Step 4** | `PhaseE_4_FvT_training.smk` | `falcon` (GPU) | Subsample classifier inputs + 3-tag collision data (`data_3b_for_mixed`) | Subsample JCMs (`jetCombinatoricModel_SB_mix_v{m}.yml`) | 15 FvT model weights & friend JSONs (`friends_FvT_ttHbb_mixeddata_stitched_v{m}.json`) |
+| **Step 5** | `PhaseE_5_analysis.smk` | `cmslpc` (CPU) | `mixeddata_4b` (15 subsamples across 4 Run 2 eras) | Subsample JCMs + SvB friend trees from Step 2 | `histAll_ttHbb_mixeddata_stitched.coffea`, comparison & analysis plots |
+| **Step 6** | `PhaseE_6_closure.smk` | `cmslpc` (CPU) | 4-tag Mixed Data (`histAll_ttHbb_mixeddata_stitched.root`), 3-tag Data with 15 FvT friends (`histMixedBkg_data_3b_for_mixed.root`), Signal (`hist_signal_ttHbb.root`) | Subsample JCMs (used inside `stats_analysis/make_fvt_data3b_hists.py`) | Closure results `.pkl`, 30-bin diagnostic fit plots, subsample overlay plots |
 
-**Execution Examples (on cmslpc):**
+#### Key Artifacts & Downstream Use:
+* **Outputs Produced**: Background closure fit histograms, diagnostic plots, and systematic uncertainty pickle file (`hists_closure_*.pkl`).
+* **Validation Criteria**:
+  * **Multijet Ensemble Variance**: Minimizes adjacent bin pull correlation at Basis 3 ($r = 0.834$).
+  * **Spurious Signal Test**: Passes at $\zeta = -0.17 \pm 0.05$ ($< 2\sigma$ from zero).
+  * **Subsample Shape Consistency**: 15-subsample overlay confirms $< 3\%$ shape variance across all 30 bins.
+
+**Execution Examples:**
 ```bash
-# Run full Phase E pipeline (Analysis -> Plots -> Closure) on cmslpc
+# Run full Phase E pipeline (Steps 1 through 6) on cmslpc
 ./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseE.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
-    --cores 4
+    --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml \
+    --cores 8
 
-# Run only Phase E.1 Analysis processor (pseudo-data inference + Phase F merge)
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseE_1_analysis.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
-    --cores 4
+# Step 1: Make mixed data picoAODs
+./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseE_1_make_mixeddata.smk \
+    --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml
 
-# Run only Phase E.2.1 Comparison plots (Data vs Mixed vs Synthetic)
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseE_2_1_plots_comparison.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
-    --cores 4
+# Step 2: Split 15 subsamples, compute JCMs, evaluate SvB friends
+./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseE_2_make_subsamples.smk \
+    --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml
 
-# Run only Phase E.2.2 Standard analysis stack plots with Mixed/Synthetic as Data
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseE_2_2_plots_analysis.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
-    --cores 4
+# Step 3: Make ttbar pseudo-data (MC subtraction check)
+./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseE_3_make_ttbar_psdata.smk \
+    --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml
 
-# Run only Phase E.3 Two-stage closure statistical fits & .pkl generation
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseE_3_closure.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
-    --cores 4
+# Step 4: Train 15 FvT models on Falcon GPU & evaluate friend trees
+./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseE_4_FvT_training.smk \
+    --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml
+
+# Step 5: Run Coffea analysis processor over 15 subsamples
+./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseE_5_analysis.smk \
+    --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml
+
+# Step 6: Two-stage closure fit, spurious signal test & plotting
+./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseE_6_closure.smk \
+    --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml
 ```
 
 ---

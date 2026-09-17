@@ -33,6 +33,10 @@ if __name__ == '__main__':
                         help="Automatically normalize mixed data to match total background prediction (Data 3b + TTbar4b 3b) in SR")
     parser.add_argument('--pure_qcd', '--no_ttbar', dest='pure_qcd', action="store_true", default=False,
                         help="Pure QCD closure mode where mixed data is already ttbar-subtracted (do not include or require ttbar)")
+    parser.add_argument('--do_CI', action="store_true", default=False,
+                        help="CI test flag")
+    parser.add_argument('--n_subsamples', '--nMixes', type=int, default=15,
+                        help="Number of mixed subsamples (default: 15)")
 
     parser.add_argument("--debug", action="store_true")
     #parser.add_argument("--signal", action="store_true")
@@ -85,7 +89,7 @@ if __name__ == '__main__':
     #  Criteria to save
     #
     save_dict = {}
-    for sub_sample in range(15):
+    for sub_sample in range(args.n_subsamples):
         save_dict[f"mix_v{sub_sample}"] = [('fourTag','SR')]
         save_dict[f"syn_v{sub_sample}"] = [('fourTag','SR')]
     save_dict["synthetic_data"]             = [('fourTag','SR')]

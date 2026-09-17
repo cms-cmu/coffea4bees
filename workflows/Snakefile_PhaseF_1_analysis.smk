@@ -239,8 +239,11 @@ use rule make_plots from analysis with:
     log: f"{config['output_path']}logs/make_plots.log"
     params:
         output_dir = f"{config['output_path']}plots_{config['label']}/",
-        metadata = config['plot_config'],
-        extra_arguments = "-s xW --year " + (DATA_YEARS[0] if len(DATA_YEARS) == 1 else ("Run3" if any("202" in y for y in DATA_YEARS) else "RunII")),
+        extra_arguments = lambda wildcards: " ".join(filter(None, [
+            "-s xW",
+            "--year " + (DATA_YEARS[0] if len(DATA_YEARS) == 1 else ("Run3" if any("202" in y for y in DATA_YEARS) else "RunII")),
+            config.get("plot_extra_arguments", ""),
+        ])),
         png_cores = 4,
         run_container_wrapper = config['analysis_container_wrapper']
     container: None
