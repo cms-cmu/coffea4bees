@@ -17,7 +17,7 @@ friends:
     # HH4b/VBF/NMSSM signals are still uncovered, exactly as before.
     trigWeight: "coffea4bees/metadata/friends/trigweights_Run3_v1.json@@trigWeight"
     FvT: root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_v2/friend/FvT/result.json@@analysis.0.merged
-    #MvD: root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_v2/friend/MvD/result.json@@analysis.0.merged
+    MvD: root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_MvDladder_c6norawF_30x/friend/MvD/result.json@@analysis.0.merged
     SvB: "coffea4bees/metadata/friends/data_SvBfriend.json@@SvB"
     SvB_MA: "coffea4bees/metadata/friends/data_SvBfriend.json@@SvB_MA"
     SvB_FeynNet: "coffea4bees/metadata/friends/SvBFeynNetfriend_mixeddata_data.json@@SvB_FeynNet"
@@ -31,10 +31,14 @@ friends:
     SvB_mixedMvD_SRSB:         root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_quadjet_run2/friend/SvB_mixedMvD_rank0_0_SRSB/result.json@@analysis.0.merged
     SvB_mixedMvD_SRonly:       root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_quadjet_run2/friend/SvB_mixedMvD_rank0_0_SRonly/result.json@@analysis.0.merged
     # 4 best-background SvBs trained on the c6-norawF 30x MvD (SR+SB, 30x); cover data+mixeddata+signal
-    SvB_c6mvd_C2:              root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_quadjet_run2/friend/SvB_c6mvd_C2_SRSB_30x/result.json@@analysis.0.merged
-    SvB_c6mvd_C5:              root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_quadjet_run2/friend/SvB_c6mvd_C5_SRSB_30x/result.json@@analysis.0.merged
-    SvB_c6mvd_C5b:             root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_quadjet_run2/friend/SvB_c6mvd_C5b_SRSB_30x/result.json@@analysis.0.merged
-    SvB_c6mvd_C6:              root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_quadjet_run2/friend/SvB_c6mvd_C6_SRSB_30x/result.json@@analysis.0.merged
+    SvB_c6mvd_C2:              root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_quadjet_run2/friend/SvB_c6mvd_C2_SRSB_30x_reeval0826/result.json@@analysis.0.merged
+    SvB_c6mvd_C5:              root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_quadjet_run2/friend/SvB_c6mvd_C5_SRSB_30x_reeval0826/result.json@@analysis.0.merged
+    SvB_c6mvd_C5b:             root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_quadjet_run2/friend/SvB_c6mvd_C5b_SRSB_30x_reeval0826/result.json@@analysis.0.merged
+    SvB_c6mvd_C6:              root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_quadjet_run2/friend/SvB_c6mvd_C6_SRSB_30x_reeval0823/result.json@@analysis.0.merged
+    # same C2 architecture trained on the 1x (un-oversampled) MvD, for 1x-vs-30x comparison
+    SvB_c6mvd_C2_1x:           root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_quadjet_run2/friend/SvB_c6mvd_C2_SRSB_1x/result.json@@analysis.0.merged
+    # C1 baseline SvB (nominal 3b x JCM x FvT multijet background), SR+SB reeval3
+    SvB_c1_1x:                 root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_quadjet_run2/friend/SvB_SRSB_reeval3/result.json@@analysis.0.merged
   2022_EE: *friends_Run3
   2023_preBPix:
     <<: *friends_Run3

@@ -479,7 +479,12 @@ use rule analysis_processor from analysis as make_histograms_data_MvD with:
         run_performance       = False,
         friends               = lambda wildcards, input: input.friends_file,
         run_on_condor         = config['run_on_condor'],
-        extra_arguments       = "--shared-dask --condor" if config['run_on_condor'] else "",
+        # NOTE: the shared analysis_processor rule (rules/analysis.smk) never consumes
+        # params.datasets_file, so runner.py would fall back to its --metadata default
+        # (coffea4bees/metadata/datasets/). That dir's data.yml points at picoAODs the
+        # MvD/SvB friends do not cover, and has no GluGlutoHHto4B.yml at all. Pass the
+        # intended dataset dir explicitly until analysis.smk wires datasets_file through.
+        extra_arguments       = ("--shared-dask --condor " if config['run_on_condor'] else "") + f"--metadata {config['dataset_location']}",
         run_container_wrapper = "./run_container",
         dashboard_address     = 0
 
@@ -501,7 +506,12 @@ use rule analysis_processor from analysis as make_histograms_mixeddata_MvD with:
         run_performance       = False,
         friends               = lambda wildcards, input: input.friends_file,
         run_on_condor         = config['run_on_condor'],
-        extra_arguments       = "--shared-dask --condor" if config['run_on_condor'] else "",
+        # NOTE: the shared analysis_processor rule (rules/analysis.smk) never consumes
+        # params.datasets_file, so runner.py would fall back to its --metadata default
+        # (coffea4bees/metadata/datasets/). That dir's data.yml points at picoAODs the
+        # MvD/SvB friends do not cover, and has no GluGlutoHHto4B.yml at all. Pass the
+        # intended dataset dir explicitly until analysis.smk wires datasets_file through.
+        extra_arguments       = ("--shared-dask --condor " if config['run_on_condor'] else "") + f"--metadata {config['dataset_location']}",
         run_container_wrapper = "./run_container",
         dashboard_address     = 0
 
@@ -530,7 +540,12 @@ use rule analysis_processor from analysis as make_histograms_signal_MvD with:
         run_performance       = False,
         friends               = lambda wildcards, input: input.friends_file,
         run_on_condor         = config['run_on_condor'],
-        extra_arguments       = "--shared-dask --condor" if config['run_on_condor'] else "",
+        # NOTE: the shared analysis_processor rule (rules/analysis.smk) never consumes
+        # params.datasets_file, so runner.py would fall back to its --metadata default
+        # (coffea4bees/metadata/datasets/). That dir's data.yml points at picoAODs the
+        # MvD/SvB friends do not cover, and has no GluGlutoHHto4B.yml at all. Pass the
+        # intended dataset dir explicitly until analysis.smk wires datasets_file through.
+        extra_arguments       = ("--shared-dask --condor " if config['run_on_condor'] else "") + f"--metadata {config['dataset_location']}",
         run_container_wrapper = "./run_container",
         dashboard_address     = 0
 
