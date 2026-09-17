@@ -270,6 +270,8 @@ rule evaluate:
     shell:
         """
         {params.init} && \
+        export XRD_REQUESTTIMEOUT=3600 XRD_STREAMTIMEOUT=600 XRD_TIMEOUTRESOLUTION=30 \
+               XRD_CONNECTIONRETRY=5 XRD_CONNECTIONWINDOW=60 && \
         PORT=$(shuf -i 10000-60000 -n 1) && \
         CLASSIFIER_CONFIG_PATHS={params.classifier_config_paths} \
         python -m src.classifier.task.main \

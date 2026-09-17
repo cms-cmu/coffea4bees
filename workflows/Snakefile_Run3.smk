@@ -121,7 +121,10 @@ use rule analysis_processor from analysis as make_histograms with:
         friends = lambda wildcards, input: input.friends_file,
         run_on_condor = config['run_on_condor'],
         weights = config.get('weights_file', "coffea4bees/metadata/weights/weights_HH4b.yml"),
-        extra_arguments = "--shared-dask --condor" if config['run_on_condor'] else "",
+        # analysis.smk never consumes params.datasets_file, so runner.py would fall back
+        # to its --metadata default (coffea4bees/metadata/datasets/), whose data.yml points
+        # at picoAODs the FvT friend does not index. Pass the intended dataset dir explicitly.
+        extra_arguments= ("--shared-dask --condor " if config['run_on_condor'] else "") + f"--metadata {config['dataset_location']}",
         run_container_wrapper = "./run_container",
         dashboard_address = 0
 
@@ -205,7 +208,10 @@ use rule analysis_processor from analysis as make_histograms_wJCM with:
         friends = lambda wildcards, input: input.friends_file,
         run_on_condor = config['run_on_condor'],
         weights = config.get('weights_file', "coffea4bees/metadata/weights/weights_HH4b.yml"),
-        extra_arguments = "--shared-dask --condor" if config['run_on_condor'] else "",
+        # analysis.smk never consumes params.datasets_file, so runner.py would fall back
+        # to its --metadata default (coffea4bees/metadata/datasets/), whose data.yml points
+        # at picoAODs the FvT friend does not index. Pass the intended dataset dir explicitly.
+        extra_arguments= ("--shared-dask --condor " if config['run_on_condor'] else "") + f"--metadata {config['dataset_location']}",
         run_container_wrapper = "./run_container",
         dashboard_address = 0
 
@@ -286,6 +292,14 @@ rule create_histogram_config_FvT:
             -e 's|  plot_ttbar_with_weights.*|  plot_ttbar_with_weights: true|' \
             -e 's|  compute_hemi_mixing_diagnostics:.*|  compute_hemi_mixing_diagnostics: {params.hemi_diag}|' \
             {input.config_file} > {output}
+        # The base config lost its `JCM_file:` line in a1ce29d4 (JCM defaults moved to
+        # metadata/weights/weights_HH4b.yml), so the substitution above has nothing to
+        # match and the JCM is silently dropped -- the processor then falls back to the
+        # per-year weights-file JCM (Run3/jetCombinatoricModel_SB_v2.yml), NOT the fit
+        # requested here. Insert the line when it is absent.
+        if ! grep -q '^  JCM_file:' {output}; then
+            sed -i "0,/^config:/s|^config:|config:\\n  JCM_file: {input.jcm_file}|" {output}
+        fi
         echo "Patched config:"
         grep -E "run_SvB|JCM_file|apply_FvT|plot_ttbar_with_weights|compute_hemi_mixing_diagnostics" {output}
         """
@@ -310,7 +324,10 @@ use rule analysis_processor from analysis as make_histograms_FvT with:
         friends               = lambda wildcards, input: input.friends_file,
         run_on_condor         = config['run_on_condor'],
         weights               = config.get('weights_file', "coffea4bees/metadata/weights/weights_HH4b.yml"),
-        extra_arguments       = "--shared-dask --condor" if config['run_on_condor'] else "",
+        # analysis.smk never consumes params.datasets_file, so runner.py would fall back
+        # to its --metadata default (coffea4bees/metadata/datasets/), whose data.yml points
+        # at picoAODs the FvT friend does not index. Pass the intended dataset dir explicitly.
+        extra_arguments= ("--shared-dask --condor " if config['run_on_condor'] else "") + f"--metadata {config['dataset_location']}",
         run_container_wrapper = "./run_container",
         dashboard_address     = 0
 
