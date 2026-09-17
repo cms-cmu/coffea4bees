@@ -102,6 +102,9 @@ rule final_output:
     shell:
         """
         echo "Copying results to eos"
+        if [ -f "proxy/x509_proxy" ]; then
+            export X509_USER_PROXY="$(pwd)/proxy/x509_proxy"
+        fi
         bash src/tools/copy_files_to_cernbox.sh -s {config[output_path]} -d {params.cern_path}{params.output_dir} -t || echo "Warning: copy to EOS failed. Skipping remote upload."
         if [ -n "{params.email}" ]; then
             echo "Workflow for {config[label]} completed successfully on $(date)." | mail -s "Snakemake Success: {config[label]}" "{params.email}" || echo "Warning: failed to send success notification email."

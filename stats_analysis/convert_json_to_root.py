@@ -1,10 +1,25 @@
 import os
-import ROOT
 import argparse
 import logging
 import json
 import array
-ROOT.gROOT.SetBatch(True)
+import numpy as np
+
+try:
+    import ROOT
+    ROOT.gROOT.SetBatch(True)
+    HAS_ROOT = True
+except ImportError:
+    ROOT = None
+    HAS_ROOT = False
+try:
+    import uproot
+    import hist
+    HAS_UPROOT = True
+except ImportError:
+    uproot = None
+    hist = None
+    HAS_UPROOT = False
 
 
 def json_to_TH1( coffea_hist, iname, rebin ):
@@ -19,7 +34,12 @@ def json_to_TH1( coffea_hist, iname, rebin ):
     overflow_value       = coffea_hist['overflow_value']  
     overflow_variance    = coffea_hist['overflow_variance']
 
-    rHist = ROOT.TH1F(iname, iname, len(centers), edges[0], edges[-1])
+    # Check if edges are non-uniform (variable binning)
+    widths = np.diff(edges)
+    if len(edges) > 1 and not np.allclose(widths, widths[0]):
+        rHist = ROOT.TH1F(iname, iname, len(edges) - 1, array.array('d', edges))
+    else:
+        rHist = ROOT.TH1F(iname, iname, len(centers), edges[0], edges[-1])
     rHist.Sumw2()
 
     rHist.SetBinContent(0, underflow_value)
@@ -57,22 +77,40 @@ def create_root_file(file_to_convert, histos, output_dir):
         os.remove(output)
         logging.info(f"Deleted existing file: {output}")
 
-    root_file = ROOT.TFile(output, 'recreate')
-
-    for ih in coffea_hists.keys():
-        # if len(histos) > 0 and ((ih in histos) or (ih.replace(".", "_") in histos)):
-        for iprocess in coffea_hists[ih].keys():
-            for iy in coffea_hists[ih][iprocess].keys():
-                for itag in coffea_hists[ih][iprocess][iy].keys():
-                    for iregion in coffea_hists[ih][iprocess][iy][itag].keys():
-                        this_hist = json_to_TH1(
-                            coffea_hists[ih][iprocess][iy][itag][iregion],
-                            ih.replace(".", "_") + "_" + iprocess + "_" + iy + "_" + itag + "_" + iregion,
-                            1)
-                        print( 'Converting hist', ih, ih.replace(".", "_") + "_" + iprocess + "_" + iy + "_" + itag + "_" + iregion)
-                        this_hist.Write()
-
-    root_file.Close()
+    if HAS_ROOT:
+        root_file = ROOT.TFile(output, 'recreate')
+        for ih in coffea_hists.keys():
+            # if len(histos) > 0 and ((ih in histos) or (ih.replace(".", "_") in histos)):
+            for iprocess in coffea_hists[ih].keys():
+                for iy in coffea_hists[ih][iprocess].keys():
+                    for itag in coffea_hists[ih][iprocess][iy].keys():
+                        for iregion in coffea_hists[ih][iprocess][iy][itag].keys():
+                            this_hist = json_to_TH1(
+                                coffea_hists[ih][iprocess][iy][itag][iregion],
+                                ih.replace(".", "_") + "_" + iprocess + "_" + iy + "_" + itag + "_" + iregion,
+                                1)
+                            print( 'Converting hist', ih, ih.replace(".", "_") + "_" + iprocess + "_" + iy + "_" + itag + "_" + iregion)
+                            this_hist.Write()
+        root_file.Close()
+    elif HAS_UPROOT:
+        with uproot.recreate(output) as f_out:
+            for ih in coffea_hists.keys():
+                for iprocess in coffea_hists[ih].keys():
+                    for iy in coffea_hists[ih][iprocess].keys():
+                        for itag in coffea_hists[ih][iprocess][iy].keys():
+                            for iregion in coffea_hists[ih][iprocess][iy][itag].keys():
+                                h_data = coffea_hists[ih][iprocess][iy][itag][iregion]
+                                edges = np.array(h_data['edges'], dtype=np.float64)
+                                values = np.array(h_data['values'], dtype=np.float64)
+                                variances = np.array(h_data['variances'], dtype=np.float64)
+                                h = hist.Hist.new.Var(edges, name="h").Weight()
+                                h.view().value = values
+                                h.view().variance = variances
+                                key = ih.replace(".", "_") + "_" + iprocess + "_" + iy + "_" + itag + "_" + iregion
+                                print('Converting hist (uproot)', ih, key)
+                                f_out[key] = h
+    else:
+        raise ImportError("Neither ROOT nor uproot is available.")
     logging.info("\n File " + output + " created.")
 
 

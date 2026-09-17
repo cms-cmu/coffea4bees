@@ -1454,16 +1454,18 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             )
 
         if self.make_classifier_input is not None:
-            # Subclasses with a different region scheme (e.g. ttHbbProcessor's
-            # single-Higgs SR/SB from candidates_selection_ttHbb.py) define no
-            # ZZ/ZH/HH signal regions, but dump_input_friend and the classifier's
-            # other_branches() still expect all five branches -> write False.
-            quadJet_fields = selev["quadJet_selected"].fields
-            for k in ["ZZSR", "ZHSR", "HHSR", "SR", "SB"]:
-                if k in quadJet_fields:
+            region_keys = ["SR", "SB"]
+            if "ZZSR" in selev["quadJet_selected"].fields or "HHSR" in selev["quadJet_selected"].fields:
+                region_keys = ["ZZSR", "ZHSR", "HHSR", "SR", "SB"]
+            for k in region_keys:
+                if k in selev["quadJet_selected"].fields:
                     selev[k] = selev["quadJet_selected"][k]
+                elif k == "HHSR" and "SR" in selev["quadJet_selected"].fields:
+                    selev[k] = selev["quadJet_selected"]["SR"]
+                elif "SR" in selev["quadJet_selected"].fields:
+                    selev[k] = ak.zeros_like(selev["quadJet_selected"]["SR"], dtype=bool)
                 else:
-                    selev[k] = np.zeros(len(selev), dtype=bool)
+                    selev[k] = ak.zeros(len(selev), dtype=bool)
             selev["nSelJets"] = ak.num(selev.selJet)
 
             from ..helpers.dump_friendtrees import dump_input_friend

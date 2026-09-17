@@ -74,6 +74,7 @@ stages:
   - cutflow
   - classifier
   - workflows
+  - mixeddata
   - reana
 
 
@@ -136,6 +137,7 @@ setup_coffea4bees:
     - echo "Setting analysis framework"
     - cd barista_framework/
     - export PATH="$PWD/.pixi-bin/bin:$PATH"
+    - if [ -f ./proxy/x509_proxy ]; then export X509_USER_PROXY="$PWD/proxy/x509_proxy"; echo "Configured X509_USER_PROXY=$X509_USER_PROXY"; fi
     - pwd && ls -la
     - ls -la coffea4bees/
   retry: 2

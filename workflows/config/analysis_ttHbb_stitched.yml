@@ -121,6 +121,7 @@ classifier_inputs:
   processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
   friend_file: "coffea4bees/metadata/datasets/friends_ttHbb_stitched_trigweight.yml"
   weights_file: "coffea4bees/metadata/weights/weights_ttHbb_stitched.yml"
+  candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
   datasets:
     - "ttHbb"
     - "data"
@@ -245,6 +246,7 @@ analysis_config:
     plot_ttbar_with_weights: true
 
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
+plot_extra_arguments: ""
 known_counts: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"
 known_counts_test: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"
 known_counts_full: "none"
@@ -260,7 +262,7 @@ convert_hist_to_json:
 combine_outdir: "datacards/"
 make_combine_inputs:
   stat_only: ""
-  bkgsyst: "output/ttHbb_mixeddata_closure/closure_fits/3bDvTMix4bDvT/SvB_MA/rebin1/SR/ttHbb/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_rebin1.pkl"
+  bkgsyst: "coffea4bees/stats_analysis/files/HIG-24-010/zz/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_zz_rebin1.pkl"
 
 combine_flags: "--three_tag threeTag --four_tag fourTag --region sum --blind"
 likelihood_scan_points: 40

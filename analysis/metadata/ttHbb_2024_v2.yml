@@ -13,6 +13,7 @@ config:
   run_SvB: true
   SvB_MA: true
   SvB: null
-  hist_cuts: ["pass_nSelJets_gt6"]
+  apply_lepton_veto: false
+  hist_cuts: ["pass_nSelJets_gt6", "passLeptonVeto"]
   top_reconstruction: fast
   plot_ttbar_with_weights: true

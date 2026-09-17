@@ -1,10 +1,12 @@
-label: "ttHbb_mixeddata"
-output_path: "output/ttHbb_mixeddata_closure/"
+label: "ttHbb_mixeddata_stitched"
+output_path: "output/ttHbb_mixeddata_stitched_closure/"
 dataset_location: "coffea4bees/metadata/datasets/"
 datasets_file: "coffea4bees/metadata/datasets/mixeddata_4b.yml"
 friend_file: "coffea4bees/metadata/friends/friends_ttHbb_mixeddata.yml"
 weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
 phase_e_dataset:
+  - "mixeddata_4b"
+dataset:
   - "mixeddata_4b"
 years:
   - "UL16_preVFP"
@@ -20,20 +22,94 @@ years:
   - "2023_BPix"
 n_samples: 15
 
-phase_f_output_path: "output/ttHbb_v3/"
-phase_f_label: "ttHbb_v3"
+phase_f_output_path: "output/ttHbb_stitched/"
+phase_f_label: "ttHbb_stitched"
 
-# Phase E_3 closure settings
+ttbar_processes:
+  - "TTTo2L2Nu_stitched"
+  - "TTToSemiLeptonic_stitched"
+  - "TTToHadronic_stitched"
+
+# Phase E closure settings
 phase_e:
-  mix_name: "3bDvTMix4bDvT"
+  mix_name: "ttHbb_mixeddata_stitched"
   nMixes: 15
   classifier: "SvB_MA"
   variable: "SvB_MA_ps"
   channel: "ttHbb"
   rebin: "1"
   years_closure: "2016 2017 2018"
-  closure_extra_args: "--pure_qcd"
+  closure_extra_args: ""
+  tt4bSF: 1.4508
   scale_mixed: 1.0
+  svb_result: "inputs/SvB_result.json"
+
+# Phase E JCM fit settings (Phase B style, inclusive)
+jcm_plot_config: "coffea4bees/plots/metadata/plotsJCM_ttHbb_stitched.yml"
+jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb_stitched_jcm_config.yml -m coffea4bees/plots/metadata/plotsJCM_ttHbb_stitched.yml"
+
+phase_e_jcm:
+  source_coffea: "output/ttHbb_stitched/computeJCM/histAll_NoJCM.coffea"
+  input_coffea: "inputs/histAll_NoJCM.coffea"
+  output_dir: "JCM_inclusive/"
+  tag: "ttHbb_stitched_inclusive"
+  region: "inclusive"
+
+mixeddata:
+  base_path: "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2/ttHbb_stitched_pz_rank0_0"
+  dataset_name: "mixeddata_ttHbb_stitched_rank0_0"
+  install_path: "coffea4bees/metadata/datasets/mixeddata_ttHbb_stitched_rank0_0.yml"
+  use_boost_corrected_matching: true
+  subtract_ttbar_with_weights: false
+  hemi_library_yaml: "coffea4bees/skimmer/metadata/hemisphere_library_noTT.yml"
+  hemi_stats_path: "coffea4bees/skimmer/metadata"
+  friends_file: "coffea4bees/metadata/datasets/friends_ttHbb_stitched.yml"
+  default_rank: 0
+  worker_memory: "6GB"
+  chunksize: 100000
+  picosize: 100000
+
+classifier_inputs_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched/classifier_inputs/mixeddata/"
+
+ttbar_psdata:
+  datasets_file: "coffea4bees/metadata/datasets/TT_stitched.yml"
+  datasets:
+    - "TTTo2L2Nu_stitched"
+    - "TTToSemiLeptonic_stitched"
+    - "TTToHadronic_stitched"
+  friends_file: "coffea4bees/metadata/datasets/friends_ttHbb_stitched.yml"
+  base_path: "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2/ttbar_PSData_stitched"
+  output_path: "ttbar_PSData/"
+  dataset_name: "ttbar_PSData_stitched"
+  install_path: "coffea4bees/metadata/datasets/ttbar_PSData_stitched.yml"
+  seed: 5
+  worker_memory: "6GB"
+  chunksize: 100000
+  picosize: 100000
+
+# Phase E FvT training settings (Self-contained in workflows/config)
+phase_e_fvt:
+  channel: "ttHbb"
+  mix_name: "ttHbb_mixeddata_stitched"
+  n_models: 15
+  # Upper bound only: EarlyStopStep ends training once validation loss plateaus.
+  # 20 matches the validated v1 training and keeps the FixedStep LR-decay window
+  # (milestones 15..24) reachable.
+  epochs: 20
+  batch_size: 2048
+  kfolds: 3
+  kfold_offset: 0
+  training_schedule: "EarlyStopStep"
+  early_stop:
+    patience: 3
+    min_delta: 1.0e-4
+    min_epoch: 8
+  eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2"
+  output_path: "FvT_training/"
+  precision: "bf16"
+  disable_benchmark: false
+  batch_eval: 65536
+  fvt_mode: "2class"
 
 analysis_config:
   processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
@@ -42,11 +118,11 @@ analysis_config:
   friend_file: "coffea4bees/metadata/friends/friends_ttHbb_mixeddata.yml"
   weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
   runner:
-    workers: 4
-    worker_memory: 8GB
-    condor: true
-    shared_dask: true
-    run_performance: true
+    workers: 8
+    chunksize: 100000
+    condor: false
+    shared_dask: false
+    run_performance: false
   config:
     blind: false
     apply_FvT: false
@@ -65,4 +141,3 @@ analysis_config:
 channels:
   ttHbb:
     variable: "SvB_MA.ps"
-    signal: "ttHbb"
