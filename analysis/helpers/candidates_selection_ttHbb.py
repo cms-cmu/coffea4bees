@@ -13,6 +13,7 @@ from coffea4bees.analysis.helpers.candidates_selection import (
 from coffea4bees.analysis.helpers.SvB_helpers import compute_SvB_FeynNet
 from coffea4bees.analysis.helpers.SvB_helpers_ttHbb import compute_SvB_ttHbb
 from coffea4bees.analysis.helpers.FvT_helpers import compute_FvT
+from coffea4bees.analysis.helpers.hist_templates import ttHbbSvBHists
 
 
 def _build_dijets_ttHbb(selev, cand_cfg=None, isRun3=False):
@@ -102,6 +103,7 @@ def _select_quadjet_ttHbb(quadJet, cand_cfg=None):
     in_analysis_box = (m_lead >= 25.0) & (m_lead <= 1000.0) & (m_subl >= 25.0) & (m_subl <= 1000.0)
     quadJet["SB"] = in_analysis_box & (~quadJet["SR"])
 
+
     # Compute Euclidean radial distance for monitoring
     quadJet["rH"] = np.sqrt((m_lead - 125.0)**2 + (m_subl - 125.0)**2)
 
@@ -174,12 +176,12 @@ def _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB=False, cand_cfg=Non
     svb_cfg = (cand_cfg or {}).get('svb', {})
     if run_SvB:
         if "SvB_MA" in selev.fields:
-            if "ps_ttHbb" in selev["SvB_MA"].fields:
+            if "ps" in selev["SvB_MA"].fields:
+                svb_ps = selev["SvB_MA"].ps
+            elif "ps_ttHbb" in selev["SvB_MA"].fields:
                 svb_ps = selev["SvB_MA"].ps_ttHbb
             elif "pttHbb" in selev["SvB_MA"].fields:
                 svb_ps = selev["SvB_MA"].pttHbb
-            elif "ps" in selev["SvB_MA"].fields:
-                svb_ps = selev["SvB_MA"].ps
             else:
                 svb_ps = None
         elif "SvB_FeynNet" in selev.fields:
@@ -187,8 +189,78 @@ def _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB=False, cand_cfg=Non
         else:
             svb_ps = None
         if svb_ps is not None:
-            selev["passSvB"] = svb_ps > svb_cfg.get('passSvB_min', 0.80)
-            selev["failSvB"] = svb_ps < svb_cfg.get('failSvB_max', 0.05)
+            selev["pass_ps_min"] = svb_ps >= svb_cfg.get('ps_min', 0.01)
+            selev["passSvB"] = svb_ps > svb_cfg.get('passSvB_min', 0.90)
+            selev["failSvB"] = (svb_ps >= 0.0) & (svb_ps < svb_cfg.get('failSvB_max', 0.05))
+
+            if "SvB_MA" in selev.fields:
+                if "ps" in selev["SvB_MA"].fields:
+                    selev["SvB_MA", "ps"] = ak.where(selev["SvB_MA"].ps < 0.01, -2.0, selev["SvB_MA"].ps)
+                ps_np = ak.to_numpy(svb_ps)
+                # Inclusive quantiles
+                n_bins = len(ttHbbSvBHists.var_binning_ps_ttHbb) - 1
+                bin_idx = np.clip(np.digitize(ps_np, ttHbbSvBHists.var_binning_ps_ttHbb) - 1, 0, n_bins - 1)
+                ps_quantile = (bin_idx + 0.5) / float(n_bins)
+                ps_quantile = np.where(ps_np < 0.01, -2.0, ps_quantile)
+                selev["SvB_MA", "ps_ttHbb"] = ak.Array(ps_quantile)
+
+                # gt6 quantiles
+                n_bins_gt6 = len(ttHbbSvBHists.var_binning_ps_ttHbb_gt6) - 1
+                bin_idx_gt6 = np.clip(np.digitize(ps_np, ttHbbSvBHists.var_binning_ps_ttHbb_gt6) - 1, 0, n_bins_gt6 - 1)
+                ps_quantile_gt6 = (bin_idx_gt6 + 0.5) / float(n_bins_gt6)
+                ps_quantile_gt6 = np.where(ps_np < 0.01, -2.0, ps_quantile_gt6)
+                selev["SvB_MA", "ps_ttHbb_gt6"] = ak.Array(ps_quantile_gt6)
+
+            pass_mask = selev.passSvB
+            m_lead = selev.leadStM_selected
+            m_subl = selev.sublStM_selected
+
+            counts = ak.where(pass_mask, 2, 0)
+            pairs = ak.concatenate([m_lead[:, np.newaxis], m_subl[:, np.newaxis]], axis=1)
+            flat_m = ak.flatten(pairs[pass_mask])
+            dijet_both = ak.unflatten(flat_m, counts)
+
+            selev["dijet_SvB_gt_0p9"] = ak.zip({
+                "lead_m": ak.where(~pass_mask, -2.0, m_lead),
+                "subl_m": ak.where(~pass_mask, -2.0, m_subl),
+            })
+            selev["dijet_both_SvB_gt_0p9"] = ak.zip({
+                "mass": dijet_both,
+            })
+
+            # Also retain 0.8 threshold for comparison
+            pass_mask_0p8 = svb_ps > 0.80
+            counts_0p8 = ak.where(pass_mask_0p8, 2, 0)
+            flat_m_0p8 = ak.flatten(pairs[pass_mask_0p8])
+            selev["dijet_SvB_gt_0p8"] = ak.zip({
+                "lead_m": ak.where(~pass_mask_0p8, -2.0, m_lead),
+                "subl_m": ak.where(~pass_mask_0p8, -2.0, m_subl),
+            })
+            selev["dijet_both_SvB_gt_0p8"] = ak.zip({
+                "mass": ak.unflatten(flat_m_0p8, counts_0p8),
+            })
+
+            # Single dedicated monitoring plot: dijet mass using network q-score best pairing (both pairs)
+            q_scores = None
+            if "SvB_MA_q_score" in quadJet.fields:
+                q_scores = quadJet.SvB_MA_q_score
+            elif "SvB_MA" in selev.fields and "q_1234" in selev["SvB_MA"].fields:
+                q_scores = np.concatenate([
+                    selev.SvB_MA.q_1234[:, np.newaxis],
+                    selev.SvB_MA.q_1324[:, np.newaxis],
+                    selev.SvB_MA.q_1423[:, np.newaxis],
+                ], axis=1)
+
+            if q_scores is not None:
+                best_q_idx = ak.argmax(q_scores, axis=1, keepdims=True)
+                quadJet_best_q = quadJet[best_q_idx][:, 0]
+                m_lead_q = quadJet_best_q.lead.mass
+                m_subl_q = quadJet_best_q.subl.mass
+                pairs_q = ak.concatenate([m_lead_q[:, np.newaxis], m_subl_q[:, np.newaxis]], axis=1)
+                flat_m_q = ak.flatten(pairs_q[pass_mask])
+                selev["dijet_both_qscore_SvB_gt_0p9"] = ak.zip({
+                    "mass": ak.unflatten(flat_m_q, counts),
+                })
 
 
 def _apply_ml_scores_ttHbb(

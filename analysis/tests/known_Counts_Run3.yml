@@ -1,65 +1,53 @@
 counts4:
-     TTToSemiLeptonic_2022_preEE:
-         passJetMult: 16.38
-         passPreSel: 0.25
-         passDiJetMass: 0.05
-         SR: 0.0
-         SB: 0.05
-
-     TTToHadronic_2022_preEE:
-         passJetMult: 26.97
-         passPreSel: 0.53
-         passDiJetMass: 0.08
-         SR: 0.0
-         SB: 0.03
-
-     TTTo2L2Nu_2022_preEE:
-         passJetMult: 12.69
-         passPreSel: 0.22
-         passDiJetMass: 0.08
-         SR: 0.03
-         SB: 0.04
-
-     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_preEE:
-         passJetMult: 0.02
-         passPreSel: 0.01
-         passDiJetMass: 0.01
-         SR: 0.01
-         SB: 0.0
-
-
-
+    TTToSemiLeptonic_2022_preEE:
+        passJetMult: 17.76
+        passPreSel: 0.28
+        passDiJetMass: 0.06
+        SR: 0.0
+        SB: 0.06
+    TTToHadronic_2022_preEE:
+        passJetMult: 28.32
+        passPreSel: 0.57
+        passDiJetMass: 0.09
+        SR: 0.0
+        SB: 0.04
+    TTTo2L2Nu_2022_preEE:
+        passJetMult: 14.26
+        passPreSel: 0.26
+        passDiJetMass: 0.09
+        SR: 0.04
+        SB: 0.05
+    GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_preEE:
+        passJetMult: 0.02
+        passPreSel: 0.01
+        passDiJetMass: 0.01
+        SR: 0.01
+        SB: 0.0
 counts3:
     TTToSemiLeptonic_2022_preEE:
-        passJetMult: 16.38
-        passPreSel: 0.67
-        passDiJetMass: 0.38
-        SR: 0.1
-        SB: 0.19
-
+        passJetMult: 17.76
+        passPreSel: 0.73
+        passDiJetMass: 0.41
+        SR: 0.11
+        SB: 0.21
     TTToHadronic_2022_preEE:
-        passJetMult: 26.97
-        passPreSel: 1.05
-        passDiJetMass: 0.64
-        SR: 0.21
-        SB: 0.3
-
+        passJetMult: 28.32
+        passPreSel: 1.11
+        passDiJetMass: 0.67
+        SR: 0.22
+        SB: 0.31
     TTTo2L2Nu_2022_preEE:
-        passJetMult: 12.69
-        passPreSel: 0.39
-        passDiJetMass: 0.14
+        passJetMult: 14.26
+        passPreSel: 0.44
+        passDiJetMass: 0.16
         SR: 0.03
-        SB: 0.08
-
+        SB: 0.09
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_preEE:
         passJetMult: 0.02
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
-
-
-
 counts4_unit:
     TTToSemiLeptonic_2022_preEE:
         passJetMult: 422.0
@@ -67,30 +55,24 @@ counts4_unit:
         passDiJetMass: 2.0
         SR: 0.0
         SB: 2.0
-
     TTToHadronic_2022_preEE:
         passJetMult: 446.0
         passPreSel: 9.0
         passDiJetMass: 2.0
         SR: 0.0
         SB: 1.0
-
     TTTo2L2Nu_2022_preEE:
         passJetMult: 412.0
         passPreSel: 6.0
         passDiJetMass: 3.0
         SR: 2.0
         SB: 1.0
-
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_preEE:
         passJetMult: 669.0
         passPreSel: 256.0
         passDiJetMass: 230.0
         SR: 169.0
         SB: 49.0
-
-
-
 counts3_unit:
     TTToSemiLeptonic_2022_preEE:
         passJetMult: 422.0
@@ -98,21 +80,18 @@ counts3_unit:
         passDiJetMass: 117.0
         SR: 30.0
         SB: 61.0
-
     TTToHadronic_2022_preEE:
         passJetMult: 446.0
         passPreSel: 184.0
         passDiJetMass: 121.0
         SR: 41.0
         SB: 56.0
-
     TTTo2L2Nu_2022_preEE:
         passJetMult: 412.0
         passPreSel: 191.0
         passDiJetMass: 71.0
         SR: 20.0
         SB: 39.0
-
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_preEE:
         passJetMult: 669.0
         passPreSel: 334.0

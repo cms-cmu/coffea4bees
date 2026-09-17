@@ -5,7 +5,7 @@ from abc import abstractmethod
 from collections import defaultdict
 from functools import cache, cached_property, partial
 from itertools import chain
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING, Iterable, Optional
 
 from src.classifier.task import ArgParser, parse
 from src.classifier.typetools import enum_dict
@@ -16,6 +16,8 @@ from src.classifier.config.setting.ml import KFold
 from src.classifier.config.state import Flags
 from src.classifier.config.state.label import MultiClass
 from src.classifier.config.dataset._root import LoadGroupedRoot
+from src.classifier.df.io import FromRoot
+from src.data_formats.root import Chunk
 from . import _group
 
 if TYPE_CHECKING:
@@ -50,6 +52,31 @@ def _debug_print_weight(df: pd.DataFrame):
     return df
 
 
+class HCRFromRoot(FromRoot):
+    def __call__(self, chunk: Chunk) -> Optional[pd.DataFrame]:
+        if self.chain._friends:
+            for friend in self.chain._friends.values():
+                if chunk in friend._data:
+                    series = friend._data[chunk]
+                    if series:
+                        f_start = series[0].start
+                        f_stop = series[-1].stop
+                        c_start = 0 if (chunk.entry_start is None or chunk.entry_start is ...) else chunk.entry_start
+                        c_stop = chunk.num_entries if (chunk.entry_stop is None or chunk.entry_stop is ...) else chunk.entry_stop
+                        new_start = max(c_start, f_start)
+                        new_stop = min(c_stop, f_stop)
+                        if new_start >= new_stop:
+                            return None
+                        if new_start != c_start or new_stop != c_stop:
+                            chunk = chunk.slice(new_start, new_stop)
+        df = super().__call__(chunk)
+        if df is not None:
+            for col in ("threeTag", "fourTag", "SR", "SB", "passHLT"):
+                if col in df.columns and df[col].dtype == object and not df[col].isna().any():
+                    df[col] = df[col].astype(bool)
+        return df
+
+
 class Common(LoadGroupedRoot):
     argparser = ArgParser()
     argparser.add_argument(
@@ -71,8 +98,6 @@ class Common(LoadGroupedRoot):
 
     @cache
     def from_root(self, groups: frozenset[str]):
-        from src.classifier.df.io import FromRoot
-
         friends = []
         for k, v in self.friends.items():
             if k <= groups:
@@ -83,7 +108,7 @@ class Common(LoadGroupedRoot):
             pres.extend(g(groups))
         pres.extend(self.preprocessors)
 
-        return FromRoot(
+        return HCRFromRoot(
             friends=friends,
             branches=self._branches.intersection,
             preprocessors=pres,

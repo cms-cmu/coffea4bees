@@ -1,0 +1,55 @@
+### HCR classifier-input friend trees for the tt+bb stitched ttbar datasets.
+###
+### Prerequisite for FvT training: classifier/config/workflows/*/FvT/train.yml
+### reads `--friends "" <classifier inputs json>@@HCR_input`, and the committed
+### classifier_inputs_nominal.json has no entries for the stitched picoAODs
+### (friend trees are keyed by picoAOD uuid, so the stitched files need their own).
+###
+### Usage (from the barista root):
+###   ./run_container python runner.py \
+###     -p coffea4bees/analysis/processors/processor_HH4b.py \
+###     -c coffea4bees/analysis/metadata/HH4b_2024_v2_classifier_inputs_stitched.yml \
+###     -m coffea4bees/metadata/datasets/archive/Run2_2024_v2/ \
+###     --friends coffea4bees/metadata/datasets/archive/Run2_2024_v2/friends_ttHbb.yml \
+###     --weights coffea4bees/metadata/weights/weights_HH4b_2024_v2.yml \
+###     -y UL16_preVFP UL16_postVFP UL17 UL18 \
+###     -d TTTo2L2Nu_stitched TTToSemiLeptonic_stitched TTToHadronic_stitched \
+###     -o classifier_inputs_stitched.coffea -op output/ttbb_stitch/classifier_inputs/ \
+###     --condor
+###
+### The friend-tree metadata lands next to the output as a .json, which must then
+### be merged with classifier_inputs_nominal.json (keeping its 681 existing
+### targets) via `python -m src.friendtrees.merge_friend_meta`.
+
+runner:
+  workers: 4
+  worker_memory: 8GB
+  chunksize: 10000
+  condor: true
+  condor_cores: 1
+  # Nothing is histogrammed here, so the .coffea would be near-empty.
+  write_coffea_output: false
+  # Default is ['coffea4bees/', 'src/'] ~= 490MB (includes .git and
+  # jet_clustering); this processor only needs analysis/ and metadata/.
+  condor_transfer_input_files:
+    - src/
+    - coffea4bees/analysis/
+    - coffea4bees/metadata/
+  allowlist_sites:
+    - T3_US_FNALLPC
+    - T2_US_Nebraska
+    - T2_US_Purdue
+
+config:
+  blind: false
+  apply_JCM: true            # JCM_file comes from the --weights file
+  apply_FvT: false           # FvT is what this is a prerequisite for; must stay off
+  apply_trigWeight: true     # consumes the merged trigWeight friends
+  apply_btagSF: true
+  apply_boosted_veto: false
+  run_SvB: false
+  # Required: xW and xbW are HCR ancillary input features
+  # (HCR.InputBranch feature_ancillary: [xW, nSelJets, xbW, year]).
+  top_reconstruction: slow
+  fill_histograms: false
+  make_classifier_input: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/stitched/

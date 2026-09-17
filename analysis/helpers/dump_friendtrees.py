@@ -67,12 +67,8 @@ def dump_input_friend(
     }
     # Add numpy fields
     seljet_labels = [seljet_label] if isinstance(seljet_label, str) else list(seljet_label)
-    fields = [
-        "ZZSR",
-        "ZHSR",
-        "HHSR",
-        "SR",
-        "SB",
+    mass_regions = [m for m in ["ZZSR", "ZHSR", "HHSR", "SR", "SB"] if m in events.fields]
+    fields = mass_regions + [
         fourTag_label,
         threeTag_label,
         "passHLT",

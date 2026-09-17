@@ -1,7 +1,21 @@
+import logging
 from collections import defaultdict
 
-def processor_config(processName, dataset, event):
+def processor_config(processName, dataset, event, overrides=None):
+    """Build the per-dataset processing configuration.
 
+    ``overrides`` is an optional mapping applied last, after every
+    process-type/run rule below. It exists so that a production can reproduce the
+    configuration a *previously written* input was made with, which the rules here
+    cannot express on their own.
+
+    The motivating case: the Run 3 rule below turns ``cut_on_HLT_decision`` back on
+    for MC (added 2026-02-16), so the inclusive 2022/2023 picoAODs -- skimmed
+    2025-09-02, before that -- are NOT HLT-filtered while 2024 is. Anything skimmed
+    now that has to be combined with those files (e.g. the tt+bb stitching, where
+    the tt+B scale factor is a picoAOD-level genWeight ratio and a mismatch
+    silently rescales tt+B) must be able to switch the cut back off per era.
+    """
     config = defaultdict(lambda : False)
 
     #
@@ -97,5 +111,17 @@ def processor_config(processName, dataset, event):
         config["do_lepton_jet_cleaning"]  = False
         config["do_jet_calibration"]  = False
         config["do_jet_veto_maps"]       = False
+
+    if overrides:
+        unknown = set(overrides) - set(config)
+        if unknown:
+            logging.warning(
+                "processor_config: overriding key(s) not set by any rule: %s",
+                sorted(unknown))
+        for key, value in overrides.items():
+            if config[key] != value:
+                logging.info("processor_config: override %s: %s -> %s",
+                             key, config[key], value)
+            config[key] = value
 
     return config
