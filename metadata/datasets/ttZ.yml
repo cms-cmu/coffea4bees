@@ -1,0 +1,51 @@
+TTZToQQ:
+  UL16_postVFP:
+    nanoAOD: /TTZToQQ_TuneCP5_13TeV-amcatnlo-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v1/NANOAODSIM
+  UL16_preVFP:
+    nanoAOD: /TTZToQQ_TuneCP5_13TeV-amcatnlo-pythia8/RunIISummer20UL16NanoAODAPVv9-106X_mcRun2_asymptotic_preVFP_v11-v1/NANOAODSIM
+  UL17:
+    nanoAOD: /TTZToQQ_TuneCP5_13TeV-amcatnlo-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v1/NANOAODSIM
+  UL18:
+    nanoAOD: /TTZToQQ_TuneCP5_13TeV-amcatnlo-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1/NANOAODSIM
+    picoAOD:
+      count: 19816000
+      cutFlowTwoTag:
+        all: 9768608.01996088
+        lumimask: 9768608.01996088
+        passHLT: 9768608.01996088
+        passJetMult_lowpt_forskim: 9548008.46167326
+        passNoiseFilter: 9768608.01996088
+        passPreSel_lowpt_forskim: 894157.1530282497
+      cutFlowTwoTagUnitWeight:
+        all: 19101900
+        lumimask: 19101900
+        passHLT: 19101900
+        passJetMult_lowpt_forskim: 18770020
+        passNoiseFilter: 19101900
+        passPreSel_lowpt_forskim: 1824814
+      files:
+      - root://cmseos.fnal.gov//store/user/smurthy/ttZ/2026_Run2_skims/TTZToQQ_UL18/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/smurthy/ttZ/2026_Run2_skims/TTZToQQ_UL18/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/smurthy/ttZ/2026_Run2_skims/TTZToQQ_UL18/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/smurthy/ttZ/2026_Run2_skims/TTZToQQ_UL18/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/smurthy/ttZ/2026_Run2_skims/TTZToQQ_UL18/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/smurthy/ttZ/2026_Run2_skims/TTZToQQ_UL18/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/smurthy/ttZ/2026_Run2_skims/TTZToQQ_UL18/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/smurthy/ttZ/2026_Run2_skims/TTZToQQ_UL18/picoAOD.chunk7.root
+      - root://cmseos.fnal.gov//store/user/smurthy/ttZ/2026_Run2_skims/TTZToQQ_UL18/picoAOD.chunk8.root
+      - root://cmseos.fnal.gov//store/user/smurthy/ttZ/2026_Run2_skims/TTZToQQ_UL18/picoAOD.chunk9.root
+      - root://cmseos.fnal.gov//store/user/smurthy/ttZ/2026_Run2_skims/TTZToQQ_UL18/picoAOD.chunk10.root
+      - root://cmseos.fnal.gov//store/user/smurthy/ttZ/2026_Run2_skims/TTZToQQ_UL18/picoAOD.chunk11.root
+      - root://cmseos.fnal.gov//store/user/smurthy/ttZ/2026_Run2_skims/TTZToQQ_UL18/picoAOD.chunk12.root
+      - root://cmseos.fnal.gov//store/user/smurthy/ttZ/2026_Run2_skims/TTZToQQ_UL18/picoAOD.chunk13.root
+      - root://cmseos.fnal.gov//store/user/smurthy/ttZ/2026_Run2_skims/TTZToQQ_UL18/picoAOD.chunk14.root
+      - root://cmseos.fnal.gov//store/user/smurthy/ttZ/2026_Run2_skims/TTZToQQ_UL18/picoAOD.chunk15.root
+      - root://cmseos.fnal.gov//store/user/smurthy/ttZ/2026_Run2_skims/TTZToQQ_UL18/picoAOD.chunk16.root
+      - root://cmseos.fnal.gov//store/user/smurthy/ttZ/2026_Run2_skims/TTZToQQ_UL18/picoAOD.chunk17.root
+      - root://cmseos.fnal.gov//store/user/smurthy/ttZ/2026_Run2_skims/TTZToQQ_UL18/picoAOD.chunk18.root
+      saved_events: 1892916
+      sumw: 10134246.74609375
+      sumw2: 20958232.140625
+      total_events: 19816000
+  xs:
+    Run2: 0.6012
