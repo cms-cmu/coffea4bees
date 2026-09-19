@@ -277,19 +277,42 @@ if __name__ == '__main__':
                         available_processes.extend(list(h.axes["process"]))
     available_processes = list(dict.fromkeys(available_processes))
 
+    def _filter_by_available_process(p_cfg):
+        """Return p_cfg restricted to available processes, or None if nothing remains.
+        Entries defined via a `sum:` block (e.g. Multijet = data_3tag - TT_3tag) carry no
+        top-level `process`; filter their components instead of dropping the whole entry."""
+        proc = p_cfg.get("process")
+        if proc is None and isinstance(p_cfg.get("sum"), dict):
+            new_sum = {}
+            for sub_name, sub_cfg in p_cfg["sum"].items():
+                sub_filtered = _filter_by_available_process(sub_cfg)
+                if sub_filtered is not None:
+                    new_sum[sub_name] = sub_filtered
+            if not new_sum:
+                return None
+            p_cfg["sum"] = new_sum
+            return p_cfg
+        if proc is None:
+            # No process information at all: leave it to downstream handling
+            return p_cfg
+        if isinstance(proc, list):
+            valid_procs = [p for p in proc if p in available_processes]
+            if not valid_procs:
+                return None
+            p_cfg["process"] = valid_procs if len(valid_procs) > 1 else valid_procs[0]
+            return p_cfg
+        return p_cfg if proc in available_processes else None
+
     if available_processes:
         for key in ["hists", "stack"]:
             if key in cfg.plotConfig:
                 new_dict = {}
                 for name, p_cfg in cfg.plotConfig[key].items():
-                    proc = p_cfg.get("process")
-                    if isinstance(proc, list):
-                        valid_procs = [p for p in proc if p in available_processes]
-                        if valid_procs:
-                            p_cfg["process"] = valid_procs if len(valid_procs) > 1 else valid_procs[0]
-                            new_dict[name] = p_cfg
-                    elif proc in available_processes:
-                        new_dict[name] = p_cfg
+                    filtered = _filter_by_available_process(p_cfg)
+                    if filtered is not None:
+                        new_dict[name] = filtered
+                    else:
+                        logging.warning(f"Dropping plotConfig {key}/{name}: none of its processes are in the input file")
                 cfg.plotConfig[key] = new_dict
 
     # Auto-infer year if not explicitly provided
