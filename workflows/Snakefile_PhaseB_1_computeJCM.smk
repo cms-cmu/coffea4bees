@@ -109,7 +109,9 @@ rule output_computeJCM:
         f"{JCM_OUTPUT_PATH}histAll_wJCM.coffea",
         f"{JCM_OUTPUT_PATH}plots_wJCM/plots_done.txt",
         f"{JCM_OUTPUT_PATH}cutflow_validation_NoJCM.txt",
-        f"{JCM_OUTPUT_PATH}cutflow_validation_wJCM.txt"
+        f"{JCM_OUTPUT_PATH}cutflow_validation_wJCM.txt",
+        f"{JCM_OUTPUT_PATH}cutflow_NoJCM.html",
+        f"{JCM_OUTPUT_PATH}cutflow_wJCM.html"
 
 DATA_YEAR_ERA = [(str(yr), era) for yr, eras in config['year_eras'].items() for era in eras]
 DATA_YEARS = [str(y) for y in config['year_eras'].keys()]
@@ -294,4 +296,27 @@ use rule check_cutflow from analysis as check_cutflow_wJCM with:
         python_bin = lambda wildcards: config.get("python_bin", "python")
     container: None
 
-localrules: create_noJCM_config, create_wJCM_config, merge_noJCM, merge_wJCM, make_new_JCM, make_plots_wJCM, check_cutflow_noJCM, check_cutflow_wJCM
+# Closure tables from the cutflow dumps: cuts as rows; data 3b | tt 3b | Multijet | tt 4b | Bkg | data 4b | ratio,
+# combined and per year, plus a detailed view with the ttbar components (src/tools/cutflow_closure.py).
+rule cutflow_closure_table:
+    input:
+        cutflow_yml = f"{JCM_OUTPUT_PATH}cutflow_{{pass_name}}.yml",
+        validation_txt = f"{JCM_OUTPUT_PATH}cutflow_validation_{{pass_name}}.txt",
+        script = "src/tools/cutflow_closure.py"
+    output:
+        html = f"{JCM_OUTPUT_PATH}cutflow_{{pass_name}}.html",
+        txt = f"{JCM_OUTPUT_PATH}cutflow_{{pass_name}}_table.txt"
+    log: f"{JCM_OUTPUT_PATH}logs/cutflow_closure_{{pass_name}}.log"
+    params:
+        title = lambda wildcards: f"{config.get('label', 'computeJCM')} cutflow ({wildcards.pass_name})",
+        run_container_wrapper = config['analysis_container_wrapper'],
+        python_bin = lambda wildcards: config.get("python_bin", "python")
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {log})
+        {params.run_container_wrapper} {params.python_bin} src/tools/cutflow_closure.py {input.cutflow_yml} \
+            -o {output.html} --txt {output.txt} --title "{params.title}" 2>&1 | tee {log}
+        """
+
+localrules: create_noJCM_config, create_wJCM_config, merge_noJCM, merge_wJCM, make_new_JCM, make_plots_wJCM, check_cutflow_noJCM, check_cutflow_wJCM, cutflow_closure_table
