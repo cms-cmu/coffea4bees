@@ -1,0 +1,19 @@
+# JCM config for the CI unit test (scripts/tools-make-jcm-weights.sh).
+# Same as nominal_jcm_config.yml but with threeTightTagFraction FIXED:
+# the CI test.coffea sample (~300 4b events) cannot constrain a 4-parameter
+# fit, and the reference files in analysis/tests/jetCombinatoricModel_SB_*_new.yml
+# were produced with t fixed. Production keeps float_t: true in nominal_jcm_config.yml.
+data4bName: data
+taglabel4b:   fourTag
+
+data3bName: data
+taglabel3b:   threeTag
+
+taglabel3b_tt: threeTag
+
+selJets: selJets_noJCM.n
+tagJets: tagJets_noJCM.n
+
+subtract3bTT: True
+
+float_t: false
