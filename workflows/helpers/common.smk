@@ -7,6 +7,27 @@ if os.getcwd() not in sys.path:
     sys.path.insert(0, os.getcwd())
 from src.stat_analysis.helpers import make_poi_maps, get_default_othersignals, get_grid_split_points, get_likelihood_scan_chunks
 
+def substitute_placeholders(obj, mapping):
+    """Replace {name} placeholders in every string of a nested config structure."""
+    if isinstance(obj, dict):
+        return {k: substitute_placeholders(v, mapping) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [substitute_placeholders(v, mapping) for v in obj]
+    if isinstance(obj, str):
+        for k, v in mapping.items():
+            obj = obj.replace("{" + k + "}", str(v))
+    return obj
+
+
+# {roast_id} names a production run so run-scoped paths (e.g. EOS outputs) are unique.
+# `roast` sets it with --config roast_id=<id>; outside roast it falls back to the config
+# label, so a plain `snakemake --configfile ...` run still gets a sensible directory.
+_roast_id = config.get('roast_id') or config.get('label') or 'nominal'
+config['roast_id'] = _roast_id
+for _k, _v in substitute_placeholders(dict(config), {'roast_id': _roast_id}).items():
+    config[_k] = _v
+
+
 def resolve_config_section(config_dict, primary_key=None, fallback_keys=None, inherit_keys=None):
     """
     Extracts and parses a sub-configuration block from the global Snakemake config dict.

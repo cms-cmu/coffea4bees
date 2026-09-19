@@ -72,16 +72,30 @@ def get_raw_jcm_config():
     return res
 
 jcm_config_path = f"{JCM_OUTPUT_PATH}analysis_config_noJCM.yml"
+jcm_file_path = f"{JCM_OUTPUT_PATH}JCM_{tag}/jetCombinatoricModel_SB_{tag}.yml"
+
+# Second pass: rerun the same datasets with the freshly fitted JCM applied
+# (still no FvT / SvB — those come from Phases C/D), then plot with the NoFvT config.
+wjcm_config_path = f"{JCM_OUTPUT_PATH}analysis_config_wJCM.yml"
+wjcm_plot_config = config.get('jcm_plot_config', config.get('jcm', {}).get('plot_config', "coffea4bees/plots/metadata/plotsAllNoFvT.yml"))
+
+def get_raw_wjcm_config():
+    res = get_raw_jcm_config()
+    res['config']['apply_JCM'] = True
+    res['config']['JCM_file'] = jcm_file_path
+    return res
 
 ### Including modules
 module analysis:
     snakefile: "rules/analysis.smk"
     config: config
 
+# NOTE: input[0] must stay the JCM yml — Snakefile_PhaseB_2 reads rules.output_computeJCM.input[0]
 rule output_computeJCM:
     input:
-        f"{JCM_OUTPUT_PATH}JCM_{tag}/jetCombinatoricModel_SB_{tag}.yml",
-        f"{JCM_OUTPUT_PATH}plots_noJCM/plots_done.txt"
+        jcm_file_path,
+        f"{JCM_OUTPUT_PATH}histAll_wJCM.coffea",
+        f"{JCM_OUTPUT_PATH}plots_wJCM/plots_done.txt"
 
 DATA_YEAR_ERA = [(str(yr), era) for yr, eras in config['year_eras'].items() for era in eras]
 DATA_YEARS = [str(y) for y in config['year_eras'].keys()]
@@ -144,7 +158,7 @@ use rule merging_coffea_files from analysis as merge_noJCM with:
 
 use rule make_JCM from analysis as make_new_JCM with:
     input: f"{JCM_OUTPUT_PATH}histAll_NoJCM.coffea"
-    output: f"{JCM_OUTPUT_PATH}JCM_{tag}/jetCombinatoricModel_SB_{tag}.yml"
+    output: jcm_file_path
     params:
         extra_arguments = config.get('jcm_extra_arguments', ""),
         tag = tag,
@@ -153,16 +167,84 @@ use rule make_JCM from analysis as make_new_JCM with:
         python_bin = lambda wildcards: config.get("python_bin", "python")
     log: f"{JCM_OUTPUT_PATH}logs/make_JCM.log"
 
-use rule make_plots from analysis as make_plots_noJCM with:
+# ---------------------------------------------------------------------------
+# Second pass: same datasets, fitted JCM applied (apply_JCM: true, JCM_file -> fit above)
+# ---------------------------------------------------------------------------
+rule create_wJCM_config:
     input:
-        coffea_file = f"{JCM_OUTPUT_PATH}histAll_NoJCM.coffea",
-        metadata_file = config.get('jcm_plot_config', config.get('jcm', {}).get('plot_config', config.get('plot_config', "coffea4bees/plots/metadata/plots_JCM_ttHbb.yml"))),
-        plot_script = "coffea4bees/plots/makePlots.py"
-    output: f"{JCM_OUTPUT_PATH}plots_noJCM/plots_done.txt"
+        jcm_file = jcm_file_path,
+        configfiles = workflow.configfiles if workflow.configfiles else []
+    output: wjcm_config_path
+    run:
+        import yaml, os
+        cfg = get_raw_wjcm_config()
+        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
+        with open(output[0], 'w') as f:
+            yaml.dump(cfg, f, default_flow_style=False)
+
+use rule analysis_processor from analysis as analysis_data_wJCM with:
+    input:
+        runner_script = "runner.py",
+        config_file = wjcm_config_path,
+        jcm_file = jcm_file_path
+    output: f"{JCM_OUTPUT_PATH}singlefiles/hist_data__{{year}}_{{era}}_wJCM.coffea"
+    log: f"{JCM_OUTPUT_PATH}logs/analysis_data__{{year}}_{{era}}_wJCM.log"
     params:
-        output_dir = f"{JCM_OUTPUT_PATH}plots_noJCM/",
-        metadata = config.get('jcm_plot_config', config.get('jcm', {}).get('plot_config', config.get('plot_config', "coffea4bees/plots/metadata/plots_JCM_ttHbb.yml"))),
-        extra_arguments = "-s xW -f png",
+        datasets = "data",
+        years = lambda wildcards: wildcards.year,
+        config = lambda wildcards, input: input.config_file,
+        extra_arguments = lambda wildcards: " ".join(filter(None, [
+            f"--era {wildcards.era}",
+            "-t" if config.get("test", False) else "",
+            config.get("additional_parameters", "")
+        ])),
+        run_container_wrapper = config['analysis_container_wrapper']
+
+use rule analysis_processor from analysis as analysis_MC_wJCM with:
+    input:
+        runner_script = "runner.py",
+        config_file = wjcm_config_path,
+        jcm_file = jcm_file_path
+    output: f"{JCM_OUTPUT_PATH}singlefiles/hist__{{dataset}}__{{year}}_wJCM.coffea"
+    log: f"{JCM_OUTPUT_PATH}logs/analysis__{{dataset}}_{{year}}_wJCM.log"
+    params:
+        datasets = lambda wildcards: wildcards.dataset,
+        years = lambda wildcards: wildcards.year,
+        config = lambda wildcards, input: input.config_file,
+        extra_arguments = lambda wildcards: " ".join(filter(None, [
+            "-t" if config.get("test", False) else "",
+            config.get("additional_parameters", "")
+        ])),
+        run_container_wrapper = config['analysis_container_wrapper']
+
+use rule merging_coffea_files from analysis as merge_wJCM with:
+    input:
+        files = [f"{JCM_OUTPUT_PATH}singlefiles/hist_data__{yr}_{era}_wJCM.coffea" for yr, era in DATA_YEAR_ERA] + [f"{JCM_OUTPUT_PATH}singlefiles/hist__{ds}__{yr}_wJCM.coffea" for ds in MC_DATASETS for yr in DATA_YEARS],
+        script = "src/tools/merge_coffea_files.py"
+    output: f"{JCM_OUTPUT_PATH}histAll_wJCM.coffea"
+    log: f"{JCM_OUTPUT_PATH}logs/merge_wJCM.log"
+    params:
+        run_performance = False,
+        run_container_wrapper = config['analysis_container_wrapper'],
+        python_bin = lambda wildcards: config.get("python_bin", "python"),
+        input_files = lambda wildcards, input: " ".join([f for f in (input.files if hasattr(input, 'files') else input) if not f.endswith('.py')])
+
+use rule make_plots from analysis as make_plots_wJCM with:
+    input:
+        coffea_file = f"{JCM_OUTPUT_PATH}histAll_wJCM.coffea",
+        metadata_file = wjcm_plot_config,
+        plot_script = "coffea4bees/plots/makePlots.py"
+    output: f"{JCM_OUTPUT_PATH}plots_wJCM/plots_done.txt"
+    params:
+        output_dir = f"{JCM_OUTPUT_PATH}plots_wJCM/",
+        metadata = wjcm_plot_config,
+        extra_arguments = lambda wildcards: " ".join(filter(None, [
+            "-s xW -f png",
+            "--year " + (DATA_YEARS[0] if len(DATA_YEARS) == 1 else ("Run3" if any("202" in y for y in DATA_YEARS) else "RunII")),
+            config.get("plot_extra_arguments", ""),
+        ])),
         run_container_wrapper = config['analysis_container_wrapper'],
         python_bin = lambda wildcards: config.get("python_bin", "python")
-    log: f"{JCM_OUTPUT_PATH}logs/make_plots_noJCM.log"
+    log: f"{JCM_OUTPUT_PATH}logs/make_plots_wJCM.log"
+
+localrules: create_noJCM_config, create_wJCM_config, merge_noJCM, merge_wJCM, make_new_JCM, make_plots_wJCM

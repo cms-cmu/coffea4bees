@@ -113,12 +113,12 @@ flowchart TD
 * **Target Machine:** **`cmslpc`**
 * **Coordinator:** `Snakefile_PhaseB.smk`
 * **Sub-workflows:**
-  * `Snakefile_PhaseB_1_computeJCM.smk`: **[New Analysis Only / One-Time]** Derives jet combinatoric model weights by running the Coffea processor with `apply_JCM: false` and fitting the resulting histograms to compute transfer factors between jet multiplicities. Done once when establishing a new analysis baseline, and reused thereafter.
+  * `Snakefile_PhaseB_1_computeJCM.smk`: **[New Analysis Only / One-Time]** Derives jet combinatoric model weights by running the Coffea processor with `apply_JCM: false` and fitting the resulting histograms to compute transfer factors between jet multiplicities. Once the fit is done, the same datasets (data + ttbar) are **rerun with the fitted JCM applied** (`apply_JCM: true`, `JCM_file` → the new fit; still no FvT/SvB) to produce `histAll_wJCM.coffea`, and plots are made from that file only, using the NoFvT plot config (`jcm_plot_config`, default `plots/metadata/plotsAllNoFvT.yml`). Done once when establishing a new analysis baseline, and reused thereafter.
   * `Snakefile_PhaseB_2_make_classifier_friendtree.smk`: **[Required for All Analyses]** Runs the Coffea processor (`processor_HH4b.py make_classifier_input`) on datasets to create the ROOT friend tree files used as input features for classifier training and evaluation.
 
 #### Key Artifacts & Required Downstream Updates:
 * **After Phase B.1 (computeJCM)**:
-  * *Outputs Produced*: Fitted JCM YAML file (`jetCombinatoricModel_SB_<tag>.yml`).
+  * *Outputs Produced*: Fitted JCM YAML file (`jetCombinatoricModel_SB_<tag>.yml`), the JCM-applied histograms `histAll_wJCM.coffea` and the NoFvT plots in `plots_wJCM/`.
   * *Files to Add/Modify*: Store the JCM file in `metadata/weights/JCM/<analysis>/` and update `weights_<analysis>.yml` (e.g. `weights_ttHbb.yml` or `weights_HH4b.yml`) to point `JCM_file:` to this new file.
 * **After Phase B.2 (make_classifier_friendtree)**:
   * *Outputs Produced*: Classifier input friend tree ROOT files on EOS + `classifier_inputs_friends.json` manifest.

@@ -1,8 +1,8 @@
 # ==============================================================================
 # GLOBAL WORKFLOW CONFIGURATION
 # ==============================================================================
-label: "TEST"
-output_path: "output/TEST/"
+label: "TESTRun2"
+output_path: "output/TESTRun2/"
 
 dataset:
   - "GluGluToHHTo4B_cHHH1"
@@ -83,6 +83,19 @@ svb:
   train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_nominal"
   eval_template: "model: {eos_base}/classifier/{label}, SvB: {eos_base}/friend/{label}"
   metadata: "coffea4bees/metadata/datasets/classifier_inputs_nominal.json@@HCR_input"
+
+# ==============================================================================
+# PHASE B.2: CLASSIFIER INPUT FRIEND TREES (cmslpc)
+# ==============================================================================
+# Everything else is inherited from analysis_config below.  The friend trees
+# MUST go to EOS: condor workers cannot see the node-local output/ directory,
+# and the merge step fails with "cp: cannot stat ..." if this points there.
+# {roast_id} is resolved in helpers/common.smk: `roast` passes --config roast_id=<id>
+# so every production run gets its own directory; outside roast it defaults to `label`
+# (i.e. .../HH4b_prod/TESTRun2/classifier_inputs/ for this file).
+classifier_inputs:
+  config:
+    make_classifier_input: root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/{roast_id}/classifier_inputs/
 
 # ==============================================================================
 # PHASE F.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
