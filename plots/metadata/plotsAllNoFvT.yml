@@ -99,3 +99,17 @@ codes:
 
 doRatio:
     1
+
+# Key plots pinned at the top of the HTML gallery (src/plotting/make_gallery.py).
+# Names match image basenames with '.' and '_' interchangeable.
+summary:
+    - selJets_noJCM.n
+    - tagJets_noJCM.n
+    - selJets.n
+    - canJet0.pt
+    - canJet3.pt
+    - m4j
+    - v4j.mass
+    - quadJet_selected.lead.mass
+    - quadJet_selected.subl.mass
+    - quadJet_selected.xHH
