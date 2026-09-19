@@ -308,7 +308,8 @@ rule cutflow_closure_table:
         txt = f"{JCM_OUTPUT_PATH}cutflow_{{pass_name}}_table.txt"
     log: f"{JCM_OUTPUT_PATH}logs/cutflow_closure_{{pass_name}}.log"
     params:
-        title = lambda wildcards: f"{config.get('label', 'computeJCM')} cutflow ({wildcards.pass_name})",
+        # no spaces/parentheses: run_container re-joins its arguments for `bash -c`, so quoting is lost
+        title = lambda wildcards: f"{config.get('label', 'computeJCM')}_cutflow_{wildcards.pass_name}",
         run_container_wrapper = config['analysis_container_wrapper'],
         python_bin = lambda wildcards: config.get("python_bin", "python")
     shell:
@@ -316,7 +317,7 @@ rule cutflow_closure_table:
         set -eo pipefail
         mkdir -p $(dirname {log})
         {params.run_container_wrapper} {params.python_bin} src/tools/cutflow_closure.py {input.cutflow_yml} \
-            -o {output.html} --txt {output.txt} --title "{params.title}" 2>&1 | tee {log}
+            -o {output.html} --txt {output.txt} --title {params.title} 2>&1 | tee {log}
         """
 
 localrules: create_noJCM_config, create_wJCM_config, merge_noJCM, merge_wJCM, make_new_JCM, make_plots_wJCM, check_cutflow_noJCM, check_cutflow_wJCM, cutflow_closure_table
