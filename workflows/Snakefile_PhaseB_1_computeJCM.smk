@@ -90,12 +90,26 @@ module analysis:
     snakefile: "rules/analysis.smk"
     config: config
 
+# Cutflow references (like the CI known counts): production compares against
+# coffea4bees/analysis/tests/known_fullCounts_JCM_<pass>.yml, test mode against
+# known_Counts_JCM_<pass>.yml; override with jcm_known_counts_<pass>[_test] in the config.
+# A missing reference only dumps the cutflow (no comparison), so the first run of a new
+# baseline produces the file to bless.
+def jcm_known_cutflow_flag(pass_name):
+    if config.get("test", False):
+        f = config.get(f"jcm_known_counts_{pass_name}_test") or f"coffea4bees/analysis/tests/known_Counts_JCM_{pass_name}.yml"
+    else:
+        f = config.get(f"jcm_known_counts_{pass_name}") or f"coffea4bees/analysis/tests/known_fullCounts_JCM_{pass_name}.yml"
+    return f'--known-cutflow "{f}"' if os.path.exists(f) else '--known-cutflow "none"'
+
 # NOTE: input[0] must stay the JCM yml — Snakefile_PhaseB_2 reads rules.output_computeJCM.input[0]
 rule output_computeJCM:
     input:
         jcm_file_path,
         f"{JCM_OUTPUT_PATH}histAll_wJCM.coffea",
-        f"{JCM_OUTPUT_PATH}plots_wJCM/plots_done.txt"
+        f"{JCM_OUTPUT_PATH}plots_wJCM/plots_done.txt",
+        f"{JCM_OUTPUT_PATH}cutflow_validation_NoJCM.txt",
+        f"{JCM_OUTPUT_PATH}cutflow_validation_wJCM.txt"
 
 DATA_YEAR_ERA = [(str(yr), era) for yr, eras in config['year_eras'].items() for era in eras]
 DATA_YEARS = [str(y) for y in config['year_eras'].keys()]
@@ -247,4 +261,37 @@ use rule make_plots from analysis as make_plots_wJCM with:
         python_bin = lambda wildcards: config.get("python_bin", "python")
     log: f"{JCM_OUTPUT_PATH}logs/make_plots_wJCM.log"
 
-localrules: create_noJCM_config, create_wJCM_config, merge_noJCM, merge_wJCM, make_new_JCM, make_plots_wJCM
+# ---------------------------------------------------------------------------
+# Cutflow dumps + comparison against known counts, for both passes (see jcm_known_cutflow_flag)
+# ---------------------------------------------------------------------------
+use rule check_cutflow from analysis as check_cutflow_noJCM with:
+    input:
+        coffea_file = f"{JCM_OUTPUT_PATH}histAll_NoJCM.coffea"
+    output:
+        validation_txt = f"{JCM_OUTPUT_PATH}cutflow_validation_NoJCM.txt",
+        cutflow_yml = f"{JCM_OUTPUT_PATH}cutflow_NoJCM.yml"
+    log: f"{JCM_OUTPUT_PATH}logs/cutflow_validation_NoJCM.log"
+    params:
+        known_flag = lambda wildcards: jcm_known_cutflow_flag("NoJCM"),
+        error_threshold = lambda wildcards: config.get("error_threshold", "0.001"),
+        cutflow_list = lambda wildcards: config.get("cutflow_list", "passJetMult,passPreSel,passDiJetMass,SR,SB"),
+        run_container_wrapper = config['analysis_container_wrapper'],
+        python_bin = lambda wildcards: config.get("python_bin", "python")
+    container: None
+
+use rule check_cutflow from analysis as check_cutflow_wJCM with:
+    input:
+        coffea_file = f"{JCM_OUTPUT_PATH}histAll_wJCM.coffea"
+    output:
+        validation_txt = f"{JCM_OUTPUT_PATH}cutflow_validation_wJCM.txt",
+        cutflow_yml = f"{JCM_OUTPUT_PATH}cutflow_wJCM.yml"
+    log: f"{JCM_OUTPUT_PATH}logs/cutflow_validation_wJCM.log"
+    params:
+        known_flag = lambda wildcards: jcm_known_cutflow_flag("wJCM"),
+        error_threshold = lambda wildcards: config.get("error_threshold", "0.001"),
+        cutflow_list = lambda wildcards: config.get("cutflow_list", "passJetMult,passPreSel,passDiJetMass,SR,SB"),
+        run_container_wrapper = config['analysis_container_wrapper'],
+        python_bin = lambda wildcards: config.get("python_bin", "python")
+    container: None
+
+localrules: create_noJCM_config, create_wJCM_config, merge_noJCM, merge_wJCM, make_new_JCM, make_plots_wJCM, check_cutflow_noJCM, check_cutflow_wJCM
