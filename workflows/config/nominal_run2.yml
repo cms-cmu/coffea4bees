@@ -80,11 +80,13 @@ fvt:
   metadata: "coffea4bees/metadata/datasets/classifier_inputs_{roast_id}.json@@HCR_input"
   workflow_overrides:
     --JCM-weight: '"" coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_2024_v2.yml@@JCM_weights'
-    --friends: '"" coffea4bees/metadata/datasets/classifier_inputs_{roast_id}.json@@HCR_input'
+    '--friends ""': coffea4bees/metadata/datasets/classifier_inputs_{roast_id}.json@@HCR_input
 
 svb:
-  eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/nominal_sel"
-  plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
+  # Phase D (falcon). Same per-roast pattern as fvt; the FvT friend used for the background is
+  # {eos_base}/friend/FvT_nominal, i.e. THIS roast's Phase C output (train_template below).
+  eos_base: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/{roast_id}"
+  plot_base: "root://eosuser.cern.ch//eos/user/j/johnda/www/HH4b/prod/{roast_id}/classifier"
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/HH4b_2024_v2/SvB"
   label: "SvB_nominal"
@@ -95,7 +97,10 @@ svb:
   friend: "{eos_base}/friend/{label}"
   train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_nominal"
   eval_template: "model: {eos_base}/classifier/{label}, SvB: {eos_base}/friend/{label}"
-  metadata: "coffea4bees/metadata/datasets/classifier_inputs_nominal.json@@HCR_input"
+  metadata: "coffea4bees/metadata/datasets/classifier_inputs_{roast_id}.json@@HCR_input"
+  workflow_overrides:
+    --JCM-weight: '"" coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_2024_v2.yml@@JCM_weights'
+    '--friends ""': coffea4bees/metadata/datasets/classifier_inputs_{roast_id}.json@@HCR_input
 
 # ==============================================================================
 # PHASE B.2: CLASSIFIER INPUT FRIEND TREES (cmslpc)
@@ -144,6 +149,11 @@ analysis_config:
     worker_memory: 8GB
     dashboard_address: 0
   config:
+    # Per-roast friends: runner.py merges these over the per-year entries of friend_file,
+    # so the FvT (and later SvB) friend trees come from THIS roast's Phase C/D, not the
+    # nominal_sel production referenced in metadata/friends/friends_HH4b.yml.
+    friends:
+      FvT: root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/{roast_id}/friend/FvT_nominal/result.json@@analysis.0.merged
     blind: true
     apply_FvT: true
     apply_JCM: true
