@@ -99,8 +99,13 @@ rule make_plots:
 
         echo "Making plots" 2>&1 | tee -a {log}
         {params.run_container_wrapper} {params.python_bin} coffea4bees/plots/makePlots.py {input[0]} -o {params.output_dir} -m {params.metadata} {params.extra_arguments} 2>&1 | tee -a {log}
-        echo "Making gallery" 2>&1 | tee -a {log}
-        {params.run_container_wrapper} {params.python_bin} src/plotting/make_gallery.py {params.output_dir} -m {params.metadata} --title "$(basename {params.output_dir})" 2>&1 | tee -a {log}
+        # HTML gallery (barista src/plotting/make_gallery.py); skipped when the barista checkout predates it (e.g. CI against master)
+        if [ -f src/plotting/make_gallery.py ]; then
+            echo "Making gallery" 2>&1 | tee -a {log}
+            {params.run_container_wrapper} {params.python_bin} src/plotting/make_gallery.py {params.output_dir} -m {params.metadata} --title "$(basename {params.output_dir})" 2>&1 | tee -a {log}
+        else
+            echo "src/plotting/make_gallery.py not found in this barista checkout; skipping gallery" 2>&1 | tee -a {log}
+        fi
         touch {output}
         """
 

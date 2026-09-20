@@ -309,8 +309,7 @@ use rule check_cutflow from analysis as check_cutflow_wJCM with:
 rule cutflow_closure_table:
     input:
         cutflow_yml = f"{JCM_OUTPUT_PATH}cutflow_{{pass_name}}.yml",
-        validation_txt = f"{JCM_OUTPUT_PATH}cutflow_validation_{{pass_name}}.txt",
-        script = "src/tools/cutflow_closure.py"
+        validation_txt = f"{JCM_OUTPUT_PATH}cutflow_validation_{{pass_name}}.txt"
     output:
         html = f"{JCM_OUTPUT_PATH}cutflow_{{pass_name}}.html",
         txt = f"{JCM_OUTPUT_PATH}cutflow_{{pass_name}}_table.txt"
@@ -324,8 +323,16 @@ rule cutflow_closure_table:
         """
         set -eo pipefail
         mkdir -p $(dirname {log})
-        {params.run_container_wrapper} {params.python_bin} src/tools/cutflow_closure.py {input.cutflow_yml} \
-            -o {output.html} --txt {output.txt} --title {params.title} 2>&1 | tee {log}
+        # tool lives in barista (src/tools/cutflow_closure.py); a checkout that predates it (e.g. CI
+        # against barista master) gets placeholder outputs instead of a failure
+        if [ -f src/tools/cutflow_closure.py ]; then
+            {params.run_container_wrapper} {params.python_bin} src/tools/cutflow_closure.py {input.cutflow_yml} \
+                -o {output.html} --txt {output.txt} --title {params.title} 2>&1 | tee {log}
+        else
+            echo "src/tools/cutflow_closure.py not found in this barista checkout; skipping closure table" 2>&1 | tee {log}
+            echo "<p>cutflow closure table not available (barista checkout predates src/tools/cutflow_closure.py)</p>" > {output.html}
+            cp {log} {output.txt}
+        fi
         """
 
 localrules: create_noJCM_config, create_wJCM_config, merge_noJCM, merge_wJCM, make_new_JCM, make_plots_wJCM, check_cutflow_noJCM, check_cutflow_wJCM, cutflow_closure_table

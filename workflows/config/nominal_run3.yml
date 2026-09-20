@@ -14,6 +14,10 @@ analysis_config:
     blind: false
     apply_FvT: false
     apply_trigWeight: true
+    # Run 3 signal MC has no trigger-weight friends yet (metadata/friends/trigweights_Run3_v1.json
+    # covers TT/TTbb/ttHbb only, see friends_HH4b.yml): warn instead of error for the uncovered
+    # samples. Remove once Phase A.2 trigger weights exist for the Run 3 signals.
+    require_trigWeight: false
     apply_btagSF: true
     apply_boosted_veto: false
     run_SvB: true
