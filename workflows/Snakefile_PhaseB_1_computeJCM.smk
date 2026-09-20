@@ -60,7 +60,10 @@ def get_raw_jcm_config():
     for k in list(res['config'].keys()):
         if k.startswith('SvB') or k == 'FvT':
             res['config'][k] = None
-    res['friend_file'] = None
+    # Keep friend_file: it also carries the trigWeight friend (trigger efficiency SFs for MC).
+    # Nulling it here silently dropped the trigger weight for all ttbar MC (the warning only
+    # shows in the dask workers) and inflated the 3b ttbar subtraction, worst for UL17/UL18.
+    # FvT/SvB friends are not loaded because apply_FvT / run_SvB are False (same as Phase B.2).
 
     if config.get("test", False):
         if 'runner' not in res or not isinstance(res['runner'], dict):
