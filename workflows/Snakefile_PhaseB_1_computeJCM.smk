@@ -98,6 +98,11 @@ module analysis:
 # known_Counts_JCM_<pass>.yml; override with jcm_known_counts_<pass>[_test] in the config.
 # A missing reference only dumps the cutflow (no comparison), so the first run of a new
 # baseline produces the file to bless.
+# SR/SB also before the MC trigger weight (`*_woTrig`), so the closure table shows what the
+# trigger SF does to the 3b ttbar subtraction per region (a missing trigger weight is then
+# visible as identical rows instead of hiding in the worker logs).
+JCM_CUTFLOW_LIST = "passJetMult,passPreSel,passDiJetMass,SR_woTrig,SR,SB_woTrig,SB"
+
 def jcm_known_cutflow_flag(pass_name):
     if config.get("test", False):
         f = config.get(f"jcm_known_counts_{pass_name}_test") or f"coffea4bees/analysis/tests/known_Counts_JCM_{pass_name}.yml"
@@ -279,7 +284,7 @@ use rule check_cutflow from analysis as check_cutflow_noJCM with:
     params:
         known_flag = lambda wildcards: jcm_known_cutflow_flag("NoJCM"),
         error_threshold = lambda wildcards: config.get("error_threshold", "0.001"),
-        cutflow_list = lambda wildcards: config.get("cutflow_list", "passJetMult,passPreSel,passDiJetMass,SR,SB"),
+        cutflow_list = lambda wildcards: config.get("jcm_cutflow_list", JCM_CUTFLOW_LIST),
         run_container_wrapper = config['analysis_container_wrapper'],
         python_bin = lambda wildcards: config.get("python_bin", "python")
     container: None
@@ -294,7 +299,7 @@ use rule check_cutflow from analysis as check_cutflow_wJCM with:
     params:
         known_flag = lambda wildcards: jcm_known_cutflow_flag("wJCM"),
         error_threshold = lambda wildcards: config.get("error_threshold", "0.001"),
-        cutflow_list = lambda wildcards: config.get("cutflow_list", "passJetMult,passPreSel,passDiJetMass,SR,SB"),
+        cutflow_list = lambda wildcards: config.get("jcm_cutflow_list", JCM_CUTFLOW_LIST),
         run_container_wrapper = config['analysis_container_wrapper'],
         python_bin = lambda wildcards: config.get("python_bin", "python")
     container: None
