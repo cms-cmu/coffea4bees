@@ -99,6 +99,13 @@ rule make_plots:
 
         echo "Making plots" 2>&1 | tee -a {log}
         {params.run_container_wrapper} {params.python_bin} coffea4bees/plots/makePlots.py {input[0]} -o {params.output_dir} -m {params.metadata} {params.extra_arguments} 2>&1 | tee -a {log}
+        # HTML gallery (barista src/plotting/make_gallery.py); skipped when the barista checkout predates it (e.g. CI against master)
+        if [ -f src/plotting/make_gallery.py ]; then
+            echo "Making gallery" 2>&1 | tee -a {log}
+            {params.run_container_wrapper} {params.python_bin} src/plotting/make_gallery.py {params.output_dir} -m {params.metadata} --title "$(basename {params.output_dir})" 2>&1 | tee -a {log}
+        else
+            echo "src/plotting/make_gallery.py not found in this barista checkout; skipping gallery" 2>&1 | tee -a {log}
+        fi
         touch {output}
         """
 
@@ -132,9 +139,10 @@ rule check_cutflow:
         "{output_path}logs/cutflow_validation_{label}.log"
     shell:
         """
-        set -eo pipefail
+        set -o pipefail
         mkdir -p $(dirname {output.validation_txt}) $(dirname {log})
         echo "Running cutflow analysis and verification for {input[0]}" > {log}
+        set +e
         {params.run_container_wrapper} bash coffea4bees/scripts/run-cutflow.sh \
             --input-file "{input[0]}" \
             --output-file "{output.cutflow_yml}" \
@@ -142,5 +150,18 @@ rule check_cutflow:
             --error-threshold "{params.error_threshold}" \
             --cutflow-list "{params.cutflow_list}" \
             --python-bin "{params.python_bin}" 2>&1 | tee -a {log}
-        touch {output.validation_txt}
+        status=$?
+        set -e
+        # Keep the comparison verdict (observed vs expected table) next to the cutflow yml:
+        # logs/ are not published by roast, and snakemake deletes the declared outputs of a
+        # failed job, so the verdict and the counts go to undeclared *_result.txt / *_failed.yml
+        # siblings that survive a failure and still get published.
+        result="$(dirname {output.validation_txt})/$(basename {output.validation_txt} .txt)_result.txt"
+        ( grep -A80 "Running cutflow comparison" {log} || grep "Skipping cutflow comparison" {log} || true ) > "$result"
+        if [ $status -ne 0 ]; then
+            [ -f "{output.cutflow_yml}" ] && cp "{output.cutflow_yml}" "$(dirname {output.cutflow_yml})/$(basename {output.cutflow_yml} .yml)_failed.yml"
+            echo "############### Cutflow check FAILED (exit $status): see $result" | tee -a {log}
+            exit $status
+        fi
+        cp "$result" {output.validation_txt}
         """

@@ -1,0 +1,64 @@
+# =============================================================================
+# Phase A.2 -- regenerate the Run 2 trigger-weight friends for ZZ4b UL16
+# =============================================================================
+# ZZ4b UL16_preVFP and UL16_postVFP (algomez/XX4b/2024_v2/) were re-skimmed after
+# metadata/datasets/trigweights_2024_v2.json was built: all 16 chunks have new
+# UUIDs and the last chunk of each era a different entry count (34942 vs 34838,
+# 21540 vs 21570). Friend trees are keyed by UUID + entry range, so the friend
+# lookup returns nothing for them -- silently skipped until 2026-09-19, now a
+# hard error (require_trigWeight). Every other TT/signal file in the nominal
+# Run 2 datasets still matches the index (checked 2026-09-19).
+#
+# Run (cmslpc, from the barista root):
+#   ./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseA_2_trigWeights.smk \
+#       --configfile coffea4bees/workflows/config/trigweights_ZZ4b_UL16.yml --cores 2
+# then merge the new entries into the shared index (and the archived copy used by lowpt):
+#   ./run_container python -m src.friendtrees.merge_friend_meta \
+#       -i coffea4bees/metadata/datasets/trigweights_2024_v2.json \
+#          output/trigweights_ZZ4b_UL16/trigger_weights/trigger_weights_friends.json \
+#       -o coffea4bees/metadata/datasets/trigweights_2024_v2.json
+#   (same for coffea4bees/metadata/datasets/archive/Run2_2024_v2/trigweights_2024_v2.json)
+# The stale ZZ4b entries stay in the index but can never match (old UUIDs).
+# Afterwards drop the temporary `require_trigWeight: false` from nominal_run2.yml.
+# =============================================================================
+
+label: "trigweights_ZZ4b_UL16"
+output_path: "output/trigweights_ZZ4b_UL16/"
+
+dataset_location: "coffea4bees/metadata/datasets/"
+
+dataset:
+  - "ZZ4b"
+
+years:
+  - "UL16_preVFP"
+  - "UL16_postVFP"
+
+trigger_weights:
+  processor: "coffea4bees/analysis/processors/processor_trigger_weights.py"
+  runner:
+    condor_cores: 1
+    worker_memory: 8GB
+    min_workers: 1
+    max_workers: 40
+    chunksize: 10000
+    condor: true
+    shared_dask: false
+    run_performance: true
+    condor_transfer_input_files:
+      - src/
+      - coffea4bees/analysis/
+      - coffea4bees/metadata/
+    allowlist_sites:
+      - T1_US_FNAL_Disk
+      - T3_US_FNALLPC
+      - T2_US_Caltech
+      - T2_US_Wisconsin
+      - T2_US_Nebraska
+  config:
+    # Friends land at {this}/ZZ4b_{era}/trigWeight.chunkN.root (own EOS area; the
+    # original friends sit next to the picoAODs in algomez's area, not writable).
+    make_classifier_input: root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/trigWeights_2024_v2_ZZ4b_UL16/
+    # Run 2 settings, stated explicitly
+    use_vectorized: false
+    tagger: DeepJet

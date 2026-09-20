@@ -26,8 +26,10 @@ python runner.py -t -o testMixedBkg_data_3b_for_mixed_kfold.coffea -d   data_3b_
 python runner.py -t -o testMixedBkg_data_3b_for_mixed.coffea -d   data_3b_for_mixed  -p coffea4bees/analysis/processors/processor_HH4b.py -y 2017 2018 2016  -op $OUTPUT_DIR -m $DATASETS -c coffea4bees/analysis/metadata/HH4b_nottcheck.yml
 
 python runner.py -t -o testMixedData.coffea -d    mixeddata  -p coffea4bees/analysis/processors/processor_HH4b.py -y 2016 2017 2018 -op $OUTPUT_DIR -m $DATASETS -c coffea4bees/analysis/metadata/HH4b_nottcheck.yml
-python runner.py -t -o testSignals.coffea -d ZH4b ZZ4b  -p coffea4bees/analysis/processors/processor_HH4b.py -y UL17 UL18 UL16_preVFP UL16_postVFP    -op $OUTPUT_DIR -m $DATASETS -c coffea4bees/analysis/metadata/HH4b_signals.yml
-python runner.py -t -o testSignals_HH4b.coffea -d GluGluToHHTo4B_cHHH1  -p coffea4bees/analysis/processors/processor_HH4b.py -y UL17 UL18 UL16_preVFP UL16_postVFP    -op $OUTPUT_DIR -m $DATASETS -c coffea4bees/analysis/metadata/HH4b_signals.yml
+# --friends: the 2024_v2 signal skims carry no trigWeight branch; the trigger SF comes from the
+# trigWeight friend (apply_trigWeight: true in HH4b_signals.yml is otherwise an error).
+python runner.py -t -o testSignals.coffea -d ZH4b ZZ4b  -p coffea4bees/analysis/processors/processor_HH4b.py -y UL17 UL18 UL16_preVFP UL16_postVFP    -op $OUTPUT_DIR -m $DATASETS -c coffea4bees/analysis/metadata/HH4b_signals.yml --friends coffea4bees/metadata/friends/friends_HH4b.yml
+python runner.py -t -o testSignals_HH4b.coffea -d GluGluToHHTo4B_cHHH1  -p coffea4bees/analysis/processors/processor_HH4b.py -y UL17 UL18 UL16_preVFP UL16_postVFP    -op $OUTPUT_DIR -m $DATASETS -c coffea4bees/analysis/metadata/HH4b_signals.yml --friends coffea4bees/metadata/friends/friends_HH4b.yml
 python src/tools/merge_coffea_files.py -f $OUTPUT_DIR/testSignals_HH4b.coffea $OUTPUT_DIR/testSignals.coffea -o $OUTPUT_DIR/testSignal_UL.coffea
 ls $OUTPUT_DIR
 
