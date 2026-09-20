@@ -1,0 +1,104 @@
+hists:
+#        data:
+#                process: data
+#                tag: fourTag
+#                year: RunII
+#                label: Four-tag Data
+#                edgecolor: k
+#                fillcolor: k            
+
+#        mix_v0:
+#                process: mixeddata_all_rank0_0
+#                tag: fourTag
+#                year: RunII
+#                label: Mixed Data (v0)
+#                edgecolor: r
+#                fillcolor: r
+#                linewidth: 2
+#                histtype: step
+
+        mix_v0:
+                process: [mixeddata_all_rank0_0, TTTo2L2Nu, TTToSemiLeptonic, TTToHadronic]
+                tag: fourTag            
+                year: RunII
+                fillcolor: r
+                edgecolor: r            
+                label: Mixed Data (rank 0,0)
+                linewidth: 2
+                histtype: step
+
+
+        mix_v3:
+                process: [mixeddata_all_rank3_3, TTTo2L2Nu, TTToSemiLeptonic, TTToHadronic]
+                tag: fourTag            
+                year: RunII
+                fillcolor: b
+                edgecolor: b            
+                label: Mixed Data (rank 3,3)
+                linewidth: 2
+                histtype: step
+
+        mix_v7:
+                process: [mixeddata_all_rank7_7, TTTo2L2Nu, TTToSemiLeptonic, TTToHadronic]
+                tag: fourTag            
+                year: RunII
+                fillcolor: g
+                edgecolor: g            
+                label: Mixed Data (rank 7,7)
+                linewidth: 2
+                histtype: step
+
+
+
+
+ratios:
+                        
+
+        mixToBkg_3:
+                numerator:
+                        type: hists
+                        key: mix_v0
+                denominator:
+                        type: hists
+                        key: mix_v3
+                uncertianty_type:
+                        nominal
+                color: b
+                marker: "o"
+                bkg_err_band:
+                        color: b
+                        type: band
+                        hatch: ///
+
+        mixToBkg_7:
+                numerator:
+                        type: hists
+                        key: mix_v0
+                denominator:
+                        type: hists
+                        key: mix_v7
+                uncertianty_type:
+                        nominal
+                color: g
+                marker: "o"
+                bkg_err_band:
+                        color: g
+                        type: band
+                        hatch: ///
+
+
+
+
+
+codes:
+   region:
+      SR: 2
+      SB: 1
+      other: 0
+   tag:
+      threeTag: 3
+      fourTag: 4
+      other: 0
+
+doRatio:
+    1

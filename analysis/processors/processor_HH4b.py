@@ -210,6 +210,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         weights: str | None = None,
         corrections_metadata: dict = None,
         apply_trigWeight: bool = True,
+        require_trigWeight: bool = True,
         apply_btagSF: bool = True,
         apply_FvT: bool = True,
         apply_boosted_veto: bool = False,
@@ -276,6 +277,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             self.apply_JCM = None
 
         self.apply_trigWeight = apply_trigWeight
+        self.require_trigWeight = require_trigWeight  # error (not just a worker-side warning) if the trigWeight source is missing
         self.apply_btagSF = apply_btagSF
         self.apply_FvT = apply_FvT
         self.apply_MvD = apply_MvD
@@ -535,6 +537,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 friend_trigWeight=self.friends.get("trigWeight"),
                 corrections_metadata=self.corrections_metadata[self.year],
                 apply_trigWeight=self.apply_trigWeight,
+                require_trigWeight=self.require_trigWeight,
                 run_systematics= 'others' in self.run_systematics,
             )
 
