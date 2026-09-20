@@ -44,6 +44,8 @@ def add_weights(
         elif friend_trigWeight:
             try:
                 trigWeight = friend_trigWeight.arrays(target)
+                if trigWeight is None:
+                    reason = f"the trigWeight friend has no entry for this file/chunk ({target}); regenerate the trigger-weight friend index for it"
             except Exception as e:
                 reason = f"trigWeight friend lookup failed for {target}: {e}"
                 trigWeight = None
