@@ -18,6 +18,11 @@ config:
   blind: false
   apply_FvT: false
   apply_trigWeight: true
+  # TEMPORARY: ZZ4b UL16_preVFP/UL16_postVFP were re-skimmed and the trigger-weight friend index
+  # (metadata/datasets/trigweights_2024_v2.json) still indexes the old files, so those 16 chunks
+  # have no trigger weight (warning, as before 2026-09-19). Remove once the ZZ4b UL16 friends are
+  # regenerated (workflows/config/trigweights_ZZ4b_UL16.yml) and merged into the index.
+  require_trigWeight: false
   apply_btagSF: true
   apply_boosted_veto: false
   run_SvB: true
