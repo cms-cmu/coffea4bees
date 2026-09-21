@@ -64,3 +64,19 @@ ratios:
 doRatio:
     1
 
+# Key plots pinned at the top of the HTML gallery (src/plotting/make_gallery.py); names match image
+# basenames with '.' and '_' interchangeable, and a bare prefix (e.g. FvT) pins every FvT_* plot.
+# Chosen for the FvT closure (Phase C.4): the 3b -> 4b model in SR/SB, plus the FvT score itself.
+summary:
+    - FvT
+    - selJets.n
+    - canJet0.pt
+    - canJet3.pt
+    - m4j
+    - v4j.mass
+    - quadJet_selected.lead.mass
+    - quadJet_selected.subl.mass
+    - quadJet_selected.xHH
+    - xW
+    - xbW
+
