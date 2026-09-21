@@ -65,3 +65,21 @@ ratios:
 doRatio:
     1
 
+
+# Key plots pinned at the top of the HTML gallery (src/plotting/make_gallery.py); names match image
+# basenames with '.' and '_' interchangeable, and a bare prefix pins every matching plot.
+# Chosen for the main analysis pass (Phase F.1): the SvB scores per channel, the FvT model and the
+# ttbar-from-d3 stack in the basic kinematics.
+summary:
+    - SvB_MA.ps_hh
+    - SvB_MA.ps_zz
+    - SvB_MA.ps_zh
+    - SvB_MA.ps
+    - FvT
+    - selJets.n
+    - canJet0.pt
+    - m4j
+    - v4j.mass
+    - quadJet_selected.lead.mass
+    - quadJet_selected.subl.mass
+    - quadJet_selected.xHH
