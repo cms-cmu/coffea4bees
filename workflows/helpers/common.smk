@@ -28,6 +28,62 @@ for _k, _v in substitute_placeholders(dict(config), {'roast_id': _roast_id}).ite
     config[_k] = _v
 
 
+def write_workflow_overrides(wfs_base, overrides, out_dir, log=None):
+    """Copy the classifier workflow templates in `wfs_base` (train.yml, evaluate.yml, ...) to
+    `out_dir`, replacing command-line options by flag.
+
+    `overrides` maps a flag (optionally followed by its first argument(s), to disambiguate
+    repeated flags) to the replacement for everything after the key, e.g.
+        {"--JCM-weight": '"" path/to/JCM.yml@@JCM_weights',
+         "--friends \"\"": 'path/to/classifier_inputs.json@@HCR_input'}
+    The second key matches `--friends "" <anything>` but not `--friends label:data <FvT>`.
+    Every string entry of every module's `option` list that starts with a key (followed by a
+    space or the end of the entry) becomes "<key> <replacement>"; the longest matching key wins;
+    everything else is copied verbatim, so the checked-in templates stay the single source of
+    truth for the model/training settings and a production only states what differs (typically
+    the inputs). Returns `out_dir`.
+    """
+    import glob
+    import shutil
+    os.makedirs(out_dir, exist_ok=True)
+    flags = dict(overrides or {})
+    keys = sorted(flags, key=len, reverse=True)
+    used = {k: 0 for k in flags}
+
+    def match(opt):
+        for k in keys:
+            if opt == k or opt.startswith(k + " "):
+                return k
+        return None
+    for src in sorted(glob.glob(os.path.join(wfs_base, "*"))):
+        dst = os.path.join(out_dir, os.path.basename(src))
+        if os.path.isdir(src):
+            continue
+        if not src.endswith((".yml", ".yaml")):
+            shutil.copy2(src, dst)
+            continue
+        with open(src) as f:
+            wf = yaml.safe_load(f) or {}
+        for section in wf.values():
+            if not isinstance(section, list):
+                continue
+            for module in section:
+                opts = module.get("option") if isinstance(module, dict) else None
+                if not isinstance(opts, list):
+                    continue
+                for i, opt in enumerate(opts):
+                    k = match(opt) if isinstance(opt, str) else None
+                    if k is not None:
+                        opts[i] = f"{k} {flags[k]}".rstrip()
+                        used[k] += 1
+        with open(dst, "w") as f:
+            yaml.dump(wf, f, default_flow_style=False, sort_keys=False)
+    unused = [k for k, n in used.items() if n == 0]
+    if unused and log is not None:
+        log(f"workflow_overrides: flags not found in any template under {wfs_base}: {unused}")
+    return out_dir
+
+
 def resolve_config_section(config_dict, primary_key=None, fallback_keys=None, inherit_keys=None):
     """
     Extracts and parses a sub-configuration block from the global Snakemake config dict.
