@@ -6,6 +6,8 @@
 # and build the background-closure table -- the same check Phase B.1 does for the JCM, so the
 # 3b -> 4b model is validated before anything (SvB, Phase D) trains on top of it.
 #
+# ttbar: reused from Phase B.1's wJCM singlefiles by default (fvt_closure.reuse_wJCM_ttbar, jcm_output_path),
+#   because the FvT weight only applies to data; set reuse_wJCM_ttbar: false to reprocess MC here.
 # Inputs (per roast, from the master config):
 #   - JCM:   fvt_closure.JCM_file, default coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_{tag}.yml
 #   - FvT:   analysis_config.config.friends.FvT (this roast's Phase C friend; runner.py merges it over friend_file)
@@ -45,7 +47,8 @@ include: "helpers/common.smk"   # resolves {roast_id}, provides resolve_config_s
 closure_cfg = config.get('fvt_closure') or {}
 if not isinstance(closure_cfg, dict):
     closure_cfg = {}
-CLOSURE_OPTION_KEYS = ('datasets', 'plot_config', 'JCM_file', 'known_counts', 'known_counts_test', 'cutflow_list')
+CLOSURE_OPTION_KEYS = ('datasets', 'plot_config', 'JCM_file', 'known_counts', 'known_counts_test', 'cutflow_list',
+                       'reuse_wJCM_ttbar', 'jcm_output_path')
 
 datasets = closure_cfg.get('datasets', ['data', 'TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic'])
 if isinstance(datasets, str):
@@ -53,6 +56,22 @@ if isinstance(datasets, str):
 DATA_YEAR_ERA = [(str(yr), era) for yr, eras in config['year_eras'].items() for era in eras] if 'data' in datasets else []
 DATA_YEARS = [str(y) for y in config['year_eras'].keys()]
 MC_DATASETS = [d for d in datasets if d != 'data']
+
+# The FvT weight is only applied to files with an entry in the FvT friend, i.e. data (see
+# event_weights.py: `apply_FvT and "FvT" in event.fields`; rename_FvT_friend returns None for MC).
+# MC histograms are therefore identical to Phase B.1's wJCM pass, so by default the ttbar
+# singlefiles from there are merged in instead of being reprocessed (saves the 12 MC jobs).
+REUSE_WJCM_TTBAR = closure_cfg.get('reuse_wJCM_ttbar', True)
+if isinstance(REUSE_WJCM_TTBAR, str):
+    REUSE_WJCM_TTBAR = REUSE_WJCM_TTBAR.lower() in ("true", "1", "yes")
+JCM_OUTPUT_PATH = closure_cfg.get('jcm_output_path', os.path.join(base_output, 'computeJCM/'))
+if not JCM_OUTPUT_PATH.endswith('/'):
+    JCM_OUTPUT_PATH += '/'
+
+def mc_singlefile(ds, yr):
+    if REUSE_WJCM_TTBAR and ds.startswith('TT'):
+        return f"{JCM_OUTPUT_PATH}singlefiles/hist__{ds}__{yr}_wJCM.coffea"
+    return f"{CLOSURE_PATH}singlefiles/hist__{ds}__{yr}_FvT_closure.coffea"
 
 tag = config.get('tag', "2024_v2")
 jcm_file = closure_cfg.get('JCM_file', f"coffea4bees/metadata/weights/JCM/{config['roast_id']}/jetCombinatoricModel_SB_{tag}.yml")
@@ -146,7 +165,7 @@ use rule analysis_processor from analysis as analysis_MC_FvT_closure with:
 
 use rule merging_coffea_files from analysis as merge_FvT_closure with:
     input:
-        files = [f"{CLOSURE_PATH}singlefiles/hist_data__{yr}_{era}_FvT_closure.coffea" for yr, era in DATA_YEAR_ERA] + [f"{CLOSURE_PATH}singlefiles/hist__{ds}__{yr}_FvT_closure.coffea" for ds in MC_DATASETS for yr in DATA_YEARS],
+        files = [f"{CLOSURE_PATH}singlefiles/hist_data__{yr}_{era}_FvT_closure.coffea" for yr, era in DATA_YEAR_ERA] + [mc_singlefile(ds, yr) for ds in MC_DATASETS for yr in DATA_YEARS],
         script = "src/tools/merge_coffea_files.py"
     output: f"{CLOSURE_PATH}histAll_FvT_closure.coffea"
     log: f"{CLOSURE_PATH}logs/merge_FvT_closure.log"
