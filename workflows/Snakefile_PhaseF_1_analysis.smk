@@ -241,6 +241,10 @@ use rule make_plots from analysis with:
     log: f"{config['output_path']}logs/make_plots.log"
     params:
         output_dir = f"{config['output_path']}plots_{config['label']}/",
+        # the shared rule plots from params.metadata (input.metadata_file only tracks the file):
+        # without this line F.1 silently plotted with the generic default plotsAll.yml, whose
+        # ttbar stack is the MC (dropped: no TTTo* in the file) instead of TTbar4b_from_d3
+        metadata = config['plot_config'],
         extra_arguments = lambda wildcards: " ".join(filter(None, [
             "-s xW",
             "--year " + (DATA_YEARS[0] if len(DATA_YEARS) == 1 else ("Run3" if any("202" in y for y in DATA_YEARS) else "RunII")),
