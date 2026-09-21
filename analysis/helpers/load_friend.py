@@ -38,8 +38,15 @@ def parse_friends(args: dict[str, str | FriendTemplate]) -> dict[str, Friend]:
 
 
 def _rename(arr: ak.Array, kept: list[str], rename: dict[str, str]):
+    # `kept` lists every optional passthrough branch any SvB/FvT friend may carry
+    # (e.g. p_ttHbb only exists in ttHbb trainings). Skip the ones this friend
+    # lacks: indexing a missing field raises FieldNotFoundError, which made
+    # rename_SvB_friend fail for every multi-class HH4b friend since p_ttHbb was
+    # added, so load_SvB fell back to the raw (unrenamed) arrays and setSvBVars
+    # took its binary ggF-only branch -> ps_zz/ps_zh = -2 and ps_hh = p_sig for
+    # every event, regardless of which class was largest.
     fields = set(arr.fields)
-    renamed = {k: arr[k] for k in kept}
+    renamed = {k: arr[k] for k in kept if k in fields}
     for k, v in rename.items():
         if k in fields:
             renamed[v] = arr[k]
