@@ -115,6 +115,8 @@ def get_analysis_targets(wildcards):
         f"{config['output_path']}plots_{config['label']}/plots_done.txt",
         f"{config['output_path']}cutflow_validation_{config['label']}.txt",
         f"{config['output_path']}cutflow_{config['label']}.yml",
+        f"{config['output_path']}cutflow_{config['label']}.html",             # closure table
+        f"{config['output_path']}cutflow_crosscheck_{config['label']}.html",  # vs Phase C.4
     ]
 
 rule all_analysis:
@@ -262,4 +264,34 @@ use rule check_cutflow from analysis with:
         run_container_wrapper = config['analysis_container_wrapper']
     container: None
 
-localrules: merging_files, make_plots, check_cutflow
+# Background-closure view of the F.1 cutflow. The 3b data carries JCM x FvT (= 4b multijet) and,
+# with plot_ttbar_with_weights, the ttbar is the FvT-derived estimate from 3b data (cutflow entries
+# TTbar_from_d3_<era>, weights d3_to_t4 / d3_to_t3) — Phase F does not run the ttbar MC.
+# Override with `closure_ttbar` (e.g. "TTToHadronic TTToSemiLeptonic TTTo2L2Nu" when it does).
+use rule cutflow_closure_table from analysis as analysis_cutflow_closure_table with:
+    params:
+        title = lambda wildcards: f"{config.get('label', 'analysis')}_cutflow_{wildcards.label}",
+        multijet = "data3b",
+        ttbar = lambda wildcards: config.get("closure_ttbar", "TTbar_from_d3"),
+        run_container_wrapper = config['analysis_container_wrapper'],
+        python_bin = lambda wildcards: config.get("python_bin", "python")
+
+# Cross-check against Phase C.4 (FvT closure): same processor, same data, same JCM x FvT, so every
+# shared dataset must give identical weighted and raw 3b/4b cutflows (SvB only adds histograms).
+# A mismatch means the two passes did not use the same weights (e.g. a different JCM file) or
+# selection (e.g. blinding). Reference path: `crosscheck_reference` (default: the C.4 dump).
+use rule cutflow_crosscheck from analysis as analysis_cutflow_crosscheck with:
+    params:
+        reference = lambda wildcards: config.get("crosscheck_reference", f"{config['output_path']}FvT_closure/cutflow_FvT_closure.yml"),
+        title = lambda wildcards: f"{config.get('label', 'analysis')}_cutflow_crosscheck_{wildcards.label}",
+        label_a = lambda wildcards: f"F.1_{wildcards.label}",
+        label_b = "C.4_FvT_closure",
+        tolerance = lambda wildcards: config.get("crosscheck_tolerance", "0.001"),
+        # blinding (SvB > 0.8 in the 4b SR) only acts in F.1 (C.4 has no SvB) -> accept the 4b data
+        # differences while blind: true; override with `crosscheck_ignore`
+        ignore = lambda wildcards: config.get("crosscheck_ignore",
+                                              "data*:counts4*" if get_raw_analysis_config().get("config", {}).get("blind", False) else ""),
+        run_container_wrapper = config['analysis_container_wrapper'],
+        python_bin = lambda wildcards: config.get("python_bin", "python")
+
+localrules: merging_files, make_plots, check_cutflow, analysis_cutflow_closure_table, analysis_cutflow_crosscheck
