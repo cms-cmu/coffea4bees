@@ -109,6 +109,44 @@ rule make_plots:
         touch {output}
         """
 
+rule cutflow_closure_table:
+    # Background-closure view of a cutflow dump (src/tools/cutflow_closure.py in barista):
+    # cuts as rows, data 3b | tt 3b | Multijet | tt 4b | Bkg | data 4b | data/Bkg, all years + per year.
+    # params.multijet: "data3b-tt3b" (JCM-only model, Phase B) or "data3b" (3b data already carries
+    # the JCM x FvT weight and models multijet + 3b ttbar, Phase C.4 / F).
+    input:
+        cutflow_yml = "{output_path}cutflow_{label}.yml",
+        validation_txt = "{output_path}cutflow_validation_{label}.txt"
+    output:
+        html = "{output_path}cutflow_{label}.html",
+        txt = "{output_path}cutflow_{label}_table.txt"
+    wildcard_constraints:
+        output_path = ".*/",
+        label = "[^/]+"
+    log: "{output_path}logs/cutflow_closure_{label}.log"
+    params:
+        # no spaces/parentheses: run_container re-joins its arguments for `bash -c`, so quoting is lost
+        title = lambda wildcards: f"{config.get('label', 'analysis')}_cutflow_{wildcards.label}",
+        multijet = "data3b-tt3b",
+        run_container_wrapper = "",
+        python_bin = lambda wildcards: config.get("python_bin", "python")
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {log})
+        # tool lives in barista (src/tools/cutflow_closure.py); a checkout that predates it (e.g. CI
+        # against barista master) gets placeholder outputs instead of a failure
+        if [ -f src/tools/cutflow_closure.py ]; then
+            {params.run_container_wrapper} {params.python_bin} src/tools/cutflow_closure.py {input.cutflow_yml} \
+                -o {output.html} --txt {output.txt} --title {params.title} --multijet {params.multijet} 2>&1 | tee {log}
+        else
+            echo "src/tools/cutflow_closure.py not found in this barista checkout; skipping closure table" 2>&1 | tee {log}
+            echo "<p>cutflow closure table not available (barista checkout predates src/tools/cutflow_closure.py)</p>" > {output.html}
+            cp {log} {output.txt}
+        fi
+        """
+
+
 def get_known_cutflow_flag(wildcards):
     import os
     label = getattr(wildcards, 'label', config.get('label', ''))
