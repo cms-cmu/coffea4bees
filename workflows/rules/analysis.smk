@@ -128,6 +128,9 @@ rule cutflow_closure_table:
         # no spaces/parentheses: run_container re-joins its arguments for `bash -c`, so quoting is lost
         title = lambda wildcards: f"{config.get('label', 'analysis')}_cutflow_{wildcards.label}",
         multijet = "data3b-tt3b",
+        # ttbar process names in the dump: the MC samples, or "TTbar_from_d3" for the FvT-derived
+        # estimate from 3b data (plot_ttbar_with_weights; Phase F runs without ttbar MC)
+        ttbar = "TTToHadronic TTToSemiLeptonic TTTo2L2Nu",
         run_container_wrapper = "",
         python_bin = lambda wildcards: config.get("python_bin", "python")
     shell:
@@ -138,11 +141,60 @@ rule cutflow_closure_table:
         # against barista master) gets placeholder outputs instead of a failure
         if [ -f src/tools/cutflow_closure.py ]; then
             {params.run_container_wrapper} {params.python_bin} src/tools/cutflow_closure.py {input.cutflow_yml} \
-                -o {output.html} --txt {output.txt} --title {params.title} --multijet {params.multijet} 2>&1 | tee {log}
+                -o {output.html} --txt {output.txt} --title {params.title} --multijet {params.multijet} \
+                --ttbar {params.ttbar} 2>&1 | tee {log}
         else
             echo "src/tools/cutflow_closure.py not found in this barista checkout; skipping closure table" 2>&1 | tee {log}
             echo "<p>cutflow closure table not available (barista checkout predates src/tools/cutflow_closure.py)</p>" > {output.html}
             cp {log} {output.txt}
+        fi
+        """
+
+
+rule cutflow_crosscheck:
+    # Cross-phase consistency check (src/tools/cutflow_compare.py in barista): compares this
+    # pass's cutflow dump, dataset by dataset and cut by cut, with the dump of an earlier pass
+    # that ran the same processor with the same weights (e.g. Phase F.1 vs Phase C.4: same data,
+    # same JCM x FvT, so weighted and raw 3b/4b counts must agree exactly). The verdict
+    # (PASS/FAIL, first line of the txt) is a report, not a gate: the rule succeeds either way so
+    # the pages get published; datasets present in only one pass are listed, not failed.
+    # params.reference may be missing (pass not run in this production) -> placeholder outputs.
+    input:
+        cutflow_yml = "{output_path}cutflow_{label}.yml"
+    output:
+        html = "{output_path}cutflow_crosscheck_{label}.html",
+        txt = "{output_path}cutflow_crosscheck_{label}.txt"
+    wildcard_constraints:
+        output_path = ".*/",
+        label = "[^/]+"
+    log: "{output_path}logs/cutflow_crosscheck_{label}.log"
+    params:
+        reference = "",
+        title = lambda wildcards: f"{config.get('label', 'analysis')}_cutflow_crosscheck_{wildcards.label}",
+        label_a = lambda wildcards: wildcards.label,
+        label_b = "reference",
+        tolerance = lambda wildcards: config.get("crosscheck_tolerance", "0.001"),
+        ignore = "",  # e.g. "data*:counts4*" while the 4b data is blinded in only one of the passes
+        run_container_wrapper = "",
+        python_bin = lambda wildcards: config.get("python_bin", "python")
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {log})
+        if [ ! -f src/tools/cutflow_compare.py ]; then
+            echo "src/tools/cutflow_compare.py not found in this barista checkout; skipping cross-check" 2>&1 | tee {log}
+            echo "<p>cutflow cross-check not available (barista checkout predates src/tools/cutflow_compare.py)</p>" > {output.html}
+            cp {log} {output.txt}
+        elif [ -z "{params.reference}" ] || [ ! -f "{params.reference}" ]; then
+            echo "SKIPPED: reference cutflow '{params.reference}' not found; nothing to compare {input.cutflow_yml} against" 2>&1 | tee {log}
+            echo "<p>cutflow cross-check skipped: reference cutflow <code>{params.reference}</code> not found</p>" > {output.html}
+            cp {log} {output.txt}
+        else
+            IGNORE=""
+            [ -n "{params.ignore}" ] && IGNORE="--ignore {params.ignore}"
+            {params.run_container_wrapper} {params.python_bin} src/tools/cutflow_compare.py {input.cutflow_yml} {params.reference} \
+                -o {output.html} --txt {output.txt} --title {params.title} \
+                --label-a {params.label_a} --label-b {params.label_b} --tolerance {params.tolerance} $IGNORE 2>&1 | tee {log}
         fi
         """
 
