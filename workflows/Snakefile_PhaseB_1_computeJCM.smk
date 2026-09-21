@@ -304,35 +304,13 @@ use rule check_cutflow from analysis as check_cutflow_wJCM with:
         python_bin = lambda wildcards: config.get("python_bin", "python")
     container: None
 
-# Closure tables from the cutflow dumps: cuts as rows; data 3b | tt 3b | Multijet | tt 4b | Bkg | data 4b | ratio,
-# combined and per year, plus a detailed view with the ttbar components (src/tools/cutflow_closure.py).
-rule cutflow_closure_table:
-    input:
-        cutflow_yml = f"{JCM_OUTPUT_PATH}cutflow_{{pass_name}}.yml",
-        validation_txt = f"{JCM_OUTPUT_PATH}cutflow_validation_{{pass_name}}.txt"
-    output:
-        html = f"{JCM_OUTPUT_PATH}cutflow_{{pass_name}}.html",
-        txt = f"{JCM_OUTPUT_PATH}cutflow_{{pass_name}}_table.txt"
-    log: f"{JCM_OUTPUT_PATH}logs/cutflow_closure_{{pass_name}}.log"
+# Closure tables from the cutflow dumps (generic rule in rules/analysis.smk; wildcards match
+# {JCM_OUTPUT_PATH}cutflow_{NoJCM,wJCM}.html). JCM-only model: Multijet = data 3b - tt 3b.
+use rule cutflow_closure_table from analysis as jcm_cutflow_closure_table with:
     params:
-        # no spaces/parentheses: run_container re-joins its arguments for `bash -c`, so quoting is lost
-        title = lambda wildcards: f"{config.get('label', 'computeJCM')}_cutflow_{wildcards.pass_name}",
+        title = lambda wildcards: f"{config.get('label', 'computeJCM')}_cutflow_{wildcards.label}",
+        multijet = "data3b-tt3b",
         run_container_wrapper = config['analysis_container_wrapper'],
         python_bin = lambda wildcards: config.get("python_bin", "python")
-    shell:
-        """
-        set -eo pipefail
-        mkdir -p $(dirname {log})
-        # tool lives in barista (src/tools/cutflow_closure.py); a checkout that predates it (e.g. CI
-        # against barista master) gets placeholder outputs instead of a failure
-        if [ -f src/tools/cutflow_closure.py ]; then
-            {params.run_container_wrapper} {params.python_bin} src/tools/cutflow_closure.py {input.cutflow_yml} \
-                -o {output.html} --txt {output.txt} --title {params.title} 2>&1 | tee {log}
-        else
-            echo "src/tools/cutflow_closure.py not found in this barista checkout; skipping closure table" 2>&1 | tee {log}
-            echo "<p>cutflow closure table not available (barista checkout predates src/tools/cutflow_closure.py)</p>" > {output.html}
-            cp {log} {output.txt}
-        fi
-        """
 
-localrules: create_noJCM_config, create_wJCM_config, merge_noJCM, merge_wJCM, make_new_JCM, make_plots_wJCM, check_cutflow_noJCM, check_cutflow_wJCM, cutflow_closure_table
+localrules: create_noJCM_config, create_wJCM_config, merge_noJCM, merge_wJCM, make_new_JCM, make_plots_wJCM, check_cutflow_noJCM, check_cutflow_wJCM, jcm_cutflow_closure_table

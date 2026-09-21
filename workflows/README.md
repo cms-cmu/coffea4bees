@@ -156,6 +156,7 @@ flowchart TD
   * `Snakefile_PhaseC_1_plot_inputs.smk`: *(Optional / Diagnostics)* Generates raw feature distributions, preprocessed data distributions, and learned event weights plots (`plot_inputs_raw`, `plot_inputs_dataprep`, `plot_weights`).
   * `Snakefile_PhaseC_2_train.smk`: *(Optional — If Retraining FvT)* Trains multi-fold FvT neural networks using PyTorch/HCR (`train`) and produces training loss and ROC curve diagnostics (`analyze`).
   * `Snakefile_PhaseC_3_evaluate.smk`: *(Run If Background Estimation / JCM Changed)* Evaluates trained models on datasets to produce FvT friend tree ntuples (`evaluate`). Flexible to run standalone or chained after training.
+  * `Snakefile_PhaseC_4_FvT_closure.smk` **(cmslpc, not part of `Snakefile_PhaseC.smk`)**: FvT closure check. Reruns the analysis processor on data + ttbar with the JCM and the freshly evaluated FvT applied (no SvB), makes the `plotsAll` plots (+ gallery), dumps/compares the cutflow (`analysis/tests/known_fullCounts_FvT_closure.yml`) and builds the closure table with Multijet = 3b data (JCM × FvT) — the Phase-B-style validation of the 3b→4b model before the SvB trains on it. Config block `fvt_closure:` (`datasets`, `plot_config`, `JCM_file`, `known_counts[_test]`, `cutflow_list`; defaults shown in the file); the FvT friend comes from `analysis_config.config.friends.FvT`. roast step key `C4`.
 
 #### Key Artifacts & Required Downstream Updates:
 * **After Phase C.2 (Train)**:
