@@ -726,7 +726,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             if not shift_name:
                 self.fill_detailed_cutflows(selev)
                 self._cutFlow.addOutput(processOutput, event.metadata["dataset"])
-                if self.plot_ttbar_with_weights and hasattr(self, '_cutFlow_ttbar'):
+                # the d3-reweighted ttbar estimate only exists for data: MC/signal chunks would add
+                # empty TTbar_from_d3_<dataset> entries to the cutflow
+                if self.plot_ttbar_with_weights and hasattr(self, '_cutFlow_ttbar') and self.processName == "data":
                     era = event.metadata["dataset"].removeprefix("data_")
                     self._cutFlow_ttbar.addOutput(processOutput, f"TTbar_from_d3_{era}")
                 if self.plot_ttbar_with_MvD_weights and hasattr(self, '_cutFlow_ttbar_MvD'):
