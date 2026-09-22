@@ -135,7 +135,60 @@ rule all_stats:
         ] + [
             f"{config['output_path']}stat_analysis/{channel}/likelihood_scan/datacard_likelihood_scan__{ch_config['signallabel']}.pdf"
             for channel, ch_config in config['channels'].items() if ch_config.get('signallabel')
+        ] + [
+            f"{config['output_path']}stat_analysis/summary.html",
         ]
+
+def stat_summary_inputs(wildcards):
+    """Everything the summary page reads, for every channel with a signal label."""
+    base = f"{config['output_path']}stat_analysis"
+    files = []
+    for channel, ch_config in config['channels'].items():
+        sig = ch_config.get('signallabel')
+        if not sig:
+            continue
+        files += [
+            f"{base}/{channel}/datacards/datacard__{channel}.txt",
+            f"{base}/{channel}/limits/datacard_limits__{sig}.json",
+            f"{base}/{channel}/significance/datacard_significance__{sig}.json",
+            f"{base}/{channel}/likelihood_scan/datacard_likelihood_scan__{sig}.pdf",
+            f"{base}/{channel}/postfit/datacard_postfit__{sig}.pdf",
+        ]
+    return files
+
+rule stat_summary:
+    # One-page HTML overview of the Combine results (src/stat_analysis/stat_summary.py in barista):
+    # per channel the expected significance, the expected limit with its bands, the datacard yields
+    # per year, the likelihood-scan status, the postfit/scan figures and links to the raw outputs.
+    # Published by roast like the plot galleries (*.html).
+    input: stat_summary_inputs
+    output:
+        html = f"{config['output_path']}stat_analysis/summary.html",
+        md = f"{config['output_path']}stat_analysis/summary.md"
+    log: f"{config['output_path']}logs/stat_summary.log"
+    params:
+        stat_dir = f"{config['output_path']}stat_analysis",
+        channels = " ".join(f"--channel {ch}={cfg['signallabel']}" for ch, cfg in config['channels'].items() if cfg.get('signallabel')),
+        variables = " ".join(f"--variable {ch}={cfg['variable']}" for ch, cfg in config['channels'].items() if cfg.get('signallabel') and cfg.get('variable')),
+        blind = lambda wildcards: "--blind" if "--blind" in config.get('combine_flags', '') else "",
+        label = config['label'],
+        run_container_wrapper = config['analysis_container_wrapper'],
+        python_bin = lambda wildcards: config.get("python_bin", "python")
+    container: None
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {log})
+        if [ -f src/stat_analysis/stat_summary.py ]; then
+            {params.run_container_wrapper} {params.python_bin} src/stat_analysis/stat_summary.py {params.stat_dir} \
+                -o {output.html} --md {output.md} {params.channels} {params.variables} {params.blind} \
+                --label {params.label} 2>&1 | tee {log}
+        else
+            echo "src/stat_analysis/stat_summary.py not found in this barista checkout; skipping summary" 2>&1 | tee {log}
+            echo "<p>stat analysis summary not available (barista checkout predates src/stat_analysis/stat_summary.py)</p>" > {output.html}
+            cp {log} {output.md}
+        fi
+        """
 
 use rule convert_hist_to_json from stat_analysis with:
     input:
@@ -183,4 +236,4 @@ use rule make_combine_inputs from stat_analysis with:
 # Import all rules from combine module
 use rule * from combine as *
 
-localrules: convert_hist_to_json, make_combine_inputs
+localrules: convert_hist_to_json, make_combine_inputs, stat_summary
