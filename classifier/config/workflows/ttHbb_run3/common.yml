@@ -1,0 +1,36 @@
+### Common classifier settings for the ttHbb Run 3 (2022) trainings.
+###
+### Same as ttHbb_stitched/common.yml with the Run 3 collision-data eras. The ttbar classes come from
+### the tt+bb stitched samples (TT_stitched.yml, picked up because --metadata points at the whole
+### metadata/datasets/ directory).
+
+setting:
+  - module: ml.DataLoader
+    option:
+      - optimize_sliceable_dataset: true # use a custom dataloader to speed up batch generation
+  - module: ROOT
+    option:
+      - friend_allow_missing: false
+
+  - module: cms.MC_TTbar
+    option:
+      - datasets:
+          - TTToSemiLeptonic_stitched
+          - TTToHadronic_stitched
+          - TTTo2L2Nu_stitched
+
+  ## remove the whole block below if you want to use all years ##
+  - module: cms.CollisionData
+    option:
+      - eras:
+          2022_preEE: [B, C, D]
+          2022_EE: [E, F, G]
+          # 2023_preBPix: [C01, C02, C11, C12]
+          # 2023_BPix: [D]
+  - module: HCR.InputBranch
+    option:
+      # no `year`: add_year keeps only the first two digits of the era (2022_preEE and 2022_EE -> 22),
+      # so with 2022 alone it is a constant input whose normalisation gives NaN outputs. Re-add it
+      # when several years are trained together.
+      - feature_ancillary: [xW, nSelJets, xbW]
+  ##########################################################
