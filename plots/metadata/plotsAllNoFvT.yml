@@ -1,39 +1,42 @@
+# Run-agnostic: the signal `process` lists name both the Run 2 and the Run 3 samples, and
+# makePlots drops whichever are absent from the input file (logging one warning per dropped
+# entry), so this config serves both productions. ZZ4b / ZH4b have no Run 3 skims and are
+# dropped there. There are no `year:` keys: `year` is a style key (src/plotting/
+# helpers_make_plot_dict.py _STYLE_KEYS) and never reaches the hist indexing — the year comes
+# from makePlots' --year, which the phase rules set (Run3 / RunII) and which is auto-inferred
+# from the histogram's year axis otherwise.
 hists:
         data:
                 process: data
                 tag: fourTag
-                year: RunII
                 label: Four-tag data
                 edgecolor: k
-                fillcolor: k            
+                fillcolor: k
 
         HH4b:
-                process: GluGluToHHTo4B_cHHH1
+                process: [GluGluToHHTo4B_cHHH1, GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00]
                 tag: fourTag
-                year: RunII
                 label: HH4b (x100)
                 edgecolor: r
-                fillcolor: r            
+                fillcolor: r
                 histtype: step
                 scalefactor: 100
-                
+
         ZH4b:
                 process: ZH4b
                 tag: fourTag
-                year: RunII
                 label: ZH4b (x100)
                 edgecolor: b
-                fillcolor: b            
+                fillcolor: b
                 histtype: step
                 scalefactor: 100
-                
+
         ZZ4b:
                 process: ZZ4b
                 tag: fourTag
-                year: RunII
                 label: ZZ4b (x100)
                 edgecolor: g
-                fillcolor: g            
+                fillcolor: g
                 histtype: step
                 scalefactor: 100
 
@@ -48,7 +51,6 @@ stack:
 
 
         MultiJet:
-                year: RunII
                 fillcolor: "#FFDF7Fff"
                 edgecolor: k
                 label: Multijet
