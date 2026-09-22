@@ -1,6 +1,6 @@
 friends:
   UL18: &friends_Run2
-    trigWeight: &trigWeight "coffea4bees/metadata/datasets/trigweights_2024_v2.json@@trigWeight"
+    trigWeight: &trigWeight "coffea4bees/metadata/friends/trigweights_Run2_v2.json@@trigWeight"
     FvT: &FvT "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/nominal_sel/friend/FvT_nominal/result.json@@analysis.0.merged"
   UL16_preVFP: *friends_Run2
   UL16_postVFP: *friends_Run2
