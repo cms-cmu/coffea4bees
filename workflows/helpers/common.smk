@@ -28,6 +28,57 @@ for _k, _v in substitute_placeholders(dict(config), {'roast_id': _roast_id}).ite
     config[_k] = _v
 
 
+def check_handoff_refs(config_dict):
+    """Fail if what Phases C/D are told to read is not what Phase B publishes.
+
+    Phase B's `phaseB_handoff` rule writes the JCM fit and the classifier-input manifest to
+    `handoff.eos_base`, and the `fvt`/`svb` blocks name those same URLs for the classifier to
+    read. The two are stated separately -- and include the JCM `tag` in the filename -- so they
+    can drift apart, and the failure is silent in the worst way: the classifier trains happily
+    against another production's weights and only the loss curve looks slightly off.
+
+    Pointing at an earlier roast's handoff is a legitimate thing to do (rerunning C or D with
+    new code against fixed inputs), so that is allowed explicitly with
+    `handoff.allow_external_refs: true` rather than by weakening this into a warning.
+    """
+    handoff = config_dict.get('handoff') or {}
+    if not isinstance(handoff, dict):
+        return
+    base = str(handoff.get('eos_base') or "").rstrip('/')
+    if not base or handoff.get('allow_external_refs'):
+        return
+
+    problems = []
+    for section in ('fvt', 'svb'):
+        blk = config_dict.get(section) or {}
+        if not isinstance(blk, dict):
+            continue
+        refs = {'metadata': blk.get('metadata')}
+        overrides = blk.get('workflow_overrides') or {}
+        if isinstance(overrides, dict):
+            for k, v in overrides.items():
+                if k == '--JCM-weight' or k.startswith('--friends'):
+                    refs[k] = v
+        for key, val in refs.items():
+            if not isinstance(val, str):
+                continue
+            path = val.split('@@')[0].replace('""', '').strip()
+            # Only remote refs are checked: a local path is read from the checkout, which is
+            # the other, deliberate half of the handoff (C.4 and F.1 read the local JCM copy).
+            if path.startswith('root://') and not path.startswith(base + '/'):
+                problems.append(f"  {section}.{key}\n      reads      {path}\n      not under  {base}/")
+    if problems:
+        raise ValueError(
+            "handoff mismatch: Phase C/D are pointed at remote files Phase B does not publish.\n"
+            + "\n".join(problems)
+            + "\n  Fix the paths, or set `handoff.allow_external_refs: true` if reading another"
+              " roast's handoff is intended."
+        )
+
+
+check_handoff_refs(config)
+
+
 def write_workflow_overrides(wfs_base, overrides, out_dir, log=None):
     """Copy the classifier workflow templates in `wfs_base` (train.yml, evaluate.yml, ...) to
     `out_dir`, replacing command-line options by flag.
