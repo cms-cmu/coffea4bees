@@ -72,3 +72,94 @@ classifier_inputs:
     fill_histograms: true
     candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
     make_classifier_input: root://eoscms.cern.ch//eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/Run3_v1/ttHbb_stitched/
+
+# ==============================================================================
+# PHASE B.1: JET COMBINATORIC MODEL (Snakefile_PhaseB_1_computeJCM.smk)
+# ==============================================================================
+# Runs the analysis processor (analysis_config below, JCM/FvT/SvB forced off) on data and the
+# stitched ttbar, fits the JCM in the SB (tag run3_v1), then reruns with the JCM applied.
+tag: "run3_v1"
+jcm_datasets:
+  - "data"
+  - "TTTo2L2Nu_stitched"
+  - "TTToSemiLeptonic_stitched"
+  - "TTToHadronic_stitched"
+jcm_plot_config: "coffea4bees/plots/metadata/plots_JCM_ttHbb_stitched.yml"
+jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb_stitched_jcm_config.yml -m coffea4bees/plots/metadata/plotsJCM_ttHbb_run3.yml -y Run3"
+# No Run 3 cutflow reference yet: only dump the cutflows (the known_fullCounts_JCM_* files are Run 2).
+jcm_known_counts_NoJCM: "none"
+jcm_known_counts_wJCM: "none"
+
+# ==============================================================================
+# PHASE C: FvT CLASSIFIER (Snakefile_PhaseC_{1,2,3}_*.smk; GPU rules run as HTCondor jobs on lxplus)
+# ==============================================================================
+classifier_setting:
+  - module: ml.DataLoader
+    option:
+      - optimize_sliceable_dataset: true
+  - module: ROOT
+    option:
+      - friend_allow_missing: false
+  - module: cms.CollisionData
+    option:
+      - eras:
+          2022_preEE: [B, C, D]
+          2022_EE: [E, F, G]
+  - module: cms.MC_TTbar
+    option:
+      - datasets:
+          - TTToSemiLeptonic_stitched
+          - TTToHadronic_stitched
+          - TTTo2L2Nu_stitched
+  - module: HCR.InputBranch
+    option:
+      # no `year`: add_year keeps only the first two digits of the era (2022_preEE and 2022_EE -> 22),
+      # so with 2022 alone it is a constant input whose normalisation gives NaN outputs. Re-add it
+      # when several years are trained together.
+      - feature_ancillary: [xW, nSelJets, xbW]
+
+fvt:
+  eos_base: "root://eoscms.cern.ch//eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/Run3_v1/ttHbb_stitched"
+  plot_base: "root://eosuser.cern.ch//eos/user/m/mmarcheg/www/ttHbb/Plots"
+  classifier_config_paths: "coffea4bees"
+  wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_run3/FvT"
+  label: "FvT_ttHbb_run3"
+  output_dir: "/eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/output/ttHbb_run3/FvT_ttHbb_run3/"
+  plot_inputs: true
+  plot_weights: true
+  evaluate: true
+  model: "{eos_base}/classifier/{label}"
+  friend: "{eos_base}/friend/{label}"
+  train_template: "model: {eos_base}/classifier/{label}"
+  eval_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/{label}"
+  metadata: "coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3.json@@HCR_input"
+
+# ==============================================================================
+# PHASE F.1: MAIN ANALYSIS PROCESSOR (also the fallback block for Phase B.1)
+# ==============================================================================
+analysis_config:
+  processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+  dataset_location: "coffea4bees/metadata/datasets/"
+  friend_file: "coffea4bees/metadata/friends/friends_ttHbb_Run3.yml"
+  weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
+  runner:
+    condor_cores: 1
+    worker_memory: 8GB
+    chunksize: 10000
+    max_workers: 500
+    dashboard_address: 0
+    condor_transfer_input_files:
+      - src/
+      - coffea4bees/analysis/
+      - coffea4bees/metadata/
+  config:
+    blind: true
+    apply_JCM: true
+    apply_FvT: true
+    apply_trigWeight: true
+    apply_btagSF: true
+    apply_boosted_veto: false
+    run_SvB: false
+    top_reconstruction: fast
+    fill_histograms: true
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
