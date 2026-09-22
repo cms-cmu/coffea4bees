@@ -98,9 +98,108 @@ rule make_plots:
         mkdir -p $MPLCONFIGDIR
 
         echo "Making plots" 2>&1 | tee -a {log}
-        {params.run_container_wrapper} {params.python_bin} coffea4bees/plots/makePlots.py {input[0]} -o {params.output_dir} -m {params.metadata} {params.extra_arguments} 2>&1 | tee -a {log}
+        # plot config = the tracked input (a `use rule ... with: input: metadata_file=...` override
+        # that forgets params.metadata would otherwise silently plot with the generic default)
+        {params.run_container_wrapper} {params.python_bin} coffea4bees/plots/makePlots.py {input.coffea_file} -o {params.output_dir} -m {input.metadata_file} {params.extra_arguments} 2>&1 | tee -a {log}
+        # HTML gallery (barista src/plotting/make_gallery.py); skipped when the barista checkout predates it (e.g. CI against master)
+        if [ -f src/plotting/make_gallery.py ]; then
+            echo "Making gallery" 2>&1 | tee -a {log}
+            {params.run_container_wrapper} {params.python_bin} src/plotting/make_gallery.py {params.output_dir} -m {input.metadata_file} --title "$(basename {params.output_dir})" 2>&1 | tee -a {log}
+        else
+            echo "src/plotting/make_gallery.py not found in this barista checkout; skipping gallery" 2>&1 | tee -a {log}
+        fi
         touch {output}
         """
+
+rule cutflow_closure_table:
+    # Background-closure view of a cutflow dump (src/tools/cutflow_closure.py in barista):
+    # cuts as rows, data 3b | tt 3b | Multijet | tt 4b | Bkg | data 4b | data/Bkg, all years + per year.
+    # params.multijet: "data3b-tt3b" (JCM-only model, Phase B) or "data3b" (3b data already carries
+    # the JCM x FvT weight and models multijet + 3b ttbar, Phase C.4 / F).
+    input:
+        cutflow_yml = "{output_path}cutflow_{label}.yml",
+        validation_txt = "{output_path}cutflow_validation_{label}.txt"
+    output:
+        html = "{output_path}cutflow_{label}.html",
+        txt = "{output_path}cutflow_{label}_table.txt"
+    wildcard_constraints:
+        output_path = ".*/",
+        label = "[^/]+"
+    log: "{output_path}logs/cutflow_closure_{label}.log"
+    params:
+        # no spaces/parentheses: run_container re-joins its arguments for `bash -c`, so quoting is lost
+        title = lambda wildcards: f"{config.get('label', 'analysis')}_cutflow_{wildcards.label}",
+        multijet = "data3b-tt3b",
+        # ttbar process names in the dump: the MC samples, or "TTbar_from_d3" for the FvT-derived
+        # estimate from 3b data (plot_ttbar_with_weights; Phase F runs without ttbar MC)
+        ttbar = "TTToHadronic TTToSemiLeptonic TTTo2L2Nu",
+        run_container_wrapper = "",
+        python_bin = lambda wildcards: config.get("python_bin", "python")
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {log})
+        # tool lives in barista (src/tools/cutflow_closure.py); a checkout that predates it (e.g. CI
+        # against barista master) gets placeholder outputs instead of a failure
+        if [ -f src/tools/cutflow_closure.py ]; then
+            {params.run_container_wrapper} {params.python_bin} src/tools/cutflow_closure.py {input.cutflow_yml} \
+                -o {output.html} --txt {output.txt} --title {params.title} --multijet {params.multijet} \
+                --ttbar {params.ttbar} 2>&1 | tee {log}
+        else
+            echo "src/tools/cutflow_closure.py not found in this barista checkout; skipping closure table" 2>&1 | tee {log}
+            echo "<p>cutflow closure table not available (barista checkout predates src/tools/cutflow_closure.py)</p>" > {output.html}
+            cp {log} {output.txt}
+        fi
+        """
+
+
+rule cutflow_crosscheck:
+    # Cross-phase consistency check (src/tools/cutflow_compare.py in barista): compares this
+    # pass's cutflow dump, dataset by dataset and cut by cut, with the dump of an earlier pass
+    # that ran the same processor with the same weights (e.g. Phase F.1 vs Phase C.4: same data,
+    # same JCM x FvT, so weighted and raw 3b/4b counts must agree exactly). The verdict
+    # (PASS/FAIL, first line of the txt) is a report, not a gate: the rule succeeds either way so
+    # the pages get published; datasets present in only one pass are listed, not failed.
+    # params.reference may be missing (pass not run in this production) -> placeholder outputs.
+    input:
+        cutflow_yml = "{output_path}cutflow_{label}.yml"
+    output:
+        html = "{output_path}cutflow_crosscheck_{label}.html",
+        txt = "{output_path}cutflow_crosscheck_{label}.txt"
+    wildcard_constraints:
+        output_path = ".*/",
+        label = "[^/]+"
+    log: "{output_path}logs/cutflow_crosscheck_{label}.log"
+    params:
+        reference = "",
+        title = lambda wildcards: f"{config.get('label', 'analysis')}_cutflow_crosscheck_{wildcards.label}",
+        label_a = lambda wildcards: wildcards.label,
+        label_b = "reference",
+        tolerance = lambda wildcards: config.get("crosscheck_tolerance", "0.001"),
+        ignore = "",  # e.g. "data*:counts4*" while the 4b data is blinded in only one of the passes
+        run_container_wrapper = "",
+        python_bin = lambda wildcards: config.get("python_bin", "python")
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {log})
+        if [ ! -f src/tools/cutflow_compare.py ]; then
+            echo "src/tools/cutflow_compare.py not found in this barista checkout; skipping cross-check" 2>&1 | tee {log}
+            echo "<p>cutflow cross-check not available (barista checkout predates src/tools/cutflow_compare.py)</p>" > {output.html}
+            cp {log} {output.txt}
+        elif [ -z "{params.reference}" ] || [ ! -f "{params.reference}" ]; then
+            echo "SKIPPED: reference cutflow '{params.reference}' not found; nothing to compare {input.cutflow_yml} against" 2>&1 | tee {log}
+            echo "<p>cutflow cross-check skipped: reference cutflow <code>{params.reference}</code> not found</p>" > {output.html}
+            cp {log} {output.txt}
+        else
+            IGNORE=""
+            [ -n "{params.ignore}" ] && IGNORE="--ignore {params.ignore}"
+            {params.run_container_wrapper} {params.python_bin} src/tools/cutflow_compare.py {input.cutflow_yml} {params.reference} \
+                -o {output.html} --txt {output.txt} --title {params.title} \
+                --label-a {params.label_a} --label-b {params.label_b} --tolerance {params.tolerance} $IGNORE 2>&1 | tee {log}
+        fi
+        """
+
 
 def get_known_cutflow_flag(wildcards):
     import os
@@ -132,9 +231,10 @@ rule check_cutflow:
         "{output_path}logs/cutflow_validation_{label}.log"
     shell:
         """
-        set -eo pipefail
+        set -o pipefail
         mkdir -p $(dirname {output.validation_txt}) $(dirname {log})
         echo "Running cutflow analysis and verification for {input[0]}" > {log}
+        set +e
         {params.run_container_wrapper} bash coffea4bees/scripts/run-cutflow.sh \
             --input-file "{input[0]}" \
             --output-file "{output.cutflow_yml}" \
@@ -142,5 +242,18 @@ rule check_cutflow:
             --error-threshold "{params.error_threshold}" \
             --cutflow-list "{params.cutflow_list}" \
             --python-bin "{params.python_bin}" 2>&1 | tee -a {log}
-        touch {output.validation_txt}
+        status=$?
+        set -e
+        # Keep the comparison verdict (observed vs expected table) next to the cutflow yml:
+        # logs/ are not published by roast, and snakemake deletes the declared outputs of a
+        # failed job, so the verdict and the counts go to undeclared *_result.txt / *_failed.yml
+        # siblings that survive a failure and still get published.
+        result="$(dirname {output.validation_txt})/$(basename {output.validation_txt} .txt)_result.txt"
+        ( grep -A80 "Running cutflow comparison" {log} || grep "Skipping cutflow comparison" {log} || true ) > "$result"
+        if [ $status -ne 0 ]; then
+            [ -f "{output.cutflow_yml}" ] && cp "{output.cutflow_yml}" "$(dirname {output.cutflow_yml})/$(basename {output.cutflow_yml} .yml)_failed.yml"
+            echo "############### Cutflow check FAILED (exit $status): see $result" | tee -a {log}
+            exit $status
+        fi
+        cp "$result" {output.validation_txt}
         """

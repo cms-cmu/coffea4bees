@@ -104,6 +104,9 @@ analysis_config:
     apply_FvT: true
     apply_JCM: true
     apply_trigWeight: true
+    # TEMPORARY: ZZ4b UL16 chunks are missing from the (archived) trigger-weight friend index after
+    # the re-skim; warn instead of error. Remove once trigweights_ZZ4b_UL16.yml has been run and merged.
+    require_trigWeight: false
     apply_btagSF: true
     apply_boosted_veto: false
     run_SvB: true

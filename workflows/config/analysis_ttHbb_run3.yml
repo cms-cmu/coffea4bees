@@ -1,0 +1,74 @@
+# ==============================================================================
+# ttHbb Run 3 workflow configuration (CERN lxplus, outputs on CERN EOS)
+# ==============================================================================
+# Inputs (picoAODs, trigger-weight friends) are read remotely from FNAL EOS; every
+# output goes to the phys_higgs group area. Phase B.2 (classifier inputs) is the
+# first phase run with this file. No ttHbb JCM exists for Run 3 yet: the classifier
+# input friend trees dump weight_noJCM_noFvT, so apply_JCM is off here and the JCM
+# is applied at training time from the JCM yaml (Phase B.1 is needed before Phase F).
+label: "ttHbb_run3"
+output_path: "/eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/output/ttHbb_run3/"
+cern_user: "mmarcheg"
+cern_path: "www/ttHbb/Plots/"
+
+dataset:
+  - "ttHbb"
+  - "data"
+  - "TTTo2L2Nu_stitched"
+  - "TTToSemiLeptonic_stitched"
+  - "TTToHadronic_stitched"
+
+# 2022 only for now; 2023/2024 picoAODs and trigger-weight friends exist as well.
+year_eras:
+  2022_preEE:
+    - "B"
+    - "C"
+    - "D"
+  2022_EE:
+    - "E"
+    - "F"
+    - "G"
+  # 2023_preBPix: ["C01", "C02", "C11", "C12"]
+  # 2023_BPix: ["D"]
+  # "2024": [...]
+
+# ==============================================================================
+# PHASE B.2: CLASSIFIER INPUTS (friend trees for FvT / SvB training)
+# ==============================================================================
+# Produced for 2022_preEE + 2022_EE on 2026-09-22 (lxplus, CERN HTCondor): 1040 HCR_input friend files
+# under make_classifier_input, indexed in coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3.json
+# (use "...classifier_inputs_ttHbb_run3.json@@HCR_input" as the Phase C/D training `metadata`).
+classifier_inputs:
+  processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+  friend_file: "coffea4bees/metadata/friends/friends_ttHbb_Run3.yml"
+  weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
+  datasets:
+    - "ttHbb"
+    - "data"
+    - "TTTo2L2Nu_stitched"
+    - "TTToSemiLeptonic_stitched"
+    - "TTToHadronic_stitched"
+  runner:
+    condor_cores: 1
+    worker_memory: 8GB
+    chunksize: 10000
+    condor: true
+    shared_dask: true
+    run_performance: true
+    max_workers: 500
+    condor_transfer_input_files:
+      - src/
+      - coffea4bees/analysis/
+      - coffea4bees/metadata/
+  config:
+    blind: true
+    apply_JCM: false
+    apply_FvT: false
+    apply_trigWeight: true
+    apply_btagSF: true
+    apply_boosted_veto: false
+    run_SvB: false
+    top_reconstruction: slow
+    fill_histograms: true
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
+    make_classifier_input: root://eoscms.cern.ch//eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/Run3_v1/ttHbb_stitched/

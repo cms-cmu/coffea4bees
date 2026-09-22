@@ -12,6 +12,7 @@ from coffea4bees.analysis.helpers.hist_templates import (
     WCandHists,
     TrigEmHists,
 )
+from coffea4bees.analysis.helpers.ttbar_decay import classify_z_decays
 from src.hist_tools import Collection, Fill
 from src.hist_tools.object import Elec, Jet, LorentzVector, Muon
 import logging
@@ -533,9 +534,14 @@ def filling_ttHbb_histograms(
     event_metadata: dict = {},
     weight_name = "weight",
     year_override: bool = False,
+    classify_Z_decay: bool = False,
 ):
     """Fills baseline event/object histograms and ttHbb-specific discriminants.
     Skips all HH4b mass window plots (xHH, dijet_HHSR, m4j_hh).
+
+    If classify_Z_decay is True (e.g. for ttZ samples), also fills
+    quadJet_selected.lead_vs_subl_m_Zbb, the same 2D mass plane restricted to
+    events where the gen-level Z decayed to bb.
     """
     if year_override:
         year = _apply_year_override(year)
@@ -572,6 +578,23 @@ def filling_ttHbb_histograms(
 
     fill += QuadJetHistsSelected(("quadJet_selected", "Selected Quad Jet"), "quadJet_selected")
     fill += QuadJetHistsMinDr(("quadJet_min_dr", "Min dR Quad Jet"), "quadJet_min_dr")
+
+    if classify_Z_decay:
+        z_result = classify_z_decays(selev.GenPart)
+        is_Zbb = z_result["hadronic_masks"]["Z -> bb"]
+        selev["weight_Zbb"] = ak.where(is_Zbb, selev[weight_name], 0.0)
+        fill += hist.add(
+            "quadJet_selected.lead_vs_subl_m_Zbb",
+            (100, 0, 1000, ("quadJet_selected.lead.mass", "Lead Boson Candidate Mass")),
+            (100, 0, 1000, ("quadJet_selected.subl.mass", "Subl Boson Candidate Mass")),
+            weight="weight_Zbb",
+        )
+        fill += hist.add(
+            "quadJet_min_dr.lead_vs_subl_m_Zbb",
+            (100, 0, 1000, ("quadJet_min_dr.lead.mass", "Lead Boson Candidate Mass")),
+            (100, 0, 1000, ("quadJet_min_dr.subl.mass", "Subl Boson Candidate Mass")),
+            weight="weight_Zbb",
+        )
 
     # Make FvT classifier hists
     if apply_FvT and ("FvT" in selev.fields):

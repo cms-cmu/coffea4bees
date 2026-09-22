@@ -75,11 +75,14 @@ if not cern_path.startswith("/"):
 
 # Define master target endpoints dynamically using an input function
 def get_master_targets(wildcards):
+    # Phase F.1 outputs (keep in sync with get_analysis_targets in Snakefile_PhaseF_1_analysis.smk)
     master_targets = [
         f"{config['output_path']}histAll_{config['label']}.coffea",
         f"{config['output_path']}plots_{config['label']}/plots_done.txt",
         f"{config['output_path']}cutflow_validation_{config['label']}.txt",
         f"{config['output_path']}cutflow_{config['label']}.yml",
+        f"{config['output_path']}cutflow_{config['label']}.html",             # closure table
+        f"{config['output_path']}cutflow_crosscheck_{config['label']}.html",  # vs Phase C.4 FvT closure
     ]
     for channel, ch_config in config.get('channels', {}).items():
         signallabel = ch_config.get('signallabel')
