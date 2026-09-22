@@ -34,7 +34,7 @@ tag: "Run3_v1"
 # Phase B.2 has its own list (classifier_inputs.datasets), B.1/C.4 use data + ttbar internally.
 # No ttbar MC here: with plot_ttbar_with_weights the ttbar is estimated from 3b data with the FvT
 # d3_to_t4 / d3_to_t3 weights (TTbar4b_from_d3 / TTbar3b_from_d3 histograms, TTbar_from_d3_<era>
-# cutflow entries), which is what the plots (plotsAll_ttbarWeights_Run3.yml) and the Combine `tt`
+# cutflow entries), which is what the plots (plotsAll_ttbarWeights.yml) and the Combine `tt`
 # template use. Running the MC as well would double count the ttbar in the datacards
 # (make_combine_inputs sums every TTTo* and TTbar4b_from_d3 process into `tt`).
 dataset:
@@ -125,7 +125,7 @@ fvt:
 # analysis_config.config.friends.FvT below, the JCM the per-roast copy.
 fvt_closure:
   datasets: [data, TTToHadronic, TTToSemiLeptonic, TTTo2L2Nu]
-  plot_config: "coffea4bees/plots/metadata/plotsAll_Run3.yml"
+  plot_config: "coffea4bees/plots/metadata/plotsAll.yml"
   # The default reference, known_fullCounts_FvT_closure.yml, holds Run 2 numbers and exists,
   # so leaving it would compare this production against Run 2 and fail every entry. Point at a
   # Run 3 file instead: while it does not exist the step only dumps the cutflow (no comparison),
@@ -167,9 +167,10 @@ svb:
 # being compared against the wrong baseline; bless these after the run and commit them.
 jcm_known_counts_NoJCM: "coffea4bees/analysis/tests/known_fullCounts_JCM_NoJCM_Run3.yml"
 jcm_known_counts_wJCM: "coffea4bees/analysis/tests/known_fullCounts_JCM_wJCM_Run3.yml"
-# B.1's second pass plots with the NoFvT config (Run 3 variant: ggF signal, no ZZ/ZH, no
-# `year: RunII` pin — that key would select a year axis value Run 3 data does not have).
-jcm_plot_config: "coffea4bees/plots/metadata/plotsAllNoFvT_Run3.yml"
+# B.1's second pass plots with the NoFvT config. Shared with Run 2: the plot configs name both
+# runs' signal samples and makePlots drops the ones absent from the input file, and the year
+# comes from --year (the rule passes Run3 here), not from the config.
+jcm_plot_config: "coffea4bees/plots/metadata/plotsAllNoFvT.yml"
 
 # ==============================================================================
 # PHASE B.2: CLASSIFIER INPUT FRIEND TREES (cmslpc)
@@ -253,7 +254,7 @@ analysis_config:
 # what a first production wants. known_Counts_Run3.yml is the small CI reference and would fail
 # against a full run.
 
-plot_config: "coffea4bees/plots/metadata/plotsAll_ttbarWeights_Run3.yml"
+plot_config: "coffea4bees/plots/metadata/plotsAll_ttbarWeights.yml"
 
 # ==============================================================================
 # PHASE F.2: COMBINE STATISTICAL INTERPRETATION & LIMITS
