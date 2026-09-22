@@ -97,8 +97,11 @@ def get_master_targets(wildcards):
         master_targets.append(f"{config['output_path']}stat_analysis/summary.html")  # Phase F.2 overview page
     return master_targets
 
-# The first rule defined in the master file remains the default target
+# default_target, not position: Snakemake takes the first rule of the top-level Snakefile
+# as the default, so adding a rule above this one would silently shrink the DAG to that
+# rule's own inputs.
 rule final_output:
+    default_target: True
     input: get_master_targets
     params:
         output_dir = f"{datetime.now().strftime('%Y%m%d')}_{config['label']}/",
