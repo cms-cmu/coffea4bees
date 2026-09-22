@@ -310,6 +310,8 @@ use rule cutflow_closure_table from analysis as jcm_cutflow_closure_table with:
     params:
         title = lambda wildcards: f"{config.get('label', 'computeJCM')}_cutflow_{wildcards.label}",
         multijet = "data3b-tt3b",
+        # the ttbar samples of this JCM (e.g. the *_stitched ones), not the generic rule's default names
+        ttbar = " ".join(d for d in datasets if not d.startswith("data")),
         run_container_wrapper = config['analysis_container_wrapper'],
         python_bin = lambda wildcards: config.get("python_bin", "python")
 
