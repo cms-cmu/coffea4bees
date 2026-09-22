@@ -35,6 +35,9 @@ year_eras:
 # ==============================================================================
 # PHASE B.2: CLASSIFIER INPUTS (friend trees for FvT / SvB training)
 # ==============================================================================
+# Produced for 2022_preEE + 2022_EE on 2026-09-22 (lxplus, CERN HTCondor): 1040 HCR_input friend files
+# under make_classifier_input, indexed in coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3.json
+# (use "...classifier_inputs_ttHbb_run3.json@@HCR_input" as the Phase C/D training `metadata`).
 classifier_inputs:
   processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
   friend_file: "coffea4bees/metadata/friends/friends_ttHbb_Run3.yml"
