@@ -149,6 +149,10 @@ fvt_closure:
   # Run 3 file instead: while it does not exist the step only dumps the cutflow (no comparison),
   # which is how the first run of a new baseline produces the numbers to bless.
   known_counts: "coffea4bees/analysis/tests/known_fullCounts_FvT_closure_Run3.yml"
+  # Same as `jcm:` above -- C.4's MC is the same three TT samples, whose trigger-weight friends
+  # exist, so the hard error belongs here rather than analysis_config's blanket false.
+  config:
+    require_trigWeight: true
 
 svb:
   # Phase D (falcon). Same per-roast pattern as fvt; the FvT friend used for the background is
@@ -186,6 +190,16 @@ svb:
 # being compared against the wrong baseline; bless these after the run and commit them.
 jcm_known_counts_NoJCM: "coffea4bees/analysis/tests/known_fullCounts_JCM_NoJCM_Run3.yml"
 jcm_known_counts_wJCM: "coffea4bees/analysis/tests/known_fullCounts_JCM_wJCM_Run3.yml"
+
+# B.1's only MC is the three inclusive TT samples, which trigweights_Run3_v1.json does cover --
+# unlike the ggF signal, which is why analysis_config sets require_trigWeight: false globally.
+# Put the hard error back where the friends exist: the JCM fit rides on the 3b ttbar
+# subtraction, so a trigger weight silently skipped here (the warning is only visible inside the
+# dask workers) mis-fits the JCM and every later phase inherits it. resolve_config_section
+# merges this `config` over analysis_config's.
+jcm:
+  config:
+    require_trigWeight: true
 # B.1's second pass plots with the NoFvT config. Shared with Run 2: the plot configs name both
 # runs' signal samples and makePlots drops the ones absent from the input file, and the year
 # comes from --year (the rule passes Run3 here), not from the config.
