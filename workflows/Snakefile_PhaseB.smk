@@ -75,7 +75,14 @@ rule phaseB_handoff:
         date > {output.done}
         """
 
+# default_target, not position: Snakemake takes the first rule of the *top-level* Snakefile as
+# the default target (rules pulled in by `include:` do not count), so simply adding a rule above
+# this one silently steals it -- and the DAG then shrinks to that rule's own inputs. That is not
+# a hypothetical: adding phaseB_handoff above dropped B.1's whole wJCM second pass, its plots and
+# both cutflow validations from the DAG, which C.4 needs (it reuses hist__TT*__<year>_wJCM.coffea
+# for the ttbar). Marking the target explicitly makes the order irrelevant.
 rule all_PhaseB:
+    default_target: True
     input:
         rules.output_computeJCM.input,
         rules.all_classifier_inputs.input,

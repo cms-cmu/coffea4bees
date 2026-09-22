@@ -52,6 +52,10 @@ elif config.get('workflow_overrides'):
 
 include: "../../src/classifier/workflow/Snakefile"
 
+# default_target, not position: Snakemake takes the first rule of the top-level Snakefile
+# as the default, so adding a rule above this one would silently shrink the DAG to that
+# rule's own inputs.
 rule all_PhaseC:
+    default_target: True
     input:
         rules.all.input

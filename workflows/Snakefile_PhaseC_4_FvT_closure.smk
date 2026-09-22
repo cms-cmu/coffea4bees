@@ -111,7 +111,11 @@ module analysis:
     snakefile: "rules/analysis.smk"
     config: config
 
+# default_target, not position: Snakemake takes the first rule of the top-level Snakefile
+# as the default, so adding a rule above this one would silently shrink the DAG to that
+# rule's own inputs.
 rule all_FvT_closure:
+    default_target: True
     input:
         f"{CLOSURE_PATH}histAll_FvT_closure.coffea",
         f"{CLOSURE_PATH}plots_FvT_closure/plots_done.txt",
