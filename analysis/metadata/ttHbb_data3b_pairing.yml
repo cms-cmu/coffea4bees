@@ -1,0 +1,4 @@
+config:
+  apply_trigWeight: false
+  apply_btagSF: false
+  tag_selection: threeTag

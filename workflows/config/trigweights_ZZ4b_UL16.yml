@@ -2,7 +2,7 @@
 # Phase A.2 -- regenerate the Run 2 trigger-weight friends for ZZ4b UL16
 # =============================================================================
 # ZZ4b UL16_preVFP and UL16_postVFP (algomez/XX4b/2024_v2/) were re-skimmed after
-# metadata/datasets/trigweights_2024_v2.json was built: all 16 chunks have new
+# metadata/friends/trigweights_Run2_v2.json was built: all 16 chunks have new
 # UUIDs and the last chunk of each era a different entry count (34942 vs 34838,
 # 21540 vs 21570). Friend trees are keyed by UUID + entry range, so the friend
 # lookup returns nothing for them -- silently skipped until 2026-09-19, now a
@@ -14,9 +14,9 @@
 #       --configfile coffea4bees/workflows/config/trigweights_ZZ4b_UL16.yml --cores 2
 # then merge the new entries into the shared index (and the archived copy used by lowpt):
 #   ./run_container python -m src.friendtrees.merge_friend_meta \
-#       -i coffea4bees/metadata/datasets/trigweights_2024_v2.json \
+#       -i coffea4bees/metadata/friends/trigweights_Run2_v2.json \
 #          output/trigweights_ZZ4b_UL16/trigger_weights/trigger_weights_friends.json \
-#       -o coffea4bees/metadata/datasets/trigweights_2024_v2.json
+#       -o coffea4bees/metadata/friends/trigweights_Run2_v2.json
 #   (same for coffea4bees/metadata/datasets/archive/Run2_2024_v2/trigweights_2024_v2.json)
 # The stale ZZ4b entries stay in the index but can never match (old UUIDs).
 # Afterwards drop the temporary `require_trigWeight: false` from nominal_run2.yml.
