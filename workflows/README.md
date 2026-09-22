@@ -17,6 +17,14 @@ The pipeline is organized into modular **Phases (A through F)** reflecting the f
 | **Phase E** | Background Uncertainties & Closure *(Optional — Skip if Stat-Only; Requires Phase F.1 Singlefiles)* | **`cmslpc`** | CPU (Condor / Dask batching) |
 | **Phase F** | Analysis Processor & CMS Combine Stats | **`cmslpc`** | CPU (Condor + Dask + Combine container) |
 
+> [!NOTE]
+> **CERN lxplus** can run every phase: the `cmslpc` phases work unchanged because `runner.py --condor`
+> auto-detects lxplus and submits Dask workers to CERN HTCondor via `dask_lxplus`; the GPU phases (C.2/C.3,
+> D.2/D.3, E.4) are dispatched by `run_container snakemake` to the `lxplus_gpu` profile, which runs the
+> train/evaluate rules as HTCondor GPU jobs. The ttHbb configs in `config/` write to
+> `root://eoscms.cern.ch//eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/` and read the FNAL inputs remotely.
+> Run `./run_container lxplus-setup` once and create the grid proxy in `proxy/x509_proxy` first.
+
 > [!TIP]
 > **Configuration Best Practice**: While Snakemake supports direct command-line parameter overrides (e.g. `--config dataset=ttHbb year=UL18`), the **recommended and reproducible approach** is to run workflows using a centralized YAML configuration file passed via `--configfile` (e.g. `--configfile coffea4bees/workflows/config/nominal_run2.yml` or `coffea4bees/workflows/config/analysis_ttHbb.yml`). CLI `--config` flags should only be used for temporary or targeted overrides (such as `--config test=true` or single-dataset evaluation).
 

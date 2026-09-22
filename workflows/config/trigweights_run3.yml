@@ -122,7 +122,7 @@ trigger_weights:
     # configs point at /store/user/algomez/..., which is not writable -- either
     # way the failure only surfaces at the friend-merge step, after all the
     # compute.
-    make_classifier_input: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/trigWeights/
+    make_classifier_input: root://eoscms.cern.ch//eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/Run3_v1/trigWeights/
     # Run 3 defaults, stated explicitly rather than relying on the is_run2 branch.
     use_vectorized: true
     tagger: PNet

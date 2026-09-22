@@ -52,4 +52,4 @@ config:
   # (HCR.InputBranch feature_ancillary: [xW, nSelJets, xbW, year]).
   top_reconstruction: slow
   fill_histograms: false
-  make_classifier_input: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/stitched/
+  make_classifier_input: root://eoscms.cern.ch//eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/2024_v2/stitched/

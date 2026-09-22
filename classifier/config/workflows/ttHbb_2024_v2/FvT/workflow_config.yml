@@ -1,8 +1,8 @@
 # Config for src/classifier/workflow/Snakefile.
 # To keep outputs from a separate run, change output_dir.
 
-eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb"
-plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
+eos_base: "root://eoscms.cern.ch//eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/2024_v2/ttHbb"
+plot_base: "root://eosuser.cern.ch//eos/user/m/mmarcheg/www/ttHbb/Plots"
 
 classifier_config_paths: coffea4bees
 wfs_base: coffea4bees/classifier/config/workflows/ttHbb_2024_v2/FvT

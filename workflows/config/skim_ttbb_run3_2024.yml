@@ -96,7 +96,7 @@ skimmer:
       - T3_US_Baylor
       - T3_US_Rutgers
   config:
-    base_path: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/
+    base_path: root://eoscms.cern.ch//eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/Run3_v1/
     # Pinned, not auto-generated: lets a re-run after an eviction resume from the
     # chunks already written instead of redoing the era.
     campaign: ttbb-skim-run3-v1

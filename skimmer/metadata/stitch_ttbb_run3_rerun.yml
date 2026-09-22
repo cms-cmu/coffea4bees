@@ -118,7 +118,7 @@ runner:
     - T2_US_Purdue
 
 config:
-  base_path: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/stitched/
+  base_path: root://eoscms.cern.ch//eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/Run3_v1/stitched/
   step: 20000
   # ANALYSIS-level k (stage 1 run with --selection analysis), not the picoAOD-level
   # one. The inclusive and TTbb picoAODs were produced by different code

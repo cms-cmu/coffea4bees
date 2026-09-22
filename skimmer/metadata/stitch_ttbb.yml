@@ -41,7 +41,7 @@ runner:
     - T2_US_Purdue
 
 config:
-  base_path: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/2024_v2/stitched/
+  base_path: root://eoscms.cern.ch//eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/2024_v2/stitched/
   step: 100000
   stitch_factors: coffea4bees/skimmer/metadata/ttbb_stitch_factors.json
   # Pinned (not auto-generated) so that re-running after a failure resumes from
