@@ -93,6 +93,8 @@ def get_master_targets(wildcards):
                 f"{config['output_path']}stat_analysis/{channel}/significance/datacard_significance__{signallabel}.log",
                 f"{config['output_path']}stat_analysis/{channel}/likelihood_scan/datacard_likelihood_scan__{signallabel}.pdf",
             ])
+    if any(ch.get('signallabel') for ch in config.get('channels', {}).values()):
+        master_targets.append(f"{config['output_path']}stat_analysis/summary.html")  # Phase F.2 overview page
     return master_targets
 
 # The first rule defined in the master file remains the default target
