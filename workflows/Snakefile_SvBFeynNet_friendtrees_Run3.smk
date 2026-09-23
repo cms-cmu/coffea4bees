@@ -30,6 +30,15 @@ config.setdefault('install_path',
 # rank-suffixed / synthetic runs where data/TT/HH friends are unchanged from the
 # legacy build. Default False preserves backward-compatible standalone behavior.
 config.setdefault('reuse_legacy_friends', False)
+
+# Sources the (non-reuse) merge collects: any subset of data, mixeddata, ttbar,
+# HH. Restricting it (e.g. --config 'feynnet_sources=[data,HH]') builds a
+# combined JSON holding only those sources; the rest are dropped, not carried
+# over from the legacy JSON.
+config.setdefault('feynnet_sources', ['data', 'mixeddata', 'ttbar', 'HH'])
+_unknown_sources = set(config['feynnet_sources']) - {'data', 'mixeddata', 'ttbar', 'HH'}
+if _unknown_sources:
+    raise ValueError(f"unknown feynnet_sources: {sorted(_unknown_sources)}")
 LEGACY_FEYNET_JSON = "coffea4bees/metadata/friends/SvBFeynNetfriend_mixeddata_data.json"
 
 # Friend-JSON name stub + output-dir tag, derived from dataset_name.
@@ -187,32 +196,25 @@ if config['reuse_legacy_friends']:
             """
 
 else:
+    _source_datasets = {
+        'data':      ['data'],
+        'mixeddata': [config['dataset_name']],
+        'ttbar':     TT_DATASETS,
+        'HH':        HH_DATASETS,
+    }
+
     rule merge_SvBFeynNet_friendtrees:
-        """Merge per-year data, mixeddata_all, and TTBar SvB_FeynNet metafiles into one JSON.
+        """Merge per-year SvB_FeynNet metafiles for feynnet_sources into one JSON.
 
         runner.py writes {output_path}/{output_file}.json alongside each coffea output,
         so per-year metafiles are the coffea paths with .coffea → .json.
         merge_friend_meta.py merges by key (SvB_FeynNet) using Friend.__add__.
         """
         input:
-            data_coffea = expand(
-                f"{FEYNNET_OUT}SvBFeynNet_data__{{year}}.coffea",
-                year=config['years']
-            ),
-            mixeddata_coffea = expand(
-                f"{FEYNNET_OUT}SvBFeynNet_{{dataset_name}}__{{year}}.coffea",
-                dataset_name=config['dataset_name'],
+            coffeas = expand(
+                f"{FEYNNET_OUT}SvBFeynNet_{{dataset}}__{{year}}.coffea",
+                dataset=[d for s in config['feynnet_sources'] for d in _source_datasets[s]],
                 year=config['years'],
-            ),
-            ttbar_coffea = expand(
-                f"{FEYNNET_OUT}SvBFeynNet_{{tt_dataset}}__{{year}}.coffea",
-                tt_dataset=TT_DATASETS,
-                year=config['years']
-            ),
-            hh_coffea = expand(
-                f"{FEYNNET_OUT}SvBFeynNet_{{hh_dataset}}__{{year}}.coffea",
-                hh_dataset=HH_DATASETS,
-                year=config['years']
             ),
         output: f"{FEYNNET_OUT}SvBFeynNetfriend_mixeddata_data.json"
         # container: None -> avoid nested apptainer under --profile lpc; ./run_container in the shell provides the container (see merge_cluster in Snakefile_Run3_make_synthetic).
@@ -220,8 +222,7 @@ else:
         log: f"{FEYNNET_OUT}logs/merge_SvBFeynNet_friendtrees.log"
         params:
             all_jsons = lambda wildcards, input: [
-                f.replace(".coffea", ".json")
-                for f in list(input.data_coffea) + list(input.mixeddata_coffea) + list(input.ttbar_coffea) + list(input.hh_coffea)
+                f.replace(".coffea", ".json") for f in list(input.coffeas)
             ]
         shell:
             """
