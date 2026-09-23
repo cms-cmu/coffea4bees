@@ -1,0 +1,51 @@
+# ==============================================================================
+# Run 3 nominal production (2022 + 2023) with the quadjet_run2 candidate selection
+# ==============================================================================
+# Only the differences from nominal_run3.yml. Everything else -- eras, datasets, phase
+# settings, handoff, classifier templates, Combine -- comes from `base:` and is documented
+# there. Dicts merge recursively (a key set here replaces just that key); lists replace.
+#
+#   roast:    `roast new --config <this file>` merges it over the base and captures the
+#             self-contained result as roasts/<id>/config.yml (base path + sha in roast.json).
+#   by hand:  snakemake --configfile coffea4bees/workflows/config/nominal_run3.yml \
+#                       --configfile coffea4bees/workflows/config/nominal_run3_quadjet_run2.yml
+#             (snakemake merges the same way; this file alone is NOT a complete config).
+#
+# What quadjet_run2 changes: candidates_selection_thresholds_quadjet_run2.yml sets
+# quadjet_selection.mode: run2, which switches only the pairing and the mass regions --
+# dijets ordered by sT, pairing by the MDR rank, SR = ZZSR|ZHSR|HHSR and SB =
+# passDiJetMass & ~SR, in place of the Run 3 dhh pairing and rhh SR/SB. Jet selection,
+# btagPNetB working points and fourTag_use_tight stay Run 3. Every product (JCM, classifier
+# inputs, FvT, SvB) is re-made by this roast; nothing is read from a nominal_run3 roast or
+# from the HH4b_Run3_quadjet_run2 study.
+#
+# Deliberately NOT changed:
+#   * tag: Run3_v1 -- the JCM file lives under {roast_id}, so it cannot collide with
+#     nominal_run3's, and the Run3_v1 hard-coded in the base's fvt/svb --JCM-weight overrides
+#     and analysis_config.JCM_file stays in step with it.
+#   * classifier_setting mass_regions: [SR, SB] -- with Run 2 regions the SR|SB decomposition
+#     holds again so it is no longer required, but it keeps the encoding equal to nominal_run3.
+#   * fvt/svb labels (FvT_nominal / SvB_nominal) -- already under {roast_id}.
+base: coffea4bees/workflows/config/nominal_run3.yml
+
+# Only used outside a roast, where {roast_id} falls back to label. Not Run3_quadjet_run2:
+# that is the study's output/ directory and EOS stem (Snakefile_Run3.smk, rules/run3_variants.smk).
+label: "Run3_nominal_quadjet_run2"
+output_path: "output/Run3_nominal_quadjet_run2/"
+
+# THE quadjet_run2 switch. Set once here: jcm (B.1), classifier_inputs (B.2) and fvt_closure
+# (C.4) inherit analysis_config's `config` through resolve_config_section and none of them
+# overrides this key, so every phase uses the same selection.
+analysis_config:
+  config:
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_quadjet_run2.yml"
+
+# Own cutflow references: once nominal_run3's are blessed, this selection (different SR/SB,
+# different counts) would fail every entry against them. None exist yet, so the first run
+# only dumps its cutflow.
+jcm_known_counts_NoJCM: "coffea4bees/analysis/tests/known_fullCounts_JCM_NoJCM_Run3_quadjet_run2.yml"
+jcm_known_counts_wJCM: "coffea4bees/analysis/tests/known_fullCounts_JCM_wJCM_Run3_quadjet_run2.yml"
+fvt_closure:
+  known_counts: "coffea4bees/analysis/tests/known_fullCounts_FvT_closure_Run3_quadjet_run2.yml"
+
+combine_outdir: "datacards/HH4b_run3_quadjet_run2_fine"
