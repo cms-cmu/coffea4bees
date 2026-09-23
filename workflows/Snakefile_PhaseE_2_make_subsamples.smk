@@ -109,12 +109,12 @@ _mixeddata_cfg = config.get('mixeddata', {})
 if isinstance(_mixeddata_cfg, dict) and 'install_path' in _mixeddata_cfg:
     config.setdefault('install_path', _mixeddata_cfg['install_path'])
 else:
-    config.setdefault('install_path', f"coffea4bees/metadata/datasets/mixeddata_{channel}{_rank_suffix}.yml")
+    config.setdefault('install_path', f"{out}coffea4bees/metadata/datasets/mixeddata_{channel}{_rank_suffix}.yml")
 
 # Subsampling configuration (16 datasets v0..v15)
 config.setdefault('n_subsamples', config.get('n_models', config.get('n_samples', config.get('nMixes', 16))))
 config.setdefault('multisample_dataset_name', "mixeddata_4b")
-config.setdefault('multisample_install_path', "coffea4bees/metadata/datasets/mixeddata_4b.yml")
+config.setdefault('multisample_install_path', f"{out}coffea4bees/metadata/datasets/mixeddata_4b.yml")
 config.setdefault('subsample_output_path', f"{out}subsamples/")
 N_SUBSAMPLES = int(config['n_subsamples'])
 SUBSAMPLES = [str(i) for i in range(N_SUBSAMPLES)]
@@ -123,9 +123,9 @@ SUBSAMPLES = [str(i) for i in range(N_SUBSAMPLES)]
 config.setdefault('classifier_inputs_base',
     f"root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/{channel}/classifier_inputs/mixeddata/")
 config.setdefault('classifier_inputs_json',
-    f"coffea4bees/metadata/datasets/classifier_inputs_mixeddata/classifier_inputs_mixeddata_{channel}.json")
+    f"{out}coffea4bees/metadata/datasets/classifier_inputs_mixeddata/classifier_inputs_mixeddata_{channel}.json")
 
-config.setdefault('mixeddata_friend_json', f"coffea4bees/metadata/friends/friends_{channel}_mixeddata_4b.json")
+config.setdefault('mixeddata_friend_json', f"{out}coffea4bees/metadata/friends/friends_{channel}_mixeddata_4b.json")
 SVB_FRIEND_JSON = config['mixeddata_friend_json']
 
 sub_out = config['subsample_output_path']
@@ -136,13 +136,14 @@ else:
     jcm_input_coffea = _raw_jcm_input
 mixeddata_jcm_file = f"{out}JCM_mixeddata_inclusive/jetCombinatoricModel_inclusive_{channel}_mixeddata.yml"
 
-localrules: all_PhaseE_2, all_PhaseE_1b, all_subsamples, all_subsample_jcm, all_classifier_inputs_mixeddata, all_classifier_inputs_subsamples, all_friends_mixeddata, all_study_mixeddata, all_subsample_closure, prepare_data_noJCM, create_subsample_config, build_multisample_registry, create_noJCM_subsamples_config, create_subsample_jcm_config, make_subsample_jcm, create_study_mixeddata_config, plot_subsample_correlation, create_analysis_config_subsample, create_plot_config_v0_closure, make_plots_v0_closure, create_plot_config_v0_vs_mixeddata_all, make_plots_v0_vs_mixeddata_all, create_classifier_inputs_config_mixeddata, create_classifier_inputs_config_subsample, update_classifier_inputs_subsample_json, merge_all_classifier_inputs_subsamples_json, create_eval_config, merge_friends_json
+localrules: all_PhaseE_2, all_PhaseE_1b, all_subsamples, all_subsample_jcm, all_classifier_inputs_mixeddata, all_classifier_inputs_subsamples, all_friends_mixeddata, all_study_mixeddata, all_subsample_closure, test_v0_closure, prepare_data_noJCM, create_subsample_config, build_multisample_registry, create_noJCM_subsamples_config, create_subsample_jcm_config, make_subsample_jcm, create_study_mixeddata_config, plot_subsample_correlation, create_analysis_config_subsample, create_plot_config_v0_closure, make_plots_v0_closure, create_plot_config_v0_vs_mixeddata_all, make_plots_v0_vs_mixeddata_all, create_classifier_inputs_config_mixeddata, create_classifier_inputs_config_subsample, update_classifier_inputs_subsample_json, merge_all_classifier_inputs_subsamples_json, create_eval_config, merge_friends_json
 
 # ── Default Master Target (Full Phase E2 End-to-End) ───────────────────────────
 def get_all_phaseE_2_inputs(wildcards):
     inputs = [
         config['multisample_install_path'],
         *expand(f"{out}JCM_subsamples/jetCombinatoricModel_SB_mix_v{{m}}.yml", m=range(N_SUBSAMPLES)),
+        *expand(f"{out}JCM_subsamples/plots_v{{m}}/selJets_noJCM_n.png", m=range(N_SUBSAMPLES)),
         f"{out}classifier_inputs/merge_all_subsamples.done",
     ]
     if config.get('eval_svb_friends', False):
@@ -164,7 +165,8 @@ rule all_subsamples:
 
 rule all_subsample_jcm:
     input:
-        expand(f"{out}JCM_subsamples/jetCombinatoricModel_SB_mix_v{{m}}.yml", m=range(N_SUBSAMPLES))
+        expand(f"{out}JCM_subsamples/jetCombinatoricModel_SB_mix_v{{m}}.yml", m=range(N_SUBSAMPLES)),
+        expand(f"{out}JCM_subsamples/plots_v{{m}}/selJets_noJCM_n.png", m=range(N_SUBSAMPLES))
 
 rule all_classifier_inputs_mixeddata:
     input:
@@ -283,6 +285,18 @@ rule build_multisample_registry:
         import yaml, re
         os.makedirs(os.path.dirname(output[0]), exist_ok=True)
 
+        existing_psdata = {}
+        target_path = output[0] if os.path.exists(output[0]) else config.get('seed_multisample_manifest', 'coffea4bees/metadata/datasets/mixeddata_4b.yml')
+        if os.path.exists(target_path):
+            with open(target_path, 'r') as f_old:
+                try:
+                    old_data = yaml.safe_load(f_old) or {}
+                    for y, y_info in old_data.get(params.dataset_name, {}).items():
+                        if isinstance(y_info, dict) and 'picoAOD' in y_info:
+                            existing_psdata[y] = [f for f in y_info['picoAOD'].get('files_template', []) if 'PSData' in f or 'vXXX' not in f]
+                except Exception:
+                    pass
+
         multisample_data = {
             params.dataset_name: {
                 "nSamples": int(params.n_samples),
@@ -324,13 +338,17 @@ rule build_multisample_registry:
                         t = re.sub(r'_v\d+(\.chunk\d+)?\.root', r'_vXXX.root', t)
                         if t not in multisample_data[params.dataset_name][year]["picoAOD"]["files_template"]:
                             multisample_data[params.dataset_name][year]["picoAOD"]["files_template"].append(t)
+            # Add back any static PSData files
+            for static_file in existing_psdata.get(year, []):
+                if static_file not in multisample_data[params.dataset_name][year]["picoAOD"]["files_template"]:
+                    multisample_data[params.dataset_name][year]["picoAOD"]["files_template"].append(static_file)
 
         print(f"Building multisample registry with {len(params.years)} years")
         with open(output[0], 'w') as f:
             yaml.dump(multisample_data, f, default_flow_style=False)
 
 # ── Stage 2b: Data 3b and Subsample noJCM Histogramming ────────────────────────
-DATA_NOJCM_INPUT = config.get('data_nojcm_coffea', jcm_input_coffea)
+DATA_NOJCM_INPUT = jcm_cfg.get('data_nojcm_coffea', config.get('data_nojcm_coffea', jcm_input_coffea))
 jcm_source_coffea = jcm_cfg.get('source_coffea', config.get('jcm_source_coffea', "output/ttHbb_stitched/computeJCM/histAll_NoJCM.coffea"))
 
 if "stage_input_coffea" not in [r.name for r in workflow.rules]:
@@ -357,7 +375,7 @@ rule prepare_data_noJCM:
     shell:
         """
         mkdir -p $(dirname {output})
-        ln -sf $(readlink -f {input}) {output}
+        ln -sf $(realpath --relative-to=$(dirname {output}) {input}) {output}
         """
 
 rule create_noJCM_subsamples_config:
@@ -439,8 +457,8 @@ rule create_subsample_jcm_config:
             "data3bName": "data",
             "taglabel3b": "threeTag",
             "taglabel3b_tt": "threeTag",
-            "selJets": "selJets.n",
-            "tagJets": "tagJets.n",
+            "selJets": "selJets_noJCM.n",
+            "tagJets": "tagJets_noJCM.n",
             "ignoreTT": False,
             "subtract3bTT": True,
             "ttbarProcesses": [
@@ -452,9 +470,116 @@ rule create_subsample_jcm_config:
         with open(output[0], "w") as f:
             yaml.dump(fit_cfg, f, default_flow_style=False)
 
+rule create_subsample_jcm_plot_config:
+    output:
+        f"{out}JCM_subsamples/configs/plots_metadata_v{{m}}.yml"
+    run:
+        import yaml
+        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
+        m = wildcards.m
+        plot_cfg = {
+            "hists": {
+                f"mix_v{m}": {
+                    "process": f"mix_v{m}",
+                    "tag": "fourTag",
+                    "year": "RunII",
+                    "label": f"Mixed data v{m} (4b)",
+                    "edgecolor": "k",
+                    "fillcolor": "k",
+                },
+                "JCM": {
+                    "process": "JCM",
+                    "tag": "fourTag",
+                    "year": "RunII",
+                    "label": "JCM fit",
+                    "edgecolor": "r",
+                    "fillcolor": "r",
+                    "histtype": "step",
+                    "scalefactor": 1,
+                },
+            },
+            "stack": {
+                "TTbar": {
+                    "year": "RunII",
+                    "fillcolor": "#85D1FBff",
+                    "edgecolor": "k",
+                    "label": "TTbar",
+                    "sum": {
+                        "TTTo2L2Nu": {
+                            "process": "TTTo2L2Nu_stitched",
+                            "tag": "fourTag",
+                            "scalefactor": 1.0,
+                        },
+                        "TTToSemiLeptonic": {
+                            "process": "TTToSemiLeptonic_stitched",
+                            "tag": "fourTag",
+                            "scalefactor": 1.0,
+                        },
+                        "TTToHadronic": {
+                            "process": "TTToHadronic_stitched",
+                            "tag": "fourTag",
+                            "scalefactor": 1.0,
+                        },
+                    },
+                },
+                "MultiJet": {
+                    "year": "RunII",
+                    "fillcolor": "#FFDF7Fff",
+                    "edgecolor": "k",
+                    "label": "Multijet",
+                    "sum": {
+                        "data_3tag": {
+                            "process": "data",
+                            "tag": "threeTag",
+                            "scalefactor": 1.0,
+                        },
+                        "TTTo2L2Nu_3tag": {
+                            "process": "TTTo2L2Nu_stitched",
+                            "tag": "threeTag",
+                            "scalefactor": -1.0,
+                        },
+                        "TTToSemiLeptonic_3tag": {
+                            "process": "TTToSemiLeptonic_stitched",
+                            "tag": "threeTag",
+                            "scalefactor": -1.0,
+                        },
+                        "TTToHadronic_3tag": {
+                            "process": "TTToHadronic_stitched",
+                            "tag": "threeTag",
+                            "scalefactor": -1.0,
+                        },
+                    },
+                },
+            },
+            "ratios": {
+                "dataToBkg": {
+                    "numerator": {"type": "hists", "key": f"mix_v{m}"},
+                    "denominator": {"type": "stack"},
+                    "uncertianty": "nominal",
+                    "color": "k",
+                    "marker": "o",
+                },
+                "dataToJCM": {
+                    "numerator": {"type": "hists", "key": f"mix_v{m}"},
+                    "denominator": {"type": "hists", "key": "JCM"},
+                    "uncertianty": "nominal",
+                    "color": "r",
+                    "marker": "o",
+                },
+            },
+            "codes": {
+                "region": {"SR": 2, "SB": 1, "other": 0},
+                "tag": {"threeTag": 3, "fourTag": 4, "other": 0},
+            },
+            "doRatio": 1,
+        }
+        with open(output[0], "w") as f:
+            yaml.dump(plot_cfg, f, default_flow_style=False, sort_keys=False)
+
 def get_subsample_jcm_inputs(wildcards):
     subsample_coffea = f"{out}classifier_inputs/histAll_{channel}_mixeddata_v{wildcards.m}.coffea"
     fit_cfg = f"{out}JCM_subsamples/configs/config_v{wildcards.m}.yml"
+    plot_cfg = f"{out}JCM_subsamples/configs/plots_metadata_v{wildcards.m}.yml"
     data_coffea = (
         config.get('dummy_jcm_file', "coffea4bees/metadata/weights/JCM/jetCombinatoricModel_SB_dummy.yml")
         if config.get('test', False)
@@ -464,13 +589,16 @@ def get_subsample_jcm_inputs(wildcards):
         "data_coffea": data_coffea,
         "subsample_coffea": subsample_coffea,
         "fit_cfg": fit_cfg,
+        "plot_cfg": plot_cfg,
     }
 
 rule make_subsample_jcm:
     input:
         unpack(get_subsample_jcm_inputs)
     output:
-        f"{out}JCM_subsamples/jetCombinatoricModel_SB_mix_v{{m}}.yml"
+        jcm_yaml = f"{out}JCM_subsamples/jetCombinatoricModel_SB_mix_v{{m}}.yml",
+        seljets_plot = f"{out}JCM_subsamples/plots_v{{m}}/selJets_noJCM_n.png",
+        tagjets_plot = f"{out}JCM_subsamples/plots_v{{m}}/tagJets_noJCM_n.png",
     log:
         f"{out}JCM_subsamples/logs/make_jcm_v{{m}}.log"
     params:
@@ -481,19 +609,23 @@ rule make_subsample_jcm:
     shell:
         """
         set -eo pipefail
-        mkdir -p $(dirname {output}) $(dirname {log})
+        mkdir -p $(dirname {output.jcm_yaml}) $(dirname {log})
         if [ "{params.test_mode}" = "True" ] || [ "{params.test_mode}" = "true" ]; then
-            echo "Test mode: deploying dummy JCM {params.dummy_jcm} -> {output}" > {log}
-            cp {params.dummy_jcm} {output}
+            echo "Test mode: deploying dummy JCM {params.dummy_jcm} -> {output.jcm_yaml}" > {log}
+            cp {params.dummy_jcm} {output.jcm_yaml}
+            touch {output.seljets_plot} {output.tagjets_plot}
         else
+            mkdir -p $(dirname {output.jcm_yaml})/plots_v{wildcards.m}
             {params.container_wrapper} {params.python_bin} coffea4bees/analysis/jcm_tools/make_jcm_weights.py \
                 -i {input.data_coffea} {input.subsample_coffea} \
                 --jcm_config {input.fit_cfg} \
+                -m {input.plot_cfg} \
+                --combine_input_files \
                 -w mix_v{wildcards.m} \
                 -r SB \
-                -o $(dirname {output})/ \
-                --no-plots \
+                -o $(dirname {output.jcm_yaml})/plots_v{wildcards.m}/ \
                 --year RunII 2>&1 | tee {log}
+            cp $(dirname {output.jcm_yaml})/plots_v{wildcards.m}/jetCombinatoricModel_SB_mix_v{wildcards.m}.yml {output.jcm_yaml}
         fi
         """
 
@@ -662,19 +794,12 @@ rule create_plot_config_v0_closure:
                 }
             },
             "stack": {
-                "TTbar": {
-                    "process": ["TTToHadronic", "TTToSemiLeptonic", "TTTo2L2Nu"],
-                    "tag": "fourTag",
-                    "fillcolor": "#85D1FBff",
-                    "edgecolor": "k",
-                    "label": "TTbar",
-                },
                 "mixeddata": {
                     "process": "mix_v0",
                     "tag": "fourTag",
-                    "fillcolor": "orange",
+                    "fillcolor": "#FFDF7Fff",
                     "edgecolor": "k",
-                    "label": "Mixed data v0 (unweighted)",
+                    "label": "Mixed data v0 (4b)",
                 }
             },
             "ratios": {
@@ -692,15 +817,15 @@ rule create_plot_config_v0_closure:
                 }
             },
             "doRatio": 1,
-            "categories": ["inclusive", "pass_nSelJets_gt6", "fail_nSelJets_le6"],
-            "regions": ["sum", "SR", "SB"],
+            "categories": ["inclusive", "pass_nSelJets_gt6"],
+            "regions": ["SR", "SB"],
         }
         with open(output[0], "w") as f:
             yaml.dump(pcfg, f, default_flow_style=False)
 
 rule make_plots_v0_closure:
     input:
-        data_coffea = jcm_input_coffea,
+        data_coffea = config.get('nominal_coffea', "output/ttHbb_stitched/histAll_ttHbb_stitched.coffea"),
         subsample_coffea = f"{out}histAll_{channel}_mixeddata_v0.coffea",
         plot_cfg = f"{out}plots_metadata_v0_closure.yml",
     output:
@@ -709,6 +834,8 @@ rule make_plots_v0_closure:
         f"{out}logs/make_plots_v0_closure.log"
     params:
         output_dir = f"{out}plots_v0_closure/",
+        extra_arguments = "-s xW --year RunII",
+        png_cores = 4,
         container_wrapper = config['analysis_container_wrapper'],
         python_bin = python_bin,
     shell:
@@ -720,10 +847,14 @@ rule make_plots_v0_closure:
             -o {params.output_dir} \
             -m {input.plot_cfg} \
             --combine_input_files \
-            --year RunII \
-            -p 1 2>&1 | tee {log}
+            {params.extra_arguments} \
+            -p {params.png_cores} 2>&1 | tee {log}
         touch {output.done}
         """
+
+rule test_v0_closure:
+    input:
+        f"{out}plots_v0_closure/plots_done.txt"
 
 rule create_plot_config_v0_vs_mixeddata_all:
     output:
@@ -767,7 +898,7 @@ rule create_plot_config_v0_vs_mixeddata_all:
                 }
             },
             "doRatio": 1,
-            "categories": ["inclusive", "pass_nSelJets_gt6", "fail_nSelJets_le6"],
+            "categories": ["inclusive", "pass_nSelJets_gt6"],
             "regions": ["sum", "SR", "SB"],
         }
         with open(output[0], "w") as f:
