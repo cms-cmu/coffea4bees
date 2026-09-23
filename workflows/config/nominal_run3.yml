@@ -84,6 +84,16 @@ classifier_setting:
   - module: HCR.InputBranch
     option:
       - feature_ancillary: [xW, nSelJets, xbW, year]
+      # Encode only SR/SB in the region index. The classifier ORs MassRegion values together,
+      # which assumes the channel flags decompose SR -- true for Run 2 (SR = ZZSR|ZHSR|HHSR),
+      # but Run 3 takes SR from the radial distance rhh and leaves ZZSR/ZHSR/HHSR as
+      # independent mass windows, so an event in the ZZ window and the Run 3 sideband encodes
+      # as ZZSR|SB = 7, which is not a MassRegion member and aborts the training.
+      # The processor still writes all five columns and the friend trees still carry them, so
+      # this reverts to the full decomposition simply by dropping this line once Run 3 ZZ/ZH
+      # samples exist. Neither Run 3 training reads them today: the FvT selects on (SB | SR),
+      # the SvB on --regions (default ["SR"]).
+      - mass_regions: [SR, SB]
 
 # ==============================================================================
 # PHASE B -> C/D HANDOFF
