@@ -2,7 +2,9 @@ runner:
   workers: 4
   worker_memory: 8GB
   friend_metafile: make_friend_SvB_FeynNet
-  friend_base: &friend_base root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_v3
+  # Fresh directory: the 2025_v3 friends are still referenced by committed JSONs
+  # (and pinned roasts); writing there would overwrite them in place.
+  friend_base: &friend_base root://cmseos.fnal.gov//store/user/jda102/XX4b/2026_Run3_SvBFeynNet
   # friend_base: &friend_base /tmp/SvBFeynNet_test   # local path for testing
 
 config:
