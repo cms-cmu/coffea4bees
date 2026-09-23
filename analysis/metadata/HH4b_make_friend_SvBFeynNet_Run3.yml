@@ -1,6 +1,10 @@
 runner:
   workers: 4
   worker_memory: 8GB
+  # Without this runner.py uses a local process pool: the Snakefile's run_on_condor
+  # param is never passed on, and 8 local jobs overload an LPC login node.
+  condor: true
+  condor_cores: 1
   friend_metafile: make_friend_SvB_FeynNet
   # Fresh directory: the 2025_v3 friends are still referenced by committed JSONs
   # (and pinned roasts); writing there would overwrite them in place.
