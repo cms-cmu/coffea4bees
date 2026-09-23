@@ -6,6 +6,11 @@ runner:
   # (and pinned roasts); writing there would overwrite them in place.
   friend_base: &friend_base root://cmseos.fnal.gov//store/user/jda102/XX4b/2026_Run3_SvBFeynNet
   # friend_base: &friend_base /tmp/SvBFeynNet_test   # local path for testing
+  # MC 2023_preBPix (mixed parking) reads is_parking from its friend tree. Only that
+  # friend is injected: loading the existing SvB_FeynNet friend would defeat the point.
+  friend_file: coffea4bees/metadata/friends/friends_HH4b.yml
+
+friends_include: [is_parking]
 
 config:
   blind: false
