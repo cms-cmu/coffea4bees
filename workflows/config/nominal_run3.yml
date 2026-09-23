@@ -283,6 +283,12 @@ analysis_config:
     # THIS roast's JCM fit (Phase B.1 handoff copy; the same file C.4, the FvT and the SvB use).
     # Without JCM_file the processor falls back to the per-year JCM in weights_file, i.e. some
     # earlier production's fit, and the 3b data / 3b ttbar normalisation is wrong.
+    # In a roast {roast_id} is the roast id, so this is Phase B's per-roast fit. Run by hand,
+    # helpers/common.smk falls back to the label (Run3_nominal) -- and CI really executes this
+    # config (gitlab-CI/stages_analysis.yml runs all_data/all_signals with test=true), unlike
+    # nominal_run2.yml which it only dry-runs. metadata/weights/JCM/Run3_nominal/ therefore
+    # holds a committed symlink to the checked-in Run 3 fit so the standalone path resolves;
+    # a roast never reads it, since its own id names a different directory.
     JCM_file: coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_Run3_v1.yml
     apply_trigWeight: true
     # The only per-year friends F.1 reads. The FvT / SvB_MA entries under `friends:` above are
