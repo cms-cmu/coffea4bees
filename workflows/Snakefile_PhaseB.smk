@@ -59,7 +59,10 @@ rule phaseB_handoff:
         if [ -n "{params.eos}" ]; then
             # Same proxy fallback as the other rules that talk to EOS: roast seeds
             # ./proxy/x509_proxy in the checkout and run_container binds it into the container.
-            if [ -z "$X509_USER_PROXY" ] && [ -f ./proxy/x509_proxy ]; then
+            # ${{X509_USER_PROXY:-}}, not $X509_USER_PROXY: snakemake prefixes every shell block
+            # with `set -euo pipefail`, and under nounset a bare reference to an unset variable
+            # aborts the rule ("X509_USER_PROXY: unbound variable") before xrdcp ever runs.
+            if [ -z "${{X509_USER_PROXY:-}}" ] && [ -f ./proxy/x509_proxy ]; then
                 export X509_USER_PROXY="$PWD/proxy/x509_proxy"
             fi
             # -p creates the destination directory; -f overwrites a previous run's copy.
