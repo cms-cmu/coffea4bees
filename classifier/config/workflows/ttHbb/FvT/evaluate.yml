@@ -10,7 +10,7 @@ dataset:
       - --metadata coffea4bees/metadata/datasets/
       - --max-workers 8
       - --data-source detector
-      - --friends "" coffea4bees/metadata/datasets/classifier_inputs_ttHbb_stitched.json@@HCR_input
+      - --friends "" coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json@@HCR_input
 
 model:
   - module: HCR.FvT.baseline.Eval
