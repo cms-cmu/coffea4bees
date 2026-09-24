@@ -8,25 +8,25 @@ hists:
 
 stack:
   TTToHadronic:
-    process: TTToHadronic
+    process: TTToHadronic_stitched
     tag: fourTag
     fillcolor: "#85D1FBff"
     edgecolor: k
-    label: "$t\\bar{t}$ Hadronic"
+    label: "$t\\bar{t}$ Hadronic (5FS + 4FS)"
 
   TTToSemiLeptonic:
-    process: TTToSemiLeptonic
+    process: TTToSemiLeptonic_stitched
     tag: fourTag
     fillcolor: "#5790FCff"
     edgecolor: k
-    label: "$t\\bar{t}$ Semi-Leptonic"
+    label: "$t\\bar{t}$ Semi-Leptonic (5FS + 4FS)"
 
   TTTo2L2Nu:
-    process: TTTo2L2Nu
+    process: TTTo2L2Nu_stitched
     tag: fourTag
     fillcolor: "#964A8Bff"
     edgecolor: k
-    label: "$t\\bar{t}$ Dileptonic"
+    label: "$t\\bar{t}$ Dileptonic (5FS + 4FS)"
 
 ratios:
   dataToBkg:
