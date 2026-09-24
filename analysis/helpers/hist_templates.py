@@ -39,19 +39,42 @@ class ttHbbSvBHists(Template):
 
     ### var_binning_ps_ttHbb defines the 20 quantile intervals (1.0 -> 0.01) for inclusive selection
     var_binning_ps_ttHbb = np.array([
-        0.010000, 0.083503, 0.161465, 0.238368, 0.311703, 0.380425, 0.444212, 0.503283,
-        0.556983, 0.606003, 0.650395, 0.690644, 0.726810, 0.759942, 0.789774, 0.817306,
-        0.842514, 0.866324, 0.889676, 0.915283, 1.000000
+        0.010000, 0.099212, 0.192487, 0.283615, 0.369789, 0.448584, 0.519491, 0.581347,
+        0.635411, 0.682728, 0.723954, 0.760391, 0.792145, 0.820311, 0.845132, 0.867489,
+        0.887844, 0.906737, 0.925399, 0.945366, 1.000000
     ])
     ps_ttHbb = H((20, 0, 1, ('ps_ttHbb', "Cumulative Signal Quantile (Inclusive)")))
 
+    ### var_binning_ps_ttHbb_16 defines the 16 quantile intervals (1.0 -> 0.01) for inclusive selection (test)
+    var_binning_ps_ttHbb_16 = np.array([
+        0.010000, 0.122390, 0.238677, 0.348656, 0.448588, 0.535594, 0.609384, 0.671526,
+        0.723959, 0.768821, 0.806846, 0.839184, 0.867489, 0.892634, 0.916031, 0.940032, 1.000000
+    ])
+    ps_ttHbb_16 = H((16, 0, 1, ('ps_ttHbb_16', "Cumulative Signal Quantile (16 bins)")))
+
     ### var_binning_ps_ttHbb_gt6 defines the 20 quantile intervals (1.0 -> 0.01) for nSelJets > 6 selection
     var_binning_ps_ttHbb_gt6 = np.array([
-        0.010000, 0.245186, 0.362469, 0.449253, 0.518553, 0.574762, 0.621929, 0.662470,
-        0.697837, 0.728395, 0.755545, 0.779284, 0.801199, 0.821162, 0.839527, 0.856502,
-        0.872399, 0.888174, 0.904485, 0.923441, 1.000000
+        0.010000, 0.258368, 0.392592, 0.490177, 0.565004, 0.623861, 0.671821, 0.711962,
+        0.746121, 0.775625, 0.801385, 0.823838, 0.843546, 0.861455, 0.877801, 0.892774,
+        0.906968, 0.920946, 0.935252, 0.951379, 1.000000
     ])
     ps_ttHbb_gt6 = H((20, 0, 1, ('ps_ttHbb_gt6', "Cumulative Signal Quantile (gt6)")))
+
+    ### var_binning_ps_ttHbb_lepveto defines the 20 quantile intervals (1.0 -> 0.01) for passLeptonVeto selection
+    var_binning_ps_ttHbb_lepveto = np.array([
+        0.010000, 0.112685, 0.210310, 0.301072, 0.385832, 0.460940, 0.528606, 0.587317,
+        0.638688, 0.683617, 0.723109, 0.758265, 0.789198, 0.816873, 0.841403, 0.863685,
+        0.884184, 0.903317, 0.922546, 0.943244, 1.000000
+    ])
+    ps_ttHbb_lepveto = H((20, 0, 1, ('ps_ttHbb_lepveto', "Cumulative Signal Quantile (Lepton Veto)")))
+
+    ### var_binning_ps_ttHbb_gt6_lepveto defines the 20 quantile intervals (1.0 -> 0.01) for gt6 + passLeptonVeto selection
+    var_binning_ps_ttHbb_gt6_lepveto = np.array([
+        0.010000, 0.262903, 0.396953, 0.492807, 0.566589, 0.624469, 0.671603, 0.711054,
+        0.744884, 0.774191, 0.799849, 0.822255, 0.841956, 0.859826, 0.876134, 0.891306,
+        0.905478, 0.919530, 0.934050, 0.950579, 1.000000
+    ])
+    ps_ttHbb_gt6_lepveto = H((20, 0, 1, ('ps_ttHbb_gt6_lepveto', "Cumulative Signal Quantile (gt6 + Lepton Veto)")))
 
 
 class DijetSvBHists(Template):
