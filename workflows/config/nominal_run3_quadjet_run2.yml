@@ -47,5 +47,7 @@ jcm_known_counts_NoJCM: "coffea4bees/analysis/tests/known_fullCounts_JCM_NoJCM_R
 jcm_known_counts_wJCM: "coffea4bees/analysis/tests/known_fullCounts_JCM_wJCM_Run3_quadjet_run2.yml"
 fvt_closure:
   known_counts: "coffea4bees/analysis/tests/known_fullCounts_FvT_closure_Run3_quadjet_run2.yml"
+# F.1 reference: the base points at nominal_run3's blessed known_fullCounts_Run3_nominal.yml.
+known_counts: "coffea4bees/analysis/tests/known_fullCounts_Run3_nominal_quadjet_run2.yml"
 
 combine_outdir: "datacards/HH4b_run3_quadjet_run2_fine"
