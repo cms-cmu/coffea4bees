@@ -131,8 +131,8 @@ def write_workflow_overrides(wfs_base, overrides, out_dir, log=None, inserts=Non
         for section in wf.values():
             if not isinstance(section, list):
                 continue
-            for module in section:
-                opts = module.get("option") if isinstance(module, dict) else None
+            for mod in section:     # not `module`: a Snakemake keyword at the start of a statement
+                opts = mod.get("option") if isinstance(mod, dict) else None
                 if not isinstance(opts, list):
                     continue
                 for i, opt in enumerate(opts):
@@ -150,12 +150,12 @@ def write_workflow_overrides(wfs_base, overrides, out_dir, log=None, inserts=Non
                         clash = [f for f in map(flag_of, anchors[a]) if f in present]
                         if clash:
                             raise ValueError(
-                                f"workflow_inserts: {src} module {module.get('module')} already sets "
+                                f"workflow_inserts: {src} module {mod.get('module')} already sets "
                                 f"{clash}; override it instead of inserting a second one")
                         new_opts.extend(anchors[a])
                         inserted[a] += 1
                     new_opts.append(opt)
-                module["option"] = new_opts
+                mod["option"] = new_opts
         with open(dst, "w") as f:
             yaml.dump(wf, f, default_flow_style=False, sort_keys=False)
     unused = [k for k, n in used.items() if n == 0]
