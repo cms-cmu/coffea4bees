@@ -282,7 +282,9 @@ rule train_fvt_mixed_model:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        if [ -z "$X509_USER_PROXY" ] && [ -f ./proxy/x509_proxy ]; then
+        # ${{X509_USER_PROXY:-}}: snakemake prefixes shell blocks with `set -euo pipefail`,
+        # and under nounset a bare reference to an unset variable aborts the rule.
+        if [ -z "${{X509_USER_PROXY:-}}" ] && [ -f ./proxy/x509_proxy ]; then
             export X509_USER_PROXY="$PWD/proxy/x509_proxy"
         fi
         CLASSIFIER_CONFIG_PATHS=coffea4bees {params.classifier_container_wrapper} {params.python_bin} -m src.classifier.task.main from {input} 2>&1 | tee {log}
@@ -429,7 +431,9 @@ rule evaluate_fvt_mixed_model:
         """
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
-        if [ -z "$X509_USER_PROXY" ] && [ -f ./proxy/x509_proxy ]; then
+        # ${{X509_USER_PROXY:-}}: snakemake prefixes shell blocks with `set -euo pipefail`,
+        # and under nounset a bare reference to an unset variable aborts the rule.
+        if [ -z "${{X509_USER_PROXY:-}}" ] && [ -f ./proxy/x509_proxy ]; then
             export X509_USER_PROXY="$PWD/proxy/x509_proxy"
         fi
         CLASSIFIER_CONFIG_PATHS=coffea4bees {params.classifier_container_wrapper} {params.python_bin} -m src.classifier.task.main from {input.cfg} 2>&1 | tee {log}

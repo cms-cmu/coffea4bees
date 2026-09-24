@@ -21,6 +21,33 @@ class InputBranch(GlobalSetting):
     n_NotCanJet: int = 8
     pad_value: float = -1
 
+    # Which MassRegion flags are folded into the region index. Empty = every member, which is
+    # the Run 2 behaviour and stays the default.
+    #
+    # The index is an OR of MassRegion values, which is only well defined when the channel
+    # flags decompose SR -- true for Run 2, where SR = ZZSR|ZHSR|HHSR and SB = ~SR. Run 3 takes
+    # SR from the radial distance rhh and leaves ZZSR/ZHSR/HHSR as independent mass windows, so
+    # an event can be in the ZZ window *and* the Run 3 sideband: ZZSR|SB = 7, not a member.
+    #
+    # Set ["SR", "SB"] for Run 3. The friend trees still carry the channel columns -- they are
+    # simply not encoded, so no reprocessing is needed and they are available again as soon as
+    # Run 3 ZZ/ZH samples make the decomposition meaningful. Nothing in Run 3 reads them today:
+    # the FvT selects on (SB | SR) and the SvB on --regions, which defaults to ["SR"].
+    mass_regions: list[str] = []
+
+    @classmethod
+    def get__mass_regions(cls, var: list[str]):
+        # MassRegion is defined further down this module; this only runs at config time, long
+        # after import, so the module-level name resolves.
+        names = {m.name for m in MassRegion}
+        unknown = [r for r in var if r not in names]
+        if unknown:
+            raise ValueError(
+                f"InputBranch.mass_regions: unknown region(s) {unknown}; "
+                f"valid names are {sorted(names)}"
+            )
+        return list(var)
+
     @classmethod
     def get__feature_CanJet(cls, var: list[str]):
         return [f"CanJet_{f}" for f in var]

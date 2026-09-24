@@ -1,6 +1,6 @@
 friends:
   UL18:
-    trigWeight: &trigWeight "coffea4bees/metadata/datasets/trigweights_2024_v2_stitched.json@@trigWeight"
+    trigWeight: &trigWeight "coffea4bees/metadata/friends/trigweights_Run2_v2.json@@trigWeight"
   UL16_preVFP:
     trigWeight: *trigWeight
   UL16_postVFP:

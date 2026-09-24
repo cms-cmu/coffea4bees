@@ -117,7 +117,10 @@ class analysis(processor.ProcessorABC):
         ###############################################
 
 
-        path = fname.replace(fname.split('store/user')[-1], '')
+        if 'store/user' in fname and ('cmseos.fnal.gov' in fname or fname.startswith('/')):
+            path = fname.replace(fname.split('store/user')[-1], '')
+        else:
+            path = 'root://cmseos.fnal.gov//store/user'
 
 
         if 'picoAOD_3b_wJCM_newSBDef' in fname:

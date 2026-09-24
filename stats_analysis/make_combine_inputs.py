@@ -114,6 +114,21 @@ def create_combine_root_file( file_to_convert,
     if multijet_process in ['data', 'mixeddata', 'mix_v0'] and 'data' not in coffea_hists[var] and 'mix_v0' in coffea_hists[var]:
         multijet_process = 'mix_v0'
 
+    # Every process matching one of tt_processes is summed into the `tt` template. The MC samples
+    # (TTTo*) and the FvT-derived estimate from 3b data (TTbar4b_from_d3) are two estimates of the
+    # same ttbar: if the histogram file carries both, the template double counts it. Refuse unless
+    # the caller narrowed --tt_processes to one family.
+    tt_present = sorted(p for p in coffea_hists[var] if p.startswith(tuple(tt_processes)))
+    tt_families = sorted({pre for pre in tt_processes if any(p.startswith(pre) for p in tt_present)})
+    if len(tt_families) > 1:
+        raise ValueError(
+            f"{file_to_convert} has ttbar from more than one estimate {tt_present} and all of them "
+            f"would be summed into the '{metadata['processes']['background']['tt']['label']}' template "
+            f"(tt_processes={tt_processes}). Either drop the ttbar MC from the analysis pass "
+            f"(plot_ttbar_with_weights gives TTbar4b_from_d3) or pass --tt_processes with a single family, "
+            f"e.g. --tt_processes {tt_families[0]}")
+    logging.info(f"ttbar template from {tt_present}")
+
     root_hists = {}
     mcSysts, closureSysts = [], []
     key_process = 'data' if 'data' in coffea_hists[var] else (data_process if data_process in coffea_hists[var] else (multijet_process if multijet_process in coffea_hists[var] else list(coffea_hists[var].keys())[0]))

@@ -39,7 +39,15 @@ def _debug_print_weight(df: pd.DataFrame):
 
     tables = []
     for region, byregion in df.groupby(_Derived.region_index):
-        tables.append(f"In region {MassRegion(region).name}:")
+        # Never let a debug table kill a training. region_index is an OR of MassRegion values,
+        # and a combination that is not a named member raises here -- at the end of dataset
+        # loading, before a single batch is trained. `-flag debug` is hardcoded in the workflow
+        # Snakefile, so this path is always live.
+        try:
+            region_name = MassRegion(region).name or f"0b{int(region):b}"
+        except ValueError:
+            region_name = f"unknown({int(region)} = 0b{int(region):b})"
+        tables.append(f"In region {region_name}:")
         table = Table("Class", "Count", "Weight")
         for label, bylabel in byregion.groupby(Columns.label_index):
             table.add_row(
@@ -182,7 +190,7 @@ class CommonTrain(Common):
         self.preprocessors.extend(
             [
                 map_selection_to_flag(
-                    **enum_dict(MassRegion)
+                    **self.region_columns()
                 ).set(name=_Derived.region_index),
                 map_selection_to_flag(
                     **self.ntag_columns()
@@ -196,6 +204,22 @@ class CommonTrain(Common):
         if Flags.debug:
             self.postprocessors.append(_debug_print_weight)
         # fmt: on
+
+    def region_columns(self):
+        """MassRegion flags to fold into the region index, honouring InputBranch.mass_regions.
+
+        Empty setting = every member, which is the Run 2 behaviour and the default. Run 3 sets
+        ["SR", "SB"]: there SR comes from the radial distance rhh while ZZSR/ZHSR/HHSR remain
+        independent mass windows, so ORing them gives values that are not MassRegion members
+        (ZZSR|SB = 7). The columns are still written by the processor and still present in the
+        friend trees -- they are simply not encoded -- so restoring the full decomposition once
+        Run 3 ZZ/ZH samples exist needs no reprocessing.
+        """
+        regions = enum_dict(MassRegion)
+        selected = list(InputBranch.mass_regions)
+        if selected:
+            regions = {k: v for k, v in regions.items() if k in selected}
+        return regions
 
     def ntag_columns(self):
         return enum_dict(NTag)

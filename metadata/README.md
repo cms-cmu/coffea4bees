@@ -16,7 +16,7 @@ This directory houses the unified dataset configurations, trigger definitions, l
   - **`datasets/archive/Run2_2024_v2/`**: Preserved reference copy of the Run2 2024_v2 datasets.
 - **`friends/`**: Centralized repository for friend tree configs and lookup maps.
   - Houses active `friends_HH4b.yml`, `friends_ttHbb.yml`, `friends_empty.yml`, and `friends_HH4b_none.yml`.
-  - Holds active trigger weights and classifier lookup JSON files (`trigweights_2024_v2.json`, `data_SvBfriend.json`, etc.).
+  - Holds active trigger weights and classifier lookup JSON files (`trigweights_Run2_v2.json`, `data_SvBfriend.json`, etc.).
   - **`friends/archive/`**: Contains legacy/unused friend tree JSON lookup files.
 - **`triggers_HH4b.yml`** & **`boosted_triggers_HH4b.yml`**: Trigger path definitions per year/era.
 - **`luminosities_HH4b.yml`**: Integrated luminosity values per year/era.

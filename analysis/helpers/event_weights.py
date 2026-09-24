@@ -15,8 +15,16 @@ def add_weights(
         friend_trigWeight: callable = None,
         target: callable = None,
         run_systematics: bool = False,
-        config : dict = {"do_MC_weights": True, "isTTForMixed": False}
+        config : dict = {"do_MC_weights": True, "isTTForMixed": False},
+        require_trigWeight: bool = False,
     ):
+    """Add the MC event weights.
+
+    require_trigWeight: if True and apply_trigWeight is requested for MC but no trigger
+    weight source is available (no `trigWeight` event field and no usable trigWeight friend),
+    raise instead of silently skipping the trigger SF. The skip only logged a warning inside
+    the dask workers, which let a whole Phase B production run without trigger weights.
+    """
 
     weights, list_weight_names = base_add_weights(
         event,
@@ -30,19 +38,28 @@ def add_weights(
 
     if apply_trigWeight and config["do_MC_weights"]:
 
+        reason = None
         if "trigWeight" in event.fields:
             trigWeight = event.trigWeight
         elif friend_trigWeight:
             try:
                 trigWeight = friend_trigWeight.arrays(target)
+                if trigWeight is None:
+                    reason = f"the trigWeight friend has no entry for this file/chunk ({target}); regenerate the trigger-weight friend index for it"
             except Exception as e:
-                logging.warning(f"Could not load trigWeight friend for {target}: {e}")
+                reason = f"trigWeight friend lookup failed for {target}: {e}"
                 trigWeight = None
         else:
+            reason = "no `trigWeight` event field and no trigWeight friend configured (friend_file missing or null?)"
             trigWeight = None
 
         if trigWeight is None:
-            logging.warning("No trigWeight found (not in event fields, no friend tree provided). Skipping trigger weight.")
+            msg = (f"apply_trigWeight is True but no trigger weight is available for dataset '{dataset}' "
+                   f"({year_label}): {reason}.")
+            if require_trigWeight:
+                raise RuntimeError(msg + " Provide the trigWeight friend (friend_file), or set "
+                                   "require_trigWeight: false / apply_trigWeight: false in the config to run without it.")
+            logging.warning(msg + " Skipping trigger weight.")
             return weights, list_weight_names
 
         if run_systematics:

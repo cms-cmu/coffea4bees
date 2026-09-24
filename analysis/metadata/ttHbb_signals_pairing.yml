@@ -1,0 +1,4 @@
+config:
+  apply_trigWeight: true
+  apply_btagSF: true
+  tag_selection: fourTag
