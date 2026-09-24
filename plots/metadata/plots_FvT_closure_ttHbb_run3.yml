@@ -1,0 +1,61 @@
+# FvT closure plots for the ttHbb Run 3 (2022) analysis (Phase C.4, Snakefile_PhaseC_4_FvT_closure.smk).
+# Four-tag data vs the background model: three-tag data reweighted with JCM x FvT (multijet + 3b ttbar)
+# plus the four-tag stitched ttbar MC. Year is set by the rule (--year Run3).
+hists:
+  data:
+    process: data
+    tag: fourTag
+    label: "Four-tag Data"
+    edgecolor: k
+    fillcolor: k
+
+stack:
+  TTToHadronic:
+    process: TTToHadronic_stitched
+    tag: fourTag
+    fillcolor: "#85D1FBff"
+    edgecolor: k
+    label: "$t\\bar{t}$ Hadronic (5FS + 4FS)"
+
+  TTToSemiLeptonic:
+    process: TTToSemiLeptonic_stitched
+    tag: fourTag
+    fillcolor: "#5790FCff"
+    edgecolor: k
+    label: "$t\\bar{t}$ Semi-Leptonic (5FS + 4FS)"
+
+  TTTo2L2Nu:
+    process: TTTo2L2Nu_stitched
+    tag: fourTag
+    fillcolor: "#964A8Bff"
+    edgecolor: k
+    label: "$t\\bar{t}$ Dileptonic (5FS + 4FS)"
+
+  MultiJet:
+    process: data
+    tag: threeTag
+    fillcolor: "#FFDF7Fff"
+    edgecolor: k
+    label: "Multijet (3b data, JCM x FvT)"
+
+ratios:
+  dataToBkg:
+    numerator:
+      type: hists
+      key: data
+    denominator:
+      type: stack
+    uncertainty:
+      nominal
+    color: k
+    marker: "o"
+
+doRatio: 1
+
+categories:
+  - "inclusive"
+  - "pass_nSelJets_gt6"
+
+regions:
+  - "SR"
+  - "SB"
