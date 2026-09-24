@@ -4,7 +4,7 @@
 label: "ttHbb"
 output_path: "output/ttHbb/"
 cern_user: "algomez"
-cern_path: "www/ttHbb/Plots/"
+cern_path: "www/plots/ttHbb/analysis/4b/"
 
 processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
 friend_file: "coffea4bees/metadata/friends/friends_ttHbb.yml"
@@ -197,7 +197,7 @@ classifier_setting:
 
 fvt:
   eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb"
-  plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
+  plot_base: "root://eosuser.cern.ch//eos/user/m/mmarcheg/www/plots/ttHbb/analysis/4b"
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_2024_v2/FvT"
   label: "FvT_ttHbb"
@@ -211,7 +211,7 @@ fvt:
 
 svb:
   eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb"
-  plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
+  plot_base: "root://eosuser.cern.ch//eos/user/m/mmarcheg/www/plots/ttHbb/analysis/4b"
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_2024_v2/SvB"
   label: "SvB_ttHbb"

@@ -1,7 +1,7 @@
 label: "ttHbb_lepton_veto"
 output_path: "output/ttHbb_lepton_veto/"
 cern_user: "algomez"
-cern_path: "www/HH4b/Plots/"
+cern_path: "www/plots/ttHbb/analysis/4b/"
 dataset:
   - "ttHbb"
   - "data"
