@@ -9,7 +9,7 @@
 label: "ttHbb_run3"
 output_path: "/eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/output/ttHbb_run3/"
 cern_user: "mmarcheg"
-cern_path: "www/ttHbb/Plots/"
+cern_path: "www/plots/ttHbb/analysis/4b/"
 
 dataset:
   - "ttHbb"
@@ -120,7 +120,7 @@ classifier_setting:
 
 fvt:
   eos_base: "root://eoscms.cern.ch//eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/Run3_v1/ttHbb_stitched"
-  plot_base: "root://eosuser.cern.ch//eos/user/m/mmarcheg/www/ttHbb/Plots"
+  plot_base: "root://eosuser.cern.ch//eos/user/m/mmarcheg/www/plots/ttHbb/analysis/4b"
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_run3/FvT"
   label: "FvT_ttHbb_run3"
@@ -163,3 +163,24 @@ analysis_config:
     top_reconstruction: fast
     fill_histograms: true
     candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
+    # Phase C FvT friend (kfold.Merge output of Snakefile_PhaseC_3_evaluate); runner.py merges this
+    # over friend_file, so data gets trigWeight + FvT and MC keeps trigWeight only.
+    friends:
+      FvT: "root://eoscms.cern.ch//eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/Run3_v1/ttHbb_stitched/friend/FvT_ttHbb_run3/result.json@@analysis.0.merged"
+
+# ==============================================================================
+# PHASE C.4: FvT CLOSURE (Snakefile_PhaseC_4_FvT_closure.smk)
+# ==============================================================================
+# Reruns the processor (analysis_config above) on data with JCM x FvT applied; the ttbar
+# histograms are reused from the Phase B.1 wJCM pass (FvT only applies to data).
+fvt_closure:
+  datasets:
+    - "data"
+    - "TTTo2L2Nu_stitched"
+    - "TTToSemiLeptonic_stitched"
+    - "TTToHadronic_stitched"
+  JCM_file: "coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_v1.yml"
+  plot_config: "coffea4bees/plots/metadata/plots_FvT_closure_ttHbb_run3.yml"
+  known_counts: "none"
+  reuse_wJCM_ttbar: true
+  jcm_output_path: "/eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/output/ttHbb_run3/computeJCM/"
