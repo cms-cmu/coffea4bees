@@ -45,10 +45,12 @@ if 'train_workflow' in config or 'eval_workflow' in config:
         with open(f"{wfs_dir}/evaluate.yml", 'w') as f:
             yaml.dump(config['eval_workflow'], f, default_flow_style=False)
     config['wfs_base'] = wfs_dir
-elif config.get('workflow_overrides'):
+elif config.get('workflow_overrides') or config.get('workflow_inserts'):
     # Keep the checked-in templates, override options by flag (e.g. the roast's JCM / manifest)
-    config['wfs_base'] = write_workflow_overrides(config['wfs_base'], config['workflow_overrides'],
-                                                  f"{output_dir}/wfs", log=print)
+    # and insert ones they lack (e.g. a wider --architecture)
+    config['wfs_base'] = write_workflow_overrides(config['wfs_base'], config.get('workflow_overrides'),
+                                                  f"{output_dir}/wfs", log=print,
+                                                  inserts=config.get('workflow_inserts'))
 
 include: "../../src/classifier/workflow/Snakefile"
 

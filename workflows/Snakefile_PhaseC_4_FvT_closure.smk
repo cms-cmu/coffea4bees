@@ -75,6 +75,9 @@ def mc_singlefile(ds, yr):
 
 tag = config.get('tag', "2024_v2")
 jcm_file = closure_cfg.get('JCM_file', f"coffea4bees/metadata/weights/JCM/{config['roast_id']}/jetCombinatoricModel_SB_{tag}.yml")
+# A remote JCM (e.g. an earlier production's EOS handoff, for a roast that skips Phase B) is read
+# through fsspec by the processor, but is no file Snakemake can see, so it gets no input edge.
+jcm_input = [] if "://" in jcm_file else jcm_file
 plot_config = closure_cfg.get('plot_config', "coffea4bees/plots/metadata/plotsAll.yml")
 CUTFLOW_LIST = closure_cfg.get('cutflow_list', "passJetMult,passPreSel,passDiJetMass,SR_woTrig,SR,SB_woTrig,SB")
 
@@ -124,7 +127,7 @@ rule all_FvT_closure:
 
 rule create_FvT_closure_config:
     input:
-        jcm_file = jcm_file,
+        jcm_file = jcm_input,
         configfiles = workflow.configfiles if workflow.configfiles else []
     output: closure_config_path
     run:

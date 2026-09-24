@@ -1,0 +1,92 @@
+# ==============================================================================
+# Run 3 with ~30x-capacity FvT and SvB -- Phases C, C.4, D, F on top of nominal_run3
+# ==============================================================================
+# Only the differences from nominal_run3.yml; see nominal_run3_quadjet_run2.yml for how the
+# `base:` overlay merges (dicts recursively, lists replace).
+#
+#   roast:    `roast new --config <this file>`, then submit steps C, C4, D, F (NOT B).
+#   by hand:  snakemake --configfile coffea4bees/workflows/config/nominal_run3.yml \
+#                       --configfile coffea4bees/workflows/config/nominal_run3_30x.yml
+#
+# The one physics change: both classifiers are trained with n_features 8 -> 54 (~30x the
+# parameters). There is no forked template: fvt/svb keep the nominal wfs_base
+# (classifier/config/workflows/HH4b_Run3/{FvT,SvB}) and `workflow_inserts` adds
+# `--architecture {n_features: 54}` before `--training` when the roast writes the run's copy
+# (helpers/common.smk: write_workflow_overrides), so 30x cannot drift from the nominal. The
+# resolved train.yml is in each phase's {output_dir}/wfs/. The batch schedule stays the nominal
+# one; if n=54 OOMs falcon's 24 GB MPS cap, SvB_SRSB_30x's caps (bs_milestones [1, 3], finetune
+# bs 4096) are the proven fallback -- they need a new override mechanism for the kwargs dicts.
+# The SvB trains against THIS roast's 30x FvT, not the nominal one, so any SvB gain cannot be
+# leaking from an under-powered FvT.
+#
+# Phase B is not re-run. Its two outputs -- the JCM fit and the classifier-input manifest -- are
+# read from the production nominal_run3_20260922_3f9e199-1e0504f, pinned by explicit URL to its
+# EOS handoff/ area, NOT {roast_id}, which here names this roast, where no B outputs exist.
+# (JCM pseudoTagProb 0.0893 -- not the older fit behind metadata/weights/JCM/Run3_nominal/.)
+#
+# What to compare against the nominal (limit 3.70 (2.61-5.30), sig 0.80, Z(b>0) 0.54,
+# C.4 SR closure 1.021 +- 0.003):
+#   * C.4 SR closure, all years and per era -- does the 30x FvT close the 2.1 % / era split?
+#   * the HH4b channel's limit/significance, and Z with empty-background bins merged: at 240 bins
+#     ps_hh_fine had 4 zero-background top bins that these stat-only cards reward.
+#   * cutflows: every row NOT weighted by the FvT (4b data, signal, raw counts) must equal the
+#     nominal's exactly; only the FvT-weighted 3b rows may move.
+base: coffea4bees/workflows/config/nominal_run3.yml
+
+label: "Run3_nominal_30x"
+output_path: "output/Run3_nominal_30x/"
+
+handoff:
+  # C and D read the nominal production's handoff, which check_handoff_refs would otherwise
+  # reject as drift from this roast's (empty) handoff area.
+  allow_external_refs: true
+
+fvt:
+  label: "FvT_30x"
+  output_dir: "output/FvT_30x/"
+  metadata: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/handoff/classifier_inputs_nominal_run3_20260922_3f9e199-1e0504f.json@@HCR_input"
+  workflow_overrides:
+    --JCM-weight: '"" root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/handoff/jetCombinatoricModel_SB_Run3_v1.yml@@JCM_weights'
+    '--friends ""': root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/handoff/classifier_inputs_nominal_run3_20260922_3f9e199-1e0504f.json@@HCR_input
+  # ~30x network capacity (default n_features 8). Before --training so FixedStep keeps its
+  # kwargs dict, which must directly follow it.
+  workflow_inserts:
+    --training: [--architecture, {n_features: 54}]
+
+fvt_closure:
+  # Same pinned JCM. Remote, so Snakefile_PhaseC_4 gives it no input edge; the processor reads it
+  # through fsspec.
+  JCM_file: root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/handoff/jetCombinatoricModel_SB_Run3_v1.yml
+  # There are no Phase B.1 wJCM ttbar singlefiles in this roast to reuse; reprocess the 12 TT jobs.
+  # Same code, JCM and config as the nominal's B.1 wJCM pass, so the ttbar should come out the same.
+  reuse_wJCM_ttbar: false
+  # The blessed known_fullCounts_FvT_closure_Run3.yml carries the NOMINAL FvT's weighted 3b rows,
+  # which a different FvT must change -- and a mismatch fails the step. Point at a file that does
+  # not exist, so the step only dumps; compare to the nominal's dump by hand (see header).
+  known_counts: "coffea4bees/analysis/tests/known_fullCounts_FvT_closure_Run3_30x.yml"
+
+svb:
+  label: "SvB_30x"
+  output_dir: "output/SvB_30x/"
+  # The background FvT is THIS roast's 30x Phase C output.
+  train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_30x"
+  metadata: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/handoff/classifier_inputs_nominal_run3_20260922_3f9e199-1e0504f.json@@HCR_input"
+  workflow_overrides:
+    --JCM-weight: '"" root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/handoff/jetCombinatoricModel_SB_Run3_v1.yml@@JCM_weights'
+    '--friends ""': root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/handoff/classifier_inputs_nominal_run3_20260922_3f9e199-1e0504f.json@@HCR_input
+  # Same width as the FvT (the SvB_SRonly_30x study trained this on falcon at n=54, full schedule).
+  workflow_inserts:
+    --training: [--architecture, {n_features: 54}]
+
+analysis_config:
+  config:
+    friends:
+      FvT: root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/{roast_id}/friend/FvT_30x/result.json@@analysis.0.merged
+      SvB_MA: root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/{roast_id}/friend/SvB_30x/result.json@@analysis.0.merged
+    JCM_file: root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/handoff/jetCombinatoricModel_SB_Run3_v1.yml
+
+# Dump-only, for the same reason as fvt_closure.known_counts: the nominal reference holds the
+# nominal FvT's weighted rows.
+known_counts: "coffea4bees/analysis/tests/known_fullCounts_Run3_nominal_30x.yml"
+
+combine_outdir: "datacards/HH4b_run3_30x"
