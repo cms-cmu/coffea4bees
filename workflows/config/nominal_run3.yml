@@ -310,9 +310,13 @@ analysis_config:
     # Run 3 four-tag definition: tight btagPNetB working point.
     fourTag_use_tight: true
 
-# No `known_counts:` — the default is "" (dump the cutflow, compare against nothing), which is
-# what a first production wants. known_Counts_Run3.yml is the small CI reference and would fail
-# against a full run.
+# Blessed from nominal_run3_20260922_3f9e199-1e0504f, the first full Run 3 production. Until a
+# reference existed the cutflow was only dumped, never compared; now a rerun is checked against
+# it. Note this is a *regression* check -- it detects change, not correctness. These counts carry
+# that production's 2.1 % SR non-closure (and the 2023_preBPix 1.059 / 2023_BPix 0.967 split), so
+# any work that deliberately changes the background model -- per-era JCM fits being the obvious
+# candidate -- means re-blessing all four references, not just this one.
+known_counts: "coffea4bees/analysis/tests/known_fullCounts_Run3_nominal.yml"
 
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttbarWeights.yml"
 
