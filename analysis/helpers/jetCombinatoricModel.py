@@ -1,6 +1,7 @@
 import logging
 
 import awkward as ak
+import fsspec
 import numpy as np
 import yaml
 from src.math_tools.random import Squares
@@ -36,10 +37,12 @@ class jetCombinatoricModel:
         logging.debug(f"JCM initialized in {'lowpt' if lowpt_mode else 'standard'} mode with cut={cut}")
 
     def read_parameter_file(self):
+        # fsspec so the JCM can be read straight from EOS (root://), e.g. a production
+        # roast's handoff copy; local paths behave exactly as with open().
 
         if self.filename.endswith('txt'):
             self.data = {}
-            with open(self.filename, 'r') as lines:
+            with fsspec.open(self.filename, 'rt') as lines:
                 for line in lines:
                     words = line.split()
                     if not len(words): continue
@@ -54,7 +57,8 @@ class jetCombinatoricModel:
             self.t = self.data[f'threeTightTagFraction{cut_suffix}']
 
         else:
-            self.data = yaml.safe_load(open(self.filename, 'r'))
+            with fsspec.open(self.filename, 'rt') as f:
+                self.data = yaml.safe_load(f)
             try:
                 cut_suffix = f'_{self.cut}' if self.cut else ''
                 self.p = self.data.get(f'pseudoTagProb{cut_suffix}', self.data.get('pseudoTagProb'))

@@ -1,13 +1,17 @@
+# Run-agnostic: the HH4b `process` list names both the Run 2 and the Run 3 signal samples, and
+# makePlots drops whichever are absent from the input file (one warning per dropped entry), so
+# this config serves both productions. ZZ4b / ZH4b have no Run 3 skims and are dropped there;
+# the Run 3 SvB is the binary ggF training, so its ps_zz / ps_zh gallery pins below never match.
 hists:
         data:
                 process: data
                 tag: fourTag
                 label: Four-tag data
                 edgecolor: k
-                fillcolor: k            
+                fillcolor: k
 
         HH4b:
-                process: GluGluToHHTo4B_cHHH1
+                process: [GluGluToHHTo4B_cHHH1, GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00]
                 tag: fourTag
                 label: HH4b (x100)
                 edgecolor: "#e42536"
