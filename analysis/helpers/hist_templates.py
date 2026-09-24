@@ -63,6 +63,9 @@ class DijetSvBHists(Template):
 
 class FeynNetSvBHists(Template):
     p_ggHH_vs_bkg  = H((50, 0, 1, ('p_ggHH_vs_bkg',  "FeynNet P(ggF vs bkg)")))
+    # Same granularity as SvB_MA.ps_hh_fine: the score piles up near 1, and the 50-bin version
+    # cannot resolve its top 0.02, which holds most of the signal. Combine input.
+    p_ggHH_vs_bkg_fine = H((240, 0, 1, ('p_ggHH_vs_bkg', "FeynNet P(ggF vs bkg)")))
     p_qqHH_vs_bkg  = H((50, 0, 1, ('p_qqHH_vs_bkg',  "FeynNet P(VBF vs bkg)")))
     p_ZZ_vs_bkg    = H((50, 0, 1, ('p_ZZ_vs_bkg',    "FeynNet P(ZZ vs bkg)")))
     p_ZH_vs_bkg    = H((50, 0, 1, ('p_ZH_vs_bkg',    "FeynNet P(ZH vs bkg)")))

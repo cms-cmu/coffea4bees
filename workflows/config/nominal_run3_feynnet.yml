@@ -12,14 +12,18 @@
 # production nominal_run3_20260922_3f9e199-1e0504f -- pinned by explicit URL, NOT {roast_id},
 # which here would name this roast, where no B/C/D outputs exist.
 #
-# Two Combine channels from the same F.1 histograms:
-#   * HH4b          -- the base channel, SvB_MA.ps_hh_fine, untouched. Must reproduce the
-#                      production's blinded stat-only Asimov: limit 3.70 (2.61-5.30), sig 0.80.
-#                      If it does not, something other than the SvB changed; stop there.
-#   * HH4b_FeynNet  -- SvB_FeynNet.p_ggHH_vs_bkg (50 bins; there is no _fine version). Events
-#                      FeynNet routes to ZZ/ZH (-1) or that fail minPs (-2) fall in underflow,
-#                      as for ps_hh. Note the binning differs from HH4b (240 bins at rebin 1),
-#                      which alone moves a stat-only limit.
+# Three Combine channels from the same F.1 histograms:
+#   * HH4b               -- the base channel, SvB_MA.ps_hh_fine, untouched. Must reproduce the
+#                           production's blinded stat-only Asimov: limit 3.70 (2.61-5.30), sig 0.80.
+#                           If it does not, something other than the SvB changed; stop there.
+#   * HH4b_FeynNet       -- SvB_FeynNet.p_ggHH_vs_bkg, 50 bins. Events FeynNet routes to ZZ/ZH (-1)
+#                           or that fail minPs (-2) fall in underflow, as for ps_hh. Kept so the
+#                           first roast's 5.08 / 0.39 is reproduced alongside the fine version.
+#   * HH4b_FeynNet_fine  -- the same score at 240 bins, the ps_hh_fine granularity. The 50-bin
+#                           top bin (0.98-1) holds most of the signal and cannot be split.
+# Caveat (nominal_run3_feynnet_20260923_d54d644-c24101b): at 240 bins, ps_hh_fine has top bins with
+# zero background, which these stat-only datacards (no autoMCStats) treat as background-free --
+# that inflates HH4b's 0.80 (0.54 once they are merged). Check the fine FeynNet for the same.
 #
 # Loading SvB_FeynNet alongside SvB_MA does not change the selection: passSvB/failSvB prefer
 # SvB_MA (analysis/helpers/candidates_selection.py, _assign_output_vars). So F.1 is kept on the
@@ -54,5 +58,11 @@ channels:
     signallabel: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb"
     othersignal: ""
     variable: "SvB_FeynNet.p_ggHH_vs_bkg"
+    signal: "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"
+    closure_subdir: "hh"
+  HH4b_FeynNet_fine:
+    signallabel: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb"
+    othersignal: ""
+    variable: "SvB_FeynNet.p_ggHH_vs_bkg_fine"
     signal: "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"
     closure_subdir: "hh"
