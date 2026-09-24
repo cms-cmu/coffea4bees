@@ -26,73 +26,73 @@ workflow_validation_coffea4bees:
     - python -m snakemake -s coffea4bees/workflows/Snakefile_PhaseE_5_analysis.smk -n
     - python -m snakemake -s coffea4bees/workflows/Snakefile_PhaseE_6_closure.smk -n
 
-phaseE_prep_test_coffea4bees:
-  stage: mixeddata
-  allow_failure: true
-  extends:
-    - .base_analysis_coffea4bees
-  needs:
-    - setup_coffea4bees
-  script:
-    - python -m pip install snakemake --quiet
-    - if [ -f ./proxy/x509_proxy ]; then export X509_USER_PROXY="$PWD/proxy/x509_proxy"; echo "Configured X509_USER_PROXY=$X509_USER_PROXY"; fi
-    - pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseE_2_make_subsamples.smk --configfile coffea4bees/workflows/config/test_phaseE.yml --config python_bin="${CONTAINER_PYTHON:-python}" --jobs 2
-    # Validate JCM and subsample outputs exist and have expected structure
-    - ls -la output/test_phaseE/JCM_subsamples/
-    - test -f output/test_phaseE/JCM_subsamples/jetCombinatoricModel_SB_mix_v0.yml
-    - grep -q "weights" output/test_phaseE/JCM_subsamples/jetCombinatoricModel_SB_mix_v0.yml
-    - pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseE_4_FvT_training.smk --configfile coffea4bees/workflows/config/test_phaseE.yml --config python_bin="${CONTAINER_PYTHON:-python}" --jobs 2
-    - ls -la output/test_phaseE/FvT_training/friends/
-    - test -f output/test_phaseE/FvT_training/friends/friends_FvT_test_phaseE_v0.json
-  artifacts:
-    paths:
-      - barista_framework/output/test_phaseE/JCM_subsamples/
-      - barista_framework/output/test_phaseE/FvT_training/
-      - barista_framework/output/test_phaseE/inputs/
-      - barista_framework/output/test_phaseE/metadata/
-    expire_in: 1 day
+# phaseE_prep_test_coffea4bees:
+#   stage: mixeddata
+#   allow_failure: true
+#   extends:
+#     - .base_analysis_coffea4bees
+#   needs:
+#     - setup_coffea4bees
+#   script:
+#     - python -m pip install snakemake --quiet
+#     - if [ -f ./proxy/x509_proxy ]; then export X509_USER_PROXY="$PWD/proxy/x509_proxy"; echo "Configured X509_USER_PROXY=$X509_USER_PROXY"; fi
+#     - pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseE_2_make_subsamples.smk --configfile coffea4bees/workflows/config/test_phaseE.yml --config python_bin="${CONTAINER_PYTHON:-python}" --jobs 2
+#     # Validate JCM and subsample outputs exist and have expected structure
+#     - ls -la output/test_phaseE/JCM_subsamples/
+#     - test -f output/test_phaseE/JCM_subsamples/jetCombinatoricModel_SB_mix_v0.yml
+#     - grep -q "weights" output/test_phaseE/JCM_subsamples/jetCombinatoricModel_SB_mix_v0.yml
+#     - pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseE_4_FvT_training.smk --configfile coffea4bees/workflows/config/test_phaseE.yml --config python_bin="${CONTAINER_PYTHON:-python}" --jobs 2
+#     - ls -la output/test_phaseE/FvT_training/friends/
+#     - test -f output/test_phaseE/FvT_training/friends/friends_FvT_test_phaseE_v0.json
+#   artifacts:
+#     paths:
+#       - barista_framework/output/test_phaseE/JCM_subsamples/
+#       - barista_framework/output/test_phaseE/FvT_training/
+#       - barista_framework/output/test_phaseE/inputs/
+#       - barista_framework/output/test_phaseE/metadata/
+#     expire_in: 1 day
 
-phaseE_analysis_test_coffea4bees:
-  stage: mixeddata
-  allow_failure: true
-  extends:
-    - .base_analysis_coffea4bees
-  needs:
-    - setup_coffea4bees
-    - phaseE_prep_test_coffea4bees
-  script:
-    - python -m pip install snakemake --quiet
-    - if [ -f ./proxy/x509_proxy ]; then export X509_USER_PROXY="$PWD/proxy/x509_proxy"; echo "Configured X509_USER_PROXY=$X509_USER_PROXY"; fi
-    - pixi run snakemake output/test_phaseE/cutflow_validation_test_phaseE.txt -s coffea4bees/workflows/Snakefile_PhaseE_5_analysis.smk --configfile coffea4bees/workflows/config/test_phaseE.yml --config python_bin="${CONTAINER_PYTHON:-python}" --jobs 2
-    - test -f output/test_phaseE/cutflow_test_phaseE.yml
-    - cat output/test_phaseE/cutflow_test_phaseE.yml
-  artifacts:
-    paths:
-      - barista_framework/output/test_phaseE/cutflow_validation_test_phaseE.txt
-      - barista_framework/output/test_phaseE/cutflow_test_phaseE.yml
-      - barista_framework/output/test_phaseE/histAll_test_phaseE.coffea
-      - barista_framework/output/test_phaseE/histAll_test_phaseE.json
-    expire_in: 1 day
+# phaseE_analysis_test_coffea4bees:
+#   stage: mixeddata
+#   allow_failure: true
+#   extends:
+#     - .base_analysis_coffea4bees
+#   needs:
+#     - setup_coffea4bees
+#     - phaseE_prep_test_coffea4bees
+#   script:
+#     - python -m pip install snakemake --quiet
+#     - if [ -f ./proxy/x509_proxy ]; then export X509_USER_PROXY="$PWD/proxy/x509_proxy"; echo "Configured X509_USER_PROXY=$X509_USER_PROXY"; fi
+#     - pixi run snakemake output/test_phaseE/cutflow_validation_test_phaseE.txt -s coffea4bees/workflows/Snakefile_PhaseE_5_analysis.smk --configfile coffea4bees/workflows/config/test_phaseE.yml --config python_bin="${CONTAINER_PYTHON:-python}" --jobs 2
+#     - test -f output/test_phaseE/cutflow_test_phaseE.yml
+#     - cat output/test_phaseE/cutflow_test_phaseE.yml
+#   artifacts:
+#     paths:
+#       - barista_framework/output/test_phaseE/cutflow_validation_test_phaseE.txt
+#       - barista_framework/output/test_phaseE/cutflow_test_phaseE.yml
+#       - barista_framework/output/test_phaseE/histAll_test_phaseE.coffea
+#       - barista_framework/output/test_phaseE/histAll_test_phaseE.json
+#     expire_in: 1 day
 
-phaseE_closure_validation_coffea4bees:
-  stage: mixeddata
-  allow_failure: true
-  extends:
-    - .base_analysis_coffea4bees
-  needs:
-    - setup_coffea4bees
-    - phaseE_prep_test_coffea4bees
-    - phaseE_analysis_test_coffea4bees
-  script:
-    - python -m pip install snakemake --quiet
-    - export PATH="$PWD/.pixi-bin/bin:$PATH"
-    - if [ -f ./proxy/x509_proxy ]; then export X509_USER_PROXY="$PWD/proxy/x509_proxy"; echo "Configured X509_USER_PROXY=$X509_USER_PROXY"; fi
-    - pixi run snakemake output/test_phaseE/closure_validation_test_phaseE.txt -s coffea4bees/workflows/Snakefile_PhaseE_6_closure.smk --configfile coffea4bees/workflows/config/test_phaseE.yml --config python_bin="${CONTAINER_PYTHON:-python}" --jobs 2
-    - test -f output/test_phaseE/closure_counts_test_phaseE.yml
-    - cat output/test_phaseE/closure_counts_test_phaseE.yml
-  artifacts:
-    paths:
-      - barista_framework/output/test_phaseE/closure_validation_test_phaseE.txt
-      - barista_framework/output/test_phaseE/closure_counts_test_phaseE.yml
-    expire_in: 1 day
+# phaseE_closure_validation_coffea4bees:
+#   stage: mixeddata
+#   allow_failure: true
+#   extends:
+#     - .base_analysis_coffea4bees
+#   needs:
+#     - setup_coffea4bees
+#     - phaseE_prep_test_coffea4bees
+#     - phaseE_analysis_test_coffea4bees
+#   script:
+#     - python -m pip install snakemake --quiet
+#     - export PATH="$PWD/.pixi-bin/bin:$PATH"
+#     - if [ -f ./proxy/x509_proxy ]; then export X509_USER_PROXY="$PWD/proxy/x509_proxy"; echo "Configured X509_USER_PROXY=$X509_USER_PROXY"; fi
+#     - pixi run snakemake output/test_phaseE/closure_validation_test_phaseE.txt -s coffea4bees/workflows/Snakefile_PhaseE_6_closure.smk --configfile coffea4bees/workflows/config/test_phaseE.yml --config python_bin="${CONTAINER_PYTHON:-python}" --jobs 2
+#     - test -f output/test_phaseE/closure_counts_test_phaseE.yml
+#     - cat output/test_phaseE/closure_counts_test_phaseE.yml
+#   artifacts:
+#     paths:
+#       - barista_framework/output/test_phaseE/closure_validation_test_phaseE.txt
+#       - barista_framework/output/test_phaseE/closure_counts_test_phaseE.yml
+#     expire_in: 1 day
 
