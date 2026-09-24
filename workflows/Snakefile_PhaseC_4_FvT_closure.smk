@@ -213,6 +213,8 @@ use rule cutflow_closure_table from analysis as FvT_cutflow_closure_table with:
     params:
         title = lambda wildcards: f"{config.get('label', 'FvT_closure')}_cutflow_{wildcards.label}",
         multijet = "data3b",
+        # the ttbar samples of this closure (e.g. the *_stitched ones), not the generic rule's default names
+        ttbar = " ".join(MC_DATASETS),
         run_container_wrapper = config['analysis_container_wrapper'],
         python_bin = lambda wildcards: config.get("python_bin", "python")
 
