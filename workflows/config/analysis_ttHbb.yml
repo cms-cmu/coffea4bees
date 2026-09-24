@@ -153,7 +153,7 @@ fvt:
   eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched"
   plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
   classifier_config_paths: "coffea4bees"
-  wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_stitched/FvT"
+  wfs_base: "coffea4bees/classifier/config/workflows/ttHbb/FvT"
   label: "FvT_ttHbb_stitched"
   output_dir: "output/FvT_ttHbb_stitched/"
   plot_inputs: true
@@ -169,7 +169,7 @@ svb:
   eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched"
   plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
   classifier_config_paths: "coffea4bees"
-  wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_stitched/SvB"
+  wfs_base: "coffea4bees/classifier/config/workflows/ttHbb/SvB"
   label: "SvB_ttHbb_stitched"
   output_dir: "output/SvB_ttHbb_stitched/"
   plot_inputs: true
