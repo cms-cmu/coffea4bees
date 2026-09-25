@@ -1,0 +1,50 @@
+# ==============================================================================
+# Run 3 FvT closure plots -- Phase C.4 only, on top of the nominal_run3 production
+# ==============================================================================
+# Reruns C.4 with the reworked closure plots (plotsAll_FvTClosure.yml: ttbar = TTbar4b_from_d3,
+# closure table tt = TTbar_from_d3) and the new ttbar MC vs TTbar4b_from_d3 comparison
+# (plots_ttbar_MC_vs_d3/, ttbar_MC_vs_d3_cutflow.html). No physics change: the FvT and the JCM
+# are the nominal production's, read from its EOS area and named under `inputs:`, which
+# `roast new` checks lies inside that roast (src/tools/roast.py:check_inputs).
+#
+#   roast new --config coffea4bees/workflows/config/nominal_run3_fvt_closure_plots.yml --phases C4
+#   roast submit <id> --step C4
+#   by hand:  snakemake -s coffea4bees/workflows/Snakefile_PhaseC_4_FvT_closure.smk \
+#                       --configfile coffea4bees/workflows/config/nominal_run3.yml \
+#                       --configfile coffea4bees/workflows/config/nominal_run3_fvt_closure_plots.yml
+#
+# Only the differences from nominal_run3.yml (see nominal_run3_quadjet_run2.yml for how the
+# `base:` overlay merges: dicts recursively, lists replace).
+base: coffea4bees/workflows/config/nominal_run3.yml
+
+label: "Run3_nominal_fvt_closure_plots"
+output_path: "output/Run3_nominal_fvt_closure_plots/"
+
+# ------------------------------------------------------------------------------
+# Products of other roasts (checked by `roast new`). Anchored so the values used below cannot
+# drift from the ones that were checked.
+# ------------------------------------------------------------------------------
+inputs:
+  upstream_roasts: [nominal_run3_20260922_3f9e199-1e0504f]
+  FvT: &upstream_FvT "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/friend/FvT_nominal/result.json@@analysis.0.merged"
+  JCM: &upstream_JCM "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/handoff/jetCombinatoricModel_SB_Run3_v1.yml"
+  # Its Phase B.1 wJCM pass, merged and archived (the singlefiles are not): the ttbar MC for C.4.
+  wJCM_ttbar: &upstream_wJCM "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/output/Run3_nominal/computeJCM/histAll_wJCM.coffea"
+
+fvt_closure:
+  # Remote, so Snakefile_PhaseC_4 gives it no input edge; the processor reads it through fsspec.
+  JCM_file: *upstream_JCM
+  # No Phase B.1 in this roast: the ttbar MC is the nominal's B.1 wJCM pass (the FvT does not
+  # touch MC), TT processes taken from its archived merged file -- no MC reprocessing.
+  wJCM_ttbar_from: *upstream_wJCM
+  # Dump-only (file does not exist). The blessed known_fullCounts_FvT_closure_Run3.yml should be
+  # reproduced exactly -- same FvT, JCM and data -- but a mismatch deletes cutflow_FvT_closure.yml,
+  # and with it the closure and ttbar-comparison tables this roast is for. Compare the dump to the
+  # blessed file by hand (the extra TTbar_from_d3_<era> entries are new, everything else must match).
+  known_counts: "coffea4bees/analysis/tests/known_fullCounts_FvT_closure_Run3_fvt_closure_plots.yml"
+
+analysis_config:
+  config:
+    friends:
+      # The nominal's Phase C friend, not {roast_id} (this roast runs no Phase C).
+      FvT: *upstream_FvT
