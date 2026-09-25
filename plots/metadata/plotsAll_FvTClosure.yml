@@ -1,0 +1,98 @@
+# Phase C.4 FvT closure plots (Snakefile_PhaseC_4_FvT_closure.smk default plot_config).
+# Run-agnostic: the HH4b `process` list names both the Run 2 and the Run 3 signal samples, and
+# makePlots drops whichever are absent from the input file (one warning per dropped entry), so
+# this config serves both productions. ZZ4b / ZH4b have no Run 3 skims and are dropped there.
+hists:
+        data:
+                process: data
+                tag: fourTag
+                label: Four-tag data
+                edgecolor: k
+                fillcolor: k
+
+        HH4b:
+                process: [GluGluToHHTo4B_cHHH1, GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00]
+                tag: fourTag
+                label: HH4b (x100)
+                edgecolor: "#e42536"
+                fillcolor: "#e42536"            
+                histtype: step
+                scalefactor: 100
+                
+        ZH4b:
+                process: [ZH4b, ggZH4b]
+                tag: fourTag
+                label: ZH4b (x100)
+                edgecolor: "#964a8b"
+                fillcolor: "#964a8b"            
+                histtype: step
+                scalefactor: 100
+
+        ZZ4b:
+                process: ZZ4b
+                tag: fourTag
+                label: ZZ4b (x100)
+                edgecolor: "#7a21dd"
+                fillcolor: "#7a21dd"            
+                histtype: step
+                scalefactor: 100
+
+
+stack:
+        # ttbar estimated from 3b data with the FvT d3_to_t4 = pt4/pd3 weight (needs
+        # plot_ttbar_with_weights, which Phase C.4 forces) -- the same stack as Phase F's
+        # plotsAll_ttbarWeights.yml, so the closure plots show the background model F uses.
+        TTbar:
+                process: TTbar4b_from_d3
+                tag: threeTag
+                fillcolor: "#85D1FBff"
+                edgecolor: k
+                label: $t\bar{t}$
+
+        Multijet:
+                process: data
+                tag: threeTag
+                fillcolor: "#FFDF7Fff"
+                edgecolor: k
+                label: QCD multijet
+
+ratios:
+        dataToBkg:
+                numerator:
+                        type: hists
+                        key: data
+                denominator:
+                        type: stack
+                uncertianty:
+                        nominal
+                color: k
+                marker: "o"
+
+doRatio:
+    1
+
+# Histograms not plotted (makePlots.py; substring match on the histogram name, added to -s/--skip):
+# m4j_hh / m4j_zh / m4j_zz, and every tagJets* collection (tagJets, tagJetsRun2, tagJets_noJCM,
+# tagJets_loose_noJCM, ...). nPSplusTagJets is kept (capital T).
+skip_hists:
+    - m4j_hh
+    - m4j_zh
+    - m4j_zz
+    - tagJets
+
+# Key plots pinned at the top of the HTML gallery (src/plotting/make_gallery.py); names match image
+# basenames with '.' and '_' interchangeable, and a bare prefix (e.g. FvT) pins every FvT_* plot.
+# Chosen for the FvT closure (Phase C.4): the 3b -> 4b model in SR/SB, plus the FvT score itself.
+summary:
+    - FvT
+    - selJets.n
+    - canJet0.pt
+    - canJet3.pt
+    - m4j
+    - v4j.mass
+    - quadJet_selected.lead.mass
+    - quadJet_selected.subl.mass
+    - quadJet_selected.xHH
+    - xW
+    - xbW
+
