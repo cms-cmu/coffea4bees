@@ -6,7 +6,9 @@
 #   inputs             fetch the upstream JCM + data/ttbar histograms (non-tight B.1 roast)
 #   M.1 hemi library   4b data, ttbar subtracted with the upstream FvT -> hemisphere library + stats
 #   M.2 mix            3b data, hemispheres swapped from the library, upstream JCM -> mixeddata_all
-#   (M.3 validate + mixed JCM, M.4 subsamples -> mixeddata_4b, M.5 ttbar pseudodata: to follow)
+#   M.3 validate       mixed-data histograms + upstream data/ttbar -> mixed-data JCM; study
+#   M.4 subsample      split mixeddata_all into N disjoint samples (M.3 JCM) -> mixeddata_4b
+#   M.5 ttbar psdata   unweighted ttbar pseudodata (one shared sample) -> ttbar_PSData
 #
 # Everything this roast consumes comes from other roasts, named under `inputs:` and checked by
 # `roast new`: the FvT from the nominal, the JCM and its histograms from a Phase B.1 roast with
@@ -68,6 +70,12 @@ FVT = INPUTS['FvT']
 INPUT_DIR = f"{out}inputs/"
 UPSTREAM_JCM = f"{INPUT_DIR}{os.path.basename(INPUTS['JCM'])}"
 UPSTREAM_HISTS = f"{INPUT_DIR}{os.path.basename(INPUTS['jcm_hists'])}"
+# The runner config those histograms were made with (B.1 writes it next to histAll_NoJCM.coffea):
+# M.3 histograms the mixed data with exactly this config, so the mixed-data JCM fit compares like
+# with like -- and it proves the upstream really used the non-tight selection.
+UPSTREAM_HIST_CONFIG_URL = f"{os.path.dirname(INPUTS['jcm_hists'])}/analysis_config_noJCM.yml"
+UPSTREAM_HIST_CONFIG = f"{INPUT_DIR}analysis_config_noJCM.yml"
+MIXED_URL = f"{HANDOFF}/{(config.get('mixing') or {}).get('dataset_name', 'mixeddata_all')}.yml"
 
 # Hemisphere library: built here (M.1) unless inputs.hemilib points at another roast's.
 HEMI_EXTERNAL = INPUTS.get('hemilib')
@@ -131,31 +139,39 @@ module analysis:
 rule fetch_inputs:
     output:
         jcm = UPSTREAM_JCM,
-        hists = UPSTREAM_HISTS
+        hists = UPSTREAM_HISTS,
+        hist_config = UPSTREAM_HIST_CONFIG
     log: f"{INPUT_DIR}fetch.log"
     params:
         jcm = INPUTS['JCM'],
-        hists = INPUTS['jcm_hists']
+        hists = INPUTS['jcm_hists'],
+        hist_config = UPSTREAM_HIST_CONFIG_URL
     shell:
         """
         set -eo pipefail
         {EOS_PROXY}
         xrdcp -f "{params.jcm}" {output.jcm} 2>&1 | tee {log}
         xrdcp -f "{params.hists}" {output.hists} 2>&1 | tee -a {log}
-        echo "fetched {params.jcm} -> {output.jcm}" | tee -a {log}
-        echo "fetched {params.hists} -> {output.hists}" | tee -a {log}
+        xrdcp -f "{params.hist_config}" {output.hist_config} 2>&1 | tee -a {log}
+        for f in {params.jcm} {params.hists} {params.hist_config}; do echo "fetched $f" | tee -a {log}; done
         """
 
 # ── Steps ─────────────────────────────────────────────────────────────────────
 
 include: "Snakefile_MakeMixedData_1_hemilib.smk"
 include: "Snakefile_MakeMixedData_2_mix.smk"
+include: "Snakefile_MakeMixedData_3_validate.smk"
+include: "Snakefile_MakeMixedData_4_subsample.smk"
+include: "Snakefile_MakeMixedData_5_ttbar_psdata.smk"
 
 # default_target, not position: an included or inserted rule can never steal the default.
 rule all_MakeMixedData:
     default_target: True
     input:
         rules.all_M1.input,
-        rules.all_M2.input
+        rules.all_M2.input,
+        rules.all_M3.input,
+        rules.all_M4.input,
+        rules.all_M5.input
 
 localrules: fetch_inputs, all_MakeMixedData
