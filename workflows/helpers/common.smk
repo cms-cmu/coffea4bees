@@ -129,6 +129,9 @@ def write_workflow_overrides(wfs_base, overrides, out_dir, log=None, inserts=Non
         with open(src) as f:
             wf = yaml.safe_load(f) or {}
         for section in wf.values():
+            # `main:` is a single module (a dict), the other sections lists of modules
+            if isinstance(section, dict):
+                section = [section]
             if not isinstance(section, list):
                 continue
             for mod in section:     # not `module`: a Snakemake keyword at the start of a statement

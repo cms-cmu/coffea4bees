@@ -48,6 +48,10 @@ fvt:
   workflow_overrides:
     --JCM-weight: '"" root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/handoff/jetCombinatoricModel_SB_Run3_v1.yml@@JCM_weights'
     '--friends ""': root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/handoff/classifier_inputs_nominal_run3_20260922_3f9e199-1e0504f.json@@HCR_input
+    # The template's 3 parallel evaluators (one per k-fold model) at n=54 hit 41.2 GB against the
+    # 40 GB half-GPU MPS limit ~10 min in, and falcon cancels the job (4 attempts, 2026-09-24).
+    # 2 evaluators ~27 GB, at the cost of a second pass (~80 min instead of ~40).
+    --max-evaluators: '2'
   # ~30x network capacity (default n_features 8). Before --training so FixedStep keeps its
   # kwargs dict, which must directly follow it.
   workflow_inserts:
