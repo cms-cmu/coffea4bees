@@ -21,9 +21,9 @@
 #                           first roast's 5.08 / 0.39 is reproduced alongside the fine version.
 #   * HH4b_FeynNet_fine  -- the same score at 240 bins, the ps_hh_fine granularity. The 50-bin
 #                           top bin (0.98-1) holds most of the signal and cannot be split.
-# Caveat (nominal_run3_feynnet_20260923_d54d644-c24101b): at 240 bins, ps_hh_fine has top bins with
-# zero background, which these stat-only datacards (no autoMCStats) treat as background-free --
-# that inflates HH4b's 0.80 (0.54 once they are merged). Check the fine FeynNet for the same.
+# Caveat (nominal_run3_feynnet_20260924_9e9b688-d99f67c): at 240 bins, ps_hh_fine has 4 top bins
+# with zero background, which these stat-only datacards (no autoMCStats) treat as background-free --
+# that inflates HH4b's 0.80 (0.54 once they are merged). p_ggHH_vs_bkg_fine has none (0.435 as is).
 #
 # Loading SvB_FeynNet alongside SvB_MA does not change the selection: passSvB/failSvB prefer
 # SvB_MA (analysis/helpers/candidates_selection.py, _assign_output_vars). So F.1 is kept on the

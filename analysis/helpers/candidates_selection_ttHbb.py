@@ -211,6 +211,20 @@ def _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB=False, cand_cfg=Non
                 ps_quantile_gt6 = np.where(ps_np < 0.01, -2.0, ps_quantile_gt6)
                 selev["SvB_MA", "ps_ttHbb_gt6"] = ak.Array(ps_quantile_gt6)
 
+                # lepveto quantiles
+                n_bins_lepveto = len(ttHbbSvBHists.var_binning_ps_ttHbb_lepveto) - 1
+                bin_idx_lepveto = np.clip(np.digitize(ps_np, ttHbbSvBHists.var_binning_ps_ttHbb_lepveto) - 1, 0, n_bins_lepveto - 1)
+                ps_quantile_lepveto = (bin_idx_lepveto + 0.5) / float(n_bins_lepveto)
+                ps_quantile_lepveto = np.where(ps_np < 0.01, -2.0, ps_quantile_lepveto)
+                selev["SvB_MA", "ps_ttHbb_lepveto"] = ak.Array(ps_quantile_lepveto)
+
+                # gt6 + lepveto quantiles
+                n_bins_gt6_lepveto = len(ttHbbSvBHists.var_binning_ps_ttHbb_gt6_lepveto) - 1
+                bin_idx_gt6_lepveto = np.clip(np.digitize(ps_np, ttHbbSvBHists.var_binning_ps_ttHbb_gt6_lepveto) - 1, 0, n_bins_gt6_lepveto - 1)
+                ps_quantile_gt6_lepveto = (bin_idx_gt6_lepveto + 0.5) / float(n_bins_gt6_lepveto)
+                ps_quantile_gt6_lepveto = np.where(ps_np < 0.01, -2.0, ps_quantile_gt6_lepveto)
+                selev["SvB_MA", "ps_ttHbb_gt6_lepveto"] = ak.Array(ps_quantile_gt6_lepveto)
+
             pass_mask = selev.passSvB
             m_lead = selev.leadStM_selected
             m_subl = selev.sublStM_selected

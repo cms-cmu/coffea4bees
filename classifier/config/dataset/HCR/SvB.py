@@ -16,8 +16,13 @@ if TYPE_CHECKING:
     import pandas as pd
 
 
-def _reweight_bkg(df: pd.DataFrame, branch: str = "FvT"):
+def _reweight_bkg(df: pd.DataFrame, branch: str = "FvT", pd3_floor: float = 0.0):
     """Scale the event weight by ``df[branch]``.
+
+    With ``pd3_floor`` > 0 (FvT only), events with p_d3 below it are reweighted by
+    p_m4 / pd3_floor instead of the stored FvT = p_m4 / p_d3, which explodes for the handful of
+    outliers an over-confident FvT sends to p_d3 ~ 0 (same floor as the processor's
+    FvT_pd3_floor). Events above the floor keep their stored FvT.
 
     The background reweighting column is configurable (via functools.partial at
     the call site) so variants can reweight by a different per-event weight
@@ -28,7 +33,11 @@ def _reweight_bkg(df: pd.DataFrame, branch: str = "FvT"):
     which pickles them; a nested-function closure is not picklable and silently
     hangs the loader's pool feeder during data loading.
     """
-    df.loc[:, "weight"] *= df[branch]
+    w = df[branch]
+    if pd3_floor > 0:
+        low = df["p_d3"] < pd3_floor
+        w = w.where(~low, df["p_m4"] / pd3_floor)
+    df.loc[:, "weight"] *= w
     return df
 
 
@@ -156,12 +165,22 @@ class _Train(CommonTrain):
     _data_selection_cls: type[_common_selection] = _data_selection
     _weight_branch: str = "FvT"
 
+    def _pd3_floor(self) -> float:
+        # the p_d3 floor only makes sense for the FvT weight (not e.g. MvD)
+        return self.opts.FvT_pd3_floor if self._weight_branch == "FvT" else 0.0
+
     argparser = ArgParser()
     argparser.add_argument(
         "--regions",
         nargs="+",
         default=["SR"],
         help="Dijet mass regions",
+    )
+    argparser.add_argument(
+        "--FvT-pd3-floor",
+        type=float,
+        default=0.0,
+        help="floor p_d3 when reweighting the background by FvT (0 = off); see _reweight_bkg",
     )
     argparser.add_argument(
         "--subsample",
@@ -212,7 +231,7 @@ class _Train(CommonTrain):
                 "label:data",
                 [
                     lambda: self._data_selection_cls(*self.opts.regions),
-                    lambda: partial(_reweight_bkg, branch=self._weight_branch),
+                    lambda: partial(_reweight_bkg, branch=self._weight_branch, pd3_floor=self._pd3_floor()),
                 ],
                 [
                     lambda: _mc_selection(*self.opts.regions),
@@ -257,10 +276,13 @@ class Background(_picoAOD.Background, _Train):
 
         super().__init__()
         self.postprocessors.insert(0, partial(self.normalize, norm=self.opts.norm))
-        self.preprocessors.append(drop_columns(self._weight_branch))
+        self.preprocessors.append(drop_columns(self._weight_branch, *self._pd3_branches()))
+
+    def _pd3_branches(self):
+        return {"p_d3", "p_m4"} if self._pd3_floor() > 0 else set()
 
     def other_branches(self):
-        return super().other_branches() | {self._weight_branch}
+        return super().other_branches() | {self._weight_branch} | self._pd3_branches()
 
     @staticmethod
     def normalize(df: pd.DataFrame, norm: float):

@@ -18,7 +18,7 @@ dataset:
       - --data-source detector
       - --mc-processes ttHbb
       - --max-workers 8
-      - --friends "" coffea4bees/metadata/datasets/classifier_inputs_ttHbb_stitched.json@@HCR_input 
+      - --friends "" coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json@@HCR_input 
 
 analysis:
   - module: kfold.Merge
