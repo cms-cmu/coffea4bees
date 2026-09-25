@@ -14,7 +14,9 @@
 #   - JCM:   fvt_closure.JCM_file, default coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_{tag}.yml
 #   - FvT:   analysis_config.config.friends.FvT (this roast's Phase C friend; runner.py merges it over friend_file)
 # Outputs: {output_path}FvT_closure/{singlefiles/, histAll_FvT_closure.coffea, plots_FvT_closure/ (+index.html),
-#           cutflow_FvT_closure.{yml,html}, cutflow_validation_FvT_closure*.txt}
+#           cutflow_FvT_closure.{yml,html}, cutflow_validation_FvT_closure*.txt,
+#           plots_ttbar_MC_vs_d3/ (+index.html), ttbar_MC_vs_d3_cutflow.{html,txt}}
+#   The last two compare the 4b ttbar MC with TTbar4b_from_d3 (target all_ttbar_MC_vs_d3).
 #
 # roast: step "C4" (cmslpc) in src/tools/roast.py.
 
@@ -50,7 +52,7 @@ closure_cfg = config.get('fvt_closure') or {}
 if not isinstance(closure_cfg, dict):
     closure_cfg = {}
 CLOSURE_OPTION_KEYS = ('datasets', 'plot_config', 'JCM_file', 'known_counts', 'known_counts_test', 'cutflow_list',
-                       'reuse_wJCM_ttbar', 'jcm_output_path', 'closure_ttbar')
+                       'reuse_wJCM_ttbar', 'jcm_output_path', 'closure_ttbar', 'ttbar_compare_plot_config')
 
 datasets = closure_cfg.get('datasets', ['data', 'TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic'])
 if isinstance(datasets, str):
@@ -82,6 +84,14 @@ jcm_file = closure_cfg.get('JCM_file', f"coffea4bees/metadata/weights/JCM/{confi
 jcm_input = [] if "://" in jcm_file else jcm_file
 plot_config = closure_cfg.get('plot_config', "coffea4bees/plots/metadata/plotsAll_FvTClosure.yml")
 CUTFLOW_LIST = closure_cfg.get('cutflow_list', "passJetMult,passPreSel,passDiJetMass,SR_woTrig,SR,SB_woTrig,SB")
+
+# Four-tag ttbar MC vs the FvT-derived estimate from 3b data (TTbar4b_from_d3), from the same merged
+# file and cutflow dump: a plot gallery and a cut-by-cut table. Needs ttbar MC in `datasets`.
+ttbar_compare_plot_config = closure_cfg.get('ttbar_compare_plot_config', "coffea4bees/plots/metadata/plotsTTbar_MCvsFromD3.yml")
+TTBAR_COMPARISON_OUTPUTS = [
+    f"{CLOSURE_PATH}plots_ttbar_MC_vs_d3/plots_done.txt",
+    f"{CLOSURE_PATH}ttbar_MC_vs_d3_cutflow.html",   # not cutflow_{label}.html: FvT_cutflow_closure_table owns that pattern
+] if any(ds.startswith('TT') for ds in MC_DATASETS) else []
 
 def known_cutflow_flag():
     if config.get("test", False):
@@ -127,7 +137,13 @@ rule all_FvT_closure:
         f"{CLOSURE_PATH}histAll_FvT_closure.coffea",
         f"{CLOSURE_PATH}plots_FvT_closure/plots_done.txt",
         f"{CLOSURE_PATH}cutflow_validation_FvT_closure.txt",
-        f"{CLOSURE_PATH}cutflow_FvT_closure.html"
+        f"{CLOSURE_PATH}cutflow_FvT_closure.html",
+        TTBAR_COMPARISON_OUTPUTS
+
+# ttbar MC vs the FvT-derived estimate alone (e.g. on an existing C.4 output):
+#   snakemake -s ... all_ttbar_MC_vs_d3
+rule all_ttbar_MC_vs_d3:
+    input: TTBAR_COMPARISON_OUTPUTS
 
 rule create_FvT_closure_config:
     input:
@@ -230,4 +246,52 @@ use rule cutflow_closure_table from analysis as FvT_cutflow_closure_table with:
         run_container_wrapper = config['analysis_container_wrapper'],
         python_bin = lambda wildcards: config.get("python_bin", "python")
 
-localrules: create_FvT_closure_config, merge_FvT_closure, make_plots_FvT_closure, check_cutflow_FvT_closure, FvT_cutflow_closure_table
+use rule make_plots from analysis as make_plots_ttbar_MC_vs_d3 with:
+    input:
+        coffea_file = f"{CLOSURE_PATH}histAll_FvT_closure.coffea",
+        metadata_file = ttbar_compare_plot_config,
+        plot_script = "coffea4bees/plots/makePlots.py"
+    output: f"{CLOSURE_PATH}plots_ttbar_MC_vs_d3/plots_done.txt"
+    params:
+        output_dir = f"{CLOSURE_PATH}plots_ttbar_MC_vs_d3/",
+        metadata = ttbar_compare_plot_config,
+        extra_arguments = lambda wildcards: " ".join(filter(None, [
+            "-s xW -f png",
+            "--year " + (DATA_YEARS[0] if len(DATA_YEARS) == 1 else ("Run3" if any("202" in y for y in DATA_YEARS) else "RunII")),
+            config.get("plot_extra_arguments", ""),
+        ])),
+        run_container_wrapper = config['analysis_container_wrapper'],
+        python_bin = lambda wildcards: config.get("python_bin", "python")
+    log: f"{CLOSURE_PATH}logs/make_plots_ttbar_MC_vs_d3.log"
+
+# Cut-by-cut ttbar 4b (and 3b) MC vs TTbar_from_d3 (src/tools/cutflow_ttbar_compare.py in barista)
+rule ttbar_MC_vs_d3_cutflow:
+    input:
+        cutflow_yml = f"{CLOSURE_PATH}cutflow_FvT_closure.yml"
+    output:
+        html = f"{CLOSURE_PATH}ttbar_MC_vs_d3_cutflow.html",
+        txt = f"{CLOSURE_PATH}ttbar_MC_vs_d3_cutflow.txt"
+    log: f"{CLOSURE_PATH}logs/ttbar_MC_vs_d3_cutflow.log"
+    params:
+        # no spaces/parentheses: run_container re-joins its arguments for `bash -c`
+        title = lambda wildcards: f"{config.get('label', 'FvT_closure')}_ttbar_MC_vs_d3",
+        mc = " ".join(ds for ds in MC_DATASETS if ds.startswith('TT')),
+        run_container_wrapper = config['analysis_container_wrapper'],
+        python_bin = lambda wildcards: config.get("python_bin", "python")
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {log})
+        # a barista checkout that predates the tool (e.g. CI against master) gets placeholder outputs
+        if [ -f src/tools/cutflow_ttbar_compare.py ]; then
+            {params.run_container_wrapper} {params.python_bin} src/tools/cutflow_ttbar_compare.py {input.cutflow_yml} \
+                -o {output.html} --txt {output.txt} --title {params.title} --mc {params.mc} \
+                --estimate TTbar_from_d3 2>&1 | tee {log}
+        else
+            echo "src/tools/cutflow_ttbar_compare.py not found in this barista checkout; skipping" 2>&1 | tee {log}
+            echo "<p>ttbar MC vs TTbar_from_d3 table not available (barista checkout predates src/tools/cutflow_ttbar_compare.py)</p>" > {output.html}
+            cp {log} {output.txt}
+        fi
+        """
+
+localrules: create_FvT_closure_config, merge_FvT_closure, make_plots_FvT_closure, check_cutflow_FvT_closure, FvT_cutflow_closure_table, make_plots_ttbar_MC_vs_d3, ttbar_MC_vs_d3_cutflow
