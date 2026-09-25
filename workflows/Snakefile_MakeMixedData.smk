@@ -16,7 +16,7 @@
 #
 # Products are published to `publish_base` on EOS; the dataset YAMLs under <publish_base>/handoff/
 # are what consumer roasts read (runner.py -m accepts root:// URLs). Nothing is installed into the
-# checkout. Run one step with a target: `roast submit <id> --step MakeMixedData --extra all_M1`.
+# checkout. Run one step with a target: `roast submit <id> --step MakeMixedData --targets all_M1`.
 #
 # This file is the ONLY place the config is read and paths are built: the step files include()d
 # below use the names defined here and never call config.setdefault themselves.
@@ -100,7 +100,11 @@ TEST_FLAG = "-t" if config['test'] else ""
 
 # Shell prefix for any rule that writes to EOS: roast seeds ./proxy/x509_proxy in the checkout.
 # ${VAR:-}, not $VAR: snakemake runs shell blocks under `set -u`.
-EOS_PROXY = ('if [ -z "${{X509_USER_PROXY:-}}" ] && [ -f ./proxy/x509_proxy ]; then '
+# SINGLE braces: this string is spliced into shell blocks as {EOS_PROXY}, and snakemake does not
+# re-format substituted text -- doubled braces (the escape needed when writing it inline in a
+# shell block, as Snakefile_PhaseB.smk does) reach bash verbatim as `${{...}}`, a bad substitution
+# that killed every publish rule before xrdcp ran.
+EOS_PROXY = ('if [ -z "${X509_USER_PROXY:-}" ] && [ -f ./proxy/x509_proxy ]; then '
              'export X509_USER_PROXY="$PWD/proxy/x509_proxy"; fi')
 
 def processor_config(section_config, inherit_config=True, **top):
