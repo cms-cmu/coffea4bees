@@ -3,6 +3,7 @@ import awkward as ak
 from coffea.nanoevents.methods import vector as v
 import uproot
 import yaml
+import fsspec
 ak.behavior.update(v.behavior)
 import ast
 import numba as nb
@@ -351,7 +352,9 @@ def split_events_into_hemispheres(event, tagged_key="tagJet"):
 
 def read_hemi_files(hemi_files_yaml, year, tree_name="Events", branch_list=None):
 
-    with open(hemi_files_yaml, 'r') as f:
+    # fsspec, not open(): this runs in the condor workers, and a roast publishes the library
+    # registry to EOS (root://...) rather than into the checkout the workers are shipped.
+    with fsspec.open(hemi_files_yaml, 'r') as f:
         hemi_library_data = yaml.safe_load(f)
         # print("Keys",hemi_library_data.keys())
         hemi_files = hemi_library_data[year]
@@ -492,8 +495,8 @@ def convert_yaml_dict(raw_dict):
 
 def init_hemi_data(hemi_metadata_yaml, hemi_files_yaml, year, hemi_summary_vars, jet_branches, event_branches=["event", "run", "luminosityBlock", "thrust_phi", "hemisphereId", "weight"]):
 
-    # Read in hemisphere library metadata
-    with open(hemi_metadata_yaml, 'r') as f:
+    # Read in hemisphere library metadata (local path or root:// URL, see read_hemi_files)
+    with fsspec.open(hemi_metadata_yaml, 'r') as f:
         hemi_stats_raw = yaml.safe_load(f)
 
     hemi_stats = convert_yaml_dict(hemi_stats_raw["hemi_summary_vars"])

@@ -1,0 +1,36 @@
+# ==============================================================================
+# Run 3 JCM with the NON-tight four-tag selection — input to the mixed-data roast
+# ==============================================================================
+# The nominal Run 3 production with one knob flipped: fourTag_use_tight false (nJet_tagged >= 4,
+# the Run 2 definition). The mixed data is built with that selection, so the JCM it applies as
+# pseudo-tag weights, and the data + ttbar histograms its mixed-data JCM fit is made from, must
+# come from the same selection -- not from the nominal's tight B.1.
+#
+# Only Phase B.1 is run:
+#   roast new --config coffea4bees/workflows/config/nominal_run3_nontight.yml \
+#       --step cmslpc:coffea4bees/workflows/Snakefile_PhaseB_1_computeJCM.smk
+#   roast submit <id> --step PhaseB_1_computeJCM
+#   roast archive <id>          # B.1 has no EOS handoff: the mixed-data roast reads the archive
+#
+# ONLY B.1 is valid with this config: the base's C/C.4/D/F keys (fvt/svb --JCM-weight,
+# analysis_config.JCM_file, handoff) still name the tight Run3_v1 fit. B.1 ignores them (its first
+# pass forces apply_JCM off, its second points JCM_file at its own fit).
+#
+# Run 2 needs no such roast: Run 2 has only the non-tight definition, so the mixed-data roast
+# reads the nominal Run 2 roast's B.1 products directly.
+base: coffea4bees/workflows/config/nominal_run3.yml
+
+label: "Run3_nontight"
+output_path: "output/Run3_nontight/"
+# Names the fit: computeJCM/JCM_<tag>/jetCombinatoricModel_SB_<tag>.yml
+tag: "Run3_nontight_v1"
+
+# The base's blessed references are TIGHT numbers; comparing against them would fail every
+# entry. Pointed at files that do not exist yet, the first run only dumps the cutflows -- that
+# dump is what gets blessed as these references.
+jcm_known_counts_NoJCM: "coffea4bees/analysis/tests/known_fullCounts_JCM_NoJCM_Run3_nontight.yml"
+jcm_known_counts_wJCM: "coffea4bees/analysis/tests/known_fullCounts_JCM_wJCM_Run3_nontight.yml"
+
+analysis_config:
+  config:
+    fourTag_use_tight: false
