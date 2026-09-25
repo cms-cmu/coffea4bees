@@ -103,3 +103,33 @@ mixing:
   use_boost_corrected_matching: true
   worker_memory: 8GB
   chunksize: 100000
+
+# ------------------------------------------------------------------------------
+# M.3: validation + mixed-data JCM (mixeddata_all as the "3b" sample, float_t)
+# ------------------------------------------------------------------------------
+# The mixed data is histogrammed with the upstream B.1 noJCM config itself (fetched next to
+# inputs.jcm_hists), so data, ttbar and mixed data share one selection and binning.
+mixed_jcm:
+  config: "coffea4bees/analysis/jcm_tools/metadata/mixeddata_all_config_Run3.yml"
+  float_t: true
+  study_template: "coffea4bees/analysis/metadata/study_mixed_data_Run3.yml"
+  # known_counts: <blessed cutflow_mixedJCM.yml, once the first roast has written one>
+
+# ------------------------------------------------------------------------------
+# M.4: subsamples -> mixeddata_4b (closure)
+# ------------------------------------------------------------------------------
+subsamples:
+  n: 16
+  dataset_name: "mixeddata_4b"
+  split_template: "coffea4bees/skimmer/metadata/split_mixeddata_Run3.yml"
+
+# ------------------------------------------------------------------------------
+# M.5: ttbar pseudodata -> ttbar_PSData (one sample, shared by every subsample)
+# ------------------------------------------------------------------------------
+ttbar_psdata:
+  dataset_name: "ttbar_PSData"
+  seed: 5
+  require_trigWeight: true     # trigweights_Run3_v1.json covers the inclusive TT samples
+  worker_memory: 6GB
+  chunksize: 100000
+  picosize: 100000
