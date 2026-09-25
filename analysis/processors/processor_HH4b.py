@@ -213,6 +213,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         require_trigWeight: bool = True,
         apply_btagSF: bool = True,
         apply_FvT: bool = True,
+        FvT_pd3_floor: float = 0.0,
         apply_boosted_veto: bool = False,
         apply_lepton_veto: bool = False,
         run_dilep_ttbar_crosscheck: bool = False,
@@ -280,6 +281,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.require_trigWeight = require_trigWeight  # error (not just a worker-side warning) if the trigWeight source is missing
         self.apply_btagSF = apply_btagSF
         self.apply_FvT = apply_FvT
+        self.FvT_pd3_floor = FvT_pd3_floor  # 0 = off; see load_FvT
         self.apply_MvD = apply_MvD
         self.apply_MvD_weight = apply_MvD_weight
         self.run_SvB = run_SvB
@@ -901,6 +903,15 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
             if hasattr(event.FvT, "event") and not ak.all(event.FvT.event == event.event):
                 raise ValueError("ERROR: FvT events do not match events ttree")
+
+        # An over-confident FvT can put p_d3 ~ 0 on a handful of outlier events, and every weight
+        # derived from it then explodes (FvT = p_m4/p_d3; d3_to_t3/t4 in setFvTVars). Floor p_d3
+        # and recompute FvT from p_m4 so the weight and the ttbar-from-3b ratios stay consistent.
+        # Events above the floor keep their stored values bit for bit.
+        if self.FvT_pd3_floor and "pd3" in event.FvT.fields and "pm4" in event.FvT.fields:
+            low = event.FvT.pd3 < self.FvT_pd3_floor
+            event["FvT", "FvT"] = np.where(low, event.FvT.pm4 / self.FvT_pd3_floor, event.FvT.FvT)
+            event["FvT", "pd3"] = np.where(low, self.FvT_pd3_floor, event.FvT.pd3)
 
         setFvTVars("FvT", event)
 
