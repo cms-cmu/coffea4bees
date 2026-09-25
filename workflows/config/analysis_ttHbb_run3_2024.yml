@@ -66,7 +66,11 @@ classifier_inputs:
     apply_JCM: false
     apply_FvT: false
     apply_trigWeight: true
-    apply_btagSF: true
+    # No shape (iterative-fit) b-tag SF exists for UParTAK4 in the Summer24 BTV payloads (only
+    # UParTAK4_comb/mujets/light fixed-WP SFs, and the 2026-01-30 btagging.json.gz that
+    # corrections.yml points at is a wp_values-only stub), so the 2024 MC runs without the
+    # CMS_btag weight, like the CI 2024 test. Switch on once BTV provides UParTAK4_shape.
+    apply_btagSF: false
     apply_boosted_veto: false
     run_SvB: false
     top_reconstruction: slow
@@ -157,7 +161,11 @@ analysis_config:
     apply_JCM: true
     apply_FvT: true
     apply_trigWeight: true
-    apply_btagSF: true
+    # No shape (iterative-fit) b-tag SF exists for UParTAK4 in the Summer24 BTV payloads (only
+    # UParTAK4_comb/mujets/light fixed-WP SFs, and the 2026-01-30 btagging.json.gz that
+    # corrections.yml points at is a wp_values-only stub), so the 2024 MC runs without the
+    # CMS_btag weight, like the CI 2024 test. Switch on once BTV provides UParTAK4_shape.
+    apply_btagSF: false
     apply_boosted_veto: false
     run_SvB: false
     top_reconstruction: fast
