@@ -11,4 +11,7 @@ tagJets: tagJets_noJCM.n
 
 subtract3bTT: True
 
-float_t: true                    # mixed-data fit: derive t from data4b/(JCM·mixed_3b) normalization
+# Float threeTightTagFraction (t) as a free fit parameter, seeded at the value derived from the
+# 3b nTightTags histogram, instead of fixing it there (make_jcm_weights.py). Intended for the
+# nominal fit.
+float_t: true
