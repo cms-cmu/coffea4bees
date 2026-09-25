@@ -32,13 +32,19 @@ from coffea4bees.skimmer.processor.skimmer_4b_base import Skimmer4b
 
 
 class SubSampler(Skimmer4b):
-    def __init__(self, sub_sampling_rand_seed=5, apply_trigWeight: bool = True, *args, **kwargs):
+    def __init__(self, sub_sampling_rand_seed=5, apply_trigWeight: bool = True,
+                 require_trigWeight: bool = False, friends: dict = None, *args, **kwargs):
+        # `friends` is named here, not left to **kwargs for Skimmer4b: runner.py injects the per-year
+        # friends (the trigWeight friend) only into processors whose own __init__ takes `friends`.
+        # Without it the ttbar pseudodata was built with no trigger weight, and add_weights only
+        # warned inside the workers. require_trigWeight makes that a hard error.
         kwargs["pico_base_name"] = f'picoAOD_PSData'
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, friends=friends, **kwargs)
 
         logging.info(f"\nRunning SubSampler with these parameters: sub_sampling_rand_seed = {sub_sampling_rand_seed} args = {args}, kwargs = {kwargs}")
         self.sub_sampling_rand_seed = sub_sampling_rand_seed
         self.apply_trigWeight = apply_trigWeight
+        self.require_trigWeight = require_trigWeight
 
     def select(self, event):
         m = self._parse_event_metadata(event)
@@ -63,6 +69,7 @@ class SubSampler(Skimmer4b):
                                                   target = target,
                                                   friend_trigWeight=self.friends.get("trigWeight"),
                                                   apply_trigWeight = self.apply_trigWeight,
+                                                  require_trigWeight = self.require_trigWeight,
                                                   config=config
                                                  )
 
