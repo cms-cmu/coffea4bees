@@ -79,8 +79,11 @@ svb:
     --JCM-weight: '"" root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/handoff/jetCombinatoricModel_SB_Run3_v1.yml@@JCM_weights'
     '--friends ""': root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/handoff/classifier_inputs_nominal_run3_20260922_3f9e199-1e0504f.json@@HCR_input
   # Same width as the FvT (the SvB_SRonly_30x study trained this on falcon at n=54, full schedule).
+  # Same p_d3 floor as analysis_config.config.FvT_pd3_floor, on the FvT background reweighting
+  # (HCR.SvB.Background; --norm is only in that module).
   workflow_inserts:
     --training: [--architecture, {n_features: 54}]
+    --norm: [--FvT-pd3-floor 0.01]
 
 analysis_config:
   config:
@@ -88,6 +91,11 @@ analysis_config:
       FvT: root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/{roast_id}/friend/FvT_30x/result.json@@analysis.0.merged
       SvB_MA: root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/{roast_id}/friend/SvB_30x/result.json@@analysis.0.merged
     JCM_file: root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/handoff/jetCombinatoricModel_SB_Run3_v1.yml
+    # The 30x FvT is over-confident on a handful of events: of 29.3M evaluated, 43 have
+    # p_d3 < 1e-3 and 7 have |FvT| > 1e6 (worst -2.6e28, where the nominal FvT gives 0.8), which
+    # alone wrecked the first C4 closure sums. Floor p_d3 at 0.01 -> |FvT|, d3_to_t3/t4 <= 100
+    # (nominal FvT 99.99 % quantile: 14). Also applied to the SvB training weights (svb block).
+    FvT_pd3_floor: 0.01
 
 # Dump-only, for the same reason as fvt_closure.known_counts: the nominal reference holds the
 # nominal FvT's weighted rows.
