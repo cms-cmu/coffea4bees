@@ -338,7 +338,9 @@ if __name__ == '__main__':
     if args.list_of_hists:
         varList = args.list_of_hists
     else:
-        varList = [h for h in cfg.hists[0]['hists'].keys() if not any(skip in h for skip in args.skip_hists)]
+        # substring match; the plot metadata's `skip_hists:` list adds to -s/--skip
+        skip_hists = list(args.skip_hists) + list(cfg.plotConfig.get("skip_hists") or [])
+        varList = [h for h in cfg.hists[0]['hists'].keys() if not any(skip in h for skip in skip_hists)]
 
     logging.info(f"Plotting {len(varList)} variables")
     doPlots(varList, debug=args.debug)

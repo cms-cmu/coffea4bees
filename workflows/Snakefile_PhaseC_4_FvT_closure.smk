@@ -8,6 +8,8 @@
 #
 # ttbar: reused from Phase B.1's wJCM singlefiles by default (fvt_closure.reuse_wJCM_ttbar, jcm_output_path),
 #   because the FvT weight only applies to data; set reuse_wJCM_ttbar: false to reprocess MC here.
+#   The plots (plotsAll_FvTClosure.yml) stack the FvT-derived ttbar from 3b data instead
+#   (TTbar4b_from_d3; plot_ttbar_with_weights is forced on), as Phase F does.
 # Inputs (per roast, from the master config):
 #   - JCM:   fvt_closure.JCM_file, default coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_{tag}.yml
 #   - FvT:   analysis_config.config.friends.FvT (this roast's Phase C friend; runner.py merges it over friend_file)
@@ -48,7 +50,7 @@ closure_cfg = config.get('fvt_closure') or {}
 if not isinstance(closure_cfg, dict):
     closure_cfg = {}
 CLOSURE_OPTION_KEYS = ('datasets', 'plot_config', 'JCM_file', 'known_counts', 'known_counts_test', 'cutflow_list',
-                       'reuse_wJCM_ttbar', 'jcm_output_path')
+                       'reuse_wJCM_ttbar', 'jcm_output_path', 'closure_ttbar')
 
 datasets = closure_cfg.get('datasets', ['data', 'TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic'])
 if isinstance(datasets, str):
@@ -78,7 +80,7 @@ jcm_file = closure_cfg.get('JCM_file', f"coffea4bees/metadata/weights/JCM/{confi
 # A remote JCM (e.g. an earlier production's EOS handoff, for a roast that skips Phase B) is read
 # through fsspec by the processor, but is no file Snakemake can see, so it gets no input edge.
 jcm_input = [] if "://" in jcm_file else jcm_file
-plot_config = closure_cfg.get('plot_config', "coffea4bees/plots/metadata/plotsAll.yml")
+plot_config = closure_cfg.get('plot_config', "coffea4bees/plots/metadata/plotsAll_FvTClosure.yml")
 CUTFLOW_LIST = closure_cfg.get('cutflow_list', "passJetMult,passPreSel,passDiJetMass,SR_woTrig,SR,SB_woTrig,SB")
 
 def known_cutflow_flag():
@@ -97,6 +99,8 @@ def get_raw_closure_config():
     res['config']['apply_JCM'] = True
     res['config']['JCM_file'] = jcm_file
     res['config']['apply_FvT'] = True
+    # TTbar{4b,3b}_from_d3 histograms: the ttbar stacked by plotsAll_FvTClosure.yml
+    res['config']['plot_ttbar_with_weights'] = True
     res['config']['run_SvB'] = False
     for k in list(res['config'].keys()):
         if k.startswith('SvB'):
@@ -215,11 +219,14 @@ use rule check_cutflow from analysis as check_cutflow_FvT_closure with:
         python_bin = lambda wildcards: config.get("python_bin", "python")
     container: None
 
-# 3b data already carries JCM x FvT, which models multijet + 3b ttbar: Multijet = data 3b
+# 3b data already carries JCM x FvT, which models multijet + 3b ttbar: Multijet = data 3b.
+# tt = the FvT-derived estimate from 3b data (TTbar_from_d3_<era> cutflow entries), as in the
+# plots and Phase F; fvt_closure.closure_ttbar: "TTToHadronic TTToSemiLeptonic TTTo2L2Nu" for MC.
 use rule cutflow_closure_table from analysis as FvT_cutflow_closure_table with:
     params:
         title = lambda wildcards: f"{config.get('label', 'FvT_closure')}_cutflow_{wildcards.label}",
         multijet = "data3b",
+        ttbar = lambda wildcards: closure_cfg.get('closure_ttbar', "TTbar_from_d3"),
         run_container_wrapper = config['analysis_container_wrapper'],
         python_bin = lambda wildcards: config.get("python_bin", "python")
 
