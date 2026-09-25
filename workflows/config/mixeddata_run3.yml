@@ -15,10 +15,10 @@
 #
 #   roast new --config coffea4bees/workflows/config/mixeddata_run3.yml \
 #       --step cmslpc:coffea4bees/workflows/Snakefile_MakeMixedData.smk
-#   roast submit <id> --step MakeMixedData --extra all_M1      # one sub-step at a time
+#   roast submit <id> --step MakeMixedData --targets all_M1      # one sub-step at a time
 #
 label: "mixeddata_run3"
-output_path: "output/mixeddata_run3_{roast_id}/"
+output_path: "output/{roast_id}/"   # the roast id already carries the label
 # EOS area of this roast: hemisphere library, picoAODs and the handoff YAMLs all go here.
 publish_base: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/{roast_id}"
 
