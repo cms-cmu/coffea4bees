@@ -141,9 +141,6 @@ class ttHbbProcessor(HH4bBaseProcessor):
         selev["fail_nSelJets_le6"] = n_selJets <= 6
         selev["passLeptonVeto"] = selev.passLeptonVeto if "passLeptonVeto" in selev.fields else np.full(len(selev), True)
 
-        # Filter out low-significance spike (ps < 0.01) everywhere from SvB histograms
-        if self.run_SvB and "pass_ps_min" in selev.fields:
-            selev = selev[selev.pass_ps_min]
 
         selev["SR"] = selev.passSR
         selev["SB"] = selev.passSB
