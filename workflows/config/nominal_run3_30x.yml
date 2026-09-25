@@ -70,8 +70,10 @@ fvt_closure:
   known_counts: "coffea4bees/analysis/tests/known_fullCounts_FvT_closure_Run3_30x.yml"
 
 svb:
-  label: "SvB_30x"
-  output_dir: "output/SvB_30x/"
+  # _floor: retrained with the FvT p_d3 floor (below). The first, unfloored SvB_30x of this roast
+  # stays on EOS next to it for comparison.
+  label: "SvB_30x_floor"
+  output_dir: "output/SvB_30x_floor/"
   # The background FvT is THIS roast's 30x Phase C output.
   train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_30x"
   metadata: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/handoff/classifier_inputs_nominal_run3_20260922_3f9e199-1e0504f.json@@HCR_input"
@@ -89,7 +91,7 @@ analysis_config:
   config:
     friends:
       FvT: root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/{roast_id}/friend/FvT_30x/result.json@@analysis.0.merged
-      SvB_MA: root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/{roast_id}/friend/SvB_30x/result.json@@analysis.0.merged
+      SvB_MA: root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/{roast_id}/friend/SvB_30x_floor/result.json@@analysis.0.merged
     JCM_file: root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/handoff/jetCombinatoricModel_SB_Run3_v1.yml
     # The 30x FvT is over-confident on a handful of events: of 29.3M evaluated, 43 have
     # p_d3 < 1e-3 and 7 have |FvT| > 1e6 (worst -2.6e28, where the nominal FvT gives 0.8), which
