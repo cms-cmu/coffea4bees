@@ -8,6 +8,8 @@
 #
 # ttbar: reused from Phase B.1's wJCM singlefiles by default (fvt_closure.reuse_wJCM_ttbar, jcm_output_path),
 #   because the FvT weight only applies to data; set reuse_wJCM_ttbar: false to reprocess MC here.
+#   A roast without its own B.1 sets fvt_closure.wJCM_ttbar_from to another roast's archived
+#   computeJCM/histAll_wJCM.coffea instead (TT processes read from it over xrootd).
 #   The plots (plotsAll_FvTClosure.yml) stack the FvT-derived ttbar from 3b data instead
 #   (TTbar4b_from_d3; plot_ttbar_with_weights is forced on), as Phase F does.
 # Inputs (per roast, from the master config):
@@ -52,7 +54,8 @@ closure_cfg = config.get('fvt_closure') or {}
 if not isinstance(closure_cfg, dict):
     closure_cfg = {}
 CLOSURE_OPTION_KEYS = ('datasets', 'plot_config', 'JCM_file', 'known_counts', 'known_counts_test', 'cutflow_list',
-                       'reuse_wJCM_ttbar', 'jcm_output_path', 'closure_ttbar', 'ttbar_compare_plot_config')
+                       'reuse_wJCM_ttbar', 'jcm_output_path', 'closure_ttbar', 'ttbar_compare_plot_config',
+                       'wJCM_ttbar_from')
 
 datasets = closure_cfg.get('datasets', ['data', 'TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic'])
 if isinstance(datasets, str):
@@ -71,6 +74,20 @@ if isinstance(REUSE_WJCM_TTBAR, str):
 JCM_OUTPUT_PATH = closure_cfg.get('jcm_output_path', os.path.join(base_output, 'computeJCM/'))
 if not JCM_OUTPUT_PATH.endswith('/'):
     JCM_OUTPUT_PATH += '/'
+
+# A roast without its own Phase B (C.4 only) takes the ttbar from ANOTHER roast's B.1 instead:
+# wJCM_ttbar_from = that roast's merged computeJCM/histAll_wJCM.coffea (its singlefiles are not
+# archived), read in place over xrootd and cut down to the TT processes (select_ttbar_upstream).
+WJCM_TTBAR_FROM = closure_cfg.get('wJCM_ttbar_from')
+TT_DATASETS = [ds for ds in MC_DATASETS if ds.startswith('TT')]
+UPSTREAM_TTBAR = f"{CLOSURE_PATH}singlefiles/hist__TTbar_upstream_wJCM.coffea"
+
+def mc_singlefiles():
+    if WJCM_TTBAR_FROM and TT_DATASETS:
+        other = [f"{CLOSURE_PATH}singlefiles/hist__{ds}__{yr}_FvT_closure.coffea"
+                 for ds in MC_DATASETS if ds not in TT_DATASETS for yr in DATA_YEARS]
+        return [UPSTREAM_TTBAR] + other
+    return [mc_singlefile(ds, yr) for ds in MC_DATASETS for yr in DATA_YEARS]
 
 def mc_singlefile(ds, yr):
     if REUSE_WJCM_TTBAR and ds.startswith('TT'):
@@ -190,9 +207,28 @@ use rule analysis_processor from analysis as analysis_MC_FvT_closure with:
         ])),
         run_container_wrapper = config['analysis_container_wrapper']
 
+# Upstream roast's B.1 ttbar (fvt_closure.wJCM_ttbar_from): the TT processes of its merged
+# histAll_wJCM.coffea, read over xrootd (src/tools/select_processes_coffea.py in barista). Its 3b
+# data is JCM-only and must not be merged, hence the process cut.
+rule select_ttbar_upstream:
+    output: UPSTREAM_TTBAR
+    log: f"{CLOSURE_PATH}logs/select_ttbar_upstream.log"
+    params:
+        url = WJCM_TTBAR_FROM or "",
+        processes = " ".join(TT_DATASETS),
+        run_container_wrapper = config['analysis_container_wrapper'],
+        python_bin = lambda wildcards: config.get("python_bin", "python")
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {log})
+        {params.run_container_wrapper} {params.python_bin} src/tools/select_processes_coffea.py "{params.url}" \
+            -o {output} -p {params.processes} 2>&1 | tee {log}
+        """
+
 use rule merging_coffea_files from analysis as merge_FvT_closure with:
     input:
-        files = [f"{CLOSURE_PATH}singlefiles/hist_data__{yr}_{era}_FvT_closure.coffea" for yr, era in DATA_YEAR_ERA] + [mc_singlefile(ds, yr) for ds in MC_DATASETS for yr in DATA_YEARS],
+        files = [f"{CLOSURE_PATH}singlefiles/hist_data__{yr}_{era}_FvT_closure.coffea" for yr, era in DATA_YEAR_ERA] + mc_singlefiles(),
         script = "src/tools/merge_coffea_files.py"
     output: f"{CLOSURE_PATH}histAll_FvT_closure.coffea"
     log: f"{CLOSURE_PATH}logs/merge_FvT_closure.log"
@@ -294,4 +330,4 @@ rule ttbar_MC_vs_d3_cutflow:
         fi
         """
 
-localrules: create_FvT_closure_config, merge_FvT_closure, make_plots_FvT_closure, check_cutflow_FvT_closure, FvT_cutflow_closure_table, make_plots_ttbar_MC_vs_d3, ttbar_MC_vs_d3_cutflow
+localrules: create_FvT_closure_config, select_ttbar_upstream, merge_FvT_closure, make_plots_FvT_closure, check_cutflow_FvT_closure, FvT_cutflow_closure_table, make_plots_ttbar_MC_vs_d3, ttbar_MC_vs_d3_cutflow
