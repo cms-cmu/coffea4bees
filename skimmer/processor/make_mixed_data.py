@@ -224,7 +224,15 @@ class HemiMixer(Skimmer4b):
         # Apply JCM
         #
         event["weight"] = weights.weight()
-        jcm_model = self.apply_JCM.get(year) if isinstance(self.apply_JCM, dict) else self.apply_JCM
+        # An explicit JCM_file is stored under "default" (__init__); the weights-file path is per year.
+        # Looking up only `year` returned None for the former, silently skipped the pseudo-tag
+        # weights, and every chunk then failed on the missing nJet_ps_and_tag.
+        if isinstance(self.apply_JCM, dict):
+            jcm_model = self.apply_JCM.get(year, self.apply_JCM.get("default"))
+            if jcm_model is None:
+                raise ValueError(f"apply_JCM is set but no JCM for year {year!r} (have {list(self.apply_JCM)})")
+        else:
+            jcm_model = self.apply_JCM
         weights, list_weight_names = add_pseudotagweights(
             event,
             weights,

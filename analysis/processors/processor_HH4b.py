@@ -445,7 +445,12 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             self.config = processor_config(self.processName, self.dataset, event)
             # print("HACK")
             if self.config["isRun3"]:
-                self.config["isSyntheticData"] = bool(self.config["isMixedData"]) or self.config["isSyntheticData"]
+                # Mixed data and ttbar pseudodata carry jets already corrected when they were
+                # skimmed: take them as stored (no Run 3 JEC re-derivation in jet_selection). The
+                # pseudodata inside mixeddata_4b already got this via isMixedData; standalone
+                # ttbar_PSData (isMC False) was otherwise re-corrected as DATA, shifting dijet masses.
+                self.config["isSyntheticData"] = (bool(self.config["isMixedData"]) or self.config["isSyntheticData"]
+                                                  or bool(self.config["isPSData"]))
                 self.config["fourTag_use_tight"] = self.fourTag_use_tight
             logging.debug(f'{self.chunk} config={self.config}, for file {self.fname}\n')
 

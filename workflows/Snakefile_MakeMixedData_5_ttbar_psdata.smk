@@ -11,11 +11,9 @@
 #   M5_publish                        -> <PUB>/handoff/ttbar_PSData.yml
 
 M5_OUT = f"{out}M5/"
-PS = config.get('ttbar_psdata') or {}
-PS_NAME = PS.get('dataset_name', 'ttbar_PSData')
 M5_CONFIG = f"{M5_OUT}sub_sample_MC.yml"
 M5_REGISTRY = f"{M5_OUT}picoaod_datasets_{PS_NAME}.yml"
-M5_DATASET = f"{M5_OUT}handoff/{PS_NAME}.yml"
+M5_DATASET = PS_DATASET
 M5_PUBLISHED = f"{M5_OUT}published.done"
 
 rule M5_config:
@@ -89,20 +87,31 @@ rule M5_dataset_yml:
         {WRAPPER} {PYTHON} src/tools/make_dataset_yml.py -i {input} -o {output} -n {PS_NAME} 2>&1 | tee {log}
         """
 
-rule M5_publish:
+rule M5_check:
+    """Every year must have pseudodata files: an all-bad-files skim otherwise publishes `{}`."""
     input: M5_DATASET
+    output: f"{M5_OUT}dataset_checked.done"
+    run:
+        check_dataset_yml(input[0], PS_NAME, YEARS)
+        with open(output[0], "w") as f:
+            f.write("ok\n")
+
+rule M5_publish:
+    input:
+        dataset = M5_DATASET,
+        checked = f"{M5_OUT}dataset_checked.done"
     output: M5_PUBLISHED
     log: f"{M5_OUT}logs/publish.log"
     shell:
         """
         set -eo pipefail
         {EOS_PROXY}
-        xrdcp -f -p {input} "{HANDOFF}/$(basename {input})" 2>&1 | tee {log}
-        echo "published {input} -> {HANDOFF}/$(basename {input})" | tee -a {log}
+        xrdcp -f -p {input.dataset} "{HANDOFF}/$(basename {input.dataset})" 2>&1 | tee {log}
+        echo "published {input.dataset} -> {HANDOFF}/$(basename {input.dataset})" | tee -a {log}
         date > {output}
         """
 
 rule all_M5:
     input: M5_PUBLISHED
 
-localrules: M5_config, M5_merge, M5_dataset_yml, M5_publish, all_M5
+localrules: M5_config, M5_merge, M5_dataset_yml, M5_check, M5_publish, all_M5
