@@ -19,8 +19,9 @@ config.setdefault('dataset_location',   "coffea4bees/metadata/datasets/")
 config.setdefault('years', ['2022_EE', '2022_preEE', '2023_BPix', '2023_preBPix'])
 config.setdefault('dataset_name', 'mixeddata_all')
 # Path to the installed dataset metadata yaml — declared as input to
-# make_SvBFeynNet_friendtrees_mixeddata so snakemake schedules the install
-# step (when invoked from Snakefile_Run3_make_mixeddata.smk) before this.
+# make_SvBFeynNet_friendtrees_mixeddata. (It used to order this after the install step of the
+# former Snakefile_Run3_make_mixeddata.smk; mixed data is now made by Snakefile_MakeMixedData.smk,
+# whose dataset YAMLs live on EOS -- the MvD consumer will wire this Snakefile up.)
 config.setdefault('install_path',
     f"coffea4bees/metadata/datasets/{config['dataset_name']}.yml")
 
@@ -99,8 +100,7 @@ use rule analysis_processor from analysis as make_SvBFeynNet_friendtrees_data wi
 
 
 use rule analysis_processor from analysis as make_SvBFeynNet_friendtrees_mixeddata with:
-    # install_path declared so this rule waits for install_mixeddata_dataset
-    # when invoked from Snakefile_Run3_make_mixeddata.smk.
+    # install_path declared as a DAG input (see the install_path note above).
     input:
         config_yml   = "coffea4bees/analysis/metadata/HH4b_make_friend_SvBFeynNet_Run3.yml",
         install_path = config['install_path'],

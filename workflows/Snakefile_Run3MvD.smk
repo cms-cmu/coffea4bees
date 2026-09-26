@@ -27,8 +27,9 @@ _install_tag = "_".join(filter(None, [_mode_tag, _dsn_tag]))
 # 2023 acceptance applied via the committed era_overrides resolver — neither
 # reuses nor clobbers the untagged-threshold shared hists. The per-rank
 # outputs are already pt-distinct via _dsn_tag, so only the rank-shared
-# data+TT dir needs this. Matches the `tag` knob in
-# Snakefile_Run3_make_mixeddata.smk. Empty by default.
+# data+TT dir needs this. (Matched the `tag` knob of the former
+# Snakefile_Run3_make_mixeddata.smk; mixed data is now made by
+# Snakefile_MakeMixedData.smk.) Empty by default.
 config.setdefault('tag', '')
 _tag_suffix  = f"_{config['tag']}" if config['tag'] else ''
 
