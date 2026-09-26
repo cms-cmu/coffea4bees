@@ -1,36 +1,56 @@
 # ==============================================================================
-# Run 3 JCM with the NON-tight four-tag selection — input to the mixed-data roast
+# Run 3 JCM + FvT with the NON-tight four-tag selection — input to the mixed-data roast
 # ==============================================================================
 # The nominal Run 3 production with one knob flipped: fourTag_use_tight false (nJet_tagged >= 4,
-# the Run 2 definition). The mixed data is built with that selection, so the JCM it applies as
-# pseudo-tag weights, and the data + ttbar histograms its mixed-data JCM fit is made from, must
-# come from the same selection -- not from the nominal's tight B.1.
+# the Run 2 definition). The mixed data is built with that selection, so everything it takes from
+# a background model must come from the same selection -- not from the nominal's tight one:
+#   * the JCM (B.1): pseudo-tag weights in the mixing, and the data + ttbar histograms of the
+#     mixed-data JCM fit
+#   * the FvT (C): ttbar subtraction in the hemisphere library (4b data, d4_to_t4) and the mixing
+#     (3b data, d3_to_t3). The tight nominal FvT does not model the 4b events that fail the tight
+#     definition (they are neither 3b nor 4b in its training): used for the library, it removed
+#     essentially all of them (mixeddata_run3_20260925_56690d5-1a7e467: the library held exactly
+#     the tight-4b count).
 #
-# Only Phase B.1 is run:
-#   roast new --config coffea4bees/workflows/config/nominal_run3_nontight.yml \
-#       --step cmslpc:coffea4bees/workflows/Snakefile_PhaseB_1_computeJCM.smk
-#   roast submit <id> --step PhaseB_1_computeJCM
-#   roast archive <id>          # B.1 has no EOS handoff: the mixed-data roast reads the archive
+#   roast new --config coffea4bees/workflows/config/nominal_run3_nontight.yml --phases B,C,C4
+#   roast submit <id> --step B     # cmslpc: B.1 JCM, B.2 classifier inputs, handoff to EOS
+#   roast submit <id> --step C     # falcon: FvT train + evaluate -> <eos_base>/friend/FvT_nominal
+#   roast submit <id> --step C4    # cmslpc: FvT closure with the non-tight JCM x FvT
+#   roast archive <id>
 #
-# ONLY B.1 is valid with this config: the base's C/C.4/D/F keys (fvt/svb --JCM-weight,
-# analysis_config.JCM_file, handoff) still name the tight Run3_v1 fit. B.1 ignores them (its first
-# pass forces apply_JCM off, its second points JCM_file at its own fit).
+# Valid for B, C and C.4 only: D (SvB) and F are not configured for this selection.
 #
 # Run 2 needs no such roast: Run 2 has only the non-tight definition, so the mixed-data roast
-# reads the nominal Run 2 roast's B.1 products directly.
+# reads the nominal Run 2 roast's products directly.
 base: coffea4bees/workflows/config/nominal_run3.yml
 
 label: "Run3_nontight"
 output_path: "output/Run3_nontight/"
-# Names the fit: computeJCM/JCM_<tag>/jetCombinatoricModel_SB_<tag>.yml
+# Names the fit: computeJCM/JCM_<tag>/jetCombinatoricModel_SB_<tag>.yml, and the handoff copy
+# <eos_base>/handoff/jetCombinatoricModel_SB_<tag>.yml that C reads (--JCM-weight below).
 tag: "Run3_nontight_v1"
 
 # The base's blessed references are TIGHT numbers; comparing against them would fail every
-# entry. Pointed at files that do not exist yet, the first run only dumps the cutflows -- that
-# dump is what gets blessed as these references.
+# entry. The JCM ones are the non-tight blessing (nominal_run3_nontight_20260925_0c53380-193851f);
+# the FvT-closure one does not exist yet, so the first C.4 run only dumps it, to be blessed.
 jcm_known_counts_NoJCM: "coffea4bees/analysis/tests/known_fullCounts_JCM_NoJCM_Run3_nontight.yml"
 jcm_known_counts_wJCM: "coffea4bees/analysis/tests/known_fullCounts_JCM_wJCM_Run3_nontight.yml"
+fvt_closure:
+  known_counts: "coffea4bees/analysis/tests/known_fullCounts_FvT_closure_Run3_nontight.yml"
+
+# FvT only: data + ttbar classifier inputs (the base adds the ggF signal for the SvB).
+classifier_inputs:
+  datasets: [data, TTToHadronic, TTToSemiLeptonic, TTTo2L2Nu]
+
+# C trains against THIS roast's non-tight JCM: the base names the tight Run3_v1 file. (Only the
+# filename differs; check_handoff_refs checks the directory, not the name, so it would not catch
+# a stale tag here -- C would fail on a missing file instead.)
+fvt:
+  workflow_overrides:
+    --JCM-weight: '"" root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/{roast_id}/handoff/jetCombinatoricModel_SB_Run3_nontight_v1.yml@@JCM_weights'
 
 analysis_config:
   config:
     fourTag_use_tight: false
+    # C.4's JCM: the per-roast handoff copy phaseB_handoff writes (named by `tag`).
+    JCM_file: coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_Run3_nontight_v1.yml
