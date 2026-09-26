@@ -1,0 +1,96 @@
+# Mixed-data validation (Snakefile_MakeMixedData_6_validation.smk, step M.6). Three comparisons in
+# one plot, all four-tag:
+#   * 4b data (points)                      vs the stack  -> does the background model follow data?
+#   * ttbar pseudodata (line)               vs the stack's ttbar MC part -> is the pseudodata right?
+#   * one mixeddata_4b subsample (line)     vs the stack  -> does one closure pseudo-experiment follow
+#     (its files already include the ttbar pseudodata)      the mixeddata_all + ttbar model?
+# Stack: multijet = mixeddata_all weighted by the mixed-data JCM (M.3), ttbar = TT MC.
+# `mix_vK` is a placeholder: M.6 writes the actual subsample index (subsample drawn per roast).
+hists:
+        data:
+                process: data
+                tag: fourTag
+                label: Four-tag data
+                edgecolor: k
+                fillcolor: k
+        subsample:
+                process: mix_vK
+                tag: fourTag
+                label: "mixeddata_4b subsample K (mixed + $t\\bar{t}$ pseudodata)"
+                edgecolor: "#e42536"
+                fillcolor: "#e42536"
+                histtype: step
+        psdata:
+                process: ttbar_PSData
+                tag: fourTag
+                label: $t\bar{t}$ pseudodata
+                edgecolor: "#1f4e9c"
+                fillcolor: "#1f4e9c"
+                histtype: step
+
+stack:
+        TTbar:
+                process: [TTToHadronic, TTToSemiLeptonic, TTTo2L2Nu]
+                tag: fourTag
+                fillcolor: "#85D1FBff"
+                edgecolor: k
+                label: $t\bar{t}$ MC
+        MultiJet:
+                process: mixeddata_all
+                tag: fourTag
+                fillcolor: "#FFDF7Fff"
+                edgecolor: k
+                label: Mixed data (mixed JCM)
+
+ratios:
+        dataToBkg:
+                numerator:
+                        type: hists
+                        key: data
+                denominator:
+                        type: stack
+                uncertianty:
+                        nominal
+                color: k
+                marker: "o"
+        subsampleToBkg:
+                numerator:
+                        type: hists
+                        key: subsample
+                denominator:
+                        type: stack
+                color: "#e42536"
+                marker: "s"
+        psdataToTTbar:
+                numerator:
+                        type: hists
+                        key: psdata
+                denominator:
+                        type: stack
+                        key: TTbar
+                color: "#1f4e9c"
+                marker: "^"
+
+codes:
+   region:
+      SR: 2
+      SB: 1
+      other: 0
+   tag:
+      threeTag: 3
+      fourTag: 4
+      other: 0
+
+doRatio:
+    1
+
+summary:
+    - selJets.n
+    - tagJets.n
+    - canJet0.pt
+    - canJet3.pt
+    - m4j
+    - v4j.mass
+    - quadJet_selected.lead.mass
+    - quadJet_selected.subl.mass
+    - quadJet_selected.xHH

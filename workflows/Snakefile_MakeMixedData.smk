@@ -9,6 +9,8 @@
 #   M.3 validate       mixed-data histograms + upstream data/ttbar -> mixed-data JCM; study
 #   M.4 subsample      split mixeddata_all into N disjoint samples (M.3 JCM) -> mixeddata_4b
 #   M.5 ttbar psdata   unweighted ttbar pseudodata (one shared sample) -> ttbar_PSData
+#   M.6 validation     plots (mixed + ttbar MC vs 4b data, pseudodata, one subsample), cutflow page,
+#                      study plots, subsample overlap matrix
 #
 # Everything this roast consumes comes from other roasts, named under `inputs:` and checked by
 # `roast new`: the FvT from the nominal, the JCM and its histograms from a Phase B.1 roast with
@@ -16,7 +18,7 @@
 #
 # Products are published to `publish_base` on EOS; the dataset YAMLs under <publish_base>/handoff/
 # are what consumer roasts read (runner.py -m accepts root:// URLs). Nothing is installed into the
-# checkout. Run one step with a target: `roast submit <id> --step MakeMixedData --extra all_M1`.
+# checkout. Run one step with a target: `roast submit <id> --step MakeMixedData --targets all_M1`.
 #
 # This file is the ONLY place the config is read and paths are built: the step files include()d
 # below use the names defined here and never call config.setdefault themselves.
@@ -86,6 +88,11 @@ HEMI_STATS_URL = HEMI_BASE            # hemi_statistics_<year>.yml live next to 
 HEMI = config.get('hemi_library') or {}
 MIX = config.get('mixing') or {}
 MIX_NAME = MIX.get('dataset_name', 'mixeddata_all')
+PS = config.get('ttbar_psdata') or {}
+PS_NAME = PS.get('dataset_name', 'ttbar_PSData')
+# M.5's ttbar pseudodata dataset YAML; M.4 folds its files into every subsample (closure pseudo-data
+# = mixed subsample + ttbar pseudodata), so it is needed before M.5's own file is included.
+PS_DATASET = f"{out}M5/handoff/{PS_NAME}.yml"
 
 # Container / runner invocation, as in Phase B.1
 config.setdefault('test', False)
@@ -100,7 +107,11 @@ TEST_FLAG = "-t" if config['test'] else ""
 
 # Shell prefix for any rule that writes to EOS: roast seeds ./proxy/x509_proxy in the checkout.
 # ${VAR:-}, not $VAR: snakemake runs shell blocks under `set -u`.
-EOS_PROXY = ('if [ -z "${{X509_USER_PROXY:-}}" ] && [ -f ./proxy/x509_proxy ]; then '
+# SINGLE braces: this string is spliced into shell blocks as {EOS_PROXY}, and snakemake does not
+# re-format substituted text -- doubled braces (the escape needed when writing it inline in a
+# shell block, as Snakefile_PhaseB.smk does) reach bash verbatim as `${{...}}`, a bad substitution
+# that killed every publish rule before xrdcp ran.
+EOS_PROXY = ('if [ -z "${X509_USER_PROXY:-}" ] && [ -f ./proxy/x509_proxy ]; then '
              'export X509_USER_PROXY="$PWD/proxy/x509_proxy"; fi')
 
 def processor_config(section_config, inherit_config=True, **top):
@@ -129,6 +140,22 @@ def write_yaml(path, obj):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as f:
         yaml.dump(obj, f, default_flow_style=False, sort_keys=False)
+
+def check_dataset_yml(path, name, years):
+    """Refuse to publish an empty or partial dataset. The skimmer runs with skipbadfiles, so a
+    processor error on every chunk becomes an empty registry, runner.py still exits 0, and without
+    this the handoff YAML would be published as `<name>: {}` (it was, once: the mixer's JCM
+    lookup bug)."""
+    with open(path) as f:
+        entry = (yaml.safe_load(f) or {}).get(name) or {}
+    def nfiles(node):
+        if isinstance(node, dict):
+            return sum(nfiles(v) for v in node.values())
+        return len(node) if isinstance(node, list) else 0
+    empty = [y for y in years if not nfiles((entry.get(y) or {}).get('picoAOD'))]
+    if empty:
+        raise ValueError(f"{path}: dataset {name!r} has no files for {empty} -- the skim failed; "
+                         f"see the per-year logs (bad_files) before publishing")
 
 module analysis:
     snakefile: "rules/analysis.smk"
@@ -163,6 +190,7 @@ include: "Snakefile_MakeMixedData_2_mix.smk"
 include: "Snakefile_MakeMixedData_3_validate.smk"
 include: "Snakefile_MakeMixedData_4_subsample.smk"
 include: "Snakefile_MakeMixedData_5_ttbar_psdata.smk"
+include: "Snakefile_MakeMixedData_6_validation.smk"
 
 # default_target, not position: an included or inserted rule can never steal the default.
 rule all_MakeMixedData:
@@ -172,6 +200,7 @@ rule all_MakeMixedData:
         rules.all_M2.input,
         rules.all_M3.input,
         rules.all_M4.input,
-        rules.all_M5.input
+        rules.all_M5.input,
+        rules.all_M6.input
 
 localrules: fetch_inputs, all_MakeMixedData
