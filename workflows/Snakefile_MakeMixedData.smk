@@ -45,10 +45,18 @@ YEAR_ERAS = {str(y): list(eras) for y, eras in config['year_eras'].items()}
 YEARS = list(YEAR_ERAS)
 TTBAR = list(config['ttbar'])
 
+# Hemisphere-library year keys. Default: one library per data year (UL16_preVFP and UL16_postVFP
+# separately; John, 2026-09-27). hemi_library.hemi_year_key: merge_ul16 restores the legacy shared
+# UL16 library. The mixer (make_mixed_data.py) is told the same key, so the two cannot disagree.
+HEMI_YEAR_KEY = (config.get('hemi_library') or {}).get('hemi_year_key', 'year')
+if HEMI_YEAR_KEY not in ('year', 'merge_ul16'):
+    raise ValueError(f"hemi_library.hemi_year_key must be 'year' or 'merge_ul16', got {HEMI_YEAR_KEY!r}")
+
 def hemi_year(year):
-    """Year key of the hemisphere library / statistics. make_mixed_data.py strips _preVFP /
-    _postVFP before looking the library up, so both UL16 halves share one UL16 library."""
-    return year.replace("_preVFP", "").replace("_postVFP", "")
+    """Year key of the hemisphere library / statistics for a data year."""
+    if HEMI_YEAR_KEY == 'merge_ul16':
+        return year.replace("_preVFP", "").replace("_postVFP", "")
+    return year
 
 HEMI_YEARS = list(dict.fromkeys(hemi_year(y) for y in YEARS))
 

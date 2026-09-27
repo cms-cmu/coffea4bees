@@ -48,6 +48,7 @@ rule M2_config:
                    'k_neighbors': int(MIX.get('k_neighbors', 10)),
                    'collision_mode': MIX.get('collision_mode', 'retry'),
                    'use_boost_corrected_matching': bool(MIX.get('use_boost_corrected_matching', True)),
+                   'hemi_year_key': HEMI_YEAR_KEY,
                    'friends': {'FvT': FVT},
                    'friends_include': ['FvT']}
         cfg = processor_config(section, inherit_config=False,
