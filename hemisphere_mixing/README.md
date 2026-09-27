@@ -46,7 +46,7 @@ When replacing a hemisphere from a 3-tag event, we need to find the "best" repla
 
 **Processor**: `coffea4bees/analysis/processors/processor_make_hemi_library.py`
 
-**Example script**: `coffea4bees/scripts/mixeddata-cluster-Run3.sh`
+**Workflow**: step M.1 of `coffea4bees/workflows/Snakefile_MakeMixedData.smk` (the mixed-data roast; config `workflows/config/mixeddata_run3.yml`)
 
 **Config**: `coffea4bees/analysis/metadata/make_hemi_library_4b.yml`
 
@@ -60,15 +60,15 @@ The processor:
 Output: ROOT files containing hemisphere data, stored at `{base_path}/{dataset}/hemisphereLib_{chunk_uuid}_{start}_{stop}.root`
 
 ```bash
-# Run for Run 3 data
-./run_container bash coffea4bees/scripts/mixeddata-cluster-Run3.sh --output-base output/
+# Run 3, as a roast step (see workflows/config/mixeddata_run3.yml)
+bin/roast submit <mixeddata roast id> --step MakeMixedData --targets all_M1
 ```
 
 ### Step 2: Mix Hemispheres (Create Synthetic Data)
 
 **Processor**: `coffea4bees/skimmer/processor/make_mixed_data.py` (class `HemiMixer`)
 
-**Example script**: `coffea4bees/scripts/mixeddata-make-dataset-Run3.sh`
+**Workflow**: step M.2 of `coffea4bees/workflows/Snakefile_MakeMixedData.smk`
 
 **Config**: `coffea4bees/skimmer/metadata/mixeddata_Run3.yml`
 
@@ -84,8 +84,8 @@ The processor:
 8. Outputs mixed PicoAOD with new jets and metadata (original/new hemisphere info, match distance)
 
 ```bash
-# Run for Run 3 data
-./run_container bash coffea4bees/scripts/mixeddata-make-dataset-Run3.sh --output-base output/
+# Run 3, as a roast step
+bin/roast submit <mixeddata roast id> --step MakeMixedData --targets all_M2
 ```
 
 ## Boost-Corrected Matching (Optional Mode)

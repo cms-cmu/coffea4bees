@@ -10,7 +10,10 @@
 #   M4_split (per v, condor)          picoAODs -> <PUB>/picoAOD/subsamples/v<v>/, registry
 #   M4_clean (per v)                  registry -> plain YAML (runner leaves numpy tags in it)
 #   M4_dataset_yml                    -> one multi-sample dataset: `mixeddata_4b`, nSamples: N,
-#                                        per-year files_template with vXXX (runner expands XXX)
+#                                        per-year files_template = the vXXX subsample files (runner
+#                                        expands XXX) + the M.5 ttbar pseudodata files (no XXX, so
+#                                        shared by every subsample): each `mix_v<k>` is a complete
+#                                        closure pseudo-data sample, multijet + ttbar
 #   M4_publish                        -> <PUB>/handoff/mixeddata_4b.yml   (what the closure reads)
 
 M4_OUT = f"{out}M4/"
@@ -37,10 +40,15 @@ rule M4_split_config:
                    'JCM_file': input.jcm,          # not the template's *_splitting.txt
                    'mixed_subsample': int(wildcards.v),
                    'n_subsamples': N_SUB}
+        # ONE output file per (subsample, era): the skim's final merge (picoaod.resize) cuts each
+        # dataset into `picosize`-event files, so with the template's 100k the larger subsamples
+        # got more chunks than the smaller (v0: 27 files, v6: 24) and no single vXXX template fits
+        # all of them. A picosize above any era's size makes every subsample's layout identical.
+        runner = {**(tmpl.get('runner') or {}), 'picosize': int(SUB.get('picosize', 10**9))}
         cfg = processor_config(section, inherit_config=False,
                                processor="coffea4bees/skimmer/processor/split_mixed_data.py",
                                dataset_location=[MIXED_URL],
-                               runner=tmpl.get('runner') or {})
+                               runner=runner)
         write_yaml(output[0], cfg)
 
 use rule analysis_processor from analysis as M4_split with:
@@ -76,13 +84,16 @@ rule M4_dataset_yml:
     """One dataset key, per-year `files_template` lists with the subsample index replaced by XXX.
     Every subsample must produce the same set of templates -- checked, not assumed (E.2 parsed
     only v0's registry, line by line)."""
-    input: expand(f"{M4_OUT}per_subsample/clean_v{{v}}.yml", v=SUBSAMPLES)
+    input:
+        subsamples = expand(f"{M4_OUT}per_subsample/clean_v{{v}}.yml", v=SUBSAMPLES),
+        psdata = PS_DATASET,
+        psdata_checked = f"{out}M5/dataset_checked.done"
     output: M4_DATASET
     run:
         import re
         from src.tools.make_dataset_yml import parse_dataset_key
         per_v = []
-        for v, path in zip(SUBSAMPLES, input):
+        for v, path in zip(SUBSAMPLES, input.subsamples):
             with open(path) as f:
                 registry = yaml.safe_load(f) or {}
             templates = {}
@@ -109,9 +120,16 @@ rule M4_dataset_yml:
         missing = [y for y in YEARS if y not in per_v[0]]
         if missing:
             raise ValueError(f"no subsample files for {missing}")
+        with open(input.psdata) as f:
+            psdata = (yaml.safe_load(f) or {}).get(PS_NAME) or {}
         dataset = {'nSamples': N_SUB, 'xs': {'Run2': 1, 'Run3': 1}}
         for year in YEARS:
-            dataset[year] = {'picoAOD': {'files_template': sorted(per_v[0][year])}}
+            ps_files = ((psdata.get(year) or {}).get('picoAOD') or {}).get('files') or []
+            if not ps_files:
+                raise ValueError(f"{input.psdata}: no ttbar pseudodata files for {year}")
+            if any('XXX' in p for p in ps_files):
+                raise ValueError(f"{input.psdata}: pseudodata file names contain XXX")
+            dataset[year] = {'picoAOD': {'files_template': sorted(per_v[0][year]) + sorted(ps_files)}}
         write_yaml(output[0], {SUB_NAME: dataset})
 
 rule M4_publish:
