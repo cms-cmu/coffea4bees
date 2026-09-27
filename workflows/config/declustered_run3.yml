@@ -9,17 +9,19 @@
 # A standalone config, not a `base:` overlay, for the same reason as mixeddata_run3.yml: this
 # roast *depends on* two others but does something entirely different, so no production config
 # is a sensible base (overlaying mixeddata_run3.yml would carry its mixing/subsample blocks along
-# as dead keys). Everything it reads from them is pinned under `inputs:`, which `roast new`
-# checks lies inside those roasts:
-#   * the nominal Run 3 roast            -> FvT (ttbar subtraction in D.1)
-#   * the non-tight Phase B.1 roast       -> data/ttbar histograms + their runner config (D.4)
+# as dead keys). Everything it reads is pinned under `inputs:`, which `roast new` checks lies
+# inside the one upstream: the NON-TIGHT production (config/nominal_run3_nontight.yml, phases
+# B.1, B, C, C4; archived) -> the FvT (ttbar subtraction, D.1) and the data/ttbar histograms +
+# their runner config (D.4/D.5). All non-tight: the tight nominal FvT only covers tight-4b
+# events, so it would silently drop the rest of the non-tight 4b sample the PDFs are learned
+# from (what happened to the mixed-data hemisphere library).
 #
 #   roast new --config coffea4bees/workflows/config/declustered_run3.yml --label declustered_run3 \
 #       --step cmslpc:coffea4bees/workflows/Snakefile_DeClustered.smk
 #   roast submit <id> --step DeClustered --targets all_D1      # one sub-step at a time
 #
 label: "declustered_run3"
-output_path: "output/declustered_run3_{roast_id}/"
+output_path: "output/{roast_id}/"   # the roast id already carries the label
 # EOS area of this roast: PDFs, picoAODs and the handoff YAML all go here.
 publish_base: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/{roast_id}"
 
@@ -27,11 +29,11 @@ publish_base: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/{roast_id}"
 # Products of other roasts (checked by `roast new`, see src/tools/roast.py:check_inputs)
 # ------------------------------------------------------------------------------
 inputs:
-  upstream_roasts: [nominal_run3_20260922_3f9e199-1e0504f, nominal_run3_nontight_20260925_0c53380-193851f]
-  # ttbar subtraction in D.1 (4b data, FvT.d4_to_t4), and in D.3 when declustering.subtract_ttbar.
-  # Must cover the data picoAODs in analysis_config.dataset_location (same data.yml as the nominal).
-  # Same file mixeddata_run3 uses.
-  FvT: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/friend/FvT_nominal/result.json@@analysis.0.merged"
+  upstream_roasts: [nominal_run3_nontight_20260925_0c53380-193851f]
+  # ttbar subtraction in D.1 (4b data, FvT.d4_to_t4), and in D.3 when declustering.subtract_ttbar:
+  # the non-tight FvT (Phase C of that roast; C.4 closure SR 1.003 +- 0.002), the file
+  # mixeddata_run3 uses. Must cover the data picoAODs in analysis_config.dataset_location.
+  FvT: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_nontight_20260925_0c53380-193851f/friend/FvT_nominal/result.json@@analysis.0.merged"
   # Non-tight data + ttbar histograms. D.4 histograms the synthetic data with the runner config
   # written next to them (analysis_config_noJCM.yml) and merges, so synthetic and real 4b data
   # share one selection. (Named jcm_hists as in mixeddata_run3.yml: it is B.1's JCM-fit input.)
@@ -87,7 +89,7 @@ cluster:
 # ------------------------------------------------------------------------------
 # D.2: sampling PDFs (make_jet_splitting_PDFs.py) -> <publish_base>/pdfs/
 # ------------------------------------------------------------------------------
-pdfs: {}
+pdfs: {}      # (no options yet)
 
 # ------------------------------------------------------------------------------
 # D.3: decluster -> <publish_base>/handoff/<dataset_name>.yml
@@ -108,8 +110,13 @@ declustering:
   # override the skimmer template's values here.
 
 # ------------------------------------------------------------------------------
-# D.4: validation (synthetic data histogrammed with the upstream non-tight config)
+# D.4: validation (synthetic data histogrammed with the upstream non-tight config) and
+# D.5: monitoring (plots + cutflow page of the D.4 histograms, D.2 PDF gallery)
 # ------------------------------------------------------------------------------
-validation: {}
+validation:
+  # ttbar MC in the upstream histograms (the non-tight roast's B.1 jcm.datasets)
+  ttbar: ["TTToHadronic", "TTToSemiLeptonic", "TTTo2L2Nu"]
+  plot_template: "coffea4bees/plots/metadata/plotsDeClustered_validation.yml"
+  # seed: 0          # seed plotted in D.5; default: drawn from the roast id
   # known_counts: <blessed cutflow_declustered.yml, once the first roast has written one>
   # error_threshold: 0.001

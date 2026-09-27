@@ -1,0 +1,71 @@
+# DeClustered-data validation (Snakefile_DeClustered_5_monitoring.smk, step D.5). All four-tag:
+#   * 4b data (points)           vs the stack -> does the declustered data follow the 4b data it
+#                                                was made from?
+#   * ttbar MC (line / stack)    reference
+# Stack as written here is for declustering.subtract_ttbar: true (declustered multijet + ttbar MC).
+# With subtract_ttbar: false the declustered sample already contains the ttbar, so D.5 moves TTbar
+# out of the stack into a reference line. `syn_vK` is a placeholder: D.5 writes the actual sample
+# (syn_noTT_v<k> or syn_v<k>, seed k drawn per roast or pinned as validation.seed).
+hists:
+        data:
+                process: data
+                tag: fourTag
+                label: Four-tag data
+                edgecolor: k
+                fillcolor: k
+
+stack:
+        TTbar:
+                process: [TTToHadronic, TTToSemiLeptonic, TTTo2L2Nu]
+                tag: fourTag
+                fillcolor: "#85D1FBff"
+                edgecolor: k
+                label: $t\bar{t}$ MC
+        MultiJet:
+                process: syn_vK
+                tag: fourTag
+                fillcolor: "#FFDF7Fff"
+                edgecolor: k
+                label: Declustered data (seed K)
+
+ratios:
+        dataToBkg:
+                numerator:
+                        type: hists
+                        key: data
+                denominator:
+                        type: stack
+                uncertianty:
+                        nominal
+                color: k
+                marker: "o"
+
+codes:
+   region:
+      SR: 2
+      SB: 1
+      other: 0
+   tag:
+      threeTag: 3
+      fourTag: 4
+      other: 0
+
+doRatio:
+    1
+
+summary:
+    - selJets.n
+    - tagJets.n
+    - canJet0.pt
+    - canJet1.pt
+    - canJet2.pt
+    - canJet3.pt
+    - canJet0.eta
+    - m4j
+    - v4j.mass
+    - v4j.pt
+    - quadJet_selected.lead.mass
+    - quadJet_selected.subl.mass
+    - quadJet_selected.lead.dr
+    - quadJet_selected.subl.dr
+    - quadJet_selected.xHH
