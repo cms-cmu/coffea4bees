@@ -129,6 +129,8 @@ fvt:
   wfs_base: "coffea4bees/classifier/config/workflows/HH4b_Run3/FvT"
   label: "FvT_nominal"
   output_dir: "output/FvT_nominal/"
+  # yields page (output_dir/yields.html): four-tag data vs JCM x (3b data - 3b ttbar) + 4b ttbar
+  yields_ratio: ["d4 / d3 - t3 + t4"]
   plot_inputs: true
   model: "{eos_base}/classifier/{label}"
   friend: "{eos_base}/friend/{label}"
