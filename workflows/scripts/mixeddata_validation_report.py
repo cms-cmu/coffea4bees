@@ -148,7 +148,7 @@ def study(path, outdir, n_sub):
 STUDY_SECTIONS = [
     ("Subsample overlap", "subsample_", "mixeddata_4b pseudo-experiments: the fraction of subsample i's "
      "events also in subsample j (off-diagonal), and each subsample's size. Disjoint subsamples need "
-     "N·w ≤ 1 for the mixed-data JCM weight w; events above that wrap to (event+v) % 9 and are shared."),
+     "N·w ≤ 1 for the mixed-data JCM weight w; events above that wrap to slice (event+v) mod floor(1/w) and are shared."),
     ("Hemisphere matching", "study_matchDist", "distance between each 3b event's hemisphere and the "
      "library hemisphere it was swapped for."),
     ("Thrust axes", "study_thrustDeltaPhi", "Δφ between the thrust axes of the two mixed-in hemispheres."),
