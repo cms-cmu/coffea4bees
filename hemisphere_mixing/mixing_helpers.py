@@ -1044,10 +1044,14 @@ def assign_mixed_subsamples(event, n_subsamples=16):
         upperLimit = ((mixed_sub_sample+1) * event.pseudoTagWeight)
         lowerLimit = ( mixed_sub_sample    * event.pseudoTagWeight);
 
-        # Handle overflow cases
-        #    when overflow occurs, pick one of the samples < 9
+        # Handle overflow cases: when (v+1)*w > 1, reuse one of the event's floor(1/w) VALID slices
+        # [m*w, (m+1)*w) inside [0, 1). The index used to be `% 9`, fixed: for w > 1/9 some of those
+        # nine slices lie above 1, the event could never land there, and high-v subsamples lost high
+        # jet-multiplicity (large-w) events -- unequal sizes (Run 3: v0-v3 2.02 M, v6-v15 1.77 M) and
+        # a composition bias. With floor(1/w) every subsample keeps every event with probability w.
         overflow = upperLimit > 1.0
-        overflow_sub_sample_index = (event.event + mixed_sub_sample) % 9
+        n_valid_slices = np.maximum(np.floor(1.0 / np.maximum(ak.to_numpy(event.pseudoTagWeight), 1e-12)), 1).astype(np.int64)
+        overflow_sub_sample_index = (ak.to_numpy(event.event).astype(np.int64) + mixed_sub_sample) % n_valid_slices
         upperLimit = ak.where( overflow, ((overflow_sub_sample_index + 1) * event.pseudoTagWeight), upperLimit )
         lowerLimit = ak.where( overflow, ((overflow_sub_sample_index    ) * event.pseudoTagWeight), lowerLimit )
 
