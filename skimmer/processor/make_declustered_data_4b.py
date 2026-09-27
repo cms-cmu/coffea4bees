@@ -1,4 +1,5 @@
 import yaml
+import fsspec
 from coffea4bees.skimmer.processor.skimmer_4b_base import Skimmer4b
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
 from coffea4bees.analysis.helpers.candidates_selection import cand_jet_selection
@@ -111,7 +112,9 @@ class DeClusterer(Skimmer4b):
 
         if clustering_pdfs_file != "None":
             if clustering_pdfs_file not in self._clustering_pdfs_cache:
-                with open(clustering_pdfs_file, "r") as f:
+                # fsspec, not open(): this runs in the condor workers, and a roast publishes the
+                # PDFs to EOS (root://...) rather than into the checkout the workers are shipped.
+                with fsspec.open(clustering_pdfs_file, "r") as f:
                     self._clustering_pdfs_cache[clustering_pdfs_file] = yaml.safe_load(f)
                 logging.info(f"Loaded {len(self._clustering_pdfs_cache[clustering_pdfs_file].keys())} PDFs from {clustering_pdfs_file}\n")
             clustering_pdfs = self._clustering_pdfs_cache[clustering_pdfs_file]

@@ -195,44 +195,46 @@ are read via the dataset's `nSamples` / `files_template`), producing
 ./run_container bash coffea4bees/scripts/synthetic-dataset-analyze-Run3-all.sh output/
 ```
 
-## Snakemake Workflow (end-to-end)
+## Snakemake Workflow (end-to-end, roast)
 
-`coffea4bees/workflows/Snakefile_Run3_make_synthetic.smk` wires all four stages
-into a single DAG (one HTCondor job per year, PDFs joining cluster → decluster):
+`coffea4bees/workflows/Snakefile_DeClustered.smk` (+ `Snakefile_DeClustered_1..4_*.smk`,
+config `workflows/config/declustered_run3.yml`) runs the whole chain as a production roast,
+laid out like `Snakefile_MakeMixedData.smk`:
 
 ```
-cluster (×year) → merge → make_pdfs
-    → [patch config → decluster (×seed×year) → merge registry] (×seed)
-    → install dataset → analyze (×year) → merge
+fetch upstream hists
+D.1 cluster (×year, condor) → merge
+D.2 make PDFs → publish to <publish_base>/pdfs/
+D.3 decluster (×seed×year, condor) → registry per seed → dataset YAML → <publish_base>/handoff/
+D.4 synthetic hists (×year, upstream non-tight B.1 config) + upstream data/ttbar → cutflow
 ```
 
 ```bash
-snakemake --profile software/snakemake/profiles/lpc \
-    --snakefile coffea4bees/workflows/Snakefile_Run3_make_synthetic.smk \
-    --cores 4
-# multiple seeds:
-#   ... --config n_seeds=5
+bin/roast new --config coffea4bees/workflows/config/declustered_run3.yml --label declustered_run3 \
+    --step cmslpc:coffea4bees/workflows/Snakefile_DeClustered.smk
+bin/roast submit <id> --step DeClustered --targets all_D1     # or all_D2, all_D3, all_D4
 ```
 
 Key points:
 
-- **Seeds** — `--config n_seeds=N` produces the contiguous replicas
-  `0..N-1`. The analyze step reads them all via `nSamples`, so the seeds
-  **must** stay contiguous from 0 (runner.py expands the `seedXXX` template over
-  `range(nSamples)`). `n_seeds` becomes `nSamples` in the installed dataset.
-- **2023 pt threshold (25 GeV)** — all three processors read
-  `coffea4bees/analysis/metadata/object_selection_thresholds.yml`, whose
-  `era_overrides: "2023"` lowers the selected-jet `pt_min` to 25 GeV for the
-  2023 eras. It is declared as an `input:` on every processing stage, so the DAG
-  fails fast if it is ever missing and the pt25 selection is guaranteed to be
-  applied.
-- **Cluster + PDFs are seed-independent** and live in a shared (tag-keyed) dir
-  that every `n_seeds` run reuses. The generated PDFs are written to a
-  workflow-local directory so the committed `jet-splitting-PDFs-*/` is left
-  untouched.
-- **Install** — `workflows/scripts/install_synthetic_dataset.py` converts the
-  per-seed registries into a `files_template` dataset YAML installed under
-  `coffea4bees/metadata/datasets_HH4b_Run3/` (commit it to version the dataset).
+- **Seeds** — `declustering.n_seeds: N` produces the contiguous replicas
+  `0..N-1`; runner.py expands the dataset's `seedXXX` template over
+  `range(nSamples)`, so they **must** stay contiguous from 0.
+- **PDFs on EOS** — D.2 publishes the PDFs and the declustering jobs read them
+  through fsspec. Writing them into the checkout does not work: the condor
+  workers get a tarball of the checkout taken when the shared dask daemon starts
+  (during D.1), before the PDFs exist. `inputs.pdfs` reuses another roast's.
+- **ttbar** — D.1 always subtracts ttbar (FvT from the nominal roast);
+  `declustering.subtract_ttbar` chooses whether D.3 does (dataset
+  `synthetic_data_<...>`, add ttbar pseudodata downstream) or declusters the ttbar
+  too (`synthetic_data_noTT_<...>`, the current Run 3 choice).
+- **2023 pt threshold (25 GeV)** — all processors read
+  `analysis/metadata/object_selection_thresholds.yml` (`era_overrides: "2023"`),
+  and the DeClusterer's b-jet pT floor follows it unless `b_pt_threshold` is set.
+
+`Snakefile_Run3_make_synthetic.smk` is the earlier, non-roast version; it predates
+the config-driven `analysis_processor` rule (its processor/condor params are
+ignored) and needs a missing `install_synthetic_dataset.py`.
 
 ---
 

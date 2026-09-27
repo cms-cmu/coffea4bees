@@ -1,4 +1,5 @@
 import yaml
+import fsspec
 import logging
 import numpy as np
 import awkward as ak
@@ -55,7 +56,8 @@ class analysis(HH4bBaseProcessor):
 
         if self.clustering_pdfs_file != "None":
             clustering_pdfs_file = self.clustering_pdfs_file.replace("XXX", self.year)
-            clustering_pdfs = yaml.safe_load(open(clustering_pdfs_file, "r"))
+            with fsspec.open(clustering_pdfs_file, "r") as f:     # local path or root:// URL
+                clustering_pdfs = yaml.safe_load(f)
             logging.info(f"Loaded {len(clustering_pdfs.keys())} PDFs from {clustering_pdfs_file}")
         else:
             clustering_pdfs = None
