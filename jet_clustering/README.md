@@ -226,10 +226,11 @@ Key points:
   workers get a tarball of the checkout taken when the shared dask daemon starts
   (during D.1), before the PDFs exist. `inputs.pdfs` reuses another roast's.
 - **ttbar** — D.1 always subtracts ttbar (the NON-tight FvT: the tight one covers only
-  tight-4b events and would silently shrink the sample the PDFs are learned from);
-  `declustering.subtract_ttbar` chooses whether D.3 does (dataset
-  `synthetic_data_<...>`, add ttbar pseudodata downstream) or declusters the ttbar
-  too (`synthetic_data_noTT_<...>`, the current Run 3 choice).
+  tight-4b events and would silently shrink the sample the PDFs are learned from). By default
+  D.3 subtracts too, so the declustered sample is multijet only (`synthetic_data_multijet`), and
+  the consumer dataset `synthetic_data_4b` folds in ttbar pseudodata (`inputs.ttbar_psdata`, the
+  mixeddata roast's `ttbar_PSData`) the way `mixeddata_4b` does. `declustering.subtract_ttbar:
+  false` declusters the ttbar with the multijet instead (`synthetic_data_noTT_<...>`).
 - **2023 pt threshold (25 GeV)** — all processors read
   `analysis/metadata/object_selection_thresholds.yml` (`era_overrides: "2023"`),
   and the DeClusterer's b-jet pT floor follows it unless `b_pt_threshold` is set.

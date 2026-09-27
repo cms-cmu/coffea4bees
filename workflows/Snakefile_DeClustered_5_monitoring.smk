@@ -4,8 +4,10 @@
 #
 # One plot set (coffea4bees/plots/metadata/plotsDeClustered_validation.yml), all four-tag:
 #   points = 4b data                 vs the stack
-#   stack  = declustered data, seed k (+ ttbar MC when the declustering subtracted ttbar;
-#            otherwise ttbar MC is a reference line: the declustered sample already contains it)
+#   stack  = declustered multijet, seed k + ttbar MC
+#   line   = ttbar pseudodata        vs the stack's ttbar MC part
+# (subtract_ttbar: false: stack = declustered data incl. ttbar; ttbar MC a reference line, no
+#  pseudodata)
 #
 #   D5_cutflow_page                  cutflow page: data 4b vs model (seed k and the mean over seeds,
 #                                    seed-to-seed rms)
@@ -20,7 +22,7 @@ VAL_SEED = int(VAL['seed']) if VAL.get('seed') is not None else \
     int(hashlib.md5(config['roast_id'].encode()).hexdigest(), 16) % N_SEEDS
 if VAL_SEED not in SEEDS:
     raise ValueError(f"validation.seed {VAL_SEED} is not one of the declustering seeds {SEEDS}")
-SYN_PREFIX = "syn_noTT" if DATASET_NAME.startswith("synthetic_data_noTT") else "syn"
+SYN_PREFIX = "syn_noTT" if MJ_NAME.startswith("synthetic_data_noTT") else "syn"
 SYN_PROCESS = f"{SYN_PREFIX}_v{VAL_SEED}"
 D5_PLOT_CONFIG = f"{D5_OUT}plotsDeClustered_validation.yml"
 PLOT_YEAR = "Run3" if any("202" in y for y in YEARS) else "RunII"
@@ -32,7 +34,7 @@ rule D5_cutflow_page:
         txt = f"{D5_OUT}cutflow_monitoring.txt"
     log: f"{D5_OUT}logs/cutflow_page.log"
     params:
-        ttbar_flag = "" if SUBTRACT_TT else "--ttbar-in-sample"
+        ttbar_flag = "--psdata " + PS_NAME if SUBTRACT_TT else "--ttbar-in-sample"
     shell:
         """
         {WRAPPER} {PYTHON} coffea4bees/workflows/scripts/declustered_validation_report.py cutflow \
@@ -50,6 +52,13 @@ rule D5_plot_config:
             raise ValueError(f"{input[0]}: no `syn_vK` placeholder for the declustered sample")
         cfg = yaml.safe_load(text.replace("syn_vK", SYN_PROCESS).replace("seed K", f"seed {VAL_SEED}"))
         stack = cfg.get('stack') or {}
+        hists = cfg.setdefault('hists', {})
+        if 'psdata' in hists:
+            if SUBTRACT_TT:
+                hists['psdata']['process'] = PS_NAME
+            else:
+                hists.pop('psdata')
+                (cfg.get('ratios') or {}).pop('psdataToTTbar', None)
         if 'TTbar' in stack:
             stack['TTbar']['process'] = list(TTBAR)
             if not SUBTRACT_TT:
