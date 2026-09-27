@@ -34,20 +34,63 @@ def _sort_map(obj: dict[frozenset[str]]):
     return {k: obj[k] for k in sorted(obj)}
 
 
+def _region_name(region) -> str:
+    # Never let a debug table kill a training. region_index is an OR of MassRegion values,
+    # and a combination that is not a named member raises here -- at the end of dataset
+    # loading, before a single batch is trained. `-flag debug` is hardcoded in the workflow
+    # Snakefile, so this path is always live.
+    try:
+        return MassRegion(region).name or f"0b{int(region):b}"
+    except ValueError:
+        return f"unknown({int(region)} = 0b{int(region):b})"
+
+
+def _log_yields(df: pd.DataFrame):
+    """The loaded per-class counts and weights by region and, when the frame has a year column, by
+    year and region, written as JSON to $HCR_YIELDS_FILE (set by the classifier workflow's train
+    rule; a log line would be wrapped by the rich handler). src/classifier/yields_report.py turns
+    it into the yields page each training publishes. No-op without the variable; never raises."""
+    import json
+    import os
+
+    path = os.environ.get("HCR_YIELDS_FILE")
+    if not path:
+        return
+    try:
+        def summary(frame):
+            return {
+                str(MultiClass.labels[label]): {
+                    "count": int(len(bylabel)),
+                    "weight": float(bylabel[Columns.weight].sum()),
+                }
+                for label, bylabel in frame.groupby(Columns.label_index)
+            }
+
+        # Each dataset module (e.g. SvB's signal and background) loads and reports separately:
+        # merge into what the earlier ones wrote. The workflow removes the file before training.
+        out = {"regions": {}, "years": {}}
+        if os.path.exists(path):
+            with open(path) as f:
+                out = json.load(f)
+        for region, byregion in df.groupby(_Derived.region_index):
+            out["regions"].setdefault(_region_name(region), {}).update(summary(byregion))
+            if "year" in byregion.columns:
+                for year, byyear in byregion.groupby("year"):
+                    out["years"].setdefault(str(year), {}).setdefault(_region_name(region), {}).update(summary(byyear))
+        with open(path, "w") as f:
+            json.dump(out, f, indent=1, sort_keys=True)
+        logging.info(f"loaded yields written to {path}")
+    except Exception as e:  # a report must never kill a training
+        logging.warning(f"loaded yields not written to {path}: {e!r}")
+
+
 def _debug_print_weight(df: pd.DataFrame):
     from rich.table import Table
 
+    _log_yields(df)
     tables = []
     for region, byregion in df.groupby(_Derived.region_index):
-        # Never let a debug table kill a training. region_index is an OR of MassRegion values,
-        # and a combination that is not a named member raises here -- at the end of dataset
-        # loading, before a single batch is trained. `-flag debug` is hardcoded in the workflow
-        # Snakefile, so this path is always live.
-        try:
-            region_name = MassRegion(region).name or f"0b{int(region):b}"
-        except ValueError:
-            region_name = f"unknown({int(region)} = 0b{int(region):b})"
-        tables.append(f"In region {region_name}:")
+        tables.append(f"In region {_region_name(region)}:")
         table = Table("Class", "Count", "Weight")
         for label, bylabel in byregion.groupby(Columns.label_index):
             table.add_row(
