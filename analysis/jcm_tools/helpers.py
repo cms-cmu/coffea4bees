@@ -68,7 +68,7 @@ def loadHistograms(inputFile: str, jcm_config: dict, format: str = 'coffea', cfg
     cutDict = get_cut_dict(cut, cfg.cutList) if cut is not None else {}
 
     year_val = sum if year == "RunII" else year
-    region_selection = sum if weightRegion in ["sum", sum] else weightRegion
+    region_selection = sum if weightRegion in ["sum", sum, "inclusive"] else weightRegion
 
     region_year_dict = {
         "year":   year_val,
@@ -81,7 +81,6 @@ def loadHistograms(inputFile: str, jcm_config: dict, format: str = 'coffea', cfg
     threeTag_tt_dict = {"tag": jcm_config.get("taglabel3b_tt","threeTag")}
 
     fourTag_data_dict = {"process": data4bName} | fourTag_dict | region_year_dict | cutDict
-    threeTag_data_dict = {"process": data3bName} | threeTag_dict | region_year_dict | cutDict
 
     ttbar_list = jcm_config.get("ttbarProcesses", ['TTTo2L2Nu', 'TTToSemiLeptonic', 'TTToHadronic'])
     fourTag_ttbar_dict  = {"process": ttbar_list} | fourTag_dict | region_year_dict | cutDict
@@ -90,18 +89,24 @@ def loadHistograms(inputFile: str, jcm_config: dict, format: str = 'coffea', cfg
     hists_data_4b = None
     hists_data_3b = None
     hists_tt     = None
+    matching_3b = []
 
     for _input_data in cfg.hists:
         if (selJets in _input_data['hists']):
+            procs = list(_input_data['hists'][selJets].axes["process"])
 
-            if (data4bName in _input_data['hists'][selJets].axes["process"]):
+            if (data4bName in procs):
                 hists_data_4b = _input_data['hists']
 
-            if (data3bName in _input_data['hists'][selJets].axes["process"]):
+            m3 = [p for p in procs if data3bName in p]
+            if m3:
+                matching_3b = m3
                 hists_data_3b = _input_data['hists']
 
-            if (ttbar_list[0] in _input_data['hists'][selJets].axes["process"]):
+            if any(t in procs for t in ttbar_list):
                 hists_tt = _input_data['hists']
+
+    threeTag_data_dict = {"process": matching_3b} | threeTag_dict | region_year_dict | cutDict
 
 
 

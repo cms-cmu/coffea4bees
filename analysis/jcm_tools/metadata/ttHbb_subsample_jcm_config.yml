@@ -1,0 +1,17 @@
+# data4bName is provided dynamically per subsample (e.g. mix_v{m}) via --data4bName
+taglabel4b: fourTag
+
+data3bName: data
+taglabel3b: threeTag
+taglabel3b_tt: threeTag
+
+selJets: selJets_noJCM.n
+tagJets: tagJets_noJCM.n
+
+ignoreTT: False
+subtract3bTT: True
+
+ttbarProcesses:
+  - TTTo2L2Nu_stitched
+  - TTToSemiLeptonic_stitched
+  - TTToHadronic_stitched

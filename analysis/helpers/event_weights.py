@@ -414,8 +414,7 @@ def add_pseudotagweights(
                 logging.debug( f"weight_d3_to_t3 {event.weight_d3_to_t3[:10]}\n" )
 
         else:
-            weight_noFvT = np.copy(event.weight)
-            weight_noFvT = np.where(
+            weight_noFvT = ak.where(
                 event[label3b],
                 event["pseudoTagWeight"], # * event["pseudoTagWeight_lowpt"],
                 1.0

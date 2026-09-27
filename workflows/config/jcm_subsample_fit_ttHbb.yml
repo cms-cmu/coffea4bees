@@ -1,0 +1,13 @@
+data4bName: mix_v{wildcards.m}
+taglabel4b: fourTag
+data3bName: data
+taglabel3b: threeTag
+taglabel3b_tt: threeTag
+selJets: selJets_noJCM.n
+tagJets: tagJets_noJCM.n
+ignoreTT: false
+subtract3bTT: true
+ttbarProcesses:
+  - TTTo2L2Nu_stitched
+  - TTToSemiLeptonic_stitched
+  - TTToHadronic_stitched

@@ -62,6 +62,7 @@ rule make_JCM:
     params:
         extra_arguments = "",
         tag = "2024_v2",
+        region = "SB",
         output_dir = "output/JCM/",
         run_container_wrapper = "",
         python_bin = lambda wildcards: config.get("python_bin", "python")
@@ -73,7 +74,7 @@ rule make_JCM:
         mkdir -p $MPLCONFIGDIR
         
         echo "Computing JCM" 2>&1 | tee -a {log}
-        {params.run_container_wrapper} {params.python_bin} coffea4bees/analysis/jcm_tools/make_jcm_weights.py -o {params.output_dir} -r SB -i {input} {params.extra_arguments} -w {params.tag} 2>&1 | tee -a {log}
+        {params.run_container_wrapper} {params.python_bin} coffea4bees/analysis/jcm_tools/make_jcm_weights.py -o {params.output_dir} -r {params.region} -i {input} {params.extra_arguments} -w {params.tag} 2>&1 | tee -a {log}
         ls {params.output_dir}
         """
 
