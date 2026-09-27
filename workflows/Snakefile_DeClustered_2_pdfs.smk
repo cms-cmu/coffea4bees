@@ -3,7 +3,9 @@
 # from (jet_clustering/make_jet_splitting_PDFs.py; until now run by hand and the output committed
 # as jet_clustering/jet-splitting-PDFs-<version>/).
 #
-#   D2_make_pdfs                      -> D2/pdfs/clustering_pdfs_vs_pT_<era>.yml (+ sampling-test plots)
+#   D2_make_pdfs (per era)            -> D2/per_era/<era>/clustering_pdfs_vs_pT_<era>.yml + sampling-test
+#                                        plots (one directory per era: the tool names its test_sampling_*
+#                                        plots without the era, so a shared directory keeps only the last)
 #   D2_publish                        PDFs -> <PDF_BASE>/ on EOS
 #
 # The declustering jobs (D.3) run on condor workers and read the PDFs from EOS through fsspec
@@ -11,24 +13,24 @@
 # With inputs.pdfs set, D.3 reads another roast's PDFs and none of this runs.
 
 D2_OUT = f"{out}D2/"
-D2_PDF_DIR = f"{D2_OUT}pdfs/"
-D2_PDFS = [f"{D2_PDF_DIR}clustering_pdfs_vs_pT_{y}.yml" for y in YEARS]
+D2_ERA_DIR = f"{D2_OUT}per_era/"
+D2_PDFS = [f"{D2_ERA_DIR}{y}/clustering_pdfs_vs_pT_{y}.yml" for y in YEARS]
 D2_PUBLISHED = f"{D2_OUT}published.done"
 D2_DONE = [] if PDF_EXTERNAL else [D2_PUBLISHED]
 
 rule D2_make_pdfs:
     input: D1_MERGED
-    output: D2_PDFS
-    log: f"{D2_OUT}logs/make_pdfs.log"
-    params:
-        years = " ".join(YEARS)
+    output: f"{D2_ERA_DIR}{{year}}/clustering_pdfs_vs_pT_{{year}}.yml"
+    log: f"{D2_OUT}logs/make_pdfs__{{year}}.log"
+    wildcard_constraints:
+        year = "|".join(YEARS)
     shell:
         """
         set -eo pipefail
         export MPLCONFIGDIR="/tmp/matplotlib"
-        mkdir -p $MPLCONFIGDIR {D2_PDF_DIR}
+        mkdir -p $MPLCONFIGDIR $(dirname {output})
         {WRAPPER} {PYTHON} coffea4bees/jet_clustering/make_jet_splitting_PDFs.py {input} \
-            -o {D2_PDF_DIR} --years {params.years} 2>&1 | tee {log}
+            -o $(dirname {output})/ --years {wildcards.year} 2>&1 | tee {log}
         ls -l {output} 2>&1 | tee -a {log}
         """
 

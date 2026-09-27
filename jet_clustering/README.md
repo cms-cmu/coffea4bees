@@ -207,12 +207,13 @@ D.1 cluster (×year, condor) → merge
 D.2 make PDFs → publish to <publish_base>/pdfs/
 D.3 decluster (×seed×year, condor) → registry per seed → dataset YAML → <publish_base>/handoff/
 D.4 synthetic hists (×year, upstream non-tight B.1 config) + upstream data/ttbar → cutflow
+D.5 monitoring: synthetic vs 4b-data plots, cutflow page, PDF sampling-test gallery (after M.6)
 ```
 
 ```bash
 bin/roast new --config coffea4bees/workflows/config/declustered_run3.yml --label declustered_run3 \
     --step cmslpc:coffea4bees/workflows/Snakefile_DeClustered.smk
-bin/roast submit <id> --step DeClustered --targets all_D1     # or all_D2, all_D3, all_D4
+bin/roast submit <id> --step DeClustered --targets all_D1     # or all_D2 ... all_D5
 ```
 
 Key points:
@@ -224,7 +225,8 @@ Key points:
   through fsspec. Writing them into the checkout does not work: the condor
   workers get a tarball of the checkout taken when the shared dask daemon starts
   (during D.1), before the PDFs exist. `inputs.pdfs` reuses another roast's.
-- **ttbar** — D.1 always subtracts ttbar (FvT from the nominal roast);
+- **ttbar** — D.1 always subtracts ttbar (the NON-tight FvT: the tight one covers only
+  tight-4b events and would silently shrink the sample the PDFs are learned from);
   `declustering.subtract_ttbar` chooses whether D.3 does (dataset
   `synthetic_data_<...>`, add ttbar pseudodata downstream) or declusters the ttbar
   too (`synthetic_data_noTT_<...>`, the current Run 3 choice).

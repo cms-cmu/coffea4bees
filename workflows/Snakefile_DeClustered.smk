@@ -10,10 +10,12 @@
 #                      + the multi-sample dataset YAML (files_template seedXXX, nSamples = n_seeds)
 #   D.4 validate       synthetic-data histograms with the upstream config, merged with the upstream
 #                      data/ttbar -> cutflow (synthetic 4b next to data 4b, same selection)
+#   D.5 monitoring     plots (synthetic vs 4b data, ttbar MC), cutflow page, PDF sampling-test gallery
 #
-# Everything this roast consumes comes from other roasts, named under `inputs:` and checked by
-# `roast new`: the FvT from the nominal, the histograms from a Phase B.1 roast with the non-tight
-# selection (config/nominal_run3_nontight.yml) -- the declustering, like the mixing, is non-tight.
+# Everything this roast consumes comes from another roast, named under `inputs:` and checked by
+# `roast new`: the FvT and the data/ttbar histograms of the NON-TIGHT production
+# (config/nominal_run3_nontight.yml) -- the declustering, like the mixing, is non-tight, and the
+# tight FvT covers only tight-4b events (it silently drops the rest; see mixeddata_run3.yml).
 #
 # Products are published to `publish_base` on EOS; the dataset YAML under <publish_base>/handoff/
 # is what consumer roasts read (runner.py -m accepts root:// URLs). Nothing is installed into the
@@ -83,6 +85,7 @@ CLUSTER = config.get('cluster') or {}
 PDFS = config.get('pdfs') or {}
 DECL = config.get('declustering') or {}
 VAL = config.get('validation') or {}
+TTBAR = list(VAL.get('ttbar', ['TTToHadronic', 'TTToSemiLeptonic', 'TTTo2L2Nu']))
 
 # PDFs: made here (D.1 + D.2) unless inputs.pdfs points at another declustered roast's published
 # set (its <publish_base>/pdfs) -- e.g. to add seeds without re-learning the splittings.
@@ -123,8 +126,9 @@ CONDOR = "" if (config['test'] or os.getenv("CI")) else "--shared-dask --condor"
 TEST_FLAG = "-t" if config['test'] else ""
 
 # Shell prefix for any rule that writes to EOS: roast seeds ./proxy/x509_proxy in the checkout.
-# ${VAR:-}, not $VAR: snakemake runs shell blocks under `set -u`.
-EOS_PROXY = ('if [ -z "${{X509_USER_PROXY:-}}" ] && [ -f ./proxy/x509_proxy ]; then '
+# ${VAR:-}, not $VAR: snakemake runs shell blocks under `set -u`. SINGLE braces: the string is
+# spliced in as {EOS_PROXY} and not re-formatted (see Snakefile_MakeMixedData.smk).
+EOS_PROXY = ('if [ -z "${X509_USER_PROXY:-}" ] && [ -f ./proxy/x509_proxy ]; then '
              'export X509_USER_PROXY="$PWD/proxy/x509_proxy"; fi')
 
 def processor_config(section_config, inherit_config=True, **top):
@@ -181,6 +185,7 @@ include: "Snakefile_DeClustered_1_cluster.smk"
 include: "Snakefile_DeClustered_2_pdfs.smk"
 include: "Snakefile_DeClustered_3_decluster.smk"
 include: "Snakefile_DeClustered_4_validate.smk"
+include: "Snakefile_DeClustered_5_monitoring.smk"
 
 # default_target, not position: an included or inserted rule can never steal the default.
 rule all_DeClustered:
@@ -189,6 +194,7 @@ rule all_DeClustered:
         rules.all_D1.input,
         rules.all_D2.input,
         rules.all_D3.input,
-        rules.all_D4.input
+        rules.all_D4.input,
+        rules.all_D5.input
 
 localrules: fetch_inputs, all_DeClustered
