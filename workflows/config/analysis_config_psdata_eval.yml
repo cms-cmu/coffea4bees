@@ -1,0 +1,24 @@
+config:
+  apply_FvT: false
+  apply_JCM: false
+  apply_boosted_veto: false
+  apply_btagSF: true
+  apply_trigWeight: false
+  blind: false
+  fill_histograms: true
+  hist_cuts:
+    - pass_nSelJets_gt6
+    - fail_nSelJets_le6
+  run_SvB: true
+  SvB_MA: true
+  top_reconstruction: fast
+runner:
+  condor: true
+  dataset_location: coffea4bees/metadata/datasets/
+  datasets_file: coffea4bees/metadata/datasets/ttbar_PSData_stitched.yml
+  weights: coffea4bees/metadata/weights/weights_ttHbb.yml
+  friends: coffea4bees/metadata/datasets/friends_ttHbb_stitched.yml
+  run_performance: false
+  shared_dask: true
+  worker_memory: 4GB
+  workers: 4

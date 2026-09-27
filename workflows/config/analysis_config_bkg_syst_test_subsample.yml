@@ -1,0 +1,26 @@
+processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+dataset_location: "output/ttHbb_bkg_syst/coffea4bees/metadata/datasets/"
+datasets_file: "output/ttHbb_bkg_syst/coffea4bees/metadata/datasets/mixeddata_4b.yml"
+weights: "coffea4bees/metadata/weights/weights_ttHbb.yml"
+
+runner:
+  workers: 4
+  min_workers: 10
+  max_workers: 100
+  worker_memory: "6GB"
+  condor: true
+  shared_dask: true
+  chunksize: 100000
+
+config:
+  blind: false
+  apply_FvT: false
+  apply_JCM: true
+  apply_trigWeight: false
+  apply_btagSF: true
+  apply_boosted_veto: false
+  run_SvB: false
+  top_reconstruction: "fast"
+  fill_histograms: true
+  hist_cuts:
+    - "pass_nSelJets_gt6"

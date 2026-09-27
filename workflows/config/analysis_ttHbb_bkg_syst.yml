@@ -1,0 +1,495 @@
+label: "ttHbb_bkg_syst"
+output_path: "output/ttHbb_bkg_syst/"
+cern_user: "algomez"
+cern_path: "www/ttHbb/Plots/"
+channel: "ttHbb"
+dataset_location: "coffea4bees/metadata/datasets/"
+
+# Dataset files: Point to output_path where intermediate dataset YAMLs are created
+mixeddata_dataset_file: "output/ttHbb_bkg_syst/coffea4bees/metadata/datasets/mixeddata_ttHbb_bkg_syst_rank0_0.yml"
+mixeddata_dataset_output: "output/ttHbb_bkg_syst/coffea4bees/metadata/datasets/mixeddata_ttHbb_bkg_syst_rank0_0.yml"
+datasets_file: "output/ttHbb_bkg_syst/coffea4bees/metadata/datasets/mixeddata_ttHbb_bkg_syst_rank0_0.yml"
+friend_file: "output/ttHbb_bkg_syst/coffea4bees/metadata/friends/friends_ttHbb_bkg_syst_4b.json"
+multisample_install_path: "output/ttHbb_bkg_syst/coffea4bees/metadata/datasets/mixeddata_4b.yml"
+classifier_inputs_json: "output/ttHbb_bkg_syst/bkg_syst_A_4_process_subsamples/classifier_inputs/classifier_inputs_mixeddata_ttHbb.json"
+mixeddata_friend_json: "output/ttHbb_bkg_syst/coffea4bees/metadata/friends/friends_ttHbb_bkg_syst_4b.json"
+weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
+years:
+  - "UL16_preVFP"
+  - "UL16_postVFP"
+  - "UL17"
+  - "UL18"
+n_samples: 16
+
+phase_f_output_path: "inputs/"
+phase_f_label: "ttHbb"
+
+ttbar_processes:
+  - "TTTo2L2Nu_stitched"
+  - "TTToSemiLeptonic_stitched"
+  - "TTToHadronic_stitched"
+
+# ==============================================================================
+# STAGE A_1: MIXED DATA PRODUCTION & INCLUSIVE JCM CALIBRATION
+# Defines only the non-default parameters overriding the Python scripts' defaults.
+# Runtime effective configs are staged into output/ttHbb_bkg_syst/bkg_syst_A_1_make_mixeddata/configs/
+# ==============================================================================
+phaseA_1:
+  # ----------------------------------------------------------------------------
+  # Rule: make_mixeddata_picoAOD_per_year
+  # Script: coffea4bees/skimmer/processor/make_mixed_data.py (HemiMixer)
+  # Purpose: Hemisphere mixing over 3b Data to generate nominal rank (0,0) picoAODs
+  # ----------------------------------------------------------------------------
+  skimmer:
+    base_path: "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2/ttHbb_pz_rank0_0"
+    hemi_library_yaml: "coffea4bees/skimmer/metadata/hemisphere_library_noTT.yml"
+    hemi_stats_path: "coffea4bees/skimmer/metadata"
+    use_boost_corrected_matching: true   # Boost-corrected k-NN distance metric (default: false)
+    use_topk_matching: true              # Top-k randomized neighbor selection (default: false)
+    runner:
+      worker_memory: "6GB"               # Worker RAM request on HTCondor (default: 4GB)
+
+  # ----------------------------------------------------------------------------
+  # Rules:
+  #   - run_analysis_mixeddata_all (Pass 1: Unweighted mixed data with unit weights)
+  #   - run_analysis_mixeddata_all_with_mixeddata_JCM (Pass 2: Re-run with calibrated JCM)
+  # Script: coffea4bees/analysis/processors/processor_ttHbb.py (ttHbbProcessor)
+  # Purpose: Histogramming of mixed data events before and after JCM calibration
+  # ----------------------------------------------------------------------------
+  analysis:
+    config:
+      apply_FvT: false                   # No 4-vs-3 tag classifier reweighting for mixing calibration
+      apply_trigWeight: false            # Unit trigger weights for unweighted pass
+      hist_cuts:
+        - "pass_nSelJets_gt6"            # Require >= 7 selected jets for ttH(bb) phase space
+
+  # ----------------------------------------------------------------------------
+  # Rule: make_mixeddata_JCM
+  # Script: coffea4bees/analysis/jcm_tools/make_jcm_weights.py
+  # Purpose: Derive inclusive Jet Combinatoric Model transfer weights against 4b Data - ttbar
+  # ----------------------------------------------------------------------------
+  jcm:
+    ttbarProcesses:
+      - "TTTo2L2Nu_stitched"
+      - "TTToSemiLeptonic_stitched"
+      - "TTToHadronic_stitched"
+    float_t: true                        # Allow ttbar normalization scale factor to float in fit
+
+  # ----------------------------------------------------------------------------
+  # Rule: make_plots_mixeddata_closure
+  # Script: coffea4bees/plots/makePlots.py
+  # Purpose: Generate data-vs-model closure distributions (4b Data vs Mixed Data * JCM)
+  # ----------------------------------------------------------------------------
+  closure_plots:
+    categories:
+      - "inclusive"
+    regions:
+      - "sum"
+      - "SR"
+      - "SB"
+
+# ==============================================================================
+# STAGE A_2: TTBAR PSEUDODATA SLICING & REGISTRY
+# Slices stitched ttbar MC using sub_sample_MC.py (SubSampler) to create
+# unweighted pseudodata picoAODs with enforced trigger weights.
+# Runtime effective configs are staged into output/ttHbb_bkg_syst/bkg_syst_A_2_make_ttbar_psdata/configs/
+# ==============================================================================
+phaseA_2:
+  datasets_file: "coffea4bees/metadata/datasets/TT_stitched.yml"
+  datasets:
+    - "TTTo2L2Nu_stitched"
+    - "TTToSemiLeptonic_stitched"
+    - "TTToHadronic_stitched"
+  friends_file: "coffea4bees/metadata/friends/friends_ttHbb.yml"
+  base_path: "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2/ttbar_PSData_stitched"
+  dataset_name: "ttbar_PSData_stitched"
+  install_path: "output/ttHbb_bkg_syst/coffea4bees/metadata/datasets/ttbar_PSData_stitched.yml"
+
+  # ----------------------------------------------------------------------------
+  # Rule: make_ttbar_pseudodata
+  # Script: coffea4bees/skimmer/processor/sub_sample_MC.py (SubSampler)
+  # Purpose: Event selection and random rejection slicing on ttbar MC
+  # ----------------------------------------------------------------------------
+  skimmer:
+    runner:
+      worker_memory: "6GB"
+      chunksize: 100000
+      picosize: 100000
+    config:
+      sub_sampling_rand_seed: 5
+      apply_trigWeight: true
+      require_trigWeight: true
+      friends_include:
+        - "trigWeight"
+
+# ==============================================================================
+# STAGE A_3: SUBSAMPLE SLICING & MULTI-SAMPLE REGISTRY ASSEMBLY
+# Slices mixeddata_all into 15 independent subsamples (v0..v14) using MixedDataSplitter,
+# and compiles mixeddata_4b.yml including both mixed data subsamples and ttbar pseudodata.
+# Runtime effective configs are staged into output/ttHbb_bkg_syst/bkg_syst_A_3_make_subsamples/configs/
+# ==============================================================================
+phaseA_3:
+  # ----------------------------------------------------------------------------
+  # Rule: run_split_mixeddata_per_subsample
+  # Script: coffea4bees/skimmer/processor/split_mixed_data.py (MixedDataSplitter)
+  # Purpose: Slices mixeddata_all into 15 statistically independent subsamples (v0..v14)
+  # ----------------------------------------------------------------------------
+  skimmer:
+    runner:
+      worker_memory: "4GB"
+      chunksize: 100000
+      picosize: 100000
+
+  # ----------------------------------------------------------------------------
+  # Rule: study_mixeddata & plot_subsample_correlation
+  # Script: coffea4bees/analysis/processors/processor_study_mixed_data.py
+  # Purpose: Evaluates subsample orthogonality and event correlation
+  # ----------------------------------------------------------------------------
+  study:
+    runner:
+      workers: 4
+      worker_memory: "4GB"
+
+# ==============================================================================
+# STAGE A_4: UNIFIED SUBSAMPLE PROCESSING (SINGLE PASS)
+# Runs processor_ttHbb.py on each mixed-data subsample (mixeddata_4b:v0..v14).
+# Simultaneously dumps:
+#   1. Pre-JCM Histograms (selJets_noJCM.n / tagJets_noJCM.n for Stage B_1)
+#   2. Classifier Input trees on EOS & merged JSON (for Stage C_1)
+#   3. SvB Friend Trees on EOS & merged friend JSON (for Stage F_1)
+# Runtime effective configs are staged into output/ttHbb_bkg_syst/bkg_syst_A_4_process_subsamples/configs/
+# ==============================================================================
+phaseA_4:
+  runner:
+    workers: 4
+    min_workers: 25
+    max_workers: 200
+    worker_memory: "6GB"
+  config:
+    run_SvB: true
+    SvB_MA: true
+    # hist_cuts:
+    #   - "pass_nSelJets_gt6"
+
+# Backward compatibility sections for downstream stages
+phase_e_jcm:
+  source_coffea: "inputs/histAll_NoJCM.coffea"
+  input_coffea: "inputs/histAll_NoJCM.coffea"
+  data_nojcm_coffea: "output/ttHbb_bkg_syst/bkg_syst_F_1_analysis/histAll_data_ttbar_v0_noFvT.coffea"
+  output_dir: "bkg_syst_A_1_make_mixeddata/JCM_1_data_inclusive/"
+  tag: "ttHbb_stitched_inclusive"
+  region: "inclusive"
+
+mixeddata:
+  base_path: "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2/ttHbb_pz_rank0_0"
+  dataset_name: "mixeddata_ttHbb_bkg_syst_rank0_0"
+  use_boost_corrected_matching: true
+  subtract_ttbar_with_weights: false
+  hemi_library_yaml: "coffea4bees/skimmer/metadata/hemisphere_library_noTT.yml"
+  hemi_stats_path: "coffea4bees/skimmer/metadata"
+  friends_file: "coffea4bees/metadata/friends/friends_ttHbb.yml"
+  default_rank: 0
+  worker_memory: "6GB"
+  chunksize: 100000
+  picosize: 100000
+
+classifier_inputs_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched/classifier_inputs/mixeddata/"
+
+# ==============================================================================
+# STAGE B_1: DEDICATED JCM FITS & VALIDATION CLOSURE
+# Fits JCM transfer weights against 4b Data - ttbar for each subsample (v0..v15)
+# using coffea4bees/analysis/jcm_tools/make_jcm_weights.py.
+# Evaluates processor_ttHbb with JCM applied on a single subsample (v0) and
+# generates data-vs-model closure plots.
+# ==============================================================================
+phaseB_1:
+  jcm:
+    config: "coffea4bees/analysis/jcm_tools/metadata/ttHbb_subsample_jcm_config.yml"
+    plot_config: "coffea4bees/plots/metadata/plots_JCM_ttHbb.yml"
+    region: "SB"
+    year: "RunII"
+    data_coffea: "inputs/histAll_NoJCM.coffea"
+  validation:
+    subsample: 0
+    processor_config: "coffea4bees/workflows/config/analysis_config_bkg_syst_test_subsample.yml"
+    plot_config: "coffea4bees/plots/metadata/plots_subsample_v0_closure_ttHbb.yml"
+    runner:
+      workers: 4
+      worker_memory: "6GB"
+      condor: true
+      shared_dask: true
+    config:
+      blind: false
+      apply_FvT: false
+      apply_JCM: true
+      apply_trigWeight: false
+      apply_btagSF: true
+      apply_boosted_veto: false
+      run_SvB: false
+      top_reconstruction: "fast"
+      fill_histograms: true
+      hist_cuts:
+        - "pass_nSelJets_gt6"
+
+# ==============================================================================
+# STAGE C_1: FVT CLASSIFIER TRAINING & EVALUATION (Bridges-2 GPU)
+# Self-contained Stage C configuration (Option 1):
+#   - classifier_setting: global settings (eras, feature branches, dataloader)
+#   - fvt_train_workflow: training task template
+#   - fvt_eval_workflow: evaluation task template
+# Runtime effective configs are staged into output/ttHbb_bkg_syst/bkg_syst_C_1_FvT/wfs/
+# ==============================================================================
+classifier_setting:
+  - module: ml.DataLoader
+    option:
+      - optimize_sliceable_dataset: true
+      - num_workers: 2
+      - batch_eval: 65536
+  - module: ROOT
+    option:
+      - friend_allow_missing: true
+  - module: cms.MC_TTbar
+    option:
+      - datasets:
+          - TTToSemiLeptonic_stitched
+          - TTToHadronic_stitched
+          - TTTo2L2Nu_stitched
+  - module: cms.CollisionData
+    option:
+      - eras:
+          UL16_preVFP: [C, D, E, F]
+          UL16_postVFP: [F, G, H]
+          UL17: [B, C, D, E, F]
+          UL18: [A, B, C, D]
+        years:
+          - UL16_preVFP
+          - UL16_postVFP
+          - UL17
+          - UL18
+  - module: HCR.InputBranch
+    option:
+      - feature_ancillary: [xW, nSelJets, xbW, year]
+      - mass_regions: [SR, SB]
+  - module: ml.Training
+    option:
+      - precision: fp16
+
+fvt_train_workflow:
+  main:
+    module: train
+    option:
+      - --max-loaders 2
+      - --max-trainers 3
+      - --device cuda cpu
+  dataset:
+    - module: HCR.FvT.TrainBaseline
+      option:
+        - --metadata coffea4bees/metadata/datasets/
+        - --max-workers 20
+        - --data-source detector mixed
+        - --no-detector-4b
+        - --data-mixed-name mixeddata_4b
+        - --data-mixed-samples {mix}
+        - --JCM-weight "" {jcm}@@JCM_weights
+        - --friends "" {nominal_ci}@@HCR_input {mixed_ci}@@HCR_input
+  model:
+    - module: HCR.FvT.baseline.Train
+      option:
+        - --kfolds 3
+        - --kfold-seed FvT random
+        - --kfold-seed-offsets 0
+        - --training EarlyStopStep
+        - epoch: 20
+          bs_init: 2048
+          patience: 3
+          min_delta: 0.0001
+          min_epoch: 8
+        - --finetuning FixedStep
+        - epoch: 1
+          bs_init: 16384
+  setting:
+    - module: IO
+      option:
+        - output: "{model}"
+
+fvt_eval_workflow:
+  main:
+    module: evaluate
+    option:
+      - --max-evaluators 3
+      - --device cuda cpu
+  dataset:
+    - module: HCR.FvT.Eval
+      option:
+        - --metadata coffea4bees/metadata/datasets/
+        - --max-workers 8
+        - --data-source detector
+        - --friends "" {nominal_ci}@@HCR_input
+  model:
+    - module: HCR.FvT.baseline.Eval
+      option:
+        - --models
+        - Final
+        - "{model}/result.json"
+  analysis:
+    - module: kfold.Merge
+      option:
+        - --name FvT
+        - --step 100000
+        - --workers 4
+        - --clean
+  setting:
+    - module: IO
+      option:
+        - output: "{FvT}"
+
+phase_e_fvt:
+  channel: "ttHbb"
+  mix_name: "ttHbb_bkg_syst"
+  n_models: 16
+  output_path: "bkg_syst_C_1_FvT/"
+  eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2"
+  plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
+  nominal_classifier_inputs: "coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json"
+  mixed_classifier_inputs_template: "output/ttHbb_bkg_syst/bkg_syst_A_4_process_subsamples/histAll_ttHbb_mixeddata_v{m}.json"
+  jcm_template: "output/ttHbb_bkg_syst/bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v{m}.yml"
+  precision: "fp16"
+  gpu_partition: "GPU-shared"
+  slurm_account: "phy260026p"
+  gpu_gres: "gpu:1"
+  gpu_mem: 22000
+  eval_mem: 22000
+  plot_inputs: false
+  plot_weights: false
+  analyze: false
+  evaluate: true
+
+
+analysis_config:
+  processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+  dataset_location: "output/ttHbb_bkg_syst/coffea4bees/metadata/datasets/"
+  datasets_file: "output/ttHbb_bkg_syst/coffea4bees/metadata/datasets/mixeddata_4b.yml"
+  friend_file: "output/ttHbb_bkg_syst/coffea4bees/metadata/friends/friends_ttHbb_bkg_syst_4b.json"
+  weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
+  runner:
+    workers: 8
+    chunksize: 100000
+    condor: false
+    shared_dask: false
+    run_performance: false
+  config:
+    blind: false
+    apply_FvT: false
+    apply_JCM: false
+    apply_trigWeight: false
+    apply_btagSF: true
+    apply_boosted_veto: false
+    run_SvB: true
+    SvB_MA: true
+    SvB: null
+    apply_lepton_veto: false
+    hist_cuts: ["pass_nSelJets_gt6"]
+    top_reconstruction: fast
+    plot_ttbar_with_weights: true
+
+# COMBINE STATISTICAL INTERPRETATION & LIMITS
+convert_hist_to_json:
+  histos:
+    - "SvB_MA.ps_ttHbb"
+    - "SvB_MA.ps_ttHbb_gt6"
+    - "SvB_MA.ps_ttHbb_lepveto"
+    - "SvB_MA.ps_ttHbb_gt6_lepveto"
+
+combine_outdir: "bkg_syst_F_3_stats/datacards/"
+make_combine_inputs:
+  stat_only: ""
+  metadata_template: "coffea4bees/stats_analysis/metadata/{channel}.yml"
+  multijet_process: "data"
+  tt_processes:
+    - "TTTo"
+    - "TTbar4b_from_d3"
+
+combine_flags: "--three_tag threeTag --four_tag fourTag --region sum --blind"
+likelihood_scan_points: 40
+likelihood_scan_r_min: 0
+likelihood_scan_r_max: 2
+likelihood_scan_y_cut: 30
+likelihood_scan_y_max: 30
+
+channels:
+  ttHbb:
+    signallabel: "ttHbb"
+    othersignal: ""
+    variable: "SvB_MA.ps_ttHbb"
+    signal: "ttHbb"
+    closure_subdir: "ttHbb"
+    region: "SR"
+    cut: "sum"
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_stat_only:
+    signallabel: "ttHbb"
+    othersignal: ""
+    variable: "SvB_MA.ps_ttHbb"
+    signal: "ttHbb"
+    closure_subdir: "ttHbb"
+    region: "SR"
+    cut: "sum"
+    stat_only: true
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_gt6:
+    signallabel: "ttHbb"
+    othersignal: ""
+    variable: "SvB_MA.ps_ttHbb_gt6"
+    signal: "ttHbb"
+    closure_subdir: "ttHbb"
+    region: "SR"
+    cut: "pass_nSelJets_gt6"
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_gt6_stat_only:
+    signallabel: "ttHbb"
+    othersignal: ""
+    variable: "SvB_MA.ps_ttHbb_gt6"
+    signal: "ttHbb"
+    closure_subdir: "ttHbb"
+    region: "SR"
+    cut: "pass_nSelJets_gt6"
+    stat_only: true
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_lepveto:
+    signallabel: "ttHbb"
+    othersignal: ""
+    variable: "SvB_MA.ps_ttHbb_lepveto"
+    signal: "ttHbb"
+    closure_subdir: "ttHbb"
+    region: "SR"
+    cut: "passLeptonVeto"
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_lepveto_stat_only:
+    signallabel: "ttHbb"
+    othersignal: ""
+    variable: "SvB_MA.ps_ttHbb_lepveto"
+    signal: "ttHbb"
+    closure_subdir: "ttHbb"
+    region: "SR"
+    cut: "passLeptonVeto"
+    stat_only: true
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_gt6_lepveto:
+    signallabel: "ttHbb"
+    othersignal: ""
+    variable: "SvB_MA.ps_ttHbb_gt6_lepveto"
+    signal: "ttHbb"
+    closure_subdir: "ttHbb"
+    region: "SR"
+    cut: "pass_nSelJets_gt6_passLeptonVeto"
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_gt6_lepveto_stat_only:
+    signallabel: "ttHbb"
+    othersignal: ""
+    variable: "SvB_MA.ps_ttHbb_gt6_lepveto"
+    signal: "ttHbb"
+    closure_subdir: "ttHbb"
+    region: "SR"
+    cut: "pass_nSelJets_gt6_passLeptonVeto"
+    stat_only: true
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"

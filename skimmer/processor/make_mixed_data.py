@@ -224,7 +224,7 @@ class HemiMixer(Skimmer4b):
         # Apply JCM
         #
         event["weight"] = weights.weight()
-        jcm_model = self.apply_JCM.get(year) if isinstance(self.apply_JCM, dict) else self.apply_JCM
+        jcm_model = self.apply_JCM.get(year, self.apply_JCM.get("default")) if isinstance(self.apply_JCM, dict) else self.apply_JCM
         weights, list_weight_names = add_pseudotagweights(
             event,
             weights,
