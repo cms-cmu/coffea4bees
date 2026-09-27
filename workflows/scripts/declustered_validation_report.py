@@ -1,11 +1,13 @@
 """DeClustered-data validation report (Snakefile_DeClustered_5_monitoring.smk, step D.5).
 
-    declustered_validation_report.py cutflow CUTFLOW.yml OUTDIR --prefix syn_noTT --seed K --n-seeds N [--ttbar-in-sample]
+    declustered_validation_report.py cutflow CUTFLOW.yml OUTDIR --prefix syn --seed K --n-seeds N
+                                             [--psdata ttbar_PSData | --ttbar-in-sample]
     declustered_validation_report.py pdfs    OUTDIR ERA_DIR [ERA_DIR ...]
 
 cutflow: four-tag cutflow page: declustered data (seed K, and the mean over all N seeds) next to the
          4b data it was made from, plus ttbar MC. With --ttbar-in-sample (no ttbar subtraction in the
-         declustering) the model is the declustered sample alone; otherwise declustered + ttbar MC.
+         declustering) the model is the declustered sample alone; otherwise declustered + ttbar MC,
+         and --psdata adds the ttbar pseudodata next to the ttbar MC.
 pdfs:    index page of D.2's sampling tests (make_jet_splitting_PDFs.py test_sampling_* plots,
          splitting multiplicities), one section per era.
 """
@@ -43,12 +45,14 @@ def _ratio(n, d):
     return f"{n / d:.3f} ± {err:.3f}"
 
 
-def cutflow(path, outdir, prefix, k, n_seeds, ttbar_in_sample):
+def cutflow(path, outdir, prefix, k, n_seeds, ttbar_in_sample, psdata=None):
     os.makedirs(outdir, exist_ok=True)
     with open(path) as f:
         counts = yaml.safe_load(f)["counts4"]
 
     def group(key):
+        if psdata and key.startswith(f"{psdata}_"):
+            return "psdata"
         if key.startswith("data_"):
             return "data"
         if key.startswith("TTTo"):
@@ -78,6 +82,8 @@ def cutflow(path, outdir, prefix, k, n_seeds, ttbar_in_sample):
     model = "declustered" if ttbar_in_sample else "declustered + ttbar MC"
     head = ["cut", "data 4b", f"seed {k}", "ttbar MC", f"model (seed {k})", "data / model",
             f"seed mean (N={n_seeds})", "data / mean model", "seed rms / mean"]
+    if psdata:
+        head += ["ttbar pseudodata", "PSdata / ttbar MC"]
     txt, blocks = [], []
     for y in years:
         rows = []
@@ -89,8 +95,12 @@ def cutflow(path, outdir, prefix, k, n_seeds, ttbar_in_sample):
             add = 0.0 if ttbar_in_sample else tt
             mean = float(seeds.mean()) if len(seeds) else 0.0
             rms = f"{seeds.std() / mean:.4f}" if len(seeds) > 1 and mean > 0 else "-"
-            rows.append([c, _fmt(da), _fmt(sk), _fmt(tt), _fmt(sk + add), _ratio(da, sk + add),
-                         _fmt(mean), _ratio(da, mean + add), rms])
+            row = [c, _fmt(da), _fmt(sk), _fmt(tt), _fmt(sk + add), _ratio(da, sk + add),
+                   _fmt(mean), _ratio(da, mean + add), rms]
+            if psdata:
+                ps = groups.get((y, "psdata"), {}).get(c, 0.0)
+                row += [_fmt(ps), _ratio(ps, tt)]
+            rows.append(row)
         widths = [max(len(str(r[i])) for r in rows + [head]) for i in range(len(head))]
         title = "all years" if y == "all" else y
         txt.append(title)
@@ -103,6 +113,8 @@ def cutflow(path, outdir, prefix, k, n_seeds, ttbar_in_sample):
     note = (f"<p>Four-tag counts (weighted). Model = {model}"
             + (" (the declustering did not subtract ttbar, so the declustered sample already models it; "
                "ttbar MC is shown for reference only)" if ttbar_in_sample else "")
+            + (f". The ttbar pseudodata ({psdata}), folded into the consumer dataset, should follow the ttbar MC"
+               if psdata else "")
             + f". Declustered samples: <code>{html.escape(prefix)}_v&lt;seed&gt;</code>; data / model "
               f"should be consistent with 1 at every cut.</p>")
     if missing:
@@ -146,11 +158,12 @@ def main():
     c.add_argument("--seed", type=int, default=0)
     c.add_argument("--n-seeds", type=int, default=1)
     c.add_argument("--ttbar-in-sample", action="store_true")
+    c.add_argument("--psdata", default=None, help="ttbar pseudodata process name (e.g. ttbar_PSData)")
     p = sub.add_parser("pdfs")
     p.add_argument("outdir"); p.add_argument("era_dirs", nargs="+")
     a = ap.parse_args()
     if a.mode == "cutflow":
-        cutflow(a.input, a.outdir, a.prefix, a.seed, a.n_seeds, a.ttbar_in_sample)
+        cutflow(a.input, a.outdir, a.prefix, a.seed, a.n_seeds, a.ttbar_in_sample, a.psdata)
     else:
         pdfs(a.outdir, a.era_dirs)
 

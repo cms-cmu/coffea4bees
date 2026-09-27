@@ -1,11 +1,12 @@
-# DeClustered-data validation (Snakefile_DeClustered_5_monitoring.smk, step D.5). All four-tag:
-#   * 4b data (points)           vs the stack -> does the declustered data follow the 4b data it
-#                                                was made from?
-#   * ttbar MC (line / stack)    reference
-# Stack as written here is for declustering.subtract_ttbar: true (declustered multijet + ttbar MC).
-# With subtract_ttbar: false the declustered sample already contains the ttbar, so D.5 moves TTbar
-# out of the stack into a reference line. `syn_vK` is a placeholder: D.5 writes the actual sample
-# (syn_noTT_v<k> or syn_v<k>, seed k drawn per roast or pinned as validation.seed).
+# DeClustered-data validation (Snakefile_DeClustered_5_monitoring.smk, step D.5), after M.6. All
+# four-tag, as written for declustering.subtract_ttbar: true (the default):
+#   * 4b data (points)            vs the stack (declustered multijet, seed k + ttbar MC)
+#                                 -> does the declustered model follow the 4b data it was made from?
+#   * ttbar pseudodata (line)     vs the stack's ttbar MC part -> is the pseudodata that the consumer
+#                                 dataset folds in right?
+# With subtract_ttbar: false the declustered sample already contains the ttbar: D.5 moves TTbar out
+# of the stack into a reference line and drops the pseudodata. `syn_vK` is a placeholder: D.5 writes
+# the actual sample (syn_v<k> / syn_noTT_v<k>, seed k drawn per roast or pinned as validation.seed).
 hists:
         data:
                 process: data
@@ -13,6 +14,13 @@ hists:
                 label: Four-tag data
                 edgecolor: k
                 fillcolor: k
+        psdata:
+                process: ttbar_PSData
+                tag: fourTag
+                label: $t\bar{t}$ pseudodata
+                edgecolor: "#1f4e9c"
+                fillcolor: "#1f4e9c"
+                histtype: step
 
 stack:
         TTbar:
@@ -26,7 +34,7 @@ stack:
                 tag: fourTag
                 fillcolor: "#FFDF7Fff"
                 edgecolor: k
-                label: Declustered data (seed K)
+                label: Declustered multijet (seed K)
 
 ratios:
         dataToBkg:
@@ -39,6 +47,15 @@ ratios:
                         nominal
                 color: k
                 marker: "o"
+        psdataToTTbar:
+                numerator:
+                        type: hists
+                        key: psdata
+                denominator:
+                        type: stack
+                        key: TTbar
+                color: "#1f4e9c"
+                marker: "^"
 
 codes:
    region:

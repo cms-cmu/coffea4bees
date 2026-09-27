@@ -6,8 +6,9 @@
 #   inputs             fetch the upstream data/ttbar histograms + their runner config (B.1 roast)
 #   D.1 cluster        4b data, ttbar subtracted with the upstream FvT -> splitting histograms
 #   D.2 PDFs           splitting histograms -> clustering_pdfs_vs_pT_<era>.yml, published to EOS
-#   D.3 decluster      4b data re-generated from the PDFs, one replica per seed -> synthetic picoAODs
-#                      + the multi-sample dataset YAML (files_template seedXXX, nSamples = n_seeds)
+#   D.3 decluster      ttbar-subtracted 4b data re-generated from the PDFs, one replica per seed
+#                      -> multijet picoAODs + multi-sample dataset YAMLs (files_template seedXXX,
+#                      nSamples = n_seeds): multijet only, and multijet + ttbar pseudodata
 #   D.4 validate       synthetic-data histograms with the upstream config, merged with the upstream
 #                      data/ttbar -> cutflow (synthetic 4b next to data 4b, same selection)
 #   D.5 monitoring     plots (synthetic vs 4b data, ttbar MC), cutflow page, PDF sampling-test gallery
@@ -15,7 +16,8 @@
 # Everything this roast consumes comes from another roast, named under `inputs:` and checked by
 # `roast new`: the FvT and the data/ttbar histograms of the NON-TIGHT production
 # (config/nominal_run3_nontight.yml) -- the declustering, like the mixing, is non-tight, and the
-# tight FvT covers only tight-4b events (it silently drops the rest; see mixeddata_run3.yml).
+# tight FvT covers only tight-4b events (it silently drops the rest; see mixeddata_run3.yml) --
+# and the ttbar pseudodata of a mixeddata roast (folded into the consumer dataset).
 #
 # Products are published to `publish_base` on EOS; the dataset YAML under <publish_base>/handoff/
 # is what consumer roasts read (runner.py -m accepts root:// URLs). Nothing is installed into the
@@ -100,22 +102,43 @@ PDF_TEMPLATE = f"{PDF_BASE}/clustering_pdfs_vs_pT_XXX.yml"     # XXX -> era, in 
 N_SEEDS = int(DECL.get('n_seeds', 1))
 SEEDS = list(range(N_SEEDS))
 
-# ttbar: the declustering either subtracts ttbar from the 4b data with the upstream FvT (then a
-# consumer adds ttbar pseudodata, e.g. the mixeddata roast's ttbar_PSData) or declusters the ttbar
-# with the multijet (the current Run 3 `synthetic_data_noTT`). runner.py picks the sample naming
-# from the dataset name (src/runner/dataset.py:get_dataset_type: synthetic_data_noTT* -> syn_noTT_v<i>,
-# other synthetic_data* -> syn_v<i>), so the name must say which one it is.
-SUBTRACT_TT = bool(DECL.get('subtract_ttbar', False))
-DATASET_NAME = str(DECL.get('dataset_name', 'synthetic_data_noTT_roast' if not SUBTRACT_TT else 'synthetic_data_subTT'))
-if not DATASET_NAME.startswith('synthetic_data') or DATASET_NAME.startswith('synthetic_data_noTT') == SUBTRACT_TT:
-    raise ValueError(f"declustering.dataset_name {DATASET_NAME!r} does not match subtract_ttbar={SUBTRACT_TT}: "
-                     f"use synthetic_data_noTT<...> without ttbar subtraction, synthetic_data<...> "
-                     f"(not _noTT) with it")
-if DATASET_NAME in ('synthetic_data', 'synthetic_data_noTT'):
-    # load_datasets_metadata refuses a name defined differently in two -m sources, and the
-    # default metadata/datasets/synthetic_data.yml already defines these two.
-    raise ValueError(f"declustering.dataset_name {DATASET_NAME!r} is taken by metadata/datasets/synthetic_data.yml")
+# ttbar. Default (subtract_ttbar: true): D.3 removes the ttbar from the 4b data with the upstream
+# FvT, so the declustered sample is MULTIJET ONLY, and -- as MakeMixedData does for mixeddata_4b --
+# the dataset consumers read folds in ttbar pseudodata (inputs.ttbar_psdata, the mixeddata roast's
+# M.5 sample). Two datasets are published:
+#   MJ_NAME       synthetic_data_multijet  declustered multijet only (D.4/D.5 compare it + ttbar MC)
+#   DATASET_NAME  synthetic_data_4b        the same files + the ttbar pseudodata  (what consumers read)
+# subtract_ttbar: false declusters the ttbar with the multijet (the old Run 3 synthetic_data_noTT):
+# one dataset, no pseudodata.
+# runner.py picks the sample naming from the dataset name (src/runner/dataset.py:get_dataset_type:
+# synthetic_data_noTT* -> syn_noTT_v<i>, other synthetic_data* -> syn_v<i>), so the names must say
+# which one they are; and load_datasets_metadata refuses a name defined differently in two -m
+# sources, so the names in metadata/datasets/synthetic_data.yml are taken.
+SUBTRACT_TT = bool(DECL.get('subtract_ttbar', True))
+if SUBTRACT_TT:
+    MJ_NAME = str(DECL.get('multijet_dataset_name', 'synthetic_data_multijet'))
+    DATASET_NAME = str(DECL.get('dataset_name', 'synthetic_data_4b'))
+else:
+    MJ_NAME = DATASET_NAME = str(DECL.get('dataset_name', 'synthetic_data_noTT_declustered'))
+for _n in dict.fromkeys((MJ_NAME, DATASET_NAME)):
+    if not _n.startswith('synthetic_data') or _n.startswith('synthetic_data_noTT') == SUBTRACT_TT:
+        raise ValueError(f"declustering dataset name {_n!r} does not match subtract_ttbar={SUBTRACT_TT}: "
+                         f"use synthetic_data_noTT<...> without ttbar subtraction, synthetic_data<...> "
+                         f"(not _noTT) with it")
+    if _n in ('synthetic_data', 'synthetic_data_noTT'):
+        raise ValueError(f"declustering dataset name {_n!r} is taken by metadata/datasets/synthetic_data.yml")
+if SUBTRACT_TT and MJ_NAME == DATASET_NAME:
+    raise ValueError("declustering.multijet_dataset_name and dataset_name must differ")
+MJ_URL = f"{HANDOFF}/{MJ_NAME}.yml"
 DATASET_URL = f"{HANDOFF}/{DATASET_NAME}.yml"
+
+# ttbar pseudodata (subtract_ttbar only): another roast's published dataset YAML, fetched locally.
+PS_INPUT = INPUTS.get('ttbar_psdata')
+if SUBTRACT_TT and not str(PS_INPUT or "").startswith("root://"):
+    raise ValueError("subtract_ttbar: true needs inputs.ttbar_psdata, a root:// URL to a published ttbar "
+                     "pseudodata dataset YAML (e.g. a mixeddata roast's handoff/ttbar_PSData.yml)")
+PS_NAME = str(DECL.get('ttbar_psdata_name', 'ttbar_PSData'))
+PS_DATASET = f"{INPUT_DIR}{PS_NAME}.yml"
 
 # Container / runner invocation, as in Snakefile_MakeMixedData.smk (config['test'] parsed above)
 _wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
@@ -179,6 +202,19 @@ rule fetch_inputs:
         for f in {params.hists} {params.hist_config}; do echo "fetched $f" | tee -a {log}; done
         """
 
+rule fetch_psdata:
+    output: PS_DATASET
+    log: f"{INPUT_DIR}fetch_psdata.log"
+    params:
+        url = PS_INPUT or ""
+    shell:
+        """
+        set -eo pipefail
+        {EOS_PROXY}
+        xrdcp -f "{params.url}" {output} 2>&1 | tee {log}
+        echo "fetched {params.url}" | tee -a {log}
+        """
+
 # ── Steps ─────────────────────────────────────────────────────────────────────
 
 include: "Snakefile_DeClustered_1_cluster.smk"
@@ -197,4 +233,4 @@ rule all_DeClustered:
         rules.all_D4.input,
         rules.all_D5.input
 
-localrules: fetch_inputs, all_DeClustered
+localrules: fetch_inputs, fetch_psdata, all_DeClustered

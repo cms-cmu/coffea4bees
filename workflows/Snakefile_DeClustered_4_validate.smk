@@ -2,12 +2,16 @@
 # D.4: validate the synthetic data against the real 4b data it was made from.
 # (scripts/synthetic-dataset-analyze-Run3-all.sh + synthetic-dataset-analyze-cutflow-Run3.sh)
 #
-#   D4_hist_config                    the upstream B.1 noJCM runner config, pointed at the synthetic
-#                                     dataset (read from this roast's EOS handoff, as a consumer would)
-#   D4_hists (per year, condor)       processor_HH4b over every seed of the synthetic dataset
+#   D4_hist_config                    the upstream B.1 noJCM runner config, pointed at the multijet
+#                                     dataset (this roast's EOS handoff, as a consumer would read it)
+#                                     and the ttbar pseudodata (inputs.ttbar_psdata)
+#   D4_hists (per year, condor)       processor_HH4b over every seed of the multijet dataset + the
+#                                     pseudodata (kept apart: runner names every synthetic_data*
+#                                     sample syn_v<seed>, so the combined dataset would hide which
+#                                     events are which)
 #   D4_merge_hists                    + the upstream data / ttbar histAll_NoJCM
 #                                     -> histAll_declustered.coffea: data 4b (data), syn(_noTT)_v<s>
-#                                        (synthetic 4b), ttbar MC, one selection and binning
+#                                        (declustered), ttbar_PSData, ttbar MC; one selection/binning
 #   D4_cutflow                        cutflow dump (first roast: the reference to bless as
 #                                     validation.known_counts)
 
@@ -25,7 +29,7 @@ rule D4_hist_config:
         if tight is not False:
             raise ValueError(f"upstream roast histogrammed with fourTag_use_tight={tight!r} "
                              f"({INPUTS['jcm_hists']}); the declustered data needs the non-tight selection")
-        cfg['dataset_location'] = [DATASET_URL]
+        cfg['dataset_location'] = [MJ_URL] + ([PS_INPUT] if SUBTRACT_TT else [])
         cfg.get('runner', {}).pop('dataset_location', None)
         if config['test']:
             cfg.setdefault('runner', {}).update({'condor': False, 'shared_dask': False})
@@ -36,12 +40,12 @@ use rule analysis_processor from analysis as D4_hists with:
         runner_script = "runner.py",
         config_file = D4_HIST_CONFIG,
         published = D3_PUBLISHED
-    output: f"{D4_OUT}singlefiles/hist__{DATASET_NAME}__{{year}}.coffea"
+    output: f"{D4_OUT}singlefiles/hist__{MJ_NAME}__{{year}}.coffea"
     log: f"{D4_OUT}logs/hists__{{year}}.log"
     wildcard_constraints:
         year = "|".join(YEARS)
     params:
-        datasets = DATASET_NAME,
+        datasets = " ".join([MJ_NAME] + ([PS_NAME] if SUBTRACT_TT else [])),
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
         extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
@@ -50,7 +54,7 @@ use rule analysis_processor from analysis as D4_hists with:
 
 use rule merging_coffea_files from analysis as D4_merge_hists with:
     input:
-        files = [UPSTREAM_HISTS] + expand(f"{D4_OUT}singlefiles/hist__{DATASET_NAME}__{{year}}.coffea", year=YEARS),
+        files = [UPSTREAM_HISTS] + expand(f"{D4_OUT}singlefiles/hist__{MJ_NAME}__{{year}}.coffea", year=YEARS),
         script = "src/tools/merge_coffea_files.py"
     output: D4_HISTALL
     log: f"{D4_OUT}logs/merge_hists.log"

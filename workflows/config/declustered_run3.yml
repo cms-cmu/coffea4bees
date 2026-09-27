@@ -1,20 +1,25 @@
 # ==============================================================================
 # DECLUSTERED (SYNTHETIC) DATASET PRODUCTION — Run 3 (2022 + 2023)
 # ==============================================================================
-# Driven by Snakefile_DeClustered.smk (D.1 cluster -> D.2 PDFs -> D.3 decluster -> D.4 validate),
-# the Snakemake port of scripts/synthetic-dataset-*-Run3-all.sh. Its product is a multi-sample
-# dataset YAML published to EOS under `publish_base`/handoff/, which consumers read in place
-# with `runner.py -m <dir> <url> ...`.
+# Driven by Snakefile_DeClustered.smk (D.1 cluster -> D.2 PDFs -> D.3 decluster -> D.4 validate
+# -> D.5 monitoring), the Snakemake port of scripts/synthetic-dataset-*-Run3-all.sh. Its products are
+# multi-sample dataset YAMLs published to EOS under `publish_base`/handoff/, which consumers read in
+# place with `runner.py -m <dir> <url> ...`:
+#   synthetic_data_4b        declustered multijet (ttbar subtracted) + ttbar pseudodata  <- consumers
+#   synthetic_data_multijet  declustered multijet only
 #
 # A standalone config, not a `base:` overlay, for the same reason as mixeddata_run3.yml: this
 # roast *depends on* two others but does something entirely different, so no production config
 # is a sensible base (overlaying mixeddata_run3.yml would carry its mixing/subsample blocks along
 # as dead keys). Everything it reads is pinned under `inputs:`, which `roast new` checks lies
-# inside the one upstream: the NON-TIGHT production (config/nominal_run3_nontight.yml, phases
-# B.1, B, C, C4; archived) -> the FvT (ttbar subtraction, D.1) and the data/ttbar histograms +
-# their runner config (D.4/D.5). All non-tight: the tight nominal FvT only covers tight-4b
-# events, so it would silently drop the rest of the non-tight 4b sample the PDFs are learned
-# from (what happened to the mixed-data hemisphere library).
+# inside the named upstream roasts:
+#   * the NON-TIGHT production (config/nominal_run3_nontight.yml, phases B.1, B, C, C4; archived)
+#     -> the FvT (ttbar subtraction, D.1 + D.3) and the data/ttbar histograms + their runner
+#     config (D.4/D.5). All non-tight: the tight nominal FvT only covers tight-4b events, so it
+#     would silently drop the rest of the non-tight 4b sample (what happened to the mixed-data
+#     hemisphere library).
+#   * the mixeddata roast (config/mixeddata_run3.yml, M.5; archived) -> the ttbar pseudodata folded
+#     into the consumer dataset, the same sample mixeddata_4b folds in.
 #
 #   roast new --config coffea4bees/workflows/config/declustered_run3.yml --label declustered_run3 \
 #       --step cmslpc:coffea4bees/workflows/Snakefile_DeClustered.smk
@@ -29,7 +34,7 @@ publish_base: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/{roast_id}"
 # Products of other roasts (checked by `roast new`, see src/tools/roast.py:check_inputs)
 # ------------------------------------------------------------------------------
 inputs:
-  upstream_roasts: [nominal_run3_nontight_20260925_0c53380-193851f]
+  upstream_roasts: [nominal_run3_nontight_20260925_0c53380-193851f, mixeddata_run3_20260926_956d4bf-aca8a4e]
   # ttbar subtraction in D.1 (4b data, FvT.d4_to_t4), and in D.3 when declustering.subtract_ttbar:
   # the non-tight FvT (Phase C of that roast; C.4 closure SR 1.003 +- 0.002), the file
   # mixeddata_run3 uses. Must cover the data picoAODs in analysis_config.dataset_location.
@@ -38,6 +43,9 @@ inputs:
   # written next to them (analysis_config_noJCM.yml) and merges, so synthetic and real 4b data
   # share one selection. (Named jcm_hists as in mixeddata_run3.yml: it is B.1's JCM-fit input.)
   jcm_hists: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_nontight_20260925_0c53380-193851f/output/Run3_nontight/computeJCM/histAll_NoJCM.coffea"
+  # ttbar pseudodata (sub_sample_MC.py, one unweighted sample) folded into synthetic_data_4b per
+  # year, as MakeMixedData M.4 folds it into mixeddata_4b. Needed with declustering.subtract_ttbar.
+  ttbar_psdata: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/mixeddata_run3_20260926_956d4bf-aca8a4e/handoff/ttbar_PSData.yml"
   # Optional: decluster with another declustered roast's PDFs (its <publish_base>/pdfs) and skip
   # D.1 + D.2 -- e.g. to add seeds. Add that roast to upstream_roasts.
   # pdfs: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/<declustered roast id>/pdfs"
@@ -97,15 +105,18 @@ pdfs: {}      # (no options yet)
 declustering:
   skimmer_template: "coffea4bees/skimmer/metadata/declustering_Run3.yml"
   # Independent replicas, seeds 0..n_seeds-1 (runner.py expands seedXXX over range(nSamples)).
-  # Each seed is a full condor pass over the 4b data.
+  # Each seed is a full condor pass over the 4b data. Start with one.
   n_seeds: 1
-  # false = decluster the 4b data as is, ttbar included (the Run 3 script chain,
-  # synthetic_data_noTT). true = subtract ttbar with inputs.FvT first; a consumer then adds
-  # ttbar pseudodata (e.g. the mixeddata roast's handoff/ttbar_PSData.yml).
-  subtract_ttbar: false
-  # Must start with synthetic_data_noTT iff subtract_ttbar is false (runner.py names the samples
-  # from it: syn_noTT_v<seed>), and differ from the names in metadata/datasets/synthetic_data.yml.
-  dataset_name: "synthetic_data_noTT_declustered"
+  # true (default): subtract ttbar from the 4b data with inputs.FvT before declustering, so the
+  # declustered sample is multijet only; the consumer dataset adds inputs.ttbar_psdata.
+  # false: decluster the ttbar with the multijet (the old Run 3 synthetic_data_noTT), one dataset.
+  subtract_ttbar: true
+  # Names must start with synthetic_data (synthetic_data_noTT<...> iff subtract_ttbar is false:
+  # runner.py names the samples from it, syn_v<seed> / syn_noTT_v<seed>) and differ from the names
+  # in metadata/datasets/synthetic_data.yml.
+  dataset_name: "synthetic_data_4b"                  # multijet + ttbar pseudodata (consumers)
+  multijet_dataset_name: "synthetic_data_multijet"   # multijet only (D.4/D.5)
+  ttbar_psdata_name: "ttbar_PSData"                  # dataset key inside inputs.ttbar_psdata
   # b_pt_threshold, dr_threshold, max_jet_retry, max_event_retry, worker_memory, chunksize:
   # override the skimmer template's values here.
 

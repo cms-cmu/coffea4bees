@@ -9,12 +9,17 @@
 #                                     picoAODs -> <PUB>/picoAOD/<name>/<dataset>/picoAOD_seed<s>*.root,
 #                                     per-(seed, year) registry
 #   D3_merge (per seed)               -> one clean registry per seed (numpy tags dropped)
-#   D3_dataset_yml                    -> one multi-sample dataset: <name>, nSamples: n_seeds, per-year
-#                                        files_template with seedXXX (runner expands XXX)
-#   D3_publish                        -> <PUB>/handoff/<name>.yml   (what consumers read)
+#   D3_dataset_yml                    -> one multi-sample dataset: <multijet name>, nSamples: n_seeds,
+#                                        per-year files_template with seedXXX (runner expands XXX)
+#   D3_combined_yml (subtract_ttbar)  -> <name>: the same + the ttbar pseudodata files, per year
+#                                        (as M.4 builds mixeddata_4b: pseudo-data = multijet + ttbar)
+#   D3_publish                        -> <PUB>/handoff/<multijet name>.yml and <name>.yml
+#                                        (consumers read <name>; D.4/D.5 the multijet one)
 
 D3_OUT = f"{out}D3/"
+D3_MJ_DATASET = f"{D3_OUT}handoff/{MJ_NAME}.yml"
 D3_DATASET = f"{D3_OUT}handoff/{DATASET_NAME}.yml"
+D3_HANDOFFS = list(dict.fromkeys([D3_MJ_DATASET, D3_DATASET]))
 D3_PUBLISHED = f"{D3_OUT}published.done"
 
 rule D3_config:
@@ -32,7 +37,7 @@ rule D3_config:
             if k in DECL:
                 runner[k] = DECL[k]
         section = {**(tmpl.get('config') or {}),
-                   'base_path': f"{PUB}/picoAOD/{DATASET_NAME}",
+                   'base_path': f"{PUB}/picoAOD/{MJ_NAME}",
                    'clustering_pdfs_file': PDF_TEMPLATE,   # read by the condor workers, via fsspec
                    'declustering_rand_seed': int(wildcards.seed),
                    'subtract_ttbar_with_weights': SUBTRACT_TT}
@@ -87,7 +92,7 @@ rule D3_dataset_yml:
     must produce the same set of templates -- checked, not assumed: the seedXXX expansion would
     otherwise read files that do not exist, or silently skip ones that do."""
     input: expand(f"{D3_OUT}per_seed/registry_seed{{seed}}.yml", seed=SEEDS)
-    output: D3_DATASET
+    output: D3_MJ_DATASET
     run:
         import re
         from src.tools.make_dataset_yml import parse_dataset_key
@@ -125,18 +130,46 @@ rule D3_dataset_yml:
         dataset = {'nSamples': N_SEEDS, 'xs': {'Run2': 1, 'Run3': 1}}
         for year in YEARS:
             dataset[year] = {'picoAOD': {'files_template': sorted(per_seed[0][year])}}
-        write_yaml(output[0], {DATASET_NAME: dataset})
+        write_yaml(output[0], {MJ_NAME: dataset})
+
+if SUBTRACT_TT:
+    rule D3_combined_yml:
+        """The consumer dataset: every seed's multijet files plus the (one, shared) ttbar pseudodata,
+        per year -- the pseudodata files carry no XXX, so every seed reads the same ones."""
+        input:
+            multijet = D3_MJ_DATASET,
+            psdata = PS_DATASET
+        output: D3_DATASET
+        run:
+            with open(input.multijet) as f:
+                mj = yaml.safe_load(f)[MJ_NAME]
+            with open(input.psdata) as f:
+                ps = (yaml.safe_load(f) or {}).get(PS_NAME) or {}
+            dataset = {k: v for k, v in mj.items() if k not in YEARS}
+            for year in YEARS:
+                ps_files = ((ps.get(year) or {}).get('picoAOD') or {}).get('files') or []
+                if not ps_files:
+                    raise ValueError(f"{input.psdata}: no {PS_NAME} files for {year}")
+                if any('XXX' in p for p in ps_files):
+                    raise ValueError(f"{input.psdata}: pseudodata file names contain XXX")
+                dataset[year] = {'picoAOD': {'files_template':
+                                             list(mj[year]['picoAOD']['files_template']) + sorted(ps_files)}}
+            write_yaml(output[0], {DATASET_NAME: dataset})
+
+    localrules: D3_combined_yml
 
 rule D3_publish:
-    input: D3_DATASET
+    input: D3_HANDOFFS
     output: D3_PUBLISHED
     log: f"{D3_OUT}logs/publish.log"
     shell:
         """
         set -eo pipefail
         {EOS_PROXY}
-        xrdcp -f -p {input} "{HANDOFF}/$(basename {input})" 2>&1 | tee {log}
-        echo "published {input} -> {HANDOFF}/$(basename {input})" | tee -a {log}
+        for f in {input}; do
+            xrdcp -f -p "$f" "{HANDOFF}/$(basename $f)" 2>&1 | tee -a {log}
+            echo "published $f -> {HANDOFF}/$(basename $f)" | tee -a {log}
+        done
         date > {output}
         """
 
