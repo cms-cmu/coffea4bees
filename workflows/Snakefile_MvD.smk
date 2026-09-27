@@ -12,6 +12,8 @@
 #                 this roast's mixeddata_all); the mixed-data JCM refit with the TIGHT selection
 #                 (the mixeddata roast's is non-tight); all published to <PUB>/handoff/
 #   V.2 MvD       (falcon, Snakefile_MvD_2_train.smk, config `mvd:`)       -> friend/MvD
+#   V.2c closure  (cmslpc, this file, --targets all_V2c): the Phase C.4 analogue -- data vs
+#                 mixed x JCM x MvD + TTbar4b_from_MvD, no SvB: plots, cutflow, closure table
 #   V.3 SvB       (falcon, Snakefile_MvD_3_svb.smk, config `svb_mvd:`)     -> friend/SvB_MvD
 #   V.4 analysis  (cmslpc, this file, --targets all_V4)
 #                 processor on data / mixeddata_all (JCM x MvD, TTbar4b_from_MvD) / signal with the
@@ -119,6 +121,40 @@ def test_runner(cfg):
         cfg.setdefault('runner', {}).update({'condor': False, 'shared_dask': False, 'run_performance': False})
     return cfg
 
+def mvd_analysis_config(upstream, signal, svb=True, extra=None):
+    """The nominal Phase F.1 analysis config (inputs.analysis_config) with the background model
+    swapped: FvT -> MvD (V.2), the JCM -> V.1's tight mixed-data fit, and, with svb, SvB_MA -> V.3's
+    SvB_MvD. signal: MvD off (the MvD friend covers data + mixed data only; the processor reads
+    event.MvD whenever apply_MvD_weight is on). svb=False is V.2c's closure pass (no SvB at all).
+    `extra` (a config dict) is merged last."""
+    cfg = load_yaml(upstream)
+    require_tight(cfg, f"the upstream analysis config ({INPUTS['analysis_config']})")
+    # Data / signal from the committed metadata, mixeddata_all from the mixeddata roast. Files, not
+    # the directory: runner -m refuses two sources defining one dataset differently, and the
+    # directory's mixeddata_all.yml is the legacy sample.
+    cfg['dataset_location'] = [p for p in V1_METADATA_FILES if not p.endswith("TT.yml")] + [MIXED_URL]
+    c = cfg.setdefault('config', {})
+    c['apply_FvT'] = False
+    c['plot_ttbar_with_weights'] = False          # TTbar4b_from_d3 needs the FvT
+    c['JCM_file'] = MIXED_JCM
+    c['run_SvB'] = bool(svb)
+    friends = {} if signal else {'MvD': MVD_FRIEND}
+    if svb:
+        friends['SvB_MA'] = SVB_FRIEND
+    else:
+        c['SvB_MA'] = None
+        c['SvB'] = None
+    c['friends'] = friends
+    # runner.py applies friends_include to the MERGED set (per-year file + config.friends), so the
+    # friends named above must be listed too -- ['trigWeight'] alone silently dropped the MvD and
+    # the processor raised "apply_MvD=True but no 'MvD' entry found in friends dict".
+    c['friends_include'] = ['trigWeight', *friends]
+    c['apply_MvD'] = not signal
+    c['apply_MvD_weight'] = not signal
+    c['plot_ttbar_with_MvD_weights'] = not signal
+    c.update(copy.deepcopy(extra or {}))
+    return test_runner(cfg)
+
 module analysis:
     snakefile: "rules/analysis.smk"
     config: config
@@ -146,12 +182,14 @@ rule fetch_inputs:
 # ── Steps ─────────────────────────────────────────────────────────────────────
 
 include: "Snakefile_MvD_1_inputs.smk"
+include: "Snakefile_MvD_2c_closure.smk"
 include: "Snakefile_MvD_4_analysis.smk"
 
 rule all_MvD:
     default_target: True
     input:
         rules.all_V1.input,
+        rules.all_V2c.input,
         rules.all_V4.input
 
 localrules: fetch_inputs, all_MvD

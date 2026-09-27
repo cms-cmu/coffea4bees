@@ -24,26 +24,6 @@ V4_CONFIG_SIGNAL = f"{V4_OUT}analysis_config_signal.yml"
 V4_HISTALL = f"{V4_OUT}histAll_{V4_LABEL}.coffea"
 V4_FRIENDS_OK = f"{V4_OUT}friends_checked.done"
 
-def _v4_config(upstream, signal):
-    cfg = load_yaml(upstream)
-    require_tight(cfg, f"the upstream analysis config ({INPUTS['analysis_config']})")
-    # Data / signal from the committed metadata, mixeddata_all from the mixeddata roast. Files, not
-    # the directory: runner -m refuses two sources defining one dataset differently, and the
-    # directory's mixeddata_all.yml is the legacy sample.
-    cfg['dataset_location'] = [p for p in V1_METADATA_FILES if not p.endswith("TT.yml")] + [MIXED_URL]
-    c = cfg.setdefault('config', {})
-    c['apply_FvT'] = False
-    c['plot_ttbar_with_weights'] = False          # TTbar4b_from_d3 needs the FvT
-    c['JCM_file'] = MIXED_JCM
-    c['run_SvB'] = True
-    c['friends'] = {'SvB_MA': SVB_FRIEND} if signal else {'MvD': MVD_FRIEND, 'SvB_MA': SVB_FRIEND}
-    c['friends_include'] = ['trigWeight']         # the per-year ones; MvD / SvB_MA are named above
-    c['apply_MvD'] = not signal
-    c['apply_MvD_weight'] = not signal
-    c['plot_ttbar_with_MvD_weights'] = not signal
-    c.update(copy.deepcopy(V4.get('config') or {}))
-    return test_runner(cfg)
-
 rule V4_check_friends:
     output: touch(V4_FRIENDS_OK)
     log: f"{V4_OUT}logs/check_friends.log"
@@ -68,7 +48,7 @@ rule V4_config:
         friends = V4_FRIENDS_OK
     output: V4_CONFIG
     run:
-        write_yaml(output[0], _v4_config(input.upstream, signal=False))
+        write_yaml(output[0], mvd_analysis_config(input.upstream, signal=False, extra=V4.get('config')))
 
 rule V4_config_signal:
     input:
@@ -77,7 +57,7 @@ rule V4_config_signal:
         friends = V4_FRIENDS_OK
     output: V4_CONFIG_SIGNAL
     run:
-        write_yaml(output[0], _v4_config(input.upstream, signal=True))
+        write_yaml(output[0], mvd_analysis_config(input.upstream, signal=True, extra=V4.get('config')))
 
 use rule analysis_processor from analysis as V4_hists with:
     input:
