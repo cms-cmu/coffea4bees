@@ -48,6 +48,7 @@ class HemiMixer(Skimmer4b):
                 k_neighbors: int = 10,
                 collision_mode: str = "retry",
                 default_rank = 0,                 # int or [rp, rn] / (rp, rn) for per-side ranks
+                hemi_year_key: str = "merge_ul16",  # "year": one library per data year; "merge_ul16": UL16_pre/postVFP share UL16 (legacy)
                 object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
                 *args, **kwargs):
         super().__init__(
@@ -96,6 +97,9 @@ class HemiMixer(Skimmer4b):
         self.k_neighbors       = k_neighbors
         self.collision_mode    = collision_mode
         self.default_rank      = default_rank
+        if hemi_year_key not in ("year", "merge_ul16"):
+            raise ValueError(f"hemi_year_key must be 'year' or 'merge_ul16', got {hemi_year_key!r}")
+        self.hemi_year_key     = hemi_year_key
         logging.info(f"use_topk_matching = {self.use_topk_matching}, k_neighbors = {self.k_neighbors}, collision_mode = {self.collision_mode}, default_rank = {self.default_rank}")
 
         # Conditional matching variables based on boost correction mode
@@ -137,7 +141,7 @@ class HemiMixer(Skimmer4b):
         #
         #  Load the hemisphere libraries
         #
-        year_str = year.replace("_preVFP", "").replace("_postVFP", "")
+        year_str = year if self.hemi_year_key == "year" else year.replace("_preVFP", "").replace("_postVFP", "")
 
         test_load_hemi_kdTrees = True
         if test_load_hemi_kdTrees:
