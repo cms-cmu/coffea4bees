@@ -82,7 +82,7 @@ runs:
   svbfeynnet_run3.yml:
     - SvBFeynNet_friendtrees_Run3
   analysis_ttHbb_bkg_syst.yml:
-    - bkg_syst
+    - {snakefile: bkg_syst, upstream: ["histAll_NoJCM.coffea", "inputs/"]}
 
 not_covered:
   PhaseB_computeJCM: "no production config"
