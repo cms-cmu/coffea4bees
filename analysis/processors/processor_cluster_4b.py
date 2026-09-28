@@ -7,6 +7,8 @@ import awkward as ak
 from coffea4bees.analysis.processors.processor_HH4b import HH4bBaseProcessor
 from src.hist_tools import Collection, Fill
 from src.hist_tools.object import Jet
+from src.storage.eos import EOS
+from src.data_formats.root import TreeWriter, Chunk
 
 from coffea4bees.analysis.helpers.candidates_selection import cand_jet_selection
 from coffea4bees.jet_clustering.clustering_hist_templates import ClusterHists
@@ -19,6 +21,7 @@ from coffea4bees.jet_clustering.declustering import (
     get_list_of_all_sub_splittings,
     get_splitting_name,
 )
+from coffea4bees.jet_clustering.splitting_library import build_splitting_library_rows
 
 # Placeholder jet/pileup ID bit written to reclustered (synthetic) jets, which
 # carry no detector-level ID. 7 = "passes tight".
@@ -35,6 +38,12 @@ class analysis(HH4bBaseProcessor):
         self.clustering_pdfs_file = kwargs.pop("clustering_pdfs_file", "coffea4bees/jet_clustering/jet-splitting-PDFs-00-11-01/clustering_pdfs_vs_pT_XXX.yml")
         self.do_declustering      = kwargs.pop("do_declustering", False)
 
+        # Library of real splittings for library-based declustering (declustering_method: library).
+        # Written per chunk to <splitting_library_base_path>/<dataset>/ when a base path is given.
+        splitting_library_base_path = kwargs.pop("splitting_library_base_path", None)
+        self.splitting_library_base = EOS(splitting_library_base_path) if splitting_library_base_path not in (None, "None") else None
+        self.splitting_library_carry_fields = list(kwargs.pop("splitting_library_carry_fields", ["btagScore"]))
+
         kwargs.setdefault("apply_JCM",    False)
         kwargs.setdefault("run_SvB",      False)
         kwargs.setdefault("apply_btagSF", False)
@@ -42,6 +51,20 @@ class analysis(HH4bBaseProcessor):
         super().__init__(friends=friends, **kwargs)
         logging.info("\nInitialize cluster 4b Processor")
         logging.info(f"subtract_ttbar_with_weights = {self.subtract_ttbar_with_weights}")
+        logging.info(f"splitting_library_base = {self.splitting_library_base}, carry_fields = {self.splitting_library_carry_fields}")
+
+    def process(self, event):
+        """Record the chunk so dump_friend_trees can name its splitting-library file."""
+        if self.splitting_library_base is not None:
+            chunk = Chunk.from_coffea_events(event)
+            dataset = event.metadata["dataset"]
+            self._splitting_library_path = (
+                self.splitting_library_base
+                / f"{dataset}/splittingLib_{chunk.uuid}_{chunk.entry_start}_{chunk.entry_stop}.root"
+            )
+            self._splitting_library_source = {str(chunk.path): [(chunk.entry_start, chunk.entry_stop)]}
+            self._splitting_library_rows = None
+        return super().process(event)
 
     def build_candidates(self, selev, weights, list_weight_names, analysis_selections, processOutput):
         """No-op: candidate jets are built in custom_processing from btag-sorted jets."""
@@ -110,6 +133,12 @@ class analysis(HH4bBaseProcessor):
 
         clustered_jets = clean_ISR(clustered_jets, clustered_splittings)
 
+        if self.splitting_library_base is not None:
+            self._splitting_library_rows = build_splitting_library_rows(
+                selev, jets_for_clustering, clustered_splittings, clustered_jets,
+                carry_fields=self.splitting_library_carry_fields,
+            )
+
         cleaned_combined_jet_flavors = get_list_of_combined_jet_types(clustered_jets)
         cleaned_split_jet_flavors = []
         for _s in cleaned_combined_jet_flavors:
@@ -157,6 +186,29 @@ class analysis(HH4bBaseProcessor):
 
         return selev, selections.all(*allcuts)
 
+
+    def dump_friend_trees(self, selev, analysis_selections, shift_name):
+        """Write this chunk's splitting-library rows (nominal only). The returned
+        {dataset: {files, source, ...}} entry has the same shape as the hemisphere library's, so
+        workflows/scripts/regroup_hemi_library.py regroups it into a {year: [files]} registry."""
+        result = super().dump_friend_trees(selev, analysis_selections, shift_name)
+        if self.splitting_library_base is None or shift_name is not None or self._splitting_library_rows is None:
+            return result
+
+        rows = self._splitting_library_rows
+        entry = {
+            "total_events": self.nEvent,
+            "saved_events": len(selev),
+            "saved_splittings": len(rows),
+            "files": [],
+            "source": self._splitting_library_source,
+        }
+        if len(rows):
+            with TreeWriter()(self._splitting_library_path) as writer:
+                writer.extend(rows)
+            entry["files"].append(self._splitting_library_path)
+
+        return result | {self.dataset: entry}
 
     def histograms(self, event, selev, weights, analysis_selections, shift_name):
 
