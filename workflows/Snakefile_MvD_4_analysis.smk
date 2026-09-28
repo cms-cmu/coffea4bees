@@ -44,7 +44,7 @@ rule V4_check_friends:
 rule V4_config:
     input:
         upstream = UPSTREAM['analysis_config'][1],
-        jcm = MIXED_JCM,
+        jcm = MIXED_JCM_DEP,
         friends = V4_FRIENDS_OK
     output: V4_CONFIG
     run:
@@ -53,7 +53,7 @@ rule V4_config:
 rule V4_config_signal:
     input:
         upstream = UPSTREAM['analysis_config'][1],
-        jcm = MIXED_JCM,
+        jcm = MIXED_JCM_DEP,
         friends = V4_FRIENDS_OK
     output: V4_CONFIG_SIGNAL
     run:

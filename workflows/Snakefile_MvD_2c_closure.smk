@@ -37,7 +37,7 @@ rule V2c_check_friend:
 rule V2c_config:
     input:
         upstream = UPSTREAM['analysis_config'][1],
-        jcm = MIXED_JCM,
+        jcm = MIXED_JCM_DEP,
         friend = V2C_FRIEND_OK
     output: V2C_CONFIG
     run:
