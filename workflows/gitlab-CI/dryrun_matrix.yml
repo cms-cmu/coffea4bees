@@ -81,6 +81,7 @@ runs:
     - SvBFeynNet_friendtrees_Run3
 
 not_covered:
+  bkg_syst: "ttHbb background systematics multi-stage pipeline, executed on cmslpc/bridges2"
   PhaseE: "legacy mixed-data chain, superseded by MakeMixedData; fails -n with the Run 3 configs"
   PhaseB_computeJCM: "no production config"
   PhaseC_1_inputs: "pre-classifier-workflow stage file; PhaseC now includes src/classifier/workflow"
