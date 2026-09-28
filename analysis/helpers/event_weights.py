@@ -136,7 +136,7 @@ def add_pseudotagweights(
     event["weight_noJCM_noFvT"] = weights.partial_weight(include=all_weights)
 
     # MvD path for mixeddata_all: apply JCM to fourTag events, then MvD weight
-    if  apply_MvD:
+    if apply_MvD or (isMixedDataAll and JCM):
         if not JCM:
             logging.error("Need JCM to use apply_MvD!!!")
 

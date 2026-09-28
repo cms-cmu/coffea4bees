@@ -124,8 +124,7 @@ rule create_ttbar_psdata_config:
                     "ttbarWeight", "nIsoMuons", "xt", "weight", "aveAbsEtaOth", "xWbW",
                     "nAllNotCanJets", "dRjjOther", "xWt", "nPSTJets", "passXWt", "d03TruthMatch",
                     "xbW", "mcPseudoTagWeight", "d23TruthMatch", "m4j", "sublStM", "dRjjClose",
-                    "aveAbsEta", "stNotCan", "SB", "selectedViewTruthMatch", "d13TruthMatch",
-                    "genWeight"
+                    "aveAbsEta", "stNotCan", "SB", "selectedViewTruthMatch", "d13TruthMatch"
                 ],
             }
         }

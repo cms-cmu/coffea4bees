@@ -1,10 +1,64 @@
+# ==============================================================================
 # coffea4bees/workflows/Snakefile_bkg_syst_B_1_computeJCM.smk
-# Bkg_syst_B_1: Dedicated Jet Combinatoric Model (JCM) Fits for Each Subsample (v0..v15)
 #
-# Fits JCM transfer weights against 4b Data - ttbar for each statistically independent
-# subsample v0..v15 using coffea4bees/analysis/jcm_tools/make_jcm_weights.py.
-# Includes verification rules to run processor on a single subsample with calibrated JCM
-# and generate data-vs-model closure plots as in PhaseF_analysis.
+# Stage B_1: Dedicated Jet Combinatoric Model (JCM) Calibration per Subsample
+# ==============================================================================
+#
+# OVERVIEW & OBJECTIVE:
+# Derives 16 dedicated Jet Combinatoric Model (JCM) transfer functions (v0..v15)
+# for the ttH(bb) background systematics evaluation.
+#
+# In the multijet background estimation framework, 3-tag events are reweighted
+# into the 4-tag signal region using combinatoric pseudo-tagging probabilities.
+# Because each of the 16 pseudo-experiments (mixed data subsamples v0..v14 and
+# the nominal dataset) represents an independent statistical realization, a
+# dedicated JCM must be fitted for each individual subsample to avoid cross-sample
+# leakage and preserve true statistical independence during FvT training.
+#
+# MATHEMATICAL FORMULATION:
+# The JCM parameterizes the probability of promoting untagged jets to b-tags:
+#   P(pseudo-tag | n_untagged) = pseudoTagProb * [1 + pairEnhancement * (decay_factor)]
+# The transfer function is fitted in the Sideband (SB) region to match:
+#   Target: [Data (4b) - ttbar MC (4b)]
+#   Model:  Mixed Data (3b / unweighted 4b) * JCM(n_untagged, event_number)
+#
+# WORKFLOW EXECUTION PIPELINE:
+#   1. Input Preparation:
+#      - Reads baseline data & stitched ttbar MC histograms: inputs/histAll_NoJCM.coffea
+#      - Reads unweighted mixed data histograms for subsample v{m}:
+#        output/ttHbb_bkg_syst/bkg_syst_A_4_process_subsamples/histAll_ttHbb_mixeddata_v{m}.coffea
+#   2. JCM Parameter Fit (`make_jcm_weights.py`):
+#      - Executes `make_jcm_weights.py` per subsample with `--data4bName mix_v{m}`
+#        in the Sideband (SB) region, floating the background scale.
+#      - Derives:
+#        * pseudoTagProb (baseline pseudo-tag probability)
+#        * pairEnhancement & pairEnhancementDecay (correlation parameters)
+#        * tt4bSF (scale factor for ttbar 4b contribution)
+#   3. Model Export:
+#      - Writes YAML and TXT parameter tables:
+#        `jetCombinatoricModel_SB_mix_v{m}.yml`
+#      - Generates validation tables (`JCM_validation_SB_mix_v{m}.txt`) and
+#        yield projection reports (`JCM_expected_yields_SB_mix_v{m}.txt`).
+#   4. Single-Subsample Verification & Closure:
+#      - Runs `processor_ttHbb.py` on subsample v0 using its dedicated JCM.
+#      - Executes `makePlots.py` to produce data-vs-model closure distributions
+#        in the SR and SB regions (`plots_subsample_v0_closure/`).
+#
+# INPUTS:
+#   - Baseline Data/MC Coffea: output/ttHbb_bkg_syst/inputs/histAll_NoJCM.coffea
+#   - Subsample Coffea: output/ttHbb_bkg_syst/bkg_syst_A_4_process_subsamples/histAll_ttHbb_mixeddata_v{m}.coffea
+#   - Fit Configuration: coffea4bees/analysis/jcm_tools/metadata/ttHbb_subsample_jcm_config.yml
+#   - Plotting Metadata: coffea4bees/plots/metadata/plots_JCM_ttHbb.yml
+#
+# OUTPUTS:
+#   - Dedicated JCM YAMLs: output/ttHbb_bkg_syst/bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v{m}.yml
+#   - Diagnostic Plots: output/ttHbb_bkg_syst/bkg_syst_B_1_computeJCM/plots_v{m}/selJets_noJCM_n.png
+#   - Validation Closure: output/ttHbb_bkg_syst/bkg_syst_B_1_computeJCM/test_v0_closure/plots_subsample_v0_closure/
+#
+# EXECUTION ENVIRONMENT:
+#   - Cluster: cmslpc (CPU only, using `./run_container`)
+#   - Batch Scheduler: HTCondor / Dask (--cores 4)
+# ==============================================================================
 
 import os
 import yaml
