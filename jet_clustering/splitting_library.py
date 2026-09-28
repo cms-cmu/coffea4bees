@@ -144,6 +144,11 @@ def build_splitting_library_rows(selev, input_jets, splittings, clustered_jets_c
 #  Consumption side
 #
 
+def _content_key(flavor):
+    """Total (b, j) content of a jet_flavor tree, e.g. '((bj)j)b' -> '2b2j'."""
+    return f"{flavor.count('b')}b{flavor.count('j')}j"
+
+
 def _rapidity(pt, eta, mass):
     """Rapidity of (pt, eta, mass): y = asinh(pz / mT)."""
     pz = pt * np.sinh(eta)
@@ -166,7 +171,9 @@ class SplittingLibrary:
     (log pT, |eta|) of the parent.
 
     Lookup key: the exact jet_flavor if it has >= min_entries rows; else the child (b, j) content
-    summary (same b/j count per child, any tree); else the coarse splitting_name.
+    summary (same b/j count per child, any tree); else the parent's total (b, j) content (any
+    split). The library children bring their own flavors, so all three keep the event's b/j
+    count. Last resort, counted in n_coarse: the coarse splitting_name (can change it).
     """
 
     #: number of extra neighbours queried to leave room for same-event exclusion
@@ -192,8 +199,9 @@ class SplittingLibrary:
         # Lookup groups, finest first
         unique_flavors, inverse = np.unique(self.flavor, return_inverse=True)
         summary = np.array([str(get_splitting_summary(f)) for f in unique_flavors], dtype=object)[inverse]
+        content = np.array([_content_key(f) for f in unique_flavors], dtype=object)[inverse]
         coarse  = np.array([get_splitting_name(f) for f in unique_flavors], dtype=object)[inverse]
-        self._groups = [self._index(self.flavor), self._index(summary), self._index(coarse)]
+        self._groups = [self._index(self.flavor), self._index(summary), self._index(content), self._index(coarse)]
         self._trees = {}
         logging.info(f"SplittingLibrary: {len(self.flavor)} splittings, {len(self._groups[0])} exact types")
 
@@ -220,15 +228,19 @@ class SplittingLibrary:
 
     def resolve_keys(self, flavor):
         """Groups to try for a target jet_flavor, finest first, as [(level, key), ...]
-        (level 0 exact, 1 child-content summary, 2 coarse splitting_name). Starts at the finest
+        (level 0 exact, 1 child-content summary, 2 parent content, 3 coarse splitting_name; see the
+        class docstring). Starts at the finest
         group with >= min_entries rows (else the finest non-empty one) and continues coarser; the
         coarser groups are used when the finer one has only same-event candidates."""
         from coffea4bees.jet_clustering.declustering import get_splitting_name, get_splitting_summary
 
-        candidates = [flavor, str(get_splitting_summary(flavor)), get_splitting_name(flavor)]
+        candidates = [flavor, str(get_splitting_summary(flavor)), _content_key(flavor), get_splitting_name(flavor)]
         existing = [(level, key) for level, key in enumerate(candidates) if key in self._groups[level]]
         if not existing:
             raise KeyError(f"SplittingLibrary: no splittings compatible with {flavor}")
+        # the coarse level only when nothing content-preserving exists
+        if len(existing) > 1 and existing[-1][0] == 3:
+            existing = existing[:-1]
         for i, (level, key) in enumerate(existing):
             if len(self._groups[level][key]) >= self.min_entries:
                 return existing[i:]
@@ -299,6 +311,9 @@ class SplittingLibrary:
 
         if self.n_self_matches:
             logging.warning(f"SplittingLibrary.lookup: {self.n_self_matches} targets had only same-event candidates")
+        self.n_coarse = int(np.sum(level_used == 3))
+        if self.n_coarse:
+            logging.warning(f"SplittingLibrary.lookup: {self.n_coarse} targets used the coarse splitting_name group (b/j content may change)")
         return index, level_used
 
 
@@ -354,3 +369,44 @@ def library_child_flavors(library, index):
     child_A = np.array([c[0] for c in children], dtype=object)[inverse]
     child_B = np.array([c[1] for c in children], dtype=object)[inverse]
     return child_A, child_B
+
+
+def decluster_with_library(jets, library, event_ids, rank, *, scale_pt=True, boost_z=True):
+    """Library replacement for sample_PDFs_vs_pT + decluster_combined_jets.
+
+    jets:      jagged [event][jet] combined jets to decluster (pt, eta, phi, jet_flavor)
+    event_ids: (n_events, 3) int array of (run, luminosityBlock, event) for self-match exclusion
+    rank:      neighbour rank (int) for every jet
+    Returns the jagged child arrays (A, B) with pt, eta, phi, mass, jet_flavor, btag_string and
+    the library's carry fields (NaN for combined children).
+    """
+    from coffea.nanoevents.methods import vector
+
+    counts = np.asarray(ak.num(jets))
+    flat = ak.flatten(jets)
+    ids = np.repeat(np.asarray(event_ids, dtype=np.int64), counts, axis=0)
+    flavor = np.asarray(ak.to_list(flat.jet_flavor), dtype=object)
+
+    index, _ = library.lookup(flavor, np.asarray(flat.pt), np.asarray(flat.eta),
+                              ids[:, 0], ids[:, 1], ids[:, 2], rank)
+    kids = align_children(library, index, np.asarray(flat.pt), np.asarray(flat.eta), np.asarray(flat.phi),
+                          scale_pt=scale_pt, boost_z=boost_z)
+    child_flavor = dict(zip("AB", library_child_flavors(library, index)))
+
+    children = []
+    for tag in "AB":
+        k = kids[tag]
+        is_single = np.array([len(f) == 1 for f in child_flavor[tag]], dtype=bool)
+        btag = k.get("btagScore")
+        btag_string = [str(round(float(b), 3)) if (s and btag is not None) else "" for b, s in
+                       zip(btag if btag is not None else np.zeros(len(is_single)), is_single)]
+        fields = {
+            "pt": k["pt"], "eta": k["eta"], "phi": k["phi"], "mass": k["mass"],
+            "jet_flavor": ak.Array(list(child_flavor[tag])),
+            "btag_string": ak.Array(btag_string),
+        }
+        for field in library.carry_fields:
+            fields[field] = k[field]
+        children.append(ak.zip({n: ak.unflatten(v, counts) for n, v in fields.items()},
+                               with_name="PtEtaPhiMLorentzVector", behavior=vector.behavior))
+    return children[0], children[1]
