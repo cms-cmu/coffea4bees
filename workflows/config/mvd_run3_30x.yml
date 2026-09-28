@@ -79,6 +79,13 @@ svb_mvd:
     # MvD-weighted background keeps the template's weight-outlier cut (w < 1).
     --training: [--architecture, {n_features: 54}]
 
+# Floor p_mix4 at 0.05 in the processor steps (V.2c, V.4): MvD <= (p_d4 - p_t4)/0.05 <= 20. The 30x
+# MvD is over-confident on a few mixed events (SB: MvD > 50 carried 2,761 of the MvD-weighted multijet,
+# 19x the 1x; closure SB 0.977 unfloored). The cap at 20 moves >= 3.6 k of the SB multijet (1x: 0.17 %,
+# unchanged); 0.1 (cap 10) would over-correct (~1.02). The SvB training is unaffected: its weight-
+# outlier cut already drops these events. Analogue of nominal_run3_30x's FvT_pd3_floor.
+mvd_pmix4_floor: 0.05
+
 closure:
   label: "MvD_30x_closure"
   # The 1x reference holds the 1x MvD's weighted rows, which a different MvD must change; dump only.
