@@ -10,7 +10,7 @@ from coffea.nanoevents.methods import vector
 
 sys.path.insert(0, os.getcwd())
 from coffea4bees.jet_clustering.clustering import cluster_bs
-from coffea4bees.jet_clustering.declustering import clean_ISR, get_list_of_all_sub_splittings
+from coffea4bees.jet_clustering.declustering import clean_ISR, get_list_of_all_sub_splittings, make_synthetic_event
 from coffea4bees.jet_clustering.splitting_library import (
     build_splitting_library_rows,
     decode_flavor,
@@ -18,6 +18,7 @@ from coffea4bees.jet_clustering.splitting_library import (
     SplittingLibrary,
     align_children,
     library_child_flavors,
+    carry_child_fields,
 )
 from src.data_formats.root import TreeWriter
 
@@ -117,7 +118,7 @@ class splittingLibraryTestCase(unittest.TestCase):
 def make_toy_library(n_per_type=None, seed=11):
     """Library rows built from random children, parent = A + B."""
     rng = np.random.default_rng(seed)
-    n_per_type = n_per_type or {"bb": 400, "bj": 300, "(bj)b": 200, "((bj)j)b": 3, "((jj)b)b": 30, "(jb)b": 1, "(bj)(bj)": 1}
+    n_per_type = n_per_type or {"bb": 400, "bj": 300, "(bj)b": 200, "((bj)j)b": 3, "((jj)b)b": 30, "(jb)b": 1, "(bj)(bj)": 1, "(jj)(jj)": 1}
     rows = {k: [] for k in ["flavor", "run", "luminosityBlock", "event"] + [f"{t}_{v}" for t in "AB" for v in ("pt", "eta", "phi", "mass", "btagScore")]}
     for flavor, n in n_per_type.items():
         for i in range(n):
@@ -223,11 +224,12 @@ class splittingLibraryLookupTestCase(unittest.TestCase):
 
     def test_escalates_when_only_same_event(self):
         """With min_entries=1, (jb)b's exact group is its single row; a target from that row's own
-        event must move to the child-content group (shared with (bj)b). (bj)(bj) is alone at every
-        level -> last-resort self match, counted."""
+        event must move to the child-content group (shared with (bj)b). (bj)(bj) moves on to the
+        parent-content group 2b2j (shared with ((bj)j)b). (jj)(jj) is alone at every level ->
+        last-resort self match, counted."""
         lib = SplittingLibrary(self.rows, carry_fields=["btagScore"], min_entries=1)
         d = lib.data
-        for flavor, expect_level, expect_self in (("(jb)b", 1, 0), ("(bj)(bj)", 0, 1)):
+        for flavor, expect_level, expect_self in (("(jb)b", 1, 0), ("(bj)(bj)", 2, 0), ("(jj)(jj)", 0, 1)):
             row = np.where(lib.flavor == flavor)[0]
             index, level = lib.lookup(lib.flavor[row], d["pt"][row], d["eta"][row],
                                       d["run"][row], d["luminosityBlock"][row], d["event"][row], 0)
@@ -238,6 +240,53 @@ class splittingLibraryLookupTestCase(unittest.TestCase):
     def test_library_rank_wraps(self):
         index_big, _ = self._lookup(rank=10_000)
         self.assertTrue(np.all(index_big >= 0))
+
+
+class libraryDeclusteringTestCase(unittest.TestCase):
+    """make_synthetic_event with a library built from other toy events."""
+
+    @classmethod
+    def setUpClass(cls):
+        lib_selev, lib_jets = make_toy_events(n_events=400, seed=21)
+        lib_clustered, lib_splittings = cluster_bs(lib_jets, debug=False)
+        lib_clean = clean_ISR(lib_clustered, lib_splittings)
+        cls.lib_rows = build_splitting_library_rows(lib_selev, lib_jets, lib_splittings, lib_clean)
+        cls.lib = SplittingLibrary(cls.lib_rows, carry_fields=["btagScore"], min_entries=5)
+
+        cls.selev, cls.jets = make_toy_events(n_events=40, seed=5)
+        clustered, splittings = cluster_bs(cls.jets, debug=False)
+        cls.clustered = clean_ISR(clustered, splittings)
+        for field, values in carry_child_fields(cls.clustered, cls.jets, ["btagScore"]).items():
+            cls.clustered[field] = values
+        cls.event_ids = np.column_stack([np.asarray(cls.selev[f]) for f in ("run", "luminosityBlock", "event")]).astype(np.int64)
+
+    def _run(self, seed):
+        return make_synthetic_event(self.clustered, None, declustering_rand_seed=seed, b_pt_threshold=30,
+                                    library=self.lib, event_ids=self.event_ids)
+
+    def test_jet_content_preserved(self):
+        out = self._run(0)
+        n_b_in = [f.count("b") for f in ["".join(ev) for ev in ak.to_list(self.clustered.jet_flavor)]]
+        n_j_in = [f.count("j") for f in ["".join(ev) for ev in ak.to_list(self.clustered.jet_flavor)]]
+        self.assertEqual([ev.count("b") for ev in ak.to_list(out.jet_flavor)], n_b_in)
+        self.assertEqual([ev.count("j") for ev in ak.to_list(out.jet_flavor)], n_j_in)
+
+    def test_btag_scores_are_real(self):
+        """Every output b-tag score is either a target jet's own score (never declustered) or a
+        library child's score."""
+        out = self._run(0)
+        lib = np.concatenate([self.lib.data["A_btagScore"], self.lib.data["B_btagScore"]]).astype(np.float64)
+        allowed = np.concatenate([np.asarray(ak.flatten(self.jets.btagScore)), lib[~np.isnan(lib)]])
+        scores = np.asarray(ak.flatten(out.btagScore))
+        self.assertFalse(np.any(np.isnan(scores)))
+        # library values are stored as float32
+        self.assertLess(np.max(np.min(np.abs(scores[:, None] - allowed[None, :]), axis=1)), 1e-6)
+
+    def test_seeds_differ(self):
+        a, b = self._run(0), self._run(1)
+        self.assertFalse(np.allclose(np.asarray(ak.flatten(a.pt)), np.asarray(ak.flatten(b.pt))))
+        c = self._run(0)
+        np.testing.assert_array_equal(np.asarray(ak.flatten(a.pt)), np.asarray(ak.flatten(c.pt)))
 
 
 if __name__ == "__main__":
