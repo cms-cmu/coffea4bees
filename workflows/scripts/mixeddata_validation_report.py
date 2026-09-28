@@ -1,13 +1,12 @@
 """Mixed-data validation report (Snakefile_MakeMixedData_6_validation.smk, step M.6).
 
     mixeddata_validation_report.py study   STUDY.coffea  OUTDIR  [--n-subsamples 16]
-    mixeddata_validation_report.py cutflow CUTFLOW.yml   OUTDIR  --subsample K
 
 study:   plots from processor_study_mixed_data (hemisphere match distance, thrust delta-phi, jet
          multiplicity before/after mixing, selected jets raw vs mixed-JCM-weighted vs subsample v0)
          and the subsample overlap matrix (heatmap + csv + summary.yml).
-cutflow: four-tag cutflow page: multijet (mixeddata_all x mixed JCM) + ttbar MC vs 4b data, ttbar
-         pseudodata vs ttbar MC, one mixeddata_4b subsample (mixed + ttbar pseudodata) vs the model.
+(The M.6 cutflow page is the shared src/tools/cutflow_closure.py: --multijet sample4b
+--multijet-process mixeddata_all --pseudodata ttbar_PSData --compare mix_v<k>.)
 """
 import argparse
 import csv
@@ -22,10 +21,6 @@ import yaml
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-
-YEARS = ["2022_preEE", "2022_EE", "2023_preBPix", "2023_BPix",
-         "UL16_preVFP", "UL16_postVFP", "UL17", "UL18"]
-
 
 # ── study ────────────────────────────────────────────────────────────────────
 
@@ -201,112 +196,14 @@ def _study_index(outdir, files, summary):
         f.write(page)
 
 
-# ── cutflow ──────────────────────────────────────────────────────────────────
-
-def _group(key, k):
-    if key.startswith("data_"):
-        return "data"
-    if key.startswith("TTTo"):
-        return "ttbar_mc"
-    if key.startswith("mixeddata_all"):
-        return "multijet"
-    if key.startswith(f"mix_v{k}_") or key == f"mix_v{k}":
-        return "subsample"
-    if "psdata" in key.lower():
-        return "psdata"
-    return None
-
-
-def _year(key):
-    for y in sorted(YEARS, key=len, reverse=True):
-        if f"_{y}" in key:
-            return y
-    return None
-
-
-def _fmt(x):
-    return f"{x:,.0f}"
-
-
-def _ratio(n, d):
-    if d <= 0:
-        return "-"
-    err = np.sqrt(n) / d if n > 0 else 0.0
-    return f"{n / d:.3f} ± {err:.3f}"
-
-
-def cutflow(path, outdir, k):
-    os.makedirs(outdir, exist_ok=True)
-    with open(path) as f:
-        cf = yaml.safe_load(f)
-    counts = cf["counts4"]
-    cuts = []
-    for v in counts.values():
-        for c in (v or {}):
-            if c not in cuts:
-                cuts.append(c)
-    groups = {}          # (year|"all", group) -> {cut: count}
-    unknown = set()
-    for key, v in counts.items():
-        g = _group(key, k)
-        if g is None:
-            unknown.add(key)
-            continue
-        for y in ("all", _year(key) or "?"):
-            d = groups.setdefault((y, g), {})
-            for c, n in (v or {}).items():
-                d[c] = d.get(c, 0.0) + float(n or 0)
-    years = ["all"] + [y for y in YEARS if any(k2[0] == y for k2 in groups)]
-    head = ["cut", "multijet (mixed x JCM)", "ttbar MC", "Bkg", "data 4b", "data / Bkg",
-            "ttbar pseudodata", "PSdata / ttbar MC", f"subsample v{k}", f"v{k} / Bkg"]
-    txt, blocks = [], []
-    for y in years:
-        rows = []
-        for c in cuts:
-            mj = groups.get((y, "multijet"), {}).get(c, 0.0)
-            tt = groups.get((y, "ttbar_mc"), {}).get(c, 0.0)
-            da = groups.get((y, "data"), {}).get(c, 0.0)
-            ps = groups.get((y, "psdata"), {}).get(c, 0.0)
-            sb = groups.get((y, "subsample"), {}).get(c, 0.0)
-            bkg = mj + tt
-            rows.append([c, _fmt(mj), _fmt(tt), _fmt(bkg), _fmt(da), _ratio(da, bkg),
-                         _fmt(ps), _ratio(ps, tt), _fmt(sb), _ratio(sb, bkg)])
-        widths = [max(len(str(r[i])) for r in rows + [head]) for i in range(len(head))]
-        txt.append(("all years" if y == "all" else y))
-        txt.append("  ".join(h.ljust(w) for h, w in zip(head, widths)))
-        txt += ["  ".join(str(x).ljust(w) for x, w in zip(r, widths)) for r in rows]
-        txt.append("")
-        th = "".join(f"<th>{html.escape(h)}</th>" for h in head)
-        tr = "".join("<tr>" + "".join(f"<td>{html.escape(str(x))}</td>" for x in r) + "</tr>" for r in rows)
-        blocks.append(f"<h2>{'all years' if y == 'all' else y}</h2><table><tr>{th}</tr>{tr}</table>")
-    note = (f"<p>Four-tag counts (weighted). Multijet = mixeddata_all weighted by the mixed-data JCM; "
-            f"Bkg = multijet + ttbar MC. The ttbar pseudodata should follow the ttbar MC; subsample v{k} "
-            f"(one mixeddata_4b pseudo-experiment: mixed events + the ttbar pseudodata) should follow Bkg.</p>")
-    if unknown:
-        note += f"<p>Not grouped: {html.escape(', '.join(sorted(unknown)[:10]))}</p>"
-    style = ("<style>body{font-family:sans-serif} table{border-collapse:collapse;margin-bottom:1.5em}"
-             "td,th{border:1px solid #ccc;padding:2px 8px;text-align:right} th{background:#eee}"
-             "td:first-child{text-align:left}</style>")
-    with open(os.path.join(outdir, "cutflow_validation.html"), "w") as f:
-        f.write(f"<html><head><meta charset='utf-8'><title>mixed-data validation cutflow</title>{style}</head>"
-                f"<body><h1>Mixed-data validation cutflow</h1>{note}{''.join(blocks)}</body></html>")
-    with open(os.path.join(outdir, "cutflow_validation.txt"), "w") as f:
-        f.write("\n".join(txt))
-    print("\n".join(txt[:len(cuts) + 3]))
-
-
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("mode", choices=["study", "cutflow"])
+    ap.add_argument("mode", choices=["study"])
     ap.add_argument("input")
     ap.add_argument("outdir")
     ap.add_argument("--n-subsamples", type=int, default=16)
-    ap.add_argument("--subsample", type=int, default=0)
     a = ap.parse_args()
-    if a.mode == "study":
-        study(a.input, a.outdir, a.n_subsamples)
-    else:
-        cutflow(a.input, a.outdir, a.subsample)
+    study(a.input, a.outdir, a.n_subsamples)
 
 
 if __name__ == "__main__":
