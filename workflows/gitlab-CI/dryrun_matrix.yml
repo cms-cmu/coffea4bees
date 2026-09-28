@@ -99,7 +99,6 @@ not_covered:
   Run3MvD: "pre-roast MvD driver, superseded by MvD"
   Run3MvD_training: "pre-roast training driver, edit-the-vars style"
   Run3_SvB_training: "pre-roast training driver"
-  Run3_make_synthetic: "broken against rules/analysis.smk; superseded by DeClustered"
   Run3_training: "pre-roast training driver, edit-the-vars style"
   SvB_friendtrees_Run3: "no production config"
   analysis: "backward-compatibility wrapper for PhaseF_1_analysis"
