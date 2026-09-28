@@ -297,6 +297,7 @@ rule make_mixeddata_JCM:
             --jcm_config {input.jcm_cfg} \
             -m {input.plot_cfg} \
             -w {params.tag} \
+            --data4bName data \
             --combine_input_files 2>&1 | tee -a {log}
         ls -la {params.output_dir}
         """

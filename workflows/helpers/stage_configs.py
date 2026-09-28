@@ -212,6 +212,8 @@ def stage_phaseA_1_configs(config, out_a1, jcm_model_file):
     # 4. Analysis Config (with Calibrated Mixed-Data JCM)
     analysis_jcm_cfg = copy.deepcopy(analysis_unit_cfg)
     analysis_jcm_cfg["config"]["apply_JCM"] = True
+    analysis_jcm_cfg["config"]["apply_MvD"] = True
+    analysis_jcm_cfg["config"]["apply_MvD_weight"] = False
     jcm_calibrated_file = os.path.join(out_a1, "JCM_2_mixeddata_inclusive", f"jetCombinatoricModel_inclusive_{channel}_mixeddata.yml")
     analysis_jcm_cfg["config"]["JCM_file"] = jcm_calibrated_file
     if 'analysis_with_jcm' in phaseA_1 and isinstance(phaseA_1['analysis_with_jcm'], dict):
@@ -572,7 +574,7 @@ def stage_phaseF_1_configs(config, out_f1):
     for m in range(n_subsamples):
         closure_dir = os.path.join(out_f1, f"closure_v{m}")
         jcm_file = os.path.join(out, f"bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v{m}.yml")
-        fvt_friend = os.path.join(out, f"bkg_syst_C_1_FvT/friends/friends_FvT_{mix_name}_v{m}.json@@FvT")
+        fvt_friend = os.path.join(out, f"bkg_syst_C_FvT/friends/friends_FvT_{mix_name}_v{m}.json@@FvT")
 
         runner_dict = {
             "workers": 4,

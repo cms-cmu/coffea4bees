@@ -213,3 +213,41 @@ def resolve_config_section(config_dict, primary_key=None, fallback_keys=None, in
         if k not in res and k in config_dict:
             res[k] = copy.deepcopy(config_dict[k])
     return res
+
+
+def resolve_step_config(default_repo_path, overrides=None, output_path=None):
+    """
+    Resolves configuration for a workflow step:
+    - If `overrides` is a string (path to custom YAML), returns that path directly.
+    - If `overrides` is None or empty dict: returns `default_repo_path`.
+    - If `overrides` is a dict: loads `default_repo_path`, deep-merges `overrides`,
+      writes the effective resolved YAML to `output_path`, and returns `output_path`.
+    """
+    if not overrides:
+        return default_repo_path
+
+    if isinstance(overrides, str):
+        return overrides
+
+    if not os.path.exists(default_repo_path):
+        raise FileNotFoundError(f"Default config not found: {default_repo_path}")
+
+    with open(default_repo_path, 'r') as f:
+        resolved = yaml.safe_load(f) or {}
+
+    def _deep_merge(base, overlay):
+        for k, v in overlay.items():
+            if k in base and isinstance(base[k], dict) and isinstance(v, dict):
+                _deep_merge(base[k], v)
+            else:
+                base[k] = copy.deepcopy(v)
+
+    _deep_merge(resolved, overrides)
+
+    if output_path:
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        with open(output_path, 'w') as f:
+            yaml.dump(resolved, f, default_flow_style=False, sort_keys=False)
+        return output_path
+
+    return default_repo_path
