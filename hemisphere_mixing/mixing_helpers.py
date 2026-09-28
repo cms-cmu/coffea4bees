@@ -1069,6 +1069,11 @@ def update_pseudoTagWeight_of_mixed_data(event, JCM):
     new_pseudoTagWeight = np.full(len(event), event.weight)
     new_nJet_pseudotagged = np.zeros(len(event), dtype=int)
 
-    new_pseudoTagWeight[fourTagFilter], new_nJet_pseudotagged[fourTagFilter] = JCM( ak.num(fourTagEvents['Jet_untagged_loose'], axis=1) + 1, fourTagEvents.event)
+    # nSelJets - 3, the mixed-data JCM fit's variable (JCM(k) = the fit's weight for nSelJets = k+3),
+    # not nUntaggedLoose + 1: the two agree only with exactly four loose tags, and a mixed event with
+    # five or more was given too small a weight -- here, too small a subsample probability (Run 3
+    # subsamples ~4 % light vs mixed x JCM). Same fix as event_weights.py's MvD branch (a7de466da).
+    n_selected = ak.sum(fourTagEvents.Jet.selected, axis=1)
+    new_pseudoTagWeight[fourTagFilter], new_nJet_pseudotagged[fourTagFilter] = JCM( n_selected - 3, fourTagEvents.event)
     event["nJet_pseudotagged"] = new_nJet_pseudotagged
     event["pseudoTagWeight"] = new_pseudoTagWeight
