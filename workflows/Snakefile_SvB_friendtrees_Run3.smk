@@ -132,7 +132,7 @@ if config['reuse_legacy_friends']:
             ),
             legacy_json = LEGACY_SVB_JSON,
         output: f"{SvB_OUT}SvBfriend_mixeddata_data.json"
-        # container: None -> avoid nested apptainer under --profile lpc; ./run_container in the shell provides the container (see merge_cluster in Snakefile_Run3_make_synthetic).
+        # container: None -> avoid nested apptainer under --profile lpc; ./run_container in the shell provides the container (a container: directive would make snakemake enter apptainer, and ./run_container cannot enter it again).
         container: None
         log: f"{SvB_OUT}logs/merge_SvB_friendtrees_mixeddata.log"
         params:
@@ -169,7 +169,7 @@ else:
             ),
             data_json = "coffea4bees/metadata/friends/data_SvBfriend.json",
         output: f"{SvB_OUT}SvBfriend_mixeddata_data.json"
-        # container: None -> avoid nested apptainer under --profile lpc; ./run_container in the shell provides the container (see merge_cluster in Snakefile_Run3_make_synthetic).
+        # container: None -> avoid nested apptainer under --profile lpc; ./run_container in the shell provides the container (a container: directive would make snakemake enter apptainer, and ./run_container cannot enter it again).
         container: None
         log: f"{SvB_OUT}logs/merge_SvB_friendtrees_mixeddata.log"
         params:

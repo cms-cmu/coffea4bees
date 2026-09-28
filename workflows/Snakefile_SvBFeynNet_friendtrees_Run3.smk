@@ -179,7 +179,7 @@ if config['reuse_legacy_friends']:
             ),
             legacy_json = LEGACY_FEYNET_JSON,
         output: f"{FEYNNET_OUT}SvBFeynNetfriend_mixeddata_data.json"
-        # container: None -> avoid nested apptainer under --profile lpc; ./run_container in the shell provides the container (see merge_cluster in Snakefile_Run3_make_synthetic).
+        # container: None -> avoid nested apptainer under --profile lpc; ./run_container in the shell provides the container (a container: directive would make snakemake enter apptainer, and ./run_container cannot enter it again).
         container: None
         log: f"{FEYNNET_OUT}logs/merge_SvBFeynNet_friendtrees.log"
         params:
@@ -217,7 +217,7 @@ else:
                 year=config['years'],
             ),
         output: f"{FEYNNET_OUT}SvBFeynNetfriend_mixeddata_data.json"
-        # container: None -> avoid nested apptainer under --profile lpc; ./run_container in the shell provides the container (see merge_cluster in Snakefile_Run3_make_synthetic).
+        # container: None -> avoid nested apptainer under --profile lpc; ./run_container in the shell provides the container (a container: directive would make snakemake enter apptainer, and ./run_container cannot enter it again).
         container: None
         log: f"{FEYNNET_OUT}logs/merge_SvBFeynNet_friendtrees.log"
         params:

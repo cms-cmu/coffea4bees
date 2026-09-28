@@ -129,5 +129,8 @@ validation:
   ttbar: ["TTToHadronic", "TTToSemiLeptonic", "TTTo2L2Nu"]
   plot_template: "coffea4bees/plots/metadata/plotsDeClustered_validation.yml"
   # seed: 0          # seed plotted in D.5; default: drawn from the roast id
-  # known_counts: <blessed cutflow_declustered.yml, once the first roast has written one>
+  # D.4 cutflow check against the blessed counts of roast declustered_run3_20260927_7e9990e-f0d7cdf, after the D.3 d4_to_t4 rerun
+  # (its D4/cutflow_declustered.yml). Same seed + inputs -> same counts; the check fails at
+  # error_threshold (default 0.001) relative difference.
+  known_counts: "coffea4bees/analysis/tests/known_fullCounts_declustered_Run3.yml"
   # error_threshold: 0.001

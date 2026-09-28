@@ -1,6 +1,6 @@
 # coffea4bees/workflows/Snakefile_DeClustered_4_validate.smk
 # D.4: validate the synthetic data against the real 4b data it was made from.
-# (scripts/synthetic-dataset-analyze-Run3-all.sh + synthetic-dataset-analyze-cutflow-Run3.sh)
+# (formerly scripts/synthetic-dataset-analyze-Run3-all.sh + the analyze-cutflow check)
 #
 #   D4_hist_config                    the upstream B.1 noJCM runner config, pointed at the multijet
 #                                     dataset (this roast's EOS handoff, as a consumer would read it)
