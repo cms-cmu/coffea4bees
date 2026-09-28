@@ -9,8 +9,8 @@
 # (subtract_ttbar: false: stack = declustered data incl. ttbar; ttbar MC a reference line, no
 #  pseudodata)
 #
-#   D5_cutflow_page                  cutflow page: data 4b vs model (seed k and the mean over seeds,
-#                                    seed-to-seed rms)
+#   D5_cutflow_page                  closure table (the shared cutflow_closure_table rule): data 4b vs
+#                                    declustered seed k + ttbar MC, pseudodata vs ttbar MC
 #   D5_plot_config + D5_plots        makePlots gallery (SR / SB, ratios)
 #   D5_pdf_page                      index of D.2's PDFs + sampling-test plots, per era
 
@@ -27,20 +27,24 @@ SYN_PROCESS = f"{SYN_PREFIX}_v{VAL_SEED}"
 D5_PLOT_CONFIG = f"{D5_OUT}plotsDeClustered_validation.yml"
 PLOT_YEAR = "Run3" if any("202" in y for y in YEARS) else "RunII"
 
-rule D5_cutflow_page:
-    input: f"{D4_OUT}cutflow_declustered.yml"
+use rule cutflow_closure_table from analysis as D5_cutflow_page with:
+    # the shared closure table (src/tools/cutflow_closure.py, as Phases B / C.4 / F), with the
+    # declustered sample as the Multijet column and the ttbar pseudodata vs tt 4b MC
+    input:
+        cutflow_yml = f"{D4_OUT}cutflow_declustered.yml",
+        validation_txt = f"{D4_OUT}cutflow_validation_declustered.txt"
     output:
         html = f"{D5_OUT}cutflow_monitoring.html",
         txt = f"{D5_OUT}cutflow_monitoring.txt"
     log: f"{D5_OUT}logs/cutflow_page.log"
     params:
-        ttbar_flag = "--psdata " + PS_NAME if SUBTRACT_TT else "--ttbar-in-sample"
-    shell:
-        """
-        {WRAPPER} {PYTHON} coffea4bees/workflows/scripts/declustered_validation_report.py cutflow \
-            {input} {D5_OUT} --prefix {SYN_PREFIX} --seed {VAL_SEED} --n-seeds {N_SEEDS} \
-            {params.ttbar_flag} 2>&1 | tee {log}
-        """
+        title = f"{config.get('label', 'declustered')}_declustered_seed{VAL_SEED}",
+        multijet = "data3b",              # unused: --multijet-process sets the Multijet column
+        ttbar = " ".join(TTBAR),
+        extra_arguments = " ".join(["--multijet-process", SYN_PROCESS]
+                                   + (["--pseudodata", PS_NAME] if SUBTRACT_TT else [])),
+        run_container_wrapper = WRAPPER,
+        python_bin = PYTHON
 
 rule D5_plot_config:
     input: VAL.get('plot_template', "coffea4bees/plots/metadata/plotsDeClustered_validation.yml")
