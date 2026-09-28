@@ -74,8 +74,24 @@ config.setdefault('jcm_template', os.path.join(out_b1, "jetCombinatoricModel_SB_
 
 # Inputs from Stage C_1
 out_c1 = f"{out}bkg_syst_C_1_inputs/inputs/"
-nominal_ci_json = os.path.join(out_c1, "classifier_inputs_ttHbb.json")
+nominal_ci_json = config.get('nominal_classifier_inputs', os.path.join(out_c1, "classifier_inputs_ttHbb_stitched.json"))
+if not os.path.exists(nominal_ci_json) and os.path.exists(os.path.join(out_c1, "classifier_inputs_ttHbb_stitched.json")):
+    nominal_ci_json = os.path.join(out_c1, "classifier_inputs_ttHbb_stitched.json")
 mixed_ci_template = os.path.join(out_c1, "classifier_inputs_mixeddata_ttHbb_v{m}.json")
+
+RUN2_ERAS = {
+    "UL16_preVFP": ["C", "D", "E", "F"],
+    "UL16_postVFP": ["F", "G", "H"],
+    "UL17": ["B", "C", "D", "E", "F"],
+    "UL18": ["A", "B", "C", "D"],
+}
+RUN2_YEARS = ["UL16_preVFP", "UL16_postVFP", "UL17", "UL18"]
+_config_years = config.get('years', None)
+if _config_years is not None:
+    if isinstance(_config_years, str):
+        _config_years = [_config_years]
+    RUN2_YEARS = [y for y in RUN2_YEARS if y in _config_years]
+    RUN2_ERAS = {y: RUN2_ERAS[y] for y in RUN2_YEARS if y in RUN2_ERAS}
 
 # Container & SLURM Resources
 CLASSIFIER_CONTAINER = "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:classifier_latest"
@@ -105,11 +121,18 @@ rule create_fvt_train_config:
         mix = "{m}",
         out_model_dir = lambda w: f"{models_dir}mix_{w.m}/",
         eos_base = config.get('eos_base', "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2"),
-        epochs = config.get('epochs', 10),
-        batch_size = config.get('batch_size', 1024),
+        epochs = config.get('epochs', 20),
+        batch_size = config.get('batch_size', 2048),
         kfolds = max(2, int(config.get('kfolds', 3))),
+        kfold_offset = config.get('kfold_offset', 0),
         precision = config.get('precision', "fp16"),
+        training_schedule = config.get('training_schedule', "EarlyStopStep"),
+        early_stop_opts = (
+            {k if k.startswith("es_") else f"es_{k}": v for k, v in config.get('early_stop', config.get('early_stop_opts', {})).items()}
+            if (config.get('early_stop') or config.get('early_stop_opts')) else {"es_patience": 3, "es_min_delta": 0.0001, "es_min_epoch": 8}
+        ),
         multisample_ds = config.get('multisample_dataset_name', 'mixeddata_4b'),
+        disable_benchmark = config.get('disable_benchmark', False),
     run:
         m = wildcards.m
         mixed_ci = mixed_ci_template.format(m=m)
@@ -127,16 +150,26 @@ rule create_fvt_train_config:
             f'--friends "" {nominal_ci_json}@@HCR_input {mixed_ci}@@HCR_input',
         ]
         
+        model_options = [
+            f"--kfolds {params.kfolds}",
+            "--kfold-seed FvT random",
+            f"--kfold-seed-offsets {params.kfold_offset}",
+            f"--training {params.training_schedule}",
+            {"epoch": params.epochs, "bs_init": params.batch_size, **params.early_stop_opts},
+            "--finetuning FixedStep",
+            {"epoch": 1, "bs_init": 16384},
+        ]
+        
         train_cfg = {
             "main": {
                 "module": "train",
                 "option": [
                     "--max-loaders 2",
-                    "--max-trainers 2",
+                    "--max-trainers 3",
                     "--device cuda cpu",
                 ]
             },
-            "data": [
+            "dataset": [
                 {
                     "module": "HCR.FvT.TrainBaseline",
                     "option": dataset_options
@@ -145,13 +178,7 @@ rule create_fvt_train_config:
             "model": [
                 {
                     "module": "HCR.FvT.baseline.Train",
-                    "option": [
-                        f"--kfolds {params.kfolds}",
-                        "--kfold-seed FvT random",
-                        "--training EarlyStopStep",
-                        {"epoch": params.epochs, "bs_init": params.batch_size},
-                        f"--precision {params.precision}",
-                    ]
+                    "option": model_options
                 }
             ],
             "setting": [
@@ -164,7 +191,52 @@ rule create_fvt_train_config:
                 {
                     "module": "Monitor",
                     "option": [
+                        {"enable": params.training_schedule == "EarlyStopStep"},
                         {"address": f"barista-monitor-mix{m}"}
+                    ]
+                },
+                {
+                    "module": "cms.MC_TTbar",
+                    "option": [
+                        {"datasets": [
+                            "TTToSemiLeptonic_stitched",
+                            "TTToHadronic_stitched",
+                            "TTTo2L2Nu_stitched",
+                        ]}
+                    ]
+                },
+                {
+                    "module": "cms.CollisionData",
+                    "option": [
+                        {
+                            "eras": RUN2_ERAS,
+                            "years": RUN2_YEARS,
+                        }
+                    ]
+                },
+                {
+                    "module": "HCR.InputBranch",
+                    "option": [
+                        {"feature_ancillary": ["xW", "nSelJets", "xbW", "year"]}
+                    ]
+                },
+                {
+                    "module": "ROOT",
+                    "option": [
+                        {"friend_allow_missing": False}
+                    ]
+                },
+                {
+                    "module": "ml.DataLoader",
+                    "option": [
+                        {"optimize_sliceable_dataset": True, "num_workers": 2, "batch_eval": 65536}
+                    ]
+                },
+                {
+                    "module": "ml.Training",
+                    "option": [
+                        {"precision": params.precision},
+                        {"disable_benchmark": params.disable_benchmark}
                     ]
                 }
             ]

@@ -6,6 +6,8 @@ for the two-stage closure test (runTwoStageClosure.py), eliminating intermediate
 
 import os
 import sys
+sys.path.insert(0, ".")
+sys.path.insert(0, "coffea4bees")
 import argparse
 import logging
 import numpy as np

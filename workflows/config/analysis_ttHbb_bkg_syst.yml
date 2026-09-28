@@ -247,7 +247,7 @@ classifier_setting:
       - batch_eval: 65536
   - module: ROOT
     option:
-      - friend_allow_missing: true
+      - friend_allow_missing: false
   - module: cms.MC_TTbar
     option:
       - datasets:
@@ -269,7 +269,6 @@ classifier_setting:
   - module: HCR.InputBranch
     option:
       - feature_ancillary: [xW, nSelJets, xbW, year]
-      - mass_regions: [SR, SB]
   - module: ml.Training
     option:
       - precision: fp16
@@ -350,7 +349,7 @@ phase_e_fvt:
   output_path: "bkg_syst_C_1_FvT/"
   eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2"
   plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
-  nominal_classifier_inputs: "coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json"
+  nominal_classifier_inputs: "coffea4bees/metadata/datasets/classifier_inputs_ttHbb_stitched.json"
   mixed_classifier_inputs_template: "output/ttHbb_bkg_syst/bkg_syst_A_4_process_subsamples/histAll_ttHbb_mixeddata_v{m}.json"
   jcm_template: "output/ttHbb_bkg_syst/bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v{m}.yml"
   precision: "fp16"

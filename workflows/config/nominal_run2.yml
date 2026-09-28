@@ -1,8 +1,8 @@
 # ==============================================================================
 # GLOBAL WORKFLOW CONFIGURATION
 # ==============================================================================
-label: "TESTRun2"
-output_path: "output/TESTRun2/"
+label: "HH4b_nominal_Run2"
+output_path: "output/HH4b_nominal_Run2/"
 
 # Datasets for the main analysis processor (Phase F.1: per-era data jobs, per-year MC jobs).
 # Phase B.2 has its own list (classifier_inputs.datasets), B.1/C.4 use data + ttbar internally.
@@ -125,7 +125,7 @@ svb:
 # and the merge step fails with "cp: cannot stat ..." if this points there.
 # {roast_id} is resolved in helpers/common.smk: `roast` passes --config roast_id=<id>
 # so every production run gets its own directory; outside roast it defaults to `label`
-# (i.e. .../HH4b_prod/TESTRun2/classifier_inputs/ for this file).
+# (i.e. .../HH4b_prod/HH4b_nominal_Run2/classifier_inputs/ for this file).
 classifier_inputs:
   # FvT trains on 3b vs 4b detector data with ttbar subtracted, SvB on signal vs background:
   # the classifier-input friend trees are needed for data (per era), ttbar and the signals.

@@ -73,9 +73,9 @@ os.makedirs(configs_dir, exist_ok=True)
 eos_base = config.get('eos_base', "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2")
 
 out_c1 = f"{out}bkg_syst_C_1_inputs/inputs/"
-nominal_ci_json = config.get('nominal_classifier_inputs', os.path.join(out_c1, "classifier_inputs_ttHbb.json"))
-if not os.path.exists(nominal_ci_json) and os.path.exists(os.path.join(out_c1, "classifier_inputs_ttHbb.json")):
-    nominal_ci_json = os.path.join(out_c1, "classifier_inputs_ttHbb.json")
+nominal_ci_json = config.get('nominal_classifier_inputs', os.path.join(out_c1, "classifier_inputs_ttHbb_stitched.json"))
+if not os.path.exists(nominal_ci_json) and os.path.exists(os.path.join(out_c1, "classifier_inputs_ttHbb_stitched.json")):
+    nominal_ci_json = os.path.join(out_c1, "classifier_inputs_ttHbb_stitched.json")
 
 RUN2_ERAS = {
     "UL16_preVFP": ["C", "D", "E", "F"],

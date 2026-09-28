@@ -231,7 +231,7 @@ rule create_fvt_train_config:
                 {
                     "module": "ROOT",
                     "option": [
-                        {"friend_allow_missing": True}
+                        {"friend_allow_missing": False}
                     ]
                 },
                 {

@@ -69,19 +69,19 @@ python_bin = config.get('python_bin', 'python')
 condor_flags = "" if config.get("test", False) else "--shared-dask --condor --worker-memory 4GB"
 
 multisample_ds_yaml = config.get('multisample_dataset_yaml', f"{out}coffea4bees/metadata/datasets/mixeddata_4b.yml")
-nominal_ci_json = config.get('nominal_classifier_inputs', "coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json")
+nominal_ci_json = config.get('nominal_classifier_inputs', "coffea4bees/metadata/datasets/classifier_inputs_ttHbb_stitched.json")
 
 localrules: all_bkg_syst_C_1, all_inputs_nominal, all_inputs_mixeddata, stage_nominal_inputs, stage_mixeddata_subsample_inputs
 
 # ── Master Target ─────────────────────────────────────────────────────────────
 rule all_bkg_syst_C_1:
     input:
-        f"{inputs_dir}classifier_inputs_ttHbb.json",
+        f"{inputs_dir}classifier_inputs_ttHbb_stitched.json",
         expand(f"{inputs_dir}classifier_inputs_mixeddata_ttHbb_v{{m}}.json", m=MIX_INDICES)
 
 rule all_inputs_nominal:
     input:
-        f"{inputs_dir}classifier_inputs_ttHbb.json"
+        f"{inputs_dir}classifier_inputs_ttHbb_stitched.json"
 
 rule all_inputs_mixeddata:
     input:
@@ -92,7 +92,7 @@ rule stage_nominal_inputs:
     input:
         nominal_ci_json
     output:
-        f"{inputs_dir}classifier_inputs_ttHbb.json"
+        f"{inputs_dir}classifier_inputs_ttHbb_stitched.json"
     shell:
         """
         set -eo pipefail
@@ -104,7 +104,7 @@ rule stage_nominal_inputs:
 # Subsamples contain hemisphere-mixed multijet data + sliced PSttbar MC.
 source_mixed_ci_template = config.get(
     'source_mixed_ci_template',
-    "coffea4bees/metadata/datasets/classifier_inputs_mixeddata/classifier_inputs_mixeddata_ttHbb_v{m}.json"
+    os.path.join(out, "bkg_syst_A_4_process_subsamples/classifier_inputs/classifier_inputs_mixeddata_ttHbb_v{m}.json")
 )
 
 rule stage_mixeddata_subsample_inputs:
