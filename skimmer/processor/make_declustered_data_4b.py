@@ -1,4 +1,5 @@
 import yaml
+import fsspec
 from coffea4bees.skimmer.processor.skimmer_4b_base import Skimmer4b
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
 from coffea4bees.analysis.helpers.candidates_selection import cand_jet_selection
@@ -111,7 +112,9 @@ class DeClusterer(Skimmer4b):
 
         if clustering_pdfs_file != "None":
             if clustering_pdfs_file not in self._clustering_pdfs_cache:
-                with open(clustering_pdfs_file, "r") as f:
+                # fsspec, not open(): this runs in the condor workers, and a roast publishes the
+                # PDFs to EOS (root://...) rather than into the checkout the workers are shipped.
+                with fsspec.open(clustering_pdfs_file, "r") as f:
                     self._clustering_pdfs_cache[clustering_pdfs_file] = yaml.safe_load(f)
                 logging.info(f"Loaded {len(self._clustering_pdfs_cache[clustering_pdfs_file].keys())} PDFs from {clustering_pdfs_file}\n")
             clustering_pdfs = self._clustering_pdfs_cache[clustering_pdfs_file]
@@ -228,7 +231,11 @@ class DeClusterer(Skimmer4b):
         #
         if self.subtract_ttbar_with_weights:
 
-            pass_ttbar_filter_selev = subtract_ttbar_with_FvT(selev, dataset, year)
+            # These are FOUR-tag events: d4_to_t4, as processor_HH4b does for its 4b events. The
+            # helper's default, d3_to_t3, is the 3b ttbar fraction (right for the mixer's 3b
+            # events) and over-subtracted the 4b data by ~1.44x the ttbar MC (roast
+            # declustered_run3_20260927_7e9990e-f0d7cdf).
+            pass_ttbar_filter_selev = subtract_ttbar_with_FvT(selev, dataset, year, "d4_to_t4")
 
             pass_ttbar_filter = np.full( len(event), True)
             pass_ttbar_filter[ selections.all(*cumulative_cuts) ] = pass_ttbar_filter_selev

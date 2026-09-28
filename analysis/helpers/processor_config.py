@@ -22,10 +22,18 @@ def processor_config(processName, dataset, event, overrides=None):
     # Set process type flags
     #
     config["isMC"]     = False if "data"    in processName else True
-    config["isPSData"] = True  if ("psdata" in processName.lower() or "ps_data" in processName.lower() or "psdata" in dataset.lower()) else False
+    # ttbar pseudodata (skimmer/processor/sub_sample_MC.py): accept/reject-unweighted MC, so it is
+    # data-like -- unit weights, no MC weights (its genWeight branch is dropped at the skim). The
+    # dataset is published as `ttbar_PSData`, which the old lowercase "ps_data" test missed (and whose
+    # capital "Data" also escaped the "data" isMC test), so it was weighted as MC.
+    config["isPSData"] = "ps_data" in processName.lower() or "psdata" in processName.lower() or "psdata" in dataset.lower()
+    if config["isPSData"]:
+        config["isMC"] = False
     config["isMixedData"]    = not (dataset.find("mix_v") == -1) or not (dataset.find("mix_noTT_v") == -1) or not (dataset.find("mix_pz_v") == -1) or not (dataset.find("mixeddata_all") == -1) or not (dataset.find("mixeddata") == -1) or not (dataset.find("mixed_data") == -1)
     config["isMixedDataAll"] = "mixeddata_all" in dataset or "mixeddata" in dataset
     config["isSignal"] = False if processName.startswith(("data", 'syn', 'TT', 'mix')) else True
+    if config["isPSData"]:
+        config["isSignal"] = False
     config["isRun3"] = True if "202" in dataset else False
 
     if config["isMixedData"]:

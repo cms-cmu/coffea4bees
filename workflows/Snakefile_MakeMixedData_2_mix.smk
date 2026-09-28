@@ -48,6 +48,7 @@ rule M2_config:
                    'k_neighbors': int(MIX.get('k_neighbors', 10)),
                    'collision_mode': MIX.get('collision_mode', 'retry'),
                    'use_boost_corrected_matching': bool(MIX.get('use_boost_corrected_matching', True)),
+                   'hemi_year_key': HEMI_YEAR_KEY,
                    'friends': {'FvT': FVT},
                    'friends_include': ['FvT']}
         cfg = processor_config(section, inherit_config=False,
@@ -95,20 +96,31 @@ rule M2_dataset_yml:
         {WRAPPER} {PYTHON} src/tools/make_dataset_yml.py -i {input} -o {output} -n {MIX_NAME} 2>&1 | tee {log}
         """
 
-rule M2_publish:
+rule M2_check:
+    """Every year must have mixed files: an all-bad-files skim otherwise publishes `{}`."""
     input: M2_DATASET
+    output: f"{M2_OUT}dataset_checked.done"
+    run:
+        check_dataset_yml(input[0], MIX_NAME, YEARS)
+        with open(output[0], "w") as f:
+            f.write("ok\n")
+
+rule M2_publish:
+    input:
+        dataset = M2_DATASET,
+        checked = f"{M2_OUT}dataset_checked.done"
     output: M2_PUBLISHED
     log: f"{M2_OUT}logs/publish.log"
     shell:
         """
         set -eo pipefail
         {EOS_PROXY}
-        xrdcp -f -p {input} "{HANDOFF}/$(basename {input})" 2>&1 | tee {log}
-        echo "published {input} -> {HANDOFF}/$(basename {input})" | tee -a {log}
+        xrdcp -f -p {input.dataset} "{HANDOFF}/$(basename {input.dataset})" 2>&1 | tee {log}
+        echo "published {input.dataset} -> {HANDOFF}/$(basename {input.dataset})" | tee -a {log}
         date > {output}
         """
 
 rule all_M2:
     input: M2_PUBLISHED
 
-localrules: M2_config, M2_merge, M2_dataset_yml, M2_publish, all_M2
+localrules: M2_config, M2_merge, M2_dataset_yml, M2_check, M2_publish, all_M2

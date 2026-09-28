@@ -1931,9 +1931,26 @@ class closure:
         self.fit_parameters_error[basis] = np.array([self.closure_TF1[basis].GetParError (b) for b in range(n)])
         self.getParameterDistribution(basis)
 
-        for _bin in range(1, self.nBins_closure + 1):
+        for _bin in range(1, self.nBins_rebin + 1):
             self.closure_TH1[basis].SetBinContent(_bin, self.closure_TF1[basis].Eval(_bin))
             # self.closure_TH1[basis].SetBinError  (_bin, self.data_obs_closure.GetBinError(_bin))
+            self.closure_TH1[basis].SetBinError  (_bin, 0.0)
+
+        for i in range(n):
+            _bin = self.nBins_rebin + 1 + i
+            c_val = self.fit_parameters[basis][i]
+            if i > basis:
+                # Constrained parameter: pull relative to prior
+                sigma_prior = (abs(self.multijet.cUp[self.multijet.basis][i]) if c_val > 0 else abs(self.multijet.cDown[self.multijet.basis][i])) / (nMixes**0.5)
+                val = -c_val / sigma_prior if sigma_prior > 0 else (-c_val / self.fit_parameters_error[basis][i] if self.fit_parameters_error[basis][i] > 0 else 0.0)
+            else:
+                # Unconstrained parameter: pull relative to post-fit error
+                val = -c_val / self.fit_parameters_error[basis][i] if self.fit_parameters_error[basis][i] > 0 else 0.0
+            self.closure_TH1[basis].SetBinContent(_bin, val)
+            self.closure_TH1[basis].SetBinError  (_bin, 0.0)
+
+        for _bin in range(self.nBins_rebin + 1 + n, self.nBins_closure + 1):
+            self.closure_TH1[basis].SetBinContent(_bin, 0.0)
             self.closure_TH1[basis].SetBinError  (_bin, 0.0)
 
         self.f.cd(self.channel)
@@ -2426,11 +2443,7 @@ class closure:
 
         parameters['ratioLines'] = [[self.fit_x_min,         parameters['rMin'], self.fit_x_min,         parameters['rMax']],
                                     [self.nBins_rebin + 0.5, parameters['rMin'], self.nBins_rebin + 0.5, parameters['rMax']]]
-        # parameters['xMax'] = self.nBins_rebin + self.multijet.basis + 1.5 if not plotSpuriousSignal else self.nBins_rebin+basis + 1.5
-        if plotSpuriousSignal:
-            parameters['xMax'] = self.nBins_rebin + 0.5 + max(self.multijet.basis, basis) + 1
-        else:
-            parameters['xMax'] = self.nBins_rebin + 0.5 + max(self.multijet.basis - basis, 0)
+        parameters['xMax'] = self.nBins_rebin + 0.5 + max(self.multijet.basis, basis) + 1
 
         parameters['outputDir'] = output_dir
 

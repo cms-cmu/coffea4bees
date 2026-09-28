@@ -214,6 +214,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         apply_btagSF: bool = True,
         apply_FvT: bool = True,
         FvT_pd3_floor: float = 0.0,
+        MvD_pmix4_floor: float = 0.0,
         apply_boosted_veto: bool = False,
         apply_lepton_veto: bool = False,
         run_dilep_ttbar_crosscheck: bool = False,
@@ -282,6 +283,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.apply_btagSF = apply_btagSF
         self.apply_FvT = apply_FvT
         self.FvT_pd3_floor = FvT_pd3_floor  # 0 = off; see load_FvT
+        self.MvD_pmix4_floor = MvD_pmix4_floor  # 0 = off; see load_MvD
         self.apply_MvD = apply_MvD
         self.apply_MvD_weight = apply_MvD_weight
         self.run_SvB = run_SvB
@@ -445,7 +447,12 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             self.config = processor_config(self.processName, self.dataset, event)
             # print("HACK")
             if self.config["isRun3"]:
-                self.config["isSyntheticData"] = bool(self.config["isMixedData"]) or self.config["isSyntheticData"]
+                # Mixed data and ttbar pseudodata carry jets already corrected when they were
+                # skimmed: take them as stored (no Run 3 JEC re-derivation in jet_selection). The
+                # pseudodata inside mixeddata_4b already got this via isMixedData; standalone
+                # ttbar_PSData (isMC False) was otherwise re-corrected as DATA, shifting dijet masses.
+                self.config["isSyntheticData"] = (bool(self.config["isMixedData"]) or self.config["isSyntheticData"]
+                                                  or bool(self.config["isPSData"]))
                 self.config["fourTag_use_tight"] = self.fourTag_use_tight
             logging.debug(f'{self.chunk} config={self.config}, for file {self.fname}\n')
 
@@ -929,6 +936,17 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             event["MvD"] = read_MvD_friend(self.target, self.friends["MvD"])
         else:
             raise ValueError("apply_MvD=True but no 'MvD' entry found in friends dict")
+
+        # The MvD analogue of FvT_pd3_floor: an over-confident MvD puts p_mix4 ~ 0 on a few mixed
+        # events and MvD = (p_d4 - p_t4)/p_mix4 explodes (the 30x MvD: events with MvD > 50 carried
+        # 19x the 1x weight). Floor p_mix4 and recompute MvD, so the multijet weight is bounded by
+        # ~1/floor; the TTbar4b_from_MvD ratio p_t4/p_mix4 (event_weights.py) uses the floored
+        # p_mix4 too. Events above the floor keep their stored values bit for bit.
+        if self.MvD_pmix4_floor and event.MvD is not None and "p_mix4" in event.MvD.fields:
+            low = event.MvD.p_mix4 < self.MvD_pmix4_floor
+            num = event.MvD.p_d4 - event.MvD.p_t4 if "p_t4" in event.MvD.fields else event.MvD.p_d4
+            event["MvD", "MvD"] = np.where(low, num / self.MvD_pmix4_floor, event.MvD.MvD)
+            event["MvD", "p_mix4"] = np.where(low, self.MvD_pmix4_floor, event.MvD.p_mix4)
 
     def load_SvB(self, event):
         """Load SvB and SvB_MA scores from one of three sources (in priority order):

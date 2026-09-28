@@ -19,8 +19,8 @@ config.setdefault('dataset_location',   "coffea4bees/metadata/datasets/")
 config.setdefault('years', ['2022_EE', '2022_preEE', '2023_BPix', '2023_preBPix'])
 config.setdefault('dataset_name', 'mixeddata_all')
 # Path to the installed dataset metadata yaml. Declared as an input to
-# make_SvB_friendtrees_mixeddata so snakemake schedules the install step
-# (when invoked from Snakefile_Run3_make_mixeddata.smk) before the SvB job.
+# make_SvB_friendtrees_mixeddata. (It used to order this after the install step of the former
+# Snakefile_Run3_make_mixeddata.smk; mixed data is now made by Snakefile_MakeMixedData.smk.)
 # In standalone mode this just points at the committed yaml.
 config.setdefault('install_path',
     f"coffea4bees/metadata/datasets/{config['dataset_name']}.yml")

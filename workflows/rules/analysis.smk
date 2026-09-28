@@ -134,6 +134,10 @@ rule cutflow_closure_table:
         # ttbar process names in the dump: the MC samples, or "TTbar_from_d3" for the FvT-derived
         # estimate from 3b data (plot_ttbar_with_weights; Phase F runs without ttbar MC)
         ttbar = "TTToHadronic TTToSemiLeptonic TTTo2L2Nu",
+        # further cutflow_closure.py options, e.g. "--multijet-process syn_v0 --pseudodata
+        # ttbar_PSData" with multijet = "sample4b" (a four-tag multijet sample as the Multijet
+        # column; DeClustered D.5)
+        extra_arguments = "",
         run_container_wrapper = "",
         python_bin = lambda wildcards: config.get("python_bin", "python")
     shell:
@@ -145,7 +149,7 @@ rule cutflow_closure_table:
         if [ -f src/tools/cutflow_closure.py ]; then
             {params.run_container_wrapper} {params.python_bin} src/tools/cutflow_closure.py {input.cutflow_yml} \
                 -o {output.html} --txt {output.txt} --title {params.title} --multijet {params.multijet} \
-                --ttbar {params.ttbar} 2>&1 | tee {log}
+                --ttbar {params.ttbar} {params.extra_arguments} 2>&1 | tee {log}
         else
             echo "src/tools/cutflow_closure.py not found in this barista checkout; skipping closure table" 2>&1 | tee {log}
             echo "<p>cutflow closure table not available (barista checkout predates src/tools/cutflow_closure.py)</p>" > {output.html}

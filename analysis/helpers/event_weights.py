@@ -145,8 +145,15 @@ def add_pseudotagweights(
         event["Jet_untagged_loose"] = event.Jet[selected_jets & ~tagged_loose]
         fourTag = ak.to_numpy(event["fourTag"]).astype(bool)
         jcm_weight = np.ones(len(event), dtype=float)
+        # The mixed-data JCM is fit per selected-jet multiplicity (make_jcm_weights.py on
+        # selJets_noJCM.n, mixeddata_all four-tag as the "3b" sample) and the MvD / SvB trainings
+        # apply it by nSelJets (apply_JCM_from_list); JCM(k) is that fit's weight for nSelJets = k+3.
+        # So the argument is nSelJets - 3, NOT nUntaggedLoose + 1 (the 3b-data definition, below):
+        # the two agree only with exactly four loose tags, and a mixed event carrying five or more
+        # was under-weighted (-4.7 % of the four-tag SB yield in the Run 3 MvD roast, 2026-09-27).
+        n_selected = ak.sum(selected_jets[fourTag], axis=1)
         jcm_weight[fourTag], _ = JCM(
-            ak.num(event[fourTag]["Jet_untagged_loose"], axis=1) + 1,
+            n_selected - 3,
             event.event[fourTag],
         )
 

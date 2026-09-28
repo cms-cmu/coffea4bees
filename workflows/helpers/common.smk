@@ -49,7 +49,7 @@ def check_handoff_refs(config_dict):
         return
 
     problems = []
-    for section in ('fvt', 'svb'):
+    for section in ('fvt', 'svb', 'mvd', 'svb_mvd'):   # nominal C/D; MvD roast V.2/V.3
         blk = config_dict.get(section) or {}
         if not isinstance(blk, dict):
             continue
@@ -79,7 +79,7 @@ def check_handoff_refs(config_dict):
 check_handoff_refs(config)
 
 
-def write_workflow_overrides(wfs_base, overrides, out_dir, log=None, inserts=None):
+def write_workflow_overrides(wfs_base, overrides, out_dir, log=None, inserts=None, modules=None):
     """Copy the classifier workflow templates in `wfs_base` (train.yml, evaluate.yml, ...) to
     `out_dir`, replacing command-line options by flag, and inserting new ones.
 
@@ -99,19 +99,38 @@ def write_workflow_overrides(wfs_base, overrides, out_dir, log=None, inserts=Non
         {"--training": ["--architecture", {"n_features": 54}]}
     widens the network without a forked template. Unlike an unused override, an anchor found in
     no template raises, as does an inserted flag the module already sets: either way the run
-    would silently train something other than what the config says. Returns `out_dir`.
+    would silently train something other than what the config says.
+
+    An override or insert key may be scoped to one template file as "<file>::<key>", e.g.
+    "evaluate.yml::--mc-processes", when the same flag appears in several templates but only one
+    should change (the SvB evaluation needs a --data-source that the training's signal module
+    does not accept).
+
+    `modules` maps a module name to its replacement, e.g.
+        {"HCR.SvB.Background": "HCR.SvB.BackgroundMixed"}
+    (a subclass with a different background, same options). A name found in no template raises.
+    Returns `out_dir`.
     """
     import glob
     import shutil
     os.makedirs(out_dir, exist_ok=True)
-    flags = dict(overrides or {})
-    keys = sorted(flags, key=len, reverse=True)
-    used = {k: 0 for k in flags}
-    anchors = {k: list(v) for k, v in (inserts or {}).items()}
-    anchor_keys = sorted(anchors, key=len, reverse=True)
-    inserted = {k: 0 for k in anchors}
 
-    def match(opt, keys=keys):
+    def scoped(mapping):
+        """{key: value} with optional "<file>::" prefixes -> {file or None: {key: value}}."""
+        out = {}
+        for k, v in (mapping or {}).items():
+            fname, sep, flag = k.partition("::")
+            out.setdefault(fname if sep else None, {})[flag if sep else k] = v
+        return out
+
+    flags_by_file = scoped(overrides)
+    anchors_by_file = {f: {k: list(v) for k, v in m.items()} for f, m in scoped(inserts).items()}
+    used = {(f, k): 0 for f, m in flags_by_file.items() for k in m}
+    inserted = {(f, k): 0 for f, m in anchors_by_file.items() for k in m}
+    renames = dict(modules or {})
+    renamed = {k: 0 for k in renames}
+
+    def match(opt, keys):
         for k in keys:
             if opt == k or opt.startswith(k + " "):
                 return k
@@ -126,6 +145,14 @@ def write_workflow_overrides(wfs_base, overrides, out_dir, log=None, inserts=Non
         if not src.endswith((".yml", ".yaml")):
             shutil.copy2(src, dst)
             continue
+        base = os.path.basename(src)
+        # this file's overrides/anchors: the unscoped ones plus those scoped to it (scoped wins)
+        flags = {**flags_by_file.get(None, {}), **flags_by_file.get(base, {})}
+        owner = {k: (base if k in flags_by_file.get(base, {}) else None) for k in flags}
+        keys = sorted(flags, key=len, reverse=True)
+        anchors = {**anchors_by_file.get(None, {}), **anchors_by_file.get(base, {})}
+        anchor_owner = {k: (base if k in anchors_by_file.get(base, {}) else None) for k in anchors}
+        anchor_keys = sorted(anchors, key=len, reverse=True)
         with open(src) as f:
             wf = yaml.safe_load(f) or {}
         for section in wf.values():
@@ -135,14 +162,17 @@ def write_workflow_overrides(wfs_base, overrides, out_dir, log=None, inserts=Non
             if not isinstance(section, list):
                 continue
             for mod in section:     # not `module`: a Snakemake keyword at the start of a statement
+                if isinstance(mod, dict) and mod.get("module") in renames:
+                    renamed[mod["module"]] += 1
+                    mod["module"] = renames[mod["module"]]
                 opts = mod.get("option") if isinstance(mod, dict) else None
                 if not isinstance(opts, list):
                     continue
                 for i, opt in enumerate(opts):
-                    k = match(opt) if isinstance(opt, str) else None
+                    k = match(opt, keys) if isinstance(opt, str) else None
                     if k is not None:
                         opts[i] = f"{k} {flags[k]}".rstrip()
-                        used[k] += 1
+                        used[(owner[k], k)] += 1
                 if not anchors:
                     continue
                 new_opts = []
@@ -156,19 +186,29 @@ def write_workflow_overrides(wfs_base, overrides, out_dir, log=None, inserts=Non
                                 f"workflow_inserts: {src} module {mod.get('module')} already sets "
                                 f"{clash}; override it instead of inserting a second one")
                         new_opts.extend(anchors[a])
-                        inserted[a] += 1
+                        inserted[(anchor_owner[a], a)] += 1
                     new_opts.append(opt)
                 mod["option"] = new_opts
         with open(dst, "w") as f:
             yaml.dump(wf, f, default_flow_style=False, sort_keys=False)
-    unused = [k for k, n in used.items() if n == 0]
+
+    def name(fk):
+        f, k = fk
+        return f"{f}::{k}" if f else k
+    unused = [name(fk) for fk, n in used.items() if n == 0]
     if unused and log is not None:
         log(f"workflow_overrides: flags not found in any template under {wfs_base}: {unused}")
-    missing = [k for k, n in inserted.items() if n == 0]
+    missing = [name(fk) for fk, n in inserted.items() if n == 0]
     if missing:
         raise ValueError(f"workflow_inserts: anchor flags not found in any template under {wfs_base}: {missing}")
     if inserted and log is not None:
-        log(f"workflow_inserts: {dict((k, anchors[k]) for k in inserted)} inserted {inserted}")
+        log(f"workflow_inserts: {dict((name(fk), anchors_by_file[fk[0]][fk[1]]) for fk in inserted)} inserted "
+            f"{dict((name(fk), n) for fk, n in inserted.items())}")
+    not_found = [k for k, n in renamed.items() if n == 0]
+    if not_found:
+        raise ValueError(f"workflow_modules: modules not found in any template under {wfs_base}: {not_found}")
+    if renamed and log is not None:
+        log(f"workflow_modules: {renames} renamed {renamed}")
     return out_dir
 
 

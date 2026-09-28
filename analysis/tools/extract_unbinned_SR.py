@@ -12,10 +12,13 @@ Purpose:
 Usage Instructions:
   1. Ensure network or XRootD access to the input picoAOD and SvB files.
   2. Run inside the coffea container:
-     ./run_container python coffea4bees/analysis/tools/extract_unbinned_SR.py
+     ./run_container python coffea4bees/analysis/tools/extract_unbinned_SR.py \
+         [--friends FRIENDS.yml] [--year UL18] [--svb-key SvB_MA] \
+         [--classifier-inputs "GLOB"] [-o OUTPUT.npz] [-j 16]
+     Run with --help for the defaults.
 
   3. Output:
-     - `output/ttHbb/unbinned_SR_ttHbb.npz` containing arrays: `ps`, `weights`, `nSelJets`.
+     - `output/ttHbb/unbinned_SR_ttHbb.npz` (or --output) containing arrays: `ps`, `weight`, `nSelJets`.
 
 Downstream:
   - Feed `output/ttHbb/unbinned_SR_ttHbb.npz` into `rebin_SvB.py` to calculate
@@ -24,8 +27,10 @@ Downstream:
 """
 import os
 import json
+import argparse
 import time
 import glob
+import yaml
 import uproot
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -82,26 +87,39 @@ def process_chunk(pico_path, hcr_path, svb_path):
         print(f"Error processing {pico_path}: {e}")
         return np.array([]), np.array([]), np.array([])
 
-def extract_all_ttHbb(output_npz="output/ttHbb/unbinned_SR_ttHbb.npz", max_workers=16):
+def extract_all_ttHbb(friends, year, svb_key, classifier_inputs, output_npz, max_workers, sample_pattern="ttHbb"):
     os.makedirs(os.path.dirname(output_npz), exist_ok=True)
-    url_svb_json = "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_v3/friend/SvB_ttHbb_v3/result.json"
-    print("Loading SvB result.json mapping...")
+
+    with open(friends) as f:
+        friends_cfg = yaml.safe_load(f)
+    # Strip the "@@analysis.0.merged" key suffix; load_svb_mapping navigates that path itself
+    url_svb_json = friends_cfg["friends"][year][svb_key].split("@@")[0]
+    print(f"Loading SvB result.json mapping from {url_svb_json}...")
     svb_map = load_svb_mapping(url_svb_json)
     print(f"Loaded {len(svb_map)} SvB chunk mappings.")
-    
-    # Find all classifier input JSON files for ttHbb
-    cfg_files = sorted(glob.glob("output/ttHbb/classifier_inputs/classifier_inputs_dataset_ttHbb__*.json"))
+
+    # Find all classifier input JSON files
+    cfg_files = sorted(glob.glob(classifier_inputs))
+    if not cfg_files:
+        raise FileNotFoundError(f"No classifier input files match: {classifier_inputs}")
     tasks = []
+    n_missing_svb = 0
     for cfg_file in cfg_files:
         with open(cfg_file) as f:
             cfg = json.load(f)
         for entry in cfg["HCR_input"]["data"]:
             pico_path = entry[0]["path"]
+            if sample_pattern and sample_pattern not in pico_path.split("/")[-2]:
+                continue
             hcr_path = entry[1][0]["chunk"]["path"]
             svb_path = svb_map.get(pico_path)
             if svb_path:
                 tasks.append((pico_path, hcr_path, svb_path))
-                
+            else:
+                n_missing_svb += 1
+    if n_missing_svb:
+        print(f"WARNING: skipping {n_missing_svb} classifier input chunks with no matching SvB chunk.")
+
     print(f"Submitting {len(tasks)} chunk extraction tasks using {max_workers} worker threads...")
     t0 = time.time()
     all_ps = []
@@ -134,4 +152,30 @@ def extract_all_ttHbb(output_npz="output/ttHbb/unbinned_SR_ttHbb.npz", max_worke
     print(f"Saved unbinned data to {output_npz} ({os.path.getsize(output_npz)/1024:.1f} KB)")
 
 if __name__ == "__main__":
-    extract_all_ttHbb()
+    parser = argparse.ArgumentParser(description="Extract unbinned SR (ps, weight, nSelJets) arrays for SvB rebinning.")
+    parser.add_argument("--friends", default="coffea4bees/metadata/friends/friends_ttHbb.yml",
+                        help="Friends YAML file containing the SvB result.json path")
+    parser.add_argument("--year", default="UL18",
+                        help="Year key inside the friends YAML")
+    parser.add_argument("--svb-key", default="SvB_MA",
+                        help="Friend key for the SvB result.json inside the friends YAML")
+    parser.add_argument("--classifier-inputs",
+                        default="coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json",
+                        help="Classifier input JSON file, or a quoted glob pattern matching several")
+    parser.add_argument("-o", "--output", default="output/ttHbb/unbinned_SR_ttHbb.npz",
+                        help="Output .npz file")
+    parser.add_argument("-j", "--max-workers", type=int, default=16,
+                        help="Number of worker threads")
+    parser.add_argument("--sample-pattern", default="ttHbb",
+                        help="Substring pattern that must appear in sample name (default: ttHbb)")
+    args = parser.parse_args()
+
+    extract_all_ttHbb(
+        friends=args.friends,
+        year=args.year,
+        svb_key=args.svb_key,
+        classifier_inputs=args.classifier_inputs,
+        output_npz=args.output,
+        max_workers=args.max_workers,
+        sample_pattern=args.sample_pattern,
+    )
