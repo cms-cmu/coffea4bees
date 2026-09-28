@@ -1,0 +1,69 @@
+# ==============================================================================
+# MvD 30x roast with the c6 SvB (C6 = c6_norawF: C5b + PNet pT resolution, jet energy fractions, nConstituents, area) -- V.3 + V.4 on top of mvd_run3_30x
+# ==============================================================================
+# The "c6" SvB of the falcon SvB study (classifier/config/workflows/HH4b_Run3/
+# SvB_mixedMvD_rank0_0_c6_norawF_SRSB_30x, the ladder's C6; rawFactor, the full c6's 17th feature, dropped on falcon's reference checkout, never committed): the 30x
+# SvB against mixed x JCM x MvD with b-tagging, PNet resolution and jet-composition inputs. Only the
+# HCR.InputBranch feature_CanJet setting differs from mvd_run3_30x's SvB_MvD_30x; the matched
+# partners are mvd_run3_30x_c5.yml / mvd_run3_30x_c5b.yml.
+#
+# Nothing upstream of the SvB is rerun: the MvD is the 30x roast mvd_run3_30x_20260927_198aefc-9fbe2d0's MvD_30x
+# (V.2), and the classifier inputs / JCM are the 1x MvD roast's V.1 (as in mvd_run3_30x). The
+# classifier-input friends already carry all 16 CanJet features (real values for data, mixed,
+# ttbar and ggF, data ~ mixed; checked 2026-09-28), so no reprocessing.
+#
+#   roast new --config coffea4bees/workflows/config/mvd_run3_30x_c6.yml \
+#       --step falcon:coffea4bees/workflows/Snakefile_MvD_3_svb.smk \
+#       --step cmslpc:coffea4bees/workflows/Snakefile_MvD.smk
+#   roast submit <id> --step MvD_3_svb                     # falcon: SvB 30x c6
+#   roast submit <id> --step MvD --targets all_V4          # cmslpc: analysis + stat-only limits
+#
+# Compare against mvd_run3_30x (SvB_MvD_30x, kinematics only): exp. limit 3.42 [2.42, 4.87],
+# exp. significance 0.61 (floored); and the c5 / c5b partners.
+base: coffea4bees/workflows/config/mvd_run3_30x.yml
+
+label: "mvd_run3_30x_c6"
+
+inputs:
+  upstream_roasts: [nominal_run3_20260922_3f9e199-1e0504f, mixeddata_run3_20260926_956d4bf-aca8a4e,
+                    mvd_run3_20260927_91be0e9-f18c44b, mvd_run3_30x_20260927_198aefc-9fbe2d0]
+  # the MvD friend V.4 weights the mixed data with (V.3 reads it through svb_mvd.train_template)
+  mvd_friend: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/mvd_run3_30x_20260927_198aefc-9fbe2d0/friend/MvD_30x/result.json"
+
+# V.4 builds its MvD friend URL from this block: the 30x roast's MvD_30x (V.2 is not run here).
+mvd:
+  eos_base: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/mvd_run3_30x_20260927_198aefc-9fbe2d0"
+  label: "MvD_30x"
+
+svb_mvd:
+  label: "SvB_MvD_30x_c6"
+  output_dir: "output/SvB_MvD_30x_c6/"
+  train_template: "model: {eos_base}/classifier/{label}, MvD: root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/mvd_run3_30x_20260927_198aefc-9fbe2d0/friend/MvD_30x"
+  # This step's common.yml (overrides the top-level classifier_setting for this step only, so the
+  # MvD settings are untouched): as mvd_run3.yml plus the candidate-jet b-tag features. Applies to
+  # the training and the evaluation alike.
+  classifier_setting:
+    - module: ml.DataLoader
+      option:
+        - optimize_sliceable_dataset: true
+    - module: ROOT
+      option:
+        - friend_allow_missing: false
+    - module: cms.CollisionData
+      option:
+        - eras:
+            2022_preEE: [B, C, D]
+            2022_EE: [E, F, G]
+            2023_preBPix: [C01, C02, C11, C12, C3, C4]
+            2023_BPix: [D1, D2]
+    - module: HCR.InputBranch
+      option:
+        - feature_ancillary: [xW, nSelJets, xbW, year]
+        - mass_regions: [SR, SB]
+        - feature_CanJet: ['pt', 'eta', 'phi', 'mass', 'btagScore', 'btagPNetCvB', 'btagPNetCvL', 'btagPNetQvG', 'PNetRegPtRawRes', 'chHEF', 'neHEF', 'chEmEF', 'neEmEF', 'muEF', 'nConstituents', 'area']
+
+analysis:
+  label: "MvD_30x_c6"
+  known_counts: "coffea4bees/analysis/tests/known_fullCounts_MvD_Run3_30x_c6.yml"
+
+combine_outdir: "datacards/HH4b_run3_MvD_30x_c6"
