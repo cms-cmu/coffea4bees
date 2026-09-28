@@ -1,0 +1,91 @@
+# ==============================================================================
+# MvD roast with ~30x-capacity MvD and SvB -- V.2, V.2c, V.3, V.4 on top of mvd_run3
+# ==============================================================================
+# The MvD analogue of nominal_run3_30x.yml. Only the differences from mvd_run3.yml; a `base:`
+# overlay (dicts merge recursively, lists replace).
+#
+#   roast new --config coffea4bees/workflows/config/mvd_run3_30x.yml \
+#       --step falcon:coffea4bees/workflows/Snakefile_MvD_2_train.smk \
+#       --step cmslpc:coffea4bees/workflows/Snakefile_MvD.smk \
+#       --step falcon:coffea4bees/workflows/Snakefile_MvD_3_svb.smk
+#   roast submit <id> --step MvD_2_train                   # falcon: MvD 30x
+#   roast submit <id> --step MvD --targets all_V2c         # cmslpc: MvD 30x closure
+#   roast submit <id> --step MvD_3_svb                     # falcon: SvB 30x vs mixed x JCM x MvD 30x
+#   roast submit <id> --step MvD --targets all_V4          # cmslpc: analysis + stat-only limits
+#   by hand: snakemake --configfile .../mvd_run3.yml --configfile .../mvd_run3_30x.yml ...
+#
+# The one physics change: both classifiers trained with n_features 8 -> 54 (~30x the parameters),
+# inserted before --training into the unchanged templates (HH4b_Run3/{MvD,SvB}), exactly as the
+# nominal 30x does. The SvB trains against THIS roast's 30x MvD.
+#
+# V.1 is not re-run. Its products -- the merged classifier-input manifest (data, ttbar, ggF +
+# mixeddata_all), the classifier metadata and the tight mixed-data JCM -- are read from the MvD
+# production mvd_run3_20260927_91be0e9-f18c44b, pinned by URL to its EOS handoff/ area (NOT
+# {roast_id}, which here names this roast, where no V.1 outputs exist). The processor steps take
+# the JCM from inputs.mixed_jcm (read through fsspec), with the argument fix (a7de466da).
+#
+# What to compare against mvd_run3_20260927_91be0e9-f18c44b (after its hot patch 3):
+#   * V.2c closure: SB 0.986, SR 0.983; per year SB 1.021 / 0.973 / 1.030 / 0.908 -- does the 30x
+#     MvD fix the overshoot and the 2023_BPix direction?
+#   * V.4: exp. limit 3.86 [2.73, 5.49], exp. significance 0.65 (nominal 3.70 / 0.80; nominal 30x:
+#     see nominal_run3_30x_20260924_8cc39b3-a512d88)
+#   * cutflows: rows not weighted by the MvD (4b data, signal, raw counts, mixed x JCM "noMvD")
+#     must equal the 1x roast's exactly.
+base: coffea4bees/workflows/config/mvd_run3.yml
+
+label: "mvd_run3_30x"
+
+inputs:
+  # lists replace: all three upstream roasts
+  upstream_roasts: [nominal_run3_20260922_3f9e199-1e0504f, mixeddata_run3_20260926_956d4bf-aca8a4e,
+                    mvd_run3_20260927_91be0e9-f18c44b]
+  # V.1's tight mixed-data JCM from the 1x MvD roast (V.2c / V.4 processor weights)
+  mixed_jcm: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/mvd_run3_20260927_91be0e9-f18c44b/handoff/jetCombinatoricModel_SB_mixeddata_tight.yml"
+
+handoff:
+  # V.2 / V.3 read the 1x MvD roast's handoff, which check_handoff_refs would otherwise reject as
+  # drift from this roast's (empty) handoff area.
+  allow_external_refs: true
+
+mvd:
+  label: "MvD_30x"
+  output_dir: "output/MvD_30x/"
+  metadata: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/mvd_run3_20260927_91be0e9-f18c44b/handoff/classifier_inputs_MvD.json@@HCR_input"
+  workflow_overrides:
+    --metadata: root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/mvd_run3_20260927_91be0e9-f18c44b/handoff/classifier_metadata
+    --JCM-weight: '"source:mixed_all" root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/mvd_run3_20260927_91be0e9-f18c44b/handoff/jetCombinatoricModel_SB_mixeddata_tight.yml@@JCM_weights'
+    '--friends ""': root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/mvd_run3_20260927_91be0e9-f18c44b/handoff/classifier_inputs_MvD.json@@HCR_input
+    # As the nominal 30x FvT: 3 parallel evaluators at n=54 exceed falcon's 40 GB half-GPU MPS
+    # limit; 2 (~27 GB) at the cost of a second pass.
+    --max-evaluators: '2'
+  workflow_inserts:
+    --training: [--architecture, {n_features: 54}]
+
+svb_mvd:
+  label: "SvB_MvD_30x"
+  output_dir: "output/SvB_MvD_30x/"
+  # The background weight is THIS roast's 30x MvD.
+  train_template: "model: {eos_base}/classifier/{label}, MvD: {eos_base}/friend/MvD_30x"
+  metadata: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/mvd_run3_20260927_91be0e9-f18c44b/handoff/classifier_inputs_MvD.json@@HCR_input"
+  workflow_overrides:
+    --metadata: root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/mvd_run3_20260927_91be0e9-f18c44b/handoff/classifier_metadata
+    --data-source: mixed_all
+    --JCM-weight: '"source:mixed_all" root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/mvd_run3_20260927_91be0e9-f18c44b/handoff/jetCombinatoricModel_SB_mixeddata_tight.yml@@JCM_weights'
+    '--friends ""': root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/mvd_run3_20260927_91be0e9-f18c44b/handoff/classifier_inputs_MvD.json@@HCR_input
+    '--friends label:data': '{MvD}/result.json@@analysis.0.merged'
+  workflow_inserts:
+    'evaluate.yml::--mc-processes': ["--data-source detector mixed_all"]
+    # Same width as the MvD (and as the nominal 30x SvB). No FvT p_d3 floor: that is FvT-only; the
+    # MvD-weighted background keeps the template's weight-outlier cut (w < 1).
+    --training: [--architecture, {n_features: 54}]
+
+closure:
+  label: "MvD_30x_closure"
+  # The 1x reference holds the 1x MvD's weighted rows, which a different MvD must change; dump only.
+  known_counts: "coffea4bees/analysis/tests/known_fullCounts_MvD_closure_Run3_30x.yml"
+
+analysis:
+  label: "MvD_30x"
+  known_counts: "coffea4bees/analysis/tests/known_fullCounts_MvD_Run3_30x.yml"
+
+combine_outdir: "datacards/HH4b_run3_MvD_30x"

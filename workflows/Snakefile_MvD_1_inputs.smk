@@ -22,7 +22,14 @@ V1_METADATA = f"{V1_OUT}handoff/{METADATA_NAME}"
 V1_HIST_CONFIG = f"{V1_OUT}analysis_config_mixed_noJCM.yml"
 V1_HISTALL = f"{V1_OUT}histAll_mixed_noJCM.coffea"
 V1_JCM_DIR = f"{V1_OUT}JCM_{JCM_TAG}/"
-MIXED_JCM = f"{V1_JCM_DIR}{JCM_NAME}"
+V1_JCM = f"{V1_JCM_DIR}{JCM_NAME}"          # this roast's V.1 fit
+# The mixed-data JCM the processor steps (V.2c, V.4) apply: V.1's fit, or -- for a roast that
+# reuses another MvD roast's V.1 (e.g. mvd_run3_30x.yml) -- inputs.mixed_jcm, a root:// URL the
+# processor reads through fsspec. MIXED_JCM_DEP is the Snakemake input edge (none for a URL).
+MIXED_JCM = INPUTS.get('mixed_jcm') or V1_JCM
+if not (MIXED_JCM == V1_JCM or str(MIXED_JCM).startswith("root://")):
+    raise ValueError(f"inputs.mixed_jcm must be a root:// URL into an upstream MvD roast, got {MIXED_JCM!r}")
+MIXED_JCM_DEP = [] if str(MIXED_JCM).startswith("root://") else [MIXED_JCM]
 V1_PUBLISHED = f"{V1_OUT}published.done"
 V1_METADATA_FILES = config.get('classifier_metadata_files',
                                ["coffea4bees/metadata/datasets/data.yml",
@@ -176,7 +183,7 @@ rule V1_fit:
     input:
         hists = V1_HISTALL,
         jcm_config = f"{V1_OUT}jcm_config_mixed.yml"
-    output: MIXED_JCM
+    output: V1_JCM
     log: f"{V1_OUT}logs/fit.log"
     shell:
         """
@@ -192,7 +199,7 @@ rule V1_publish:
     input:
         manifest = V1_MANIFEST,
         metadata = V1_METADATA,
-        jcm = MIXED_JCM,
+        jcm = V1_JCM,
         cutflow = f"{V1_OUT}cutflow_mixed_noJCM.yml"
     output: touch(V1_PUBLISHED)
     log: f"{V1_OUT}logs/publish.log"
