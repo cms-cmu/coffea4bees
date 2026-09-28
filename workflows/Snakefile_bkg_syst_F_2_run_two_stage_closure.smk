@@ -113,8 +113,7 @@ classifier = config['classifier']
 rebin_str = f"rebin{config['rebin']}"
 channel = config['channel']
 var = config['variable']
-
-closure_output_dir = f"{out_f2}closure_fits/{channel}/{var}/"
+closure_output_dir = f"{out_f2}closure_fits/{mix_name}/{classifier}/{rebin_str}/SR/{channel}/"
 closure_pkl = f"{closure_output_dir}hists_closure_{mix_name}_{var}_{rebin_str}.pkl"
 
 # TTbar comparison outputs
@@ -236,8 +235,6 @@ rule run_two_stage_closure:
             --channel {params.channel} \
             --rebin {params.rebin} \
             --outputPath {params.output_dir} \
-            --simple_output_dir \
-            --maxBasis {params.maxBasis} \
             --input_file_mix {params.input_file_mix} \
             --input_file_data3b {params.input_file_data3b} \
             --input_file_sig {params.input_file_sig} \

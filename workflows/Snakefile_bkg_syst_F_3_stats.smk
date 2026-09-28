@@ -138,6 +138,23 @@ default_nominal_json = "inputs/histAll_ttHbb_stitched.json" if os.path.exists("i
 nominal_coffea = config.get('nominal_coffea', default_nominal_coffea)
 nominal_json = config.get('nominal_json', default_nominal_json)
 
+def get_region_for_channel(channel):
+    # 1. Check channel-specific setting
+    ch_config = config.get('channels', {}).get(channel, {})
+    if 'region' in ch_config:
+        return ch_config['region']
+    
+    # 2. Check if region is specified inside combine_flags
+    import shlex
+    flags = config.get('combine_flags', '')
+    tokens = shlex.split(flags)
+    for idx, t in enumerate(tokens[:-1]):
+        if t == '--region':
+            return tokens[idx+1]
+            
+    # 3. Fallback to default SR
+    return 'SR'
+
 # Decoupled config definitions and path resolution
 def get_bkgsyst_for_channel(channel):
     ch_config = config.get('channels', {}).get(channel, {})
@@ -151,11 +168,13 @@ def get_bkgsyst_for_channel(channel):
             closure_subdir=ch_config.get('closure_subdir', channel)
         )
     closure_subdir = ch_config.get('closure_subdir', config.get('channel', 'ttHbb'))
-    mix_name = config.get('mix_name', 'ttHbb_mixeddata')
+    mix_name = config.get('mix_name', '3bDvTMix4bDvT')
     var = ch_config.get('closure_var', config.get('variable', 'SvB_MA_ps_ttHbb'))
+    classifier = config.get('classifier', 'SvB_MA')
+    region = get_region_for_channel(channel)
     rebin_val = config.get('rebin', '1')
     rebin_str = f"rebin{rebin_val}"
-    return f"{out}bkg_syst_F_2_run_two_stage_closure/closure_fits/{closure_subdir}/{var}/hists_closure_{mix_name}_{var}_{rebin_str}.pkl"
+    return f"{out}bkg_syst_F_2_run_two_stage_closure/closure_fits/{mix_name}/{classifier}/{rebin_str}/{region}/{closure_subdir}/hists_closure_{mix_name}_{var}_{rebin_str}.pkl"
 
 for ch_name, ch_config in config.get('channels', {}).items():
     ch_config.setdefault('bkgsyst', get_bkgsyst_for_channel(ch_name))
@@ -187,23 +206,6 @@ def get_stat_only_flag(channel=None):
     if str(val).lower() in ['false', '0', 'none', '']:
         return ''
     return '--stat_only' if str(val) == '--stat-only' else str(val)
-
-def get_region_for_channel(channel):
-    # 1. Check channel-specific setting
-    ch_config = config.get('channels', {}).get(channel, {})
-    if 'region' in ch_config:
-        return ch_config['region']
-    
-    # 2. Check if region is specified inside combine_flags
-    import shlex
-    flags = config.get('combine_flags', '')
-    tokens = shlex.split(flags)
-    for idx, t in enumerate(tokens[:-1]):
-        if t == '--region':
-            return tokens[idx+1]
-            
-    # 3. Fallback to default SR
-    return 'SR'
 
 module stat_analysis:
     snakefile: "rules/stat_analysis.smk"

@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 import os
+import sys
+sys.path.insert(0, ".")
+sys.path.insert(0, "coffea4bees")
 import json
 import array
 import argparse
