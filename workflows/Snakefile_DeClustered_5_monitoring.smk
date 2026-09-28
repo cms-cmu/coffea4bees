@@ -39,7 +39,7 @@ use rule cutflow_closure_table from analysis as D5_cutflow_page with:
     log: f"{D5_OUT}logs/cutflow_page.log"
     params:
         title = f"{config.get('label', 'declustered')}_declustered_seed{VAL_SEED}",
-        multijet = "data3b",              # unused: --multijet-process sets the Multijet column
+        multijet = "sample4b",            # Multijet column = the four-tag sample --multijet-process
         ttbar = " ".join(TTBAR),
         extra_arguments = " ".join(["--multijet-process", SYN_PROCESS]
                                    + (["--pseudodata", PS_NAME] if SUBTRACT_TT else [])),
