@@ -12,7 +12,7 @@ The pipeline is organized into modular **Phases (A through F)** reflecting the f
 | :--- | :--- | :--- | :--- |
 | **Phase A** | Skimmer & Trigger Weights | **`cmslpc`** | CPU (Condor / Dask batching) |
 | **Phase B** | **Phase B.1**: Compute JCM *(New Analysis Only)*<br>**Phase B.2**: Make Classifier Friend Trees *(Required)* | **`cmslpc`** | CPU (Condor / Dask batching) |
-| **Phase C** | **Phase C.1 / C.2**: Plot Inputs & Train *(Optional)*<br>**Phase C.3**: Evaluate *(If Bkg Model Changed)*<br>**Phase C.4**: FvT closure (processor + plots + cutflow with the new FvT; **cmslpc**, roast step `C4`) | **`falcon`** (GPU cluster) / **PSC Bridges-2**; C.4 on **`cmslpc`** | GPU (NVIDIA MPS/CUDA for training & inference); C.4 CPU (Condor) |
+| **Phase C** | **Phase C.1 / C.2**: Plot Inputs & Train *(Optional)*<br>**Phase C.3**: Evaluate *(If Bkg Model Changed)* | **`falcon`** (GPU cluster) / **PSC Bridges-2** | GPU (NVIDIA MPS/CUDA for training & inference) |
 | **Phase D** | **Phase D.1 / D.2**: Plot Inputs & Train *(Optional)*<br>**Phase D.3**: Evaluate *(Required)* | **`falcon`** (GPU cluster) / **PSC Bridges-2** | GPU (NVIDIA MPS/CUDA for training & inference) |
 | **Phase E** | Background Uncertainties & Closure *(Optional — Skip if Stat-Only; Requires Phase F.1 Singlefiles)* | **`cmslpc`** | CPU (Condor / Dask batching) |
 | **Phase F** | Analysis Processor & CMS Combine Stats | **`cmslpc`** | CPU (Condor + Dask + Combine container) |
@@ -113,16 +113,16 @@ flowchart TD
 * **Target Machine:** **`cmslpc`**
 * **Coordinator:** `Snakefile_PhaseB.smk`
 * **Sub-workflows:**
-  * `Snakefile_PhaseB_1_computeJCM.smk`: **[New Analysis Only / One-Time]** Derives jet combinatoric model weights by running the Coffea processor with `apply_JCM: false` and fitting the resulting histograms to compute transfer factors between jet multiplicities. Once the fit is done, the same datasets (data + ttbar) are **rerun with the fitted JCM applied** (`apply_JCM: true`, `JCM_file` → the new fit; still no FvT/SvB) to produce `histAll_wJCM.coffea`, and plots are made from that file only, using the NoFvT plot config (`jcm_plot_config`, default `plots/metadata/plotsAllNoFvT.yml`). Done once when establishing a new analysis baseline, and reused thereafter.
+  * `Snakefile_PhaseB_1_computeJCM.smk`: **[New Analysis Only / One-Time]** Derives jet combinatoric model weights by running the Coffea processor with `apply_JCM: false` and fitting the resulting histograms to compute transfer factors between jet multiplicities. Done once when establishing a new analysis baseline, and reused thereafter.
   * `Snakefile_PhaseB_2_make_classifier_friendtree.smk`: **[Required for All Analyses]** Runs the Coffea processor (`processor_HH4b.py make_classifier_input`) on datasets to create the ROOT friend tree files used as input features for classifier training and evaluation.
 
 #### Key Artifacts & Required Downstream Updates:
 * **After Phase B.1 (computeJCM)**:
-  * *Outputs Produced*: Fitted JCM YAML file (`jetCombinatoricModel_SB_<tag>.yml`), the JCM-applied histograms `histAll_wJCM.coffea`, the NoFvT plots in `plots_wJCM/` (with an `index.html` gallery), and cutflow dumps `cutflow_NoJCM.yml` / `cutflow_wJCM.yml`. The cutflows are compared (like the CI known counts) against `analysis/tests/known_fullCounts_JCM_<pass>.yml` (`known_Counts_JCM_<pass>.yml` in test mode; override with `jcm_known_counts_<pass>[_test]` in the config). If the reference is missing the cutflow is only dumped — bless the dump as the new reference when a baseline changes on purpose. The comparison verdict (observed vs expected table) is written to `cutflow_validation_<pass>_result.txt` next to the yml; on a mismatch the rule fails (Phase B stops) but that file and a `cutflow_<pass>_failed.yml` copy of the counts survive and are published by roast for debugging. `cutflow_<pass>.html` (and `cutflow_<pass>_table.txt`) is the background-closure view of the same numbers (`src/tools/cutflow_closure.py`): cuts as rows (including SR/SB before the MC trigger weight, `*_woTrig`, so the effect of the trigger SF on the ttbar subtraction is visible), data 3b | tt 3b | Multijet | tt 4b | Bkg | data 4b | data/Bkg, summed over all years and per year, with toggles for the ttbar components (+ tt 3b / data 3b fraction) and for raw entry counts. The cut list is `jcm_cutflow_list` in the config.
-  * *Files to Add/Modify*: Store the JCM file in `metadata/weights/JCM/<analysis>/` and update `weights_<analysis>.yml` (e.g. `weights_ttHbb.yml` or `weights_HH4b.yml`) to point `JCM_file:` to this new file. For a **roast** the convention is a per-roast copy, `metadata/weights/JCM/<roast_id>/jetCombinatoricModel_SB_<tag>.yml`, which the master config references via `fvt.workflow_overrides` (`--JCM-weight`, `--friends`, resolved with `{roast_id}`; see `config/nominal_run2.yml`). `workflow_overrides` keeps the checked-in FvT/SvB templates as the source of truth and only replaces the listed flags in the working copy Phase C/D writes (`helpers/common.smk: write_workflow_overrides`).
+  * *Outputs Produced*: Fitted JCM YAML file (`jetCombinatoricModel_SB_<tag>.yml`).
+  * *Files to Add/Modify*: Store the JCM file in `metadata/weights/JCM/<analysis>/` and update `weights_<analysis>.yml` (e.g. `weights_ttHbb.yml` or `weights_HH4b.yml`) to point `JCM_file:` to this new file.
 * **After Phase B.2 (make_classifier_friendtree)**:
   * *Outputs Produced*: Classifier input friend tree ROOT files on EOS + `classifier_inputs_friends.json` manifest.
-  * *Files to Add/Modify*: Create the classifier dataset manifest in `metadata/datasets/.../classifier_inputs_<analysis>.json` with the `@@HCR_input` / `@@HCR_input_lowpt` dataset configuration block for PyTorch dataloaders. Ensure `fvt.metadata` and `svb.metadata` in the master config point to this JSON. The B.2 output `classifier_inputs_friends.json` already has this shape (`{"HCR_input": {name, branches, data}}`); for a **roast**, commit it as `metadata/datasets/classifier_inputs_<roast_id>.json` (the `fvt` block in `config/nominal_run2.yml` references it via `{roast_id}`) and ship the commit to the falcon checkout before submitting step C. Make sure `classifier_inputs.datasets` lists data + ttbar + signals — without it B.2 only processes the top-level `dataset:` list (signals), which is not enough to train the FvT.
+  * *Files to Add/Modify*: Create the classifier dataset manifest in `metadata/datasets/.../classifier_inputs_<analysis>.json` with the `@@HCR_input` / `@@HCR_input_lowpt` dataset configuration block for PyTorch dataloaders. Ensure `fvt.metadata` and `svb.metadata` in the master config point to this JSON.
 
 #### Snakemake Rulegraph DAG:
 <p align="center">
@@ -156,7 +156,6 @@ flowchart TD
   * `Snakefile_PhaseC_1_plot_inputs.smk`: *(Optional / Diagnostics)* Generates raw feature distributions, preprocessed data distributions, and learned event weights plots (`plot_inputs_raw`, `plot_inputs_dataprep`, `plot_weights`).
   * `Snakefile_PhaseC_2_train.smk`: *(Optional — If Retraining FvT)* Trains multi-fold FvT neural networks using PyTorch/HCR (`train`) and produces training loss and ROC curve diagnostics (`analyze`).
   * `Snakefile_PhaseC_3_evaluate.smk`: *(Run If Background Estimation / JCM Changed)* Evaluates trained models on datasets to produce FvT friend tree ntuples (`evaluate`). Flexible to run standalone or chained after training.
-  * `Snakefile_PhaseC_4_FvT_closure.smk` **(cmslpc, not part of `Snakefile_PhaseC.smk`)**: FvT closure check. Reruns the analysis processor on data with the JCM and the freshly evaluated FvT applied (no SvB; the ttbar histograms are merged in from Phase B.1's wJCM pass, since the FvT weight only applies to data — `fvt_closure.reuse_wJCM_ttbar: false` reprocesses MC instead), makes the `plotsAll` plots (+ gallery), dumps/compares the cutflow (`analysis/tests/known_fullCounts_FvT_closure.yml`) and builds the closure table with Multijet = 3b data (JCM × FvT) — the Phase-B-style validation of the 3b→4b model before the SvB trains on it. Config block `fvt_closure:` (`datasets`, `plot_config`, `JCM_file`, `known_counts[_test]`, `cutflow_list`; defaults shown in the file); the FvT friend comes from `analysis_config.config.friends.FvT`. roast step key `C4`.
 
 #### Key Artifacts & Required Downstream Updates:
 * **After Phase C.2 (Train)**:
@@ -264,9 +263,9 @@ flowchart TD
 ---
 
 ### Phase E: Background Systematics & Two-Stage Closure
-* **Target Machine:** **`cmslpc`** (Steps 1, 2, 3, 5, 6: CPU batching with HTCondor/Dask + Combine container) / **`falcon`** (Step 4: GPU cluster for FvT training & evaluation)
+* **Target Machine:** **`cmslpc`** (Steps 1, 2, 3, 5, 6, 7, 8: CPU batching with HTCondor/Dask + Combine container) / **`falcon`** (Step 4: GPU cluster for FvT training & evaluation)
 * **Coordinator:** `Snakefile_PhaseE.smk`
-* **Dedicated In-Depth Guide:** See [PhaseE_MixedData_Closure.md](docs/PhaseE_MixedData_Closure.md) for full physics motivation, architecture, step-by-step instructions, and troubleshooting.
+* **Dedicated In-Depth Guide:** See [README_PhaseE.md](docs/README_PhaseE.md) for full physics motivation, rulegraph architecture, step-by-step instructions, and artifact matrix.
 * **Sub-workflows:**
   * `Snakefile_PhaseE_1_make_mixeddata.smk`: Step 1 — Generates mixed-data picoAODs from collision data using the hemisphere mixing library.
   * `Snakefile_PhaseE_2_make_subsamples.smk`: Step 2 — Slices mixed data into 15 statistically independent subsamples (`mix_v0` .. `mix_v14`), fits subsample-specific JCM weights, creates classifier inputs, and evaluates SvB friend trees.
@@ -274,6 +273,8 @@ flowchart TD
   * `Snakefile_PhaseE_4_FvT_training.smk`: Step 4 — Trains 15 distinct FvT models (one per subsample) on Falcon GPU and evaluates friend trees on 3-tag collision data.
   * `Snakefile_PhaseE_5_analysis.smk`: Step 5 — Executes Coffea analysis processor (`processor_ttHbb.py`) over all 15 mixed-data subsamples across 4 Run 2 eras (`UL16_preVFP`, `UL16_postVFP`, `UL17`, `UL18`).
   * `Snakefile_PhaseE_6_closure.smk`: Step 6 — Builds 3-tag background ROOT histograms with `coffea4bees/stats_analysis/make_fvt_data3b_hists.py` ($SF = 1.4508$, 30 variable bins), converts mixed-data and signal to ROOT, and executes `runTwoStageClosure.py`.
+  * `Snakefile_PhaseE_7_stats.smk`: Step 7 — Runs CMS Combine statistical interpretation on collision data (blinded SR) injecting closure systematics (`bkgsyst`), evaluating expected limits, postfit pulls, likelihood scans, and expected impacts.
+  * `Snakefile_PhaseE_8_stats_mixeddata.smk`: Step 8 — Runs CMS Combine unblinded statistical interpretation using the 15-subsample average mixed data $\langle\text{mix}\rangle_{4b}$ as pseudo-data (`data_obs`), generating limits, observed significance, saturated Goodness-of-Fit toys, and impacts.
 
 #### Required Datasets and JCM Models per Step:
 Because Phase E mixes multiple data-driven and MC components, ensuring the correct dataset and JCM file at each step is critical:
@@ -286,17 +287,20 @@ Because Phase E mixes multiple data-driven and MC components, ensuring the corre
 | **Step 4** | `PhaseE_4_FvT_training.smk` | `falcon` (GPU) | Subsample classifier inputs + 3-tag collision data (`data_3b_for_mixed`) | Subsample JCMs (`jetCombinatoricModel_SB_mix_v{m}.yml`) | 15 FvT model weights & friend JSONs (`friends_FvT_ttHbb_mixeddata_stitched_v{m}.json`) |
 | **Step 5** | `PhaseE_5_analysis.smk` | `cmslpc` (CPU) | `mixeddata_4b` (15 subsamples across 4 Run 2 eras) | Subsample JCMs + SvB friend trees from Step 2 | `histAll_ttHbb_mixeddata_stitched.coffea`, comparison & analysis plots |
 | **Step 6** | `PhaseE_6_closure.smk` | `cmslpc` (CPU) | 4-tag Mixed Data (`histAll_ttHbb_mixeddata_stitched.root`), 3-tag Data with 15 FvT friends (`histMixedBkg_data_3b_for_mixed.root`), Signal (`hist_signal_ttHbb.root`) | Subsample JCMs (used inside `stats_analysis/make_fvt_data3b_hists.py`) | Closure results `.pkl`, 30-bin diagnostic fit plots, subsample overlay plots |
+| **Step 7** | `PhaseE_7_stats.smk` | `cmslpc` (CPU) | `histAll_ttHbb_stitched.json`, Closure results `.pkl` | Injected into Combine datacards | Datacards, expected limits, significance, scans, and Asimov impacts across 8 channels |
+| **Step 8** | `PhaseE_8_stats_mixeddata.smk` | `cmslpc` (CPU) | 15 Subsample `.coffea` files, Closure results `.pkl` | Injected into Combine datacards | Unblinded pseudo-data limits, observed significance ($0.00\sigma$), saturated GoF, and impacts |
+
+#### Snakemake Rulegraph DAG:
+<p align="center">
+  <img src="docs/figures/rulegraph_PhaseE.svg" alt="Phase E Rulegraph DAG" width="650"/>
+</p>
 
 #### Key Artifacts & Downstream Use:
-* **Outputs Produced**: Background closure fit histograms, diagnostic plots, and systematic uncertainty pickle file (`hists_closure_*.pkl`).
-* **Validation Criteria**:
-  * **Multijet Ensemble Variance**: Minimizes adjacent bin pull correlation at Basis 3 ($r = 0.834$).
-  * **Spurious Signal Test**: Passes at $\zeta = -0.17 \pm 0.05$ ($< 2\sigma$ from zero).
-  * **Subsample Shape Consistency**: 15-subsample overlay confirms $< 3\%$ shape variance across all 30 bins.
+* **Outputs Produced**: Background closure fit histograms, diagnostic plots, systematic uncertainty pickle file (`hists_closure_*.pkl`), blinded collision data limits/impacts, and unblinded mixed data stats validation.
 
 **Execution Examples:**
 ```bash
-# Run full Phase E pipeline (Steps 1 through 6) on cmslpc
+# Run full Phase E pipeline (Steps 1 through 8) on cmslpc
 ./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseE.smk \
     --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml \
     --cores 8
@@ -322,8 +326,19 @@ Because Phase E mixes multiple data-driven and MC components, ensuring the corre
     --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml
 
 # Step 6: Two-stage closure fit, spurious signal test & plotting
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseE_6_closure.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml
+./run_container snakemake --profile software/snakemake/profiles/lpc -s coffea4bees/workflows/Snakefile_PhaseE_6_closure.smk \
+    --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml \
+    --cores 4
+
+# Step 7: Statistical interpretation, limits, likelihood scans, impacts & EOS upload (blinded collision data)
+./run_container snakemake --profile software/snakemake/profiles/lpc -s coffea4bees/workflows/Snakefile_PhaseE_7_stats.smk \
+    --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml \
+    --cores 4
+
+# Step 8: Complete unblinded statistical interpretation on average mixed data
+./run_container snakemake --profile software/snakemake/profiles/lpc -s coffea4bees/workflows/Snakefile_PhaseE_8_stats_mixeddata.smk \
+    --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml \
+    --cores 4
 ```
 
 ---
@@ -338,8 +353,8 @@ Because Phase E mixes multiple data-driven and MC components, ensuring the corre
 
 #### Key Artifacts & Required Downstream Updates:
 * **After Phase F.1 (Analysis Processor)**:
-  * *Outputs Produced*: `histAll_<label>.coffea`, cutflow summary `cutflow_<label>.yml` (+ `cutflow_validation_<label>_result.txt` verdict, `cutflow_<label>.html` closure table, `cutflow_crosscheck_<label>.html` F.1-vs-C.4 check), and data/MC plots on EOS/web.
-  * *Files to Add/Modify*: Update reference cutflow counts file (`analysis/tests/known_fullCounts_<label>.yml`, `known_Counts_<label>.yml` in test mode) if this run establishes a new validated baseline. For a roast make sure `analysis_config.config.JCM_file` points at the per-roast JCM copy (`metadata/weights/JCM/<roast_id>/…`) and `friends.FvT` / `friends.SvB_MA` at this roast's Phase C / D friend trees.
+  * *Outputs Produced*: `histAll_<label>.coffea`, cutflow summary `cutflow_<label>.yml`, and data/MC plots on EOS/web.
+  * *Files to Add/Modify*: Update reference cutflow counts file (`known_Counts_<analysis>.yml`) if this run establishes a new validated baseline.
 * **After Phase F.2 (Combine Stats)**:
   * *Outputs Produced*: Combine JSON histograms, datacards (`datacard_*.txt`), workspaces (`datacard_*.root`), limit outputs (`datacard_limits_*.json`), and likelihood profile scan PDFs/ROOT snapshots.
 

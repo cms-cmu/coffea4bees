@@ -29,7 +29,7 @@ python3 coffea4bees/stats_analysis/convert_json_to_root.py -f $INPUT_DIR/testSig
 # Test it with the
 #
 display_section_header "Run test runTwoStageClosure"
-python3 coffea4bees/stats_analysis/runTwoStageClosure.py  --var SvB_MA_ps_hh  --rebin 1 --outputPath $OUTPUT_DIR/testsLocal  --do_CI \
+python3 coffea4bees/stats_analysis/runTwoStageClosure.py  --var SvB_MA_ps_hh  --rebin 1 --outputPath $OUTPUT_DIR/testsLocal  --do_CI --maxBasis 5 \
     --input_file_data3b $OUTPUT_DIR/testMixedBkg_data_3b_for_mixed.root \
     --input_file_TT     $OUTPUT_DIR/testMixedBkg_TT.root \
     --input_file_mix    $OUTPUT_DIR/testMixedData.root \
@@ -37,7 +37,7 @@ python3 coffea4bees/stats_analysis/runTwoStageClosure.py  --var SvB_MA_ps_hh  --
     
 display_section_header "Run test runTwoStageClosure kfold"
 ls -lrt $OUTPUT_DIR/
-python3 coffea4bees/stats_analysis/runTwoStageClosure.py  --var SvB_MA_ps_hh  --rebin 1 --outputPath $OUTPUT_DIR/testsLocal_kfold/  --do_CI --use_kfold  \
+python3 coffea4bees/stats_analysis/runTwoStageClosure.py  --var SvB_MA_ps_hh  --rebin 1 --outputPath $OUTPUT_DIR/testsLocal_kfold/  --do_CI --use_kfold --maxBasis 5 \
     --input_file_data3b $OUTPUT_DIR/testMixedBkg_data_3b_for_mixed_kfold.root \
     --input_file_TT     $OUTPUT_DIR/testMixedBkg_TT.root \
     --input_file_mix    $OUTPUT_DIR/testMixedData.root \
@@ -60,7 +60,7 @@ python3 coffea4bees/stats_analysis/runTwoStageClosure.py  --var SvB_MA_ps_hh  --
 mkdir -p $OUTPUT_DIR/3bDvTMix4bDvT/SvB_MA/rebin1/SR/hh/
 cp -r coffea4bees/stats_analysis/tests/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_hh_rebin1.root $OUTPUT_DIR/3bDvTMix4bDvT/SvB_MA/rebin1/SR/hh/
 
-python3 coffea4bees/stats_analysis/runTwoStageClosure.py  --var SvB_MA_ps_hh  --rebin 1 --outputPath $OUTPUT_DIR --reuse_inputs --do_CI
+python3 coffea4bees/stats_analysis/runTwoStageClosure.py  --var SvB_MA_ps_hh  --rebin 1 --outputPath $OUTPUT_DIR --reuse_inputs --do_CI --maxBasis 5
 python3 coffea4bees/stats_analysis/tests/test_runTwoStageClosure.py --knownCounts coffea4bees/stats_analysis/tests/known_twoStageClosure_counts_SvB_MA_ps_hh.yml --output_path $OUTPUT_DIR --inputFile $OUTPUT_DIR/3bDvTMix4bDvT/SvB_MA/rebin1/SR/hh/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_hh_rebin1.root
 
 python3 coffea4bees/stats_analysis/tests/dumpTwoStageInputs.py --input $OUTPUT_DIR/3bDvTMix4bDvT/SvB_MA/rebin1/SR/hh/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_hh_rebin1.root   --output $OUTPUT_DIR/test_dump_twoStageClosureInputsCounts.yml
