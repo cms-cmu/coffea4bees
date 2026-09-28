@@ -231,7 +231,11 @@ class DeClusterer(Skimmer4b):
         #
         if self.subtract_ttbar_with_weights:
 
-            pass_ttbar_filter_selev = subtract_ttbar_with_FvT(selev, dataset, year)
+            # These are FOUR-tag events: d4_to_t4, as processor_HH4b does for its 4b events. The
+            # helper's default, d3_to_t3, is the 3b ttbar fraction (right for the mixer's 3b
+            # events) and over-subtracted the 4b data by ~1.44x the ttbar MC (roast
+            # declustered_run3_20260927_7e9990e-f0d7cdf).
+            pass_ttbar_filter_selev = subtract_ttbar_with_FvT(selev, dataset, year, "d4_to_t4")
 
             pass_ttbar_filter = np.full( len(event), True)
             pass_ttbar_filter[ selections.all(*cumulative_cuts) ] = pass_ttbar_filter_selev
