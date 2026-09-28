@@ -6,8 +6,10 @@ clustered jet by a real splitting of the same exact type (``jet_flavor`` tree st
 nearest neighbour in the parent's (log pT, |eta|), and aligns the real child four-vectors onto
 the target parent. See ~/ClaudeBrain/outputs/decluster-replacement/design.md.
 
-This module holds the library *production* side: turning the splittings of ``cluster_bs`` into
-flat per-splitting rows written by the cluster processor.
+Production side: turning the splittings of ``cluster_bs`` into flat per-splitting rows written by
+the cluster processor (build_splitting_library_rows).
+Consumption side: SplittingLibrary (load, rank-r nearest-neighbour lookup with same-event
+exclusion) and align_children (place the real children onto a target parent).
 
 One row per splitting (including sub-splittings):
     run, luminosityBlock, event     -- source event (self-match exclusion)
@@ -20,6 +22,8 @@ One row per splitting (including sub-splittings):
     A_<field>, B_<field>            -- carry-along fields of single-jet children (NaN for a
                                        combined child)
 """
+import logging
+
 import numpy as np
 import awkward as ak
 
@@ -134,3 +138,219 @@ def build_splitting_library_rows(selev, input_jets, splittings, clustered_jets_c
     rows = ak.zip(columns, depth_limit=1)
     assert len(rows) == int(np.sum(n_split))
     return rows
+
+
+#
+#  Consumption side
+#
+
+def _rapidity(pt, eta, mass):
+    """Rapidity of (pt, eta, mass): y = asinh(pz / mT)."""
+    pz = pt * np.sinh(eta)
+    mT = np.sqrt(pt**2 + mass**2)
+    return np.arcsinh(pz / mT)
+
+
+def _eta_from_rapidity(pt, y, mass):
+    """Inverse of _rapidity: eta = asinh(pz / pt), pz = mT sinh(y)."""
+    mT = np.sqrt(pt**2 + mass**2)
+    return np.arcsinh(mT * np.sinh(y) / pt)
+
+
+def _wrap_phi(phi):
+    return (phi + np.pi) % (2 * np.pi) - np.pi
+
+
+class SplittingLibrary:
+    """Real splittings of one era, grouped by exact jet_flavor, with a cached KD-tree per group on
+    (log pT, |eta|) of the parent.
+
+    Lookup key: the exact jet_flavor if it has >= min_entries rows; else the child (b, j) content
+    summary (same b/j count per child, any tree); else the coarse splitting_name.
+    """
+
+    #: number of extra neighbours queried to leave room for same-event exclusion
+    n_extra = 4
+
+    def __init__(self, rows, carry_fields=("btagScore",), min_entries=10, clean_tree_only=True):
+        from coffea4bees.jet_clustering.declustering import get_splitting_name, get_splitting_summary
+
+        if clean_tree_only:
+            rows = rows[np.asarray(rows.in_clean_tree, dtype=bool)]
+
+        self.carry_fields = list(carry_fields)
+        self.min_entries = min_entries
+        self.flavor = decode_flavor(rows.jet_flavor)
+
+        names = ["run", "luminosityBlock", "event", "pt", "eta", "phi", "mass"]
+        names += [f"{t}_{v}" for t in "AB" for v in _P4 + self.carry_fields]
+        self.data = {n: np.asarray(rows[n]) for n in names}
+        self.data["run"] = self.data["run"].astype(np.int64)
+        self.data["luminosityBlock"] = self.data["luminosityBlock"].astype(np.int64)
+        self.data["event"] = self.data["event"].astype(np.int64)
+
+        # Lookup groups, finest first
+        unique_flavors, inverse = np.unique(self.flavor, return_inverse=True)
+        summary = np.array([str(get_splitting_summary(f)) for f in unique_flavors], dtype=object)[inverse]
+        coarse  = np.array([get_splitting_name(f) for f in unique_flavors], dtype=object)[inverse]
+        self._groups = [self._index(self.flavor), self._index(summary), self._index(coarse)]
+        self._trees = {}
+        logging.info(f"SplittingLibrary: {len(self.flavor)} splittings, {len(self._groups[0])} exact types")
+
+    @staticmethod
+    def _index(keys):
+        order = np.argsort(keys, kind="stable")
+        uniq, start = np.unique(keys[order], return_index=True)
+        bounds = list(start) + [len(order)]
+        return {k: order[bounds[i]:bounds[i + 1]] for i, k in enumerate(uniq)}
+
+    @classmethod
+    def from_files(cls, files_yaml, year, **kwargs):
+        """Load from a {year: [files]} registry (local path or root:// URL, as the hemi library)."""
+        import fsspec
+        import uproot
+        import yaml
+
+        with fsspec.open(files_yaml, "r") as f:
+            files = yaml.safe_load(f)[year]
+        files = [files] if isinstance(files, str) else files
+        rows = ak.concatenate([batch for batch in uproot.iterate({f: "Events" for f in files}, library="ak",
+                                                                 step_size=500_000)])
+        return cls(rows, **kwargs)
+
+    def resolve_keys(self, flavor):
+        """Groups to try for a target jet_flavor, finest first, as [(level, key), ...]
+        (level 0 exact, 1 child-content summary, 2 coarse splitting_name). Starts at the finest
+        group with >= min_entries rows (else the finest non-empty one) and continues coarser; the
+        coarser groups are used when the finer one has only same-event candidates."""
+        from coffea4bees.jet_clustering.declustering import get_splitting_name, get_splitting_summary
+
+        candidates = [flavor, str(get_splitting_summary(flavor)), get_splitting_name(flavor)]
+        existing = [(level, key) for level, key in enumerate(candidates) if key in self._groups[level]]
+        if not existing:
+            raise KeyError(f"SplittingLibrary: no splittings compatible with {flavor}")
+        for i, (level, key) in enumerate(existing):
+            if len(self._groups[level][key]) >= self.min_entries:
+                return existing[i:]
+        return existing
+
+    def _tree(self, level, key):
+        from scipy.spatial import cKDTree
+
+        if (level, key) not in self._trees:
+            members = self._groups[level][key]
+            points = np.column_stack([np.log(self.data["pt"][members]), np.abs(self.data["eta"][members])])
+            self._trees[(level, key)] = (cKDTree(points), members)
+        return self._trees[(level, key)]
+
+    def lookup(self, flavor, pt, eta, run, luminosityBlock, event, rank):
+        """Library row index for each target (flat arrays), plus the lookup level used.
+
+        Takes the rank-th nearest neighbour (0 = nearest) in (log pT, |eta|) after dropping
+        neighbours from the target's own (run, luminosityBlock, event); the rank wraps modulo the
+        group size, and if fewer allowed neighbours are found, the farthest allowed one is used.
+        Targets whose group holds only same-event candidates move to the next coarser group; if
+        none has any, the nearest (same-event) row is used and counted in self.n_self_matches.
+        """
+        flavor = np.asarray(flavor, dtype=object)
+        pt, eta = np.asarray(pt, dtype=np.float64), np.asarray(eta, dtype=np.float64)
+        rank = np.broadcast_to(np.asarray(rank, dtype=np.int64), flavor.shape)
+        target_id = np.column_stack([np.asarray(run), np.asarray(luminosityBlock), np.asarray(event)]).astype(np.int64)
+        points = np.column_stack([np.log(pt), np.abs(eta)])
+
+        index = np.full(len(flavor), -1, dtype=np.int64)
+        level_used = np.full(len(flavor), -1, dtype=np.int8)
+        self.n_self_matches = 0
+
+        for f in np.unique(flavor):
+            pending = np.where(flavor == f)[0]
+            groups = self.resolve_keys(f)
+            for level, key in groups:
+                tree, members = self._tree(level, key)
+                n = len(members)
+                r = rank[pending] % n
+                k = int(min(r.max() + 1 + self.n_extra, n))
+                _, nbr = tree.query(points[pending], k=list(range(1, k + 1)))
+                lib_idx = members[nbr]                                        # (n_pending, k)
+
+                lib_id = np.stack([self.data["run"][lib_idx], self.data["luminosityBlock"][lib_idx],
+                                   self.data["event"][lib_idx]], axis=-1)     # (n_pending, k, 3)
+                allowed = ~np.all(lib_id == target_id[pending][:, None, :], axis=-1)
+                n_allowed = allowed.sum(axis=1)
+
+                # column of the r-th allowed neighbour (or the last allowed one)
+                allowed_rank = np.cumsum(allowed, axis=1) - 1
+                pick = allowed & (allowed_rank == np.minimum(r, n_allowed - 1)[:, None])
+                ok = n_allowed > 0
+                col = np.argmax(pick, axis=1)
+                index[pending[ok]] = lib_idx[np.where(ok)[0], col[ok]]
+                level_used[pending[ok]] = level
+                pending = pending[~ok]
+                if len(pending) == 0:
+                    break
+
+            if len(pending):
+                level, key = groups[0]
+                tree, members = self._tree(level, key)
+                _, nbr = tree.query(points[pending], k=1)
+                index[pending] = members[nbr]
+                level_used[pending] = level
+                self.n_self_matches += len(pending)
+
+        if self.n_self_matches:
+            logging.warning(f"SplittingLibrary.lookup: {self.n_self_matches} targets had only same-event candidates")
+        return index, level_used
+
+
+def align_children(library, index, pt, eta, phi, mass=None, *, scale_pt=True, boost_z=True):
+    """Place the children of library rows ``index`` onto target parents (pt, eta, phi).
+
+    1. scale both children's four-vectors by pt / pt_lib (pT exact; m/pT preserved)
+    2. reflect in z if sign(eta) != sign(eta_lib) (matching is on |eta|)
+    3. rotate in phi by phi - phi_lib (phi exact)
+    4. boost along z so the aligned parent has the target pz (eta exact)
+
+    The parent mass is not preserved. ``mass`` is unused (kept for symmetry with the target p4).
+    Returns {"A": {pt, eta, phi, mass, <carry fields>}, "B": {...}} of flat numpy arrays.
+    """
+    d = library.data
+    pt, eta, phi = (np.asarray(x, dtype=np.float64) for x in (pt, eta, phi))
+    lib_pt, lib_eta, lib_phi, lib_mass = (d[v][index].astype(np.float64) for v in _P4)
+
+    scale = pt / lib_pt if scale_pt else np.ones_like(pt)
+    flip = np.sign(eta) != np.sign(lib_eta)
+    dphi = phi - lib_phi
+
+    if boost_z:
+        parent_pt = lib_pt * scale
+        parent_mass = lib_mass * scale
+        y_lib = _rapidity(lib_pt, np.where(flip, -lib_eta, lib_eta), lib_mass)   # scale-invariant
+        y_target = np.arcsinh(parent_pt * np.sinh(eta) / np.sqrt(parent_pt**2 + parent_mass**2))
+        dy = y_target - y_lib
+    else:
+        dy = np.zeros_like(pt)
+
+    out = {}
+    for tag in "AB":
+        c_pt   = d[f"{tag}_pt"][index].astype(np.float64) * scale
+        c_mass = d[f"{tag}_mass"][index].astype(np.float64) * scale
+        c_eta  = d[f"{tag}_eta"][index].astype(np.float64)
+        c_eta  = np.where(flip, -c_eta, c_eta)
+        c_eta  = _eta_from_rapidity(c_pt, _rapidity(c_pt, c_eta, c_mass) + dy, c_mass)
+        c_phi  = _wrap_phi(d[f"{tag}_phi"][index].astype(np.float64) + dphi)
+        out[tag] = {"pt": c_pt, "eta": c_eta, "phi": c_phi, "mass": c_mass}
+        for field in library.carry_fields:
+            out[tag][field] = d[f"{tag}_{field}"][index].astype(np.float64)
+    return out
+
+
+def library_child_flavors(library, index):
+    """(flavor_A, flavor_B) of library rows ``index`` (numpy object arrays)."""
+    from coffea4bees.jet_clustering.declustering import children_jet_flavors
+
+    flavors = library.flavor[index]
+    uniq, inverse = np.unique(flavors, return_inverse=True)
+    children = [children_jet_flavors(f) for f in uniq]
+    child_A = np.array([c[0] for c in children], dtype=object)[inverse]
+    child_B = np.array([c[1] for c in children], dtype=object)[inverse]
+    return child_A, child_B
