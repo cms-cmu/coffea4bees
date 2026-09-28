@@ -134,7 +134,8 @@ rule cutflow_closure_table:
         # estimate from 3b data (plot_ttbar_with_weights; Phase F runs without ttbar MC)
         ttbar = "TTToHadronic TTToSemiLeptonic TTTo2L2Nu",
         # further cutflow_closure.py options, e.g. "--multijet-process syn_v0 --pseudodata
-        # ttbar_PSData" (a four-tag multijet sample as the Multijet column; DeClustered D.5)
+        # ttbar_PSData" with multijet = "sample4b" (a four-tag multijet sample as the Multijet
+        # column; DeClustered D.5)
         extra_arguments = "",
         run_container_wrapper = "",
         python_bin = lambda wildcards: config.get("python_bin", "python")

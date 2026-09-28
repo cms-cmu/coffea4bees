@@ -32,7 +32,8 @@ rule D1_config:
             # histogram-pass settings (top reconstruction, btagSF, ...) of analysis_config.config
             inherit_config=False,
             processor="coffea4bees/analysis/processors/processor_cluster_4b.py",
-            runner=tmpl.get('runner') or {})
+            runner={**(tmpl.get('runner') or {}),
+                    **{k: CLUSTER[k] for k in ('worker_memory', 'chunksize') if k in CLUSTER}})
         if not cfg['config'].get('subtract_ttbar_with_weights'):
             raise ValueError("D.1 must subtract ttbar: the PDFs describe the multijet splittings")
         write_yaml(output[0], cfg)
