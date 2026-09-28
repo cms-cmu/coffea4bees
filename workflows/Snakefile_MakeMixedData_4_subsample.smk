@@ -4,7 +4,7 @@
 # split_mixed_data.py gives each mixed 4b event a pseudo-tag weight w from the M.3 mixed-data JCM
 # and puts it in subsample v when one per-event uniform number lies in [v*w, (v+1)*w)
 # (mixing_helpers.assign_mixed_subsamples): N unweighted, disjoint samples as long as N*w <= 1.
-# Events with N*w > 1 wrap to (event+v) % 9 and are shared -- M.3's study counts them.
+# Events with N*w > 1 wrap to slice (event+v) mod floor(1/w) and are shared -- M.3's study counts them.
 #
 #   M4_split_config (per v)           skimmer config (subsample.split_template + this roast's values)
 #   M4_split (per v, condor)          picoAODs -> <PUB>/picoAOD/subsamples/v<v>/, registry
