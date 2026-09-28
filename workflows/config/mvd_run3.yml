@@ -112,7 +112,8 @@ mvd:
 
 # ==============================================================================
 # V.2c (cmslpc): MvD closure, the Phase C.4 analogue -- data vs mixed x JCM x MvD + TTbar4b_from_MvD,
-# no SvB. First roast: the cutflow is only dumped; bless it into known_counts afterwards.
+# no SvB. known_counts blessed from mvd_run3_20260927_91be0e9-f18c44b (after its hot patch 3, the mixed-data
+# JCM argument fix): SB data/Bkg 0.986, SR 0.983. A regression check -- it detects change, not correctness.
 # ==============================================================================
 closure:
   label: "MvD_closure"
@@ -156,7 +157,7 @@ analysis:
   label: "MvD"
   signal_datasets: ["GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"]
   plot_config: "coffea4bees/plots/metadata/plotsAll_MvD_roast.yml"
-  # first roast: dump only; bless the cutflow afterwards
+  # blessed from mvd_run3_20260927_91be0e9-f18c44b (after its hot patch 3); a regression check
   known_counts: "coffea4bees/analysis/tests/known_fullCounts_MvD_Run3.yml"
 
 combine_flags: "--blind"
