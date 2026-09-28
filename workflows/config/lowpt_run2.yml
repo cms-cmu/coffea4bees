@@ -11,7 +11,7 @@ dataset:
   - "GluGluToHHTo4B_cHHH2p45"
   - "GluGluToHHTo4B_cHHH5"
   - "ZH4b"
-  - "ZZ4b"
+  # - "ZZ4b"  # Temporarily disabled: UL16 chunks have new UUIDs after re-skim and are missing trigger-weight friends until trigweights_ZZ4b_UL16.yml is run and merged.
   - "ggZH4b"
 
 year_eras:
@@ -128,12 +128,12 @@ channels:
     variable: "SvB_MA.ps_hh_fine"
     signal: "GluGluToHHTo4B_cHHH1"
     closure_subdir: "hh"
-  ZZ4b:
-    signallabel: "ZZ_bbbb"
-    othersignal: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb ZH_bbbb"
-    variable: "SvB_MA.ps_zz"
-    signal: "ZZ4b"
-    closure_subdir: "zz"
+  # ZZ4b:
+  #   signallabel: "ZZ_bbbb"
+  #   othersignal: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb ZH_bbbb"
+  #   variable: "SvB_MA.ps_zz"
+  #   signal: "ZZ4b"
+  #   closure_subdir: "zz"
   ZH4b:
     signallabel: "ZH_bbbb"
     othersignal: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb ZZ_bbbb"
