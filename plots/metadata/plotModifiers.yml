@@ -13,11 +13,16 @@ SvB_MA_ps_zz : {"rebin":4, "yscale":"log"}
 SvB_MA_ps_hh : {"rebin":10, "yscale":"log"}
 SvB_MA_ps_ttHbb : {"yscale":"log"}
 SvB_MA_ps_ttHbb_gt6 : {"yscale":"log"}
+SvB_MA_ps_ttHbb_gt6_lepveto : {"yscale":"log"}
 SvB_MA_ps : {"yscale":"log"}
 SvB_MA_ps_flat : {"yscale":"log"}
 SvB_MA_ptt : {"yscale":"log"}
 SvB_MA.ps_ttHbb : {"yscale":"log"}
+SvB_MA.ps_ttHbb_14 : {"yscale":"log"}
+SvB_MA.ps_ttHbb_12 : {"yscale":"log"}
 SvB_MA.ps_ttHbb_gt6 : {"yscale":"log"}
+SvB_MA.ps_ttHbb_lepveto : {"yscale":"log"}
+SvB_MA.ps_ttHbb_gt6_lepveto : {"yscale":"log"}
 SvB_MA.ps : {"yscale":"log"}
 SvB_MA.ptt : {"yscale":"log"}
 SvB_MA.tt_vs_mj : {"yscale":"log"}
