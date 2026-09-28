@@ -2,7 +2,8 @@
 # D.1: learn the jet splittings. processor_cluster_4b.py takes 4b data events (ttbar subtracted
 # with the upstream FvT, rand > FvT.d4_to_t4), clusters the four candidate jets into their
 # splitting tree and histograms the splitting variables per splitting type and pT bin.
-# (scripts/synthetic-dataset-cluster-Run3-all.sh, config analysis/metadata/cluster_4b_Run3.yml)
+# (formerly scripts/synthetic-dataset-cluster-Run3-all.sh; config analysis/metadata/cluster_4b_Run3.yml,
+#  Run 2 cluster_4b.yml)
 #
 #   D1_config                         runner config (cluster.config_template + this roast's values)
 #   D1_cluster (per data year, condor) -> splitting histograms, one coffea per year

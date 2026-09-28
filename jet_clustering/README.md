@@ -122,7 +122,8 @@ yielding a unique binary splitting tree per event. A numba-jitted core
 **Processor**: `coffea4bees/analysis/processors/processor_cluster_4b.py`
 (extends the standard `HH4bBaseProcessor`)
 
-**Example script**: `coffea4bees/scripts/synthetic-dataset-cluster-Run3-all.sh`
+**Workflow stage**: D.1, `workflows/Snakefile_DeClustered_1_cluster.smk` (CI test slice:
+`scripts/synthetic-dataset-cluster.sh`)
 
 **Config**: `coffea4bees/analysis/metadata/cluster_4b_Run3.yml`
 
@@ -137,7 +138,7 @@ The processor:
 Output: `synthetic_datasets_Run3_nott.coffea` (histograms of the splittings)
 
 ```bash
-./run_container bash coffea4bees/scripts/synthetic-dataset-cluster-Run3-all.sh --output-base output/
+bin/roast submit <id> --step DeClustered --targets all_D1
 ```
 
 ### Step 1b: Make the clustering PDFs
@@ -160,7 +161,8 @@ python jet_clustering/make_jet_splitting_PDFs.py \
 **Processor**: `coffea4bees/skimmer/processor/make_declustered_data_4b.py`
 (class `DeClusterer`)
 
-**Example script**: `coffea4bees/scripts/synthetic-dataset-make-dataset-Run3-all.sh`
+**Workflow stage**: D.3, `workflows/Snakefile_DeClustered_3_decluster.smk` (CI test slices:
+`scripts/synthetic-dataset-make-dataset.sh`, `synthetic-dataset-make-dataset-Run3.sh`)
 
 **Config**: `coffea4bees/skimmer/metadata/declustering_Run3.yml`
 
@@ -176,14 +178,15 @@ Output: declustered PicoAODs on EOS
 (`{base_path}/{dataset}/picoAOD_seed{seed}...root`) plus a picoAOD registry YAML.
 
 ```bash
-./run_container bash coffea4bees/scripts/synthetic-dataset-make-dataset-Run3-all.sh --output-base output/
+bin/roast submit <id> --step DeClustered --targets all_D3
 ```
 
 ### Step 3: Analyze
 
 **Processor**: `coffea4bees/analysis/processors/processor_HH4b.py`
 
-**Example script**: `coffea4bees/scripts/synthetic-dataset-analyze-Run3-all.sh`
+**Workflow stage**: D.4, `workflows/Snakefile_DeClustered_4_validate.smk` (CI test slices:
+`scripts/synthetic-dataset-analyze.sh`, `synthetic-dataset-analyze-Run3.sh`)
 
 **Config**: `coffea4bees/analysis/metadata/HH4b_mixed_data_new.yml`
 
@@ -192,7 +195,7 @@ are read via the dataset's `nSamples` / `files_template`), producing
 `histDeClusteredDataRun3_noTT.coffea`.
 
 ```bash
-./run_container bash coffea4bees/scripts/synthetic-dataset-analyze-Run3-all.sh output/
+bin/roast submit <id> --step DeClustered --targets all_D4
 ```
 
 ## Snakemake Workflow (end-to-end, roast)
@@ -234,10 +237,6 @@ Key points:
 - **2023 pt threshold (25 GeV)** — all processors read
   `analysis/metadata/object_selection_thresholds.yml` (`era_overrides: "2023"`),
   and the DeClusterer's b-jet pT floor follows it unless `b_pt_threshold` is set.
-
-`Snakefile_Run3_make_synthetic.smk` is the earlier, non-roast version; it predates
-the config-driven `analysis_processor` rule (its processor/condor params are
-ignored) and needs a missing `install_synthetic_dataset.py`.
 
 ---
 
