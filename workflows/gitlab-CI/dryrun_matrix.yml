@@ -1,0 +1,112 @@
+# Workflow dry-run matrix, read by workflows/scripts/ci_workflow_dryrun.py (CI job
+# workflow_validation_coffea4bees in stages_workflows.yml).
+#
+# runs: each production config (under workflows/config/) -> the Snakefiles its roast runs,
+#   named without the `Snakefile_` prefix and `.smk` suffix. Every pair is dry-run
+#   (`snakemake -n`) with test=false and test=true; a `base:` config is layered over its base
+#   chain exactly as `roast new` captures it. Seeded from the roasts/ records (2026-09-28).
+#
+#   `upstream:` lists path fragments of products an EARLIER phase of the same roast writes
+#   (a standalone dry run cannot see them). The pair passes only if every missing input
+#   matches one of them; any other missing file is a failure.
+#
+# not_covered: top-level Snakefiles deliberately left out of `runs` (no production config to
+#   pair them with). They are still compile-checked. A top-level Snakefile in neither list
+#   fails the job, so a new workflow cannot land without being placed in one of them.
+
+runs:
+  nominal_run2.yml:
+    - PhaseA
+    - PhaseB
+    - PhaseC
+    - {snakefile: PhaseC_4_FvT_closure, upstream: ["computeJCM/singlefiles/", "metadata/weights/JCM/"]}
+    - PhaseD
+    - PhaseF
+    - PhaseF_1_analysis
+  nominal_run3.yml:
+    - PhaseA
+    - PhaseB
+    - PhaseC
+    - {snakefile: PhaseC_4_FvT_closure, upstream: ["computeJCM/singlefiles/", "metadata/weights/JCM/"]}
+    - PhaseD
+    - PhaseF
+    - PhaseF_1_analysis
+  nominal_run3_30x.yml:
+    - PhaseC
+    - PhaseC_4_FvT_closure
+    - PhaseD
+    - PhaseF
+  nominal_run3_quadjet_run2.yml:
+    - PhaseB
+    - PhaseC
+    - {snakefile: PhaseC_4_FvT_closure, upstream: ["computeJCM/singlefiles/", "metadata/weights/JCM/"]}
+    - PhaseD
+    - PhaseF
+  nominal_run3_nontight.yml:
+    - PhaseB
+    - PhaseB_1_computeJCM
+    - PhaseC
+    - {snakefile: PhaseC_4_FvT_closure, upstream: ["computeJCM/singlefiles/", "metadata/weights/JCM/"]}
+  nominal_run3_feynnet.yml:
+    - PhaseF
+  nominal_run3_fvt_closure_plots.yml:
+    - PhaseC_4_FvT_closure
+  nominal_run3_ci.yml:
+    - PhaseF_1_analysis
+  lowpt_run2.yml:
+    - PhaseF
+    - PhaseF_1_analysis
+  analysis_ttHbb.yml:
+    - PhaseA
+    - PhaseB
+    - PhaseC
+    - PhaseD
+    - PhaseF
+    - PhaseF_1_analysis
+  mixeddata_run2.yml:
+    - MakeMixedData
+  mixeddata_run3.yml:
+    - MakeMixedData
+  mvd_run3.yml:
+    - MvD
+    - MvD_2_train
+    - MvD_3_svb
+  mvd_run3_30x.yml:
+    - MvD
+    - MvD_2_train
+    - MvD_3_svb
+  declustered_run3.yml:
+    - DeClustered
+  svbfeynnet_run3.yml:
+    - SvBFeynNet_friendtrees_Run3
+
+not_covered:
+  PhaseE: "legacy mixed-data chain, superseded by MakeMixedData; fails -n with the Run 3 configs"
+  PhaseB_computeJCM: "no production config"
+  PhaseC_1_inputs: "pre-classifier-workflow stage file; PhaseC now includes src/classifier/workflow"
+  PhaseC_1_plot_inputs: "pre-classifier-workflow stage file; PhaseC now includes src/classifier/workflow"
+  PhaseC_2_train: "pre-classifier-workflow stage file; PhaseC now includes src/classifier/workflow"
+  PhaseC_3_evaluate: "pre-classifier-workflow stage file; PhaseC now includes src/classifier/workflow"
+  PhaseD_1_inputs: "pre-classifier-workflow stage file; PhaseD now includes src/classifier/workflow"
+  PhaseD_1_plot_inputs: "pre-classifier-workflow stage file; PhaseD now includes src/classifier/workflow"
+  PhaseD_2_train: "pre-classifier-workflow stage file; PhaseD now includes src/classifier/workflow"
+  PhaseD_3_evaluate: "pre-classifier-workflow stage file; PhaseD now includes src/classifier/workflow"
+  Run2_make_mixeddata: "pre-roast mixed-data production, superseded by MakeMixedData"
+  Run3: "pre-roast Run 3 driver (rules/run3_variants.smk)"
+  Run3MvD: "pre-roast MvD driver, superseded by MvD"
+  Run3MvD_training: "pre-roast training driver, edit-the-vars style"
+  Run3_SvB_training: "pre-roast training driver"
+  Run3_make_synthetic: "broken against rules/analysis.smk; superseded by DeClustered"
+  Run3_training: "pre-roast training driver, edit-the-vars style"
+  SvB_friendtrees_Run3: "no production config"
+  analysis: "backward-compatibility wrapper for PhaseF_1_analysis"
+  classifier_inputs_Run3: "pre-roast driver (rules/run3_variants.smk)"
+  computeJCM: "backward-compatibility wrapper for PhaseB_1_computeJCM"
+  full_analysis: "backward-compatibility wrapper for PhaseF"
+  isParking_friendtrees_Run3: "no production config"
+  make_classifier_friendtree: "backward-compatibility wrapper for PhaseB_2_make_classifier_friendtree"
+  mixdata_closure: "hard-coded config, no production config"
+  mixeddata: "pre-roast mixed-data analysis workflow"
+  reana: "REANA workflow, exercised by the reana stage"
+  stats: "backward-compatibility wrapper for PhaseF_2_stats"
+  testCI: "hard-coded CI demo workflow"
