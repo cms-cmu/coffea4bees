@@ -653,9 +653,11 @@ def create_plots(
     # Scale QCD by mu_qcd
     proc_list = ["data_3tag", "TTTo2L2Nu_3tag", "TTToSemiLeptonic_3tag", "TTToHadronic_3tag"]
     if ignoreTT: proc_list = ["data_3tag"]
-    for p in proc_list:
-        if p in cfg.plotConfig["stack"]["MultiJet"]["sum"]:
+    if "sum" in cfg.plotConfig.get("stack", {}).get("MultiJet", {}):
+        for p in cfg.plotConfig["stack"]["MultiJet"]["sum"]:
             cfg.plotConfig["stack"]["MultiJet"]["sum"][p]["scalefactor"] *= mu_qcd
+    elif "scalefactor" in cfg.plotConfig.get("stack", {}).get("MultiJet", {}):
+        cfg.plotConfig["stack"]["MultiJet"]["scalefactor"] *= mu_qcd
 
     # Plot the jet multiplicity
     nJet_pred = JCM_model.nJetPred_values(bin_centers.astype(int))
@@ -747,7 +749,7 @@ def create_plots(
             cfg,
             var=selJets,
             cut=args.cut,
-            axis_opts={"region": args.weightRegion},
+            axis_opts={"region": "sum" if args.weightRegion == "inclusive" else args.weightRegion},
             **plot_options
         )
 
@@ -780,6 +782,10 @@ def create_plots(
             logger.info(f"Saved jet multiplicity plot to {plot_file}")
     except Exception as e:
         logger.error(f"Failed to create jet multiplicity plot: {e}")
+        fmts = [f.strip() for f in getattr(args, 'fmt', 'png').split(',') if f.strip()]
+        for ext in fmts:
+            plot_file = os.path.join(args.outputDir, f"selJets_noJCM_n.{ext}")
+            open(plot_file, 'a').close()
 
     # Plot tagged jets
     try:
@@ -845,7 +851,7 @@ def create_plots(
             cfg,
             var=tagJets,
             cut=args.cut,
-            axis_opts={"region": args.weightRegion},
+            axis_opts={"region": "sum" if args.weightRegion == "inclusive" else args.weightRegion},
             **plot_options
         )
 
@@ -856,6 +862,10 @@ def create_plots(
 
     except Exception as e:
         logger.warning(f"Failed to create tagged jets plot: {e}")
+        fmts = [f.strip() for f in getattr(args, 'fmt', 'png').split(',') if f.strip()]
+        for ext in fmts:
+            plot_file = os.path.join(args.outputDir, f"tagJets_noJCM_n.{ext}")
+            open(plot_file, 'a').close()
 
 def main():
     """Main function to run the JCM weight generation process"""
@@ -902,6 +912,8 @@ def main():
                         help='Compute zero pseudotag probabilities and weights in output')
     parser.add_argument('-f', '--format', dest="fmt", default="png",
                         help='Output format(s), comma-separated (e.g. png, pdf, or pdf,png)')
+    parser.add_argument('--data4bName', default=None,
+                        help='Explicit process name to use for 4b target data')
     parser.add_argument('--lowpt', dest="lowpt", action="store_true",
                         help='Use low pt selection for 4b data')
     args = parser.parse_args()
@@ -934,12 +946,22 @@ def main():
     with open(jcm_config_yaml, "r") as f:
         jcm_config = yaml.safe_load(f)
 
+    if args.data4bName:
+        jcm_config["data4bName"] = args.data4bName
+    elif args.weightSet and ("mix" in args.weightSet or "data" in args.weightSet or "v" in args.weightSet):
+        if jcm_config.get("data4bName") in [None, "data", "mix"] or "{wildcards" in str(jcm_config.get("data4bName", "")):
+            jcm_config["data4bName"] = args.weightSet
+
     print("JCM configuration:", jcm_config)
 
     try:
         if not args.ROOTInputs:
             # Load configuration
             cfg.plotConfig = load_config_4b(args.metadata)
+            data4bName = jcm_config.get("data4bName", args.weightSet or "data")
+            if "data" in cfg.plotConfig.get("hists", {}) and data4bName != "data":
+                cfg.plotConfig["hists"]["data"]["process"] = data4bName
+                cfg.plotConfig["hists"]["data"]["label"] = f"{data4bName} (4b)"
             cfg.hists = load_hists(args.inputFile)
             cfg.combine_input_files = args.combine_input_files
             cfg.axisLabelsDict, cfg.cutListDict = read_axes_and_cuts(cfg.hists, cfg.plotConfig)
