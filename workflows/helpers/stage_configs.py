@@ -555,6 +555,103 @@ def stage_phaseA_4_configs(config, out_a4):
     }
 
 
+def stage_phaseC_configs(config, out_c):
+    """
+    Generate concrete per-subsample classifier workflow configs into {out_c}models/mix_{m}/.
+    Writes:
+      - {out_c}models/mix_{m}/wfs/train.yml
+      - {out_c}models/mix_{m}/wfs/evaluate.yml
+      - {out_c}models/mix_{m}/common.yml
+    Also registers train_templates and eval_templates into config for barista's generic Snakefile.
+    """
+    channel = config.get('channel', 'ttHbb')
+    out = config.get('out', 'output/ttHbb_bkg_syst/')
+    n_models = int(config.get('n_models', config.get('n_subsamples', 16)))
+    eos_base = config.get("eos_base", "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2")
+    mix_name = config.get("mix_name", "ttHbb_bkg_syst")
+
+    nominal_ci = config.get(
+        'nominal_classifier_inputs',
+        'coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json'
+    )
+    if not os.path.exists(nominal_ci) and os.path.exists('coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json'):
+        nominal_ci = 'coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json'
+
+    mixed_ci_template = config.get(
+        'mixed_classifier_inputs_template',
+        f"{out}bkg_syst_A_4_process_subsamples/histAll_{channel}_mixeddata_v{{m}}.json"
+    )
+
+    jcm_template = config.get(
+        'jcm_template',
+        f"{out}bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v{{m}}.yml"
+    )
+
+    raw_train_wf = config.get("fvt_train_workflow", config.get("train_workflow", {}))
+    raw_eval_wf = config.get("fvt_eval_workflow", config.get("eval_workflow", {}))
+
+    common_cfg = config.get("classifier_setting", [
+        {
+            "module": "ml.Training",
+            "option": [{"precision": config.get("precision", "fp16")}]
+        }
+    ])
+    if isinstance(common_cfg, list):
+        common_data = {"setting": common_cfg}
+    elif isinstance(common_cfg, dict):
+        common_data = common_cfg if "setting" in common_cfg else {"setting": common_cfg}
+    else:
+        common_data = {"setting": []}
+
+    train_templates = config.setdefault("train_templates", {})
+    eval_templates = config.setdefault("eval_templates", {})
+
+    staged_configs = {}
+
+    def _format_structure(obj, mapping):
+        if isinstance(obj, str):
+            res = obj
+            for k, v in mapping.items():
+                res = res.replace(f"{{{k}}}", str(v))
+            return res
+        elif isinstance(obj, dict):
+            return {k: _format_structure(v, mapping) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [_format_structure(elem, mapping) for elem in obj]
+        return obj
+
+    for m in range(n_models):
+        model_dir = os.path.join(out_c, f"models/mix_{m}")
+        wfs_dir = os.path.join(model_dir, "wfs")
+        os.makedirs(wfs_dir, exist_ok=True)
+
+        mapping = {
+            "mix": str(m),
+            "jcm": jcm_template.format(m=m),
+            "mixed_ci": mixed_ci_template.format(m=m),
+            "nominal_ci": nominal_ci,
+        }
+
+        train_file = os.path.join(wfs_dir, "train.yml")
+        eval_file = os.path.join(wfs_dir, "evaluate.yml")
+        common_file = os.path.join(model_dir, "common.yml")
+
+        _dump_yaml(_format_structure(raw_train_wf, mapping), train_file)
+        _dump_yaml(_format_structure(raw_eval_wf, mapping), eval_file)
+        _dump_yaml(common_data, common_file)
+
+        train_templates[model_dir] = f"model: {eos_base}/classifier/{mix_name}_v{m}"
+        eval_templates[model_dir] = f"model: {eos_base}/classifier/{mix_name}_v{m}, FvT: {eos_base}/friend/FvT/{mix_name}_v{m}"
+
+        staged_configs[m] = {
+            "train": train_file,
+            "eval": eval_file,
+            "common": common_file,
+        }
+
+    return staged_configs
+
+
 def stage_phaseF_1_configs(config, out_f1):
     """
     Generate all effective runtime configs for Stage F_1 into {out_f1}closure_v{m}/.
