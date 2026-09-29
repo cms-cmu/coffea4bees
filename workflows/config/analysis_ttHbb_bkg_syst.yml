@@ -35,6 +35,7 @@ years:
 
 phase_f_output_path: "inputs/"
 phase_f_label: "ttHbb"
+nominal_coffea: "output/ttHbb/histAll_ttHbb.coffea"
 
 # ttbar MC in inputs.jcm_hists: the ttbar term of the A_1 mixed-data JCM fit
 ttbar_processes:
@@ -310,6 +311,18 @@ analysis_config:
     top_reconstruction: fast
     plot_ttbar_with_weights: true
     fill_histograms: "SvB"
+
+# TWO-STAGE CLOSURE CANDIDATES & MULTI-BINNING
+closure_rebin_candidates:
+  - 2   # 120 bins (240 / 2)
+  - 12  # 20 bins (240 / 12)
+  - 15  # 16 bins (240 / 15)
+  - 16  # 15 bins (240 / 16)
+  - 20  # 12 bins (240 / 20)
+  - 24  # 10 bins (240 / 24)
+max_basis: 10
+rebin: 12
+
 
 # TWO-STAGE CLOSURE CANDIDATES & MULTI-BINNING
 closure_rebin_candidates:
