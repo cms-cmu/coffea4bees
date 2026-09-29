@@ -47,7 +47,7 @@ classifier_inputs:
 # a stale tag here -- C would fail on a missing file instead.)
 fvt:
   workflow_overrides:
-    --JCM-weight: '"" root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/{roast_id}/handoff/jetCombinatoricModel_SB_Run3_nontight_v1.yml@@JCM_weights'
+    --JCM-weight: '"" {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_Run3_nontight_v1.yml@@JCM_weights'
 
 analysis_config:
   config:

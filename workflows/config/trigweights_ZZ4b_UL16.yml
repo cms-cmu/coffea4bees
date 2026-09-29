@@ -58,7 +58,7 @@ trigger_weights:
   config:
     # Friends land at {this}/ZZ4b_{era}/trigWeight.chunkN.root (own EOS area; the
     # original friends sit next to the picoAODs in algomez's area, not writable).
-    make_classifier_input: root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/trigWeights_2024_v2_ZZ4b_UL16/
+    make_classifier_input: "{eos_prod}/trigWeights_2024_v2_ZZ4b_UL16/"
     # Run 2 settings, stated explicitly
     use_vectorized: false
     tagger: DeepJet
