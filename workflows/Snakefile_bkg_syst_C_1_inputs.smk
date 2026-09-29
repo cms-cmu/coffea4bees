@@ -1,121 +1,84 @@
 # ==============================================================================
 # coffea4bees/workflows/Snakefile_bkg_syst_C_1_inputs.smk
 #
-# Stage C_1: HCR Classifier Training Input Generation (CPU on cmslpc)
+# Stage C_1: Classifier Input Feature Inspection, Validation Plots & Analysis
 # ==============================================================================
 #
 # OVERVIEW & OBJECTIVE:
-# Generates the HCR (Hierarchical Classifier for Resonances) classifier training
-# inputs (ROOT trees and dataset JSON manifests) for the ttH(bb) background
-# systematics pipeline across Run 2 eras (UL16_preVFP, UL16_postVFP, UL17, UL18).
-#
-# For each of the 16 independent pseudo-experiments (v0..v15), the FvT neural
-# network trains a reweighting function that maps 3-tag collision data to 4-tag
-# background. To achieve this, the training sample requires:
-#   1. Baseline Collision Data (3b): Detector 3b events serving as source domain.
-#   2. Baseline ttbar MC (3b & 4b): Simulated ttbar events in both 3b and 4b
-#      regions, allowing the classifier to learn the ttbar component and separate
-#      it from multijet QCD.
-#   3. Mixed Data 4b Subsamples (v0..v15): Sliced 4b events where each subsample
-#      v{m} is constructed from hemisphere-mixed multijet data PLUS sliced
-#      pseudotagged ttbar MC (subsample + PSttbar from mixeddata_4b.yml).
+# Generates validation distributions and performance diagnostics for the HCR
+# neural network classifier inputs, feature representations, training loss / ROC
+# curves, and output event weights across all 16 background systematic subsamples
+# (mix_0..mix_15).
 #
 # WORKFLOW EXECUTION PIPELINE:
-#   1. Baseline Detector Inputs:
-#      - Evaluates processor_ttHbb.py over Data (3b) and stitched ttbar MC
-#        (TTTo2L2Nu, TTToSemiLeptonic, TTToHadronic) with dump_classifier_inputs.
-#      - Writes detector HCR inputs: classifier_inputs_ttHbb.json
-#   2. Per-Subsample Mixed-Data Inputs:
-#      - Evaluates processor_ttHbb.py over each slice `mixeddata_4b:{m}`
-#        (which unifies mixeddata subsample m + PSttbar) with unit weights.
-#      - Writes per-subsample HCR manifests:
-#        classifier_inputs_mixeddata_ttHbb_v{m}.json
+#   1. Configuration Staging:
+#      - Stages concrete per-subsample workflow configs (train.yml, evaluate.yml,
+#        common.yml) via helpers.stage_configs.stage_phaseC_configs.
+#   2. Raw Input Feature Plotting (`rule plot_inputs_raw`):
+#      - Evaluates raw kinematic and tagging distributions from friend trees
+#        and input picoAODs split by physics processes (d4, d3, t4, t3).
+#   3. Embedded DataPrep Plotting (`rule plot_inputs_dataprep`):
+#      - Plots normalized embedded feature representations produced by the
+#        HCR network's inputEmbed.dataPrep() layer.
+#   4. Network Performance & Loss Analysis (`rule analyze`):
+#      - Evaluates training loss curves, ROC distributions, and background
+#        reweighting fidelity from model checkpoints (result.json).
+#   5. Classifier Weight Distributions (`rule plot_weights`):
+#      - Compares data/MC weight distributions and closure metrics across
+#        control and signal regions.
 #
 # INPUTS:
-#   - Detector Datasets: coffea4bees/metadata/datasets/data.yml, TT_stitched.yml
-#   - Multi-Sample Mixed Dataset: output/ttHbb_bkg_syst/coffea4bees/metadata/datasets/mixeddata_4b.yml
-#   - Friends Manifest: coffea4bees/metadata/friends/friends_ttHbb.yml
+#   - Trained Model Checkpoints: {out_c}models/mix_{m}/train.done (From C_2)
+#   - Classifier Input Manifests: coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json
+#   - Per-subsample Mixed Inputs: {out_a4}histAll_ttHbb_mixeddata_v{m}.json
 #
 # OUTPUTS:
-#   - Detector Input JSON: {out_c1}inputs/classifier_inputs_ttHbb.json
-#   - Per-Subsample Input JSONs: {out_c1}inputs/classifier_inputs_mixeddata_ttHbb_v{m}.json
+#   - Analysis ROC/Loss plots: {plot_base}/{DATE}_{label}_mix_{m}/analyze/
+#   - Raw Feature Plots:       {plot_base}/{DATE}_{label}_mix_{m}/inputs_raw/
+#   - DataPrep Plots:          {plot_base}/{DATE}_{label}_mix_{m}/inputs_dataprep/
+#   - Weight Distribution Plots: {plot_base}/{DATE}_{label}_mix_{m}/weights/
+#   - Completion Tokens:       {out_c}models/mix_{m}/analyze.done, etc.
 #
 # EXECUTION ENVIRONMENT:
-#   - Cluster: cmslpc (CPU only, using `./run_container`)
-#   - Batch Scheduler: HTCondor / Dask (--cores 4)
+#   - Cluster: cmslpc / falcon / bridges2
+#   - Container: /cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cmu/barista:classifier_latest
 # ==============================================================================
 
 import os
-import copy
-import yaml
 
 if not workflow.configfiles:
     configfile: "coffea4bees/workflows/config/analysis_ttHbb_bkg_syst.yml"
 
 include: "helpers/bkg_syst_common.smk"
 
-# ── Configuration Resolution ──────────────────────────────────────────────────
-c1_cfg = config.get('phase_c_inputs', config.get('classifier_inputs', {}))
 n_models = int(config.get('n_models', config.get('n_subsamples', 16)))
 MIX_INDICES = list(range(n_models))
 
-out_c1 = f"{out}bkg_syst_C_1_inputs/"
-os.makedirs(out_c1, exist_ok=True)
-inputs_dir = f"{out_c1}inputs/"
-os.makedirs(inputs_dir, exist_ok=True)
+out_c = f"{out}bkg_syst_C_FvT/"
+os.makedirs(out_c, exist_ok=True)
 
-container_wrapper = config.get('analysis_container_wrapper', config.get('container_wrapper', './run_container'))
-python_bin = config.get('python_bin', 'python')
-condor_flags = "" if config.get("test", False) else "--shared-dask --condor --worker-memory 4GB"
+from helpers.stage_configs import stage_phaseC_configs
+cfg_files = stage_phaseC_configs(config, out_c)
 
-multisample_ds_yaml = config.get('multisample_dataset_yaml', f"{out}coffea4bees/metadata/datasets/mixeddata_4b.yml")
-nominal_ci_json = config.get('nominal_classifier_inputs', "coffea4bees/metadata/datasets/classifier_inputs_ttHbb_stitched.json")
-
-localrules: all_bkg_syst_C_1, all_inputs_nominal, all_inputs_mixeddata, stage_nominal_inputs, stage_mixeddata_subsample_inputs
+if not globals().get("_CLASSIFIER_WORKFLOW_INCLUDED", False):
+    _CLASSIFIER_WORKFLOW_INCLUDED = True
+    include: "../../src/classifier/workflow/Snakefile"
 
 # ── Master Target ─────────────────────────────────────────────────────────────
 rule all_bkg_syst_C_1:
+    default_target: True
     input:
-        f"{inputs_dir}classifier_inputs_ttHbb_stitched.json",
-        expand(f"{inputs_dir}classifier_inputs_mixeddata_ttHbb_v{{m}}.json", m=MIX_INDICES)
+        expand(f"{out_c}models/mix_{{m}}/analyze.done", m=MIX_INDICES),
+        expand(f"{out_c}models/mix_{{m}}/plot_inputs_raw.done", m=MIX_INDICES),
+        expand(f"{out_c}models/mix_{{m}}/plot_inputs_dataprep.done", m=MIX_INDICES),
+        expand(f"{out_c}models/mix_{{m}}/plot_weights.done", m=MIX_INDICES),
 
-rule all_inputs_nominal:
+rule all_bkg_syst_C_1_analyze:
     input:
-        f"{inputs_dir}classifier_inputs_ttHbb_stitched.json"
+        expand(f"{out_c}models/mix_{{m}}/analyze.done", m=MIX_INDICES),
 
-rule all_inputs_mixeddata:
+rule all_bkg_syst_C_1_plots:
     input:
-        expand(f"{inputs_dir}classifier_inputs_mixeddata_ttHbb_v{{m}}.json", m=MIX_INDICES)
-
-# ── Stage 1: Stage or Verify Baseline Detector Classifier Inputs ──────────────
-rule stage_nominal_inputs:
-    input:
-        nominal_ci_json
-    output:
-        f"{inputs_dir}classifier_inputs_ttHbb_stitched.json"
-    shell:
-        """
-        set -eo pipefail
-        mkdir -p $(dirname {output})
-        cp {input} {output}
-        """
-
-# ── Stage 2: Stage or Generate Classifier Inputs for Mixed Subsample v{m} ─────
-# Subsamples contain hemisphere-mixed multijet data + sliced PSttbar MC.
-source_mixed_ci_template = config.get(
-    'source_mixed_ci_template',
-    os.path.join(out, "bkg_syst_A_4_process_subsamples/classifier_inputs/classifier_inputs_mixeddata_ttHbb_v{m}.json")
-)
-
-rule stage_mixeddata_subsample_inputs:
-    input:
-        lambda w: source_mixed_ci_template.format(m=w.m)
-    output:
-        f"{inputs_dir}classifier_inputs_mixeddata_ttHbb_v{{m}}.json"
-    shell:
-        """
-        set -eo pipefail
-        mkdir -p $(dirname {output})
-        cp {input} {output}
-        """
-
+        expand(f"{out_c}models/mix_{{m}}/plot_inputs_raw.done", m=MIX_INDICES),
+        expand(f"{out_c}models/mix_{{m}}/plot_inputs_dataprep.done", m=MIX_INDICES),
+        expand(f"{out_c}models/mix_{{m}}/plot_weights.done", m=MIX_INDICES),
