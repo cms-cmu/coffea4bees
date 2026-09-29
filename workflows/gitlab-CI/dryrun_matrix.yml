@@ -81,6 +81,10 @@ runs:
     - DeClustered
   declustered_run3_library.yml:
     - DeClustered
+  declustered_run3_library_sigcheck.yml:
+    - DeClustered
+  declustered_run3_library_sigcheck_massmatch.yml:
+    - DeClustered
   svbfeynnet_run3.yml:
     - SvBFeynNet_friendtrees_Run3
 

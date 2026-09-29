@@ -448,7 +448,9 @@ def jet_selection(
 
         event['Jet', 'bRegCorr'] = 1.0
 
-        if not isSyntheticData:
+        # synthetic data AND declustered MC (synthetic_mc*) carry jets calibrated at the skim: no
+        # re-derivation (their jets have no rawFactor / area to derive it from)
+        if not (isSyntheticData or isSyntheticMC):
             #### temporary hack
             if '2024' in dataset:
                 event['Jet'] = apply_jerc_corrections_jsonpog(
