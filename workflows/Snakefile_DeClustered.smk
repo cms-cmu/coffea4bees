@@ -7,6 +7,8 @@
 #   D.1 cluster        4b data, ttbar subtracted with the upstream FvT -> splitting histograms
 #   D.2 PDFs           splitting histograms -> clustering_pdfs_vs_pT_<era>.yml, published to EOS
 #   D.3 decluster      ttbar-subtracted 4b data re-generated from the PDFs, one replica per seed
+#                      (declustering.method: library -> from D.1's library of real splittings,
+#                      seed i = neighbour rank i; see jet_clustering/splitting_library.py)
 #                      -> multijet picoAODs + multi-sample dataset YAMLs (files_template seedXXX,
 #                      nSamples = n_seeds): multijet only, and multijet + ttbar pseudodata
 #   D.4 validate       synthetic-data histograms with the upstream config, merged with the upstream
@@ -96,6 +98,21 @@ if PDF_EXTERNAL and not str(PDF_EXTERNAL).startswith("root://"):
     raise ValueError("inputs.pdfs must be a root:// URL into an upstream declustered roast's pdfs/")
 PDF_BASE = str(PDF_EXTERNAL).rstrip("/") if PDF_EXTERNAL else f"{PUB}/pdfs"
 PDF_TEMPLATE = f"{PDF_BASE}/clustering_pdfs_vs_pT_XXX.yml"     # XXX -> era, in the processor
+
+# How D.3 generates the splittings. "pdf" (default): sample them from the D.2 PDFs. "library":
+# replace each clustered jet by a real splitting from the library D.1 writes alongside its
+# histograms (one row per real splitting, <PUB>/splitting_library/), chosen as the rank-r nearest
+# neighbour in (log pT, |eta|) of its exact type, with r = the seed. The {year: [files]} registry
+# the DeClusterer reads is published next to the files. D.2 still runs (D.5's PDF gallery).
+METHOD = str(DECL.get('method', 'pdf'))
+if METHOD not in ('pdf', 'library'):
+    raise ValueError(f"declustering.method must be 'pdf' or 'library', got {METHOD!r}")
+LIBRARY = METHOD == 'library'
+LIB_OPTS = DECL.get('library') or {}
+LIB_BASE = f"{PUB}/splitting_library"
+LIB_REGISTRY_URL = f"{LIB_BASE}/splitting_library.yml"
+# D.3's picoAOD names: make_declustered_data_4b.py tags the library ones
+PICO_PREFIX = "picoAOD_lib_seed" if LIBRARY else "picoAOD_seed"
 
 # Seeds: one independent replica per seed. runner.py expands the dataset's `files_template`
 # over range(nSamples), so the seeds MUST be 0..n_seeds-1 (no gaps, no offset).
