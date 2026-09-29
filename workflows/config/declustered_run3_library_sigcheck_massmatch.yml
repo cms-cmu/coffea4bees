@@ -1,0 +1,18 @@
+# ==============================================================================
+# DeClustered D.6 signal check, variant B: m/pT matching for splittings with < 2 b's
+# ==============================================================================
+# declustered_run3_library_sigcheck.yml (variant A) + library.mass_match_weight: lookup groups
+# whose splittings all have fewer than two b's in the parent also match on w * log(m/pT); the
+# bb-type splittings (the H/Z -> bb candidates) keep (log pT, |eta|) only and should stay
+# scrambled. Compare its D6/signal_check.txt with variant A's.
+#
+#   roast new --config coffea4bees/workflows/config/declustered_run3_library_sigcheck_massmatch.yml \
+#       --label declustered_run3_sigcheck_B --step cmslpc:coffea4bees/workflows/Snakefile_DeClustered.smk:all_D6
+#
+base: coffea4bees/workflows/config/declustered_run3_library_sigcheck.yml
+
+label: "declustered_run3_sigcheck_massmatch"
+
+declustering:
+  library:
+    mass_match_weight: 1.0

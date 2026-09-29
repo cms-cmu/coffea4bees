@@ -29,6 +29,24 @@ import awkward as ak
 
 _P4 = ["pt", "eta", "phi", "mass"]
 
+#: Jet fields that must NOT be carried from the library. The clustered (hence library) b-jet
+#: four-vectors already include the b-jet regression (cand_jet_selection: canJet = raw * bRegCorr),
+#: so the synthetic picoAODs write unit regression factors; carrying the real ones would apply them
+#: twice. rawFactor / area are JEC inputs: re-deriving corrections from them on a synthetic pT
+#: would be wrong.
+NOT_CARRIABLE = ("bRegCorr", "PNetRegPtRawCorr", "PNetRegPtRawCorrNeutrino", "rawFactor", "area")
+
+#: Carried fields written back as integers
+INTEGER_FIELDS = ("jetId", "puId", "nSVs", "nConstituents", "hadronFlavour")
+
+
+def check_carry_fields(fields):
+    bad = [f for f in fields if f in NOT_CARRIABLE]
+    if bad:
+        raise ValueError(f"splitting library cannot carry {bad}: the library b-jets are already regressed "
+                         f"(regression factors would be applied twice) / JEC inputs (see NOT_CARRIABLE)")
+    return list(fields)
+
 
 def encode_flavor(flavors):
     """Per-event jagged array of jet_flavor strings -> same structure, each string replaced by
@@ -105,6 +123,9 @@ def carry_child_fields(child, input_jets, fields):
     is_single = ak.str.length(child.jet_flavor) == 1
 
     carried = {}
+    missing = [f for f in fields if f not in input_jets.fields]
+    if missing:
+        raise KeyError(f"carry fields {missing} are not on the clustered input jets (have: {input_jets.fields})")
     for field in fields:
         values = ak.fill_none(input_jets[field][idx], np.nan)
         carried[field] = ak.where(is_single, ak.values_astype(values, np.float64), np.nan)
@@ -178,15 +199,27 @@ class SplittingLibrary:
 
     #: number of extra neighbours queried to leave room for same-event exclusion
     n_extra = 4
+    #: names of the lookup levels (index = level)
+    LEVELS = ("exact", "child_content", "parent_content", "coarse")
 
-    def __init__(self, rows, carry_fields=("btagScore",), min_entries=10, clean_tree_only=True):
+    def __init__(self, rows, carry_fields=("btagScore",), min_entries=10, clean_tree_only=True, mass_match_weight=None):
         from coffea4bees.jet_clustering.declustering import get_splitting_name, get_splitting_summary
 
         if clean_tree_only:
             rows = rows[np.asarray(rows.in_clean_tree, dtype=bool)]
 
         self.carry_fields = list(carry_fields)
+        missing = [f for f in self.carry_fields if f"A_{f}" not in rows.fields or f"B_{f}" not in rows.fields]
+        if missing:
+            # otherwise every chunk fails inside the skimmer, which only lists it under bad_files
+            raise KeyError(f"splitting library has no carry field(s) {missing} (library fields: {rows.fields}); "
+                           f"rebuild it with splitting_library_carry_fields including them, or drop them from "
+                           f"library_carry_fields")
         self.min_entries = min_entries
+        # mass_match_weight w: groups whose splittings all have < 2 b's in the parent (no H/Z->bb
+        # candidates: gluon splittings, FSR/ISR-like) also match on w * log(m/pT) of the parent;
+        # groups with 2 b's stay (log pT, |eta|) only, so resonant bb pairs remain scrambled.
+        self.mass_match_weight = None if mass_match_weight in (None, 0, "None") else float(mass_match_weight)
         self.flavor = decode_flavor(rows.jet_flavor)
 
         names = ["run", "luminosityBlock", "event", "pt", "eta", "phi", "mass"]
@@ -203,6 +236,9 @@ class SplittingLibrary:
         coarse  = np.array([get_splitting_name(f) for f in unique_flavors], dtype=object)[inverse]
         self._groups = [self._index(self.flavor), self._index(summary), self._index(content), self._index(coarse)]
         self._trees = {}
+        # Running totals over every lookup() call (retries included): targets resolved at each
+        # level, and last-resort same-event matches. Read (and differenced) by the DeClusterer.
+        self.lookup_counts = {**{name: 0 for name in self.LEVELS}, "self_match": 0}
         logging.info(f"SplittingLibrary: {len(self.flavor)} splittings, {len(self._groups[0])} exact types")
 
     @staticmethod
@@ -251,16 +287,30 @@ class SplittingLibrary:
 
         if (level, key) not in self._trees:
             members = self._groups[level][key]
-            points = np.column_stack([np.log(self.data["pt"][members]), np.abs(self.data["eta"][members])])
-            self._trees[(level, key)] = (cKDTree(points), members)
+            uses_mass = self.mass_match_weight is not None and max(f.count("b") for f in np.unique(self.flavor[members])) < 2
+            points = self._points(self.data["pt"][members], self.data["eta"][members],
+                                  self.data["mass"][members] if uses_mass else None)
+            self._trees[(level, key)] = (cKDTree(points), members, uses_mass)
         return self._trees[(level, key)]
 
-    def lookup(self, flavor, pt, eta, run, luminosityBlock, event, rank):
+    def _points(self, pt, eta, mass=None):
+        """KD-tree coordinates: (log pT, |eta|) [+ w * log(m/pT) when mass is given]."""
+        pt = np.asarray(pt, dtype=np.float64)
+        cols = [np.log(pt), np.abs(np.asarray(eta, dtype=np.float64))]
+        if mass is not None:
+            cols.append(self.mass_match_weight * np.log(np.clip(np.asarray(mass, dtype=np.float64) / pt, 1e-3, None)))
+        return np.column_stack(cols)
+
+    def lookup(self, flavor, pt, eta, run, luminosityBlock, event, rank, *, max_distance=None, retry_offset=0, mass=None):
         """Library row index for each target (flat arrays), plus the lookup level used.
 
         Takes the rank-th nearest neighbour (0 = nearest) in (log pT, |eta|) after dropping
         neighbours from the target's own (run, luminosityBlock, event); the rank wraps modulo the
         group size, and if fewer allowed neighbours are found, the farthest allowed one is used.
+        With max_distance, the rank is first capped to the allowed neighbours within that distance
+        (the nearest allowed one always counts); retry_offset is added after the cap, so retries
+        can still step beyond it. Defaults: no cap, no offset (plain rank). ``mass`` (the targets'
+        parent masses) is needed with mass_match_weight: groups matched on m/pT use it.
         Targets whose group holds only same-event candidates move to the next coarser group; if
         none has any, the nearest (same-event) row is used and counted in self.n_self_matches.
         """
@@ -268,7 +318,12 @@ class SplittingLibrary:
         pt, eta = np.asarray(pt, dtype=np.float64), np.asarray(eta, dtype=np.float64)
         rank = np.broadcast_to(np.asarray(rank, dtype=np.int64), flavor.shape)
         target_id = np.column_stack([np.asarray(run), np.asarray(luminosityBlock), np.asarray(event)]).astype(np.int64)
-        points = np.column_stack([np.log(pt), np.abs(eta)])
+        points2 = self._points(pt, eta)
+        points3 = None
+        if self.mass_match_weight is not None:
+            if mass is None:
+                raise ValueError("SplittingLibrary.lookup: mass_match_weight is set, pass the targets' mass")
+            points3 = self._points(pt, eta, mass)
 
         index = np.full(len(flavor), -1, dtype=np.int64)
         level_used = np.full(len(flavor), -1, dtype=np.int8)
@@ -278,17 +333,23 @@ class SplittingLibrary:
             pending = np.where(flavor == f)[0]
             groups = self.resolve_keys(f)
             for level, key in groups:
-                tree, members = self._tree(level, key)
+                tree, members, uses_mass = self._tree(level, key)
+                points = points3 if uses_mass else points2
                 n = len(members)
                 r = rank[pending] % n
-                k = int(min(r.max() + 1 + self.n_extra, n))
-                _, nbr = tree.query(points[pending], k=list(range(1, k + 1)))
+                k = int(min(r.max() + int(retry_offset) + 1 + self.n_extra, n))
+                dist, nbr = tree.query(points[pending], k=list(range(1, k + 1)))
                 lib_idx = members[nbr]                                        # (n_pending, k)
 
                 lib_id = np.stack([self.data["run"][lib_idx], self.data["luminosityBlock"][lib_idx],
                                    self.data["event"][lib_idx]], axis=-1)     # (n_pending, k, 3)
                 allowed = ~np.all(lib_id == target_id[pending][:, None, :], axis=-1)
                 n_allowed = allowed.sum(axis=1)
+                if max_distance is not None:
+                    # allowed neighbours are distance-ordered, so the ones within the cap come first
+                    n_close = np.maximum((allowed & (dist <= max_distance)).sum(axis=1), 1)
+                    r = np.minimum(r, n_close - 1)
+                r = r + int(retry_offset)
 
                 # column of the r-th allowed neighbour (or the last allowed one)
                 allowed_rank = np.cumsum(allowed, axis=1) - 1
@@ -303,14 +364,17 @@ class SplittingLibrary:
 
             if len(pending):
                 level, key = groups[0]
-                tree, members = self._tree(level, key)
-                _, nbr = tree.query(points[pending], k=1)
+                tree, members, uses_mass = self._tree(level, key)
+                _, nbr = tree.query((points3 if uses_mass else points2)[pending], k=1)
                 index[pending] = members[nbr]
                 level_used[pending] = level
                 self.n_self_matches += len(pending)
 
         if self.n_self_matches:
             logging.warning(f"SplittingLibrary.lookup: {self.n_self_matches} targets had only same-event candidates")
+        for level, name in enumerate(self.LEVELS):
+            self.lookup_counts[name] += int(np.sum(level_used == level))
+        self.lookup_counts["self_match"] += self.n_self_matches
         self.n_coarse = int(np.sum(level_used == 3))
         if self.n_coarse:
             logging.warning(f"SplittingLibrary.lookup: {self.n_coarse} targets used the coarse splitting_name group (b/j content may change)")
@@ -371,12 +435,34 @@ def library_child_flavors(library, index):
     return child_A, child_B
 
 
-def decluster_with_library(jets, library, event_ids, rank, *, scale_pt=True, boost_z=True):
+def random_ranks(pt, eta, phi, event, k_neighbors, key):
+    """Reproducible random neighbour ranks in [0, k_neighbors), one per target: the counter-based
+    Squares RNG (as sample_PDFs_vs_pT) keyed on ``key`` (e.g. (seed, event retry, jet retry)),
+    counters from the target's rounded (pt, eta, phi) and its event number. Same inputs -> same
+    ranks, on any worker and in any chunking."""
+    from src.math_tools.random import Squares
+
+    counter = np.zeros((len(pt), 4), dtype=np.uint64)
+    counter[:, 0] = np.round(np.asarray(pt, dtype=np.float64), 1).view(np.uint64)
+    counter[:, 1] = np.round(np.asarray(eta, dtype=np.float64), 3).view(np.uint64)
+    counter[:, 2] = np.round(np.asarray(phi, dtype=np.float64), 3).view(np.uint64)
+    counter[:, 3] = np.asarray(event, dtype=np.int64).view(np.uint64)
+    return Squares("splitting_library", *key).choice(counter, a=int(k_neighbors)).astype(np.int64)
+
+
+def decluster_with_library(jets, library, event_ids, rank, *, scale_pt=True, boost_z=True,
+                           selection="rank", k_neighbors=20, max_distance=0.05, rng_key=(0,), retry_offset=0):
     """Library replacement for sample_PDFs_vs_pT + decluster_combined_jets.
 
     jets:      jagged [event][jet] combined jets to decluster (pt, eta, phi, jet_flavor)
     event_ids: (n_events, 3) int array of (run, luminosityBlock, event) for self-match exclusion
-    rank:      neighbour rank (int) for every jet
+    selection: "rank"   every jet takes neighbour ``rank`` (int)
+               "random" every jet takes a reproducible random neighbour among its k_neighbors
+                        nearest (random_ranks, keyed on rng_key) that lie within max_distance
+                        in (log pT, |eta|) (None: no cap; the nearest always counts), then
+                        stepped outward by ``retry_offset`` (the retry count) so a failing jet
+                        cannot keep drawing the same candidates; ``rank`` is ignored.
+                        k_neighbors 1 = rank mode, seed 0.
     Returns the jagged child arrays (A, B) with pt, eta, phi, mass, jet_flavor, btag_string and
     the library's carry fields (NaN for combined children).
     """
@@ -387,8 +473,16 @@ def decluster_with_library(jets, library, event_ids, rank, *, scale_pt=True, boo
     ids = np.repeat(np.asarray(event_ids, dtype=np.int64), counts, axis=0)
     flavor = np.asarray(ak.to_list(flat.jet_flavor), dtype=object)
 
+    if selection == "random":
+        rank = random_ranks(np.asarray(flat.pt), np.asarray(flat.eta), np.asarray(flat.phi), ids[:, 2],
+                            k_neighbors, rng_key)
+        cap = dict(max_distance=max_distance, retry_offset=retry_offset)
+    elif selection == "rank":
+        cap = {}
+    else:
+        raise ValueError(f"library selection must be 'rank' or 'random', got {selection!r}")
     index, _ = library.lookup(flavor, np.asarray(flat.pt), np.asarray(flat.eta),
-                              ids[:, 0], ids[:, 1], ids[:, 2], rank)
+                              ids[:, 0], ids[:, 1], ids[:, 2], rank, mass=np.asarray(flat.mass), **cap)
     kids = align_children(library, index, np.asarray(flat.pt), np.asarray(flat.eta), np.asarray(flat.phi),
                           scale_pt=scale_pt, boost_z=boost_z)
     child_flavor = dict(zip("AB", library_child_flavors(library, index)))
