@@ -49,6 +49,8 @@ class HemiMixer(Skimmer4b):
                 collision_mode: str = "retry",
                 default_rank = 0,                 # int or [rp, rn] / (rp, rn) for per-side ranks
                 hemi_year_key: str = "merge_ul16",  # "year": one library per data year; "merge_ul16": UL16_pre/postVFP share UL16 (legacy)
+                mix_tags: str = "threeTag",       # events to mix: "threeTag" (the mixed data) | "threeTag_fourTag" (signal check)
+                require_trigWeight: bool = True,  # MC only: without a trigWeight friend, fail or write unit weights
                 object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
                 *args, **kwargs):
         super().__init__(
@@ -100,6 +102,13 @@ class HemiMixer(Skimmer4b):
         if hemi_year_key not in ("year", "merge_ul16"):
             raise ValueError(f"hemi_year_key must be 'year' or 'merge_ul16', got {hemi_year_key!r}")
         self.hemi_year_key     = hemi_year_key
+        # "threeTag_fourTag": every preselected event (3b and 4b) is mixed -- the MakeMixedData M.7
+        # signal check, which asks what the mixing does to all the signal the data can contain. The
+        # 3b events get the JCM pseudo-tags as in the data; the 4b ones keep their real tags.
+        if mix_tags not in ("threeTag", "threeTag_fourTag"):
+            raise ValueError(f"mix_tags must be 'threeTag' or 'threeTag_fourTag', got {mix_tags!r}")
+        self.mix_tags          = mix_tags
+        self.require_trigWeight = require_trigWeight
         logging.info(f"use_topk_matching = {self.use_topk_matching}, k_neighbors = {self.k_neighbors}, collision_mode = {self.collision_mode}, default_rank = {self.default_rank}")
 
         # Conditional matching variables based on boost correction mode
@@ -260,10 +269,23 @@ class HemiMixer(Skimmer4b):
                 # trigWeight = trigWeight_file.arrays(['event', 'trigWeight_Data', 'trigWeight_MC'], entry_start=estart,entry_stop=estop)
                 # if not ak.all(trigWeight.event == event.event):
                 #     raise ValueError('trigWeight events do not match events ttree')
-                trigWeight = self.friends.get("trigWeight").arrays(target)
-
-                event["trigWeight_Data"] = trigWeight.Data
-                event["trigWeight_MC"]   = trigWeight.MC
+                friend = self.friends.get("trigWeight")
+                # a friend index that does not cover this sample returns None (or raises)
+                try:
+                    trigWeight = friend.arrays(target) if friend is not None else None
+                except Exception as e:
+                    logging.warning(f"trigWeight friend lookup failed for {target}: {e}")
+                    trigWeight = None
+                if trigWeight is not None:
+                    event["trigWeight_Data"] = trigWeight.Data
+                    event["trigWeight_MC"]   = trigWeight.MC
+                elif self.require_trigWeight:
+                    raise ValueError(f"no trigWeight friend for {dataset} (set require_trigWeight: false to write unit weights)")
+                else:
+                    # e.g. the Run 3 ggF signal, which no trigger-weight friend covers yet
+                    logging.warning(f"no trigWeight friend for {dataset}: writing unit trigger weights")
+                    event["trigWeight_Data"] = np.ones(len(event))
+                    event["trigWeight_MC"]   = np.ones(len(event))
 
 
         selections = PackedSelection()
@@ -271,7 +293,8 @@ class HemiMixer(Skimmer4b):
         selections.add( "passNoiseFilter", event.passNoiseFilter)
         selections.add( "passHLT", ( event.passHLT if config["cut_on_HLT_decision"] else np.full(len(event), True)  ) )
         selections.add( 'passJetMult',   event.passJetMult )
-        selections.add( "passThreeTag", event.threeTag)
+        mix_tag = event.threeTag if self.mix_tags == "threeTag" else (event.threeTag | event.fourTag)
+        selections.add( "passThreeTag", mix_tag)
 
         cumulative_cuts = ["lumimask"]
         self._cutFlow.fill( "all",             event[selections.all(*cumulative_cuts)], allTag=True )
@@ -302,8 +325,9 @@ class HemiMixer(Skimmer4b):
 
             self._cutFlow.fill( "passNTag_btagSF", event[selections.all(*cumulative_cuts)], allTag=True )
 
-        selection = event.lumimask & event.passNoiseFilter & event.passJetMult & event.threeTag
-        if not config["isMC"]: selection = selection & event.passHLT
+        # The same cuts as selev below. The old `& passHLT only for data` disagreed with it for Run 3
+        # MC, where cut_on_HLT_decision is on: "additional branches do not match the selected events".
+        selection = selections.all(*cumulative_cuts)
 
         selev = event[selections.all(*cumulative_cuts)]
 

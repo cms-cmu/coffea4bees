@@ -11,6 +11,7 @@
 #   M.5 ttbar psdata   unweighted ttbar pseudodata (one shared sample) -> ttbar_PSData
 #   M.6 validation     plots (mixed + ttbar MC vs 4b data, pseudodata, one subsample), cutflow page,
 #                      study plots, subsample overlap matrix
+#   M.7 signal check   signal MC mixed the same way (3b + 4b), SvB on the fly: does it stay signal-like?
 #
 # Everything this roast consumes comes from other roasts, named under `inputs:` and checked by
 # `roast new`: the FvT from the nominal, the JCM and its histograms from a Phase B.1 roast with
@@ -225,6 +226,7 @@ include: "Snakefile_MakeMixedData_3_validate.smk"
 include: "Snakefile_MakeMixedData_4_subsample.smk"
 include: "Snakefile_MakeMixedData_5_ttbar_psdata.smk"
 include: "Snakefile_MakeMixedData_6_validation.smk"
+include: "Snakefile_MakeMixedData_7_signal.smk"
 
 # default_target, not position: an included or inserted rule can never steal the default.
 rule all_MakeMixedData:
@@ -235,6 +237,7 @@ rule all_MakeMixedData:
         rules.all_M3.input,
         rules.all_M4.input,
         rules.all_M5.input,
-        rules.all_M6.input
+        rules.all_M6.input,
+        rules.all_M7.input
 
 localrules: fetch_inputs, all_MakeMixedData
