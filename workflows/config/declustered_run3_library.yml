@@ -31,7 +31,12 @@ declustering:
   dataset_name: "synthetic_data_lib_4b"
   multijet_dataset_name: "synthetic_data_lib_multijet"
   library:
-    carry_fields: [btagScore]  # child jet properties taken from the library (btagScore always)
+    # child jet properties taken from the library (btagScore always): the real b-tag, jet ID and
+    # HCR classifier-input features (dump_friendtrees.py fills absent ones with 0). NOT the b-jet
+    # regression factors (the library jets are already regressed) nor the JEC inputs rawFactor/area
+    # (splitting_library.NOT_CARRIABLE).
+    carry_fields: [btagScore, jetId, btagPNetCvB, btagPNetCvL, btagPNetQvG, btagPNetTauVJet,
+                   PNetRegPtRawRes, nSVs, chHEF, neHEF, chEmEF, neEmEF, muEF, nConstituents]
     min_entries: 10            # below this an exact type falls back to same child b/j content
     scale_pt: true             # scale the children to the parent pT
     boost_z: true              # boost the children along z to the parent pz

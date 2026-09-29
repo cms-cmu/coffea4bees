@@ -29,6 +29,24 @@ import awkward as ak
 
 _P4 = ["pt", "eta", "phi", "mass"]
 
+#: Jet fields that must NOT be carried from the library. The clustered (hence library) b-jet
+#: four-vectors already include the b-jet regression (cand_jet_selection: canJet = raw * bRegCorr),
+#: so the synthetic picoAODs write unit regression factors; carrying the real ones would apply them
+#: twice. rawFactor / area are JEC inputs: re-deriving corrections from them on a synthetic pT
+#: would be wrong.
+NOT_CARRIABLE = ("bRegCorr", "PNetRegPtRawCorr", "PNetRegPtRawCorrNeutrino", "rawFactor", "area")
+
+#: Carried fields written back as integers
+INTEGER_FIELDS = ("jetId", "puId", "nSVs", "nConstituents", "hadronFlavour")
+
+
+def check_carry_fields(fields):
+    bad = [f for f in fields if f in NOT_CARRIABLE]
+    if bad:
+        raise ValueError(f"splitting library cannot carry {bad}: the library b-jets are already regressed "
+                         f"(regression factors would be applied twice) / JEC inputs (see NOT_CARRIABLE)")
+    return list(fields)
+
 
 def encode_flavor(flavors):
     """Per-event jagged array of jet_flavor strings -> same structure, each string replaced by
@@ -105,6 +123,9 @@ def carry_child_fields(child, input_jets, fields):
     is_single = ak.str.length(child.jet_flavor) == 1
 
     carried = {}
+    missing = [f for f in fields if f not in input_jets.fields]
+    if missing:
+        raise KeyError(f"carry fields {missing} are not on the clustered input jets (have: {input_jets.fields})")
     for field in fields:
         values = ak.fill_none(input_jets[field][idx], np.nan)
         carried[field] = ak.where(is_single, ak.values_astype(values, np.float64), np.nan)
@@ -181,14 +202,24 @@ class SplittingLibrary:
     #: names of the lookup levels (index = level)
     LEVELS = ("exact", "child_content", "parent_content", "coarse")
 
-    def __init__(self, rows, carry_fields=("btagScore",), min_entries=10, clean_tree_only=True):
+    def __init__(self, rows, carry_fields=("btagScore",), min_entries=10, clean_tree_only=True, mass_match_weight=None):
         from coffea4bees.jet_clustering.declustering import get_splitting_name, get_splitting_summary
 
         if clean_tree_only:
             rows = rows[np.asarray(rows.in_clean_tree, dtype=bool)]
 
         self.carry_fields = list(carry_fields)
+        missing = [f for f in self.carry_fields if f"A_{f}" not in rows.fields or f"B_{f}" not in rows.fields]
+        if missing:
+            # otherwise every chunk fails inside the skimmer, which only lists it under bad_files
+            raise KeyError(f"splitting library has no carry field(s) {missing} (library fields: {rows.fields}); "
+                           f"rebuild it with splitting_library_carry_fields including them, or drop them from "
+                           f"library_carry_fields")
         self.min_entries = min_entries
+        # mass_match_weight w: groups whose splittings all have < 2 b's in the parent (no H/Z->bb
+        # candidates: gluon splittings, FSR/ISR-like) also match on w * log(m/pT) of the parent;
+        # groups with 2 b's stay (log pT, |eta|) only, so resonant bb pairs remain scrambled.
+        self.mass_match_weight = None if mass_match_weight in (None, 0, "None") else float(mass_match_weight)
         self.flavor = decode_flavor(rows.jet_flavor)
 
         names = ["run", "luminosityBlock", "event", "pt", "eta", "phi", "mass"]
@@ -256,11 +287,21 @@ class SplittingLibrary:
 
         if (level, key) not in self._trees:
             members = self._groups[level][key]
-            points = np.column_stack([np.log(self.data["pt"][members]), np.abs(self.data["eta"][members])])
-            self._trees[(level, key)] = (cKDTree(points), members)
+            uses_mass = self.mass_match_weight is not None and max(f.count("b") for f in np.unique(self.flavor[members])) < 2
+            points = self._points(self.data["pt"][members], self.data["eta"][members],
+                                  self.data["mass"][members] if uses_mass else None)
+            self._trees[(level, key)] = (cKDTree(points), members, uses_mass)
         return self._trees[(level, key)]
 
-    def lookup(self, flavor, pt, eta, run, luminosityBlock, event, rank, *, max_distance=None, retry_offset=0):
+    def _points(self, pt, eta, mass=None):
+        """KD-tree coordinates: (log pT, |eta|) [+ w * log(m/pT) when mass is given]."""
+        pt = np.asarray(pt, dtype=np.float64)
+        cols = [np.log(pt), np.abs(np.asarray(eta, dtype=np.float64))]
+        if mass is not None:
+            cols.append(self.mass_match_weight * np.log(np.clip(np.asarray(mass, dtype=np.float64) / pt, 1e-3, None)))
+        return np.column_stack(cols)
+
+    def lookup(self, flavor, pt, eta, run, luminosityBlock, event, rank, *, max_distance=None, retry_offset=0, mass=None):
         """Library row index for each target (flat arrays), plus the lookup level used.
 
         Takes the rank-th nearest neighbour (0 = nearest) in (log pT, |eta|) after dropping
@@ -268,7 +309,8 @@ class SplittingLibrary:
         group size, and if fewer allowed neighbours are found, the farthest allowed one is used.
         With max_distance, the rank is first capped to the allowed neighbours within that distance
         (the nearest allowed one always counts); retry_offset is added after the cap, so retries
-        can still step beyond it. Defaults: no cap, no offset (plain rank).
+        can still step beyond it. Defaults: no cap, no offset (plain rank). ``mass`` (the targets'
+        parent masses) is needed with mass_match_weight: groups matched on m/pT use it.
         Targets whose group holds only same-event candidates move to the next coarser group; if
         none has any, the nearest (same-event) row is used and counted in self.n_self_matches.
         """
@@ -276,7 +318,12 @@ class SplittingLibrary:
         pt, eta = np.asarray(pt, dtype=np.float64), np.asarray(eta, dtype=np.float64)
         rank = np.broadcast_to(np.asarray(rank, dtype=np.int64), flavor.shape)
         target_id = np.column_stack([np.asarray(run), np.asarray(luminosityBlock), np.asarray(event)]).astype(np.int64)
-        points = np.column_stack([np.log(pt), np.abs(eta)])
+        points2 = self._points(pt, eta)
+        points3 = None
+        if self.mass_match_weight is not None:
+            if mass is None:
+                raise ValueError("SplittingLibrary.lookup: mass_match_weight is set, pass the targets' mass")
+            points3 = self._points(pt, eta, mass)
 
         index = np.full(len(flavor), -1, dtype=np.int64)
         level_used = np.full(len(flavor), -1, dtype=np.int8)
@@ -286,7 +333,8 @@ class SplittingLibrary:
             pending = np.where(flavor == f)[0]
             groups = self.resolve_keys(f)
             for level, key in groups:
-                tree, members = self._tree(level, key)
+                tree, members, uses_mass = self._tree(level, key)
+                points = points3 if uses_mass else points2
                 n = len(members)
                 r = rank[pending] % n
                 k = int(min(r.max() + int(retry_offset) + 1 + self.n_extra, n))
@@ -316,8 +364,8 @@ class SplittingLibrary:
 
             if len(pending):
                 level, key = groups[0]
-                tree, members = self._tree(level, key)
-                _, nbr = tree.query(points[pending], k=1)
+                tree, members, uses_mass = self._tree(level, key)
+                _, nbr = tree.query((points3 if uses_mass else points2)[pending], k=1)
                 index[pending] = members[nbr]
                 level_used[pending] = level
                 self.n_self_matches += len(pending)
@@ -434,7 +482,7 @@ def decluster_with_library(jets, library, event_ids, rank, *, scale_pt=True, boo
     else:
         raise ValueError(f"library selection must be 'rank' or 'random', got {selection!r}")
     index, _ = library.lookup(flavor, np.asarray(flat.pt), np.asarray(flat.eta),
-                              ids[:, 0], ids[:, 1], ids[:, 2], rank, **cap)
+                              ids[:, 0], ids[:, 1], ids[:, 2], rank, mass=np.asarray(flat.mass), **cap)
     kids = align_children(library, index, np.asarray(flat.pt), np.asarray(flat.eta), np.asarray(flat.phi),
                           scale_pt=scale_pt, boost_z=boost_z)
     child_flavor = dict(zip("AB", library_child_flavors(library, index)))

@@ -268,6 +268,33 @@ class splittingLibraryLookupTestCase(unittest.TestCase):
         step, _ = self.lib.lookup(*args, 19, max_distance=0.0, retry_offset=2)
         np.testing.assert_array_equal(step, self.lib.lookup(*args, 2)[0])
 
+    def test_mass_match_low_b_only(self):
+        """mass_match_weight: bb-type groups are untouched (identical picks); bj-type picks move
+        closer to the target's m/pT."""
+        lib_m = SplittingLibrary(self.rows, carry_fields=["btagScore"], min_entries=10, mass_match_weight=1.0)
+        d = self.lib.data
+        rng = np.random.default_rng(8)
+        n = 150
+        pt = rng.uniform(60, 350, n)
+        eta = rng.uniform(-2.2, 2.2, n)
+        mass = pt * rng.uniform(0.2, 1.0, n)
+        ids = (np.full(n, 3), np.full(n, 3), np.arange(n))
+        for flavor, same in (("bb", True), ("bj", False)):
+            f = np.array([flavor] * n, dtype=object)
+            a, _ = self.lib.lookup(f, pt, eta, *ids, 0, mass=mass)
+            b, _ = lib_m.lookup(f, pt, eta, *ids, 0, mass=mass)
+            if same:
+                np.testing.assert_array_equal(a, b)
+            else:
+                dm = lambda i: np.abs(np.log(d["mass"][i] / d["pt"][i]) - np.log(mass / pt))
+                self.assertLess(np.median(dm(b)), 0.5 * np.median(dm(a)))
+        with self.assertRaises(ValueError):
+            lib_m.lookup(np.array(["bj"], dtype=object), pt[:1], eta[:1], [3], [3], [0], 0)
+
+    def test_missing_carry_field_is_an_error(self):
+        with self.assertRaises(KeyError):
+            SplittingLibrary(self.rows, carry_fields=["btagScore", "jetId"])
+
     def test_library_rank_wraps(self):
         index_big, _ = self._lookup(rank=10_000)
         self.assertTrue(np.all(index_big >= 0))
