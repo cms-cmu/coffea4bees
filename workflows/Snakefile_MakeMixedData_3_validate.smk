@@ -17,8 +17,9 @@ M3_HIST_CONFIG = f"{M3_OUT}analysis_config_mixed.yml"
 M3_HISTALL = f"{M3_OUT}histAll_mixedJCM.coffea"
 MJ = config.get('mixed_jcm') or {}
 M3_JCM_TAG = "mixeddata"
+M3_REGION = MJ.get('region', config.get('jcm_region', 'SB'))
 M3_JCM_DIR = f"{M3_OUT}JCM_{M3_JCM_TAG}/"
-MIXED_JCM = f"{M3_JCM_DIR}jetCombinatoricModel_SB_{M3_JCM_TAG}.yml"
+MIXED_JCM = f"{M3_JCM_DIR}jetCombinatoricModel_{M3_REGION}_{M3_JCM_TAG}.yml"
 M3_STUDY_CONFIG = f"{M3_OUT}study_mixed_data.yml"
 M3_STUDY = f"{M3_OUT}study_{MIX_NAME}.coffea"
 M3_PUBLISHED = f"{M3_OUT}published.done"
@@ -52,7 +53,7 @@ use rule analysis_processor from analysis as M3_hists with:
         datasets = MIX_NAME,
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
+        extra_arguments = " ".join(filter(None, [TEST_FLAG])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 
@@ -91,13 +92,17 @@ rule M3_jcm_config:
     run:
         with open(input[0]) as f:
             cfg = yaml.safe_load(f) or {}
-        cfg['data3bName'] = MIX_NAME        # the mixed data stands in for the 3b sample
+        cfg['data3bName'] = "mixeddata_all"
+        cfg['data4bName'] = "data"
+        cfg['ignoreTT'] = True
         cfg['float_t'] = bool(MJ.get('float_t', True))
+        if 'ttbarProcesses' in MJ or 'ttbar_processes' in config:
+            cfg['ttbarProcesses'] = MJ.get('ttbarProcesses', config.get('ttbar_processes', TTBAR))
         write_yaml(output[0], cfg)
 
 rule M3_fit:
     input:
-        hists = M3_HISTALL,
+        hists = [UPSTREAM_HISTS] + expand(f"{M3_OUT}singlefiles/hist__{MIX_NAME}__{{year}}.coffea", year=YEARS),
         jcm_config = f"{M3_OUT}jcm_config_mixed.yml"
     output: MIXED_JCM
     log: f"{M3_OUT}logs/fit.log"
@@ -107,7 +112,7 @@ rule M3_fit:
         export MPLCONFIGDIR="/tmp/matplotlib"
         mkdir -p $MPLCONFIGDIR {M3_JCM_DIR}
         {WRAPPER} {PYTHON} coffea4bees/analysis/jcm_tools/make_jcm_weights.py -o {M3_JCM_DIR} \
-            -i {input.hists} -r SB -w {M3_JCM_TAG} --jcm_config {input.jcm_config} 2>&1 | tee {log}
+            -i {input.hists} -r {M3_REGION} -w {M3_JCM_TAG} --data4bName data --jcm_config {input.jcm_config} 2>&1 | tee {log}
         ls {M3_JCM_DIR} 2>&1 | tee -a {log}
         """
 
@@ -140,7 +145,7 @@ use rule analysis_processor from analysis as M3_study with:
         datasets = MIX_NAME,
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
+        extra_arguments = " ".join(filter(None, [TEST_FLAG])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 
