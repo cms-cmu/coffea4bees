@@ -9,8 +9,8 @@
 # b-tag scores come with them. Seed i = rank i; one seed = rank 0, the nearest neighbour.
 # See jet_clustering/splitting_library.py and ~/ClaudeBrain/outputs/decluster-replacement/design.md.
 #
-# Same upstream roasts and inputs as the base. D.2 still makes the PDFs (D.5's gallery) but D.3
-# does not read them.
+# Same upstream roasts and inputs as the base. No PDFs are made (D.3 does not read them): no
+# D1_merge, D.2 or D.5 PDF gallery. `pdfs: {make: true}` builds them anyway, as a reference.
 #
 #   roast new --config coffea4bees/workflows/config/declustered_run3_library.yml \
 #       --label declustered_run3_library --step cmslpc:coffea4bees/workflows/Snakefile_DeClustered.smk

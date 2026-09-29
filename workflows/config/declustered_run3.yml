@@ -97,7 +97,9 @@ cluster:
 # ------------------------------------------------------------------------------
 # D.2: sampling PDFs (make_jet_splitting_PDFs.py) -> <publish_base>/pdfs/
 # ------------------------------------------------------------------------------
-pdfs: {}      # (no options yet)
+pdfs: {}
+  # make: true    # default: true for declustering.method pdf, false for library (D.3 does not read
+  #               # them); true builds them anyway (D.5's PDF gallery as a reference)
 
 # ------------------------------------------------------------------------------
 # D.3: decluster -> <publish_base>/handoff/<dataset_name>.yml
