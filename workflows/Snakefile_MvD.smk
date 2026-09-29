@@ -152,6 +152,11 @@ def mvd_analysis_config(upstream, signal, svb=True, extra=None):
     c['apply_MvD'] = not signal
     c['apply_MvD_weight'] = not signal
     c['plot_ttbar_with_MvD_weights'] = not signal
+    # Floor on the MvD's p_mix4 (processor MvD_pmix4_floor; the analogue of FvT_pd3_floor): bounds
+    # the multijet weight MvD = (p_d4 - p_t4)/p_mix4 at ~1/floor. Top-level `mvd_pmix4_floor`, off by
+    # default (the 1x MvD's tail is negligible; its blessed cutflows assume no floor).
+    if config.get('mvd_pmix4_floor'):
+        c['MvD_pmix4_floor'] = float(config['mvd_pmix4_floor'])
     c.update(copy.deepcopy(extra or {}))
     return test_runner(cfg)
 
