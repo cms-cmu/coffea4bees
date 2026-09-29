@@ -57,8 +57,8 @@ if __name__ == '__main__':
         safe_label = label.replace('_', r'\_')
         ticks_labels.append(f"$\\bf\\mathrm{{{safe_label}}}${obs_line}\nExp:{limit['exp0']:.2f}")
         ax.vlines( limit['exp0'], i, i+0.98, color='k', linestyle='dashed', label=('expected' if i==0 else '') )
-        ax.fill_betweenx( [ i, i+0.98], 2*[limit['exp+2']], 2*[limit['exp-2']], color = '#85D1FBff', label=('68% expected' if i==0 else '' ) )
-        ax.fill_betweenx( [ i, i+0.98], 2*[limit['exp+1']], 2*[limit['exp-1']], color = '#FFDF7Fff', label=('95% expected' if i==0 else '' )  )
+        ax.fill_betweenx( [ i, i+0.98], 2*[limit['exp+2']], 2*[limit['exp-2']], color = '#85D1FBff', label=('95% expected' if i==0 else '' ) )
+        ax.fill_betweenx( [ i, i+0.98], 2*[limit['exp+1']], 2*[limit['exp-1']], color = '#FFDF7Fff', label=('68% expected' if i==0 else '' )  )
 
     ax.set_yticks( ticks )
     ax.set_yticklabels( ticks_labels )
