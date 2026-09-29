@@ -19,12 +19,58 @@ def substitute_placeholders(obj, mapping):
     return obj
 
 
+def _user_profile():
+    """Per-user paths, so a workflow config can be shared without naming anyone.
+
+    A config writes {eos_prod}/{roast_id}/... instead of a personal EOS path.  The values
+    are resolved here, in order:
+
+      1. --config eos_prod=... on the command line.  This is how `roast` passes what it
+         already keeps in ~/.config/roast/config.json, so a roast user configures nothing
+         twice, and re-running someone else's roast lands in *your* area, not theirs.
+      2. ~/.config/coffea4bees/profile.yml (override the location with $COFFEA4BEES_PROFILE),
+         for running snakemake by hand without roast.
+      3. Derived from the account names, so CI and a casual dry run need no setup at all.
+
+    cern_user may be given either as a bare account (johnda) or already sharded (j/johnda);
+    both appear in the older Snakefiles, so accept either.
+    """
+    import getpass
+
+    profile = {}
+    path = os.path.expanduser(os.environ.get("COFFEA4BEES_PROFILE", "~/.config/coffea4bees/profile.yml"))
+    if os.path.exists(path):
+        with open(path) as fh:
+            profile = yaml.safe_load(fh) or {}
+
+    def pick(key, default):
+        return config.get(key) or profile.get(key) or default
+
+    try:
+        _login = os.environ.get("USER") or getpass.getuser()
+    except Exception:                      # getpass raises when there is no passwd entry (some containers)
+        _login = "unknown"
+    lpc_user = pick('lpc_user', _login)
+    cern_user = pick('cern_user', os.environ.get("CERN_USER") or _login)
+    sharded = cern_user if "/" in cern_user else f"{cern_user[0]}/{cern_user}"
+    return {
+        'lpc_user': lpc_user,
+        'cern_user': cern_user,
+        # xrootd needs root://host//path, hence the doubled slash before an absolute path
+        'eos_prod': pick('eos_prod', f"root://cmseos.fnal.gov//store/user/{lpc_user}/HH4b_prod"),
+        'web_prod': pick('web_prod', f"root://eosuser.cern.ch//eos/user/{sharded}/www/HH4b/prod"),
+    }
+
+
 # {roast_id} names a production run so run-scoped paths (e.g. EOS outputs) are unique.
 # `roast` sets it with --config roast_id=<id>; outside roast it falls back to the config
 # label, so a plain `snakemake --configfile ...` run still gets a sensible directory.
+# The user-level placeholders resolve in the same pass, so "{eos_prod}/{roast_id}" works.
 _roast_id = config.get('roast_id') or config.get('label') or 'nominal'
-config['roast_id'] = _roast_id
-for _k, _v in substitute_placeholders(dict(config), {'roast_id': _roast_id}).items():
+_placeholders = {'roast_id': _roast_id, **_user_profile()}
+for _k, _v in _placeholders.items():
+    config[_k] = _v
+for _k, _v in substitute_placeholders(dict(config), _placeholders).items():
     config[_k] = _v
 
 
@@ -253,3 +299,41 @@ def resolve_config_section(config_dict, primary_key=None, fallback_keys=None, in
         if k not in res and k in config_dict:
             res[k] = copy.deepcopy(config_dict[k])
     return res
+
+
+def resolve_step_config(default_repo_path, overrides=None, output_path=None):
+    """
+    Resolves configuration for a workflow step:
+    - If `overrides` is a string (path to custom YAML), returns that path directly.
+    - If `overrides` is None or empty dict: returns `default_repo_path`.
+    - If `overrides` is a dict: loads `default_repo_path`, deep-merges `overrides`,
+      writes the effective resolved YAML to `output_path`, and returns `output_path`.
+    """
+    if not overrides:
+        return default_repo_path
+
+    if isinstance(overrides, str):
+        return overrides
+
+    if not os.path.exists(default_repo_path):
+        raise FileNotFoundError(f"Default config not found: {default_repo_path}")
+
+    with open(default_repo_path, 'r') as f:
+        resolved = yaml.safe_load(f) or {}
+
+    def _deep_merge(base, overlay):
+        for k, v in overlay.items():
+            if k in base and isinstance(base[k], dict) and isinstance(v, dict):
+                _deep_merge(base[k], v)
+            else:
+                base[k] = copy.deepcopy(v)
+
+    _deep_merge(resolved, overrides)
+
+    if output_path:
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        with open(output_path, 'w') as f:
+            yaml.dump(resolved, f, default_flow_style=False, sort_keys=False)
+        return output_path
+
+    return default_repo_path

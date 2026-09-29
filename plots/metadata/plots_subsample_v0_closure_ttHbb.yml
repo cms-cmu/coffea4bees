@@ -1,0 +1,35 @@
+hists:
+  data:
+    process: data
+    tag: fourTag
+    label: "Four-tag data"
+    edgecolor: k
+    fillcolor: k
+
+stack:
+  mixeddata:
+    process: mix_v0
+    tag: fourTag
+    fillcolor: "#FFDF7Fff"
+    edgecolor: k
+    label: "Mixed data v0 (JCM weighted)"
+
+ratios:
+  dataToStack:
+    numerator:
+      type: hists
+      key: data
+    denominator:
+      type: stack
+    uncertainty: nominal
+    color: k
+    marker: "o"
+
+doRatio: 1
+categories:
+  - "inclusive"
+  - "pass_nSelJets_gt6"
+regions:
+  - "sum"
+  - "SR"
+  - "SB"

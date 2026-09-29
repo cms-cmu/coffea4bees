@@ -58,6 +58,7 @@ categories:
   - "inclusive"
   - "pass_nSelJets_gt6"
   - "passLeptonVeto"
+  - "pass_nSelJets_gt6,passLeptonVeto"
 
 regions:
   - "SR"

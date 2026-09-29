@@ -1,0 +1,34 @@
+# ==============================================================================
+# DECLUSTERED (SYNTHETIC) DATASET PRODUCTION — Run 3, library-based ("replacement") declustering
+# ==============================================================================
+# declustered_run3.yml with one knob flipped: declustering.method library. Instead of sampling
+# each splitting from the D.2 PDFs, D.3 replaces it by a REAL splitting of the same exact type
+# from a library of the 4b data's own splittings (written by D.1 next to its histograms), picked
+# as the rank-r nearest neighbour in the parent's (log pT, |eta|) -- never from the event being
+# declustered -- and aligned onto the parent (pT scaled, phi rotated, boosted in z). The children's
+# b-tag scores come with them. Seed i = rank i; one seed = rank 0, the nearest neighbour.
+# See jet_clustering/splitting_library.py and ~/ClaudeBrain/outputs/decluster-replacement/design.md.
+#
+# Same upstream roasts and inputs as the base. D.2 still makes the PDFs (D.5's gallery) but D.3
+# does not read them.
+#
+#   roast new --config coffea4bees/workflows/config/declustered_run3_library.yml \
+#       --label declustered_run3_library --step cmslpc:coffea4bees/workflows/Snakefile_DeClustered.smk
+#   roast submit <id> --step DeClustered --targets all_D1      # one sub-step at a time
+#
+base: coffea4bees/workflows/config/declustered_run3.yml
+
+label: "declustered_run3_library"
+
+declustering:
+  method: library
+  n_seeds: 1               # seed 0 = rank 0 (nearest neighbour)
+  # Distinct from the PDF roast's names, so a consumer can read both handoffs in one -m list
+  # (runner.py refuses a dataset name defined differently in two sources).
+  dataset_name: "synthetic_data_lib_4b"
+  multijet_dataset_name: "synthetic_data_lib_multijet"
+  library:
+    carry_fields: [btagScore]  # child jet properties taken from the library (btagScore always)
+    min_entries: 10            # below this an exact type falls back to same child b/j content
+    scale_pt: true             # scale the children to the parent pT
+    boost_z: true              # boost the children along z to the parent pz

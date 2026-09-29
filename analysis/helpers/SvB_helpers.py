@@ -323,19 +323,22 @@ def subtract_ttbar_with_SvB(selev, dataset, year):
 
 
 def setFvTVars(FvTName, event):
-    if "std" not in event.FvT.fields:
+    fvt = getattr(event, FvTName)
+    if "std" not in fvt.fields:
         event[FvTName, "std"] = np.ones(len(event))
 
-    if "pt4" not in event.FvT.fields:
-        event[FvTName, "pt4"] = np.ones(len(event))
-        event[FvTName, "pt3"] = np.ones(len(event))
-        event[FvTName, "pd4"] = np.ones(len(event))
-        event[FvTName, "pd3"] = np.ones(len(event))
+    for var, branch in [("pt4", "p_t4"), ("pt3", "p_t3"), ("pd4", "p_d4"), ("pd3", "p_d3")]:
+        if var not in fvt.fields:
+            if branch in fvt.fields:
+                event[FvTName, var] = getattr(fvt, branch)
+            else:
+                event[FvTName, var] = np.ones(len(event))
 
-    event[FvTName, "frac_err"]   = getattr(event, FvTName).std / getattr(event, FvTName).FvT
-    event[FvTName, "d4_to_t4"]   = getattr(event, FvTName).pt4 / getattr(event, FvTName).pd4
-    event[FvTName, "d3_to_t3"]   = getattr(event, FvTName).pt3 / getattr(event, FvTName).pd3
-    event[FvTName, "d3_to_t4"]   = getattr(event, FvTName).pt4 / getattr(event, FvTName).pd3
+    fvt = getattr(event, FvTName)
+    event[FvTName, "frac_err"]   = fvt.std / fvt.FvT
+    event[FvTName, "d4_to_t4"]   = fvt.pt4 / fvt.pd4
+    event[FvTName, "d3_to_t3"]   = fvt.pt3 / fvt.pd3
+    event[FvTName, "d3_to_t4"]   = fvt.pt4 / fvt.pd3
 
 
 

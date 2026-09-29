@@ -1,4 +1,5 @@
 import yaml
+import fsspec
 from coffea4bees.skimmer.processor.skimmer_4b_base import Skimmer4b
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
 from coffea4bees.analysis.helpers.candidates_selection import cand_jet_selection
@@ -6,6 +7,7 @@ from src.compat import nano_from_root
 
 from coffea4bees.jet_clustering.clustering   import cluster_bs
 from coffea4bees.jet_clustering.declustering import make_synthetic_event, clean_ISR
+from coffea4bees.jet_clustering.splitting_library import SplittingLibrary, carry_child_fields
 from coffea4bees.analysis.helpers.SvB_helpers import setFvTVars, subtract_ttbar_with_FvT
 from coffea4bees.analysis.helpers.object_selection import resolve_object_selection_config
 
@@ -55,8 +57,31 @@ class DeClusterer(Skimmer4b):
                 friends: dict[str, str|FriendTemplate] = None,
                 corrections_metadata: dict = None,
                 object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
+                declustering_method: str = "pdf",
+                clustering_library_file: str = "None",
+                library_carry_fields: list = ("btagScore",),
+                library_min_entries: int = 10,
+                library_scale_pt: bool = True,
+                library_boost_z: bool = True,
                 *args, **kwargs):
-        kwargs["pico_base_name"] = f'picoAOD_seed{declustering_rand_seed}'
+        # declustering_method "pdf" (default): sample the splittings from clustering_pdfs_file.
+        # "library": replace them by real splittings from clustering_library_file (a {year: [files]}
+        # registry written by processor_cluster_4b; XXX -> year), the neighbour rank being
+        # declustering_rand_seed. See jet_clustering/splitting_library.py.
+        if declustering_method not in ("pdf", "library"):
+            raise ValueError(f"declustering_method must be 'pdf' or 'library', got {declustering_method!r}")
+        self.declustering_method = declustering_method
+        self.clustering_library_file = clustering_library_file
+        self.library_carry_fields = list(library_carry_fields)
+        if "btagScore" not in self.library_carry_fields:
+            self.library_carry_fields.insert(0, "btagScore")   # the output b-tag score comes from here
+        self.library_min_entries = library_min_entries
+        self.library_scale_pt = library_scale_pt
+        self.library_boost_z = library_boost_z
+        self._splitting_library_cache = {}
+
+        pico_tag = "lib_" if declustering_method == "library" else ""
+        kwargs["pico_base_name"] = f'picoAOD_{pico_tag}seed{declustering_rand_seed}'
         super().__init__(
             corrections_metadata=corrections_metadata,
             object_selection_cfg=object_selection_cfg,
@@ -64,7 +89,7 @@ class DeClusterer(Skimmer4b):
             *args, **kwargs,
         )
 
-        logging.info(f"\nRunning Declusterer with these parameters: clustering_pdfs_file = {clustering_pdfs_file}, subtract_ttbar_with_weights = {subtract_ttbar_with_weights}, declustering_rand_seed = {declustering_rand_seed}, b_pt_threshold = {b_pt_threshold}, dr_threshold = {dr_threshold}, max_jet_retry = {max_jet_retry}, max_event_retry = {max_event_retry}, args = {args}, kwargs = {kwargs}")
+        logging.info(f"\nRunning Declusterer with these parameters: declustering_method = {declustering_method}, clustering_library_file = {clustering_library_file}, library_carry_fields = {self.library_carry_fields}, library_min_entries = {library_min_entries}, library_scale_pt = {library_scale_pt}, library_boost_z = {library_boost_z}, clustering_pdfs_file = {clustering_pdfs_file}, subtract_ttbar_with_weights = {subtract_ttbar_with_weights}, declustering_rand_seed = {declustering_rand_seed}, b_pt_threshold = {b_pt_threshold}, dr_threshold = {dr_threshold}, max_jet_retry = {max_jet_retry}, max_event_retry = {max_event_retry}, args = {args}, kwargs = {kwargs}")
         self.clustering_pdfs_file = clustering_pdfs_file
 
         self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
@@ -111,12 +136,23 @@ class DeClusterer(Skimmer4b):
 
         if clustering_pdfs_file != "None":
             if clustering_pdfs_file not in self._clustering_pdfs_cache:
-                with open(clustering_pdfs_file, "r") as f:
+                # fsspec, not open(): this runs in the condor workers, and a roast publishes the
+                # PDFs to EOS (root://...) rather than into the checkout the workers are shipped.
+                with fsspec.open(clustering_pdfs_file, "r") as f:
                     self._clustering_pdfs_cache[clustering_pdfs_file] = yaml.safe_load(f)
                 logging.info(f"Loaded {len(self._clustering_pdfs_cache[clustering_pdfs_file].keys())} PDFs from {clustering_pdfs_file}\n")
             clustering_pdfs = self._clustering_pdfs_cache[clustering_pdfs_file]
         else:
             clustering_pdfs = None
+
+        splitting_library = None
+        if self.declustering_method == "library":
+            library_file = self.clustering_library_file.replace("XXX", year)
+            if (library_file, year) not in self._splitting_library_cache:
+                self._splitting_library_cache[(library_file, year)] = SplittingLibrary.from_files(
+                    library_file, year, carry_fields=self.library_carry_fields, min_entries=self.library_min_entries)
+                logging.info(f"Loaded {len(self._splitting_library_cache[(library_file, year)].flavor)} splittings for {year} from {library_file}\n")
+            splitting_library = self._splitting_library_cache[(library_file, year)]
 
         path = fname.replace(fname.split("/")[-1], "")
 
@@ -228,7 +264,11 @@ class DeClusterer(Skimmer4b):
         #
         if self.subtract_ttbar_with_weights:
 
-            pass_ttbar_filter_selev = subtract_ttbar_with_FvT(selev, dataset, year)
+            # These are FOUR-tag events: d4_to_t4, as processor_HH4b does for its 4b events. The
+            # helper's default, d3_to_t3, is the 3b ttbar fraction (right for the mixer's 3b
+            # events) and over-subtracted the 4b data by ~1.44x the ttbar MC (roast
+            # declustered_run3_20260927_7e9990e-f0d7cdf).
+            pass_ttbar_filter_selev = subtract_ttbar_with_FvT(selev, dataset, year, "d4_to_t4")
 
             pass_ttbar_filter = np.full( len(event), True)
             pass_ttbar_filter[ selections.all(*cumulative_cuts) ] = pass_ttbar_filter_selev
@@ -269,6 +309,19 @@ class DeClusterer(Skimmer4b):
         # from coffea4bees.analysis.helpers.write_debug_info import add_debug_info_to_output_clustering_outputs
         # add_debug_info_to_output_clustering_outputs(selev, clustered_jets, processOutput)
 
+        library_kwargs = {}
+        if splitting_library is not None:
+            # Jets never declustered keep their own carry fields (NaN on combined jets, whose
+            # children bring the library's values)
+            for field, values in carry_child_fields(clustered_jets, jets_for_clustering, self.library_carry_fields).items():
+                clustered_jets[field] = values
+            library_kwargs = dict(
+                library=splitting_library,
+                event_ids=np.column_stack([np.asarray(selev.run), np.asarray(selev.luminosityBlock), np.asarray(selev.event)]).astype(np.int64),
+                library_scale_pt=self.library_scale_pt,
+                library_boost_z=self.library_boost_z,
+            )
+
         b_pt_threshold = self._resolve_b_pt_threshold(year, config["isRun3"])
         declustered_jets = make_synthetic_event(clustered_jets, clustering_pdfs,
                                                 declustering_rand_seed=self.declustering_rand_seed,
@@ -276,7 +329,8 @@ class DeClusterer(Skimmer4b):
                                                 dr_threshold=self.dr_threshold,
                                                 max_jet_retry=self.max_jet_retry,
                                                 max_event_retry=self.max_event_retry,
-                                                chunk=chunk)
+                                                chunk=chunk,
+                                                **library_kwargs)
 
         declustered_jets = declustered_jets[ak.argsort(declustered_jets.pt, axis=1, ascending=False)]
 
@@ -314,6 +368,12 @@ class DeClusterer(Skimmer4b):
         else:
             out_branches["Jet_bRegCorr"] = ak.unflatten(np.full(total_jet, _UNIT_CORRECTION), n_jet)
             out_branches["Jet_btagDeepFlavB"] = declustered_jets.btagScore
+
+        # Other carried jet properties (btagScore is written above)
+        if splitting_library is not None:
+            for field in self.library_carry_fields:
+                if field != "btagScore":
+                    out_branches[f"Jet_{field}"] = declustered_jets[field]
 
         #
         #  Need to skip all the other jet branches to make sure they have the same number of jets

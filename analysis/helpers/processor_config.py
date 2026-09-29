@@ -26,7 +26,7 @@ def processor_config(processName, dataset, event, overrides=None):
     # data-like -- unit weights, no MC weights (its genWeight branch is dropped at the skim). The
     # dataset is published as `ttbar_PSData`, which the old lowercase "ps_data" test missed (and whose
     # capital "Data" also escaped the "data" isMC test), so it was weighted as MC.
-    config["isPSData"] = "ps_data" in processName or "psdata" in processName.lower()
+    config["isPSData"] = "ps_data" in processName.lower() or "psdata" in processName.lower() or "psdata" in dataset.lower()
     if config["isPSData"]:
         config["isMC"] = False
     config["isMixedData"]    = not (dataset.find("mix_v") == -1) or not (dataset.find("mix_noTT_v") == -1) or not (dataset.find("mix_pz_v") == -1) or not (dataset.find("mixeddata_all") == -1) or not (dataset.find("mixeddata") == -1) or not (dataset.find("mixed_data") == -1)
