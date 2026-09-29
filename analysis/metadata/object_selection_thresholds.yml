@@ -93,7 +93,17 @@ jet:
 # "2023_BPix" entry would take precedence over "2023". Eras with no matching
 # key (e.g. the 2022* eras) use the base thresholds unchanged.
 era_overrides:
+  "2022":                 # 2022, 2022_preEE, 2022_EE
+    jet:
+      run3:
+        selected:
+          pt_min: 30
   "2023":                 # 2023, 2023_preBPix, 2023_BPix
+    jet:
+      run3:
+        selected:
+          pt_min: 25
+  "2024":
     jet:
       run3:
         selected:
