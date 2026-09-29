@@ -63,11 +63,15 @@ class DeClusterer(Skimmer4b):
                 library_min_entries: int = 10,
                 library_scale_pt: bool = True,
                 library_boost_z: bool = True,
+                library_selection: str = "random",
+                library_k_neighbors: int = 5,
                 *args, **kwargs):
         # declustering_method "pdf" (default): sample the splittings from clustering_pdfs_file.
         # "library": replace them by real splittings from clustering_library_file (a {year: [files]}
-        # registry written by processor_cluster_4b; XXX -> year), the neighbour rank being
-        # declustering_rand_seed. See jet_clustering/splitting_library.py.
+        # registry written by processor_cluster_4b; XXX -> year). library_selection "random"
+        # (default): each jet takes a reproducible random one of its library_k_neighbors nearest,
+        # keyed on declustering_rand_seed + the jet kinematics, so seeds are equivalent replicas;
+        # "rank": neighbour rank declustering_rand_seed. See jet_clustering/splitting_library.py.
         if declustering_method not in ("pdf", "library"):
             raise ValueError(f"declustering_method must be 'pdf' or 'library', got {declustering_method!r}")
         self.declustering_method = declustering_method
@@ -78,6 +82,10 @@ class DeClusterer(Skimmer4b):
         self.library_min_entries = library_min_entries
         self.library_scale_pt = library_scale_pt
         self.library_boost_z = library_boost_z
+        if library_selection not in ("random", "rank"):
+            raise ValueError(f"library_selection must be 'random' or 'rank', got {library_selection!r}")
+        self.library_selection = library_selection
+        self.library_k_neighbors = int(library_k_neighbors)
         self._splitting_library_cache = {}
 
         pico_tag = "lib_" if declustering_method == "library" else ""
@@ -89,7 +97,7 @@ class DeClusterer(Skimmer4b):
             *args, **kwargs,
         )
 
-        logging.info(f"\nRunning Declusterer with these parameters: declustering_method = {declustering_method}, clustering_library_file = {clustering_library_file}, library_carry_fields = {self.library_carry_fields}, library_min_entries = {library_min_entries}, library_scale_pt = {library_scale_pt}, library_boost_z = {library_boost_z}, clustering_pdfs_file = {clustering_pdfs_file}, subtract_ttbar_with_weights = {subtract_ttbar_with_weights}, declustering_rand_seed = {declustering_rand_seed}, b_pt_threshold = {b_pt_threshold}, dr_threshold = {dr_threshold}, max_jet_retry = {max_jet_retry}, max_event_retry = {max_event_retry}, args = {args}, kwargs = {kwargs}")
+        logging.info(f"\nRunning Declusterer with these parameters: declustering_method = {declustering_method}, clustering_library_file = {clustering_library_file}, library_carry_fields = {self.library_carry_fields}, library_min_entries = {library_min_entries}, library_scale_pt = {library_scale_pt}, library_boost_z = {library_boost_z}, library_selection = {library_selection}, library_k_neighbors = {library_k_neighbors}, clustering_pdfs_file = {clustering_pdfs_file}, subtract_ttbar_with_weights = {subtract_ttbar_with_weights}, declustering_rand_seed = {declustering_rand_seed}, b_pt_threshold = {b_pt_threshold}, dr_threshold = {dr_threshold}, max_jet_retry = {max_jet_retry}, max_event_retry = {max_event_retry}, args = {args}, kwargs = {kwargs}")
         self.clustering_pdfs_file = clustering_pdfs_file
 
         self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
@@ -320,6 +328,8 @@ class DeClusterer(Skimmer4b):
                 event_ids=np.column_stack([np.asarray(selev.run), np.asarray(selev.luminosityBlock), np.asarray(selev.event)]).astype(np.int64),
                 library_scale_pt=self.library_scale_pt,
                 library_boost_z=self.library_boost_z,
+                library_selection=self.library_selection,
+                library_k_neighbors=self.library_k_neighbors,
             )
 
         lookups_before = dict(splitting_library.lookup_counts) if splitting_library is not None else None
