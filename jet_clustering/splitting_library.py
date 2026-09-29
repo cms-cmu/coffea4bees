@@ -260,12 +260,15 @@ class SplittingLibrary:
             self._trees[(level, key)] = (cKDTree(points), members)
         return self._trees[(level, key)]
 
-    def lookup(self, flavor, pt, eta, run, luminosityBlock, event, rank):
+    def lookup(self, flavor, pt, eta, run, luminosityBlock, event, rank, *, max_distance=None, retry_offset=0):
         """Library row index for each target (flat arrays), plus the lookup level used.
 
         Takes the rank-th nearest neighbour (0 = nearest) in (log pT, |eta|) after dropping
         neighbours from the target's own (run, luminosityBlock, event); the rank wraps modulo the
         group size, and if fewer allowed neighbours are found, the farthest allowed one is used.
+        With max_distance, the rank is first capped to the allowed neighbours within that distance
+        (the nearest allowed one always counts); retry_offset is added after the cap, so retries
+        can still step beyond it. Defaults: no cap, no offset (plain rank).
         Targets whose group holds only same-event candidates move to the next coarser group; if
         none has any, the nearest (same-event) row is used and counted in self.n_self_matches.
         """
@@ -286,14 +289,19 @@ class SplittingLibrary:
                 tree, members = self._tree(level, key)
                 n = len(members)
                 r = rank[pending] % n
-                k = int(min(r.max() + 1 + self.n_extra, n))
-                _, nbr = tree.query(points[pending], k=list(range(1, k + 1)))
+                k = int(min(r.max() + int(retry_offset) + 1 + self.n_extra, n))
+                dist, nbr = tree.query(points[pending], k=list(range(1, k + 1)))
                 lib_idx = members[nbr]                                        # (n_pending, k)
 
                 lib_id = np.stack([self.data["run"][lib_idx], self.data["luminosityBlock"][lib_idx],
                                    self.data["event"][lib_idx]], axis=-1)     # (n_pending, k, 3)
                 allowed = ~np.all(lib_id == target_id[pending][:, None, :], axis=-1)
                 n_allowed = allowed.sum(axis=1)
+                if max_distance is not None:
+                    # allowed neighbours are distance-ordered, so the ones within the cap come first
+                    n_close = np.maximum((allowed & (dist <= max_distance)).sum(axis=1), 1)
+                    r = np.minimum(r, n_close - 1)
+                r = r + int(retry_offset)
 
                 # column of the r-th allowed neighbour (or the last allowed one)
                 allowed_rank = np.cumsum(allowed, axis=1) - 1
@@ -395,16 +403,18 @@ def random_ranks(pt, eta, phi, event, k_neighbors, key):
 
 
 def decluster_with_library(jets, library, event_ids, rank, *, scale_pt=True, boost_z=True,
-                           selection="rank", k_neighbors=5, rng_key=(0,), retry_offset=0):
+                           selection="rank", k_neighbors=20, max_distance=0.05, rng_key=(0,), retry_offset=0):
     """Library replacement for sample_PDFs_vs_pT + decluster_combined_jets.
 
     jets:      jagged [event][jet] combined jets to decluster (pt, eta, phi, jet_flavor)
     event_ids: (n_events, 3) int array of (run, luminosityBlock, event) for self-match exclusion
     selection: "rank"   every jet takes neighbour ``rank`` (int)
                "random" every jet takes a reproducible random neighbour among its k_neighbors
-                        nearest (random_ranks, keyed on rng_key), stepped outward by
-                        ``retry_offset`` (the retry count) so a failing jet cannot keep drawing
-                        from the same k; ``rank`` is ignored. k_neighbors 1 = rank mode, seed 0.
+                        nearest (random_ranks, keyed on rng_key) that lie within max_distance
+                        in (log pT, |eta|) (None: no cap; the nearest always counts), then
+                        stepped outward by ``retry_offset`` (the retry count) so a failing jet
+                        cannot keep drawing the same candidates; ``rank`` is ignored.
+                        k_neighbors 1 = rank mode, seed 0.
     Returns the jagged child arrays (A, B) with pt, eta, phi, mass, jet_flavor, btag_string and
     the library's carry fields (NaN for combined children).
     """
@@ -417,11 +427,14 @@ def decluster_with_library(jets, library, event_ids, rank, *, scale_pt=True, boo
 
     if selection == "random":
         rank = random_ranks(np.asarray(flat.pt), np.asarray(flat.eta), np.asarray(flat.phi), ids[:, 2],
-                            k_neighbors, rng_key) + int(retry_offset)
-    elif selection != "rank":
+                            k_neighbors, rng_key)
+        cap = dict(max_distance=max_distance, retry_offset=retry_offset)
+    elif selection == "rank":
+        cap = {}
+    else:
         raise ValueError(f"library selection must be 'rank' or 'random', got {selection!r}")
     index, _ = library.lookup(flavor, np.asarray(flat.pt), np.asarray(flat.eta),
-                              ids[:, 0], ids[:, 1], ids[:, 2], rank)
+                              ids[:, 0], ids[:, 1], ids[:, 2], rank, **cap)
     kids = align_children(library, index, np.asarray(flat.pt), np.asarray(flat.eta), np.asarray(flat.phi),
                           scale_pt=scale_pt, boost_z=boost_z)
     child_flavor = dict(zip("AB", library_child_flavors(library, index)))

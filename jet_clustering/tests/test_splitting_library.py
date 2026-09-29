@@ -248,6 +248,26 @@ class splittingLibraryLookupTestCase(unittest.TestCase):
         lib.lookup(np.array(["bb"], dtype=object), t["pt"][:1], t["eta"][:1], [2], [2], [0], 0)
         self.assertEqual(lib.lookup_counts["exact"], n + 1)          # running total
 
+    def test_distance_cap(self):
+        """Capped picks stay within max_distance unless the nearest allowed neighbour is already
+        farther (then it is taken); retry_offset steps beyond the cap."""
+        t, d = self.targets, self.lib.data
+        args = (t["flavor"], t["pt"], t["eta"], t["run"], t["luminosityBlock"], t["event"])
+        dist = lambda i: np.hypot(np.log(d["pt"][i]) - np.log(t["pt"]), np.abs(d["eta"][i]) - np.abs(t["eta"]))
+        cap = 0.05
+        nearest, _ = self.lib.lookup(*args, 0)
+        capped, _ = self.lib.lookup(*args, 19, max_distance=cap)
+        uncapped, _ = self.lib.lookup(*args, 19)
+        ok = (dist(capped) <= cap + 1e-12) | (capped == nearest)
+        self.assertTrue(np.all(ok))
+        self.assertTrue(np.any(capped != uncapped))            # the cap did bite in this sparse toy
+        self.assertTrue(np.any(dist(uncapped) > cap))
+        # with a cap no neighbour passes, rank -> nearest, and retry_offset 2 -> the 3rd allowed
+        tight, _ = self.lib.lookup(*args, 19, max_distance=0.0)
+        np.testing.assert_array_equal(tight, nearest)
+        step, _ = self.lib.lookup(*args, 19, max_distance=0.0, retry_offset=2)
+        np.testing.assert_array_equal(step, self.lib.lookup(*args, 2)[0])
+
     def test_library_rank_wraps(self):
         index_big, _ = self._lookup(rank=10_000)
         self.assertTrue(np.all(index_big >= 0))
