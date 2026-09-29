@@ -85,7 +85,9 @@ jcm_datasets:
   - "TTToSemiLeptonic_stitched"
   - "TTToHadronic_stitched"
 
-jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb_jcm_config.yml -m coffea4bees/plots/metadata/plots_JCM_ttHbb.yml"
+# --data4bName data: make_jcm_weights.py (since 94936fc09) replaces data4bName with the -w label
+# when that label contains "v" (2024_v2), and then finds no 4b data histograms.
+jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb_jcm_config.yml -m coffea4bees/plots/metadata/plots_JCM_ttHbb.yml --data4bName data"
 
 # B.1 cutflow references.  The defaults (known_fullCounts_JCM_{NoJCM,wJCM}.yml) hold the HH4b
 # nominal_run2 numbers and would fail this run; point at ttHbb files that do not exist yet so the
