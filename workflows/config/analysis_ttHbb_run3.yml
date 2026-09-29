@@ -78,6 +78,8 @@ classifier_inputs:
 # ==============================================================================
 # Runs the analysis processor (analysis_config below, JCM/FvT/SvB forced off) on data and the
 # stitched ttbar, fits the JCM in the SB (tag run3_v1), then reruns with the JCM applied.
+# The fit is committed as metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2022_v1.yml
+# (the Snakemake tag stays run3_v1: it names the existing output directory on EOS).
 tag: "run3_v1"
 jcm_datasets:
   - "data"
@@ -179,7 +181,7 @@ fvt_closure:
     - "TTTo2L2Nu_stitched"
     - "TTToSemiLeptonic_stitched"
     - "TTToHadronic_stitched"
-  JCM_file: "coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_v1.yml"
+  JCM_file: "coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2022_v1.yml"
   plot_config: "coffea4bees/plots/metadata/plots_FvT_closure_ttHbb_run3.yml"
   known_counts: "none"
   reuse_wJCM_ttbar: true

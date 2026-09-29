@@ -10,8 +10,10 @@ dataset:
       - --metadata coffea4bees/metadata/datasets/
       - --max-workers 20
       - --data-source detector
-      # ttHbb Run 3 JCM from Phase B.1 (workflows/config/analysis_ttHbb_run3.yml, tag run3_v1)
-      - --JCM-weight "" coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_v1.yml@@JCM_weights
+      # ttHbb Run 3 (2022) JCM from Phase B.1 (workflows/config/analysis_ttHbb_run3.yml, Snakemake tag
+      # run3_v1, committed as run3_2022_v1). One file per year: use "year:<era>" groups when training
+      # several years together.
+      - --JCM-weight "" coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2022_v1.yml@@JCM_weights
       - --friends "" coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3.json@@HCR_input
 model:
   - module: HCR.FvT.baseline.Train
