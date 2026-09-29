@@ -3,6 +3,7 @@ import awkward as ak
 import vector as vec
 from coffea.nanoevents.methods import vector
 from coffea4bees.jet_clustering.sample_jet_templates import sample_PDFs_vs_pT
+from coffea4bees.jet_clustering.splitting_library import decluster_with_library
 
 # _MAX_NUM_JET_RETRY = 4
 # _MAX_NUM_EVENT_RETRY = 4
@@ -524,7 +525,40 @@ def decluster_combined_jets(input_jet, debug=False):
     return pA, pB
 
 
-def decluster_splitting_types(input_jets, splitting_types, input_pdfs, rand_seed, *, b_pt_threshold=40, dr_threshold=0.4, max_jet_retry=_MAX_NUM_JET_RETRY, chunk=None, debug=False):
+def _decluster_with_pdfs(input_jets_to_decluster, splitting_types, input_pdfs, sample_seed, *, chunk=None, debug=False):
+    """Sample the decluster variables from the PDFs and build the children (the original
+    declustering; sample_seed is 11 * num_trys + rand_seed as before)."""
+
+    splittings_info = []
+
+    if debug:
+        print(f"splittings_types is {splitting_types} sample_seed {sample_seed}")
+
+    for _s in splitting_types:
+
+        # Pre compute these to save time
+        _s_mask = create_flavor_mask(input_jets_to_decluster, _s)
+        _num_samples   = np.sum(ak.num(input_jets_to_decluster[_s_mask]))
+        _indicies = np.where(ak.flatten(_s_mask))
+        _indicies_tuple = (_indicies[0].to_list())
+
+        splittings_info.append((get_splitting_name(_s), _num_samples, _indicies_tuple))
+
+    #
+    #  Sample the PDFs,  add sampled varibales to the jets to be declustered
+    #
+    sample_PDFs_vs_pT(input_jets_to_decluster, input_pdfs, sample_seed, splittings_info, chunk=chunk)
+
+    #
+    #  do the declustering
+    #
+    return decluster_combined_jets(input_jets_to_decluster, debug=debug)
+
+
+def decluster_splitting_types(input_jets, splitting_types, input_pdfs, rand_seed, *, b_pt_threshold=40, dr_threshold=0.4, max_jet_retry=_MAX_NUM_JET_RETRY, chunk=None, debug=False,
+                              library=None, event_ids=None, rank_offset=0, library_scale_pt=True, library_boost_z=True):
+    """With ``library`` (a SplittingLibrary) the children are real library splittings (rank
+    rank_offset + retry, see splitting_library.decluster_with_library) instead of PDF samples."""
 
     if debug:
         print(f"{chunk} decluster_splitting_types input rand_seed {rand_seed}\n")
@@ -563,33 +597,13 @@ def decluster_splitting_types(input_jets, splitting_types, input_pdfs, rand_seed
         if debug:
             print(f" (decluster_splitting_types) num_trys {num_trys} ")
 
-        splittings_info = []
-
-        if debug:
-            print(f"splittings_types is {splitting_types} num_trys {num_trys}")
-
-        for _s in splitting_types:
-
-            # Pre compute these to save time
-            _s_mask = create_flavor_mask(input_jets_to_decluster, _s)
-            _num_samples   = np.sum(ak.num(input_jets_to_decluster[_s_mask]))
-            _indicies = np.where(ak.flatten(_s_mask))
-            _indicies_tuple = (_indicies[0].to_list())
-
-            splittings_info.append((get_splitting_name(_s), _num_samples, _indicies_tuple))
-
-        if debug:
-            print(f"{chunk} decluster_splitting_types rand_seed {rand_seed}\n")
-
-        #
-        #  Sample the PDFs,  add sampled varibales to the jets to be declustered
-        #
-        sample_PDFs_vs_pT(input_jets_to_decluster, input_pdfs, 11 * num_trys + rand_seed, splittings_info, chunk=chunk)
-
-        #
-        #  do the declustering
-        #
-        declustered_jets_A, declustered_jets_B  = decluster_combined_jets(input_jets_to_decluster, debug=debug)
+        if library is not None:
+            declustered_jets_A, declustered_jets_B = decluster_with_library(
+                input_jets_to_decluster, library, event_ids, rank_offset + num_trys,
+                scale_pt=library_scale_pt, boost_z=library_boost_z)
+        else:
+            declustered_jets_A, declustered_jets_B = _decluster_with_pdfs(
+                input_jets_to_decluster, splitting_types, input_pdfs, 11 * num_trys + rand_seed, chunk=chunk, debug=debug)
 
         #
         #  Check for declustered jets failing kinematic requirements
@@ -627,7 +641,7 @@ def decluster_splitting_types(input_jets, splitting_types, input_pdfs, rand_seed
     return unclustered_jets
 
 
-def make_synthetic_event_core(input_jets, input_pdfs, rand_seed, *, b_pt_threshold=40, dr_threshold=0.4, max_jet_retry=_MAX_NUM_JET_RETRY, chunk=None, debug=False):
+def make_synthetic_event_core(input_jets, input_pdfs, rand_seed, *, b_pt_threshold=40, dr_threshold=0.4, max_jet_retry=_MAX_NUM_JET_RETRY, chunk=None, debug=False, **library_kwargs):
 
     if debug:
         print(f"{chunk} make_synthetic_event_core rand_seed {rand_seed}\n")
@@ -645,7 +659,7 @@ def make_synthetic_event_core(input_jets, input_pdfs, rand_seed, *, b_pt_thresho
         if debug:
             print(f"(make_synthetic_event_core) splitting_types was {splitting_types}")
 
-        input_jets = decluster_splitting_types(input_jets, splitting_types, input_pdfs, rand_seed, b_pt_threshold=b_pt_threshold, dr_threshold=dr_threshold, max_jet_retry=max_jet_retry, chunk=chunk, debug=debug)
+        input_jets = decluster_splitting_types(input_jets, splitting_types, input_pdfs, rand_seed, b_pt_threshold=b_pt_threshold, dr_threshold=dr_threshold, max_jet_retry=max_jet_retry, chunk=chunk, debug=debug, **library_kwargs)
 
         splitting_types = get_list_of_combined_jet_types(input_jets)
 
@@ -662,7 +676,16 @@ def make_synthetic_event_core(input_jets, input_pdfs, rand_seed, *, b_pt_thresho
 #   return make_synthetic_event_core(input_jets, input_pdfs, debug=debug)
 
 
-def make_synthetic_event(input_jets, input_pdfs, declustering_rand_seed=66, *, b_pt_threshold=40, dr_threshold=0.4, max_jet_retry=_MAX_NUM_JET_RETRY, max_event_retry=_MAX_NUM_EVENT_RETRY, chunk=None, debug=False):
+def make_synthetic_event(input_jets, input_pdfs, declustering_rand_seed=66, *, b_pt_threshold=40, dr_threshold=0.4, max_jet_retry=_MAX_NUM_JET_RETRY, max_event_retry=_MAX_NUM_EVENT_RETRY, chunk=None, debug=False,
+                         library=None, event_ids=None, library_scale_pt=True, library_boost_z=True):
+    """Decluster every clustered jet of ``input_jets``.
+
+    Default: sample the splittings from ``input_pdfs``. With ``library`` (a SplittingLibrary),
+    replace them by real library splittings instead: the neighbour rank is
+    declustering_rand_seed + event retry + jet retry, ``event_ids`` ((n_events, 3) run,
+    luminosityBlock, event) excludes self matches, and the library's carry fields (which
+    ``input_jets`` must already have, NaN for combined jets) are propagated to the output.
+    """
 
     if debug:
         print(f"{chunk} make_synthetic_event rand_seed {declustering_rand_seed}\n")
@@ -684,6 +707,8 @@ def make_synthetic_event(input_jets, input_pdfs, declustering_rand_seed=66, *, b
     flat_declustered_mass       = np.zeros(n_total_declustered_jets)
     flat_declustered_jet_flavor = np.full (n_total_declustered_jets, "X")
     flat_declustered_btagScore  = np.full(n_total_declustered_jets, -1.0)
+    carry_fields = list(library.carry_fields) if library is not None else []
+    flat_declustered_carry = {field: np.full(n_total_declustered_jets, np.nan) for field in carry_fields}
 
     num_trys = 0
 
@@ -694,7 +719,14 @@ def make_synthetic_event(input_jets, input_pdfs, declustering_rand_seed=66, *, b
 
         to_decluster_indicies = np.where(events_to_decluster_mask)[0]
 
-        declustered_events = make_synthetic_event_core(input_jets[to_decluster_indicies], input_pdfs, 7 * num_trys + declustering_rand_seed,
+        if library is not None:
+            library_kwargs = dict(library=library, event_ids=np.asarray(event_ids)[to_decluster_indicies],
+                                  rank_offset=declustering_rand_seed + num_trys,
+                                  library_scale_pt=library_scale_pt, library_boost_z=library_boost_z)
+        else:
+            library_kwargs = {}
+
+        declustered_events = make_synthetic_event_core(input_jets[to_decluster_indicies], input_pdfs, 7 * num_trys + declustering_rand_seed, **library_kwargs,
                                                        b_pt_threshold=b_pt_threshold, dr_threshold=dr_threshold, max_jet_retry=max_jet_retry, chunk=chunk, debug=debug)
 
         #
@@ -737,8 +769,14 @@ def make_synthetic_event(input_jets, input_pdfs, declustering_rand_seed=66, *, b
         flat_declustered_mass      [jet_replace_mask]    = new_jets_flat.mass
         flat_declustered_jet_flavor[jet_replace_mask]    = new_jets_flat.jet_flavor
         flat_declustered_btagScore [jet_replace_mask] = [float(str(i)) for i in new_jets_flat.btag_string]
+        for field in carry_fields:
+            flat_declustered_carry[field][jet_replace_mask] = np.asarray(new_jets_flat[field], dtype=np.float64)
         events_to_decluster_mask[update_indicies_global] = False
         num_trys += 1
+
+    # A carried btagScore is the unrounded float (btag_string holds 3 decimals)
+    if "btagScore" in flat_declustered_carry:
+        flat_declustered_btagScore = flat_declustered_carry.pop("btagScore")
 
     #
     #  Assigning the flavor bit (for writting out the synthetic datasets
@@ -756,6 +794,7 @@ def make_synthetic_event(input_jets, input_pdfs, declustering_rand_seed=66, *, b
             "jet_flavor": ak.unflatten(flat_declustered_jet_flavor,     n_declustered_jets_per_event),
             "btagScore":  ak.unflatten(flat_declustered_btagScore,      n_declustered_jets_per_event),
             "jet_flavor_bit": ak.unflatten(flat_declustered_flavor_bit, n_declustered_jets_per_event),
+            **{field: ak.unflatten(values, n_declustered_jets_per_event) for field, values in flat_declustered_carry.items()},
         },
         with_name="PtEtaPhiMLorentzVector",
         behavior=vector.behavior,
