@@ -10,13 +10,14 @@
 #
 # The declustering jobs (D.3) run on condor workers and read the PDFs from EOS through fsspec
 # (make_declustered_data_4b.py), so nothing is installed into the checkout.
-# With inputs.pdfs set, D.3 reads another roast's PDFs and none of this runs.
+# With inputs.pdfs set, D.3 reads another roast's PDFs and none of this runs; nor with
+# declustering.method library unless pdfs.make: true (MAKE_PDFS).
 
 D2_OUT = f"{out}D2/"
 D2_ERA_DIR = f"{D2_OUT}per_era/"
 D2_PDFS = [f"{D2_ERA_DIR}{y}/clustering_pdfs_vs_pT_{y}.yml" for y in YEARS]
 D2_PUBLISHED = f"{D2_OUT}published.done"
-D2_DONE = [] if PDF_EXTERNAL else [D2_PUBLISHED]
+D2_DONE = [D2_PUBLISHED] if MAKE_PDFS else []
 
 rule D2_make_pdfs:
     input: D1_MERGED
