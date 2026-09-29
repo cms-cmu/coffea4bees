@@ -237,6 +237,16 @@ class splittingLibraryLookupTestCase(unittest.TestCase):
             self.assertEqual(lib.n_self_matches, expect_self)
             self.assertEqual(bool(index[0] == row[0]), bool(expect_self))
 
+    def test_lookup_counts(self):
+        lib = SplittingLibrary(self.rows, carry_fields=["btagScore"], min_entries=10)
+        n = 7
+        t = self.targets
+        lib.lookup(np.array(["bb"] * n + ["((bj)j)b"] * 2, dtype=object), t["pt"][:n + 2], t["eta"][:n + 2],
+                   np.full(n + 2, 2), np.full(n + 2, 2), np.arange(n + 2), 0)
+        self.assertEqual(lib.lookup_counts, {"exact": n, "child_content": 2, "parent_content": 0, "coarse": 0, "self_match": 0})
+        lib.lookup(np.array(["bb"], dtype=object), t["pt"][:1], t["eta"][:1], [2], [2], [0], 0)
+        self.assertEqual(lib.lookup_counts["exact"], n + 1)          # running total
+
     def test_library_rank_wraps(self):
         index_big, _ = self._lookup(rank=10_000)
         self.assertTrue(np.all(index_big >= 0))

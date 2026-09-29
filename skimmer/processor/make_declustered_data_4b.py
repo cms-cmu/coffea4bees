@@ -322,6 +322,8 @@ class DeClusterer(Skimmer4b):
                 library_boost_z=self.library_boost_z,
             )
 
+        lookups_before = dict(splitting_library.lookup_counts) if splitting_library is not None else None
+
         b_pt_threshold = self._resolve_b_pt_threshold(year, config["isRun3"])
         declustered_jets = make_synthetic_event(clustered_jets, clustering_pdfs,
                                                 declustering_rand_seed=self.declustering_rand_seed,
@@ -391,6 +393,10 @@ class DeClusterer(Skimmer4b):
         branches = ak.Array(out_branches)
 
         processOutput["total_jet"] = total_jet
+        if splitting_library is not None:
+            # this chunk's library lookups by level (retries included) + last-resort self matches;
+            # summed per dataset into the picoAOD registry (worker log warnings never reach the driver)
+            processOutput["library_lookups"] = {k: v - lookups_before[k] for k, v in splitting_library.lookup_counts.items()}
 
         return (selection,
                 branches,
