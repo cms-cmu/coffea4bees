@@ -74,7 +74,7 @@ trigger_weights:
   config:
     use_vectorized: false
     tagger: DeepJet
-    make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched/
+    make_classifier_input: "{eos_prod}/{roast_id}/classifier_inputs/"
 
 # ==============================================================================
 # PHASE B: CALIBRATION & CLASSIFIER INPUTS (JCM & Friendtrees)
@@ -120,7 +120,7 @@ classifier_inputs:
     run_SvB: false
     top_reconstruction: slow
     fill_histograms: true
-    make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched/
+    make_classifier_input: "{eos_prod}/{roast_id}/classifier_inputs/"
 
 # ==============================================================================
 # PHASE C & D: CLASSIFIER SETTINGS (Entirely on falcon / PSC)
@@ -149,9 +149,33 @@ classifier_setting:
     option:
       - feature_ancillary: [xW, nSelJets, xbW, year]
 
+# ==============================================================================
+# PHASE B -> C/D HANDOFF
+# ==============================================================================
+# Where Phase B publishes the two files C and D consume (rule phaseB_handoff in
+# Snakefile_PhaseB.smk).  B always writes local copies at
+#   coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_2024_v2.yml
+#   coffea4bees/metadata/datasets/classifier_inputs_{roast_id}.json
+# on the host it runs on (cmslpc), which is what C.4 and F.1 read -- the analysis processor
+# opens the JCM with a plain open(), so those consumers need a real file.
+#
+# eos_base additionally publishes both to EOS.  C and D run on falcon and read them through
+# the classifier's parse.mapping, which deserializes with fsspec and so accepts root:// URLs.
+# The fvt/svb blocks below must point at these same two URLs.
+handoff:
+  eos_base: "{eos_prod}/{roast_id}/handoff"
+
+# ==============================================================================
+# PHASE C: FvT (falcon).  Self-contained per roast: models and friends go to the roast's own
+# EOS directory, and training/evaluation read THIS roast's classifier-input manifest and JCM
+# fit from the handoff area above.
+# workflow_overrides: the checked-in templates classifier/config/workflows/ttHbb/FvT/
+# {train,evaluate}.yml stay the source of truth; only the listed flags are replaced
+# (helpers/common.smk: write_workflow_overrides).
+# ==============================================================================
 fvt:
-  eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched"
-  plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
+  eos_base: "{eos_prod}/{roast_id}"
+  plot_base: "{web_prod}/{roast_id}/classifier"
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/ttHbb/FvT"
   label: "FvT_ttHbb_stitched"
@@ -163,11 +187,29 @@ fvt:
   friend: "{eos_base}/friend/{label}"
   train_template: "model: {eos_base}/classifier/{label}"
   eval_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/{label}"
-  metadata: "coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json@@HCR_input"
+  metadata: "{eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input"
+  workflow_overrides:
+    --metadata: "coffea4bees/metadata/datasets/"
+    --JCM-weight: '"" {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2.yml@@JCM_weights'
+    '--friends ""': "{eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input"
 
+# ==============================================================================
+# PHASE C.4 (cmslpc, roast step C4): FvT closure -- the processor on data with JCM x FvT (no
+# SvB; the ttbar histograms are reused from Phase B.1's wJCM pass, since the FvT does not
+# touch MC), plots, cutflow check and closure table.  Datasets follow jcm_datasets above,
+# which for ttHbb are the stitched ttbar samples.
+# ==============================================================================
+fvt_closure:
+  datasets: [data, TTToHadronic_stitched, TTToSemiLeptonic_stitched, TTTo2L2Nu_stitched]
+  plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
+
+# ==============================================================================
+# PHASE D: SvB (falcon).  Same per-roast pattern as fvt; the FvT friend used for the
+# background is {eos_base}/friend/FvT_ttHbb_stitched, i.e. THIS roast's Phase C output.
+# ==============================================================================
 svb:
-  eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched"
-  plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
+  eos_base: "{eos_prod}/{roast_id}"
+  plot_base: "{web_prod}/{roast_id}/classifier"
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/ttHbb/SvB"
   label: "SvB_ttHbb_stitched"
@@ -179,7 +221,11 @@ svb:
   friend: "{eos_base}/friend/{label}"
   train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_ttHbb_stitched"
   eval_template: "model: {eos_base}/classifier/{label}, SvB: {eos_base}/friend/{label}"
-  metadata: "coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json@@HCR_input"
+  metadata: "{eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input"
+  workflow_overrides:
+    --metadata: "coffea4bees/metadata/datasets/"
+    --JCM-weight: '"" {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2.yml@@JCM_weights'
+    '--friends ""': "{eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input"
 
 # ==============================================================================
 # PHASE F.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
