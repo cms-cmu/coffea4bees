@@ -77,6 +77,8 @@ runs:
     - MvD_3_svb
   declustered_run3.yml:
     - DeClustered
+  declustered_run3_library.yml:
+    - DeClustered
   svbfeynnet_run3.yml:
     - SvBFeynNet_friendtrees_Run3
   analysis_ttHbb_bkg_syst.yml:
