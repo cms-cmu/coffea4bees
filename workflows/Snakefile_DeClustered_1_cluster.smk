@@ -14,6 +14,8 @@
 #   D1_library_regroup (per year)     the chunk files listed in that year's coffea -> {year: [files]}
 #   D1_library_merge                  -> one registry for all years
 #   D1_library_publish                -> <LIB_BASE>/splitting_library.yml (what D.3 reads)
+#   D1_library_summary (per year)     -> D1/library/summary/: rows per exact splitting type and the
+#                                        lookup group each resolves to (summarize_splitting_library.py)
 #
 # With inputs.pdfs set (pdf method), D.3 declusters with another roast's PDFs and none of this runs.
 
@@ -23,6 +25,7 @@ D1_MERGED = f"{D1_OUT}splittings.coffea"
 D1_LIB_REGISTRY = f"{D1_OUT}library/splitting_library.yml"
 D1_LIB_PUBLISHED = f"{D1_OUT}library/published.done"
 LIB_DONE = [D1_LIB_PUBLISHED] if LIBRARY else []
+D1_LIB_SUMMARIES = [f"{D1_OUT}library/summary/splitting_library_summary_{y}.yml" for y in YEARS] if LIBRARY else []
 
 rule D1_config:
     input: CLUSTER.get('config_template', "coffea4bees/analysis/metadata/cluster_4b_Run3.yml")
@@ -126,7 +129,25 @@ rule D1_library_publish:
         date > {output}
         """
 
-rule all_D1:
-    input: ([] if PDF_EXTERNAL else [D1_MERGED]) + LIB_DONE
+rule D1_library_summary:
+    input: D1_LIB_REGISTRY
+    output:
+        yml = f"{D1_OUT}library/summary/splitting_library_summary_{{year}}.yml",
+        txt = f"{D1_OUT}library/summary/splitting_library_summary_{{year}}.txt"
+    log: f"{D1_OUT}logs/library_summary__{{year}}.log"
+    wildcard_constraints:
+        year = "|".join(YEARS)
+    params:
+        min_entries = int(LIB_OPTS.get('min_entries', 10))
+    shell:
+        """
+        set -eo pipefail
+        {EOS_PROXY}
+        {WRAPPER} {PYTHON} coffea4bees/jet_clustering/summarize_splitting_library.py {input} {wildcards.year} \
+            -o $(dirname {output.yml}) --min-entries {params.min_entries} 2>&1 | tee {log}
+        """
 
-localrules: D1_config, D1_merge, D1_library_regroup, D1_library_merge, D1_library_publish, all_D1
+rule all_D1:
+    input: ([] if PDF_EXTERNAL else [D1_MERGED]) + LIB_DONE + D1_LIB_SUMMARIES
+
+localrules: D1_config, D1_merge, D1_library_regroup, D1_library_merge, D1_library_publish, D1_library_summary, all_D1

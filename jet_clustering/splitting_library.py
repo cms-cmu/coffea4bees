@@ -178,6 +178,8 @@ class SplittingLibrary:
 
     #: number of extra neighbours queried to leave room for same-event exclusion
     n_extra = 4
+    #: names of the lookup levels (index = level)
+    LEVELS = ("exact", "child_content", "parent_content", "coarse")
 
     def __init__(self, rows, carry_fields=("btagScore",), min_entries=10, clean_tree_only=True):
         from coffea4bees.jet_clustering.declustering import get_splitting_name, get_splitting_summary
@@ -203,6 +205,9 @@ class SplittingLibrary:
         coarse  = np.array([get_splitting_name(f) for f in unique_flavors], dtype=object)[inverse]
         self._groups = [self._index(self.flavor), self._index(summary), self._index(content), self._index(coarse)]
         self._trees = {}
+        # Running totals over every lookup() call (retries included): targets resolved at each
+        # level, and last-resort same-event matches. Read (and differenced) by the DeClusterer.
+        self.lookup_counts = {**{name: 0 for name in self.LEVELS}, "self_match": 0}
         logging.info(f"SplittingLibrary: {len(self.flavor)} splittings, {len(self._groups[0])} exact types")
 
     @staticmethod
@@ -311,6 +316,9 @@ class SplittingLibrary:
 
         if self.n_self_matches:
             logging.warning(f"SplittingLibrary.lookup: {self.n_self_matches} targets had only same-event candidates")
+        for level, name in enumerate(self.LEVELS):
+            self.lookup_counts[name] += int(np.sum(level_used == level))
+        self.lookup_counts["self_match"] += self.n_self_matches
         self.n_coarse = int(np.sum(level_used == 3))
         if self.n_coarse:
             logging.warning(f"SplittingLibrary.lookup: {self.n_coarse} targets used the coarse splitting_name group (b/j content may change)")
