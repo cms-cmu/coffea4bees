@@ -38,7 +38,7 @@ def _slash(p):
     return p if p.endswith("/") else p + "/"
 
 out = _slash(config['output_path'])
-PUB = str(config['publish_base']).rstrip("/")
+PUB = str(config.get('publish_base', f"{out}publish")).rstrip("/")
 HANDOFF = f"{PUB}/handoff"
 
 if 'year_eras' in config:
@@ -122,7 +122,7 @@ _wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else
 config.setdefault('analysis_container_wrapper', _wrapper)
 WRAPPER = config['analysis_container_wrapper']
 PYTHON = config.get('python_bin', os.getenv("CONTAINER_PYTHON", "python"))
-CONDOR = "" if (config['test'] or os.getenv("CI")) else "--shared-dask --condor"
+CONDOR = ""
 TEST_FLAG = "-t" if config['test'] else ""
 
 # Shell prefix for any rule that writes to EOS: roast seeds ./proxy/x509_proxy in the checkout.

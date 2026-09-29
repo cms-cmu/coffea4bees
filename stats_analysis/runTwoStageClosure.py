@@ -242,8 +242,8 @@ def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel
         "UL16": ["UL16_preVFP", "UL16_postVFP", "2016"],
         "UL17": ["UL17", "2017"],
         "UL18": ["UL18", "2018"],
-        "UL16_preVFP": ["UL16_preVFP"],
-        "UL16_postVFP": ["UL16_postVFP"],
+        "UL16_preVFP": ["UL16_preVFP", "2016"],
+        "UL16_postVFP": ["UL16_postVFP", "2016"],
     }
 
     for y in norm_years:
@@ -265,9 +265,10 @@ def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel
                                       debug=args.debug,
                                       as_aliases=True)
 
-        f.cd(directory)
-        hist_data_obs.SetName("data_obs")
-        hist_data_obs.Write()
+        if hist_data_obs is not None:
+            f.cd(directory)
+            hist_data_obs.SetName("data_obs")
+            hist_data_obs.Write()
 
         #
         # multijet
@@ -590,8 +591,8 @@ def prepInput():
         "UL16": ["UL16_preVFP", "UL16_postVFP", "2016"],
         "UL17": ["UL17", "2017"],
         "UL18": ["UL18", "2018"],
-        "UL16_preVFP": ["UL16_preVFP"],
-        "UL16_postVFP": ["UL16_postVFP"],
+        "UL16_preVFP": ["UL16_preVFP", "2016"],
+        "UL16_postVFP": ["UL16_postVFP", "2016"],
     }
     all_years = []
     for y in years:

@@ -157,9 +157,11 @@ def rule_exists(rule_name):
         return False
 
 def get_multisample_dataset_file(wildcards=None):
+    if rule_exists('M4_dataset_yml'):
+        return getattr(rules, 'M4_dataset_yml').output[0]
     out_file = config.get('multisample_install_path', f"{out}coffea4bees/metadata/datasets/mixeddata_4b.yml")
     repo_file = "coffea4bees/metadata/datasets/mixeddata_4b.yml"
-    if rule_exists('M4_dataset_yml') or rule_exists('M4_publish') or rule_exists('build_multisample_registry'):
+    if rule_exists('M4_publish') or rule_exists('build_multisample_registry'):
         return out_file
     if os.path.exists(out_file):
         return out_file
