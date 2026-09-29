@@ -2,6 +2,8 @@
 # D.3: decluster. make_declustered_data_4b.py (runner -s) re-clusters every 4b data event into
 # its splitting tree and re-generates each splitting from the D.2 PDFs, seeded by
 # declustering_rand_seed: every seed is an independent synthetic replica of the 4b data.
+# declustering.method: library -- each splitting is instead replaced by a real one from D.1's
+# splitting library, the seed being the neighbour rank (picoAOD_lib_seed<s>).
 # (scripts/synthetic-dataset-make-dataset-Run3-all.sh, config skimmer/metadata/declustering_Run3.yml)
 #
 #   D3_config (per seed)              skimmer config (declustering.skimmer_template + this roast's values)
@@ -21,11 +23,13 @@ D3_MJ_DATASET = f"{D3_OUT}handoff/{MJ_NAME}.yml"
 D3_DATASET = f"{D3_OUT}handoff/{DATASET_NAME}.yml"
 D3_HANDOFFS = list(dict.fromkeys([D3_MJ_DATASET, D3_DATASET]))
 D3_PUBLISHED = f"{D3_OUT}published.done"
+# what the declustering reads: the D.2 PDFs, or D.1's splitting library
+D3_SOURCE_DONE = LIB_DONE if LIBRARY else D2_DONE
 
 rule D3_config:
     input:
         template = DECL.get('skimmer_template', "coffea4bees/skimmer/metadata/declustering_Run3.yml"),
-        pdfs = D2_DONE
+        source = D3_SOURCE_DONE
     output: f"{D3_OUT}configs/declustering_seed{{seed}}.yml"
     wildcard_constraints:
         seed = r"\d+"
@@ -41,6 +45,12 @@ rule D3_config:
                    'clustering_pdfs_file': PDF_TEMPLATE,   # read by the condor workers, via fsspec
                    'declustering_rand_seed': int(wildcards.seed),
                    'subtract_ttbar_with_weights': SUBTRACT_TT}
+        if LIBRARY:
+            section.update({'clustering_pdfs_file': "None",
+                            'declustering_method': 'library',
+                            'clustering_library_file': LIB_REGISTRY_URL,   # {year: [files]}, via fsspec
+                            **{f"library_{k}": LIB_OPTS[k]
+                               for k in ('carry_fields', 'min_entries', 'scale_pt', 'boost_z') if k in LIB_OPTS}})
         for k in ('b_pt_threshold', 'dr_threshold', 'max_jet_retry', 'max_event_retry'):
             if k in DECL:
                 section[k] = DECL[k]
@@ -59,7 +69,7 @@ use rule analysis_processor from analysis as D3_decluster with:
     input:
         runner_script = "runner.py",
         config_file = f"{D3_OUT}configs/declustering_seed{{seed}}.yml",
-        pdfs = D2_DONE
+        source = D3_SOURCE_DONE
     output: f"{D3_OUT}per_seed/seed{{seed}}/picoaod_datasets__{{year}}.yml"
     log: f"{D3_OUT}logs/decluster__seed{{seed}}__{{year}}.log"
     wildcard_constraints:
@@ -108,8 +118,8 @@ rule D3_dataset_yml:
                 if (entry or {}).get('files'):
                     eras.add((year, era))
                 for fp in (entry or {}).get('files') or []:
-                    # keep .chunkN: the files on disk are picoAOD_seed<s>.chunk<k>.root
-                    t = re.sub(rf'/picoAOD_seed{s}((\.chunk\d+)?\.root)$', r'/picoAOD_seedXXX\1', fp)
+                    # keep .chunkN: the files on disk are picoAOD[_lib]_seed<s>.chunk<k>.root
+                    t = re.sub(rf'/{PICO_PREFIX}{s}((\.chunk\d+)?\.root)$', rf'/{PICO_PREFIX}XXX\1', fp)
                     if 'XXX' not in t:
                         raise ValueError(f"{path}: {fp} does not carry seed {s}")
                     templates.setdefault(year, set()).add(t)

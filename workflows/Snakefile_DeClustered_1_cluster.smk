@@ -8,11 +8,20 @@
 #   D1_cluster (per data year, condor) -> splitting histograms, one coffea per year
 #   D1_merge                          -> splittings.coffea (D.2 reads all eras from one file)
 #
-# With inputs.pdfs set, D.3 declusters with another roast's PDFs and none of this runs.
+# declustering.method: library -- D1_cluster also writes the splitting library (one ROOT file per
+# chunk, <LIB_BASE>/<dataset>/), and
+#   D1_library_regroup (per year)     the chunk files listed in that year's coffea -> {year: [files]}
+#   D1_library_merge                  -> one registry for all years
+#   D1_library_publish                -> <LIB_BASE>/splitting_library.yml (what D.3 reads)
+#
+# With inputs.pdfs set (pdf method), D.3 declusters with another roast's PDFs and none of this runs.
 
 D1_OUT = f"{out}D1/"
 D1_CONFIG = f"{D1_OUT}cluster_4b.yml"
 D1_MERGED = f"{D1_OUT}splittings.coffea"
+D1_LIB_REGISTRY = f"{D1_OUT}library/splitting_library.yml"
+D1_LIB_PUBLISHED = f"{D1_OUT}library/published.done"
+LIB_DONE = [D1_LIB_PUBLISHED] if LIBRARY else []
 
 rule D1_config:
     input: CLUSTER.get('config_template', "coffea4bees/analysis/metadata/cluster_4b_Run3.yml")
@@ -27,7 +36,10 @@ rule D1_config:
              'run_SvB': False,
              'fourTag_use_tight': False,              # the 4b sample the DeClusterer re-generates
              'friends': {'FvT': FVT},                 # merged over friend_file by runner.py
-             'friends_include': ['FvT']},             # data only: no trigWeight needed
+             'friends_include': ['FvT'],              # data only: no trigWeight needed
+             **({'splitting_library_base_path': LIB_BASE,
+                 'splitting_library_carry_fields': list(LIB_OPTS.get('carry_fields', ['btagScore']))}
+                if LIBRARY else {})},
             # the script ran cluster_4b_Run3.yml alone, on the processor defaults: not the
             # histogram-pass settings (top reconstruction, btagSF, ...) of analysis_config.config
             inherit_config=False,
@@ -66,7 +78,54 @@ use rule merging_coffea_files from analysis as D1_merge with:
         python_bin = PYTHON,
         input_files = lambda wildcards, input: " ".join(input.files)
 
-rule all_D1:
-    input: [] if PDF_EXTERNAL else [D1_MERGED]
+rule D1_library_regroup:
+    """Every dataset key in one year's cluster output belongs to that year (same layout as the
+    hemisphere library's, hence the same script)."""
+    input: f"{D1_OUT}cluster/splittings__{{year}}.coffea"
+    output: f"{D1_OUT}library/per_year/splitting_library__{{year}}.yml"
+    log: f"{D1_OUT}logs/library_regroup__{{year}}.log"
+    wildcard_constraints:
+        year = "|".join(YEARS)
+    shell:
+        """
+        {WRAPPER} {PYTHON} coffea4bees/workflows/scripts/regroup_hemi_library.py \
+            {wildcards.year} {input} {output} 2>&1 | tee {log}
+        """
 
-localrules: D1_config, D1_merge, all_D1
+rule D1_library_merge:
+    input: expand(f"{D1_OUT}library/per_year/splitting_library__{{year}}.yml", year=YEARS)
+    output: D1_LIB_REGISTRY
+    run:
+        merged = {}
+        for path in input:
+            with open(path) as f:
+                for key, files in (yaml.safe_load(f) or {}).items():
+                    files = [files] if isinstance(files, str) else list(files)
+                    if key in merged:
+                        raise ValueError(f"{path}: splitting library year {key} listed twice")
+                    if not all(str(p).startswith("root://") for p in files):
+                        # the condor workers read the library; a local path would not reach them
+                        raise ValueError(f"{path}: splitting library files are not on EOS: {files[:2]}")
+                    merged[key] = files
+        missing = [y for y in YEARS if not merged.get(y)]
+        if missing:
+            raise ValueError(f"splitting library has no files for {missing}")
+        write_yaml(output[0], merged)
+
+rule D1_library_publish:
+    input: D1_LIB_REGISTRY
+    output: D1_LIB_PUBLISHED
+    log: f"{D1_OUT}logs/library_publish.log"
+    shell:
+        """
+        set -eo pipefail
+        {EOS_PROXY}
+        xrdcp -f -p {input} "{LIB_REGISTRY_URL}" 2>&1 | tee {log}
+        echo "published {input} -> {LIB_REGISTRY_URL}" | tee -a {log}
+        date > {output}
+        """
+
+rule all_D1:
+    input: ([] if PDF_EXTERNAL else [D1_MERGED]) + LIB_DONE
+
+localrules: D1_config, D1_merge, D1_library_regroup, D1_library_merge, D1_library_publish, all_D1
