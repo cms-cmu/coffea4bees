@@ -40,17 +40,18 @@ rule M2_config:
                    # edge, so a new fit there was silently ignored).
                    'apply_JCM': True,
                    'JCM_file': input.jcm,
-                   'subtract_ttbar_with_weights': True,
+                   'subtract_ttbar_with_weights': SUBTRACT_TTBAR,
                    'hemi_library_yaml': HEMI_LIB_URL,     # read by the condor workers, via fsspec
                    'hemi_stats_path': HEMI_STATS_URL,
-                   'default_rank': _rank(MIX.get('default_rank', 0)),
+                   'default_rank': _rank(MIX.get('default_rank', config.get('default_rank', 0))),
                    'use_topk_matching': bool(MIX.get('use_topk_matching', True)),
                    'k_neighbors': int(MIX.get('k_neighbors', 10)),
                    'collision_mode': MIX.get('collision_mode', 'retry'),
                    'use_boost_corrected_matching': bool(MIX.get('use_boost_corrected_matching', True)),
-                   'hemi_year_key': HEMI_YEAR_KEY,
-                   'friends': {'FvT': FVT},
-                   'friends_include': ['FvT']}
+                   'hemi_year_key': HEMI_YEAR_KEY}
+        if SUBTRACT_TTBAR and FVT:
+            section['friends'] = {'FvT': FVT}
+            section['friends_include'] = ['FvT']
         cfg = processor_config(section, inherit_config=False,
                                processor="coffea4bees/skimmer/processor/make_mixed_data.py",
                                runner=runner)

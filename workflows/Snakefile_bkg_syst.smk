@@ -89,28 +89,22 @@ var = config['variable']
 
 # Sub-workflows
 include: "Snakefile_bkg_syst_A_1_make_mixeddata.smk"
-include: "Snakefile_bkg_syst_A_2_make_ttbar_psdata.smk"
-include: "Snakefile_bkg_syst_A_3_make_subsamples.smk"
-include: "Snakefile_bkg_syst_A_4_process_subsamples.smk"
+include: "Snakefile_bkg_syst_A_2_process_subsamples.smk"
 include: "Snakefile_bkg_syst_B_1_computeJCM.smk"
 include: "Snakefile_bkg_syst_C.smk"
 include: "Snakefile_bkg_syst_F.smk"
 
-# Phase A aggregate target (A_1 through A_4)
+# Phase A aggregate target (A_1 through A_2)
 rule all_bkg_syst_A:
     input:
         rules.all_bkg_syst_A_1.input,
-        rules.all_bkg_syst_A_2.input,
-        rules.all_bkg_syst_A_3.input,
-        rules.all_bkg_syst_A_4.input
+        rules.all_bkg_syst_A_2.input
 
-# Pre-FvT master target rule (A_1, A_2, A_3, A_4, and B_1)
+# Pre-FvT master target rule (A_1, A_2, and B_1)
 rule all_pre_fvt:
     input:
         rules.all_bkg_syst_A_1.input,
         rules.all_bkg_syst_A_2.input,
-        rules.all_bkg_syst_A_3.input,
-        rules.all_bkg_syst_A_4.input,
         rules.all_bkg_syst_B_1.input
 
 # Top master target rule
