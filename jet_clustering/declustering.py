@@ -557,11 +557,12 @@ def _decluster_with_pdfs(input_jets_to_decluster, splitting_types, input_pdfs, s
 
 def decluster_splitting_types(input_jets, splitting_types, input_pdfs, rand_seed, *, b_pt_threshold=40, dr_threshold=0.4, max_jet_retry=_MAX_NUM_JET_RETRY, chunk=None, debug=False,
                               library=None, event_ids=None, rank_offset=0, library_scale_pt=True, library_boost_z=True,
-                              library_selection="rank", library_k_neighbors=5, library_seed=0, event_try=0):
+                              library_selection="rank", library_k_neighbors=20, library_max_distance=0.05,
+                              library_seed=0, event_try=0):
     """With ``library`` (a SplittingLibrary) the children are real library splittings instead of PDF
     samples (see splitting_library.decluster_with_library): neighbour rank rank_offset + retry
-    (library_selection "rank"), or a random one of the library_k_neighbors nearest keyed on
-    (library_seed, event_try, retry) ("random")."""
+    (library_selection "rank"), or a random one of the library_k_neighbors nearest within
+    library_max_distance, keyed on (library_seed, event_try, retry) ("random")."""
 
     if debug:
         print(f"{chunk} decluster_splitting_types input rand_seed {rand_seed}\n")
@@ -604,7 +605,7 @@ def decluster_splitting_types(input_jets, splitting_types, input_pdfs, rand_seed
             declustered_jets_A, declustered_jets_B = decluster_with_library(
                 input_jets_to_decluster, library, event_ids, rank_offset + num_trys,
                 scale_pt=library_scale_pt, boost_z=library_boost_z,
-                selection=library_selection, k_neighbors=library_k_neighbors,
+                selection=library_selection, k_neighbors=library_k_neighbors, max_distance=library_max_distance,
                 rng_key=(library_seed, event_try, num_trys), retry_offset=event_try + num_trys)
         else:
             declustered_jets_A, declustered_jets_B = _decluster_with_pdfs(
@@ -683,14 +684,14 @@ def make_synthetic_event_core(input_jets, input_pdfs, rand_seed, *, b_pt_thresho
 
 def make_synthetic_event(input_jets, input_pdfs, declustering_rand_seed=66, *, b_pt_threshold=40, dr_threshold=0.4, max_jet_retry=_MAX_NUM_JET_RETRY, max_event_retry=_MAX_NUM_EVENT_RETRY, chunk=None, debug=False,
                          library=None, event_ids=None, library_scale_pt=True, library_boost_z=True,
-                         library_selection="rank", library_k_neighbors=5):
+                         library_selection="rank", library_k_neighbors=20, library_max_distance=0.05):
     """Decluster every clustered jet of ``input_jets``.
 
     Default: sample the splittings from ``input_pdfs``. With ``library`` (a SplittingLibrary),
     replace them by real library splittings instead: library_selection "rank" takes neighbour
     declustering_rand_seed + event retry + jet retry; "random" a reproducible random one of the
-    library_k_neighbors nearest, keyed on (declustering_rand_seed, event retry, jet retry) and the
-    jet's kinematics. ``event_ids`` ((n_events, 3) run,
+    library_k_neighbors nearest within library_max_distance in (log pT, |eta|), keyed on
+    (declustering_rand_seed, event retry, jet retry) and the jet's kinematics. ``event_ids`` ((n_events, 3) run,
     luminosityBlock, event) excludes self matches, and the library's carry fields (which
     ``input_jets`` must already have, NaN for combined jets) are propagated to the output.
     """
@@ -732,6 +733,7 @@ def make_synthetic_event(input_jets, input_pdfs, declustering_rand_seed=66, *, b
                                   rank_offset=declustering_rand_seed + num_trys,
                                   library_scale_pt=library_scale_pt, library_boost_z=library_boost_z,
                                   library_selection=library_selection, library_k_neighbors=library_k_neighbors,
+                                  library_max_distance=library_max_distance,
                                   library_seed=declustering_rand_seed, event_try=num_trys)
         else:
             library_kwargs = {}

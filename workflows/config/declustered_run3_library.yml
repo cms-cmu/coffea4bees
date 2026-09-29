@@ -6,8 +6,9 @@
 # from a library of the 4b data's own splittings (written by D.1 next to its histograms), picked
 # among the nearest neighbours in the parent's (log pT, |eta|) -- never from the event being
 # declustered -- and aligned onto the parent (pT scaled, phi rotated, boosted in z). The children's
-# b-tag scores come with them. Which neighbour: a reproducible random one of the k_neighbors nearest,
-# drawn per jet from the seed and the jet's kinematics, so every seed is an equivalent replica
+# b-tag scores come with them. Which neighbour: a reproducible random one of the k_neighbors nearest
+# within max_distance, drawn per jet from the seed and the jet's kinematics, so every seed is an
+# equivalent replica
 # (selection: rank instead takes neighbour <seed> for every jet, as the first library roast did).
 # See jet_clustering/splitting_library.py and ~/ClaudeBrain/outputs/decluster-replacement/design.md.
 #
@@ -35,4 +36,6 @@ declustering:
     scale_pt: true             # scale the children to the parent pT
     boost_z: true              # boost the children along z to the parent pz
     selection: random          # random: one of the k_neighbors nearest per jet (seeded); rank: neighbour <seed>
-    k_neighbors: 5             # random selection: candidates per jet (tightness vs variety)
+    k_neighbors: 20            # random selection: candidates per jet (variety; seed overlap ~1/k)
+    max_distance: 0.05         # ... but only those within this distance in (log pT, |eta|) (the nearest
+                               #     always counts): keeps sparse tails / rare types to close matches
