@@ -120,6 +120,8 @@ rule D6_hist_config:
         base = config['analysis_config']['dataset_location']
         cfg['dataset_location'] = [base, D6_DATASET]
         cfg.get('runner', {}).pop('dataset_location', None)
+        # no Run 3 trigger-weight friend covers the ggF signal (as in the nominal roast's signal passes)
+        cfg.setdefault('config', {})['require_trigWeight'] = False
         if SVB_MODEL:
             # on-the-fly SvB (no friend trees exist for the declustered events): the same model
             # for the original and the declustered signal
