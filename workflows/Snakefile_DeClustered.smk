@@ -103,7 +103,7 @@ PDF_TEMPLATE = f"{PDF_BASE}/clustering_pdfs_vs_pT_XXX.yml"     # XXX -> era, in 
 # replace each clustered jet by a real splitting from the library D.1 writes alongside its
 # histograms (one row per real splitting, <PUB>/splitting_library/), chosen as the rank-r nearest
 # neighbour in (log pT, |eta|) of its exact type, with r = the seed. The {year: [files]} registry
-# the DeClusterer reads is published next to the files. D.2 still runs (D.5's PDF gallery).
+# the DeClusterer reads is published next to the files. The PDFs are then skipped (MAKE_PDFS below).
 METHOD = str(DECL.get('method', 'pdf'))
 if METHOD not in ('pdf', 'library'):
     raise ValueError(f"declustering.method must be 'pdf' or 'library', got {METHOD!r}")
@@ -113,6 +113,13 @@ LIB_BASE = f"{PUB}/splitting_library"
 LIB_REGISTRY_URL = f"{LIB_BASE}/splitting_library.yml"
 # D.3's picoAOD names: make_declustered_data_4b.py tags the library ones
 PICO_PREFIX = "picoAOD_lib_seed" if LIBRARY else "picoAOD_seed"
+
+# Make the PDFs here (D1_merge + D.2 + D.5's PDF gallery)? The pdf method needs them unless
+# inputs.pdfs supplies another roast's; the library method never reads them, so by default they are
+# skipped -- pdfs.make: true builds them anyway, e.g. for the gallery as a reference.
+MAKE_PDFS = bool(PDFS.get('make', not LIBRARY)) and not PDF_EXTERNAL
+if not LIBRARY and not MAKE_PDFS and not PDF_EXTERNAL:
+    raise ValueError("declustering.method pdf needs PDFs: drop pdfs.make: false, or set inputs.pdfs")
 
 # Seeds: one independent replica per seed. runner.py expands the dataset's `files_template`
 # over range(nSamples), so the seeds MUST be 0..n_seeds-1 (no gaps, no offset).

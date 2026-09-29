@@ -104,6 +104,6 @@ rule all_D5:
     input:
         f"{D5_OUT}plots/plots_done.txt",
         f"{D5_OUT}cutflow_monitoring.html",
-        [] if PDF_EXTERNAL else [f"{D2_OUT}index.html"]
+        [f"{D2_OUT}index.html"] if MAKE_PDFS else []
 
 localrules: D5_cutflow_page, D5_plot_config, D5_plots, D5_pdf_page, all_D5

@@ -18,6 +18,7 @@
 #                                        lookup group each resolves to (summarize_splitting_library.py)
 #
 # With inputs.pdfs set (pdf method), D.3 declusters with another roast's PDFs and none of this runs.
+# D1_merge (the histograms' only consumer is D.2) runs only when the PDFs are made (MAKE_PDFS).
 
 D1_OUT = f"{out}D1/"
 D1_CONFIG = f"{D1_OUT}cluster_4b.yml"
@@ -148,6 +149,6 @@ rule D1_library_summary:
         """
 
 rule all_D1:
-    input: ([] if PDF_EXTERNAL else [D1_MERGED]) + LIB_DONE + D1_LIB_SUMMARIES
+    input: ([D1_MERGED] if MAKE_PDFS else []) + LIB_DONE + D1_LIB_SUMMARIES
 
 localrules: D1_config, D1_merge, D1_library_regroup, D1_library_merge, D1_library_publish, D1_library_summary, all_D1
