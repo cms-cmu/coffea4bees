@@ -19,6 +19,7 @@ from coffea4bees.jet_clustering.splitting_library import (
     align_children,
     library_child_flavors,
     carry_child_fields,
+    random_ranks,
 )
 from src.data_formats.root import TreeWriter
 
@@ -291,6 +292,35 @@ class libraryDeclusteringTestCase(unittest.TestCase):
         self.assertFalse(np.any(np.isnan(scores)))
         # library values are stored as float32
         self.assertLess(np.max(np.min(np.abs(scores[:, None] - allowed[None, :]), axis=1)), 1e-6)
+
+    def _run_random(self, seed, k=5):
+        return make_synthetic_event(self.clustered, None, declustering_rand_seed=seed, b_pt_threshold=30,
+                                    library=self.lib, event_ids=self.event_ids,
+                                    library_selection="random", library_k_neighbors=k)
+
+    def test_random_reproducible_and_seeded(self):
+        a, b, c = self._run_random(3), self._run_random(3), self._run_random(4)
+        np.testing.assert_array_equal(np.asarray(ak.flatten(a.pt)), np.asarray(ak.flatten(b.pt)))
+        self.assertFalse(np.allclose(np.asarray(ak.flatten(a.pt)), np.asarray(ak.flatten(c.pt))))
+        self.assertEqual(ak.to_list(ak.num(a)), ak.to_list(ak.num(c)))      # same jet content per event
+
+    def test_random_k1_is_rank0(self):
+        """k_neighbors 1 draws rank 0 and steps out by the retry count: rank mode, seed 0."""
+        a, b = self._run_random(7, k=1), self._run(0)
+        for f in ("pt", "eta", "phi", "btagScore"):
+            np.testing.assert_array_equal(np.asarray(ak.flatten(a[f])), np.asarray(ak.flatten(b[f])))
+
+    def test_random_ranks_uniform(self):
+        rng = np.random.default_rng(1)
+        n = 20000
+        r = random_ranks(rng.uniform(30, 300, n), rng.uniform(-2.5, 2.5, n), rng.uniform(-3, 3, n),
+                         np.arange(n), 5, (0, 0, 0))
+        counts = np.bincount(r, minlength=5)
+        self.assertEqual(len(counts), 5)
+        self.assertTrue(np.all(np.abs(counts - n / 5) < 5 * np.sqrt(n / 5)), counts)
+        r2 = random_ranks(rng.uniform(30, 300, n), rng.uniform(-2.5, 2.5, n), rng.uniform(-3, 3, n),
+                          np.arange(n), 5, (1, 0, 0))
+        self.assertLess(np.mean(r == r2), 0.3)          # another seed -> (nearly) independent draw
 
     def test_seeds_differ(self):
         a, b = self._run(0), self._run(1)

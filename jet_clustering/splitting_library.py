@@ -379,12 +379,32 @@ def library_child_flavors(library, index):
     return child_A, child_B
 
 
-def decluster_with_library(jets, library, event_ids, rank, *, scale_pt=True, boost_z=True):
+def random_ranks(pt, eta, phi, event, k_neighbors, key):
+    """Reproducible random neighbour ranks in [0, k_neighbors), one per target: the counter-based
+    Squares RNG (as sample_PDFs_vs_pT) keyed on ``key`` (e.g. (seed, event retry, jet retry)),
+    counters from the target's rounded (pt, eta, phi) and its event number. Same inputs -> same
+    ranks, on any worker and in any chunking."""
+    from src.math_tools.random import Squares
+
+    counter = np.zeros((len(pt), 4), dtype=np.uint64)
+    counter[:, 0] = np.round(np.asarray(pt, dtype=np.float64), 1).view(np.uint64)
+    counter[:, 1] = np.round(np.asarray(eta, dtype=np.float64), 3).view(np.uint64)
+    counter[:, 2] = np.round(np.asarray(phi, dtype=np.float64), 3).view(np.uint64)
+    counter[:, 3] = np.asarray(event, dtype=np.int64).view(np.uint64)
+    return Squares("splitting_library", *key).choice(counter, a=int(k_neighbors)).astype(np.int64)
+
+
+def decluster_with_library(jets, library, event_ids, rank, *, scale_pt=True, boost_z=True,
+                           selection="rank", k_neighbors=5, rng_key=(0,), retry_offset=0):
     """Library replacement for sample_PDFs_vs_pT + decluster_combined_jets.
 
     jets:      jagged [event][jet] combined jets to decluster (pt, eta, phi, jet_flavor)
     event_ids: (n_events, 3) int array of (run, luminosityBlock, event) for self-match exclusion
-    rank:      neighbour rank (int) for every jet
+    selection: "rank"   every jet takes neighbour ``rank`` (int)
+               "random" every jet takes a reproducible random neighbour among its k_neighbors
+                        nearest (random_ranks, keyed on rng_key), stepped outward by
+                        ``retry_offset`` (the retry count) so a failing jet cannot keep drawing
+                        from the same k; ``rank`` is ignored. k_neighbors 1 = rank mode, seed 0.
     Returns the jagged child arrays (A, B) with pt, eta, phi, mass, jet_flavor, btag_string and
     the library's carry fields (NaN for combined children).
     """
@@ -395,6 +415,11 @@ def decluster_with_library(jets, library, event_ids, rank, *, scale_pt=True, boo
     ids = np.repeat(np.asarray(event_ids, dtype=np.int64), counts, axis=0)
     flavor = np.asarray(ak.to_list(flat.jet_flavor), dtype=object)
 
+    if selection == "random":
+        rank = random_ranks(np.asarray(flat.pt), np.asarray(flat.eta), np.asarray(flat.phi), ids[:, 2],
+                            k_neighbors, rng_key) + int(retry_offset)
+    elif selection != "rank":
+        raise ValueError(f"library selection must be 'rank' or 'random', got {selection!r}")
     index, _ = library.lookup(flavor, np.asarray(flat.pt), np.asarray(flat.eta),
                               ids[:, 0], ids[:, 1], ids[:, 2], rank)
     kids = align_children(library, index, np.asarray(flat.pt), np.asarray(flat.eta), np.asarray(flat.phi),
