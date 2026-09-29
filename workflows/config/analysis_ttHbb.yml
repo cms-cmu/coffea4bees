@@ -3,8 +3,7 @@
 # ==============================================================================
 label: "ttHbb"
 output_path: "output/ttHbb/"
-cern_user: "algomez"
-cern_path: "www/ttHbb/Plots/"
+# No cern_user/cern_path: publishing goes through `roast publish` (per-user roast config).
 
 dataset:
   - "ttHbb"
@@ -241,15 +240,28 @@ analysis_config:
     chunksize: 10000
     dashboard_address: 0
   config:
+    # Per-roast friends: runner.py merges these over the per-year entries of friend_file, so
+    # the FvT and SvB friend trees come from THIS roast's Phase C/D, not the algomez
+    # ttHbb_stitched production referenced in metadata/friends/friends_ttHbb.yml.  C.4 reads
+    # the FvT from here too.
+    friends:
+      FvT: "{eos_prod}/{roast_id}/friend/FvT_ttHbb_stitched/result.json@@analysis.0.merged"
+      SvB_MA: "{eos_prod}/{roast_id}/friend/SvB_ttHbb_stitched/result.json@@analysis.0.merged"
+    # blind: the F.1 vs C.4 cutflow cross-check then ignores data*:counts4* by default.
     blind: true
     apply_FvT: true
     apply_JCM: true
+    # THIS roast's JCM fit (Phase B.1 handoff copy; the same file C.4, the FvT and the SvB use).
+    # Without it the processor falls back to JCM/Run2_ttHbb from weights_file.
+    JCM_file: coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_2024_v2.yml
     apply_trigWeight: true
     apply_btagSF: true
     apply_boosted_veto: false
     apply_lepton_veto: false
     run_SvB: true
-    SvB_MA: true
+    # no on-the-fly SvB model: the scores come from the friend above (`true` would evaluate the
+    # model in weights_file, i.e. the algomez production).
+    SvB_MA: null
     SvB: null
     hist_cuts: ["pass_nSelJets_gt6", "passLeptonVeto"]
     top_reconstruction: fast
