@@ -70,9 +70,7 @@ if not out.endswith("/"):
     out += "/"
 
 out_a1 = f"{out}bkg_syst_A_1_make_mixeddata/"
-out_a2 = f"{out}bkg_syst_A_2_make_ttbar_psdata/"
-out_a3 = f"{out}bkg_syst_A_3_make_subsamples/"
-out_a4 = f"{out}bkg_syst_A_4_process_subsamples/"
+out_a2 = f"{out}bkg_syst_A_2_process_subsamples/"
 out_b1 = f"{out}bkg_syst_B_1_computeJCM/"
 out_c1 = f"{out}bkg_syst_C_1_inputs/"
 out_c  = f"{out}bkg_syst_C_FvT/"
