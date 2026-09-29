@@ -25,8 +25,8 @@ D1_CONFIG = f"{D1_OUT}cluster_4b.yml"
 D1_MERGED = f"{D1_OUT}splittings.coffea"
 D1_LIB_REGISTRY = f"{D1_OUT}library/splitting_library.yml"
 D1_LIB_PUBLISHED = f"{D1_OUT}library/published.done"
-LIB_DONE = [D1_LIB_PUBLISHED] if LIBRARY else []
-D1_LIB_SUMMARIES = [f"{D1_OUT}library/summary/splitting_library_summary_{y}.yml" for y in YEARS] if LIBRARY else []
+LIB_DONE = [D1_LIB_PUBLISHED] if BUILD_LIBRARY else []            # inputs.splitting_library: nothing to wait for
+D1_LIB_SUMMARIES = [f"{D1_OUT}library/summary/splitting_library_summary_{y}.yml" for y in YEARS] if BUILD_LIBRARY else []
 
 rule D1_config:
     input: CLUSTER.get('config_template', "coffea4bees/analysis/metadata/cluster_4b_Run3.yml")
@@ -44,7 +44,7 @@ rule D1_config:
              'friends_include': ['FvT'],              # data only: no trigWeight needed
              **({'splitting_library_base_path': LIB_BASE,
                  'splitting_library_carry_fields': list(LIB_OPTS.get('carry_fields', ['btagScore']))}
-                if LIBRARY else {})},
+                if BUILD_LIBRARY else {})},
             # the script ran cluster_4b_Run3.yml alone, on the processor defaults: not the
             # histogram-pass settings (top reconstruction, btagSF, ...) of analysis_config.config
             inherit_config=False,

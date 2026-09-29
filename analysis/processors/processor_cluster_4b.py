@@ -21,7 +21,7 @@ from coffea4bees.jet_clustering.declustering import (
     get_list_of_all_sub_splittings,
     get_splitting_name,
 )
-from coffea4bees.jet_clustering.splitting_library import build_splitting_library_rows
+from coffea4bees.jet_clustering.splitting_library import build_splitting_library_rows, check_carry_fields
 
 # Placeholder jet/pileup ID bit written to reclustered (synthetic) jets, which
 # carry no detector-level ID. 7 = "passes tight".
@@ -42,7 +42,7 @@ class analysis(HH4bBaseProcessor):
         # Written per chunk to <splitting_library_base_path>/<dataset>/ when a base path is given.
         splitting_library_base_path = kwargs.pop("splitting_library_base_path", None)
         self.splitting_library_base = EOS(splitting_library_base_path) if splitting_library_base_path not in (None, "None") else None
-        self.splitting_library_carry_fields = list(kwargs.pop("splitting_library_carry_fields", ["btagScore"]))
+        self.splitting_library_carry_fields = check_carry_fields(kwargs.pop("splitting_library_carry_fields", ["btagScore"]))
 
         kwargs.setdefault("apply_JCM",    False)
         kwargs.setdefault("run_SvB",      False)

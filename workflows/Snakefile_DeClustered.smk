@@ -14,6 +14,7 @@
 #   D.4 validate       synthetic-data histograms with the upstream config, merged with the upstream
 #                      data/ttbar -> cutflow (synthetic 4b next to data 4b, same selection)
 #   D.5 monitoring     plots (synthetic vs 4b data, ttbar MC), cutflow page, PDF sampling-test gallery
+#   D.6 signal check   signal MC declustered the same way: does the Higgs-candidate peak wash out?
 #
 # Everything this roast consumes comes from another roast, named under `inputs:` and checked by
 # `roast new`: the FvT and the data/ttbar histograms of the NON-TIGHT production
@@ -110,7 +111,13 @@ if METHOD not in ('pdf', 'library'):
 LIBRARY = METHOD == 'library'
 LIB_OPTS = DECL.get('library') or {}
 LIB_BASE = f"{PUB}/splitting_library"
-LIB_REGISTRY_URL = f"{LIB_BASE}/splitting_library.yml"
+# inputs.splitting_library: another roast's published registry (<its publish_base>/splitting_library/
+# splitting_library.yml) -- D.1 then builds no library (e.g. D.6-only reruns, A/B of lookup options)
+LIB_EXTERNAL = INPUTS.get('splitting_library')
+if LIB_EXTERNAL and not str(LIB_EXTERNAL).startswith("root://"):
+    raise ValueError("inputs.splitting_library must be a root:// URL to a published splitting_library.yml")
+LIB_REGISTRY_URL = str(LIB_EXTERNAL) if LIB_EXTERNAL else f"{LIB_BASE}/splitting_library.yml"
+BUILD_LIBRARY = LIBRARY and not LIB_EXTERNAL
 # D.3's picoAOD names: make_declustered_data_4b.py tags the library ones
 PICO_PREFIX = "picoAOD_lib_seed" if LIBRARY else "picoAOD_seed"
 
@@ -246,6 +253,7 @@ include: "Snakefile_DeClustered_2_pdfs.smk"
 include: "Snakefile_DeClustered_3_decluster.smk"
 include: "Snakefile_DeClustered_4_validate.smk"
 include: "Snakefile_DeClustered_5_monitoring.smk"
+include: "Snakefile_DeClustered_6_signal.smk"
 
 # default_target, not position: an included or inserted rule can never steal the default.
 rule all_DeClustered:
@@ -255,6 +263,7 @@ rule all_DeClustered:
         rules.all_D2.input,
         rules.all_D3.input,
         rules.all_D4.input,
-        rules.all_D5.input
+        rules.all_D5.input,
+        rules.all_D6.input
 
 localrules: fetch_inputs, fetch_psdata, all_DeClustered
