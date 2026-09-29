@@ -82,8 +82,11 @@ classifier_inputs:
 # PHASE B.1: JET COMBINATORIC MODEL (Snakefile_PhaseB_1_computeJCM.smk)
 # ==============================================================================
 # Runs the analysis processor (analysis_config below, JCM/FvT/SvB forced off) on data and the
-# stitched ttbar, fits the JCM in the SB (tag run3_2024_v1), then reruns with the JCM applied.
-tag: "run3_2024_v1"
+# stitched ttbar, fits the JCM in the SB, then reruns with the JCM applied.
+# run3_2024_v1 (2026-09-25) used the 30 GeV selected-jet cut; run3_2024_v2 uses the 25 GeV cut set
+# for 2024 in analysis/metadata/object_selection_thresholds.yml (era_overrides). The v1 outputs were
+# moved to <output_path>/computeJCM_run3_2024_v1_pt30/.
+tag: "run3_2024_v2"
 jcm_datasets:
   - "data"
   - "TTTo2L2Nu_stitched"
