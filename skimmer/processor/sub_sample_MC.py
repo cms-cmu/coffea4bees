@@ -33,7 +33,7 @@ from coffea4bees.skimmer.processor.skimmer_4b_base import Skimmer4b
 
 class SubSampler(Skimmer4b):
     def __init__(self, sub_sampling_rand_seed=5, apply_trigWeight: bool = True,
-                 require_trigWeight: bool = False, friends: dict = None, *args, **kwargs):
+                 require_trigWeight: bool = False, friends: dict = None, *args, ttbb_scale: float = 1.0, **kwargs):
         # `friends` is named here, not left to **kwargs for Skimmer4b: runner.py injects the per-year
         # friends (the trigWeight friend) only into processors whose own __init__ takes `friends`.
         # Without it the ttbar pseudodata was built with no trigger weight, and add_weights only
@@ -41,10 +41,11 @@ class SubSampler(Skimmer4b):
         kwargs["pico_base_name"] = f'picoAOD_PSData'
         super().__init__(*args, friends=friends, **kwargs)
 
-        logging.info(f"\nRunning SubSampler with these parameters: sub_sampling_rand_seed = {sub_sampling_rand_seed} args = {args}, kwargs = {kwargs}")
+        logging.info(f"\nRunning SubSampler with these parameters: sub_sampling_rand_seed = {sub_sampling_rand_seed}, ttbb_scale = {ttbb_scale}, args = {args}, kwargs = {kwargs}")
         self.sub_sampling_rand_seed = sub_sampling_rand_seed
         self.apply_trigWeight = apply_trigWeight
         self.require_trigWeight = require_trigWeight
+        self.ttbb_scale = float(ttbb_scale)
 
     def select(self, event):
         m = self._parse_event_metadata(event)
@@ -144,7 +145,17 @@ class SubSampler(Skimmer4b):
         counter[:, 1] <<= 32
         counter[:, 1] |= np.asarray(selev.luminosityBlock).view(np.uint32)
         sample_rand = rng.uniform(counter, low=0, high=1.0).astype(np.float32)
-        pass_sub_sample_filter_selev = (sample_rand < selev.weight)
+        scale = getattr(self, "ttbb_scale", 1.0)
+        if scale == 1.0 and "ttbb_scale" in config:
+            scale = float(config["ttbb_scale"])
+
+        weight_for_subsample = selev.weight
+        if scale != 1.0 and "genTtbarId" in selev.fields:
+            from coffea4bees.analysis.helpers.ttbar_categories import is_ttB
+            ttb_mask = np.asarray(ak.to_numpy(is_ttB(selev.genTtbarId)))
+            weight_for_subsample = np.where(ttb_mask, selev.weight * scale, selev.weight)
+
+        pass_sub_sample_filter_selev = (sample_rand < weight_for_subsample)
 
         pass_sub_sample_filter = np.full( len(event), True)
         pass_sub_sample_filter[ selections.all(*cumulative_cuts) ] = pass_sub_sample_filter_selev

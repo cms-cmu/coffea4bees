@@ -1,7 +1,7 @@
 label: "ttHbb_mixeddata_stitched"
 output_path: "output/ttHbb_mixeddata_stitched_closure/"
 dataset_location: "coffea4bees/metadata/datasets/"
-datasets_file: "coffea4bees/metadata/datasets/mixeddata_4b.yml"
+datasets_file: "coffea4bees/metadata/datasets/mixeddata_4b_ttHbb.yml"
 friend_file: "coffea4bees/metadata/friends/friends_ttHbb_mixeddata.yml"
 weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
 phase_e_dataset:

@@ -5,6 +5,7 @@
 # declustering.method: library -- each splitting is instead replaced by a real one from D.1's
 # splitting library, the seed being the neighbour rank (picoAOD_lib_seed<s>).
 # (scripts/synthetic-dataset-make-dataset-Run3-all.sh, config skimmer/metadata/declustering_Run3.yml)
+
 #
 #   D3_config (per seed)              skimmer config (declustering.skimmer_template + this roast's values)
 #   D3_decluster (per seed x year, condor)

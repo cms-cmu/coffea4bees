@@ -81,9 +81,10 @@ runs:
     - DeClustered
   svbfeynnet_run3.yml:
     - SvBFeynNet_friendtrees_Run3
+  analysis_ttHbb_bkg_syst.yml:
+    - {snakefile: bkg_syst, upstream: ["histAll_NoJCM.coffea", "inputs/"]}
 
 not_covered:
-  PhaseE: "legacy mixed-data chain, superseded by MakeMixedData; fails -n with the Run 3 configs"
   PhaseB_computeJCM: "no production config"
   PhaseC_1_inputs: "pre-classifier-workflow stage file; PhaseC now includes src/classifier/workflow"
   PhaseC_1_plot_inputs: "pre-classifier-workflow stage file; PhaseC now includes src/classifier/workflow"
@@ -98,7 +99,6 @@ not_covered:
   Run3MvD: "pre-roast MvD driver, superseded by MvD"
   Run3MvD_training: "pre-roast training driver, edit-the-vars style"
   Run3_SvB_training: "pre-roast training driver"
-  Run3_make_synthetic: "broken against rules/analysis.smk; superseded by DeClustered"
   Run3_training: "pre-roast training driver, edit-the-vars style"
   SvB_friendtrees_Run3: "no production config"
   analysis: "backward-compatibility wrapper for PhaseF_1_analysis"
