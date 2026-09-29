@@ -12,7 +12,8 @@
 #   M6_config_closure / M6_hists_closure (per yr) mixeddata_4b (--samples k) + ttbar_PSData, no JCM
 #                                                 (both unit-weight); read from the EOS handoff
 #   M6_merge                                      + the upstream data / ttbar MC histograms (fetched)
-#   M6_cutflow + M6_cutflow_page                  four-tag cutflow dump + HTML page
+#   M6_cutflow + M6_cutflow_page                  four-tag cutflow dump + closure table (the shared
+#                                                 cutflow_closure_table rule)
 #   M6_plot_config + M6_plots                     makePlots gallery (SR / SB, ratios)
 #   M6_study                                      study plots + subsample overlap matrix (from M.3)
 #                                                 + study/index.html
@@ -132,17 +133,24 @@ use rule check_cutflow from analysis as M6_cutflow with:
         python_bin = PYTHON
     container: None
 
-rule M6_cutflow_page:
-    input: f"{M6_OUT}cutflow_validation.yml"
+use rule cutflow_closure_table from analysis as M6_cutflow_page with:
+    # the shared closure table (src/tools/cutflow_closure.py, as Phases B / C.4 / F and DeClustered
+    # D.5): Multijet = mixeddata_all x mixed JCM as is, ttbar pseudodata vs tt 4b MC, and subsample
+    # k (mixed + ttbar pseudodata) vs Bkg
+    input:
+        cutflow_yml = f"{M6_OUT}cutflow_validation.yml",
+        validation_txt = f"{M6_OUT}cutflow_validation_dump.txt"
     output:
         html = f"{M6_OUT}cutflow_validation.html",
         txt = f"{M6_OUT}cutflow_validation.txt"
     log: f"{M6_OUT}logs/cutflow_page.log"
-    shell:
-        """
-        {WRAPPER} {PYTHON} coffea4bees/workflows/scripts/mixeddata_validation_report.py cutflow \
-            {input} {M6_OUT} --subsample {VAL_SUB} 2>&1 | tee {log}
-        """
+    params:
+        title = f"{config.get('label', 'mixeddata')}_validation_v{VAL_SUB}",
+        multijet = "sample4b",            # Multijet column = the four-tag sample --multijet-process
+        ttbar = " ".join(TTBAR),
+        extra_arguments = f"--multijet-process {MIX_NAME} --pseudodata {PS_NAME} --compare mix_v{VAL_SUB}",
+        run_container_wrapper = WRAPPER,
+        python_bin = PYTHON
 
 rule M6_plot_config:
     input: VAL.get('plot_template', "coffea4bees/plots/metadata/plotsMixedData_validation.yml")

@@ -2,7 +2,8 @@
 # D.3: decluster. make_declustered_data_4b.py (runner -s) re-clusters every 4b data event into
 # its splitting tree and re-generates each splitting from the D.2 PDFs, seeded by
 # declustering_rand_seed: every seed is an independent synthetic replica of the 4b data.
-# (scripts/synthetic-dataset-make-dataset-Run3-all.sh, config skimmer/metadata/declustering_Run3.yml)
+# (formerly scripts/synthetic-dataset-make-dataset-Run3-all.sh; config skimmer/metadata/declustering_Run3.yml,
+#  Run 2 declustering.yml)
 #
 #   D3_config (per seed)              skimmer config (declustering.skimmer_template + this roast's values)
 #   D3_decluster (per seed x year, condor)
