@@ -215,6 +215,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         apply_FvT: bool = True,
         FvT_pd3_floor: float = 0.0,
         MvD_pmix4_floor: float = 0.0,
+        event_subsample: int = 1,
         apply_boosted_veto: bool = False,
         apply_lepton_veto: bool = False,
         run_dilep_ttbar_crosscheck: bool = False,
@@ -284,6 +285,11 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.apply_FvT = apply_FvT
         self.FvT_pd3_floor = FvT_pd3_floor  # 0 = off; see load_FvT
         self.MvD_pmix4_floor = MvD_pmix4_floor  # 0 = off; see load_MvD
+        # Keep only events with event % N == 0, weighted by N (unbiased, reproducible thinning for
+        # expensive passes, e.g. MakeMixedData M.7's SvB-on-the-fly histograms of mixeddata_all). 1: off.
+        self.event_subsample = int(event_subsample)
+        if self.event_subsample < 1:
+            raise ValueError(f"event_subsample must be >= 1, got {event_subsample!r}")
         self.apply_MvD = apply_MvD
         self.apply_MvD_weight = apply_MvD_weight
         self.run_SvB = run_SvB
@@ -666,6 +672,33 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             # Add pseudotag weights
             weights, list_weight_names = self.include_pseudotag_in_weight(event, weights, list_weight_names)
 
+        if self.event_subsample > 1:
+            keep = ak.to_numpy(event.event) % self.event_subsample == 0
+            selections.add("passEventSubsample", keep)
+            allcuts.append("passEventSubsample")
+            analysis_selections = selections.all(*allcuts)
+            weights.add("event_subsample", np.full(len(event), float(self.event_subsample)))
+            list_weight_names.append("event_subsample")
+
+        # MakeMixedData M.7 signal check: the mixed signal files are read as two datasets by the
+        # input event's tag (make_mixed_data.py mixInputFourTag). The 3b-origin events are weighted
+        # by the JCM on their input untagged loose-jet count, as the 3b signal is; the 4b-origin
+        # ones are not.
+        mix_origin = ("3b" if self.dataset.startswith("synthetic_mc_3b_") else
+                      "4b" if self.dataset.startswith("synthetic_mc_4b_") else None)
+        if mix_origin and self.config["isSyntheticMC"]:
+            is4b = ak.to_numpy(event.mixInputFourTag).astype(bool)
+            selections.add("passMixOrigin", is4b if mix_origin == "4b" else ~is4b)
+            allcuts.append("passMixOrigin")
+            analysis_selections = selections.all(*allcuts)
+            if mix_origin == "3b":
+                if self.jcm_model is None:
+                    raise ValueError(f"{self.dataset}: the 3b-origin mixed signal needs a JCM (apply_JCM + JCM_file)")
+                jcm_w = np.ones(len(event), dtype=float)
+                jcm_w[~is4b], _ = self.jcm_model(event.mixInputNUntagged[~is4b], event.event[~is4b])
+                weights.add("JCM_mixed3b", jcm_w)
+                list_weight_names.append("JCM_mixed3b")
+
         # Select events passing all cuts
         selev = event[analysis_selections]
 
@@ -705,8 +738,11 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         if self.return_events_for_display:
             self.events_for_display(selev, processOutput)
 
-        # Blind data in fourTag SR (mixeddata, synthetic data, and MC are never blinded)
-        if not (self.config["isMC"] or self.config["isMixedData"] or self.config["isSyntheticData"] or "mix" in self.dataset) and self.blind:
+        # Blind data in fourTag SR (mixeddata, synthetic data, and MC are never blinded). isSyntheticMC
+        # too: signal MC run through the mixing / declustering (synthetic_mc_*) has isMC False, so it
+        # was blinded like data -- its SR SvB > 0.8 tail silently vanished (MakeMixedData M.7, Run 2).
+        if not (self.config["isMC"] or self.config["isMixedData"] or self.config["isSyntheticData"]
+                or self.config["isSyntheticMC"] or "mix" in self.dataset) and self.blind:
             with self._stage(f"{label}:blinding"):
                 blind_flag = self._get_blind_flag(selev)
                 if blind_flag is None:

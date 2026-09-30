@@ -51,6 +51,7 @@ class HemiMixer(Skimmer4b):
                 hemi_year_key: str = "merge_ul16",  # "year": one library per data year; "merge_ul16": UL16_pre/postVFP share UL16 (legacy)
                 mix_tags: str = "threeTag",       # events to mix: "threeTag" (the mixed data) | "threeTag_fourTag" (signal check)
                 require_trigWeight: bool = True,  # MC only: without a trigWeight friend, fail or write unit weights
+                event_subsample: int = 1,         # mix only events with event % N == 0 (M.7 signal check); 1: all
                 object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
                 *args, **kwargs):
         super().__init__(
@@ -108,6 +109,11 @@ class HemiMixer(Skimmer4b):
         if mix_tags not in ("threeTag", "threeTag_fourTag"):
             raise ValueError(f"mix_tags must be 'threeTag' or 'threeTag_fourTag', got {mix_tags!r}")
         self.mix_tags          = mix_tags
+        # Unbiased, reproducible thinning by event number. Whoever builds the dataset from the output
+        # must divide the sample's sumw by N (MakeMixedData M7_dataset_yml does).
+        self.event_subsample   = int(event_subsample)
+        if self.event_subsample < 1:
+            raise ValueError(f"event_subsample must be >= 1, got {event_subsample!r}")
         self.require_trigWeight = require_trigWeight
         logging.info(f"use_topk_matching = {self.use_topk_matching}, k_neighbors = {self.k_neighbors}, collision_mode = {self.collision_mode}, default_rank = {self.default_rank}")
 
@@ -294,6 +300,8 @@ class HemiMixer(Skimmer4b):
         selections.add( "passHLT", ( event.passHLT if config["cut_on_HLT_decision"] else np.full(len(event), True)  ) )
         selections.add( 'passJetMult',   event.passJetMult )
         mix_tag = event.threeTag if self.mix_tags == "threeTag" else (event.threeTag | event.fourTag)
+        if self.event_subsample > 1:
+            mix_tag = mix_tag & (ak.to_numpy(event.event) % self.event_subsample == 0)
         selections.add( "passThreeTag", mix_tag)
 
         cumulative_cuts = ["lumimask"]
@@ -442,10 +450,22 @@ class HemiMixer(Skimmer4b):
         neg_hemi_new = neg_hemi_new[not_same_event_selev]
         n_event      = len(selev)
 
+        #
+        #  Signal check (mix_tags threeTag_fourTag): record where each mixed event came from, before
+        #  its jets are replaced -- its input tag, and its untagged loose-jet count (the JCM argument).
+        #  processor_HH4b reads the files as two datasets by origin and weights the 3b-origin events
+        #  by the JCM (MakeMixedData M.7).
+        #
+        origin_vars = []
+        if self.mix_tags != "threeTag":
+            selev["mixInputFourTag"] = ak.values_astype(selev.fourTag, np.int8)
+            selev["mixInputNUntagged"] = ak.num(selev.Jet[selev.Jet.selected & ~selev.Jet.tagged_loose], axis=1)
+            origin_vars = ["mixInputFourTag", "mixInputNUntagged"]
+
 
         old_hemi_output_vars = ["thrust_phi",  "event", "run", "luminosityBlock", "weight", "hemisphereId"]
         new_hemi_output_vars = old_hemi_output_vars + ["match_dist", "match_rank", "nSelJet", "nTagJet", "nJet"]
-        output_vars = []
+        output_vars = list(origin_vars)
 
         for var_name in old_hemi_output_vars:
             selev[f"posHemiOld_{var_name}"] = pos_hemi[var_name]
