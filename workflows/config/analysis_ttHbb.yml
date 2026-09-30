@@ -3,18 +3,7 @@
 # ==============================================================================
 label: "ttHbb"
 output_path: "output/ttHbb/"
-<<<<<<< HEAD
 # No cern_user/cern_path: publishing goes through `roast publish` (per-user roast config).
-=======
-cern_user: "algomez"
-cern_path: "www/plots/ttHbb/analysis/4b/"
-
-processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
-friend_file: "coffea4bees/metadata/friends/friends_ttHbb.yml"
-weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
-dataset_location: "coffea4bees/metadata/datasets/"
-candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
->>>>>>> 1b12a010 (ttHbb configs: plots to CERNBox www/plots/ttHbb/analysis/4b)
 
 dataset:
   - "ttHbb"
@@ -268,13 +257,8 @@ fvt_closure:
 # background is {eos_base}/friend/FvT_ttHbb_stitched, i.e. THIS roast's Phase C output.
 # ==============================================================================
 svb:
-<<<<<<< HEAD
   eos_base: "{eos_prod}/{roast_id}"
   plot_base: "{web_prod}/{roast_id}/classifier"
-=======
-  eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb"
-  plot_base: "root://eosuser.cern.ch//eos/user/m/mmarcheg/www/plots/ttHbb/analysis/4b"
->>>>>>> 1b12a010 (ttHbb configs: plots to CERNBox www/plots/ttHbb/analysis/4b)
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/ttHbb/SvB"
   label: "SvB_ttHbb_stitched"
