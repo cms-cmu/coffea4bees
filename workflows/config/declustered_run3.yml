@@ -135,6 +135,11 @@ validation:
   ttbar: ["TTToHadronic", "TTToSemiLeptonic", "TTTo2L2Nu"]
   plot_template: "coffea4bees/plots/metadata/plotsDeClustered_validation.yml"
   # seed: 0          # seed plotted in D.5; default: drawn from the roast id
+  # D.4 cutflow check against the blessed counts of roast declustered_run3_20260927_7e9990e-f0d7cdf, after the D.3 d4_to_t4 rerun
+  # (its D4/cutflow_declustered.yml). Same seed + inputs -> same counts; the check fails at
+  # error_threshold (default 0.001) relative difference.
+  known_counts: "coffea4bees/analysis/tests/known_fullCounts_declustered_Run3.yml"
+  # error_threshold: 0.001
 
 # ------------------------------------------------------------------------------
 # D.6: signal scrambling check -- signal MC declustered with the same method / seed as D.3; the
@@ -146,8 +151,5 @@ signal_check:
   datasets: ["GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"]   # the only Run 3 signal covering 2022 + 2023
   seed: 0
   chunksize: 5000     # signal passes the 4b selection ~10x more than data: smaller chunks than D.3
-  # D.4 cutflow check against the blessed counts of roast declustered_run3_20260927_7e9990e-f0d7cdf, after the D.3 d4_to_t4 rerun
-  # (its D4/cutflow_declustered.yml). Same seed + inputs -> same counts; the check fails at
-  # error_threshold (default 0.001) relative difference.
-  known_counts: "coffea4bees/analysis/tests/known_fullCounts_declustered_Run3.yml"
-  # error_threshold: 0.001
+  max_chunks: 20      # per sample-year: ~40k 4b signal events/year is plenty for the fractions (the
+                      # full ~3M 4b events would cost as much CPU as declustering all the data)

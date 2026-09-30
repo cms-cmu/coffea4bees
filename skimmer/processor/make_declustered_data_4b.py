@@ -281,9 +281,6 @@ class DeClusterer(Skimmer4b):
 
             self._cutFlow.fill( "passFourTag_btagSF", event[selections.all(*cumulative_cuts)], allTag=True )
 
-        selection = event.lumimask & event.passNoiseFilter & event.passJetMult & event.fourTag
-        if not config["isMC"]: selection = selection & event.passHLT
-
         selev = event[selections.all(*cumulative_cuts)]
 
         #
@@ -303,8 +300,11 @@ class DeClusterer(Skimmer4b):
             cumulative_cuts.append("pass_ttbar_filter")
             self._cutFlow.fill( "pass_ttbar_filter", event[selections.all(*cumulative_cuts)], allTag=True )
 
-            selection = selection & pass_ttbar_filter
             selev = selev[pass_ttbar_filter_selev]
+
+        # The events written are exactly selev: the same cumulative cuts. (Previously passHLT was
+        # added only for data, so MC with cut_on_HLT_decision failed the skimmer's length check.)
+        selection = selections.all(*cumulative_cuts)
 
         selev = cand_jet_selection(selev)
         canJet    = selev.canJet
