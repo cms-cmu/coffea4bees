@@ -34,7 +34,8 @@ publish_base: "{eos_prod}/{roast_id}"
 # Products of other roasts (checked by `roast new`, see src/tools/roast.py:check_inputs)
 # ------------------------------------------------------------------------------
 inputs:
-  upstream_roasts: [nominal_run3_nontight_20260925_0c53380-193851f, mixeddata_run3_20260926_956d4bf-aca8a4e]
+  upstream_roasts: [nominal_run3_nontight_20260925_0c53380-193851f, mixeddata_run3_20260926_956d4bf-aca8a4e,
+                    nominal_run3_20260922_3f9e199-1e0504f]
   # ttbar subtraction in D.1 (4b data, FvT.d4_to_t4), and in D.3 when declustering.subtract_ttbar:
   # the non-tight FvT (Phase C of that roast; C.4 closure SR 1.003 +- 0.002), the file
   # mixeddata_run3 uses. Must cover the data picoAODs in analysis_config.dataset_location.
@@ -46,6 +47,9 @@ inputs:
   # ttbar pseudodata (sub_sample_MC.py, one unweighted sample) folded into synthetic_data_4b per
   # year, as MakeMixedData M.4 folds it into mixeddata_4b. Needed with declustering.subtract_ttbar.
   ttbar_psdata: "{eos_prod}/mixeddata_run3_20260926_956d4bf-aca8a4e/handoff/ttbar_PSData.yml"
+  # D.6 signal check: the analysis SvB (nominal Run 3, Phase D), evaluated on the fly on the original
+  # and the declustered signal MC. The only trained Run 3 SvB (the non-tight roast has none).
+  SvB_model: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/classifier/SvB_nominal/result.json"
   # Optional: decluster with another declustered roast's PDFs (its <publish_base>/pdfs) and skip
   # D.1 + D.2 -- e.g. to add seeds. Add that roast to upstream_roasts.
   # pdfs: "{eos_prod}/<declustered roast id>/pdfs"
@@ -97,7 +101,10 @@ cluster:
 # ------------------------------------------------------------------------------
 # D.2: sampling PDFs (make_jet_splitting_PDFs.py) -> <publish_base>/pdfs/
 # ------------------------------------------------------------------------------
-pdfs: "{}      # (no options yet)"
+pdfs: {}
+  # make: true    # default: true for declustering.method pdf, false for library (D.3 does not read
+  #               # them); true builds them anyway (D.5's PDF gallery as a reference)
+
 
 # ------------------------------------------------------------------------------
 # D.3: decluster -> <publish_base>/handoff/<dataset_name>.yml
@@ -129,6 +136,17 @@ validation:
   ttbar: ["TTToHadronic", "TTToSemiLeptonic", "TTTo2L2Nu"]
   plot_template: "coffea4bees/plots/metadata/plotsDeClustered_validation.yml"
   # seed: 0          # seed plotted in D.5; default: drawn from the roast id
+
+# ------------------------------------------------------------------------------
+# D.6: signal scrambling check -- signal MC declustered with the same method / seed as D.3; the
+# Higgs-candidate peak should wash out and SvB should stop calling it signal (report: SR fraction,
+# 100 < m < 150 fraction, SvB ps_hh high-score fractions, overlays; SvB = inputs.SvB_model)
+# ------------------------------------------------------------------------------
+signal_check:
+  enabled: true
+  datasets: ["GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"]   # the only Run 3 signal covering 2022 + 2023
+  seed: 0
+  chunksize: 5000     # signal passes the 4b selection ~10x more than data: smaller chunks than D.3
   # D.4 cutflow check against the blessed counts of roast declustered_run3_20260927_7e9990e-f0d7cdf, after the D.3 d4_to_t4 rerun
   # (its D4/cutflow_declustered.yml). Same seed + inputs -> same counts; the check fails at
   # error_threshold (default 0.001) relative difference.

@@ -4,13 +4,16 @@
 # declustered_run3.yml with one knob flipped: declustering.method library. Instead of sampling
 # each splitting from the D.2 PDFs, D.3 replaces it by a REAL splitting of the same exact type
 # from a library of the 4b data's own splittings (written by D.1 next to its histograms), picked
-# as the rank-r nearest neighbour in the parent's (log pT, |eta|) -- never from the event being
+# among the nearest neighbours in the parent's (log pT, |eta|) -- never from the event being
 # declustered -- and aligned onto the parent (pT scaled, phi rotated, boosted in z). The children's
-# b-tag scores come with them. Seed i = rank i; one seed = rank 0, the nearest neighbour.
+# b-tag scores come with them. Which neighbour: a reproducible random one of the k_neighbors nearest
+# within max_distance, drawn per jet from the seed and the jet's kinematics, so every seed is an
+# equivalent replica
+# (selection: rank instead takes neighbour <seed> for every jet, as the first library roast did).
 # See jet_clustering/splitting_library.py and ~/ClaudeBrain/outputs/decluster-replacement/design.md.
 #
-# Same upstream roasts and inputs as the base. D.2 still makes the PDFs (D.5's gallery) but D.3
-# does not read them.
+# Same upstream roasts and inputs as the base. No PDFs are made (D.3 does not read them): no
+# D1_merge, D.2 or D.5 PDF gallery. `pdfs: {make: true}` builds them anyway, as a reference.
 #
 #   roast new --config coffea4bees/workflows/config/declustered_run3_library.yml \
 #       --label declustered_run3_library --step cmslpc:coffea4bees/workflows/Snakefile_DeClustered.smk
@@ -22,13 +25,22 @@ label: "declustered_run3_library"
 
 declustering:
   method: library
-  n_seeds: 1               # seed 0 = rank 0 (nearest neighbour)
+  n_seeds: 1
   # Distinct from the PDF roast's names, so a consumer can read both handoffs in one -m list
   # (runner.py refuses a dataset name defined differently in two sources).
   dataset_name: "synthetic_data_lib_4b"
   multijet_dataset_name: "synthetic_data_lib_multijet"
   library:
-    carry_fields: [btagScore]  # child jet properties taken from the library (btagScore always)
+    # child jet properties taken from the library (btagScore always): the real b-tag, jet ID and
+    # HCR classifier-input features (dump_friendtrees.py fills absent ones with 0). NOT the b-jet
+    # regression factors (the library jets are already regressed) nor the JEC inputs rawFactor/area
+    # (splitting_library.NOT_CARRIABLE).
+    carry_fields: [btagScore, jetId, btagPNetCvB, btagPNetCvL, btagPNetQvG, btagPNetTauVJet,
+                   PNetRegPtRawRes, nSVs, chHEF, neHEF, chEmEF, neEmEF, muEF, nConstituents]
     min_entries: 10            # below this an exact type falls back to same child b/j content
     scale_pt: true             # scale the children to the parent pT
     boost_z: true              # boost the children along z to the parent pz
+    selection: random          # random: one of the k_neighbors nearest per jet (seeded); rank: neighbour <seed>
+    k_neighbors: 20            # random selection: candidates per jet (variety; seed overlap ~1/k)
+    max_distance: 0.05         # ... but only those within this distance in (log pT, |eta|) (the nearest
+                               #     always counts): keeps sparse tails / rare types to close matches

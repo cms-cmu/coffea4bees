@@ -88,6 +88,8 @@ def main():
                         help="Histogram variable stems to convert.")
     parser.add_argument("--nominal_coffea", nargs="*", default=[],
                         help="Optional nominal coffea files for signal (ttHbb) and baseline background.")
+    parser.add_argument("--regions", nargs="+", default=['SR', 'SB'],
+                        help="Regions to convert (default: SR SB).")
     parser.add_argument("-o", "--output", required=True,
                         help="Path to output ROOT file.")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging.")
@@ -97,9 +99,9 @@ def main():
                         format="[%(levelname)s] %(message)s")
 
     root_dict = {}
-
     eff_scale_mixed = args.scale_mixed
     logging.info(f"Using scale_mixed = {eff_scale_mixed}")
+    logging.info(f"Regions to extract: {args.regions}")
 
     closure_dir = args.closure_dir.rstrip("/")
 
@@ -117,7 +119,7 @@ def main():
 
         logging.info(f"[Slot {m} <- closure_v{v}] Processing disk subsample {v} into closure model {m}...")
 
-        # 1. Ingest Data 3b (JCM * FvT_v) and TTbar
+        # 1. Ingest Data 3b (JCM * FvT_v), TTbar, and Data 4b
         if os.path.exists(data_file):
             data_data = load(data_file)
             hists_dict = data_data.get("hists", {})
@@ -128,44 +130,54 @@ def main():
                 if not any(stem.endswith(k) or f"_{k}_" in stem for k in args.hist_keys):
                     continue
 
-                for yr in h.axes['year']:
-                    # Extract 3-tag Data (Multijet background model)
-                    h_data_3b = slice_1d(h, 'data', yr, 'threeTag', 'SR')
-                    if h_data_3b is not None:
-                        u_hist = to_uproot_hist(h_data_3b)
-                        # Plain nominal key: e.g. SvB_MA_ps_ttHbb_data_UL18_threeTag_SR
-                        root_dict[f"{stem}_data_{yr}_threeTag_SR"] = u_hist
+                for reg in args.regions:
+                    if reg not in h.axes['region']:
+                        continue
 
-                        # FvT subsample key expected by runTwoStageClosure.py:
-                        # SvB_MA_FvT_3bDvTMix4bDvT_v{m}_newSBDef_ps_ttHbb_data_UL18_threeTag_SR
-                        idx = m
-                        fvt_stem = stem
-                        if "SvB_MA_ps" in stem:
-                            fvt_stem = stem.replace("SvB_MA_ps", f"SvB_MA_FvT_{args.mix_name}_v{idx}_newSBDef_ps")
-                        elif "SvB_ps" in stem:
-                            fvt_stem = stem.replace("SvB_ps", f"SvB_FvT_{args.mix_name}_v{idx}_newSBDef_ps")
-                        else:
-                            fvt_stem = f"{stem}_FvT_{args.mix_name}_v{idx}_newSBDef"
-                        root_dict[f"{fvt_stem}_data_{yr}_threeTag_SR"] = u_hist
-                        root_dict[f"{fvt_stem}_data_3b_for_mixed_{yr}_threeTag_SR"] = u_hist
-
-                    # Extract 3-tag TTbar
-                    if not args.pure_qcd and 'TTbar4b_from_d3' in h.axes['process']:
-                        h_ttbar_3b = slice_1d(h, 'TTbar4b_from_d3', yr, 'threeTag', 'SR')
-                        if h_ttbar_3b is not None:
-                            u_ttbar_hist = to_uproot_hist(h_ttbar_3b)
-                            root_dict[f"{stem}_TTbar4b_from_d3_{yr}_threeTag_SR"] = u_ttbar_hist
+                    for yr in h.axes['year']:
+                        # Extract 3-tag Data (Multijet background model)
+                        h_data_3b = slice_1d(h, 'data', yr, 'threeTag', reg)
+                        if h_data_3b is not None:
+                            u_hist = to_uproot_hist(h_data_3b)
+                            root_dict[f"{stem}_data_{yr}_threeTag_{reg}"] = u_hist
+                            root_dict[f"{stem}_nominal_data_{yr}_threeTag_{reg}"] = u_hist
 
                             idx = m
-                            fvt_tt_stem = stem
+                            fvt_stem = stem
                             if "SvB_MA_ps" in stem:
-                                fvt_tt_stem = stem.replace("SvB_MA_ps", f"SvB_MA_FvT_{args.mix_name}_v{idx}_newSBDef_ps")
+                                fvt_stem = stem.replace("SvB_MA_ps", f"SvB_MA_FvT_{args.mix_name}_v{idx}_newSBDef_ps")
                             elif "SvB_ps" in stem:
-                                fvt_tt_stem = stem.replace("SvB_ps", f"SvB_FvT_{args.mix_name}_v{idx}_newSBDef_ps")
+                                fvt_stem = stem.replace("SvB_ps", f"SvB_FvT_{args.mix_name}_v{idx}_newSBDef_ps")
                             else:
-                                fvt_tt_stem = f"{stem}_FvT_{args.mix_name}_v{idx}_newSBDef"
-                            root_dict[f"{fvt_tt_stem}_TTbar4b_from_d3_{yr}_threeTag_SR"] = u_ttbar_hist
-                            root_dict[f"{stem}_TTbar4b_from_d3_v{idx}_{yr}_threeTag_SR"] = u_ttbar_hist
+                                fvt_stem = f"{stem}_FvT_{args.mix_name}_v{idx}_newSBDef"
+                            root_dict[f"{fvt_stem}_data_{yr}_threeTag_{reg}"] = u_hist
+                            root_dict[f"{fvt_stem}_data_3b_for_mixed_{yr}_threeTag_{reg}"] = u_hist
+
+                        # Extract 4-tag Data (real data if present)
+                        h_data_4b = slice_1d(h, 'data', yr, 'fourTag', reg)
+                        if h_data_4b is not None:
+                            u_hist_4b = to_uproot_hist(h_data_4b)
+                            root_dict[f"{stem}_data_{yr}_fourTag_{reg}"] = u_hist_4b
+                            root_dict[f"{stem}_nominal_data_{yr}_fourTag_{reg}"] = u_hist_4b
+
+                        # Extract 3-tag TTbar
+                        if not args.pure_qcd and 'TTbar4b_from_d3' in h.axes['process']:
+                            h_ttbar_3b = slice_1d(h, 'TTbar4b_from_d3', yr, 'threeTag', reg)
+                            if h_ttbar_3b is not None:
+                                u_ttbar_hist = to_uproot_hist(h_ttbar_3b)
+                                root_dict[f"{stem}_TTbar4b_from_d3_{yr}_threeTag_{reg}"] = u_ttbar_hist
+                                root_dict[f"{stem}_nominal_TTbar4b_from_d3_{yr}_threeTag_{reg}"] = u_ttbar_hist
+
+                                idx = m
+                                fvt_tt_stem = stem
+                                if "SvB_MA_ps" in stem:
+                                    fvt_tt_stem = stem.replace("SvB_MA_ps", f"SvB_MA_FvT_{args.mix_name}_v{idx}_newSBDef_ps")
+                                elif "SvB_ps" in stem:
+                                    fvt_tt_stem = stem.replace("SvB_ps", f"SvB_FvT_{args.mix_name}_v{idx}_newSBDef_ps")
+                                else:
+                                    fvt_tt_stem = f"{stem}_FvT_{args.mix_name}_v{idx}_newSBDef"
+                                root_dict[f"{fvt_tt_stem}_TTbar4b_from_d3_{yr}_threeTag_{reg}"] = u_ttbar_hist
+                                root_dict[f"{stem}_TTbar4b_from_d3_v{idx}_{yr}_threeTag_{reg}"] = u_ttbar_hist
         else:
             logging.warning(f"Data file not found: {data_file}")
 
@@ -187,13 +199,17 @@ def main():
                             mix_proc = p
                             break
 
-                for yr in h.axes['year']:
-                    h_mix_4b = slice_1d(h, mix_proc, yr, 'fourTag', 'SR')
-                    if h_mix_4b is not None:
-                        u_hist = to_uproot_hist(h_mix_4b, scale=eff_scale_mixed)
-                        idx = m
-                        root_dict[f"{stem}_mix_v{idx}_{yr}_fourTag_SR"] = u_hist
-                        root_dict[f"{stem}_{args.mix_name}_v{idx}_{yr}_fourTag_SR"] = u_hist
+                for reg in args.regions:
+                    if reg not in h.axes['region']:
+                        continue
+
+                    for yr in h.axes['year']:
+                        h_mix_4b = slice_1d(h, mix_proc, yr, 'fourTag', reg)
+                        if h_mix_4b is not None:
+                            u_hist = to_uproot_hist(h_mix_4b, scale=eff_scale_mixed)
+                            idx = m
+                            root_dict[f"{stem}_mix_v{idx}_{yr}_fourTag_{reg}"] = u_hist
+                            root_dict[f"{stem}_{args.mix_name}_v{idx}_{yr}_fourTag_{reg}"] = u_hist
         else:
             logging.warning(f"Mixed data file not found: {mix_file}")
 
@@ -207,12 +223,19 @@ def main():
                 stem = h_key.replace(".", "_")
                 if not any(stem.endswith(k) or f"_{k}_" in stem for k in args.hist_keys):
                     continue
-                for proc in ['ttHbb', 'GluGluToHHTo4B_cHHH1', 'ZH4b', 'ZZ4b']:
-                    if proc in h.axes['process']:
-                        for yr in h.axes['year']:
-                            h_sig = slice_1d(h, proc, yr, 'fourTag', 'SR')
-                            if h_sig is not None:
-                                root_dict[f"{stem}_{proc}_{yr}_fourTag_SR"] = to_uproot_hist(h_sig)
+
+                for reg in args.regions:
+                    if reg not in h.axes['region']:
+                        continue
+
+                    for proc in ['ttHbb', 'GluGluToHHTo4B_cHHH1', 'ZH4b', 'ZZ4b', 'data', 'TTbar4b_from_d3']:
+                        if proc in h.axes['process']:
+                            for yr in h.axes['year']:
+                                for tag in ['threeTag', 'fourTag']:
+                                    h_cand = slice_1d(h, proc, yr, tag, reg)
+                                    if h_cand is not None:
+                                        root_dict[f"{stem}_{proc}_{yr}_{tag}_{reg}"] = to_uproot_hist(h_cand)
+                                        root_dict[f"{stem}_nominal_{proc}_{yr}_{tag}_{reg}"] = to_uproot_hist(h_cand)
 
     logging.info(f"Total histograms to write to ROOT: {len(root_dict)}")
     out_dir = os.path.dirname(args.output)

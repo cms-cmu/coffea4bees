@@ -1,5 +1,11 @@
 label: "ttHbb_bkg_syst"
 output_path: "output/ttHbb_bkg_syst/"
+fourTag_use_tight: false
+publish_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2_v2/ttHbb_pz_rank0_0"
+inputs:
+  FvT: "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2_v2/ttHbb_pz_rank0_0/friend/FvT_nominal/result.json@@analysis.0.merged"
+  JCM: "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2_v2/ttHbb_pz_rank0_0/output/computeJCM/jetCombinatoricModel_SB.yml"
+  jcm_hists: "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2_v2/ttHbb_pz_rank0_0/output/computeJCM/histAll_NoJCM.coffea"
 cern_user: "algomez"
 cern_path: "www/ttHbb/Plots/"
 channel: "ttHbb"
@@ -10,8 +16,8 @@ mixeddata_dataset_file: "output/ttHbb_bkg_syst/coffea4bees/metadata/datasets/mix
 mixeddata_dataset_output: "output/ttHbb_bkg_syst/coffea4bees/metadata/datasets/mixeddata_ttHbb_bkg_syst_rank0_0.yml"
 datasets_file: "output/ttHbb_bkg_syst/coffea4bees/metadata/datasets/mixeddata_ttHbb_bkg_syst_rank0_0.yml"
 friend_file: "output/ttHbb_bkg_syst/coffea4bees/metadata/friends/friends_ttHbb_bkg_syst_4b.json"
-multisample_install_path: "output/ttHbb_bkg_syst/coffea4bees/metadata/datasets/mixeddata_4b.yml"
-classifier_inputs_json: "output/ttHbb_bkg_syst/bkg_syst_A_4_process_subsamples/classifier_inputs/classifier_inputs_mixeddata_ttHbb.json"
+multisample_install_path: "output/ttHbb_bkg_syst/M4/handoff/mixeddata_4b.yml"
+classifier_inputs_json: "output/ttHbb_bkg_syst/bkg_syst_A_2_process_subsamples/classifier_inputs/classifier_inputs_mixeddata_ttHbb.json"
 mixeddata_friend_json: "output/ttHbb_bkg_syst/coffea4bees/metadata/friends/friends_ttHbb_bkg_syst_4b.json"
 weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
 years:
@@ -23,6 +29,7 @@ n_samples: 16
 
 phase_f_output_path: "inputs/"
 phase_f_label: "ttHbb"
+nominal_coffea: "output/ttHbb/histAll_ttHbb.coffea"
 
 ttbar_processes:
   - "TTTo2L2Nu_stitched"
@@ -165,9 +172,12 @@ phaseA_4:
     min_workers: 25
     max_workers: 200
     worker_memory: "6GB"
+    friend_base: null
   config:
     run_SvB: true
     SvB_MA: true
+    make_classifier_input: null
+    make_friend_SvB: null
     # hist_cuts:
     #   - "pass_nSelJets_gt6"
 
@@ -367,7 +377,7 @@ phase_e_fvt:
 analysis_config:
   processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
   dataset_location: "output/ttHbb_bkg_syst/coffea4bees/metadata/datasets/"
-  datasets_file: "output/ttHbb_bkg_syst/coffea4bees/metadata/datasets/mixeddata_4b.yml"
+  datasets_file: "output/ttHbb_bkg_syst/M4/handoff/mixeddata_4b.yml"
   friend_file: "output/ttHbb_bkg_syst/coffea4bees/metadata/friends/friends_ttHbb_bkg_syst_4b.json"
   weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
   runner:
@@ -377,6 +387,7 @@ analysis_config:
     shared_dask: false
     run_performance: false
   config:
+    fourTag_use_tight: false
     blind: false
     apply_FvT: false
     apply_JCM: false
@@ -390,6 +401,18 @@ analysis_config:
     hist_cuts: ["pass_nSelJets_gt6"]
     top_reconstruction: fast
     plot_ttbar_with_weights: true
+
+# TWO-STAGE CLOSURE CANDIDATES & MULTI-BINNING
+closure_rebin_candidates:
+  - 2   # 120 bins (240 / 2)
+  - 12  # 20 bins (240 / 12)
+  - 15  # 16 bins (240 / 15)
+  - 16  # 15 bins (240 / 16)
+  - 20  # 12 bins (240 / 20)
+  - 24  # 10 bins (240 / 24)
+max_basis: 10
+rebin: 12
+
 
 # COMBINE STATISTICAL INTERPRETATION & LIMITS
 convert_hist_to_json:

@@ -7,7 +7,7 @@ from src.compat import nano_from_root
 
 from coffea4bees.jet_clustering.clustering   import cluster_bs
 from coffea4bees.jet_clustering.declustering import make_synthetic_event, clean_ISR
-from coffea4bees.jet_clustering.splitting_library import SplittingLibrary, carry_child_fields
+from coffea4bees.jet_clustering.splitting_library import SplittingLibrary, carry_child_fields, check_carry_fields, INTEGER_FIELDS
 from coffea4bees.analysis.helpers.SvB_helpers import setFvTVars, subtract_ttbar_with_FvT
 from coffea4bees.analysis.helpers.object_selection import resolve_object_selection_config
 
@@ -63,22 +63,39 @@ class DeClusterer(Skimmer4b):
                 library_min_entries: int = 10,
                 library_scale_pt: bool = True,
                 library_boost_z: bool = True,
+                library_selection: str = "random",
+                library_k_neighbors: int = 20,
+                library_max_distance: float = 0.05,
+                require_trigWeight: bool = True,
+                library_mass_match_weight: float = None,
                 *args, **kwargs):
         # declustering_method "pdf" (default): sample the splittings from clustering_pdfs_file.
         # "library": replace them by real splittings from clustering_library_file (a {year: [files]}
-        # registry written by processor_cluster_4b; XXX -> year), the neighbour rank being
-        # declustering_rand_seed. See jet_clustering/splitting_library.py.
+        # registry written by processor_cluster_4b; XXX -> year). library_selection "random"
+        # (default): each jet takes a reproducible random one of its library_k_neighbors nearest
+        # within library_max_distance in (log pT, |eta|) (None: no cap), keyed on
+        # declustering_rand_seed + the jet kinematics, so seeds are equivalent replicas;
+        # "rank": neighbour rank declustering_rand_seed. See jet_clustering/splitting_library.py.
         if declustering_method not in ("pdf", "library"):
             raise ValueError(f"declustering_method must be 'pdf' or 'library', got {declustering_method!r}")
         self.declustering_method = declustering_method
         self.clustering_library_file = clustering_library_file
-        self.library_carry_fields = list(library_carry_fields)
+        self.library_carry_fields = check_carry_fields(library_carry_fields)
         if "btagScore" not in self.library_carry_fields:
             self.library_carry_fields.insert(0, "btagScore")   # the output b-tag score comes from here
         self.library_min_entries = library_min_entries
         self.library_scale_pt = library_scale_pt
         self.library_boost_z = library_boost_z
+        if library_selection not in ("random", "rank"):
+            raise ValueError(f"library_selection must be 'random' or 'rank', got {library_selection!r}")
+        self.library_selection = library_selection
+        self.library_k_neighbors = int(library_k_neighbors)
+        self.library_max_distance = None if library_max_distance in (None, "None") else float(library_max_distance)
+        # match low-b (< 2 b) splittings also on w * log(m/pT) of the parent; None: off
+        self.library_mass_match_weight = library_mass_match_weight
         self._splitting_library_cache = {}
+        # MC only: without a trigWeight friend, fail (default) or write unit trigger weights
+        self.require_trigWeight = require_trigWeight
 
         pico_tag = "lib_" if declustering_method == "library" else ""
         kwargs["pico_base_name"] = f'picoAOD_{pico_tag}seed{declustering_rand_seed}'
@@ -89,7 +106,7 @@ class DeClusterer(Skimmer4b):
             *args, **kwargs,
         )
 
-        logging.info(f"\nRunning Declusterer with these parameters: declustering_method = {declustering_method}, clustering_library_file = {clustering_library_file}, library_carry_fields = {self.library_carry_fields}, library_min_entries = {library_min_entries}, library_scale_pt = {library_scale_pt}, library_boost_z = {library_boost_z}, clustering_pdfs_file = {clustering_pdfs_file}, subtract_ttbar_with_weights = {subtract_ttbar_with_weights}, declustering_rand_seed = {declustering_rand_seed}, b_pt_threshold = {b_pt_threshold}, dr_threshold = {dr_threshold}, max_jet_retry = {max_jet_retry}, max_event_retry = {max_event_retry}, args = {args}, kwargs = {kwargs}")
+        logging.info(f"\nRunning Declusterer with these parameters: declustering_method = {declustering_method}, clustering_library_file = {clustering_library_file}, library_carry_fields = {self.library_carry_fields}, library_min_entries = {library_min_entries}, library_scale_pt = {library_scale_pt}, library_boost_z = {library_boost_z}, library_selection = {library_selection}, library_k_neighbors = {library_k_neighbors}, library_max_distance = {library_max_distance}, clustering_pdfs_file = {clustering_pdfs_file}, subtract_ttbar_with_weights = {subtract_ttbar_with_weights}, declustering_rand_seed = {declustering_rand_seed}, b_pt_threshold = {b_pt_threshold}, dr_threshold = {dr_threshold}, max_jet_retry = {max_jet_retry}, max_event_retry = {max_event_retry}, args = {args}, kwargs = {kwargs}")
         self.clustering_pdfs_file = clustering_pdfs_file
 
         self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
@@ -150,7 +167,8 @@ class DeClusterer(Skimmer4b):
             library_file = self.clustering_library_file.replace("XXX", year)
             if (library_file, year) not in self._splitting_library_cache:
                 self._splitting_library_cache[(library_file, year)] = SplittingLibrary.from_files(
-                    library_file, year, carry_fields=self.library_carry_fields, min_entries=self.library_min_entries)
+                    library_file, year, carry_fields=self.library_carry_fields, min_entries=self.library_min_entries,
+                    mass_match_weight=self.library_mass_match_weight)
                 logging.info(f"Loaded {len(self._splitting_library_cache[(library_file, year)].flavor)} splittings for {year} from {library_file}\n")
             splitting_library = self._splitting_library_cache[(library_file, year)]
 
@@ -215,10 +233,19 @@ class DeClusterer(Skimmer4b):
                 # trigWeight = trigWeight_file.arrays(['event', 'trigWeight_Data', 'trigWeight_MC'], entry_start=estart,entry_stop=estop)
                 # if not ak.all(trigWeight.event == event.event):
                 #     raise ValueError('trigWeight events do not match events ttree')
-                trigWeight = self.friends.get("trigWeight").arrays(target)
-
-                event["trigWeight_Data"] = trigWeight.Data
-                event["trigWeight_MC"]   = trigWeight.MC
+                friend = self.friends.get("trigWeight")
+                # a friend index that does not cover this sample returns None
+                trigWeight = friend.arrays(target) if friend is not None else None
+                if trigWeight is not None:
+                    event["trigWeight_Data"] = trigWeight.Data
+                    event["trigWeight_MC"]   = trigWeight.MC
+                elif self.require_trigWeight:
+                    raise ValueError(f"no trigWeight friend for {dataset} (set require_trigWeight: false to write unit weights)")
+                else:
+                    # e.g. the Run 3 ggF signal, which no trigger-weight friend covers yet
+                    logging.warning(f"no trigWeight friend for {dataset}: writing unit trigger weights")
+                    event["trigWeight_Data"] = np.ones(len(event))
+                    event["trigWeight_MC"]   = np.ones(len(event))
 
 
         selections = PackedSelection()
@@ -320,7 +347,12 @@ class DeClusterer(Skimmer4b):
                 event_ids=np.column_stack([np.asarray(selev.run), np.asarray(selev.luminosityBlock), np.asarray(selev.event)]).astype(np.int64),
                 library_scale_pt=self.library_scale_pt,
                 library_boost_z=self.library_boost_z,
+                library_selection=self.library_selection,
+                library_k_neighbors=self.library_k_neighbors,
+                library_max_distance=self.library_max_distance,
             )
+
+        lookups_before = dict(splitting_library.lookup_counts) if splitting_library is not None else None
 
         b_pt_threshold = self._resolve_b_pt_threshold(year, config["isRun3"])
         declustered_jets = make_synthetic_event(clustered_jets, clustering_pdfs,
@@ -369,11 +401,16 @@ class DeClusterer(Skimmer4b):
             out_branches["Jet_bRegCorr"] = ak.unflatten(np.full(total_jet, _UNIT_CORRECTION), n_jet)
             out_branches["Jet_btagDeepFlavB"] = declustered_jets.btagScore
 
-        # Other carried jet properties (btagScore is written above)
+        # Other carried jet properties (btagScore is written above): real values from the library /
+        # the untouched input jets, replacing the jetId placeholder when jetId is carried
         if splitting_library is not None:
             for field in self.library_carry_fields:
-                if field != "btagScore":
-                    out_branches[f"Jet_{field}"] = declustered_jets[field]
+                if field == "btagScore":
+                    continue
+                values = declustered_jets[field]
+                if field in INTEGER_FIELDS:
+                    values = ak.values_astype(ak.nan_to_num(values, nan=-1), np.int32)
+                out_branches[f"Jet_{field}"] = values
 
         #
         #  Need to skip all the other jet branches to make sure they have the same number of jets
@@ -391,6 +428,10 @@ class DeClusterer(Skimmer4b):
         branches = ak.Array(out_branches)
 
         processOutput["total_jet"] = total_jet
+        if splitting_library is not None:
+            # this chunk's library lookups by level (retries included) + last-resort self matches;
+            # summed per dataset into the picoAOD registry (worker log warnings never reach the driver)
+            processOutput["library_lookups"] = {k: v - lookups_before[k] for k, v in splitting_library.lookup_counts.items()}
 
         return (selection,
                 branches,

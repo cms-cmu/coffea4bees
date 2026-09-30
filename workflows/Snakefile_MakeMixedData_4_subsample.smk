@@ -64,7 +64,7 @@ use rule analysis_processor from analysis as M4_split with:
         datasets = MIX_NAME,
         years = " ".join(YEARS),
         config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, ["-s", TEST_FLAG, CONDOR])),
+        extra_arguments = " ".join(filter(None, ["-s", TEST_FLAG])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 
