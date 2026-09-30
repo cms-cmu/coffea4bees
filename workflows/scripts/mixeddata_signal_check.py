@@ -7,8 +7,8 @@
            region the analysis uses) and threeTag + fourTag (every preselected event -- what was
            mixed). The mixed signal is shown in fourTag (the mixed data's 4b). Per sample:
            SR / SB yields and SR fraction, Higgs-candidate masses (100 < m < 150 fraction, mean,
-           RMS) and the SR SvB ps_hh (mean, fractions and yields above 0.5 / 0.8 / 0.95).
-           Overlays, unit area and absolute -> signal_check.{txt,yml}, plots/*.png, index.html
+           RMS) and the SR SvB ps_hh (sentinel fraction, mean, fractions and yields above 0.5 /
+           0.8 / 0.95) -> signal_check.{txt,yml}. The plots are M7_plots' (makePlots + gallery).
 
 A mixing that decorrelates the hemispheres turns the signal background-like: the mixed SR fraction
 and 100 < m < 150 fraction fall towards the data values and the SvB piles up at low ps_hh. What
@@ -18,7 +18,6 @@ Run from the barista root (the container's cwd).
 """
 import argparse
 import glob
-import html
 import os
 import sys
 
@@ -76,12 +75,12 @@ def cmd_dataset(args):
         yaml.dump(out, f, default_flow_style=False, sort_keys=False)
 
 
-def _project(h, process, tags, regions):
+def _project(h, process, tags, regions, flow=False):
     vals = 0
     for t in tags:
         for r in regions:
             sub = h[{"process": process, "tag": t, "region": r}]
-            vals = vals + sub[{"year": sum}].values(flow=False)
+            vals = vals + sub[{"year": sum}].values(flow=flow)
     return np.asarray(vals, dtype=float)
 
 
@@ -110,11 +109,15 @@ def _summarise(hists, masses, svb, process, tags):
             r[v] = {"mean": mean, "rms": float(np.sqrt(np.sum(y * (c - mean) ** 2) / tot)),
                     "frac_100_150": float(y[(c > 100) & (c < 150)].sum() / tot)}
     if svb:
-        y = _project(hists[svb], process, tags, ["SR"])
+        # ps_hh underflow = the sentinel (-2: p_ggF <= 0.01, or HH not the largest signal class):
+        # part of the SR yield, so it counts in the fraction denominators; the mean is over [0, 1]
+        yf = _project(hists[svb], process, tags, ["SR"], flow=True)
+        y = yf[1:-1]
         c = hists[svb].axes[-1].centers
-        tot = y.sum()
+        tot = yf.sum()
         if tot > 0:
-            r["SvB_SR"] = {"mean": float(np.sum(y * c) / tot), "yield": float(tot)}
+            r["SvB_SR"] = {"mean": float(np.sum(y * c) / y.sum()) if y.sum() > 0 else float("nan"),
+                           "yield": float(tot), "sentinel_frac": float(yf[0] / tot)}
             for cut in SVB_CUTS:
                 key = f"{cut:g}".replace(".", "p")
                 r["SvB_SR"][f"frac_gt_{key}"] = float(y[c > cut].sum() / tot)
@@ -124,13 +127,9 @@ def _summarise(hists, masses, svb, process, tags):
 
 def cmd_report(args):
     from coffea.util import load
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
 
     hists = load(args.hists)["hists"]
-    plots = os.path.join(args.output_dir, "plots")
-    os.makedirs(plots, exist_ok=True)
+    os.makedirs(args.output_dir, exist_ok=True)
     masses = [v for v in ("quadJet_selected.lead.mass", "quadJet_selected.subl.mass") if v in hists]
     svb = next((v for v in ("SvB_MA.ps_hh_fine", "SvB_MA.ps_hh") if v in hists), None)
     if svb is None:
@@ -139,7 +138,6 @@ def cmd_report(args):
     summary = {}
     lines = ["# M.7 signal check: original vs mixed signal MC (all years)", ""]
     cols = ("original 4b", "original 3b+4b", "mixed 4b")
-    page = []
     for pair in args.pairs:
         orig_name, mix_name = pair.split(":")
         h0 = hists[variables[0]]
@@ -170,7 +168,8 @@ def cmd_report(args):
             lines.append(row(f"{short}  mean", "{:.1f}", lambda r, v=v: r[v]["mean"]))
             lines.append(row(f"{short}  rms", "{:.1f}", lambda r, v=v: r[v]["rms"]))
         if svb:
-            lines.append(row("SR SvB ps_hh mean", "{:.3f}", lambda r: r["SvB_SR"]["mean"]))
+            lines.append(row("SR SvB ps_hh sentinel (<0) frac", "{:.3f}", lambda r: r["SvB_SR"]["sentinel_frac"]))
+            lines.append(row("SR SvB ps_hh mean (in [0,1])", "{:.3f}", lambda r: r["SvB_SR"]["mean"]))
             for cut in SVB_CUTS:
                 key = f"{cut:g}".replace(".", "p")
                 lines.append(row(f"SR SvB ps_hh > {cut:g} fraction", "{:.3f}", lambda r, k=key: r["SvB_SR"][f"frac_gt_{k}"]))
@@ -187,28 +186,6 @@ def cmd_report(args):
                 pass
         lines += [f"{'mixed signal in fourTag':36s} {res['mixed_fourTag_fraction']:15.3f}", ""]
 
-        page.append(f"<h2>{html.escape(orig_name)}</h2>")
-        for v in variables:
-            h = hists[v]
-            edges = h.axes[-1].edges
-            regions = ["SR"] if v == svb else ["SR", "SB"]
-            for norm in ("unit", "abs"):
-                fig, ax = plt.subplots(figsize=(6, 4))
-                for (label, (p, tags)), style in zip(samples.items(), ("-", ":", "--")):
-                    y = _project(h, p, tags, regions)
-                    if y.sum() > 0:
-                        ax.stairs(y / y.sum() if norm == "unit" else y, edges, label=label, linestyle=style)
-                ax.set_xlabel(v)
-                ax.set_ylabel(("unit area" if norm == "unit" else "events") + f" ({'+'.join(regions)})")
-                ax.legend(fontsize=8)
-                if v == svb:
-                    ax.set_yscale("log")
-                ax.set_title(orig_name, fontsize=8)
-                fig.tight_layout()
-                name = f"{orig_name}__{v.replace('.', '_')}__{norm}.png"
-                fig.savefig(os.path.join(plots, name), dpi=110)
-                plt.close(fig)
-                page.append(f'<a href="plots/{name}"><img src="plots/{name}" width="420"></a>')
     lines += ["Mixing works if the mixed signal looks background-like: its SR fraction and 100<m<150",
               "fraction fall towards the data values (4b data SR/(SR+SB) ~ 0.34), and its SvB piles up at",
               "low ps_hh. Whatever stays at high SvB is signal that the mixed background model",
@@ -219,10 +196,6 @@ def cmd_report(args):
         f.write(text)
     with open(os.path.join(args.output_dir, "signal_check.yml"), "w") as f:
         yaml.dump(summary, f, default_flow_style=False, sort_keys=False)
-    with open(os.path.join(args.output_dir, "index.html"), "w") as f:
-        f.write("<html><head><title>M.7 signal check</title></head><body>\n"
-                f"<h1>M.7 signal check: original vs mixed signal</h1>\n<pre>{html.escape(text)}</pre>\n"
-                + "\n".join(page) + "\n</body></html>\n")
     print(text)
 
 
