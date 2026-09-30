@@ -144,13 +144,18 @@ def cmd_report(args):
         print("WARNING: no SvB_MA.ps_hh histogram -- was the SvB evaluated? (inputs.SvB_model)")
     h0 = hists[svb or masses[0]]
     summary = {}
-    lines = ["# M.7 signal check: original vs mixed signal MC (all years)", ""]
-    cols = ("4b", "3b x JCM", "mixed 3b x JCM", "mixed 4b")
+    lab = args.label
+    lines = [f"# {args.title}: original vs {lab} signal MC (all years)", ""]
     for triple in args.samples:
         orig_name, mix3_name, mix4_name = triple.split(":")
-        po, p3, p4 = (_find_process(h0, n) for n in (orig_name, mix3_name, mix4_name))
-        samples = {cols[0]: (po, ["fourTag"]), cols[1]: (po, ["threeTag"]),
-                   cols[2]: (p3, ["fourTag"]), cols[3]: (p4, ["fourTag"])}
+        # mix3_name "-": no 3b-origin sample (e.g. DeClustered D.6: only 4b events are declustered)
+        with3b = mix3_name != "-"
+        cols = (("4b", "3b x JCM", f"{lab} 3b x JCM", f"{lab} 4b") if with3b else ("4b", f"{lab} 4b"))
+        po, p4 = _find_process(h0, orig_name), _find_process(h0, mix4_name)
+        p3 = _find_process(h0, mix3_name) if with3b else None
+        samples = ({cols[0]: (po, ["fourTag"]), cols[1]: (po, ["threeTag"]),
+                    cols[2]: (p3, ["fourTag"]), cols[3]: (p4, ["fourTag"])} if with3b else
+                   {cols[0]: (po, ["fourTag"]), cols[1]: (p4, ["fourTag"])})
         res = {label: _summarise(hists, masses, svb, p, tags) for label, (p, tags) in samples.items()}
         summary[orig_name] = res
 
@@ -163,7 +168,7 @@ def cmd_report(args):
                     vals.append("-")
             return f"{name:36s} " + " ".join(f"{v:>15s}" for v in vals)
 
-        lines += [f"## {orig_name}  (processes {po}, {p3}, {p4})", "",
+        lines += [f"## {orig_name}  (processes {', '.join(p for p in (po, p3, p4) if p)})", "",
                   f"{'':36s} " + " ".join(f"{c:>15s}" for c in cols),
                   row("SR + SB yield (weighted)", "{:.2f}", lambda r: r["SR"] + r["SB"]),
                   row("SR fraction SR/(SR+SB)", "{:.3f}", lambda r: r["SR_fraction"])]
@@ -180,7 +185,9 @@ def cmd_report(args):
                 lines.append(row(f"SR SvB ps_hh > {cut:g} fraction", "{:.3f}", lambda r, k=key: r["SvB_SR"][f"frac_gt_{k}"]))
                 lines.append(row(f"SR SvB ps_hh > {cut:g} yield", "{:.3f}", lambda r, k=key: r["SvB_SR"][f"yield_gt_{k}"]))
             # mixed / original per origin: what of each signal population survives the mixing
-            for mixed, orig, key in ((cols[2], cols[1], "mixed3b_over_3b"), (cols[3], cols[0], "mixed4b_over_4b")):
+            pairs = (((cols[2], cols[1], "mixed3b_over_3b"), (cols[3], cols[0], "mixed4b_over_4b")) if with3b else
+                     ((cols[1], cols[0], "mixed4b_over_4b"),))
+            for mixed, orig, key in pairs:
                 try:
                     y_m = res[mixed]["SvB_SR"]["yield_gt_0p8"]
                     y_o = res[orig]["SvB_SR"]["yield_gt_0p8"]
@@ -190,13 +197,19 @@ def cmd_report(args):
                     pass
         lines.append("")
 
-    lines += ["Mixing works if the mixed signal looks background-like: its SR fraction and 100<m<150",
-              "fraction fall towards the data values (4b data SR/(SR+SB) ~ 0.34), and its SvB piles up at",
-              "low ps_hh. Whatever stays at high SvB is signal that the mixed background model",
-              "(mixeddata_all -> MvD, SvB background) would absorb: mixed 3b x JCM is the signal in the",
-              "3b data carried into the mixed data. Yields use the original sample's sumw (/ subsample);",
-              "the JCM is M.2's (the one the 3b events see before mixing), on the input event's untagged",
-              "loose jets."]
+    if args.label == "mixed":
+        lines += ["Mixing works if the mixed signal looks background-like: its SR fraction and 100<m<150",
+                  "fraction fall towards the data values (4b data SR/(SR+SB) ~ 0.34), and its SvB piles up at",
+                  "low ps_hh. Whatever stays at high SvB is signal that the mixed background model",
+                  "(mixeddata_all -> MvD, SvB background) would absorb: mixed 3b x JCM is the signal in the",
+                  "3b data carried into the mixed data. Yields use the original sample's sumw (/ subsample);",
+                  "the JCM is M.2's (the one the 3b events see before mixing), on the input event's untagged",
+                  "loose jets."]
+    else:
+        lines += [f"The {lab} signal should look background-like: its SR fraction and 100<m<150 fraction",
+                  "fall towards the data values (4b data SR/(SR+SB) ~ 0.34), and its SvB piles up at low",
+                  f"ps_hh. Whatever stays at high SvB is signal that the {lab} background model would",
+                  "absorb. Yields use the original sample's sumw (/ subsample)."]
     text = "\n".join(lines) + "\n"
     with open(os.path.join(args.output_dir, "signal_check.txt"), "w") as f:
         f.write(text)
@@ -219,6 +232,8 @@ def main():
     d.add_argument("-o", "--output", required=True)
     r = sub.add_parser("report")
     r.add_argument("--hists", required=True)
+    r.add_argument("--label", default="mixed", help="name of the synthetic signal in the report (DeClustered D.6: declustered)")
+    r.add_argument("--title", default="M.7 signal check", help="report title")
     r.add_argument("--samples", nargs="+", required=True,
                    help="original:mixed-3b:mixed-4b process names, one per signal")
     r.add_argument("-o", "--output-dir", required=True)
