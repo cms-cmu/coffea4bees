@@ -10,7 +10,7 @@ label: "ttHbb_stitched"
 additional_parameters: "--condor --run-performance"
 output_path: "output/ttHbb_stitched/"
 cern_user: "mmarcheg"
-cern_path: "www/plots/ttHbb/analysis/4b"
+cern_path: "www/plots/ttHbb/analysis/4b/"
 
 dataset:
   - "ttHbb"
@@ -155,7 +155,7 @@ classifier_setting:
 
 fvt:
   eos_base: "root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_stitched"
-  plot_base: "root://eosuser.cern.ch//eos/user/a/mmarcheg/www/plots/ttHbb/analysis/4b"
+  plot_base: "root://eosuser.cern.ch//eos/user/m/mmarcheg/www/plots/ttHbb/analysis/4b"
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_stitched/FvT"
   label: "FvT_ttHbb_stitched"
@@ -171,7 +171,7 @@ fvt:
 
 svb:
   eos_base: "root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_stitched"
-  plot_base: "root://eosuser.cern.ch//eos/user/a/mmarcheg/www/plots/ttHbb/analysis/4b"
+  plot_base: "root://eosuser.cern.ch//eos/user/m/mmarcheg/www/plots/ttHbb/analysis/4b"
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_stitched/SvB"
   label: "SvB_ttHbb_stitched"
