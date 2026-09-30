@@ -55,6 +55,7 @@ class HemiMixer(Skimmer4b):
                 k_random: int | None = None,
                 mixing_seed: int = 0,
                 require_trigWeight: bool = True,  # MC only: without a trigWeight friend, fail or write unit weights
+                event_subsample: int = 1,         # mix only events with event % N == 0 (M.7 signal check); 1: all
                 object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
                 *args, **kwargs):
         super().__init__(
@@ -114,21 +115,11 @@ class HemiMixer(Skimmer4b):
         if mix_tags not in ("threeTag", "fourTag", "threeTag_fourTag"):
             raise ValueError(f"mix_tags must be 'threeTag', 'fourTag' or 'threeTag_fourTag', got {mix_tags!r}")
         self.mix_tags          = mix_tags
-        if self.apply_JCM is None and mix_tags != "fourTag":
-            raise ValueError(f"mix_tags={mix_tags!r} mixes 3b events, which need the JCM pseudo-tags (apply_JCM)")
-        # ttbar subtraction uses the FvT probability of the events being mixed; the default of
-        # subtract_ttbar_with_FvT is d3_to_t3, wrong for 4b events.
-        self.ttbar_var = {"threeTag": "d3_to_t3", "fourTag": "d4_to_t4"}.get(mix_tags)
-        if subtract_ttbar_with_weights and self.ttbar_var is None:
-            raise ValueError(f"subtract_ttbar_with_weights with mix_tags={mix_tags!r}: no single FvT variable for 3b and 4b events")
-        self.exclude_source_event = (mix_tags == "fourTag") if exclude_source_event is None else bool(exclude_source_event)
-        if rank_selection != "fixed" and not use_topk_matching:
-            raise ValueError("rank_selection='random' needs use_topk_matching=True")
-        if self.exclude_source_event and not use_topk_matching:
-            raise ValueError("exclude_source_event needs use_topk_matching=True")
-        self.rank_selection    = rank_selection
-        self.k_random          = k_random
-        self.mixing_seed       = int(mixing_seed)
+        # Unbiased, reproducible thinning by event number. Whoever builds the dataset from the output
+        # must divide the sample's sumw by N (MakeMixedData M7_dataset_yml does).
+        self.event_subsample   = int(event_subsample)
+        if self.event_subsample < 1:
+            raise ValueError(f"event_subsample must be >= 1, got {event_subsample!r}")
         self.require_trigWeight = require_trigWeight
         logging.info(f"use_topk_matching = {self.use_topk_matching}, k_neighbors = {self.k_neighbors}, collision_mode = {self.collision_mode}, default_rank = {self.default_rank}, "
                      f"mix_tags = {self.mix_tags}, exclude_source_event = {self.exclude_source_event}, rank_selection = {self.rank_selection}, "
@@ -322,7 +313,9 @@ class HemiMixer(Skimmer4b):
         selections.add( "passNoiseFilter", event.passNoiseFilter)
         selections.add( "passHLT", ( event.passHLT if config["cut_on_HLT_decision"] else np.full(len(event), True)  ) )
         selections.add( 'passJetMult',   event.passJetMult )
-        mix_tag = {"threeTag": event.threeTag, "fourTag": event.fourTag}.get(self.mix_tags, event.threeTag | event.fourTag)
+        mix_tag = event.threeTag if self.mix_tags == "threeTag" else (event.threeTag | event.fourTag)
+        if self.event_subsample > 1:
+            mix_tag = mix_tag & (ak.to_numpy(event.event) % self.event_subsample == 0)
         selections.add( "passThreeTag", mix_tag)
 
         cumulative_cuts = ["lumimask"]
@@ -475,10 +468,22 @@ class HemiMixer(Skimmer4b):
         neg_hemi_new = neg_hemi_new[not_same_event_selev]
         n_event      = len(selev)
 
+        #
+        #  Signal check (mix_tags threeTag_fourTag): record where each mixed event came from, before
+        #  its jets are replaced -- its input tag, and its untagged loose-jet count (the JCM argument).
+        #  processor_HH4b reads the files as two datasets by origin and weights the 3b-origin events
+        #  by the JCM (MakeMixedData M.7).
+        #
+        origin_vars = []
+        if self.mix_tags != "threeTag":
+            selev["mixInputFourTag"] = ak.values_astype(selev.fourTag, np.int8)
+            selev["mixInputNUntagged"] = ak.num(selev.Jet[selev.Jet.selected & ~selev.Jet.tagged_loose], axis=1)
+            origin_vars = ["mixInputFourTag", "mixInputNUntagged"]
+
 
         old_hemi_output_vars = ["thrust_phi",  "event", "run", "luminosityBlock", "weight", "hemisphereId"]
         new_hemi_output_vars = old_hemi_output_vars + ["match_dist", "match_rank", "nSelJet", "nTagJet", "nJet"]
-        output_vars = []
+        output_vars = list(origin_vars)
 
         for var_name in old_hemi_output_vars:
             selev[f"posHemiOld_{var_name}"] = pos_hemi[var_name]

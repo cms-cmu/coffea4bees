@@ -36,11 +36,8 @@ inputs:
   JCM: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_nontight_20260925_0c53380-193851f/output/Run3_nontight/computeJCM/JCM_Run3_nontight_v1/jetCombinatoricModel_SB_Run3_nontight_v1.yml"
   jcm_hists: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_nontight_20260925_0c53380-193851f/output/Run3_nontight/computeJCM/histAll_NoJCM.coffea"
   # M.7 signal check: the analysis SvB (nominal Run 3, Phase D), evaluated on the fly on the
-  # original and the mixed signal MC.
+  # original and the mixed signal MC and on mixeddata_all.
   SvB_model: "{eos_prod}/nominal_run3_20260922_3f9e199-1e0504f/classifier/SvB_nominal/result.json"
-  # M.7: the nominal production's Phase F histograms (data, background, original signal) the
-  # mixed signal is merged into and plotted with; F's analysis_config.yml sits next to it.
-  phaseF_hists: "{eos_prod}/nominal_run3_20260922_3f9e199-1e0504f/output/Run3_nominal/histAll_Run3_nominal.coffea"
   # Optional: reuse another mixeddata roast's hemisphere library (its <publish_base>/hemilib) and
   # skip M.1 -- e.g. when only the mixing rank / matcher changes. Add that roast to upstream_roasts.
   # hemilib: "{eos_prod}/<mixeddata roast id>/hemilib"
@@ -141,10 +138,13 @@ ttbar_psdata:
 
 # ------------------------------------------------------------------------------
 # M.7: signal check -- signal MC (every preselected event, 3b and 4b) mixed with M.2's settings and
-# M.1's library, histogrammed next to the original with SvB = inputs.SvB_model on the fly. Report:
-# SR fraction, 100 < m < 150 fraction, SR SvB ps_hh high-score fractions / yields, overlays.
+# M.1's library; with SvB = inputs.SvB_model on the fly: 4b signal, 3b signal x M.2 JCM, mixed 3b
+# signal x M.2 JCM, mixed 4b signal (plots_signal/), and mixeddata_all x mixed JCM with the mixed 3b
+# signal overlaid (plots_mixeddata/). Report: SR fraction, 100 < m < 150 fraction, SR SvB ps_hh.
 # ------------------------------------------------------------------------------
 signal_check:
   enabled: true
   datasets: ["GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"]   # the only Run 3 signal covering 2022 + 2023
+  subsample: 10             # mix only signal events with event % 10 == 0 (sumw / 10); 1 = all
+  mixeddata_subsample: 10   # mixeddata_all SvB pass: event % 10 == 0, weights x 10; 1 = all
   chunksize: 20000
