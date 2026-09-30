@@ -20,24 +20,27 @@
 label: "mixeddata_run3"
 output_path: "output/{roast_id}/"   # the roast id already carries the label
 # EOS area of this roast: hemisphere library, picoAODs and the handoff YAMLs all go here.
-publish_base: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/{roast_id}"
+publish_base: "{eos_prod}/{roast_id}"
 
 # ------------------------------------------------------------------------------
 # Products of other roasts (checked by `roast new`, see src/tools/roast.py:check_inputs)
 # ------------------------------------------------------------------------------
 inputs:
-  upstream_roasts: [nominal_run3_nontight_20260925_0c53380-193851f]
+  upstream_roasts: [nominal_run3_nontight_20260925_0c53380-193851f, nominal_run3_20260922_3f9e199-1e0504f]
   # ttbar subtraction in M.1 (4b data, FvT.d4_to_t4) and M.2 (3b data, FvT.d3_to_t3): the
   # non-tight FvT (Phase C of that roast; C.4 closure SR 1.003 +- 0.002). Must cover the data
   # picoAODs in analysis_config.dataset_location (same data.yml as that roast).
-  FvT: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_nontight_20260925_0c53380-193851f/friend/FvT_nominal/result.json@@analysis.0.merged"
+  FvT: "{eos_prod}/nominal_run3_nontight_20260925_0c53380-193851f/friend/FvT_nominal/result.json@@analysis.0.merged"
   # Non-tight JCM: M.2 applies it as pseudo-tag weights. Its data + ttbar histograms feed the
   # mixed-data JCM fit (M.3), so both must come from the same selection as the mixing.
-  JCM: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_nontight_20260925_0c53380-193851f/output/Run3_nontight/computeJCM/JCM_Run3_nontight_v1/jetCombinatoricModel_SB_Run3_nontight_v1.yml"
-  jcm_hists: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_nontight_20260925_0c53380-193851f/output/Run3_nontight/computeJCM/histAll_NoJCM.coffea"
+  JCM: "{eos_prod}/nominal_run3_nontight_20260925_0c53380-193851f/output/Run3_nontight/computeJCM/JCM_Run3_nontight_v1/jetCombinatoricModel_SB_Run3_nontight_v1.yml"
+  jcm_hists: "{eos_prod}/nominal_run3_nontight_20260925_0c53380-193851f/output/Run3_nontight/computeJCM/histAll_NoJCM.coffea"
+  # M.7 signal check: the analysis SvB (nominal Run 3, Phase D), evaluated on the fly on the
+  # original and the mixed signal MC.
+  SvB_model: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/classifier/SvB_nominal/result.json"
   # Optional: reuse another mixeddata roast's hemisphere library (its <publish_base>/hemilib) and
   # skip M.1 -- e.g. when only the mixing rank / matcher changes. Add that roast to upstream_roasts.
-  # hemilib: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/<mixeddata roast id>/hemilib"
+  # hemilib: "{eos_prod}/<mixeddata roast id>/hemilib"
 
 # Eras as they appear in metadata/datasets/data.yml (picoAOD keys) — same as nominal_run3.yml.
 year_eras:
@@ -132,3 +135,13 @@ ttbar_psdata:
   worker_memory: 6GB
   chunksize: 100000
   picosize: 100000
+
+# ------------------------------------------------------------------------------
+# M.7: signal check -- signal MC (every preselected event, 3b and 4b) mixed with M.2's settings and
+# M.1's library, histogrammed next to the original with SvB = inputs.SvB_model on the fly. Report:
+# SR fraction, 100 < m < 150 fraction, SR SvB ps_hh high-score fractions / yields, overlays.
+# ------------------------------------------------------------------------------
+signal_check:
+  enabled: true
+  datasets: ["GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"]   # the only Run 3 signal covering 2022 + 2023
+  chunksize: 20000

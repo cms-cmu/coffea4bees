@@ -86,9 +86,15 @@ if not out.endswith("/"):
     out += "/"
 
 out_a1 = f"{out}bkg_syst_A_1_make_mixeddata/"
-out_a2 = f"{out}bkg_syst_A_2_make_ttbar_psdata/"
-out_a3 = f"{out}bkg_syst_A_3_make_subsamples/"
-out_a4 = f"{out}bkg_syst_A_4_process_subsamples/"
+if os.path.exists(f"{out}bkg_syst_A_4_process_subsamples"):
+    out_a2 = f"{out}bkg_syst_A_2_make_ttbar_psdata/"
+    out_a3 = f"{out}bkg_syst_A_3_make_subsamples/"
+    out_a4 = f"{out}bkg_syst_A_4_process_subsamples/"
+else:
+    out_a2 = f"{out}bkg_syst_A_2_process_subsamples/"
+    out_a3 = f"{out}bkg_syst_A_3_make_subsamples/"
+    out_a4 = out_a2
+
 out_b1 = f"{out}bkg_syst_B_1_computeJCM/"
 out_c1 = f"{out}bkg_syst_C_1_inputs/"
 out_c  = f"{out}bkg_syst_C_FvT/"
@@ -111,7 +117,7 @@ config.setdefault('install_path', mixeddata_dataset_output)
 
 # Multi-sample and classifier paths
 config.setdefault('multisample_dataset_name', "mixeddata_4b")
-config.setdefault('multisample_install_path', f"{out}coffea4bees/metadata/datasets/mixeddata_4b.yml")
+config.setdefault('multisample_install_path', f"{out}M4/handoff/mixeddata_4b.yml" if 'v2' in out or os.path.exists(f"{out}M4") else f"{out}coffea4bees/metadata/datasets/mixeddata_4b.yml")
 config.setdefault('subsample_output_path', f"{out_a3}subsamples/")
 config.setdefault('classifier_inputs_base',
     f"root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/{channel}/classifier_inputs/mixeddata/")
@@ -151,9 +157,11 @@ def rule_exists(rule_name):
         return False
 
 def get_multisample_dataset_file(wildcards=None):
+    if rule_exists('M4_dataset_yml'):
+        return getattr(rules, 'M4_dataset_yml').output[0]
     out_file = config.get('multisample_install_path', f"{out}coffea4bees/metadata/datasets/mixeddata_4b.yml")
     repo_file = "coffea4bees/metadata/datasets/mixeddata_4b.yml"
-    if rule_exists('build_multisample_registry'):
+    if rule_exists('M4_publish') or rule_exists('build_multisample_registry'):
         return out_file
     if os.path.exists(out_file):
         return out_file

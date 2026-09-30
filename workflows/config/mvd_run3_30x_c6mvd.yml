@@ -1,0 +1,79 @@
+# ==============================================================================
+# MvD roast, 30x MvD with the c6 jet features ("c6 MvD") -- V.2, V.2c, V.3 (kinematic SvB), V.4
+# ==============================================================================
+# The MvD must see every feature an SvB trained against it sees (John, 2026-09-28): an MvD that is
+# over-powered with respect to the SvB is fine, an under-powered one is not. The SvB c6 trained
+# against the kinematics-only 30x MvD (mvd_run3_30x_c6_20260928_30cfa2e-40df06f) learned mixed-vs-
+# data differences in the jet features the MvD never corrected: in SR 47 % of mixed x MvD fell in
+# the ps_hh sentinel vs 31 % of data, and data/bkg was 2-3 at high SvB. So this roast trains the
+# 30x MvD with the full c6 (c6_norawF) candidate-jet features -- as the falcon study's
+# Run3_MvD_c6norawF_30x ("MvDladder") -- and every SvB variant (kinematic, c5, c5b, c6) trains
+# against it: this roast's V.3 is the kinematic SvB; mvd_run3_30x_c6mvd_{c5,c5b,c6}.yml reuse this
+# roast's MvD and retrain only the SvB.
+#
+# Only the MvD's classifier_setting (feature_CanJet) differs from mvd_run3_30x.yml's MvD; the
+# kinematic SvB is identical to mvd_run3_30x's SvB_MvD_30x except that its background weight is
+# this MvD. The falcon ladder capped the batch growth at 30x (bs_milestones [1,3], finetune bs 4096);
+# the override mechanism cannot edit those kwargs, and the uncapped 30x MvD/SvB fit, so not here.
+#
+#   roast new --config coffea4bees/workflows/config/mvd_run3_30x_c6mvd.yml \
+#       --step falcon:coffea4bees/workflows/Snakefile_MvD_2_train.smk \
+#       --step cmslpc:coffea4bees/workflows/Snakefile_MvD.smk \
+#       --step falcon:coffea4bees/workflows/Snakefile_MvD_3_svb.smk
+#   roast submit <id> --step MvD_2_train                   # falcon: MvD 30x c6
+#   roast submit <id> --step MvD --targets all_V2c         # cmslpc: closure with this MvD
+#   roast submit <id> --step MvD_3_svb                     # falcon: kinematic SvB vs this MvD
+#   roast submit <id> --step MvD --targets all_V4          # cmslpc: analysis + stat-only limits
+base: coffea4bees/workflows/config/mvd_run3_30x.yml
+
+label: "mvd_run3_30x_c6mvd"
+
+mvd:
+  label: "MvD_30x_c6"
+  output_dir: "output/MvD_30x_c6/"
+  # 1 evaluator, as the falcon c6 MvD ladder: with 2 the evaluation hit 45.8 GB against the 40 GB
+  # half-GPU MPS limit and was cancelled (2026-09-28); 3 sequential passes instead.
+  workflow_overrides:
+    --max-evaluators: '1'
+  # This step's common.yml (overrides the top-level classifier_setting for the MvD step only):
+  # mvd_run3.yml's settings plus the c6 (c6_norawF) candidate-jet features. Training and evaluation.
+  classifier_setting:
+    - module: ml.DataLoader
+      option:
+        - optimize_sliceable_dataset: true
+    - module: ROOT
+      option:
+        - friend_allow_missing: false
+    - module: cms.CollisionData
+      option:
+        - eras:
+            2022_preEE: [B, C, D]
+            2022_EE: [E, F, G]
+            2023_preBPix: [C01, C02, C11, C12, C3, C4]
+            2023_BPix: [D1, D2]
+    - module: HCR.InputBranch
+      option:
+        - feature_ancillary: [xW, nSelJets, xbW, year]
+        - mass_regions: [SR, SB]
+        - feature_CanJet: ['pt', 'eta', 'phi', 'mass', 'btagScore', 'btagPNetCvB', 'btagPNetCvL', 'btagPNetQvG', 'PNetRegPtRawRes', 'chHEF', 'neHEF', 'chEmEF', 'neEmEF', 'muEF', 'nConstituents', 'area']
+
+svb_mvd:
+  # the kinematic SvB (default feature_CanJet), weighted by THIS roast's c6 MvD
+  label: "SvB_MvD_30x_kin_c6mvd"
+  output_dir: "output/SvB_MvD_30x_kin_c6mvd/"
+  train_template: "model: {eos_base}/classifier/{label}, MvD: {eos_base}/friend/MvD_30x_c6"
+
+# p_mix4 floor 0.01, not mvd_run3_30x's 0.05 (tuned on the kinematic MvD's spurious tail): the c6 MvD is
+# sharper (57 % of the mixed x JCM SB weight at MvD < 0.5, 3.2 % above 5) and the cap at ~20 clipped real
+# weight. V.2c closure, data/Bkg SR / SB: floor 0.05 1.043 / 1.059; 0.01 1.006 / 1.019; none 1.004 / 1.015.
+mvd_pmix4_floor: 0.01
+
+closure:
+  label: "MvD_30x_c6_closure"
+  known_counts: "coffea4bees/analysis/tests/known_fullCounts_MvD_closure_Run3_30x_c6mvd.yml"
+
+analysis:
+  label: "MvD_30x_c6mvd_kin"
+  known_counts: "coffea4bees/analysis/tests/known_fullCounts_MvD_Run3_30x_c6mvd_kin.yml"
+
+combine_outdir: "datacards/HH4b_run3_MvD_30x_c6mvd_kin"

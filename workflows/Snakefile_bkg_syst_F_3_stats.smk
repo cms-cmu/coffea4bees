@@ -132,8 +132,8 @@ config.setdefault('stats_container_wrapper', config.get('container_wrapper', "./
 out = config['output_path']
 if not out.endswith("/"):
     out += "/"
-default_nominal_coffea = "inputs/histAll_ttHbb_stitched.coffea" if os.path.exists("inputs/histAll_ttHbb_stitched.coffea") else f"{phase_f_out}histAll_{phase_f_lbl}.coffea"
-default_nominal_json = "inputs/histAll_ttHbb_stitched.json" if os.path.exists("inputs/histAll_ttHbb_stitched.json") else f"{phase_f_out}histAll_{phase_f_lbl}.json"
+default_nominal_coffea = "inputs/histAll_ttHbb_stitched.coffea" if os.path.exists("inputs/histAll_ttHbb_stitched.coffea") else ("output/v5_ttHbb/histAll_ttHbb.coffea" if os.path.exists("output/v5_ttHbb/histAll_ttHbb.coffea") else f"{phase_f_out}histAll_{phase_f_lbl}.coffea")
+default_nominal_json = "inputs/histAll_ttHbb_stitched.json" if os.path.exists("inputs/histAll_ttHbb_stitched.json") else ("output/v5_ttHbb/histAll_ttHbb.json" if os.path.exists("output/v5_ttHbb/histAll_ttHbb.json") else f"{phase_f_out}histAll_{phase_f_lbl}.json")
 
 nominal_coffea = config.get('nominal_coffea', default_nominal_coffea)
 nominal_json = config.get('nominal_json', default_nominal_json)
@@ -156,10 +156,16 @@ def get_region_for_channel(channel):
     return 'SR'
 
 # Decoupled config definitions and path resolution
-def get_bkgsyst_for_channel(channel):
+def get_bkgsyst_for_channel(channel, rebin=None):
     ch_config = config.get('channels', {}).get(channel, {})
+    if rebin is None:
+        rebin_val = str(config.get('rebin', '12'))
+    else:
+        rebin_val = str(rebin)
+    rebin_str = f"rebin{rebin_val}"
     if 'bkgsyst' in ch_config and ch_config['bkgsyst']:
-        return ch_config['bkgsyst']
+        import re as re_mod
+        return re_mod.sub(r'rebin\d+', rebin_str, ch_config['bkgsyst'])
     global_bkgsyst = config.get('make_combine_inputs', {}).get('bkgsyst') or config.get('bkgsyst')
     if global_bkgsyst:
         return global_bkgsyst.format(
@@ -172,16 +178,15 @@ def get_bkgsyst_for_channel(channel):
     var = ch_config.get('closure_var', config.get('variable', 'SvB_MA_ps_ttHbb'))
     classifier = config.get('classifier', 'SvB_MA')
     region = get_region_for_channel(channel)
-    rebin_val = config.get('rebin', '1')
-    rebin_str = f"rebin{rebin_val}"
     return f"{out}bkg_syst_F_2_run_two_stage_closure/closure_fits/{mix_name}/{classifier}/{rebin_str}/{region}/{closure_subdir}/hists_closure_{mix_name}_{var}_{rebin_str}.pkl"
 
 for ch_name, ch_config in config.get('channels', {}).items():
     ch_config.setdefault('bkgsyst', get_bkgsyst_for_channel(ch_name))
 
-# Constrain channel wildcard
+# Constrain channel and rebin wildcards
 wildcard_constraints:
-    channel = "|".join(config['channels'].keys()) if config['channels'] else "[a-zA-Z0-9_]+"
+    channel = "|".join(config['channels'].keys()) if config['channels'] else "[a-zA-Z0-9_]+",
+    rebin = r"\d+"
 
 def get_stat_only_flag(channel=None):
     if channel and channel in config.get('channels', {}):
@@ -242,27 +247,41 @@ rule final_output:
         fi
         """
 
+def get_combine_targets_F_3(wildcards):
+    checkpoint_output = checkpoints.evaluate_closure_candidates.get().output[0]
+    import json
+    try:
+        with open(checkpoint_output, "r") as f:
+            data = json.load(f)
+        passing_rebins = data.get("passing_rebins", [])
+    except Exception as e:
+        print(f"[Snakemake] Error reading {checkpoint_output}: {e}")
+        passing_rebins = []
+
+    if not passing_rebins:
+        print("[Snakemake] Notice: No candidate rebin scheme passed the two-stage closure test. Stage F_3 Combine targets will be empty.")
+        return []
+
+    targets = []
+    for r in passing_rebins:
+        for channel, ch_config in config.get('channels', {}).items():
+            sig = ch_config.get('signallabel')
+            if not sig:
+                continue
+            ch_dir = f"{out_f3}stat_analysis_rebin{r}/{channel}/"
+            targets.extend([
+                f"{ch_dir}limits/datacard_limits__{sig}.json",
+                f"{ch_dir}postfit/datacard_postfit__{sig}.pdf",
+                f"{ch_dir}significance/datacard_significance__{sig}.log",
+                f"{ch_dir}significance/datacard_significance__{sig}.json",
+                f"{ch_dir}likelihood_scan/datacard_likelihood_scan__{sig}.pdf",
+                f"{ch_dir}impacts/datacard_impacts__{sig}.pdf"
+            ])
+    return targets
+
 rule all_bkg_syst_F_3:
     input:
-        [
-            f"{out_f3}stat_analysis/{channel}/limits/datacard_limits__{ch_config['signallabel']}.json"
-            for channel, ch_config in config.get('channels', {}).items() if ch_config.get('signallabel')
-        ] + [
-            f"{out_f3}stat_analysis/{channel}/postfit/datacard_postfit__{ch_config['signallabel']}.pdf"
-            for channel, ch_config in config.get('channels', {}).items() if ch_config.get('signallabel')
-        ] + [
-            f"{out_f3}stat_analysis/{channel}/significance/datacard_significance__{ch_config['signallabel']}.log"
-            for channel, ch_config in config.get('channels', {}).items() if ch_config.get('signallabel')
-        ] + [
-            f"{out_f3}stat_analysis/{channel}/significance/datacard_significance__{ch_config['signallabel']}.json"
-            for channel, ch_config in config.get('channels', {}).items() if ch_config.get('signallabel')
-        ] + [
-            f"{out_f3}stat_analysis/{channel}/likelihood_scan/datacard_likelihood_scan__{ch_config['signallabel']}.pdf"
-            for channel, ch_config in config.get('channels', {}).items() if ch_config.get('signallabel')
-        ] + [
-            f"{out_f3}stat_analysis/{channel}/impacts/datacard_impacts__{ch_config['signallabel']}.pdf"
-            for channel, ch_config in config.get('channels', {}).items() if ch_config.get('signallabel')
-        ]
+        get_combine_targets_F_3
 
 use rule convert_hist_to_json from stat_analysis with:
     input:
@@ -283,16 +302,16 @@ use rule make_combine_inputs from stat_analysis with:
     input:
         injson = nominal_json,
         injsonsyst = list([]),
-        bkgsyst = lambda wildcards: get_bkgsyst_for_channel(wildcards.channel),
+        bkgsyst = lambda wildcards: get_bkgsyst_for_channel(wildcards.channel, wildcards.rebin),
         script = "coffea4bees/stats_analysis/make_combine_inputs.py",
         metadata_file = lambda wildcards: config['make_combine_inputs']['metadata_template'].format(channel=wildcards.channel.split('_')[0])
-    output: f"{out_f3}stat_analysis/{{channel}}/datacards/datacard__{{channel}}.txt"
+    output: f"{out_f3}stat_analysis_rebin{{rebin}}/{{channel}}/datacards/datacard__{{channel}}.txt"
     params:
         variable = lambda wildcards: config['channels'][wildcards.channel]['variable'],
         syst_file = lambda wildcards, input: f"--syst_file {config['make_combine_inputs']['syst_file']}" if config['make_combine_inputs']['syst_file'] else "",
-        rebin = lambda wildcards, input: config['make_combine_inputs']['rebin'],
+        rebin = lambda wildcards, input: wildcards.rebin,
         metadata = lambda wildcards: config['make_combine_inputs']['metadata_template'].format(channel=wildcards.channel.split('_')[0]),
-        output_dir = lambda wildcards: f"{out_f3}stat_analysis/{wildcards.channel}/datacards/",
+        output_dir = lambda wildcards: f"{out_f3}stat_analysis_rebin{wildcards.rebin}/{wildcards.channel}/datacards/",
         variable_binning = lambda wildcards, input: config['make_combine_inputs']['variable_binning'],
         stat_only = lambda wildcards, input: get_stat_only_flag(wildcards.channel),
         signal = lambda wildcards: wildcards.channel,
@@ -305,7 +324,7 @@ use rule make_combine_inputs from stat_analysis with:
             f"--tt_processes {' '.join(config['channels'][wildcards.channel].get('tt_processes', config['make_combine_inputs']['tt_processes']))}"
         ),
         container_wrapper = config['stats_container_wrapper']
-    log: f"{out}logs/make_combine_inputs_{{channel}}.log"
+    log: f"{out}logs/make_combine_inputs_rebin{{rebin}}_{{channel}}.log"
 
 use rule * from combine as *
 

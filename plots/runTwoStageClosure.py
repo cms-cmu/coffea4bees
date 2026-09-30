@@ -708,9 +708,14 @@ def fTest(chi2_1, chi2_2, ndf_1, ndf_2):
     d1 = (ndf_1 - ndf_2)
     d2 = ndf_2
     print(f'd1, d2 = {d1}, {d2}')
+    if d1 <= 0 or d2 <= 0:
+        print("Warning: invalid NDF for fTest (d1 <= 0 or d2 <= 0), returning 1.0")
+        return 1.0
     N = (chi2_1 - chi2_2) / d1
     D = chi2_2 / d2
-    print('N, D = {N}, {D}')
+    print(f'N, D = {N}, {D}')
+    if D <= 0:
+        return 1.0
     fStat = N / D
     fProb = scipy.stats.f.cdf(fStat, d1, d2)
     expectedFStat = scipy.stats.distributions.f.isf(0.05, d1, d2)
@@ -2588,7 +2593,7 @@ def makeInputDiagnosticPlots(channel):
         for p in ['data_obs', 'multijet', 'ttbar', 'signal']:
             h_orig = f_check.Get(f"{channel}/{p}")
             if h_orig:
-                h_r = rebin_histogram(h_orig, rebin) if isinstance(rebin, array.array) else (h_orig.Clone() if int(rebin) == 1 else h_orig.Rebin(int(rebin), f"{p}_tmp"))
+                h_r = rebin_histogram(h_orig, rebin) if isinstance(rebin, array.array) else (h_orig.Clone() if int(rebin) == 1 else h_orig.Clone().Rebin(int(rebin)))
                 h_b = ROOT.TH1F(f"{p}_binned", "", nb, 0.5, 0.5 + nb)
                 for b in range(1, nb + 1):
                     h_b.SetBinContent(b, h_r.GetBinContent(b))
@@ -2600,7 +2605,7 @@ def makeInputDiagnosticPlots(channel):
             for p in ['data_obs', 'multijet']:
                 h_orig = f_check.Get(f"{m_name}/{channel}/{p}")
                 if h_orig:
-                    h_r = rebin_histogram(h_orig, rebin) if isinstance(rebin, array.array) else (h_orig.Clone() if int(rebin) == 1 else h_orig.Rebin(int(rebin), f"{p}_tmp"))
+                    h_r = rebin_histogram(h_orig, rebin) if isinstance(rebin, array.array) else (h_orig.Clone() if int(rebin) == 1 else h_orig.Clone().Rebin(int(rebin)))
                     h_b = ROOT.TH1F(f"{p}_binned", "", nb, 0.5, 0.5 + nb)
                     for b in range(1, nb + 1):
                         h_b.SetBinContent(b, h_r.GetBinContent(b))
