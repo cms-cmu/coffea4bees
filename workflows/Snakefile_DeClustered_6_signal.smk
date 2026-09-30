@@ -315,7 +315,7 @@ rule D6_report:
     shell:
         """
         set -eo pipefail
-        {WRAPPER} {PYTHON} {input.script} report --label declustered --title "D.6 signal check" \
+        {WRAPPER} {PYTHON} {input.script} report --label declustered --title D.6 \
             --hists {input.hists} --samples {params.triples} -o {D6_OUT} 2>&1 | tee {log}
         """
 
