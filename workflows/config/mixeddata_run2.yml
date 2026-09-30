@@ -18,7 +18,7 @@
 label: "mixeddata_run2"
 output_path: "output/{roast_id}/"   # the roast id already carries the label
 # EOS area of this roast: hemisphere library, picoAODs and the handoff YAMLs all go here.
-publish_base: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/{roast_id}"
+publish_base: "{eos_prod}/{roast_id}"
 
 # ------------------------------------------------------------------------------
 # Products of other roasts (checked by `roast new`, see src/tools/roast.py:check_inputs)
@@ -27,11 +27,11 @@ inputs:
   upstream_roasts: [nominal_run2_20260919_a180b1a-a16559c]
   # ttbar subtraction in M.1 (4b data, FvT.d4_to_t4) and M.2 (3b data, FvT.d3_to_t3): the nominal
   # Run 2 FvT (Phase C). Covers the data picoAODs in metadata/datasets/data.yml.
-  FvT: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run2_20260919_a180b1a-a16559c/friend/FvT_nominal/result.json@@analysis.0.merged"
+  FvT: "{eos_prod}/nominal_run2_20260919_a180b1a-a16559c/friend/FvT_nominal/result.json@@analysis.0.merged"
   # Nominal Run 2 B.1 JCM (tag 2024_v2): M.2 applies it as pseudo-tag weights; its data + ttbar
   # histograms feed the mixed-data JCM fit (M.3).
-  JCM: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run2_20260919_a180b1a-a16559c/output/TESTRun2/computeJCM/JCM_2024_v2/jetCombinatoricModel_SB_2024_v2.yml"
-  jcm_hists: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run2_20260919_a180b1a-a16559c/output/TESTRun2/computeJCM/histAll_NoJCM.coffea"
+  JCM: "{eos_prod}/nominal_run2_20260919_a180b1a-a16559c/output/TESTRun2/computeJCM/JCM_2024_v2/jetCombinatoricModel_SB_2024_v2.yml"
+  jcm_hists: "{eos_prod}/nominal_run2_20260919_a180b1a-a16559c/output/TESTRun2/computeJCM/histAll_NoJCM.coffea"
   # M.7 signal check: the analysis SvB (nominal Run 2, Phase D), evaluated on the fly on the
   # original and the mixed signal MC.
   SvB_model: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run2_20260919_a180b1a-a16559c/classifier/SvB_nominal/result.json"
