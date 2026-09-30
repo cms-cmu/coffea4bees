@@ -3,8 +3,7 @@
 # ==============================================================================
 label: "ttHbb"
 output_path: "output/ttHbb/"
-cern_user: "algomez"
-cern_path: "www/ttHbb/Plots/"
+# No cern_user/cern_path: publishing goes through `roast publish` (per-user roast config).
 
 dataset:
   - "ttHbb"
@@ -86,7 +85,15 @@ jcm_datasets:
   - "TTToSemiLeptonic_stitched"
   - "TTToHadronic_stitched"
 
-jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb_jcm_config.yml -m coffea4bees/plots/metadata/plots_JCM_ttHbb.yml"
+# --data4bName data: make_jcm_weights.py (since 94936fc09) replaces data4bName with the -w label
+# when that label contains "v" (2024_v2), and then finds no 4b data histograms.
+jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb_jcm_config.yml -m coffea4bees/plots/metadata/plots_JCM_ttHbb.yml --data4bName data"
+
+# B.1 cutflow references.  The defaults (known_fullCounts_JCM_{NoJCM,wJCM}.yml) hold the HH4b
+# nominal_run2 numbers and would fail this run; point at ttHbb files that do not exist yet so the
+# first production only dumps its cutflows, then bless and commit them.
+jcm_known_counts_NoJCM: "coffea4bees/analysis/tests/known_fullCounts_JCM_NoJCM_ttHbb.yml"
+jcm_known_counts_wJCM: "coffea4bees/analysis/tests/known_fullCounts_JCM_wJCM_ttHbb.yml"
 
 classifier_inputs:
   processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
@@ -202,6 +209,8 @@ fvt:
 fvt_closure:
   datasets: [data, TTToHadronic_stitched, TTToSemiLeptonic_stitched, TTTo2L2Nu_stitched]
   plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
+  # default known_fullCounts_FvT_closure.yml is HH4b nominal_run2; dump-only until blessed
+  known_counts: "coffea4bees/analysis/tests/known_fullCounts_FvT_closure_ttHbb.yml"
 
 # ==============================================================================
 # PHASE D: SvB (falcon).  Same per-roast pattern as fvt; the FvT friend used for the
@@ -240,6 +249,10 @@ analysis_config:
     worker_memory: 8GB
     chunksize: 10000
     dashboard_address: 0
+  # CI runs F.1 from this file (test=true), so it keeps the static ttHbb_stitched friends and
+  # JCM from friend_file/weights_file.  A roast repoints F.1/C.4 at its own Phase B/C/D outputs in
+  # its captured roasts/<id>/config.yml (analysis_config.config.friends, JCM_file, SvB_MA: null,
+  # known_counts), as nominal_run2 did.
   config:
     blind: true
     apply_FvT: true
