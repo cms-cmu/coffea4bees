@@ -50,6 +50,9 @@ inputs:
   # D.6 signal check: the analysis SvB (nominal Run 3, Phase D), evaluated on the fly on the original
   # and the declustered signal MC. The only trained Run 3 SvB (the non-tight roast has none).
   SvB_model: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/classifier/SvB_nominal/result.json"
+  # D.6: the nominal production's Phase F histograms (data, background, original signal) the
+  # declustered signal is merged into and plotted with; F's analysis_config.yml sits next to it.
+  phaseF_hists: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/output/Run3_nominal/histAll_Run3_nominal.coffea"
   # Optional: decluster with another declustered roast's PDFs (its <publish_base>/pdfs) and skip
   # D.1 + D.2 -- e.g. to add seeds. Add that roast to upstream_roasts.
   # pdfs: "{eos_prod}/<declustered roast id>/pdfs"
@@ -142,9 +145,10 @@ validation:
   # error_threshold: 0.001
 
 # ------------------------------------------------------------------------------
-# D.6: signal scrambling check -- signal MC declustered with the same method / seed as D.3; the
-# Higgs-candidate peak should wash out and SvB should stop calling it signal (report: SR fraction,
-# 100 < m < 150 fraction, SvB ps_hh high-score fractions, overlays; SvB = inputs.SvB_model)
+# D.6: signal check (as MakeMixedData M.7) -- signal MC declustered with D.3's method / seed,
+# histogrammed with the nominal Phase F config (SvB = inputs.SvB_model on the fly), merged into F's
+# histAll and plotted with F's plot config (makePlots + gallery); report: SR fraction,
+# 100 < m < 150 fraction, SR SvB ps_hh tail (mixeddata_signal_check.py)
 # ------------------------------------------------------------------------------
 signal_check:
   enabled: true
@@ -152,4 +156,6 @@ signal_check:
   seed: 0
   chunksize: 5000     # signal passes the 4b selection ~10x more than data: smaller chunks than D.3
   max_chunks: 20      # per sample-year: ~40k 4b signal events/year is plenty for the fractions (the
-                      # full ~3M 4b events would cost as much CPU as declustering all the data)
+                      # full ~3M 4b events would cost as much CPU as declustering all the data);
+                      # the subsample's sumw is scaled to the events declustered
+  # plot_config: coffea4bees/plots/metadata/plotsAll_ttbarWeights.yml   # F's (default)
