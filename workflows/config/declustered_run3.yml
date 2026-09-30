@@ -143,9 +143,9 @@ validation:
   # seed: 0          # seed plotted in D.5; default: drawn from the roast id
 
 # ------------------------------------------------------------------------------
-# D.6: signal check (as MakeMixedData M.7) -- signal MC declustered with D.3's method / seed,
-# histogrammed with the nominal Phase F config (SvB = inputs.SvB_model on the fly), merged into F's
-# histAll and plotted with F's plot config (makePlots + gallery); report: SR fraction,
+# D.6: signal check (as MakeMixedData M.7) -- signal MC declustered with D.3's method / seed
+# (thinned), histogrammed with D.4's upstream config (SvB = inputs.SvB_model on the fly) next to the
+# declustered data; galleries plots_signal/ and plots_declustered/ (makePlots); report: SR fraction,
 # 100 < m < 150 fraction, SR SvB ps_hh tail (mixeddata_signal_check.py)
 # ------------------------------------------------------------------------------
 signal_check:
