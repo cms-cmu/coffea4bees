@@ -705,8 +705,11 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         if self.return_events_for_display:
             self.events_for_display(selev, processOutput)
 
-        # Blind data in fourTag SR (mixeddata, synthetic data, and MC are never blinded)
-        if not (self.config["isMC"] or self.config["isMixedData"] or self.config["isSyntheticData"] or "mix" in self.dataset) and self.blind:
+        # Blind data in fourTag SR (mixeddata, synthetic data, and MC are never blinded). isSyntheticMC
+        # too: signal MC run through the mixing / declustering (synthetic_mc_*) has isMC False, so it
+        # was blinded like data -- its SR SvB > 0.8 tail silently vanished (MakeMixedData M.7, Run 2).
+        if not (self.config["isMC"] or self.config["isMixedData"] or self.config["isSyntheticData"]
+                or self.config["isSyntheticMC"] or "mix" in self.dataset) and self.blind:
             with self._stage(f"{label}:blinding"):
                 blind_flag = self._get_blind_flag(selev)
                 if blind_flag is None:

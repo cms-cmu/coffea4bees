@@ -130,7 +130,8 @@ rule M7_hist_config:
         c['friends'] = {k: v for k, v in (c.get('friends') or {}).items() if not k.startswith('SvB')}
         c.update({'run_SvB': True, 'SvB': None,
                   'SvB_MA': [{'path': SVB_MODEL, 'name': 'Final'}],
-                  'require_trigWeight': False})   # Run 3 ggF has no trigger-weight friend
+                  'require_trigWeight': False,    # Run 3 ggF has no trigger-weight friend
+                  'blind': False})                # no data here; a blinded synthetic_mc lost its SR SvB tail
         if config['test']:
             cfg.setdefault('runner', {}).update({'condor': False, 'shared_dask': False})
         write_yaml(output[0], cfg)

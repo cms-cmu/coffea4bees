@@ -76,12 +76,12 @@ def cmd_dataset(args):
         yaml.dump(out, f, default_flow_style=False, sort_keys=False)
 
 
-def _project(h, process, tags, regions):
+def _project(h, process, tags, regions, flow=False):
     vals = 0
     for t in tags:
         for r in regions:
             sub = h[{"process": process, "tag": t, "region": r}]
-            vals = vals + sub[{"year": sum}].values(flow=False)
+            vals = vals + sub[{"year": sum}].values(flow=flow)
     return np.asarray(vals, dtype=float)
 
 
@@ -110,11 +110,15 @@ def _summarise(hists, masses, svb, process, tags):
             r[v] = {"mean": mean, "rms": float(np.sqrt(np.sum(y * (c - mean) ** 2) / tot)),
                     "frac_100_150": float(y[(c > 100) & (c < 150)].sum() / tot)}
     if svb:
-        y = _project(hists[svb], process, tags, ["SR"])
+        # ps_hh underflow = the sentinel (-2: p_ggF <= 0.01, or HH not the largest signal class):
+        # part of the SR yield, so it counts in the fraction denominators; the mean is over [0, 1]
+        yf = _project(hists[svb], process, tags, ["SR"], flow=True)
+        y = yf[1:-1]
         c = hists[svb].axes[-1].centers
-        tot = y.sum()
+        tot = yf.sum()
         if tot > 0:
-            r["SvB_SR"] = {"mean": float(np.sum(y * c) / tot), "yield": float(tot)}
+            r["SvB_SR"] = {"mean": float(np.sum(y * c) / y.sum()) if y.sum() > 0 else float("nan"),
+                           "yield": float(tot), "sentinel_frac": float(yf[0] / tot)}
             for cut in SVB_CUTS:
                 key = f"{cut:g}".replace(".", "p")
                 r["SvB_SR"][f"frac_gt_{key}"] = float(y[c > cut].sum() / tot)
@@ -170,7 +174,8 @@ def cmd_report(args):
             lines.append(row(f"{short}  mean", "{:.1f}", lambda r, v=v: r[v]["mean"]))
             lines.append(row(f"{short}  rms", "{:.1f}", lambda r, v=v: r[v]["rms"]))
         if svb:
-            lines.append(row("SR SvB ps_hh mean", "{:.3f}", lambda r: r["SvB_SR"]["mean"]))
+            lines.append(row("SR SvB ps_hh sentinel (<0) frac", "{:.3f}", lambda r: r["SvB_SR"]["sentinel_frac"]))
+            lines.append(row("SR SvB ps_hh mean (in [0,1])", "{:.3f}", lambda r: r["SvB_SR"]["mean"]))
             for cut in SVB_CUTS:
                 key = f"{cut:g}".replace(".", "p")
                 lines.append(row(f"SR SvB ps_hh > {cut:g} fraction", "{:.3f}", lambda r, k=key: r["SvB_SR"][f"frac_gt_{k}"]))
