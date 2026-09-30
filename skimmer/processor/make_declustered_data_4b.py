@@ -68,6 +68,7 @@ class DeClusterer(Skimmer4b):
                 library_max_distance: float = 0.05,
                 require_trigWeight: bool = True,
                 library_mass_match_weight: float = None,
+                event_subsample: int = 1,
                 *args, **kwargs):
         # declustering_method "pdf" (default): sample the splittings from clustering_pdfs_file.
         # "library": replace them by real splittings from clustering_library_file (a {year: [files]}
@@ -96,6 +97,11 @@ class DeClusterer(Skimmer4b):
         self._splitting_library_cache = {}
         # MC only: without a trigWeight friend, fail (default) or write unit trigger weights
         self.require_trigWeight = require_trigWeight
+        # Decluster only events with event % N == 0 (DeClustered D.6 signal check, as the mixer's
+        # MakeMixedData M.7 thinning); whoever builds the dataset divides the sample's sumw by N.
+        self.event_subsample = int(event_subsample)
+        if self.event_subsample < 1:
+            raise ValueError(f"event_subsample must be >= 1, got {event_subsample!r}")
 
         pico_tag = "lib_" if declustering_method == "library" else ""
         kwargs["pico_base_name"] = f'picoAOD_{pico_tag}seed{declustering_rand_seed}'
@@ -261,6 +267,9 @@ class DeClusterer(Skimmer4b):
         self._cutFlow.fill( "all",             event[selections.all(*cumulative_cuts)], allTag=True )
 
         other_cuts = ["passNoiseFilter", "passHLT", "passJetMult","passFourTag"]
+        if self.event_subsample > 1:
+            selections.add("passEventSubsample", ak.to_numpy(event.event) % self.event_subsample == 0)
+            other_cuts.append("passEventSubsample")
 
         for cut in other_cuts:
             cumulative_cuts.append(cut)
