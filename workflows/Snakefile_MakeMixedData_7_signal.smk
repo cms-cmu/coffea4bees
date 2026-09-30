@@ -22,6 +22,9 @@
 #   M7_merge_hists                   -> histAll_signal_check.coffea
 #   M7_report                        -> signal_check.{txt,yml} + overlays (plots/, index.html)
 #
+# 4b mixing: only the 4b signal events are mixed (mix_tags fourTag, no JCM), with seed 0's settings;
+# the report's "original" is then compared through its four-tag histograms.
+#
 # signal_check: {enabled: false} turns it off; datasets: the signal samples.
 # The name synthetic_mc_* gives isSyntheticMC in processor_config: MC weights with the b-tag SF
 # stored at mixing time (CMSbtag), no JEC, no truth matching. It must not contain "mix", which
@@ -58,12 +61,15 @@ rule M7_config:
         cfg['config'].update({
             'base_path': f"{PUB}/picoAOD/signal_mixed",
             'step': step,
-            'mix_tags': 'threeTag_fourTag',       # all preselected signal, 3b and 4b
+            # all preselected signal, 3b and 4b; 4b mixing: the 4b events (no JCM)
+            'mix_tags': 'fourTag' if MIX4B else 'threeTag_fourTag',
             'subtract_ttbar_with_weights': False, # signal MC: nothing to subtract
             'friends': {},
             'friends_include': ['trigWeight'],    # the GluGlu MC trigger weights ...
             'require_trigWeight': False,          # ... which Run 3 ggF lacks: unit weights (shape test)
         })
+        if MIX4B:
+            cfg['config']['exclude_source_event'] = False   # signal MC is not in the library
         if config['test']:
             cfg['runner'].update({'condor': False, 'shared_dask': False, 'workers': 1})
         write_yaml(output[0], cfg)
