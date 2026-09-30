@@ -1,0 +1,18 @@
+# ==============================================================================
+# DECLUSTERED (SYNTHETIC) DATASET PRODUCTION — Run 3, library declustering + m/pT matching
+# ==============================================================================
+# declustered_run3_library.yml (variant A) + library.mass_match_weight: lookup groups whose
+# splittings all have fewer than two b's in the parent also match on w * log(m/pT); the bb-type
+# splittings (the H/Z -> bb candidates) keep (log pT, |eta|) only, so the signal stays scrambled.
+# A/B against a variant-A roast on the same code: closure (D.4) and signal check (D.6).
+#
+#   roast new --config coffea4bees/workflows/config/declustered_run3_library_massmatch.yml \
+#       --label declustered_run3_libB --step cmslpc:coffea4bees/workflows/Snakefile_DeClustered.smk
+#
+base: coffea4bees/workflows/config/declustered_run3_library.yml
+
+label: "declustered_run3_library_massmatch"
+
+declustering:
+  library:
+    mass_match_weight: 1.0
