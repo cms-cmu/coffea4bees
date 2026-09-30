@@ -67,6 +67,8 @@ runs:
     - MakeMixedData
   mixeddata_run3.yml:
     - MakeMixedData
+  mixeddata_run3_4bmix.yml:
+    - MakeMixedData
   mvd_run3.yml:
     - MvD
     - MvD_2_train
