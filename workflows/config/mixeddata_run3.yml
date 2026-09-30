@@ -38,6 +38,9 @@ inputs:
   # M.7 signal check: the analysis SvB (nominal Run 3, Phase D), evaluated on the fly on the
   # original and the mixed signal MC.
   SvB_model: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/classifier/SvB_nominal/result.json"
+  # M.7: the nominal production's Phase F histograms (data, background, original signal) the
+  # mixed signal is merged into and plotted with; F's analysis_config.yml sits next to it.
+  phaseF_hists: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/output/Run3_nominal/histAll_Run3_nominal.coffea"
   # Optional: reuse another mixeddata roast's hemisphere library (its <publish_base>/hemilib) and
   # skip M.1 -- e.g. when only the mixing rank / matcher changes. Add that roast to upstream_roasts.
   # hemilib: "{eos_prod}/<mixeddata roast id>/hemilib"
