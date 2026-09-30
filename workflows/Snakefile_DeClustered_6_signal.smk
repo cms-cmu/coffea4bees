@@ -135,6 +135,8 @@ rule D6_dataset_yml:
         script = "coffea4bees/workflows/scripts/mixeddata_signal_check.py"
     output: D6_DATASET
     log: f"{D6_OUT}logs/dataset_yml.log"
+    params:
+        full = f"{D6_OUT}datasets/signal_declustered_fullnorm.yml"
     shell:
         """
         set -eo pipefail
@@ -196,7 +198,7 @@ use rule analysis_processor from analysis as D6_hists_signal with:
     wildcard_constraints:
         year = "|".join(YEARS)
     params:
-        datasets = " ".join(SIG_DATASETS + list(SIG_NAMES.values())),
+        datasets = " ".join(SIG_NAMES.values()),
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
         extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
