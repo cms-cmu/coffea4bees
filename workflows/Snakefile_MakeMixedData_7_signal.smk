@@ -63,6 +63,12 @@ if SIG_ENABLED and not str(SVB_MODEL or "").startswith("root://"):
     raise ValueError("signal_check needs inputs.SvB_model: a root:// URL to an upstream roast's SvB result.json")
 PLOT_ERA = 'Run3' if any('202' in y for y in YEARS) else 'RunII'
 
+PHASEF_HISTS = INPUTS.get('phaseF_hists')
+if SIG_ENABLED and not str(PHASEF_HISTS or "").startswith("root://"):
+    raise ValueError("signal_check needs inputs.phaseF_hists: a root:// URL to the nominal roast's "
+                     "Phase F histAll_<label>.coffea (its analysis_config.yml must sit next to it)")
+SIG_PLOT_CONFIG = SIG.get('plot_config', "coffea4bees/plots/metadata/plotsAll_ttbarWeights.yml")
+
 M7_OUT = f"{out}M7/"
 M7_CONFIG = f"{M7_OUT}make_mixed_signal.yml"
 M7_DATASET = f"{M7_OUT}datasets/signal_mixed.yml"
