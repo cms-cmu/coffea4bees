@@ -67,8 +67,9 @@ def loadHistograms(inputFile: str, jcm_config: dict, format: str = 'coffea', cfg
     logger.info(f"Loading coffea histograms with cut={cut}, year={year}, weightRegion={weightRegion}")
     cutDict = get_cut_dict(cut, cfg.cutList) if cut is not None else {}
 
-    year_val = sum if year == "RunII" else year
-    region_selection = sum if weightRegion in ["sum", sum, "inclusive"] else weightRegion
+    # Aggregate labels sum over the year axis (same convention as src/plotting/helpers_make_plot_dict.py)
+    year_val = sum if year in ("RunII", "Run2", "Run3", "RunIII") else year
+    region_selection = sum if weightRegion in ["sum", sum] else weightRegion
 
     region_year_dict = {
         "year":   year_val,
