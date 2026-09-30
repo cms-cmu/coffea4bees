@@ -151,3 +151,5 @@ signal_check:
   datasets: ["GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"]   # the only Run 3 signal covering 2022 + 2023
   seed: 0
   chunksize: 5000     # signal passes the 4b selection ~10x more than data: smaller chunks than D.3
+  max_chunks: 20      # per sample-year: ~40k 4b signal events/year is plenty for the fractions (the
+                      # full ~3M 4b events would cost as much CPU as declustering all the data)

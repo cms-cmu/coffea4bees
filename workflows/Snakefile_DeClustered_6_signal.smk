@@ -24,6 +24,9 @@ SIG = config.get('signal_check') or {}
 SIG_ENABLED = bool(SIG.get('enabled', True))
 SIG_DATASETS = list(SIG.get('datasets', ["GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"]))
 SIG_SEED = int(SIG.get('seed', 0))
+# max_chunks: decluster only this many chunks per sample-year (the fractions / shapes the check
+# reports need tens of thousands of 4b events, not the whole ~3M-event 4b sample); None: all.
+SIG_MAX_CHUNKS = SIG.get('max_chunks')
 SIG_NAMES = {d: f"synthetic_mc_{d}" for d in SIG_DATASETS}   # 'synthetic_mc_*': runner type mc, own process
 SVB_MODEL = INPUTS.get('SvB_model')
 if SIG_ENABLED and SVB_MODEL and not str(SVB_MODEL).startswith("root://"):
@@ -53,6 +56,8 @@ rule D6_config:
         runner['chunksize'] = int(SIG.get('chunksize', 5000))
         if config['test']:
             runner['workers'] = 1            # local test on an interactive node: one worker
+        elif SIG_MAX_CHUNKS:
+            runner['maxchunks'] = int(SIG_MAX_CHUNKS)
         section = {**(tmpl.get('config') or {}),
                    'base_path': f"{PUB}/picoAOD/signal_declustered",
                    'clustering_pdfs_file': PDF_TEMPLATE,
@@ -167,13 +172,15 @@ rule D6_report:
         yml = f"{D6_OUT}signal_check.yml"
     log: f"{D6_OUT}logs/report.log"
     params:
-        pairs = " ".join(f"{d}:{n}" for d, n in SIG_NAMES.items())
+        pairs = " ".join(f"{d}:{n}" for d, n in SIG_NAMES.items()),
+        # a subsample is normalised to the full sample's sumw: its yields are not comparable
+        subsampled = "--subsampled" if (SIG_MAX_CHUNKS or config['test']) else ""
     shell:
         """
         set -eo pipefail
         export MPLCONFIGDIR="/tmp/matplotlib"; mkdir -p $MPLCONFIGDIR
         {WRAPPER} {PYTHON} coffea4bees/workflows/scripts/declustered_signal_check.py report \
-            --hists {input} --pairs {params.pairs} -o {D6_OUT} 2>&1 | tee {log}
+            --hists {input} --pairs {params.pairs} -o {D6_OUT} {params.subsampled} 2>&1 | tee {log}
         """
 
 rule all_D6:

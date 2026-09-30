@@ -91,6 +91,9 @@ def cmd_report(args):
     svb = next((v for v in ("SvB_MA.ps_hh_fine", "SvB_MA.ps_hh") if v in hists), None)
     variables = masses + [v for v in ("m4j", "quadJet_selected.xHH") if v in hists] + ([svb] if svb else [])
     summary, lines = {}, ["# D.6 signal scrambling check: original vs declustered signal MC (fourTag, all years)", ""]
+    if args.subsampled:
+        lines += ["(declustered sample = a subset of the signal, normalised to the full sample: yields are not",
+                  " comparable, fractions and unit-area shapes are)", ""]
     for pair in args.pairs:
         orig_name, syn_name = pair.split(":")
         h0 = hists[variables[0]]
@@ -122,10 +125,13 @@ def cmd_report(args):
         o, s = res["original"], res["declustered"]
         ratio = s["SR_fraction"] / o["SR_fraction"] if o["SR_fraction"] > 0 else float("nan")
         res["SR_fraction_ratio"] = float(ratio)
+        res["subsampled"] = bool(args.subsampled)
         summary[orig_name] = res
         lines += [f"## {orig_name}  (processes {po} vs {ps})", "",
-                  f"{'':34s} {'original':>12s} {'declustered':>12s}",
-                  f"{'fourTag SR + SB events (weighted)':34s} {o['SR'] + o['SB']:12.2f} {s['SR'] + s['SB']:12.2f}",
+                  f"{'':34s} {'original':>12s} {'declustered':>12s}"]
+        if not args.subsampled:
+            lines.append(f"{'fourTag SR + SB events (weighted)':34s} {o['SR'] + o['SB']:12.2f} {s['SR'] + s['SB']:12.2f}")
+        lines += [
                   f"{'SR fraction SR/(SR+SB)':34s} {o['SR_fraction']:12.3f} {s['SR_fraction']:12.3f}   (declustered/original {ratio:.3f})"]
         for v in masses:
             if v in o and v in s:
@@ -136,8 +142,9 @@ def cmd_report(args):
             lines.append(f"{'SR SvB ps_hh mean':34s} {so['mean']:12.3f} {ss['mean']:12.3f}")
             lines.append(f"{'SR SvB ps_hh > 0.8  fraction':34s} {so['frac_gt_0p8']:12.3f} {ss['frac_gt_0p8']:12.3f}")
             lines.append(f"{'SR SvB ps_hh > 0.95 fraction':34s} {so['frac_gt_0p95']:12.3f} {ss['frac_gt_0p95']:12.3f}")
-            lines.append(f"{'SR SvB ps_hh > 0.8  yield':34s} {so['yield_gt_0p8']:12.3f} {ss['yield_gt_0p8']:12.3f}"
-                         f"   (declustered/original {ss['yield_gt_0p8'] / so['yield_gt_0p8'] if so['yield_gt_0p8'] else float('nan'):.3f})")
+            if not args.subsampled:
+                lines.append(f"{'SR SvB ps_hh > 0.8  yield':34s} {so['yield_gt_0p8']:12.3f} {ss['yield_gt_0p8']:12.3f}"
+                             f"   (declustered/original {ss['yield_gt_0p8'] / so['yield_gt_0p8'] if so['yield_gt_0p8'] else float('nan'):.3f})")
         lines.append("")
         for v in variables:
             h = hists[v]
@@ -179,6 +186,8 @@ def main():
     r.add_argument("--hists", required=True)
     r.add_argument("--pairs", nargs="+", required=True, help="original:declustered process names")
     r.add_argument("-o", "--output-dir", required=True)
+    r.add_argument("--subsampled", action="store_true",
+                   help="the declustered sample is a subset (max_chunks / test): report fractions and shapes only")
     args = ap.parse_args()
     {"dataset": cmd_dataset, "report": cmd_report}[args.cmd](args)
 
