@@ -55,7 +55,7 @@ if not isinstance(closure_cfg, dict):
     closure_cfg = {}
 CLOSURE_OPTION_KEYS = ('datasets', 'plot_config', 'JCM_file', 'known_counts', 'known_counts_test', 'cutflow_list',
                        'reuse_wJCM_ttbar', 'jcm_output_path', 'closure_ttbar', 'ttbar_compare_plot_config',
-                       'wJCM_ttbar_from')
+                       'wJCM_ttbar_from', 'known_counts_fatal')
 
 datasets = closure_cfg.get('datasets', ['data', 'TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic'])
 if isinstance(datasets, str):
@@ -265,6 +265,8 @@ use rule check_cutflow from analysis as check_cutflow_FvT_closure with:
     log: f"{CLOSURE_PATH}logs/cutflow_validation_FvT_closure.log"
     params:
         known_flag = lambda wildcards: known_cutflow_flag(),
+        # known_counts_fatal: false flags a mismatch instead of failing (counts depend on the FvT training)
+        fatal = lambda wildcards: "true" if config.get("test", False) else str(closure_cfg.get("known_counts_fatal", True)).lower(),
         error_threshold = lambda wildcards: config.get("error_threshold", "0.001"),
         cutflow_list = lambda wildcards: CUTFLOW_LIST,
         run_container_wrapper = config['analysis_container_wrapper'],
