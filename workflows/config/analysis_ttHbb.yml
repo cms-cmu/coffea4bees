@@ -146,6 +146,14 @@ classifier_setting:
           UL16_postVFP: [F, G, H]
           UL17: [B, C, D, E, F]
           UL18: [A, B, C, D]
+          # Run 3 -- must stay in sync with year_eras above: CollisionData.eras
+          # drives both the data and the MC file lists in the classifier
+          # (classifier/config/dataset/HCR/_picoAOD.py).
+          2022_preEE: [B, C, D]
+          2022_EE: [E, F, G]
+          2023_preBPix: [C01, C02, C11, C12, C3, C4]
+          2023_BPix: [D1, D2]
+          "2024": [C, D, E, F, G, H, I2, I3]
   - module: cms.MC_TTbar
     option:
       - datasets:
