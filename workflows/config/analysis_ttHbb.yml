@@ -209,8 +209,10 @@ fvt:
 fvt_closure:
   datasets: [data, TTToHadronic_stitched, TTToSemiLeptonic_stitched, TTTo2L2Nu_stitched]
   plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
-  # default known_fullCounts_FvT_closure.yml is HH4b nominal_run2; dump-only until blessed
+  # blessed from roast ttHbb_run2_20260929_a209210-6a2293a; the counts depend on that roast's FvT
+  # training, so a production mismatch is flagged, not fatal (CI/test mode stays fatal)
   known_counts: "coffea4bees/analysis/tests/known_fullCounts_FvT_closure_ttHbb.yml"
+  known_counts_fatal: false
 
 # ==============================================================================
 # PHASE D: SvB (falcon).  Same per-roast pattern as fvt; the FvT friend used for the
@@ -271,6 +273,9 @@ analysis_config:
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
 plot_extra_arguments: ""
 known_counts: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"
+# F.1 production counts depend on the roast's FvT/SvB training: flag a mismatch, don't fail
+# (applies in production only; CI, test=true, stays fatal)
+known_counts_fatal: false
 known_counts_test: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"
 known_counts_full: "none"
 
