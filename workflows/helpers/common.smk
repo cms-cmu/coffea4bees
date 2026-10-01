@@ -5,92 +5,92 @@ import copy
 import yaml
 
 if os.getcwd() not in sys.path:
-    sys.path.insert(0, os.getcwd())
+sys.path.insert(0, os.getcwd())
 from src.stat_analysis.helpers import make_poi_maps, get_default_othersignals, get_grid_split_points, get_likelihood_scan_chunks
 
 def substitute_placeholders(obj, mapping):
-    """Replace {name} placeholders in every string of a nested config structure."""
-    if isinstance(obj, dict):
-        return {k: substitute_placeholders(v, mapping) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [substitute_placeholders(v, mapping) for v in obj]
-    if isinstance(obj, str):
-        for k, v in mapping.items():
-            obj = obj.replace("{" + k + "}", str(v))
-    return obj
+"""Replace {name} placeholders in every string of a nested config structure."""
+if isinstance(obj, dict):
+return {k: substitute_placeholders(v, mapping) for k, v in obj.items()}
+if isinstance(obj, list):
+return [substitute_placeholders(v, mapping) for v in obj]
+if isinstance(obj, str):
+for k, v in mapping.items():
+    obj = obj.replace("{" + k + "}", str(v))
+return obj
 
 
 def _user_profile():
-    """Per-user paths, so a workflow config can be shared without naming anyone.
+"""Per-user paths, so a workflow config can be shared without naming anyone.
 
-    A config writes {eos_prod}/{roast_id}/... instead of a personal EOS path.  The values
-    are resolved here, in order:
+A config writes {eos_prod}/{roast_id}/... instead of a personal EOS path.  The values
+are resolved here, in order:
 
-      1. --config eos_prod=... on the command line.  This is how `roast` passes what it
-         already keeps in ~/.config/roast/config.json, so a roast user configures nothing
-         twice, and re-running someone else's roast lands in *your* area, not theirs.
-      2. ~/.config/coffea4bees/profile.yml (override the location with $COFFEA4BEES_PROFILE),
-         for running snakemake by hand without roast.
-      3. Derived from the account names, so CI and a casual dry run need no setup at all.
+1. --config eos_prod=... on the command line.  This is how `roast` passes what it
+ already keeps in ~/.config/roast/config.json, so a roast user configures nothing
+ twice, and re-running someone else's roast lands in *your* area, not theirs.
+2. ~/.config/coffea4bees/profile.yml (override the location with $COFFEA4BEES_PROFILE),
+ for running snakemake by hand without roast.
+3. Derived from the account names, so CI and a casual dry run need no setup at all.
 
-    cern_user may be given either as a bare account (johnda) or already sharded (j/johnda);
-    both appear in the older Snakefiles, so accept either.
-    """
-    import getpass
+cern_user may be given either as a bare account (johnda) or already sharded (j/johnda);
+both appear in the older Snakefiles, so accept either.
+"""
+import getpass
 
-    profile = {}
-    path = os.path.expanduser(os.environ.get("COFFEA4BEES_PROFILE", "~/.config/coffea4bees/profile.yml"))
-    if os.path.exists(path):
-        with open(path) as fh:
-            profile = yaml.safe_load(fh) or {}
+profile = {}
+path = os.path.expanduser(os.environ.get("COFFEA4BEES_PROFILE", "~/.config/coffea4bees/profile.yml"))
+if os.path.exists(path):
+with open(path) as fh:
+    profile = yaml.safe_load(fh) or {}
 
-    def pick(key, default):
-        return config.get(key) or profile.get(key) or default
+def pick(key, default):
+return config.get(key) or profile.get(key) or default
 
-    try:
-        _login = os.environ.get("USER") or getpass.getuser()
-    except Exception:                      # getpass raises when there is no passwd entry (some containers)
-        _login = "unknown"
-    lpc_user = pick('lpc_user', _login)
-    cern_user = pick('cern_user', os.environ.get("CERN_USER") or _login)
-    sharded = cern_user if "/" in cern_user else f"{cern_user[0]}/{cern_user}"
-    return {
-        'lpc_user': lpc_user,
-        'cern_user': cern_user,
-        # xrootd needs root://host//path, hence the doubled slash before an absolute path
-        'eos_prod': pick('eos_prod', f"root://cmseos.fnal.gov//store/user/{lpc_user}/HH4b_prod"),
-        'web_prod': pick('web_prod', f"root://eosuser.cern.ch//eos/user/{sharded}/www/HH4b/prod"),
-    }
+try:
+_login = os.environ.get("USER") or getpass.getuser()
+except Exception:                      # getpass raises when there is no passwd entry (some containers)
+_login = "unknown"
+lpc_user = pick('lpc_user', _login)
+cern_user = pick('cern_user', os.environ.get("CERN_USER") or _login)
+sharded = cern_user if "/" in cern_user else f"{cern_user[0]}/{cern_user}"
+return {
+'lpc_user': lpc_user,
+'cern_user': cern_user,
+# xrootd needs root://host//path, hence the doubled slash before an absolute path
+'eos_prod': pick('eos_prod', f"root://cmseos.fnal.gov//store/user/{lpc_user}/HH4b_prod"),
+'web_prod': pick('web_prod', f"root://eosuser.cern.ch//eos/user/{sharded}/www/HH4b/prod"),
+}
 
 
 def _upstream_base(rid, own_eos_prod):
-    """Where roast `rid` wrote, for configs that read an earlier roast's products.
+"""Where roast `rid` wrote, for configs that read an earlier roast's products.
 
-    {eos_prod} is the *reader's* area, so it is right for outputs and wrong for inputs: a
-    colleague running this config would look for an upstream roast under their own account.
-    {roast:<id>} instead resolves through that roast's committed manifest, which records
-    where it actually wrote, so the reference names a run and the owner follows from it.
-    """
-    import json
+{eos_prod} is the *reader's* area, so it is right for outputs and wrong for inputs: a
+colleague running this config would look for an upstream roast under their own account.
+{roast:<id>} instead resolves through that roast's committed manifest, which records
+where it actually wrote, so the reference names a run and the owner follows from it.
+"""
+import json
 
-    manifest = os.path.join("roasts", rid, "roast.json")
-    if os.path.exists(manifest):
-        with open(manifest) as fh:
-            m = json.load(fh) or {}
-        base = (m.get("user_paths") or {}).get("eos_prod")
-        if not base:
-            # manifests written before user_paths existed: the account that ran it is still
-            # recorded in the ssh target it was checked out on
-            ssh = ((m.get("hosts") or {}).get("cmslpc") or {}).get("ssh", "")
-            user = ssh.split("@", 1)[0] if "@" in ssh else ""
-            if user:
-                base = f"root://cmseos.fnal.gov//store/user/{user}/HH4b_prod"
-        if base:
-            return f"{base.rstrip('/')}/{rid}"
-    print(f"WARNING: no usable manifest for upstream roast {rid} (looked in {manifest}); "
-          f"assuming it lives under your own area. Commit roasts/{rid}/roast.json so this "
-          f"resolves for everyone.")
-    return f"{own_eos_prod.rstrip('/')}/{rid}"
+manifest = os.path.join("roasts", rid, "roast.json")
+if os.path.exists(manifest):
+with open(manifest) as fh:
+    m = json.load(fh) or {}
+base = (m.get("user_paths") or {}).get("eos_prod")
+if not base:
+    # manifests written before user_paths existed: the account that ran it is still
+    # recorded in the ssh target it was checked out on
+    ssh = ((m.get("hosts") or {}).get("cmslpc") or {}).get("ssh", "")
+    user = ssh.split("@", 1)[0] if "@" in ssh else ""
+    if user:
+	base = f"root://cmseos.fnal.gov//store/user/{user}/HH4b_prod"
+if base:
+    return f"{base.rstrip('/')}/{rid}"
+print(f"WARNING: no usable manifest for upstream roast {rid} (looked in {manifest}); "
+  f"assuming it lives under your own area. Commit roasts/{rid}/roast.json so this "
+  f"resolves for everyone.")
+return f"{own_eos_prod.rstrip('/')}/{rid}"
 
 
 def _upstream_config_value(rid, key):
