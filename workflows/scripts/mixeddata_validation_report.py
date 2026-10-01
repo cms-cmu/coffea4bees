@@ -1,10 +1,16 @@
 """Mixed-data validation report (Snakefile_MakeMixedData_6_validation.smk, step M.6).
 
     mixeddata_validation_report.py study   STUDY.coffea  OUTDIR  [--n-subsamples 16]
+    mixeddata_validation_report.py seeds   REG_v0.yml ... REG_vN-1.yml --outdir OUTDIR [--years ...]
 
 study:   plots from processor_study_mixed_data (hemisphere match distance, thrust delta-phi, jet
          multiplicity before/after mixing, selected jets raw vs mixed-JCM-weighted vs subsample v0)
          and the subsample overlap matrix (heatmap + csv + summary.yml).
+seeds:   4b mixing (mixing.source: fourTag). Reads the per-seed mixed picoAODs listed in M.2's per-seed
+         registries: seed-overlap matrix (events of seed i with the SAME two replacement hemispheres
+         in seed j; and per hemisphere), sizes, chosen-rank and match-distance distributions, and
+         the self-match check (a replacement hemisphere from the event's own library entry -- the
+         source-event veto must make this 0; the report raises otherwise).
 (The M.6 cutflow page is the shared src/tools/cutflow_closure.py: --multijet sample4b
 --multijet-process mixeddata_all --pseudodata ttbar_PSData --compare mix_v<k>.)
 """
@@ -196,14 +202,185 @@ def _study_index(outdir, files, summary):
         f.write(page)
 
 
+# ── seeds (4b mixing) ────────────────────────────────────────────────────────
+
+_SEED_BRANCHES = ["event", "run", "luminosityBlock",
+                  "posHemiNew_event", "posHemiNew_run", "posHemiNew_luminosityBlock",
+                  "negHemiNew_event", "negHemiNew_run", "negHemiNew_luminosityBlock",
+                  "posHemiNew_match_rank", "negHemiNew_match_rank",
+                  "posHemiNew_match_dist", "negHemiNew_match_dist"]
+_GOLD = np.uint64(0x9E3779B97F4A7C15)
+
+
+def _event_key(event, run, lumi):
+    """One uint64 per (run, lumi, event): (run << 32 | lumi) mixed with the event number."""
+    rl = (np.asarray(run).astype(np.uint64) << np.uint64(32)) | np.asarray(lumi).astype(np.uint32).astype(np.uint64)
+    with np.errstate(over="ignore"):
+        return (rl * _GOLD) ^ np.asarray(event).astype(np.int64).view(np.uint64)
+
+
+def _read_seed(registry, years):
+    import uproot
+    from src.tools.make_dataset_yml import parse_dataset_key
+    with open(registry) as f:
+        reg = yaml.safe_load(f) or {}
+    files = []
+    for key, ds in reg.items():
+        year, _ = parse_dataset_key(key)
+        if year in years:
+            files += (ds or {}).get("files") or []
+    if not files:
+        raise ValueError(f"{registry}: no files for {years}")
+    cols = {b: [] for b in _SEED_BRANCHES}
+    for fp in sorted(files):
+        with uproot.open(fp) as f:
+            arr = f["Events"].arrays(_SEED_BRANCHES, library="np")
+        for b in _SEED_BRANCHES:
+            cols[b].append(arr[b])
+    c = {b: np.concatenate(v) for b, v in cols.items()}
+    src = _event_key(c["event"], c["run"], c["luminosityBlock"])
+    pos = _event_key(c["posHemiNew_event"], c["posHemiNew_run"], c["posHemiNew_luminosityBlock"])
+    neg = _event_key(c["negHemiNew_event"], c["negHemiNew_run"], c["negHemiNew_luminosityBlock"])
+    order = np.argsort(src, kind="stable")
+    return {"src": src[order], "pos": pos[order], "neg": neg[order],
+            "self_match": int(np.sum((pos == src) | (neg == src))),
+            "rank": np.concatenate([c["posHemiNew_match_rank"], c["negHemiNew_match_rank"]]).astype(int),
+            "dist": np.concatenate([c["posHemiNew_match_dist"], c["negHemiNew_match_dist"]]).astype(float),
+            "n_files": len(files)}
+
+
+def seeds(registries, outdir, years):
+    os.makedirs(outdir, exist_ok=True)
+    made = []
+
+    def save(fig, name):
+        fig.savefig(os.path.join(outdir, name), dpi=110, bbox_inches="tight")
+        plt.close(fig)
+        made.append(name)
+
+    data = [_read_seed(r, years) for r in registries]
+    n = len(data)
+    sizes = np.array([len(d["src"]) for d in data])
+    pair = np.full((n, n), np.nan)      # same (pos, neg) replacement: an identical mixed event
+    hemi = np.full((n, n), np.nan)      # per hemisphere: same library hemisphere on that side
+    common = np.zeros((n, n), dtype=np.int64)
+    for i in range(n):
+        for j in range(n):
+            if i == j:
+                continue
+            _, ii, jj = np.intersect1d(data[i]["src"], data[j]["src"], assume_unique=False, return_indices=True)
+            common[i, j] = len(ii)
+            if len(ii) == 0:
+                continue
+            same_p = data[i]["pos"][ii] == data[j]["pos"][jj]
+            same_n = data[i]["neg"][ii] == data[j]["neg"][jj]
+            pair[i, j] = float(np.mean(same_p & same_n))
+            hemi[i, j] = float((np.sum(same_p) + np.sum(same_n)) / (2 * len(ii)))
+
+    for m, name, title in ((pair, "seed_overlap_matrix.png", "events of seed i with the same two replacement hemispheres in seed j [%]"),
+                           (hemi, "seed_overlap_hemispheres.png", "hemispheres of seed i with the same replacement in seed j [%]")):
+        fig, ax = plt.subplots(figsize=(7.5, 6.3))
+        im = ax.imshow(m * 100, cmap="viridis", origin="lower")
+        ax.set_xticks(range(n)); ax.set_yticks(range(n))
+        ax.set_xlabel("seed j"); ax.set_ylabel("seed i"); ax.set_title(title, fontsize=9)
+        fig.colorbar(im, ax=ax)
+        save(fig, name)
+
+    fig, ax = plt.subplots(figsize=(7, 4))
+    ax.bar(range(n), sizes / 1e6, color="#FFDF7F", edgecolor="k")
+    ax.set_xlabel("seed"); ax.set_ylabel("mixed 4b events [M]"); ax.set_title("sample sizes")
+    save(fig, "seed_sizes.png")
+
+    k = int(max(d["rank"].max() for d in data)) + 1
+    fig, ax = plt.subplots(figsize=(6, 4.5))
+    for s_, d in enumerate(data[:4]):
+        ax.stairs(np.bincount(d["rank"], minlength=k) / len(d["rank"]), np.arange(k + 1) - 0.5, label=f"seed {s_}")
+    ax.set_xlabel("chosen rank"); ax.set_ylabel("fraction of hemispheres"); ax.legend()
+    save(fig, "seed_rank.png")
+
+    fig, ax = plt.subplots(figsize=(6, 4.5))
+    hi = float(np.nanpercentile(np.concatenate([d["dist"] for d in data[:4]]), 99.5))
+    for s_, d in enumerate(data[:4]):
+        ax.hist(d["dist"], bins=80, range=(0, hi), histtype="step", density=True, label=f"seed {s_}")
+    ax.set_xlabel("hemisphere match distance"); ax.set_ylabel("normalised"); ax.legend()
+    save(fig, "seed_matchDist.png")
+
+    with open(os.path.join(outdir, "seed_overlap_matrix.csv"), "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["i\\j"] + list(range(n)))
+        for i in range(n):
+            w.writerow([i] + ["" if np.isnan(x) else round(float(x), 5) for x in pair[i]])
+    self_match = [d["self_match"] for d in data]
+    summary = {
+        "n_seeds": n,
+        "years": list(years),
+        "seed_events": [int(x) for x in sizes],
+        "self_match_events": self_match,
+        "mean_pair_overlap": round(float(np.nanmean(pair)), 5),
+        "max_pair_overlap": round(float(np.nanmax(pair)), 5),
+        "mean_hemisphere_overlap": round(float(np.nanmean(hemi)), 4),
+        "mean_common_source_events_fraction": round(float(np.mean(common[~np.eye(n, dtype=bool)] / np.repeat(sizes, n - 1))), 4),
+        "mean_rank": [round(float(d["rank"].mean()), 3) for d in data],
+        "mean_match_dist": [round(float(np.mean(d["dist"])), 4) for d in data],
+    }
+    with open(os.path.join(outdir, "summary.yml"), "w") as f:
+        yaml.safe_dump(summary, f, sort_keys=False)
+    made += ["seed_overlap_matrix.csv", "summary.yml"]
+    _seeds_index(outdir, made, summary)
+    print(yaml.safe_dump(summary, sort_keys=False))
+    if any(self_match):
+        raise SystemExit(f"self-matched hemispheres found {self_match}: the source-event veto did not work")
+
+
+def _seeds_index(outdir, files, summary):
+    pngs = [f for f in files if f.endswith(".png")]
+    rows = "".join(f"<tr><td>v{i}</td><td>{n:,}</td><td>{r}</td><td>{d}</td><td>{sm}</td></tr>"
+                   for i, (n, r, d, sm) in enumerate(zip(summary["seed_events"], summary["mean_rank"],
+                                                        summary["mean_match_dist"], summary["self_match_events"])))
+    facts = [("seeds", summary["n_seeds"]), ("years", ", ".join(summary["years"])),
+             ("identical mixed event in two seeds (mean / max)",
+              f"{100 * summary['mean_pair_overlap']:.2f}% / {100 * summary['max_pair_overlap']:.2f}%"),
+             ("same replacement hemisphere in two seeds (mean)", f"{100 * summary['mean_hemisphere_overlap']:.1f}%"),
+             ("source events common to two seeds (mean)", f"{100 * summary['mean_common_source_events_fraction']:.1f}%")]
+    fact_rows = "".join(f"<tr><th>{html.escape(k)}</th><td>{html.escape(str(v))}</td></tr>" for k, v in facts)
+    figs = "".join(f"<figure><a href='{p}'><img src='{p}' loading='lazy'></a>"
+                   f"<figcaption>{html.escape(p[:-4])}</figcaption></figure>" for p in pngs)
+    style = ("<style>body{font-family:sans-serif;margin:1.5em;max-width:1400px}"
+             "table{border-collapse:collapse;margin:0.5em 2em 1em 0;display:inline-table;vertical-align:top}"
+             "td,th{border:1px solid #ccc;padding:2px 10px;text-align:right}th{background:#eee;text-align:left}"
+             ".grid{display:flex;flex-wrap:wrap;gap:12px}figure{margin:0;width:420px}"
+             "figure img{width:100%;border:1px solid #ddd}figcaption{font-size:12px;color:#555}</style>")
+    page = (f"<html><head><meta charset='utf-8'><title>4b-mixing seeds</title>{style}</head><body>"
+            f"<h1>4b mixing: seed study</h1>"
+            f"<p>Each seed draws every hemisphere's replacement uniformly from its nearest library "
+            f"neighbours (own event vetoed). Files: <a href='summary.yml'>summary.yml</a> · "
+            f"<a href='seed_overlap_matrix.csv'>seed_overlap_matrix.csv</a></p>"
+            f"<table>{fact_rows}</table>"
+            f"<table><tr><th>seed</th><th>events</th><th>mean rank</th><th>mean match dist</th>"
+            f"<th>self-matches</th></tr>{rows}</table>"
+            f"<div class='grid'>{figs}</div></body></html>")
+    with open(os.path.join(outdir, "index.html"), "w") as f:
+        f.write(page)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("mode", choices=["study"])
-    ap.add_argument("input")
-    ap.add_argument("outdir")
+    ap.add_argument("mode", choices=["study", "seeds"])
+    ap.add_argument("input", nargs="+", help="study: STUDY.coffea OUTDIR; seeds: the per-seed registries")
+    ap.add_argument("--outdir", default=None, help="seeds: output directory")
+    ap.add_argument("--years", nargs="+", default=None, help="seeds: data years to read (default: all in the registries)")
     ap.add_argument("--n-subsamples", type=int, default=16)
     a = ap.parse_args()
-    study(a.input, a.outdir, a.n_subsamples)
+    if a.mode == "study":
+        if len(a.input) != 2:
+            ap.error("study takes STUDY.coffea OUTDIR")
+        study(a.input[0], a.input[1], a.n_subsamples)
+    else:
+        if not a.outdir:
+            ap.error("seeds needs --outdir")
+        years = a.years or ["2022_preEE", "2022_EE", "2023_preBPix", "2023_BPix",
+                            "UL16_preVFP", "UL16_postVFP", "UL17", "UL18"]
+        seeds(a.input, a.outdir, years)
 
 
 if __name__ == "__main__":
