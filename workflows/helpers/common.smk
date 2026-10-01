@@ -1,5 +1,6 @@
 import sys
 import os
+import re
 import copy
 import yaml
 
@@ -62,6 +63,52 @@ def _user_profile():
     }
 
 
+def _upstream_base(rid, own_eos_prod):
+    """Where roast `rid` wrote, for configs that read an earlier roast's products.
+
+    {eos_prod} is the *reader's* area, so it is right for outputs and wrong for inputs: a
+    colleague running this config would look for an upstream roast under their own account.
+    {roast:<id>} instead resolves through that roast's committed manifest, which records
+    where it actually wrote, so the reference names a run and the owner follows from it.
+    """
+    import json
+
+    manifest = os.path.join("roasts", rid, "roast.json")
+    if os.path.exists(manifest):
+        with open(manifest) as fh:
+            m = json.load(fh) or {}
+        base = (m.get("user_paths") or {}).get("eos_prod")
+        if not base:
+            # manifests written before user_paths existed: the account that ran it is still
+            # recorded in the ssh target it was checked out on
+            ssh = ((m.get("hosts") or {}).get("cmslpc") or {}).get("ssh", "")
+            user = ssh.split("@", 1)[0] if "@" in ssh else ""
+            if user:
+                base = f"root://cmseos.fnal.gov//store/user/{user}/HH4b_prod"
+        if base:
+            return f"{base.rstrip('/')}/{rid}"
+    print(f"WARNING: no usable manifest for upstream roast {rid} (looked in {manifest}); "
+          f"assuming it lives under your own area. Commit roasts/{rid}/roast.json so this "
+          f"resolves for everyone.")
+    return f"{own_eos_prod.rstrip('/')}/{rid}"
+
+
+def substitute_upstreams(obj, own_eos_prod, seen):
+    """Replace {roast:<id>} anywhere in a nested config structure."""
+    if isinstance(obj, dict):
+        return {k: substitute_upstreams(v, own_eos_prod, seen) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [substitute_upstreams(v, own_eos_prod, seen) for v in obj]
+    if isinstance(obj, str):
+        def _sub(m):
+            rid = m.group(1)
+            if rid not in seen:
+                seen[rid] = _upstream_base(rid, own_eos_prod)
+            return seen[rid]
+        return re.sub(r"\{roast:([^}]+)\}", _sub, obj)
+    return obj
+
+
 # {roast_id} names a production run so run-scoped paths (e.g. EOS outputs) are unique.
 # `roast` sets it with --config roast_id=<id>; outside roast it falls back to the config
 # label, so a plain `snakemake --configfile ...` run still gets a sensible directory.
@@ -72,6 +119,13 @@ for _k, _v in _placeholders.items():
     config[_k] = _v
 for _k, _v in substitute_placeholders(dict(config), _placeholders).items():
     config[_k] = _v
+
+# Inputs from earlier roasts resolve through their own manifests, not the reader's area.
+_upstreams = {}
+for _k, _v in substitute_upstreams(dict(config), _placeholders['eos_prod'], _upstreams).items():
+    config[_k] = _v
+for _rid, _base in sorted(_upstreams.items()):
+    print(f"upstream {_rid} -> {_base}")
 
 
 def check_handoff_refs(config_dict):

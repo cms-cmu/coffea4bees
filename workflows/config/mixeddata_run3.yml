@@ -30,11 +30,11 @@ inputs:
   # ttbar subtraction in M.1 (4b data, FvT.d4_to_t4) and M.2 (3b data, FvT.d3_to_t3): the
   # non-tight FvT (Phase C of that roast; C.4 closure SR 1.003 +- 0.002). Must cover the data
   # picoAODs in analysis_config.dataset_location (same data.yml as that roast).
-  FvT: "{eos_prod}/nominal_run3_nontight_20260925_0c53380-193851f/friend/FvT_nominal/result.json@@analysis.0.merged"
+  FvT: "{roast:nominal_run3_nontight_20260925_0c53380-193851f}/friend/FvT_nominal/result.json@@analysis.0.merged"
   # Non-tight JCM: M.2 applies it as pseudo-tag weights. Its data + ttbar histograms feed the
   # mixed-data JCM fit (M.3), so both must come from the same selection as the mixing.
-  JCM: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_nontight_20260925_0c53380-193851f/output/Run3_nontight/computeJCM/JCM_Run3_nontight_v1/jetCombinatoricModel_SB_Run3_nontight_v1.yml"
-  jcm_hists: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_nontight_20260925_0c53380-193851f/output/Run3_nontight/computeJCM/histAll_NoJCM.coffea"
+  JCM: "{roast:nominal_run3_nontight_20260925_0c53380-193851f}/output/Run3_nontight/computeJCM/JCM_Run3_nontight_v1/jetCombinatoricModel_SB_Run3_nontight_v1.yml"
+  jcm_hists: "{roast:nominal_run3_nontight_20260925_0c53380-193851f}/output/Run3_nontight/computeJCM/histAll_NoJCM.coffea"
   # M.7 signal check: the analysis SvB (nominal Run 3, Phase D), evaluated on the fly on the
   # original and the mixed signal MC and on mixeddata_all.
   SvB_model: "{eos_prod}/nominal_run3_20260922_3f9e199-1e0504f/classifier/SvB_nominal/result.json"
