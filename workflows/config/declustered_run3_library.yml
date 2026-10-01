@@ -44,3 +44,8 @@ declustering:
     k_neighbors: 20            # random selection: candidates per jet (variety; seed overlap ~1/k)
     max_distance: 0.05         # ... but only those within this distance in (log pT, |eta|) (the nearest
                                #     always counts): keeps sparse tails / rare types to close matches
+
+validation:
+  # The base's known_counts are the PDF roast's blessed D.4 cutflow; library mode has none yet, so
+  # D4_cutflow just writes D4/cutflow_declustered.yml (bless it into analysis/tests/ to arm the check).
+  known_counts: null
