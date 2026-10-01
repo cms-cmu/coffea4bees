@@ -94,7 +94,6 @@ class DeClusterer(Skimmer4b):
         self.library_max_distance = None if library_max_distance in (None, "None") else float(library_max_distance)
         # match low-b (< 2 b) splittings also on w * log(m/pT) of the parent; None: off
         self.library_mass_match_weight = library_mass_match_weight
-        self._splitting_library_cache = {}
         # MC only: without a trigWeight friend, fail (default) or write unit trigger weights
         self.require_trigWeight = require_trigWeight
         # Decluster only events with event % N == 0 (DeClustered D.6 signal check, as the mixer's
@@ -171,12 +170,10 @@ class DeClusterer(Skimmer4b):
         splitting_library = None
         if self.declustering_method == "library":
             library_file = self.clustering_library_file.replace("XXX", year)
-            if (library_file, year) not in self._splitting_library_cache:
-                self._splitting_library_cache[(library_file, year)] = SplittingLibrary.from_files(
-                    library_file, year, carry_fields=self.library_carry_fields, min_entries=self.library_min_entries,
-                    mass_match_weight=self.library_mass_match_weight)
-                logging.info(f"Loaded {len(self._splitting_library_cache[(library_file, year)].flavor)} splittings for {year} from {library_file}\n")
-            splitting_library = self._splitting_library_cache[(library_file, year)]
+            # per process, not per instance: each chunk gets a freshly unpickled processor
+            splitting_library = SplittingLibrary.cached(
+                library_file, year, carry_fields=self.library_carry_fields, min_entries=self.library_min_entries,
+                mass_match_weight=self.library_mass_match_weight)
 
         path = fname.replace(fname.split("/")[-1], "")
 
