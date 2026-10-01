@@ -25,6 +25,9 @@ label: "declustered_run3_library"
 
 declustering:
   method: library
+  # D.3 / D.6 condor workers. With the numba cluster_bs and the per-process library a 25k-event
+  # chunk peaks at ~2.1 GB (the skimmer template's 8GB matches only ~40% of the LPC slots).
+  worker_memory: 4GB
   n_seeds: 1
   # Distinct from the PDF roast's names, so a consumer can read both handoffs in one -m list
   # (runner.py refuses a dataset name defined differently in two sources).
