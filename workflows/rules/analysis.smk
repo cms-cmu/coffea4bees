@@ -230,6 +230,11 @@ rule check_cutflow:
         known_flag = get_known_cutflow_flag,
         error_threshold = lambda wildcards: config.get("error_threshold", "0.001"),
         cutflow_list = lambda wildcards: config.get("cutflow_list", "passJetMult,passPreSel,passDiJetMass,SR,SB"),
+        # "false": a mismatch against the known counts is flagged (log, *_result.txt, validation
+        # txt) but does not fail the job, for references that are expected to move, e.g. counts
+        # that depend on a retrained FvT/SvB. Top-level `known_counts_fatal` in the config;
+        # production only (test=true, i.e. CI, always fails on a mismatch).
+        fatal = lambda wildcards: "true" if config.get("test", False) else str(config.get("known_counts_fatal", True)).lower(),
         run_container_wrapper = "",
         python_bin = lambda wildcards: config.get("python_bin", "python")
     log:
@@ -257,6 +262,11 @@ rule check_cutflow:
         ( grep -A80 "Running cutflow comparison" {log} || grep "Skipping cutflow comparison" {log} || true ) > "$result"
         if [ $status -ne 0 ]; then
             [ -f "{output.cutflow_yml}" ] && cp "{output.cutflow_yml}" "$(dirname {output.cutflow_yml})/$(basename {output.cutflow_yml} .yml)_failed.yml"
+            if [ "{params.fatal}" = "false" ] && [ -f "{output.cutflow_yml}" ]; then
+                echo "############### Cutflow check MISMATCH (warn-only, exit $status): see $result" | tee -a {log}
+                {{ echo "WARN-ONLY MISMATCH against the known counts (known_counts_fatal: false)"; cat "$result"; }} > {output.validation_txt}
+                exit 0
+            fi
             echo "############### Cutflow check FAILED (exit $status): see $result" | tee -a {log}
             exit $status
         fi

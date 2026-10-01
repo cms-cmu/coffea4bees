@@ -1,6 +1,7 @@
 """Snakefile: Run3 SvB training (quadjet_run2 inputs).
 
-Adapted from Snakefile_Run3MvD_training.smk and Snakefile_Run3_training.smk.
+Adapted from Snakefile_Run3_training.smk and the former Snakefile_Run3MvD_training.smk
+(replaced by the MvD roast workflow, Snakefile_MvD.smk).
 
 SvB is structurally heavier than FvT/MvD because:
   * train.yml uses two `dataset` modules (HCR.SvB.Background + HCR.SvB.Signal)

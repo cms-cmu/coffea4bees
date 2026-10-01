@@ -146,6 +146,14 @@ classifier_setting:
           UL16_postVFP: [F, G, H]
           UL17: [B, C, D, E, F]
           UL18: [A, B, C, D]
+          # Run 3 -- must stay in sync with year_eras above: CollisionData.eras
+          # drives both the data and the MC file lists in the classifier
+          # (classifier/config/dataset/HCR/_picoAOD.py).
+          2022_preEE: [B, C, D]
+          2022_EE: [E, F, G]
+          2023_preBPix: [C01, C02, C11, C12, C3, C4]
+          2023_BPix: [D1, D2]
+          "2024": [C, D, E, F, G, H, I2, I3]
   - module: cms.MC_TTbar
     option:
       - datasets:
@@ -209,8 +217,10 @@ fvt:
 fvt_closure:
   datasets: [data, TTToHadronic_stitched, TTToSemiLeptonic_stitched, TTTo2L2Nu_stitched]
   plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
-  # default known_fullCounts_FvT_closure.yml is HH4b nominal_run2; dump-only until blessed
+  # blessed from roast ttHbb_run2_20260929_a209210-6a2293a; the counts depend on that roast's FvT
+  # training, so a production mismatch is flagged, not fatal (CI/test mode stays fatal)
   known_counts: "coffea4bees/analysis/tests/known_fullCounts_FvT_closure_ttHbb.yml"
+  known_counts_fatal: false
 
 # ==============================================================================
 # PHASE D: SvB (falcon).  Same per-roast pattern as fvt; the FvT friend used for the
@@ -271,6 +281,9 @@ analysis_config:
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
 plot_extra_arguments: ""
 known_counts: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"
+# F.1 production counts depend on the roast's FvT/SvB training: flag a mismatch, don't fail
+# (applies in production only; CI, test=true, stays fatal)
+known_counts_fatal: false
 known_counts_test: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"
 known_counts_full: "none"
 
