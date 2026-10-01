@@ -12,6 +12,8 @@
 # declustering.method: library -- D1_cluster also writes the splitting library (one ROOT file per
 # chunk, <LIB_BASE>/<dataset>/), and
 #   D1_library_regroup (per year)     the chunk files listed in that year's coffea -> {year: [files]}
+#   D1_library_consolidate (per year) -> one file per year, <LIB_BASE>/merged/ (every D.3 worker
+#                                        loads a whole year: ~1300 chunk files cost ~80 s, one ~10 s)
 #   D1_library_merge                  -> one registry for all years
 #   D1_library_publish                -> <LIB_BASE>/splitting_library.yml (what D.3 reads)
 #   D1_library_summary (per year)     -> D1/library/summary/: rows per exact splitting type and the
@@ -97,8 +99,31 @@ rule D1_library_regroup:
             {wildcards.year} {input} {output} 2>&1 | tee {log}
         """
 
+rule D1_library_consolidate:
+    """The year's chunk files merged into one zstd ROOT file on EOS (same Events schema); the
+    per-year registry then lists just that file."""
+    input: f"{D1_OUT}library/per_year/splitting_library__{{year}}.yml"
+    output: f"{D1_OUT}library/consolidated/splitting_library__{{year}}.yml"
+    log: f"{D1_OUT}logs/library_consolidate__{{year}}.log"
+    wildcard_constraints:
+        year = "|".join(YEARS)
+    params:
+        local = lambda wildcards: f"{D1_OUT}library/consolidated/splitting_library_{wildcards.year}.root",
+        url = lambda wildcards: f"{LIB_BASE}/merged/splitting_library_{wildcards.year}.root",
+    shell:
+        """
+        set -eo pipefail
+        {EOS_PROXY}
+        mkdir -p $(dirname {params.local})
+        {WRAPPER} {PYTHON} coffea4bees/workflows/scripts/consolidate_splitting_library.py \
+            {wildcards.year} {input} {params.local} 2>&1 | tee {log}
+        xrdcp -f -p {params.local} "{params.url}" 2>&1 | tee -a {log}
+        rm -f {params.local}
+        printf '%s:\n- %s\n' "{wildcards.year}" "{params.url}" > {output}
+        """
+
 rule D1_library_merge:
-    input: expand(f"{D1_OUT}library/per_year/splitting_library__{{year}}.yml", year=YEARS)
+    input: expand(f"{D1_OUT}library/consolidated/splitting_library__{{year}}.yml", year=YEARS)
     output: D1_LIB_REGISTRY
     run:
         merged = {}
@@ -151,4 +176,4 @@ rule D1_library_summary:
 rule all_D1:
     input: ([D1_MERGED] if MAKE_PDFS else []) + LIB_DONE + D1_LIB_SUMMARIES
 
-localrules: D1_config, D1_merge, D1_library_regroup, D1_library_merge, D1_library_publish, D1_library_summary, all_D1
+localrules: D1_config, D1_merge, D1_library_regroup, D1_library_consolidate, D1_library_merge, D1_library_publish, D1_library_summary, all_D1

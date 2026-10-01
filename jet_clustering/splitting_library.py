@@ -22,12 +22,35 @@ One row per splitting (including sub-splittings):
     A_<field>, B_<field>            -- carry-along fields of single-jet children (NaN for a
                                        combined child)
 """
+import copy
 import logging
+import os
+import subprocess
+import tempfile
 
 import numpy as np
 import awkward as ak
 
 _P4 = ["pt", "eta", "phi", "mass"]
+
+# SplittingLibrary.cached: libraries loaded in this process, least recently used first. A worker
+# sees chunks of several years; two keep the memory bounded (one year's library is O(100 MB)).
+_LIBRARY_CACHE = {}
+_LIBRARY_CACHE_SIZE = 2
+_LOCAL_COPY_MAX_FILES = 8
+
+
+def _local_copy(path, tmp):
+    """xrdcp a root:// file into tmp and return the local path (the original on any failure)."""
+    if not str(path).startswith("root://"):
+        return path
+    local = os.path.join(tmp, f"{len(os.listdir(tmp))}_{os.path.basename(str(path))}")
+    try:
+        subprocess.run(["xrdcp", "-f", "-s", str(path), local], check=True, timeout=600)
+        return local
+    except (OSError, subprocess.SubprocessError) as e:
+        logging.warning(f"SplittingLibrary: xrdcp of {path} failed ({e}); reading it over xrootd")
+        return path
 
 #: Jet fields that must NOT be carried from the library. The clustered (hence library) b-jet
 #: four-vectors already include the b-jet regression (cand_jet_selection: canJet = raw * bRegCorr),
@@ -231,10 +254,10 @@ class SplittingLibrary:
 
         # Lookup groups, finest first
         unique_flavors, inverse = np.unique(self.flavor, return_inverse=True)
-        summary = np.array([str(get_splitting_summary(f)) for f in unique_flavors], dtype=object)[inverse]
-        content = np.array([_content_key(f) for f in unique_flavors], dtype=object)[inverse]
-        coarse  = np.array([get_splitting_name(f) for f in unique_flavors], dtype=object)[inverse]
-        self._groups = [self._index(self.flavor), self._index(summary), self._index(content), self._index(coarse)]
+        summary = [str(get_splitting_summary(f)) for f in unique_flavors]
+        content = [_content_key(f) for f in unique_flavors]
+        coarse  = [get_splitting_name(f) for f in unique_flavors]
+        self._groups = [self._index(inverse, labels) for labels in (list(unique_flavors), summary, content, coarse)]
         self._trees = {}
         # Running totals over every lookup() call (retries included): targets resolved at each
         # level, and last-resort same-event matches. Read (and differenced) by the DeClusterer.
@@ -242,10 +265,14 @@ class SplittingLibrary:
         logging.info(f"SplittingLibrary: {len(self.flavor)} splittings, {len(self._groups[0])} exact types")
 
     @staticmethod
-    def _index(keys):
-        order = np.argsort(keys, kind="stable")
-        uniq, start = np.unique(keys[order], return_index=True)
-        bounds = list(start) + [len(order)]
+    def _index(flavor_code, labels):
+        """{label: row indices (ascending)} for rows whose flavor (code into unique flavors) maps to
+        label; labels[i] is the group of unique flavor i. Integer sorts only: an argsort of the
+        object-string keys per level cost seconds per load."""
+        uniq, label_code = np.unique(np.array(labels, dtype=object), return_inverse=True)
+        row_code = label_code[flavor_code]
+        order = np.argsort(row_code, kind="stable")
+        bounds = np.concatenate([[0], np.cumsum(np.bincount(row_code, minlength=len(uniq)))])
         return {k: order[bounds[i]:bounds[i + 1]] for i, k in enumerate(uniq)}
 
     @classmethod
@@ -258,9 +285,31 @@ class SplittingLibrary:
         with fsspec.open(files_yaml, "r") as f:
             files = yaml.safe_load(f)[year]
         files = [files] if isinstance(files, str) else files
-        rows = ak.concatenate([batch for batch in uproot.iterate({f: "Events" for f in files}, library="ak",
-                                                                 step_size=500_000)])
+        with tempfile.TemporaryDirectory() as tmp:
+            # uproot reads a library file over xrootd at a few MB/s; xrdcp moves it at ~500 MB/s.
+            # Only for a consolidated library (a few files), not D.1's per-chunk files.
+            if len(files) <= _LOCAL_COPY_MAX_FILES:
+                files = [_local_copy(f, tmp) for f in files]
+            rows = ak.concatenate([batch for batch in uproot.iterate({f: "Events" for f in files}, library="ak",
+                                                                     step_size=1_000_000)])
         return cls(rows, **kwargs)
+
+    @classmethod
+    def cached(cls, files_yaml, year, **kwargs):
+        """from_files, loaded once per process. The executor hands every chunk a freshly unpickled
+        processor, so a per-instance cache reloads the library (and rebuilds its indices and
+        KD-trees) per chunk. Returns a shallow view sharing all of that, with its own zeroed
+        lookup_counts (the DeClusterer differences them per chunk)."""
+        key = (files_yaml, year, tuple(sorted((k, tuple(v) if isinstance(v, list) else v) for k, v in kwargs.items())))
+        library = _LIBRARY_CACHE.pop(key, None)
+        if library is None:
+            library = cls.from_files(files_yaml, year, **kwargs)
+        _LIBRARY_CACHE[key] = library                         # most recently used last
+        while len(_LIBRARY_CACHE) > _LIBRARY_CACHE_SIZE:
+            _LIBRARY_CACHE.pop(next(iter(_LIBRARY_CACHE)))
+        view = copy.copy(library)
+        view.lookup_counts = dict.fromkeys(library.lookup_counts, 0)
+        return view
 
     def resolve_keys(self, flavor):
         """Groups to try for a target jet_flavor, finest first, as [(level, key), ...]

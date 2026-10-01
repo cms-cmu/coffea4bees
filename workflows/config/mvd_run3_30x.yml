@@ -40,7 +40,7 @@ inputs:
   upstream_roasts: [nominal_run3_20260922_3f9e199-1e0504f, mixeddata_run3_20260926_956d4bf-aca8a4e,
                     mvd_run3_20260927_91be0e9-f18c44b]
   # V.1's tight mixed-data JCM from the 1x MvD roast (V.2c / V.4 processor weights)
-  mixed_jcm: "{eos_prod}/mvd_run3_20260927_91be0e9-f18c44b/handoff/jetCombinatoricModel_SB_mixeddata_tight.yml"
+  mixed_jcm: "{roast:mvd_run3_20260927_91be0e9-f18c44b}/handoff/jetCombinatoricModel_SB_mixeddata_tight.yml"
 
 handoff:
   # V.2 / V.3 read the 1x MvD roast's handoff, which check_handoff_refs would otherwise reject as
@@ -50,11 +50,11 @@ handoff:
 mvd:
   label: "MvD_30x"
   output_dir: "output/MvD_30x/"
-  metadata: "{eos_prod}/mvd_run3_20260927_91be0e9-f18c44b/handoff/classifier_inputs_MvD.json@@HCR_input"
+  metadata: "{roast:mvd_run3_20260927_91be0e9-f18c44b}/handoff/classifier_inputs_MvD.json@@HCR_input"
   workflow_overrides:
-    --metadata: "{eos_prod}/mvd_run3_20260927_91be0e9-f18c44b/handoff/classifier_metadata"
-    --JCM-weight: '"source:mixed_all" {eos_prod}/mvd_run3_20260927_91be0e9-f18c44b/handoff/jetCombinatoricModel_SB_mixeddata_tight.yml@@JCM_weights'
-    '--friends ""': "{eos_prod}/mvd_run3_20260927_91be0e9-f18c44b/handoff/classifier_inputs_MvD.json@@HCR_input"
+    --metadata: "{roast:mvd_run3_20260927_91be0e9-f18c44b}/handoff/classifier_metadata"
+    --JCM-weight: '"source:mixed_all" {roast:mvd_run3_20260927_91be0e9-f18c44b}/handoff/jetCombinatoricModel_SB_mixeddata_tight.yml@@JCM_weights'
+    '--friends ""': "{roast:mvd_run3_20260927_91be0e9-f18c44b}/handoff/classifier_inputs_MvD.json@@HCR_input"
     # As the nominal 30x FvT: 3 parallel evaluators at n=54 exceed falcon's 40 GB half-GPU MPS
     # limit; 2 (~27 GB) at the cost of a second pass.
     --max-evaluators: '2'
@@ -66,12 +66,12 @@ svb_mvd:
   output_dir: "output/SvB_MvD_30x/"
   # The background weight is THIS roast's 30x MvD.
   train_template: "model: {eos_base}/classifier/{label}, MvD: {eos_base}/friend/MvD_30x"
-  metadata: "{eos_prod}/mvd_run3_20260927_91be0e9-f18c44b/handoff/classifier_inputs_MvD.json@@HCR_input"
+  metadata: "{roast:mvd_run3_20260927_91be0e9-f18c44b}/handoff/classifier_inputs_MvD.json@@HCR_input"
   workflow_overrides:
-    --metadata: "{eos_prod}/mvd_run3_20260927_91be0e9-f18c44b/handoff/classifier_metadata"
+    --metadata: "{roast:mvd_run3_20260927_91be0e9-f18c44b}/handoff/classifier_metadata"
     --data-source: mixed_all
-    --JCM-weight: '"source:mixed_all" {eos_prod}/mvd_run3_20260927_91be0e9-f18c44b/handoff/jetCombinatoricModel_SB_mixeddata_tight.yml@@JCM_weights'
-    '--friends ""': "{eos_prod}/mvd_run3_20260927_91be0e9-f18c44b/handoff/classifier_inputs_MvD.json@@HCR_input"
+    --JCM-weight: '"source:mixed_all" {roast:mvd_run3_20260927_91be0e9-f18c44b}/handoff/jetCombinatoricModel_SB_mixeddata_tight.yml@@JCM_weights'
+    '--friends ""': "{roast:mvd_run3_20260927_91be0e9-f18c44b}/handoff/classifier_inputs_MvD.json@@HCR_input"
     '--friends label:data': '{MvD}/result.json@@analysis.0.merged'
   workflow_inserts:
     'evaluate.yml::--mc-processes': ["--data-source detector mixed_all"]
