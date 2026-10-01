@@ -2,13 +2,13 @@
 #
 # Sets fields that are identical across:
 #   - Snakefile_Run3.smk
-#   - Snakefile_Run3MvD.smk
 #   - Snakefile_classifier_inputs_Run3.smk
 #
 # Per-Snakefile fields (output_path, jcm_install_path, datasets,
 # classifier_inputs_install_path) stay in each consumer because they
 # differ per Snakefile (e.g. nominal Run3.smk uses a legacy committed
-# classifier_inputs_Run3.json while Run3MvD.smk produces classifier_inputs_MvD_Run3.json).
+# classifier_inputs_Run3.json). The MvD production lives in the MvD roast workflow
+# (Snakefile_MvD.smk), which replaced Snakefile_Run3MvD.smk.
 
 config.setdefault('mode', 'nominal')
 

@@ -10,7 +10,7 @@ config.setdefault('datasets',
 config.setdefault('years', ['2022_EE', '2022_preEE', '2023_BPix', '2023_preBPix'])
 
 # install path differs per (mode, dataset_name); matches the file historically
-# produced by Snakefile_Run3MvD.smk so downstream consumers (FvT training in
+# produced by the former Snakefile_Run3MvD.smk so downstream consumers (FvT training in
 # Snakefile_Run3.smk for quadjet_run2) keep working unchanged with the legacy
 # 'mixeddata_all' dataset name.
 _mode_tag    = "" if config['mode'] == "nominal" else config['mode']

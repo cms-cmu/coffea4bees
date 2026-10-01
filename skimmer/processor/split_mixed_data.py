@@ -3,7 +3,7 @@ import awkward as ak
 
 import numpy as np
 import yaml
-from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
+from coffea4bees.analysis.helpers.object_selection import apply_jet_calibration
 from src.skimmer.mc_weight_outliers import OutlierByMedian
 from coffea4bees.analysis.helpers.processor_config import processor_config
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
@@ -48,7 +48,7 @@ class MixedDataSplitter(Skimmer4b):
         )
 
         if False and config["do_jet_calibration"]:
-            jets = apply_jerc_corrections_jsonpog(events,
+            jets = apply_jet_calibration(events,
                                           corrections_metadata=self.corrections_metadata[year],
                                           isMC=config["isMC"],
                                           run_systematics=False,

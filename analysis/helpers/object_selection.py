@@ -4,7 +4,7 @@ import logging
 import yaml
 import os
 from src.physics.common import drClean, compute_puid
-from src.physics.objects.jet_corrections import apply_jet_veto_maps, apply_jerc_corrections, apply_jerc_corrections_jsonpog
+from src.physics.objects.jet_corrections import apply_jet_veto_maps, apply_jerc_corrections_regressed
 from src.physics.objects.jet_tools import compute_jet_id
 from coffea4bees.analysis.trigger_emulator.helpers import compute_emulation_vars
 from copy import copy
@@ -125,6 +125,43 @@ def resolve_btag_algo(corrections_metadata: dict, jet: ak.Array, isRun3: bool = 
         )
     logging.debug(f"Using b-tagging discriminant Jet.{btag_algo}")
     return btag_algo
+
+
+
+def apply_jet_calibration(
+    event: ak.Array,
+    corrections_metadata: dict,
+    isMC: bool,
+    dataset: str,
+    run_systematics: bool = False,
+) -> ak.Array:
+    """Return the JEC/JER-calibrated ``Jet`` collection for this era.
+
+    Thin analysis-side wrapper around
+    :func:`src.physics.objects.jet_corrections.apply_jerc_corrections_regressed`:
+    when the era's ``jec.regression_jet_type`` is set (Run 3), jets passing the
+    loose b-tag working point (``btag_algo`` / ``btagWP.L``) get the pt-regressed
+    JEC of that jet type on top of the matching regression factor, all other jets
+    the plain ``jec.jet_type`` JEC. With ``run_systematics=True`` the ``JER`` and
+    ``JES_<source>`` (``jes_unc``) variation records are built for both and merged
+    per jet, so Run 3 gets the same variations as Run 2.
+
+    Processors call this once, before the systematic-shift loop; ``jet_selection``
+    only falls back to it (nominal) when the jets it receives are not yet
+    calibrated (no ``pt_raw`` field).
+    """
+    regression_mask = None
+    if (corrections_metadata.get('jec') or {}).get('regression_jet_type'):
+        btag_algo = resolve_btag_algo(corrections_metadata, event.Jet)
+        regression_mask = event.Jet[btag_algo] >= corrections_metadata['btagWP']['L']
+    return apply_jerc_corrections_regressed(
+        event,
+        corrections_metadata=corrections_metadata,
+        isMC=isMC,
+        dataset=dataset,
+        run_systematics=run_systematics,
+        regression_mask=regression_mask,
+    )
 
 
 def muon_selection(muon: ak.Array, isRun3: bool = False, sel_cfg: dict = None) -> ak.Array:
@@ -448,38 +485,16 @@ def jet_selection(
 
         event['Jet', 'bRegCorr'] = 1.0
 
-        if not isSyntheticData:
-            #### temporary hack
-            if '2024' in dataset:
-                event['Jet'] = apply_jerc_corrections_jsonpog(
-                    event,
-                    corrections_metadata=corrections_metadata,
-                    isMC=isMC,
-                    dataset=dataset,
-                    run_systematics=False,
-                    jet_type="AK4PFPuppi"
-                )
-            else:
-                event['Jet'] = ak.where(
-                    event.Jet.btagScore >= corrections_metadata['btagWP']['L'],
-                    apply_jerc_corrections_jsonpog(
-                        event,
-                        corrections_metadata=corrections_metadata,
-                        isMC=isMC,
-                        run_systematics=False,
-                        dataset=dataset,
-                        jet_corr_factor=event.Jet.PNetRegPtRawCorr * event.Jet.PNetRegPtRawCorrNeutrino,
-                        jet_type="AK4PFPuppiPNetRegressionPlusNeutrino"
-                    ),
-                    apply_jerc_corrections_jsonpog(
-                        event,
-                        corrections_metadata=corrections_metadata,
-                        isMC=isMC,
-                        dataset=dataset,
-                        run_systematics=False,
-                        jet_type="AK4PFPuppi"
-                    )
-                )
+        # Nominal JEC/JER fallback for callers that hand in uncalibrated jets.
+        # Processors calibrate up front with apply_jet_calibration (including
+        # the JES/JER variations, which a per-shift re-correction here would
+        # destroy), in which case the jets already carry ``pt_raw`` and are
+        # left untouched. Which jets get the pt-regressed JEC, and of which
+        # type, is configured per era in corrections.yml (jec.regression_jet_type).
+        if not isSyntheticData and 'pt_raw' not in event.Jet.fields:
+            event['Jet'] = apply_jet_calibration(
+                event, corrections_metadata, isMC=isMC, dataset=dataset, run_systematics=False
+            )
 
         event['Jet', 'puId'] = 10
         if 'jetId' in event.Jet.fields: ###### temporary hack before using nanoV15

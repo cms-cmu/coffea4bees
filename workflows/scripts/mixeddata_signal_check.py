@@ -1,14 +1,18 @@
 """MakeMixedData M.7 signal check (Snakefile_MakeMixedData_7_signal.smk).
 
-  dataset  build the synthetic_mc_<signal> dataset YAML: the mixed picoAODs from the merged M7
-           registry (keys <signal>_<year>...) + the original sample's normalisation (the mixing keeps
-           every mixed event's generator weight, so the original sumw / xs give comparable yields)
-  report   original vs mixed signal, all years. The original is shown twice: fourTag (the signal
-           region the analysis uses) and threeTag + fourTag (every preselected event -- what was
-           mixed). The mixed signal is shown in fourTag (the mixed data's 4b). Per sample:
-           SR / SB yields and SR fraction, Higgs-candidate masses (100 < m < 150 fraction, mean,
-           RMS) and the SR SvB ps_hh (mean, fractions and yields above 0.5 / 0.8 / 0.95).
-           Overlays, unit area and absolute -> signal_check.{txt,yml}, plots/*.png, index.html
+  dataset  build the dataset YAML: one entry per --prefix (synthetic_mc_3b_, synthetic_mc_4b_), all
+           on the same mixed picoAODs from the merged M7 registry (keys <signal>_<year>...), with the
+           original sample's normalisation (the mixing keeps every mixed event's generator weight, so
+           the original sumw / xs give comparable yields; with --subsample N, the mixer's event % N
+           thinning, sumw and sumw2 are divided by N). processor_HH4b keeps each origin's events.
+  report   four samples, all years: the 4b signal and the 3b signal x the M.2 JCM, and the
+           mixed signal from 3b input events (x the same JCM) and from 4b input events, the mixed
+           ones in fourTag (the mixed data's 4b). Per sample: SR / SB yields and SR fraction,
+           Higgs-candidate masses (100 < m < 150 fraction, mean, RMS) and the SR SvB ps_hh (sentinel
+           fraction, mean, fractions and yields above 0.5 / 0.8 / 0.95), and mixed / original per
+           origin -> signal_check.{txt,yml}. The plots are M7_plots_*' (makePlots + gallery).
+           --pairs original:synthetic instead: three samples (original 4b, original 3b+4b, the
+           synthetic sample in fourTag) -- DeClustered D.6's report.
 
 A mixing that decorrelates the hemispheres turns the signal background-like: the mixed SR fraction
 and 100 < m < 150 fraction fall towards the data values and the SvB piles up at low ps_hh. What
@@ -18,7 +22,6 @@ Run from the barista root (the container's cwd).
 """
 import argparse
 import glob
-import html
 import os
 import sys
 
@@ -66,22 +69,28 @@ def cmd_dataset(args):
                 if orig:
                     raise SystemExit(f"no mixed files for {sig} {year} (registry keys: {sorted(registry)[:6]})")
                 continue
-            entry[year] = {"picoAOD": {"files": files, **{k: orig[k] for k in NORM_KEYS if k in orig}}}
-            print(f"{sig} {year}: {len(files)} mixed files, sumw {orig.get('sumw')}")
+            norm = {k: orig[k] for k in NORM_KEYS if k in orig}
+            # event % N thinning in the mixer: 1/N of the generator weight is kept
+            for k in ("sumw", "sumw2"):
+                if k in norm:
+                    norm[k] = norm[k] / args.subsample
+            entry[year] = {"picoAOD": {"files": files, **norm}}
+            print(f"{sig} {year}: {len(files)} mixed files, sumw {norm.get('sumw')} (original / {args.subsample})")
         if not any(y in entry for y in args.years):
             raise SystemExit(f"no mixed files for {sig} in any of {args.years}")
-        out[f"{args.prefix}{sig}"] = entry
+        for prefix in args.prefix:
+            out[f"{prefix}{sig}"] = entry
     os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
     with open(args.output, "w") as f:
         yaml.dump(out, f, default_flow_style=False, sort_keys=False)
 
 
-def _project(h, process, tags, regions):
+def _project(h, process, tags, regions, flow=False):
     vals = 0
     for t in tags:
         for r in regions:
             sub = h[{"process": process, "tag": t, "region": r}]
-            vals = vals + sub[{"year": sum}].values(flow=False)
+            vals = vals + sub[{"year": sum}].values(flow=flow)
     return np.asarray(vals, dtype=float)
 
 
@@ -110,11 +119,15 @@ def _summarise(hists, masses, svb, process, tags):
             r[v] = {"mean": mean, "rms": float(np.sqrt(np.sum(y * (c - mean) ** 2) / tot)),
                     "frac_100_150": float(y[(c > 100) & (c < 150)].sum() / tot)}
     if svb:
-        y = _project(hists[svb], process, tags, ["SR"])
+        # ps_hh underflow = the sentinel (-2: p_ggF <= 0.01, or HH not the largest signal class):
+        # part of the SR yield, so it counts in the fraction denominators; the mean is over [0, 1]
+        yf = _project(hists[svb], process, tags, ["SR"], flow=True)
+        y = yf[1:-1]
         c = hists[svb].axes[-1].centers
-        tot = y.sum()
+        tot = yf.sum()
         if tot > 0:
-            r["SvB_SR"] = {"mean": float(np.sum(y * c) / tot), "yield": float(tot)}
+            r["SvB_SR"] = {"mean": float(np.sum(y * c) / y.sum()) if y.sum() > 0 else float("nan"),
+                           "yield": float(tot), "sentinel_frac": float(yf[0] / tot)}
             for cut in SVB_CUTS:
                 key = f"{cut:g}".replace(".", "p")
                 r["SvB_SR"][f"frac_gt_{key}"] = float(y[c > cut].sum() / tot)
@@ -124,31 +137,36 @@ def _summarise(hists, masses, svb, process, tags):
 
 def cmd_report(args):
     from coffea.util import load
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
 
     hists = load(args.hists)["hists"]
-    plots = os.path.join(args.output_dir, "plots")
-    os.makedirs(plots, exist_ok=True)
+    os.makedirs(args.output_dir, exist_ok=True)
     masses = [v for v in ("quadJet_selected.lead.mass", "quadJet_selected.subl.mass") if v in hists]
     svb = next((v for v in ("SvB_MA.ps_hh_fine", "SvB_MA.ps_hh") if v in hists), None)
     if svb is None:
         print("WARNING: no SvB_MA.ps_hh histogram -- was the SvB evaluated? (inputs.SvB_model)")
-    variables = ([svb] if svb else []) + masses + [v for v in ("m4j", "quadJet_selected.xHH") if v in hists]
+    h0 = hists[svb or masses[0]]
     summary = {}
     lines = ["# M.7 signal check: original vs mixed signal MC (all years)", ""]
-    cols = ("original 4b", "original 3b+4b", "mixed 4b")
-    page = []
-    for pair in args.pairs:
-        orig_name, mix_name = pair.split(":")
-        h0 = hists[variables[0]]
-        po, pm = _find_process(h0, orig_name), _find_process(h0, mix_name)
-        samples = {cols[0]: (po, ["fourTag"]), cols[1]: (po, ["threeTag", "fourTag"]), cols[2]: (pm, ["fourTag"])}
+    # (signal name, column labels, {label: (process, tags)}, [(numerator, denominator, key)] for the
+    # SvB > 0.8 yield ratios)
+    reports = []
+    for triple in args.samples or []:
+        orig_name, mix3_name, mix4_name = triple.split(":")
+        po, p3, p4 = (_find_process(h0, n) for n in (orig_name, mix3_name, mix4_name))
+        cols = ("4b", "3b x JCM", "mixed 3b x JCM", "mixed 4b")
+        reports.append((orig_name, cols,
+                        {cols[0]: (po, ["fourTag"]), cols[1]: (po, ["threeTag"]),
+                         cols[2]: (p3, ["fourTag"]), cols[3]: (p4, ["fourTag"])},
+                        [(cols[2], cols[1], "mixed3b_over_3b"), (cols[3], cols[0], "mixed4b_over_4b")]))
+    for pair in args.pairs or []:
+        orig_name, syn_name = pair.split(":")
+        po, ps = _find_process(h0, orig_name), _find_process(h0, syn_name)
+        cols = ("original 4b", "original 3b+4b", "mixed 4b")
+        reports.append((orig_name, cols,
+                        {cols[0]: (po, ["fourTag"]), cols[1]: (po, ["threeTag", "fourTag"]), cols[2]: (ps, ["fourTag"])},
+                        [(cols[2], cols[0], "mixed_over_original_4b"), (cols[2], cols[1], "mixed_over_original_3b4b")]))
+    for orig_name, cols, samples, ratios in reports:
         res = {label: _summarise(hists, masses, svb, p, tags) for label, (p, tags) in samples.items()}
-        mixed_all = _summarise(hists, masses, svb, pm, ["threeTag", "fourTag"])
-        res["mixed_fourTag_fraction"] = float((res[cols[2]]["SR"] + res[cols[2]]["SB"]) /
-                                              max(mixed_all["SR"] + mixed_all["SB"], 1e-12))
         summary[orig_name] = res
 
         def row(name, fmt, get):
@@ -160,7 +178,7 @@ def cmd_report(args):
                     vals.append("-")
             return f"{name:36s} " + " ".join(f"{v:>15s}" for v in vals)
 
-        lines += [f"## {orig_name}  (processes {po} vs {pm})", "",
+        lines += [f"## {orig_name}  (processes {', '.join(dict.fromkeys(p for p, _ in samples.values()))})", "",
                   f"{'':36s} " + " ".join(f"{c:>15s}" for c in cols),
                   row("SR + SB yield (weighted)", "{:.2f}", lambda r: r["SR"] + r["SB"]),
                   row("SR fraction SR/(SR+SB)", "{:.3f}", lambda r: r["SR_fraction"])]
@@ -170,59 +188,35 @@ def cmd_report(args):
             lines.append(row(f"{short}  mean", "{:.1f}", lambda r, v=v: r[v]["mean"]))
             lines.append(row(f"{short}  rms", "{:.1f}", lambda r, v=v: r[v]["rms"]))
         if svb:
-            lines.append(row("SR SvB ps_hh mean", "{:.3f}", lambda r: r["SvB_SR"]["mean"]))
+            lines.append(row("SR SvB ps_hh sentinel (<0) frac", "{:.3f}", lambda r: r["SvB_SR"]["sentinel_frac"]))
+            lines.append(row("SR SvB ps_hh mean (in [0,1])", "{:.3f}", lambda r: r["SvB_SR"]["mean"]))
             for cut in SVB_CUTS:
                 key = f"{cut:g}".replace(".", "p")
                 lines.append(row(f"SR SvB ps_hh > {cut:g} fraction", "{:.3f}", lambda r, k=key: r["SvB_SR"][f"frac_gt_{k}"]))
                 lines.append(row(f"SR SvB ps_hh > {cut:g} yield", "{:.3f}", lambda r, k=key: r["SvB_SR"][f"yield_gt_{k}"]))
-            try:
-                y_mix = res[cols[2]]["SvB_SR"]["yield_gt_0p8"]
-                y_all = res[cols[1]]["SvB_SR"]["yield_gt_0p8"]
-                y_4b = res[cols[0]]["SvB_SR"]["yield_gt_0p8"]
-                res["SvB_gt_0p8_mixed_over_original_3b4b"] = float(y_mix / y_all) if y_all else float("nan")
-                res["SvB_gt_0p8_mixed_over_original_4b"] = float(y_mix / y_4b) if y_4b else float("nan")
-                lines.append(f"{'SR SvB > 0.8 yield, mixed / original':36s} "
-                             f"{res['SvB_gt_0p8_mixed_over_original_4b']:15.3f} {res['SvB_gt_0p8_mixed_over_original_3b4b']:15.3f}")
-            except KeyError:
-                pass
-        lines += [f"{'mixed signal in fourTag':36s} {res['mixed_fourTag_fraction']:15.3f}", ""]
+            # mixed / original per origin: what of each signal population survives the mixing
+            for mixed, orig, key in ratios:
+                try:
+                    y_m = res[mixed]["SvB_SR"]["yield_gt_0p8"]
+                    y_o = res[orig]["SvB_SR"]["yield_gt_0p8"]
+                    res[f"SvB_gt_0p8_{key}"] = float(y_m / y_o) if y_o else float("nan")
+                    lines.append(f"{f'SR SvB > 0.8 yield, {mixed} / {orig}':52s} {res[f'SvB_gt_0p8_{key}']:8.3f}")
+                except KeyError:
+                    pass
+        lines.append("")
 
-        page.append(f"<h2>{html.escape(orig_name)}</h2>")
-        for v in variables:
-            h = hists[v]
-            edges = h.axes[-1].edges
-            regions = ["SR"] if v == svb else ["SR", "SB"]
-            for norm in ("unit", "abs"):
-                fig, ax = plt.subplots(figsize=(6, 4))
-                for (label, (p, tags)), style in zip(samples.items(), ("-", ":", "--")):
-                    y = _project(h, p, tags, regions)
-                    if y.sum() > 0:
-                        ax.stairs(y / y.sum() if norm == "unit" else y, edges, label=label, linestyle=style)
-                ax.set_xlabel(v)
-                ax.set_ylabel(("unit area" if norm == "unit" else "events") + f" ({'+'.join(regions)})")
-                ax.legend(fontsize=8)
-                if v == svb:
-                    ax.set_yscale("log")
-                ax.set_title(orig_name, fontsize=8)
-                fig.tight_layout()
-                name = f"{orig_name}__{v.replace('.', '_')}__{norm}.png"
-                fig.savefig(os.path.join(plots, name), dpi=110)
-                plt.close(fig)
-                page.append(f'<a href="plots/{name}"><img src="plots/{name}" width="420"></a>')
     lines += ["Mixing works if the mixed signal looks background-like: its SR fraction and 100<m<150",
               "fraction fall towards the data values (4b data SR/(SR+SB) ~ 0.34), and its SvB piles up at",
               "low ps_hh. Whatever stays at high SvB is signal that the mixed background model",
-              "(mixeddata_all -> MvD, SvB background) would absorb. Yields use the original sample's",
-              "sumw; the 3b events carry no JCM weight (a shape test)."]
+              "(mixeddata_all -> MvD, SvB background) would absorb: mixed 3b x JCM is the signal in the",
+              "3b data carried into the mixed data. Yields use the original sample's sumw (/ subsample);",
+              "the JCM is M.2's (the one the 3b events see before mixing), on the input event's untagged",
+              "loose jets."]
     text = "\n".join(lines) + "\n"
     with open(os.path.join(args.output_dir, "signal_check.txt"), "w") as f:
         f.write(text)
     with open(os.path.join(args.output_dir, "signal_check.yml"), "w") as f:
         yaml.dump(summary, f, default_flow_style=False, sort_keys=False)
-    with open(os.path.join(args.output_dir, "index.html"), "w") as f:
-        f.write("<html><head><title>M.7 signal check</title></head><body>\n"
-                f"<h1>M.7 signal check: original vs mixed signal</h1>\n<pre>{html.escape(text)}</pre>\n"
-                + "\n".join(page) + "\n</body></html>\n")
     print(text)
 
 
@@ -234,11 +228,15 @@ def main():
     d.add_argument("--metadata", nargs="+", required=True, help="dataset metadata dir(s) / file(s)")
     d.add_argument("--signals", nargs="+", required=True)
     d.add_argument("--years", nargs="+", required=True)
-    d.add_argument("--prefix", default="synthetic_mc_")
+    d.add_argument("--prefix", nargs="+", default=["synthetic_mc_"],
+                   help="one dataset per prefix, all on the same files")
+    d.add_argument("--subsample", type=int, default=1, help="the mixer's event %% N thinning: sumw / N")
     d.add_argument("-o", "--output", required=True)
     r = sub.add_parser("report")
     r.add_argument("--hists", required=True)
-    r.add_argument("--pairs", nargs="+", required=True, help="original:mixed process names")
+    g = r.add_mutually_exclusive_group(required=True)
+    g.add_argument("--samples", nargs="+", help="original:mixed-3b:mixed-4b process names, one per signal (M.7)")
+    g.add_argument("--pairs", nargs="+", help="original:synthetic process names, one per signal (DeClustered D.6)")
     r.add_argument("-o", "--output-dir", required=True)
     args = ap.parse_args()
     {"dataset": cmd_dataset, "report": cmd_report}[args.cmd](args)
