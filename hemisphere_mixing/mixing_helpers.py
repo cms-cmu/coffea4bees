@@ -761,6 +761,20 @@ def replace_hemis_load_kdTrees(*, all_hemis, hemi_stats, hemi_data, hemi_jet_ran
     return all_hemis_new[sort_idx]
 
 
+def _full_lib_data(rec, hemi_data, hemi_stats, event_branches, hemi_summary_vars, jet_branches,
+                   use_boost_corrected_matching):
+    """The full library payload (jets + summary) of one jet-multiplicity bin, cached in hemi_data."""
+    cache = hemi_data.setdefault("_full_lib_data", {})
+    if rec["jet_mult_key"] not in cache:
+        load_vars_full = list(event_branches) + list(hemi_summary_vars) + list(jet_branches)
+        if use_boost_corrected_matching and "pz" not in hemi_summary_vars:
+            load_vars_full = load_vars_full + ["pz"]
+        cache[rec["jet_mult_key"]] = get_hemispheres_data(
+            rec["mask_4b"], hemi_data, load_vars_full, hemi_stats=hemi_stats[rec["jet_mult_key"]]
+        )
+    return cache[rec["jet_mult_key"]]
+
+
 def replace_hemis_topk_kdTrees(
     *,
     all_hemis,
@@ -778,6 +792,7 @@ def replace_hemis_topk_kdTrees(
     rank_selection="fixed",
     k_random=None,
     mixing_seed=0,
+    boost_acceptance_eta=None,
 ):
     """Top-K kd-tree matcher with per-hemi rank selection.
 
@@ -805,6 +820,13 @@ def replace_hemis_topk_kdTrees(
     pos and neg sides), so different seeds give exchangeable samples. default_rank is ignored.
     Collisions: "retry" takes the smallest-distance non-colliding pair within [0, k_random)^2,
     "drop" drops the event.
+
+    `boost_acceptance_eta` (with use_boost_corrected_matching): a candidate is only usable if the z
+    boost leaves the set of its jets inside |eta| <= boost_acceptance_eta unchanged -- no jet pushed
+    out of (or pulled into) the tracker acceptance. Without it the boost moved ~4.5% of tagged jets
+    beyond |eta| 2.4 and ~15% of 4b-mixed events lost a tag. Unusable candidates are skipped exactly
+    like vetoed ones: fixed rank -> the smallest-distance usable pair from default_rank on, random ->
+    uniform among the usable ranks in [0, k_random), none usable -> the event is dropped.
 
     Returns
     -------
@@ -942,6 +964,30 @@ def replace_hemis_topk_kdTrees(
         lib_lumi_per_hemi[m]   = rec["lib_lumi"]
         match_dist_per_hemi[m] = rec["match_dist"]
 
+    # ─── Stage 1b: boost acceptance of every candidate ────────────────────
+    check_acceptance = bool(use_boost_corrected_matching and boost_acceptance_eta is not None)
+    usable_per_hemi = np.ones((N, K), dtype=bool)
+    if check_acceptance:
+        eta_max = float(boost_acceptance_eta)
+        for rec in bin_records:
+            m = np.asarray(rec["mask_3b"])
+            lib = _full_lib_data(rec, hemi_data, hemi_stats, event_branches, hemi_summary_vars,
+                                 jet_branches, use_boost_corrected_matching)
+            stats_pz = hemi_stats[rec["jet_mult_key"]]["pz"]
+            pz_target = rec["subset_hemis"]["pz"]
+            usable = np.ones(rec["match_idx"].shape, dtype=bool)
+            for k in range(rec["match_idx"].shape[1]):
+                idx = rec["match_idx"][:, k]
+                jets = ak.zip({"pt": lib["Jet_pt"][idx], "eta": lib["Jet_eta"][idx],
+                               "phi": lib["Jet_phi"][idx], "mass": lib["Jet_mass"][idx]},
+                              with_name="PtEtaPhiMLorentzVector", behavior=vector.behavior)
+                pz_matched = lib["pz"][idx] * stats_pz["RMS"] + stats_pz["mean"]
+                boosted, _ = boost_jets_along_z(jets, pz_target, pz_matched, jets.sum(axis=1).energy)
+                before = np.abs(jets.eta) <= eta_max
+                after = np.abs(boosted.eta) <= eta_max
+                usable[:, k] = ak.to_numpy(ak.all(before == after, axis=1))
+            usable_per_hemi[m] = usable
+
     # ─── Stage 2: pick rank per hemi ──────────────────────────────────────
     chosen_rank = np.empty(N, dtype=np.int32)
     if rank_selection == "random":
@@ -953,10 +999,18 @@ def replace_hemis_topk_kdTrees(
         counter[:, 0] = np.asarray(src_event).astype(np.int64).view(np.uint64)
         counter[:, 1] = np.asarray(src_run).astype(np.uint32).astype(np.uint64) << np.uint64(32)
         counter[:, 1] |= np.asarray(src_lumi).astype(np.uint32).astype(np.uint64)
+        # uniform among the usable ranks of the pool (all of them without the acceptance check)
+        pool = usable_per_hemi[:, :k_random] & np.isfinite(match_dist_per_hemi[:, :k_random])
+        n_pool = pool.sum(axis=1)
         for side, sl in (("pos", slice(0, n_event)), ("neg", slice(n_event, N))):
             rng = Squares("hemi_mixing_rank", int(mixing_seed), side)
             u = rng.uniform(counter[sl], low=0, high=1.0)
-            chosen_rank[sl] = np.minimum((u * k_random).astype(np.int32), k_random - 1)
+            if not check_acceptance:
+                chosen_rank[sl] = np.minimum((u * k_random).astype(np.int32), k_random - 1)
+                continue
+            target = np.minimum((u * n_pool[sl]).astype(np.int64), np.maximum(n_pool[sl] - 1, 0))
+            # the target-th usable rank (0-based); hemis with an empty pool keep rank 0 and are retried
+            chosen_rank[sl] = np.argmax(np.cumsum(pool[sl], axis=1) > target[:, None], axis=1)
         rank_lo_p = rank_lo_n = 0
         rank_hi = k_random
     else:
@@ -965,8 +1019,11 @@ def replace_hemis_topk_kdTrees(
         rank_lo_p, rank_lo_n = rp_default, rn_default
         rank_hi = K
     kept_event_mask = np.ones(n_event, dtype=bool)
-    # Candidates removed by the source-event veto carry infinite distance and are never chosen.
-    check_finite = exclude_source_event
+    # Candidates removed by the source-event veto carry infinite distance and are never chosen;
+    # candidates the boost would move across the acceptance edge are never chosen either.
+    check_finite = exclude_source_event or check_acceptance
+    if check_acceptance:
+        match_dist_per_hemi = np.where(usable_per_hemi, match_dist_per_hemi, np.inf)
 
     if collision_mode != "ignore" or check_finite:
         pos_e = lib_event_per_hemi[:n_event]; neg_e = lib_event_per_hemi[n_event:]
@@ -1029,16 +1086,8 @@ def replace_hemis_topk_kdTrees(
         match_dist_chosen = np.take_along_axis(match_dist_sub, chosen_rank_sub[:, None], axis=1).reshape(-1)
 
         # Now fetch full library payload (jets + summary) for this bin.
-        if rec["jet_mult_key"] not in hemi_data["_full_lib_data"]:
-            load_vars_full = list(event_branches) + list(hemi_summary_vars) + list(jet_branches)
-            if use_boost_corrected_matching and "pz" not in hemi_summary_vars:
-                load_vars_full = load_vars_full + ["pz"]
-
-            hemi_data["_full_lib_data"][rec["jet_mult_key"]] = get_hemispheres_data(
-                rec["mask_4b"], hemi_data, load_vars_full, hemi_stats=hemi_stats[rec["jet_mult_key"]]
-            )
-
-        hemi_lib_data = hemi_data["_full_lib_data"][rec["jet_mult_key"]]
+        hemi_lib_data = _full_lib_data(rec, hemi_data, hemi_stats, event_branches, hemi_summary_vars,
+                                       jet_branches, use_boost_corrected_matching)
 
         new_thrust = hemi_lib_data["thrust_phi"][match_idx_chosen]
         dphi = subset_hemis["thrust_phi"] - new_thrust

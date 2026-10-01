@@ -55,6 +55,9 @@ def _m2_config(template, jcm, dst, seed=None):
                'collision_mode': MIX.get('collision_mode', 'retry'),
                'use_boost_corrected_matching': bool(MIX.get('use_boost_corrected_matching', True)),
                'hemi_year_key': HEMI_YEAR_KEY}
+    if MIX.get('boost_acceptance_eta') is not None:
+        # skip match candidates whose z boost would move a jet across the tracker acceptance
+        section['boost_acceptance_eta'] = float(MIX['boost_acceptance_eta'])
     if seed is not None:
         # 4b data, real tags: no pseudo-tags. The mixer takes the FvT variable from mix_tags
         # (d4_to_t4) and vetoes each event's own hemispheres, which are in the library.

@@ -103,6 +103,10 @@ mixing:
   k_neighbors: 10
   collision_mode: retry        # ignore | drop | retry
   use_boost_corrected_matching: true
+  # Skip match candidates whose z boost would move any of their jets across |eta| = 2.4 (out of or into
+  # the tracker acceptance). Without it ~4.5% of tagged jets left the acceptance and ~15% of mixed events
+  # lost a tag (found in mixeddata_run3_4bmix_20260930_2e4bcf8-2f1d90b; the 3b JCM fit hid it).
+  boost_acceptance_eta: 2.4
   worker_memory: 8GB
   chunksize: 100000
 

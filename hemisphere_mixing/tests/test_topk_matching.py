@@ -8,7 +8,9 @@ import unittest
 import awkward as ak
 import numpy as np
 
-from coffea4bees.hemisphere_mixing.mixing_helpers import replace_hemis_topk_kdTrees
+from coffea.nanoevents.methods import vector
+
+from coffea4bees.hemisphere_mixing.mixing_helpers import boost_jets_along_z, replace_hemis_topk_kdTrees
 
 SUMMARY = ["sumPt_T_minor", "sumPt_T", "combinedMass", "pz"]
 JETS = ["Jet_pt", "Jet_eta", "Jet_phi", "Jet_mass"]
@@ -115,6 +117,49 @@ class TopKMatchingTest(unittest.TestCase):
         self.assertLessEqual(int(np.asarray(out.match_rank).max()), 2)
         with self.assertRaises(ValueError):
             _mix(self.lib, self.stats, self.hemis, rank_selection="random", k_random=11)
+
+    def _boost_lib(self):
+        """Library whose jets sit near |eta| = 2.4, queried with pz targets that need large boosts."""
+        rng = np.random.default_rng(3)
+        n_events = 300
+        lib, stats = _library(n_events, rng)
+        n = 2 * n_events
+        lib["Jet_eta"] = ak.Array([[float(e), float(-e / 2)] for e in rng.uniform(0.5, 2.35, n)])
+        lib["Jet_pt"] = ak.Array([[60.0, 50.0]] * n)
+        lib["Jet_phi"] = ak.Array([[0.0, 2.0]] * n)
+        lib["Jet_mass"] = ak.Array([[10.0, 8.0]] * n)
+        jets = ak.zip({"pt": lib["Jet_pt"], "eta": lib["Jet_eta"], "phi": lib["Jet_phi"], "mass": lib["Jet_mass"]},
+                      with_name="PtEtaPhiMLorentzVector", behavior=vector.behavior)
+        lib["pz"] = ak.to_numpy(jets.sum(axis=1).pz)            # stats mean 0 / RMS 1: stored = physical
+        stats[KEY]["pz"] = {"mean": 0.0, "RMS": 1.0}
+        rows = np.concatenate([np.arange(n_events), n_events + np.arange(n_events)])
+        hemis = _query(lib, rows)
+        hemis = ak.with_field(hemis, ak.Array(rng.normal(0, 150, len(hemis))), "pz")   # boosts both ways
+        return lib, stats, hemis
+
+    def _crossings(self, lib, stats, hemis, out):
+        """Hemispheres whose chosen replacement had a jet moved across |eta| = 2.4 by the boost."""
+        idx_of = {(int(e), int(h)): i for i, (e, h) in enumerate(zip(lib["event"], lib["hemisphereId"]))}
+        idx = np.array([idx_of[(int(e), int(h))] for e, h in zip(out.event, out.hemisphereId)])
+        jets = ak.zip({"pt": lib["Jet_pt"][idx], "eta": lib["Jet_eta"][idx], "phi": lib["Jet_phi"][idx],
+                       "mass": lib["Jet_mass"][idx]}, with_name="PtEtaPhiMLorentzVector", behavior=vector.behavior)
+        boosted, _ = boost_jets_along_z(jets, hemis["pz"], np.asarray(lib["pz"])[idx], jets.sum(axis=1).energy)
+        return int(np.sum(ak.to_numpy(ak.any((np.abs(jets.eta) <= 2.4) != (np.abs(boosted.eta) <= 2.4), axis=1))))
+
+    def test_boost_acceptance_retry(self):
+        lib, stats, hemis = self._boost_lib()
+        for sel in ("fixed", "random"):
+            kw = dict(collision_mode="retry", exclude_source_event=True, rank_selection=sel, mixing_seed=2,
+                      use_boost_corrected_matching=True)
+            off, _ = _mix(lib, stats, hemis, **kw)
+            on, kept = _mix(lib, stats, hemis, boost_acceptance_eta=2.4, **kw)
+            with self.subTest(sel=sel):
+                self.assertGreater(self._crossings(lib, stats, hemis, off), 0)     # the toy does exercise it
+                n_ev = len(hemis) // 2
+                keep = np.concatenate([kept, kept])
+                self.assertEqual(self._crossings(lib, stats, hemis[keep], on[keep]), 0)
+                self.assertGreater(np.mean(kept), 0.9)
+                self.assertFalse(np.any(np.asarray(on.event[:n_ev])[kept] == np.asarray(hemis.event[:n_ev])[kept]))
 
 
 if __name__ == "__main__":
