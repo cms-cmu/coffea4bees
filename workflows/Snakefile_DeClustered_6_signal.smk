@@ -170,7 +170,7 @@ def _d6_hist_config(src, dst, datasets, subsample=1):
               'event_subsample': subsample})
     if config['test']:
         cfg.setdefault('runner', {}).update({'condor': False, 'shared_dask': False})
-    write_yaml(dst, cfg)
+    write_yaml(dst, cap_workers(cfg))
 
 rule D6_hist_config_signal:
     input: UPSTREAM_HIST_CONFIG

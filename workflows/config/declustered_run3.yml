@@ -29,6 +29,9 @@ label: "declustered_run3"
 output_path: "output/{roast_id}/"   # the roast id already carries the label
 # EOS area of this roast: PDFs, picoAODs and the handoff YAML all go here.
 publish_base: "{eos_prod}/{roast_id}"
+# Cap on each runner.py condor cluster (D.1, D.3, D.4, D.6); the runner default is 1000, which
+# two roasts at once turn into ~2000 queued workers. MakeMixedData caps at 200 too.
+max_workers: 200
 
 # ------------------------------------------------------------------------------
 # Products of other roasts (checked by `roast new`, see src/tools/roast.py:check_inputs)
