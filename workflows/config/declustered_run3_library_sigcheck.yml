@@ -18,6 +18,8 @@ inputs:
   upstream_roasts: [nominal_run3_nontight_20260925_0c53380-193851f, mixeddata_run3_20260926_956d4bf-aca8a4e,
                     nominal_run3_20260922_3f9e199-1e0504f, declustered_run3_library_20260928_f2e27c4-92dd020]
   splitting_library: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/declustered_run3_library_20260928_f2e27c4-92dd020/splitting_library/splitting_library.yml"
+  # the declustered data D.6 compares with: that roast's multijet handoff (no D.3 here)
+  declustered_data: "{eos_prod}/declustered_run3_library_20260928_f2e27c4-92dd020/handoff/synthetic_data_lib_multijet.yml"
 
 declustering:
   library:

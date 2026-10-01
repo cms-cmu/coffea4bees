@@ -4,59 +4,66 @@
 # real QCD splitting (library) or the PDFs, so a H->bb pair should no longer peak. Otherwise
 # signal leaks into the synthetic background model.
 #
-# Signal MC is declustered with D.3's method, library / PDFs and seed, histogrammed with the nominal
-# production's Phase F analysis config (inputs.phaseF_hists; SvB = inputs.SvB_model evaluated on the
-# fly, the model behind F's SvB friend) and merged into F's histAll, so it is plotted next to the
-# nominal F data, background and original signal with F's plot config plus a declustered-signal
-# entry (make_plots + the standard gallery). The report (the M.7 tool, mixeddata_signal_check.py)
+# Signal MC is declustered with D.3's method, library / PDFs and seed (thinned by event % N).
+# Everything is histogrammed with D.4's upstream (non-tight) config and the analysis SvB
+# (inputs.SvB_model, the nominal roast's Phase D) evaluated on the fly:
+#   the signal          4b; declustered (synthetic_mc_<signal>)
+#   the declustered     this roast's multijet handoff (or inputs.declustered_data), seed
+#   data                signal_check.seed, thinned by event % N (weights x N)
+# Two galleries (make_plots): plots_signal/ (the signal curves) and plots_declustered/ (the
+# declustered data with both signals overlaid). The report (M.7's mixeddata_signal_check.py)
 # gives the numbers: how much of the high-SvB tail and the Higgs-candidate peak survives.
 #
-#   D6_config                         skimmer config: D.3's, on signal MC (no ttbar subtraction,
-#                                     trigWeight friend, unit weights if absent)
+#   D6_config                         skimmer config: D.3's, on signal MC (event_subsample, no ttbar
+#                                     subtraction, trigWeight friend, unit weights if absent)
 #                                     picoAODs -> <PUB>/picoAOD/signal_declustered
 #   D6_decluster (per year, condor)   -> per-year registry
 #   D6_dataset_yml                    -> synthetic_mc_<signal>: the declustered files + the original
-#                                        sample's normalisation, scaled to the events declustered
-#                                        when signal_check.max_chunks subsamples
-#   D6_fetch_F                        F's histAll + the analysis_config.yml next to it
-#   D6_hist_config                    F's analysis config, pointed at the declustered signal: SvB and
-#                                     FvT friends dropped, SvB_MA = inputs.SvB_model on the fly, unblinded
-#   D6_hists (per year, condor)       processor_HH4b over the declustered signal
-#   D6_merge_hists                    F's histAll + the declustered signal -> histAll_signal_check.coffea
-#   D6_plot_config + D6_plots         F's plot config + HH4b declustered -> makePlots gallery (plots/)
+#                                        sample's normalisation (sumw / subsample, xs, ...)
+#   D6_hist_config_{signal,declustered}  D.4's upstream config, SvB on the fly, unblinded
+#   D6_hists_{signal,declustered} (per year, condor)
+#   D6_merge_hists                    -> histAll_signal_check.coffea
+#   D6_plot_config_{signal,declustered} + D6_plots_{signal,declustered} -> plots_*/ (makePlots + gallery)
 #   D6_report                         -> signal_check.{txt,yml}
 #
 # signal_check: {enabled: false} turns it off; datasets: the signal samples (default: the SM ggHH,
-# the only Run 3 signal covering 2022 + 2023); plot_config: the F plot config (default
-# plotsAll_ttbarWeights.yml, Phase F's). The name synthetic_mc_* gives isSyntheticMC in
-# processor_config: MC weights, no JEC. It must not contain "mix" (-> mixed data, unit weights).
+# the only Run 3 signal covering 2022 + 2023); subsample: decluster only signal events with
+# event % N == 0 (default 10; 1 = all); declustered_data_subsample: the same for the declustered-
+# data SvB pass (default 10). The name synthetic_mc_* gives isSyntheticMC in processor_config: MC
+# weights, no JEC. It must not contain "mix" (-> mixed data, unit weights).
 
 SIG = config.get('signal_check') or {}
 SIG_ENABLED = bool(SIG.get('enabled', True))
 SIG_DATASETS = list(SIG.get('datasets', ["GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"]))
 SIG_SEED = int(SIG.get('seed', 0))
-# max_chunks: decluster only this many chunks per sample-year (the check needs tens of thousands of
-# 4b events, not the whole ~3M-event 4b sample, which costs as much CPU as all the data); None: all.
-SIG_MAX_CHUNKS = SIG.get('max_chunks')
 SIG_NAMES = {d: f"synthetic_mc_{d}" for d in SIG_DATASETS}
+# Decluster only events with event % N == 0: the check measures fractions and shapes (the full ggHH
+# 4b sample costs as much CPU as declustering all the data). The dataset's sumw is divided by N.
+SIG_SUBSAMPLE = int(SIG.get('subsample', 10))
+# The same thinning for the declustered-data SvB pass (millions of events, SvB on the fly);
+# processor_HH4b weights the kept events by N.
+DATA_SUBSAMPLE = int(SIG.get('declustered_data_subsample', 10))
+for _k, _n in (('subsample', SIG_SUBSAMPLE), ('declustered_data_subsample', DATA_SUBSAMPLE)):
+    if _n < 1:
+        raise ValueError(f"signal_check.{_k} must be >= 1, got {_n}")
 SVB_MODEL = INPUTS.get('SvB_model')
 if SIG_ENABLED and not str(SVB_MODEL or "").startswith("root://"):
     raise ValueError("signal_check needs inputs.SvB_model: a root:// URL to an upstream roast's SvB result.json")
-PHASEF_HISTS = INPUTS.get('phaseF_hists')
-if SIG_ENABLED and not str(PHASEF_HISTS or "").startswith("root://"):
-    raise ValueError("signal_check needs inputs.phaseF_hists: a root:// URL to the nominal roast's "
-                     "Phase F histAll_<label>.coffea (its analysis_config.yml must sit next to it)")
-SIG_PLOT_CONFIG = SIG.get('plot_config', "coffea4bees/plots/metadata/plotsAll_ttbarWeights.yml")
+# The declustered data to compare with: this roast's multijet handoff (after D.3), or another
+# roast's (inputs.declustered_data, e.g. a D.6-only roast on an existing library).
+DECL_DATA_URL = INPUTS.get('declustered_data') or MJ_URL
+DECL_DATA_NAME = str(SIG.get('declustered_data_name', MJ_NAME))
+DECL_DATA_DONE = [] if INPUTS.get('declustered_data') else [D3_PUBLISHED]
+DECL_DATA_PROCESS = f"{'syn_noTT' if DECL_DATA_NAME.startswith('synthetic_data_noTT') else 'syn'}_v{SIG_SEED}"
+PLOT_ERA = 'Run3' if any('202' in y for y in YEARS) else 'RunII'
 
 D6_OUT = f"{out}D6/"
 D6_CONFIG = f"{D6_OUT}configs/declustering_signal.yml"
 D6_DATASET = f"{D6_OUT}datasets/signal_declustered.yml"
-D6_HIST_CONFIG = f"{D6_OUT}analysis_config_signal.yml"
+D6_HIST_CONFIG = {k: f"{D6_OUT}analysis_config_{k}.yml" for k in ("signal", "declustered")}
 D6_HISTALL = f"{D6_OUT}histAll_signal_check.coffea"
 D6_REPORT = f"{D6_OUT}signal_check.txt"
-D6_F_HISTS = f"{D6_OUT}inputs/{os.path.basename(str(PHASEF_HISTS))}"
-D6_F_CONFIG = f"{D6_OUT}inputs/analysis_config_phaseF.yml"
-D6_PLOT_CONFIG = f"{D6_OUT}plots_signal_check.yml"
+D6_PLOTS = ("signal", "declustered")
 
 rule D6_config:
     input:
@@ -70,17 +77,16 @@ rule D6_config:
         for k in ('worker_memory', 'chunksize'):
             if k in DECL:
                 runner[k] = DECL[k]
-        # Signal MC passes the 4b selection ~10x more often than data, so a data-sized chunk means
-        # ~10x the events to decluster per task (4+ GB workers): smaller chunks.
-        runner['chunksize'] = int(SIG.get('chunksize', 5000))
+        # Signal MC passes the 4b selection ~10x more often than data: 5000 events per chunk
+        # (4+ GB workers otherwise), times the event % N thinning (only 1/N is declustered).
+        runner['chunksize'] = int(SIG.get('chunksize', 5000 * SIG_SUBSAMPLE))
         if config['test']:
             runner['workers'] = 1            # local test on an interactive node: one worker
-        elif SIG_MAX_CHUNKS:
-            runner['maxchunks'] = int(SIG_MAX_CHUNKS)
         section = {**(tmpl.get('config') or {}),
                    'base_path': f"{PUB}/picoAOD/signal_declustered",
                    'clustering_pdfs_file': PDF_TEMPLATE,
                    'declustering_rand_seed': SIG_SEED,
+                   'event_subsample': SIG_SUBSAMPLE,           # decluster only event % N == 0
                    'subtract_ttbar_with_weights': False,       # signal MC: nothing to subtract
                    'friends_include': ['trigWeight'],           # the GluGlu MC trigger weights ...
                    'require_trigWeight': False}                 # ... which Run 3 ggF lacks: unit weights
@@ -119,82 +125,93 @@ use rule analysis_processor from analysis as D6_decluster with:
 
 rule D6_dataset_yml:
     """synthetic_mc_<signal>: per year, the declustered files of that sample and the ORIGINAL
-    sample's normalisation (the declustering keeps every event and its generator weight). With
-    max_chunks only part of the sample is declustered: sumw / sumw2 are then scaled by the events
-    processed over the sample's (the registry's total_events / the original count; the powheg
-    weights are ~constant), so the yields still compare like with like."""
+    sample's normalisation (the declustering keeps each event's generator weight), sumw divided by
+    signal_check.subsample for the event % N thinning, so the yields compare like with like."""
     input:
         registries = expand(f"{D6_OUT}per_year/picoaod_datasets__{{year}}.yml", year=YEARS),
         merge_script = "coffea4bees/workflows/scripts/merge_mixeddata_registries.py",
         script = "coffea4bees/workflows/scripts/mixeddata_signal_check.py"
     output: D6_DATASET
     log: f"{D6_OUT}logs/dataset_yml.log"
-    params:
-        full = f"{D6_OUT}datasets/signal_declustered_fullnorm.yml"
     shell:
         """
         set -eo pipefail
         {WRAPPER} {PYTHON} {input.merge_script} {input.registries} {D6_OUT}datasets/registry.yml 2>&1 | tee {log}
         {WRAPPER} {PYTHON} {input.script} dataset \
             --registry {D6_OUT}datasets/registry.yml --metadata {config[analysis_config][dataset_location]} \
-            --signals {SIG_DATASETS} --years {YEARS} --prefix synthetic_mc_ -o {params.full} 2>&1 | tee -a {log}
-        {WRAPPER} {PYTHON} coffea4bees/workflows/scripts/declustered_signal_norm.py \
-            {params.full} {D6_OUT}datasets/registry.yml {output} 2>&1 | tee -a {log}
+            --signals {SIG_DATASETS} --years {YEARS} --prefix synthetic_mc_ --subsample {SIG_SUBSAMPLE} \
+            -o {output} 2>&1 | tee -a {log}
         """
 
-rule D6_fetch_F:
-    output:
-        hists = D6_F_HISTS,
-        config = D6_F_CONFIG
-    log: f"{D6_OUT}logs/fetch_F.log"
-    params:
-        hists = PHASEF_HISTS,
-        config = f"{os.path.dirname(str(PHASEF_HISTS))}/analysis_config.yml"
-    shell:
-        """
-        set -eo pipefail
-        {EOS_PROXY}
-        xrdcp -f "{params.hists}" {output.hists} 2>&1 | tee {log}
-        xrdcp -f "{params.config}" {output.config} 2>&1 | tee -a {log}
-        """
+def _d6_hist_config(src, dst, datasets, subsample=1):
+    """D.4's upstream (non-tight) analysis config with the analysis SvB on the fly, unblinded,
+    thinned by event % subsample (processor_HH4b weights the kept events by N)."""
+    with open(src) as f:
+        cfg = yaml.safe_load(f) or {}
+    tight = (cfg.get('config') or {}).get('fourTag_use_tight', False)
+    if tight is not False:
+        raise ValueError(f"upstream histogram config has fourTag_use_tight={tight!r}; need the non-tight selection")
+    cfg['dataset_location'] = list(datasets)
+    cfg.get('runner', {}).pop('dataset_location', None)
+    c = cfg.setdefault('config', {})
+    # No SvB friend covers the declustered events: evaluate the analysis SvB on the fly. A friend
+    # takes precedence over the classifier (load_SvB), so drop them (FvT, a 3b-data weight, too);
+    # the MC needs only the trigger weights. Four-tag only: no JCM.
+    c['friends'] = {k: v for k, v in (c.get('friends') or {}).items()
+                    if not (k.startswith('SvB') or k.startswith('FvT'))}
+    c.pop('JCM_file', None)
+    c.update({'run_SvB': True, 'SvB': None,
+              'SvB_MA': [{'path': SVB_MODEL, 'name': 'Final'}],
+              'apply_FvT': False,
+              'apply_JCM': False,
+              'friends_include': ['trigWeight'],
+              'require_trigWeight': False,    # Run 3 ggF has no trigger-weight friend
+              'blind': False,
+              'event_subsample': subsample})
+    if config['test']:
+        cfg.setdefault('runner', {}).update({'condor': False, 'shared_dask': False})
+    write_yaml(dst, cap_workers(cfg))
 
-rule D6_hist_config:
-    input: D6_F_CONFIG
-    output: D6_HIST_CONFIG
+rule D6_hist_config_signal:
+    input: UPSTREAM_HIST_CONFIG
+    output: D6_HIST_CONFIG['signal']
     run:
-        with open(input[0]) as f:
-            cfg = yaml.safe_load(f) or {}
-        cfg['dataset_location'] = [config['analysis_config']['dataset_location'], D6_DATASET]
-        cfg.get('runner', {}).pop('dataset_location', None)
-        c = cfg.setdefault('config', {})
-        # No SvB friend covers the declustered events: evaluate the analysis SvB on the fly (the model
-        # F's SvB_MA friend was made from). A friend takes precedence over the classifier (load_SvB),
-        # so drop them; FvT (a 3b-data weight) does not cover them either.
-        c['friends'] = {k: v for k, v in (c.get('friends') or {}).items()
-                        if not (k.startswith('SvB') or k.startswith('FvT'))}
-        c.pop('JCM_file', None)          # F's JCM (3b-data weight) lives in the nominal checkout only
-        c.update({'run_SvB': True, 'SvB': None,
-                  'SvB_MA': [{'path': SVB_MODEL, 'name': 'Final'}],
-                  'apply_FvT': False,
-                  'apply_JCM': False,
-                  'friends_include': ['trigWeight'],   # the MC needs only trigWeight (not F's FvT / SvB_MA)
-                  'require_trigWeight': False,         # Run 3 ggF has no trigger-weight friend
-                  'blind': False})
-        if config['test']:
-            cfg.setdefault('runner', {}).update({'condor': False, 'shared_dask': False})
-        write_yaml(output[0], cfg)
+        _d6_hist_config(input[0], output[0], [config['analysis_config']['dataset_location'], D6_DATASET])
 
-use rule analysis_processor from analysis as D6_hists with:
+rule D6_hist_config_declustered:
+    input: UPSTREAM_HIST_CONFIG
+    output: D6_HIST_CONFIG['declustered']
+    run:
+        _d6_hist_config(input[0], output[0], [DECL_DATA_URL], subsample=DATA_SUBSAMPLE)
+
+use rule analysis_processor from analysis as D6_hists_signal with:
     input:
         runner_script = "runner.py",
-        config_file = D6_HIST_CONFIG,
+        config_file = D6_HIST_CONFIG['signal'],
         dataset = D6_DATASET
-    output: f"{D6_OUT}singlefiles/hist__signal_declustered__{{year}}.coffea"
-    log: f"{D6_OUT}logs/hists__{{year}}.log"
+    output: f"{D6_OUT}singlefiles/hist__signal__{{year}}.coffea"
+    log: f"{D6_OUT}logs/hists_signal__{{year}}.log"
     wildcard_constraints:
         year = "|".join(YEARS)
     params:
-        datasets = " ".join(SIG_NAMES.values()),
+        datasets = " ".join(SIG_DATASETS + list(SIG_NAMES.values())),
+        years = lambda wildcards: wildcards.year,
+        config = lambda wildcards, input: input.config_file,
+        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
+        run_container_wrapper = WRAPPER,
+        python_bin = PYTHON
+
+use rule analysis_processor from analysis as D6_hists_declustered with:
+    input:
+        runner_script = "runner.py",
+        config_file = D6_HIST_CONFIG['declustered'],
+        published = DECL_DATA_DONE
+    output: f"{D6_OUT}singlefiles/hist__{DECL_DATA_NAME}__{{year}}.coffea"
+    log: f"{D6_OUT}logs/hists_declustered__{{year}}.log"
+    wildcard_constraints:
+        year = "|".join(YEARS)
+    params:
+        datasets = DECL_DATA_NAME,
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
         extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
@@ -203,7 +220,8 @@ use rule analysis_processor from analysis as D6_hists with:
 
 use rule merging_coffea_files from analysis as D6_merge_hists with:
     input:
-        files = [D6_F_HISTS] + expand(f"{D6_OUT}singlefiles/hist__signal_declustered__{{year}}.coffea", year=YEARS),
+        files = expand(f"{D6_OUT}singlefiles/hist__signal__{{year}}.coffea", year=YEARS)
+                + expand(f"{D6_OUT}singlefiles/hist__{DECL_DATA_NAME}__{{year}}.coffea", year=YEARS),
         script = "src/tools/merge_coffea_files.py"
     output: D6_HISTALL
     log: f"{D6_OUT}logs/merge_hists.log"
@@ -213,35 +231,75 @@ use rule merging_coffea_files from analysis as D6_merge_hists with:
         python_bin = PYTHON,
         input_files = lambda wildcards, input: " ".join(input.files)
 
-rule D6_plot_config:
-    """F's plot config + the declustered signal, drawn like F's HH4b (same scale factor) but dashed."""
-    input: SIG_PLOT_CONFIG
-    output: D6_PLOT_CONFIG
+def _plot_entry(process, tag, label, color, linestyle="solid", scale=1, histtype="step"):
+    return {'process': list(process), 'tag': tag, 'label': label, 'edgecolor': color, 'fillcolor': color,
+            'histtype': histtype, 'linestyle': linestyle, 'scalefactor': scale}
+
+_SUMMARY = ['SvB_MA.ps_hh', 'SvB_MA.ps', 'quadJet_selected.lead.mass', 'quadJet_selected.subl.mass',
+            'quadJet_selected.xHH', 'm4j', 'v4j.mass']
+
+rule D6_plot_config_signal:
+    """The signal curves, no data or background: the 4b signal and the declustered signal."""
+    output: f"{D6_OUT}plots_signal.yml"
     run:
-        with open(input[0]) as f:
-            cfg = yaml.safe_load(f) or {}
-        hists = cfg.setdefault('hists', {})
-        ref = dict(hists.get('HH4b') or {})
-        scale = ref.get('scalefactor', 100)
-        hists['HH4b_declustered'] = {'process': list(SIG_NAMES.values()), 'tag': 'fourTag',
-                                     'label': f"HH4b declustered (x{scale:g})", 'edgecolor': "#1f77b4",
-                                     'fillcolor': "#1f77b4", 'histtype': 'step', 'linestyle': 'dashed',
-                                     'scalefactor': scale}
+        cfg = {'hists': {
+                   'HH4b_4b': _plot_entry(SIG_DATASETS, 'fourTag', "4b signal", "#e42536"),
+                   'HH4b_declustered': _plot_entry(SIG_NAMES.values(), 'fourTag', "declustered signal", "#1f77b4", "dashed")},
+               'doRatio': 0,
+               'summary': _SUMMARY}
         write_yaml(output[0], cfg)
 
-use rule make_plots from analysis as D6_plots with:
+rule D6_plot_config_declustered:
+    """The declustered data (the synthetic background model) with the 4b signal and the declustered
+    signal overlaid (x100, the scale of the analysis signal plots); the ratio panel is each (x100)
+    signal / the declustered data."""
+    output: f"{D6_OUT}plots_declustered.yml"
+    run:
+        cfg = {'hists': {
+                   'HH4b_4b': _plot_entry(SIG_DATASETS, 'fourTag', "4b signal (x100)", "#e42536", "solid", 100),
+                   'HH4b_declustered': _plot_entry(SIG_NAMES.values(), 'fourTag', "declustered signal (x100)",
+                                                   "#1f77b4", "dashed", 100)},
+               'stack': {
+                   'DeclusteredData': {'process': DECL_DATA_PROCESS, 'tag': 'fourTag', 'fillcolor': "#FFDF7Fff",
+                                       'edgecolor': 'k', 'label': "Declustered data"}},
+               'ratios': {
+                   'sig4bToDeclustered': {'numerator': {'type': 'hists', 'key': 'HH4b_4b'},
+                                          'denominator': {'type': 'stack'},
+                                          'uncertianty': 'nominal', 'color': "#e42536", 'marker': "s"},
+                   'declSigToDeclustered': {'numerator': {'type': 'hists', 'key': 'HH4b_declustered'},
+                                            'denominator': {'type': 'stack'},
+                                            'uncertianty': 'nominal', 'color': "#1f77b4", 'marker': "o"}},
+               'doRatio': 1,
+               'summary': _SUMMARY}
+        write_yaml(output[0], cfg)
+
+use rule make_plots from analysis as D6_plots_signal with:
     input:
         coffea_file = D6_HISTALL,
-        metadata_file = D6_PLOT_CONFIG,
+        metadata_file = f"{D6_OUT}plots_signal.yml",
         plot_script = "coffea4bees/plots/makePlots.py"
-    output: f"{D6_OUT}plots/plots_done.txt"
+    output: f"{D6_OUT}plots_signal/plots_done.txt"
     params:
-        output_dir = f"{D6_OUT}plots/",
-        metadata = D6_PLOT_CONFIG,
-        extra_arguments = f"-s xW -f png --year {'Run3' if any('202' in y for y in YEARS) else 'RunII'}",
+        output_dir = f"{D6_OUT}plots_signal/",
+        metadata = f"{D6_OUT}plots_signal.yml",
+        extra_arguments = f"-s xW -f png --year {PLOT_ERA}",
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
-    log: f"{D6_OUT}logs/plots.log"
+    log: f"{D6_OUT}logs/plots_signal.log"
+
+use rule make_plots from analysis as D6_plots_declustered with:
+    input:
+        coffea_file = D6_HISTALL,
+        metadata_file = f"{D6_OUT}plots_declustered.yml",
+        plot_script = "coffea4bees/plots/makePlots.py"
+    output: f"{D6_OUT}plots_declustered/plots_done.txt"
+    params:
+        output_dir = f"{D6_OUT}plots_declustered/",
+        metadata = f"{D6_OUT}plots_declustered.yml",
+        extra_arguments = f"-s xW -f png --year {PLOT_ERA}",
+        run_container_wrapper = WRAPPER,
+        python_bin = PYTHON
+    log: f"{D6_OUT}logs/plots_declustered.log"
 
 rule D6_report:
     input:
@@ -252,16 +310,18 @@ rule D6_report:
         yml = f"{D6_OUT}signal_check.yml"
     log: f"{D6_OUT}logs/report.log"
     params:
-        pairs = " ".join(f"{d}:{n}" for d, n in SIG_NAMES.items())
+        # original:(no 3b origin):declustered process names
+        triples = " ".join(f"{d}:-:{SIG_NAMES[d]}" for d in SIG_DATASETS)
     shell:
         """
         set -eo pipefail
-        {WRAPPER} {PYTHON} {input.script} report \
-            --hists {input.hists} --pairs {params.pairs} -o {D6_OUT} 2>&1 | tee {log}
+        {WRAPPER} {PYTHON} {input.script} report --label declustered --title D.6 \
+            --hists {input.hists} --samples {params.triples} -o {D6_OUT} 2>&1 | tee {log}
         """
 
 rule all_D6:
-    input: [D6_REPORT, f"{D6_OUT}plots/plots_done.txt"] if SIG_ENABLED else []
+    input: [D6_REPORT] + [f"{D6_OUT}plots_{k}/plots_done.txt" for k in D6_PLOTS] if SIG_ENABLED else []
 
-localrules: D6_config, D6_dataset_yml, D6_fetch_F, D6_hist_config, D6_merge_hists, D6_plot_config,
-            D6_plots, D6_report, all_D6
+localrules: D6_config, D6_dataset_yml, D6_hist_config_signal, D6_hist_config_declustered, D6_merge_hists,
+            D6_plot_config_signal, D6_plot_config_declustered, D6_plots_signal, D6_plots_declustered,
+            D6_report, all_D6

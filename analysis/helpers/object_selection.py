@@ -491,7 +491,9 @@ def jet_selection(
         # destroy), in which case the jets already carry ``pt_raw`` and are
         # left untouched. Which jets get the pt-regressed JEC, and of which
         # type, is configured per era in corrections.yml (jec.regression_jet_type).
-        if not isSyntheticData and 'pt_raw' not in event.Jet.fields:
+        # Synthetic data AND declustered MC (synthetic_mc*) carry jets calibrated at the skim, with
+        # no rawFactor / area to re-derive it from.
+        if not (isSyntheticData or isSyntheticMC) and 'pt_raw' not in event.Jet.fields:
             event['Jet'] = apply_jet_calibration(
                 event, corrections_metadata, isMC=isMC, dataset=dataset, run_systematics=False
             )

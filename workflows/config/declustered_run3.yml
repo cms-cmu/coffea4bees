@@ -29,6 +29,9 @@ label: "declustered_run3"
 output_path: "output/{roast_id}/"   # the roast id already carries the label
 # EOS area of this roast: PDFs, picoAODs and the handoff YAML all go here.
 publish_base: "{eos_prod}/{roast_id}"
+# Cap on each runner.py condor cluster (D.1, D.3, D.4, D.6); the runner default is 1000, which
+# two roasts at once turn into ~2000 queued workers. MakeMixedData caps at 200 too.
+max_workers: 200
 
 # ------------------------------------------------------------------------------
 # Products of other roasts (checked by `roast new`, see src/tools/roast.py:check_inputs)
@@ -50,9 +53,9 @@ inputs:
   # D.6 signal check: the analysis SvB (nominal Run 3, Phase D), evaluated on the fly on the original
   # and the declustered signal MC. The only trained Run 3 SvB (the non-tight roast has none).
   SvB_model: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/classifier/SvB_nominal/result.json"
-  # D.6: the nominal production's Phase F histograms (data, background, original signal) the
-  # declustered signal is merged into and plotted with; F's analysis_config.yml sits next to it.
-  phaseF_hists: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/output/Run3_nominal/histAll_Run3_nominal.coffea"
+  # D.6 compares with this roast's own declustered data (the D.3 multijet handoff). A D.6-only roast
+  # on another roast's library names that roast's handoff instead:
+  # declustered_data: "{eos_prod}/<declustered roast id>/handoff/<multijet name>.yml"
   # Optional: decluster with another declustered roast's PDFs (its <publish_base>/pdfs) and skip
   # D.1 + D.2 -- e.g. to add seeds. Add that roast to upstream_roasts.
   # pdfs: "{eos_prod}/<declustered roast id>/pdfs"
@@ -145,17 +148,16 @@ validation:
   # error_threshold: 0.001
 
 # ------------------------------------------------------------------------------
-# D.6: signal check (as MakeMixedData M.7) -- signal MC declustered with D.3's method / seed,
-# histogrammed with the nominal Phase F config (SvB = inputs.SvB_model on the fly), merged into F's
-# histAll and plotted with F's plot config (makePlots + gallery); report: SR fraction,
+# D.6: signal check (as MakeMixedData M.7) -- signal MC declustered with D.3's method / seed
+# (thinned), histogrammed with D.4's upstream config (SvB = inputs.SvB_model on the fly) next to the
+# declustered data; galleries plots_signal/ and plots_declustered/ (makePlots); report: SR fraction,
 # 100 < m < 150 fraction, SR SvB ps_hh tail (mixeddata_signal_check.py)
 # ------------------------------------------------------------------------------
 signal_check:
   enabled: true
   datasets: ["GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"]   # the only Run 3 signal covering 2022 + 2023
-  seed: 0
-  chunksize: 5000     # signal passes the 4b selection ~10x more than data: smaller chunks than D.3
-  max_chunks: 20      # per sample-year: ~40k 4b signal events/year is plenty for the fractions (the
-                      # full ~3M 4b events would cost as much CPU as declustering all the data);
-                      # the subsample's sumw is scaled to the events declustered
-  # plot_config: coffea4bees/plots/metadata/plotsAll_ttbarWeights.yml   # F's (default)
+  seed: 0             # the declustering seed of the signal, and the declustered-data seed plotted
+  subsample: 10       # decluster only signal events with event % N == 0 (sumw / N); 1: all. The full
+                      # ggHH 4b sample would cost as much CPU as declustering all the data
+  declustered_data_subsample: 10   # the declustered-data SvB pass: event % N == 0, weights x N
+  # chunksize: 50000  # signal chunk size (default 5000 x subsample: ~5000 declustered per chunk)

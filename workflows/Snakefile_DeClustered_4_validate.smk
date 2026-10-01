@@ -33,7 +33,7 @@ rule D4_hist_config:
         cfg.get('runner', {}).pop('dataset_location', None)
         if config['test']:
             cfg.setdefault('runner', {}).update({'condor': False, 'shared_dask': False})
-        write_yaml(output[0], cfg)
+        write_yaml(output[0], cap_workers(cfg))
 
 use rule analysis_processor from analysis as D4_hists with:
     input:
