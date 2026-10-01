@@ -1,0 +1,24 @@
+# ==============================================================================
+# 4b mixing WITHOUT the z boost -- A/B partner of mixeddata_run3_4bmix.yml
+# ==============================================================================
+# Same as mixeddata_run3_4bmix.yml (4b data mixed, own hemispheres vetoed, 16 seeds, the 3b roast's
+# hemisphere library), but hemispheres are matched on all four variables including pz and taken as
+# stored: no boost along z, so no jet can leave the tracker acceptance and boost_acceptance_eta has
+# nothing to do. Compare with the boost + acceptance-retry roast of mixeddata_run3_4bmix.yml.
+#
+# Own dataset names, so both samples can be read side by side in one job (load_datasets_metadata
+# refuses a name defined differently in two -m sources).
+#
+#   roast new --config coffea4bees/workflows/config/mixeddata_run3_4bmix_noboost.yml \
+#       --step cmslpc:coffea4bees/workflows/Snakefile_MakeMixedData.smk
+#
+base: coffea4bees/workflows/config/mixeddata_run3_4bmix.yml
+label: "mixeddata_run3_4bmix_noboost"
+
+mixing:
+  dataset_name: "mixeddata_all_4bmixnoboost"
+  use_boost_corrected_matching: false
+  boost_acceptance_eta: null      # no boost, no acceptance check (the mixer refuses it without the boost)
+
+subsamples:
+  dataset_name: "mixeddata_4bmixnoboost_4b"     # samples mix_4bmixnoboost_v<k>
