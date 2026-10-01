@@ -203,6 +203,13 @@ def processor_config(section_config, inherit_config=True, **top):
             cfg[k] = v
     if config['test']:
         cfg.setdefault('runner', {}).update({'condor': False, 'shared_dask': False})
+    return cap_workers(cfg)
+
+# Per-roast cap on the condor cluster (config max_workers; runner.py's default is 1000)
+MAX_WORKERS = int(config.get('max_workers', 200))
+
+def cap_workers(cfg):
+    cfg.setdefault('runner', {})['max_workers'] = MAX_WORKERS
     return cfg
 
 def write_yaml(path, obj):
