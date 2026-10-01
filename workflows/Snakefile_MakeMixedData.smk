@@ -160,7 +160,11 @@ _wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else
 config.setdefault('analysis_container_wrapper', _wrapper)
 WRAPPER = config['analysis_container_wrapper']
 PYTHON = config.get('python_bin', os.getenv("CONTAINER_PYTHON", "python"))
-CONDOR = ""
+# Processor jobs run on condor through the shared Dask daemon (local only for test / CI). Without
+# --condor every runner job processes on the interactive node (5178c5837 set this to "": the
+# 4b-mixing roast's 8 parallel mixers, 4 local workers each loading the hemisphere library,
+# were OOM-killed and took cmslpc338 and cmslpc325 down, 2026-09-30).
+CONDOR = "" if (config['test'] or os.getenv("CI")) else "--shared-dask --condor"
 TEST_FLAG = "-t" if config['test'] else ""
 
 # Shell prefix for any rule that writes to EOS: roast seeds ./proxy/x509_proxy in the checkout.

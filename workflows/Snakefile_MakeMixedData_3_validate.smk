@@ -56,7 +56,7 @@ use rule analysis_processor from analysis as M3_hists with:
         datasets = MIX_NAME,
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, [TEST_FLAG])),
+        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 
@@ -148,7 +148,7 @@ use rule analysis_processor from analysis as M3_study with:
         datasets = MIX_NAME,
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, [TEST_FLAG])),
+        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 
