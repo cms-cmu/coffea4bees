@@ -81,6 +81,12 @@ runs:
     - DeClustered
   declustered_run3_library.yml:
     - DeClustered
+  declustered_run3_library_massmatch.yml:
+    - DeClustered
+  declustered_run3_library_sigcheck.yml:
+    - DeClustered
+  declustered_run3_library_sigcheck_massmatch.yml:
+    - DeClustered
   svbfeynnet_run3.yml:
     - SvBFeynNet_friendtrees_Run3
 
@@ -96,8 +102,6 @@ not_covered:
   PhaseD_3_evaluate: "pre-classifier-workflow stage file; PhaseD now includes src/classifier/workflow"
   Run2_make_mixeddata: "pre-roast mixed-data production, superseded by MakeMixedData"
   Run3: "pre-roast Run 3 driver (rules/run3_variants.smk)"
-  Run3MvD: "pre-roast MvD driver, superseded by MvD"
-  Run3MvD_training: "pre-roast training driver, edit-the-vars style"
   Run3_SvB_training: "pre-roast training driver"
   Run3_training: "pre-roast training driver, edit-the-vars style"
   SvB_friendtrees_Run3: "no production config"

@@ -28,17 +28,17 @@ publish_base: "{eos_prod}/{roast_id}"
 inputs:
   upstream_roasts: [nominal_run3_20260922_3f9e199-1e0504f, mixeddata_run3_20260926_956d4bf-aca8a4e]
   # Built with the NON-tight 4b hemisphere library; V.1 / V.4 re-select it with the tight selection.
-  mixeddata_all: "{eos_prod}/mixeddata_run3_20260926_956d4bf-aca8a4e/handoff/mixeddata_all.yml"
+  mixeddata_all: "{roast:mixeddata_run3_20260926_956d4bf-aca8a4e}/handoff/mixeddata_all.yml"
   # Nominal Phase B.2: the data / ttbar / ggF classifier-input manifest, and the config that made
   # it (V.1 makes the mixeddata_all inputs with exactly that config).
-  classifier_inputs: "{eos_prod}/nominal_run3_20260922_3f9e199-1e0504f/handoff/classifier_inputs_nominal_run3_20260922_3f9e199-1e0504f.json"
-  classifier_inputs_config: "{eos_prod}/nominal_run3_20260922_3f9e199-1e0504f/output/Run3_nominal/classifier_inputs/classifier_inputs_config.yml"
+  classifier_inputs: "{roast:nominal_run3_20260922_3f9e199-1e0504f}/handoff/classifier_inputs_nominal_run3_20260922_3f9e199-1e0504f.json"
+  classifier_inputs_config: "{roast:nominal_run3_20260922_3f9e199-1e0504f}/output/Run3_nominal/classifier_inputs/classifier_inputs_config.yml"
   # Nominal B.1 JCM (the one the B.2 config above applies) and its data + ttbar histograms, which
   # the tight mixed-data JCM fit reuses (analysis_config_noJCM.yml is read from the same directory).
-  JCM: "{eos_prod}/nominal_run3_20260922_3f9e199-1e0504f/handoff/jetCombinatoricModel_SB_Run3_v1.yml"
-  jcm_hists: "{eos_prod}/nominal_run3_20260922_3f9e199-1e0504f/output/Run3_nominal/computeJCM/histAll_NoJCM.coffea"
+  JCM: "{roast:nominal_run3_20260922_3f9e199-1e0504f}/handoff/jetCombinatoricModel_SB_Run3_v1.yml"
+  jcm_hists: "{roast:nominal_run3_20260922_3f9e199-1e0504f}/output/Run3_nominal/computeJCM/histAll_NoJCM.coffea"
   # Nominal Phase F.1 runner config: V.4 swaps FvT -> MvD, the JCM and SvB_MA, nothing else.
-  analysis_config: "{eos_prod}/nominal_run3_20260922_3f9e199-1e0504f/output/Run3_nominal/analysis_config.yml"
+  analysis_config: "{roast:nominal_run3_20260922_3f9e199-1e0504f}/output/Run3_nominal/analysis_config.yml"
 
 # Eras as in nominal_run3.yml
 year_eras:

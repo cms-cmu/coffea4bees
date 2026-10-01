@@ -10,7 +10,7 @@ from coffea.analysis_tools import PackedSelection
 from coffea.nanoevents import NanoAODSchema
 from coffea.lookup_tools import dense_lookup
 
-from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
+from coffea4bees.analysis.helpers.object_selection import apply_jet_calibration
 from src.physics.event_selection import apply_event_selection
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
 from coffea4bees.analysis.helpers.object_selection import load_object_selection_config
@@ -676,7 +676,7 @@ class analysis(processor.ProcessorABC):
         event = apply_event_selection( event, self.corrections_metadata[self.year], cut_on_lumimask=self.config["cut_on_lumimask"])
 
         # JEC
-        jets = apply_jerc_corrections_jsonpog(event,
+        jets = apply_jet_calibration(event,
                                 corrections_metadata=self.corrections_metadata[self.year],
                                 isMC=self.config["isMC"],
                                 run_systematics=False,

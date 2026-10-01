@@ -283,6 +283,7 @@ use rule check_cutflow from analysis as check_cutflow_noJCM with:
     log: f"{JCM_OUTPUT_PATH}logs/cutflow_validation_NoJCM.log"
     params:
         known_flag = lambda wildcards: jcm_known_cutflow_flag("NoJCM"),
+        fatal = lambda wildcards: "true" if config.get("test", False) else str(config.get("jcm_known_counts_fatal", True)).lower(),
         error_threshold = lambda wildcards: config.get("error_threshold", "0.001"),
         cutflow_list = lambda wildcards: config.get("jcm_cutflow_list", JCM_CUTFLOW_LIST),
         run_container_wrapper = config['analysis_container_wrapper'],
@@ -298,6 +299,7 @@ use rule check_cutflow from analysis as check_cutflow_wJCM with:
     log: f"{JCM_OUTPUT_PATH}logs/cutflow_validation_wJCM.log"
     params:
         known_flag = lambda wildcards: jcm_known_cutflow_flag("wJCM"),
+        fatal = lambda wildcards: "true" if config.get("test", False) else str(config.get("jcm_known_counts_fatal", True)).lower(),
         error_threshold = lambda wildcards: config.get("error_threshold", "0.001"),
         cutflow_list = lambda wildcards: config.get("jcm_cutflow_list", JCM_CUTFLOW_LIST),
         run_container_wrapper = config['analysis_container_wrapper'],
@@ -310,6 +312,8 @@ use rule cutflow_closure_table from analysis as jcm_cutflow_closure_table with:
     params:
         title = lambda wildcards: f"{config.get('label', 'computeJCM')}_cutflow_{wildcards.label}",
         multijet = "data3b-tt3b",
+        # the ttbar samples of this JCM (e.g. the *_stitched ones), not the generic rule's default names
+        ttbar = " ".join(d for d in datasets if not d.startswith("data")),
         run_container_wrapper = config['analysis_container_wrapper'],
         python_bin = lambda wildcards: config.get("python_bin", "python")
 

@@ -19,7 +19,7 @@ from coffea4bees.analysis.helpers.load_friend import (
 
 from coffea.analysis_tools import Weights, PackedSelection
 import numpy as np
-from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
+from coffea4bees.analysis.helpers.object_selection import apply_jet_calibration
 from src.physics.common import update_events
 from copy import copy
 import logging
@@ -55,6 +55,7 @@ class HemiMixer(Skimmer4b):
                 k_random: int | None = None,
                 mixing_seed: int = 0,
                 require_trigWeight: bool = True,  # MC only: without a trigWeight friend, fail or write unit weights
+                event_subsample: int = 1,         # mix only events with event % N == 0 (M.7 signal check); 1: all
                 object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
                 *args, **kwargs):
         super().__init__(
@@ -114,6 +115,11 @@ class HemiMixer(Skimmer4b):
         if mix_tags not in ("threeTag", "fourTag", "threeTag_fourTag"):
             raise ValueError(f"mix_tags must be 'threeTag', 'fourTag' or 'threeTag_fourTag', got {mix_tags!r}")
         self.mix_tags          = mix_tags
+        # Unbiased, reproducible thinning by event number. Whoever builds the dataset from the output
+        # must divide the sample's sumw by N (MakeMixedData M7_dataset_yml does).
+        self.event_subsample   = int(event_subsample)
+        if self.event_subsample < 1:
+            raise ValueError(f"event_subsample must be >= 1, got {event_subsample!r}")
         if self.apply_JCM is None and mix_tags != "fourTag":
             raise ValueError(f"mix_tags={mix_tags!r} mixes 3b events, which need the JCM pseudo-tags (apply_JCM)")
         # ttbar subtraction uses the FvT probability of the events being mixed; the default of
@@ -239,7 +245,7 @@ class HemiMixer(Skimmer4b):
         # Calculate and apply Jet Energy Calibration
         #
         if config["do_jet_calibration"]:
-            jets = apply_jerc_corrections_jsonpog(event,
+            jets = apply_jet_calibration(event,
                                           corrections_metadata=self.corrections_metadata[year],
                                           isMC=config["isMC"],
                                           dataset=dataset
@@ -323,6 +329,8 @@ class HemiMixer(Skimmer4b):
         selections.add( "passHLT", ( event.passHLT if config["cut_on_HLT_decision"] else np.full(len(event), True)  ) )
         selections.add( 'passJetMult',   event.passJetMult )
         mix_tag = {"threeTag": event.threeTag, "fourTag": event.fourTag}.get(self.mix_tags, event.threeTag | event.fourTag)
+        if self.event_subsample > 1:
+            mix_tag = mix_tag & (ak.to_numpy(event.event) % self.event_subsample == 0)
         selections.add( "passThreeTag", mix_tag)
 
         cumulative_cuts = ["lumimask"]
@@ -475,10 +483,22 @@ class HemiMixer(Skimmer4b):
         neg_hemi_new = neg_hemi_new[not_same_event_selev]
         n_event      = len(selev)
 
+        #
+        #  Signal check (mix_tags threeTag_fourTag): record where each mixed event came from, before
+        #  its jets are replaced -- its input tag, and its untagged loose-jet count (the JCM argument).
+        #  processor_HH4b reads the files as two datasets by origin and weights the 3b-origin events
+        #  by the JCM (MakeMixedData M.7).
+        #
+        origin_vars = []
+        if self.mix_tags != "threeTag":
+            selev["mixInputFourTag"] = ak.values_astype(selev.fourTag, np.int8)
+            selev["mixInputNUntagged"] = ak.num(selev.Jet[selev.Jet.selected & ~selev.Jet.tagged_loose], axis=1)
+            origin_vars = ["mixInputFourTag", "mixInputNUntagged"]
+
 
         old_hemi_output_vars = ["thrust_phi",  "event", "run", "luminosityBlock", "weight", "hemisphereId"]
         new_hemi_output_vars = old_hemi_output_vars + ["match_dist", "match_rank", "nSelJet", "nTagJet", "nJet"]
-        output_vars = []
+        output_vars = list(origin_vars)
 
         for var_name in old_hemi_output_vars:
             selev[f"posHemiOld_{var_name}"] = pos_hemi[var_name]

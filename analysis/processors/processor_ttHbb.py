@@ -116,6 +116,14 @@ class ttHbbProcessor(HH4bBaseProcessor):
             self.fill_cutflow_with_and_without_trig("passSvB", selev[selev.passSvB])
             self.fill_cutflow_with_and_without_trig("failSvB", selev[selev.failSvB])
 
+        # TTbar_from_d3 cutflow entries (the FvT-derived ttbar the closure tables subtract), as in
+        # HH4bBaseProcessor.fill_detailed_cutflows; without them those entries are left empty
+        if self.plot_ttbar_with_weights:
+            self._fill_ttbar_detailed_cutflows(selev)
+
+        if self.plot_ttbar_with_MvD_weights:
+            self._fill_ttbar_MvD_detailed_cutflows(selev)
+
     def build_selections(self, event, weights):
         """Build PackedSelection object with all cuts and add selJets.n > 6 categorization."""
         selections, allcuts = super().build_selections(event, weights)
