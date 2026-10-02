@@ -32,6 +32,7 @@ mixing:
   dataset_name: "mixeddata_all_4bmix"
   k_random: 10               # rank drawn uniformly from [0, k_random); must be <= k_neighbors
   picosize: 1000000000       # one output file per (seed, era): every seed templates alike in M.4
+  worker_memory: 6GB         # measured peak ~5.5 GB (library); 8 GB matched only ~10 LPC slots
 
 subsamples:
   n: 16                      # = number of seeds

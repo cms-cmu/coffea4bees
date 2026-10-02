@@ -122,6 +122,14 @@ if MIX_SOURCE not in ('threeTag', 'fourTag'):
     raise ValueError(f"mixing.source must be 'threeTag' or 'fourTag', got {MIX_SOURCE!r}")
 MIX4B = MIX_SOURCE == 'fourTag'
 
+# 4b mixing reads a 4b skim of the data (M.2a: skim4b + ttbar filter FvT.d4_to_t4, ~3% of the data
+# events) instead of rereading all data for every seed. inputs.data_4bskim pins another roast's skim.
+SKIM_NAME = MIX.get('skim_dataset_name', 'data__4bskim')       # "data__" prefix: runner.py reads it as data
+SKIM_EXTERNAL = INPUTS.get('data_4bskim')
+SKIM_URL = str(SKIM_EXTERNAL) if SKIM_EXTERNAL else f"{HANDOFF}/{SKIM_NAME}.yml"
+if MIX4B and not SKIM_NAME.startswith('data__'):
+    raise ValueError(f"mixing.skim_dataset_name {SKIM_NAME!r} must start with 'data__' (runner.py reads any other name as MC)")
+
 # Samples: 3b mixing splits mixeddata_all into N subsamples with the mixed-data JCM (M.4); 4b mixing
 # makes one mixing pass per seed (M.2). Either way subsamples.n is N and subsamples.dataset_name the
 # multi-sample dataset.

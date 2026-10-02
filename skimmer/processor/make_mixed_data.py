@@ -54,6 +54,7 @@ class HemiMixer(Skimmer4b):
                 rank_selection: str = "fixed",    # "fixed": default_rank | "random": uniform in [0, k_random), keyed on mixing_seed
                 k_random: int | None = None,
                 mixing_seed: int = 0,
+                boost_acceptance_eta: float | None = None,  # boost-corrected matching: skip candidates whose boost moves a jet across |eta| = this
                 require_trigWeight: bool = True,  # MC only: without a trigWeight friend, fail or write unit weights
                 event_subsample: int = 1,         # mix only events with event % N == 0 (M.7 signal check); 1: all
                 object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
@@ -135,10 +136,15 @@ class HemiMixer(Skimmer4b):
         self.rank_selection    = rank_selection
         self.k_random          = k_random
         self.mixing_seed       = int(mixing_seed)
+        if boost_acceptance_eta is not None and not use_boost_corrected_matching:
+            raise ValueError("boost_acceptance_eta only applies with use_boost_corrected_matching=True")
+        if boost_acceptance_eta is not None and not use_topk_matching:
+            raise ValueError("boost_acceptance_eta needs use_topk_matching=True")
+        self.boost_acceptance_eta = None if boost_acceptance_eta is None else float(boost_acceptance_eta)
         self.require_trigWeight = require_trigWeight
         logging.info(f"use_topk_matching = {self.use_topk_matching}, k_neighbors = {self.k_neighbors}, collision_mode = {self.collision_mode}, default_rank = {self.default_rank}, "
                      f"mix_tags = {self.mix_tags}, exclude_source_event = {self.exclude_source_event}, rank_selection = {self.rank_selection}, "
-                     f"k_random = {self.k_random}, mixing_seed = {self.mixing_seed}")
+                     f"k_random = {self.k_random}, mixing_seed = {self.mixing_seed}, boost_acceptance_eta = {self.boost_acceptance_eta}")
 
         # Conditional matching variables based on boost correction mode
         if self.use_boost_corrected_matching:
@@ -424,6 +430,7 @@ class HemiMixer(Skimmer4b):
                 rank_selection=self.rank_selection,
                 k_random=self.k_random,
                 mixing_seed=self.mixing_seed,
+                boost_acceptance_eta=self.boost_acceptance_eta,
             )
         elif test_load_hemi_kdTrees:
             all_hemis = replace_hemis_load_kdTrees(all_hemis=all_hemis, hemi_jet_ranges=hemi_jet_ranges,
