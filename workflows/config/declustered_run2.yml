@@ -97,7 +97,7 @@ cluster:
 # D.2: sampling PDFs (make_jet_splitting_PDFs.py) -> <publish_base>/pdfs/, one per UL year
 # (as the committed jet_clustering/jet-splitting-PDFs-00-09-00/clustering_pdfs_vs_pT_UL*.yml)
 # ------------------------------------------------------------------------------
-pdfs: "{}      # (no options yet)"
+pdfs: {}      # (no options yet)
 
 # ------------------------------------------------------------------------------
 # D.3: decluster -> <publish_base>/handoff/<dataset_name>.yml
