@@ -1,13 +1,13 @@
 # ==============================================================================
-# ttHbb Run 3 workflow configuration (CERN lxplus, outputs on CERN EOS)
+# ttHbb Run 3 (2024) workflow configuration (CERN lxplus, outputs on CERN EOS)
 # ==============================================================================
 # Inputs (picoAODs, trigger-weight friends) are read remotely from FNAL EOS; every
 # output goes to the phys_higgs group area. Phase B.2 (classifier inputs) is the
 # first phase run with this file. No ttHbb JCM exists for Run 3 yet: the classifier
 # input friend trees dump weight_noJCM_noFvT, so apply_JCM is off here and the JCM
 # is applied at training time from the JCM yaml (Phase B.1 is needed before Phase F).
-label: "ttHbb_run3"
-output_path: "/eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/output/ttHbb_run3/"
+label: "ttHbb_run3_2024"
+output_path: "/eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/output/ttHbb_run3_2024/"
 cern_user: "mmarcheg"
 cern_path: "www/plots/ttHbb/analysis/4b/"
 
@@ -18,16 +18,18 @@ dataset:
   - "TTToSemiLeptonic_stitched"
   - "TTToHadronic_stitched"
 
-# 2022 only for now; 2023/2024 picoAODs and trigger-weight friends exist as well.
+# 2024 only (2022 runs with analysis_ttHbb_run3.yml). '2024' must stay quoted: unquoted it parses as an
+# int and the string-keyed year lookups (friends, luminosities) miss it. Era I is split into I2/I3.
 year_eras:
-  2022_preEE:
-    - "B"
+  '2024':
     - "C"
     - "D"
-  2022_EE:
     - "E"
     - "F"
     - "G"
+    - "H"
+    - "I2"
+    - "I3"
   # 2023_preBPix: ["C01", "C02", "C11", "C12"]
   # 2023_BPix: ["D"]
   # "2024": [...]
@@ -35,9 +37,8 @@ year_eras:
 # ==============================================================================
 # PHASE B.2: CLASSIFIER INPUTS (friend trees for FvT / SvB training)
 # ==============================================================================
-# Produced for 2022_preEE + 2022_EE on 2026-09-22 (lxplus, CERN HTCondor): 1040 HCR_input friend files
-# under make_classifier_input, indexed in coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3.json
-# (use "...classifier_inputs_ttHbb_run3.json@@HCR_input" as the Phase C/D training `metadata`).
+# The merged friend index of this run is committed as
+# coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2024.json (Phase C/D training `metadata`).
 classifier_inputs:
   processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
   friend_file: "coffea4bees/metadata/friends/friends_ttHbb_Run3.yml"
@@ -65,7 +66,11 @@ classifier_inputs:
     apply_JCM: false
     apply_FvT: false
     apply_trigWeight: true
-    apply_btagSF: true
+    # No shape (iterative-fit) b-tag SF exists for UParTAK4 in the Summer24 BTV payloads (only
+    # UParTAK4_comb/mujets/light fixed-WP SFs, and the 2026-01-30 btagging.json.gz that
+    # corrections.yml points at is a wp_values-only stub), so the 2024 MC runs without the
+    # CMS_btag weight, like the CI 2024 test. Switch on once BTV provides UParTAK4_shape.
+    apply_btagSF: false
     apply_boosted_veto: false
     run_SvB: false
     top_reconstruction: slow
@@ -77,17 +82,18 @@ classifier_inputs:
 # PHASE B.1: JET COMBINATORIC MODEL (Snakefile_PhaseB_1_computeJCM.smk)
 # ==============================================================================
 # Runs the analysis processor (analysis_config below, JCM/FvT/SvB forced off) on data and the
-# stitched ttbar, fits the JCM in the SB (tag run3_v1), then reruns with the JCM applied.
-# The fit is committed as metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2022_v1.yml
-# (the Snakemake tag stays run3_v1: it names the existing output directory on EOS).
-tag: "run3_v1"
+# stitched ttbar, fits the JCM in the SB, then reruns with the JCM applied.
+# run3_2024_v1 (2026-09-25) used the 30 GeV selected-jet cut; run3_2024_v2 uses the 25 GeV cut set
+# for 2024 in analysis/metadata/object_selection_thresholds.yml (era_overrides). The v1 outputs were
+# moved to <output_path>/computeJCM_run3_2024_v1_pt30/.
+tag: "run3_2024_v2"
 jcm_datasets:
   - "data"
   - "TTTo2L2Nu_stitched"
   - "TTToSemiLeptonic_stitched"
   - "TTToHadronic_stitched"
 jcm_plot_config: "coffea4bees/plots/metadata/plots_JCM_ttHbb_stitched.yml"
-jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb_stitched_jcm_config.yml -m coffea4bees/plots/metadata/plotsJCM_ttHbb_run3.yml -y Run3"
+jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb_stitched_jcm_config.yml -m coffea4bees/plots/metadata/plotsJCM_ttHbb_run3.yml -y 2024"
 # No Run 3 cutflow reference yet: only dump the cutflows (the known_fullCounts_JCM_* files are Run 2).
 jcm_known_counts_NoJCM: "none"
 jcm_known_counts_wJCM: "none"
@@ -105,8 +111,7 @@ classifier_setting:
   - module: cms.CollisionData
     option:
       - eras:
-          2022_preEE: [B, C, D]
-          2022_EE: [E, F, G]
+          '2024': [C, D, E, F, G, H, I2, I3]
   - module: cms.MC_TTbar
     option:
       - datasets:
@@ -115,8 +120,8 @@ classifier_setting:
           - TTTo2L2Nu_stitched
   - module: HCR.InputBranch
     option:
-      # no `year`: add_year keeps only the first two digits of the era (2022_preEE and 2022_EE -> 22),
-      # so with 2022 alone it is a constant input whose normalisation gives NaN outputs. Re-add it
+      # no `year`: add_year keeps only the first two digits of the era (2024 -> 24),
+      # so with 2024 alone it is a constant input whose normalisation gives NaN outputs. Re-add it
       # when several years are trained together.
       - feature_ancillary: [xW, nSelJets, xbW]
 
@@ -124,9 +129,9 @@ fvt:
   eos_base: "root://eoscms.cern.ch//eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/Run3_v1/ttHbb_stitched"
   plot_base: "root://eosuser.cern.ch//eos/user/m/mmarcheg/www/plots/ttHbb/analysis/4b"
   classifier_config_paths: "coffea4bees"
-  wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_run3/FvT"
-  label: "FvT_ttHbb_run3"
-  output_dir: "/eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/output/ttHbb_run3/FvT_ttHbb_run3/"
+  wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_run3_2024/FvT"
+  label: "FvT_ttHbb_run3_2024"
+  output_dir: "/eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/output/ttHbb_run3_2024/FvT_ttHbb_run3_2024/"
   plot_inputs: true
   plot_weights: true
   evaluate: true
@@ -134,7 +139,7 @@ fvt:
   friend: "{eos_base}/friend/{label}"
   train_template: "model: {eos_base}/classifier/{label}"
   eval_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/{label}"
-  metadata: "coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3.json@@HCR_input"
+  metadata: "coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2024.json@@HCR_input"
 
 # ==============================================================================
 # PHASE F.1: MAIN ANALYSIS PROCESSOR (also the fallback block for Phase B.1)
@@ -159,30 +164,14 @@ analysis_config:
     apply_JCM: true
     apply_FvT: true
     apply_trigWeight: true
-    apply_btagSF: true
+    # No shape (iterative-fit) b-tag SF exists for UParTAK4 in the Summer24 BTV payloads (only
+    # UParTAK4_comb/mujets/light fixed-WP SFs, and the 2026-01-30 btagging.json.gz that
+    # corrections.yml points at is a wp_values-only stub), so the 2024 MC runs without the
+    # CMS_btag weight, like the CI 2024 test. Switch on once BTV provides UParTAK4_shape.
+    apply_btagSF: false
     apply_boosted_veto: false
     run_SvB: false
     top_reconstruction: fast
     fill_histograms: true
     candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
-    # Phase C FvT friend (kfold.Merge output of Snakefile_PhaseC_3_evaluate); runner.py merges this
-    # over friend_file, so data gets trigWeight + FvT and MC keeps trigWeight only.
-    friends:
-      FvT: "root://eoscms.cern.ch//eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/Run3_v1/ttHbb_stitched/friend/FvT_ttHbb_run3/result.json@@analysis.0.merged"
-
-# ==============================================================================
-# PHASE C.4: FvT CLOSURE (Snakefile_PhaseC_4_FvT_closure.smk)
-# ==============================================================================
-# Reruns the processor (analysis_config above) on data with JCM x FvT applied; the ttbar
-# histograms are reused from the Phase B.1 wJCM pass (FvT only applies to data).
-fvt_closure:
-  datasets:
-    - "data"
-    - "TTTo2L2Nu_stitched"
-    - "TTToSemiLeptonic_stitched"
-    - "TTToHadronic_stitched"
-  JCM_file: "coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2022_v1.yml"
-  plot_config: "coffea4bees/plots/metadata/plots_FvT_closure_ttHbb_run3.yml"
-  known_counts: "none"
-  reuse_wJCM_ttbar: true
-  jcm_output_path: "/eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/output/ttHbb_run3/computeJCM/"
+    # (add `friends: {FvT: <2024 FvT friend>@@analysis.0.merged}` and an fvt_closure block once Phase C has run on 2024)
