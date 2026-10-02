@@ -1,6 +1,6 @@
 friends:
   2022_preEE: &friends_Run3
-    trigWeight: "coffea4bees/metadata/friends/trigger_weights_friends_ZX4b_Run3.json@trigWeight"
+    trigWeight: "coffea4bees/metadata/friends/trigger_weights_friends_ZX4b_Run3.json@@trigWeight"
   2022_EE: *friends_Run3
   2023_preBPix: *friends_Run3
   2023_BPix: *friends_Run3
