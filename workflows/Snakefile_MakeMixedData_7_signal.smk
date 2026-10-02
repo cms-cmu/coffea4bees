@@ -97,6 +97,8 @@ rule M7_config:
         })
         if MIX4B:
             cfg['config']['exclude_source_event'] = False   # signal MC is not in the library
+            # M.2's 4b config reads the data skim: the signal samples live in the analysis datasets
+            cfg['dataset_location'] = config['analysis_config']['dataset_location']
         if config['test']:
             cfg['runner'].update({'condor': False, 'shared_dask': False, 'workers': 1})
         write_yaml(output[0], cfg)
