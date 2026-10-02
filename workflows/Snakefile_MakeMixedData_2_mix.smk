@@ -148,13 +148,23 @@ else:
         upstream FvT (d4_to_t4) -- the hemisphere library's own selection, same random numbers."""
         input:
             template = MIX.get('skim_template', "coffea4bees/skimmer/metadata/HH4b_fourTag.yml"),
+            mixer_template = MIX.get('skimmer_template', "coffea4bees/skimmer/metadata/mixeddata_Run3.yml"),
         output: M2A_CONFIG
         run:
             with open(input.template) as f:
                 tmpl = yaml.safe_load(f) or {}
+            with open(input.mixer_template) as f:
+                mix_runner = (yaml.safe_load(f) or {}).get('runner') or {}
             step = int(MIX.get('chunksize', 100000))
+            # ONE shared Dask daemon serves every runner job of the roast, and its workers take the
+            # memory and code tarball of whichever job starts it -- here usually this skim. So the
+            # skim must ask for the MIXER's workers: the mixer's memory and its transfer list (which
+            # ships coffea4bees/hemisphere_mixing). With the skim template's 4 GB / analysis+skimmer
+            # tarball, every later mixer died with "No module named coffea4bees.hemisphere_mixing".
             runner = {**(tmpl.get('runner') or {}), 'class_name': 'Skimmer', 'chunksize': step,
-                      'worker_memory': MIX.get('skim_worker_memory', '4GB')}
+                      'worker_memory': MIX.get('worker_memory', '8GB'),
+                      'condor_transfer_input_files': mix_runner.get('condor_transfer_input_files',
+                                                                    ['src', 'coffea4bees/'])}
             section = {**(tmpl.get('config') or {}),
                        'base_path': f"{PUB}/picoAOD/{SKIM_NAME}",
                        'step': step,
