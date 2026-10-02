@@ -11,7 +11,7 @@
 #     Run 2 drops jets with puId < 6 below 50 GeV, and a library child's own puId (computed at its
 #     own pT, 0 above 50 GeV) would fail after scaling -- the synthetic jets keep puId 7, as in
 #     PDF mode. Not bRegCorr / rawFactor / area (splitting_library.NOT_CARRIABLE).
-#   * D.6 signal check: the Run 2 SM ggHH and the nominal Run 2 SvB.
+#   * D.6 signal check: the Run 2 SM ggHH and the nominal Run 2 SvB (from the base).
 #   * The upstream B.1 histograms are blinded, so D.4 closure has no 4b data in the SR.
 #
 #   roast new --config coffea4bees/workflows/config/declustered_run2_library.yml \
@@ -23,10 +23,6 @@ label: "declustered_run2_library"
 
 # Cap on each runner.py condor cluster (as declustered_run3.yml)
 max_workers: 200
-
-inputs:
-  # D.6: the nominal Run 2 analysis SvB (Phase D of nominal_run2), evaluated on the fly
-  SvB_model: "{roast:nominal_run2_20260919_a180b1a-a16559c}/classifier/SvB_nominal/result.json"
 
 declustering:
   method: library
@@ -50,10 +46,3 @@ declustering:
 validation:
   # The base's known_counts are the Run 2 PDF roast's; library mode has none yet.
   known_counts: null
-
-signal_check:
-  enabled: true
-  datasets: ["GluGluToHHTo4B_cHHH1"]
-  seed: 0
-  subsample: 10
-  declustered_data_subsample: 10
