@@ -81,6 +81,10 @@ runs:
     - DeClustered
   declustered_run3_library.yml:
     - DeClustered
+  declustered_run2.yml:
+    - DeClustered
+  declustered_run2_library.yml:
+    - DeClustered
   declustered_run3_library_massmatch.yml:
     - DeClustered
   declustered_run3_library_massmatch_reuseD1.yml:

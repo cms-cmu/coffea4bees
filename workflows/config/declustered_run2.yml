@@ -42,6 +42,9 @@ inputs:
   jcm_hists: "{roast:nominal_run2_20260919_a180b1a-a16559c}/output/TESTRun2/computeJCM/histAll_NoJCM.coffea"
   # ttbar pseudodata folded into synthetic_data_4b per year (as M.4 builds mixeddata_4b).
   ttbar_psdata: "{roast:mixeddata_run2_20260927_c39c264-0ce4d59}/handoff/ttbar_PSData.yml"
+  # D.6 signal check: the nominal Run 2 analysis SvB (Phase D of nominal_run2), evaluated on the fly
+  # on the original and the declustered signal MC (as declustered_run3.yml).
+  SvB_model: "{roast:nominal_run2_20260919_a180b1a-a16559c}/classifier/SvB_nominal/result.json"
   # Optional: decluster with another declustered roast's PDFs (its <publish_base>/pdfs) and skip
   # D.1 + D.2 -- e.g. to add seeds. Add that roast to upstream_roasts.
   # pdfs: "{eos_prod}/<declustered roast id>/pdfs"
@@ -97,7 +100,7 @@ cluster:
 # D.2: sampling PDFs (make_jet_splitting_PDFs.py) -> <publish_base>/pdfs/, one per UL year
 # (as the committed jet_clustering/jet-splitting-PDFs-00-09-00/clustering_pdfs_vs_pT_UL*.yml)
 # ------------------------------------------------------------------------------
-pdfs: "{}      # (no options yet)"
+pdfs: {}      # (no options yet)
 
 # ------------------------------------------------------------------------------
 # D.3: decluster -> <publish_base>/handoff/<dataset_name>.yml
@@ -129,3 +132,13 @@ validation:
   # (its D4/cutflow_declustered.yml). Same seed + inputs -> same counts; the check fails at
   # error_threshold (default 0.001) relative difference.
   known_counts: "coffea4bees/analysis/tests/known_fullCounts_declustered_Run2.yml"
+
+# ------------------------------------------------------------------------------
+# D.6: signal check (as MakeMixedData M.7) -- signal MC declustered with D.3's method / seed
+# ------------------------------------------------------------------------------
+signal_check:
+  enabled: true
+  datasets: ["GluGluToHHTo4B_cHHH1"]   # the Run 2 SM ggHH
+  seed: 0
+  subsample: 10
+  declustered_data_subsample: 10
