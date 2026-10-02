@@ -25,6 +25,11 @@ label: "declustered_run3_library"
 
 declustering:
   method: library
+  # D.3 / D.6 condor workers. With the numba cluster_bs and the per-process library one year's
+  # library + a 25k-event chunk peak at ~2.1 GB, but a worker caches up to two years' libraries:
+  # 4GB workers were OOM-killed (libB2, 77 D.3 chunks lost). 8GB (the skimmer template's) matches
+  # only ~40% of the LPC slots.
+  worker_memory: 6GB
   n_seeds: 1
   # Distinct from the PDF roast's names, so a consumer can read both handoffs in one -m list
   # (runner.py refuses a dataset name defined differently in two sources).
@@ -44,3 +49,8 @@ declustering:
     k_neighbors: 20            # random selection: candidates per jet (variety; seed overlap ~1/k)
     max_distance: 0.05         # ... but only those within this distance in (log pT, |eta|) (the nearest
                                #     always counts): keeps sparse tails / rare types to close matches
+
+validation:
+  # The base's known_counts are the PDF roast's blessed D.4 cutflow; library mode has none yet, so
+  # D4_cutflow just writes D4/cutflow_declustered.yml (bless it into analysis/tests/ to arm the check).
+  known_counts: null
