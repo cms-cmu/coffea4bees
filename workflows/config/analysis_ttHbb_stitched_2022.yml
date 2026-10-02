@@ -155,7 +155,11 @@ classifier_setting:
 
 fvt:
   eos_base: "root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_stitched"
+<<<<<<< HEAD:workflows/config/analysis_ttHbb_stitched_2022.yml
   plot_base: "root://eosuser.cern.ch//eos/user/m/mmarcheg/www/plots/ttHbb/analysis/4b"
+=======
+  plot_base: "root://eosuser.cern.ch//eos/user/a/mmarcheg/www/plots/ttHbb/analysis/4b"
+>>>>>>> f924927a (Update classifier_inputs.processor to processor_ttHbb.py):workflows/config/analysis_ttHbb_stitched.yml
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_stitched/FvT"
   label: "FvT_ttHbb_stitched"
@@ -171,7 +175,11 @@ fvt:
 
 svb:
   eos_base: "root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_stitched"
+<<<<<<< HEAD:workflows/config/analysis_ttHbb_stitched_2022.yml
   plot_base: "root://eosuser.cern.ch//eos/user/m/mmarcheg/www/plots/ttHbb/analysis/4b"
+=======
+  plot_base: "root://eosuser.cern.ch//eos/user/a/mmarcheg/www/plots/ttHbb/analysis/4b"
+>>>>>>> f924927a (Update classifier_inputs.processor to processor_ttHbb.py):workflows/config/analysis_ttHbb_stitched.yml
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_stitched/SvB"
   label: "SvB_ttHbb_stitched"
