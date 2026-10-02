@@ -6,7 +6,8 @@
 # (log pT, |eta|) within max_distance, no mass matching). See that config for the method.
 #
 # Run 2 differences:
-#   * carry_fields: NanoAOD v9 jets (DeepJet scores, qgl, bRegRes; no PNet, no nSVs). Not puId:
+#   * carry_fields: what the Run 2 candidate jets have (b-tag, jet ID, constituents and energy
+#     fractions; no PNet, nSVs, DeepJet CvB/CvL/QG, qgl or bRegRes). Not puId:
 #     Run 2 drops jets with puId < 6 below 50 GeV, and a library child's own puId (computed at its
 #     own pT, 0 above 50 GeV) would fail after scaling -- the synthetic jets keep puId 7, as in
 #     PDF mode. Not bRegCorr / rawFactor / area (splitting_library.NOT_CARRIABLE).
@@ -37,8 +38,8 @@ declustering:
   dataset_name: "synthetic_data_lib_4b"
   multijet_dataset_name: "synthetic_data_lib_multijet"
   library:
-    carry_fields: [btagScore, jetId, btagDeepFlavCvB, btagDeepFlavCvL, btagDeepFlavQG, qgl, bRegRes,
-                   nConstituents, chHEF, neHEF, chEmEF, neEmEF, muEF]
+    # what the Run 2 candidate jets carry into the clustering (no DeepJet CvB/CvL/QG, qgl, bRegRes)
+    carry_fields: [btagScore, jetId, nConstituents, chHEF, neHEF, chEmEF, neEmEF, muEF]
     min_entries: 10
     scale_pt: true
     boost_z: true
