@@ -15,6 +15,12 @@
 base: coffea4bees/workflows/config/mixeddata_run3_4bmix.yml
 label: "mixeddata_run3_4bmix_noboost"
 
+inputs:
+  # + the boost/retry 4b roast, whose 4b skim (M.2a) this roast reads instead of skimming again
+  upstream_roasts: [nominal_run3_nontight_20260925_0c53380-193851f, nominal_run3_20260922_3f9e199-1e0504f,
+                    mixeddata_run3_20260926_956d4bf-aca8a4e, mixeddata_run3_4bmix_20261001_af69c01-28f390d]
+  data_4bskim: "{roast:mixeddata_run3_4bmix_20261001_af69c01-28f390d}/handoff/data__4bskim.yml"
+
 mixing:
   dataset_name: "mixeddata_all_4bmixnoboost"
   use_boost_corrected_matching: false
