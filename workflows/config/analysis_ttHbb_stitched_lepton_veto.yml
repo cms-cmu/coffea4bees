@@ -1,25 +1,38 @@
 # ==============================================================================
 # GLOBAL WORKFLOW CONFIGURATION
 # ==============================================================================
-label: "ttHbb_stitched"
-# Per-job condor clusters instead of the shared dask daemon. The daemon builds
-# its condor code tarball once at startup, so a running daemon ships whatever
-# src/ + coffea4bees/ looked like then; each runner.py invocation here builds a
-# fresh one instead. Drop this line (and pre-start the daemon per the docs) once
-# the daemon is restarted against current code.
-additional_parameters: "--condor --run-performance"
-output_path: "output/ttHbb_stitched/"
-cern_user: "mmarcheg"
-cern_path: "www/plots/ttHbb/analysis/4b/"
+label: "ttHbb_stitched_lepton_veto"
+output_path: "output/ttHbb_stitched_lepton_veto/"
+cern_user: "algomez"
+cern_path: "www/ttHbb/Plots/"
 
 dataset:
   - "ttHbb"
   - "data"
 
 year_eras:
-  # 2022 only -- derived from analysis_ttHbb_stitched.yml for a 2022-only
-  # Phase B.1 (JCM) run. Everything else in this file is identical to the
-  # parent config; only this block differs.
+  UL16_preVFP:
+    - "C"
+    - "D"
+    - "E"
+    - "F"
+  UL16_postVFP:
+    - "F"
+    - "G"
+    - "H"
+  UL17:
+    - "C"
+    - "D"
+    - "E"
+    - "F"
+  UL18:
+    - "A"
+    - "B"
+    - "C"
+    - "D"
+  # --- Run 3 -----------------------------------------------------------------
+  # Era keys must match metadata/datasets/data.yml (and triggers_HH4b.yml):
+  # 2022_preEE / 2022_EE / 2023_preBPix / 2023_BPix / 2024
   "2022_preEE":       # Run2022 C+D, 7980.4 pb-1. "B" is the JetHT PD of Run2022C,
     - "B"             # "C" is the JetMET PD of the same era -- both are needed.
     - "C"
@@ -28,6 +41,26 @@ year_eras:
     - "E"
     - "F"
     - "G"
+  "2023_preBPix":     # Run2023 C, 17960 pb-1. Split over JetMET0/JetMET1
+    - "C01"           # (C01,C02,C11,C12) and ParkingHH (C3,C4).
+    - "C02"
+    - "C11"
+    - "C12"
+    - "C3"
+    - "C4"
+  "2023_BPix":        # Run2023 D, 9680 pb-1. ParkingHH v1+v2.
+    - "D1"
+    - "D2"
+  "2024":             # Run2024 C-I, 109950 pb-1. Era I is split into I2/I3.
+    - "C"
+    - "D"
+    - "E"
+    - "F"
+    - "G"
+    - "H"
+    - "I2"
+    - "I3"
+
 # ==============================================================================
 # PHASE A: SKIMMING & TRIGGER WEIGHTS
 # ==============================================================================
@@ -51,7 +84,7 @@ skimmer:
       - T2_US_Wisconsin
 
   config:
-    base_path: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_stitched/
+    base_path: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched/
     step: 100000
     loosePtForSkim: true
 
@@ -71,7 +104,7 @@ trigger_weights:
   config:
     use_vectorized: false
     tagger: DeepJet
-    make_classifier_input: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_stitched/
+    make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched/
 
 # ==============================================================================
 # PHASE B: CALIBRATION & CLASSIFIER INPUTS (JCM & Friendtrees)
@@ -116,7 +149,7 @@ classifier_inputs:
     run_SvB: false
     top_reconstruction: slow
     fill_histograms: true
-    make_classifier_input: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_stitched/
+    make_classifier_input: root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched/
 
 # ==============================================================================
 # PHASE C & D: CLASSIFIER SETTINGS (Entirely on falcon / PSC)
@@ -154,8 +187,8 @@ classifier_setting:
       - feature_ancillary: [xW, nSelJets, xbW, year]
 
 fvt:
-  eos_base: "root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_stitched"
-  plot_base: "root://eosuser.cern.ch//eos/user/m/mmarcheg/www/plots/ttHbb/analysis/4b"
+  eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched"
+  plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_stitched/FvT"
   label: "FvT_ttHbb_stitched"
@@ -170,8 +203,8 @@ fvt:
   metadata: "coffea4bees/metadata/datasets/classifier_inputs_ttHbb_stitched.json@@HCR_input"
 
 svb:
-  eos_base: "root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_stitched"
-  plot_base: "root://eosuser.cern.ch//eos/user/m/mmarcheg/www/plots/ttHbb/analysis/4b"
+  eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched"
+  plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_stitched/SvB"
   label: "SvB_ttHbb_stitched"
@@ -198,13 +231,6 @@ analysis_config:
     worker_memory: 8GB
     chunksize: 10000
     dashboard_address: 0
-    # Trim the condor tarball: the default ['coffea4bees/', 'src/'] ships .git
-    # (117 MB) and jet_clustering (170 MB) to every worker (~490 MB total).
-    # Matches the trigger_weights / classifier_inputs runner blocks above.
-    condor_transfer_input_files:
-      - src/
-      - coffea4bees/analysis/
-      - coffea4bees/metadata/
   config:
     blind: true
     apply_FvT: true
@@ -212,6 +238,7 @@ analysis_config:
     apply_trigWeight: true
     apply_btagSF: true
     apply_boosted_veto: false
+    apply_lepton_veto: true
     run_SvB: true
     SvB_MA: true
     SvB: null
@@ -232,7 +259,7 @@ convert_hist_to_json:
     - "SvB_MA.ps_ttHbb"
     - "SvB_MA.ps"
 
-combine_outdir: "datacards/"
+combine_outdir: "datacards/ttHbb_stitched_lepton_veto/"
 make_combine_inputs:
   stat_only: ""
   bkgsyst: "output/ttHbb_mixeddata_closure/closure_fits/3bDvTMix4bDvT/SvB_MA/rebin1/SR/ttHbb/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_rebin1.pkl"
