@@ -169,7 +169,12 @@ def _m7_hist_config(src, dst, datasets, jcm_file, mixed_data=False, subsample=1)
               'require_trigWeight': False,    # Run 3 ggF has no trigger-weight friend
               'blind': False,                 # a blinded synthetic_mc lost its SR SvB tail
               'event_subsample': subsample})
-    if mixed_data:
+    if jcm_file is None:
+        # 4b mixing: the mixed events are unit-weight four-tag events (no JCM, no apply_MvD branch);
+        # the plots scale the union of the N seeds by 1/N, as M.6
+        c.update({'apply_JCM': False})
+        c.pop('JCM_file', None)
+    elif mixed_data:
         c.update({'apply_MvD': True, 'apply_MvD_weight': False})
     if config['test']:
         cfg.setdefault('runner', {}).update({'condor': False, 'shared_dask': False})
@@ -187,10 +192,10 @@ rule M7_hist_config_signal:
 rule M7_hist_config_mixeddata:
     input:
         hist_config = UPSTREAM_HIST_CONFIG,
-        jcm = MIXED_JCM
+        jcm = [] if MIX4B else MIXED_JCM        # 4b mixing has no mixed-data JCM (no M.3)
     output: M7_HIST_CONFIG['mixeddata']
     run:
-        _m7_hist_config(input.hist_config, output[0], [MIXED_URL], input.jcm,
+        _m7_hist_config(input.hist_config, output[0], [MIXED_URL], None if MIX4B else input.jcm,
                         mixed_data=True, subsample=MIX_SUBSAMPLE)
 
 use rule analysis_processor from analysis as M7_hists_signal with:
@@ -216,7 +221,7 @@ use rule analysis_processor from analysis as M7_hists_mixeddata with:
         runner_script = "runner.py",
         config_file = M7_HIST_CONFIG['mixeddata'],
         published = M2_PUBLISHED,
-        jcm = MIXED_JCM
+        jcm = [] if MIX4B else MIXED_JCM
     output: f"{M7_OUT}singlefiles/hist__{MIX_NAME}__{{year}}.coffea"
     log: f"{M7_OUT}logs/hists_mixeddata__{{year}}.log"
     wildcard_constraints:
@@ -254,13 +259,14 @@ rule M7_plot_config_signal:
     signal from 3b (x the same JCM) and from 4b input events. No ratio panel."""
     output: f"{M7_OUT}plots_signal.yml"
     run:
-        cfg = {'hists': {
-                   'HH4b_4b': _plot_entry(SIG_DATASETS, 'fourTag', "4b signal", "#e42536"),
-                   'HH4b_3b': _plot_entry(SIG_DATASETS, 'threeTag', "3b signal x JCM", "#e42536", "dashed"),
-                   'HH4b_mixed3b': _plot_entry(SIG_3B.values(), 'fourTag', "mixed 3b signal x JCM", "#1f77b4", "dashed"),
-                   'HH4b_mixed4b': _plot_entry(SIG_4B.values(), 'fourTag', "mixed 4b signal", "#1f77b4")},
-               'doRatio': 0,
-               'summary': _SUMMARY}
+        hists = {'HH4b_4b': _plot_entry(SIG_DATASETS, 'fourTag', "4b signal", "#e42536"),
+                 'HH4b_3b': _plot_entry(SIG_DATASETS, 'threeTag', "3b signal x JCM", "#e42536", "dashed"),
+                 'HH4b_mixed3b': _plot_entry(SIG_3B.values(), 'fourTag', "mixed 3b signal x JCM", "#1f77b4", "dashed"),
+                 'HH4b_mixed4b': _plot_entry(SIG_4B.values(), 'fourTag', "mixed 4b signal", "#1f77b4")}
+        if MIX4B:                               # 4b mixing mixes only the 4b signal events
+            for k in ('HH4b_3b', 'HH4b_mixed3b'):
+                hists.pop(k)
+        cfg = {'hists': hists, 'doRatio': 0, 'summary': _SUMMARY}
         write_yaml(output[0], cfg)
 
 rule M7_plot_config_mixeddata:
@@ -269,20 +275,24 @@ rule M7_plot_config_mixeddata:
     ratio panel is each (x100) signal / mixed data."""
     output: f"{M7_OUT}plots_mixeddata.yml"
     run:
+        # 4b mixing: the mixed 4b signal overlaid on the union of the N seeds x 1/N (unit weights)
+        mixed_key, mixed_sig, mixed_label = (('HH4b_mixed4b', SIG_4B, "mixed 4b signal (x100)") if MIX4B else
+                                             ('HH4b_mixed3b', SIG_3B, "mixed 3b signal x JCM (x100)"))
+        stack = {'process': MIX_NAME, 'tag': 'fourTag', 'fillcolor': "#FFDF7Fff", 'edgecolor': 'k',
+                 'label': (f"Mixed 4b data (mean of {N_SUB} seeds)" if MIX4B else "Mixed data x JCM")}
+        if MIX4B:
+            stack['scalefactor'] = 1.0 / N_SUB
         cfg = {'hists': {
                    'HH4b_4b': _plot_entry(SIG_DATASETS, 'fourTag', "4b signal (x100)", "#e42536", "solid", 100),
-                   'HH4b_mixed3b': _plot_entry(SIG_3B.values(), 'fourTag', "mixed 3b signal x JCM (x100)",
-                                               "#1f77b4", "dashed", 100)},
-               'stack': {
-                   'MixedData': {'process': MIX_NAME, 'tag': 'fourTag', 'fillcolor': "#FFDF7Fff",
-                                 'edgecolor': 'k', 'label': "Mixed data x JCM"}},
+                   mixed_key: _plot_entry(mixed_sig.values(), 'fourTag', mixed_label, "#1f77b4", "dashed", 100)},
+               'stack': {'MixedData': stack},
                'ratios': {
                    'sig4bToMixed': {'numerator': {'type': 'hists', 'key': 'HH4b_4b'},
                                     'denominator': {'type': 'stack'},
                                     'uncertianty': 'nominal', 'color': "#e42536", 'marker': "s"},
-                   'mixed3bToMixed': {'numerator': {'type': 'hists', 'key': 'HH4b_mixed3b'},
-                                      'denominator': {'type': 'stack'},
-                                      'uncertianty': 'nominal', 'color': "#1f77b4", 'marker': "o"}},
+                   'mixedSigToMixed': {'numerator': {'type': 'hists', 'key': mixed_key},
+                                       'denominator': {'type': 'stack'},
+                                       'uncertianty': 'nominal', 'color': "#1f77b4", 'marker': "o"}},
                'doRatio': 1,
                'summary': _SUMMARY}
         write_yaml(output[0], cfg)
@@ -324,8 +334,8 @@ rule M7_report:
         yml = f"{M7_OUT}signal_check.yml"
     log: f"{M7_OUT}logs/report.log"
     params:
-        # original:mixed-3b:mixed-4b process names
-        triples = " ".join(f"{d}:{SIG_3B[d]}:{SIG_4B[d]}" for d in SIG_DATASETS)
+        # original:mixed-3b:mixed-4b process names; "-": no 3b-origin sample (4b mixing mixes only 4b)
+        triples = " ".join(f"{d}:{'-' if MIX4B else SIG_3B[d]}:{SIG_4B[d]}" for d in SIG_DATASETS)
     shell:
         """
         set -eo pipefail
