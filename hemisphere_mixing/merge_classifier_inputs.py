@@ -101,19 +101,50 @@ def main() -> int:
             continue
         with open(jf, "r") as f:
             d = json.load(f)
+        sub_entries = []
         if "HCR_input" in d:
             if ref_branches is not None:
                 d["HCR_input"]["branches"] = sorted(
                     list(set(d["HCR_input"].get("branches", [])).intersection(ref_branches))
                 )
             all_branches.update(d["HCR_input"].get("branches", []))
-            for entry in d["HCR_input"].get("data", []):
+            sub_entries = d["HCR_input"].get("data", [])
+            for entry in sub_entries:
                 all_entries.append(entry)
+
+        base_nominal = [e for e in curr.get("HCR_input", {}).get("data", []) if not is_any_subsample(e)]
+        per_sub_entries = base_nominal + sub_entries
+
+        seen_sub = set()
+        deduped_sub = []
+        for entry in per_sub_entries:
+            try:
+                key = (
+                    entry[0]["path"],
+                    entry[1][0]["chunk"]["path"],
+                    entry[1][0].get("start"),
+                    entry[1][0].get("stop"),
+                )
+            except (IndexError, KeyError, TypeError):
+                key = None
+            if key is not None:
+                if key in seen_sub:
+                    continue
+                seen_sub.add(key)
+            deduped_sub.append(entry)
+
+        per_sub_d = {
+            "HCR_input": {
+                "name": "HCR_input",
+                "branches": d.get("HCR_input", {}).get("branches", curr.get("HCR_input", {}).get("branches", [])),
+                "data": deduped_sub
+            }
+        }
 
         per_sub_target = target.replace(".json", f"_v{v_idx}.json")
         os.makedirs(os.path.dirname(os.path.abspath(per_sub_target)), exist_ok=True)
         with open(per_sub_target, "w") as f_sub:
-            json.dump(d, f_sub, indent=2)
+            json.dump(per_sub_d, f_sub, indent=2)
 
     # Guard against the same (source file, friend chunk) pair being listed twice
     seen = set()

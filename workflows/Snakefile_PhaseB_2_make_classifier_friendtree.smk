@@ -155,7 +155,12 @@ def get_classifier_inputs_config_inputs(wildcards):
         inputs.append(ds_loc)
     rule_names = {r.name for r in workflow.rules}
     if 'output_computeJCM' in rule_names:
-        inputs.append(rules.output_computeJCM.input[0])
+        if bool(config.get('per_year_jcm', False)):
+            jcm_out = globals().get('JCM_OUTPUT_PATH', os.path.join(config.get('output_path', 'output/'), 'computeJCM/'))
+            jcm_tag = config.get('tag', '2024_v2')
+            inputs.extend([f"{jcm_out}JCM_{jcm_tag}/jetCombinatoricModel_SB_{jcm_tag}_{yr}.yml" for yr in years])
+        else:
+            inputs.append(rules.output_computeJCM.input[0])
     return inputs
 
 rule create_classifier_inputs_config:
@@ -166,10 +171,18 @@ rule create_classifier_inputs_config:
         cfg = get_raw_classifier_inputs_config()
         rule_names = {r.name for r in workflow.rules}
         if 'output_computeJCM' in rule_names:
-            new_jcm_file = str(rules.output_computeJCM.input[0])
             if 'config' not in cfg or not isinstance(cfg['config'], dict):
                 cfg['config'] = {}
-            cfg['config']['JCM_file'] = new_jcm_file
+            if bool(config.get('per_year_jcm', False)):
+                jcm_out = globals().get('JCM_OUTPUT_PATH', os.path.join(config.get('output_path', 'output/'), 'computeJCM/'))
+                jcm_tag = config.get('tag', '2024_v2')
+                cfg['config']['JCM_file'] = {
+                    str(yr): f"{jcm_out}JCM_{jcm_tag}/jetCombinatoricModel_SB_{jcm_tag}_{yr}.yml"
+                    for yr in years
+                }
+            else:
+                new_jcm_file = str(rules.output_computeJCM.input[0])
+                cfg['config']['JCM_file'] = new_jcm_file
         if config.get("test", False):
             if 'runner' not in cfg or not isinstance(cfg['runner'], dict):
                 cfg['runner'] = {}

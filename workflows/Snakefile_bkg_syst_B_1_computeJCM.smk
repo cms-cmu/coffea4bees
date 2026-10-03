@@ -88,14 +88,28 @@ if not DATA_NOJCM_INPUT.startswith("/") and not DATA_NOJCM_INPUT.startswith("out
 else:
     jcm_input_coffea = DATA_NOJCM_INPUT
 
-localrules: all_bkg_syst_B_1, prepare_data_noJCM_b1, make_subsample_jcm_b1, test_plots_subsample_closure, test_v0_jcm_closure, all_test_subsample_closure
+per_year_jcm = bool(config.get('per_year_jcm', phaseB_1.get('per_year_jcm', False)))
 
-rule all_bkg_syst_B_1:
-    input:
-        expand(f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}.yml", m=range(N_SUBSAMPLES)),
-        expand(f"{out_b1}plots_v{{m}}/selJets_noJCM_n.png", m=range(N_SUBSAMPLES)),
-        expand(f"{out_b1}plots_v{{m}}/tagJets_noJCM_n.png", m=range(N_SUBSAMPLES)),
-        f"{out_b1}test_v{val_subsample}_closure/plots/plots_done.txt"
+wildcard_constraints:
+    m = r"\d+",
+    year = r"[A-Za-z0-9_]+",
+
+localrules: all_bkg_syst_B_1, prepare_data_noJCM_b1, make_subsample_jcm_b1, make_subsample_jcm_b1_per_year, stage_test_subsample_config, test_plots_subsample_closure, test_v0_jcm_closure, all_test_subsample_closure
+
+if per_year_jcm:
+    rule all_bkg_syst_B_1:
+        input:
+            expand(f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml", m=range(N_SUBSAMPLES), year=YEARS),
+            expand(f"{out_b1}plots_v{{m}}_{{year}}/selJets_noJCM_n.png", m=range(N_SUBSAMPLES), year=YEARS),
+            expand(f"{out_b1}plots_v{{m}}_{{year}}/tagJets_noJCM_n.png", m=range(N_SUBSAMPLES), year=YEARS),
+            f"{out_b1}test_v{val_subsample}_closure/plots/plots_done.txt"
+else:
+    rule all_bkg_syst_B_1:
+        input:
+            expand(f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}.yml", m=range(N_SUBSAMPLES)),
+            expand(f"{out_b1}plots_v{{m}}/selJets_noJCM_n.png", m=range(N_SUBSAMPLES)),
+            expand(f"{out_b1}plots_v{{m}}/tagJets_noJCM_n.png", m=range(N_SUBSAMPLES)),
+            f"{out_b1}test_v{val_subsample}_closure/plots/plots_done.txt"
 
 rule prepare_data_noJCM_b1:
     input:
@@ -163,12 +177,78 @@ rule make_subsample_jcm_b1:
         fi
         """
 
+rule make_subsample_jcm_b1_per_year:
+    input:
+        unpack(get_subsample_jcm_inputs_b1)
+    output:
+        jcm_yaml = f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml",
+        seljets_plot = f"{out_b1}plots_v{{m}}_{{year}}/selJets_noJCM_n.png",
+        tagjets_plot = f"{out_b1}plots_v{{m}}_{{year}}/tagJets_noJCM_n.png",
+    log:
+        f"{out_b1}logs/make_jcm_v{{m}}_{{year}}.log"
+    params:
+        container_wrapper = config['analysis_container_wrapper'],
+        python_bin = python_bin,
+        test_mode = config.get('test', False),
+        dummy_jcm = config.get('dummy_jcm_file', "coffea4bees/metadata/weights/JCM/jetCombinatoricModel_SB_dummy.yml"),
+        region = jcm_region,
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {output.jcm_yaml})/plots_v{wildcards.m}_{wildcards.year} $(dirname {log})
+        if [ "{params.test_mode}" = "True" ] || [ "{params.test_mode}" = "true" ]; then
+            echo "Test mode: deploying dummy JCM {params.dummy_jcm} -> {output.jcm_yaml}" > {log}
+            cp {params.dummy_jcm} {output.jcm_yaml}
+            touch {output.seljets_plot} {output.tagjets_plot}
+        else
+            {params.container_wrapper} {params.python_bin} coffea4bees/analysis/jcm_tools/make_jcm_weights.py \
+                -i {input.data_coffea} {input.subsample_coffea} \
+                --jcm_config {input.fit_cfg} \
+                -m {input.plot_cfg} \
+                --combine_input_files \
+                -w mix_v{wildcards.m}_{wildcards.year} \
+                --data4bName mix_v{wildcards.m} \
+                -r {params.region} \
+                -o $(dirname {output.jcm_yaml})/plots_v{wildcards.m}_{wildcards.year}/ \
+                --year {wildcards.year} 2>&1 | tee {log}
+            cp $(dirname {output.jcm_yaml})/plots_v{wildcards.m}_{wildcards.year}/jetCombinatoricModel_{params.region}_mix_v{wildcards.m}_{wildcards.year}.yml {output.jcm_yaml}
+        fi
+        """
+
 # ── Verification: Processor Test on a Single Subsample with Calibrated JCM ────
+def get_val_jcm_inputs(wildcards):
+    if per_year_jcm:
+        return [f"{out_b1}jetCombinatoricModel_SB_mix_v{wildcards.m}_{y}.yml" for y in YEARS]
+    return f"{out_b1}jetCombinatoricModel_SB_mix_v{wildcards.m}.yml"
+
+rule stage_test_subsample_config:
+    input:
+        jcm = get_val_jcm_inputs,
+        proc_cfg = val_proc_cfg,
+        script = "coffea4bees/analysis/jcm_tools/stage_subsample_jcm_config.py",
+    output:
+        cfg = f"{out_b1}test_v{{m}}_closure/analysis_config_test.yml",
+    log:
+        f"{out_b1}test_v{{m}}_closure/logs/stage_test_subsample_config.log"
+    params:
+        container_wrapper = config['analysis_container_wrapper'],
+        python_bin = python_bin,
+        years_opt = f"--years {' '.join(YEARS)}" if per_year_jcm else "",
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {output.cfg}) $(dirname {log})
+        {params.container_wrapper} {params.python_bin} {input.script} \
+            --base-config {input.proc_cfg} \
+            --jcm-files {input.jcm} \
+            --output {output.cfg} \
+            {params.years_opt} 2>&1 | tee {log}
+        """
+
 rule test_processor_subsample_with_jcm:
     input:
+        cfg = f"{out_b1}test_v{{m}}_closure/analysis_config_test.yml",
         ds_file = get_multisample_dataset_file,
-        jcm = f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}.yml",
-        proc_cfg = val_proc_cfg,
     output:
         coffea = f"{out_b1}test_v{{m}}_closure/histAll_{channel}_mixeddata_v{{m}}_with_JCM.coffea",
     log:
@@ -185,12 +265,11 @@ rule test_processor_subsample_with_jcm:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea}) $(dirname {log})
-        {params.container_wrapper} {params.python_bin} runner.py {input.proc_cfg} \
+        {params.container_wrapper} {params.python_bin} runner.py {input.cfg} \
             --processor {params.processor} \
             --metadata {input.ds_file} \
             --datasets {params.dataset} \
             --years {params.years} \
-            --config-override apply_JCM=True JCM_file={input.jcm} \
             --output-path {params.output_path} \
             --output $(basename {output.coffea}) \
             {params.condor_flags} 2>&1 | tee {log}

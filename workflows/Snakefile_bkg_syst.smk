@@ -53,7 +53,7 @@ if not workflow.configfiles:
 
 include: "helpers/common.smk"
 
-phase_e_cfg = resolve_config_section(config, primary_key='phase_e', fallback_keys=['phaseE', 'closure'])
+phase_e_cfg = resolve_config_section(config, primary_key='phase_e', fallback_keys=['phase_e_fvt', 'phaseE', 'closure'])
 for k, v in phase_e_cfg.items():
     config.setdefault(k, v)
 

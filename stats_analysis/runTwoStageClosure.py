@@ -3611,6 +3611,17 @@ def run():
     if not closures[channel].passed:
         failed_steps.append("Closure Bias Test")
 
+    # Evaluate spurious signal status and basis
+    basis_closure = closures[channel].basis if channel in closures else None
+    ss_fprob = None
+    ss_passed = None
+    ss_basis = None
+    if channel in closures and basis_closure is not None and hasattr(closures[channel], "fProb_ss"):
+        if basis_closure in closures[channel].fProb_ss:
+            ss_fprob = float(closures[channel].fProb_ss[basis_closure])
+            ss_passed = bool(ss_fprob < 0.95) if closures[channel].passed else None
+            ss_basis = int(basis_closure)
+
     closure_status_file = f"{output_dir}/closure_status.json"
     import json
     status_dict = {
@@ -3621,6 +3632,9 @@ def run():
         "max_basis": maxBasisClosure,
         "variance_passed": bool(multijetEnsembles[channel].passed) if channel in multijetEnsembles else False,
         "bias_passed": bool(closures[channel].passed) if channel in closures else False,
+        "spurious_signal_passed": ss_passed,
+        "spurious_signal_basis": ss_basis,
+        "spurious_signal_fprob": ss_fprob,
         "passed": bool(closures[channel].passed and (multijetEnsembles[channel].passed or not getattr(args, 'strict_ensemble', False))),
         "selected_basis": int(closures[channel].basis) if channel in closures and closures[channel].basis is not None else None,
         "multijet_basis": int(multijetEnsembles[channel].basis) if channel in multijetEnsembles and multijetEnsembles[channel].basis is not None else None,

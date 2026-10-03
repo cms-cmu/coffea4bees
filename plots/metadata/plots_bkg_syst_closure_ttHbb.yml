@@ -3,23 +3,7 @@
 
 hists:
   mixeddata:
-    process:
-      - mix_v0
-      - mix_v1
-      - mix_v2
-      - mix_v3
-      - mix_v4
-      - mix_v5
-      - mix_v6
-      - mix_v7
-      - mix_v8
-      - mix_v9
-      - mix_v10
-      - mix_v11
-      - mix_v12
-      - mix_v13
-      - mix_v14
-      - mix_v15
+    process: mix_v0
     tag: fourTag
     label: "Mixed data (4b)"
     edgecolor: k
@@ -60,15 +44,16 @@ regions:
   - "SB"
 
 summary:
+  - overlay_SvB_MA_ps_ttHbb
+  - overlay_SvB_MA_ps
+  - overlay_FvT
+  - overlay_selJets_pt
+  - SvB_MA.ps_ttHbb
+  - SvB_MA.ps
   - SvB_MA.ps_hh
   - SvB_MA.ps_zh
   - SvB_MA.ps_zz
-  - SvB_MA.ps
   - FvT
   - selJets.n
   - canJet0.pt
   - m4j
-  - v4j.mass
-  - quadJet_selected.lead.mass
-  - quadJet_selected.subl.mass
-  - quadJet_selected.xHH

@@ -494,7 +494,7 @@ def stage_phaseA_4_configs(config, out_a4):
     JCM histograms + SvB friend trees) into {out_a4}configs/.
     Only non-default parameters specified in config['phaseA_4'] are merged on top.
     """
-    phaseA_4 = config.get('phaseA_4', config.get('phaseA_3', config.get('bkg_syst_A_4', {})))
+    phaseA_4 = config.get('phaseA_2', config.get('phaseA_4', config.get('phaseA_3', config.get('bkg_syst_A_2', config.get('bkg_syst_A_4', {})))))
     channel = config.get('channel', 'ttHbb')
     configs_dir = os.path.join(out_a4, "configs")
     default_processor = config.get('analysis_processor') or (config.get('analysis_config', {}) or {}).get('processor') or f"coffea4bees/analysis/processors/processor_{channel}.py"
@@ -565,26 +565,43 @@ def stage_phaseC_configs(config, out_c):
     Also registers train_templates and eval_templates into config for barista's generic Snakefile.
     """
     channel = config.get('channel', 'ttHbb')
-    out = config.get('out', 'output/ttHbb_bkg_syst/')
-    n_models = int(config.get('n_models', config.get('n_subsamples', 16)))
-    eos_base = config.get("eos_base", "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2")
-    mix_name = config.get("mix_name", "ttHbb_bkg_syst")
+    out = config.get('output_path', config.get('out', 'output/ttHbb_bkg_syst/'))
+    if not out.endswith('/'):
+        out += '/'
+    phase_c_cfg = config.get('phase_e_fvt', config.get('phaseC', config.get('phase_c', {})))
+    n_models = int(config.get('n_models', config.get('n_subsamples', phase_c_cfg.get('n_models', 16))))
+    eos_base = phase_c_cfg.get("eos_base", config.get("eos_base", "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2"))
+    mix_name = phase_c_cfg.get("mix_name", config.get("mix_name", "ttHbb_bkg_syst"))
+    per_year_jcm = bool(config.get('per_year_jcm', (config.get('phaseB_1', {}) or {}).get('per_year_jcm', False)))
+    raw_years = config.get('years', ['UL16_preVFP', 'UL16_postVFP', 'UL17', 'UL18'])
+    if isinstance(raw_years, str):
+        years = [str(y).strip() for y in raw_years.split() if str(y).strip()]
+    else:
+        years = [str(y) for y in raw_years]
 
-    nominal_ci = config.get(
+    nominal_ci = phase_c_cfg.get(
         'nominal_classifier_inputs',
-        'coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json'
+        config.get(
+            'nominal_classifier_inputs',
+            'coffea4bees/metadata/datasets/classifier_inputs_ttHbb_stitched.json' if os.path.exists('coffea4bees/metadata/datasets/classifier_inputs_ttHbb_stitched.json') else 'coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json'
+        )
     )
-    if not os.path.exists(nominal_ci) and os.path.exists('coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json'):
-        nominal_ci = 'coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json'
 
-    mixed_ci_template = config.get(
+    default_subsample_dir = "bkg_syst_A_2_process_subsamples" if os.path.exists(f"{out}bkg_syst_A_2_process_subsamples") else "bkg_syst_A_4_process_subsamples"
+    mixed_ci_template = phase_c_cfg.get(
         'mixed_classifier_inputs_template',
-        f"{out}bkg_syst_A_4_process_subsamples/histAll_{channel}_mixeddata_v{{m}}.json"
+        config.get(
+            'mixed_classifier_inputs_template',
+            f"{out}{default_subsample_dir}/histAll_{channel}_mixeddata_v{{m}}.json"
+        )
     )
 
-    jcm_template = config.get(
+    jcm_template = phase_c_cfg.get(
         'jcm_template',
-        f"{out}bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v{{m}}.yml"
+        config.get(
+            'jcm_template',
+            f"{out}bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v{{m}}.yml"
+        )
     )
 
     raw_train_wf = config.get("fvt_train_workflow", config.get("train_workflow", {}))
@@ -625,12 +642,19 @@ def stage_phaseC_configs(config, out_c):
         wfs_dir = os.path.join(model_dir, "wfs")
         os.makedirs(wfs_dir, exist_ok=True)
 
+        model_eos = f"{eos_base}/classifier/{mix_name}_v{m}"
+        fvt_eos = f"{eos_base}/friend/FvT/{mix_name}_v{m}"
+
         mapping = {
             "mix": str(m),
             "jcm": jcm_template.format(m=m),
             "mixed_ci": mixed_ci_template.format(m=m),
             "nominal_ci": nominal_ci,
+            "model": model_eos,
+            "FvT": fvt_eos,
         }
+        for y in years:
+            mapping[f"jcm_{y}"] = os.path.join(out, f"bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v{m}_{y}.yml")
 
         train_file = os.path.join(wfs_dir, "train.yml")
         eval_file = os.path.join(wfs_dir, "evaluate.yml")
@@ -654,77 +678,97 @@ def stage_phaseC_configs(config, out_c):
 
 def stage_phaseF_1_configs(config, out_f1):
     """
-    Generate all effective runtime configs for Stage F_1 into {out_f1}closure_v{m}/.
-    Creates concrete, self-contained analysis_config_data.yml for each subsample m,
-    eliminating runtime dynamic YAML generation in Snakemake run: blocks.
+    Generate the consolidated runtime config for Stage F_1 into {out_f1}.
+    Creates concrete, self-contained analysis_config_mixeddata_bkgs.yml evaluating
+    all 16 subsamples simultaneously in a single pass over 3-tag collision data.
     """
     phase_f_cfg = config.get('phase_f_1', config.get('bkg_syst_F_1', config.get('phase_f', {})))
     channel = config.get('channel', 'ttHbb')
     n_subsamples = int(config.get('n_subsamples', config.get('n_models', 16)))
-    out = config.get('output_path', 'output/ttHbb_bkg_syst/')
+    out = config.get('output_path', config.get('out', 'output/ttHbb_bkg_syst/'))
     if not out.endswith('/'):
         out += '/'
     mix_name = config.get('mix_name', f"{channel}_bkg_syst")
     is_test = config.get('test', False)
+    per_year_jcm = bool(config.get('per_year_jcm', (config.get('phaseB_1', {}) or {}).get('per_year_jcm', False)))
+    raw_years = config.get('years', ['UL16_preVFP', 'UL16_postVFP', 'UL17', 'UL18'])
+    if isinstance(raw_years, str):
+        years = [str(y).strip() for y in raw_years.split() if str(y).strip()]
+    else:
+        years = [str(y) for y in raw_years]
 
-    data_configs = {}
+    subsample_names = [f"v{m}" for m in range(n_subsamples)]
+
+    # Build multi-subsample JCM dictionary
+    jcm_file = {}
     for m in range(n_subsamples):
-        closure_dir = os.path.join(out_f1, f"closure_v{m}")
-        jcm_file = os.path.join(out, f"bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v{m}.yml")
-        fvt_friend = os.path.join(out, f"bkg_syst_C_FvT/friends/friends_FvT_{mix_name}_v{m}.json@@FvT")
-
-        runner_dict = {
-            "workers": 4,
-            "condor": True,
-            "shared_dask": True,
-            "run_performance": True,
-            "worker_memory": "4GB",
-            "dataset_location": config.get('dataset_location', "coffea4bees/metadata/datasets/"),
-            "datasets_file": "coffea4bees/metadata/datasets/data.yml",
-            "weights_file": config.get('weights_file', f"coffea4bees/metadata/weights/weights_{channel}.yml"),
-        }
-        if is_test:
-            runner_dict["condor"] = False
-            runner_dict["shared_dask"] = False
-            runner_dict["workers"] = 2
-            runner_dict["chunksize"] = config.get("chunksize", 1000)
-            runner_dict["maxchunks"] = config.get("maxchunks", 1)
-
-        data_cfg = {
-            "processor": config.get('analysis_processor') or f"coffea4bees/analysis/processors/processor_{channel}.py",
-            "weights_file": config.get('weights_file', f"coffea4bees/metadata/weights/weights_{channel}.yml"),
-            "runner": runner_dict,
-            "config": {
-                "blind": False,
-                "apply_FvT": True,
-                "apply_JCM": True,
-                "JCM_file": jcm_file,
-                "friends": {
-                    "trigWeight": config.get('trigweights_file', "coffea4bees/metadata/friends/trigweights_Run2_v2.json@@trigWeight"),
-                    "SvB_MA": config.get('data_svb_friend', f"root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/{channel}_stitched/friend/SvB_{channel}_stitched/result.json@@analysis.0.merged"),
-                    "FvT": fvt_friend,
-                },
-                "apply_trigWeight": True,
-                "apply_btagSF": True,
-                "apply_boosted_veto": False,
-                "run_SvB": True,
-                "SvB_MA": True,
-                "top_reconstruction": "fast",
-                "plot_ttbar_with_weights": True,
-                "candidates_selection_cfg": f"coffea4bees/analysis/metadata/candidates_selection_thresholds_{channel}.yml",
-                "fill_histograms": True,
-                "hist_cuts": ["pass_nSelJets_gt6"],
+        v_name = f"v{m}"
+        if per_year_jcm:
+            jcm_file[v_name] = {
+                y: os.path.join(out, f"bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v{m}_{y}.yml")
+                for y in years
             }
-        }
-        if 'runner' in phase_f_cfg and isinstance(phase_f_cfg['runner'], dict):
-            _deep_merge(data_cfg['runner'], phase_f_cfg['runner'])
-        if 'config' in phase_f_cfg and isinstance(phase_f_cfg['config'], dict):
-            _deep_merge(data_cfg['config'], phase_f_cfg['config'])
+        else:
+            jcm_file[v_name] = os.path.join(out, f"bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v{m}.yml")
 
-        cfg_path = _dump_yaml(data_cfg, os.path.join(closure_dir, "analysis_config_data.yml"))
-        data_configs[m] = cfg_path
+    # Build friends dictionary
+    friends_dict = {
+        "trigWeight": config.get('trigweights_file', "coffea4bees/metadata/friends/trigweights_Run2_v2.json@@trigWeight"),
+        "SvB_MA": config.get('data_svb_friend', f"root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/{channel}_stitched/friend/SvB_{channel}_stitched/result.json@@analysis.0.merged"),
+    }
+    for m in range(n_subsamples):
+        friends_dict[f"FvT_v{m}"] = os.path.join(out, f"bkg_syst_C_FvT/friends/friends_FvT_{mix_name}_v{m}.json@@FvT")
+    friends_dict["FvT"] = friends_dict["FvT_v0"]
+
+    runner_dict = {
+        "workers": 4,
+        "condor": True,
+        "shared_dask": True,
+        "run_performance": True,
+        "worker_memory": "4GB",
+        "dataset_location": config.get('dataset_location', "coffea4bees/metadata/datasets/"),
+        "datasets_file": "coffea4bees/metadata/datasets/data.yml",
+        "weights_file": config.get('weights_file', f"coffea4bees/metadata/weights/weights_{channel}.yml"),
+    }
+    if is_test:
+        runner_dict["condor"] = False
+        runner_dict["shared_dask"] = False
+        runner_dict["workers"] = 2
+        runner_dict["chunksize"] = config.get("chunksize", 1000)
+        runner_dict["maxchunks"] = config.get("maxchunks", 1)
+
+    data_cfg = {
+        "processor": config.get('analysis_processor') or f"coffea4bees/analysis/processors/processor_{channel}.py",
+        "weights_file": config.get('weights_file', f"coffea4bees/metadata/weights/weights_{channel}.yml"),
+        "runner": runner_dict,
+        "config": {
+            "blind": False,
+            "apply_FvT": True,
+            "apply_JCM": True,
+            "JCM_file": jcm_file,
+            "subsample_names": subsample_names,
+            "friends": friends_dict,
+            "apply_trigWeight": True,
+            "apply_btagSF": True,
+            "apply_boosted_veto": False,
+            "run_SvB": True,
+            "SvB_MA": True,
+            "top_reconstruction": "fast",
+            "plot_ttbar_with_weights": True,
+            "candidates_selection_cfg": f"coffea4bees/analysis/metadata/candidates_selection_thresholds_{channel}.yml",
+            "fill_histograms": True,
+            "hist_cuts": ["pass_nSelJets_gt6"],
+        }
+    }
+    if 'runner' in phase_f_cfg and isinstance(phase_f_cfg['runner'], dict):
+        _deep_merge(data_cfg['runner'], phase_f_cfg['runner'])
+    if 'config' in phase_f_cfg and isinstance(phase_f_cfg['config'], dict):
+        _deep_merge(data_cfg['config'], phase_f_cfg['config'])
+
+    cfg_path = _dump_yaml(data_cfg, os.path.join(out_f1, "analysis_config_mixeddata_bkgs.yml"))
 
     return {
-        "data_configs": data_configs,
+        "config": cfg_path,
+        "data_configs": {0: cfg_path},
     }
 
