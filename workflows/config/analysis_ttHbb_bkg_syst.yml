@@ -96,11 +96,12 @@ phaseA_3:
   # config: classifier inputs -> <publish_base>/classifier_inputs/mixeddata/v<k>/, SvB friends ->
   # <publish_base>/friend/mixeddata/v<k>/, SvB_MA = inputs.SvB_model (defaults: helpers/stage_configs.py)
 
-# A_3 validation plots (rule A3_validation): 4b data and nominal model (inputs.nominal_hists) vs the
-# mixed subsamples (mean, min-max, and `subsample` on its own), per region, inclusive + each of `cuts`
+# A_3 validation plots (rule A3_validation: makePlots + gallery, plot config
+# coffea4bees/plots/metadata/plots_bkg_syst_mixed_validation.yml): 4b data and the nominal model
+# (inputs.nominal_hists) vs the mean of the mixed subsamples and `subsample` on its own, in SR / SB,
+# inclusive and pass_nSelJets_gt6
 validation:
-  hists: ["SvB_MA.ps_ttHbb", "SvB_MA.ps", "SvB_MA.tt_vs_mj"]
-  cuts: ["pass_nSelJets_gt6"]
+  hists: ["SvB_MA.ps_ttHbb", "SvB_MA.ps", "SvB_MA.tt_vs_mj", "SvB_MA.ptt", "selJets.n", "tagJets.n"]
   model_ttbar: ["TTbar4b_from_d3"]       # the nominal Phase F ttbar (from 3b data), filled as threeTag
   model_ttbar_tag: "threeTag"
   subsample: 0
@@ -261,11 +262,8 @@ phase_e_fvt:
   # nominal_classifier_inputs: inputs.classifier_inputs; the per-subsample mixed classifier inputs and
   # JCMs default to this roast's A_3 / B_1 outputs (helpers/stage_configs.py:stage_phaseC_configs)
   precision: "fp16"
-  gpu_partition: "GPU-shared"
-  slurm_account: "phy260026p"
-  gpu_gres: "gpu:1"
-  gpu_mem: 22000
-  eval_mem: 22000
+  # GPU resources: the falcon defaults of src/classifier/workflow/Snakefile (work / light / mps:50);
+  # on Bridges-2 set gpu_partition: GPU-shared, slurm_account: phy260026p, gpu_gres: gpu:1, gpu_mem/eval_mem: 22000
   plot_inputs: false
   plot_weights: false
   analyze: false
