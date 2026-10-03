@@ -7,26 +7,21 @@ import sys
 import shutil
 import yaml
 import copy
-import ast as _ast
+import re
 
 include: "common.smk"
 
 # ── 1. Configuration Section Resolution ────────────────────────────────────────
-phase_e_cfg = resolve_config_section(config, primary_key='phase_e', fallback_keys=['phase_e_fvt', 'phaseE', 'closure', 'mixeddata'])
+phase_e_cfg = resolve_config_section(config, primary_key='phase_e', fallback_keys=['phaseE', 'closure'])
 for k, v in phase_e_cfg.items():
     config.setdefault(k, v)
 
-jcm_cfg = resolve_config_section(config, primary_key='phase_e_jcm', fallback_keys=['jcm', 'phase_e'])
-for k, v in jcm_cfg.items():
-    config.setdefault(f"jcm_{k}", v)
-
-mixeddata_cfg = resolve_config_section(config, primary_key='mixeddata', fallback_keys=['mixed_data'])
-for k, v in mixeddata_cfg.items():
-    config.setdefault(k, v)
-
-psdata_cfg = resolve_config_section(config, primary_key='phaseA_2', fallback_keys=['phaseA_4', 'ttbar_psdata', 'psdata', 'ttbar_pseudodata'])
-for k, v in psdata_cfg.items():
-    if k != 'output_path' and not isinstance(v, dict):
+# Stage C (FvT) settings: stage_phaseC_configs and src/classifier/workflow/Snakefile read them from
+# the top level (eos_base, nominal_classifier_inputs, gpu_*, analyze, ...), as Snakefile_PhaseC.smk
+# hoists its `fvt` section. output_path stays the workflow's.
+fvt_cfg = resolve_config_section(config, primary_key='phase_e_fvt', fallback_keys=['fvt', 'fvt_classifier'])
+for k, v in fvt_cfg.items():
+    if k != 'output_path':
         config.setdefault(k, v)
 
 # ── 2. Execution Environment & Container Setup ─────────────────────────────────
@@ -54,47 +49,30 @@ is_run3 = any(('202' in str(y) or 'Run3' in str(y)) for y in YEARS)
 config.setdefault('isRun3', is_run3)
 run_period = "Run3" if is_run3 else "Run2"
 
-# ── 4. Subsamples & Ranks ──────────────────────────────────────────────────────
-N_SUBSAMPLES = int(config.get('n_subsamples', config.get('n_models', config.get('n_samples', 15))))
+# ── 4. Subsamples ──────────────────────────────────────────────────────────────
+SUB = config.get('subsamples') or {}
+# Where the closure samples come from: `split` = 3b mixing (mixeddata_all split with the A_1 JCM),
+# `seeds` = 4b mixing (the N seeds of a MakeMixedData 4b-mixing roast's mixeddata_all_<tag>; no JCM)
+SUB_SOURCE = SUB.get('source', 'split')
+if SUB_SOURCE not in ('split', 'seeds'):
+    raise ValueError(f"subsamples.source must be 'split' or 'seeds', got {SUB_SOURCE!r}")
+N_SUBSAMPLES = int(SUB.get('n', config.get('n_subsamples', config.get('n_models', config.get('n_samples', 16)))))
 SUBSAMPLES = [str(i) for i in range(N_SUBSAMPLES)]
-
-config.setdefault('default_rank', 0)
-_rank_raw = config['default_rank']
-if isinstance(_rank_raw, str):
-    try:
-        _rank = _ast.literal_eval(_rank_raw)
-    except (ValueError, SyntaxError):
-        _rank = _rank_raw
-else:
-    _rank = _rank_raw
-
-if isinstance(_rank, (list, tuple)):
-    _rank_suffix = f"_rank{int(_rank[0])}_{int(_rank[1])}"
-    _rank_tuple = [int(_rank[0]), int(_rank[1])]
-else:
-    _rank_suffix = f"_rank{int(_rank)}_{int(_rank)}"
-    _rank_tuple = [int(_rank), int(_rank)]
-
-config.setdefault('tag', '')
-_tag = str(config['tag'])
-_tag_suffix = f"_{_tag}" if _tag else ''
+config.setdefault('n_subsamples', N_SUBSAMPLES)     # B, C and F read n_subsamples / n_models
+TEST_FLAG = "-t" if config.get("test", False) else ""
+TTBAR = list(config.get('ttbar') or config.get('ttbar_processes') or [])
 
 # ── 5. Standard Output Directory Hierarchies ──────────────────────────────────
 config.setdefault('output_path', "output/ttHbb_bkg_syst/")
 out = config['output_path']
 if not out.endswith("/"):
     out += "/"
+# EOS area for what this workflow writes there (the A_2 subsample picoAODs)
+PUB = str(config.get('publish_base', f"{out}publish")).rstrip("/")
 
-out_a1 = f"{out}bkg_syst_A_1_make_mixeddata/"
-if os.path.exists(f"{out}bkg_syst_A_4_process_subsamples"):
-    out_a2 = f"{out}bkg_syst_A_2_make_ttbar_psdata/"
-    out_a3 = f"{out}bkg_syst_A_3_make_subsamples/"
-    out_a4 = f"{out}bkg_syst_A_4_process_subsamples/"
-else:
-    out_a2 = f"{out}bkg_syst_A_2_process_subsamples/"
-    out_a3 = f"{out}bkg_syst_A_3_make_subsamples/"
-    out_a4 = out_a2
-
+out_a1 = f"{out}bkg_syst_A_1_mixed_jcm/"
+out_a2 = f"{out}bkg_syst_A_2_make_subsamples/"
+out_a3 = f"{out}bkg_syst_A_3_process_subsamples/"
 out_b1 = f"{out}bkg_syst_B_1_computeJCM/"
 out_c1 = f"{out}bkg_syst_C_1_inputs/"
 out_c  = f"{out}bkg_syst_C_FvT/"
@@ -103,97 +81,85 @@ out_f2 = f"{out}bkg_syst_F_2_run_two_stage_closure/"
 out_f3 = f"{out}bkg_syst_F_3_stats/"
 out_f4 = f"{out}bkg_syst_F_4_stats_mixeddata/"
 
-picoaod_dir = f"{out_a1}make_mixeddata_picoAOD_per_year/"
+# ── 6. Inputs: a mixeddata roast + the analysis' nominal roast ─────────────────
+# From the MakeMixedData roast (its handoff/ YAMLs): the mixed data and the ttbar pseudodata. The
+# mixed-data JCM that splits them into subsamples is fit here (A_1), in the analysis selection.
+# From the nominal analysis roast: its B.1 noJCM histograms (A_1, B_1), its Phase F histograms
+# (F_2 signal, F_3 / F_4 datacards), its classifier-input manifest (C) and its SvB friend (F_1).
+INPUTS = config.get('inputs') or {}
+for _key in ('mixeddata_all', 'ttbar_psdata', 'jcm_hists', 'nominal_hists', 'SvB', 'SvB_model'):
+    if not INPUTS.get(_key):
+        raise ValueError(f"bkg_syst: inputs.{_key} is required (see analysis_ttHbb_bkg_syst.yml)")
+MIXED_URL = str(INPUTS['mixeddata_all'])
+MIX_NAME = os.path.basename(MIXED_URL).removesuffix(".yml")       # handoff/<dataset key>.yml
+PS_URL = str(INPUTS['ttbar_psdata'])
+PS_NAME = os.path.basename(PS_URL).removesuffix(".yml")
+# Data + ttbar MC noJCM histograms in the analysis selection (the B.1 JCM-fit input), and the runner
+# config they were made with (B.1 writes it next to them): A_1 histograms the mixed data with it.
+JCM_HISTS_URL = str(INPUTS['jcm_hists'])
+JCM_HIST_CONFIG_URL = str(INPUTS.get('analysis_config_noJCM')
+                          or f"{os.path.dirname(JCM_HISTS_URL)}/analysis_config_noJCM.yml")
+A_INPUT_DIR = f"{out}inputs/"
+JCM_HISTS = f"{A_INPUT_DIR}{os.path.basename(JCM_HISTS_URL)}"
+JCM_HIST_CONFIG = f"{A_INPUT_DIR}{os.path.basename(JCM_HIST_CONFIG_URL)}"
+PS_DATASET = f"{A_INPUT_DIR}{PS_NAME}.yml"
+# The nominal Phase F histograms, fetched (coffea's load() reads local files only); F_3 converts
+# them to the datacard JSON next to them.
+NOMINAL_HISTS_URL = str(INPUTS['nominal_hists'])
+config['nominal_coffea'] = f"{A_INPUT_DIR}{os.path.basename(NOMINAL_HISTS_URL)}"
+config.setdefault('nominal_json', config['nominal_coffea'].removesuffix(".coffea") + ".json")
+# Read in place (fsspec / friend URLs)
+if INPUTS.get('classifier_inputs'):
+    config['nominal_classifier_inputs'] = str(INPUTS['classifier_inputs'])
+config['data_svb_friend'] = str(INPUTS['SvB'])
+# ...and the SvB model that made that friend: A_3 evaluates it on the mixed subsamples, so mixed data
+# and data are scored by the same SvB in the closure
+config['mixed_svb_model'] = str(INPUTS['SvB_model'])
+MIXED_DATASET = f"{A_INPUT_DIR}{MIX_NAME}.yml"      # local copy: A_2 reads the seeds' file lists
 
-config.setdefault('base_path',
-    f"root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/{run_period}/{channel}_pz{_rank_suffix}")
+# The multi-sample closure dataset A_2 assembles: mixeddata_4b (samples mix_v<k>) or
+# mixeddata_<tag>_4b (samples mix_<tag>_v<k>) -- the only multi-sample names runner.py knows
+# (src/runner/dataset.py:get_dataset_type / mixed_variant_prefix).
+SUB_NAME = SUB.get('dataset_name', config.get('multisample_dataset_name', "mixeddata_4b"))
+config['multisample_dataset_name'] = SUB_NAME
+if SUB_NAME == 'mixeddata_4b':
+    SUB_PREFIX = 'mix'
+elif (_m := re.fullmatch(r"mixeddata_([A-Za-z0-9]+)_4b", SUB_NAME)) and _m.group(1) != 'noTTSub':
+    SUB_PREFIX = f"mix_{_m.group(1)}"
+else:
+    raise ValueError(f"subsamples.dataset_name {SUB_NAME!r} must be 'mixeddata_4b' or 'mixeddata_<tag>_4b' "
+                     f"(runner.py reads any other name as MC)")
+MULTISAMPLE_DATASET = f"{out_a2}{SUB_NAME}.yml"
+# The dataset metadata C's classifier reads (--metadata): the repo's dataset YAMLs, except any that
+# defines SUB_NAME (two do: mixeddata_4b.yml, mixeddata_4b_ttHbb.yml), + MULTISAMPLE_DATASET (A_2)
+CLASSIFIER_METADATA = f"{out_a2}classifier_metadata/"
+config.setdefault('classifier_metadata', CLASSIFIER_METADATA)
 
-# Dataset naming and paths
-config.setdefault('dataset_name', f"mixeddata_{channel}{_rank_suffix}")
-default_mixeddata_dataset = f"coffea4bees/metadata/datasets/{config.get('mixeddata', {}).get('dataset_name', config.get('dataset_name', 'mixeddata_ttHbb_bkg_syst_rank0_0'))}.yml"
-mixeddata_dataset_output = config.get('mixeddata_dataset_output', f"{out}coffea4bees/metadata/datasets/{config.get('mixeddata', {}).get('dataset_name', config.get('dataset_name', 'mixeddata_ttHbb_bkg_syst_rank0_0'))}.yml")
-mixeddata_dataset_file = config.get('mixeddata_dataset_file', default_mixeddata_dataset)
-config.setdefault('install_path', mixeddata_dataset_output)
-
-# Multi-sample and classifier paths
-config.setdefault('multisample_dataset_name', "mixeddata_4b")
-config.setdefault('multisample_install_path', f"{out}M4/handoff/mixeddata_4b.yml" if 'v2' in out or os.path.exists(f"{out}M4") else f"{out}coffea4bees/metadata/datasets/mixeddata_4b.yml")
-config.setdefault('subsample_output_path', f"{out_a3}subsamples/")
-config.setdefault('classifier_inputs_base',
-    f"root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/{channel}/classifier_inputs/mixeddata/")
+# EOS products of this run, all under publish_base
+config.setdefault('classifier_inputs_base', f"{PUB}/classifier_inputs/mixeddata/")
+config.setdefault('mixeddata_friend_base', f"{PUB}/friend/mixeddata/")
+config.setdefault('eos_base', PUB)                     # C: classifier/ and friend/FvT/
 config.setdefault('classifier_inputs_json',
-    f"{out_a4}classifier_inputs/classifier_inputs_mixeddata_{channel}.json")
+    f"{out_a3}classifier_inputs/classifier_inputs_mixeddata_{channel}.json")
 config.setdefault('mixeddata_friend_json', f"{out}coffea4bees/metadata/friends/friends_{channel}_mixeddata_4b.json")
 
-# Handoff configuration for cross-cluster execution (roast)
+# Shell prefix for rules that read or write EOS (roast seeds ./proxy/x509_proxy in the checkout).
+# Single braces: spliced into shell blocks as {EOS_PROXY}, not re-formatted by snakemake.
+EOS_PROXY = ('if [ -z "${X509_USER_PROXY:-}" ] && [ -f ./proxy/x509_proxy ]; then '
+             'export X509_USER_PROXY="$PWD/proxy/x509_proxy"; fi')
+
+# EOS handoff for cross-cluster execution (roast): B_1 / A_3 products for C on the GPU host, C's
+# friend manifests back for F (bkg_syst_AB_handoff, bkg_syst_C_handoff). handoff.eos_base
 _handoff = config.get('handoff') or {}
 if not isinstance(_handoff, dict):
     _handoff = {}
 HANDOFF_EOS = str(_handoff.get('eos_base') or "").rstrip('/')
 
-# ── 6. Common Helper Functions ────────────────────────────────────────────────
-def get_hemi_stats_file(wildcards):
-    year_str = wildcards.year.replace("_preVFP", "").replace("_postVFP", "")
-    stats_dir = config.get('hemi_stats_path', 'coffea4bees/skimmer/metadata')
-    return f"{stats_dir}/hemi_statistics_{year_str}.yml"
+def write_yaml(path, obj):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        yaml.dump(obj, f, default_flow_style=False, sort_keys=False)
 
-def apply_test_runner_overrides(cfg):
-    if config.get("test", False):
-        cfg.setdefault("runner", {})
-        cfg["runner"]["condor"] = False
-        cfg["runner"]["shared_dask"] = False
-        cfg["runner"]["workers"] = 2
-        cfg["runner"].pop("min_workers", None)
-        cfg["runner"].pop("max_workers", None)
-        if "chunksize" in config:
-            cfg["runner"]["chunksize"] = config["chunksize"]
-        elif "chunksize" not in cfg["runner"]:
-            cfg["runner"]["chunksize"] = 1000
-        if "maxchunks" in config:
-            cfg["runner"]["maxchunks"] = config["maxchunks"]
-        elif "maxchunks" not in cfg["runner"]:
-            cfg["runner"]["maxchunks"] = 1
-    return cfg
-
-def rule_exists(rule_name):
-    try:
-        getattr(rules, rule_name)
-        return True
-    except Exception:
-        return False
-
-def get_multisample_dataset_file(wildcards=None):
-    if rule_exists('M4_dataset_yml'):
-        return getattr(rules, 'M4_dataset_yml').output[0]
-    out_file = config.get('multisample_install_path', f"{out}coffea4bees/metadata/datasets/mixeddata_4b.yml")
-    repo_file = "coffea4bees/metadata/datasets/mixeddata_4b.yml"
-    if rule_exists('M4_publish') or rule_exists('build_multisample_registry'):
-        return out_file
-    if os.path.exists(out_file):
-        return out_file
-    if os.path.exists(repo_file):
-        return repo_file
-    return out_file
-
-def get_ttbar_psdata_dataset_file(wildcards=None):
-    out_file = config.get('ttbar_psdata_install_path', f"{out}coffea4bees/metadata/datasets/ttbar_PSData_stitched.yml")
-    repo_file = "coffea4bees/metadata/datasets/ttbar_PSData_stitched.yml"
-    if rule_exists('install_ttbar_psdata_dataset') or rule_exists('create_ttbar_psdata_dataset_yaml'):
-        return out_file
-    if os.path.exists(out_file):
-        return out_file
-    if os.path.exists(repo_file):
-        return repo_file
-    return out_file
-
-def get_mixeddata_dataset_file(wildcards=None):
-    ds_name = config.get('mixeddata', {}).get('dataset_name', config.get('dataset_name', 'mixeddata_ttHbb_bkg_syst_rank0_0'))
-    out_file = config.get('mixeddata_install_path', f"{out}coffea4bees/metadata/datasets/{ds_name}.yml")
-    repo_file = f"coffea4bees/metadata/datasets/{config.get('mixeddata', {}).get('dataset_name', config.get('dataset_name', 'mixeddata_ttHbb_bkg_syst_rank0_0'))}.yml"
-    if rule_exists('create_mixeddata_dataset_yaml') or rule_exists('install_mixeddata_dataset_yaml'):
-        return out_file
-    if os.path.exists(out_file):
-        return out_file
-    if os.path.exists(repo_file):
-        return repo_file
-    return out_file
+module analysis:
+    snakefile: "rules/analysis.smk"     # resolved from the including Snakefile (workflows/)
+    config: config

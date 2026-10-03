@@ -7,10 +7,13 @@
 #   M3_merge_hists                    + the upstream data / ttbar histAll_NoJCM
 #   M3_cutflow                        cutflow dump (first roast: the reference to bless)
 #   M3_fit                            make_jcm_weights.py, mixeddata_all as the "3b" sample, float_t
-#                                     -> jetCombinatoricModel_SB_mixeddata.yml (M.4 splits with it)
-#   M3_study (per year) + merge       processor_study_mixed_data with that JCM: per-event subsample
-#                                     assignment, pseudo-tag weights, overflow (N*w > 1) counts
-#   M3_publish                        the mixed-data JCM -> <PUB>/handoff/  (MvD needs it too)
+#                                     -> jetCombinatoricModel_SB_mixeddata.yml (M.6 / M.7 weight the
+#                                     mixed data with it)
+#   M3_publish                        the mixed-data JCM -> <PUB>/handoff/
+#
+# This JCM is fit in the upstream (HH4b non-tight) selection, so it validates the mixed data; it is
+# not what an analysis splits with. The split into subsamples, and the subsample study, need a fit
+# in the analysis' own selection and live with the analysis (Snakefile_bkg_syst_A_*).
 #
 # 4b mixing: nothing to fit (unit-weight 4b events) and no JCM splitting, so all_M3 is empty; the
 # data-vs-mixed comparison is M.6.
@@ -23,8 +26,6 @@ M3_JCM_TAG = "mixeddata"
 M3_REGION = MJ.get('region', config.get('jcm_region', 'SB'))
 M3_JCM_DIR = f"{M3_OUT}JCM_{M3_JCM_TAG}/"
 MIXED_JCM = f"{M3_JCM_DIR}jetCombinatoricModel_{M3_REGION}_{M3_JCM_TAG}.yml"
-M3_STUDY_CONFIG = f"{M3_OUT}study_mixed_data.yml"
-M3_STUDY = f"{M3_OUT}study_{MIX_NAME}.coffea"
 M3_PUBLISHED = f"{M3_OUT}published.done"
 
 rule M3_hist_config:
@@ -127,55 +128,6 @@ rule M3_fit:
         ls {M3_JCM_DIR} 2>&1 | tee -a {log}
         """
 
-rule M3_study_config:
-    input:
-        template = MJ.get('study_template', "coffea4bees/analysis/metadata/study_mixed_data_Run3.yml"),
-        jcm = MIXED_JCM
-    output: M3_STUDY_CONFIG
-    run:
-        with open(input.template) as f:
-            tmpl = yaml.safe_load(f) or {}
-        runner = {**(tmpl.get('runner') or {}), **(MJ.get('runner') or {})}
-        if not config.get('test', False):
-            runner['condor'] = True
-            runner['shared_dask'] = True
-        # this roast's mixed-data JCM, not the template's hard-coded *_splitting.txt
-        cfg = processor_config({**(tmpl.get('config') or {}), 'apply_JCM': True, 'JCM_file': input.jcm},
-                               inherit_config=False,
-                               processor="coffea4bees/analysis/processors/processor_study_mixed_data.py",
-                               dataset_location=[MIXED_URL],
-                               runner=runner)
-        write_yaml(output[0], cfg)
-
-use rule analysis_processor from analysis as M3_study with:
-    input:
-        runner_script = "runner.py",
-        config_file = M3_STUDY_CONFIG,
-        published = M2_PUBLISHED
-    output: f"{M3_OUT}study/study__{{year}}.coffea"
-    log: f"{M3_OUT}logs/study__{{year}}.log"
-    wildcard_constraints:
-        year = "|".join(YEARS)
-    params:
-        datasets = MIX_NAME,
-        years = lambda wildcards: wildcards.year,
-        config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
-        run_container_wrapper = WRAPPER,
-        python_bin = PYTHON
-
-use rule merging_coffea_files from analysis as M3_merge_study with:
-    input:
-        files = expand(f"{M3_OUT}study/study__{{year}}.coffea", year=YEARS),
-        script = "src/tools/merge_coffea_files.py"
-    output: M3_STUDY
-    log: f"{M3_OUT}logs/merge_study.log"
-    params:
-        run_performance = False,
-        run_container_wrapper = WRAPPER,
-        python_bin = PYTHON,
-        input_files = lambda wildcards, input: " ".join(input.files)
-
 rule M3_publish:
     input: MIXED_JCM
     output: M3_PUBLISHED
@@ -191,7 +143,6 @@ rule M3_publish:
 
 rule all_M3:
     input:
-        [] if MIX4B else [M3_PUBLISHED, M3_STUDY, f"{M3_OUT}cutflow_validation_mixedJCM.txt"]
+        [] if MIX4B else [M3_PUBLISHED, f"{M3_OUT}cutflow_validation_mixedJCM.txt"]
 
-localrules: M3_hist_config, M3_merge_hists, M3_cutflow, M3_jcm_config, M3_fit, M3_study_config,
-            M3_merge_study, M3_publish, all_M3
+localrules: M3_hist_config, M3_merge_hists, M3_cutflow, M3_jcm_config, M3_fit, M3_publish, all_M3

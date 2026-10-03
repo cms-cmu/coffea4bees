@@ -30,7 +30,7 @@
 # INPUTS:
 #   - Trained Model Checkpoints: {out_c}models/mix_{m}/train.done (From C_2)
 #   - Classifier Input Manifests: coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json
-#   - Per-subsample Mixed Inputs: {out_a4}histAll_ttHbb_mixeddata_v{m}.json
+#   - Per-subsample Mixed Inputs: {out_a3}histAll_ttHbb_mixeddata_v{m}.json
 #
 # OUTPUTS:
 #   - Analysis ROC/Loss plots: {plot_base}/{DATE}_{label}_mix_{m}/analyze/

@@ -93,19 +93,50 @@ def _upstream_base(rid, own_eos_prod):
     return f"{own_eos_prod.rstrip('/')}/{rid}"
 
 
-def substitute_upstreams(obj, own_eos_prod, seen):
-    """Replace {roast:<id>} anywhere in a nested config structure."""
+def _upstream_config_value(rid, key):
+    """{roast:<id>:<key>}: top-level `key` of roast `rid`'s captured config (roasts/<id>/config.yml),
+    with its {roast_id} filled in -- e.g. output_path, so a reader names that roast's products by
+    the run, not by a copy of its directory layout (output/ttHbb/...). Key `id`: the id itself."""
+    if key == "id":
+        return rid
+    captured = os.path.join("roasts", rid, "config.yml")
+    if not os.path.exists(captured):
+        raise ValueError(f"{{roast:{rid}:{key}}}: no captured config {captured} (commit roasts/{rid}/)")
+    with open(captured) as fh:
+        cfg = yaml.safe_load(fh) or {}
+    if not isinstance(cfg.get(key), str):
+        raise ValueError(f"{{roast:{rid}:{key}}}: {captured} has no top-level string {key!r}")
+    return cfg[key].replace("{roast_id}", rid)
+
+
+# {roast:<id>} -> that roast's EOS area; {roast:<id>:<key>} -> a value from its captured config.
+# <id> may be an alias: `inputs.upstream_roasts` given as {alias: roast id} (src/tools/roast.py
+# check_inputs accepts the same syntax at `roast new`).
+UPSTREAM_REF = re.compile(r"\{roast:([^}:]+)(?::([^}]+))?\}")
+
+
+def upstream_aliases(config_dict):
+    """{alias: roast id} from a mapping-form inputs.upstream_roasts ({} for the str / list form)."""
+    ups = (config_dict.get('inputs') or {}).get('upstream_roasts')
+    return {str(k): str(v) for k, v in ups.items()} if isinstance(ups, dict) else {}
+
+
+def substitute_upstreams(obj, own_eos_prod, seen, aliases=None):
+    """Replace {roast:<id>} and {roast:<id>:<key>} anywhere in a nested config structure."""
+    aliases = aliases or {}
     if isinstance(obj, dict):
-        return {k: substitute_upstreams(v, own_eos_prod, seen) for k, v in obj.items()}
+        return {k: substitute_upstreams(v, own_eos_prod, seen, aliases) for k, v in obj.items()}
     if isinstance(obj, list):
-        return [substitute_upstreams(v, own_eos_prod, seen) for v in obj]
+        return [substitute_upstreams(v, own_eos_prod, seen, aliases) for v in obj]
     if isinstance(obj, str):
         def _sub(m):
-            rid = m.group(1)
+            rid, key = aliases.get(m.group(1), m.group(1)), m.group(2)
+            if key:
+                return _upstream_config_value(rid, key)
             if rid not in seen:
                 seen[rid] = _upstream_base(rid, own_eos_prod)
             return seen[rid]
-        return re.sub(r"\{roast:([^}]+)\}", _sub, obj)
+        return UPSTREAM_REF.sub(_sub, obj)
     return obj
 
 
@@ -122,7 +153,8 @@ for _k, _v in substitute_placeholders(dict(config), _placeholders).items():
 
 # Inputs from earlier roasts resolve through their own manifests, not the reader's area.
 _upstreams = {}
-for _k, _v in substitute_upstreams(dict(config), _placeholders['eos_prod'], _upstreams).items():
+for _k, _v in substitute_upstreams(dict(config), _placeholders['eos_prod'], _upstreams,
+                                   upstream_aliases(config)).items():
     config[_k] = _v
 for _rid, _base in sorted(_upstreams.items()):
     print(f"upstream {_rid} -> {_base}")
