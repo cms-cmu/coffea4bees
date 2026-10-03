@@ -30,8 +30,11 @@ rule M2_config:
         with open(input.template) as f:
             tmpl = yaml.safe_load(f) or {}
         step = int(MIX.get('chunksize', 100000))
-        runner = {**(tmpl.get('runner') or {}),
+        runner = {**(tmpl.get('runner') or {}), **(MIX.get('runner') or {}),
                   'worker_memory': MIX.get('worker_memory', '8GB'), 'chunksize': step}
+        if not config.get('test', False):
+            runner['condor'] = True
+            runner['shared_dask'] = True
         section = {**(tmpl.get('config') or {}),
                    'base_path': f"{PUB}/picoAOD/{MIX_NAME}",
                    'step': step,

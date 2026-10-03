@@ -246,6 +246,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         year_override: bool = False,
         compute_hemi_mixing_diagnostics: bool = False,
         plot_extra_canjet_vars: bool = False,
+        subsample_names: list[str] | None = None,
     ):
 
         logging.debug("\nInitialize Analysis Processor")
@@ -262,9 +263,38 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             self.weights_data = yaml.safe_load(open(weights, 'r')).get('weights', {})
 
         self.apply_JCM = {}
+        self.subsample_jcms = {}
+        if subsample_names:
+            self.subsample_names = list(subsample_names)
+        else:
+            self.subsample_names = []
+
         if apply_JCM:
-            if isinstance(JCM_file, str):
+            if isinstance(JCM_file, dict) and any(str(k).startswith(("v", "mix")) or isinstance(k, int) for k in JCM_file.keys()):
+                # Multi-subsample JCM configuration (Stage F_1 single pass)
+                def _sort_key(k):
+                    s = str(k).lstrip("vmix_")
+                    return int(s) if s.isdigit() else str(k)
+                if not self.subsample_names:
+                    self.subsample_names = sorted([f"v{k}" if isinstance(k, int) else str(k) for k in JCM_file.keys()], key=_sort_key)
+                for k, jcm_entry in JCM_file.items():
+                    v_name = f"v{k}" if isinstance(k, int) else str(k)
+                    if isinstance(jcm_entry, str):
+                        self.subsample_jcms[v_name] = {"default": jetCombinatoricModel(jcm_entry)}
+                    elif isinstance(jcm_entry, dict):
+                        self.subsample_jcms[v_name] = {
+                            yr: jetCombinatoricModel(p) for yr, p in jcm_entry.items() if p
+                        }
+                ref_v = self.subsample_names[0]
+                self.apply_JCM = self.subsample_jcms[ref_v]
+                logging.info(f"Loaded multi-subsample JCM models for {len(self.subsample_jcms)} subsamples: {self.subsample_names}, reference={ref_v}")
+            elif isinstance(JCM_file, str):
                 self.apply_JCM = {"default": jetCombinatoricModel(JCM_file)}
+            elif isinstance(JCM_file, dict):
+                for year, jcm_path in JCM_file.items():
+                    if jcm_path:
+                        self.apply_JCM[year] = jetCombinatoricModel(jcm_path)
+                logging.info(f"Loaded JCM models for {len(self.apply_JCM)} eras from config: {list(self.apply_JCM.keys())}")
             elif self.weights_data:
                 for year, year_cfg in self.weights_data.items():
                     jcm_path = year_cfg.get("JCM_file") or year_cfg.get("JCM")
@@ -729,6 +759,18 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             selev["trigWeight"] = weights.partial_weight(include=['CMS_bbbb_resolved_ggf_triggerEffSF'])[analysis_selections]
             selev['weight_woTrig'] = weights.partial_weight(exclude=['CMS_bbbb_resolved_ggf_triggerEffSF'])[analysis_selections]
             selev["no_weight"] = np.ones(len(selev))
+            if "weight_d3_to_t4" in event.fields:
+                selev["weight_d3_to_t4"] = event["weight_d3_to_t4"][analysis_selections]
+            if "weight_d3_to_t3" in event.fields:
+                selev["weight_d3_to_t3"] = event["weight_d3_to_t3"][analysis_selections]
+            if hasattr(self, "subsample_names") and self.subsample_names:
+                for v_name in self.subsample_names:
+                    if f"weight_{v_name}" in event.fields:
+                        selev[f"weight_{v_name}"] = event[f"weight_{v_name}"][analysis_selections]
+                    if f"weight_d3_to_t4_{v_name}" in event.fields:
+                        selev[f"weight_d3_to_t4_{v_name}"] = event[f"weight_d3_to_t4_{v_name}"][analysis_selections]
+                    if f"weight_d3_to_t3_{v_name}" in event.fields:
+                        selev[f"weight_d3_to_t3_{v_name}"] = event[f"weight_d3_to_t3_{v_name}"][analysis_selections]
 
         with self._stage(f"{label}:detailed_cutflows"):
             # Fill detailed cutflows
@@ -809,6 +851,18 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             return
 
         FvT_loaded = False
+        if hasattr(self, "subsample_names") and self.subsample_names:
+            for v_name in self.subsample_names:
+                f_key = f"FvT_{v_name}"
+                if f_key in self.friends:
+                    arr = rename_FvT_friend(self.target, self.friends[f_key])
+                    if arr is not None:
+                        event[f_key] = arr
+                        setFvTVars(f_key, event)
+            if "FvT" not in event.fields and "FvT_v0" in event.fields:
+                event["FvT"] = event["FvT_v0"]
+                FvT_loaded = True
+
         if "FvT" in self.friends:
             FvT_arr = rename_FvT_friend(self.target, self.friends["FvT"])
             if FvT_arr is not None:
@@ -1628,7 +1682,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             event_metadata=event.metadata,
             year_label=self.year_label,
             len_event=len(event),
-            )
+            subsample_jcms=getattr(self, "subsample_jcms", None),
+            year=self.year,
+        )
 
     def events_for_display(self, selev, processOutput):
         """Track top 20 events with largest SvB_MA.ps_hh across all chunks.

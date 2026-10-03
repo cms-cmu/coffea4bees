@@ -170,6 +170,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
                 event_metadata=event.metadata,
                 year_override=self.year_override,
                 classify_Z_decay=self.classify_Z_decay,
+                subsample_names=getattr(self, "subsample_names", None),
             )
 
             if not self.plot_ttbar_with_weights or self.processName != "data":
@@ -191,6 +192,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
                 event_metadata=event.metadata,
                 weight_name="weight_d3_to_t4",
                 year_override=self.year_override,
+                subsample_names=getattr(self, "subsample_names", None),
             )
 
             hist_t3 = filling_ttHbb_histograms(
@@ -207,6 +209,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
                 event_metadata=event.metadata,
                 weight_name="weight_d3_to_t3",
                 year_override=self.year_override,
+                subsample_names=getattr(self, "subsample_names", None),
             )
 
             hists.append(hist_t4)

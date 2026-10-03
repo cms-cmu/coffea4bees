@@ -26,7 +26,11 @@ rule M5_config:
                   "class_name": "SubSampler", "data_tier": "picoAOD", "condor_cores": 1,
                   "worker_memory": PS.get('worker_memory', "6GB"),
                   "condor_transfer_input_files": ["src", "coffea4bees/"],
-                  "allowlist_sites": ["T2_US_Nebraska", "T2_US_Purdue", "T3_US_FNALLPC", "T3_US_NotreDame"]}
+                  "allowlist_sites": ["T2_US_Nebraska", "T2_US_Purdue", "T3_US_FNALLPC", "T3_US_NotreDame"],
+                  **(PS.get('runner') or {})}
+        if not config.get('test', False):
+            runner['condor'] = True
+            runner['shared_dask'] = True
         section = {
             "base_path": f"{PUB}/picoAOD/{PS_NAME}",
             "sub_sampling_rand_seed": int(PS.get('seed', 5)),
