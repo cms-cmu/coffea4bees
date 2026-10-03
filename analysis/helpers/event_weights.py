@@ -422,6 +422,16 @@ def add_pseudotagweights(
                 event["weight_d3_to_t3_noFvT"] = weight_d3_to_t3  # alias for _noFvT histogram TTbar3b filling
                 logging.debug( f"weight_d3_to_t3 {event.weight_d3_to_t3[:10]}\n" )
 
+        else:
+            weight_noFvT = ak.where(
+                event[label3b],
+                event["pseudoTagWeight"], # * event["pseudoTagWeight_lowpt"],
+                1.0
+            )
+            weights.add("no_FvT", weight_noFvT)
+            list_weight_names.append("no_FvT")
+            logging.debug( f"no_FvT {weights.partial_weight(include=['no_FvT'])[:10]}\n" )
+
         # Multi-subsample weights (Stage F_1 single-pass background model)
         if subsample_jcms:
             n_3tag_events = int(np.sum(event[label3b]))
@@ -476,16 +486,6 @@ def add_pseudotagweights(
                 event[f"weight_{v_name}"] = w_data_v
                 event[f"weight_d3_to_t4_{v_name}"] = w_t4_v
                 event[f"weight_d3_to_t3_{v_name}"] = w_t3_v
-
-        else:
-            weight_noFvT = ak.where(
-                event[label3b],
-                event["pseudoTagWeight"], # * event["pseudoTagWeight_lowpt"],
-                1.0
-            )
-            weights.add("no_FvT", weight_noFvT)
-            list_weight_names.append("no_FvT")
-            logging.debug( f"no_FvT {weights.partial_weight(include=['no_FvT'])[:10]}\n" )
 
     return weights, list_weight_names
 
