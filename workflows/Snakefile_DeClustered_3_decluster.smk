@@ -48,6 +48,11 @@ rule D3_config:
         for k in ('worker_memory', 'chunksize'):
             if k in DECL:
                 runner[k] = DECL[k]
+        # the shared Dask daemon's workers get the code tarball of the job that STARTS it. Without
+        # D.1 (inputs.splitting_library) that is D.3, and the Run 2 template's list lacks
+        # coffea4bees/skimmer: every chunk failed "No module named coffea4bees.skimmer"
+        # (declib16_run2). Ship all of the code, as D.1 does.
+        runner['condor_transfer_input_files'] = ['src', 'coffea4bees']
         section = {**(tmpl.get('config') or {}),
                    'base_path': f"{PUB}/picoAOD/{MJ_NAME}",
                    'clustering_pdfs_file': PDF_TEMPLATE,   # read by the condor workers, via fsspec
