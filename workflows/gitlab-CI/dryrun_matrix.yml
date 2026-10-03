@@ -99,6 +99,7 @@ runs:
     - SvBFeynNet_friendtrees_Run3
   analysis_ttHbb_bkg_syst.yml:
     - bkg_syst
+    - bkg_syst_AB
 
 not_covered:
   PhaseB_computeJCM: "no production config"

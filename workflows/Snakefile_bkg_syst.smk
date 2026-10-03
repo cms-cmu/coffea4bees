@@ -53,7 +53,7 @@ if not workflow.configfiles:
 
 include: "helpers/common.smk"
 
-phase_e_cfg = resolve_config_section(config, primary_key='phase_e', fallback_keys=['phaseE', 'closure'])
+phase_e_cfg = resolve_config_section(config, primary_key='phase_e', fallback_keys=['phase_e_fvt', 'phaseE', 'closure'])
 for k, v in phase_e_cfg.items():
     config.setdefault(k, v)
 
@@ -86,11 +86,12 @@ rule all_bkg_syst_A:
         rules.all_bkg_syst_A_2.input,
         rules.all_bkg_syst_A_3.input
 
-# Pre-FvT master target rule (A_1 through A_3, and B_1)
+# Pre-FvT master target rule (A_1 through A_3, B_1, and the handoff C reads on the GPU host)
 rule all_pre_fvt:
     input:
         rules.all_bkg_syst_A.input,
-        rules.all_bkg_syst_B_1.input
+        rules.all_bkg_syst_B_1.input,
+        rules.bkg_syst_AB_handoff.output
 
 # Top master target rule (default_target: the C files mark their own all_* rules as default too)
 rule all_bkg_syst:

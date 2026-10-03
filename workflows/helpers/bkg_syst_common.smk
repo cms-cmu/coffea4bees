@@ -148,6 +148,13 @@ config.setdefault('mixeddata_friend_json', f"{out}coffea4bees/metadata/friends/f
 EOS_PROXY = ('if [ -z "${X509_USER_PROXY:-}" ] && [ -f ./proxy/x509_proxy ]; then '
              'export X509_USER_PROXY="$PWD/proxy/x509_proxy"; fi')
 
+# EOS handoff for cross-cluster execution (roast): B_1 / A_3 products for C on the GPU host, C's
+# friend manifests back for F (bkg_syst_AB_handoff, bkg_syst_C_handoff). handoff.eos_base
+_handoff = config.get('handoff') or {}
+if not isinstance(_handoff, dict):
+    _handoff = {}
+HANDOFF_EOS = str(_handoff.get('eos_base') or "").rstrip('/')
+
 def write_yaml(path, obj):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as f:

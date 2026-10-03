@@ -85,40 +85,92 @@ closure_plot_cfg = config.get(
 wildcard_constraints:
     m = r"\d+"
 
-localrules: all_bkg_syst_F_1, all_bkg_syst_F_1_hists, link_mixeddata_closure, make_plots_closure, make_gallery_closure, closure_v
+localrules: all_bkg_syst_F_1, all_bkg_syst_F_1_hists, make_plots_closure, make_gallery_closure, stage_bkg_syst_friend_manifest, stage_bkg_syst_jcm, stage_bkg_syst_jcm_per_year
 
 # ── Master Target Rule ────────────────────────────────────────────────────────
 rule all_bkg_syst_F_1:
     input:
-        expand(f"{out_f1}closure_v{{m}}/plots/plots_done.txt", m=SUBSAMPLES),
-        expand(f"{out_f1}closure_v{{m}}/plots/gallery.html", m=SUBSAMPLES)
+        f"{out_f1}plots/plots_done.txt",
+        f"{out_f1}plots/gallery.html"
 
 # ── Histogram Only Target Rule (Before Plotting) ──────────────────────────────
 rule all_bkg_syst_F_1_hists:
     input:
-        expand(f"{out_f1}closure_v{{m}}/histAll_data_v{{m}}.coffea", m=SUBSAMPLES),
-        expand(f"{out_f1}closure_v{{m}}/histAll_mixeddata_v{{m}}.coffea", m=SUBSAMPLES)
+        f"{out_f1}histAll_mixeddata_bkgs.coffea"
 
-# ── Convenience Single-Subsample Rule ─────────────────────────────────────────
-rule closure_v:
-    input:
-        f"{out_f1}closure_v{{m}}/plots/gallery.html"
+per_year_jcm = bool(config.get('per_year_jcm', (config.get('phaseB_1', {}) or {}).get('per_year_jcm', False)))
 
-# ── Data Background Model Processor ───────────────────────────────────────────
+# Staging rules for cross-cluster execution under roast (fetching from EOS handoff if not local).
+# Only when F_1 runs without the stage that makes the file (Snakefile_bkg_syst.smk includes B_1 and
+# C before F: two rules for one output are ambiguous).
+_defined_rules = {r.name for r in workflow.rules}
+if HANDOFF_EOS and 'extract_friend_manifest' not in _defined_rules:
+    rule stage_bkg_syst_friend_manifest:
+        output:
+            f"{out_c}friends/friends_FvT_{mix_name}_v{{m}}.json"
+        params:
+            src = f"{HANDOFF_EOS}/friends/friends_FvT_{mix_name}_v{{m}}.json"
+        shell:
+            """
+            mkdir -p $(dirname {output})
+            if command -v xrdcp &>/dev/null; then
+                xrdcp -f '{params.src}' '{output}'
+            else
+                cp -f '{params.src}' '{output}'
+            fi
+            """
+
+if HANDOFF_EOS and 'make_subsample_jcm_b1' not in _defined_rules:
+    rule stage_bkg_syst_jcm:
+        output:
+            f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}.yml"
+        params:
+            src = f"{HANDOFF_EOS}/JCM/jetCombinatoricModel_SB_mix_v{{m}}.yml"
+        shell:
+            """
+            mkdir -p $(dirname {output})
+            if command -v xrdcp &>/dev/null; then
+                xrdcp -f '{params.src}' '{output}'
+            else
+                cp -f '{params.src}' '{output}'
+            fi
+            """
+
+    rule stage_bkg_syst_jcm_per_year:
+        output:
+            f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml"
+        params:
+            src = f"{HANDOFF_EOS}/JCM/jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml"
+        shell:
+            """
+            mkdir -p $(dirname {output})
+            if command -v xrdcp &>/dev/null; then
+                xrdcp -f '{params.src}' '{output}'
+            else
+                cp -f '{params.src}' '{output}'
+            fi
+            """
+
+def get_all_analysis_jcm_inputs(wildcards):
+    if per_year_jcm:
+        return [f"{out_b1}jetCombinatoricModel_SB_mix_v{m}_{y}.yml" for m in SUBSAMPLES for y in YEARS]
+    return [f"{out_b1}jetCombinatoricModel_SB_mix_v{m}.yml" for m in SUBSAMPLES]
+
+# ── Data Background Model Processor (Single Pass over Collision Data) ──────────
 rule analysis_data_closure:
     input:
-        cfg = lambda wildcards: cfg_files['data_configs'][int(wildcards.m)],
-        jcm = f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}.yml",
-        fvt = f"{out_c}friends/friends_FvT_{mix_name}_v{{m}}.json",
+        cfg = cfg_files['config'],
+        jcm = get_all_analysis_jcm_inputs,
+        fvt = expand(f"{out_c}friends/friends_FvT_{mix_name}_v{{m}}.json", m=SUBSAMPLES),
     output:
-        coffea = f"{out_f1}closure_v{{m}}/histAll_data_v{{m}}.coffea"
+        coffea = f"{out_f1}histAll_mixeddata_bkgs.coffea"
     log:
-        f"{out_f1}closure_v{{m}}/logs/analysis_data.log"
+        f"{out_f1}logs/analysis_data.log"
     params:
         processor = config.get('analysis_processor') or f"coffea4bees/analysis/processors/processor_{channel}.py",
         dataset = "data",
         years = " ".join(YEARS),
-        output_path = f"{out_f1}closure_v{{m}}/",
+        output_path = out_f1,
         condor_flags = condor_flags,
         container_wrapper = container_wrapper,
         python_bin = python_bin
@@ -141,35 +193,25 @@ rule analysis_data_closure:
             {params.condor_flags} 2>&1 | tee {log}
         """
 
-# ── Link Stage A_3 Mixed Data Histograms ──────────────────────────────────────
-rule link_mixeddata_closure:
-    input:
-        f"{out_a3}histAll_{channel}_mixeddata_v{{m}}.coffea"
-    output:
-        f"{out_f1}closure_v{{m}}/histAll_mixeddata_v{{m}}.coffea"
-    shell:
-        """
-        mkdir -p $(dirname {output})
-        ln -sf $(realpath --relative-to=$(dirname {output}) {input}) {output}
-        """
-
-# ── Closure Comparison Plots (Mixed Data vs Background Model) ─────────────────
+# ── Closure Comparison & Multi-Subsample Overlay Plots ────────────────────────
 rule make_plots_closure:
     input:
-        data_coffea = f"{out_f1}closure_v{{m}}/histAll_data_v{{m}}.coffea",
-        mixed_coffea = f"{out_f1}closure_v{{m}}/histAll_mixeddata_v{{m}}.coffea",
+        data_coffea = f"{out_f1}histAll_mixeddata_bkgs.coffea",
+        mixed_coffea = expand(f"{out_a3}histAll_{channel}_mixeddata_v{{m}}.coffea", m=SUBSAMPLES),
         plot_cfg = closure_plot_cfg
     output:
-        done = f"{out_f1}closure_v{{m}}/plots/plots_done.txt"
+        done = f"{out_f1}plots/plots_done.txt"
     log:
-        f"{out_f1}closure_v{{m}}/logs/make_plots.log"
+        f"{out_f1}logs/make_plots.log"
     params:
-        output_dir = f"{out_f1}closure_v{{m}}/plots/",
-        extra_arguments = lambda wildcards: " ".join(filter(None, [
+        output_dir = f"{out_f1}plots/",
+        extra_arguments = " ".join(filter(None, [
             "-s xW",
             "--year " + ("Run3" if any("202" in y for y in YEARS) else "RunII"),
             config.get("plot_extra_arguments", ""),
         ])),
+        channel = channel,
+        n_models = N_SUBSAMPLES,
         container_wrapper = container_wrapper,
         python_bin = python_bin
     shell:
@@ -183,20 +225,25 @@ rule make_plots_closure:
             --combine_input_files \
             -p 4 \
             {params.extra_arguments} 2>&1 | tee {log}
+        {params.container_wrapper} {params.python_bin} coffea4bees/plots/make_subsample_overlay_plots.py \
+            -i {input.data_coffea} \
+            -o {params.output_dir} \
+            --channel {params.channel} \
+            --n_subsamples {params.n_models} 2>&1 | tee -a {log}
         touch {output.done}
         """
 
 # ── Summary HTML Gallery ──────────────────────────────────────────────────────
 rule make_gallery_closure:
     input:
-        plots_done = f"{out_f1}closure_v{{m}}/plots/plots_done.txt",
+        plots_done = f"{out_f1}plots/plots_done.txt",
         plot_cfg = closure_plot_cfg
     output:
-        gallery = f"{out_f1}closure_v{{m}}/plots/gallery.html"
+        gallery = f"{out_f1}plots/gallery.html"
     log:
-        f"{out_f1}closure_v{{m}}/logs/make_gallery.log"
+        f"{out_f1}logs/make_gallery.log"
     params:
-        output_dir = f"{out_f1}closure_v{{m}}/plots/",
+        output_dir = f"{out_f1}plots/",
         container_wrapper = container_wrapper,
         python_bin = python_bin
     shell:
@@ -204,7 +251,8 @@ rule make_gallery_closure:
         set -eo pipefail
         mkdir -p $(dirname {output.gallery}) $(dirname {log})
         if [ -f src/plotting/make_gallery.py ]; then
-            {params.container_wrapper} {params.python_bin} src/plotting/make_gallery.py                 {params.output_dir} -m {input.plot_cfg} --title Closure_v{wildcards.m} -o gallery.html 2>&1 | tee {log}
+            {params.container_wrapper} {params.python_bin} src/plotting/make_gallery.py \
+                {params.output_dir} -m {input.plot_cfg} --title "Stage_F_1_Mixed-Data_Background_Systematics" -o gallery.html 2>&1 | tee {log}
         else
             touch {output.gallery}
         fi

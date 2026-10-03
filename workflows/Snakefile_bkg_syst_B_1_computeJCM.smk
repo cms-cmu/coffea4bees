@@ -88,14 +88,28 @@ val_plot_cfg = val_section.get('plot_config', "coffea4bees/plots/metadata/plots_
 # mixed-data JCM against (fetched by A1_fetch)
 jcm_input_coffea = jcm_section.get('data_coffea') or JCM_HISTS
 
-localrules: all_bkg_syst_B_1, prepare_data_noJCM_b1, make_subsample_jcm_b1, test_plots_subsample_closure, test_v0_jcm_closure, all_test_subsample_closure
+per_year_jcm = bool(config.get('per_year_jcm', phaseB_1.get('per_year_jcm', False)))
 
-rule all_bkg_syst_B_1:
-    input:
-        expand(f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}.yml", m=range(N_SUBSAMPLES)),
-        expand(f"{out_b1}plots_v{{m}}/selJets_noJCM_n.png", m=range(N_SUBSAMPLES)),
-        expand(f"{out_b1}plots_v{{m}}/tagJets_noJCM_n.png", m=range(N_SUBSAMPLES)),
-        f"{out_b1}test_v{val_subsample}_closure/plots/plots_done.txt"
+wildcard_constraints:
+    m = r"\d+",
+    year = r"[A-Za-z0-9_]+",
+
+localrules: all_bkg_syst_B_1, prepare_data_noJCM_b1, make_subsample_jcm_b1, make_subsample_jcm_b1_per_year, stage_test_subsample_config, test_plots_subsample_closure, test_v0_jcm_closure, all_test_subsample_closure, bkg_syst_AB_handoff
+
+if per_year_jcm:
+    rule all_bkg_syst_B_1:
+        input:
+            expand(f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml", m=range(N_SUBSAMPLES), year=YEARS),
+            expand(f"{out_b1}plots_v{{m}}_{{year}}/selJets_noJCM_n.png", m=range(N_SUBSAMPLES), year=YEARS),
+            expand(f"{out_b1}plots_v{{m}}_{{year}}/tagJets_noJCM_n.png", m=range(N_SUBSAMPLES), year=YEARS),
+            f"{out_b1}test_v{val_subsample}_closure/plots/plots_done.txt"
+else:
+    rule all_bkg_syst_B_1:
+        input:
+            expand(f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}.yml", m=range(N_SUBSAMPLES)),
+            expand(f"{out_b1}plots_v{{m}}/selJets_noJCM_n.png", m=range(N_SUBSAMPLES)),
+            expand(f"{out_b1}plots_v{{m}}/tagJets_noJCM_n.png", m=range(N_SUBSAMPLES)),
+            f"{out_b1}test_v{val_subsample}_closure/plots/plots_done.txt"
 
 rule prepare_data_noJCM_b1:
     input:
@@ -164,12 +178,79 @@ rule make_subsample_jcm_b1:
         fi
         """
 
+rule make_subsample_jcm_b1_per_year:
+    input:
+        unpack(get_subsample_jcm_inputs_b1)
+    output:
+        jcm_yaml = f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml",
+        seljets_plot = f"{out_b1}plots_v{{m}}_{{year}}/selJets_noJCM_n.png",
+        tagjets_plot = f"{out_b1}plots_v{{m}}_{{year}}/tagJets_noJCM_n.png",
+    log:
+        f"{out_b1}logs/make_jcm_v{{m}}_{{year}}.log"
+    params:
+        container_wrapper = config['analysis_container_wrapper'],
+        python_bin = python_bin,
+        test_mode = config.get('test', False),
+        dummy_jcm = config.get('dummy_jcm_file', "coffea4bees/metadata/weights/JCM/jetCombinatoricModel_SB_dummy.yml"),
+        region = jcm_region,
+        sample_prefix = SUB_PREFIX,
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {output.jcm_yaml})/plots_v{wildcards.m}_{wildcards.year} $(dirname {log})
+        if [ "{params.test_mode}" = "True" ] || [ "{params.test_mode}" = "true" ]; then
+            echo "Test mode: deploying dummy JCM {params.dummy_jcm} -> {output.jcm_yaml}" > {log}
+            cp {params.dummy_jcm} {output.jcm_yaml}
+            touch {output.seljets_plot} {output.tagjets_plot}
+        else
+            {params.container_wrapper} {params.python_bin} coffea4bees/analysis/jcm_tools/make_jcm_weights.py \
+                -i {input.data_coffea} {input.subsample_coffea} \
+                --jcm_config {input.fit_cfg} \
+                -m {input.plot_cfg} \
+                --combine_input_files \
+                -w mix_v{wildcards.m}_{wildcards.year} \
+                --data4bName {params.sample_prefix}_v{wildcards.m} \
+                -r {params.region} \
+                -o $(dirname {output.jcm_yaml})/plots_v{wildcards.m}_{wildcards.year}/ \
+                --year {wildcards.year} 2>&1 | tee {log}
+            cp $(dirname {output.jcm_yaml})/plots_v{wildcards.m}_{wildcards.year}/jetCombinatoricModel_{params.region}_mix_v{wildcards.m}_{wildcards.year}.yml {output.jcm_yaml}
+        fi
+        """
+
 # ── Verification: Processor Test on a Single Subsample with Calibrated JCM ────
+def get_val_jcm_inputs(wildcards):
+    if per_year_jcm:
+        return [f"{out_b1}jetCombinatoricModel_SB_mix_v{wildcards.m}_{y}.yml" for y in YEARS]
+    return f"{out_b1}jetCombinatoricModel_SB_mix_v{wildcards.m}.yml"
+
+rule stage_test_subsample_config:
+    input:
+        jcm = get_val_jcm_inputs,
+        proc_cfg = val_proc_cfg,
+        script = "coffea4bees/analysis/jcm_tools/stage_subsample_jcm_config.py",
+    output:
+        cfg = f"{out_b1}test_v{{m}}_closure/analysis_config_test.yml",
+    log:
+        f"{out_b1}test_v{{m}}_closure/logs/stage_test_subsample_config.log"
+    params:
+        container_wrapper = config['analysis_container_wrapper'],
+        python_bin = python_bin,
+        years_opt = f"--years {' '.join(YEARS)}" if per_year_jcm else "",
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {output.cfg}) $(dirname {log})
+        {params.container_wrapper} {params.python_bin} {input.script} \
+            --base-config {input.proc_cfg} \
+            --jcm-files {input.jcm} \
+            --output {output.cfg} \
+            {params.years_opt} 2>&1 | tee {log}
+        """
+
 rule test_processor_subsample_with_jcm:
     input:
+        cfg = f"{out_b1}test_v{{m}}_closure/analysis_config_test.yml",
         ds_file = MULTISAMPLE_DATASET,
-        jcm = f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}.yml",
-        proc_cfg = val_proc_cfg,
     output:
         coffea = f"{out_b1}test_v{{m}}_closure/histAll_{channel}_mixeddata_v{{m}}_with_JCM.coffea",
     log:
@@ -186,12 +267,11 @@ rule test_processor_subsample_with_jcm:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.coffea}) $(dirname {log})
-        {params.container_wrapper} {params.python_bin} runner.py {input.proc_cfg} \
+        {params.container_wrapper} {params.python_bin} runner.py {input.cfg} \
             --processor {params.processor} \
             --metadata {input.ds_file} \
             --datasets {params.dataset} \
             --years {params.years} \
-            --config-override apply_JCM=True JCM_file={input.jcm} \
             --output-path {params.output_path} \
             --output $(basename {output.coffea}) \
             {params.condor_flags} 2>&1 | tee {log}
@@ -241,3 +321,68 @@ rule test_v0_jcm_closure:
 rule all_test_subsample_closure:
     input:
         expand(f"{out_b1}test_v{{m}}_closure/plots/plots_done.txt", m=range(N_SUBSAMPLES))
+
+# ── Stage A & B Handoff ───────────────────────────────────────────────────────
+def get_bkg_syst_AB_handoff_inputs(wildcards):
+    res = {
+        "classifier_inputs": expand(f"{out_a3}histAll_{channel}_mixeddata_v{{v}}.json", v=SUBSAMPLES),
+        # C's --metadata needs this run's multi-sample dataset (helpers/stage_configs.py rebuilds the
+        # classifier_metadata directory from it on the GPU host)
+        "datasets": [MULTISAMPLE_DATASET],
+    }
+    if per_year_jcm:
+        res["jcms"] = expand(f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml", m=range(N_SUBSAMPLES), year=YEARS)
+    else:
+        res["jcms"] = expand(f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}.yml", m=range(N_SUBSAMPLES))
+    return res
+
+rule bkg_syst_AB_handoff:
+    input:
+        unpack(get_bkg_syst_AB_handoff_inputs)
+    output:
+        done = f"{out}handoff/bkg_syst_AB_handoff.done"
+    log:
+        f"{out}logs/bkg_syst_AB_handoff.log"
+    params:
+        eos = HANDOFF_EOS,
+        roast_id = config.get('roast_id', '')
+    shell:
+        """
+        set -eo pipefail
+        {EOS_PROXY}
+        mkdir -p $(dirname {output.done}) $(dirname {log})
+        echo "=== Background Systematics Stage A/B Handoff $(date) ===" > {log}
+
+        # Local copies to metadata/weights/JCM/ if running in roast
+        if [ -n "{params.roast_id}" ]; then
+            LOCAL_DIR="coffea4bees/metadata/weights/JCM/{params.roast_id}"
+            mkdir -p "$LOCAL_DIR"
+            for f in {input.jcms}; do
+                cp -f "$f" "$LOCAL_DIR/"
+                echo "Copied $f -> $LOCAL_DIR/" >> {log}
+            done
+        fi
+
+        # Remote copies to EOS if handoff.eos_base is configured
+        if [ -n "{params.eos}" ]; then
+            echo "Publishing to EOS handoff: {params.eos}" >> {log}
+            if command -v eos &>/dev/null; then
+                eos mkdir -p $(echo "{params.eos}/JCM" | sed 's|^root://[^/]*//|/|') 2>/dev/null || true
+                eos mkdir -p $(echo "{params.eos}/classifier_inputs" | sed 's|^root://[^/]*//|/|') 2>/dev/null || true
+            fi
+            for f in {input.jcms}; do
+                dst="{params.eos}/JCM/$(basename $f)"
+                xrdcp -f "$f" "$dst" 2>&1 | tee -a {log}
+            done
+            for f in {input.classifier_inputs}; do
+                dst="{params.eos}/classifier_inputs/$(basename $f)"
+                xrdcp -f "$f" "$dst" 2>&1 | tee -a {log}
+            done
+            for f in {input.datasets}; do
+                xrdcp -f "$f" "{params.eos}/datasets/$(basename $f)" 2>&1 | tee -a {log}
+            done
+        else
+            echo "No handoff.eos_base configured; local outputs only" >> {log}
+        fi
+        touch {output.done}
+        """

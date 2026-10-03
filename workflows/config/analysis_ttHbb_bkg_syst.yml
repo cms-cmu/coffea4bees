@@ -17,6 +17,9 @@ fourTag_use_tight: false
 # EOS area this workflow writes to: the A_2 subsample picoAODs (<publish_base>/picoAOD/subsamples/v<k>/),
 # the A_3 classifier inputs / SvB friends, the C models and FvT friends
 publish_base: "{eos_prod}/{roast_id}"
+# EOS handoff between hosts: A/B products for C on the GPU host, C's friend manifests for F
+handoff:
+  eos_base: "{eos_prod}/{roast_id}/handoff"
 channel: "ttHbb"
 dataset_location: "coffea4bees/metadata/datasets/"
 

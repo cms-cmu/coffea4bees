@@ -192,13 +192,17 @@ def check_handoff_refs(config_dict):
                 if k == '--JCM-weight' or k.startswith('--friends'):
                     refs[k] = v
         for key, val in refs.items():
-            if not isinstance(val, str):
-                continue
-            path = val.split('@@')[0].replace('""', '').strip()
-            # Only remote refs are checked: a local path is read from the checkout, which is
-            # the other, deliberate half of the handoff (C.4 and F.1 read the local JCM copy).
-            if path.startswith('root://') and not path.startswith(base + '/'):
-                problems.append(f"  {section}.{key}\n      reads      {path}\n      not under  {base}/")
+            entries = val if isinstance(val, list) else [val]
+            for item in entries:
+                if not isinstance(item, str):
+                    continue
+                raw_path = item.split('@@')[0].replace('""', '').strip()
+                tokens = raw_path.split()
+                path = tokens[-1] if tokens else ""
+                # Only remote refs are checked: a local path is read from the checkout, which is
+                # the other, deliberate half of the handoff (C.4 and F.1 read the local JCM copy).
+                if path.startswith('root://') and not path.startswith(base + '/'):
+                    problems.append(f"  {section}.{key}\n      reads      {path}\n      not under  {base}/")
     if problems:
         raise ValueError(
             "handoff mismatch: Phase C/D are pointed at remote files Phase B does not publish.\n"
@@ -300,12 +304,22 @@ def write_workflow_overrides(wfs_base, overrides, out_dir, log=None, inserts=Non
                 opts = mod.get("option") if isinstance(mod, dict) else None
                 if not isinstance(opts, list):
                     continue
-                for i, opt in enumerate(opts):
+                expanded_opts = []
+                for opt in opts:
                     k = match(opt, keys) if isinstance(opt, str) else None
                     if k is not None:
-                        opts[i] = f"{k} {flags[k]}".rstrip()
+                        val = flags[k]
+                        if isinstance(val, list):
+                            for item in val:
+                                expanded_opts.append(f"{k} {item}".rstrip())
+                        else:
+                            expanded_opts.append(f"{k} {val}".rstrip())
                         used[(owner[k], k)] += 1
+                    else:
+                        expanded_opts.append(opt)
+                opts = expanded_opts
                 if not anchors:
+                    mod["option"] = opts
                     continue
                 new_opts = []
                 for opt in opts:

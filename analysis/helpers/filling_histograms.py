@@ -535,6 +535,7 @@ def filling_ttHbb_histograms(
     weight_name = "weight",
     year_override: bool = False,
     classify_Z_decay: bool = False,
+    subsample_names: list = None,
 ):
     """Fills baseline event/object histograms and ttHbb-specific discriminants.
     Skips all HH4b mass window plots (xHH, dijet_HHSR, m4j_hh).
@@ -564,6 +565,9 @@ def filling_ttHbb_histograms(
     fill += hist.add("hT_selected", (50, 0, 1500, ("hT_selected", "h_{T} [GeV]")))
 
     skip_jet_list = ['energy', 'deepjet_c']
+    skip_all_but_n = [
+        "deepjet_b", "energy", "eta", "id_jet", "id_pileup", "mass", "phi", "pt", "pz", "deepjet_c",
+    ]
     fill += Jet.plot(("selJets", "Selected Jets"), "selJet", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
     fill += Jet.plot(("tagJets", "Tag Jets"), "tagJet", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
     fill += Jet.plot(("selJets_noJCM", "Selected Jets"), "selJet", weight="weight_noJCM_noFvT", skip=skip_jet_list, bins={"mass": (50, 0, 100)})
@@ -619,6 +623,41 @@ def filling_ttHbb_histograms(
     if (weight_name == "weight" and "weight_noFvT" in selev.fields
             and "SvB_MA" in selev.fields and "ps_ttHbb" in selev.SvB_MA.fields):
         fill += ttHbbSvBHists(("SvB_MA_noFvT", "SvB MA Classifier (no FvT)"), "SvB_MA", weight="weight_noFvT")
+
+    if subsample_names:
+        for v_name in subsample_names:
+            if weight_name == "weight_d3_to_t4":
+                w_var = f"weight_d3_to_t4_{v_name}"
+            elif weight_name == "weight_d3_to_t3":
+                w_var = f"weight_d3_to_t3_{v_name}"
+            else:
+                w_var = f"weight_{v_name}"
+
+            if w_var in selev.fields:
+                # 1. SvB_MA (crucial discriminant for Combine closure fits)
+                if "SvB_MA" in selev.fields and "ps_ttHbb" in selev["SvB_MA"].fields:
+                    fill += ttHbbSvBHists((f"SvB_MA_{v_name}", f"SvB_MA {v_name} Classifier"), "SvB_MA", weight=w_var)
+                elif "SvB" in selev.fields and "ps_ttHbb" in selev["SvB"].fields:
+                    fill += ttHbbSvBHists((f"SvB_{v_name}", f"SvB {v_name} Classifier"), "SvB", weight=w_var)
+
+                # For TTbar backgrounds, only SvB_MA is needed by closure fits
+                if processName != "data":
+                    continue
+
+                # 2. FvT diagnostics
+                fvt_field = f"FvT_{v_name}" if f"FvT_{v_name}" in selev.fields else "FvT"
+                if fvt_field in selev.fields:
+                    if v_name in ("v0", "0"):
+                        fvt_skip = ["pt", "pm3", "pm4"] if "pt" not in selev[fvt_field].fields else []
+                    else:
+                        fvt_skip = ["pt", "pm3", "pm4", "FvT_l", "pd4", "pd3", "pt4", "pt3", "std", "frac_err", "d3_to_t3", "d4_to_t4", "d3_to_t4"]
+                    fill += FvTHists((f"FvT_{v_name}", f"FvT {v_name} Classifier"), fvt_field, skip=fvt_skip, weight=w_var)
+
+                # 3. selJets & tagJets diagnostics
+                # Reference model v0 retains full kinematics; v1..v15 retain lightweight multiplicity (.n)
+                jet_skip = skip_jet_list if v_name in ("v0", "0") else skip_all_but_n
+                fill += Jet.plot((f"selJets_{v_name}", f"Selected Jets {v_name}"), "selJet", weight=w_var, skip=jet_skip, bins={"mass": (50, 0, 100)})
+                fill += Jet.plot((f"tagJets_{v_name}", f"Tag Jets {v_name}"), "tagJet", weight=w_var, skip=jet_skip, bins={"mass": (50, 0, 100)})
 
     fill(selev, hist)
     return hist.to_dict(nonempty=True)

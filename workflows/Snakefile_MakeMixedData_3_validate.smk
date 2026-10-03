@@ -123,7 +123,8 @@ rule M3_fit:
         export MPLCONFIGDIR="/tmp/matplotlib"
         mkdir -p $MPLCONFIGDIR {M3_JCM_DIR}
         {WRAPPER} {PYTHON} coffea4bees/analysis/jcm_tools/make_jcm_weights.py -o {M3_JCM_DIR} \
-            -i {input.hists} -r {M3_REGION} -w {M3_JCM_TAG} --data4bName data --jcm_config {input.jcm_config} 2>&1 | tee {log}
+            -i {input.hists} -r {M3_REGION} -w {M3_JCM_TAG} --data4bName data --jcm_config {input.jcm_config} \
+            --combine_input_files 2>&1 | tee {log}
         ls {M3_JCM_DIR} 2>&1 | tee -a {log}
         """
 

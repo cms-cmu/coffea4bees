@@ -74,7 +74,18 @@ MC_FILES = expand(
 include: "helpers/common.smk"
 
 def get_raw_analysis_config():
-    return resolve_config_section(config, primary_key='analysis_config', fallback_keys=['analysis'])
+    cfg = resolve_config_section(config, primary_key='analysis_config', fallback_keys=['analysis'])
+    if config.get('per_year_jcm', False) and 'config' in cfg and cfg['config'].get('apply_JCM'):
+        if 'JCM_file' not in cfg['config'] or not cfg['config']['JCM_file']:
+            tag = config.get('tag', '2024_v2')
+            roast_id = config.get('roast_id', config.get('label', 'nominal'))
+            jcm_candidate = {
+                yr: f"coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_{tag}_{yr}.yml"
+                for yr in config.get('year_eras', {}).keys()
+            }
+            if all(os.path.exists(p) for p in jcm_candidate.values()):
+                cfg['config']['JCM_file'] = jcm_candidate
+    return cfg
 
 analysis_config_path = f"{config['output_path']}analysis_config.yml"
 

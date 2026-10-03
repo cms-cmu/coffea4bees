@@ -82,6 +82,7 @@ if SUB_SOURCE == 'split':
             # `picosize`-event files, so with the template's 100k the larger subsamples got more chunks
             # than the smaller and no single vXXX template fits all of them.
             cfg['runner']['picosize'] = int(SUB.get('picosize', 10**9))
+            cfg['runner'].update(SUB.get('runner') or {})      # subsamples.runner overrides (as M.4 had)
             write_yaml(output[0], cfg)
 
     use rule analysis_processor from analysis as A2_split with:
@@ -197,17 +198,8 @@ rule A2_classifier_metadata:
         repo = config.get('dataset_location', "coffea4bees/metadata/datasets/"),
     output: directory(CLASSIFIER_METADATA)
     run:
-        import glob, shutil
-        os.makedirs(output[0], exist_ok=True)
-        skipped = []
-        for path in sorted(glob.glob(os.path.join(input.repo, "*.yml"))):
-            with open(path) as f:
-                keys = set(yaml.safe_load(f) or {})
-            if SUB_NAME in keys:
-                skipped.append(os.path.basename(path))
-                continue
-            shutil.copy(path, output[0])
-        shutil.copy(input.dataset, output[0])
+        from helpers.stage_configs import build_classifier_metadata
+        skipped = build_classifier_metadata(input.repo, input.dataset, output[0], SUB_NAME)
         print(f"classifier metadata: {output[0]} (skipped {skipped}: they define {SUB_NAME})")
 
 rule all_bkg_syst_A_2:
