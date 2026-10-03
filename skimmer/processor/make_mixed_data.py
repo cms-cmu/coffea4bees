@@ -115,6 +115,10 @@ class HemiMixer(Skimmer4b):
         if mix_tags not in ("threeTag", "fourTag", "threeTag_fourTag"):
             raise ValueError(f"mix_tags must be 'threeTag', 'fourTag' or 'threeTag_fourTag', got {mix_tags!r}")
         self.mix_tags          = mix_tags
+        self.exclude_source_event = exclude_source_event if exclude_source_event is not None else (mix_tags == "fourTag")
+        self.rank_selection    = rank_selection
+        self.k_random          = k_random
+        self.mixing_seed       = mixing_seed
         # Unbiased, reproducible thinning by event number. Whoever builds the dataset from the output
         # must divide the sample's sumw by N (MakeMixedData M7_dataset_yml does).
         self.event_subsample   = int(event_subsample)
