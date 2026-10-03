@@ -182,12 +182,10 @@ rule coffea_to_root_closure:
             -o {output} 2>&1 | tee {log}
         """
 
-default_signal_coffea = "inputs/histAll_ttHbb_stitched.coffea" if os.path.exists("inputs/histAll_ttHbb_stitched.coffea") else ("output/v5_ttHbb/histAll_ttHbb.coffea" if os.path.exists("output/v5_ttHbb/histAll_ttHbb.coffea") else "output/ttHbb/histAll_ttHbb.coffea")
-
 rule make_signal_root_closure:
     input:
         script = "coffea4bees/stats_analysis/make_signal_root.py",
-        signal_file = config.get('nominal_coffea', default_signal_coffea),
+        signal_file = config['nominal_coffea'],        # inputs.nominal_hists, fetched (bkg_syst_common)
     output:
         f"{out_f2}root_inputs/hist_signal_ttHbb.root"
     params:

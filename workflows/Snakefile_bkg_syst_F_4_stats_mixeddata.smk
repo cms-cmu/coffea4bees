@@ -88,8 +88,7 @@ out = config['output_path']
 if not out.endswith("/"):
     out += "/"
 out_f4 = f"{out}bkg_syst_F_4_stats_mixeddata/"
-default_nominal_json = "inputs/histAll_ttHbb_stitched.json" if os.path.exists("inputs/histAll_ttHbb_stitched.json") else f"{phase_f_out}histAll_{phase_f_lbl}.json"
-nominal_json = config.get('nominal_json', default_nominal_json)
+nominal_json = config['nominal_json']           # written by F_3 from inputs.nominal_hists
 ave_mixeddata_json = config.get('ave_mixeddata_json', f"{out_f4}histAll_ttHbb_mixeddata_ave.json")
 
 config.setdefault('make_combine_inputs', {})

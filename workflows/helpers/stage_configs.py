@@ -39,14 +39,8 @@ def stage_phaseA_3_configs(config, out_a3):
     configs_dir = os.path.join(out_a3, "configs")
     default_processor = config.get('analysis_processor') or (config.get('analysis_config', {}) or {}).get('processor') or f"coffea4bees/analysis/processors/processor_{channel}.py"
 
-    classifier_inputs_base = config.get(
-        'classifier_inputs_base',
-        f"root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/{channel}_stitched/classifier_inputs/mixeddata/"
-    )
-    friend_base = config.get(
-        'mixeddata_friend_base',
-        f"root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/friends/{channel}/"
-    )
+    classifier_inputs_base = config['classifier_inputs_base']     # set by bkg_syst_common
+    friend_base = config['mixeddata_friend_base']
 
     process_subsamples_cfg = {
         "processor": default_processor,
@@ -68,7 +62,8 @@ def stage_phaseA_3_configs(config, out_a3):
             "apply_btagSF": True,
             "apply_boosted_veto": False,
             "run_SvB": True,
-            "SvB_MA": True,
+            # the nominal roast's SvB model (inputs.SvB_model), not weights_<channel>.yml's
+            "SvB_MA": [{"path": config['mixed_svb_model'], "name": config.get('mixed_svb_model_name', "Final")}],
             "top_reconstruction": "fast",
             "fill_histograms": True,
             "hist_cuts": ["pass_nSelJets_gt6"],
@@ -109,15 +104,13 @@ def stage_phaseC_configs(config, out_c):
     if not out.endswith('/'):
         out += '/'
     n_models = int(config.get('n_models', config.get('n_subsamples', 16)))
-    eos_base = config.get("eos_base", "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2")
+    eos_base = config['eos_base']                                 # set by bkg_syst_common
     mix_name = config.get("mix_name", "ttHbb_bkg_syst")
 
     nominal_ci = config.get(
         'nominal_classifier_inputs',
         'coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json'
     )
-    if not os.path.exists(nominal_ci) and os.path.exists('coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json'):
-        nominal_ci = 'coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json'
 
     mixed_ci_template = config.get(
         'mixed_classifier_inputs_template',
@@ -243,7 +236,7 @@ def stage_phaseF_1_configs(config, out_f1):
                 "JCM_file": jcm_file,
                 "friends": {
                     "trigWeight": config.get('trigweights_file', "coffea4bees/metadata/friends/trigweights_Run2_v2.json@@trigWeight"),
-                    "SvB_MA": config.get('data_svb_friend', f"root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/{channel}_stitched/friend/SvB_{channel}_stitched/result.json@@analysis.0.merged"),
+                    "SvB_MA": config['data_svb_friend'],          # inputs.SvB (bkg_syst_common)
                     "FvT": fvt_friend,
                 },
                 "apply_trigWeight": True,

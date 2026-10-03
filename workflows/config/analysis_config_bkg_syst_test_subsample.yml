@@ -1,6 +1,4 @@
 processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
-dataset_location: "output/ttHbb_bkg_syst/coffea4bees/metadata/datasets/"
-datasets_file: "output/ttHbb_bkg_syst/bkg_syst_A_2_make_subsamples/mixeddata_4b.yml"
 weights: "coffea4bees/metadata/weights/weights_ttHbb.yml"
 
 runner:

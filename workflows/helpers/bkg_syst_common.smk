@@ -81,11 +81,13 @@ out_f2 = f"{out}bkg_syst_F_2_run_two_stage_closure/"
 out_f3 = f"{out}bkg_syst_F_3_stats/"
 out_f4 = f"{out}bkg_syst_F_4_stats_mixeddata/"
 
-# ── 6. Stage A inputs: a mixeddata roast + the analysis' own JCM histograms ─────
-# The mixed data and the ttbar pseudodata come from a MakeMixedData roast (its handoff/ YAMLs); the
+# ── 6. Inputs: a mixeddata roast + the analysis' nominal roast ─────────────────
+# From the MakeMixedData roast (its handoff/ YAMLs): the mixed data and the ttbar pseudodata. The
 # mixed-data JCM that splits them into subsamples is fit here (A_1), in the analysis selection.
+# From the nominal analysis roast: its B.1 noJCM histograms (A_1, B_1), its Phase F histograms
+# (F_2 signal, F_3 / F_4 datacards), its classifier-input manifest (C) and its SvB friend (F_1).
 INPUTS = config.get('inputs') or {}
-for _key in ('mixeddata_all', 'ttbar_psdata', 'jcm_hists'):
+for _key in ('mixeddata_all', 'ttbar_psdata', 'jcm_hists', 'nominal_hists', 'SvB', 'SvB_model'):
     if not INPUTS.get(_key):
         raise ValueError(f"bkg_syst: inputs.{_key} is required (see analysis_ttHbb_bkg_syst.yml)")
 MIXED_URL = str(INPUTS['mixeddata_all'])
@@ -101,6 +103,18 @@ A_INPUT_DIR = f"{out}inputs/"
 JCM_HISTS = f"{A_INPUT_DIR}{os.path.basename(JCM_HISTS_URL)}"
 JCM_HIST_CONFIG = f"{A_INPUT_DIR}{os.path.basename(JCM_HIST_CONFIG_URL)}"
 PS_DATASET = f"{A_INPUT_DIR}{PS_NAME}.yml"
+# The nominal Phase F histograms, fetched (coffea's load() reads local files only); F_3 converts
+# them to the datacard JSON next to them.
+NOMINAL_HISTS_URL = str(INPUTS['nominal_hists'])
+config['nominal_coffea'] = f"{A_INPUT_DIR}{os.path.basename(NOMINAL_HISTS_URL)}"
+config.setdefault('nominal_json', config['nominal_coffea'].removesuffix(".coffea") + ".json")
+# Read in place (fsspec / friend URLs)
+if INPUTS.get('classifier_inputs'):
+    config['nominal_classifier_inputs'] = str(INPUTS['classifier_inputs'])
+config['data_svb_friend'] = str(INPUTS['SvB'])
+# ...and the SvB model that made that friend: A_3 evaluates it on the mixed subsamples, so mixed data
+# and data are scored by the same SvB in the closure
+config['mixed_svb_model'] = str(INPUTS['SvB_model'])
 MIXED_DATASET = f"{A_INPUT_DIR}{MIX_NAME}.yml"      # local copy: A_2 reads the seeds' file lists
 
 # The multi-sample closure dataset A_2 assembles: mixeddata_4b (samples mix_v<k>) or
@@ -117,8 +131,10 @@ else:
                      f"(runner.py reads any other name as MC)")
 MULTISAMPLE_DATASET = f"{out_a2}{SUB_NAME}.yml"
 
-config.setdefault('classifier_inputs_base',
-    f"root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/{channel}/classifier_inputs/mixeddata/")
+# EOS products of this run, all under publish_base
+config.setdefault('classifier_inputs_base', f"{PUB}/classifier_inputs/mixeddata/")
+config.setdefault('mixeddata_friend_base', f"{PUB}/friend/mixeddata/")
+config.setdefault('eos_base', PUB)                     # C: classifier/ and friend/FvT/
 config.setdefault('classifier_inputs_json',
     f"{out_a3}classifier_inputs/classifier_inputs_mixeddata_{channel}.json")
 config.setdefault('mixeddata_friend_json', f"{out}coffea4bees/metadata/friends/friends_{channel}_mixeddata_4b.json")

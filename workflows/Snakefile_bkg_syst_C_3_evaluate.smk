@@ -59,7 +59,7 @@ os.makedirs(out_c, exist_ok=True)
 from helpers.stage_configs import stage_phaseC_configs
 cfg_files = stage_phaseC_configs(config, out_c)
 
-eos_base = config.get("eos_base", "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2")
+eos_base = config['eos_base']                     # set by bkg_syst_common (publish_base)
 mix_name = config.get("mix_name", "ttHbb_bkg_syst")
 container_wrapper = config.get('container_wrapper', './run_container')
 python_bin = config.get('python_bin', 'python')

@@ -132,11 +132,9 @@ config.setdefault('stats_container_wrapper', config.get('container_wrapper', "./
 out = config['output_path']
 if not out.endswith("/"):
     out += "/"
-default_nominal_coffea = "inputs/histAll_ttHbb_stitched.coffea" if os.path.exists("inputs/histAll_ttHbb_stitched.coffea") else ("output/v5_ttHbb/histAll_ttHbb.coffea" if os.path.exists("output/v5_ttHbb/histAll_ttHbb.coffea") else f"{phase_f_out}histAll_{phase_f_lbl}.coffea")
-default_nominal_json = "inputs/histAll_ttHbb_stitched.json" if os.path.exists("inputs/histAll_ttHbb_stitched.json") else ("output/v5_ttHbb/histAll_ttHbb.json" if os.path.exists("output/v5_ttHbb/histAll_ttHbb.json") else f"{phase_f_out}histAll_{phase_f_lbl}.json")
-
-nominal_coffea = config.get('nominal_coffea', default_nominal_coffea)
-nominal_json = config.get('nominal_json', default_nominal_json)
+# inputs.nominal_hists, fetched, and the JSON convert_hist_to_json writes next to it (bkg_syst_common)
+nominal_coffea = config['nominal_coffea']
+nominal_json = config['nominal_json']
 
 def get_region_for_channel(channel):
     # 1. Check channel-specific setting
@@ -221,7 +219,8 @@ module combine:
     config: config
 
 # Resolve absolute CERNBox destination path
-cern_user = config.get("cern_user", os.environ.get("USER", "algomez"))
+# final_output only (not in any all_* target; a roast publishes with `roast publish`)
+cern_user = config.get("cern_user") or os.environ.get("CERN_USER") or os.environ.get("USER", "")
 cern_path = config.get("cern_path", "www/ttHbb/Plots/")
 if not cern_path.startswith("/"):
     first_letter = cern_user[0]

@@ -10,8 +10,9 @@
 # data and ttbar MC (inputs.jcm_hists, the B.1 noJCM histograms), with the mixed data histogrammed
 # by the very runner config those were made with -- one selection, one binning.
 #
-#   A1_fetch                          inputs.jcm_hists + its runner config, the mixed-data and
-#                                     pseudodata YAMLs -> local
+#   A1_fetch                          every file input the workflow reads locally: inputs.jcm_hists +
+#                                     its runner config, the mixed-data and pseudodata YAMLs, and
+#                                     inputs.nominal_hists (for F_2 / F_3)
 #   A1_hist_config                    that runner config, pointed at mixeddata_all (read from EOS)
 #   A1_hists (per year, condor)       the analysis processor over mixeddata_all
 #   A1_merge_hists                    + the analysis data / ttbar histAll_NoJCM
@@ -42,13 +43,15 @@ rule A1_fetch:
         hists = JCM_HISTS,
         hist_config = JCM_HIST_CONFIG,
         psdata = PS_DATASET,
-        mixed = MIXED_DATASET
+        mixed = MIXED_DATASET,
+        nominal = config['nominal_coffea']
     log: f"{A_INPUT_DIR}fetch.log"
     params:
         hists = JCM_HISTS_URL,
         hist_config = JCM_HIST_CONFIG_URL,
         psdata = PS_URL,
-        mixed = MIXED_URL
+        mixed = MIXED_URL,
+        nominal = NOMINAL_HISTS_URL
     shell:
         """
         set -eo pipefail
@@ -62,6 +65,7 @@ rule A1_fetch:
         fetch_file "{params.hist_config}" "{output.hist_config}"
         fetch_file "{params.psdata}" "{output.psdata}"
         fetch_file "{params.mixed}" "{output.mixed}"
+        fetch_file "{params.nominal}" "{output.nominal}"
         """
 
 rule A1_hist_config:

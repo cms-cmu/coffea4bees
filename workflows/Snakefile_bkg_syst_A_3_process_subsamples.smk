@@ -101,7 +101,7 @@ rule process_subsample_single_pass:
             --output-path {params.output_path} \
             --output $(basename {output.coffea}) \
             {params.condor_flags} 2>&1 | tee {log}
-        touch {output.json_meta}
+        test -s {output.json_meta}      # runner's friend manifest (HCR_input + SvB_MA): C and F read it
         """
 
 # ── Merge Classifier Inputs JSON Manifest ─────────────────────────────────────

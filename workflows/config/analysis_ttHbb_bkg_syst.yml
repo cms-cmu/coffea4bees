@@ -1,15 +1,25 @@
+# ==============================================================================
+# ttHbb Run 2 BACKGROUND SYSTEMATIC (Snakefile_bkg_syst.smk), run as a roast
+# ==============================================================================
+# Closure subsamples from the Run 2 mixed data, per-subsample JCM + FvT, two-stage closure fit, and
+# the datacards with that background systematic. Everything it reads comes from two upstream roasts
+# (see `inputs:`); everything it writes is this roast's: local output under output/{roast_id}/, EOS
+# products under {eos_prod}/{roast_id}/. No user names: {eos_prod} / {web_prod} come from the roast
+# user's profile (helpers/common.smk), and publishing goes through `roast publish`.
+#
+#   roast new --config coffea4bees/workflows/config/analysis_ttHbb_bkg_syst.yml \
+#       --step cmslpc:coffea4bees/workflows/Snakefile_bkg_syst.smk
+#   roast submit <id> --step bkg_syst --targets all_pre_fvt      # A_1-A_3 + B_1
+#
 label: "ttHbb_bkg_syst"
-output_path: "output/ttHbb_bkg_syst/"
+output_path: "output/{roast_id}/"
 fourTag_use_tight: false
-# EOS area this workflow writes to (the A_2 subsample picoAODs: <publish_base>/picoAOD/subsamples/v<k>/)
-publish_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2_v2/ttHbb_pz_rank0_0"
-cern_user: "algomez"
-cern_path: "www/ttHbb/Plots/"
+# EOS area this workflow writes to: the A_2 subsample picoAODs (<publish_base>/picoAOD/subsamples/v<k>/),
+# the A_3 classifier inputs / SvB friends, the C models and FvT friends
+publish_base: "{eos_prod}/{roast_id}"
 channel: "ttHbb"
 dataset_location: "coffea4bees/metadata/datasets/"
 
-classifier_inputs_json: "output/ttHbb_bkg_syst/bkg_syst_A_3_process_subsamples/classifier_inputs/classifier_inputs_mixeddata_ttHbb.json"
-mixeddata_friend_json: "output/ttHbb_bkg_syst/coffea4bees/metadata/friends/friends_ttHbb_bkg_syst_4b.json"
 weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
 years:
   - "UL16_preVFP"
@@ -19,7 +29,6 @@ years:
 
 phase_f_output_path: "inputs/"
 phase_f_label: "ttHbb"
-nominal_coffea: "output/ttHbb/histAll_ttHbb.coffea"
 
 # ttbar MC in inputs.jcm_hists: the ttbar term of the A_1 mixed-data JCM fit
 ttbar_processes:
@@ -33,16 +42,27 @@ ttbar_processes:
 #   A_2  split mixeddata_all into subsamples.n subsamples with it; + ttbar pseudodata -> mixeddata_4b
 #   A_3  processor_ttHbb over each subsample (pre-JCM histograms for B_1, classifier inputs, SvB)
 # ==============================================================================
+# Everything read from other productions, checked by `roast new` to lie inside upstream_roasts.
 inputs:
-  upstream_roasts: [mixeddata_run2_20260927_c39c264-0ce4d59]
-  # The mixed data and the ttbar pseudodata: a MakeMixedData roast's handoff YAMLs (read in place)
+  upstream_roasts: [ttHbb_run2_20260929_a209210-6a2293a, mixeddata_run2_20260927_c39c264-0ce4d59]
+  # MakeMixedData roast (Run 2, 3b mixing): the mixed data and the ttbar pseudodata (read in place)
   mixeddata_all: "{roast:mixeddata_run2_20260927_c39c264-0ce4d59}/handoff/mixeddata_all.yml"
   ttbar_psdata: "{roast:mixeddata_run2_20260927_c39c264-0ce4d59}/handoff/ttbar_PSData.yml"
-  # 4b data + ttbar MC noJCM histograms in the ttHbb selection (the B.1 JCM-fit input). A_1 fits the
-  # mixed-data JCM against them and B_1 the per-subsample JCMs. The runner config they were made with
-  # must sit next to them as analysis_config_noJCM.yml (or set inputs.analysis_config_noJCM): A_1
-  # histograms the mixed data with exactly that config.
-  jcm_hists: "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2_v2/ttHbb_pz_rank0_0/output/computeJCM/histAll_NoJCM.coffea"
+  # Nominal ttHbb Run 2 roast:
+  #   jcm_hists      B.1 4b data + ttbar MC noJCM histograms (ttHbb selection, stitched ttbar). A_1
+  #                  fits the mixed-data JCM against them, B_1 the per-subsample JCMs. A_1 histograms
+  #                  the mixed data with the runner config next to them (analysis_config_noJCM.yml).
+  #   nominal_hists  Phase F histograms: F_2 signal, F_3 / F_4 datacards
+  #   classifier_inputs  B.2 classifier-input manifest (C: the detector 3b / ttbar HCR inputs)
+  #   SvB            Phase D SvB friend of the data (F_1)
+  # {roast:<id>:<key>} = a top-level value of that roast's captured config (roasts/<id>/config.yml):
+  # its output_path / label, so these follow the nominal roast's layout instead of copying it
+  jcm_hists: "{roast:ttHbb_run2_20260929_a209210-6a2293a}/{roast:ttHbb_run2_20260929_a209210-6a2293a:output_path}computeJCM/histAll_NoJCM.coffea"
+  nominal_hists: "{roast:ttHbb_run2_20260929_a209210-6a2293a}/{roast:ttHbb_run2_20260929_a209210-6a2293a:output_path}histAll_{roast:ttHbb_run2_20260929_a209210-6a2293a:label}.coffea"
+  classifier_inputs: "{roast:ttHbb_run2_20260929_a209210-6a2293a}/handoff/classifier_inputs_ttHbb_run2_20260929_a209210-6a2293a.json"
+  SvB: "{roast:ttHbb_run2_20260929_a209210-6a2293a}/friend/SvB_ttHbb_stitched/result.json@@analysis.0.merged"
+  #   SvB_model      the Phase D model behind that friend: A_3 scores the mixed subsamples with it
+  SvB_model: "{roast:ttHbb_run2_20260929_a209210-6a2293a}/classifier/SvB_ttHbb_stitched/result.json"
 
 # A_1: make_jcm_weights.py, mixeddata_all as the "3b" sample; ttbarProcesses = ttbar_processes
 mixed_jcm:
@@ -60,23 +80,16 @@ subsamples:
 #   1. Pre-JCM Histograms (selJets_noJCM.n / tagJets_noJCM.n for Stage B_1)
 #   2. Classifier Input trees on EOS & merged JSON (for Stage C_1)
 #   3. SvB Friend Trees on EOS & merged friend JSON (for Stage F_1)
-# Runtime effective configs are staged into output/ttHbb_bkg_syst/bkg_syst_A_3_process_subsamples/configs/
+# Runtime effective configs are staged into <output_path>bkg_syst_A_3_process_subsamples/configs/
 phaseA_3:
   runner:
     workers: 4
     min_workers: 25
     max_workers: 200
     worker_memory: "6GB"
-    friend_base: null
-  config:
-    run_SvB: true
-    SvB_MA: true
-    make_classifier_input: null
-    make_friend_SvB: null
-    # hist_cuts:
-    #   - "pass_nSelJets_gt6"
+  # config: classifier inputs -> <publish_base>/classifier_inputs/mixeddata/, SvB friends ->
+  # <publish_base>/friend/mixeddata/, SvB_MA = inputs.SvB_model (defaults: helpers/stage_configs.py)
 
-classifier_inputs_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/ttHbb_stitched/classifier_inputs/mixeddata/"
 
 # ==============================================================================
 # STAGE B_1: DEDICATED JCM FITS & VALIDATION CLOSURE
@@ -120,7 +133,7 @@ phaseB_1:
 #   - classifier_setting: global settings (eras, feature branches, dataloader)
 #   - fvt_train_workflow: training task template
 #   - fvt_eval_workflow: evaluation task template
-# Runtime effective configs are staged into output/ttHbb_bkg_syst/bkg_syst_C_1_FvT/wfs/
+# Runtime effective configs are staged into <output_path>bkg_syst_C_FvT/models/mix_<m>/
 # ==============================================================================
 classifier_setting:
   - module: ml.DataLoader
@@ -229,11 +242,9 @@ phase_e_fvt:
   channel: "ttHbb"
   mix_name: "ttHbb_bkg_syst"
   n_models: 16
-  eos_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2"
-  plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
-  nominal_classifier_inputs: "coffea4bees/metadata/datasets/classifier_inputs_ttHbb_stitched.json"
-  mixed_classifier_inputs_template: "output/ttHbb_bkg_syst/bkg_syst_A_3_process_subsamples/histAll_ttHbb_mixeddata_v{m}.json"
-  jcm_template: "output/ttHbb_bkg_syst/bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v{m}.yml"
+  plot_base: "{web_prod}/{roast_id}/classifier_plots"
+  # nominal_classifier_inputs: inputs.classifier_inputs; the per-subsample mixed classifier inputs and
+  # JCMs default to this roast's A_3 / B_1 outputs (helpers/stage_configs.py:stage_phaseC_configs)
   precision: "fp16"
   gpu_partition: "GPU-shared"
   slurm_account: "phy260026p"
@@ -246,11 +257,9 @@ phase_e_fvt:
   evaluate: true
 
 
+# Only `processor` is read (A_3, B_1): the processor of every analysis pass
 analysis_config:
   processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
-  dataset_location: "output/ttHbb_bkg_syst/coffea4bees/metadata/datasets/"
-  datasets_file: "output/ttHbb_bkg_syst/bkg_syst_A_2_make_subsamples/mixeddata_4b.yml"
-  friend_file: "output/ttHbb_bkg_syst/coffea4bees/metadata/friends/friends_ttHbb_bkg_syst_4b.json"
   weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
   runner:
     workers: 8

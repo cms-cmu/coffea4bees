@@ -98,7 +98,7 @@ runs:
   svbfeynnet_run3.yml:
     - SvBFeynNet_friendtrees_Run3
   analysis_ttHbb_bkg_syst.yml:
-    - {snakefile: bkg_syst, upstream: ["output/ttHbb/histAll_ttHbb.coffea"]}
+    - bkg_syst
 
 not_covered:
   PhaseB_computeJCM: "no production config"
