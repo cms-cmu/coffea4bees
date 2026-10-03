@@ -95,17 +95,24 @@ rule M3_jcm_config:
     run:
         with open(input[0]) as f:
             cfg = yaml.safe_load(f) or {}
-        cfg['data3bName'] = "mixeddata_all"
+        cfg['data3bName'] = MIX_NAME        # the mixed data stands in for the 3b sample
         cfg['data4bName'] = "data"
-        cfg['ignoreTT'] = True
         cfg['float_t'] = bool(MJ.get('float_t', True))
-        if 'ttbarProcesses' in MJ or 'ttbar_processes' in config:
-            cfg['ttbarProcesses'] = MJ.get('ttbarProcesses', config.get('ttbar_processes', TTBAR))
+        # The fit keeps the ttbar term: the mixed data is multijet only (ttbar-subtracted 3b data)
+        # while the 4b data it is fit to contains ttbar. The samples must be the ones the upstream
+        # jcm_hists histogrammed, i.e. this roast's `ttbar` list.
+        if 'ttbarProcesses' in MJ:
+            cfg['ttbarProcesses'] = MJ['ttbarProcesses']
+        elif TTBAR:
+            cfg.setdefault('ttbarProcesses', TTBAR)
         write_yaml(output[0], cfg)
 
 rule M3_fit:
     input:
-        hists = [UPSTREAM_HISTS] + expand(f"{M3_OUT}singlefiles/hist__{MIX_NAME}__{{year}}.coffea", year=YEARS),
+        # The merged file, not the per-year singlefiles: make_jcm_weights.py keeps the LAST input file
+        # holding each process (jcm_tools/helpers.py:loadHistograms), so per-year inputs fit one year
+        # of mixed data against all years of 4b data.
+        hists = M3_HISTALL,
         jcm_config = f"{M3_OUT}jcm_config_mixed.yml"
     output: MIXED_JCM
     log: f"{M3_OUT}logs/fit.log"
