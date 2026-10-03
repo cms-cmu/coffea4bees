@@ -118,7 +118,8 @@ class HemiMixer(Skimmer4b):
         self.exclude_source_event = exclude_source_event if exclude_source_event is not None else (mix_tags == "fourTag")
         self.rank_selection    = rank_selection
         self.k_random          = k_random
-        self.mixing_seed       = mixing_seed
+        self.mixing_seed       = int(mixing_seed)
+        self.ttbar_var = {"threeTag": "d3_to_t3", "fourTag": "d4_to_t4"}.get(mix_tags)
         # Unbiased, reproducible thinning by event number. Whoever builds the dataset from the output
         # must divide the sample's sumw by N (MakeMixedData M7_dataset_yml does).
         self.event_subsample   = int(event_subsample)
