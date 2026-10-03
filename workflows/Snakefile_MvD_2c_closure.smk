@@ -17,7 +17,7 @@ V2C_DATASETS = ['data', MIX_NAME]
 V2C_CONFIG = f"{V2C_OUT}analysis_config.yml"
 V2C_HISTALL = f"{V2C_OUT}histAll_{V2C_LABEL}.coffea"
 V2C_FRIEND_OK = f"{V2C_OUT}friend_checked.done"
-V2C_PLOT_CONFIG = V2C.get('plot_config', "coffea4bees/plots/metadata/plotsAll_MvD_roast.yml")
+V2C_PLOT_CONFIG = mvd_plot_config(V2C.get('plot_config', "coffea4bees/plots/metadata/plotsAll_MvD_roast.yml"))
 
 rule V2c_check_friend:
     output: touch(V2C_FRIEND_OK)
@@ -118,6 +118,7 @@ use rule cutflow_closure_table from analysis as V2c_closure_table with:
         title = f"{config.get('label', 'mvd')}_cutflow_{V2C_LABEL}",
         multijet = "mixed4b",
         ttbar = "TTbar4b_from_MvD",
+        extra_arguments = f"--multijet-process {MIX_NAME}",
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 

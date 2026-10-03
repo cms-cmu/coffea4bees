@@ -819,7 +819,11 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     era = event.metadata["dataset"].removeprefix("data_")
                     self._cutFlow_ttbar.addOutput(processOutput, f"TTbar_from_d3_{era}")
                 if self.plot_ttbar_with_MvD_weights and hasattr(self, '_cutFlow_ttbar_MvD'):
-                    era = event.metadata["dataset"].removeprefix("mixeddata_all_")
+                    # the mixed data: strip its own name (mixeddata_all, mixeddata_all_4bmix, ...), not
+                    # the literal "mixeddata_all_", so every background model gives
+                    # TTbar4b_from_MvD_<year><era>. Other chunks keep their (empty, blessed) keys.
+                    prefix = self.processName if self.config["isMixedDataAll"] else "mixeddata_all"
+                    era = event.metadata["dataset"].removeprefix(f"{prefix}_")
                     self._cutFlow_ttbar_MvD.addOutput(processOutput, f"TTbar4b_from_MvD_{era}")
 
         with self._stage(f"{label}:fill_histograms"):
