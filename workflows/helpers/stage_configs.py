@@ -28,11 +28,18 @@ def _dump_yaml(data, output_file):
         f.write(new_content)
     return output_file
 
-def stage_phaseA_3_configs(config, out_a3):
+def stage_phaseA_3_configs(config, out_a3, subsamples):
     """
-    Generate unified runtime config for Stage A_3 (subsample processing: classifier inputs +
-    JCM histograms + SvB friend trees) into {out_a3}configs/.
+    Generate the runtime configs for Stage A_3 (subsample processing: classifier inputs + JCM
+    histograms + SvB friend trees) into {out_a3}configs/, one per subsample.
     Only non-default parameters specified in config['phaseA_3'] are merged on top.
+
+    One per subsample because every subsample contains the SAME ttbar pseudodata files: with one
+    friend directory for all of them, the 16 parallel jobs wrote, merged and cleaned up friend
+    trees of the same pseudodata files in the same place (one job's cleanup removed another's
+    files: "Unable to remove .../TTToSemiLeptonic_UL18/HCR_input_..._picoAOD_PSData.root").
+    Each subsample now has its own <base>/v<k>/ (and the pseudodata friends exist once per
+    subsample -- small).
     """
     phaseA_3_cfg = config.get('phaseA_3') or {}
     channel = config.get('channel', 'ttHbb')
@@ -50,7 +57,8 @@ def stage_phaseA_3_configs(config, out_a3):
             "workers": 4,
             "min_workers": 25,
             "max_workers": 200,
-            "worker_memory": "6GB",
+            # the A_3 pass (SvB on the fly + friend dumps) was OOM-killed at 6 GB
+            "worker_memory": config.get('worker_memory', "8GB"),
             "friend_base": friend_base,
             "write_coffea_output": True,
         },
@@ -83,10 +91,19 @@ def stage_phaseA_3_configs(config, out_a3):
             if k not in ['runner', 'config', 'worker_memory', 'workers', 'min_workers', 'max_workers'] and not isinstance(v, dict):
                 process_subsamples_cfg['config'][k] = v
 
-    process_subsamples_file = _dump_yaml(process_subsamples_cfg, os.path.join(configs_dir, f"process_subsamples_mixeddata_{channel}.yml"))
+    files = {}
+    for v in subsamples:
+        cfg = copy.deepcopy(process_subsamples_cfg)
+        # per-subsample friend directories (see the docstring); friend_base is a runner key, so it
+        # cannot go through runner.py --config-overrides
+        cfg['runner']['friend_base'] = f"{cfg['runner']['friend_base'].rstrip('/')}/v{v}/"
+        for key in ('make_classifier_input', 'make_friend_SvB'):
+            if cfg['config'].get(key):
+                cfg['config'][key] = f"{cfg['config'][key].rstrip('/')}/v{v}/"
+        files[str(v)] = _dump_yaml(cfg, os.path.join(configs_dir, f"process_subsamples_mixeddata_{channel}_v{v}.yml"))
 
     return {
-        "process_subsamples": process_subsamples_file,
+        "process_subsamples": files,
     }
 
 
@@ -162,6 +179,9 @@ def stage_phaseC_configs(config, out_c):
 
         mapping = {
             "mix": str(m),
+            # A_2's metadata directory: this run's multi-sample dataset is the only one named mixed_name
+            "metadata": config['classifier_metadata'],
+            "mixed_name": config.get('multisample_dataset_name', "mixeddata_4b"),
             "jcm": jcm_template.format(m=m),
             "mixed_ci": mixed_ci_template.format(m=m),
             "nominal_ci": nominal_ci,

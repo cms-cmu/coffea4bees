@@ -44,25 +44,32 @@ ttbar_processes:
 # ==============================================================================
 # Everything read from other productions, checked by `roast new` to lie inside upstream_roasts.
 inputs:
-  upstream_roasts: [ttHbb_run2_20260929_a209210-6a2293a, mixeddata_run2_20260927_c39c264-0ce4d59]
-  # MakeMixedData roast (Run 2, 3b mixing): the mixed data and the ttbar pseudodata (read in place)
-  mixeddata_all: "{roast:mixeddata_run2_20260927_c39c264-0ce4d59}/handoff/mixeddata_all.yml"
-  ttbar_psdata: "{roast:mixeddata_run2_20260927_c39c264-0ce4d59}/handoff/ttbar_PSData.yml"
-  # Nominal ttHbb Run 2 roast:
-  #   jcm_hists      B.1 4b data + ttbar MC noJCM histograms (ttHbb selection, stitched ttbar). A_1
-  #                  fits the mixed-data JCM against them, B_1 the per-subsample JCMs. A_1 histograms
-  #                  the mixed data with the runner config next to them (analysis_config_noJCM.yml).
-  #   nominal_hists  Phase F histograms: F_2 signal, F_3 / F_4 datacards
+  # The two upstream roasts, by alias: {roast:<alias>} is that roast's EOS area, {roast:<alias>:<key>}
+  # a top-level value of its captured config (roasts/<id>/config.yml; `id` = the roast id itself)
+  upstream_roasts:
+    nominal: ttHbb_run2_20260929_a209210-6a2293a          # ttHbb Run 2 nominal (B, C, C4, D, F)
+    mixeddata: mixeddata_run2_20260927_c39c264-0ce4d59    # MakeMixedData Run 2, 3b mixing
+  # mixed data and ttbar pseudodata (read in place)
+  mixeddata_all: "{roast:mixeddata}/handoff/mixeddata_all.yml"
+  ttbar_psdata: "{roast:mixeddata}/handoff/ttbar_PSData.yml"
+  # From the nominal roast, laid out by its own output_path / label:
+  #   jcm_hists          B.1 4b data + ttbar MC noJCM histograms (ttHbb selection, stitched ttbar). A_1
+  #                      fits the mixed-data JCM against them, B_1 the per-subsample JCMs. A_1 histograms
+  #                      the mixed data with the runner config next to them (analysis_config_noJCM.yml).
+  #   nominal_hists      Phase F histograms: F_2 signal, F_3 / F_4 datacards
   #   classifier_inputs  B.2 classifier-input manifest (C: the detector 3b / ttbar HCR inputs)
-  #   SvB            Phase D SvB friend of the data (F_1)
-  # {roast:<id>:<key>} = a top-level value of that roast's captured config (roasts/<id>/config.yml):
-  # its output_path / label, so these follow the nominal roast's layout instead of copying it
-  jcm_hists: "{roast:ttHbb_run2_20260929_a209210-6a2293a}/{roast:ttHbb_run2_20260929_a209210-6a2293a:output_path}computeJCM/histAll_NoJCM.coffea"
-  nominal_hists: "{roast:ttHbb_run2_20260929_a209210-6a2293a}/{roast:ttHbb_run2_20260929_a209210-6a2293a:output_path}histAll_{roast:ttHbb_run2_20260929_a209210-6a2293a:label}.coffea"
-  classifier_inputs: "{roast:ttHbb_run2_20260929_a209210-6a2293a}/handoff/classifier_inputs_ttHbb_run2_20260929_a209210-6a2293a.json"
-  SvB: "{roast:ttHbb_run2_20260929_a209210-6a2293a}/friend/SvB_ttHbb_stitched/result.json@@analysis.0.merged"
-  #   SvB_model      the Phase D model behind that friend: A_3 scores the mixed subsamples with it
-  SvB_model: "{roast:ttHbb_run2_20260929_a209210-6a2293a}/classifier/SvB_ttHbb_stitched/result.json"
+  #   SvB                Phase D SvB friend of the data (F_1)
+  #   SvB_model          the Phase D model behind that friend: A_3 scores the mixed subsamples with it
+  jcm_hists: "{roast:nominal}/{roast:nominal:output_path}computeJCM/histAll_NoJCM.coffea"
+  nominal_hists: "{roast:nominal}/{roast:nominal:output_path}histAll_{roast:nominal:label}.coffea"
+  classifier_inputs: "{roast:nominal}/handoff/classifier_inputs_{roast:nominal:id}.json"
+  SvB: "{roast:nominal}/friend/SvB_ttHbb_stitched/result.json@@analysis.0.merged"
+  SvB_model: "{roast:nominal}/classifier/SvB_ttHbb_stitched/result.json"
+
+# Dask worker memory of every Stage A processor job (A_1 histograms, A_2 split / study, A_3). One value:
+# the jobs share a Dask daemon whose workers keep the memory of the job that started it. The split
+# and the A_3 pass (SvB on the fly) were OOM-killed at 4 / 6 GB.
+worker_memory: "8GB"
 
 # A_1: make_jcm_weights.py, mixeddata_all as the "3b" sample; ttbarProcesses = ttbar_processes
 mixed_jcm:
@@ -86,9 +93,17 @@ phaseA_3:
     workers: 4
     min_workers: 25
     max_workers: 200
-    worker_memory: "6GB"
-  # config: classifier inputs -> <publish_base>/classifier_inputs/mixeddata/, SvB friends ->
-  # <publish_base>/friend/mixeddata/, SvB_MA = inputs.SvB_model (defaults: helpers/stage_configs.py)
+  # config: classifier inputs -> <publish_base>/classifier_inputs/mixeddata/v<k>/, SvB friends ->
+  # <publish_base>/friend/mixeddata/v<k>/, SvB_MA = inputs.SvB_model (defaults: helpers/stage_configs.py)
+
+# A_3 validation plots (rule A3_validation): 4b data and nominal model (inputs.nominal_hists) vs the
+# mixed subsamples (mean, min-max, and `subsample` on its own), per region, inclusive + each of `cuts`
+validation:
+  hists: ["SvB_MA.ps_ttHbb", "SvB_MA.ps", "SvB_MA.tt_vs_mj"]
+  cuts: ["pass_nSelJets_gt6"]
+  model_ttbar: ["TTbar4b_from_d3"]       # the nominal Phase F ttbar (from 3b data), filled as threeTag
+  model_ttbar_tag: "threeTag"
+  subsample: 0
 
 
 # ==============================================================================
@@ -179,11 +194,11 @@ fvt_train_workflow:
   dataset:
     - module: HCR.FvT.TrainBaseline
       option:
-        - --metadata coffea4bees/metadata/datasets/
+        - --metadata {metadata}
         - --max-workers 20
         - --data-source detector mixed
         - --no-detector-4b
-        - --data-mixed-name mixeddata_4b
+        - --data-mixed-name {mixed_name}
         - --data-mixed-samples {mix}
         - --JCM-weight "" {jcm}@@JCM_weights
         - --friends "" {nominal_ci}@@HCR_input {mixed_ci}@@HCR_input
@@ -216,7 +231,7 @@ fvt_eval_workflow:
   dataset:
     - module: HCR.FvT.Eval
       option:
-        - --metadata coffea4bees/metadata/datasets/
+        - --metadata {metadata}
         - --max-workers 8
         - --data-source detector
         - --friends "" {nominal_ci}@@HCR_input

@@ -16,7 +16,7 @@
 #
 # INPUTS:
 #   - Multi-sample dataset: {out_a2}mixeddata_4b.yml (from Stage A_2)
-#   - Staged runtime config: {out_a3}configs/process_subsamples_mixeddata_{channel}.yml
+#   - Staged runtime configs: {out_a3}configs/process_subsamples_mixeddata_{channel}_v{v}.yml
 #
 # OUTPUTS:
 #   - Pre-JCM histograms: {out_a3}histAll_{channel}_mixeddata_v{v}.coffea
@@ -43,12 +43,13 @@ if "A2_STUDY" not in globals():            # standalone: A_2 provides the datase
 
 # ── Stage A_3 Runtime Config Staging (Generated into {out_a3}configs/) ────────
 from helpers.stage_configs import stage_phaseA_3_configs
-cfg_files = stage_phaseA_3_configs(config, out_a3)
+# own name: cfg_files is reassigned by later includes (F_1), and input functions run after parsing
+A3_CFG_FILES = stage_phaseA_3_configs(config, out_a3, SUBSAMPLES)['process_subsamples']
 
 ci_json = config['classifier_inputs_json']
 friend_json = config['mixeddata_friend_json']
 
-localrules: all_bkg_syst_A_3, all_subsample_coffea, all_classifier_inputs_mixeddata, all_friends_mixeddata, merge_classifier_inputs_mixeddata_json, merge_mixeddata_friends_json
+localrules: all_bkg_syst_A_3, A3_validation, all_subsample_coffea, all_classifier_inputs_mixeddata, all_friends_mixeddata, merge_classifier_inputs_mixeddata_json, merge_mixeddata_friends_json
 
 # ── Master Target Rules ───────────────────────────────────────────────────────
 rule all_bkg_syst_A_3:
@@ -56,6 +57,7 @@ rule all_bkg_syst_A_3:
         expand(f"{out_a3}histAll_{channel}_mixeddata_v{{v}}.coffea", v=SUBSAMPLES),
         ci_json,
         friend_json,
+        f"{out_a3}validation/index.html",
 
 rule all_subsample_coffea:
     input:
@@ -73,7 +75,7 @@ rule all_friends_mixeddata:
 rule process_subsample_single_pass:
     input:
         ds_file = MULTISAMPLE_DATASET,
-        cfg = cfg_files['process_subsamples'],
+        cfg = lambda w: A3_CFG_FILES[w.v],
     output:
         coffea = f"{out_a3}histAll_{channel}_mixeddata_v{{v}}.coffea",
         json_meta = f"{out_a3}histAll_{channel}_mixeddata_v{{v}}.json",
@@ -156,4 +158,41 @@ rule merge_mixeddata_friends_json:
             --inputs {input.jsons} \
             --output-json {output.target_json} \
             --output-done {output.done} 2>&1 | tee {log}
+        """
+
+# ── Validation: do the closure samples look like the 4b data / the nominal model (SvB first)? ──
+# points 4b data, stack nominal model (3b x JCM x FvT + its ttbar) -- both from inputs.nominal_hists --
+# and the N mixed subsamples (mean, min-max) + one of them, per region (SR, SB) and selection
+# (inclusive + validation.cuts).
+VAL = config.get('validation') or {}
+rule A3_validation:
+    input:
+        nominal = config['nominal_coffea'],
+        mixed = expand(f"{out_a3}histAll_{channel}_mixeddata_v{{v}}.coffea", v=SUBSAMPLES),
+    output:
+        index = f"{out_a3}validation/index.html",
+        yields = f"{out_a3}validation/yields.yml",
+    log:
+        f"{out_a3}logs/validation.log"
+    params:
+        hists = " ".join(VAL.get('hists', [f"SvB_MA.ps_{channel}", "SvB_MA.ps", "SvB_MA.tt_vs_mj"])),
+        # the nominal model's ttbar: ttHbb's Phase F has TTbar4b_from_d3 (filled as threeTag), no MC
+        ttbar = " ".join(VAL.get('model_ttbar', ["TTbar4b_from_d3"])),
+        ttbar_tag = VAL.get('model_ttbar_tag', "threeTag"),
+        cuts = " ".join(VAL.get('cuts', [])),
+        compare = VAL.get('subsample', 0),
+        sample_prefix = SUB_PREFIX,
+        outdir = f"{out_a3}validation/",
+        container_wrapper = container_wrapper,
+        python_bin = python_bin,
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p {params.outdir} $(dirname {log})
+        export MPLCONFIGDIR=/tmp/matplotlib
+        {params.container_wrapper} {params.python_bin} coffea4bees/workflows/scripts/bkg_syst_mixed_validation.py \
+            --nominal {input.nominal} --mixed {input.mixed} --sample-prefix {params.sample_prefix} \
+            --ttbar {params.ttbar} --ttbar-tag {params.ttbar_tag} --cuts {params.cuts} \
+            --hists {params.hists} --compare {params.compare} \
+            -o {params.outdir} 2>&1 | tee {log}
         """

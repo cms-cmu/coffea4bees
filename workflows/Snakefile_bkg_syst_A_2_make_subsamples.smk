@@ -21,6 +21,8 @@
 #                                     processor_study_mixed_data with the A_1 JCM: per-event subsample
 #                                     assignment, pseudo-tag weights, overflow (N*w > 1) counts
 #   A2_study_report                   study plots + subsample overlap matrix + index.html
+#   A2_classifier_metadata            the repo's dataset YAMLs (minus any defining the multi-sample
+#                                     name) + this dataset -> the --metadata directory C reads
 #
 # subsamples.source: seeds (4b mixing) -- the N seeds of a MakeMixedData 4b-mixing roast's
 # mixeddata_all_<tag> (inputs.mixeddata_all; seed s under .../v<s>/) are already unit-weight 4b
@@ -50,6 +52,9 @@ def _a2_runner_config(template, section, processor):
     cfg = {k: ana[k] for k in ('friend_file', 'weights_file') if k in ana}
     cfg.update({'processor': processor, 'dataset_location': [MIXED_URL],
                 'runner': dict(template.get('runner') or {}), 'config': section})
+    # the split was OOM-killed at the template's 4 GB (and the shared Dask daemon keeps the memory
+    # of the job that started it): every Stage A runner config asks for the same
+    cfg['runner']['worker_memory'] = config.get('worker_memory', "8GB")
     if config.get('test', False):
         cfg['runner'].update({'condor': False, 'shared_dask': False})
     return cfg
@@ -183,11 +188,34 @@ else:
                                                             input.psdata, PS_NAME, YEARS, SUB_NAME,
                                                             template_seed_file(MIX_NAME)))
 
+rule A2_classifier_metadata:
+    """C's classifier merges every YAML of its --metadata directory and looks the mixed samples up by
+    name: the repo's directory defines `mixeddata_4b` twice (and with other productions' files), so
+    C gets a directory where this run's dataset is the only one with that name."""
+    input:
+        dataset = MULTISAMPLE_DATASET,
+        repo = config.get('dataset_location', "coffea4bees/metadata/datasets/"),
+    output: directory(CLASSIFIER_METADATA)
+    run:
+        import glob, shutil
+        os.makedirs(output[0], exist_ok=True)
+        skipped = []
+        for path in sorted(glob.glob(os.path.join(input.repo, "*.yml"))):
+            with open(path) as f:
+                keys = set(yaml.safe_load(f) or {})
+            if SUB_NAME in keys:
+                skipped.append(os.path.basename(path))
+                continue
+            shutil.copy(path, output[0])
+        shutil.copy(input.dataset, output[0])
+        print(f"classifier metadata: {output[0]} (skipped {skipped}: they define {SUB_NAME})")
+
 rule all_bkg_syst_A_2:
     input:
         MULTISAMPLE_DATASET,
+        CLASSIFIER_METADATA,
         [f"{out_a2}study/index.html"] if SUB_SOURCE == 'split' else []
 
-localrules: A2_dataset_yml, all_bkg_syst_A_2
+localrules: A2_dataset_yml, A2_classifier_metadata, all_bkg_syst_A_2
 if SUB_SOURCE == 'split':
     localrules: A2_split_config, A2_clean, A2_study_config, A2_merge_study, A2_study_report

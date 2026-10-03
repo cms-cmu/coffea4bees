@@ -82,6 +82,9 @@ rule A1_hist_config:
                              f"the non-tight selection")
         cfg['dataset_location'] = [MIXED_URL]
         cfg.get('runner', {}).pop('dataset_location', None)
+        # Stage A's processor jobs share one Dask daemon whose workers keep the memory of the job
+        # that started it -- usually this one -- so every Stage A runner config asks for the same
+        cfg.setdefault('runner', {})['worker_memory'] = config.get('worker_memory', "8GB")
         if config.get('test', False):
             cfg.setdefault('runner', {}).update({'condor': False, 'shared_dask': False})
         write_yaml(output[0], cfg)

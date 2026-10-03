@@ -130,6 +130,10 @@ else:
     raise ValueError(f"subsamples.dataset_name {SUB_NAME!r} must be 'mixeddata_4b' or 'mixeddata_<tag>_4b' "
                      f"(runner.py reads any other name as MC)")
 MULTISAMPLE_DATASET = f"{out_a2}{SUB_NAME}.yml"
+# The dataset metadata C's classifier reads (--metadata): the repo's dataset YAMLs, except any that
+# defines SUB_NAME (two do: mixeddata_4b.yml, mixeddata_4b_ttHbb.yml), + MULTISAMPLE_DATASET (A_2)
+CLASSIFIER_METADATA = f"{out_a2}classifier_metadata/"
+config.setdefault('classifier_metadata', CLASSIFIER_METADATA)
 
 # EOS products of this run, all under publish_base
 config.setdefault('classifier_inputs_base', f"{PUB}/classifier_inputs/mixeddata/")
