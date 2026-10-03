@@ -54,8 +54,28 @@ for _key in ('mixeddata_all', 'classifier_inputs', 'classifier_inputs_config', '
     if not str(INPUTS.get(_key) or "").startswith("root://"):
         raise ValueError(f"inputs.{_key} must be a root:// URL into an upstream roast (see the config)")
 
-MIX_NAME = 'mixeddata_all'
+# The background-model dataset: the single key of the inputs.mixeddata_all handoff. Default the 3b
+# mixed data's `mixeddata_all`; mixed_dataset_name picks another one-sample model, e.g. the 4b
+# mixing's mixeddata_all_4bmix or the 16-seed declustered mixeddata_all_declib16. It must start with
+# mixeddata_all: the runner (one sample) and the analysis (isMixedDataAll: JCM x MvD weights,
+# TTbar4b_from_MvD, no blinding, no JEC) recognise the model by that prefix and get any other name
+# silently wrong.
+MIX_NAME = str(config.get('mixed_dataset_name', 'mixeddata_all'))
+if not MIX_NAME.startswith('mixeddata_all'):
+    raise ValueError(f"mixed_dataset_name {MIX_NAME!r} must start with 'mixeddata_all'")
 MIXED_URL = INPUTS['mixeddata_all']
+if MIX_NAME != 'mixeddata_all':
+    # V.2 / V.3 run from their config blocks alone and their data loader reads the `mixeddata_all`
+    # key unless told otherwise: every classifier template with a mixed_all data source needs
+    # --data-mixed-all-name (workflow_inserts), or MvD/SvB train on no or the wrong mixed data.
+    _flag = f"--data-mixed-all-name {MIX_NAME}"
+    for _blk in ('mvd', 'svb_mvd'):
+        _ins = (config.get(_blk) or {}).get('workflow_inserts') or {}
+        if not any(_flag in (v if isinstance(v, list) else [v]) for v in _ins.values()):
+            raise ValueError(f"mixed_dataset_name {MIX_NAME}: `{_blk}.workflow_inserts` must insert "
+                             f"'{_flag}' next to each --data-source (see mvd_run3_declib16.yml)")
+    if (config.get('make_combine_inputs') or {}).get('multijet_process', MIX_NAME) != MIX_NAME:
+        raise ValueError(f"make_combine_inputs.multijet_process must be {MIX_NAME} (mixed_dataset_name)")
 
 # Local copies of what the processors / merge tools open with plain open() or coffea load().
 INPUT_DIR = f"{out}inputs/"
@@ -184,6 +204,38 @@ rule fetch_inputs:
         done
         """
 
+# Plot configs name the multijet stack `process: mixeddata_all`; with another mixed_dataset_name
+# V.2c / V.4 plot a copy with that process renamed (else the Multijet stack is silently empty).
+PLOT_SOURCES = {}
+
+def mvd_plot_config(src):
+    if MIX_NAME == 'mixeddata_all':
+        return src
+    PLOT_SOURCES[os.path.basename(src)] = src
+    return f"{INPUT_DIR}plots/{os.path.basename(src)}"
+
+rule mvd_plot_config:
+    input: lambda wildcards: PLOT_SOURCES[wildcards.name]
+    output: f"{INPUT_DIR}plots/{{name}}"
+    run:
+        n = 0
+        def rename(node):
+            nonlocal n
+            if isinstance(node, dict):
+                if node.get('process') == 'mixeddata_all':
+                    node['process'] = MIX_NAME
+                    n += 1
+                for v in node.values():
+                    rename(v)
+            elif isinstance(node, list):
+                for v in node:
+                    rename(v)
+        cfg = load_yaml(input[0])
+        rename(cfg)
+        if not n:
+            raise ValueError(f"{input[0]}: no `process: mixeddata_all` to rename to {MIX_NAME}")
+        write_yaml(output[0], cfg)
+
 # ── Steps ─────────────────────────────────────────────────────────────────────
 
 include: "Snakefile_MvD_1_inputs.smk"
@@ -197,4 +249,4 @@ rule all_MvD:
         rules.all_V2c.input,
         rules.all_V4.input
 
-localrules: fetch_inputs, all_MvD
+localrules: fetch_inputs, mvd_plot_config, all_MvD

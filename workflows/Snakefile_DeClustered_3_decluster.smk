@@ -3,7 +3,8 @@
 # its splitting tree and re-generates each splitting from the D.2 PDFs, seeded by
 # declustering_rand_seed: every seed is an independent synthetic replica of the 4b data.
 # declustering.method: library -- each splitting is instead replaced by a real one from D.1's
-# splitting library, the seed being the neighbour rank (picoAOD_lib_seed<s>).
+# splitting library, a random one of each jet's nearest neighbours drawn from the seed
+# (library.selection random; rank: the seed is the neighbour rank) (picoAOD_lib_seed<s>).
 # (scripts/synthetic-dataset-make-dataset-Run3-all.sh, config skimmer/metadata/declustering_Run3.yml)
 
 #
@@ -11,18 +12,24 @@
 #   D3_decluster (per seed x year, condor)
 #                                     picoAODs -> <PUB>/picoAOD/<name>/<dataset>/picoAOD_seed<s>*.root,
 #                                     per-(seed, year) registry
+#   D3_check (per seed x year)        refuse a registry with lost chunks/eras (runner.py exits 0);
+#                                     moved to *.incomplete so a rerun redoes that job
 #   D3_merge (per seed)               -> one clean registry per seed (numpy tags dropped)
 #   D3_dataset_yml                    -> one multi-sample dataset: <multijet name>, nSamples: n_seeds,
 #                                        per-year files_template with seedXXX (runner expands XXX)
 #   D3_combined_yml (subtract_ttbar)  -> <name>: the same + the ttbar pseudodata files, per year
 #                                        (as M.4 builds mixeddata_4b: pseudo-data = multijet + ttbar)
-#   D3_publish                        -> <PUB>/handoff/<multijet name>.yml and <name>.yml
-#                                        (consumers read <name>; D.4/D.5 the multijet one)
+#   D3_all_yml (all_dataset_name)     -> <all name> (mixeddata_all_*): every seed's multijet files as
+#                                        ONE sample, per year and era -- the MvD background model, as
+#                                        the 4b mixing's mixeddata_all_4bmix
+#   D3_publish                        -> <PUB>/handoff/<multijet name>.yml, <name>.yml (+ <all name>.yml)
+#                                        (consumers read <name>; D.4/D.5 the multijet one; MvD <all name>)
 
 D3_OUT = f"{out}D3/"
 D3_MJ_DATASET = f"{D3_OUT}handoff/{MJ_NAME}.yml"
 D3_DATASET = f"{D3_OUT}handoff/{DATASET_NAME}.yml"
-D3_HANDOFFS = list(dict.fromkeys([D3_MJ_DATASET, D3_DATASET]))
+D3_ALL_DATASET = f"{D3_OUT}handoff/{ALL_NAME}.yml" if ALL_NAME else None
+D3_HANDOFFS = list(dict.fromkeys(filter(None, [D3_MJ_DATASET, D3_DATASET, D3_ALL_DATASET])))
 D3_PUBLISHED = f"{D3_OUT}published.done"
 # what the declustering reads: the D.2 PDFs, or D.1's splitting library
 D3_SOURCE_DONE = LIB_DONE if LIBRARY else D2_DONE
@@ -41,6 +48,11 @@ rule D3_config:
         for k in ('worker_memory', 'chunksize'):
             if k in DECL:
                 runner[k] = DECL[k]
+        # the shared Dask daemon's workers get the code tarball of the job that STARTS it. Without
+        # D.1 (inputs.splitting_library) that is D.3, and the Run 2 template's list lacks
+        # coffea4bees/skimmer: every chunk failed "No module named coffea4bees.skimmer"
+        # (declib16_run2). Ship all of the code, as D.1 does.
+        runner['condor_transfer_input_files'] = ['src', 'coffea4bees']
         section = {**(tmpl.get('config') or {}),
                    'base_path': f"{PUB}/picoAOD/{MJ_NAME}",
                    'clustering_pdfs_file': PDF_TEMPLATE,   # read by the condor workers, via fsspec
@@ -85,10 +97,32 @@ use rule analysis_processor from analysis as D3_decluster with:
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 
+rule D3_check:
+    """runner.py exits 0 when the skim loses chunks (it then skips the merge and writes a registry
+    with no usable files). Refuse that here, per (seed, year): the incomplete registry is moved to
+    *.incomplete, so the next run (roast resume) re-runs just that job."""
+    input: f"{D3_OUT}per_seed/seed{{seed}}/picoaod_datasets__{{year}}.yml"
+    output: f"{D3_OUT}per_seed/seed{{seed}}/complete__{{year}}.ok"
+    log: f"{D3_OUT}logs/check__seed{{seed}}__{{year}}.log"
+    wildcard_constraints:
+        seed = r"\d+",
+        year = "|".join(YEARS)
+    params:
+        expect = lambda wildcards: f"{wildcards.year}:{','.join(YEAR_ERAS[wildcards.year])}",
+        test = "--test" if config['test'] else ""
+    shell:
+        """
+        set -o pipefail
+        {WRAPPER} {PYTHON} coffea4bees/workflows/scripts/check_skim_registry.py \
+            {input} {output} --expect {params.expect} {params.test} 2>&1 | tee {log}
+        """
+
 rule D3_merge:
     """Per-year registry keys (data_2022_EEE, ...) never collide across years; the script
     refuses an overlap (a rerun clobbering another year) and drops runner's numpy tags."""
-    input: expand(f"{D3_OUT}per_seed/seed{{{{seed}}}}/picoaod_datasets__{{year}}.yml", year=YEARS)
+    input:
+        registries = expand(f"{D3_OUT}per_seed/seed{{{{seed}}}}/picoaod_datasets__{{year}}.yml", year=YEARS),
+        checked = expand(f"{D3_OUT}per_seed/seed{{{{seed}}}}/complete__{{year}}.ok", year=YEARS)
     output: f"{D3_OUT}per_seed/registry_seed{{seed}}.yml"
     log: f"{D3_OUT}logs/merge__seed{{seed}}.log"
     wildcard_constraints:
@@ -96,7 +130,7 @@ rule D3_merge:
     shell:
         """
         {WRAPPER} {PYTHON} coffea4bees/workflows/scripts/merge_mixeddata_registries.py \
-            {input} {output} 2>&1 | tee {log}
+            {input.registries} {output} 2>&1 | tee {log}
         """
 
 rule D3_dataset_yml:
@@ -170,6 +204,46 @@ if SUBTRACT_TT:
 
     localrules: D3_combined_yml
 
+if ALL_NAME:
+    rule D3_all_yml:
+        """The MvD background model: every seed's multijet files under one dataset key, per year and
+        era (the layout runner.py's single-sample data path reads), as M2_dataset_yml does for the 4b
+        mixing. Each seed alone must cover every year and era."""
+        input: expand(f"{D3_OUT}per_seed/registry_seed{{seed}}.yml", seed=SEEDS)
+        output: D3_ALL_DATASET
+        run:
+            from src.tools.make_dataset_yml import parse_dataset_key
+            entry = {}
+            for s, path in zip(SEEDS, input):
+                with open(path) as f:
+                    registry = yaml.safe_load(f) or {}
+                eras_s = set()
+                for key, ds in registry.items():
+                    year, era = parse_dataset_key(key)
+                    if year is None:
+                        raise ValueError(f"{path}: cannot tell the year of registry key {key!r}")
+                    files = (ds or {}).get('files') or []
+                    if not files:
+                        continue
+                    eras_s.add((year, era))
+                    pico = entry.setdefault(year, {'picoAOD': {}})['picoAOD']
+                    target = pico.setdefault(era, {'files': []})['files'] if era else pico.setdefault('files', [])
+                    target.extend(files)
+                missing = [f"{y}{e}" for y, es in YEAR_ERAS.items() for e in es if (y, e) not in eras_s]
+                if missing and not config['test']:
+                    raise ValueError(f"{path}: seed {s} has no declustered files for {missing}")
+            if missing_years := [y for y in YEARS if y not in entry]:
+                raise ValueError(f"no declustered files for {missing_years}")
+            for year in entry.values():
+                for k, v in year['picoAOD'].items():
+                    if k == 'files':
+                        year['picoAOD'][k] = sorted(set(v))
+                    else:
+                        v['files'] = sorted(set(v['files']))
+            write_yaml(output[0], {ALL_NAME: {y: entry[y] for y in YEARS}})
+
+    localrules: D3_all_yml
+
 rule D3_publish:
     input: D3_HANDOFFS
     output: D3_PUBLISHED
@@ -188,4 +262,4 @@ rule D3_publish:
 rule all_D3:
     input: D3_PUBLISHED
 
-localrules: D3_config, D3_merge, D3_dataset_yml, D3_publish, all_D3
+localrules: D3_config, D3_check, D3_merge, D3_dataset_yml, D3_publish, all_D3

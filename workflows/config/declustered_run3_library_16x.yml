@@ -1,0 +1,40 @@
+# ==============================================================================
+# 16x DECLUSTERED SAMPLE — Run 3, library declustering (libA), 16 seeds
+# ==============================================================================
+# declustered_run3_library.yml (the libA setup: random among the k_neighbors = 20 nearest library
+# splittings within 0.05 in (log pT, |eta|)) run with 16 seeds on libA's published library (no D.1).
+# Each seed is an exchangeable declustered replica of the ttbar-subtracted 4b data; the replicas are
+# correlated through the shared 4b events (same clustered skeleton, only the splittings re-drawn).
+# The declustered analogue of the 4b mixing (mixeddata_run3_4bmix.yml). Products (handoff/):
+#   mixeddata_all_declib16.yml        all 16 seeds' multijet as ONE sample: the high-statistics MvD
+#                                     background model (16x the 4b statistics; the floating JCM
+#                                     normalisation in MvD V.1 absorbs the 1/16). Named mixeddata_all_*
+#                                     on purpose: the analysis recognises the MvD model by that prefix.
+#   synthetic_data_lib16_4b.yml       nSamples 16, samples syn_v<k> = seed k + ttbar pseudodata
+#                                     (closure / background-systematic subsamples)
+#   synthetic_data_lib16_multijet.yml the same without the pseudodata (D.4 / D.5)
+#
+#   roast new --config coffea4bees/workflows/config/declustered_run3_library_16x.yml \
+#       --label declib16_run3 --step cmslpc:coffea4bees/workflows/Snakefile_DeClustered.smk
+#   roast submit <id> --step DeClustered --targets all_D3     # 16 seeds x 4 years D3 condor jobs
+#
+base: coffea4bees/workflows/config/declustered_run3_library.yml
+
+label: "declustered_run3_library_16x"
+
+inputs:
+  # lists are replaced, not merged: the base's three upstreams + the libA roast (its library)
+  upstream_roasts: [nominal_run3_nontight_20260925_0c53380-193851f, mixeddata_run3_20260926_956d4bf-aca8a4e,
+                    nominal_run3_20260922_3f9e199-1e0504f, libA_run3_20260930_4e3ad63-da2340e]
+  splitting_library: "{roast:libA_run3_20260930_4e3ad63-da2340e}/splitting_library/splitting_library.yml"
+
+declustering:
+  n_seeds: 16
+  # fresh names (runner.py refuses a dataset name defined differently in two -m sources)
+  dataset_name: "synthetic_data_lib16_4b"
+  multijet_dataset_name: "synthetic_data_lib16_multijet"
+  all_dataset_name: "mixeddata_all_declib16"
+
+# D.6 is the libA roast's signal check verbatim (same library, method and signal seed): skip it.
+signal_check:
+  enabled: false

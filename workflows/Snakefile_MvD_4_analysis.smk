@@ -17,6 +17,7 @@
 V4_OUT = f"{out}V4/"
 V4 = config.get('analysis') or {}
 V4_LABEL = V4.get('label', "MvD")
+V4_PLOT_CONFIG = mvd_plot_config(V4.get('plot_config', "coffea4bees/plots/metadata/plotsAll_MvD_roast.yml"))
 V4_SIGNAL = list(V4.get('signal_datasets', ["GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"]))
 V4_DATASETS = ['data', MIX_NAME] + V4_SIGNAL
 V4_CONFIG = f"{V4_OUT}analysis_config.yml"
@@ -92,13 +93,13 @@ use rule merging_coffea_files from analysis as V4_merge with:
 use rule make_plots from analysis as V4_plots with:
     input:
         coffea_file = V4_HISTALL,
-        metadata_file = V4.get('plot_config', "coffea4bees/plots/metadata/plotsAll_MvD_roast.yml"),
+        metadata_file = V4_PLOT_CONFIG,
         plot_script = "coffea4bees/plots/makePlots.py"
     output: f"{V4_OUT}plots_{V4_LABEL}/plots_done.txt"
     log: f"{V4_OUT}logs/plots.log"
     params:
         output_dir = f"{V4_OUT}plots_{V4_LABEL}/",
-        metadata = V4.get('plot_config', "coffea4bees/plots/metadata/plotsAll_MvD_roast.yml"),
+        metadata = V4_PLOT_CONFIG,
         extra_arguments = V4.get('plot_extra_arguments', "-s xW -f png"),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON

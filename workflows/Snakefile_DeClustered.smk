@@ -163,6 +163,21 @@ if SUBTRACT_TT and MJ_NAME == DATASET_NAME:
 MJ_URL = f"{HANDOFF}/{MJ_NAME}.yml"
 DATASET_URL = f"{HANDOFF}/{DATASET_NAME}.yml"
 
+# Optional third dataset, for a high-statistics background model (MvD): every seed's multijet
+# files as ONE single-sample dataset -- n_seeds x the 4b statistics, correlated through the shared
+# 4b events -- as the 4b mixing's mixeddata_all_4bmix. The name MUST start with mixeddata_all_: the
+# runner (one sample, not syn_v<i>) and the analysis (isMixedDataAll -> JCM x MvD weights, no
+# blinding, no JEC) recognise the MvD background model by that prefix only, and get any other name
+# silently wrong. Multijet only: MvD takes the ttbar from MC.
+ALL_NAME = DECL.get('all_dataset_name')
+if ALL_NAME is not None:
+    ALL_NAME = str(ALL_NAME)
+    if not ALL_NAME.startswith('mixeddata_all_'):
+        raise ValueError(f"declustering.all_dataset_name {ALL_NAME!r} must start with 'mixeddata_all_' "
+                         f"(the analysis recognises the MvD background model by that prefix)")
+    if not SUBTRACT_TT:
+        raise ValueError("declustering.all_dataset_name needs subtract_ttbar: true (a multijet-only model)")
+
 # ttbar pseudodata (subtract_ttbar only): another roast's published dataset YAML, fetched locally.
 PS_INPUT = INPUTS.get('ttbar_psdata')
 if SUBTRACT_TT and not str(PS_INPUT or "").startswith("root://"):
