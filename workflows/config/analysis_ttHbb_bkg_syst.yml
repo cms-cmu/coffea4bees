@@ -209,12 +209,12 @@ fvt_train_workflow:
         - --kfolds 3
         - --kfold-seed FvT random
         - --kfold-seed-offsets 0
-        - --training EarlyStopStep
+        # as the nominal ttHbb FvT (classifier/config/workflows/ttHbb/FvT/train.yml): FixedStep, 20
+        # epochs. (EarlyStopStep takes es_patience / es_min_delta / es_min_epoch and needs Monitor
+        # benchmarks, which this workflow does not enable.)
+        - --training FixedStep
         - epoch: 20
-          bs_init: 2048
-          patience: 3
-          min_delta: 0.0001
-          min_epoch: 8
+          bs_init: 1024
         - --finetuning FixedStep
         - epoch: 1
           bs_init: 16384
