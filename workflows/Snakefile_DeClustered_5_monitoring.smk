@@ -13,6 +13,8 @@
 #                                    declustered seed k + ttbar MC, pseudodata vs ttbar MC
 #   D5_plot_config + D5_plots        makePlots gallery (SR / SB, ratios)
 #   D5_pdf_page                      index of D.2's PDFs + sampling-test plots, per era
+#   D5_seed_study (library, >= 2 seeds)  seed overlaps (same library draw / identical event), single-
+#                                    candidate lookups, effective number of independent replicas
 
 import hashlib
 
@@ -100,10 +102,41 @@ rule D5_pdf_page:
             {D2_OUT} {params.era_dirs} 2>&1 | tee {log}
         """
 
+# Seed study (library method, >= 2 seeds): how often two seeds draw the same library splitting for
+# the same event (Jet_lib_index), identical events, the single-candidate lookups (same in every seed),
+# and the effective number of independent replicas per cut and per bin (D.4 cutflow / histograms:
+# rho = 1 - Var_seeds / <N>, N_eff = n / (1 + (n-1) rho)). Reads only a few branches of the per-seed
+# picoAODs, for validation.seed_study_years (default all). See declustered_seed_study.py.
+SEED_STUDY = LIBRARY and N_SEEDS >= 2 and bool(VAL.get('seed_study', True))
+if SEED_STUDY:
+    rule D5_seed_study:
+        input:
+            registries = expand(f"{D3_OUT}per_seed/registry_seed{{seed}}.yml", seed=SEEDS),
+            published = D3_PUBLISHED,
+            cutflow = f"{D4_OUT}cutflow_declustered.yml",
+            hists = D4_HISTALL
+        output:
+            index = f"{D5_OUT}seed_study/index.html",
+            summary = f"{D5_OUT}seed_study/summary.yml"
+        log: f"{D5_OUT}logs/seed_study.log"
+        params:
+            years = " ".join(VAL.get('seed_study_years') or YEARS)
+        shell:
+            """
+            set -eo pipefail
+            {EOS_PROXY}
+            {WRAPPER} {PYTHON} coffea4bees/workflows/scripts/declustered_seed_study.py \
+                {input.registries} --outdir $(dirname {output.index}) --years {params.years} \
+                --cutflow {input.cutflow} --hists {input.hists} --process-prefix {SYN_PREFIX} 2>&1 | tee {log}
+            """
+
+    localrules: D5_seed_study
+
 rule all_D5:
     input:
         f"{D5_OUT}plots/plots_done.txt",
         f"{D5_OUT}cutflow_monitoring.html",
-        [f"{D2_OUT}index.html"] if MAKE_PDFS else []
+        [f"{D2_OUT}index.html"] if MAKE_PDFS else [],
+        [f"{D5_OUT}seed_study/index.html"] if SEED_STUDY else []
 
 localrules: D5_cutflow_page, D5_plot_config, D5_plots, D5_pdf_page, all_D5

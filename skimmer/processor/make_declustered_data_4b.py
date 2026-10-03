@@ -417,6 +417,8 @@ class DeClusterer(Skimmer4b):
                 if field in INTEGER_FIELDS:
                     values = ak.values_astype(ak.nan_to_num(values, nan=-1), np.int32)
                 out_branches[f"Jet_{field}"] = values
+            # D.5 seed study: which library splitting each jet came from (-1: not declustered)
+            out_branches["Jet_lib_index"] = ak.values_astype(ak.nan_to_num(declustered_jets.lib_index, nan=-1), np.int32)
 
         #
         #  Need to skip all the other jet branches to make sure they have the same number of jets
