@@ -34,7 +34,7 @@
 #        using HTCondor/Dask batching across all analysis years (UL16..UL18).
 #      - Produces: `closure_v{m}/histAll_data_v{m}.coffea`
 #   3. Mixed Data Symlinking (`link_mixeddata_closure`):
-#      - Symlinks Stage A_4 unweighted 4-tag mixed data histograms:
+#      - Symlinks Stage A_3 unweighted 4-tag mixed data histograms:
 #        `histAll_ttHbb_mixeddata_v{m}.coffea` -> `closure_v{m}/histAll_mixeddata_v{m}.coffea`
 #   4. Closure Comparison Plotting (`make_plots_closure`):
 #      - Executes `coffea4bees/plots/makePlots.py` to compare Data background model
@@ -50,7 +50,7 @@
 # INPUTS:
 #   - Dedicated JCM YAMLs: output/.../bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v{m}.yml
 #   - FvT Friend Manifests: output/.../bkg_syst_C_FvT/friends/friends_FvT_{mix_name}_v{m}.json
-#   - Stage A_4 Mixed Data: output/.../bkg_syst_A_4_process_subsamples/histAll_ttHbb_mixeddata_v{m}.coffea
+#   - Stage A_3 Mixed Data: output/.../bkg_syst_A_3_process_subsamples/histAll_ttHbb_mixeddata_v{m}.coffea
 #   - Plotting Metadata: coffea4bees/plots/metadata/plots_bkg_syst_closure_ttHbb.yml
 #
 # OUTPUTS:
@@ -141,10 +141,10 @@ rule analysis_data_closure:
             {params.condor_flags} 2>&1 | tee {log}
         """
 
-# ── Link Stage A_4 Mixed Data Histograms ──────────────────────────────────────
+# ── Link Stage A_3 Mixed Data Histograms ──────────────────────────────────────
 rule link_mixeddata_closure:
     input:
-        f"{out_a4}histAll_{channel}_mixeddata_v{{m}}.coffea"
+        f"{out_a3}histAll_{channel}_mixeddata_v{{m}}.coffea"
     output:
         f"{out_f1}closure_v{{m}}/histAll_mixeddata_v{{m}}.coffea"
     shell:

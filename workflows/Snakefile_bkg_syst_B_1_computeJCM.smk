@@ -24,9 +24,9 @@
 #
 # WORKFLOW EXECUTION PIPELINE:
 #   1. Input Preparation:
-#      - Reads baseline data & stitched ttbar MC histograms: inputs/histAll_NoJCM.coffea
+#      - Reads baseline data & stitched ttbar MC histograms: inputs.jcm_hists (as A_1)
 #      - Reads unweighted mixed data histograms for subsample v{m}:
-#        output/ttHbb_bkg_syst/bkg_syst_A_4_process_subsamples/histAll_ttHbb_mixeddata_v{m}.coffea
+#        output/ttHbb_bkg_syst/bkg_syst_A_3_process_subsamples/histAll_ttHbb_mixeddata_v{m}.coffea
 #   2. JCM Parameter Fit (`make_jcm_weights.py`):
 #      - Executes `make_jcm_weights.py` per subsample with `--data4bName mix_v{m}`
 #        in the Sideband (SB) region, floating the background scale.
@@ -45,8 +45,8 @@
 #        in the SR and SB regions (`plots_subsample_v0_closure/`).
 #
 # INPUTS:
-#   - Baseline Data/MC Coffea: output/ttHbb_bkg_syst/inputs/histAll_NoJCM.coffea
-#   - Subsample Coffea: output/ttHbb_bkg_syst/bkg_syst_A_4_process_subsamples/histAll_ttHbb_mixeddata_v{m}.coffea
+#   - Baseline Data/MC Coffea: inputs.jcm_hists, fetched to output/ttHbb_bkg_syst/inputs/
+#   - Subsample Coffea: output/ttHbb_bkg_syst/bkg_syst_A_3_process_subsamples/histAll_ttHbb_mixeddata_v{m}.coffea
 #   - Fit Configuration: coffea4bees/analysis/jcm_tools/metadata/ttHbb_subsample_jcm_config.yml
 #   - Plotting Metadata: coffea4bees/plots/metadata/plots_JCM_ttHbb.yml
 #
@@ -67,6 +67,8 @@ if not workflow.configfiles:
     configfile: "coffea4bees/workflows/config/analysis_ttHbb_bkg_syst.yml"
 
 include: "helpers/bkg_syst_common.smk"
+if "_SNAKEFILE_BKG_SYST_A_3_INCLUDED" not in globals():   # standalone: A_3 provides the histograms
+    include: "Snakefile_bkg_syst_A_3_process_subsamples.smk"
 
 # ── Stage B_1 Static Configs & Resolution ─────────────────────────────────────
 phaseB_1 = config.get('phaseB_1', {})
@@ -82,11 +84,9 @@ val_subsample = val_section.get('subsample', 0)
 val_proc_cfg = val_section.get('processor_config', "coffea4bees/workflows/config/analysis_config_bkg_syst_test_subsample.yml")
 val_plot_cfg = val_section.get('plot_config', "coffea4bees/plots/metadata/plots_subsample_v0_closure_ttHbb.yml")
 
-DATA_NOJCM_INPUT = jcm_section.get('data_coffea', config.get('data_nojcm_coffea', "inputs/histAll_NoJCM.coffea"))
-if not DATA_NOJCM_INPUT.startswith("/") and not DATA_NOJCM_INPUT.startswith("output/"):
-    jcm_input_coffea = os.path.join(out, DATA_NOJCM_INPUT)
-else:
-    jcm_input_coffea = DATA_NOJCM_INPUT
+# The analysis data + ttbar noJCM histograms: by default the same inputs.jcm_hists A_1 fits the
+# mixed-data JCM against (fetched by A1_fetch)
+jcm_input_coffea = jcm_section.get('data_coffea') or JCM_HISTS
 
 localrules: all_bkg_syst_B_1, prepare_data_noJCM_b1, make_subsample_jcm_b1, test_plots_subsample_closure, test_v0_jcm_closure, all_test_subsample_closure
 
@@ -99,7 +99,7 @@ rule all_bkg_syst_B_1:
 
 rule prepare_data_noJCM_b1:
     input:
-        lambda wildcards: DATA_NOJCM_INPUT if os.path.exists(DATA_NOJCM_INPUT) else jcm_input_coffea
+        jcm_input_coffea
     output:
         f"{out_b1}histAll_NoJCM_data.coffea"
     shell:
@@ -111,7 +111,7 @@ rule prepare_data_noJCM_b1:
         """
 
 def get_subsample_jcm_inputs_b1(wildcards):
-    subsample_coffea = f"{out_a4}histAll_{channel}_mixeddata_v{wildcards.m}.coffea"
+    subsample_coffea = f"{out_a3}histAll_{channel}_mixeddata_v{wildcards.m}.coffea"
     data_coffea = (
         config.get('dummy_jcm_file', "coffea4bees/metadata/weights/JCM/jetCombinatoricModel_SB_dummy.yml")
         if config.get('test', False)
@@ -140,6 +140,7 @@ rule make_subsample_jcm_b1:
         dummy_jcm = config.get('dummy_jcm_file', "coffea4bees/metadata/weights/JCM/jetCombinatoricModel_SB_dummy.yml"),
         region = jcm_region,
         year = jcm_year,
+        sample_prefix = SUB_PREFIX,        # process name of subsample m: mix_v<m> / mix_<tag>_v<m>
     shell:
         """
         set -eo pipefail
@@ -155,7 +156,7 @@ rule make_subsample_jcm_b1:
                 -m {input.plot_cfg} \
                 --combine_input_files \
                 -w mix_v{wildcards.m} \
-                --data4bName mix_v{wildcards.m} \
+                --data4bName {params.sample_prefix}_v{wildcards.m} \
                 -r {params.region} \
                 -o $(dirname {output.jcm_yaml})/plots_v{wildcards.m}/ \
                 --year {params.year} 2>&1 | tee {log}
@@ -166,7 +167,7 @@ rule make_subsample_jcm_b1:
 # ── Verification: Processor Test on a Single Subsample with Calibrated JCM ────
 rule test_processor_subsample_with_jcm:
     input:
-        ds_file = get_multisample_dataset_file,
+        ds_file = MULTISAMPLE_DATASET,
         jcm = f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}.yml",
         proc_cfg = val_proc_cfg,
     output:

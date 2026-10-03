@@ -1,7 +1,7 @@
 # ==============================================================================
-# coffea4bees/workflows/Snakefile_bkg_syst_A_2_process_subsamples.smk
+# coffea4bees/workflows/Snakefile_bkg_syst_A_3_process_subsamples.smk
 #
-# Stage A_2: Unified Subsample Processing (Single Pass per Subsample)
+# Stage A_3: Unified Subsample Processing (Single Pass per Subsample)
 # ==============================================================================
 #
 # OVERVIEW & OBJECTIVE:
@@ -15,57 +15,51 @@
 #      required by Stage F_1 (analysis).
 #
 # INPUTS:
-#   - Master multi-sample registry: mixeddata_4b.yml (from Stage A_1 / MakeMixedData M.4)
-#   - Staged runtime config: {out_a2}configs/process_subsamples_mixeddata_{channel}.yml
+#   - Multi-sample dataset: {out_a2}mixeddata_4b.yml (from Stage A_2)
+#   - Staged runtime config: {out_a3}configs/process_subsamples_mixeddata_{channel}.yml
 #
 # OUTPUTS:
-#   - Pre-JCM histograms: {out_a2}histAll_{channel}_mixeddata_v{v}.coffea
-#   - Per-subsample friend JSONs: {out_a2}histAll_{channel}_mixeddata_v{v}.json
-#   - Merged classifier inputs: {out_a2}classifier_inputs/classifier_inputs_mixeddata_{channel}.json
+#   - Pre-JCM histograms: {out_a3}histAll_{channel}_mixeddata_v{v}.coffea
+#   - Per-subsample friend JSONs: {out_a3}histAll_{channel}_mixeddata_v{v}.json
+#   - Merged classifier inputs: {out_a3}classifier_inputs/classifier_inputs_mixeddata_{channel}.json
 #   - Merged friend manifest: {mixeddata_friend_json}
 #
 # USAGE:
-#   snakemake -s Snakefile_bkg_syst_A_2_process_subsamples.smk \
-#             --configfile config/analysis_ttHbb_bkg_syst_v2.yml -np all_bkg_syst_A_2
+#   snakemake -s Snakefile_bkg_syst_A_3_process_subsamples.smk \
+#             --configfile config/analysis_ttHbb_bkg_syst.yml -np all_bkg_syst_A_3
 # ==============================================================================
 
 import os
 
 _SNAKEFILE_PROCESS_SUBSAMPLES_INCLUDED = True
-_SNAKEFILE_BKG_SYST_A_2_INCLUDED = True
+_SNAKEFILE_BKG_SYST_A_3_INCLUDED = True
 
 if not workflow.configfiles:
     configfile: "coffea4bees/workflows/config/analysis_ttHbb_bkg_syst.yml"
 
 include: "helpers/bkg_syst_common.smk"
+if "A2_STUDY" not in globals():            # standalone: A_2 provides the dataset
+    include: "Snakefile_bkg_syst_A_2_make_subsamples.smk"
 
-# ── Stage A_2 Runtime Config Staging (Generated into {out_a2}configs/) ────────
-from helpers.stage_configs import stage_phaseA_4_configs
-cfg_files = stage_phaseA_4_configs(config, out_a2)
+# ── Stage A_3 Runtime Config Staging (Generated into {out_a3}configs/) ────────
+from helpers.stage_configs import stage_phaseA_3_configs
+cfg_files = stage_phaseA_3_configs(config, out_a3)
 
 ci_json = config['classifier_inputs_json']
 friend_json = config['mixeddata_friend_json']
 
-localrules: all_bkg_syst_A_2, all_bkg_syst_A_2_alias, all_bkg_syst_A_4, all_subsample_coffea, all_classifier_inputs_mixeddata, all_friends_mixeddata, merge_classifier_inputs_mixeddata_json, merge_mixeddata_friends_json
+localrules: all_bkg_syst_A_3, all_subsample_coffea, all_classifier_inputs_mixeddata, all_friends_mixeddata, merge_classifier_inputs_mixeddata_json, merge_mixeddata_friends_json
 
 # ── Master Target Rules ───────────────────────────────────────────────────────
-rule all_bkg_syst_A_2:
+rule all_bkg_syst_A_3:
     input:
-        expand(f"{out_a2}histAll_{channel}_mixeddata_v{{v}}.coffea", v=SUBSAMPLES),
+        expand(f"{out_a3}histAll_{channel}_mixeddata_v{{v}}.coffea", v=SUBSAMPLES),
         ci_json,
         friend_json,
 
-rule all_bkg_syst_A_2_alias:
-    input:
-        rules.all_bkg_syst_A_2.input
-
-rule all_bkg_syst_A_4:
-    input:
-        rules.all_bkg_syst_A_2.input
-
 rule all_subsample_coffea:
     input:
-        expand(f"{out_a2}histAll_{channel}_mixeddata_v{{v}}.coffea", v=SUBSAMPLES)
+        expand(f"{out_a3}histAll_{channel}_mixeddata_v{{v}}.coffea", v=SUBSAMPLES)
 
 rule all_classifier_inputs_mixeddata:
     input:
@@ -78,17 +72,17 @@ rule all_friends_mixeddata:
 # ── Unified Single-Pass Subsample Processing ───────────────────────────────────
 rule process_subsample_single_pass:
     input:
-        ds_file = get_multisample_dataset_file,
+        ds_file = MULTISAMPLE_DATASET,
         cfg = cfg_files['process_subsamples'],
     output:
-        coffea = f"{out_a2}histAll_{channel}_mixeddata_v{{v}}.coffea",
-        json_meta = f"{out_a2}histAll_{channel}_mixeddata_v{{v}}.json",
+        coffea = f"{out_a3}histAll_{channel}_mixeddata_v{{v}}.coffea",
+        json_meta = f"{out_a3}histAll_{channel}_mixeddata_v{{v}}.json",
     log:
-        f"{out_a2}logs/process_subsample_v{{v}}.log"
+        f"{out_a3}logs/process_subsample_v{{v}}.log"
     params:
         processor = config.get('analysis_processor') or (config.get('analysis_config', {}) or {}).get('processor') or f"coffea4bees/analysis/processors/processor_{channel}.py",
         dataset = lambda wildcards: f"{config['multisample_dataset_name']}:{wildcards.v}",
-        output_path = out_a2,
+        output_path = out_a3,
         years = " ".join(YEARS),
         container_wrapper = container_wrapper,
         condor_flags = condor_flags,
@@ -113,10 +107,10 @@ rule process_subsample_single_pass:
 # ── Merge Classifier Inputs JSON Manifest ─────────────────────────────────────
 rule merge_classifier_inputs_mixeddata_json:
     input:
-        jsons = expand(f"{out_a2}histAll_{channel}_mixeddata_v{{v}}.json", v=SUBSAMPLES),
+        jsons = expand(f"{out_a3}histAll_{channel}_mixeddata_v{{v}}.json", v=SUBSAMPLES),
     output:
         target_json = ci_json,
-        done = f"{out_a2}classifier_inputs/merge_all_subsamples.done",
+        done = f"{out_a3}classifier_inputs/merge_all_subsamples.done",
     params:
         nominal_ci = config.get(
             "nominal_classifier_inputs",
@@ -126,7 +120,7 @@ rule merge_classifier_inputs_mixeddata_json:
         ),
         python_bin = python_bin,
     log:
-        f"{out_a2}logs/merge_classifier_inputs_mixeddata_json.log"
+        f"{out_a3}logs/merge_classifier_inputs_mixeddata_json.log"
     shell:
         """
         set -eo pipefail
@@ -145,15 +139,15 @@ rule merge_classifier_inputs_mixeddata_json:
 # ── Merge Friend Trees Metadata JSON ──────────────────────────────────────────
 rule merge_mixeddata_friends_json:
     input:
-        jsons = expand(f"{out_a2}histAll_{channel}_mixeddata_v{{v}}.json", v=SUBSAMPLES),
+        jsons = expand(f"{out_a3}histAll_{channel}_mixeddata_v{{v}}.json", v=SUBSAMPLES),
     output:
         target_json = friend_json,
-        done = f"{out_a2}friends/merge_all_friends.done",
+        done = f"{out_a3}friends/merge_all_friends.done",
     params:
         container_wrapper = container_wrapper,
         python_bin = python_bin,
     log:
-        f"{out_a2}logs/merge_mixeddata_friends_json.log"
+        f"{out_a3}logs/merge_mixeddata_friends_json.log"
     shell:
         """
         set -eo pipefail
