@@ -614,6 +614,12 @@ def filling_ttHbb_histograms(
         if "ps_ttHbb" in selev[name].fields:
             fill += ttHbbSvBHists((name, f"{name} Classifier"), name)
 
+    # SvB without the FvT reweighting (3b: JCM only), as filling_nominal_histograms does for HH4b.
+    # Only for the nominal fill: the TTbar*_from_d3 fills (weight_name != "weight") are FvT-derived.
+    if (weight_name == "weight" and "weight_noFvT" in selev.fields
+            and "SvB_MA" in selev.fields and "ps_ttHbb" in selev.SvB_MA.fields):
+        fill += ttHbbSvBHists(("SvB_MA_noFvT", "SvB MA Classifier (no FvT)"), "SvB_MA", weight="weight_noFvT")
+
     fill(selev, hist)
     return hist.to_dict(nonempty=True)
 
