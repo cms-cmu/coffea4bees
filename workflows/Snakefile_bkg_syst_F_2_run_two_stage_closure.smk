@@ -242,7 +242,14 @@ rule run_two_stage_closure:
         maxBasis = config.get('max_basis', 10),
         years = config.get('years_closure', ' '.join(YEARS)),
         nMixes = len(subsample_indices_closure),
-        extra_args = lambda wildcards: (config.get('closure_extra_args', '').strip() + " --ignore_failures").strip(),
+        subsample_indices = " ".join(str(v) for v in subsample_indices_closure),
+        extra_args = lambda wildcards: (
+            config.get('closure_extra_args', '').strip() +
+            (" --match_normalization" if config.get('match_closure_normalization', False) else "") +
+            (" --include_ensemble_variance" if config.get('include_ensemble_variance', False) else "") +
+            f" --subsample_indices {' '.join(str(v) for v in subsample_indices_closure)}" +
+            " --ignore_failures"
+        ).strip(),
         input_file_mix = lambda wildcards, input: config.get('input_file_mix', input.inroot),
         input_file_data3b = lambda wildcards, input: config.get('input_file_data3b', input.inroot),
         input_file_sig = lambda wildcards, input: config.get('input_file_sig', input.sigroot),

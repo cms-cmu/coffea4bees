@@ -98,12 +98,13 @@ rule all_bkg_syst_A:
         rules.all_bkg_syst_A_1.input,
         rules.all_bkg_syst_A_2.input
 
-# Pre-FvT master target rule (A_1, A_2, and B_1)
+# Pre-FvT master target rule (A_1, A_2, and B_1 + handoff)
 rule all_pre_fvt:
     input:
         rules.all_bkg_syst_A_1.input,
         rules.all_bkg_syst_A_2.input,
-        rules.all_bkg_syst_B_1.input
+        rules.all_bkg_syst_B_1.input,
+        rules.bkg_syst_AB_handoff.output
 
 # Top master target rule
 rule all_bkg_syst:

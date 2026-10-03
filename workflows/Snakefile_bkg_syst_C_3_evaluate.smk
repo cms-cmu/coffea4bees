@@ -104,8 +104,40 @@ if not globals().get("_EXTRACT_FRIEND_MANIFEST_INCLUDED", False):
             fi
             """
 
+rule bkg_syst_C_handoff:
+    input:
+        expand(f"{out_c}friends/friends_FvT_{mix_name}_v{{m}}.json", m=MIX_INDICES)
+    output:
+        done = f"{out_c}handoff/bkg_syst_C_handoff.done"
+    log:
+        f"{out_c}logs/bkg_syst_C_handoff.log"
+    params:
+        eos = HANDOFF_EOS
+    shell:
+        """
+        mkdir -p $(dirname {output.done}) $(dirname {log})
+        echo "=== Background Systematics Stage C Handoff $(date) ===" > {log}
+        if [ -n "{params.eos}" ]; then
+            echo "Publishing friend manifests to EOS handoff: {params.eos}/friends" >> {log}
+            for f in {input}; do
+                dst="{params.eos}/friends/$(basename $f)"
+                if command -v xrdcp &>/dev/null; then
+                    xrdcp -f "$f" "$dst" 2>&1 | tee -a {log}
+                else
+                    cp -f "$f" "$dst" 2>&1 | tee -a {log}
+                fi
+            done
+        else
+            echo "No handoff.eos_base configured; local friend manifests only" >> {log}
+        fi
+        touch {output.done}
+        """
+
+localrules: bkg_syst_C_handoff
+
 rule all_bkg_syst_C_3:
     default_target: True
     input:
         expand(f"{out_c}models/mix_{{m}}/evaluate.done", m=MIX_INDICES),
-        expand(f"{out_c}friends/friends_FvT_{mix_name}_v{{m}}.json", m=MIX_INDICES)
+        expand(f"{out_c}friends/friends_FvT_{mix_name}_v{{m}}.json", m=MIX_INDICES),
+        rules.bkg_syst_C_handoff.output

@@ -2,10 +2,16 @@ label: "ttHbb_bkg_syst"
 output_path: "output/ttHbb_bkg_syst/"
 fourTag_use_tight: false
 publish_base: "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2_v2/ttHbb_pz_rank0_0"
-inputs:
+bootstrap_inputs:
   FvT: "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2_v2/ttHbb_pz_rank0_0/friend/FvT_nominal/result.json@@analysis.0.merged"
   JCM: "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2_v2/ttHbb_pz_rank0_0/output/computeJCM/jetCombinatoricModel_SB.yml"
   jcm_hists: "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2_v2/ttHbb_pz_rank0_0/output/computeJCM/histAll_NoJCM.coffea"
+
+handoff:
+  eos_base: "{eos_prod}/{roast_id}/handoff"
+
+signal_check:
+  enabled: false
 cern_user: "algomez"
 cern_path: "www/ttHbb/Plots/"
 channel: "ttHbb"

@@ -85,7 +85,7 @@ closure_plot_cfg = config.get(
 wildcard_constraints:
     m = r"\d+"
 
-localrules: all_bkg_syst_F_1, all_bkg_syst_F_1_hists, make_plots_closure, make_gallery_closure
+localrules: all_bkg_syst_F_1, all_bkg_syst_F_1_hists, make_plots_closure, make_gallery_closure, stage_bkg_syst_friend_manifest, stage_bkg_syst_jcm, stage_bkg_syst_jcm_per_year
 
 # ── Master Target Rule ────────────────────────────────────────────────────────
 rule all_bkg_syst_F_1:
@@ -99,6 +99,53 @@ rule all_bkg_syst_F_1_hists:
         f"{out_f1}histAll_mixeddata_bkgs.coffea"
 
 per_year_jcm = bool(config.get('per_year_jcm', (config.get('phaseB_1', {}) or {}).get('per_year_jcm', False)))
+
+# Staging rules for cross-cluster execution under roast (fetching from EOS handoff if not local)
+if HANDOFF_EOS:
+    rule stage_bkg_syst_friend_manifest:
+        output:
+            f"{out_c}friends/friends_FvT_{mix_name}_v{{m}}.json"
+        params:
+            src = f"{HANDOFF_EOS}/friends/friends_FvT_{mix_name}_v{{m}}.json"
+        shell:
+            """
+            mkdir -p $(dirname {output})
+            if command -v xrdcp &>/dev/null; then
+                xrdcp -f '{params.src}' '{output}'
+            else
+                cp -f '{params.src}' '{output}'
+            fi
+            """
+
+    rule stage_bkg_syst_jcm:
+        output:
+            f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}.yml"
+        params:
+            src = f"{HANDOFF_EOS}/JCM/jetCombinatoricModel_SB_mix_v{{m}}.yml"
+        shell:
+            """
+            mkdir -p $(dirname {output})
+            if command -v xrdcp &>/dev/null; then
+                xrdcp -f '{params.src}' '{output}'
+            else
+                cp -f '{params.src}' '{output}'
+            fi
+            """
+
+    rule stage_bkg_syst_jcm_per_year:
+        output:
+            f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml"
+        params:
+            src = f"{HANDOFF_EOS}/JCM/jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml"
+        shell:
+            """
+            mkdir -p $(dirname {output})
+            if command -v xrdcp &>/dev/null; then
+                xrdcp -f '{params.src}' '{output}'
+            else
+                cp -f '{params.src}' '{output}'
+            fi
+            """
 
 def get_all_analysis_jcm_inputs(wildcards):
     if per_year_jcm:

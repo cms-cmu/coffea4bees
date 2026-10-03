@@ -125,6 +125,12 @@ config.setdefault('classifier_inputs_json',
     f"{out_a4}classifier_inputs/classifier_inputs_mixeddata_{channel}.json")
 config.setdefault('mixeddata_friend_json', f"{out}coffea4bees/metadata/friends/friends_{channel}_mixeddata_4b.json")
 
+# Handoff configuration for cross-cluster execution (roast)
+_handoff = config.get('handoff') or {}
+if not isinstance(_handoff, dict):
+    _handoff = {}
+HANDOFF_EOS = str(_handoff.get('eos_base') or "").rstrip('/')
+
 # ── 6. Common Helper Functions ────────────────────────────────────────────────
 def get_hemi_stats_file(wildcards):
     year_str = wildcards.year.replace("_preVFP", "").replace("_postVFP", "")

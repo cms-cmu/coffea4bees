@@ -587,22 +587,35 @@ def stage_phaseC_configs(config, out_c):
         )
     )
 
-    default_subsample_dir = "bkg_syst_A_2_process_subsamples" if os.path.exists(f"{out}bkg_syst_A_2_process_subsamples") else "bkg_syst_A_4_process_subsamples"
-    mixed_ci_template = phase_c_cfg.get(
-        'mixed_classifier_inputs_template',
-        config.get(
-            'mixed_classifier_inputs_template',
-            f"{out}{default_subsample_dir}/histAll_{channel}_mixeddata_v{{m}}.json"
-        )
-    )
+    handoff_eos = (config.get('handoff') or {}).get('eos_base')
+    if handoff_eos:
+        handoff_eos = str(handoff_eos).rstrip('/')
 
-    jcm_template = phase_c_cfg.get(
-        'jcm_template',
-        config.get(
-            'jcm_template',
-            f"{out}bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v{{m}}.yml"
+    default_subsample_dir = "bkg_syst_A_2_process_subsamples" if os.path.exists(f"{out}bkg_syst_A_2_process_subsamples") else "bkg_syst_A_4_process_subsamples"
+
+    local_ci_sample = f"{out}{default_subsample_dir}/histAll_{channel}_mixeddata_v0.json"
+    if handoff_eos and not os.path.exists(local_ci_sample) and not phase_c_cfg.get('mixed_classifier_inputs_template') and 'mixed_classifier_inputs_template' not in config:
+        mixed_ci_template = f"{handoff_eos}/classifier_inputs/histAll_{channel}_mixeddata_v{{m}}.json"
+    else:
+        mixed_ci_template = phase_c_cfg.get(
+            'mixed_classifier_inputs_template',
+            config.get(
+                'mixed_classifier_inputs_template',
+                f"{out}{default_subsample_dir}/histAll_{channel}_mixeddata_v{{m}}.json"
+            )
         )
-    )
+
+    local_jcm_sample = f"{out}bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v0.yml"
+    if handoff_eos and not os.path.exists(local_jcm_sample) and not phase_c_cfg.get('jcm_template') and 'jcm_template' not in config:
+        jcm_template = f"{handoff_eos}/JCM/jetCombinatoricModel_SB_mix_v{{m}}.yml"
+    else:
+        jcm_template = phase_c_cfg.get(
+            'jcm_template',
+            config.get(
+                'jcm_template',
+                f"{out}bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v{{m}}.yml"
+            )
+        )
 
     raw_train_wf = config.get("fvt_train_workflow", config.get("train_workflow", {}))
     raw_eval_wf = config.get("fvt_eval_workflow", config.get("eval_workflow", {}))
@@ -654,7 +667,11 @@ def stage_phaseC_configs(config, out_c):
             "FvT": fvt_eos,
         }
         for y in years:
-            mapping[f"jcm_{y}"] = os.path.join(out, f"bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v{m}_{y}.yml")
+            local_jcm_y = os.path.join(out, f"bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v{m}_{y}.yml")
+            if handoff_eos and not os.path.exists(local_jcm_y):
+                mapping[f"jcm_{y}"] = f"{handoff_eos}/JCM/jetCombinatoricModel_SB_mix_v{m}_{y}.yml"
+            else:
+                mapping[f"jcm_{y}"] = local_jcm_y
 
         train_file = os.path.join(wfs_dir, "train.yml")
         eval_file = os.path.join(wfs_dir, "evaluate.yml")
@@ -699,17 +716,28 @@ def stage_phaseF_1_configs(config, out_f1):
 
     subsample_names = [f"v{m}" for m in range(n_subsamples)]
 
+    handoff_eos = (config.get('handoff') or {}).get('eos_base')
+    if handoff_eos:
+        handoff_eos = str(handoff_eos).rstrip('/')
+
     # Build multi-subsample JCM dictionary
     jcm_file = {}
     for m in range(n_subsamples):
         v_name = f"v{m}"
         if per_year_jcm:
-            jcm_file[v_name] = {
-                y: os.path.join(out, f"bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v{m}_{y}.yml")
-                for y in years
-            }
+            jcm_file[v_name] = {}
+            for y in years:
+                loc_jcm = os.path.join(out, f"bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v{m}_{y}.yml")
+                if os.path.exists(loc_jcm) or not handoff_eos:
+                    jcm_file[v_name][y] = loc_jcm
+                else:
+                    jcm_file[v_name][y] = f"{handoff_eos}/JCM/jetCombinatoricModel_SB_mix_v{m}_{y}.yml"
         else:
-            jcm_file[v_name] = os.path.join(out, f"bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v{m}.yml")
+            loc_jcm = os.path.join(out, f"bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v{m}.yml")
+            if os.path.exists(loc_jcm) or not handoff_eos:
+                jcm_file[v_name] = loc_jcm
+            else:
+                jcm_file[v_name] = f"{handoff_eos}/JCM/jetCombinatoricModel_SB_mix_v{m}.yml"
 
     # Build friends dictionary
     friends_dict = {
@@ -717,7 +745,11 @@ def stage_phaseF_1_configs(config, out_f1):
         "SvB_MA": config.get('data_svb_friend', f"root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/{channel}_stitched/friend/SvB_{channel}_stitched/result.json@@analysis.0.merged"),
     }
     for m in range(n_subsamples):
-        friends_dict[f"FvT_v{m}"] = os.path.join(out, f"bkg_syst_C_FvT/friends/friends_FvT_{mix_name}_v{m}.json@@FvT")
+        loc_friend = os.path.join(out, f"bkg_syst_C_FvT/friends/friends_FvT_{mix_name}_v{m}.json")
+        if os.path.exists(loc_friend) or not handoff_eos:
+            friends_dict[f"FvT_v{m}"] = f"{loc_friend}@@FvT"
+        else:
+            friends_dict[f"FvT_v{m}"] = f"{handoff_eos}/friends/friends_FvT_{mix_name}_v{m}.json@@FvT"
     friends_dict["FvT"] = friends_dict["FvT_v0"]
 
     runner_dict = {

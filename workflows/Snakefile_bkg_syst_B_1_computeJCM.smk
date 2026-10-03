@@ -94,7 +94,7 @@ wildcard_constraints:
     m = r"\d+",
     year = r"[A-Za-z0-9_]+",
 
-localrules: all_bkg_syst_B_1, prepare_data_noJCM_b1, make_subsample_jcm_b1, make_subsample_jcm_b1_per_year, stage_test_subsample_config, test_plots_subsample_closure, test_v0_jcm_closure, all_test_subsample_closure
+localrules: all_bkg_syst_B_1, prepare_data_noJCM_b1, make_subsample_jcm_b1, make_subsample_jcm_b1_per_year, stage_test_subsample_config, test_plots_subsample_closure, test_v0_jcm_closure, all_test_subsample_closure, bkg_syst_AB_handoff
 
 if per_year_jcm:
     rule all_bkg_syst_B_1:
@@ -319,3 +319,60 @@ rule test_v0_jcm_closure:
 rule all_test_subsample_closure:
     input:
         expand(f"{out_b1}test_v{{m}}_closure/plots/plots_done.txt", m=range(N_SUBSAMPLES))
+
+# ── Stage A & B Handoff ───────────────────────────────────────────────────────
+def get_bkg_syst_AB_handoff_inputs(wildcards):
+    res = {
+        "classifier_inputs": expand(f"{out_a4}histAll_{channel}_mixeddata_v{{v}}.json", v=SUBSAMPLES),
+    }
+    if per_year_jcm:
+        res["jcms"] = expand(f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml", m=range(N_SUBSAMPLES), year=YEARS)
+    else:
+        res["jcms"] = expand(f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}.yml", m=range(N_SUBSAMPLES))
+    return res
+
+rule bkg_syst_AB_handoff:
+    input:
+        unpack(get_bkg_syst_AB_handoff_inputs)
+    output:
+        done = f"{out}handoff/bkg_syst_AB_handoff.done"
+    log:
+        f"{out}logs/bkg_syst_AB_handoff.log"
+    params:
+        eos = HANDOFF_EOS,
+        roast_id = config.get('roast_id', '')
+    shell:
+        """
+        mkdir -p $(dirname {output.done}) $(dirname {log})
+        echo "=== Background Systematics Stage A/B Handoff $(date) ===" > {log}
+
+        # Local copies to metadata/weights/JCM/ if running in roast
+        if [ -n "{params.roast_id}" ]; then
+            LOCAL_DIR="coffea4bees/metadata/weights/JCM/{params.roast_id}"
+            mkdir -p "$LOCAL_DIR"
+            for f in {input.jcms}; do
+                cp -f "$f" "$LOCAL_DIR/"
+                echo "Copied $f -> $LOCAL_DIR/" >> {log}
+            done
+        fi
+
+        # Remote copies to EOS if handoff.eos_base is configured
+        if [ -n "{params.eos}" ]; then
+            echo "Publishing to EOS handoff: {params.eos}" >> {log}
+            if command -v eos &>/dev/null; then
+                eos mkdir -p $(echo "{params.eos}/JCM" | sed 's|^root://[^/]*//|/|') 2>/dev/null || true
+                eos mkdir -p $(echo "{params.eos}/classifier_inputs" | sed 's|^root://[^/]*//|/|') 2>/dev/null || true
+            fi
+            for f in {input.jcms}; do
+                dst="{params.eos}/JCM/$(basename $f)"
+                xrdcp -f "$f" "$dst" 2>&1 | tee -a {log}
+            done
+            for f in {input.classifier_inputs}; do
+                dst="{params.eos}/classifier_inputs/$(basename $f)"
+                xrdcp -f "$f" "$dst" 2>&1 | tee -a {log}
+            done
+        else
+            echo "No handoff.eos_base configured; local outputs only" >> {log}
+        fi
+        touch {output.done}
+        """
