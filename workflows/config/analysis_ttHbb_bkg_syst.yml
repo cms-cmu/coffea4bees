@@ -262,8 +262,11 @@ phase_e_fvt:
   # nominal_classifier_inputs: inputs.classifier_inputs; the per-subsample mixed classifier inputs and
   # JCMs default to this roast's A_3 / B_1 outputs (helpers/stage_configs.py:stage_phaseC_configs)
   precision: "fp16"
-  # GPU resources: the falcon defaults of src/classifier/workflow/Snakefile (work / light / mps:50);
-  # on Bridges-2 set gpu_partition: GPU-shared, slurm_account: phy260026p, gpu_gres: gpu:1, gpu_mem/eval_mem: 22000
+  # GPU resources (falcon): qos light allows <= 25 MPS per job and 3 jobs per user; medium 50 MPS but
+  # 1 job and 8 h. mps:50 on light (the Snakefile default) is refused (QOSMaxGRESPerJob), so: light +
+  # mps:25 -> 3 trainings in parallel. On Bridges-2: gpu_partition: GPU-shared, slurm_account:
+  # phy260026p, gpu_gres: gpu:1, gpu_mem/eval_mem: 22000.
+  gpu_gres: "mps:25"
   plot_inputs: false
   plot_weights: false
   analyze: false
