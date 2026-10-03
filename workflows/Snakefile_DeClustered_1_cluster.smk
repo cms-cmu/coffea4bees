@@ -12,17 +12,23 @@
 # declustering.method: library -- D1_cluster also writes the splitting library (one ROOT file per
 # chunk, <LIB_BASE>/<dataset>/), and
 #   D1_library_regroup (per year)     the chunk files listed in that year's coffea -> {year: [files]}
+#   D1_library_consolidate (per year) -> one file per year, <LIB_BASE>/merged/ (every D.3 worker
+#                                        loads a whole year: ~1300 chunk files cost ~80 s, one ~10 s)
 #   D1_library_merge                  -> one registry for all years
 #   D1_library_publish                -> <LIB_BASE>/splitting_library.yml (what D.3 reads)
+#   D1_library_summary (per year)     -> D1/library/summary/: rows per exact splitting type and the
+#                                        lookup group each resolves to (summarize_splitting_library.py)
 #
 # With inputs.pdfs set (pdf method), D.3 declusters with another roast's PDFs and none of this runs.
+# D1_merge (the histograms' only consumer is D.2) runs only when the PDFs are made (MAKE_PDFS).
 
 D1_OUT = f"{out}D1/"
 D1_CONFIG = f"{D1_OUT}cluster_4b.yml"
 D1_MERGED = f"{D1_OUT}splittings.coffea"
 D1_LIB_REGISTRY = f"{D1_OUT}library/splitting_library.yml"
 D1_LIB_PUBLISHED = f"{D1_OUT}library/published.done"
-LIB_DONE = [D1_LIB_PUBLISHED] if LIBRARY else []
+LIB_DONE = [D1_LIB_PUBLISHED] if BUILD_LIBRARY else []            # inputs.splitting_library: nothing to wait for
+D1_LIB_SUMMARIES = [f"{D1_OUT}library/summary/splitting_library_summary_{y}.yml" for y in YEARS] if BUILD_LIBRARY else []
 
 rule D1_config:
     input: CLUSTER.get('config_template', "coffea4bees/analysis/metadata/cluster_4b_Run3.yml")
@@ -40,7 +46,7 @@ rule D1_config:
              'friends_include': ['FvT'],              # data only: no trigWeight needed
              **({'splitting_library_base_path': LIB_BASE,
                  'splitting_library_carry_fields': list(LIB_OPTS.get('carry_fields', ['btagScore']))}
-                if LIBRARY else {})},
+                if BUILD_LIBRARY else {})},
             # the script ran cluster_4b_Run3.yml alone, on the processor defaults: not the
             # histogram-pass settings (top reconstruction, btagSF, ...) of analysis_config.config
             inherit_config=False,
@@ -93,8 +99,31 @@ rule D1_library_regroup:
             {wildcards.year} {input} {output} 2>&1 | tee {log}
         """
 
+rule D1_library_consolidate:
+    """The year's chunk files merged into one zstd ROOT file on EOS (same Events schema); the
+    per-year registry then lists just that file."""
+    input: f"{D1_OUT}library/per_year/splitting_library__{{year}}.yml"
+    output: f"{D1_OUT}library/consolidated/splitting_library__{{year}}.yml"
+    log: f"{D1_OUT}logs/library_consolidate__{{year}}.log"
+    wildcard_constraints:
+        year = "|".join(YEARS)
+    params:
+        local = lambda wildcards: f"{D1_OUT}library/consolidated/splitting_library_{wildcards.year}.root",
+        url = lambda wildcards: f"{LIB_BASE}/merged/splitting_library_{wildcards.year}.root",
+    shell:
+        """
+        set -eo pipefail
+        {EOS_PROXY}
+        mkdir -p $(dirname {params.local})
+        {WRAPPER} {PYTHON} coffea4bees/workflows/scripts/consolidate_splitting_library.py \
+            {wildcards.year} {input} {params.local} 2>&1 | tee {log}
+        xrdcp -f -p {params.local} "{params.url}" 2>&1 | tee -a {log}
+        rm -f {params.local}
+        printf '%s:\n- %s\n' "{wildcards.year}" "{params.url}" > {output}
+        """
+
 rule D1_library_merge:
-    input: expand(f"{D1_OUT}library/per_year/splitting_library__{{year}}.yml", year=YEARS)
+    input: expand(f"{D1_OUT}library/consolidated/splitting_library__{{year}}.yml", year=YEARS)
     output: D1_LIB_REGISTRY
     run:
         merged = {}
@@ -126,7 +155,25 @@ rule D1_library_publish:
         date > {output}
         """
 
-rule all_D1:
-    input: ([] if PDF_EXTERNAL else [D1_MERGED]) + LIB_DONE
+rule D1_library_summary:
+    input: D1_LIB_REGISTRY
+    output:
+        yml = f"{D1_OUT}library/summary/splitting_library_summary_{{year}}.yml",
+        txt = f"{D1_OUT}library/summary/splitting_library_summary_{{year}}.txt"
+    log: f"{D1_OUT}logs/library_summary__{{year}}.log"
+    wildcard_constraints:
+        year = "|".join(YEARS)
+    params:
+        min_entries = int(LIB_OPTS.get('min_entries', 10))
+    shell:
+        """
+        set -eo pipefail
+        {EOS_PROXY}
+        {WRAPPER} {PYTHON} coffea4bees/jet_clustering/summarize_splitting_library.py {input} {wildcards.year} \
+            -o $(dirname {output.yml}) --min-entries {params.min_entries} 2>&1 | tee {log}
+        """
 
-localrules: D1_config, D1_merge, D1_library_regroup, D1_library_merge, D1_library_publish, all_D1
+rule all_D1:
+    input: ([D1_MERGED] if MAKE_PDFS else []) + LIB_DONE + D1_LIB_SUMMARIES
+
+localrules: D1_config, D1_merge, D1_library_regroup, D1_library_consolidate, D1_library_merge, D1_library_publish, D1_library_summary, all_D1

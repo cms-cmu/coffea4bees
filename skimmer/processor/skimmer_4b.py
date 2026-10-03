@@ -1,12 +1,15 @@
 import logging
 
 import numpy as np
-from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
+from coffea4bees.analysis.helpers.object_selection import apply_jet_calibration
 from coffea4bees.analysis.helpers.event_selection import apply_4b_selection
 from src.physics.event_selection import apply_event_selection
 
 from coffea.analysis_tools import PackedSelection, Weights
 from coffea4bees.skimmer.processor.skimmer_4b_base import Skimmer4b
+from coffea4bees.analysis.helpers.SvB_helpers import setFvTVars, subtract_ttbar_with_FvT
+from coffea4bees.analysis.helpers.load_friend import rename_FvT_friend
+from src.data_formats.root import Chunk
 
 
 class Skimmer(Skimmer4b):
@@ -16,6 +19,9 @@ class Skimmer(Skimmer4b):
             skim4b=False,
             split_tag_categories=False,
             mc_outlier_threshold=200,
+            subtract_ttbar_with_weights=False,
+            tt_vs_mj_var="d4_to_t4",
+            friends=None,             # named here: runner.py injects friends only into processors whose own __init__ takes them
             corrections_metadata=None,
             object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
             *args, **kwargs
@@ -24,6 +30,9 @@ class Skimmer(Skimmer4b):
             kwargs["pico_base_name"] = f'picoAOD_fourTag'
         super().__init__(
             mc_outlier_threshold=mc_outlier_threshold,
+            # only the ttbar filter reads a friend: nominal skims ignore whatever runner.py injects,
+            # so Skimmer4b's eager parse_friends does not touch friends_HH4b.yml for them
+            friends=friends if subtract_ttbar_with_weights else None,
             corrections_metadata=corrections_metadata,
             object_selection_cfg=object_selection_cfg,
             *args, **kwargs,
@@ -31,6 +40,16 @@ class Skimmer(Skimmer4b):
         self.loosePtForSkim = loosePtForSkim
         self.skim4b = skim4b
         self.split_tag_categories = split_tag_categories
+        # ttbar subtraction with the FvT friend (rand > FvT.<tt_vs_mj_var>), as the hemisphere library
+        # and the mixer do it -- same Squares stream keyed on the ORIGINAL dataset/era, so a skim of
+        # 4b data with d4_to_t4 keeps exactly the library's events (MakeMixedData M.2a, 4b mixing).
+        # Done here because the FvT friend is keyed on the original files: it cannot follow the skim.
+        self.subtract_ttbar_with_weights = subtract_ttbar_with_weights
+        self.tt_vs_mj_var = tt_vs_mj_var
+        if subtract_ttbar_with_weights and not skim4b:
+            raise ValueError("subtract_ttbar_with_weights is only supported with skim4b (one FvT variable: d4_to_t4)")
+        if subtract_ttbar_with_weights and "FvT" not in self.friends:
+            raise ValueError("subtract_ttbar_with_weights needs an FvT friend (friends: {FvT: ...})")
 
     def select(self, events):
         m = self._parse_event_metadata(events)
@@ -44,7 +63,7 @@ class Skimmer(Skimmer4b):
         )
 
         if config["do_jet_calibration"]:
-            jets = apply_jerc_corrections_jsonpog(
+            jets = apply_jet_calibration(
                 events,
                 corrections_metadata=self.corrections_metadata[year],
                 isMC=config["isMC"],
@@ -102,6 +121,14 @@ class Skimmer(Skimmer4b):
             selections.add("passPreSel", events.passPreSel)
             selections.add("passFourTag", events.fourTag)
             final_selection = selections.require(lumimask=True, passNoiseFilter=True, passHLT=True, passJetMult=True, passPreSel=True, passFourTag=True)
+            if self.subtract_ttbar_with_weights:
+                events["FvT"] = rename_FvT_friend(Chunk.from_coffea_events(events), self.friends["FvT"])
+                setFvTVars("FvT", events)
+                pass_ttbar = np.full(len(events), True)
+                pass_ttbar[final_selection] = np.asarray(
+                    subtract_ttbar_with_FvT(events[final_selection], dataset, year, tt_vs_mj_var=self.tt_vs_mj_var))
+                selections.add("pass_ttbar_filter", pass_ttbar)
+                final_selection = final_selection & pass_ttbar
         else:
             selections.add('passJetMult', events.passJetMult)
             selections.add("passPreSel", events.passPreSel)

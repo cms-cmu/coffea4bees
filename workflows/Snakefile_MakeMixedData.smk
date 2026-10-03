@@ -11,6 +11,13 @@
 #   M.5 ttbar psdata   unweighted ttbar pseudodata (one shared sample) -> ttbar_PSData
 #   M.6 validation     plots (mixed + ttbar MC vs 4b data, pseudodata, one subsample), cutflow page,
 #                      study plots, subsample overlap matrix
+#   M.7 signal check   signal MC mixed the same way (3b + 4b), SvB on the fly: does it stay signal-like?
+#
+# mixing.source: fourTag (config/mixeddata_run3_4bmix.yml) is the 4b-mixing variant: 4b data events
+# are mixed instead of 3b x JCM, with their own hemispheres vetoed in the library match, and N seeds
+# (random rank among the top k_random neighbours) give the N samples. M.3's JCM fit and M.4's JCM
+# splitting drop out: M.2 publishes all seeds as one dataset (mixeddata_all_4bmix, MvD) and M.4
+# assembles the per-seed samples + ttbar pseudodata (mixeddata_4bmix_4b, closure).
 #
 # Everything this roast consumes comes from other roasts, named under `inputs:` and checked by
 # `roast new`: the FvT from the nominal, the JCM and its histograms from a Phase B.1 roast with
@@ -108,6 +115,45 @@ HEMI_STATS_URL = str(INPUTS.get('hemi_stats_path') or HEMI_BASE)            # he
 HEMI = config.get('hemi_library') or {}
 MIX = config.get('mixing') or {}
 MIX_NAME = MIX.get('dataset_name', 'mixeddata_all')
+
+# What is mixed: threeTag (3b data x JCM, the nominal mixed data) or fourTag (4b data; N seeds)
+MIX_SOURCE = MIX.get('source', 'threeTag')
+if MIX_SOURCE not in ('threeTag', 'fourTag'):
+    raise ValueError(f"mixing.source must be 'threeTag' or 'fourTag', got {MIX_SOURCE!r}")
+MIX4B = MIX_SOURCE == 'fourTag'
+
+# 4b mixing reads a 4b skim of the data (M.2a: skim4b + ttbar filter FvT.d4_to_t4, ~3% of the data
+# events) instead of rereading all data for every seed. inputs.data_4bskim pins another roast's skim.
+SKIM_NAME = MIX.get('skim_dataset_name', 'data__4bskim')       # "data__" prefix: runner.py reads it as data
+SKIM_EXTERNAL = INPUTS.get('data_4bskim')
+SKIM_URL = str(SKIM_EXTERNAL) if SKIM_EXTERNAL else f"{HANDOFF}/{SKIM_NAME}.yml"
+if MIX4B and not SKIM_NAME.startswith('data__'):
+    raise ValueError(f"mixing.skim_dataset_name {SKIM_NAME!r} must start with 'data__' (runner.py reads any other name as MC)")
+
+# Samples: 3b mixing splits mixeddata_all into N subsamples with the mixed-data JCM (M.4); 4b mixing
+# makes one mixing pass per seed (M.2). Either way subsamples.n is N and subsamples.dataset_name the
+# multi-sample dataset.
+SUB = config.get('subsamples') or {}
+N_SUB = int(SUB.get('n', 16))
+SUBSAMPLES = list(range(N_SUB))
+SUB_NAME = SUB.get('dataset_name', 'mixeddata_4b')
+
+# runner.py (src/runner/dataset.py:get_dataset_type) decides by name how a dataset is read, and an
+# unknown name is MC: mixeddata_all* is one mixed dataset, mixeddata_4b / mixeddata_<tag>_4b a
+# multi-sample one with samples mix_v<k> / mix_<tag>_v<k>.
+import re as _re
+if not MIX_NAME.startswith('mixeddata_all'):
+    raise ValueError(f"mixing.dataset_name {MIX_NAME!r} must start with 'mixeddata_all' (runner.py reads any other name as MC)")
+if SUB_NAME == 'mixeddata_4b':
+    SUB_PREFIX = 'mix'
+elif (_m := _re.fullmatch(r"mixeddata_([A-Za-z0-9]+)_4b", SUB_NAME)) and _m.group(1) != 'noTTSub':
+    SUB_PREFIX = f"mix_{_m.group(1)}"
+else:
+    raise ValueError(f"subsamples.dataset_name {SUB_NAME!r} must be 'mixeddata_4b' or 'mixeddata_<tag>_4b' "
+                     f"(runner.py reads any other name as MC)")
+if MIX4B and SUB_NAME == 'mixeddata_4b':
+    raise ValueError("4b mixing needs its own dataset names (e.g. subsamples.dataset_name: mixeddata_4bmix_4b): "
+                     "load_datasets_metadata refuses a name defined differently in two -m sources")
 PS = config.get('ttbar_psdata') or {}
 PS_NAME = PS.get('dataset_name', 'ttbar_PSData')
 # M.5's ttbar pseudodata dataset YAML; M.4 folds its files into every subsample (closure pseudo-data
@@ -122,7 +168,11 @@ _wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else
 config.setdefault('analysis_container_wrapper', _wrapper)
 WRAPPER = config['analysis_container_wrapper']
 PYTHON = config.get('python_bin', os.getenv("CONTAINER_PYTHON", "python"))
-CONDOR = ""
+# Processor jobs run on condor through the shared Dask daemon (local only for test / CI). Without
+# --condor every runner job processes on the interactive node: 5178c5837 set this to "", and a
+# MakeMixedData roast's parallel mixers (4 local workers each, loading the hemisphere library)
+# were OOM-killed and took cmslpc338 and cmslpc325 down (2026-09-30).
+CONDOR = "" if (config['test'] or os.getenv("CI")) else "--shared-dask --condor"
 TEST_FLAG = "-t" if config['test'] else ""
 
 # Shell prefix for any rule that writes to EOS: roast seeds ./proxy/x509_proxy in the checkout.
@@ -225,6 +275,7 @@ include: "Snakefile_MakeMixedData_3_validate.smk"
 include: "Snakefile_MakeMixedData_4_subsample.smk"
 include: "Snakefile_MakeMixedData_5_ttbar_psdata.smk"
 include: "Snakefile_MakeMixedData_6_validation.smk"
+include: "Snakefile_MakeMixedData_7_signal.smk"
 
 # default_target, not position: an included or inserted rule can never steal the default.
 rule all_MakeMixedData:
@@ -235,6 +286,7 @@ rule all_MakeMixedData:
         rules.all_M3.input,
         rules.all_M4.input,
         rules.all_M5.input,
-        rules.all_M6.input
+        rules.all_M6.input,
+        rules.all_M7.input
 
 localrules: fetch_inputs, all_MakeMixedData

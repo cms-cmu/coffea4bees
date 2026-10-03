@@ -17,6 +17,11 @@
 #   M6_plot_config + M6_plots                     makePlots gallery (SR / SB, ratios)
 #   M6_study                                      study plots + subsample overlap matrix (from M.3)
 #                                                 + study/index.html
+#
+# 4b mixing: multijet = mixeddata_all_4bmix (all N seeds, unit weight) scaled by 1/N in the plots and
+# the cutflow table; the subsample line is one seed (mix_4bmix_v<k>, + ttbar pseudodata). M6_study
+# reads the per-seed picoAODs: seed-overlap matrix (same replacement hemispheres), rank / distance
+# distributions, and the self-match check (a mixed hemisphere from its own event must never occur).
 
 import hashlib
 
@@ -58,10 +63,11 @@ def _m6_hist_config(src, dst, datasets_urls, jcm_file):
 rule M6_config_mixed:
     input:
         hist_config = UPSTREAM_HIST_CONFIG,
-        jcm = MIXED_JCM
+        jcm = [] if MIX4B else MIXED_JCM
     output: f"{M6_OUT}analysis_config_mixedJCM.yml"
     run:
-        _m6_hist_config(input.hist_config, output[0], [MIXED_URL], input.jcm)
+        # 4b mixing: unit-weight four-tag events, no JCM
+        _m6_hist_config(input.hist_config, output[0], [MIXED_URL], None if MIX4B else input.jcm)
 
 rule M6_config_closure:
     input: UPSTREAM_HIST_CONFIG
@@ -82,7 +88,7 @@ use rule analysis_processor from analysis as M6_hists_mixed with:
         datasets = MIX_NAME,
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, [TEST_FLAG])),
+        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 
@@ -100,7 +106,7 @@ use rule analysis_processor from analysis as M6_hists_closure with:
         datasets = f"{SUB_NAME} {PS_NAME}",
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, [f"--samples {VAL_SUB}", TEST_FLAG])),
+        extra_arguments = " ".join(filter(None, [f"--samples {VAL_SUB}", TEST_FLAG, CONDOR])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 
@@ -148,7 +154,8 @@ use rule cutflow_closure_table from analysis as M6_cutflow_page with:
         title = f"{config.get('label', 'mixeddata')}_validation_v{VAL_SUB}",
         multijet = "sample4b",            # Multijet column = the four-tag sample --multijet-process
         ttbar = " ".join(TTBAR),
-        extra_arguments = f"--multijet-process {MIX_NAME} --pseudodata {PS_NAME} --compare mix_v{VAL_SUB}",
+        extra_arguments = (f"--multijet-process {MIX_NAME} --pseudodata {PS_NAME} --compare {SUB_PREFIX}_v{VAL_SUB}"
+                           + (f" --multijet-scale {1.0 / N_SUB!r}" if MIX4B else "")),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 
@@ -160,7 +167,16 @@ rule M6_plot_config:
             text = f.read()
         if "mix_vK" not in text:
             raise ValueError(f"{input[0]}: no `mix_vK` placeholder for the subsample")
-        text = text.replace("mix_vK", f"mix_v{VAL_SUB}").replace("subsample K", f"subsample v{VAL_SUB}")
+        text = text.replace("mix_vK", f"{SUB_PREFIX}_v{VAL_SUB}").replace("subsample K", f"subsample v{VAL_SUB}")
+        if MIX4B:
+            # the multijet is the union of the N seeds: 1/N of it is one sample's worth
+            plot_cfg = yaml.safe_load(text)
+            mj = plot_cfg['stack']['MultiJet']
+            mj.update({'process': MIX_NAME, 'scalefactor': 1.0 / N_SUB,
+                       'label': f"Mixed 4b data (mean of {N_SUB} seeds)"})
+            plot_cfg['hists']['subsample']['label'] = (f"{SUB_NAME} seed v{VAL_SUB} "
+                                                       "(mixed + $t\\bar{t}$ pseudodata)")
+            text = yaml.dump(plot_cfg, default_flow_style=False, sort_keys=False)
         os.makedirs(os.path.dirname(output[0]), exist_ok=True)
         with open(output[0], "w") as f:
             f.write(text)
@@ -179,18 +195,38 @@ use rule make_plots from analysis as M6_plots with:
         python_bin = PYTHON
     log: f"{M6_OUT}logs/plots.log"
 
-rule M6_study:
-    input: M3_STUDY
-    output:
-        matrix = f"{M6_OUT}study/subsample_overlap_matrix.png",
-        summary = f"{M6_OUT}study/summary.yml",
-        index = f"{M6_OUT}study/index.html"
-    log: f"{M6_OUT}logs/study.log"
-    shell:
-        """
-        {WRAPPER} {PYTHON} coffea4bees/workflows/scripts/mixeddata_validation_report.py study \
-            {input} {M6_OUT}study --n-subsamples {N_SUB} 2>&1 | tee {log}
-        """
+if not MIX4B:
+    rule M6_study:
+        input: M3_STUDY
+        output:
+            matrix = f"{M6_OUT}study/subsample_overlap_matrix.png",
+            summary = f"{M6_OUT}study/summary.yml",
+            index = f"{M6_OUT}study/index.html"
+        log: f"{M6_OUT}logs/study.log"
+        shell:
+            """
+            {WRAPPER} {PYTHON} coffea4bees/workflows/scripts/mixeddata_validation_report.py study \
+                {input} {M6_OUT}study --n-subsamples {N_SUB} 2>&1 | tee {log}
+            """
+else:
+    rule M6_study:
+        input:
+            registries = M2_SEED_REGISTRIES,
+            published = M2_PUBLISHED
+        output:
+            matrix = f"{M6_OUT}study/seed_overlap_matrix.png",
+            summary = f"{M6_OUT}study/summary.yml",
+            index = f"{M6_OUT}study/index.html"
+        log: f"{M6_OUT}logs/study.log"
+        params:
+            years = " ".join(VAL.get('seed_study_years') or YEARS)
+        shell:
+            """
+            set -eo pipefail
+            {EOS_PROXY}
+            {WRAPPER} {PYTHON} coffea4bees/workflows/scripts/mixeddata_validation_report.py seeds \
+                {input.registries} --outdir {M6_OUT}study --years {params.years} 2>&1 | tee {log}
+            """
 
 rule all_M6:
     input:

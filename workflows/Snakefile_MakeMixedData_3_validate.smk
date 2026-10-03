@@ -11,6 +11,9 @@
 #   M3_study (per year) + merge       processor_study_mixed_data with that JCM: per-event subsample
 #                                     assignment, pseudo-tag weights, overflow (N*w > 1) counts
 #   M3_publish                        the mixed-data JCM -> <PUB>/handoff/  (MvD needs it too)
+#
+# 4b mixing: nothing to fit (unit-weight 4b events) and no JCM splitting, so all_M3 is empty; the
+# data-vs-mixed comparison is M.6.
 
 M3_OUT = f"{out}M3/"
 M3_HIST_CONFIG = f"{M3_OUT}analysis_config_mixed.yml"
@@ -53,7 +56,7 @@ use rule analysis_processor from analysis as M3_hists with:
         datasets = MIX_NAME,
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, [TEST_FLAG])),
+        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 
@@ -92,17 +95,24 @@ rule M3_jcm_config:
     run:
         with open(input[0]) as f:
             cfg = yaml.safe_load(f) or {}
-        cfg['data3bName'] = "mixeddata_all"
+        cfg['data3bName'] = MIX_NAME        # the mixed data stands in for the 3b sample
         cfg['data4bName'] = "data"
-        cfg['ignoreTT'] = True
         cfg['float_t'] = bool(MJ.get('float_t', True))
-        if 'ttbarProcesses' in MJ or 'ttbar_processes' in config:
-            cfg['ttbarProcesses'] = MJ.get('ttbarProcesses', config.get('ttbar_processes', TTBAR))
+        # The fit keeps the ttbar term: the mixed data is multijet only (ttbar-subtracted 3b data)
+        # while the 4b data it is fit to contains ttbar. The samples must be the ones the upstream
+        # jcm_hists histogrammed, i.e. this roast's `ttbar` list.
+        if 'ttbarProcesses' in MJ:
+            cfg['ttbarProcesses'] = MJ['ttbarProcesses']
+        elif TTBAR:
+            cfg.setdefault('ttbarProcesses', TTBAR)
         write_yaml(output[0], cfg)
 
 rule M3_fit:
     input:
-        hists = [UPSTREAM_HISTS] + expand(f"{M3_OUT}singlefiles/hist__{MIX_NAME}__{{year}}.coffea", year=YEARS),
+        # The merged file, not the per-year singlefiles: make_jcm_weights.py keeps the LAST input file
+        # holding each process (jcm_tools/helpers.py:loadHistograms), so per-year inputs fit one year
+        # of mixed data against all years of 4b data.
+        hists = M3_HISTALL,
         jcm_config = f"{M3_OUT}jcm_config_mixed.yml"
     output: MIXED_JCM
     log: f"{M3_OUT}logs/fit.log"
@@ -150,7 +160,7 @@ use rule analysis_processor from analysis as M3_study with:
         datasets = MIX_NAME,
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, [TEST_FLAG])),
+        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 
@@ -181,9 +191,7 @@ rule M3_publish:
 
 rule all_M3:
     input:
-        M3_PUBLISHED,
-        M3_STUDY,
-        f"{M3_OUT}cutflow_validation_mixedJCM.txt"
+        [] if MIX4B else [M3_PUBLISHED, M3_STUDY, f"{M3_OUT}cutflow_validation_mixedJCM.txt"]
 
 localrules: M3_hist_config, M3_merge_hists, M3_cutflow, M3_jcm_config, M3_fit, M3_study_config,
             M3_merge_study, M3_publish, all_M3

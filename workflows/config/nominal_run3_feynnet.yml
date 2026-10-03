@@ -40,12 +40,12 @@ output_path: "output/Run3_nominal_feynnet/"
 analysis_config:
   config:
     friends:
-      FvT: root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/friend/FvT_nominal/result.json@@analysis.0.merged
-      SvB_MA: root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/friend/SvB_nominal/result.json@@analysis.0.merged
+      FvT: "{roast:nominal_run3_20260922_3f9e199-1e0504f}/friend/FvT_nominal/result.json@@analysis.0.merged"
+      SvB_MA: "{roast:nominal_run3_20260922_3f9e199-1e0504f}/friend/SvB_nominal/result.json@@analysis.0.merged"
     # The production's own Phase B fit, read from its EOS handoff area (jetCombinatoricModel
     # opens it through fsspec). Not the metadata/weights/JCM/Run3_nominal/ symlink, which points
     # at the older checked-in Run3/v2 fit.
-    JCM_file: root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/handoff/jetCombinatoricModel_SB_Run3_v1.yml
+    JCM_file: "{roast:nominal_run3_20260922_3f9e199-1e0504f}/handoff/jetCombinatoricModel_SB_Run3_v1.yml"
     # Lists replace, so restate the base's three and add SvB_FeynNet (per-year, friends_HH4b.yml).
     friends_include: [trigWeight, FvT, SvB_MA, SvB_FeynNet]
 

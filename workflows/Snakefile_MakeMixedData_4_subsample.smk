@@ -15,12 +15,13 @@
 #                                        shared by every subsample): each `mix_v<k>` is a complete
 #                                        closure pseudo-data sample, multijet + ttbar
 #   M4_publish                        -> <PUB>/handoff/mixeddata_4b.yml   (what the closure reads)
+#
+# 4b mixing: no split; the samples are M.2's seeds, and M4_dataset_yml templates their per-seed
+# registries (<PUB>/picoAOD/<name>/v<s>/ -> vXXX) into e.g. mixeddata_4bmix_4b (samples mix_4bmix_v<k>).
+
+import re
 
 M4_OUT = f"{out}M4/"
-SUB = config.get('subsamples') or {}
-N_SUB = int(SUB.get('n', 16))
-SUBSAMPLES = list(range(N_SUB))
-SUB_NAME = SUB.get('dataset_name', 'mixeddata_4b')
 M4_DATASET = f"{M4_OUT}handoff/{SUB_NAME}.yml"
 M4_PUBLISHED = f"{M4_OUT}published.done"
 
@@ -67,7 +68,7 @@ use rule analysis_processor from analysis as M4_split with:
         datasets = MIX_NAME,
         years = " ".join(YEARS),
         config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, ["-s", TEST_FLAG])),
+        extra_arguments = " ".join(filter(None, ["-s", TEST_FLAG, CONDOR])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 
@@ -83,17 +84,27 @@ rule M4_clean:
             {input} {output} 2>&1 | tee {log}
         """
 
+def _template_sample_file(fp, v):
+    """A sample's file path with its index replaced by XXX (None if it carries none)."""
+    if MIX4B:
+        t = re.sub(rf'/{re.escape(MIX_NAME)}/v{v}/', f'/{MIX_NAME}/vXXX/', fp)
+    else:
+        t = re.sub(rf'/subsamples/v{v}/', '/subsamples/vXXX/', fp)
+        # keep .chunkN: the files on disk are picoAOD_mixed_v<v>.chunk<k>.root (as in the
+        # existing mixeddata_4b.yml); E.2 dropped it, pointing at files that don't exist
+        t = re.sub(rf'_v{v}((\.chunk\d+)?\.root)$', r'_vXXX\1', t)
+    return t if 'XXX' in t else None
+
 rule M4_dataset_yml:
     """One dataset key, per-year `files_template` lists with the subsample index replaced by XXX.
     Every subsample must produce the same set of templates -- checked, not assumed (E.2 parsed
     only v0's registry, line by line)."""
     input:
-        subsamples = expand(f"{M4_OUT}per_subsample/clean_v{{v}}.yml", v=SUBSAMPLES),
+        subsamples = M2_SEED_REGISTRIES if MIX4B else expand(f"{M4_OUT}per_subsample/clean_v{{v}}.yml", v=SUBSAMPLES),
         psdata = PS_DATASET,
         psdata_checked = f"{out}M5/dataset_checked.done"
     output: M4_DATASET
     run:
-        import re
         from src.tools.make_dataset_yml import parse_dataset_key
         per_v = []
         for v, path in zip(SUBSAMPLES, input.subsamples):
@@ -105,11 +116,8 @@ rule M4_dataset_yml:
                 if year is None:
                     raise ValueError(f"{path}: cannot tell the year of registry key {key!r}")
                 for fp in (entry or {}).get('files') or []:
-                    t = re.sub(rf'/subsamples/v{v}/', '/subsamples/vXXX/', fp)
-                    # keep .chunkN: the files on disk are picoAOD_mixed_v<v>.chunk<k>.root (as in the
-                    # existing mixeddata_4b.yml); E.2 dropped it, pointing at files that don't exist
-                    t = re.sub(rf'_v{v}((\.chunk\d+)?\.root)$', r'_vXXX\1', t)
-                    if 'XXX' not in t:
+                    t = _template_sample_file(fp, v)
+                    if t is None:
                         raise ValueError(f"{path}: {fp} does not carry subsample index v{v}")
                     templates.setdefault(year, set()).add(t)
             per_v.append(templates)

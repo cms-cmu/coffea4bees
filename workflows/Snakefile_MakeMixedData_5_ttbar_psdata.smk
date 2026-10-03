@@ -67,7 +67,7 @@ use rule analysis_processor from analysis as M5_psdata with:
         datasets = " ".join(TTBAR),
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, ["-s", TEST_FLAG])),
+        extra_arguments = " ".join(filter(None, ["-s", TEST_FLAG, CONDOR])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 

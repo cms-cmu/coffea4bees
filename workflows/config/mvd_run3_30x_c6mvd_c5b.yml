@@ -23,18 +23,18 @@ inputs:
   upstream_roasts: [nominal_run3_20260922_3f9e199-1e0504f, mixeddata_run3_20260926_956d4bf-aca8a4e,
                     mvd_run3_20260927_91be0e9-f18c44b, mvd_run3_30x_c6mvd_20260928_d3f6ae2-aede48c]
   # the MvD friend V.4 weights the mixed data with (V.3 reads it through svb_mvd.train_template)
-  mvd_friend: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/mvd_run3_30x_c6mvd_20260928_d3f6ae2-aede48c/friend/MvD_30x_c6/result.json"
+  mvd_friend: "{roast:mvd_run3_30x_c6mvd_20260928_d3f6ae2-aede48c}/friend/MvD_30x_c6/result.json"
 
 # V.4 builds its MvD friend URL from this block: the c6mvd roast's MvD_30x_c6 (V.2 is not run here).
 mvd:
-  eos_base: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/mvd_run3_30x_c6mvd_20260928_d3f6ae2-aede48c"
+  eos_base: "{roast:mvd_run3_30x_c6mvd_20260928_d3f6ae2-aede48c}"
   label: "MvD_30x_c6"
 
 svb_mvd:
   label: "SvB_MvD_30x_c5b_c6mvd"
   plot_inputs: false
   output_dir: "output/SvB_MvD_30x_c5b_c6mvd/"
-  train_template: "model: {eos_base}/classifier/{label}, MvD: root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/mvd_run3_30x_c6mvd_20260928_d3f6ae2-aede48c/friend/MvD_30x_c6"
+  train_template: "model: {eos_base}/classifier/{label}, MvD: {roast:mvd_run3_30x_c6mvd_20260928_d3f6ae2-aede48c}/friend/MvD_30x_c6"
   # This step's common.yml (overrides the top-level classifier_setting for this step only, so the
   # MvD settings are untouched): as mvd_run3.yml plus the candidate-jet b-tag features. Applies to
   # the training and the evaluation alike.

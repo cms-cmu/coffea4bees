@@ -1,0 +1,48 @@
+# ==============================================================================
+# DECLUSTERED (SYNTHETIC) DATASET PRODUCTION — Run 2, library-based ("replacement") declustering
+# ==============================================================================
+# declustered_run2.yml with declustering.method library, as declustered_run3_library.yml (the
+# setup of roast libA_run3_20260930_4e3ad63-da2340e: random among the k_neighbors nearest in
+# (log pT, |eta|) within max_distance, no mass matching). See that config for the method.
+#
+# Run 2 differences:
+#   * carry_fields: what the Run 2 candidate jets have (b-tag, jet ID, constituents and energy
+#     fractions; no PNet, nSVs, DeepJet CvB/CvL/QG, qgl or bRegRes). Not puId:
+#     Run 2 drops jets with puId < 6 below 50 GeV, and a library child's own puId (computed at its
+#     own pT, 0 above 50 GeV) would fail after scaling -- the synthetic jets keep puId 7, as in
+#     PDF mode. Not bRegCorr / rawFactor / area (splitting_library.NOT_CARRIABLE).
+#   * D.6 signal check: the Run 2 SM ggHH and the nominal Run 2 SvB (from the base).
+#   * The upstream B.1 histograms are blinded, so D.4 closure has no 4b data in the SR.
+#
+#   roast new --config coffea4bees/workflows/config/declustered_run2_library.yml \
+#       --label libA_run2 --step cmslpc:coffea4bees/workflows/Snakefile_DeClustered.smk
+#
+base: coffea4bees/workflows/config/declustered_run2.yml
+
+label: "declustered_run2_library"
+
+# Cap on each runner.py condor cluster (as declustered_run3.yml)
+max_workers: 200
+
+declustering:
+  method: library
+  n_seeds: 1
+  # D.3 / D.6 condor workers: one year's library + a 25k-event chunk ~2 GB, up to two cached
+  # libraries per worker (4GB was OOM-killed in Run 3)
+  worker_memory: 6GB
+  # Distinct from the PDF roast's names (a consumer can read both handoffs in one -m list)
+  dataset_name: "synthetic_data_lib_4b"
+  multijet_dataset_name: "synthetic_data_lib_multijet"
+  library:
+    # what the Run 2 candidate jets carry into the clustering (no DeepJet CvB/CvL/QG, qgl, bRegRes)
+    carry_fields: [btagScore, jetId, nConstituents, chHEF, neHEF, chEmEF, neEmEF, muEF]
+    min_entries: 10
+    scale_pt: true
+    boost_z: true
+    selection: random
+    k_neighbors: 20
+    max_distance: 0.05
+
+validation:
+  # The base's known_counts are the Run 2 PDF roast's; library mode has none yet.
+  known_counts: null

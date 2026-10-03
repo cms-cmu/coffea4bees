@@ -19,6 +19,7 @@ from coffea4bees.jet_clustering.splitting_library import (
     align_children,
     library_child_flavors,
     carry_child_fields,
+    random_ranks,
 )
 from src.data_formats.root import TreeWriter
 
@@ -237,6 +238,63 @@ class splittingLibraryLookupTestCase(unittest.TestCase):
             self.assertEqual(lib.n_self_matches, expect_self)
             self.assertEqual(bool(index[0] == row[0]), bool(expect_self))
 
+    def test_lookup_counts(self):
+        lib = SplittingLibrary(self.rows, carry_fields=["btagScore"], min_entries=10)
+        n = 7
+        t = self.targets
+        lib.lookup(np.array(["bb"] * n + ["((bj)j)b"] * 2, dtype=object), t["pt"][:n + 2], t["eta"][:n + 2],
+                   np.full(n + 2, 2), np.full(n + 2, 2), np.arange(n + 2), 0)
+        self.assertEqual(lib.lookup_counts, {"exact": n, "child_content": 2, "parent_content": 0, "coarse": 0, "self_match": 0})
+        lib.lookup(np.array(["bb"], dtype=object), t["pt"][:1], t["eta"][:1], [2], [2], [0], 0)
+        self.assertEqual(lib.lookup_counts["exact"], n + 1)          # running total
+
+    def test_distance_cap(self):
+        """Capped picks stay within max_distance unless the nearest allowed neighbour is already
+        farther (then it is taken); retry_offset steps beyond the cap."""
+        t, d = self.targets, self.lib.data
+        args = (t["flavor"], t["pt"], t["eta"], t["run"], t["luminosityBlock"], t["event"])
+        dist = lambda i: np.hypot(np.log(d["pt"][i]) - np.log(t["pt"]), np.abs(d["eta"][i]) - np.abs(t["eta"]))
+        cap = 0.05
+        nearest, _ = self.lib.lookup(*args, 0)
+        capped, _ = self.lib.lookup(*args, 19, max_distance=cap)
+        uncapped, _ = self.lib.lookup(*args, 19)
+        ok = (dist(capped) <= cap + 1e-12) | (capped == nearest)
+        self.assertTrue(np.all(ok))
+        self.assertTrue(np.any(capped != uncapped))            # the cap did bite in this sparse toy
+        self.assertTrue(np.any(dist(uncapped) > cap))
+        # with a cap no neighbour passes, rank -> nearest, and retry_offset 2 -> the 3rd allowed
+        tight, _ = self.lib.lookup(*args, 19, max_distance=0.0)
+        np.testing.assert_array_equal(tight, nearest)
+        step, _ = self.lib.lookup(*args, 19, max_distance=0.0, retry_offset=2)
+        np.testing.assert_array_equal(step, self.lib.lookup(*args, 2)[0])
+
+    def test_mass_match_low_b_only(self):
+        """mass_match_weight: bb-type groups are untouched (identical picks); bj-type picks move
+        closer to the target's m/pT."""
+        lib_m = SplittingLibrary(self.rows, carry_fields=["btagScore"], min_entries=10, mass_match_weight=1.0)
+        d = self.lib.data
+        rng = np.random.default_rng(8)
+        n = 150
+        pt = rng.uniform(60, 350, n)
+        eta = rng.uniform(-2.2, 2.2, n)
+        mass = pt * rng.uniform(0.2, 1.0, n)
+        ids = (np.full(n, 3), np.full(n, 3), np.arange(n))
+        for flavor, same in (("bb", True), ("bj", False)):
+            f = np.array([flavor] * n, dtype=object)
+            a, _ = self.lib.lookup(f, pt, eta, *ids, 0, mass=mass)
+            b, _ = lib_m.lookup(f, pt, eta, *ids, 0, mass=mass)
+            if same:
+                np.testing.assert_array_equal(a, b)
+            else:
+                dm = lambda i: np.abs(np.log(d["mass"][i] / d["pt"][i]) - np.log(mass / pt))
+                self.assertLess(np.median(dm(b)), 0.5 * np.median(dm(a)))
+        with self.assertRaises(ValueError):
+            lib_m.lookup(np.array(["bj"], dtype=object), pt[:1], eta[:1], [3], [3], [0], 0)
+
+    def test_missing_carry_field_is_an_error(self):
+        with self.assertRaises(KeyError):
+            SplittingLibrary(self.rows, carry_fields=["btagScore", "jetId"])
+
     def test_library_rank_wraps(self):
         index_big, _ = self._lookup(rank=10_000)
         self.assertTrue(np.all(index_big >= 0))
@@ -281,6 +339,35 @@ class libraryDeclusteringTestCase(unittest.TestCase):
         self.assertFalse(np.any(np.isnan(scores)))
         # library values are stored as float32
         self.assertLess(np.max(np.min(np.abs(scores[:, None] - allowed[None, :]), axis=1)), 1e-6)
+
+    def _run_random(self, seed, k=5):
+        return make_synthetic_event(self.clustered, None, declustering_rand_seed=seed, b_pt_threshold=30,
+                                    library=self.lib, event_ids=self.event_ids,
+                                    library_selection="random", library_k_neighbors=k)
+
+    def test_random_reproducible_and_seeded(self):
+        a, b, c = self._run_random(3), self._run_random(3), self._run_random(4)
+        np.testing.assert_array_equal(np.asarray(ak.flatten(a.pt)), np.asarray(ak.flatten(b.pt)))
+        self.assertFalse(np.allclose(np.asarray(ak.flatten(a.pt)), np.asarray(ak.flatten(c.pt))))
+        self.assertEqual(ak.to_list(ak.num(a)), ak.to_list(ak.num(c)))      # same jet content per event
+
+    def test_random_k1_is_rank0(self):
+        """k_neighbors 1 draws rank 0 and steps out by the retry count: rank mode, seed 0."""
+        a, b = self._run_random(7, k=1), self._run(0)
+        for f in ("pt", "eta", "phi", "btagScore"):
+            np.testing.assert_array_equal(np.asarray(ak.flatten(a[f])), np.asarray(ak.flatten(b[f])))
+
+    def test_random_ranks_uniform(self):
+        rng = np.random.default_rng(1)
+        n = 20000
+        r = random_ranks(rng.uniform(30, 300, n), rng.uniform(-2.5, 2.5, n), rng.uniform(-3, 3, n),
+                         np.arange(n), 5, (0, 0, 0))
+        counts = np.bincount(r, minlength=5)
+        self.assertEqual(len(counts), 5)
+        self.assertTrue(np.all(np.abs(counts - n / 5) < 5 * np.sqrt(n / 5)), counts)
+        r2 = random_ranks(rng.uniform(30, 300, n), rng.uniform(-2.5, 2.5, n), rng.uniform(-3, 3, n),
+                          np.arange(n), 5, (1, 0, 0))
+        self.assertLess(np.mean(r == r2), 0.3)          # another seed -> (nearly) independent draw
 
     def test_seeds_differ(self):
         a, b = self._run(0), self._run(1)

@@ -1,0 +1,43 @@
+# ==============================================================================
+# 4b-MIXING VARIANT of the Run 3 mixed-data production
+# ==============================================================================
+# Same workflow (Snakefile_MakeMixedData.smk) and inputs as mixeddata_run3.yml, but the events that
+# are mixed are the 4b data events themselves (non-tight, ttbar subtracted with FvT.d4_to_t4)
+# instead of 3b events x JCM. Every 4b event's own hemispheres are in the library, so the mixer
+# vetoes them (same run/lumi/event, both hemispheres); otherwise the nearest neighbour of each
+# hemisphere is itself and the "mixed" event is the original.
+#
+# Samples: one mixing pass per seed, each hemisphere's replacement drawn uniformly from its
+# k_random nearest library neighbours (collisions retried within that pool) -> N exchangeable
+# samples, correlated through the shared 4b events. No JCM anywhere: M.3's fit and M.4's split drop
+# out. Products (handoff/):
+#   mixeddata_all_4bmix.yml   all N seeds as one dataset (MvD; weight 1/N for one sample's worth)
+#   mixeddata_4bmix_4b.yml    nSamples N, samples mix_4bmix_v<k> = seed k + ttbar pseudodata (closure)
+#   ttbar_PSData.yml          as in the 3b production
+#
+#   roast new --config coffea4bees/workflows/config/mixeddata_run3_4bmix.yml \
+#       --step cmslpc:coffea4bees/workflows/Snakefile_MakeMixedData.smk
+#
+base: coffea4bees/workflows/config/mixeddata_run3.yml
+label: "mixeddata_run3_4bmix"
+
+inputs:
+  # + the 3b mixed-data roast, whose hemisphere library (same non-tight FvT, same data) is reused
+  upstream_roasts: [nominal_run3_nontight_20260925_0c53380-193851f, nominal_run3_20260922_3f9e199-1e0504f,
+                    mixeddata_run3_20260926_956d4bf-aca8a4e]
+  hemilib: "{eos_prod}/mixeddata_run3_20260926_956d4bf-aca8a4e/hemilib"
+
+mixing:
+  source: fourTag
+  dataset_name: "mixeddata_all_4bmix"
+  k_random: 10               # rank drawn uniformly from [0, k_random); must be <= k_neighbors
+  picosize: 1000000000       # one output file per (seed, era): every seed templates alike in M.4
+  worker_memory: 6GB         # measured peak ~5.5 GB (library); 8 GB matched only ~10 LPC slots
+
+subsamples:
+  n: 16                      # = number of seeds
+  dataset_name: "mixeddata_4bmix_4b"
+
+validation:
+  # M.6 seed study reads the per-seed picoAODs (few branches, all 16 seeds)
+  seed_study_years: ["2022_preEE", "2022_EE", "2023_preBPix", "2023_BPix"]

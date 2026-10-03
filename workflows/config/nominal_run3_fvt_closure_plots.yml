@@ -26,10 +26,10 @@ output_path: "output/Run3_nominal_fvt_closure_plots/"
 # ------------------------------------------------------------------------------
 inputs:
   upstream_roasts: [nominal_run3_20260922_3f9e199-1e0504f]
-  FvT: &upstream_FvT "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/friend/FvT_nominal/result.json@@analysis.0.merged"
-  JCM: &upstream_JCM "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/handoff/jetCombinatoricModel_SB_Run3_v1.yml"
+  FvT: &upstream_FvT "{roast:nominal_run3_20260922_3f9e199-1e0504f}/friend/FvT_nominal/result.json@@analysis.0.merged"
+  JCM: &upstream_JCM "{roast:nominal_run3_20260922_3f9e199-1e0504f}/handoff/jetCombinatoricModel_SB_Run3_v1.yml"
   # Its Phase B.1 wJCM pass, merged and archived (the singlefiles are not): the ttbar MC for C.4.
-  wJCM_ttbar: &upstream_wJCM "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/nominal_run3_20260922_3f9e199-1e0504f/output/Run3_nominal/computeJCM/histAll_wJCM.coffea"
+  wJCM_ttbar: &upstream_wJCM "{roast:nominal_run3_20260922_3f9e199-1e0504f}/output/Run3_nominal/computeJCM/histAll_wJCM.coffea"
 
 fvt_closure:
   # Remote, so Snakefile_PhaseC_4 gives it no input edge; the processor reads it through fsspec.

@@ -1,0 +1,26 @@
+# ==============================================================================
+# DeClustered D.6 signal scrambling check ONLY, on an existing library roast's library
+# ==============================================================================
+# Declusters the Run 3 SM ggHH MC with the published splitting library of
+# declustered_run3_library_20260928_f2e27c4-92dd020 (inputs.splitting_library: no D.1 here) and
+# histograms it next to the original MC with the analysis SvB evaluated on the fly. Variant A of
+# the mass-matching A/B (declustered_run3_library_sigcheck_massmatch.yml is B). Run only all_D6:
+#
+#   roast new --config coffea4bees/workflows/config/declustered_run3_library_sigcheck.yml \
+#       --label declustered_run3_sigcheck_A --step cmslpc:coffea4bees/workflows/Snakefile_DeClustered.smk:all_D6
+#
+base: coffea4bees/workflows/config/declustered_run3_library.yml
+
+label: "declustered_run3_sigcheck"
+
+inputs:
+  # lists are replaced, not merged: the base's three upstreams + the library roast
+  upstream_roasts: [nominal_run3_nontight_20260925_0c53380-193851f, mixeddata_run3_20260926_956d4bf-aca8a4e,
+                    nominal_run3_20260922_3f9e199-1e0504f, declustered_run3_library_20260928_f2e27c4-92dd020]
+  splitting_library: "root://cmseos.fnal.gov//store/user/jda102/HH4b_prod/declustered_run3_library_20260928_f2e27c4-92dd020/splitting_library/splitting_library.yml"
+  # the declustered data D.6 compares with: that roast's multijet handoff (no D.3 here)
+  declustered_data: "{eos_prod}/declustered_run3_library_20260928_f2e27c4-92dd020/handoff/synthetic_data_lib_multijet.yml"
+
+declustering:
+  library:
+    carry_fields: [btagScore]   # all that library carries (it predates the extra jet fields)
