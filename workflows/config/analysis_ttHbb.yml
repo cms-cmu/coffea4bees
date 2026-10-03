@@ -78,6 +78,7 @@ trigger_weights:
 # ==============================================================================
 # PHASE B: CALIBRATION & CLASSIFIER INPUTS (JCM & Friendtrees)
 # ==============================================================================
+per_year_jcm: true
 jcm_plot_config: "coffea4bees/plots/metadata/plots_JCM_ttHbb.yml"
 jcm_datasets:
   - "data"
@@ -197,7 +198,11 @@ fvt:
   metadata: "{eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input"
   workflow_overrides:
     --metadata: "coffea4bees/metadata/datasets/"
-    --JCM-weight: '"" {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2.yml@@JCM_weights'
+    --JCM-weight:
+      - 'year:UL16_preVFP {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml@@JCM_weights'
+      - 'year:UL16_postVFP {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml@@JCM_weights'
+      - 'year:UL17 {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL17.yml@@JCM_weights'
+      - 'year:UL18 {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL18.yml@@JCM_weights'
     '--friends ""': "{eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input"
 
 # ==============================================================================
@@ -235,7 +240,11 @@ svb:
   metadata: "{eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input"
   workflow_overrides:
     --metadata: "coffea4bees/metadata/datasets/"
-    --JCM-weight: '"" {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2.yml@@JCM_weights'
+    --JCM-weight:
+      - 'year:UL16_preVFP {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml@@JCM_weights'
+      - 'year:UL16_postVFP {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml@@JCM_weights'
+      - 'year:UL17 {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL17.yml@@JCM_weights'
+      - 'year:UL18 {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL18.yml@@JCM_weights'
     '--friends ""': "{eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input"
 
 # ==============================================================================

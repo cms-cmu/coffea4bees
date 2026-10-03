@@ -15,3 +15,6 @@ ttbarProcesses:
   - TTTo2L2Nu_stitched
   - TTToSemiLeptonic_stitched
   - TTToHadronic_stitched
+
+float_t: true
+float_tt4bSF: true

@@ -24,11 +24,12 @@ def main():
         with open(src, "r") as f:
             data = json.load(f)
 
-    merged = data.get("predictions")
+    merged = None
+    analysis = data.get("analysis")
+    if analysis and isinstance(analysis, list) and len(analysis) > 0:
+        merged = analysis[0].get("merged")
     if merged is None:
-        analysis = data.get("analysis")
-        if analysis and isinstance(analysis, list) and len(analysis) > 0:
-            merged = analysis[0].get("merged")
+        merged = data.get("predictions")
     if merged is None:
         print(f"Error: could not find 'predictions' or 'merged' structure in {src}. Type: {type(data)}, Keys/Len: {list(data.keys()) if isinstance(data, dict) else len(data)}", file=sys.stderr)
         sys.exit(1)

@@ -45,7 +45,10 @@ rule M4_split_config:
         # dataset into `picosize`-event files, so with the template's 100k the larger subsamples
         # got more chunks than the smaller (v0: 27 files, v6: 24) and no single vXXX template fits
         # all of them. A picosize above any era's size makes every subsample's layout identical.
-        runner = {**(tmpl.get('runner') or {}), 'picosize': int(SUB.get('picosize', 10**9))}
+        runner = {**(tmpl.get('runner') or {}), **(SUB.get('runner') or {}), 'picosize': int(SUB.get('picosize', 10**9))}
+        if not config.get('test', False):
+            runner['condor'] = True
+            runner['shared_dask'] = True
         cfg = processor_config(section, inherit_config=False,
                                processor="coffea4bees/skimmer/processor/split_mixed_data.py",
                                dataset_location=[MIXED_URL],

@@ -12,7 +12,7 @@ import ast as _ast
 include: "common.smk"
 
 # ── 1. Configuration Section Resolution ────────────────────────────────────────
-phase_e_cfg = resolve_config_section(config, primary_key='phase_e', fallback_keys=['phaseE', 'closure', 'mixeddata'])
+phase_e_cfg = resolve_config_section(config, primary_key='phase_e', fallback_keys=['phase_e_fvt', 'phaseE', 'closure', 'mixeddata'])
 for k, v in phase_e_cfg.items():
     config.setdefault(k, v)
 
@@ -124,6 +124,12 @@ config.setdefault('classifier_inputs_base',
 config.setdefault('classifier_inputs_json',
     f"{out_a4}classifier_inputs/classifier_inputs_mixeddata_{channel}.json")
 config.setdefault('mixeddata_friend_json', f"{out}coffea4bees/metadata/friends/friends_{channel}_mixeddata_4b.json")
+
+# Handoff configuration for cross-cluster execution (roast)
+_handoff = config.get('handoff') or {}
+if not isinstance(_handoff, dict):
+    _handoff = {}
+HANDOFF_EOS = str(_handoff.get('eos_base') or "").rstrip('/')
 
 # ── 6. Common Helper Functions ────────────────────────────────────────────────
 def get_hemi_stats_file(wildcards):

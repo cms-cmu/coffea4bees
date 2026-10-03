@@ -30,14 +30,26 @@ _handoff = config.get('handoff') or {}
 if not isinstance(_handoff, dict):
     _handoff = {}
 HANDOFF_EOS = str(_handoff.get('eos_base') or "").rstrip('/')
-HANDOFF_JCM = _handoff.get(
-    'jcm_file', f"coffea4bees/metadata/weights/JCM/{config['roast_id']}/jetCombinatoricModel_SB_{tag}.yml")
+per_year_jcm = bool(config.get('per_year_jcm', False))
+
+if per_year_jcm:
+    HANDOFF_JCM = [
+        f"coffea4bees/metadata/weights/JCM/{config['roast_id']}/jetCombinatoricModel_SB_{tag}_{yr}.yml"
+        for yr in DATA_YEARS
+    ]
+    ALL_JCM_INPUTS = ALL_JCM_FILES
+else:
+    HANDOFF_JCM = [
+        _handoff.get('jcm_file', f"coffea4bees/metadata/weights/JCM/{config['roast_id']}/jetCombinatoricModel_SB_{tag}.yml")
+    ]
+    ALL_JCM_INPUTS = [jcm_file_path]
+
 HANDOFF_MANIFEST = _handoff.get(
     'manifest_file', f"coffea4bees/metadata/datasets/classifier_inputs_{config['roast_id']}.json")
 
 rule phaseB_handoff:
     input:
-        jcm = jcm_file_path,
+        jcm = ALL_JCM_INPUTS,
         manifest = f"{config['output_path']}classifier_inputs/classifier_inputs_friends.json"
     output:
         jcm = HANDOFF_JCM,
@@ -49,13 +61,20 @@ rule phaseB_handoff:
     shell:
         """
         set -eo pipefail
-        mkdir -p $(dirname {output.jcm}) $(dirname {output.manifest}) $(dirname {output.done}) $(dirname {log})
-        cp -f {input.jcm} {output.jcm}
+        mkdir -p $(dirname {output.manifest}) $(dirname {output.done}) $(dirname {log})
         cp -f {input.manifest} {output.manifest}
-        {{
-            echo "handoff local jcm      -> {output.jcm}"
-            echo "handoff local manifest -> {output.manifest}"
-        }} 2>&1 | tee {log}
+        echo "handoff local manifest -> {output.manifest}" 2>&1 | tee {log}
+
+        inputs=({input.jcm})
+        outputs=({output.jcm})
+        for i in "${{!inputs[@]}}"; do
+            src="${{inputs[$i]}}"
+            dst="${{outputs[$i]}}"
+            mkdir -p $(dirname "$dst")
+            cp -f "$src" "$dst"
+            echo "handoff local jcm      -> $dst" 2>&1 | tee -a {log}
+        done
+
         if [ -n "{params.eos}" ]; then
             # Same proxy fallback as the other rules that talk to EOS: roast seeds
             # ./proxy/x509_proxy in the checkout and run_container binds it into the container.
@@ -66,12 +85,12 @@ rule phaseB_handoff:
                 export X509_USER_PROXY="$PWD/proxy/x509_proxy"
             fi
             # -p creates the destination directory; -f overwrites a previous run's copy.
-            xrdcp -f -p "{output.jcm}"      "{params.eos}/$(basename {output.jcm})"      2>&1 | tee -a {log}
             xrdcp -f -p "{output.manifest}" "{params.eos}/$(basename {output.manifest})" 2>&1 | tee -a {log}
-            {{
-                echo "handoff EOS jcm        -> {params.eos}/$(basename {output.jcm})"
-                echo "handoff EOS manifest   -> {params.eos}/$(basename {output.manifest})"
-            }} 2>&1 | tee -a {log}
+            echo "handoff EOS manifest   -> {params.eos}/$(basename {output.manifest})" 2>&1 | tee -a {log}
+            for dst in "${{outputs[@]}}"; do
+                xrdcp -f -p "$dst" "{params.eos}/$(basename "$dst")" 2>&1 | tee -a {log}
+                echo "handoff EOS jcm        -> {params.eos}/$(basename "$dst")" 2>&1 | tee -a {log}
+            done
         else
             echo "handoff: no handoff.eos_base set, local copies only" 2>&1 | tee -a {log}
         fi

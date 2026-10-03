@@ -135,21 +135,28 @@ TTBAR_COMPARISON_OUTPUTS = [
     f"{out_f2}ttbar_MC_vs_d3_cutflow.txt",
 ]
 
-localrules: all_bkg_syst_F_2, coffea_to_root_closure, make_signal_root_closure, run_two_stage_closure, evaluate_closure_candidates, check_closure_validation, make_plots_ttbar_MC_vs_d3, ttbar_MC_vs_d3_cutflow, all_ttbar_MC_vs_d3
+localrules: all_bkg_syst_F_2, coffea_to_root_closure, make_signal_root_closure, run_two_stage_closure, evaluate_closure_candidates, make_closure_summary_html, check_closure_validation, make_plots_ttbar_MC_vs_d3, ttbar_MC_vs_d3_cutflow, all_ttbar_MC_vs_d3
 
 rule all_bkg_syst_F_2:
     input:
-        f"{out_f2}closure_summary.json"
+        f"{out_f2}closure_summary.json",
+        f"{out_f2}closure_summary.html"
 
 n_models_closure = int(config.get('n_subsamples', config.get('n_models', config.get('n_samples', 16))))
+if 'out_a4' not in locals() and 'out_a4' not in globals():
+    if os.path.exists(f"{out}bkg_syst_A_4_process_subsamples"):
+        out_a4 = f"{out}bkg_syst_A_4_process_subsamples/"
+    else:
+        out_a4 = f"{out}bkg_syst_A_2_process_subsamples/"
+
 subsample_indices_closure = config.get('subsample_indices', list(range(n_models_closure)))
 if isinstance(subsample_indices_closure, str):
     subsample_indices_closure = [int(x) for x in subsample_indices_closure.split()]
 
 def get_closure_coffea_inputs(wildcards):
     inputs = {
-        'data': [f"{out}bkg_syst_F_1_analysis/closure_v{v}/histAll_data_v{v}.coffea" for v in subsample_indices_closure],
-        'mix': [f"{out}bkg_syst_F_1_analysis/closure_v{v}/histAll_mixeddata_v{v}.coffea" for v in subsample_indices_closure],
+        'bkg': f"{out}bkg_syst_F_1_analysis/histAll_mixeddata_bkgs.coffea",
+        'mix': [f"{out_a4}histAll_{channel}_mixeddata_v{v}.coffea" for v in subsample_indices_closure],
     }
     return inputs
 
@@ -163,6 +170,9 @@ rule coffea_to_root_closure:
         container_wrapper = config['analysis_container_wrapper'],
         python_bin = config['python_bin'],
         closure_dir = f"{out}bkg_syst_F_1_analysis/",
+        bkg_coffea = f"{out}bkg_syst_F_1_analysis/histAll_mixeddata_bkgs.coffea",
+        mixed_dir = out_a4,
+        channel = channel,
         mix_name = mix_name,
         subsample_indices = " ".join(str(v) for v in subsample_indices_closure),
         scale_mixed = config.get('scale_mixed', 1.0),
@@ -175,6 +185,9 @@ rule coffea_to_root_closure:
         mkdir -p $(dirname {output}) $(dirname {log})
         {params.container_wrapper} {params.python_bin} {input.script} \
             --closure_dir {params.closure_dir} \
+            --bkg_coffea {params.bkg_coffea} \
+            --mixed_dir {params.mixed_dir} \
+            --channel {params.channel} \
             --mix_name {params.mix_name} \
             --subsample_indices {params.subsample_indices} \
             --scale_mixed {params.scale_mixed} \
@@ -228,8 +241,15 @@ rule run_two_stage_closure:
         output_dir = f"{out_f2}closure_fits/",
         maxBasis = config.get('max_basis', 10),
         years = config.get('years_closure', ' '.join(YEARS)),
-        nMixes = n_models_closure,
-        extra_args = lambda wildcards: (config.get('closure_extra_args', '').strip() + " --ignore_failures").strip(),
+        nMixes = len(subsample_indices_closure),
+        subsample_indices = " ".join(str(v) for v in subsample_indices_closure),
+        extra_args = lambda wildcards: (
+            config.get('closure_extra_args', '').strip() +
+            (" --match_normalization" if config.get('match_closure_normalization', False) else "") +
+            (" --include_ensemble_variance" if config.get('include_ensemble_variance', False) else "") +
+            f" --subsample_indices {' '.join(str(v) for v in subsample_indices_closure)}" +
+            " --ignore_failures"
+        ).strip(),
         input_file_mix = lambda wildcards, input: config.get('input_file_mix', input.inroot),
         input_file_data3b = lambda wildcards, input: config.get('input_file_data3b', input.inroot),
         input_file_sig = lambda wildcards, input: config.get('input_file_sig', input.sigroot),
@@ -268,55 +288,52 @@ checkpoint evaluate_closure_candidates:
         status_files = expand(
             f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{{rebin}}/SR/{channel}/closure_status.json",
             rebin=REBIN_CANDIDATES
-        )
+        ),
+        script = "coffea4bees/stats_analysis/evaluate_closure_candidates.py",
     output:
         summary = f"{out_f2}closure_summary.json"
     log:
         f"{out_f2}logs/evaluate_closure_candidates.log"
-    run:
-        import json
-        passing_rebins = []
-        summary_records = []
-        log_lines = []
-        log_lines.append("=" * 70)
-        log_lines.append(f"TWO-STAGE CLOSURE EVALUATION SUMMARY ({channel}):")
-        log_lines.append(f"{'Rebin':<8} {'Bins':<8} {'Variance':<12} {'Bias':<12} {'Overall':<10} {'Selected Basis'}")
-        log_lines.append("-" * 70)
-        for sf in input.status_files:
-            try:
-                with open(sf, "r") as jf:
-                    data = json.load(jf)
-            except Exception as e:
-                data = {"passed": False, "rebin": None, "error": str(e)}
-            
-            rebin_val = data.get("rebin")
-            n_bins = data.get("n_bins")
-            if n_bins is None and rebin_val:
-                try:
-                    n_bins = 240 // int(rebin_val)
-                except Exception:
-                    n_bins = "?"
-            var_p = "PASS" if data.get("variance_passed") else "FAIL"
-            bias_p = "PASS" if data.get("bias_passed") else "FAIL"
-            overall = "PASS" if data.get("passed") else "FAIL"
-            basis = data.get("selected_basis", "-")
-            log_lines.append(f"{str(rebin_val):<8} {str(n_bins):<8} {var_p:<12} {bias_p:<12} {overall:<10} {str(basis)}")
-            summary_records.append(data)
-            if data.get("passed"):
-                passing_rebins.append(int(rebin_val))
-        log_lines.append("=" * 70)
-        log_lines.append(f"Passing rebins eligible for Combine: {passing_rebins}")
-        summary_text = "\n".join(log_lines)
-        print("\n" + summary_text + "\n")
-        
-        with open(log[0], "w") as lf:
-            lf.write(summary_text + "\n")
+    params:
+        channel = channel,
+        container_wrapper = config['analysis_container_wrapper'],
+        python_bin = config['python_bin']
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {output.summary}) $(dirname {log})
+        {params.container_wrapper} {params.python_bin} {input.script} \
+            --status-files {input.status_files} \
+            --channel {params.channel} \
+            --output {output.summary} 2>&1 | tee {log}
+        """
 
-        with open(output.summary, "w") as out_f:
-            json.dump({
-                "passing_rebins": passing_rebins,
-                "all_evaluations": summary_records
-            }, out_f, indent=2)
+rule make_closure_summary_html:
+    input:
+        summary = f"{out_f2}closure_summary.json",
+        status_files = expand(
+            f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{{rebin}}/SR/{channel}/closure_status.json",
+            rebin=REBIN_CANDIDATES
+        ),
+        script = "coffea4bees/stats_analysis/make_closure_summary_html.py"
+    output:
+        html = f"{out_f2}closure_summary.html"
+    log:
+        f"{out_f2}logs/make_closure_summary_html.log"
+    params:
+        output_dir = out_f2,
+        title = f"Stage F_2 Two-Stage Closure ({channel} - {var})",
+        container_wrapper = config['analysis_container_wrapper'],
+        python_bin = config['python_bin']
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {output.html}) $(dirname {log})
+        {params.container_wrapper} {params.python_bin} {input.script} \
+            --summary {input.summary} \
+            --output_dir {params.output_dir} \
+            --output {output.html} 2>&1 | tee {log}
+        """
 
 rule check_closure_validation:
     input:

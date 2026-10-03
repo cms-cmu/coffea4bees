@@ -53,7 +53,7 @@ if not workflow.configfiles:
 
 include: "helpers/common.smk"
 
-phase_e_cfg = resolve_config_section(config, primary_key='phase_e', fallback_keys=['phaseE', 'closure'])
+phase_e_cfg = resolve_config_section(config, primary_key='phase_e', fallback_keys=['phase_e_fvt', 'phaseE', 'closure'])
 for k, v in phase_e_cfg.items():
     config.setdefault(k, v)
 
@@ -98,12 +98,13 @@ rule all_bkg_syst_A:
         rules.all_bkg_syst_A_1.input,
         rules.all_bkg_syst_A_2.input
 
-# Pre-FvT master target rule (A_1, A_2, and B_1)
+# Pre-FvT master target rule (A_1, A_2, and B_1 + handoff)
 rule all_pre_fvt:
     input:
         rules.all_bkg_syst_A_1.input,
         rules.all_bkg_syst_A_2.input,
-        rules.all_bkg_syst_B_1.input
+        rules.all_bkg_syst_B_1.input,
+        rules.bkg_syst_AB_handoff.output
 
 # Top master target rule
 rule all_bkg_syst:

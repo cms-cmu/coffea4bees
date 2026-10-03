@@ -122,7 +122,8 @@ rule M3_fit:
         export MPLCONFIGDIR="/tmp/matplotlib"
         mkdir -p $MPLCONFIGDIR {M3_JCM_DIR}
         {WRAPPER} {PYTHON} coffea4bees/analysis/jcm_tools/make_jcm_weights.py -o {M3_JCM_DIR} \
-            -i {input.hists} -r {M3_REGION} -w {M3_JCM_TAG} --data4bName data --jcm_config {input.jcm_config} 2>&1 | tee {log}
+            -i {input.hists} -r {M3_REGION} -w {M3_JCM_TAG} --data4bName data --jcm_config {input.jcm_config} \
+            --combine_input_files 2>&1 | tee {log}
         ls {M3_JCM_DIR} 2>&1 | tee -a {log}
         """
 
@@ -134,12 +135,16 @@ rule M3_study_config:
     run:
         with open(input.template) as f:
             tmpl = yaml.safe_load(f) or {}
+        runner = {**(tmpl.get('runner') or {}), **(MJ.get('runner') or {})}
+        if not config.get('test', False):
+            runner['condor'] = True
+            runner['shared_dask'] = True
         # this roast's mixed-data JCM, not the template's hard-coded *_splitting.txt
         cfg = processor_config({**(tmpl.get('config') or {}), 'apply_JCM': True, 'JCM_file': input.jcm},
                                inherit_config=False,
                                processor="coffea4bees/analysis/processors/processor_study_mixed_data.py",
                                dataset_location=[MIXED_URL],
-                               runner=tmpl.get('runner') or {})
+                               runner=runner)
         write_yaml(output[0], cfg)
 
 use rule analysis_processor from analysis as M3_study with:
