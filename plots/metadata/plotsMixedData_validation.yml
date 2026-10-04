@@ -1,11 +1,8 @@
-# Mixed-data validation (Snakefile_MakeMixedData_6_validation.smk, step M.6). Three comparisons in
+# Mixed-data validation (Snakefile_MakeMixedData_6_validation.smk, step M.6). Two comparisons in
 # one plot, all four-tag:
 #   * 4b data (points)                      vs the stack  -> does the background model follow data?
 #   * ttbar pseudodata (line)               vs the stack's ttbar MC part -> is the pseudodata right?
-#   * one mixeddata_4b subsample (line)     vs the stack  -> does one closure pseudo-experiment follow
-#     (its files already include the ttbar pseudodata)      the mixeddata_all + ttbar model?
 # Stack: multijet = mixeddata_all weighted by the mixed-data JCM (M.3), ttbar = TT MC.
-# `mix_vK` is a placeholder: M.6 writes the actual subsample index (subsample drawn per roast).
 hists:
         data:
                 process: data
@@ -13,13 +10,6 @@ hists:
                 label: Four-tag data
                 edgecolor: k
                 fillcolor: k
-        subsample:
-                process: mix_vK
-                tag: fourTag
-                label: "mixeddata_4b subsample K (mixed + $t\\bar{t}$ pseudodata)"
-                edgecolor: "#e42536"
-                fillcolor: "#e42536"
-                histtype: step
         psdata:
                 process: ttbar_PSData
                 tag: fourTag
@@ -53,14 +43,6 @@ ratios:
                         nominal
                 color: k
                 marker: "o"
-        subsampleToBkg:
-                numerator:
-                        type: hists
-                        key: subsample
-                denominator:
-                        type: stack
-                color: "#e42536"
-                marker: "s"
         psdataToTTbar:
                 numerator:
                         type: hists

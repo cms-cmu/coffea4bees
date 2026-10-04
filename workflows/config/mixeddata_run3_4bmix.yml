@@ -9,10 +9,11 @@
 #
 # Samples: one mixing pass per seed, each hemisphere's replacement drawn uniformly from its
 # k_random nearest library neighbours (collisions retried within that pool) -> N exchangeable
-# samples, correlated through the shared 4b events. No JCM anywhere: M.3's fit and M.4's split drop
-# out. Products (handoff/):
-#   mixeddata_all_4bmix.yml   all N seeds as one dataset (MvD; weight 1/N for one sample's worth)
-#   mixeddata_4bmix_4b.yml    nSamples N, samples mix_4bmix_v<k> = seed k + ttbar pseudodata (closure)
+# samples, correlated through the shared 4b events. No JCM anywhere: M.3's fit drops out.
+# Products (handoff/):
+#   mixeddata_all_4bmix.yml   all N seeds as one dataset (MvD; weight 1/N for one sample's worth;
+#                             seed s under .../v<s>/ -- bkg_syst A_2 regroups it into the closure
+#                             samples mix_<tag>_v<s> = seed s + ttbar pseudodata)
 #   ttbar_PSData.yml          as in the 3b production
 #
 #   roast new --config coffea4bees/workflows/config/mixeddata_run3_4bmix.yml \
@@ -31,12 +32,11 @@ mixing:
   source: fourTag
   dataset_name: "mixeddata_all_4bmix"
   k_random: 10               # rank drawn uniformly from [0, k_random); must be <= k_neighbors
-  picosize: 1000000000       # one output file per (seed, era): every seed templates alike in M.4
+  picosize: 1000000000       # one output file per (seed, era): every seed templates alike (bkg_syst A_2)
   worker_memory: 6GB         # measured peak ~5.5 GB (library); 8 GB matched only ~10 LPC slots
 
 subsamples:
-  n: 16                      # = number of seeds
-  dataset_name: "mixeddata_4bmix_4b"
+  n: 16                      # = number of seeds (bkg_syst regroups mixeddata_all_4bmix by seed)
 
 validation:
   # M.6 seed study reads the per-seed picoAODs (few branches, all 16 seeds)

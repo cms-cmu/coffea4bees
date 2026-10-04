@@ -16,3 +16,8 @@ inputs:
   upstream_roasts: [nominal_run3_nontight_20260925_0c53380-193851f, nominal_run3_20260922_3f9e199-1e0504f,
                     mixeddata_run3_20260926_956d4bf-aca8a4e]
   subsamples: "{roast:mixeddata_run3_20260926_956d4bf-aca8a4e}/handoff/mixeddata_4b.yml"
+
+# the subsample dataset that roast published (this workflow no longer makes or names subsamples)
+subsamples:
+  n: 16
+  dataset_name: "mixeddata_4b"

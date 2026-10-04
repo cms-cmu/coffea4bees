@@ -10,11 +10,11 @@
 # analysis across all stages:
 #
 #   ┌────────────────────────────────────────────────────────────────────────┐
-#   │ STAGE A: Mixed-Data Ensemble Generation (CPU on cmslpc)                │
-#   │ - A_1: Make mixed data events (3b + 1b permutation)                   │
-#   │ - A_2: Make ttbar pseudo-data for ttbar subtraction                    │
-#   │ - A_3: Partition into 16 statistically independent subsamples (v0..v15)│
-#   │ - A_4: Process unweighted 4-tag subsamples                             │
+#   │ STAGE A: Closure subsamples from a mixeddata roast (CPU on cmslpc)     │
+#   │   (inputs.mixeddata_all / ttbar_psdata: a MakeMixedData roast handoff) │
+#   │ - A_1: Mixed-data JCM fit in the analysis selection (inputs.jcm_hists) │
+#   │ - A_2: Split into N independent subsamples (v0..vN-1) + ttbar psdata   │
+#   │ - A_3: Process unweighted 4-tag subsamples                             │
 #   └───────────────────────────────────┬────────────────────────────────────┘
 #                                       ▼
 #   ┌────────────────────────────────────────────────────────────────────────┐
@@ -38,7 +38,7 @@
 #   └────────────────────────────────────────────────────────────────────────┘
 #
 # EXECUTION TARGETS:
-#   - `all_bkg_syst_A`: Run all of Stage A (A_1 through A_4)
+#   - `all_bkg_syst_A`: Run all of Stage A (A_1 through A_3)
 #   - `all_bkg_syst_B_1`: Run Stage B_1 JCM calibration
 #   - `all_bkg_syst_C_1`, `all_bkg_syst_C_2`, `all_bkg_syst_C_3`: Stage C
 #   - `all_bkg_syst_F_1`, `all_bkg_syst_F_2`, `all_bkg_syst_F_3`, `all_bkg_syst_F_4`: Stage F
@@ -65,20 +65,6 @@ config.setdefault('variable', "SvB_MA_ps_ttHbb")
 config.setdefault('channel', "ttHbb")
 config.setdefault('rebin', "1")
 
-out = config['output_path']
-if not out.endswith("/"):
-    out += "/"
-
-out_a1 = f"{out}bkg_syst_A_1_make_mixeddata/"
-out_a2 = f"{out}bkg_syst_A_2_process_subsamples/"
-out_b1 = f"{out}bkg_syst_B_1_computeJCM/"
-out_c1 = f"{out}bkg_syst_C_1_inputs/"
-out_c  = f"{out}bkg_syst_C_FvT/"
-out_f1 = f"{out}bkg_syst_F_1_analysis/"
-out_f2 = f"{out}bkg_syst_F_2_run_two_stage_closure/"
-out_f3 = f"{out}bkg_syst_F_3_stats/"
-out_f4 = f"{out}bkg_syst_F_4_stats_mixeddata/"
-
 mix_name = config['mix_name']
 classifier = config['classifier']
 rebin_str = f"rebin{config['rebin']}"
@@ -86,28 +72,30 @@ channel = config['channel']
 var = config['variable']
 
 # Sub-workflows
-include: "Snakefile_bkg_syst_A_1_make_mixeddata.smk"
-include: "Snakefile_bkg_syst_A_2_process_subsamples.smk"
+include: "Snakefile_bkg_syst_A_1_mixed_jcm.smk"
+include: "Snakefile_bkg_syst_A_2_make_subsamples.smk"
+include: "Snakefile_bkg_syst_A_3_process_subsamples.smk"
 include: "Snakefile_bkg_syst_B_1_computeJCM.smk"
 include: "Snakefile_bkg_syst_C.smk"
 include: "Snakefile_bkg_syst_F.smk"
 
-# Phase A aggregate target (A_1 through A_2)
+# Phase A aggregate target (A_1 through A_3)
 rule all_bkg_syst_A:
     input:
         rules.all_bkg_syst_A_1.input,
-        rules.all_bkg_syst_A_2.input
+        rules.all_bkg_syst_A_2.input,
+        rules.all_bkg_syst_A_3.input
 
-# Pre-FvT master target rule (A_1, A_2, and B_1 + handoff)
+# Pre-FvT master target rule (A_1 through A_3, B_1, and the handoff C reads on the GPU host)
 rule all_pre_fvt:
     input:
-        rules.all_bkg_syst_A_1.input,
-        rules.all_bkg_syst_A_2.input,
+        rules.all_bkg_syst_A.input,
         rules.all_bkg_syst_B_1.input,
         rules.bkg_syst_AB_handoff.output
 
-# Top master target rule
+# Top master target rule (default_target: the C files mark their own all_* rules as default too)
 rule all_bkg_syst:
+    default_target: True
     input:
         rules.all_bkg_syst_A.input,
         rules.all_bkg_syst_B_1.input,

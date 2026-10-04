@@ -6,7 +6,7 @@
 # stored: no boost along z, so no jet can leave the tracker acceptance and boost_acceptance_eta has
 # nothing to do. Compare with the boost + acceptance-retry roast of mixeddata_run3_4bmix.yml.
 #
-# Own dataset names, so both samples can be read side by side in one job (load_datasets_metadata
+# Own dataset name, so both samples can be read side by side in one job (load_datasets_metadata
 # refuses a name defined differently in two -m sources).
 #
 #   roast new --config coffea4bees/workflows/config/mixeddata_run3_4bmix_noboost.yml \
@@ -25,6 +25,3 @@ mixing:
   dataset_name: "mixeddata_all_4bmixnoboost"
   use_boost_corrected_matching: false
   boost_acceptance_eta: null      # no boost, no acceptance check (the mixer refuses it without the boost)
-
-subsamples:
-  dataset_name: "mixeddata_4bmixnoboost_4b"     # samples mix_4bmixnoboost_v<k>

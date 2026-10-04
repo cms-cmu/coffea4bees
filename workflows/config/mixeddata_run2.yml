@@ -2,9 +2,10 @@
 # MIXED-DATA DATASET PRODUCTION — Run 2 (UL16_preVFP, UL16_postVFP, UL17, UL18)
 # ==============================================================================
 # Driven by Snakefile_MakeMixedData.smk (design: M.1 hemisphere library -> M.2 mix -> M.3 validate
-# + mixed JCM -> M.4 subsamples -> M.5 ttbar pseudodata). Its products are dataset
-# YAMLs published to EOS under `publish_base`/handoff/, which the consumers (MvD: mixeddata_all,
-# closure: mixeddata_4b + ttbar_PSData) read in place with `runner.py -m <dir> <url> ...`.
+# + mixed JCM -> M.5 ttbar pseudodata -> M.6 validation). Its products are dataset YAMLs published
+# to EOS under `publish_base`/handoff/, which the consumers (MvD: mixeddata_all; bkg_syst A, which
+# fits the analysis' mixed JCM and splits it into the closure subsamples: mixeddata_all +
+# ttbar_PSData) read in place with `runner.py -m <dir> <url> ...`.
 #
 # A standalone config, not a `base:` overlay. Everything it reads from another roast is named under
 # `inputs:`, which `roast new` checks lies inside that roast. Run 2 has only the NON-tight four-tag
@@ -113,16 +114,7 @@ mixing:
 mixed_jcm:
   config: "coffea4bees/analysis/jcm_tools/metadata/mixeddata_all_config.yml"
   float_t: true
-  study_template: "coffea4bees/analysis/metadata/study_mixed_data.yml"
   # known_counts: <blessed cutflow_mixedJCM.yml, once the first roast has written one>
-
-# ------------------------------------------------------------------------------
-# M.4: subsamples -> mixeddata_4b (closure)
-# ------------------------------------------------------------------------------
-subsamples:
-  n: 16
-  dataset_name: "mixeddata_4b"
-  split_template: "coffea4bees/skimmer/metadata/split_mixeddata.yml"
 
 # ------------------------------------------------------------------------------
 # M.5: ttbar pseudodata -> ttbar_PSData (one sample, shared by every subsample)

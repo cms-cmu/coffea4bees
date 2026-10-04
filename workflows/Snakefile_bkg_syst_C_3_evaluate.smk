@@ -59,9 +59,8 @@ os.makedirs(out_c, exist_ok=True)
 from helpers.stage_configs import stage_phaseC_configs
 cfg_files = stage_phaseC_configs(config, out_c)
 
-phase_e_fvt = config.get("phase_e_fvt", {})
-eos_base = config.get("eos_base", phase_e_fvt.get("eos_base", "root://cmseos.fnal.gov//store/user/algomez/XX4b/mixeddata/Run2_v2"))
-mix_name = config.get("mix_name", phase_e_fvt.get("mix_name", "ttHbb_bkg_syst"))
+eos_base = config['eos_base']                     # set by bkg_syst_common (publish_base)
+mix_name = config.get("mix_name", "ttHbb_bkg_syst")
 container_wrapper = config.get('container_wrapper', './run_container')
 python_bin = config.get('python_bin', 'python3')
 
@@ -115,6 +114,8 @@ rule bkg_syst_C_handoff:
         eos = HANDOFF_EOS
     shell:
         """
+        set -eo pipefail
+        {EOS_PROXY}
         mkdir -p $(dirname {output.done}) $(dirname {log})
         echo "=== Background Systematics Stage C Handoff $(date) ===" > {log}
         if [ -n "{params.eos}" ]; then

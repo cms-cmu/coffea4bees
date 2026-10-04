@@ -109,6 +109,9 @@ runs:
     - DeClustered
   svbfeynnet_run3.yml:
     - SvBFeynNet_friendtrees_Run3
+  analysis_ttHbb_bkg_syst.yml:
+    - bkg_syst
+    - bkg_syst_AB
 
 not_covered:
   PhaseB_computeJCM: "no production config"
@@ -126,10 +129,6 @@ not_covered:
   Run3_training: "pre-roast training driver, edit-the-vars style"
   SvB_friendtrees_Run3: "no production config"
   analysis: "backward-compatibility wrapper for PhaseF_1_analysis"
-  bkg_syst: "dry run disabled: the chain never hoists phase_e_fvt into the config, so
-    src/classifier/workflow/Snakefile fails with KeyError 'eos_base' (see Snakefile_PhaseC.smk
-    for the hoist it is missing).  Re-add to runs: once that is fixed."
-  bkg_syst_AB: "subworkflow for background systematics stages A and B"
   classifier_inputs_Run3: "pre-roast driver (rules/run3_variants.smk)"
   computeJCM: "backward-compatibility wrapper for PhaseB_1_computeJCM"
   full_analysis: "backward-compatibility wrapper for PhaseF"

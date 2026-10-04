@@ -1,0 +1,80 @@
+# bkg_syst A_3 validation (Snakefile_bkg_syst_A_3_process_subsamples.smk, rule A3_plot_config fills
+# the MIXED_* / TTBAR_* placeholders): do the closure samples (mixed + ttbar pseudodata, unit weight)
+# look like the 4b data and like the nominal background model?
+#   points  4b data                                     (inputs.nominal_hists)
+#   stack   nominal model: multijet = 3b data x JCM x FvT, + its ttbar (TTbar4b_from_d3 for ttHbb)
+#   lines   the mean of the N mixed subsamples, and one subsample   (A_3, merged)
+# makePlots runs on [nominal, merged A_3] with --combine_input_files: every process is read from the
+# file that has it; the cut axes the plot does not select are summed.
+hists:
+        data:
+                process: data
+                tag: fourTag
+                label: Four-tag data
+                edgecolor: k
+                fillcolor: k
+        mixed_mean:
+                process: MIXED_ALL
+                tag: fourTag
+                scalefactor: MIXED_SCALE
+                label: "Mixed + $t\\bar{t}$ PS: mean of MIXED_N subsamples"
+                edgecolor: "#e42536"
+                fillcolor: "#e42536"
+                histtype: step
+        mixed_one:
+                process: MIXED_ONE
+                tag: fourTag
+                label: "Mixed + $t\\bar{t}$ PS: MIXED_ONE"
+                edgecolor: "#7a21dd"
+                fillcolor: "#7a21dd"
+                histtype: step
+
+stack:
+        TTbar:
+                process: TTBAR_PROCESSES
+                tag: TTBAR_TAG
+                fillcolor: "#85D1FBff"
+                edgecolor: k
+                label: $t\bar{t}$ (nominal model)
+        MultiJet:
+                process: data
+                tag: threeTag
+                fillcolor: "#FFDF7Fff"
+                edgecolor: k
+                label: Multijet (3b x JCM x FvT)
+
+ratios:
+        dataToBkg:
+                numerator:
+                        type: hists
+                        key: data
+                denominator:
+                        type: stack
+                uncertianty:
+                        nominal
+                color: k
+                marker: "o"
+        mixedToBkg:
+                numerator:
+                        type: hists
+                        key: mixed_mean
+                denominator:
+                        type: stack
+                color: "#e42536"
+                marker: "s"
+
+codes:
+   region:
+      SR: 2
+      SB: 1
+      other: 0
+   tag:
+      threeTag: 3
+      fourTag: 4
+      other: 0
+
+doRatio:
+    1
+
+regions: ["SR", "SB"]
+categories: ["inclusive", "pass_nSelJets_gt6"]

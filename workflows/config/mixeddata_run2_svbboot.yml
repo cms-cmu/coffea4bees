@@ -19,3 +19,8 @@ inputs:
   # lists replace: the base's upstream + the mixeddata roast whose subsamples are bootstrapped
   upstream_roasts: [nominal_run2_20260919_a180b1a-a16559c, mixeddata_run2_20260927_c39c264-0ce4d59]
   subsamples: "{roast:mixeddata_run2_20260927_c39c264-0ce4d59}/handoff/mixeddata_4b.yml"
+
+# the subsample dataset that roast published (this workflow no longer makes or names subsamples)
+subsamples:
+  n: 16
+  dataset_name: "mixeddata_4b"
