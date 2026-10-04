@@ -1,8 +1,9 @@
 # ==============================================================================
 # 16x DECLUSTERED SAMPLE — Run 3, library declustering (libA), 16 seeds
 # ==============================================================================
-# declustered_run3_library.yml (the libA setup: random among the k_neighbors = 20 nearest library
-# splittings within 0.05 in (log pT, |eta|)) run with 16 seeds on libA's published library (no D.1).
+# declustered_run3_library.yml (random among the k_neighbors = 20 nearest library splittings in
+# (log pT, |eta|); no distance cap -- the library default since 2026-10-04, unlike roast libA_run3
+# itself; one library per worker) run with 16 seeds on libA's published library (no D.1).
 # Each seed is an exchangeable declustered replica of the ttbar-subtracted 4b data; the replicas are
 # correlated through the shared 4b events (same clustered skeleton, only the splittings re-drawn).
 # The declustered analogue of the 4b mixing (mixeddata_run3_4bmix.yml). Products (handoff/):

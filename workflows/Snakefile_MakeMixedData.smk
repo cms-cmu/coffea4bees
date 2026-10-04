@@ -138,6 +138,24 @@ SUB = config.get('subsamples') or {}
 N_SUB = int(SUB.get('n', 16))
 SUBSAMPLES = list(range(N_SUB))
 
+# inputs.subsamples (optional): a multi-sample closure dataset published elsewhere -- an older
+# mixeddata roast's M.4 handoff/mixeddata_4b.yml, or the analysis' Stage A samples -- named
+# subsamples.dataset_name (mixeddata_4b -> samples mix_v<k>, mixeddata_<tag>_4b -> mix_<tag>_v<k>).
+# M.6's SvB Poisson bootstrap (target all_M6_svb) then runs on it: this roast makes no subsamples.
+SUB_EXTERNAL = INPUTS.get('subsamples')
+if SUB_EXTERNAL:
+    import re as _re
+    if not str(SUB_EXTERNAL).startswith("root://"):
+        raise ValueError("inputs.subsamples must be a root:// URL to a published multi-sample dataset YAML")
+    SUB_NAME = SUB.get('dataset_name', 'mixeddata_4b')
+    _m = _re.fullmatch(r"mixeddata_([A-Za-z0-9]+)_4b", SUB_NAME)
+    if SUB_NAME == 'mixeddata_4b':
+        SUB_PREFIX = 'mix'
+    elif _m and _m.group(1) != 'noTTSub':
+        SUB_PREFIX = f"mix_{_m.group(1)}"
+    else:
+        raise ValueError(f"subsamples.dataset_name {SUB_NAME!r} must be 'mixeddata_4b' or 'mixeddata_<tag>_4b'")
+
 if not MIX_NAME.startswith('mixeddata_all'):
     raise ValueError(f"mixing.dataset_name {MIX_NAME!r} must start with 'mixeddata_all' (runner.py reads any other name as MC)")
 PS = config.get('ttbar_psdata') or {}

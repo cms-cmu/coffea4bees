@@ -71,6 +71,12 @@ runs:
     - MakeMixedData
   mixeddata_run3_4bmix_noboost.yml:
     - MakeMixedData
+  mixeddata_run2_svbboot.yml:
+    - MakeMixedData
+  mixeddata_run3_svbboot.yml:
+    - MakeMixedData
+  mixeddata_run3_4bmix_svbboot.yml:
+    - MakeMixedData
   mvd_run3.yml:
     - MvD
     - MvD_2_train
@@ -98,6 +104,8 @@ runs:
   declustered_run3_library_16x.yml:
     - DeClustered
   declustered_run2_library_16x.yml:
+    - DeClustered
+  declustered_run2_library_16x_nocap.yml:
     - DeClustered
   svbfeynnet_run3.yml:
     - SvBFeynNet_friendtrees_Run3

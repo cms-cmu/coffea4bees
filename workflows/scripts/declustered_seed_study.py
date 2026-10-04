@@ -66,12 +66,18 @@ def _registry_files(path, years):
 def _read(files):
     import awkward as ak
     import uproot
-    parts = [b for b in uproot.iterate({f: "Events" for f in files}, BRANCHES, library="ak", step_size="200 MB")]
+    # one file at a time, as mixeddata_validation_report.py seeds: uproot.iterate with a byte step_size
+    # ("200 MB") failed over xrootd (fsspec_xrootd: "integer argument expected for offset")
+    parts = []
+    for fp in files:
+        with uproot.open(fp) as f:
+            tree = f["Events"]
+            if "Jet_lib_index" not in tree.keys():
+                raise SystemExit(f"{fp}: no Jet_lib_index branch (declustered before the seed study existed)")
+            parts.append(tree.arrays(BRANCHES, library="ak"))
     ev = ak.concatenate(parts) if parts else None
     if ev is None or len(ev) == 0:
         raise SystemExit(f"no events in {files[:2]}...")
-    if "Jet_lib_index" not in ev.fields:
-        raise SystemExit(f"{files[0]}: no Jet_lib_index branch (declustered before the seed study existed)")
     key = np.asarray(ev.run, dtype=np.int64) * (1 << 40) + np.asarray(ev.event, dtype=np.int64)
     order = np.argsort(key, kind="stable")
     key = key[order]

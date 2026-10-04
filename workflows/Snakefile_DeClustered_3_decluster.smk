@@ -63,7 +63,7 @@ rule D3_config:
                             'declustering_method': 'library',
                             'clustering_library_file': LIB_REGISTRY_URL,   # {year: [files]}, via fsspec
                             **{f"library_{k}": LIB_OPTS[k]
-                               for k in ('carry_fields', 'min_entries', 'scale_pt', 'boost_z', 'selection', 'k_neighbors', 'max_distance', 'mass_match_weight')
+                               for k in ('carry_fields', 'min_entries', 'scale_pt', 'boost_z', 'selection', 'k_neighbors', 'max_distance', 'mass_match_weight', 'cache_size')
                                if k in LIB_OPTS}})
         for k in ('b_pt_threshold', 'dr_threshold', 'max_jet_retry', 'max_event_retry'):
             if k in DECL:

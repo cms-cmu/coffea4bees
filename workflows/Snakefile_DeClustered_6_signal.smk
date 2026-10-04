@@ -80,6 +80,8 @@ rule D6_config:
         # Signal MC passes the 4b selection ~10x more often than data: 5000 events per chunk
         # (4+ GB workers otherwise), times the event % N thinning (only 1/N is declustered).
         runner['chunksize'] = int(SIG.get('chunksize', 5000 * SIG_SUBSAMPLE))
+        # all of the code, as D3_config: in a D.6-only roast this job may start the shared daemon
+        runner['condor_transfer_input_files'] = ['src', 'coffea4bees']
         if config['test']:
             runner['workers'] = 1            # local test on an interactive node: one worker
         section = {**(tmpl.get('config') or {}),
@@ -99,7 +101,7 @@ rule D6_config:
                             'declustering_method': 'library',
                             'clustering_library_file': LIB_REGISTRY_URL,
                             **{f"library_{k}": LIB_OPTS[k]
-                               for k in ('carry_fields', 'min_entries', 'scale_pt', 'boost_z', 'selection', 'k_neighbors', 'max_distance', 'mass_match_weight')
+                               for k in ('carry_fields', 'min_entries', 'scale_pt', 'boost_z', 'selection', 'k_neighbors', 'max_distance', 'mass_match_weight', 'cache_size')
                                if k in LIB_OPTS}})
         cfg = processor_config(section, inherit_config=False,
                                processor="coffea4bees/skimmer/processor/make_declustered_data_4b.py",

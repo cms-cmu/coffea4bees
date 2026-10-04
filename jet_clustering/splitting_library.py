@@ -297,17 +297,22 @@ class SplittingLibrary:
         return cls(rows, **kwargs)
 
     @classmethod
-    def cached(cls, files_yaml, year, **kwargs):
+    def cached(cls, files_yaml, year, *, cache_size=None, **kwargs):
         """from_files, loaded once per process. The executor hands every chunk a freshly unpickled
         processor, so a per-instance cache reloads the library (and rebuilds its indices and
         KD-trees) per chunk. Returns a shallow view sharing all of that, with its own zeroed
-        lookup_counts (the DeClusterer differences them per chunk)."""
+        lookup_counts (the DeClusterer differences them per chunk). ``cache_size``: libraries kept
+        per process (default _LIBRARY_CACHE_SIZE); the least recently used are dropped before a
+        new one loads, so at most cache_size are ever in memory."""
+        cache_size = _LIBRARY_CACHE_SIZE if cache_size is None else int(cache_size)
         key = (files_yaml, year, tuple(sorted((k, tuple(v) if isinstance(v, list) else v) for k, v in kwargs.items())))
         library = _LIBRARY_CACHE.pop(key, None)
         if library is None:
+            while len(_LIBRARY_CACHE) >= cache_size:              # free memory BEFORE loading
+                _LIBRARY_CACHE.pop(next(iter(_LIBRARY_CACHE)))
             library = cls.from_files(files_yaml, year, **kwargs)
         _LIBRARY_CACHE[key] = library                         # most recently used last
-        while len(_LIBRARY_CACHE) > _LIBRARY_CACHE_SIZE:
+        while len(_LIBRARY_CACHE) > cache_size:
             _LIBRARY_CACHE.pop(next(iter(_LIBRARY_CACHE)))
         view = copy.copy(library)
         view.lookup_counts = dict.fromkeys(library.lookup_counts, 0)
