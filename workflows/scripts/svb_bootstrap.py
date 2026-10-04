@@ -4,6 +4,10 @@ what is the n-seed average worth in statistics? (after jet_clustering/bootstrap_
     svb_bootstrap.py DUMP_year1.coffea [DUMP_year2.coffea ...] --outdir OUTDIR
         [--prefix syn] [--toys 30] [--bins 40] [--rng-seed 1]
 
+--weights hemi (mixed data, dump_hemi_sources: true): the Poisson weights go on the source
+HEMISPHERES instead, (w1 - 1)(w2 - 1) + 1 per mixed event (see toy_weights). ttbar pseudodata
+(run == 1) is always dropped.
+
 Input: processor_HH4b outputs made with dump_SvB_in_SR: true -- processOutput["SvB_in_SR"][dataset] =
 {run, luminosityBlock, event, SvB_MA_ps} of the four-tag SR events, dataset <prefix>_v<s>_<year...>.
 
@@ -29,10 +33,16 @@ import numpy as np
 import yaml
 
 
-def load(paths, prefix):
-    """{seed: (run, lumi, event, svb)} concatenated over the dumps' datasets <prefix>_v<s>_*."""
+HEMI_COLS = [f"{side}_{f}" for side in ("posHemiNew", "negHemiNew")
+             for f in ("run", "luminosityBlock", "event", "hemisphereId")]
+
+
+def load(paths, prefix, hemi=False):
+    """{seed: {column: array}} concatenated over the dumps' datasets <prefix>_v<s>_* (with the
+    hemisphere-source columns when hemi). ttbar pseudodata (run == 1) is dropped."""
     from coffea.util import load as cload
     pat = re.compile(rf"^{re.escape(prefix)}_v(\d+)_")
+    keys = ["run", "luminosityBlock", "event", "SvB_MA_ps"] + (HEMI_COLS if hemi else [])
     per_seed = {}
     for p in paths:
         out = cload(p)
@@ -43,46 +53,75 @@ def load(paths, prefix):
             m = pat.match(ds)
             if not m:
                 continue
-            s = int(m.group(1))
-            acc = per_seed.setdefault(s, {k: [] for k in ("run", "luminosityBlock", "event", "SvB_MA_ps")})
-            for k in acc:
+            missing = [k for k in keys if k not in cols]
+            if missing:
+                raise SystemExit(f"{p} {ds}: no {missing} (hemisphere sources need dump_hemi_sources: true)")
+            acc = per_seed.setdefault(int(m.group(1)), {k: [] for k in keys})
+            for k in keys:
                 acc[k].extend(cols[k])
     if not per_seed:
         raise SystemExit(f"no {prefix}_v<s>_* datasets in {paths}")
     seeds = sorted(per_seed)
     if seeds != list(range(len(seeds))):
         raise SystemExit(f"seeds {seeds}: expected 0..n-1")
-    return {s: {k: np.asarray(v) for k, v in per_seed[s].items()} for s in seeds}
+    data = {}
+    for s in seeds:
+        d = {k: np.asarray(v) for k, v in per_seed[s].items()}
+        keep = d["run"] != 1                             # ttbar pseudodata
+        if hemi:
+            keep &= (d["posHemiNew_run"] >= 0) & (d["negHemiNew_run"] >= 0)
+        data[s] = {k: v[keep] for k, v in d.items()}
+    return data
 
 
-def bootstrap(data, edges, n_toys, rng):
+def _ids(cols):
+    _, inv = np.unique(np.stack([c.astype(np.int64) for c in cols], axis=1), axis=0, return_inverse=True)
+    return inv.ravel()
+
+
+def toy_weights(data, mode, n_toys, rng):
+    """(n_entries, n_toys) Poisson toy weight per entry (seeds concatenated in order), and the
+    number of independent units weighted.
+    event: one Poisson(1) per input event (run, luminosityBlock, event), shared by its versions.
+    hemi:  one Poisson(1) per source hemisphere (run, luminosityBlock, event, hemisphereId) of the
+           mixed events' two library hemispheres; event weight (w1 - 1)(w2 - 1) + 1 (John's 2025
+           mixed-data recipe, jet_clustering/bootstrap_mixed_correlation.py): mean 1, variance 1,
+           events correlated only if they share both hemispheres."""
+    cat = {k: np.concatenate([data[s][k] for s in data]) for k in data[0]}
+    if mode == "event":
+        inv = _ids([cat["run"], cat["luminosityBlock"], cat["event"]])
+        W = rng.poisson(1.0, size=(inv.max() + 1, n_toys)).astype(float)
+        return W[inv], int(inv.max() + 1)
+    n = len(cat["run"])
+    both = {f: np.concatenate([cat[f"posHemiNew_{f}"], cat[f"negHemiNew_{f}"]])
+            for f in ("run", "luminosityBlock", "event", "hemisphereId")}
+    inv = _ids([both["run"], both["luminosityBlock"], both["event"], both["hemisphereId"]])
+    W = rng.poisson(1.0, size=(inv.max() + 1, n_toys)).astype(float)
+    w1, w2 = W[inv[:n]], W[inv[n:]]
+    return (w1 - 1) * (w2 - 1) + 1, int(inv.max() + 1)
+
+
+def bootstrap(data, edges, n_toys, rng, mode="event"):
     n = len(data)
-    run = np.concatenate([data[s]["run"] for s in data]).astype(np.int64)
-    lumi = np.concatenate([data[s]["luminosityBlock"] for s in data]).astype(np.int64)
-    evt = np.concatenate([data[s]["event"] for s in data]).astype(np.int64)
     svb = np.concatenate([data[s]["SvB_MA_ps"] for s in data]).astype(np.float64)
     seed = np.concatenate([np.full(len(data[s]["run"]), s) for s in data])
-    ids = np.stack([run, lumi, evt], axis=1)
-    _, inv = np.unique(ids, axis=0, return_inverse=True)
-    inv = inv.ravel()
-    n_inputs = inv.max() + 1
     nb = len(edges) - 1
     b = np.clip(np.digitize(svb, edges) - 1, 0, nb - 1)
+    w, n_units = toy_weights(data, mode, n_toys, rng)
 
     per_seed = np.stack([np.bincount(b[seed == s], minlength=nb) for s in range(n)]).astype(float)
     mean = per_seed.mean(axis=0)                     # the n-seed template (unweighted)
-    W = rng.poisson(1.0, size=(n_inputs, n_toys)).astype(float)
-    toys = np.stack([np.bincount(b, weights=W[inv, t], minlength=nb) for t in range(n_toys)]) / n
+    toys = np.stack([np.bincount(b, weights=w[:, t], minlength=nb) for t in range(n_toys)]) / n
     var_boot = np.mean((toys - mean) ** 2, axis=0)
 
-    # one seed alone, same input weights: should be ~ Poisson (N_eff ~ 1)
+    # one seed alone, same toy weights: the "one sample used n times" test
     m0 = seed == 0
-    toys0 = np.stack([np.bincount(b[m0], weights=W[inv[m0], t], minlength=nb) for t in range(n_toys)])
+    toys0 = np.stack([np.bincount(b[m0], weights=w[m0, t], minlength=nb) for t in range(n_toys)])
     var_boot0 = np.mean((toys0 - per_seed[0]) ** 2, axis=0)
-    seed_spread = per_seed.var(axis=0, ddof=1)       # declustering noise of ONE seed (data fixed)
-    return {"n_seeds": n, "n_inputs": int(n_inputs), "n_entries": int(len(svb)), "per_seed": per_seed,
+    seed_spread = per_seed.var(axis=0, ddof=1)       # seed-to-seed spread (input data fixed)
+    return {"n_seeds": n, "n_inputs": n_units, "n_entries": int(len(svb)), "per_seed": per_seed,
             "mean": mean, "var_boot": var_boot, "var_boot0": var_boot0, "seed0": per_seed[0],
-            "seed_spread": seed_spread}
+            "seed_spread": seed_spread, "mode": mode}
 
 
 def summarize(r, edges, min_count):
@@ -96,7 +135,7 @@ def summarize(r, edges, min_count):
     A = r["var_boot"] - r["seed_spread"] / r["n_seeds"]
     rho_pooled = float(A[ok].sum() / r["mean"][ok].sum())
     return neff, neff0, ok, {
-        "n_seeds": r["n_seeds"], "toys": None, "input_events": r["n_inputs"], "sr_entries_all_seeds": r["n_entries"],
+        "n_seeds": r["n_seeds"], "toys": None, "weights": None, "poisson_units": r["n_inputs"], "sr_entries_all_seeds": r["n_entries"],
         "events_per_seed": float(r["mean"].sum()),
         "n_eff_pooled": round(pooled, 3),
         "n_eff_one_seed_pooled (expect ~1)": round(pooled0, 3),
@@ -178,17 +217,21 @@ def main():
     ap.add_argument("--bins", type=int, default=40)
     ap.add_argument("--min-count", type=float, default=20, help="bins with fewer mean events are left out of the pooled N_eff")
     ap.add_argument("--rng-seed", type=int, default=1)
+    ap.add_argument("--weights", choices=["event", "hemi"], default="event",
+                    help="event: Poisson per input event (declustered); hemi: per source hemisphere, "
+                         "(w1-1)(w2-1)+1 per mixed event (mixed data; needs dump_hemi_sources)")
     ap.add_argument("--title", default="SvB Poisson bootstrap")
     ap.add_argument("--run-label", default=None, help="RunII / Run3 for the CMS label (default: from the dataset years)")
     a = ap.parse_args()
     os.makedirs(a.outdir, exist_ok=True)
-    data = load(a.dumps, a.prefix)
+    data = load(a.dumps, a.prefix, hemi=(a.weights == "hemi"))
     if a.run_label is None:
         a.run_label = "Run3" if any("202" in os.path.basename(p) for p in a.dumps) else "RunII"
     edges = np.linspace(0, 1, a.bins + 1)
-    r = bootstrap(data, edges, a.toys, np.random.default_rng(a.rng_seed))
+    r = bootstrap(data, edges, a.toys, np.random.default_rng(a.rng_seed), mode=a.weights)
     neff, neff0, ok, summary = summarize(r, edges, a.min_count)
     summary["toys"] = a.toys
+    summary["weights"] = a.weights
     plot(r, edges, neff, neff0, ok, a.outdir, a.title)
     n = r["n_seeds"]
     # test: ONE sample used n times -- the same events n times, so the bootstrap RMS is that sample's
@@ -205,8 +248,12 @@ def main():
     with open(os.path.join(a.outdir, "index.html"), "w") as f:
         f.write(f"<html><head><meta charset='utf-8'><title>SvB bootstrap</title><style>body{{font-family:sans-serif;"
                 f"margin:2em}}td{{padding:2px 10px;border-bottom:1px solid #ddd}}</style></head><body>"
-                f"<h2>{html.escape(a.title)}</h2><p>Each input 4b event gets one Poisson(1) weight per toy, shared by all "
-                f"its declustered versions; the toy-to-toy variance of the {r['n_seeds']}-seed mean SvB histogram (SR, "
+                f"<h2>{html.escape(a.title)}</h2><p>"
+                + ("Each input 4b event gets one Poisson(1) weight per toy, shared by all its versions"
+                   if a.weights == "event" else
+                   "Each source hemisphere gets one Poisson(1) weight per toy; a mixed event built from "
+                   "hemispheres with weights w1, w2 gets (w1-1)(w2-1)+1")
+                + f"; the toy-to-toy variance of the {r['n_seeds']}-seed mean SvB histogram (SR, "
                 f"four-tag) is its statistical variance. N_eff = &lang;N&rang;/Var. <a href='summary.yml'>summary.yml</a>"
                 f"</p><table>{rows}</table>"
                 f"<h3>One sample used {r['n_seeds']} times (test)</h3><p><img src='svb_bootstrap_one_sample_x{r['n_seeds']}.png' style='max-width:700px'></p>"

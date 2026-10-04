@@ -228,11 +228,69 @@ else:
                 {input.registries} --outdir {M6_OUT}study --years {params.years} 2>&1 | tee {log}
             """
 
+# SvB Poisson bootstrap of the N subsamples' average (as DeClustered D5_svb_*): the analysis SvB on
+# the fly on every sample of the M.4 dataset (<SUB_PREFIX>_v<k>, unit weight), the four-tag SR events'
+# (run, lumi, event, SvB_MA.ps) + the two library hemispheres each was mixed from dumped; then one
+# Poisson(1) weight per source hemisphere, (w1-1)(w2-1)+1 per mixed event (John's 2025 recipe), and
+# the toy-to-toy variance of the N-sample mean SvB histogram -> N_eff (workflows/scripts/svb_bootstrap.py
+# --weights hemi). The ttbar pseudodata in each sample (run == 1) is left out.
+MIX_SVB_BOOT = bool(VAL.get('svb_bootstrap', True)) and str(INPUTS.get('SvB_model') or "").startswith("root://")
+M6_SVB_OUT = f"{M6_OUT}svb_bootstrap/"
+if MIX_SVB_BOOT:
+    rule M6_svb_config:
+        input: UPSTREAM_HIST_CONFIG
+        output: f"{M6_SVB_OUT}analysis_config_svb_dump.yml"
+        run:
+            _m7_hist_config(input[0], output[0], [SUB_URL], None)   # SvB on the fly, unblinded, unit weight
+            with open(output[0]) as f:
+                cfg = yaml.safe_load(f)
+            cfg['config'].update({'dump_SvB_in_SR': True, 'dump_hemi_sources': True, 'fill_histograms': False})
+            write_yaml(output[0], cfg)
+
+    use rule analysis_processor from analysis as M6_svb_dump with:
+        input:
+            runner_script = "runner.py",
+            config_file = f"{M6_SVB_OUT}analysis_config_svb_dump.yml",
+            subsamples = M4_PUBLISHED,
+            psdata = M5_PUBLISHED
+        output: f"{M6_SVB_OUT}dumps/svb_dump__{{year}}.coffea"
+        log: f"{M6_SVB_OUT}logs/dump__{{year}}.log"
+        wildcard_constraints:
+            year = "|".join(YEARS)
+        params:
+            datasets = SUB_NAME,
+            years = lambda wildcards: wildcards.year,
+            config = lambda wildcards, input: input.config_file,
+            extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
+            run_container_wrapper = WRAPPER,
+            python_bin = PYTHON
+
+    rule M6_svb_bootstrap:
+        input: expand(f"{M6_SVB_OUT}dumps/svb_dump__{{year}}.coffea", year=YEARS)
+        output:
+            index = f"{M6_SVB_OUT}index.html",
+            summary = f"{M6_SVB_OUT}summary.yml"
+        log: f"{M6_SVB_OUT}logs/bootstrap.log"
+        params:
+            toys = int(VAL.get('svb_bootstrap_toys', 30)),
+            # one token: run_container re-quotes the arguments
+            title = f"{config.get('label', 'mixeddata')}_SvB_MA_ps_SR_fourTag_{N_SUB}samples"
+        shell:
+            """
+            set -o pipefail
+            {WRAPPER} {PYTHON} coffea4bees/workflows/scripts/svb_bootstrap.py {input} \\
+                --outdir {M6_SVB_OUT} --prefix {SUB_PREFIX} --weights hemi --toys {params.toys} \\
+                --title {params.title} 2>&1 | tee {log}
+            """
+
+    localrules: M6_svb_config, M6_svb_bootstrap
+
 rule all_M6:
     input:
         f"{M6_OUT}plots/plots_done.txt",
         f"{M6_OUT}cutflow_validation.html",
-        f"{M6_OUT}study/index.html"
+        f"{M6_OUT}study/index.html",
+        [f"{M6_SVB_OUT}index.html"] if MIX_SVB_BOOT else []
 
 localrules: M6_config_mixed, M6_config_closure, M6_merge, M6_cutflow, M6_cutflow_page,
             M6_plot_config, M6_plots, M6_study, all_M6
