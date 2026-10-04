@@ -26,6 +26,10 @@ if VAL_SEED not in SEEDS:
     raise ValueError(f"validation.seed {VAL_SEED} is not one of the declustering seeds {SEEDS}")
 SYN_PREFIX = "syn_noTT" if MJ_NAME.startswith("synthetic_data_noTT") else "syn"
 SYN_PROCESS = f"{SYN_PREFIX}_v{VAL_SEED}"
+# With several seeds the validation shows their MEAN (all seeds' histograms / cutflows summed, scaled
+# by 1/n_seeds), as M.6 does for the 4b mixing; one seed otherwise.
+SYN_ALL = [f"{SYN_PREFIX}_v{s}" for s in SEEDS]
+SYN_TAG = f"mean of {N_SEEDS} seeds" if N_SEEDS > 1 else f"seed {VAL_SEED}"
 D5_PLOT_CONFIG = f"{D5_OUT}plotsDeClustered_validation.yml"
 PLOT_YEAR = "Run3" if any("202" in y for y in YEARS) else "RunII"
 
@@ -40,10 +44,11 @@ use rule cutflow_closure_table from analysis as D5_cutflow_page with:
         txt = f"{D5_OUT}cutflow_monitoring.txt"
     log: f"{D5_OUT}logs/cutflow_page.log"
     params:
-        title = f"{config.get('label', 'declustered')}_declustered_seed{VAL_SEED}",
+        title = (f"{config.get('label', 'declustered')}_declustered_mean{N_SEEDS}seeds" if N_SEEDS > 1
+                 else f"{config.get('label', 'declustered')}_declustered_seed{VAL_SEED}"),
         multijet = "sample4b",            # Multijet column = the four-tag sample --multijet-process
         ttbar = " ".join(TTBAR),
-        extra_arguments = " ".join(["--multijet-process", SYN_PROCESS]
+        extra_arguments = " ".join(["--multijet-process", *SYN_ALL, "--multijet-scale", repr(1.0 / N_SEEDS)]
                                    + (["--pseudodata", PS_NAME] if SUBTRACT_TT else [])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
@@ -56,8 +61,10 @@ rule D5_plot_config:
             text = f.read()
         if "syn_vK" not in text:
             raise ValueError(f"{input[0]}: no `syn_vK` placeholder for the declustered sample")
-        cfg = yaml.safe_load(text.replace("syn_vK", SYN_PROCESS).replace("seed K", f"seed {VAL_SEED}"))
+        cfg = yaml.safe_load(text.replace("syn_vK", SYN_PROCESS).replace("seed K", SYN_TAG))
         stack = cfg.get('stack') or {}
+        if N_SEEDS > 1 and 'MultiJet' in stack:
+            stack['MultiJet'].update({'process': list(SYN_ALL), 'scalefactor': 1.0 / N_SEEDS})
         hists = cfg.setdefault('hists', {})
         if 'psdata' in hists:
             if SUBTRACT_TT:
@@ -73,7 +80,7 @@ rule D5_plot_config:
                 cfg.setdefault('hists', {})['TTbar'] = {**tt, 'histtype': 'step',
                                                         'label': tt.get('label', 'ttbar MC') + " (in the declustered data)"}
                 if 'MultiJet' in stack:
-                    stack['MultiJet']['label'] = f"Declustered 4b data incl. $t\\bar{{t}}$ (seed {VAL_SEED})"
+                    stack['MultiJet']['label'] = f"Declustered 4b data incl. $t\\bar{{t}}$ ({SYN_TAG})"
         write_yaml(output[0], cfg)
 
 use rule make_plots from analysis as D5_plots with:
