@@ -7,8 +7,8 @@
 # among the nearest neighbours in the parent's (log pT, |eta|) -- never from the event being
 # declustered -- and aligned onto the parent (pT scaled, phi rotated, boosted in z). The children's
 # b-tag scores come with them. Which neighbour: a reproducible random one of the k_neighbors nearest
-# within max_distance, drawn per jet from the seed and the jet's kinematics, so every seed is an
-# equivalent replica
+# (no distance cap since 2026-10-04), drawn per jet from the seed and the jet's kinematics, so every
+# seed is an equivalent replica
 # (selection: rank instead takes neighbour <seed> for every jet, as the first library roast did).
 # See jet_clustering/splitting_library.py and ~/ClaudeBrain/outputs/decluster-replacement/design.md.
 #
@@ -47,8 +47,14 @@ declustering:
     boost_z: true              # boost the children along z to the parent pz
     selection: random          # random: one of the k_neighbors nearest per jet (seeded); rank: neighbour <seed>
     k_neighbors: 20            # random selection: candidates per jet (variety; seed overlap ~1/k)
-    max_distance: 0.05         # ... but only those within this distance in (log pT, |eta|) (the nearest
-                               #     always counts): keeps sparse tails / rare types to close matches
+    # No distance cap (John, 2026-10-04): any of the k_neighbors nearest, however far. The 0.05 cap
+    # (roasts libA_*, declib16_run2) left 4% of Run 2 lookups with a single candidate, identical in
+    # every seed; without it (declib16nc_run2) the same-draw rate between seeds fell 8.4% -> 3.6% and
+    # the D.5 closure did not change. "None" (string): a null could be dropped by a config merge.
+    max_distance: "None"
+    # library files kept per condor worker process: 1 (two Run 2 libraries + a chunk exceeded the
+    # 6 GB workers with 16 seeds x 4 years on one daemon; one library peaks ~1.5 GB per worker)
+    cache_size: 1
 
 validation:
   # The base's known_counts are the PDF roast's blessed D.4 cutflow; library mode has none yet, so

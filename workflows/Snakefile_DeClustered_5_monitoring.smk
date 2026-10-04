@@ -139,11 +139,67 @@ if SEED_STUDY:
 
     localrules: D5_seed_study
 
+# SvB Poisson bootstrap (library, >= 2 seeds, an upstream SvB model): the analysis SvB evaluated on
+# the fly on every seed of the multijet sample (D.6's config recipe), the (run, lumi, event, SvB_MA.ps)
+# of the four-tag SR events dumped (processor_HH4b dump_SvB_in_SR); then each INPUT event gets 30
+# Poisson(1) weights shared by its declustered versions, and the toy-to-toy variance of the n-seed
+# mean SvB histogram gives its statistical power: N_eff = <N>/Var (workflows/scripts/svb_bootstrap.py).
+SVB_BOOT = LIBRARY and N_SEEDS >= 2 and bool(VAL.get('svb_bootstrap', True)) \
+    and str(INPUTS.get('SvB_model') or "").startswith("root://")
+SVB_BOOT_OUT = f"{D5_OUT}svb_bootstrap/"
+if SVB_BOOT:
+    rule D5_svb_config:
+        input: UPSTREAM_HIST_CONFIG
+        output: f"{SVB_BOOT_OUT}analysis_config_svb_dump.yml"
+        run:
+            _d6_hist_config(input[0], output[0], [MJ_URL])     # SvB on the fly, unblinded, no FvT/JCM
+            with open(output[0]) as f:
+                cfg = yaml.safe_load(f)
+            cfg['config'].update({'dump_SvB_in_SR': True, 'fill_histograms': False})
+            write_yaml(output[0], cfg)
+
+    use rule analysis_processor from analysis as D5_svb_dump with:
+        input:
+            runner_script = "runner.py",
+            config_file = f"{SVB_BOOT_OUT}analysis_config_svb_dump.yml",
+            published = D3_PUBLISHED
+        output: f"{SVB_BOOT_OUT}dumps/svb_dump__{{year}}.coffea"
+        log: f"{SVB_BOOT_OUT}logs/dump__{{year}}.log"
+        wildcard_constraints:
+            year = "|".join(YEARS)
+        params:
+            datasets = MJ_NAME,
+            years = lambda wildcards: wildcards.year,
+            config = lambda wildcards, input: input.config_file,
+            extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
+            run_container_wrapper = WRAPPER,
+            python_bin = PYTHON
+
+    rule D5_svb_bootstrap:
+        input: expand(f"{SVB_BOOT_OUT}dumps/svb_dump__{{year}}.coffea", year=YEARS)
+        output:
+            index = f"{SVB_BOOT_OUT}index.html",
+            summary = f"{SVB_BOOT_OUT}summary.yml"
+        log: f"{SVB_BOOT_OUT}logs/bootstrap.log"
+        params:
+            toys = int(VAL.get('svb_bootstrap_toys', 30)),
+            title = f"{config.get('label', 'declustered')}: SvB_MA ps (SR, four-tag), {N_SEEDS} seeds"
+        shell:
+            """
+            set -o pipefail
+            {WRAPPER} {PYTHON} coffea4bees/workflows/scripts/svb_bootstrap.py {input} \\
+                --outdir {SVB_BOOT_OUT} --prefix {SYN_PREFIX} --toys {params.toys} \\
+                --title "{params.title}" 2>&1 | tee {log}
+            """
+
+    localrules: D5_svb_config, D5_svb_bootstrap
+
 rule all_D5:
     input:
         f"{D5_OUT}plots/plots_done.txt",
         f"{D5_OUT}cutflow_monitoring.html",
         [f"{D2_OUT}index.html"] if MAKE_PDFS else [],
-        [f"{D5_OUT}seed_study/index.html"] if SEED_STUDY else []
+        [f"{D5_OUT}seed_study/index.html"] if SEED_STUDY else [],
+        [f"{SVB_BOOT_OUT}index.html"] if SVB_BOOT else []
 
 localrules: D5_cutflow_page, D5_plot_config, D5_plots, D5_pdf_page, all_D5

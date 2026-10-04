@@ -27,7 +27,8 @@ declustering:
   all_dataset_name: "mixeddata_all_declib16nc"
   library:
     # "None", not null: the processor takes the string as no cap, and a null could be dropped by a
-    # config merge in favour of the base's 0.05
+    # config merge in favour of the base's 0.05 (the library default is no cap since 2026-10-04, but
+    # the capped 16x config this overlays pins 0.05)
     max_distance: "None"
     # one library per condor worker process: two Run 2 libraries + a chunk exceeded the 6 GB
     # workers when 16 seeds x 4 years shared one daemon (declib16_run2: UL18 workers OOM-killed)

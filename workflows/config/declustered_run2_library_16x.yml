@@ -29,6 +29,12 @@ declustering:
   dataset_name: "synthetic_data_lib16_4b"
   multijet_dataset_name: "synthetic_data_lib16_multijet"
   all_dataset_name: "mixeddata_all_declib16"
+  library:
+    # PINNED to what roast declib16_run2_20261003_f7183e9-9ae5088 ran (and its dataset names mean):
+    # the 0.05 distance cap, two libraries per worker. The library default is now no cap -- the
+    # current 16x Run 2 sample is declustered_run2_library_16x_nocap.yml.
+    max_distance: 0.05
+    cache_size: 2
 
 # D.6 is the libA Run 2 roast's signal check verbatim (same library, method and signal seed): skip it.
 signal_check:

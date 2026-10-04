@@ -402,6 +402,21 @@ def add_debug_info_for_Boosted_Synthetic(events, processOutput):
 
 
 
+def dump_SvB_in_SR(event, processOutput, dataset, key="SvB_in_SR"):
+    """add_SvB_in_SR under one namespaced key, as plain lists (accumulate concatenates them across
+    chunks): processOutput[key][dataset] = {run, luminosityBlock, event, SvB_MA_ps} for the
+    four-tag SR events. Input of workflows/scripts/svb_bootstrap.py (Poisson bootstrap of the SvB
+    distribution over the input events)."""
+    passSR = ak.to_numpy(ak.fill_none(event["quadJet_selected"].SR & event.fourTag, False))
+    sel = event[passSR]
+    processOutput[key] = {dataset: {
+        "run": ak.to_numpy(sel.run).astype("int64").tolist(),
+        "luminosityBlock": ak.to_numpy(sel.luminosityBlock).astype("int64").tolist(),
+        "event": ak.to_numpy(sel.event).astype("int64").tolist(),
+        "SvB_MA_ps": ak.to_numpy(sel.SvB_MA.ps).astype("float64").tolist(),
+    }}
+
+
 def add_SvB_in_SR(event, processOutput):
     # passSR = (selev["quadJet_selected"].SR)
     passSR = (event["quadJet_selected"].SR & event.fourTag)

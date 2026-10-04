@@ -3,7 +3,7 @@
 # ==============================================================================
 # declustered_run2.yml with declustering.method library, as declustered_run3_library.yml (the
 # setup of roast libA_run3_20260930_4e3ad63-da2340e: random among the k_neighbors nearest in
-# (log pT, |eta|) within max_distance, no mass matching). See that config for the method.
+# (log pT, |eta|), no mass matching -- since 2026-10-04 with no distance cap). See that config.
 #
 # Run 2 differences:
 #   * carry_fields: what the Run 2 candidate jets have (b-tag, jet ID, constituents and energy
@@ -41,7 +41,8 @@ declustering:
     boost_z: true
     selection: random
     k_neighbors: 20
-    max_distance: 0.05
+    max_distance: "None"         # no cap (default since 2026-10-04; see declustered_run3_library.yml)
+    cache_size: 1                # one library per condor worker process (ditto)
 
 validation:
   # The base's known_counts are the Run 2 PDF roast's; library mode has none yet.
