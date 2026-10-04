@@ -149,6 +149,11 @@ n_models_closure = int(config.get('n_subsamples', config.get('n_models', config.
 subsample_indices_closure = config.get('subsample_indices', list(range(n_models_closure)))
 if isinstance(subsample_indices_closure, str):
     subsample_indices_closure = [int(x) for x in subsample_indices_closure.split()]
+# runTwoStageClosure.py fits mixes 0..nMixes-1 (it has no --subsample_indices; passing one failed every
+# run_two_stage_closure job with "unrecognized arguments")
+if [int(v) for v in subsample_indices_closure] != list(range(len(subsample_indices_closure))):
+    raise ValueError(f"subsample_indices {subsample_indices_closure}: the two-stage closure fit "
+                     f"(runTwoStageClosure.py --nMixes) takes subsamples 0..n-1 only")
 
 def get_closure_coffea_inputs(wildcards):
     inputs = {
@@ -242,7 +247,6 @@ rule run_two_stage_closure:
             config.get('closure_extra_args', '').strip() +
             (" --match_normalization" if config.get('match_closure_normalization', False) else "") +
             (" --include_ensemble_variance" if config.get('include_ensemble_variance', False) else "") +
-            f" --subsample_indices {' '.join(str(v) for v in subsample_indices_closure)}" +
             " --ignore_failures"
         ).strip(),
         input_file_mix = lambda wildcards, input: config.get('input_file_mix', input.inroot),
