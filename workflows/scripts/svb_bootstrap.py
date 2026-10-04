@@ -135,6 +135,40 @@ def plot(r, edges, neff, neff0, ok, outdir, title):
     fig.tight_layout(); fig.savefig(os.path.join(outdir, "svb_bootstrap.png"), dpi=120); plt.close(fig)
 
 
+def plot_cms(values, sig_boot, sig_naive, edges, path, run_label, region="SR", xlabel="SvB",
+             ratio_range=(0.9, 1.1)):
+    """John's bootstrap figure: the average with the bootstrap RMS as the yellow band (stack + ratio),
+    the naive (independent-samples) uncertainty as black points; ratio to the average."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    try:
+        import mplhep as hep
+        plt.style.use(hep.style.CMS)
+    except ImportError:
+        hep = None
+    yellow, c = "#F9DF8E", 0.5 * (edges[1:] + edges[:-1])
+    fig, (ax, rx) = plt.subplots(2, 1, figsize=(10, 10), sharex=True, gridspec_kw={"height_ratios": [3, 1], "hspace": 0.05})
+    ax.stairs(values, edges, fill=True, color=yellow, label="Average (Bootstrap Uncertainties)")
+    ax.stairs(values, edges, color="k", lw=1.5)
+    ax.errorbar(c, values, yerr=sig_naive, fmt="o", color="k", ms=6, label="Average (Naive Uncertainties)")
+    ax.set_yscale("log"); ax.legend(loc="upper right", fontsize=18)
+    ax.set_title(region, fontsize=24)
+    if hep is not None:
+        hep.cms.label("Internal", data=True, ax=ax, rlabel=f"{run_label} (13 TeV)" if run_label == "RunII"
+                      else f"{run_label} (13.6 TeV)", loc=0)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        rb, rn = sig_boot / values, sig_naive / values
+    ok = values > 0
+    rx.bar(c[ok], 2 * rb[ok], bottom=1 - rb[ok], width=np.diff(edges)[ok], color=yellow, alpha=0.9, lw=0)
+    rx.errorbar(c[ok], np.ones(ok.sum()), yerr=rn[ok], fmt="o", color="k", ms=4)
+    rx.axhline(1, ls="--", c="k", lw=2)
+    rx.set_ylim(*ratio_range); rx.set_ylabel("Ratio"); rx.set_xlabel(xlabel)
+    for ext in ("png", "pdf"):
+        fig.savefig(f"{path}.{ext}", dpi=120, bbox_inches="tight")
+    plt.close(fig)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("dumps", nargs="+")
@@ -145,14 +179,25 @@ def main():
     ap.add_argument("--min-count", type=float, default=20, help="bins with fewer mean events are left out of the pooled N_eff")
     ap.add_argument("--rng-seed", type=int, default=1)
     ap.add_argument("--title", default="SvB Poisson bootstrap")
+    ap.add_argument("--run-label", default=None, help="RunII / Run3 for the CMS label (default: from the dataset years)")
     a = ap.parse_args()
     os.makedirs(a.outdir, exist_ok=True)
     data = load(a.dumps, a.prefix)
+    if a.run_label is None:
+        a.run_label = "Run3" if any("202" in os.path.basename(p) for p in a.dumps) else "RunII"
     edges = np.linspace(0, 1, a.bins + 1)
     r = bootstrap(data, edges, a.toys, np.random.default_rng(a.rng_seed))
     neff, neff0, ok, summary = summarize(r, edges, a.min_count)
     summary["toys"] = a.toys
     plot(r, edges, neff, neff0, ok, a.outdir, a.title)
+    n = r["n_seeds"]
+    # test: ONE sample used n times -- the same events n times, so the bootstrap RMS is that sample's
+    # full sqrt(N) while the naive independent-samples error is sqrt(n N)/n = sqrt(N/n)
+    plot_cms(r["seed0"], np.sqrt(r["var_boot0"]), np.sqrt(n * r["seed0"]) / n, edges,
+             os.path.join(a.outdir, "svb_bootstrap_one_sample_x%d" % n), a.run_label)
+    # the real n-seed average: bootstrap RMS vs naive sqrt(sum N)/n
+    plot_cms(r["mean"], np.sqrt(r["var_boot"]), np.sqrt(n * r["mean"]) / n, edges,
+             os.path.join(a.outdir, "svb_bootstrap_average"), a.run_label)
     with open(os.path.join(a.outdir, "summary.yml"), "w") as f:
         yaml.safe_dump(summary, f, sort_keys=False)
     rows = "".join(f"<tr><td>{html.escape(k)}</td><td>{html.escape(str(v))}</td></tr>"
@@ -163,7 +208,10 @@ def main():
                 f"<h2>{html.escape(a.title)}</h2><p>Each input 4b event gets one Poisson(1) weight per toy, shared by all "
                 f"its declustered versions; the toy-to-toy variance of the {r['n_seeds']}-seed mean SvB histogram (SR, "
                 f"four-tag) is its statistical variance. N_eff = &lang;N&rang;/Var. <a href='summary.yml'>summary.yml</a>"
-                f"</p><table>{rows}</table><p><img src='svb_bootstrap.png' style='max-width:800px'></p></body></html>")
+                f"</p><table>{rows}</table>"
+                f"<h3>One sample used {r['n_seeds']} times (test)</h3><p><img src='svb_bootstrap_one_sample_x{r['n_seeds']}.png' style='max-width:700px'></p>"
+                f"<h3>Average of the {r['n_seeds']} declustered seeds</h3><p><img src='svb_bootstrap_average.png' style='max-width:700px'></p>"
+                f"<h3>Diagnostics</h3><p><img src='svb_bootstrap.png' style='max-width:800px'></p></body></html>")
     print(f"svb bootstrap: N_eff pooled {summary['n_eff_pooled']} (one seed {summary['n_eff_one_seed_pooled (expect ~1)']}), "
           f"written to {a.outdir}")
 
