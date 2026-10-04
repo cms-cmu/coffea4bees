@@ -255,7 +255,7 @@ rule make_mixeddata_ave_json:
         ave_json = ave_mixeddata_json
     params:
         closure_dir = out_a3,
-        file_template = f"histAll_{a3_channel}_mixeddata_v{{v}}.coffea",
+        file_template = f"histAll_{a3_channel}_mixeddata_v{{{{v}}}}.coffea",   # {v} after snakemake formats params
         script = "coffea4bees/stats_analysis/make_mixeddata_ave_json.py",
         subsamples = " ".join(str(v) for v in subsample_indices_f4),
         container_wrapper = "./run_container"
