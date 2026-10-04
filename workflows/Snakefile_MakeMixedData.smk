@@ -137,6 +137,12 @@ SUB = config.get('subsamples') or {}
 N_SUB = int(SUB.get('n', 16))
 SUBSAMPLES = list(range(N_SUB))
 SUB_NAME = SUB.get('dataset_name', 'mixeddata_4b')
+# inputs.subsamples: another (finished) mixeddata roast's published M.4 dataset YAML
+# (<its publish_base>/handoff/<SUB_NAME>.yml) -- M.6's SvB bootstrap then runs on it instead of this
+# roast's own M.4 (target all_M6_svb: a bootstrap-only roast on an older production)
+SUB_EXTERNAL = INPUTS.get('subsamples')
+if SUB_EXTERNAL and not str(SUB_EXTERNAL).startswith("root://"):
+    raise ValueError("inputs.subsamples must be a root:// URL to a mixeddata roast's handoff/<subsamples name>.yml")
 
 # runner.py (src/runner/dataset.py:get_dataset_type) decides by name how a dataset is read, and an
 # unknown name is MC: mixeddata_all* is one mixed dataset, mixeddata_4b / mixeddata_<tag>_4b a

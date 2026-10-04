@@ -31,6 +31,7 @@ VAL = config.get('validation') or {}
 VAL_SUB = int(VAL['subsample']) if VAL.get('subsample') is not None else \
     int(hashlib.md5(config['roast_id'].encode()).hexdigest(), 16) % N_SUB
 SUB_URL = f"{HANDOFF}/{SUB_NAME}.yml"
+SVB_SUB_URL = str(SUB_EXTERNAL) if SUB_EXTERNAL else SUB_URL     # what the SvB bootstrap reads
 PS_URL = f"{HANDOFF}/{PS_NAME}.yml"
 M6_HISTALL = f"{M6_OUT}histAll_validation.coffea"
 M6_PLOT_CONFIG = f"{M6_OUT}plotsMixedData_validation.yml"
@@ -241,7 +242,7 @@ if MIX_SVB_BOOT:
         input: UPSTREAM_HIST_CONFIG
         output: f"{M6_SVB_OUT}analysis_config_svb_dump.yml"
         run:
-            _m7_hist_config(input[0], output[0], [SUB_URL], None)   # SvB on the fly, unblinded, unit weight
+            _m7_hist_config(input[0], output[0], [SVB_SUB_URL], None)   # SvB on the fly, unblinded, unit weight
             with open(output[0]) as f:
                 cfg = yaml.safe_load(f)
             cfg['config'].update({'dump_SvB_in_SR': True, 'dump_hemi_sources': True, 'fill_histograms': False})
@@ -251,8 +252,8 @@ if MIX_SVB_BOOT:
         input:
             runner_script = "runner.py",
             config_file = f"{M6_SVB_OUT}analysis_config_svb_dump.yml",
-            subsamples = M4_PUBLISHED,
-            psdata = M5_PUBLISHED
+            # this roast's M.4 dataset (+ the M.5 pseudodata its files include), or another roast's
+            published = [] if SUB_EXTERNAL else [M4_PUBLISHED, M5_PUBLISHED]
         output: f"{M6_SVB_OUT}dumps/svb_dump__{{year}}.coffea"
         log: f"{M6_SVB_OUT}logs/dump__{{year}}.log"
         wildcard_constraints:
@@ -283,7 +284,10 @@ if MIX_SVB_BOOT:
                 --title {params.title} 2>&1 | tee {log}
             """
 
-    localrules: M6_svb_config, M6_svb_bootstrap
+    rule all_M6_svb:
+        input: f"{M6_SVB_OUT}index.html"
+
+    localrules: M6_svb_config, M6_svb_bootstrap, all_M6_svb
 
 rule all_M6:
     input:

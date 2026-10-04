@@ -1,0 +1,21 @@
+# ==============================================================================
+# SvB Poisson bootstrap ONLY, on roast mixeddata_run2_20260927_c39c264-0ce4d59's 16 subsamples
+# ==============================================================================
+# mixeddata_run2.yml (same inputs as that roast captured) with inputs.subsamples pointing at its
+# published mixeddata_4b: M.6's SvB bootstrap (M6_svb_config / M6_svb_dump / M6_svb_bootstrap) runs on
+# it, nothing else. The bootstrap rules postdate that roast (its pinned M.6 has no M.7 and differs by
+# ~150 lines), hence a separate roast at the current code. One Poisson(1) weight per source hemisphere,
+# (w1-1)(w2-1)+1 per mixed event; N_eff of the 16-subsample mean SvB_MA ps in SR (four-tag).
+#
+#   roast new --config coffea4bees/workflows/config/mixeddata_run2_svbboot.yml --label mixsvbboot_run2 \
+#       --step cmslpc:coffea4bees/workflows/Snakefile_MakeMixedData.smk
+#   roast submit <id> --step MakeMixedData --targets all_M6_svb
+#
+base: coffea4bees/workflows/config/mixeddata_run2.yml
+
+label: "mixeddata_run2_svbboot"
+
+inputs:
+  # lists replace: the base's upstream + the mixeddata roast whose subsamples are bootstrapped
+  upstream_roasts: [nominal_run2_20260919_a180b1a-a16559c, mixeddata_run2_20260927_c39c264-0ce4d59]
+  subsamples: "{roast:mixeddata_run2_20260927_c39c264-0ce4d59}/handoff/mixeddata_4b.yml"
