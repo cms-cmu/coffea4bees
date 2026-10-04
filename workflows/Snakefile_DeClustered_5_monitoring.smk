@@ -183,13 +183,14 @@ if SVB_BOOT:
         log: f"{SVB_BOOT_OUT}logs/bootstrap.log"
         params:
             toys = int(VAL.get('svb_bootstrap_toys', 30)),
-            title = f"{config.get('label', 'declustered')}: SvB_MA ps (SR, four-tag), {N_SEEDS} seeds"
+            # one token: run_container re-quotes the arguments, so spaces / parentheses break the shell
+            title = f"{config.get('label', 'declustered')}_SvB_MA_ps_SR_fourTag_{N_SEEDS}seeds"
         shell:
             """
             set -o pipefail
             {WRAPPER} {PYTHON} coffea4bees/workflows/scripts/svb_bootstrap.py {input} \\
                 --outdir {SVB_BOOT_OUT} --prefix {SYN_PREFIX} --toys {params.toys} \\
-                --title "{params.title}" 2>&1 | tee {log}
+                --title {params.title} 2>&1 | tee {log}
             """
 
     localrules: D5_svb_config, D5_svb_bootstrap
