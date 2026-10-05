@@ -247,6 +247,8 @@ rule run_two_stage_closure:
             config.get('closure_extra_args', '').strip() +
             (" --match_normalization" if config.get('match_closure_normalization', False) else "") +
             (" --include_ensemble_variance" if config.get('include_ensemble_variance', False) else "") +
+            (" --unify_background" if config.get('unify_background', False) else "") +
+            (f" --basis_type {config.get('basis_type', 'fourier')}" if config.get('basis_type') else "") +
             f" --subsample_indices {' '.join(str(v) for v in subsample_indices_closure)}" +
             " --ignore_failures"
         ).strip(),

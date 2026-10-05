@@ -132,6 +132,7 @@ config.setdefault('stats_container_wrapper', config.get('container_wrapper', "./
 out = config['output_path']
 if not out.endswith("/"):
     out += "/"
+out_f3 = f"{out}bkg_syst_F_3_stats/"
 default_nominal_coffea = "inputs/histAll_ttHbb_stitched.coffea" if os.path.exists("inputs/histAll_ttHbb_stitched.coffea") else ("output/v5_ttHbb/histAll_ttHbb.coffea" if os.path.exists("output/v5_ttHbb/histAll_ttHbb.coffea") else f"{phase_f_out}histAll_{phase_f_lbl}.coffea")
 default_nominal_json = "inputs/histAll_ttHbb_stitched.json" if os.path.exists("inputs/histAll_ttHbb_stitched.json") else ("output/v5_ttHbb/histAll_ttHbb.json" if os.path.exists("output/v5_ttHbb/histAll_ttHbb.json") else f"{phase_f_out}histAll_{phase_f_lbl}.json")
 
@@ -159,22 +160,12 @@ def get_region_for_channel(channel):
 def get_bkgsyst_for_channel(channel, rebin=None):
     ch_config = config.get('channels', {}).get(channel, {})
     if rebin is None:
-        rebin_val = str(config.get('rebin', '12'))
+        rebin_val = str(config.get('rebin', '20'))
     else:
         rebin_val = str(rebin)
     rebin_str = f"rebin{rebin_val}"
-    if 'bkgsyst' in ch_config and ch_config['bkgsyst']:
-        import re as re_mod
-        return re_mod.sub(r'rebin\d+', rebin_str, ch_config['bkgsyst'])
-    global_bkgsyst = config.get('make_combine_inputs', {}).get('bkgsyst') or config.get('bkgsyst')
-    if global_bkgsyst:
-        return global_bkgsyst.format(
-            output_path=out,
-            channel=channel,
-            closure_subdir=ch_config.get('closure_subdir', channel)
-        )
     closure_subdir = ch_config.get('closure_subdir', config.get('channel', 'ttHbb'))
-    mix_name = config.get('mix_name', '3bDvTMix4bDvT')
+    mix_name = config.get('mix_name', 'ttHbb_bkg_syst')
     var = ch_config.get('closure_var', config.get('variable', 'SvB_MA_ps_ttHbb'))
     classifier = config.get('classifier', 'SvB_MA')
     region = get_region_for_channel(channel)
@@ -248,22 +239,28 @@ rule final_output:
         """
 
 def get_combine_targets_F_3(wildcards):
-    checkpoint_output = checkpoints.evaluate_closure_candidates.get().output[0]
-    import json
-    try:
-        with open(checkpoint_output, "r") as f:
-            data = json.load(f)
-        passing_rebins = data.get("passing_rebins", [])
-    except Exception as e:
-        print(f"[Snakemake] Error reading {checkpoint_output}: {e}")
-        passing_rebins = []
-
-    if not passing_rebins:
-        print("[Snakemake] Notice: No candidate rebin scheme passed the two-stage closure test. Stage F_3 Combine targets will be empty.")
-        return []
+    explicit_rebins = config.get('f3_rebins') or config.get('stat_analysis_rebins')
+    if explicit_rebins:
+        if isinstance(explicit_rebins, (int, str)):
+            target_rebins = [int(r) for r in str(explicit_rebins).split()]
+        else:
+            target_rebins = [int(r) for r in explicit_rebins]
+    else:
+        closure_summary_path = f"{out}bkg_syst_F_2_run_two_stage_closure/closure_summary.json"
+        if os.path.exists(closure_summary_path):
+            import json
+            try:
+                with open(closure_summary_path, "r") as f:
+                    data = json.load(f)
+                target_rebins = data.get("passing_rebins", [15, 24])
+            except Exception as e:
+                print(f"[Snakemake] Error reading {closure_summary_path}: {e}")
+                target_rebins = [15, 24]
+        else:
+            target_rebins = [15, 24]
 
     targets = []
-    for r in passing_rebins:
+    for r in target_rebins:
         for channel, ch_config in config.get('channels', {}).items():
             sig = ch_config.get('signallabel')
             if not sig:
@@ -321,7 +318,8 @@ use rule make_combine_inputs from stat_analysis with:
             + (f"--cut {config['channels'][wildcards.channel]['cut']} " if 'cut' in config['channels'][wildcards.channel] and config['channels'][wildcards.channel]['cut'] not in ['', 'sum'] else '')
             + (f"--data_process {config['channels'][wildcards.channel]['data_process']} " if 'data_process' in config['channels'][wildcards.channel] else '')
             + f"--multijet_process {config['channels'][wildcards.channel].get('multijet_process', config['make_combine_inputs']['multijet_process'])} "
-            f"--tt_processes {' '.join(config['channels'][wildcards.channel].get('tt_processes', config['make_combine_inputs']['tt_processes']))}"
+            + f"--tt_processes {' '.join(config['channels'][wildcards.channel].get('tt_processes', config['make_combine_inputs']['tt_processes']))} "
+            + ("--unify_background " if config.get('unify_background', False) else "")
         ),
         container_wrapper = config['stats_container_wrapper']
     log: f"{out}logs/make_combine_inputs_rebin{{rebin}}_{{channel}}.log"

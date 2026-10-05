@@ -55,8 +55,15 @@ config.setdefault('isRun3', is_run3)
 run_period = "Run3" if is_run3 else "Run2"
 
 # ── 4. Subsamples & Ranks ──────────────────────────────────────────────────────
-N_SUBSAMPLES = int(config.get('n_subsamples', config.get('n_models', config.get('n_samples', 15))))
-SUBSAMPLES = [str(i) for i in range(N_SUBSAMPLES)]
+subsample_indices = config.get('subsample_indices', phase_e_cfg.get('subsample_indices', None))
+if subsample_indices is not None:
+    if isinstance(subsample_indices, str):
+        subsample_indices = [int(x) for x in subsample_indices.split()]
+    SUBSAMPLES = [str(i) for i in subsample_indices]
+    N_SUBSAMPLES = len(SUBSAMPLES)
+else:
+    N_SUBSAMPLES = int(config.get('n_subsamples', config.get('n_models', config.get('n_samples', 15))))
+    SUBSAMPLES = [str(i) for i in range(N_SUBSAMPLES)]
 
 config.setdefault('default_rank', 0)
 _rank_raw = config['default_rank']

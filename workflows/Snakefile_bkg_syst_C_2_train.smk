@@ -57,7 +57,10 @@ if not workflow.configfiles:
 include: "helpers/bkg_syst_common.smk"
 
 n_models = int(config.get('n_models', config.get('n_subsamples', 16)))
-MIX_INDICES = list(range(n_models))
+subsample_indices = config.get('subsample_indices', list(range(n_models)))
+if isinstance(subsample_indices, str):
+    subsample_indices = [int(x) for x in subsample_indices.split()]
+MIX_INDICES = [int(x) for x in subsample_indices]
 
 out_c = f"{out}bkg_syst_C_FvT/"
 os.makedirs(out_c, exist_ok=True)

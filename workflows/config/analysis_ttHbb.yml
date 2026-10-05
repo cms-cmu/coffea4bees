@@ -300,6 +300,7 @@ convert_hist_to_json:
 
 combine_outdir: "datacards/"
 make_combine_inputs:
+  rebin: 12
   stat_only: ""
   bkgsyst: "coffea4bees/stats_analysis/files/HIG-24-010/zz/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_zz_rebin1.pkl"
 

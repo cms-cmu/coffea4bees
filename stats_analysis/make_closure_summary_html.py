@@ -27,13 +27,15 @@ def parse_args():
 
 
 def is_hidden_plot(filename: str) -> bool:
-    """Returns True if the plot belongs to high-dimensional scans or diagonalized bases."""
+    """Returns True if the plot belongs to high-dimensional scans, diagonalized bases, or basis shapes."""
     fn = filename.lower()
     if "diagonalized" in fn:
         return True
     if "projection" in fn:
         return True
     if "_parameters_basis" in fn:
+        return True
+    if "normalized_basis" in fn or "additive_basis" in fn:
         return True
     return False
 
@@ -57,9 +59,7 @@ def categorize_plot(filename: str) -> tuple[int, str]:
         return (3, "Stage 2 — Spurious Signal Fits")
     if "subsample" in fn or fn.startswith("mix_"):
         return (4, "Pre-Fit Subsamples & Diagnostics")
-    if "normalized_basis" in fn or "additive_basis" in fn:
-        return (5, "Normalized Basis Function Shapes")
-    return (6, "Other Diagnostic Plots")
+    return (5, "Other Diagnostic Plots")
 
 
 def categorize_hidden_plot(filename: str) -> tuple[int, str]:
@@ -73,7 +73,9 @@ def categorize_hidden_plot(filename: str) -> tuple[int, str]:
         return (2, "Stage 2 — Spurious Signal Parameter Projections")
     if "diagonalized" in fn:
         return (3, "Diagonalized Basis Vectors")
-    return (4, "Other Parameter Projections")
+    if "normalized_basis" in fn or "additive_basis" in fn:
+        return (4, "Normalized & Additive Basis Shapes")
+    return (5, "Other Parameter Projections")
 
 
 def collect_plots(rebin_dir: Path, base_dir: Path) -> dict[str, dict[str, list[dict]]]:
