@@ -49,7 +49,9 @@ def main():
     parser.add_argument("-i", "--nominal_json", default="output/ttHbb_stitched/histAll_ttHbb_stitched.json",
                         help="Path to baseline nominal json.")
     parser.add_argument("-c", "--closure_dir", default="output/ttHbb_mixeddata_stitched_closure",
-                        help="Directory containing closure_v{v}/histAll_mixeddata_v{v}.coffea")
+                        help="Directory containing the subsample coffea files (see --file_template)")
+    parser.add_argument("--file_template", default="closure_v{v}/histAll_mixeddata_v{v}.coffea",
+                        help="Subsample coffea file under --closure_dir; {v} is the subsample index.")
     parser.add_argument("-o", "--output", default="output/ttHbb_mixeddata_stitched_closure/histAll_ttHbb_mixeddata_ave.json",
                         help="Output JSON path.")
     parser.add_argument("--subsamples", type=int, nargs="+", default=list(range(15)),
@@ -81,7 +83,7 @@ def main():
                 ref_dict = None
 
                 for v in args.subsamples:
-                    fpath = os.path.join(args.closure_dir, f"closure_v{v}", f"histAll_mixeddata_v{v}.coffea")
+                    fpath = os.path.join(args.closure_dir, args.file_template.format(v=v))
                     if not os.path.exists(fpath):
                         raise FileNotFoundError(f"Missing mixeddata coffea file: {fpath}")
                     h_data = load(fpath)["hists"][var]
