@@ -112,6 +112,8 @@ runs:
   analysis_ttHbb_bkg_syst.yml:
     - bkg_syst
     - bkg_syst_AB
+  trigweights_run3_signal.yml:
+    - TrigWeights
 
 not_covered:
   PhaseB_computeJCM: "no production config"

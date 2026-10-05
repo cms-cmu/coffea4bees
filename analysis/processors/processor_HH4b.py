@@ -153,6 +153,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         JCM_file (str): Path to JCM weight file.
         corrections_metadata (dict): Metadata for corrections (JES, etc.).
         apply_trigWeight (bool): Whether to apply trigger weights.
+        config_overrides (dict): processor_config keys set after its rules (e.g.
+            cut_on_HLT_decision: false for the no-trigger signal in the trigger-weight validation).
         apply_btagSF (bool): Whether to apply b-tagging scale factors.
         apply_FvT (bool): Whether to apply FvT classifier/friend tree.
         apply_boosted_veto (bool): Whether to apply boosted event veto.
@@ -211,6 +213,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         corrections_metadata: dict = None,
         apply_trigWeight: bool = True,
         require_trigWeight: bool = True,
+        config_overrides: dict | None = None,
         apply_btagSF: bool = True,
         apply_FvT: bool = True,
         FvT_pd3_floor: float = 0.0,
@@ -313,6 +316,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         self.apply_trigWeight = apply_trigWeight
         self.require_trigWeight = require_trigWeight  # error (not just a worker-side warning) if the trigWeight source is missing
+        self.config_overrides = dict(config_overrides) if config_overrides else None
         self.apply_btagSF = apply_btagSF
         self.apply_FvT = apply_FvT
         self.FvT_pd3_floor = FvT_pd3_floor  # 0 = off; see load_FvT
@@ -484,7 +488,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             #
             # Set process and datset dependent flags
             #
-            self.config = processor_config(self.processName, self.dataset, event)
+            self.config = processor_config(self.processName, self.dataset, event, self.config_overrides)
             # print("HACK")
             if self.config["isRun3"]:
                 # Mixed data and ttbar pseudodata carry jets already corrected when they were
