@@ -244,7 +244,7 @@ class splittingLibraryLookupTestCase(unittest.TestCase):
         t = self.targets
         lib.lookup(np.array(["bb"] * n + ["((bj)j)b"] * 2, dtype=object), t["pt"][:n + 2], t["eta"][:n + 2],
                    np.full(n + 2, 2), np.full(n + 2, 2), np.arange(n + 2), 0)
-        self.assertEqual(lib.lookup_counts, {"exact": n, "child_content": 2, "parent_content": 0, "coarse": 0, "self_match": 0})
+        self.assertEqual(lib.lookup_counts, {"exact": n, "child_content": 2, "parent_content": 0, "coarse": 0, "self_match": 0, "single_candidate": 0})
         lib.lookup(np.array(["bb"], dtype=object), t["pt"][:1], t["eta"][:1], [2], [2], [0], 0)
         self.assertEqual(lib.lookup_counts["exact"], n + 1)          # running total
 
@@ -368,6 +368,31 @@ class libraryDeclusteringTestCase(unittest.TestCase):
         r2 = random_ranks(rng.uniform(30, 300, n), rng.uniform(-2.5, 2.5, n), rng.uniform(-3, 3, n),
                           np.arange(n), 5, (1, 0, 0))
         self.assertLess(np.mean(r == r2), 0.3)          # another seed -> (nearly) independent draw
+
+    def test_lib_index(self):
+        """Every output jet names the library row its splitting came from, or -1 if it was never
+        declustered; seeds draw different rows; the children of a row match its child flavors."""
+        a, b = self._run_random(3), self._run_random(4)
+        idx = np.asarray(ak.flatten(a.lib_index))
+        n_single = int(ak.sum(ak.str.length(self.clustered.jet_flavor) == 1))     # never declustered
+        self.assertEqual(int(np.sum(idx == -1)), n_single)
+        drawn = idx[idx >= 0].astype(np.int64)
+        self.assertTrue(np.all(drawn < len(self.lib.data["run"])))
+        self.assertGreater(len(drawn), 0)
+        # drawn rows never come from the event being declustered
+        ev = np.repeat(self.event_ids[:, 2], np.asarray(ak.num(a)))[idx >= 0]
+        self.assertFalse(np.any(np.asarray(self.lib.data["event"])[drawn] == ev))
+        self.assertFalse(np.array_equal(idx, np.asarray(ak.flatten(b.lib_index))))
+
+    def test_single_candidate_count(self):
+        lib = SplittingLibrary(self.lib_rows, carry_fields=["btagScore"], min_entries=5)
+        make_synthetic_event(self.clustered, None, declustering_rand_seed=0, b_pt_threshold=30, library=lib,
+                             event_ids=self.event_ids, library_selection="random", library_max_distance=1e-9)
+        self.assertGreater(lib.lookup_counts["single_candidate"], 0)
+        lib2 = SplittingLibrary(self.lib_rows, carry_fields=["btagScore"], min_entries=5)
+        make_synthetic_event(self.clustered, None, declustering_rand_seed=0, b_pt_threshold=30, library=lib2,
+                             event_ids=self.event_ids, library_selection="random", library_max_distance=None)
+        self.assertEqual(lib2.lookup_counts["single_candidate"], 0)
 
     def test_seeds_differ(self):
         a, b = self._run(0), self._run(1)

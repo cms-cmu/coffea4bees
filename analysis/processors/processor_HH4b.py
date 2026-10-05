@@ -240,6 +240,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         fourTag_use_tight: bool = False,  # Run3: redefine fourTag as 3 Tight + >=4 Medium b-tagged jets
         friends: dict[str, str|FriendTemplate] = None,
         return_events_for_display: bool = False,
+        dump_SvB_in_SR: bool = False,  # (run, lumi, event, SvB_MA.ps) of four-tag SR events -> processOutput["SvB_in_SR"]
+        dump_hemi_sources: bool = False,  # ... + the mixed events' library hemispheres (posHemiNew_*/negHemiNew_*)
         tracker = None,
         object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
         candidates_selection_cfg: str = "coffea4bees/analysis/metadata/candidates_selection_thresholds.yml",
@@ -388,6 +390,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.histCuts = hist_cuts
         self.apply_mixeddata_sel = apply_mixeddata_sel
         self.return_events_for_display = return_events_for_display
+        self.dump_SvB_in_SR = dump_SvB_in_SR
+        self.dump_hemi_sources = dump_hemi_sources
         self.year_override = year_override
         self.parking_lumi_cfg = load_parking_lumi_cfg(parking_lumi_cfg) if parking_lumi_cfg else None
         self.compute_hemi_mixing_diagnostics = compute_hemi_mixing_diagnostics
@@ -768,6 +772,12 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         if self.return_events_for_display:
             self.events_for_display(selev, processOutput)
 
+        # Per-event SvB of the four-tag SR events, for a Poisson bootstrap outside the processor
+        # (DeClustered D.5: workflows/scripts/svb_bootstrap.py)
+        if self.dump_SvB_in_SR and not shift_name:
+            from coffea4bees.analysis.helpers.write_debug_info import dump_SvB_in_SR
+            dump_SvB_in_SR(selev, processOutput, dataset=event.metadata["dataset"], hemi_sources=self.dump_hemi_sources)
+
         # Blind data in fourTag SR (mixeddata, synthetic data, and MC are never blinded). isSyntheticMC
         # too: signal MC run through the mixing / declustering (synthetic_mc_*) has isMC False, so it
         # was blinded like data -- its SR SvB > 0.8 tail silently vanished (MakeMixedData M.7, Run 2).
@@ -819,7 +829,11 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     era = event.metadata["dataset"].removeprefix("data_")
                     self._cutFlow_ttbar.addOutput(processOutput, f"TTbar_from_d3_{era}")
                 if self.plot_ttbar_with_MvD_weights and hasattr(self, '_cutFlow_ttbar_MvD'):
-                    era = event.metadata["dataset"].removeprefix("mixeddata_all_")
+                    # the mixed data: strip its own name (mixeddata_all, mixeddata_all_4bmix, ...), not
+                    # the literal "mixeddata_all_", so every background model gives
+                    # TTbar4b_from_MvD_<year><era>. Other chunks keep their (empty, blessed) keys.
+                    prefix = self.processName if self.config["isMixedDataAll"] else "mixeddata_all"
+                    era = event.metadata["dataset"].removeprefix(f"{prefix}_")
                     self._cutFlow_ttbar_MvD.addOutput(processOutput, f"TTbar4b_from_MvD_{era}")
 
         with self._stage(f"{label}:fill_histograms"):

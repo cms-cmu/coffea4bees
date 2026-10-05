@@ -108,8 +108,8 @@ pdfs: {}      # (no options yet)
 declustering:
   # The Run 2 skimmer config (scripts/synthetic-dataset-make-dataset.sh); this roast overrides its
   # base_path, PDF file, seed and ttbar subtraction. Its condor_transfer_input_files list lacks
-  # coffea4bees/skimmer, which only matters without the shared dask daemon (whose tarball comes
-  # from D.1's config: all of coffea4bees/). b-jet pT floor: from object_selection (Run 2: 40 GeV).
+  # coffea4bees/skimmer; D3_config ships all of src + coffea4bees instead (D.3 starts the shared
+  # dask daemon when D.1 is skipped). b-jet pT floor: from object_selection (Run 2: 40 GeV).
   skimmer_template: "coffea4bees/skimmer/metadata/declustering.yml"
   chunksize: 25000              # template: 100000 -- see cluster.chunksize
   worker_memory: 8GB            # template: 4GB

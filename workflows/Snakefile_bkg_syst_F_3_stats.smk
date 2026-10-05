@@ -212,7 +212,8 @@ module combine:
     config: config
 
 # Resolve absolute CERNBox destination path
-cern_user = config.get("cern_user", os.environ.get("USER", "algomez"))
+# final_output only (not in any all_* target; a roast publishes with `roast publish`)
+cern_user = config.get("cern_user") or os.environ.get("CERN_USER") or os.environ.get("USER", "")
 cern_path = config.get("cern_path", "www/ttHbb/Plots/")
 if not cern_path.startswith("/"):
     first_letter = cern_user[0]

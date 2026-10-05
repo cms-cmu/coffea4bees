@@ -68,6 +68,7 @@ class DeClusterer(Skimmer4b):
                 library_max_distance: float = 0.05,
                 require_trigWeight: bool = True,
                 library_mass_match_weight: float = None,
+                library_cache_size: int = 2,
                 event_subsample: int = 1,
                 *args, **kwargs):
         # declustering_method "pdf" (default): sample the splittings from clustering_pdfs_file.
@@ -94,6 +95,12 @@ class DeClusterer(Skimmer4b):
         self.library_max_distance = None if library_max_distance in (None, "None") else float(library_max_distance)
         # match low-b (< 2 b) splittings also on w * log(m/pT) of the parent; None: off
         self.library_mass_match_weight = library_mass_match_weight
+        # libraries kept per worker process (most recently used). 2 avoids reloads when a worker's
+        # chunks alternate between two years, but two Run 2 libraries (UL18 the largest) + a chunk
+        # exceeded 6 GB workers once 16 seeds x 4 years shared one daemon (declib16_run2): 1 there.
+        self.library_cache_size = int(library_cache_size)
+        if self.library_cache_size < 1:
+            raise ValueError(f"library_cache_size must be >= 1, got {library_cache_size!r}")
         # MC only: without a trigWeight friend, fail (default) or write unit trigger weights
         self.require_trigWeight = require_trigWeight
         # Decluster only events with event % N == 0 (DeClustered D.6 signal check, as the mixer's
@@ -173,7 +180,7 @@ class DeClusterer(Skimmer4b):
             # per process, not per instance: each chunk gets a freshly unpickled processor
             splitting_library = SplittingLibrary.cached(
                 library_file, year, carry_fields=self.library_carry_fields, min_entries=self.library_min_entries,
-                mass_match_weight=self.library_mass_match_weight)
+                mass_match_weight=self.library_mass_match_weight, cache_size=self.library_cache_size)
 
         path = fname.replace(fname.split("/")[-1], "")
 
@@ -417,6 +424,8 @@ class DeClusterer(Skimmer4b):
                 if field in INTEGER_FIELDS:
                     values = ak.values_astype(ak.nan_to_num(values, nan=-1), np.int32)
                 out_branches[f"Jet_{field}"] = values
+            # D.5 seed study: which library splitting each jet came from (-1: not declustered)
+            out_branches["Jet_lib_index"] = ak.values_astype(ak.nan_to_num(declustered_jets.lib_index, nan=-1), np.int32)
 
         #
         #  Need to skip all the other jet branches to make sure they have the same number of jets

@@ -36,7 +36,7 @@
 # INPUTS:
 #   - Dedicated JCMs: {out_b1}jetCombinatoricModel_SB_mix_v{m}.yml (From B_1)
 #   - Detector Inputs: coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json
-#   - Mixed Inputs: {out_a4}histAll_ttHbb_mixeddata_v{m}.json (From A_4)
+#   - Mixed Inputs: {out_a3}histAll_ttHbb_mixeddata_v{m}.json (From A_3)
 #   - Staged Wfs: {out_c}models/mix_{m}/wfs/train.yml & common.yml
 #
 # OUTPUTS:

@@ -108,6 +108,8 @@ out = config['output_path']
 if not out.endswith("/"):
     out += "/"
 out_f2 = f"{out}bkg_syst_F_2_run_two_stage_closure/"
+if 'out_a3' not in globals():     # standalone: no bkg_syst_common
+    out_a3 = f"{out}bkg_syst_A_3_process_subsamples/"
 mix_name = config['mix_name']
 classifier = config['classifier']
 channel = config['channel']
@@ -143,20 +145,20 @@ rule all_bkg_syst_F_2:
         f"{out_f2}closure_summary.html"
 
 n_models_closure = int(config.get('n_subsamples', config.get('n_models', config.get('n_samples', 16))))
-if 'out_a4' not in locals() and 'out_a4' not in globals():
-    if os.path.exists(f"{out}bkg_syst_A_4_process_subsamples"):
-        out_a4 = f"{out}bkg_syst_A_4_process_subsamples/"
-    else:
-        out_a4 = f"{out}bkg_syst_A_2_process_subsamples/"
 
 subsample_indices_closure = config.get('subsample_indices', list(range(n_models_closure)))
 if isinstance(subsample_indices_closure, str):
     subsample_indices_closure = [int(x) for x in subsample_indices_closure.split()]
+# runTwoStageClosure.py fits mixes 0..nMixes-1 (it has no --subsample_indices; passing one failed every
+# run_two_stage_closure job with "unrecognized arguments")
+if [int(v) for v in subsample_indices_closure] != list(range(len(subsample_indices_closure))):
+    raise ValueError(f"subsample_indices {subsample_indices_closure}: the two-stage closure fit "
+                     f"(runTwoStageClosure.py --nMixes) takes subsamples 0..n-1 only")
 
 def get_closure_coffea_inputs(wildcards):
     inputs = {
         'bkg': f"{out}bkg_syst_F_1_analysis/histAll_mixeddata_bkgs.coffea",
-        'mix': [f"{out_a4}histAll_{channel}_mixeddata_v{v}.coffea" for v in subsample_indices_closure],
+        'mix': [f"{out_a3}histAll_{channel}_mixeddata_v{v}.coffea" for v in subsample_indices_closure],
     }
     return inputs
 
@@ -171,7 +173,7 @@ rule coffea_to_root_closure:
         python_bin = config['python_bin'],
         closure_dir = f"{out}bkg_syst_F_1_analysis/",
         bkg_coffea = f"{out}bkg_syst_F_1_analysis/histAll_mixeddata_bkgs.coffea",
-        mixed_dir = out_a4,
+        mixed_dir = out_a3,
         channel = channel,
         mix_name = mix_name,
         subsample_indices = " ".join(str(v) for v in subsample_indices_closure),
@@ -195,12 +197,10 @@ rule coffea_to_root_closure:
             -o {output} 2>&1 | tee {log}
         """
 
-default_signal_coffea = "inputs/histAll_ttHbb_stitched.coffea" if os.path.exists("inputs/histAll_ttHbb_stitched.coffea") else ("output/v5_ttHbb/histAll_ttHbb.coffea" if os.path.exists("output/v5_ttHbb/histAll_ttHbb.coffea") else "output/ttHbb/histAll_ttHbb.coffea")
-
 rule make_signal_root_closure:
     input:
         script = "coffea4bees/stats_analysis/make_signal_root.py",
-        signal_file = config.get('nominal_coffea', default_signal_coffea),
+        signal_file = config['nominal_coffea'],        # inputs.nominal_hists, fetched (bkg_syst_common)
     output:
         f"{out_f2}root_inputs/hist_signal_ttHbb.root"
     params:

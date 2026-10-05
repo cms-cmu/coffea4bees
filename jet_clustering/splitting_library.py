@@ -260,8 +260,10 @@ class SplittingLibrary:
         self._groups = [self._index(inverse, labels) for labels in (list(unique_flavors), summary, content, coarse)]
         self._trees = {}
         # Running totals over every lookup() call (retries included): targets resolved at each
-        # level, and last-resort same-event matches. Read (and differenced) by the DeClusterer.
-        self.lookup_counts = {**{name: 0 for name in self.LEVELS}, "self_match": 0}
+        # level, last-resort same-event matches, and (with max_distance) targets whose only
+        # candidate within the cap is the nearest one -- drawn identically by every seed. Read
+        # (and differenced) by the DeClusterer.
+        self.lookup_counts = {**{name: 0 for name in self.LEVELS}, "self_match": 0, "single_candidate": 0}
         logging.info(f"SplittingLibrary: {len(self.flavor)} splittings, {len(self._groups[0])} exact types")
 
     @staticmethod
@@ -295,17 +297,22 @@ class SplittingLibrary:
         return cls(rows, **kwargs)
 
     @classmethod
-    def cached(cls, files_yaml, year, **kwargs):
+    def cached(cls, files_yaml, year, *, cache_size=None, **kwargs):
         """from_files, loaded once per process. The executor hands every chunk a freshly unpickled
         processor, so a per-instance cache reloads the library (and rebuilds its indices and
         KD-trees) per chunk. Returns a shallow view sharing all of that, with its own zeroed
-        lookup_counts (the DeClusterer differences them per chunk)."""
+        lookup_counts (the DeClusterer differences them per chunk). ``cache_size``: libraries kept
+        per process (default _LIBRARY_CACHE_SIZE); the least recently used are dropped before a
+        new one loads, so at most cache_size are ever in memory."""
+        cache_size = _LIBRARY_CACHE_SIZE if cache_size is None else int(cache_size)
         key = (files_yaml, year, tuple(sorted((k, tuple(v) if isinstance(v, list) else v) for k, v in kwargs.items())))
         library = _LIBRARY_CACHE.pop(key, None)
         if library is None:
+            while len(_LIBRARY_CACHE) >= cache_size:              # free memory BEFORE loading
+                _LIBRARY_CACHE.pop(next(iter(_LIBRARY_CACHE)))
             library = cls.from_files(files_yaml, year, **kwargs)
         _LIBRARY_CACHE[key] = library                         # most recently used last
-        while len(_LIBRARY_CACHE) > _LIBRARY_CACHE_SIZE:
+        while len(_LIBRARY_CACHE) > cache_size:
             _LIBRARY_CACHE.pop(next(iter(_LIBRARY_CACHE)))
         view = copy.copy(library)
         view.lookup_counts = dict.fromkeys(library.lookup_counts, 0)
@@ -398,6 +405,7 @@ class SplittingLibrary:
                     # allowed neighbours are distance-ordered, so the ones within the cap come first
                     n_close = np.maximum((allowed & (dist <= max_distance)).sum(axis=1), 1)
                     r = np.minimum(r, n_close - 1)
+                    self.lookup_counts["single_candidate"] += int(np.sum((n_close == 1) & (n_allowed > 0)))
                 r = r + int(retry_offset)
 
                 # column of the r-th allowed neighbour (or the last allowed one)
@@ -512,8 +520,8 @@ def decluster_with_library(jets, library, event_ids, rank, *, scale_pt=True, boo
                         stepped outward by ``retry_offset`` (the retry count) so a failing jet
                         cannot keep drawing the same candidates; ``rank`` is ignored.
                         k_neighbors 1 = rank mode, seed 0.
-    Returns the jagged child arrays (A, B) with pt, eta, phi, mass, jet_flavor, btag_string and
-    the library's carry fields (NaN for combined children).
+    Returns the jagged child arrays (A, B) with pt, eta, phi, mass, jet_flavor, btag_string,
+    the library's carry fields (NaN for combined children) and lib_index (the library row drawn).
     """
     from coffea.nanoevents.methods import vector
 
@@ -550,6 +558,9 @@ def decluster_with_library(jets, library, event_ids, rank, *, scale_pt=True, boo
         }
         for field in library.carry_fields:
             fields[field] = k[field]
+        # the library row this child comes from (both children of a draw share it): lets D.5
+        # compare the draws of different seeds (make_synthetic_event carries it like a carry field)
+        fields["lib_index"] = index.astype(np.float64)
         children.append(ak.zip({n: ak.unflatten(v, counts) for n, v in fields.items()},
                                with_name="PtEtaPhiMLorentzVector", behavior=vector.behavior))
     return children[0], children[1]

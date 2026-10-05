@@ -1,0 +1,24 @@
+# ==============================================================================
+# SvB Poisson bootstrap ONLY, on roast mixeddata_run3_4bmix_20261001_af69c01-28f390d's 16 seeds
+# ==============================================================================
+# mixeddata_run3_4bmix.yml with inputs.subsamples pointing at that roast's published
+# mixeddata_4bmix_4b (samples mix_4bmix_v<k> = seed k + ttbar pseudodata): M.6's SvB bootstrap only
+# (see mixeddata_run2_svbboot.yml). The 4b-mixing analogue of the declustered D5_svb_bootstrap.
+#
+#   roast new --config coffea4bees/workflows/config/mixeddata_run3_4bmix_svbboot.yml --label mixsvbboot_4bmix \
+#       --step cmslpc:coffea4bees/workflows/Snakefile_MakeMixedData.smk
+#   roast submit <id> --step MakeMixedData --targets all_M6_svb
+#
+base: coffea4bees/workflows/config/mixeddata_run3_4bmix.yml
+
+label: "mixeddata_run3_4bmix_svbboot"
+
+inputs:
+  upstream_roasts: [nominal_run3_nontight_20260925_0c53380-193851f, nominal_run3_20260922_3f9e199-1e0504f,
+                    mixeddata_run3_20260926_956d4bf-aca8a4e, mixeddata_run3_4bmix_20261001_af69c01-28f390d]
+  subsamples: "{roast:mixeddata_run3_4bmix_20261001_af69c01-28f390d}/handoff/mixeddata_4bmix_4b.yml"
+
+# the per-seed dataset that roast published (this workflow no longer makes or names it)
+subsamples:
+  n: 16
+  dataset_name: "mixeddata_4bmix_4b"

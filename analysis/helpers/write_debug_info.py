@@ -402,6 +402,36 @@ def add_debug_info_for_Boosted_Synthetic(events, processOutput):
 
 
 
+HEMI_SOURCE_FIELDS = ("run", "luminosityBlock", "event", "hemisphereId")
+
+
+def dump_SvB_in_SR(event, processOutput, dataset, key="SvB_in_SR", hemi_sources=False):
+    """add_SvB_in_SR under one namespaced key, as plain lists (accumulate concatenates them across
+    chunks): processOutput[key][dataset] = {run, luminosityBlock, event, SvB_MA_ps} for the
+    four-tag SR events. Input of workflows/scripts/svb_bootstrap.py (Poisson bootstrap of the SvB
+    distribution over the input events).
+    hemi_sources (mixed data): also the library hemispheres each mixed event was built from,
+    posHemiNew_* / negHemiNew_* (run, luminosityBlock, event, hemisphereId) as add_hemi_events;
+    -1 for events without them (the ttbar pseudodata files in a mixeddata_4b sample), so every
+    column keeps one entry per event."""
+    passSR = ak.to_numpy(ak.fill_none(event["quadJet_selected"].SR & event.fourTag, False))
+    sel = event[passSR]
+    cols = {
+        "run": ak.to_numpy(sel.run).astype("int64").tolist(),
+        "luminosityBlock": ak.to_numpy(sel.luminosityBlock).astype("int64").tolist(),
+        "event": ak.to_numpy(sel.event).astype("int64").tolist(),
+        "SvB_MA_ps": ak.to_numpy(sel.SvB_MA.ps).astype("float64").tolist(),
+    }
+    if hemi_sources:
+        for side in ("posHemiNew", "negHemiNew"):
+            for f in HEMI_SOURCE_FIELDS:
+                if side in sel.fields and f in sel[side].fields:
+                    cols[f"{side}_{f}"] = ak.to_numpy(sel[side][f]).astype("int64").tolist()
+                else:
+                    cols[f"{side}_{f}"] = [-1] * len(sel)
+    processOutput[key] = {dataset: cols}
+
+
 def add_SvB_in_SR(event, processOutput):
     # passSR = (selev["quadJet_selected"].SR)
     passSR = (event["quadJet_selected"].SR & event.fourTag)

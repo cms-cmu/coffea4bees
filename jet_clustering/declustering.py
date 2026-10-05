@@ -716,7 +716,10 @@ def make_synthetic_event(input_jets, input_pdfs, declustering_rand_seed=66, *, b
     flat_declustered_mass       = np.zeros(n_total_declustered_jets)
     flat_declustered_jet_flavor = np.full (n_total_declustered_jets, "X")
     flat_declustered_btagScore  = np.full(n_total_declustered_jets, -1.0)
-    carry_fields = list(library.carry_fields) if library is not None else []
+    # + lib_index: the library row each jet's splitting was drawn from (-1: never declustered)
+    carry_fields = list(library.carry_fields) + ["lib_index"] if library is not None else []
+    if library is not None and "lib_index" not in input_jets.fields:
+        input_jets = ak.with_field(input_jets, ak.values_astype(ak.full_like(input_jets.pt, -1), np.float64), "lib_index")
     flat_declustered_carry = {field: np.full(n_total_declustered_jets, np.nan) for field in carry_fields}
 
     num_trys = 0

@@ -34,7 +34,7 @@
 #        using HTCondor/Dask batching across all analysis years (UL16..UL18).
 #      - Produces: `closure_v{m}/histAll_data_v{m}.coffea`
 #   3. Mixed Data Symlinking (`link_mixeddata_closure`):
-#      - Symlinks Stage A_4 unweighted 4-tag mixed data histograms:
+#      - Symlinks Stage A_3 unweighted 4-tag mixed data histograms:
 #        `histAll_ttHbb_mixeddata_v{m}.coffea` -> `closure_v{m}/histAll_mixeddata_v{m}.coffea`
 #   4. Closure Comparison Plotting (`make_plots_closure`):
 #      - Executes `coffea4bees/plots/makePlots.py` to compare Data background model
@@ -50,7 +50,7 @@
 # INPUTS:
 #   - Dedicated JCM YAMLs: output/.../bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v{m}.yml
 #   - FvT Friend Manifests: output/.../bkg_syst_C_FvT/friends/friends_FvT_{mix_name}_v{m}.json
-#   - Stage A_4 Mixed Data: output/.../bkg_syst_A_4_process_subsamples/histAll_ttHbb_mixeddata_v{m}.coffea
+#   - Stage A_3 Mixed Data: output/.../bkg_syst_A_3_process_subsamples/histAll_ttHbb_mixeddata_v{m}.coffea
 #   - Plotting Metadata: coffea4bees/plots/metadata/plots_bkg_syst_closure_ttHbb.yml
 #
 # OUTPUTS:
@@ -100,8 +100,11 @@ rule all_bkg_syst_F_1_hists:
 
 per_year_jcm = bool(config.get('per_year_jcm', (config.get('phaseB_1', {}) or {}).get('per_year_jcm', False)))
 
-# Staging rules for cross-cluster execution under roast (fetching from EOS handoff if not local)
-if HANDOFF_EOS:
+# Staging rules for cross-cluster execution under roast (fetching from EOS handoff if not local).
+# Only when F_1 runs without the stage that makes the file (Snakefile_bkg_syst.smk includes B_1 and
+# C before F: two rules for one output are ambiguous).
+_defined_rules = {r.name for r in workflow.rules}
+if HANDOFF_EOS and 'extract_friend_manifest' not in _defined_rules:
     rule stage_bkg_syst_friend_manifest:
         output:
             f"{out_c}friends/friends_FvT_{mix_name}_v{{m}}.json"
@@ -117,6 +120,7 @@ if HANDOFF_EOS:
             fi
             """
 
+if HANDOFF_EOS and 'make_subsample_jcm_b1' not in _defined_rules:
     rule stage_bkg_syst_jcm:
         output:
             f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}.yml"
@@ -193,7 +197,7 @@ rule analysis_data_closure:
 rule make_plots_closure:
     input:
         data_coffea = f"{out_f1}histAll_mixeddata_bkgs.coffea",
-        mixed_coffea = expand(f"{out_a4}histAll_{channel}_mixeddata_v{{m}}.coffea", m=SUBSAMPLES),
+        mixed_coffea = expand(f"{out_a3}histAll_{channel}_mixeddata_v{{m}}.coffea", m=SUBSAMPLES),
         plot_cfg = closure_plot_cfg
     output:
         done = f"{out_f1}plots/plots_done.txt"

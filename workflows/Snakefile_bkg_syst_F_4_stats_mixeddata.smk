@@ -50,7 +50,7 @@
 #
 # INPUTS:
 #   - Nominal JSON: inputs/histAll_ttHbb_stitched.json (or nominal path)
-#   - Stage F_1 Mixed Data Coffea: output/.../bkg_syst_F_1_analysis/closure_v{m}/histAll_mixeddata_v{m}.coffea
+#   - Stage A_3 Mixed Data Coffea: output/.../bkg_syst_A_3_process_subsamples/histAll_{channel}_mixeddata_v{m}.coffea
 #   - Stage F_2 Systematic Pickle: output/.../bkg_syst_F_2_run_two_stage_closure/closure_fits/.../hists_closure_*.pkl
 #
 # OUTPUTS:
@@ -88,8 +88,10 @@ out = config['output_path']
 if not out.endswith("/"):
     out += "/"
 out_f4 = f"{out}bkg_syst_F_4_stats_mixeddata/"
-default_nominal_json = "inputs/histAll_ttHbb_stitched.json" if os.path.exists("inputs/histAll_ttHbb_stitched.json") else f"{phase_f_out}histAll_{phase_f_lbl}.json"
-nominal_json = config.get('nominal_json', default_nominal_json)
+if 'out_a3' not in globals():     # standalone: no bkg_syst_common
+    out_a3 = f"{out}bkg_syst_A_3_process_subsamples/"
+a3_channel = config.get('channel', 'ttHbb')
+nominal_json = config['nominal_json']           # written by F_3 from inputs.nominal_hists
 ave_mixeddata_json = config.get('ave_mixeddata_json', f"{out_f4}histAll_ttHbb_mixeddata_ave.json")
 
 config.setdefault('make_combine_inputs', {})
@@ -247,11 +249,14 @@ if isinstance(subsample_indices_f4, str):
 rule make_mixeddata_ave_json:
     input:
         nominal_json = nominal_json,
-        subsample_files = [f"{out}bkg_syst_F_1_analysis/closure_v{v}/histAll_mixeddata_v{v}.coffea" for v in subsample_indices_f4]
+        # the unweighted 4b mixed subsamples (A_3); the single-pass F_1 makes no per-subsample copies
+        subsample_files = [f"{out_a3}histAll_{a3_channel}_mixeddata_v{v}.coffea" for v in subsample_indices_f4]
     output:
         ave_json = ave_mixeddata_json
     params:
-        closure_dir = f"{out}bkg_syst_F_1_analysis/",
+        closure_dir = out_a3,
+        # a function: snakemake would expand {v} in a params string as a wildcard
+        file_template = lambda wildcards: f"histAll_{a3_channel}_mixeddata_v{{v}}.coffea",
         script = "coffea4bees/stats_analysis/make_mixeddata_ave_json.py",
         subsamples = " ".join(str(v) for v in subsample_indices_f4),
         container_wrapper = "./run_container"
@@ -264,6 +269,7 @@ rule make_mixeddata_ave_json:
         {params.container_wrapper} python3 {params.script} \
             -i {input.nominal_json} \
             -c {params.closure_dir} \
+            --file_template '{params.file_template}' \
             --subsamples {params.subsamples} \
             -o {output.ave_json} > {log} 2>&1
         """

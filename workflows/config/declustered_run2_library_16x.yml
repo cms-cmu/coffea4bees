@@ -1,0 +1,41 @@
+# ==============================================================================
+# 16x DECLUSTERED SAMPLE — Run 2, library declustering (libA), 16 seeds
+# ==============================================================================
+# declustered_run2_library.yml (the libA setup, Run 2 carry fields) run with 16 seeds on the
+# library roast libA_run2_20261002_7fc0957-3531140 published (no D.1); the Run 2 twin of
+# declustered_run3_library_16x.yml -- see that config for the products and the caveats. Handoffs:
+#   mixeddata_all_declib16.yml        all 16 seeds' multijet as ONE sample (MvD-style background model)
+#   synthetic_data_lib16_4b.yml       nSamples 16, syn_v<k> = seed k + ttbar pseudodata
+#   synthetic_data_lib16_multijet.yml the same without the pseudodata (D.4 / D.5)
+# (Same names as Run 3: runner -m merges a dataset's years across sources.)
+# The upstream B.1 histograms are blinded: D.4 / D.5 compare with 4b data outside the SR only.
+#
+#   roast new --config coffea4bees/workflows/config/declustered_run2_library_16x.yml \
+#       --label declib16_run2 --step cmslpc:coffea4bees/workflows/Snakefile_DeClustered.smk
+#   roast submit <id> --step DeClustered --targets all_D3     # 16 seeds x 4 years D3 condor jobs
+#
+base: coffea4bees/workflows/config/declustered_run2_library.yml
+
+label: "declustered_run2_library_16x"
+
+inputs:
+  # lists are replaced, not merged: the base's two upstreams + the libA Run 2 roast (its library)
+  upstream_roasts: [nominal_run2_20260919_a180b1a-a16559c, mixeddata_run2_20260927_c39c264-0ce4d59,
+                    libA_run2_20261002_7fc0957-3531140]
+  splitting_library: "{roast:libA_run2_20261002_7fc0957-3531140}/splitting_library/splitting_library.yml"
+
+declustering:
+  n_seeds: 16
+  dataset_name: "synthetic_data_lib16_4b"
+  multijet_dataset_name: "synthetic_data_lib16_multijet"
+  all_dataset_name: "mixeddata_all_declib16"
+  library:
+    # PINNED to what roast declib16_run2_20261003_f7183e9-9ae5088 ran (and its dataset names mean):
+    # the 0.05 distance cap, two libraries per worker. The library default is now no cap -- the
+    # current 16x Run 2 sample is declustered_run2_library_16x_nocap.yml.
+    max_distance: 0.05
+    cache_size: 2
+
+# D.6 is the libA Run 2 roast's signal check verbatim (same library, method and signal seed): skip it.
+signal_check:
+  enabled: false
