@@ -182,6 +182,7 @@ handoff:
 # (helpers/common.smk: write_workflow_overrides).
 # ==============================================================================
 fvt:
+  gpu_qos: medium
   eos_base: "{eos_prod}/{roast_id}"
   plot_base: "{web_prod}/{roast_id}/classifier"
   classifier_config_paths: "coffea4bees"
@@ -224,6 +225,8 @@ fvt_closure:
 # background is {eos_base}/friend/FvT_ttHbb_stitched, i.e. THIS roast's Phase C output.
 # ==============================================================================
 svb:
+  gpu_qos: medium
+  train_runtime: 180
   eos_base: "{eos_prod}/{roast_id}"
   plot_base: "{web_prod}/{roast_id}/classifier"
   classifier_config_paths: "coffea4bees"
@@ -297,6 +300,7 @@ convert_hist_to_json:
 
 combine_outdir: "datacards/"
 make_combine_inputs:
+  rebin: 12
   stat_only: ""
   bkgsyst: "coffea4bees/stats_analysis/files/HIG-24-010/zz/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_zz_rebin1.pkl"
 

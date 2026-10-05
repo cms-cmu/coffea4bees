@@ -241,7 +241,15 @@ def stage_phaseC_configs(config, out_c):
             return [_format_structure(elem, mapping) for elem in obj]
         return obj
 
-    for m in range(n_models):
+    raw_subsamples = config.get('subsample_indices', phase_c_cfg.get('subsample_indices', list(range(n_models))))
+    if isinstance(raw_subsamples, str):
+        subsample_indices = [int(x) for x in raw_subsamples.split()]
+    else:
+        subsample_indices = [int(x) for x in raw_subsamples]
+
+    jcm_dir = os.path.dirname(jcm_template) if jcm_template else os.path.join(out, "bkg_syst_B_1_computeJCM")
+
+    for m in subsample_indices:
         model_dir = os.path.join(out_c, f"models/mix_{m}")
         wfs_dir = os.path.join(model_dir, "wfs")
         os.makedirs(wfs_dir, exist_ok=True)
@@ -261,7 +269,7 @@ def stage_phaseC_configs(config, out_c):
             "FvT": fvt_eos,
         }
         for y in years:
-            local_jcm_y = os.path.join(out, f"bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v{m}_{y}.yml")
+            local_jcm_y = os.path.join(jcm_dir, f"jetCombinatoricModel_SB_mix_v{m}_{y}.yml")
             if handoff_eos and not os.path.exists(local_jcm_y):
                 mapping[f"jcm_{y}"] = f"{handoff_eos}/JCM/jetCombinatoricModel_SB_mix_v{m}_{y}.yml"
             else:

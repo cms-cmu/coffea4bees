@@ -56,8 +56,17 @@ SUB = config.get('subsamples') or {}
 SUB_SOURCE = SUB.get('source', 'split')
 if SUB_SOURCE not in ('split', 'seeds'):
     raise ValueError(f"subsamples.source must be 'split' or 'seeds', got {SUB_SOURCE!r}")
-N_SUBSAMPLES = int(SUB.get('n', config.get('n_subsamples', config.get('n_models', config.get('n_samples', 16)))))
-SUBSAMPLES = [str(i) for i in range(N_SUBSAMPLES)]
+
+subsample_indices = config.get('subsample_indices', phase_e_cfg.get('subsample_indices', None))
+if subsample_indices is not None:
+    if isinstance(subsample_indices, str):
+        subsample_indices = [int(x) for x in subsample_indices.split()]
+    SUBSAMPLES = [str(i) for i in subsample_indices]
+    N_SUBSAMPLES = len(SUBSAMPLES)
+else:
+    N_SUBSAMPLES = int(SUB.get('n', config.get('n_subsamples', config.get('n_models', config.get('n_samples', 16)))))
+    SUBSAMPLES = [str(i) for i in range(N_SUBSAMPLES)]
+
 config.setdefault('n_subsamples', N_SUBSAMPLES)     # B, C and F read n_subsamples / n_models
 TEST_FLAG = "-t" if config.get("test", False) else ""
 TTBAR = list(config.get('ttbar') or config.get('ttbar_processes') or [])

@@ -75,15 +75,35 @@ regionName = {'SB': 'Sideband',
 #        ]
 
 
-BEs = ['1']
-for k in range(1, 11):
-    BEs.append(f'sin({k}*pi*x)')
-    BEs.append(f'cos({k}*pi*x)')
+def make_basis_elements(basis_type='fourier'):
+    elements = []
+    if basis_type == 'fourier':
+        elements = ['1']
+        for k in range(1, 11):
+            elements.append(f'sin({k}*pi*x)')
+            elements.append(f'cos({k}*pi*x)')
+    elif basis_type == 'bernstein':
+        import math
+        degree = 10
+        elements = ['1']
+        for i in range(1, degree + 1):
+            c = math.comb(degree, i)
+            term = f'{c}'
+            term += f' * (x^{i})' if i > 1 else ' * x'
+            if degree - i > 0:
+                p = degree - i
+                term += f' * ((1-x)^{p})' if p > 1 else ' * (1-x)'
+            elements.append(term)
+    else:
+        raise ValueError(f"Unknown basis_type: {basis_type}")
 
-BE = []
-if HAS_ROOT:
-    for i, s in enumerate(BEs):
-        BE.append( ROOT.TF1('BE%d' % i, s, 0, 1) )
+    tf1_list = []
+    if HAS_ROOT:
+        for i, s in enumerate(elements):
+            tf1_list.append(ROOT.TF1(f'BE{i}', s, 0, 1))
+    return elements, tf1_list
+
+BEs, BE = make_basis_elements('fourier')
 
 
 def print_log(string):
@@ -403,6 +423,9 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, 
                                   debug=args.debug,
                                   as_aliases=True)
 
+    if hist_data_obs is None:
+        raise ValueError(f"Could not find data_obs for mix {mix} (mix_number {mix_number}) in {input_file_mix}!")
+
     f.cd(directory)
     hist_data_obs.SetName("data_obs")
     hist_data_obs.Write()
@@ -414,7 +437,7 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, 
     var_name_multijet = var_name
     if args.use_kfold:
         if 'm4j' in args.var:
-                var_name_multijet = args.var + f'_FvT_{mix}_newSBDefSeedAve'
+            var_name_multijet = args.var + f'_FvT_{mix}_newSBDefSeedAve'
         else:
             var_name_multijet = var_name_multijet.replace(f"{SvB}_ps", f"{SvB}_FvT_{mix}_newSBDefSeedAve_ps")
     elif args.use_ZZinSB:
@@ -425,7 +448,6 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, 
         var_name_multijet = var_name_multijet.replace("_v","ZZandZHinSB_v")
     else:
         var_name_multijet = var_name_multijet.replace(f"{SvB}_ps", f"{SvB}_FvT_{mix}_newSBDef_ps")
-
 
     hist_multijet = combine_hists(input_file_data3b,
                                   f"{var_name_multijet}_PROC_YEAR_threeTag_SR",
@@ -440,6 +462,9 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, 
                                       procs=["data_3b_for_mixed", "data", "data_3b"],
                                       debug=args.debug,
                                       as_aliases=True)
+
+    if hist_multijet is None:
+        raise ValueError(f"Could not find multijet for mix {mix} (mix_number {mix_number}) in {input_file_data3b}!")
 
     if hist_data_obs is not None and hist_multijet is not None:
         if hist_data_obs.GetNbinsX() != hist_multijet.GetNbinsX():
@@ -800,6 +825,20 @@ class multijetEnsemble:
                 imodel.Rebin(self.rebin)
             self.models_rebin.append(imodel)
 
+        if getattr(args, 'match_normalization', False):
+            int_target = self.data_minus_ttbar.Integral()
+            int_mj = self.average_rebin.Integral()
+            if int_mj > 0:
+                scale_mj = int_target / int_mj
+                print_log(f"[INFO] Matching multijet normalization to data - ttbar: scale = {scale_mj:.6f} "
+                          f"(target = {int_target:.2f}, original multijet = {int_mj:.2f})")
+                self.average.Scale(scale_mj)
+                self.average_rebin.Scale(scale_mj)
+                for m in self.models:
+                    m.Scale(scale_mj)
+                for mr in self.models_rebin:
+                    mr.Scale(scale_mj)
+
         self.nBins_rebin = self.average_rebin.GetSize() - 2
 
         self.f.cd(self.channel)
@@ -878,9 +917,11 @@ class multijetEnsemble:
         # scale dynamic range of each element to 1
         for i in range(1, len(B)):
             d = B[i].max() - B[i].min()
-            B[i] = B[i] / d
+            if d > 1e-12:
+                B[i] = B[i] / d
             d = B_no_rebin[i].max() - B_no_rebin[i].min()
-            B_no_rebin[i] = B_no_rebin[i] / d
+            if d > 1e-12:
+                B_no_rebin[i] = B_no_rebin[i] / d
 
         for i in range(len(S)):
             S[i] = S[i] / S[i, -1] * self.signal.GetBinContent(self.nBins_rebin) / h[-1]
@@ -1604,6 +1645,28 @@ class closure:
         self.data_obs_closure = ROOT.TH1F('data_obs_closure', '', self.nBins_closure, 0.5, 0.5 + self.nBins_closure)
         self.signal_closure   = ROOT.TH1F('signal_closure',   '', self.nBins_closure, 0.5, 0.5 + self.nBins_closure)
 
+        sem_diff_sq = np.zeros(self.nBins_rebin)
+        diff_by_mix = []
+        if getattr(args, 'include_ensemble_variance', False) and len(self.multijet.models_rebin) > 1:
+            for m_idx, mix in enumerate(mixes):
+                h_d = f.Get(f'{mix}/{self.channel}/data_obs')
+                if h_d and not h_d.IsZombie() and m_idx < len(self.multijet.models_rebin):
+                    h_d_r = h_d.Clone(f'{h_d.GetName()}_rebin_closure_eval')
+                    h_d_r.SetDirectory(0)
+                    if isinstance(self.rebin, array.array):
+                        h_d_r = rebin_histogram(h_d_r, self.rebin)
+                    else:
+                        h_d_r.Rebin(self.rebin)
+                    m_mr = self.multijet.models_rebin[m_idx]
+                    diff_arr = [h_d_r.GetBinContent(b) - m_mr.GetBinContent(b) for b in range(1, self.nBins_rebin + 1)]
+                    diff_by_mix.append(diff_arr)
+            if len(diff_by_mix) > 1:
+                diff_by_mix_arr = np.array(diff_by_mix)
+                sem_diff_sq = np.var(diff_by_mix_arr, axis=0, ddof=1) / len(diff_by_mix)
+                print_log(f"[INFO] Option B: Computed ensemble variance across {len(diff_by_mix)} pseudo-experiments.")
+                for b_i in range(self.nBins_rebin):
+                    print_log(f"       Bin {b_i+1}: SEM(diff) = {np.sqrt(sem_diff_sq[b_i]):.2f} (std = {np.sqrt(sem_diff_sq[b_i] * len(diff_by_mix)):.2f})")
+
         for _bin in range(1, self.nBins_rebin + 1):
             self.multijet_closure.SetBinContent(_bin, self.multijet.average_rebin.GetBinContent(_bin))
             if getattr(args, 'unify_background', False):
@@ -1623,6 +1686,8 @@ class closure:
                 error = (self.data_obs_rebin.GetBinError(_bin)**2 + self.multijet.average_rebin.GetBinError(_bin)**2 + (2.0 / nMixes)**2)**0.5
             else:
                 error = (self.data_obs_rebin.GetBinError(_bin)**2 + self.ttbar_rebin.GetBinError(_bin)**2 + self.multijet.average_rebin.GetBinError(_bin)**2 + (2.0 / nMixes)**2)**0.5  # adding 2 in quadrature improves gaussian approx of poisson errors
+            if getattr(args, 'include_ensemble_variance', False) and len(diff_by_mix) > 1:
+                error = (error**2 + sem_diff_sq[_bin - 1])**0.5
             self.data_obs_closure.SetBinError  (_bin, error)
 
         for _bin in range(self.nBins_rebin + 1, self.nBins_closure + 1):
@@ -3694,9 +3759,15 @@ if __name__ == "__main__":
     parser.add_argument('--input_file_nominal_data', default=None, help="Optional ROOT file containing nominal Data 4b and 3b (defaults to input_file_mix)")
     parser.add_argument('--input_file_nominal_bkg', default=None, help="Optional ROOT file containing nominal Background (defaults to input_file_mix)")
     parser.add_argument('--save_all_formats', action="store_true", default=False, help="Save plots in png, pdf, and C formats (default: png only)")
+    parser.add_argument('--match_normalization', '--match-normalization', action="store_true", default=False, help="Scale multijet model so total background integral matches data_obs (mixed data)")
+    parser.add_argument('--subsample_indices', nargs='+', type=int, default=None, help="Explicit list of subsample indices to use (e.g. 0 1 2 ... 12 14 15)")
+    parser.add_argument('--include_ensemble_variance', '--include-ensemble-variance', action="store_true", default=False, help="Incorporate subsample-level ensemble variance across pseudo-experiments into closure error")
+    parser.add_argument('--basis_type', default='fourier', choices=['fourier', 'bernstein'], help="Type of basis functions for closure fits: fourier or bernstein (default: fourier)")
 
     args = parser.parse_args()
     print(f"\nRunning with these parameters: {args}")
+
+    BEs, BE = make_basis_elements(args.basis_type)
 
     #
     #  Parse channel
@@ -3798,7 +3869,12 @@ if __name__ == "__main__":
 
     probThreshold = 0.05  # 0.045500263896 #0.682689492137 # 1sigma
 
-    mixes = [f'{args.mix_name}_v{i}' for i in range(nMixes)]
+    if args.subsample_indices is not None and len(args.subsample_indices) > 0:
+        mixes = [f'{args.mix_name}_v{i}' for i in args.subsample_indices]
+        nMixes = len(mixes)
+        print_log(f"[INFO] Using {nMixes} explicit subsample indices: {args.subsample_indices}")
+    else:
+        mixes = [f'{args.mix_name}_v{i}' for i in range(nMixes)]
 
     if not HAS_ROOT:
         if args.do_CI:

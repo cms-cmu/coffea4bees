@@ -44,6 +44,7 @@ config.setdefault('analysis_container', "/cvmfs/unpacked.cern.ch/gitlab-registry
 config.setdefault('combine_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-analysis/general/combine-container:CMSSW_14_1_0_pre4-combine_v10.6.0-harvester_v3.1.0")
 config.setdefault('container_wrapper', "./run_container combine")
 config.setdefault('stats_container_wrapper', config.get('container_wrapper', "./run_container combine"))
+config.setdefault('analysis_container_wrapper', config.get('analysis_wrapper', "./run_container"))
 
 # Decoupled config definitions and path resolution
 def get_bkgsyst_for_channel(channel):
