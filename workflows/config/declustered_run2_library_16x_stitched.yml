@@ -1,0 +1,55 @@
+# ==============================================================================
+# 16x DECLUSTERED SAMPLE — Run 2, library declustering, 16 seeds, no cap, STITCHED ttbar
+# ==============================================================================
+# declustered_run2_library_16x_nocap.yml (roast declib16nc_run2_20261003_3ab8302-b2d2dec: libA_run2's
+# published library, 16 seeds, no distance cap, no D.1, D.6 off) built off the ttHbb Run 2
+# production ttHbb_run2_20261003_f7183e9-cca392c instead of the HH4b nominal_run2: the ttbar is the
+# stitched sample (TTTo*_stitched, incl. the TTbb-enriched part) throughout --
+#   * D.3 ttbar subtraction: that roast's FvT_ttHbb_stitched (d4_to_t4 trained against stitched
+#     ttbar MC; its friend covers every data picoAOD era of metadata/datasets/data.yml)
+#   * D.4 / D.5 reference: its B.1 noJCM histograms (4b data + stitched ttbar MC, processor_ttHbb,
+#     blinded) and the runner config next to them, so the declustered data is histogrammed in the
+#     ttHbb selection
+#   * D.5 SvB bootstrap: its SvB_ttHbb_stitched model on the fly (SvB_MA.ps = ps_ttHbb)
+# The library itself is unchanged (libA_run2: splittings of the nominal-FvT-subtracted 4b data).
+#
+# ttbar pseudodata: NO roast has published a stitched ttbar_PSData (algomez's
+# XX4b/mixeddata/Run2/ttbar_PSData_stitched is hand-made, so `roast new` refuses it). The consumer
+# dataset synthetic_data_lib16st_4b therefore folds in the INCLUSIVE ttbar_PSData of
+# mixeddata_run2_20260927_c39c264-0ce4d59 -- the same file analysis_ttHbb_bkg_syst.yml uses. D.5's
+# pseudodata line is then inclusive pseudodata vs stitched MC. mixeddata_all_declib16st (multijet
+# only; what a bkg_syst-style consumer splits and adds its own pseudodata to) is unaffected.
+#
+# Fresh dataset names (runner -m refuses one name defined differently in two sources):
+#   mixeddata_all_declib16st.yml          all 16 seeds' multijet as ONE sample
+#   synthetic_data_lib16st_4b.yml         nSamples 16, syn_v<k> = seed k + ttbar pseudodata
+#   synthetic_data_lib16st_multijet.yml   the same without the pseudodata (D.4 / D.5)
+#
+#   roast new --config coffea4bees/workflows/config/declustered_run2_library_16x_stitched.yml \
+#       --label declib16st_run2 --step cmslpc:coffea4bees/workflows/Snakefile_DeClustered.smk
+#
+base: coffea4bees/workflows/config/declustered_run2_library_16x_nocap.yml
+
+label: "declustered_run2_library_16x_stitched"
+
+inputs:
+  # lists are replaced, not merged; every inputs key of the base chain is overridden below, so the
+  # nominal_run2 roast is no longer an upstream
+  upstream_roasts:
+    ttHbb: ttHbb_run2_20261003_f7183e9-cca392c          # ttHbb Run 2, stitched ttbar (B, C, D, F)
+    libA: libA_run2_20261002_7fc0957-3531140            # Run 2 splitting library
+    mixeddata: mixeddata_run2_20260927_c39c264-0ce4d59  # ttbar pseudodata (inclusive, see above)
+  FvT: "{roast:ttHbb}/friend/FvT_ttHbb_stitched/result.json@@analysis.0.merged"
+  jcm_hists: "{roast:ttHbb}/{roast:ttHbb:output_path}computeJCM/histAll_NoJCM.coffea"
+  SvB_model: "{roast:ttHbb}/classifier/SvB_ttHbb_stitched/result.json"
+  splitting_library: "{roast:libA}/splitting_library/splitting_library.yml"
+  ttbar_psdata: "{roast:mixeddata}/handoff/ttbar_PSData.yml"
+
+declustering:
+  dataset_name: "synthetic_data_lib16st_4b"
+  multijet_dataset_name: "synthetic_data_lib16st_multijet"
+  all_dataset_name: "mixeddata_all_declib16st"
+
+validation:
+  # the ttbar MC in inputs.jcm_hists (the ttHbb roast's B.1 jcm_datasets)
+  ttbar: ["TTToHadronic_stitched", "TTToSemiLeptonic_stitched", "TTTo2L2Nu_stitched"]

@@ -107,6 +107,8 @@ runs:
     - DeClustered
   declustered_run2_library_16x_nocap.yml:
     - DeClustered
+  declustered_run2_library_16x_stitched.yml:
+    - DeClustered
   svbfeynnet_run3.yml:
     - SvBFeynNet_friendtrees_Run3
   analysis_ttHbb_bkg_syst.yml:
