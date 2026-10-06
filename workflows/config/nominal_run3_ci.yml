@@ -48,9 +48,9 @@ analysis_config:
     apply_FvT: false
     plot_ttbar_with_weights: false
     apply_trigWeight: true
-    # trigweights_Run3_v1.json covers TT/TTbb/ttHbb only, not the ggF signal (see
-    # friends_HH4b.yml): warn rather than abort. Same reason as in nominal_run3.yml.
-    require_trigWeight: false
+    # trigweights_Run3_v2.json (friends_HH4b.yml) covers TT and the 2022/2023 ggF signal.
+    # Same as nominal_run3.yml.
+    require_trigWeight: true
     apply_btagSF: true
     apply_boosted_veto: false
     run_SvB: true
