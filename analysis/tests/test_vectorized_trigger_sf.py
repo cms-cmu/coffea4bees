@@ -201,5 +201,63 @@ class TestTriggerSFVectorized(unittest.TestCase):
             data, mc, sf = tsf.calculate_event_sf(events)
             self.assertEqual(len(sf), 1)
 
+    def test_2023_jet_leg_2d(self):
+        """2023 jet leg is a 2D (PF HT x 4th-jet pT) map; data and MC enter the event efficiency"""
+        jet_leg = {
+            "type": "hist2d",
+            "x_edges": np.array([200.0, 300.0, 1000.0]),   # PF HT
+            "y_edges": np.array([30.0, 50.0, 150.0]),      # 4th-jet pT
+            "eff": np.array([[0.5, 0.9],
+                             [0.8, 1.0]]),
+        }
+
+        def load(inst, path, is_l1=False):
+            self._mock_load_root_file(inst, path, is_l1)
+            inst.data_lookups["Data__Efficiency2D_Inclusive-PerLeg-ForthJetPt-vs-alljets_PFHT"] = jet_leg
+            mc = dict(jet_leg, eff=jet_leg["eff"] * 0.5)
+            inst.mc_lookups["Simulation__Efficiency2D_Inclusive-PerLeg-ForthJetPt-vs-alljets_PFHT"] = mc
+
+        with patch.object(TriggerSFVectorized, '_load_root_file', autospec=True) as mock_load:
+            mock_load.side_effect = load
+            tsf = TriggerSFVectorized(2023, map_path="dummy", tagger="PNet")
+
+            name = "Efficiency2D_Inclusive-PerLeg-ForthJetPt-vs-alljets_PFHT"
+            # in range, below range (clipped to the first bin), above range (clipped to the last)
+            ht = ak.Array([250.0, 100.0, 5000.0])
+            pt4 = ak.Array([60.0, 10.0, 500.0])
+            np.testing.assert_allclose(tsf.lookup_efficiency_2d(name, ht, pt4), [0.9, 0.5, 1.0])
+            np.testing.assert_allclose(tsf.lookup_efficiency_2d(name, ht, pt4, is_data=False), [0.45, 0.25, 0.5])
+
+            # the jet leg is now in the product: MC eff is half the data eff for every other leg equal
+            d, m, sf = tsf._calculate_2023_PreBPix(pt4, ht, ht, ak.Array([1.0, 1.0, 1.0]))
+            np.testing.assert_allclose(ak.to_numpy(sf), 2.0)
+
+    def test_2d_map_missing_raises(self):
+        """A missing 2D map is an error, not a silent efficiency of 1"""
+        with patch.object(TriggerSFVectorized, '_load_root_file', autospec=True) as mock_load:
+            mock_load.side_effect = self._mock_load_root_file
+            tsf = TriggerSFVectorized(2023, map_path="dummy", tagger="PNet")
+            with self.assertRaises(KeyError):
+                tsf.lookup_efficiency_2d("Efficiency2D_Inclusive", ak.Array([300.0]), ak.Array([40.0]))
+
+    def test_tefficiency_2d_fill(self):
+        """Empty bins: forward-filled along y within a row, empty rows copy the nearest filled row"""
+        class H:
+            def __init__(self, vals, cls="TH2D"):
+                self.classname, self._v = cls, np.array(vals, dtype=float)
+            def values(self):
+                return self._v
+            def member(self, name):
+                ax = MagicMock()
+                ax.edges.return_value = np.arange(self._v.shape[0 if name == "fXaxis" else 1] + 1, dtype=float)
+                return ax
+
+        total = H([[0, 0, 0], [10, 0, 0], [10, 10, 10]])
+        passed = H([[0, 0, 0], [5, 0, 0], [8, 9, 10]])
+        teff = MagicMock()
+        teff.member.side_effect = lambda n: {"fTotalHistogram": total, "fPassedHistogram": passed}[n]
+        table = TriggerSFVectorized._tefficiency_2d(teff)
+        np.testing.assert_allclose(table["eff"], [[0.5, 0.5, 0.5], [0.5, 0.5, 0.5], [0.8, 0.9, 1.0]])
+
 if __name__ == '__main__':
     unittest.main()

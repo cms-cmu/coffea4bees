@@ -162,12 +162,68 @@ class TriggerSFVectorized:
                             "type": "graph"
                         }
 
-                    elif hasattr(obj, "to_hist"): # TEfficiency or Hist
-                        # For 2D
+                    elif obj_class == "TEfficiency":
+                        table = self._tefficiency_2d(obj)
+                        if table is not None:
+                            store[name] = table
+
+                    elif hasattr(obj, "to_hist"): # Hist
                         pass
 
         except FileNotFoundError:
             logging.error(f"Could not open file {full_path}")
+
+    @staticmethod
+    def _tefficiency_2d(obj):
+        """passed/total of a 2D TEfficiency as a lookup table, or None if it is not 2D.
+
+        Empty bins (total == 0) are filled so every (x, y) has an efficiency: within each x row
+        from the nearest filled bin at lower y (efficiency rises with y, the 4th-jet pT for the
+        2023 jet leg), then from higher y; rows with no filled bin at all copy the nearest filled
+        row. In the 2023 map the empty bins are the kinematically sparse high-pT4 / low-HT corner
+        and the whole HT 200-250 row.
+        """
+        total = obj.member("fTotalHistogram")
+        passed = obj.member("fPassedHistogram")
+        if not total.classname.startswith("TH2"):
+            return None
+        tot = np.asarray(total.values(), dtype=float)
+        pas = np.asarray(passed.values(), dtype=float)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            eff = np.where(tot > 0, pas / tot, np.nan)
+        for i in range(eff.shape[0]):
+            row = eff[i]
+            for j in range(1, len(row)):
+                if np.isnan(row[j]):
+                    row[j] = row[j - 1]
+            for j in range(len(row) - 2, -1, -1):
+                if np.isnan(row[j]):
+                    row[j] = row[j + 1]
+        filled = [i for i in range(eff.shape[0]) if not np.isnan(eff[i]).all()]
+        if not filled:
+            return None
+        for i in range(eff.shape[0]):
+            if np.isnan(eff[i]).all():
+                eff[i] = eff[min(filled, key=lambda k: abs(k - i))]
+        return {
+            "type": "hist2d",
+            "x_edges": np.asarray(total.member("fXaxis").edges(), dtype=float),
+            "y_edges": np.asarray(total.member("fYaxis").edges(), dtype=float),
+            "eff": eff,
+        }
+
+    def lookup_efficiency_2d(self, name, x, y, is_data=True):
+        """Per-event efficiency from a 2D map (flat x, y); out-of-range values use the edge bins."""
+        store = self.data_lookups if is_data else self.mc_lookups
+        target = next((v for k, v in store.items() if name in k and v.get("type") == "hist2d"), None)
+        if target is None:
+            raise KeyError(f"no 2D efficiency map matching '{name}' ({'data' if is_data else 'MC'}, "
+                           f"year {self.year}, tagger {self.tagger})")
+        xv = ak.to_numpy(x).astype(float)
+        yv = ak.to_numpy(y).astype(float)
+        ix = np.clip(np.searchsorted(target["x_edges"], xv, side="right") - 1, 0, target["eff"].shape[0] - 1)
+        iy = np.clip(np.searchsorted(target["y_edges"], yv, side="right") - 1, 0, target["eff"].shape[1] - 1)
+        return ak.Array(target["eff"][ix, iy])
 
     def _fix_in_range(self, val):
         return ak.where(val < 0.0, 0.0, ak.where(val > 1.0, 1.0, val))
@@ -499,9 +555,10 @@ class TriggerSFVectorized:
         d_L1, _, _ = self.lookup_efficiency("L1_HTT280er_preBPix", calojetht, is_data=True)
         m_L1, _, _ = self.lookup_efficiency("L1_HTT280er_preBPix", calojetht, is_data=False)
 
-        # 2D lookup mockup: JetLeg(x=pfjetht, y=pt4)
-        d_JetLeg, _, _ = self.lookup_efficiency("JetLeg", pfjetht, is_data=True) # Needs 2D support
-        m_JetLeg, _, _ = self.lookup_efficiency("JetLeg", pfjetht, is_data=False) # Needs 2D support
+        # Jet leg: 2D map, x = PF HT, y = 4th-jet pT (Efficiency2D_Inclusive-PerLeg-ForthJetPt-vs-alljets_PFHT)
+        jet_leg = "Efficiency2D_Inclusive-PerLeg-ForthJetPt-vs-alljets_PFHT"
+        d_JetLeg = self.lookup_efficiency_2d(jet_leg, pfjetht, pt4, is_data=True)
+        m_JetLeg = self.lookup_efficiency_2d(jet_leg, pfjetht, pt4, is_data=False)
 
         d_BJetLeg, _, _ = self.lookup_efficiency("InclusiveBTagLeg", btagTMean, is_data=True)
         m_BJetLeg, _, _ = self.lookup_efficiency("InclusiveBTagLeg", btagTMean, is_data=False)
