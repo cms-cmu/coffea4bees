@@ -245,14 +245,17 @@ if ALL_NAME:
     localrules: D3_all_yml
 
 rule D3_publish:
-    input: D3_HANDOFFS
+    input:
+        handoffs = D3_HANDOFFS,
+        # a consumer dataset naming pseudodata made here waits for its M5_check + M5_publish
+        psdata_published = PS_PUBLISHED
     output: D3_PUBLISHED
     log: f"{D3_OUT}logs/publish.log"
     shell:
         """
         set -eo pipefail
         {EOS_PROXY}
-        for f in {input}; do
+        for f in {input.handoffs}; do
             xrdcp -f -p "$f" "{HANDOFF}/$(basename $f)" 2>&1 | tee -a {log}
             echo "published $f -> {HANDOFF}/$(basename $f)" | tee -a {log}
         done

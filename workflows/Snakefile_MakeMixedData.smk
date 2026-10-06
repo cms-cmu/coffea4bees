@@ -213,21 +213,7 @@ def write_yaml(path, obj):
     with open(path, "w") as f:
         yaml.dump(obj, f, default_flow_style=False, sort_keys=False)
 
-def check_dataset_yml(path, name, years):
-    """Refuse to publish an empty or partial dataset. The skimmer runs with skipbadfiles, so a
-    processor error on every chunk becomes an empty registry, runner.py still exits 0, and without
-    this the handoff YAML would be published as `<name>: {}` (it was, once: the mixer's JCM
-    lookup bug)."""
-    with open(path) as f:
-        entry = (yaml.safe_load(f) or {}).get(name) or {}
-    def nfiles(node):
-        if isinstance(node, dict):
-            return sum(nfiles(v) for v in node.values())
-        return len(node) if isinstance(node, list) else 0
-    empty = [y for y in years if not nfiles((entry.get(y) or {}).get('picoAOD'))]
-    if empty:
-        raise ValueError(f"{path}: dataset {name!r} has no files for {empty} -- the skim failed; "
-                         f"see the per-year logs (bad_files) before publishing")
+# check_dataset_yml: helpers/common.smk (shared with Snakefile_DeClustered.smk's ttbar pseudodata)
 
 module analysis:
     snakefile: "rules/analysis.smk"

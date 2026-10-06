@@ -4,7 +4,7 @@
 #
 #   D4_hist_config                    the upstream B.1 noJCM runner config, pointed at the multijet
 #                                     dataset (this roast's EOS handoff, as a consumer would read it)
-#                                     and the ttbar pseudodata (inputs.ttbar_psdata)
+#                                     and the ttbar pseudodata (inputs.ttbar_psdata, or made here)
 #   D4_hists (per year, condor)       processor_HH4b over every seed of the multijet dataset + the
 #                                     pseudodata (kept apart: runner names every synthetic_data*
 #                                     sample syn_v<seed>, so the combined dataset would hide which
@@ -29,7 +29,7 @@ rule D4_hist_config:
         if tight is not False:
             raise ValueError(f"upstream roast histogrammed with fourTag_use_tight={tight!r} "
                              f"({INPUTS['jcm_hists']}); the declustered data needs the non-tight selection")
-        cfg['dataset_location'] = [MJ_URL] + ([PS_INPUT] if SUBTRACT_TT else [])
+        cfg['dataset_location'] = [MJ_URL] + ([PS_URL] if SUBTRACT_TT else [])
         cfg.get('runner', {}).pop('dataset_location', None)
         if config['test']:
             cfg.setdefault('runner', {}).update({'condor': False, 'shared_dask': False})
@@ -39,7 +39,8 @@ use rule analysis_processor from analysis as D4_hists with:
     input:
         runner_script = "runner.py",
         config_file = D4_HIST_CONFIG,
-        published = D3_PUBLISHED
+        published = D3_PUBLISHED,
+        psdata_published = PS_PUBLISHED     # ttbar pseudodata made in this roast (read from EOS)
     output: f"{D4_OUT}singlefiles/hist__{MJ_NAME}__{{year}}.coffea"
     log: f"{D4_OUT}logs/hists__{{year}}.log"
     wildcard_constraints:
