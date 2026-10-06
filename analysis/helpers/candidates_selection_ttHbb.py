@@ -16,6 +16,101 @@ from coffea4bees.analysis.helpers.FvT_helpers import compute_FvT
 from coffea4bees.analysis.helpers.hist_templates import ttHbbSvBHists
 
 
+    # logging.info(f"{len(canJet[0])} ::: {canJet[0][0].x},{canJet[0][1].x},{canJet[0][2].x},{canJet[0][3].x},")
+    # logging.info(f"{len(diJet[0])} ::: {diJet.lead[0].x}  ::: {diJet.subl[0].x}")
+    # # logging.info(f"{diJet[0].x}  :::: {diJet[0]}  :::: {diJet.dr[0]}")
+    # logging.info(f"{diJet.pt}")
+    # logging.info(f"{diJet[0].x}  :::: {diJet[0]}  :::: {diJet.dr[0]}")
+    # Sort diJets within views to be lead/subl by st (Run 2) or pt (Run 3)
+    # if isRun3:
+        # diJet = diJet[ak.argsort(diJet.pt, axis=2, ascending=False)]
+    # else:
+        # diJet = diJet[ak.argsort(diJet.st, axis=2, ascending=False)]
+        # Random lead/subl ordering within each pairing (reproducible, seeded by event number)
+        # rng = Squares("diJetOrdering")
+        # swap = np.stack([rng.shift(i).uniform(selev.event) < 0.5 for i in range(3)], axis=1)  # (nEvents, 3)
+        # diJet = ak.where(swap[:, :, np.newaxis], diJet[:, :, ::-1], diJet)
+    
+
+def _build_can_ttH_dijets(selev, cand_cfg=None, isRun3=False):
+    canJet = selev["canJet"]
+    pairing = [np.array([[0, 2], [0, 1], [0, 1], [2, 0], [1, 0], [1, 0]]), 
+                np.array([[1, 3], [2, 3], [3, 2], [3, 1], [3, 2], [2, 3]])]
+    diJet = canJet[:, pairing[0]] + canJet[:, pairing[1]]    ### contains [[82.8, -1.18], [-1.11, 82.8], [79, 2.63]] per event for each value and represents the two dijets in the three possible pairing
+    diJet["lead"] = canJet[:, pairing[0]]  ### represents in lead "jet" in the two dijets in each of the three possible pairing
+    diJet["subl"] = canJet[:, pairing[1]]  ### represents in subl "jet" in the two dijets in each of the three possible pairing
+    diJet["st"] = diJet["lead"].pt + diJet["subl"].pt
+    diJet["dr"] = diJet["lead"].delta_r(diJet["subl"])
+    diJet["dphi"] = diJet["lead"].delta_phi(diJet["subl"])
+    diJet["deta"] = diJet["lead"].eta - diJet["subl"].eta
+    diJetDr = diJet[ak.argsort(diJet.dr, axis=2, ascending=True)]
+
+    canH_min_mass, canH_max_mass = 80, 170
+    canH_min_pt_offset, canH_min_pt_scale, canH_min_dr_offset = 50., 160., 0.18
+    canH_max_pt_offset, canH_max_pt_scale, canH_max_dr_offset = 70., 320., 0.2
+    canTT_min_pt_offset, canTT_min_pt_scale, canTT_min_dr_offset = -200., 320., 4.6
+    canTT_max_pt_offset, canTT_max_pt_scale, canTT_max_dr_offset = -250., 170., 4.2
+    
+    diJet["pass_canH_mass"] = (canH_min_mass < diJet.mass) & (diJet.mass < canH_max_mass)
+
+    diJet["pass_canH_PtDR"] = (
+        (canH_min_dr_offset + (canH_min_pt_scale / (diJet.pt + canH_min_pt_offset)) < diJet.dr) &
+        (diJet.dr < np.maximum(canH_max_dr_offset + (canH_max_pt_scale / (diJet.pt + canH_max_pt_offset))  , 4))
+    )
+
+    diJet["pass_canTT_PtDR"] = (
+        (canTT_min_dr_offset + (canTT_min_pt_scale / (diJet.pt + canTT_min_pt_offset)) < diJet.dr) &
+        (diJet.dr < np.maximum( canTT_max_dr_offset + (canTT_max_pt_scale / (diJet.pt + canTT_max_pt_offset)) , 4) )
+    )
+
+    del canJet, pairing
+    return diJet, diJetDr
+
+
+
+def _build_can_ttH_quadjets(selev, diJet, diJetDr, cand_cfg=None, isRun3=False):
+    """Build quadjet candidates and assign signal regions for ttHbb."""
+    rng_0 = Squares("quadJetSelection")
+    rng_1 = rng_0.shift(1)
+    rng_2 = rng_0.shift(2)
+    counter = selev.event
+
+    quadJet = ak.zip({
+        "canH": diJet[:, :, 0],
+        "canTT": diJet[:, :, 1],
+        "pass_canH_mass": ak.all(diJet.pass_canH_mass, axis=2),
+        "random": np.concatenate([
+            rng_0.uniform(counter, low=0.1, high=0.9)[:, np.newaxis],
+            rng_1.uniform(counter, low=0.1, high=0.9)[:, np.newaxis],
+            rng_2.uniform(counter, low=0.1, high=0.9)[:, np.newaxis],
+            rng_3.uniform(counter, low=0.1, high=0.9)[:, np.newaxis],
+            rng_4.uniform(counter, low=0.1, high=0.9)[:, np.newaxis],
+            rng_5.uniform(counter, low=0.1, high=0.9)[:, np.newaxis],
+        ], axis=1),
+    })
+
+    quadJet["dr"] = quadJet["canH"].delta_r(quadJet["canTT"])
+    quadJet["dphi"] = quadJet["canH"].delta_phi(quadJet["canTT"])
+    quadJet["deta"] = quadJet["canH"].eta - quadJet["canTT"].eta
+    quadJet["v4jmass"] = selev["v4j"].mass
+    _select_quadjet_ttHbb(quadJet, cand_cfg)
+
+    return quadJet
+
+def _select_cant_ttH_quadjet(quadJet, cand_cfg=None):
+    m_lead = quadJet["canH"].mass
+    m_subl = quadJet["canTT"].mass
+
+    # Ranking: prioritize MDR passing pairings, with random tie-breaker
+    quadJet["rank"] = (
+        quadJet.random 
+        + (quadJet.canH.pass_canH_PtDR * 10)
+        + (quadJet.canTT.pass_canTT_PtDR * 10)
+        + quadJet.pass_canH_mass
+    )
+    quadJet["selected"] = quadJet.rank == np.max(quadJet.rank, axis=1)
+
+
 def _build_dijets_ttHbb(selev, cand_cfg=None, isRun3=False):
     """Build dijet pairs and compute dijet-level variables for ttHbb.
     
