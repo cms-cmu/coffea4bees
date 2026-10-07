@@ -171,13 +171,18 @@ use rule make_plots from analysis as TV_plots with:
         metadata_file = f"{TV_OUT}plots_{{tv_dataset}}.yml",
         plot_script = "coffea4bees/plots/makePlots.py"
     output: f"{TV_OUT}plots_{{tv_dataset}}/{{plot_year}}/plots_done.txt"
+    # Plotting runs on the login node (localrule). makePlots forks `-p` workers per gallery, and
+    # snakemake ran up to --jobs of these at once: 8 x 8 processes, each holding the merged
+    # histograms, and two LPC nodes (cmslpc320, cmslpc322; 2026-10-07) went unresponsive during
+    # this step. threads + -p {threads} caps it at cores/4 galleries x 4 workers.
+    threads: 4
     wildcard_constraints:
         tv_dataset = "|".join(re.escape(d) for d in TV_DATASETS),
         plot_year = "|".join(TV_PLOT_YEARS)
     params:
         output_dir = lambda wildcards: f"{TV_OUT}plots_{wildcards.tv_dataset}/{wildcards.plot_year}/",
         metadata = lambda wildcards: f"{TV_OUT}plots_{wildcards.tv_dataset}.yml",
-        extra_arguments = lambda wildcards: f"-s xW -f png --year {wildcards.plot_year}",
+        extra_arguments = lambda wildcards, threads: f"-s xW -f png --year {wildcards.plot_year} -p {threads}",
         run_container_wrapper = TV_WRAPPER,
         python_bin = TV_PYTHON
     log: f"{TV_OUT}logs/plots_{{tv_dataset}}_{{plot_year}}.log"
