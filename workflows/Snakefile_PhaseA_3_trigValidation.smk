@@ -8,14 +8,18 @@
 #   HLT     the MC HLT decision (OR of triggers_HH4b.yml), apply_trigWeight: false
 #   HLT_SF  HLT decision x the trigger SF (emulated Data/MC efficiency, event_weights.py)
 #           read from A.2's friend index = the nominal Run 3 treatment
-# Each output's process axis is renamed to HH4b_<variant> (scripts/trig_validation.py rename) so
-# the three can be merged into one file and overlaid by makePlots: one gallery per era plus the
-# Run 3 sum, fourTag, ratio to noTrig. The report gives yields and HLT/noTrig, HLT_SF/noTrig and
-# the mean SF (HLT_SF/HLT) per era and cut.
+# Each output's process axis is renamed to <dataset>__<variant> (scripts/trig_validation.py rename)
+# so the variants can be merged into one file and overlaid by makePlots: per dataset, one gallery
+# per era plus the Run 3 sum, fourTag, ratio to noTrig. The report gives, per dataset, the yields and
+# HLT/noTrig, HLT_SF/noTrig and the mean SF (HLT_SF/HLT) per era and cut.
 #
-# trig_validation: {enabled: false} turns it off; runner: the processor_HH4b runner block (keep it
-# identical to trigger_weights.runner -- under --shared-dask the first job's spec wins);
-# regions: plotted regions (default SR, SB).
+# trig_validation: {enabled: false} turns it off; datasets / years: what to validate (default: every
+# A.2 dataset and year -- name a subset when A.2 makes friends for overlapping samples, e.g. the
+# inclusive and stitched ttbar); runner: the processor_HH4b runner block (keep it identical to
+# trigger_weights.runner -- under --shared-dask the first job's spec wins); regions: plotted
+# regions (default SR, SB).
+
+import re
 
 TV = config.get('trig_validation') or {}
 TV_ENABLED = bool(TV.get('enabled', True))
@@ -23,7 +27,15 @@ TV_OUT = f"{config['output_path']}trig_validation/"
 TV_VARIANTS = ["noTrig", "HLT", "HLT_SF"]
 TV_FRIENDS = f"{config['output_path']}trigger_weights/trigger_weights_friends.json"
 TV_HISTALL = f"{TV_OUT}histAll_trigValidation.coffea"
-TV_PLOT_YEARS = years + ["Run3"]
+TV_DATASETS = list(TV.get('datasets') or config['dataset'])
+TV_YEARS = list(TV.get('years') or years)
+for _d in TV_DATASETS:
+    if _d not in config['dataset']:
+        raise ValueError(f"trig_validation.datasets: {_d} is not an A.2 dataset (no trigger-weight friend)")
+for _y in TV_YEARS:
+    if _y not in years:
+        raise ValueError(f"trig_validation.years: {_y} is not an A.2 year")
+TV_PLOT_YEARS = TV_YEARS + ["Run3"]
 TV_SCRIPT = "coffea4bees/workflows/scripts/trig_validation.py"
 TV_WRAPPER = config['analysis_container_wrapper']
 TV_PYTHON = config['python_bin']
@@ -86,9 +98,9 @@ use rule analysis_processor from analysis as TV_hists with:
     log: f"{TV_OUT}logs/hists__{{variant}}__{{year}}.log"
     wildcard_constraints:
         variant = "|".join(TV_VARIANTS),
-        year = "|".join(years)
+        year = "|".join(TV_YEARS)
     params:
-        datasets = " ".join(config['dataset']),
+        datasets = " ".join(TV_DATASETS),
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
         extra_arguments = lambda wildcards: " ".join(filter(None, [
@@ -99,7 +111,7 @@ use rule analysis_processor from analysis as TV_hists with:
         python_bin = TV_PYTHON
 
 rule TV_rename:
-    """Process axis -> HH4b_<variant> (and the cutflow dataset keys -> HH4b_<variant>_<year>)."""
+    """Process axis <dataset> -> <dataset>__<variant> (and the cutflow keys <dataset>_<year> likewise)."""
     input:
         coffea = f"{TV_OUT}singlefiles/hist__{{variant}}__{{year}}.coffea",
         script = TV_SCRIPT
@@ -107,19 +119,19 @@ rule TV_rename:
     log: f"{TV_OUT}logs/rename__{{variant}}__{{year}}.log"
     wildcard_constraints:
         variant = "|".join(TV_VARIANTS),
-        year = "|".join(years)
+        year = "|".join(TV_YEARS)
     params:
-        datasets = " ".join(config['dataset'])
+        datasets = " ".join(TV_DATASETS)
     shell:
         """
         set -eo pipefail
         {TV_WRAPPER} {TV_PYTHON} {input.script} rename -i {input.coffea} -o {output} \
-            --processes {params.datasets} --new-name HH4b_{wildcards.variant} 2>&1 | tee {log}
+            --processes {params.datasets} --suffix __{wildcards.variant} 2>&1 | tee {log}
         """
 
 use rule merging_coffea_files from analysis as TV_merge with:
     input:
-        files = expand(f"{TV_OUT}singlefiles/renamed__{{variant}}__{{year}}.coffea", variant=TV_VARIANTS, year=years),
+        files = expand(f"{TV_OUT}singlefiles/renamed__{{variant}}__{{year}}.coffea", variant=TV_VARIANTS, year=TV_YEARS),
         script = "src/tools/merge_coffea_files.py"
     output: TV_HISTALL
     log: f"{TV_OUT}logs/merge.log"
@@ -134,15 +146,18 @@ _TV_STYLE = {"noTrig": ("No trigger", "#7f7f7f", "dashed"),
              "HLT_SF": ("MC HLT x trigger SF", "#e42536", "solid")}
 
 rule TV_plot_config:
-    """The three variants overlaid, fourTag, ratio panel = variant / noTrig."""
-    output: f"{TV_OUT}plots.yml"
+    """One dataset's three variants overlaid, fourTag, ratio panel = variant / noTrig."""
+    output: f"{TV_OUT}plots_{{tv_dataset}}.yml"
+    wildcard_constraints:
+        tv_dataset = "|".join(re.escape(d) for d in TV_DATASETS)
     run:
-        hists = {f"HH4b_{v}": {'process': f"HH4b_{v}", 'tag': 'fourTag', 'label': lab,
-                               'edgecolor': col, 'fillcolor': col, 'histtype': 'step',
-                               'linestyle': ls, 'scalefactor': 1}
+        ds = wildcards.tv_dataset
+        hists = {f"{ds}__{v}": {'process': f"{ds}__{v}", 'tag': 'fourTag', 'label': lab,
+                                'edgecolor': col, 'fillcolor': col, 'histtype': 'step',
+                                'linestyle': ls, 'scalefactor': 1}
                  for v, (lab, col, ls) in _TV_STYLE.items()}
-        ratios = {f"{v}_to_noTrig": {'numerator': {'type': 'hists', 'key': f"HH4b_{v}"},
-                                     'denominator': {'type': 'hists', 'key': "HH4b_noTrig"},
+        ratios = {f"{v}_to_noTrig": {'numerator': {'type': 'hists', 'key': f"{ds}__{v}"},
+                                     'denominator': {'type': 'hists', 'key': f"{ds}__noTrig"},
                                      'uncertianty': 'nominal', 'color': _TV_STYLE[v][1], 'marker': "o"}
                   for v in ("HLT", "HLT_SF")}
         _tv_write_yaml(output[0], {'hists': hists, 'ratios': ratios, 'doRatio': 1,
@@ -153,18 +168,19 @@ rule TV_plot_config:
 use rule make_plots from analysis as TV_plots with:
     input:
         coffea_file = TV_HISTALL,
-        metadata_file = f"{TV_OUT}plots.yml",
+        metadata_file = f"{TV_OUT}plots_{{tv_dataset}}.yml",
         plot_script = "coffea4bees/plots/makePlots.py"
-    output: f"{TV_OUT}plots_{{plot_year}}/plots_done.txt"
+    output: f"{TV_OUT}plots_{{tv_dataset}}/{{plot_year}}/plots_done.txt"
     wildcard_constraints:
+        tv_dataset = "|".join(re.escape(d) for d in TV_DATASETS),
         plot_year = "|".join(TV_PLOT_YEARS)
     params:
-        output_dir = lambda wildcards: f"{TV_OUT}plots_{wildcards.plot_year}/",
-        metadata = f"{TV_OUT}plots.yml",
+        output_dir = lambda wildcards: f"{TV_OUT}plots_{wildcards.tv_dataset}/{wildcards.plot_year}/",
+        metadata = lambda wildcards: f"{TV_OUT}plots_{wildcards.tv_dataset}.yml",
         extra_arguments = lambda wildcards: f"-s xW -f png --year {wildcards.plot_year}",
         run_container_wrapper = TV_WRAPPER,
         python_bin = TV_PYTHON
-    log: f"{TV_OUT}logs/plots_{{plot_year}}.log"
+    log: f"{TV_OUT}logs/plots_{{tv_dataset}}_{{plot_year}}.log"
 
 rule TV_report:
     input:
@@ -178,12 +194,13 @@ rule TV_report:
         """
         set -eo pipefail
         {TV_WRAPPER} {TV_PYTHON} {input.script} report -i {input.hists} \
-            --variants {TV_VARIANTS} --years {years} -o {TV_OUT}trig_validation 2>&1 | tee {log}
+            --datasets {TV_DATASETS} --variants {TV_VARIANTS} --years {TV_YEARS} -o {TV_OUT}trig_validation 2>&1 | tee {log}
         """
 
 rule all_trig_validation:
     input:
-        ([f"{TV_OUT}trig_validation.txt"] + [f"{TV_OUT}plots_{y}/plots_done.txt" for y in TV_PLOT_YEARS])
+        ([f"{TV_OUT}trig_validation.txt"] + [f"{TV_OUT}plots_{d}/{y}/plots_done.txt"
+                                             for d in TV_DATASETS for y in TV_PLOT_YEARS])
         if TV_ENABLED else []
 
 localrules: TV_config, TV_rename, TV_merge, TV_plot_config, TV_plots, TV_report, all_trig_validation

@@ -1,11 +1,12 @@
 """Helpers for the trigger-weight validation (Snakefile_PhaseA_3_trigValidation.smk).
 
-rename  rewrite a processor_HH4b output so the signal shows up as one variant: every histogram's
-        process-axis categories in --processes become --new-name, and the cutflow dataset keys
-        <process>_<year> become <new-name>_<year>. Three renamed outputs (noTrig, HLT, HLT_SF) can
-        then be merged into one file and overlaid by makePlots.
-report  four-tag yields per variant, era and cut from the cutflow, with HLT/noTrig (the MC
-        trigger efficiency), HLT_SF/noTrig and HLT_SF/HLT (the mean trigger SF).
+rename  rewrite a processor_HH4b output so each sample shows up as one variant: every histogram's
+        process-axis category <process> in --processes becomes <process><suffix> (e.g.
+        TTToHadronic__HLT_SF), and the cutflow dataset keys <process>_<year> become
+        <process><suffix>_<year>. The renamed outputs of the variants (noTrig, HLT, HLT_SF) can then
+        be merged into one file and overlaid by makePlots.
+report  per dataset, four-tag yields per variant, era and cut from the cutflow, with HLT/noTrig (the
+        MC trigger efficiency), HLT_SF/noTrig and HLT_SF/HLT (the mean trigger SF).
 """
 import argparse
 import logging
@@ -49,64 +50,71 @@ def _walk(obj, mapping):
     return obj
 
 
-def _rename_key(key, processes, new_name):
-    for p in processes:
+def _rename_key(key, processes, suffix):
+    # longest first: a dataset name can be a prefix of another (TTToHadronic, TTToHadronic_stitched)
+    for p in sorted(processes, key=len, reverse=True):
         if key == p or key.startswith(p + "_"):
-            return new_name + key[len(p):]
+            return p + suffix + key[len(p):]
     return key
 
 
 def cmd_rename(args):
     out = load(args.input)
-    mapping = {p: args.new_name for p in args.processes}
+    mapping = {p: p + args.suffix for p in args.processes}
     n_hists = 0
     for key, val in list(out.items()):
         if key.startswith("cutFlow") or key == "cutflow_hists":
-            out[key] = {_rename_key(k, args.processes, args.new_name): v for k, v in val.items()}
+            out[key] = {_rename_key(k, args.processes, args.suffix): v for k, v in val.items()}
         elif key.startswith("hists") or isinstance(val, (dict, hist.Hist)):
             out[key] = _walk(val, mapping)
             n_hists += sum(1 for v in (val.values() if isinstance(val, dict) else [val])
                            if isinstance(v, hist.Hist))
     save(out, args.output)
-    logging.info(f"{args.input} -> {args.output}: {args.processes} -> {args.new_name} ({n_hists} top-level hists)")
+    logging.info(f"{args.input} -> {args.output}: {args.processes} -> *{args.suffix} ({n_hists} top-level hists)")
 
 
-def _yields(out, variant, year):
+def _yields(out, dataset, variant, year):
     flows = out.get("cutFlowFourTag", {})
-    key = f"HH4b_{variant}_{year}"
+    key = f"{dataset}__{variant}_{year}"
     if key not in flows:
         raise KeyError(f"no cutFlowFourTag entry {key}; have {sorted(flows)}")
     return {c: float(flows[key].get(c, float("nan"))) for c in CUTS}
 
 
-def cmd_report(args):
-    out = load(args.input)
-    rows = {}
-    for year in args.years:
-        rows[year] = {v: _yields(out, v, year) for v in args.variants}
-    rows["Run3"] = {v: {c: sum(rows[y][v][c] for y in args.years) for c in CUTS} for v in args.variants}
+def ratio(a, b):
+    return a / b if b else float("nan")
 
-    def ratio(a, b):
-        return a / b if b else float("nan")
 
+def _report_dataset(out, dataset, variants, years):
+    rows = {y: {v: _yields(out, dataset, v, y) for v in variants} for y in years}
+    rows["Run3"] = {v: {c: sum(rows[y][v][c] for y in years) for c in CUTS} for v in variants}
     result, lines, flags = {}, [], []
-    hdr = f"{'era':<13}{'cut':<15}" + "".join(f"{v:>12}" for v in args.variants) + \
+    hdr = f"{'era':<13}{'cut':<15}" + "".join(f"{v:>12}" for v in variants) + \
           f"{'HLT/noTrig':>12}{'SF/noTrig':>12}{'mean SF':>10}"
-    lines += ["Four-tag weighted yields (cutFlowFourTag) and ratios", hdr, "-" * len(hdr)]
+    lines += [f"== {dataset}: four-tag weighted yields (cutFlowFourTag) and ratios", hdr, "-" * len(hdr)]
     for era, by_var in rows.items():
         result[era] = {}
         for c in CUTS:
-            y = {v: by_var[v][c] for v in args.variants}
+            y = {v: by_var[v][c] for v in variants}
             eff = ratio(y.get("HLT", 0), y.get("noTrig", 0))
             sf_eff = ratio(y.get("HLT_SF", 0), y.get("noTrig", 0))
             sf = ratio(y.get("HLT_SF", 0), y.get("HLT", 0))
             result[era][c] = {**y, "HLT_over_noTrig": eff, "HLT_SF_over_noTrig": sf_eff, "mean_SF": sf}
-            lines.append(f"{era:<13}{c:<15}" + "".join(f"{y[v]:>12.4g}" for v in args.variants) +
+            lines.append(f"{era:<13}{c:<15}" + "".join(f"{y[v]:>12.4g}" for v in variants) +
                          f"{eff:>12.4f}{sf_eff:>12.4f}{sf:>10.4f}")
             if c == "passPreSel" and era != "Run3" and eff > 0.999:
-                flags.append(f"{era}: HLT/noTrig = {eff:.4f} at passPreSel -- the picoAODs look HLT-filtered "
+                flags.append(f"{dataset} {era}: HLT/noTrig = {eff:.4f} at passPreSel -- the picoAODs look HLT-filtered "
                              f"or carry no HLT branches (passHLT defaults to True), so noTrig is not a no-trigger sample")
         lines.append("")
+    return result, lines, flags
+
+
+def cmd_report(args):
+    out = load(args.input)
+    result, lines, flags = {}, [], []
+    for ds in args.datasets:
+        r, l, f = _report_dataset(out, ds, args.variants, args.years)
+        result[ds], lines, flags = r, lines + l, flags + f
     if flags:
         lines += ["WARNINGS"] + [f"  {f}" for f in flags]
     text = "\n".join(lines) + "\n"
@@ -123,9 +131,10 @@ def main():
     r.add_argument("-i", "--input", required=True)
     r.add_argument("-o", "--output", required=True)
     r.add_argument("--processes", nargs="+", required=True)
-    r.add_argument("--new-name", required=True)
+    r.add_argument("--suffix", required=True, help="appended to each process name, e.g. __HLT_SF")
     p = sub.add_parser("report")
     p.add_argument("-i", "--input", required=True)
+    p.add_argument("--datasets", nargs="+", required=True)
     p.add_argument("--variants", nargs="+", required=True)
     p.add_argument("--years", nargs="+", required=True)
     p.add_argument("-o", "--output", required=True, help="output path stem (.txt and .yml are written)")
