@@ -118,11 +118,13 @@ trigger_weights:
     # of dropping friends into the picoAOD dirs: friends are regenerated far more
     # often than picoAODs, and this keeps that blast radius to one folder.
     #
-    # MY OWN EOS area. The default is the local output_path, and several shipped
-    # configs point at /store/user/algomez/..., which is not writable -- either
-    # way the failure only surfaces at the friend-merge step, after all the
-    # compute.
-    make_classifier_input: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/trigWeights/
+    # The running user's roast area, so any of us can regenerate these. A fixed
+    # /store/user/<someone>/ path is not writable for anyone else, and the default
+    # (the local output_path) is not reachable from the workers -- either way the
+    # failure only surfaces at the friend-merge step, after all the compute.
+    # (trigweights_Run3_v1.json was made into /store/user/mmarcheg/ttHbb/Run3_v1/trigWeights/,
+    # before the TriggerSFVectorized fixes of 2026-10-06: 2022 HLT legs and per-era L1.)
+    make_classifier_input: "{eos_prod}/{roast_id}/trigWeights/"
     # Run 3 defaults, stated explicitly rather than relying on the is_run2 branch.
     use_vectorized: true
     tagger: PNet
