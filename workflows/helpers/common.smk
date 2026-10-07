@@ -437,3 +437,20 @@ def resolve_step_config(default_repo_path, overrides=None, output_path=None):
         return output_path
 
     return default_repo_path
+
+
+def check_dataset_yml(path, name, years):
+    """Refuse to publish an empty or partial dataset. The skimmer runs with skipbadfiles, so a
+    processor error on every chunk becomes an empty registry, runner.py still exits 0, and without
+    this the handoff YAML would be published as `<name>: {}` (it was, once: the mixer's JCM
+    lookup bug)."""
+    with open(path) as f:
+        entry = (yaml.safe_load(f) or {}).get(name) or {}
+    def nfiles(node):
+        if isinstance(node, dict):
+            return sum(nfiles(v) for v in node.values())
+        return len(node) if isinstance(node, list) else 0
+    empty = [y for y in years if not nfiles((entry.get(y) or {}).get('picoAOD'))]
+    if empty:
+        raise ValueError(f"{path}: dataset {name!r} has no files for {empty} -- the skim failed; "
+                         f"see the per-year logs (bad_files) before publishing")

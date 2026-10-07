@@ -1,0 +1,132 @@
+# hists:
+#        data_2022_EE:
+#                process: data
+#                tag: fourTag
+#                year: 2022_EE
+#
+#        data_2022_preEE:
+#                process: data
+#                tag: fourTag
+#                year: 2022_preEE
+#
+#        data_2023_BPix:
+#                process: data
+#                tag: fourTag
+#                year: 2023_BPix
+#
+#        data_2023_preBPix:
+#                process: data
+#                tag: fourTag
+#                year: 2023_preBPix
+#
+#        data_2024:
+#                process: data
+#                tag: fourTag
+#                year: 2024
+#                   
+#        TTTo2L2Nu_2022_EE:
+#                process: TTTo2L2Nu
+#                tag: fourTag
+#                year: 2022_EE
+#
+#        TTTo2L2Nu_2022_preEE:
+#                process: TTTo2L2Nu
+#                tag: fourTag
+#                year: 2022_preEE
+#
+#        TTTo2L2Nu_2023_BPix:
+#                process: TTTo2L2Nu
+#                tag: fourTag
+#                year: 2023_BPix
+#
+#        TTTo2L2Nu_2023_preBPix:
+#                process: TTTo2L2Nu
+#                tag: fourTag
+#                year: 2023_preBPix
+#
+#        TTTo2L2Nu_2024:
+#                process: TTTo2L2Nu
+#                tag: fourTag
+#                year: 2024
+#
+#        TTToHadronic_2022_EE:
+#                process: TTToHadronic
+#                tag: fourTag
+#                year: 2022_EE
+#
+#        TTToHadronic_2022_preEE:
+#                process: TTToHadronic
+#                tag: fourTag
+#                year: 2022_preEE
+#
+#        TTToHadronic_2023_BPix:
+#                process: TTToHadronic
+#                tag: fourTag
+#                year: 2023_BPix
+#
+#        TTToHadronic_2023_preBPix:
+#                process: TTToHadronic
+#                tag: fourTag
+#                year: 2023_preBPix
+#
+#        TTToHadronic_2024:
+#                process: TTToHadronic
+#                tag: fourTag
+#                year: 2024
+#
+#        TTToSemiLeptonic_2022_EE:
+#                process: TTToSemiLeptonic
+#                tag: fourTag
+#                year: 2022_EE
+#
+#        TTToSemiLeptonic_2022_preEE:
+#                process: TTToSemiLeptonic
+#                tag: fourTag
+#                year: 2022_preEE
+#
+#        TTToSemiLeptonic_2023_BPix:
+#                process: TTToSemiLeptonic
+#                tag: fourTag
+#                year: 2023_BPix
+#
+#        TTToSemiLeptonic_2023_preBPix:
+#                process: TTToSemiLeptonic
+#                tag: fourTag
+#                year: 2023_preBPix
+#
+#        TTToSemiLeptonic_2024:
+#                process: TTToSemiLeptonic
+#                tag: fourTag
+#                year: 2024
+hists:
+        data:
+                process: data
+                tag: fourTag
+                label: Four-tag data
+                histtype: step
+                year: [2022_EE, 2022_preEE, 2023_BPix, 2023_preBPix, "2024"]
+        Multijet:
+                process: data
+                tag: threeTag
+                label: Multijet
+                year: [2022_EE, 2022_preEE, 2023_BPix, 2023_preBPix, "2024"]
+
+stack:
+        TTbar:
+                process: [TTTo2L2Nu, TTToHadronic, TTToSemiLeptonic]
+                tag: fourTag
+                label: TTbar 
+                year: [2022_EE, 2022_preEE, 2023_BPix, 2023_preBPix, "2024"]
+
+codes:
+    region:
+        SR: 2
+        SB: 1
+        other: 0
+    tag:
+        threeTag: 3
+        fourTag: 4
+        other: 0
+
+doRatio:
+    0
