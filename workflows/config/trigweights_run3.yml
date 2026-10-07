@@ -53,12 +53,16 @@ dataset:
   - "TTToHadronic_stitched"
   - "ttHbb"
 
+# 2022/2023 only (2026-10-07): the TriggerSFVectorized fixes (2022 HLT legs, per-era L1) change
+# only these eras -- every 2024 curve was already found -- so the 2024 entries of
+# trigweights_Run3_v1.json stay valid and are carried over when the index is rebuilt.
+# (The note above about ONE invocation still holds: the merged index of this run must be
+# merged with v1's 2024 entries, not used on its own.)
 years:
   - "2022_preEE"
   - "2022_EE"
   - "2023_preBPix"
   - "2023_BPix"
-  - "2024"
 
 trigger_weights:
   processor: "coffea4bees/analysis/processors/processor_trigger_weights.py"
