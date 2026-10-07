@@ -194,8 +194,11 @@ def neff_hists(path, prefix, n, variables):
         names = [f"{prefix}_v{s}" for s in range(n)]
         if not all(p in procs for p in names):
             raise SystemExit(f"{path} {var}: missing {[p for p in names if p not in procs]}")
+        # every category axis but process/tag/region summed: year, and any hist_cuts axes (the
+        # ttHbb config adds pass_nSelJets_gt6 / passLeptonVeto), leaving the variable's own axis
+        extra = {ax.name: sum for ax in h.axes[:-1] if ax.name not in ("process", "tag", "region")}
         for region in ("SR", "SB"):
-            x = np.array([h[{"process": p, "tag": "fourTag", "region": region, "year": sum}].values()
+            x = np.array([h[{"process": p, "tag": "fourTag", "region": region, **extra}].values()
                           for p in names], dtype=float)
             mean, rho, ne = _rho(x)
             out[(var, region)] = {"edges": h.axes[-1].edges, "mean": mean, "rho": rho, "n_eff": ne}
