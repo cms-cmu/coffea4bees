@@ -1,6 +1,0 @@
-# Same production as trigweights_run3_signal.yml, after the 2023 jet leg was added to
-# TriggerSFVectorized (2D PF HT x 4th-jet pT map, Efficiency2D_Inclusive-PerLeg-ForthJetPt-vs-alljets_PFHT).
-# Its own roast (own {roast_id} EOS area), so the friends and the validation report compare directly
-# with trigweights_run3_signal_20261005_ccecc05-c5b2089 (2023 = L1 x b-tag leg only). 2022 is unchanged.
-base: coffea4bees/workflows/config/trigweights_run3_signal.yml
-label: "trigweights_run3_signal_jetleg"

@@ -992,11 +992,13 @@ def main():
     with open(jcm_config_yaml, "r") as f:
         jcm_config = yaml.safe_load(f)
 
+    # The 4b process comes from the jcm_config, or from --data4bName when given (the ttHbb
+    # bkg_syst subsample fits pass mix_v<m> explicitly). It is NOT guessed from -w/--weightSet:
+    # that is the output tag, and a substring test on it ("v" in "Run3_v1" / "2024_v2", "mix" or
+    # "data" in "mixeddata_tight") renamed the 4b data of the nominal Run 2/Run 3 and MvD fits
+    # to the tag, so no 4b histograms were found.
     if args.data4bName:
         jcm_config["data4bName"] = args.data4bName
-    elif args.weightSet and ("mix" in args.weightSet or "data" in args.weightSet or "v" in args.weightSet):
-        if jcm_config.get("data4bName") in [None, "data", "mix"] or "{wildcards" in str(jcm_config.get("data4bName", "")):
-            jcm_config["data4bName"] = args.weightSet
 
     print("JCM configuration:", jcm_config)
 

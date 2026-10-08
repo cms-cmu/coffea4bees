@@ -114,9 +114,9 @@ runs:
   analysis_ttHbb_bkg_syst.yml:
     - bkg_syst
     - bkg_syst_AB
-  trigweights_run3_signal.yml:
+  trigweights_run3.yml:
     - TrigWeights
-  trigweights_run3_signal_jetleg.yml:
+  trigweights_run3_signal.yml:
     - TrigWeights
 
 not_covered:

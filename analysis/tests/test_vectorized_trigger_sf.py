@@ -9,7 +9,7 @@ from coffea4bees.analysis.trigger_emulator.helpers import compute_emulation_vars
 # Ensure workspace root is in path
 sys.path.append(os.getcwd())
 
-from coffea4bees.analysis.trigger_emulator.TriggerSFVectorized import TriggerSFVectorized
+from coffea4bees.analysis.trigger_emulator.TriggerSFVectorized import TriggerSFVectorized, trigger_era_code
 
 class TestTriggerSFVectorized(unittest.TestCase):
 
@@ -229,7 +229,7 @@ class TestTriggerSFVectorized(unittest.TestCase):
             np.testing.assert_allclose(tsf.lookup_efficiency_2d(name, ht, pt4, is_data=False), [0.45, 0.25, 0.5])
 
             # the jet leg is now in the product: MC eff is half the data eff for every other leg equal
-            d, m, sf = tsf._calculate_2023_PreBPix(pt4, ht, ht, ak.Array([1.0, 1.0, 1.0]))
+            d, m, sf = tsf._calculate_2023(pt4, ht, ht, ak.Array([1.0, 1.0, 1.0]))
             np.testing.assert_allclose(ak.to_numpy(sf), 2.0)
 
     def test_2d_map_missing_raises(self):
@@ -258,6 +258,81 @@ class TestTriggerSFVectorized(unittest.TestCase):
         teff.member.side_effect = lambda n: {"fTotalHistogram": total, "fPassedHistogram": passed}[n]
         table = TriggerSFVectorized._tefficiency_2d(teff)
         np.testing.assert_allclose(table["eff"], [[0.5, 0.5, 0.5], [0.5, 0.5, 0.5], [0.8, 0.9, 1.0]])
+
+    def test_era_codes(self):
+        """Each Run 3 era gets its own code; other years keep the calendar year"""
+        self.assertEqual(trigger_era_code("2022_preEE", "2022"), 2021)
+        self.assertEqual(trigger_era_code("2022_EE", "2022"), 2022)
+        self.assertEqual(trigger_era_code("2023_preBPix", "2023"), 2023)
+        self.assertEqual(trigger_era_code("2023_BPix", "2023"), 2020)
+        self.assertEqual(trigger_era_code("2024", "2024"), 2024)
+        self.assertEqual(trigger_era_code("UL18", "2018"), 2018)
+
+    def test_l1_curve_per_era(self):
+        """preEE/postEE and preBPix/postBPix read different L1 curves"""
+        names = []
+        orig = TriggerSFVectorized.lookup_efficiency
+
+        def spy(inst, name, values, is_data=True):
+            names.append(name)
+            return orig(inst, name, values, is_data)
+
+        events = ak.Array({"Jet": {"pt": [[100.0, 80.0, 60.0, 40.0]], "pn_b": [[0.9, 0.8, 0.5, 0.1]],
+                                   "pfht_selected": [[True] * 4], "ht_selected": [[True] * 4]}})
+        events['Jet', 'btagScore'] = events.Jet.pn_b
+        compute_emulation_vars(events)
+        jet_leg = {"type": "hist2d", "x_edges": np.array([0.0, 2000.0]), "y_edges": np.array([0.0, 500.0]),
+                   "eff": np.array([[1.0]])}
+
+        def load(inst, path, is_l1=False):
+            self._mock_load_root_file(inst, path, is_l1)
+            inst.data_lookups["Data__Efficiency2D_Inclusive-PerLeg-ForthJetPt-vs-alljets_PFHT"] = jet_leg
+            inst.mc_lookups["Simulation__Efficiency2D_Inclusive-PerLeg-ForthJetPt-vs-alljets_PFHT"] = jet_leg
+
+        expected = {2021: "L1All_preEE", 2022: "L1All_postEE",
+                    2023: "L1_HTT280er_preBPix", 2020: "L1_HTT280er_postBPix"}
+        with patch.object(TriggerSFVectorized, '_load_root_file', autospec=True) as mock_load, \
+             patch.object(TriggerSFVectorized, 'lookup_efficiency', autospec=True, side_effect=spy):
+            mock_load.side_effect = load
+            for code, l1 in expected.items():
+                names.clear()
+                TriggerSFVectorized(code, map_path="dummy", tagger="PNet").calculate_event_sf(events)
+                self.assertIn(l1, names, code)
+                other = set(expected.values()) - {l1}
+                self.assertFalse(other & set(names), (code, other & set(names)))
+
+    def test_missing_1d_curve_warns(self):
+        """A missing 1D curve still gives 1.0 but is logged (once)"""
+        with patch.object(TriggerSFVectorized, '_load_root_file', autospec=True) as mock_load:
+            mock_load.side_effect = self._mock_load_root_file
+            tsf = TriggerSFVectorized(2022, map_path="dummy", tagger="PNet")
+            with self.assertLogs(level="WARNING") as logs:
+                eff, _, _ = tsf.lookup_efficiency("NoSuchLeg", ak.Array([50.0, 60.0]))
+                tsf.lookup_efficiency("NoSuchLeg", ak.Array([50.0]))
+            np.testing.assert_allclose(ak.to_numpy(eff), 1.0)
+            self.assertEqual(sum("NoSuchLeg" in m for m in logs.output), 1)
+
+    def test_real_maps_run3_eras(self):
+        """The shipped Run 3 maps have every curve each era asks for (no fallback warning)"""
+        map_path = "coffea4bees/analysis/trigger_emulator/data/"
+        if not os.path.exists(os.path.join(map_path, "TriggerEfficiency_Fit_2023_18April2025.root")):
+            self.skipTest("trigger maps not available (run from the barista root)")
+        events = ak.Array({"Jet": {"pt": [[150.0, 100.0, 70.0, 50.0], [60.0, 50.0, 40.0, 35.0]],
+                                   "pn_b": [[0.99, 0.95, 0.5, 0.1], [0.9, 0.8, 0.2, 0.1]],
+                                   "pfht_selected": [[True] * 4] * 2, "ht_selected": [[True] * 4] * 2}})
+        events['Jet', 'btagScore'] = events.Jet.pn_b
+        compute_emulation_vars(events)
+        sfs = {}
+        for era, code in [("2022_preEE", 2021), ("2022_EE", 2022), ("2023_preBPix", 2023), ("2023_BPix", 2020),
+                          ("2024", 2024)]:
+            tsf = TriggerSFVectorized(code, map_path=map_path, tagger="PNet")
+            d, m, sf = tsf.calculate_event_sf(events)
+            self.assertEqual(tsf._warned_missing, set(), era)
+            self.assertTrue(np.all((ak.to_numpy(d) > 0) & (ak.to_numpy(d) <= 1)), era)
+            sfs[era] = ak.to_numpy(sf)
+        # the per-era L1 curves differ, so the eras of a year must not give identical SFs
+        self.assertFalse(np.allclose(sfs["2022_preEE"], sfs["2022_EE"]))
+        self.assertFalse(np.allclose(sfs["2023_preBPix"], sfs["2023_BPix"]))
 
 if __name__ == '__main__':
     unittest.main()
