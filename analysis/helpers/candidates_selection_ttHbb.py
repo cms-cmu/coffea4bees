@@ -45,40 +45,28 @@ def _build_can_ttH_dijets(selev, cand_cfg=None, isRun3=False):
     diJet["deta"] = diJet["lead"].eta - diJet["subl"].eta
     diJetDr = diJet[ak.argsort(diJet.dr, axis=2, ascending=True)]
 
-    canH_min_mass, canH_max_mass = 80, 170
-    canH_min_pt_offset, canH_min_pt_scale, canH_min_dr_offset = 50., 160., 0.18
-    canH_max_pt_offset, canH_max_pt_scale, canH_max_dr_offset = 70., 320., 0.2
-    canTT_min_pt_offset, canTT_min_pt_scale, canTT_min_dr_offset = -200., 320., 4.6
-    canTT_max_pt_offset, canTT_max_pt_scale, canTT_max_dr_offset = -250., 170., 4.2
-    
-    diJet["pass_canH_mass"] = (canH_min_mass < diJet.mass) & (diJet.mass < canH_max_mass)
-
-    diJet["pass_canH_PtDR"] = (
-        (canH_min_dr_offset + (canH_min_pt_scale / (diJet.pt + canH_min_pt_offset)) < diJet.dr) &
-        (diJet.dr < np.maximum(canH_max_dr_offset + (canH_max_pt_scale / (diJet.pt + canH_max_pt_offset))  , 4))
-    )
-
-    diJet["pass_canTT_PtDR"] = (
-        (canTT_min_dr_offset + (canTT_min_pt_scale / (diJet.pt + canTT_min_pt_offset)) < diJet.dr) &
-        (diJet.dr < np.maximum( canTT_max_dr_offset + (canTT_max_pt_scale / (diJet.pt + canTT_max_pt_offset)) , 4) )
-    )
-
     del canJet, pairing
     return diJet, diJetDr
-
-
 
 def _build_can_ttH_quadjets(selev, diJet, diJetDr, cand_cfg=None, isRun3=False):
     """Build quadjet candidates and assign signal regions for ttHbb."""
     rng_0 = Squares("quadJetSelection")
     rng_1 = rng_0.shift(1)
     rng_2 = rng_0.shift(2)
+    rng_3 = rng_0.shift(3)
+    rng_4 = rng_0.shift(4)
+    rng_5 = rng_0.shift(5)
     counter = selev.event
 
     quadJet = ak.zip({
         "canH": diJet[:, :, 0],
         "canTT": diJet[:, :, 1],
-        "pass_canH_mass": ak.all(diJet.pass_canH_mass, axis=2),
+        ### lead/subl/close/other/passDiJetMass kept so downstream (_assign_output_vars_ttHbb, processors) works unchanged
+        "lead": diJet[:, :, 0],
+        "subl": diJet[:, :, 1],
+        "close": diJetDr[:, :, 0],
+        "other": diJetDr[:, :, 1],
+        "passDiJetMass": ak.all((0. < diJet.mass) & (diJet.mass < 2000.), axis=2),
         "random": np.concatenate([
             rng_0.uniform(counter, low=0.1, high=0.9)[:, np.newaxis],
             rng_1.uniform(counter, low=0.1, high=0.9)[:, np.newaxis],
@@ -92,8 +80,42 @@ def _build_can_ttH_quadjets(selev, diJet, diJetDr, cand_cfg=None, isRun3=False):
     quadJet["dr"] = quadJet["canH"].delta_r(quadJet["canTT"])
     quadJet["dphi"] = quadJet["canH"].delta_phi(quadJet["canTT"])
     quadJet["deta"] = quadJet["canH"].eta - quadJet["canTT"].eta
-    quadJet["v4jmass"] = selev["v4j"].mass
-    _select_quadjet_ttHbb(quadJet, cand_cfg)
+    quadJet["v4jmass"] = selev["v4j"].mass[:, np.newaxis]   ### pairings axis is regular (no sort), so broadcast explicitly
+
+    ### one quadJet entry per pairing: canH is slot 0, canTT is slot 1 of each pairing
+    canH_min_mass, canH_max_mass = 80, 170
+    canH_min_pt_offset, canH_min_pt_scale, canH_min_dr_offset = -50., 160., 0.18
+    canH_max_pt_offset, canH_max_pt_scale, canH_max_dr_offset = -70., 320., 0.2
+    canTT_min_pt_offset, canTT_min_pt_scale, canTT_min_dr_offset = 200., 320., 4.6
+    canTT_max_pt_offset, canTT_max_pt_scale, canTT_max_dr_offset = 250., 170., 4.2
+
+    canH, canTT = quadJet["canH"], quadJet["canTT"]
+
+    quadJet["pass_canH_mass"] = (canH_min_mass < canH.mass) & (canH.mass < canH_max_mass)
+
+    quadJet["pass_canH_PtDR"] = (
+        (canH_min_dr_offset + (canH_min_pt_scale / (canH.pt - canH_min_pt_offset)) < canH.dr) &
+        (canH.dr < np.minimum(canH_max_dr_offset + (canH_max_pt_scale / (canH.pt - canH_max_pt_offset))  , 4)) &   ### minimum: 4 is a cap, not a floor
+        (canH.pt >= canH_min_pt_offset)
+    )
+
+    quadJet["pass_canTT_PtDR"] = (
+        (canTT_min_dr_offset + (canTT_min_pt_scale / (canTT.pt - canTT_min_pt_offset)) < canTT.dr) &
+        (canTT.dr < np.minimum( canTT_max_dr_offset + (canTT_max_pt_scale / (canTT.pt - canTT_max_pt_offset)) , 4) ) &
+        (canTT.pt <= canTT_max_pt_offset)
+    )
+
+    ### number of pairings (of 6) passing each cut; computed here because
+    ### _select_cant_ttH_quadjet reuses the pass_canH_mass name for its ranking category
+    selev["nPairs"] = ak.zip({
+        "pass_canH_PtDR": ak.sum(quadJet.pass_canH_PtDR, axis=1),
+        "pass_canTT_PtDR": ak.sum(quadJet.pass_canTT_PtDR, axis=1),
+        "pass_canH_mass": ak.sum(quadJet.pass_canH_mass, axis=1),
+        "pass_all": ak.sum(quadJet.pass_canH_PtDR & quadJet.pass_canTT_PtDR & quadJet.pass_canH_mass, axis=1),
+    })
+
+    _select_cant_ttH_quadjet(quadJet, cand_cfg)
+    _assign_SR_SB_ttHbb(quadJet, cand_cfg, full_space=True)   ### SR = whole (canH, canTT) mass plane, SB empty
 
     return quadJet
 
@@ -104,11 +126,34 @@ def _select_cant_ttH_quadjet(quadJet, cand_cfg=None):
     # Ranking: prioritize MDR passing pairings, with random tie-breaker
     quadJet["rank"] = (
         quadJet.random 
-        + (quadJet.canH.pass_canH_PtDR * 10)
-        + (quadJet.canTT.pass_canTT_PtDR * 10)
-        + quadJet.pass_canH_mass
+        + (quadJet.pass_canH_PtDR * 20)
+        + (quadJet.pass_canTT_PtDR * 10)
+        # + quadJet.pass_canH_mass
     )
-    quadJet["selected"] = quadJet.rank == np.max(quadJet.rank, axis=1)
+    quadJet["selected"] = quadJet.rank == ak.max(quadJet.rank, axis=1, keepdims=True)
+
+    rank_canH_PtDR = quadJet.pass_canH_PtDR
+    rank_canTT_PtDR = quadJet.pass_canTT_PtDR
+    rank_canH_canTT = (rank_canH_PtDR * 20) + (rank_canTT_PtDR * 10)
+    rank_canH_mass = rank_canH_canTT + quadJet.pass_canH_mass
+    rank_canH_mass_rand = rank_canH_mass + quadJet.random
+    
+    quadJet["pass_canH_PtDr"] = (rank_canH_PtDR == ak.max(rank_canH_PtDR, axis=1, keepdims=True)) & (rank_canH_PtDR > 0)
+    quadJet["pass_canTT_PtDr"] = (rank_canTT_PtDR == ak.max(rank_canTT_PtDR, axis=1, keepdims=True)) & (rank_canTT_PtDR > 0)
+    quadJet["pass_canH_canTT_PtDr"] = (rank_canH_canTT == ak.max(rank_canH_canTT, axis=1, keepdims=True)) & (rank_canH_canTT > 0)
+    quadJet["pass_canH_mass"] = (rank_canH_mass == ak.max(rank_canH_mass, axis=1, keepdims=True)) & (rank_canH_mass > 0)
+    quadJet["pass_canH_mass_rand"] = (rank_canH_mass_rand == ak.max(rank_canH_mass_rand, axis=1, keepdims=True)) & (rank_canH_mass_rand > 0)
+
+def _assign_output_vars_can_ttH(selev, diJet, quadJet, run_SvB=False, cand_cfg=None):
+    """Assign the standard ttHbb candidate fields plus canH/canTT-specific fields to selev."""
+    _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB, cand_cfg)
+
+    selev["canH_mass_selected"] = selev.quadJet_selected.canH.mass
+    selev["canTT_mass_selected"] = selev.quadJet_selected.canTT.mass
+
+    selev["pass_canH_mass"] = selev.quadJet_selected.pass_canH_mass
+    selev["pass_canH_PtDR"] = selev.quadJet_selected.pass_canH_PtDR
+    selev["pass_canTT_PtDR"] = selev.quadJet_selected.pass_canTT_PtDR
 
 
 def _build_dijets_ttHbb(selev, cand_cfg=None, isRun3=False):
@@ -160,8 +205,24 @@ def _build_dijets_ttHbb(selev, cand_cfg=None, isRun3=False):
 
 
 def _select_quadjet_ttHbb(quadJet, cand_cfg=None):
-    """Pick best quadjet pairing and assign ttHbb SR/SB regions.
-    
+    """Pick best quadjet pairing and assign ttHbb SR/SB regions (see _assign_SR_SB_ttHbb)."""
+    _assign_SR_SB_ttHbb(quadJet, cand_cfg)
+
+    # Ranking: prioritize MDR passing pairings, with random tie-breaker
+    quadJet["rank"] = (
+        10 * quadJet.passDiJetMass
+        + quadJet.lead.passMDR
+        + quadJet.subl.passMDR
+        + quadJet.random
+    )
+    quadJet["selected"] = quadJet.rank == np.max(quadJet.rank, axis=1)
+
+
+def _assign_SR_SB_ttHbb(quadJet, cand_cfg=None, full_space=False):
+    """Assign ttHbb SR/SB regions in the (m_lead, m_subl) plane.
+
+    full_space=True: SR is the whole (m_lead, m_subl) plane, SB is empty (no arm selection).
+
     SR Modes:
         - 'baseline' (default): Original cross [85, 185] / [90, 185] GeV up to 1000 GeV
             Horizontal arm: m_subl in [85, 185] GeV, m_lead in [25, 1000] GeV
@@ -177,39 +238,35 @@ def _select_quadjet_ttHbb(quadJet, cand_cfg=None):
     m_lead = quadJet["lead"].mass
     m_subl = quadJet["subl"].mass
 
-    sr_cfg = (cand_cfg or {}).get("sr_ttHbb", {})
-    mode = (cand_cfg or {}).get("sr_mode") or sr_cfg.get("mode", "optimal_balance")
+    # sr_cfg = (cand_cfg or {}).get("sr_ttHbb", {})
+    # mode = (cand_cfg or {}).get("sr_mode") or sr_cfg.get("mode", "optimal_balance")
 
-    if mode in ["optimal_balance", "optimal"]:
-        h_min = sr_cfg.get("h_min", 95.0)
-        h_max = sr_cfg.get("h_max", 180.0)
-        m_min = sr_cfg.get("m_min", 25.0)
-        arm_max = sr_cfg.get("arm_max", 400.0)
+    # if mode in ["optimal_balance", "optimal"]:
+    #     h_min = sr_cfg.get("h_min", 95.0)
+    #     h_max = sr_cfg.get("h_max", 180.0)
+    #     m_min = sr_cfg.get("m_min", 25.0)
+    #     arm_max = sr_cfg.get("arm_max", 400.0)
 
-        in_h_arm = (m_subl >= h_min) & (m_subl <= h_max) & (m_lead >= m_min) & (m_lead <= arm_max)
-        in_v_arm = (m_lead >= h_min) & (m_lead <= h_max) & (m_subl >= m_min) & (m_subl <= arm_max)
-    else:
-        # Default baseline
-        in_h_arm = (m_subl >= 85.0) & (m_subl <= 185.0) & (m_lead >= 25.0) & (m_lead <= 1000.0)
-        in_v_arm = (m_lead >= 90.0) & (m_lead <= 185.0) & (m_subl >= 25.0) & (m_subl <= 1000.0)
+    #     in_h_arm = (m_subl >= h_min) & (m_subl <= h_max) & (m_lead >= m_min) & (m_lead <= arm_max)
+    #     in_v_arm = (m_lead >= h_min) & (m_lead <= h_max) & (m_subl >= m_min) & (m_subl <= arm_max)
+    # else:
+    #     # Default baseline
+    #     in_h_arm = (m_subl >= 85.0) & (m_subl <= 185.0) & (m_lead >= 25.0) & (m_lead <= 1000.0)
+    #     in_v_arm = (m_lead >= 90.0) & (m_lead <= 185.0) & (m_subl >= 25.0) & (m_subl <= 1000.0)
 
-    quadJet["SR"] = in_h_arm | in_v_arm
+    # quadJet["SR"] = in_h_arm | in_v_arm
 
-    in_analysis_box = (m_lead >= 25.0) & (m_lead <= 1000.0) & (m_subl >= 25.0) & (m_subl <= 1000.0)
-    quadJet["SB"] = in_analysis_box & (~quadJet["SR"])
+    full_space = True
+    if full_space:
+        quadJet["SR"] = ak.ones_like(m_lead, dtype=bool)
+
+    # in_analysis_box = (m_lead >= 25.0) & (m_lead <= 1000.0) & (m_subl >= 25.0) & (m_subl <= 1000.0)
+    # quadJet["SB"] = in_analysis_box & (~quadJet["SR"])
+    quadJet["SB"] = (~quadJet["SR"])
 
 
     # Compute Euclidean radial distance for monitoring
     quadJet["rH"] = np.sqrt((m_lead - 125.0)**2 + (m_subl - 125.0)**2)
-
-    # Ranking: prioritize MDR passing pairings, with random tie-breaker
-    quadJet["rank"] = (
-        10 * quadJet.passDiJetMass
-        + quadJet.lead.passMDR
-        + quadJet.subl.passMDR
-        + quadJet.random
-    )
-    quadJet["selected"] = quadJet.rank == np.max(quadJet.rank, axis=1)
 
 
 def _build_quadjets_ttHbb(selev, diJet, diJetDr, cand_cfg=None, isRun3=False):
@@ -451,23 +508,23 @@ def create_cand_jet_dijet_quadjet_ttHbb(
     analysis_selections: ak.Array = None,
     cand_cfg: dict = None,
 ):
-    """Creates candidate jets, dijets, and quadjets unconstrained for ttHbb analysis."""
+    """Creates candidate jets, canH/canTT dijets, and quadjets for ttHbb analysis."""
     selev = cand_jet_selection(selev, include_lowptjets, cand_cfg=cand_cfg)
     selev["v4j"] = selev.canJet.sum(axis=1)
 
     _compute_vbf_variables(selev, cand_cfg)
 
-    diJet, diJetDr = _build_dijets_ttHbb(selev, cand_cfg, isRun3)
-    quadJet = _build_quadjets_ttHbb(selev, diJet, diJetDr, cand_cfg, isRun3)
+    diJet, diJetDr = _build_can_ttH_dijets(selev, cand_cfg, isRun3)
+    quadJet = _build_can_ttH_quadjets(selev, diJet, diJetDr, cand_cfg, isRun3)   ### also runs _select_cant_ttH_quadjet
     del diJetDr
 
-    apply_FvT = _apply_ml_scores_ttHbb(
-        selev, quadJet, apply_FvT, classifier_FvT,
-        run_SvB, run_systematics, classifier_SvB, classifier_SvB_MA, classifier_SvB_FeynNet,
-        weights, list_weight_names, analysis_selections, label3b,
-    )
+    # apply_FvT = _apply_ml_scores_ttHbb(
+    #     selev, quadJet, apply_FvT, classifier_FvT,
+    #     run_SvB, run_systematics, classifier_SvB, classifier_SvB_MA, classifier_SvB_FeynNet,
+    #     weights, list_weight_names, analysis_selections, label3b,
+    # )
 
-    _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB, cand_cfg)
+    _assign_output_vars_can_ttH(selev, diJet, quadJet, run_SvB, cand_cfg)
     del diJet, quadJet
 
     return selev
