@@ -48,7 +48,7 @@ analysis_config:
     apply_FvT: false
     plot_ttbar_with_weights: false
     apply_trigWeight: true
-    # trigweights_Run3_v2.json (friends_HH4b.yml) covers TT and the 2022/2023 ggF signal.
+    # trigweights_Run3_v3.json (friends_HH4b.yml) covers TT and the 2022/2023 ggF signal.
     # Same as nominal_run3.yml.
     require_trigWeight: true
     apply_btagSF: true

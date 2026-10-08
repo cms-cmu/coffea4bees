@@ -127,7 +127,7 @@ mixed_jcm:
 ttbar_psdata:
   dataset_name: "ttbar_PSData"
   seed: 5
-  require_trigWeight: true     # trigweights_Run3_v2.json covers the inclusive TT samples
+  require_trigWeight: true     # trigweights_Run3_v3.json covers the inclusive TT samples
   worker_memory: 6GB
   chunksize: 100000
   picosize: 100000
