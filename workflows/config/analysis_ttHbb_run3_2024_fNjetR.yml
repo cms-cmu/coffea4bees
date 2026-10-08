@@ -140,9 +140,10 @@ fvt:
   friend: "{eos_base}/friend/{label}"
   train_template: "model: {eos_base}/classifier/{label}"
   eval_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/{label}"
-  metadata: "coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2024.json@@HCR_input"
+  metadata: "coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2024_clean_v1.json@@HCR_input"  # ruling 2024-IDX-1: integrity-clean index
   workflow_overrides:
     --JCM-weight: '"" coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2024_pt25_fNjetR_v1.yml@@JCM_weights'
+    '--friends ""': 'coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2024_clean_v1.json@@HCR_input'
   train_mem: 96000      # 2024 has 3.96x the 2022 data (all selected events are loaded; 2022 train peaked ~22 GB) -> est. 65-75 GB.
                         # 96000 MB -> schedd assigns 32 cpus -> matches H100 NVL / H200 slots only (A100 slots cap at 48 GB). Expect longer queues.
   eval_mem: 48000       # 2022 eval peaked 31.7 GB; evaluate processes chunk by chunk (2024 chunks are smaller). Hold for memory -> STOP.
