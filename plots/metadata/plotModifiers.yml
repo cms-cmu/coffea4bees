@@ -54,7 +54,7 @@ quadJet_all.lead_vs_subl_dr : {"2d":True}
 quadJet_all.lead_vs_subl_pt : {"2d":True}
 
 
-quadJet_truth.pt_H_vs_dr_bb : {"2d":True, "shapes": [{"type": "hyperbola", "p": 235, "n": 2, "xrange": [100, 1000], "color": "magenta"}, {"type": "hyperbola", "p": 235, "xrange": [100, 1000], "color": "magenta"}]}
+quadJet_truth.pt_H_vs_dr_bb : {"2d":True, "shapes": [{"type": "hyperbola", "b": 235, "a": 2, "xrange": [100, 1000], "color": "magenta"}, {"type": "hyperbola", "b": 235, "xrange": [100, 1000], "color": "magenta"}]}
 quadJet_truth.pt_tt_vs_dr_bb : {"2d":True}
 quadJet_truth.m_H_vs_dr_bb : {"2d":True}
 quadJet_truth.m_tt_vs_dr_bb : {"2d":True}
