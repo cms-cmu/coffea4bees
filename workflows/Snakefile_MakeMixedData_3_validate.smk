@@ -1,0 +1,148 @@
+# coffea4bees/workflows/Snakefile_MakeMixedData_3_validate.smk
+# M.3: validate the mixed data and fit its JCM.
+#
+#   M3_hist_config                    the upstream B.1 noJCM runner config, pointed at mixeddata_all
+#                                     (read from this roast's EOS handoff, as a consumer would)
+#   M3_hists (per year, condor)       processor_HH4b over mixeddata_all
+#   M3_merge_hists                    + the upstream data / ttbar histAll_NoJCM
+#   M3_cutflow                        cutflow dump (first roast: the reference to bless)
+#   M3_fit                            make_jcm_weights.py, mixeddata_all as the "3b" sample, float_t
+#                                     -> jetCombinatoricModel_SB_mixeddata.yml (M.6 / M.7 weight the
+#                                     mixed data with it)
+#   M3_publish                        the mixed-data JCM -> <PUB>/handoff/
+#
+# This JCM is fit in the upstream (HH4b non-tight) selection, so it validates the mixed data; it is
+# not what an analysis splits with. The split into subsamples, and the subsample study, need a fit
+# in the analysis' own selection and live with the analysis (Snakefile_bkg_syst_A_*).
+#
+# 4b mixing: nothing to fit (unit-weight 4b events) and no JCM splitting, so all_M3 is empty; the
+# data-vs-mixed comparison is M.6.
+
+M3_OUT = f"{out}M3/"
+M3_HIST_CONFIG = f"{M3_OUT}analysis_config_mixed.yml"
+M3_HISTALL = f"{M3_OUT}histAll_mixedJCM.coffea"
+MJ = config.get('mixed_jcm') or {}
+M3_JCM_TAG = "mixeddata"
+M3_REGION = MJ.get('region', config.get('jcm_region', 'SB'))
+M3_JCM_DIR = f"{M3_OUT}JCM_{M3_JCM_TAG}/"
+MIXED_JCM = f"{M3_JCM_DIR}jetCombinatoricModel_{M3_REGION}_{M3_JCM_TAG}.yml"
+M3_PUBLISHED = f"{M3_OUT}published.done"
+
+rule M3_hist_config:
+    input: UPSTREAM_HIST_CONFIG
+    output: M3_HIST_CONFIG
+    run:
+        with open(input[0]) as f:
+            cfg = yaml.safe_load(f) or {}
+        tight = (cfg.get('config') or {}).get('fourTag_use_tight', False)
+        if tight is not False:
+            raise ValueError(f"upstream JCM roast histogrammed with fourTag_use_tight={tight!r} "
+                             f"({INPUTS['jcm_hists']}); the mixed data needs the non-tight selection")
+        cfg['dataset_location'] = [MIXED_URL]
+        cfg.get('runner', {}).pop('dataset_location', None)
+        if config['test']:
+            cfg.setdefault('runner', {}).update({'condor': False, 'shared_dask': False})
+        write_yaml(output[0], cfg)
+
+use rule analysis_processor from analysis as M3_hists with:
+    input:
+        runner_script = "runner.py",
+        config_file = M3_HIST_CONFIG,
+        published = M2_PUBLISHED
+    output: f"{M3_OUT}singlefiles/hist__{MIX_NAME}__{{year}}.coffea"
+    log: f"{M3_OUT}logs/hists__{{year}}.log"
+    wildcard_constraints:
+        year = "|".join(YEARS)
+    params:
+        datasets = MIX_NAME,
+        years = lambda wildcards: wildcards.year,
+        config = lambda wildcards, input: input.config_file,
+        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
+        run_container_wrapper = WRAPPER,
+        python_bin = PYTHON
+
+use rule merging_coffea_files from analysis as M3_merge_hists with:
+    input:
+        files = [UPSTREAM_HISTS] + expand(f"{M3_OUT}singlefiles/hist__{MIX_NAME}__{{year}}.coffea", year=YEARS),
+        script = "src/tools/merge_coffea_files.py"
+    output: M3_HISTALL
+    log: f"{M3_OUT}logs/merge_hists.log"
+    params:
+        run_performance = False,
+        run_container_wrapper = WRAPPER,
+        python_bin = PYTHON,
+        input_files = lambda wildcards, input: " ".join(input.files)
+
+use rule check_cutflow from analysis as M3_cutflow with:
+    input:
+        coffea_file = M3_HISTALL
+    output:
+        validation_txt = f"{M3_OUT}cutflow_validation_mixedJCM.txt",
+        cutflow_yml = f"{M3_OUT}cutflow_mixedJCM.yml"
+    log: f"{M3_OUT}logs/cutflow_mixedJCM.log"
+    params:
+        known_flag = lambda wildcards: (f'--known-cutflow "{MJ["known_counts"]}"'
+                                        if MJ.get('known_counts') and os.path.exists(MJ['known_counts'])
+                                        else '--known-cutflow "none"'),
+        error_threshold = lambda wildcards: config.get("error_threshold", "0.001"),
+        cutflow_list = lambda wildcards: config.get("cutflow_list", "passJetMult,passPreSel,passDiJetMass,SR,SB"),
+        run_container_wrapper = WRAPPER,
+        python_bin = PYTHON
+    container: None
+
+rule M3_jcm_config:
+    input: MJ.get('config', "coffea4bees/analysis/jcm_tools/metadata/mixeddata_all_config_Run3.yml")
+    output: f"{M3_OUT}jcm_config_mixed.yml"
+    run:
+        with open(input[0]) as f:
+            cfg = yaml.safe_load(f) or {}
+        cfg['data3bName'] = MIX_NAME        # the mixed data stands in for the 3b sample
+        cfg['data4bName'] = "data"
+        cfg['float_t'] = bool(MJ.get('float_t', True))
+        # The fit keeps the ttbar term: the mixed data is multijet only (ttbar-subtracted 3b data)
+        # while the 4b data it is fit to contains ttbar. The samples must be the ones the upstream
+        # jcm_hists histogrammed, i.e. this roast's `ttbar` list.
+        if 'ttbarProcesses' in MJ:
+            cfg['ttbarProcesses'] = MJ['ttbarProcesses']
+        elif TTBAR:
+            cfg.setdefault('ttbarProcesses', TTBAR)
+        write_yaml(output[0], cfg)
+
+rule M3_fit:
+    input:
+        # The merged file, not the per-year singlefiles: make_jcm_weights.py keeps the LAST input file
+        # holding each process (jcm_tools/helpers.py:loadHistograms), so per-year inputs fit one year
+        # of mixed data against all years of 4b data.
+        hists = M3_HISTALL,
+        jcm_config = f"{M3_OUT}jcm_config_mixed.yml"
+    output: MIXED_JCM
+    log: f"{M3_OUT}logs/fit.log"
+    shell:
+        """
+        set -eo pipefail
+        export MPLCONFIGDIR="/tmp/matplotlib"
+        mkdir -p $MPLCONFIGDIR {M3_JCM_DIR}
+        {WRAPPER} {PYTHON} coffea4bees/analysis/jcm_tools/make_jcm_weights.py -o {M3_JCM_DIR} \
+            -i {input.hists} -r {M3_REGION} -w {M3_JCM_TAG} --data4bName data --jcm_config {input.jcm_config} \
+            --combine_input_files 2>&1 | tee {log}
+        ls {M3_JCM_DIR} 2>&1 | tee -a {log}
+        """
+
+rule M3_publish:
+    input: MIXED_JCM
+    output: M3_PUBLISHED
+    log: f"{M3_OUT}logs/publish.log"
+    shell:
+        """
+        set -eo pipefail
+        {EOS_PROXY}
+        xrdcp -f -p {input} "{HANDOFF}/$(basename {input})" 2>&1 | tee {log}
+        echo "published {input} -> {HANDOFF}/$(basename {input})" | tee -a {log}
+        date > {output}
+        """
+
+rule all_M3:
+    input:
+        [] if MIX4B else [M3_PUBLISHED, f"{M3_OUT}cutflow_validation_mixedJCM.txt"]
+
+localrules: M3_hist_config, M3_merge_hists, M3_cutflow, M3_jcm_config, M3_fit, M3_publish, all_M3

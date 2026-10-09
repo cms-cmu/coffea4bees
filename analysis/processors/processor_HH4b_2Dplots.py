@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 import awkward as ak
 import numpy as np
 import yaml
-from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
+from coffea4bees.analysis.helpers.object_selection import apply_jet_calibration
 from src.physics.common import update_events
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b
 from coffea4bees.analysis.helpers.filling_histograms import (
@@ -124,7 +124,7 @@ class analysis(processor.ProcessorABC):
         #
         # Calculate and apply Jet Energy Calibration
         #
-        jets = apply_jerc_corrections_jsonpog(event,
+        jets = apply_jet_calibration(event,
                                         corrections_metadata=self.corrections_metadata[self.year],
                                         isMC=True,
                                         run_systematics=False,

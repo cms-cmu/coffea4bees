@@ -1,0 +1,324 @@
+# coffea4bees/workflows/Snakefile_DeClustered.smk
+# DeClustered (synthetic) dataset production: the top level of the declustered roast. Ports the
+# scripts/synthetic-dataset-{cluster,make-dataset,analyze,analyze-cutflow}-Run3*.sh chain, laid
+# out like Snakefile_MakeMixedData.smk.
+#
+#   inputs             fetch the upstream data/ttbar histograms + their runner config (B.1 roast)
+#   D.1 cluster        4b data, ttbar subtracted with the upstream FvT -> splitting histograms
+#   D.2 PDFs           splitting histograms -> clustering_pdfs_vs_pT_<era>.yml, published to EOS
+#   D.3 decluster      ttbar-subtracted 4b data re-generated from the PDFs, one replica per seed
+#                      (declustering.method: library -> from D.1's library of real splittings,
+#                      seed i = neighbour rank i; see jet_clustering/splitting_library.py)
+#                      -> multijet picoAODs + multi-sample dataset YAMLs (files_template seedXXX,
+#                      nSamples = n_seeds): multijet only, and multijet + ttbar pseudodata
+#   D.4 validate       synthetic-data histograms with the upstream config, merged with the upstream
+#                      data/ttbar -> cutflow (synthetic 4b next to data 4b, same selection)
+#   D.5 monitoring     plots (synthetic vs 4b data, ttbar MC), cutflow page, PDF sampling-test gallery
+#   D.6 signal check   signal MC declustered the same way: does the Higgs-candidate peak wash out?
+#   (M.5 ttbar PS      only with a `ttbar_psdata:` section: the ttbar pseudodata made here, from
+#                      validation.ttbar, as MakeMixedData's M.5 -- instead of inputs.ttbar_psdata)
+#
+# Everything this roast consumes comes from another roast, named under `inputs:` and checked by
+# `roast new`: the FvT and the data/ttbar histograms of the NON-TIGHT production
+# (config/nominal_run3_nontight.yml) -- the declustering, like the mixing, is non-tight, and the
+# tight FvT covers only tight-4b events (it silently drops the rest; see mixeddata_run3.yml) --
+# and the ttbar pseudodata of a mixeddata roast (folded into the consumer dataset), unless it is
+# made here.
+#
+# Products are published to `publish_base` on EOS; the dataset YAML under <publish_base>/handoff/
+# is what consumer roasts read (runner.py -m accepts root:// URLs). Nothing is installed into the
+# checkout: the PDFs in particular go to EOS, not coffea4bees/jet_clustering/, because the condor
+# workers get a tarball of the checkout made when the shared dask daemon starts (in D.1), so a PDF
+# written into the checkout afterwards would never reach them. Run one step with a target:
+# `roast submit <id> --step DeClustered --targets all_D1`.
+#
+# This file is the ONLY place the config is read and paths are built: the step files include()d
+# below use the names defined here and never call config.setdefault themselves.
+
+import os
+import copy
+import yaml
+
+if not workflow.configfiles:
+    configfile: "coffea4bees/workflows/config/declustered_run3.yml"
+
+include: "helpers/common.smk"      # {roast_id} substitution
+
+# ── Configuration ─────────────────────────────────────────────────────────────
+
+def _slash(p):
+    return p if p.endswith("/") else p + "/"
+
+config.setdefault('test', False)
+if isinstance(config['test'], str):
+    config['test'] = config['test'].lower() in ("true", "1", "yes")
+
+out = _slash(config['output_path'])
+PUB = str(config['publish_base']).rstrip("/")
+if config['test']:
+    # `roast submit -t` moves output_path to <output_path>_test/; keep the test slice's picoAODs,
+    # PDFs and handoff out of the real EOS area too, or the full run is left with stale files.
+    PUB = f"{PUB}/test"
+HANDOFF = f"{PUB}/handoff"
+
+YEAR_ERAS = {str(y): list(eras) for y, eras in config['year_eras'].items()}
+YEARS = list(YEAR_ERAS)
+
+# The declustered data is built with the non-tight four-tag definition, as the mixed data is:
+# make_declustered_data_4b.py (a Skimmer4b) has no tight option, so the cluster (D.1) and
+# validation (D.4) passes must not use one either, or the PDFs and the check describe a
+# different 4b sample from the one declustered.
+if config.get('fourTag_use_tight', None) is not False \
+        or config['analysis_config']['config'].get('fourTag_use_tight', None) is not False:
+    raise ValueError("declustered production requires fourTag_use_tight: false, top level and in "
+                     "analysis_config.config")
+
+INPUTS = config.get('inputs') or {}
+for _key in ('FvT', 'jcm_hists'):
+    if not str(INPUTS.get(_key) or "").startswith("root://"):
+        # FvT: the cluster processor falls back to a legacy FvT file next to each picoAOD when no
+        # FvT friend is given -- a silent substitute for the upstream roast's classifier.
+        raise ValueError(f"inputs.{_key} must be a root:// URL into an upstream roast (see the config)")
+FVT = INPUTS['FvT']
+
+# Local copies of the upstream histograms and their runner config: coffea's load() reads local
+# files only. D.4 histograms the synthetic data with exactly that config, so synthetic and real
+# 4b data are compared like with like -- and it proves the upstream used the non-tight selection.
+INPUT_DIR = f"{out}inputs/"
+UPSTREAM_HISTS = f"{INPUT_DIR}{os.path.basename(INPUTS['jcm_hists'])}"
+UPSTREAM_HIST_CONFIG_URL = f"{os.path.dirname(INPUTS['jcm_hists'])}/analysis_config_noJCM.yml"
+UPSTREAM_HIST_CONFIG = f"{INPUT_DIR}analysis_config_noJCM.yml"
+
+CLUSTER = config.get('cluster') or {}
+PDFS = config.get('pdfs') or {}
+DECL = config.get('declustering') or {}
+VAL = config.get('validation') or {}
+TTBAR = list(VAL.get('ttbar', ['TTToHadronic', 'TTToSemiLeptonic', 'TTTo2L2Nu']))
+
+# PDFs: made here (D.1 + D.2) unless inputs.pdfs points at another declustered roast's published
+# set (its <publish_base>/pdfs) -- e.g. to add seeds without re-learning the splittings.
+PDF_EXTERNAL = INPUTS.get('pdfs')
+if PDF_EXTERNAL and not str(PDF_EXTERNAL).startswith("root://"):
+    raise ValueError("inputs.pdfs must be a root:// URL into an upstream declustered roast's pdfs/")
+PDF_BASE = str(PDF_EXTERNAL).rstrip("/") if PDF_EXTERNAL else f"{PUB}/pdfs"
+PDF_TEMPLATE = f"{PDF_BASE}/clustering_pdfs_vs_pT_XXX.yml"     # XXX -> era, in the processor
+
+# How D.3 generates the splittings. "pdf" (default): sample them from the D.2 PDFs. "library":
+# replace each clustered jet by a real splitting from the library D.1 writes alongside its
+# histograms (one row per real splitting, <PUB>/splitting_library/), chosen as the rank-r nearest
+# neighbour in (log pT, |eta|) of its exact type, with r = the seed. The {year: [files]} registry
+# the DeClusterer reads is published next to the files. The PDFs are then skipped (MAKE_PDFS below).
+METHOD = str(DECL.get('method', 'pdf'))
+if METHOD not in ('pdf', 'library'):
+    raise ValueError(f"declustering.method must be 'pdf' or 'library', got {METHOD!r}")
+LIBRARY = METHOD == 'library'
+LIB_OPTS = DECL.get('library') or {}
+LIB_BASE = f"{PUB}/splitting_library"
+# inputs.splitting_library: another roast's published registry (<its publish_base>/splitting_library/
+# splitting_library.yml) -- D.1 then builds no library (e.g. D.6-only reruns, A/B of lookup options)
+LIB_EXTERNAL = INPUTS.get('splitting_library')
+if LIB_EXTERNAL and not str(LIB_EXTERNAL).startswith("root://"):
+    raise ValueError("inputs.splitting_library must be a root:// URL to a published splitting_library.yml")
+LIB_REGISTRY_URL = str(LIB_EXTERNAL) if LIB_EXTERNAL else f"{LIB_BASE}/splitting_library.yml"
+BUILD_LIBRARY = LIBRARY and not LIB_EXTERNAL
+# D.3's picoAOD names: make_declustered_data_4b.py tags the library ones
+PICO_PREFIX = "picoAOD_lib_seed" if LIBRARY else "picoAOD_seed"
+
+# Make the PDFs here (D1_merge + D.2 + D.5's PDF gallery)? The pdf method needs them unless
+# inputs.pdfs supplies another roast's; the library method never reads them, so by default they are
+# skipped -- pdfs.make: true builds them anyway, e.g. for the gallery as a reference.
+MAKE_PDFS = bool(PDFS.get('make', not LIBRARY)) and not PDF_EXTERNAL
+if not LIBRARY and not MAKE_PDFS and not PDF_EXTERNAL:
+    raise ValueError("declustering.method pdf needs PDFs: drop pdfs.make: false, or set inputs.pdfs")
+
+# Seeds: one independent replica per seed. runner.py expands the dataset's `files_template`
+# over range(nSamples), so the seeds MUST be 0..n_seeds-1 (no gaps, no offset).
+N_SEEDS = int(DECL.get('n_seeds', 1))
+SEEDS = list(range(N_SEEDS))
+
+# ttbar. Default (subtract_ttbar: true): D.3 removes the ttbar from the 4b data with the upstream
+# FvT, so the declustered sample is MULTIJET ONLY, and -- as MakeMixedData does for mixeddata_4b --
+# the dataset consumers read folds in ttbar pseudodata (inputs.ttbar_psdata, the mixeddata roast's
+# M.5 sample). Two datasets are published:
+#   MJ_NAME       synthetic_data_multijet  declustered multijet only (D.4/D.5 compare it + ttbar MC)
+#   DATASET_NAME  synthetic_data_4b        the same files + the ttbar pseudodata  (what consumers read)
+# subtract_ttbar: false declusters the ttbar with the multijet (the old Run 3 synthetic_data_noTT):
+# one dataset, no pseudodata.
+# runner.py picks the sample naming from the dataset name (src/runner/dataset.py:get_dataset_type:
+# synthetic_data_noTT* -> syn_noTT_v<i>, other synthetic_data* -> syn_v<i>), so the names must say
+# which one they are; and load_datasets_metadata refuses a name defined differently in two -m
+# sources, so the names in metadata/datasets/synthetic_data.yml are taken.
+SUBTRACT_TT = bool(DECL.get('subtract_ttbar', True))
+if SUBTRACT_TT:
+    MJ_NAME = str(DECL.get('multijet_dataset_name', 'synthetic_data_multijet'))
+    DATASET_NAME = str(DECL.get('dataset_name', 'synthetic_data_4b'))
+else:
+    MJ_NAME = DATASET_NAME = str(DECL.get('dataset_name', 'synthetic_data_noTT_declustered'))
+for _n in dict.fromkeys((MJ_NAME, DATASET_NAME)):
+    if not _n.startswith('synthetic_data') or _n.startswith('synthetic_data_noTT') == SUBTRACT_TT:
+        raise ValueError(f"declustering dataset name {_n!r} does not match subtract_ttbar={SUBTRACT_TT}: "
+                         f"use synthetic_data_noTT<...> without ttbar subtraction, synthetic_data<...> "
+                         f"(not _noTT) with it")
+    if _n in ('synthetic_data', 'synthetic_data_noTT'):
+        raise ValueError(f"declustering dataset name {_n!r} is taken by metadata/datasets/synthetic_data.yml")
+if SUBTRACT_TT and MJ_NAME == DATASET_NAME:
+    raise ValueError("declustering.multijet_dataset_name and dataset_name must differ")
+MJ_URL = f"{HANDOFF}/{MJ_NAME}.yml"
+DATASET_URL = f"{HANDOFF}/{DATASET_NAME}.yml"
+
+# Optional third dataset, for a high-statistics background model (MvD): every seed's multijet
+# files as ONE single-sample dataset -- n_seeds x the 4b statistics, correlated through the shared
+# 4b events -- as the 4b mixing's mixeddata_all_4bmix. The name MUST start with mixeddata_all_: the
+# runner (one sample, not syn_v<i>) and the analysis (isMixedDataAll -> JCM x MvD weights, no
+# blinding, no JEC) recognise the MvD background model by that prefix only, and get any other name
+# silently wrong. Multijet only: MvD takes the ttbar from MC.
+ALL_NAME = DECL.get('all_dataset_name')
+if ALL_NAME is not None:
+    ALL_NAME = str(ALL_NAME)
+    if not ALL_NAME.startswith('mixeddata_all_'):
+        raise ValueError(f"declustering.all_dataset_name {ALL_NAME!r} must start with 'mixeddata_all_' "
+                         f"(the analysis recognises the MvD background model by that prefix)")
+    if not SUBTRACT_TT:
+        raise ValueError("declustering.all_dataset_name needs subtract_ttbar: true (a multijet-only model)")
+
+# ttbar pseudodata (subtract_ttbar only), either
+#   * another roast's published dataset YAML (inputs.ttbar_psdata), fetched locally, or
+#   * made here (a `ttbar_psdata:` section, keys as in mixeddata_run2.yml): MakeMixedData's M.5 step
+#     (Snakefile_MakeMixedData_5_ttbar_psdata.smk) over validation.ttbar -- the ttbar MC of the
+#     upstream histograms, so the pseudodata is the same sample (e.g. stitched) the D.4/D.5 check and
+#     the FvT subtraction use -- published as <PUB>/handoff/<dataset_name>.yml.
+PS = config.get('ttbar_psdata') or {}
+PS_INPUT = INPUTS.get('ttbar_psdata')
+BUILD_PS = SUBTRACT_TT and bool(PS)
+if BUILD_PS and PS_INPUT:
+    raise ValueError("ttbar pseudodata: give either inputs.ttbar_psdata (another roast's) or a ttbar_psdata: "
+                     "section (made here), not both -- set inputs.ttbar_psdata: null to drop an inherited one")
+if SUBTRACT_TT and not BUILD_PS and not str(PS_INPUT or "").startswith("root://"):
+    raise ValueError("subtract_ttbar: true needs inputs.ttbar_psdata, a root:// URL to a published ttbar "
+                     "pseudodata dataset YAML (e.g. a mixeddata roast's handoff/ttbar_PSData.yml), or a "
+                     "ttbar_psdata: section to make it here")
+if BUILD_PS:
+    PS_NAME = str(PS.get('dataset_name', 'ttbar_PSData'))
+    if 'psdata' not in PS_NAME.lower():
+        # processor_config tells pseudodata (isPSData: data-like, no MC weights) by its name
+        raise ValueError(f"ttbar_psdata.dataset_name {PS_NAME!r} must contain 'PSData'")
+    PS_DATASET = f"{out}M5/handoff/{PS_NAME}.yml"       # the M.5 step's local copy
+    PS_URL = f"{HANDOFF}/{PS_NAME}.yml"                 # what D.4 reads, after M5_publish
+else:
+    PS_NAME = str(DECL.get('ttbar_psdata_name', 'ttbar_PSData'))
+    PS_DATASET = f"{INPUT_DIR}{PS_NAME}.yml"
+    PS_URL = PS_INPUT
+
+# Container / runner invocation, as in Snakefile_MakeMixedData.smk (config['test'] parsed above)
+_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
+config.setdefault('analysis_container_wrapper', _wrapper)
+WRAPPER = config['analysis_container_wrapper']
+PYTHON = config.get('python_bin', os.getenv("CONTAINER_PYTHON", "python"))
+CONDOR = "" if (config['test'] or os.getenv("CI")) else "--shared-dask --condor"
+TEST_FLAG = "-t" if config['test'] else ""
+
+# Shell prefix for any rule that writes to EOS: roast seeds ./proxy/x509_proxy in the checkout.
+# ${VAR:-}, not $VAR: snakemake runs shell blocks under `set -u`. SINGLE braces: the string is
+# spliced in as {EOS_PROXY} and not re-formatted (see Snakefile_MakeMixedData.smk).
+EOS_PROXY = ('if [ -z "${X509_USER_PROXY:-}" ] && [ -f ./proxy/x509_proxy ]; then '
+             'export X509_USER_PROXY="$PWD/proxy/x509_proxy"; fi')
+
+def processor_config(section_config, inherit_config=True, **top):
+    """A runner config: analysis_config's processor/dataset_location/friend_file/weights_file/
+    runner, with `section_config` merged over analysis_config.config (or, inherit_config=False,
+    over nothing -- the DeClusterer's Skimmer4b base takes no histogram-pass settings) and `top`
+    over the rest. Written with yaml.dump, so there is no sed-patching anywhere in this workflow.
+    (The shared analysis_processor rule passes only the config, --datasets, --years and
+    extra_arguments to runner.py: processor, friends, weights and condor must all be in here.)"""
+    ac = copy.deepcopy(config['analysis_config'])
+    cfg = {k: ac[k] for k in ('processor', 'dataset_location', 'friend_file', 'weights_file', 'runner') if k in ac}
+    base = ac.get('config', {}) if inherit_config else {}
+    cfg['config'] = {**base, **copy.deepcopy(section_config)}
+    for k, v in top.items():
+        if isinstance(v, dict) and isinstance(cfg.get(k), dict):
+            cfg[k] = {**cfg[k], **v}
+        else:
+            cfg[k] = v
+    if config['test']:
+        cfg.setdefault('runner', {}).update({'condor': False, 'shared_dask': False})
+    return cap_workers(cfg)
+
+# Per-roast cap on the condor cluster (config max_workers; runner.py's default is 1000)
+MAX_WORKERS = int(config.get('max_workers', 200))
+
+def cap_workers(cfg):
+    cfg.setdefault('runner', {})['max_workers'] = MAX_WORKERS
+    return cfg
+
+def write_yaml(path, obj):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        yaml.dump(obj, f, default_flow_style=False, sort_keys=False)
+
+module analysis:
+    snakefile: "rules/analysis.smk"
+    config: config
+
+# ── Inputs from upstream roasts ───────────────────────────────────────────────
+
+rule fetch_inputs:
+    output:
+        hists = UPSTREAM_HISTS,
+        hist_config = UPSTREAM_HIST_CONFIG
+    log: f"{INPUT_DIR}fetch.log"
+    params:
+        hists = INPUTS['jcm_hists'],
+        hist_config = UPSTREAM_HIST_CONFIG_URL
+    shell:
+        """
+        set -eo pipefail
+        {EOS_PROXY}
+        xrdcp -f "{params.hists}" {output.hists} 2>&1 | tee {log}
+        xrdcp -f "{params.hist_config}" {output.hist_config} 2>&1 | tee -a {log}
+        for f in {params.hists} {params.hist_config}; do echo "fetched $f" | tee -a {log}; done
+        """
+
+if not BUILD_PS:
+    rule fetch_psdata:
+        output: PS_DATASET
+        log: f"{INPUT_DIR}fetch_psdata.log"
+        params:
+            url = PS_INPUT or ""
+        shell:
+            """
+            set -eo pipefail
+            {EOS_PROXY}
+            xrdcp -f "{params.url}" {output} 2>&1 | tee {log}
+            echo "fetched {params.url}" | tee -a {log}
+            """
+
+    localrules: fetch_psdata
+
+# ── Steps ─────────────────────────────────────────────────────────────────────
+
+# ttbar pseudodata made here: M5_config / M5_psdata (per year, condor) / M5_merge / M5_dataset_yml /
+# M5_check / M5_publish -> PS_DATASET + PS_URL. Independent of D.1-D.3.
+if BUILD_PS:
+    include: "Snakefile_MakeMixedData_5_ttbar_psdata.smk"
+PS_PUBLISHED = [M5_PUBLISHED] if BUILD_PS else []
+
+include: "Snakefile_DeClustered_1_cluster.smk"
+include: "Snakefile_DeClustered_2_pdfs.smk"
+include: "Snakefile_DeClustered_3_decluster.smk"
+include: "Snakefile_DeClustered_4_validate.smk"
+include: "Snakefile_DeClustered_5_monitoring.smk"
+include: "Snakefile_DeClustered_6_signal.smk"
+
+# default_target, not position: an included or inserted rule can never steal the default.
+rule all_DeClustered:
+    default_target: True
+    input:
+        rules.all_D1.input,
+        rules.all_D2.input,
+        rules.all_D3.input,
+        rules.all_D4.input,
+        rules.all_D5.input,
+        rules.all_D6.input,
+        PS_PUBLISHED
+
+localrules: fetch_inputs, all_DeClustered

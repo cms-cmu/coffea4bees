@@ -472,13 +472,14 @@ data:
   2023_preBPix:
     PFNano:
       C01:
-      - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/data_2023/JetMET0/Run2023C-22Sep2023_v1-v1_DAZSLE_PFNano/250614_031322/
+      - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/data_2023/JetMET0/
+
       C02:
-      - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/data_2023/JetMET0/Run2023C-22Sep2023_v2-v1_DAZSLE_PFNano/250614_031403/
+      - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/data_2023/JetMET0/
       C11:
-      - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/data_2023/JetMET1/Run2023C-22Sep2023_v1-v1_DAZSLE_PFNano/250614_031608/
+      - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/data_2023/JetMET1/
       C12:
-      - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/data_2023/JetMET1/Run2023C-22Sep2023_v2-v1_DAZSLE_PFNano/250614_031650/
+      - root://cmseos.fnal.gov//store/user/lpcpfnano/PFNano_Run3/25v2/sixie/data_2023/JetMET1/
     nanoAOD:
       C01: /JetMET0/Run2023C-22Sep2023_v1-v1/NANOAOD
       C02: /JetMET0/Run2023C-22Sep2023_v2-v1/NANOAOD
@@ -1798,6 +1799,24 @@ data:
         sumw: 103497248
         sumw2: 103497248
         total_events: 103497248
+  '2025':
+    nanoAOD:
+      B01: /ParkingHH0/Run2025B-PromptReco-v1/NANOAOD
+      C01: /ParkingHH0/Run2025C-PromptReco-v1/NANOAOD
+      C02: /ParkingHH0/Run2025C-PromptReco-v2/NANOAOD
+      D01: /ParkingHH0/Run2025D-PromptReco-v1/NANOAOD
+      E01: /ParkingHH0/Run2025E-PromptReco-v1/NANOAOD
+      F01: /ParkingHH0/Run2025F-PromptReco-v1/NANOAOD
+      F02: /ParkingHH0/Run2025F-PromptReco-v2/NANOAOD
+      G01: /ParkingHH0/Run2025G-PromptReco-v1/NANOAOD
+      B11: /ParkingHH1/Run2025B-PromptReco-v1/NANOAOD
+      C11: /ParkingHH1/Run2025C-PromptReco-v1/NANOAOD
+      C12: /ParkingHH1/Run2025C-PromptReco-v2/NANOAOD
+      D11: /ParkingHH1/Run2025D-PromptReco-v1/NANOAOD
+      E11: /ParkingHH1/Run2025E-PromptReco-v1/NANOAOD
+      F11: /ParkingHH1/Run2025F-PromptReco-v1/NANOAOD
+      F12: /ParkingHH1/Run2025F-PromptReco-v2/NANOAOD
+      G11: /ParkingHH1/Run2025G-PromptReco-v1/NANOAOD
 data_3b_for_mixed:
   '2016':
     picoAOD:

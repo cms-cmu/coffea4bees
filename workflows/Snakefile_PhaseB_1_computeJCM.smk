@@ -45,7 +45,12 @@ years = list(config['year_eras'].keys()) if 'year_eras' in config and isinstance
 if isinstance(years, str):
     years = [years]
 
+DATA_YEAR_ERA = [(str(yr), era) for yr, eras in config['year_eras'].items() for era in eras]
+DATA_YEARS = [str(y) for y in config['year_eras'].keys()] if 'year_eras' in config and isinstance(config['year_eras'], dict) else [str(y) for y in years]
+MC_DATASETS = [d for d in JCM_DATASETS if d != 'data']
+
 tag = config.get('tag', "2024_v2")
+per_year_jcm = bool(config.get('per_year_jcm', False))
 
 include: "helpers/common.smk"
 
@@ -77,6 +82,11 @@ def get_raw_jcm_config():
 jcm_config_path = f"{JCM_OUTPUT_PATH}analysis_config_noJCM.yml"
 jcm_file_path = f"{JCM_OUTPUT_PATH}JCM_{tag}/jetCombinatoricModel_SB_{tag}.yml"
 
+if per_year_jcm:
+    ALL_JCM_FILES = [f"{JCM_OUTPUT_PATH}JCM_{tag}/jetCombinatoricModel_SB_{tag}_{yr}.yml" for yr in DATA_YEARS]
+else:
+    ALL_JCM_FILES = [jcm_file_path]
+
 # Second pass: rerun the same datasets with the freshly fitted JCM applied
 # (still no FvT / SvB — those come from Phases C/D), then plot with the NoFvT config.
 wjcm_config_path = f"{JCM_OUTPUT_PATH}analysis_config_wJCM.yml"
@@ -85,7 +95,13 @@ wjcm_plot_config = config.get('jcm_plot_config', config.get('jcm', {}).get('plot
 def get_raw_wjcm_config():
     res = get_raw_jcm_config()
     res['config']['apply_JCM'] = True
-    res['config']['JCM_file'] = jcm_file_path
+    if per_year_jcm:
+        res['config']['JCM_file'] = {
+            yr: f"{JCM_OUTPUT_PATH}JCM_{tag}/jetCombinatoricModel_SB_{tag}_{yr}.yml"
+            for yr in DATA_YEARS
+        }
+    else:
+        res['config']['JCM_file'] = jcm_file_path
     return res
 
 ### Including modules
@@ -113,17 +129,13 @@ def jcm_known_cutflow_flag(pass_name):
 # NOTE: input[0] must stay the JCM yml — Snakefile_PhaseB_2 reads rules.output_computeJCM.input[0]
 rule output_computeJCM:
     input:
-        jcm_file_path,
+        ALL_JCM_FILES,
         f"{JCM_OUTPUT_PATH}histAll_wJCM.coffea",
         f"{JCM_OUTPUT_PATH}plots_wJCM/plots_done.txt",
         f"{JCM_OUTPUT_PATH}cutflow_validation_NoJCM.txt",
         f"{JCM_OUTPUT_PATH}cutflow_validation_wJCM.txt",
         f"{JCM_OUTPUT_PATH}cutflow_NoJCM.html",
         f"{JCM_OUTPUT_PATH}cutflow_wJCM.html"
-
-DATA_YEAR_ERA = [(str(yr), era) for yr, eras in config['year_eras'].items() for era in eras]
-DATA_YEARS = [str(y) for y in config['year_eras'].keys()]
-MC_DATASETS = [d for d in JCM_DATASETS if d != 'data']
 
 rule create_noJCM_config:
     input: workflow.configfiles if workflow.configfiles else []
@@ -180,23 +192,51 @@ use rule merging_coffea_files from analysis as merge_noJCM with:
         python_bin = lambda wildcards: config.get("python_bin", "python"),
         input_files = lambda wildcards, input: " ".join([f for f in (input.files if hasattr(input, 'files') else input) if not f.endswith('.py')])
 
-use rule make_JCM from analysis as make_new_JCM with:
-    input: f"{JCM_OUTPUT_PATH}histAll_NoJCM.coffea"
-    output: jcm_file_path
-    params:
-        extra_arguments = config.get('jcm_extra_arguments', ""),
-        tag = tag,
-        output_dir = f"{JCM_OUTPUT_PATH}JCM_{tag}/",
-        run_container_wrapper = config['analysis_container_wrapper'],
-        python_bin = lambda wildcards: config.get("python_bin", "python")
-    log: f"{JCM_OUTPUT_PATH}logs/make_JCM.log"
+if per_year_jcm:
+    rule make_new_JCM_per_year:
+        input: f"{JCM_OUTPUT_PATH}histAll_NoJCM.coffea"
+        output: f"{JCM_OUTPUT_PATH}JCM_{tag}/jetCombinatoricModel_SB_{tag}_{{year}}.yml"
+        params:
+            extra_arguments = config.get('jcm_extra_arguments', ""),
+            tag = lambda wildcards: f"{tag}_{wildcards.year}",
+            region = "SB",
+            output_dir = f"{JCM_OUTPUT_PATH}JCM_{tag}/plots_{{year}}/",
+            run_container_wrapper = config['analysis_container_wrapper'],
+            python_bin = lambda wildcards: config.get("python_bin", "python")
+        log: f"{JCM_OUTPUT_PATH}logs/make_JCM_{{year}}.log"
+        shell:
+            """
+            set -eo pipefail
+            export MPLCONFIGDIR="/tmp/matplotlib_${{wildcards.year}}"
+            mkdir -p $MPLCONFIGDIR {params.output_dir}
+            echo "Computing JCM for year ${{wildcards.year}}" 2>&1 | tee -a {log}
+            {params.run_container_wrapper} {params.python_bin} coffea4bees/analysis/jcm_tools/make_jcm_weights.py \
+                -o {params.output_dir} \
+                -r {params.region} \
+                -i {input} \
+                -y {wildcards.year} \
+                -w {params.tag} \
+                {params.extra_arguments} 2>&1 | tee -a {log}
+            cp -f {params.output_dir}jetCombinatoricModel_{params.region}_{params.tag}.yml {output}
+            """
+else:
+    use rule make_JCM from analysis as make_new_JCM with:
+        input: f"{JCM_OUTPUT_PATH}histAll_NoJCM.coffea"
+        output: jcm_file_path
+        params:
+            extra_arguments = config.get('jcm_extra_arguments', ""),
+            tag = tag,
+            output_dir = f"{JCM_OUTPUT_PATH}JCM_{tag}/",
+            run_container_wrapper = config['analysis_container_wrapper'],
+            python_bin = lambda wildcards: config.get("python_bin", "python")
+        log: f"{JCM_OUTPUT_PATH}logs/make_JCM.log"
 
 # ---------------------------------------------------------------------------
 # Second pass: same datasets, fitted JCM applied (apply_JCM: true, JCM_file -> fit above)
 # ---------------------------------------------------------------------------
 rule create_wJCM_config:
     input:
-        jcm_file = jcm_file_path,
+        jcm_file = ALL_JCM_FILES,
         configfiles = workflow.configfiles if workflow.configfiles else []
     output: wjcm_config_path
     run:
@@ -210,7 +250,7 @@ use rule analysis_processor from analysis as analysis_data_wJCM with:
     input:
         runner_script = "runner.py",
         config_file = wjcm_config_path,
-        jcm_file = jcm_file_path
+        jcm_file = (lambda wildcards: f"{JCM_OUTPUT_PATH}JCM_{tag}/jetCombinatoricModel_SB_{tag}_{wildcards.year}.yml" if per_year_jcm else jcm_file_path)
     output: f"{JCM_OUTPUT_PATH}singlefiles/hist_data__{{year}}_{{era}}_wJCM.coffea"
     log: f"{JCM_OUTPUT_PATH}logs/analysis_data__{{year}}_{{era}}_wJCM.log"
     params:
@@ -228,7 +268,7 @@ use rule analysis_processor from analysis as analysis_MC_wJCM with:
     input:
         runner_script = "runner.py",
         config_file = wjcm_config_path,
-        jcm_file = jcm_file_path
+        jcm_file = (lambda wildcards: f"{JCM_OUTPUT_PATH}JCM_{tag}/jetCombinatoricModel_SB_{tag}_{wildcards.year}.yml" if per_year_jcm else jcm_file_path)
     output: f"{JCM_OUTPUT_PATH}singlefiles/hist__{{dataset}}__{{year}}_wJCM.coffea"
     log: f"{JCM_OUTPUT_PATH}logs/analysis__{{dataset}}_{{year}}_wJCM.log"
     params:
@@ -283,6 +323,7 @@ use rule check_cutflow from analysis as check_cutflow_noJCM with:
     log: f"{JCM_OUTPUT_PATH}logs/cutflow_validation_NoJCM.log"
     params:
         known_flag = lambda wildcards: jcm_known_cutflow_flag("NoJCM"),
+        fatal = lambda wildcards: "true" if config.get("test", False) else str(config.get("jcm_known_counts_fatal", True)).lower(),
         error_threshold = lambda wildcards: config.get("error_threshold", "0.001"),
         cutflow_list = lambda wildcards: config.get("jcm_cutflow_list", JCM_CUTFLOW_LIST),
         run_container_wrapper = config['analysis_container_wrapper'],
@@ -298,6 +339,7 @@ use rule check_cutflow from analysis as check_cutflow_wJCM with:
     log: f"{JCM_OUTPUT_PATH}logs/cutflow_validation_wJCM.log"
     params:
         known_flag = lambda wildcards: jcm_known_cutflow_flag("wJCM"),
+        fatal = lambda wildcards: "true" if config.get("test", False) else str(config.get("jcm_known_counts_fatal", True)).lower(),
         error_threshold = lambda wildcards: config.get("error_threshold", "0.001"),
         cutflow_list = lambda wildcards: config.get("jcm_cutflow_list", JCM_CUTFLOW_LIST),
         run_container_wrapper = config['analysis_container_wrapper'],
@@ -310,7 +352,13 @@ use rule cutflow_closure_table from analysis as jcm_cutflow_closure_table with:
     params:
         title = lambda wildcards: f"{config.get('label', 'computeJCM')}_cutflow_{wildcards.label}",
         multijet = "data3b-tt3b",
+        # the ttbar samples of this JCM (e.g. the *_stitched ones), not the generic rule's default names
+        ttbar = " ".join(d for d in datasets if not d.startswith("data")),
         run_container_wrapper = config['analysis_container_wrapper'],
         python_bin = lambda wildcards: config.get("python_bin", "python")
 
-localrules: create_noJCM_config, create_wJCM_config, merge_noJCM, merge_wJCM, make_new_JCM, make_plots_wJCM, check_cutflow_noJCM, check_cutflow_wJCM, jcm_cutflow_closure_table
+if per_year_jcm:
+    localrules: create_noJCM_config, create_wJCM_config, merge_noJCM, merge_wJCM, make_new_JCM_per_year, make_plots_wJCM, check_cutflow_noJCM, check_cutflow_wJCM, jcm_cutflow_closure_table
+else:
+    localrules: create_noJCM_config, create_wJCM_config, merge_noJCM, merge_wJCM, make_new_JCM, make_plots_wJCM, check_cutflow_noJCM, check_cutflow_wJCM, jcm_cutflow_closure_table
+

@@ -28,10 +28,10 @@ TRGSF_FILES = {
         2016: "TriggerEfficiency_Fit_2016_matched_0p5.root", # pre-UL trigger SFs -> to be replaced with UL
         2017: "TriggerEfficiency_Fit_2017_14Feb2024.root",
         2018: "TriggerEfficiency_Fit_2018_matched_0p5.root", # pre-UL trigger SFs -> to be replaced with UL
-        2021: "TriggerEfficiency_Fit_2021_18April2025.root",
+        2021: "TriggerEfficiency_Fit_2022_18April2025.root",
         2022: "TriggerEfficiency_Fit_2022_18April2025.root",
         2023: "TriggerEfficiency_Fit_2023_18April2025.root",
-        2020: "TriggerEfficiency_Fit_2020_18April2025.root",
+        2020: "TriggerEfficiency_Fit_2023_18April2025.root",
         2024: "TriggerEfficiency_Fit_2024_22April2026.root",
     },
     "PNet"  : {
@@ -39,10 +39,10 @@ TRGSF_FILES = {
         2016: "TriggerEfficiency_Fit_2016_matched_0p5.root", # use the same trigger SF for the moment
         2017: "TriggerEfficiency_Fit_2017_14Feb2024.root",
         2018: "TriggerEfficiency_Fit_2018_matched_0p5.root", # use the same trigger SF for the moment
-        2021: "TriggerEfficiency_Fit_2021_18April2025.root",
+        2021: "TriggerEfficiency_Fit_2022_18April2025.root",
         2022: "TriggerEfficiency_Fit_2022_18April2025.root",
         2023: "TriggerEfficiency_Fit_2023_18April2025.root",
-        2020: "TriggerEfficiency_Fit_2020_18April2025.root",
+        2020: "TriggerEfficiency_Fit_2023_18April2025.root",
         2024: "TriggerEfficiency_Fit_2024_22April2026.root",
     },
     "ParT"   : {
@@ -50,13 +50,24 @@ TRGSF_FILES = {
         2016: None,
         2017: "TriggerEfficiency_Fit_2017_14Feb2024.root",
         2018: None,
-        2021: "TriggerEfficiency_Fit_2021_18April2025.root",
+        2021: "TriggerEfficiency_Fit_2022_18April2025.root",
         2022: "TriggerEfficiency_Fit_2022_18April2025.root",
         2023: "TriggerEfficiency_Fit_2023_18April2025.root",
-        2020: "TriggerEfficiency_Fit_2020_18April2025.root",
+        2020: "TriggerEfficiency_Fit_2023_18April2025.root",
         2024: "TriggerEfficiency_Fit_2024_22April2026.root",
     },
 }
+
+# Era codes (Marina_triggerHelper.py convention): the second-half era of 2022 and the first of 2023
+# keep the calendar year, the others get their own code. The HLT maps exist once per year and are
+# shared by both eras; the L1 curves are per era (L1All_preEE/postEE, L1_HTT280er_preBPix/postBPix).
+TRIGGER_ERA_CODES = {"2022_preEE": 2021, "2022_EE": 2022, "2023_preBPix": 2023, "2023_BPix": 2020}
+
+
+def trigger_era_code(year_key, year_label):
+    """TriggerSFVectorized year for a corrections-metadata key ('2022_preEE', 'UL18', '2024', ...)."""
+    return TRIGGER_ERA_CODES.get(str(year_key), int(year_label))
+
 
 class TriggerSFVectorized:
     def __init__(self, year, map_path="coffea4bees/analysis/trigger_emulator/data/", tagger="DeepJet"):
@@ -66,6 +77,7 @@ class TriggerSFVectorized:
 
         self.data_lookups = {}
         self.mc_lookups = {}
+        self._warned_missing = set()
 
         # Ensure path is absolute if not already
         if not os.path.isabs(self.map_path) and not os.path.exists(self.map_path):
@@ -162,12 +174,68 @@ class TriggerSFVectorized:
                             "type": "graph"
                         }
 
-                    elif hasattr(obj, "to_hist"): # TEfficiency or Hist
-                        # For 2D
+                    elif obj_class == "TEfficiency":
+                        table = self._tefficiency_2d(obj)
+                        if table is not None:
+                            store[name] = table
+
+                    elif hasattr(obj, "to_hist"): # Hist
                         pass
 
         except FileNotFoundError:
             logging.error(f"Could not open file {full_path}")
+
+    @staticmethod
+    def _tefficiency_2d(obj):
+        """passed/total of a 2D TEfficiency as a lookup table, or None if it is not 2D.
+
+        Empty bins (total == 0) are filled so every (x, y) has an efficiency: within each x row
+        from the nearest filled bin at lower y (efficiency rises with y, the 4th-jet pT for the
+        2023 jet leg), then from higher y; rows with no filled bin at all copy the nearest filled
+        row. In the 2023 map the empty bins are the kinematically sparse high-pT4 / low-HT corner
+        and the whole HT 200-250 row.
+        """
+        total = obj.member("fTotalHistogram")
+        passed = obj.member("fPassedHistogram")
+        if not total.classname.startswith("TH2"):
+            return None
+        tot = np.asarray(total.values(), dtype=float)
+        pas = np.asarray(passed.values(), dtype=float)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            eff = np.where(tot > 0, pas / tot, np.nan)
+        for i in range(eff.shape[0]):
+            row = eff[i]
+            for j in range(1, len(row)):
+                if np.isnan(row[j]):
+                    row[j] = row[j - 1]
+            for j in range(len(row) - 2, -1, -1):
+                if np.isnan(row[j]):
+                    row[j] = row[j + 1]
+        filled = [i for i in range(eff.shape[0]) if not np.isnan(eff[i]).all()]
+        if not filled:
+            return None
+        for i in range(eff.shape[0]):
+            if np.isnan(eff[i]).all():
+                eff[i] = eff[min(filled, key=lambda k: abs(k - i))]
+        return {
+            "type": "hist2d",
+            "x_edges": np.asarray(total.member("fXaxis").edges(), dtype=float),
+            "y_edges": np.asarray(total.member("fYaxis").edges(), dtype=float),
+            "eff": eff,
+        }
+
+    def lookup_efficiency_2d(self, name, x, y, is_data=True):
+        """Per-event efficiency from a 2D map (flat x, y); out-of-range values use the edge bins."""
+        store = self.data_lookups if is_data else self.mc_lookups
+        target = next((v for k, v in store.items() if name in k and v.get("type") == "hist2d"), None)
+        if target is None:
+            raise KeyError(f"no 2D efficiency map matching '{name}' ({'data' if is_data else 'MC'}, "
+                           f"year {self.year}, tagger {self.tagger})")
+        xv = ak.to_numpy(x).astype(float)
+        yv = ak.to_numpy(y).astype(float)
+        ix = np.clip(np.searchsorted(target["x_edges"], xv, side="right") - 1, 0, target["eff"].shape[0] - 1)
+        iy = np.clip(np.searchsorted(target["y_edges"], yv, side="right") - 1, 0, target["eff"].shape[1] - 1)
+        return ak.Array(target["eff"][ix, iy])
 
     def _fix_in_range(self, val):
         return ak.where(val < 0.0, 0.0, ak.where(val > 1.0, 1.0, val))
@@ -220,14 +288,25 @@ class TriggerSFVectorized:
         # Helper to find the matching key in the store (handle simplified names)
         # Marina code splits by "Efficiency_" or "Intervals_"
         # We need flexible matching
+        # Curves stored in a per-trigger directory ('<HLT path>/Data__Efficiency_<leg>', the 2022 map)
+        # are asked for as '<HLT path>_<leg>': fold the directory + sample prefix into '_' before
+        # matching. (Without this every 2022 HLT leg missed and the 2022 SF was the L1 alone.)
         target = None
         for key in store:
-            if name in key and "Efficiency" in key: # Prefer efficiency maps
+            if "Efficiency" not in key or store[key].get("type") != "graph":
+                continue
+            flat = key.replace("/Data__Efficiency_", "_").replace("/Simulation__Efficiency_", "_")
+            if name in key or name in flat:
                 target = store[key]
                 break
 
         if target is None:
-            # Fallback or return 1.0
+            # No curve: efficiency 1 (data and MC alike, so the leg drops out of the SF). Say so --
+            # a mistyped or absent key used to vanish silently (the 2023 jet leg did).
+            if (name, is_data) not in self._warned_missing:
+                self._warned_missing.add((name, is_data))
+                logging.warning(f"TriggerSFVectorized: no {'data' if is_data else 'MC'} efficiency curve "
+                                f"matching '{name}' (year {self.year}, tagger {self.tagger}); using 1.0")
             return ak.ones_like(values, dtype=float), ak.zeros_like(values, dtype=float), ak.zeros_like(values, dtype=float)
 
         if target["type"] == "graph":
@@ -287,10 +366,7 @@ class TriggerSFVectorized:
             return self._calculate_2022(events.trigEm.pt1, events.trigEm.pt2, events.trigEm.pt3, events.trigEm.pt4, events.trigEm.pfjetht, events.trigEm.calojetht, events.trigEm.btagTMean)
 
         elif self.year in [2020, 2023]:
-            if self.year == 2020:
-                return self._calculate_2023_PostBPix(events.trigEm.pt4, events.trigEm.pfjetht, events.trigEm.calojetht, events.trigEm.btagTMean)
-            else:
-                return self._calculate_2023_PreBPix(events.trigEm.pt4, events.trigEm.pfjetht, events.trigEm.calojetht, events.trigEm.btagTMean)
+            return self._calculate_2023(events.trigEm.pt4, events.trigEm.pfjetht, events.trigEm.calojetht, events.trigEm.btagTMean)
 
         elif self.year == 2024:
             return self._calculate_2024(events.trigEm.pt4, events.trigEm.pfjetht, events.trigEm.calojetht, events.trigEm.btagTMean)
@@ -472,36 +548,18 @@ class TriggerSFVectorized:
 
         return self._compute_sf(d_comps, m_comps)
 
-    def _calculate_2023_PostBPix(self, pt4, pfjetht, calojetht, btagTMean):
-        # 2020 in Marina code
-        trg = "HLT_PFHT280_QuadPFJet30_PNet2BTagMean0p55"
+    def _calculate_2023(self, pt4, pfjetht, calojetht, btagTMean):
+        # L1 per era (2020 = 2023_BPix, 2023 = 2023_preBPix); the HLT legs come from the one 2023
+        # map, which has the inclusive jet leg (2D) and b-tag leg only. (The former postBPix path
+        # looked up HLT_PFHT280_QuadPFJet30_PNet2BTagMean0p55_* legs that the map does not contain.)
+        l1_name = "L1_HTT280er_postBPix" if self.year == 2020 else "L1_HTT280er_preBPix"
+        d_L1, _, _ = self.lookup_efficiency(l1_name, calojetht, is_data=True)
+        m_L1, _, _ = self.lookup_efficiency(l1_name, calojetht, is_data=False)
 
-        d_L1, _, _ = self.lookup_efficiency("L1_HTT280er_postBPix", calojetht, is_data=True)
-        m_L1, _, _ = self.lookup_efficiency("L1_HTT280er_postBPix", calojetht, is_data=False)
-
-        d_4Pixel20, _, _ = self.lookup_efficiency(trg+"_4PixelOnlyPFCentralJetTightIDPt20", pt4, is_data=True)
-        m_4Pixel20, _, _ = self.lookup_efficiency(trg+"_4PixelOnlyPFCentralJetTightIDPt20", pt4, is_data=False)
-
-        d_4PF30, _, _ = self.lookup_efficiency(trg+"_4PFCentralJetTightIDPt30", pt4, is_data=True)
-        m_4PF30, _, _ = self.lookup_efficiency(trg+"_4PFCentralJetTightIDPt30", pt4, is_data=False)
-
-        d_PFHT280, _, _ = self.lookup_efficiency(trg+"_PFHT280Jet30", pfjetht, is_data=True)
-        m_PFHT280, _, _ = self.lookup_efficiency(trg+"_PFHT280Jet30", pfjetht, is_data=False)
-
-        d_BTagMean, _, _ = self.lookup_efficiency(trg+"_PFCentralJetPt30PNet2BTagMean0p55", btagTMean, is_data=True)
-        m_BTagMean, _, _ = self.lookup_efficiency(trg+"_PFCentralJetPt30PNet2BTagMean0p55", btagTMean, is_data=False)
-
-        d_comps = [d_L1, d_4Pixel20, d_4PF30, d_PFHT280, d_BTagMean]
-        m_comps = [m_L1, m_4Pixel20, m_4PF30, m_PFHT280, m_BTagMean]
-        return self._compute_sf(d_comps, m_comps)
-
-    def _calculate_2023_PreBPix(self, pt4, pfjetht, calojetht, btagTMean):
-        d_L1, _, _ = self.lookup_efficiency("L1_HTT280er_preBPix", calojetht, is_data=True)
-        m_L1, _, _ = self.lookup_efficiency("L1_HTT280er_preBPix", calojetht, is_data=False)
-
-        # 2D lookup mockup: JetLeg(x=pfjetht, y=pt4)
-        d_JetLeg, _, _ = self.lookup_efficiency("JetLeg", pfjetht, is_data=True) # Needs 2D support
-        m_JetLeg, _, _ = self.lookup_efficiency("JetLeg", pfjetht, is_data=False) # Needs 2D support
+        # Jet leg: 2D map, x = PF HT, y = 4th-jet pT (Efficiency2D_Inclusive-PerLeg-ForthJetPt-vs-alljets_PFHT)
+        jet_leg = "Efficiency2D_Inclusive-PerLeg-ForthJetPt-vs-alljets_PFHT"
+        d_JetLeg = self.lookup_efficiency_2d(jet_leg, pfjetht, pt4, is_data=True)
+        m_JetLeg = self.lookup_efficiency_2d(jet_leg, pfjetht, pt4, is_data=False)
 
         d_BJetLeg, _, _ = self.lookup_efficiency("InclusiveBTagLeg", btagTMean, is_data=True)
         m_BJetLeg, _, _ = self.lookup_efficiency("InclusiveBTagLeg", btagTMean, is_data=False)

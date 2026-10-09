@@ -1,0 +1,65 @@
+# ==============================================================================
+# The c5b SvB against the c6-feature 30x MvD -- V.3 + V.4 on top of mvd_run3_30x_c6mvd
+# ==============================================================================
+# As mvd_run3_30x_c5b.yml (same SvB: its feature_CanJet), but the multijet weight is the 30x MvD
+# trained with the full c6 jet features (roast mvd_run3_30x_c6mvd_20260928_d3f6ae2-aede48c, MvD_30x_c6), so the MvD sees every
+# feature this SvB sees (John, 2026-09-28: an over-powered MvD is fine, an under-powered one is not;
+# against the kinematic MvD the c6 SvB separated mixed from data, data/bkg 2-3 at high SvB).
+# Only V.3 (this SvB) and V.4 run here. Input plots off: src/classifier/plot_inputs.py rebuilds the
+# model with the default 4 CanJet features and fails on a wider checkpoint (diagnostic only).
+#
+#   roast new --config coffea4bees/workflows/config/mvd_run3_30x_c6mvd_c5b.yml \
+#       --step falcon:coffea4bees/workflows/Snakefile_MvD_3_svb.smk \
+#       --step cmslpc:coffea4bees/workflows/Snakefile_MvD.smk
+#   roast submit <id> --step MvD_3_svb                     # falcon: SvB 30x c5b vs the c6 MvD
+#   roast submit <id> --step MvD --targets all_V4          # cmslpc: analysis + stat-only limits
+#
+# Compare against mvd_run3_30x_c6mvd (kinematic SvB, same MvD) and the c5 / c5b / c6 partners.
+base: coffea4bees/workflows/config/mvd_run3_30x_c6mvd.yml
+
+label: "mvd_run3_30x_c6mvd_c5b"
+
+inputs:
+  upstream_roasts: [nominal_run3_20260922_3f9e199-1e0504f, mixeddata_run3_20260926_956d4bf-aca8a4e,
+                    mvd_run3_20260927_91be0e9-f18c44b, mvd_run3_30x_c6mvd_20260928_d3f6ae2-aede48c]
+  # the MvD friend V.4 weights the mixed data with (V.3 reads it through svb_mvd.train_template)
+  mvd_friend: "{roast:mvd_run3_30x_c6mvd_20260928_d3f6ae2-aede48c}/friend/MvD_30x_c6/result.json"
+
+# V.4 builds its MvD friend URL from this block: the c6mvd roast's MvD_30x_c6 (V.2 is not run here).
+mvd:
+  eos_base: "{roast:mvd_run3_30x_c6mvd_20260928_d3f6ae2-aede48c}"
+  label: "MvD_30x_c6"
+
+svb_mvd:
+  label: "SvB_MvD_30x_c5b_c6mvd"
+  plot_inputs: false
+  output_dir: "output/SvB_MvD_30x_c5b_c6mvd/"
+  train_template: "model: {eos_base}/classifier/{label}, MvD: {roast:mvd_run3_30x_c6mvd_20260928_d3f6ae2-aede48c}/friend/MvD_30x_c6"
+  # This step's common.yml (overrides the top-level classifier_setting for this step only, so the
+  # MvD settings are untouched): as mvd_run3.yml plus the candidate-jet b-tag features. Applies to
+  # the training and the evaluation alike.
+  classifier_setting:
+    - module: ml.DataLoader
+      option:
+        - optimize_sliceable_dataset: true
+    - module: ROOT
+      option:
+        - friend_allow_missing: false
+    - module: cms.CollisionData
+      option:
+        - eras:
+            2022_preEE: [B, C, D]
+            2022_EE: [E, F, G]
+            2023_preBPix: [C01, C02, C11, C12, C3, C4]
+            2023_BPix: [D1, D2]
+    - module: HCR.InputBranch
+      option:
+        - feature_ancillary: [xW, nSelJets, xbW, year]
+        - mass_regions: [SR, SB]
+        - feature_CanJet: ['pt', 'eta', 'phi', 'mass', 'btagScore', 'btagPNetCvB', 'btagPNetCvL', 'btagPNetQvG']
+
+analysis:
+  label: "MvD_30x_c6mvd_c5b"
+  known_counts: "coffea4bees/analysis/tests/known_fullCounts_MvD_Run3_30x_c6mvd_c5b.yml"
+
+combine_outdir: "datacards/HH4b_run3_MvD_30x_c6mvd_c5b"

@@ -1,0 +1,62 @@
+# ==============================================================================
+# DECLUSTERED (SYNTHETIC) DATASET PRODUCTION — Run 3, library-based ("replacement") declustering
+# ==============================================================================
+# declustered_run3.yml with one knob flipped: declustering.method library. Instead of sampling
+# each splitting from the D.2 PDFs, D.3 replaces it by a REAL splitting of the same exact type
+# from a library of the 4b data's own splittings (written by D.1 next to its histograms), picked
+# among the nearest neighbours in the parent's (log pT, |eta|) -- never from the event being
+# declustered -- and aligned onto the parent (pT scaled, phi rotated, boosted in z). The children's
+# b-tag scores come with them. Which neighbour: a reproducible random one of the k_neighbors nearest
+# (no distance cap since 2026-10-04), drawn per jet from the seed and the jet's kinematics, so every
+# seed is an equivalent replica
+# (selection: rank instead takes neighbour <seed> for every jet, as the first library roast did).
+# See jet_clustering/splitting_library.py and ~/ClaudeBrain/outputs/decluster-replacement/design.md.
+#
+# Same upstream roasts and inputs as the base. No PDFs are made (D.3 does not read them): no
+# D1_merge, D.2 or D.5 PDF gallery. `pdfs: {make: true}` builds them anyway, as a reference.
+#
+#   roast new --config coffea4bees/workflows/config/declustered_run3_library.yml \
+#       --label declustered_run3_library --step cmslpc:coffea4bees/workflows/Snakefile_DeClustered.smk
+#   roast submit <id> --step DeClustered --targets all_D1      # one sub-step at a time
+#
+base: coffea4bees/workflows/config/declustered_run3.yml
+
+label: "declustered_run3_library"
+
+declustering:
+  method: library
+  # D.3 / D.6 condor workers. With the numba cluster_bs and the per-process library one year's
+  # library + a 25k-event chunk peak at ~2.1 GB, but a worker caches up to two years' libraries:
+  # 4GB workers were OOM-killed (libB2, 77 D.3 chunks lost). 8GB (the skimmer template's) matches
+  # only ~40% of the LPC slots.
+  worker_memory: 6GB
+  n_seeds: 1
+  # Distinct from the PDF roast's names, so a consumer can read both handoffs in one -m list
+  # (runner.py refuses a dataset name defined differently in two sources).
+  dataset_name: "synthetic_data_lib_4b"
+  multijet_dataset_name: "synthetic_data_lib_multijet"
+  library:
+    # child jet properties taken from the library (btagScore always): the real b-tag, jet ID and
+    # HCR classifier-input features (dump_friendtrees.py fills absent ones with 0). NOT the b-jet
+    # regression factors (the library jets are already regressed) nor the JEC inputs rawFactor/area
+    # (splitting_library.NOT_CARRIABLE).
+    carry_fields: [btagScore, jetId, btagPNetCvB, btagPNetCvL, btagPNetQvG, btagPNetTauVJet,
+                   PNetRegPtRawRes, nSVs, chHEF, neHEF, chEmEF, neEmEF, muEF, nConstituents]
+    min_entries: 10            # below this an exact type falls back to same child b/j content
+    scale_pt: true             # scale the children to the parent pT
+    boost_z: true              # boost the children along z to the parent pz
+    selection: random          # random: one of the k_neighbors nearest per jet (seeded); rank: neighbour <seed>
+    k_neighbors: 20            # random selection: candidates per jet (variety; seed overlap ~1/k)
+    # No distance cap (John, 2026-10-04): any of the k_neighbors nearest, however far. The 0.05 cap
+    # (roasts libA_*, declib16_run2) left 4% of Run 2 lookups with a single candidate, identical in
+    # every seed; without it (declib16nc_run2) the same-draw rate between seeds fell 8.4% -> 3.6% and
+    # the D.5 closure did not change. "None" (string): a null could be dropped by a config merge.
+    max_distance: "None"
+    # library files kept per condor worker process: 1 (two Run 2 libraries + a chunk exceeded the
+    # 6 GB workers with 16 seeds x 4 years on one daemon; one library peaks ~1.5 GB per worker)
+    cache_size: 1
+
+validation:
+  # The base's known_counts are the PDF roast's blessed D.4 cutflow; library mode has none yet, so
+  # D4_cutflow just writes D4/cutflow_declustered.yml (bless it into analysis/tests/ to arm the check).
+  known_counts: null

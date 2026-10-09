@@ -1,0 +1,35 @@
+# ==============================================================================
+# 16x DECLUSTERED SAMPLE — Run 2, library declustering, 16 seeds, NO distance cap
+# ==============================================================================
+# declustered_run2_library_16x.yml (roast declib16_run2_20261003_f7183e9-9ae5088) with the
+# max_distance cap removed: every jet draws uniformly from its k_neighbors = 20 nearest library
+# splittings of its exact type, however far. With the cap, 4.0% of the Run 2 lookups had a single
+# candidate (identical in every seed); the 16 seeds were worth N_eff ~3.3-6 replicas for SR/SB shapes
+# (D.5 seed study). Removing the cap adds variety in the sparse tails / rare types at the cost of
+# looser matches there -- check the closure (D.4/D.5) as well as the seed study.
+#
+# Fresh dataset names (runner -m refuses one name defined differently in two sources):
+#   mixeddata_all_declib16nc.yml        all 16 seeds' multijet as ONE sample
+#   synthetic_data_lib16nc_4b.yml       nSamples 16, syn_v<k> = seed k + ttbar pseudodata
+#   synthetic_data_lib16nc_multijet.yml the same without the pseudodata (D.4 / D.5)
+# D.5 validates the mean of the 16 seeds.
+#
+#   roast new --config coffea4bees/workflows/config/declustered_run2_library_16x_nocap.yml \
+#       --label declib16nc_run2 --step cmslpc:coffea4bees/workflows/Snakefile_DeClustered.smk
+#
+base: coffea4bees/workflows/config/declustered_run2_library_16x.yml
+
+label: "declustered_run2_library_16x_nocap"
+
+declustering:
+  dataset_name: "synthetic_data_lib16nc_4b"
+  multijet_dataset_name: "synthetic_data_lib16nc_multijet"
+  all_dataset_name: "mixeddata_all_declib16nc"
+  library:
+    # "None", not null: the processor takes the string as no cap, and a null could be dropped by a
+    # config merge in favour of the base's 0.05 (the library default is no cap since 2026-10-04, but
+    # the capped 16x config this overlays pins 0.05)
+    max_distance: "None"
+    # one library per condor worker process: two Run 2 libraries + a chunk exceeded the 6 GB
+    # workers when 16 seeds x 4 years shared one daemon (declib16_run2: UL18 workers OOM-killed)
+    cache_size: 1

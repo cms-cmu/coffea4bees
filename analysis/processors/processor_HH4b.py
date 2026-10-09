@@ -12,7 +12,7 @@ import awkward as ak
 import numpy as np
 import yaml
 import gc
-from src.physics.objects.jet_corrections import apply_jerc_corrections, apply_jerc_corrections_jsonpog
+from coffea4bees.analysis.helpers.object_selection import apply_jet_calibration
 from src.physics.common import update_events
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b
 from coffea4bees.analysis.helpers.event_weights import (
@@ -153,6 +153,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         JCM_file (str): Path to JCM weight file.
         corrections_metadata (dict): Metadata for corrections (JES, etc.).
         apply_trigWeight (bool): Whether to apply trigger weights.
+        config_overrides (dict): processor_config keys set after its rules (e.g.
+            cut_on_HLT_decision: false for the no-trigger signal in the trigger-weight validation).
         apply_btagSF (bool): Whether to apply b-tagging scale factors.
         apply_FvT (bool): Whether to apply FvT classifier/friend tree.
         apply_boosted_veto (bool): Whether to apply boosted event veto.
@@ -211,8 +213,12 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         corrections_metadata: dict = None,
         apply_trigWeight: bool = True,
         require_trigWeight: bool = True,
+        config_overrides: dict | None = None,
         apply_btagSF: bool = True,
         apply_FvT: bool = True,
+        FvT_pd3_floor: float = 0.0,
+        MvD_pmix4_floor: float = 0.0,
+        event_subsample: int = 1,
         apply_boosted_veto: bool = False,
         apply_lepton_veto: bool = False,
         run_dilep_ttbar_crosscheck: bool = False,
@@ -237,6 +243,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         fourTag_use_tight: bool = False,  # Run3: redefine fourTag as 3 Tight + >=4 Medium b-tagged jets
         friends: dict[str, str|FriendTemplate] = None,
         return_events_for_display: bool = False,
+        dump_SvB_in_SR: bool = False,  # (run, lumi, event, SvB_MA.ps) of four-tag SR events -> processOutput["SvB_in_SR"]
+        dump_hemi_sources: bool = False,  # ... + the mixed events' library hemispheres (posHemiNew_*/negHemiNew_*)
         tracker = None,
         object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
         candidates_selection_cfg: str = "coffea4bees/analysis/metadata/candidates_selection_thresholds.yml",
@@ -244,6 +252,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         year_override: bool = False,
         compute_hemi_mixing_diagnostics: bool = False,
         plot_extra_canjet_vars: bool = False,
+        subsample_names: list[str] | None = None,
     ):
 
         logging.debug("\nInitialize Analysis Processor")
@@ -260,9 +269,38 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             self.weights_data = yaml.safe_load(open(weights, 'r')).get('weights', {})
 
         self.apply_JCM = {}
+        self.subsample_jcms = {}
+        if subsample_names:
+            self.subsample_names = list(subsample_names)
+        else:
+            self.subsample_names = []
+
         if apply_JCM:
-            if isinstance(JCM_file, str):
+            if isinstance(JCM_file, dict) and any(str(k).startswith(("v", "mix")) or isinstance(k, int) for k in JCM_file.keys()):
+                # Multi-subsample JCM configuration (Stage F_1 single pass)
+                def _sort_key(k):
+                    s = str(k).lstrip("vmix_")
+                    return int(s) if s.isdigit() else str(k)
+                if not self.subsample_names:
+                    self.subsample_names = sorted([f"v{k}" if isinstance(k, int) else str(k) for k in JCM_file.keys()], key=_sort_key)
+                for k, jcm_entry in JCM_file.items():
+                    v_name = f"v{k}" if isinstance(k, int) else str(k)
+                    if isinstance(jcm_entry, str):
+                        self.subsample_jcms[v_name] = {"default": jetCombinatoricModel(jcm_entry)}
+                    elif isinstance(jcm_entry, dict):
+                        self.subsample_jcms[v_name] = {
+                            yr: jetCombinatoricModel(p) for yr, p in jcm_entry.items() if p
+                        }
+                ref_v = self.subsample_names[0]
+                self.apply_JCM = self.subsample_jcms[ref_v]
+                logging.info(f"Loaded multi-subsample JCM models for {len(self.subsample_jcms)} subsamples: {self.subsample_names}, reference={ref_v}")
+            elif isinstance(JCM_file, str):
                 self.apply_JCM = {"default": jetCombinatoricModel(JCM_file)}
+            elif isinstance(JCM_file, dict):
+                for year, jcm_path in JCM_file.items():
+                    if jcm_path:
+                        self.apply_JCM[year] = jetCombinatoricModel(jcm_path)
+                logging.info(f"Loaded JCM models for {len(self.apply_JCM)} eras from config: {list(self.apply_JCM.keys())}")
             elif self.weights_data:
                 for year, year_cfg in self.weights_data.items():
                     jcm_path = year_cfg.get("JCM_file") or year_cfg.get("JCM")
@@ -278,8 +316,16 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         self.apply_trigWeight = apply_trigWeight
         self.require_trigWeight = require_trigWeight  # error (not just a worker-side warning) if the trigWeight source is missing
+        self.config_overrides = dict(config_overrides) if config_overrides else None
         self.apply_btagSF = apply_btagSF
         self.apply_FvT = apply_FvT
+        self.FvT_pd3_floor = FvT_pd3_floor  # 0 = off; see load_FvT
+        self.MvD_pmix4_floor = MvD_pmix4_floor  # 0 = off; see load_MvD
+        # Keep only events with event % N == 0, weighted by N (unbiased, reproducible thinning for
+        # expensive passes, e.g. MakeMixedData M.7's SvB-on-the-fly histograms of mixeddata_all). 1: off.
+        self.event_subsample = int(event_subsample)
+        if self.event_subsample < 1:
+            raise ValueError(f"event_subsample must be >= 1, got {event_subsample!r}")
         self.apply_MvD = apply_MvD
         self.apply_MvD_weight = apply_MvD_weight
         self.run_SvB = run_SvB
@@ -348,6 +394,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.histCuts = hist_cuts
         self.apply_mixeddata_sel = apply_mixeddata_sel
         self.return_events_for_display = return_events_for_display
+        self.dump_SvB_in_SR = dump_SvB_in_SR
+        self.dump_hemi_sources = dump_hemi_sources
         self.year_override = year_override
         self.parking_lumi_cfg = load_parking_lumi_cfg(parking_lumi_cfg) if parking_lumi_cfg else None
         self.compute_hemi_mixing_diagnostics = compute_hemi_mixing_diagnostics
@@ -440,10 +488,15 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             #
             # Set process and datset dependent flags
             #
-            self.config = processor_config(self.processName, self.dataset, event)
+            self.config = processor_config(self.processName, self.dataset, event, self.config_overrides)
             # print("HACK")
             if self.config["isRun3"]:
-                self.config["isSyntheticData"] = bool(self.config["isMixedData"]) or self.config["isSyntheticData"]
+                # Mixed data and ttbar pseudodata carry jets already corrected when they were
+                # skimmed: take them as stored (no Run 3 JEC re-derivation in jet_selection). The
+                # pseudodata inside mixeddata_4b already got this via isMixedData; standalone
+                # ttbar_PSData (isMC False) was otherwise re-corrected as DATA, shifting dijet masses.
+                self.config["isSyntheticData"] = (bool(self.config["isMixedData"]) or self.config["isSyntheticData"]
+                                                  or bool(self.config["isPSData"]))
                 self.config["fourTag_use_tight"] = self.fourTag_use_tight
             logging.debug(f'{self.chunk} config={self.config}, for file {self.fname}\n')
 
@@ -555,7 +608,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         with self._stage("jet_corrections"):
             if self.config["do_jet_calibration"]:
 
-                jets = apply_jerc_corrections_jsonpog(
+                jets = apply_jet_calibration(
                     event,
                     corrections_metadata=self.corrections_metadata[self.year],
                     isMC=self.config["isMC"],
@@ -657,6 +710,33 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             # Add pseudotag weights
             weights, list_weight_names = self.include_pseudotag_in_weight(event, weights, list_weight_names)
 
+        if self.event_subsample > 1:
+            keep = ak.to_numpy(event.event) % self.event_subsample == 0
+            selections.add("passEventSubsample", keep)
+            allcuts.append("passEventSubsample")
+            analysis_selections = selections.all(*allcuts)
+            weights.add("event_subsample", np.full(len(event), float(self.event_subsample)))
+            list_weight_names.append("event_subsample")
+
+        # MakeMixedData M.7 signal check: the mixed signal files are read as two datasets by the
+        # input event's tag (make_mixed_data.py mixInputFourTag). The 3b-origin events are weighted
+        # by the JCM on their input untagged loose-jet count, as the 3b signal is; the 4b-origin
+        # ones are not.
+        mix_origin = ("3b" if self.dataset.startswith("synthetic_mc_3b_") else
+                      "4b" if self.dataset.startswith("synthetic_mc_4b_") else None)
+        if mix_origin and self.config["isSyntheticMC"]:
+            is4b = ak.to_numpy(event.mixInputFourTag).astype(bool)
+            selections.add("passMixOrigin", is4b if mix_origin == "4b" else ~is4b)
+            allcuts.append("passMixOrigin")
+            analysis_selections = selections.all(*allcuts)
+            if mix_origin == "3b":
+                if self.jcm_model is None:
+                    raise ValueError(f"{self.dataset}: the 3b-origin mixed signal needs a JCM (apply_JCM + JCM_file)")
+                jcm_w = np.ones(len(event), dtype=float)
+                jcm_w[~is4b], _ = self.jcm_model(event.mixInputNUntagged[~is4b], event.event[~is4b])
+                weights.add("JCM_mixed3b", jcm_w)
+                list_weight_names.append("JCM_mixed3b")
+
         # Select events passing all cuts
         selev = event[analysis_selections]
 
@@ -696,8 +776,17 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         if self.return_events_for_display:
             self.events_for_display(selev, processOutput)
 
-        # Blind data in fourTag SR (mixeddata, synthetic data, and MC are never blinded)
-        if not (self.config["isMC"] or self.config["isMixedData"] or self.config["isSyntheticData"] or "mix" in self.dataset) and self.blind:
+        # Per-event SvB of the four-tag SR events, for a Poisson bootstrap outside the processor
+        # (DeClustered D.5: workflows/scripts/svb_bootstrap.py)
+        if self.dump_SvB_in_SR and not shift_name:
+            from coffea4bees.analysis.helpers.write_debug_info import dump_SvB_in_SR
+            dump_SvB_in_SR(selev, processOutput, dataset=event.metadata["dataset"], hemi_sources=self.dump_hemi_sources)
+
+        # Blind data in fourTag SR (mixeddata, synthetic data, and MC are never blinded). isSyntheticMC
+        # too: signal MC run through the mixing / declustering (synthetic_mc_*) has isMC False, so it
+        # was blinded like data -- its SR SvB > 0.8 tail silently vanished (MakeMixedData M.7, Run 2).
+        if not (self.config["isMC"] or self.config["isMixedData"] or self.config["isSyntheticData"]
+                or self.config["isSyntheticMC"] or "mix" in self.dataset) and self.blind:
             with self._stage(f"{label}:blinding"):
                 blind_flag = self._get_blind_flag(selev)
                 if blind_flag is None:
@@ -720,6 +809,18 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             selev["trigWeight"] = weights.partial_weight(include=['CMS_bbbb_resolved_ggf_triggerEffSF'])[analysis_selections]
             selev['weight_woTrig'] = weights.partial_weight(exclude=['CMS_bbbb_resolved_ggf_triggerEffSF'])[analysis_selections]
             selev["no_weight"] = np.ones(len(selev))
+            if "weight_d3_to_t4" in event.fields:
+                selev["weight_d3_to_t4"] = event["weight_d3_to_t4"][analysis_selections]
+            if "weight_d3_to_t3" in event.fields:
+                selev["weight_d3_to_t3"] = event["weight_d3_to_t3"][analysis_selections]
+            if hasattr(self, "subsample_names") and self.subsample_names:
+                for v_name in self.subsample_names:
+                    if f"weight_{v_name}" in event.fields:
+                        selev[f"weight_{v_name}"] = event[f"weight_{v_name}"][analysis_selections]
+                    if f"weight_d3_to_t4_{v_name}" in event.fields:
+                        selev[f"weight_d3_to_t4_{v_name}"] = event[f"weight_d3_to_t4_{v_name}"][analysis_selections]
+                    if f"weight_d3_to_t3_{v_name}" in event.fields:
+                        selev[f"weight_d3_to_t3_{v_name}"] = event[f"weight_d3_to_t3_{v_name}"][analysis_selections]
 
         with self._stage(f"{label}:detailed_cutflows"):
             # Fill detailed cutflows
@@ -732,7 +833,11 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     era = event.metadata["dataset"].removeprefix("data_")
                     self._cutFlow_ttbar.addOutput(processOutput, f"TTbar_from_d3_{era}")
                 if self.plot_ttbar_with_MvD_weights and hasattr(self, '_cutFlow_ttbar_MvD'):
-                    era = event.metadata["dataset"].removeprefix("mixeddata_all_")
+                    # the mixed data: strip its own name (mixeddata_all, mixeddata_all_4bmix, ...), not
+                    # the literal "mixeddata_all_", so every background model gives
+                    # TTbar4b_from_MvD_<year><era>. Other chunks keep their (empty, blessed) keys.
+                    prefix = self.processName if self.config["isMixedDataAll"] else "mixeddata_all"
+                    era = event.metadata["dataset"].removeprefix(f"{prefix}_")
                     self._cutFlow_ttbar_MvD.addOutput(processOutput, f"TTbar4b_from_MvD_{era}")
 
         with self._stage(f"{label}:fill_histograms"):
@@ -800,6 +905,18 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             return
 
         FvT_loaded = False
+        if hasattr(self, "subsample_names") and self.subsample_names:
+            for v_name in self.subsample_names:
+                f_key = f"FvT_{v_name}"
+                if f_key in self.friends:
+                    arr = rename_FvT_friend(self.target, self.friends[f_key])
+                    if arr is not None:
+                        event[f_key] = arr
+                        setFvTVars(f_key, event)
+            if "FvT" not in event.fields and "FvT_v0" in event.fields:
+                event["FvT"] = event["FvT_v0"]
+                FvT_loaded = True
+
         if "FvT" in self.friends:
             FvT_arr = rename_FvT_friend(self.target, self.friends["FvT"])
             if FvT_arr is not None:
@@ -902,6 +1019,15 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             if hasattr(event.FvT, "event") and not ak.all(event.FvT.event == event.event):
                 raise ValueError("ERROR: FvT events do not match events ttree")
 
+        # An over-confident FvT can put p_d3 ~ 0 on a handful of outlier events, and every weight
+        # derived from it then explodes (FvT = p_m4/p_d3; d3_to_t3/t4 in setFvTVars). Floor p_d3
+        # and recompute FvT from p_m4 so the weight and the ttbar-from-3b ratios stay consistent.
+        # Events above the floor keep their stored values bit for bit.
+        if self.FvT_pd3_floor and "pd3" in event.FvT.fields and "pm4" in event.FvT.fields:
+            low = event.FvT.pd3 < self.FvT_pd3_floor
+            event["FvT", "FvT"] = np.where(low, event.FvT.pm4 / self.FvT_pd3_floor, event.FvT.FvT)
+            event["FvT", "pd3"] = np.where(low, self.FvT_pd3_floor, event.FvT.pd3)
+
         setFvTVars("FvT", event)
 
 
@@ -918,6 +1044,17 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             event["MvD"] = read_MvD_friend(self.target, self.friends["MvD"])
         else:
             raise ValueError("apply_MvD=True but no 'MvD' entry found in friends dict")
+
+        # The MvD analogue of FvT_pd3_floor: an over-confident MvD puts p_mix4 ~ 0 on a few mixed
+        # events and MvD = (p_d4 - p_t4)/p_mix4 explodes (the 30x MvD: events with MvD > 50 carried
+        # 19x the 1x weight). Floor p_mix4 and recompute MvD, so the multijet weight is bounded by
+        # ~1/floor; the TTbar4b_from_MvD ratio p_t4/p_mix4 (event_weights.py) uses the floored
+        # p_mix4 too. Events above the floor keep their stored values bit for bit.
+        if self.MvD_pmix4_floor and event.MvD is not None and "p_mix4" in event.MvD.fields:
+            low = event.MvD.p_mix4 < self.MvD_pmix4_floor
+            num = event.MvD.p_d4 - event.MvD.p_t4 if "p_t4" in event.MvD.fields else event.MvD.p_d4
+            event["MvD", "MvD"] = np.where(low, num / self.MvD_pmix4_floor, event.MvD.MvD)
+            event["MvD", "p_mix4"] = np.where(low, self.MvD_pmix4_floor, event.MvD.p_mix4)
 
     def load_SvB(self, event):
         """Load SvB and SvB_MA scores from one of three sources (in priority order):
@@ -1226,6 +1363,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             tuple: (weights, list_weight_names) - Updated weights and weight name list
         """
         if not (self.config["isMC"] and self.apply_btagSF):
+            return weights, list_weight_names
+        # 2024 uses UParT tagger; only WP-based SFs (UParTAK4_wp_values) are                                                                       
+        # available — no shape SF exists yet. Skip btag SFs for this year.                                                                         
+        if self.year == "2024":                                                                                                                    
             return weights, list_weight_names
 
         weights, list_weight_names = add_btagweights(
@@ -1599,7 +1740,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             event_metadata=event.metadata,
             year_label=self.year_label,
             len_event=len(event),
-            )
+            subsample_jcms=getattr(self, "subsample_jcms", None),
+            year=self.year,
+        )
 
     def events_for_display(self, selev, processOutput):
         """Track top 20 events with largest SvB_MA.ps_hh across all chunks.

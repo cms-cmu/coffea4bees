@@ -3,9 +3,9 @@ import warnings
 import awkward as ak
 import yaml
 import numpy as np
-from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
+from coffea4bees.analysis.helpers.object_selection import apply_jet_calibration
 from coffea4bees.analysis.trigger_emulator.TrigEmulatorTool   import TrigEmulatorTool
-from coffea4bees.analysis.trigger_emulator.TriggerSFVectorized import TriggerSFVectorized
+from coffea4bees.analysis.trigger_emulator.TriggerSFVectorized import TriggerSFVectorized, trigger_era_code
 from coffea4bees.analysis.trigger_emulator.helpers import compute_emulation_vars
 from src.physics.event_selection import apply_event_selection
 
@@ -81,7 +81,7 @@ class analysis(processor.ProcessorABC):
         #
         # Calculate and apply Jet Energy Calibration
         #
-        jets = apply_jerc_corrections_jsonpog(
+        jets = apply_jet_calibration(
             event,
             corrections_metadata=self.corrections_metadata[self.year],
             isMC=self.config["isMC"],
@@ -113,7 +113,7 @@ class analysis(processor.ProcessorABC):
         event['trigWeight'] = {}
 
         if self.use_vectorized:
-            year_int = int(year_label)
+            year_int = trigger_era_code(self.year, year_label)   # per era: 2022_preEE -> 2021, 2023_BPix -> 2020
             if year_int not in self.trig_sfs_vect:
                 self.trig_sfs_vect[year_int] = TriggerSFVectorized(year_int, map_path="coffea4bees/analysis/trigger_emulator/data/", tagger=self.tagger)
 

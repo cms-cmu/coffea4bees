@@ -89,7 +89,8 @@ def create_combine_root_file( file_to_convert,
                                 multijet_process='data',
                                 data_process='data',
                                 tt_processes=['TTTo', 'TTbar4b_from_d3'],
-                                cut='' ):
+                                cut='',
+                                unify_background=False ):
 
     logging.info(f"Reading {metadata_file}")
     region_key = region if cut in ["sum", ""] or not cut else f"{region}_{cut}"
@@ -202,26 +203,31 @@ def create_combine_root_file( file_to_convert,
                 root_hists[iyear]['ZH4b'][ih].Add( root_hists[iyear]['ggZH4b'][ih] )
                 logging.info(f"Adding ggZH4b to ZH4b in {iyear} {ih}")
             del root_hists[iyear]['ggZH4b']
-    
-    logging.info("\n Merging UL16_preVFP and UL16_postVFP")
-    for iy in list(root_hists.keys()):
-        if 'UL16_preVFP' in iy:
-            for ip, _ in list(root_hists[iy].items()):
-                if isinstance(root_hists[iy][ip], dict):
-                    for iv, _ in list(root_hists[iy][ip].items()):
-                        root_hists[iy][ip][iv].Add( root_hists[iy.replace('pre', 'post')][ip][iv.replace('preV', 'postV')] )
-                else:
-                    root_hists[iy][ip].Add( root_hists[iy.replace('pre', 'post')][ip] )
-            del root_hists[iy.replace('pre', 'post')]
-            root_hists['_'.join(iy.split('_')[:-1])] = root_hists.pop(iy)
+    merge_ul16 = not any(('UL16_preVFP' in b or 'preVFP' in b) for b in metadata.get('bin', []))
+    if merge_ul16:
+        logging.info("\n Merging UL16_preVFP and UL16_postVFP")
+        for iy in list(root_hists.keys()):
+            if 'UL16_preVFP' in iy:
+                for ip, _ in list(root_hists[iy].items()):
+                    if isinstance(root_hists[iy][ip], dict):
+                        for iv, _ in list(root_hists[iy][ip].items()):
+                            root_hists[iy][ip][iv].Add( root_hists[iy.replace('pre', 'post')][ip][iv.replace('preV', 'postV')] )
+                    else:
+                        root_hists[iy][ip].Add( root_hists[iy.replace('pre', 'post')][ip] )
+                del root_hists[iy.replace('pre', 'post')]
+                root_hists['_'.join(iy.split('_')[:-1])] = root_hists.pop(iy)
 
 
     ### renaming and merging histos for final combine inputs
     for iy in list(root_hists.keys()):
         for jy in metadata['bin']:
-            iy_clean = iy.replace('UL', '').replace('_preVFP', '').replace('_postVFP', '')
-            jy_clean = '_'.join(jy.split('_')[1:])
-            if iy_clean == jy_clean or iy_clean in jy_clean or jy_clean in iy_clean:
+            if merge_ul16:
+                iy_clean = iy.replace('UL', '').replace('_preVFP', '').replace('_postVFP', '')
+                jy_clean = '_'.join(jy.split('_')[1:])
+                match = (iy_clean == jy_clean or iy_clean in jy_clean or jy_clean in iy_clean)
+            else:
+                match = (iy in jy or jy.endswith(iy))
+            if match:
                 if jy not in root_hists:
                     root_hists[jy] = root_hists.pop(iy)
                 elif jy != iy:
@@ -275,7 +281,7 @@ def create_combine_root_file( file_to_convert,
                 mixedBkg_data3b[var]['data_3b_for_mixed'][iy.split("_")[1]][three_tag]['SR'],
                 f'multijet_{iy}_{var}', rebin )
 
-    if not stat_only:
+    if not stat_only and not unify_background:
         for channel in metadata['bin']:
             if channel not in root_hists:
                 continue
@@ -338,6 +344,50 @@ def create_combine_root_file( file_to_convert,
             else:
                 logging.info(f"{ip} not in metadata processes, removing from root file.")
                 del root_hists[channel][ip]
+
+    if unify_background:
+        for channel in root_hists.keys():
+            multijet_hist = root_hists[channel]['multijet']['nominal'] if isinstance(root_hists[channel].get('multijet'), dict) else root_hists[channel].get('multijet')
+            tt_label = metadata['processes']['background'].get('tt', {}).get('label', 'tt')
+            tt_hist = root_hists[channel][tt_label]['nominal'] if isinstance(root_hists[channel].get(tt_label), dict) else root_hists[channel].get(tt_label)
+
+            bkg_nominal = multijet_hist.Clone("background")
+            bkg_nominal.SetTitle(f"background_{channel}")
+            if tt_hist is not None:
+                bkg_nominal.Add(tt_hist)
+
+            bkg_dict = {'nominal': bkg_nominal}
+            if not stat_only and bkg_systematics_file:
+                for ibin, ivalues in bkg_syst_file.items():
+                    if np.max(np.abs(np.array(ivalues, dtype=float) - 1.0)) < 1e-6:
+                        continue
+                    clean_ibin = ibin.replace('_hh', '').replace('_ttHbb', '').replace('_zh', '').replace('_zz', '').replace('vari', 'variance')
+                    bkg_name_syst = f"CMS_bbbb_resolved_bkg_datadriven_{clean_ibin}"
+                    syst_h = bkg_nominal.Clone(f"background_{bkg_name_syst}")
+                    syst_h.SetTitle(f"background_{bkg_name_syst}_{channel}")
+                    for i in range(len(ivalues)):
+                        nom_val = syst_h.GetBinContent(i + 1)
+                        factor = float(ivalues[i])
+                        if not np.isfinite(factor):
+                            factor = 1.0
+                        syst_h.SetBinContent(i + 1, nom_val * factor)
+                    bkg_dict[bkg_name_syst] = syst_h
+
+            if 'multijet' in root_hists[channel]:
+                del root_hists[channel]['multijet']
+            if tt_label in root_hists[channel]:
+                del root_hists[channel][tt_label]
+            root_hists[channel]['background'] = bkg_dict
+
+        metadata['processes']['background'] = {
+            'background': {
+                'label': 'background',
+                'process': 1
+            }
+        }
+        metadata['processes']['all'] = { **metadata['processes']['signal'], **metadata['processes']['background'] }
+        if not stat_only and bkg_systematics_file:
+            closureSysts = [ i.replace('Up', '') for i in root_hists[next(iter(root_hists))]['background'].keys() if i.endswith('Up') ] if root_hists else []
 
     if blind:
         logging.info("\n Blinding: replacing data_obs with sum of backgrounds")
@@ -412,9 +462,10 @@ def create_combine_root_file( file_to_convert,
             cb.WriteDatacard(f"{output_dir}/datacard_{ibin}.txt", f"{output_dir}/{ibin}_{output_file}")
 
         else:
+            closure_procs = ["background"] if unify_background else ["multijet"]
             for nuisance in closureSysts:
-                cb.cp().process(["multijet"]).AddSyst(cb, nuisance, 'shape', ch.SystMap()(1.0))
-            cb.SetGroup("multijet", closureSysts)
+                cb.cp().process(closure_procs).AddSyst(cb, nuisance, 'shape', ch.SystMap()(1.0))
+            cb.SetGroup("background" if unify_background else "multijet", closureSysts)
             
             btagSysts = []
             othersSysts = []
@@ -422,15 +473,21 @@ def create_combine_root_file( file_to_convert,
             mtopSysts = []
             for nuisance in mcSysts:
                 if ('2016' in nuisance) or ('UL16' in nuisance):
-                    nuisance = nuisance.replace('UL16_postVFP', '2016')
-                    if ('2016' in ibin):
-                        cb.cp().signals().AddSyst(cb, nuisance, 'shape', ch.SystMap('bin')([f'{ibin_label}_2016'],1.0))
-                elif ('2017' in nuisance):
-                    if('2017' in ibin):
-                        cb.cp().signals().AddSyst(cb, nuisance, 'shape', ch.SystMap('bin')([f'{ibin_label}_2017'],1.0))
-                elif ('2018' in nuisance):
-                    if ('2018' in ibin):
-                        cb.cp().signals().AddSyst(cb, nuisance, 'shape', ch.SystMap('bin')([f'{ibin_label}_2018'],1.0))
+                    if not merge_ul16:
+                        if ('UL16_preVFP' in nuisance and 'UL16_preVFP' in ibin) or ('UL16_postVFP' in nuisance and 'UL16_postVFP' in ibin):
+                            cb.cp().signals().AddSyst(cb, nuisance, 'shape', ch.SystMap('bin')([ibin], 1.0))
+                        elif 'UL16' not in nuisance and '2016' in nuisance and ('UL16' in ibin or '2016' in ibin):
+                            cb.cp().signals().AddSyst(cb, nuisance, 'shape', ch.SystMap('bin')([ibin], 1.0))
+                    else:
+                        nuisance = nuisance.replace('UL16_postVFP', '2016')
+                        if ('2016' in ibin):
+                            cb.cp().signals().AddSyst(cb, nuisance, 'shape', ch.SystMap('bin')([f'{ibin_label}_2016'], 1.0))
+                elif ('2017' in nuisance) or ('UL17' in nuisance):
+                    if ('2017' in ibin or 'UL17' in ibin):
+                        cb.cp().signals().AddSyst(cb, nuisance, 'shape', ch.SystMap('bin')([ibin], 1.0))
+                elif ('2018' in nuisance) or ('UL18' in nuisance):
+                    if ('2018' in ibin or 'UL18' in ibin):
+                        cb.cp().signals().AddSyst(cb, nuisance, 'shape', ch.SystMap('bin')([ibin], 1.0))
                 else:
                     cb.cp().signals().AddSyst(cb, nuisance, 'shape', ch.SystMap()(1.0))
                 if 'btag' in nuisance:
@@ -445,19 +502,22 @@ def create_combine_root_file( file_to_convert,
                 if 'mtop' in isyst: mtopSysts.append(isyst)
                 else: othersSysts.append(isyst)
                 syst_years = metadata['uncertainty'][isyst].get('years', {})
-                if ('2016' in isyst):
-                    if ('2016' in ibin and f'{ibin_label}_2016' in syst_years):
-                        cb.cp().signals().AddSyst(cb, isyst, metadata['uncertainty'][isyst]['type'], ch.SystMap('bin')([f'{ibin_label}_2016'],syst_years[f'{ibin_label}_2016']))
+                if ibin in syst_years:
+                    cb.cp().signals().AddSyst(cb, isyst, metadata['uncertainty'][isyst]['type'], ch.SystMap('bin')
+                                            ([ibin], syst_years[ibin]))
+                elif ('2016' in isyst):
+                    if (('2016' in ibin or 'UL16' in ibin) and f'{ibin_label}_2016' in syst_years):
+                        cb.cp().signals().AddSyst(cb, isyst, metadata['uncertainty'][isyst]['type'], ch.SystMap('bin')([ibin], syst_years[f'{ibin_label}_2016']))
                 elif ('2017' in isyst):
-                    if ('2017' in ibin and f'{ibin_label}_2017' in syst_years):
-                        cb.cp().signals().AddSyst(cb, isyst, metadata['uncertainty'][isyst]['type'], ch.SystMap('bin')([f'{ibin_label}_2017'],syst_years[f'{ibin_label}_2017']))
+                    if (('2017' in ibin or 'UL17' in ibin) and f'{ibin_label}_2017' in syst_years):
+                        cb.cp().signals().AddSyst(cb, isyst, metadata['uncertainty'][isyst]['type'], ch.SystMap('bin')([ibin], syst_years[f'{ibin_label}_2017']))
                 elif ('2018' in isyst):
-                    if ('2018' in ibin and f'{ibin_label}_2018' in syst_years):
-                        cb.cp().signals().AddSyst(cb, isyst, metadata['uncertainty'][isyst]['type'], ch.SystMap('bin')([f'{ibin_label}_2018'],syst_years[f'{ibin_label}_2018']))
+                    if (('2018' in ibin or 'UL18' in ibin) and f'{ibin_label}_2018' in syst_years):
+                        cb.cp().signals().AddSyst(cb, isyst, metadata['uncertainty'][isyst]['type'], ch.SystMap('bin')([ibin], syst_years[f'{ibin_label}_2018']))
                 elif ('1718' in isyst):
-                    if ('2017' in ibin or '2018' in ibin) and ibin in syst_years:
+                    if ('2017' in ibin or '2018' in ibin or 'UL17' in ibin or 'UL18' in ibin) and (ibin in syst_years or f'{ibin_label}_1718' in syst_years):
                         cb.cp().signals().AddSyst(cb, isyst, metadata['uncertainty'][isyst]['type'], ch.SystMap('bin')
-                                            ([ibin],syst_years[ibin]))
+                                            ([ibin], syst_years.get(ibin, syst_years.get(f'{ibin_label}_1718'))))
                 else:
                     if ibin in syst_years:
                         cb.cp().signals().AddSyst(cb, isyst, metadata['uncertainty'][isyst]['type'], ch.SystMap('bin')
@@ -525,6 +585,8 @@ if __name__ == '__main__':
                         default='data', help='Process to use for data_obs')
     parser.add_argument('--tt_processes', dest="tt_processes", nargs="+",
                         default=['TTTo', 'TTbar4b_from_d3'], help='List of processes/prefixes to merge into ttbar')
+    parser.add_argument('--unify_background', dest='unify_background', action="store_true",
+                        default=False, help="Unify multijet and ttbar backgrounds for closure systematics")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
@@ -558,4 +620,5 @@ if __name__ == '__main__':
         multijet_process=args.multijet_process,
         data_process=args.data_process,
         tt_processes=args.tt_processes,
+        unify_background=args.unify_background,
     )

@@ -791,9 +791,40 @@ def plot(sampleDictionary, plotParameters,debug=False):
 
     # stack up the hists in stack in proper order
     if stack:
+        # Check if any component in the stack has negative bins
+        has_negative = False
+        nbins = next(iter(stack.values())).GetNbinsX()
+        for h in stack.values():
+            for b in range(1, nbins + 1):
+                if h.GetBinContent(b) < 0:
+                    has_negative = True
+                    break
+            if has_negative:
+                break
+
+        stack_to_add = {}
+        for k in sorted(stack.keys()):
+            stack_to_add[k] = copy.copy(stack[k])
+
+        if has_negative:
+            keys = sorted(stack.keys())
+            for b in range(1, nbins + 1):
+                comps = [stack[k].GetBinContent(b) for k in keys]
+                tot = sum(comps)
+                if tot <= 0:
+                    for k in keys:
+                        stack_to_add[k].SetBinContent(b, 0.0)
+                elif any(c < 0 for c in comps):
+                    pos_sum = sum(c for c in comps if c > 0)
+                    for k, c in zip(keys, comps):
+                        if c > 0 and pos_sum > 0:
+                            stack_to_add[k].SetBinContent(b, c * (tot / pos_sum))
+                        else:
+                            stack_to_add[k].SetBinContent(b, 0.0)
+
         stacked = ROOT.THStack("stack", "")
         for i in sorted(stack.keys()):
-            stacked.Add(copy.copy(stack[i]), "hist")
+            stacked.Add(stack_to_add[i], "hist")
 
         if not th2Ratio:
             hPad.cd()
@@ -1177,11 +1208,11 @@ def plot(sampleDictionary, plotParameters,debug=False):
             os.makedirs(outdir)
 
     logstr = "_logy" if logY else ""
-    if debug: print("SaveAs("+plotParameters["outputDir"]+plotParameters["outputName"]+logstr+".pdf)")
-    canvas.SaveAs(plotParameters["outputDir"]+plotParameters["outputName"]+logstr+".pdf")
-    canvas.SaveAs(plotParameters["outputDir"]+plotParameters["outputName"]+logstr+".png")
-    canvas.SaveAs(plotParameters["outputDir"]+plotParameters["outputName"]+logstr+".C")
-    #canvas.SaveAs(plotParameters["outputDir"]+plotParameters["outputName"]+".root")
+    save_all = plotParameters.get("save_all_formats", False)
+    formats = plotParameters.get("formats", ["png", "pdf", "C"] if save_all else ["png"])
+    for fmt in formats:
+        if debug: print("SaveAs(" + plotParameters["outputDir"] + plotParameters["outputName"] + logstr + "." + fmt + ")")
+        canvas.SaveAs(plotParameters["outputDir"] + plotParameters["outputName"] + logstr + "." + fmt)
     return canvas
 
 

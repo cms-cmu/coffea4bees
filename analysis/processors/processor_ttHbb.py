@@ -179,6 +179,14 @@ class ttHbbProcessor(HH4bBaseProcessor):
             self.fill_cutflow_with_and_without_trig("passSvB", selev[selev.passSvB])
             self.fill_cutflow_with_and_without_trig("failSvB", selev[selev.failSvB])
 
+        # TTbar_from_d3 cutflow entries (the FvT-derived ttbar the closure tables subtract), as in
+        # HH4bBaseProcessor.fill_detailed_cutflows; without them those entries are left empty
+        if self.plot_ttbar_with_weights:
+            self._fill_ttbar_detailed_cutflows(selev)
+
+        if self.plot_ttbar_with_MvD_weights:
+            self._fill_ttbar_MvD_detailed_cutflows(selev)
+
     def build_selections(self, event, weights):
         """Build PackedSelection object with all cuts and add selJets.n > 6 categorization."""
         selections, allcuts = super().build_selections(event, weights)
@@ -204,9 +212,6 @@ class ttHbbProcessor(HH4bBaseProcessor):
         selev["fail_nSelJets_le6"] = n_selJets <= 6
         selev["passLeptonVeto"] = selev.passLeptonVeto if "passLeptonVeto" in selev.fields else np.full(len(selev), True)
 
-        # Filter out low-significance spike (ps < 0.01) everywhere from SvB histograms
-        if self.run_SvB and "pass_ps_min" in selev.fields:
-            selev = selev[selev.pass_ps_min]
 
         selev["SR"] = selev.passSR
         selev["SB"] = selev.passSB
@@ -238,6 +243,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
                 can_ttH=self.pairing == "can_ttH",
                 classify_Z_decay=self.classify_Z_decay,
                 truth_pairing_forced=self._is_ttHbb_MC() and self.pairing == "can_ttH",
+                subsample_names=getattr(self, "subsample_names", None),
             )
 
             if not self.plot_ttbar_with_weights or self.processName != "data":
@@ -260,6 +266,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
                 weight_name="weight_d3_to_t4",
                 year_override=self.year_override,
                 can_ttH=self.pairing == "can_ttH",
+                subsample_names=getattr(self, "subsample_names", None),
             )
 
             hist_t3 = filling_ttHbb_histograms(
@@ -277,6 +284,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
                 weight_name="weight_d3_to_t3",
                 year_override=self.year_override,
                 can_ttH=self.pairing == "can_ttH",
+                subsample_names=getattr(self, "subsample_names", None),
             )
 
             hists.append(hist_t4)

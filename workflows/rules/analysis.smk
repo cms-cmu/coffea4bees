@@ -62,6 +62,7 @@ rule make_JCM:
     params:
         extra_arguments = "",
         tag = "2024_v2",
+        region = "SB",
         output_dir = "output/JCM/",
         run_container_wrapper = "",
         python_bin = lambda wildcards: config.get("python_bin", "python")
@@ -73,7 +74,7 @@ rule make_JCM:
         mkdir -p $MPLCONFIGDIR
         
         echo "Computing JCM" 2>&1 | tee -a {log}
-        {params.run_container_wrapper} {params.python_bin} coffea4bees/analysis/jcm_tools/make_jcm_weights.py -o {params.output_dir} -r SB -i {input} {params.extra_arguments} -w {params.tag} 2>&1 | tee -a {log}
+        {params.run_container_wrapper} {params.python_bin} coffea4bees/analysis/jcm_tools/make_jcm_weights.py -o {params.output_dir} -r {params.region} -i {input} {params.extra_arguments} -w {params.tag} 2>&1 | tee -a {log}
         ls {params.output_dir}
         """
 
@@ -133,6 +134,10 @@ rule cutflow_closure_table:
         # ttbar process names in the dump: the MC samples, or "TTbar_from_d3" for the FvT-derived
         # estimate from 3b data (plot_ttbar_with_weights; Phase F runs without ttbar MC)
         ttbar = "TTToHadronic TTToSemiLeptonic TTTo2L2Nu",
+        # further cutflow_closure.py options, e.g. "--multijet-process syn_v0 --pseudodata
+        # ttbar_PSData" with multijet = "sample4b" (a four-tag multijet sample as the Multijet
+        # column; DeClustered D.5)
+        extra_arguments = "",
         run_container_wrapper = "",
         python_bin = lambda wildcards: config.get("python_bin", "python")
     shell:
@@ -144,7 +149,7 @@ rule cutflow_closure_table:
         if [ -f src/tools/cutflow_closure.py ]; then
             {params.run_container_wrapper} {params.python_bin} src/tools/cutflow_closure.py {input.cutflow_yml} \
                 -o {output.html} --txt {output.txt} --title {params.title} --multijet {params.multijet} \
-                --ttbar {params.ttbar} 2>&1 | tee {log}
+                --ttbar {params.ttbar} {params.extra_arguments} 2>&1 | tee {log}
         else
             echo "src/tools/cutflow_closure.py not found in this barista checkout; skipping closure table" 2>&1 | tee {log}
             echo "<p>cutflow closure table not available (barista checkout predates src/tools/cutflow_closure.py)</p>" > {output.html}
@@ -225,6 +230,11 @@ rule check_cutflow:
         known_flag = get_known_cutflow_flag,
         error_threshold = lambda wildcards: config.get("error_threshold", "0.001"),
         cutflow_list = lambda wildcards: config.get("cutflow_list", "passJetMult,passPreSel,passDiJetMass,SR,SB"),
+        # "false": a mismatch against the known counts is flagged (log, *_result.txt, validation
+        # txt) but does not fail the job, for references that are expected to move, e.g. counts
+        # that depend on a retrained FvT/SvB. Top-level `known_counts_fatal` in the config;
+        # production only (test=true, i.e. CI, always fails on a mismatch).
+        fatal = lambda wildcards: "true" if config.get("test", False) else str(config.get("known_counts_fatal", True)).lower(),
         run_container_wrapper = "",
         python_bin = lambda wildcards: config.get("python_bin", "python")
     log:
@@ -252,6 +262,11 @@ rule check_cutflow:
         ( grep -A80 "Running cutflow comparison" {log} || grep "Skipping cutflow comparison" {log} || true ) > "$result"
         if [ $status -ne 0 ]; then
             [ -f "{output.cutflow_yml}" ] && cp "{output.cutflow_yml}" "$(dirname {output.cutflow_yml})/$(basename {output.cutflow_yml} .yml)_failed.yml"
+            if [ "{params.fatal}" = "false" ] && [ -f "{output.cutflow_yml}" ]; then
+                echo "############### Cutflow check MISMATCH (warn-only, exit $status): see $result" | tee -a {log}
+                {{ echo "WARN-ONLY MISMATCH against the known counts (known_counts_fatal: false)"; cat "$result"; }} > {output.validation_txt}
+                exit 0
+            fi
             echo "############### Cutflow check FAILED (exit $status): see $result" | tee -a {log}
             exit $status
         fi

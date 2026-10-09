@@ -1,0 +1,23 @@
+pseudoTagProb                  0.09294354378672112
+pseudoTagProb_err              0.013907244178213776
+pseudoTagProb_pererr           14.963109444295483
+pairEnhancement                2.2310760324125525e-11
+pairEnhancement_err            0.1568393632199792
+pairEnhancement_pererr         702976325958.6562
+pairEnhancementDecay           0.10000524378411053
+pairEnhancementDecay_err       0.0
+pairEnhancementDecay_pererr    0.0
+tt4bSF                         1.0
+tt4bSF_err                     0
+tt4bSF_pererr                  0.0
+threeTightTagFraction          0.5521038252129068
+threeTightTagFraction_err      0
+threeTightTagFraction_pererr   0.0
+mu_qcd                         0.08758210596550134
+chi^2                          116702.39269976158
+ndf                            12
+chi^2/ndf                      9725.199391646798
+p-value                        0.0
+n5b_pred                       138976.01179877875
+n5b_true                       156643.0
+JCM_weights                    [0.0513144860546369, 0.09785962192751606, 0.140078687926219, 0.1783737643155559, 0.213109560595624, 0.24461688887312222, 0.27319581440522156, 0.2991185133207215, 0.32263186473447547, 0.34395980194151377, 0.3633054450828541, 0.3808530355937926]

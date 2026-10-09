@@ -2,7 +2,7 @@
 #
 # Produced by Phase A.2 (workflows/config/trigweights_run3.yml) over the
 # picoAODs that TT.yml / TT_stitched.yml / ttHbb.yml point at today. Covers
-# 7 datasets x 5 eras:
+# 7 datasets x 5 eras (plus the 2022/2023 HH4b ggF signal, unused here):
 #   TTTo{2L2Nu,SemiLeptonic,Hadronic}            (inclusive 5FS)
 #   TTTo{2L2Nu,SemiLeptonic,Hadronic}_stitched   (tt+bb stitched)
 #   ttHbb
@@ -15,9 +15,14 @@
 #
 # '2024' MUST stay quoted: unquoted it parses as an int and the string-keyed
 # year lookup in runner.py misses it, silently dropping the friend for that era.
+# Index: trigweights_Run3_v3.json (2026-10-07), made with the TriggerSFVectorized fixes (2022 HLT legs,
+# per-era L1 curves, 2023 2D jet leg):
+#   2022/2023 TT/TTbb/ttHbb  roast trigweights_run3_mc_20261007_f839489-6d2497e
+#   2022/2023 SM ggF signal  roast trigweights_run3_signal_eras_20261007_27bc66d-ef555a7
+#   2024 (all of the above)  carried over from v1 (unchanged by the fixes; mmarcheg's area)
 friends:
   2022_preEE: &trigWeight_Run3
-    trigWeight: "coffea4bees/metadata/friends/trigweights_Run3_v1.json@@trigWeight"
+    trigWeight: "coffea4bees/metadata/friends/trigweights_Run3_v3.json@@trigWeight"
   2022_EE: *trigWeight_Run3
   2023_preBPix: *trigWeight_Run3
   2023_BPix: *trigWeight_Run3

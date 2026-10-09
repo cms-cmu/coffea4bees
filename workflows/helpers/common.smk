@@ -1,5 +1,6 @@
 import sys
 import os
+import re
 import copy
 import yaml
 
@@ -19,13 +20,144 @@ def substitute_placeholders(obj, mapping):
     return obj
 
 
+def _user_profile():
+    """Per-user paths, so a workflow config can be shared without naming anyone.
+
+    A config writes {eos_prod}/{roast_id}/... instead of a personal EOS path.  The values
+    are resolved here, in order:
+
+      1. --config eos_prod=... on the command line.  This is how `roast` passes what it
+         already keeps in ~/.config/roast/config.json, so a roast user configures nothing
+         twice, and re-running someone else's roast lands in *your* area, not theirs.
+      2. ~/.config/coffea4bees/profile.yml (override the location with $COFFEA4BEES_PROFILE),
+         for running snakemake by hand without roast.
+      3. Derived from the account names, so CI and a casual dry run need no setup at all.
+
+    cern_user may be given either as a bare account (johnda) or already sharded (j/johnda);
+    both appear in the older Snakefiles, so accept either.
+    """
+    import getpass
+
+    profile = {}
+    path = os.path.expanduser(os.environ.get("COFFEA4BEES_PROFILE", "~/.config/coffea4bees/profile.yml"))
+    if os.path.exists(path):
+        with open(path) as fh:
+            profile = yaml.safe_load(fh) or {}
+
+    def pick(key, default):
+        return config.get(key) or profile.get(key) or default
+
+    try:
+        _login = os.environ.get("USER") or getpass.getuser()
+    except Exception:                      # getpass raises when there is no passwd entry (some containers)
+        _login = "unknown"
+    lpc_user = pick('lpc_user', _login)
+    cern_user = pick('cern_user', os.environ.get("CERN_USER") or _login)
+    sharded = cern_user if "/" in cern_user else f"{cern_user[0]}/{cern_user}"
+    return {
+        'lpc_user': lpc_user,
+        'cern_user': cern_user,
+        # xrootd needs root://host//path, hence the doubled slash before an absolute path
+        'eos_prod': pick('eos_prod', f"root://cmseos.fnal.gov//store/user/{lpc_user}/HH4b_prod"),
+        'web_prod': pick('web_prod', f"root://eosuser.cern.ch//eos/user/{sharded}/www/HH4b/prod"),
+    }
+
+
+def _upstream_base(rid, own_eos_prod):
+    """Where roast `rid` wrote, for configs that read an earlier roast's products.
+
+    {eos_prod} is the *reader's* area, so it is right for outputs and wrong for inputs: a
+    colleague running this config would look for an upstream roast under their own account.
+    {roast:<id>} instead resolves through that roast's committed manifest, which records
+    where it actually wrote, so the reference names a run and the owner follows from it.
+    """
+    import json
+
+    manifest = os.path.join("roasts", rid, "roast.json")
+    if os.path.exists(manifest):
+        with open(manifest) as fh:
+            m = json.load(fh) or {}
+        base = (m.get("user_paths") or {}).get("eos_prod")
+        if not base:
+            # manifests written before user_paths existed: the account that ran it is still
+            # recorded in the ssh target it was checked out on
+            ssh = ((m.get("hosts") or {}).get("cmslpc") or {}).get("ssh", "")
+            user = ssh.split("@", 1)[0] if "@" in ssh else ""
+            if user:
+                base = f"root://cmseos.fnal.gov//store/user/{user}/HH4b_prod"
+        if base:
+            return f"{base.rstrip('/')}/{rid}"
+    print(f"WARNING: no usable manifest for upstream roast {rid} (looked in {manifest}); "
+          f"assuming it lives under your own area. Commit roasts/{rid}/roast.json so this "
+          f"resolves for everyone.")
+    return f"{own_eos_prod.rstrip('/')}/{rid}"
+
+
+def _upstream_config_value(rid, key):
+    """{roast:<id>:<key>}: top-level `key` of roast `rid`'s captured config (roasts/<id>/config.yml),
+    with its {roast_id} filled in -- e.g. output_path, so a reader names that roast's products by
+    the run, not by a copy of its directory layout (output/ttHbb/...). Key `id`: the id itself."""
+    if key == "id":
+        return rid
+    captured = os.path.join("roasts", rid, "config.yml")
+    if not os.path.exists(captured):
+        raise ValueError(f"{{roast:{rid}:{key}}}: no captured config {captured} (commit roasts/{rid}/)")
+    with open(captured) as fh:
+        cfg = yaml.safe_load(fh) or {}
+    if not isinstance(cfg.get(key), str):
+        raise ValueError(f"{{roast:{rid}:{key}}}: {captured} has no top-level string {key!r}")
+    return cfg[key].replace("{roast_id}", rid)
+
+
+# {roast:<id>} -> that roast's EOS area; {roast:<id>:<key>} -> a value from its captured config.
+# <id> may be an alias: `inputs.upstream_roasts` given as {alias: roast id} (src/tools/roast.py
+# check_inputs accepts the same syntax at `roast new`).
+UPSTREAM_REF = re.compile(r"\{roast:([^}:]+)(?::([^}]+))?\}")
+
+
+def upstream_aliases(config_dict):
+    """{alias: roast id} from a mapping-form inputs.upstream_roasts ({} for the str / list form)."""
+    ups = (config_dict.get('inputs') or {}).get('upstream_roasts')
+    return {str(k): str(v) for k, v in ups.items()} if isinstance(ups, dict) else {}
+
+
+def substitute_upstreams(obj, own_eos_prod, seen, aliases=None):
+    """Replace {roast:<id>} and {roast:<id>:<key>} anywhere in a nested config structure."""
+    aliases = aliases or {}
+    if isinstance(obj, dict):
+        return {k: substitute_upstreams(v, own_eos_prod, seen, aliases) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [substitute_upstreams(v, own_eos_prod, seen, aliases) for v in obj]
+    if isinstance(obj, str):
+        def _sub(m):
+            rid, key = aliases.get(m.group(1), m.group(1)), m.group(2)
+            if key:
+                return _upstream_config_value(rid, key)
+            if rid not in seen:
+                seen[rid] = _upstream_base(rid, own_eos_prod)
+            return seen[rid]
+        return UPSTREAM_REF.sub(_sub, obj)
+    return obj
+
+
 # {roast_id} names a production run so run-scoped paths (e.g. EOS outputs) are unique.
 # `roast` sets it with --config roast_id=<id>; outside roast it falls back to the config
 # label, so a plain `snakemake --configfile ...` run still gets a sensible directory.
+# The user-level placeholders resolve in the same pass, so "{eos_prod}/{roast_id}" works.
 _roast_id = config.get('roast_id') or config.get('label') or 'nominal'
-config['roast_id'] = _roast_id
-for _k, _v in substitute_placeholders(dict(config), {'roast_id': _roast_id}).items():
+_placeholders = {'roast_id': _roast_id, **_user_profile()}
+for _k, _v in _placeholders.items():
     config[_k] = _v
+for _k, _v in substitute_placeholders(dict(config), _placeholders).items():
+    config[_k] = _v
+
+# Inputs from earlier roasts resolve through their own manifests, not the reader's area.
+_upstreams = {}
+for _k, _v in substitute_upstreams(dict(config), _placeholders['eos_prod'], _upstreams,
+                                   upstream_aliases(config)).items():
+    config[_k] = _v
+for _rid, _base in sorted(_upstreams.items()):
+    print(f"upstream {_rid} -> {_base}")
 
 
 def check_handoff_refs(config_dict):
@@ -49,7 +181,7 @@ def check_handoff_refs(config_dict):
         return
 
     problems = []
-    for section in ('fvt', 'svb'):
+    for section in ('fvt', 'svb', 'mvd', 'svb_mvd'):   # nominal C/D; MvD roast V.2/V.3
         blk = config_dict.get(section) or {}
         if not isinstance(blk, dict):
             continue
@@ -60,13 +192,17 @@ def check_handoff_refs(config_dict):
                 if k == '--JCM-weight' or k.startswith('--friends'):
                     refs[k] = v
         for key, val in refs.items():
-            if not isinstance(val, str):
-                continue
-            path = val.split('@@')[0].replace('""', '').strip()
-            # Only remote refs are checked: a local path is read from the checkout, which is
-            # the other, deliberate half of the handoff (C.4 and F.1 read the local JCM copy).
-            if path.startswith('root://') and not path.startswith(base + '/'):
-                problems.append(f"  {section}.{key}\n      reads      {path}\n      not under  {base}/")
+            entries = val if isinstance(val, list) else [val]
+            for item in entries:
+                if not isinstance(item, str):
+                    continue
+                raw_path = item.split('@@')[0].replace('""', '').strip()
+                tokens = raw_path.split()
+                path = tokens[-1] if tokens else ""
+                # Only remote refs are checked: a local path is read from the checkout, which is
+                # the other, deliberate half of the handoff (C.4 and F.1 read the local JCM copy).
+                if path.startswith('root://') and not path.startswith(base + '/'):
+                    problems.append(f"  {section}.{key}\n      reads      {path}\n      not under  {base}/")
     if problems:
         raise ValueError(
             "handoff mismatch: Phase C/D are pointed at remote files Phase B does not publish.\n"
@@ -79,9 +215,9 @@ def check_handoff_refs(config_dict):
 check_handoff_refs(config)
 
 
-def write_workflow_overrides(wfs_base, overrides, out_dir, log=None):
+def write_workflow_overrides(wfs_base, overrides, out_dir, log=None, inserts=None, modules=None):
     """Copy the classifier workflow templates in `wfs_base` (train.yml, evaluate.yml, ...) to
-    `out_dir`, replacing command-line options by flag.
+    `out_dir`, replacing command-line options by flag, and inserting new ones.
 
     `overrides` maps a flag (optionally followed by its first argument(s), to disambiguate
     repeated flags) to the replacement for everything after the key, e.g.
@@ -92,20 +228,52 @@ def write_workflow_overrides(wfs_base, overrides, out_dir, log=None):
     space or the end of the entry) becomes "<key> <replacement>"; the longest matching key wins;
     everything else is copied verbatim, so the checked-in templates stay the single source of
     truth for the model/training settings and a production only states what differs (typically
-    the inputs). Returns `out_dir`.
+    the inputs).
+
+    `inserts` maps an anchor flag (matched the same way) to a list of option entries inserted
+    immediately before it, for settings the template does not carry at all, e.g.
+        {"--training": ["--architecture", {"n_features": 54}]}
+    widens the network without a forked template. Unlike an unused override, an anchor found in
+    no template raises, as does an inserted flag the module already sets: either way the run
+    would silently train something other than what the config says.
+
+    An override or insert key may be scoped to one template file as "<file>::<key>", e.g.
+    "evaluate.yml::--mc-processes", when the same flag appears in several templates but only one
+    should change (the SvB evaluation needs a --data-source that the training's signal module
+    does not accept).
+
+    `modules` maps a module name to its replacement, e.g.
+        {"HCR.SvB.Background": "HCR.SvB.BackgroundMixed"}
+    (a subclass with a different background, same options). A name found in no template raises.
+    Returns `out_dir`.
     """
     import glob
     import shutil
     os.makedirs(out_dir, exist_ok=True)
-    flags = dict(overrides or {})
-    keys = sorted(flags, key=len, reverse=True)
-    used = {k: 0 for k in flags}
 
-    def match(opt):
+    def scoped(mapping):
+        """{key: value} with optional "<file>::" prefixes -> {file or None: {key: value}}."""
+        out = {}
+        for k, v in (mapping or {}).items():
+            fname, sep, flag = k.partition("::")
+            out.setdefault(fname if sep else None, {})[flag if sep else k] = v
+        return out
+
+    flags_by_file = scoped(overrides)
+    anchors_by_file = {f: {k: list(v) for k, v in m.items()} for f, m in scoped(inserts).items()}
+    used = {(f, k): 0 for f, m in flags_by_file.items() for k in m}
+    inserted = {(f, k): 0 for f, m in anchors_by_file.items() for k in m}
+    renames = dict(modules or {})
+    renamed = {k: 0 for k in renames}
+
+    def match(opt, keys):
         for k in keys:
             if opt == k or opt.startswith(k + " "):
                 return k
         return None
+
+    def flag_of(opt):
+        return opt.split()[0] if isinstance(opt, str) and opt.startswith("-") else None
     for src in sorted(glob.glob(os.path.join(wfs_base, "*"))):
         dst = os.path.join(out_dir, os.path.basename(src))
         if os.path.isdir(src):
@@ -113,25 +281,80 @@ def write_workflow_overrides(wfs_base, overrides, out_dir, log=None):
         if not src.endswith((".yml", ".yaml")):
             shutil.copy2(src, dst)
             continue
+        base = os.path.basename(src)
+        # this file's overrides/anchors: the unscoped ones plus those scoped to it (scoped wins)
+        flags = {**flags_by_file.get(None, {}), **flags_by_file.get(base, {})}
+        owner = {k: (base if k in flags_by_file.get(base, {}) else None) for k in flags}
+        keys = sorted(flags, key=len, reverse=True)
+        anchors = {**anchors_by_file.get(None, {}), **anchors_by_file.get(base, {})}
+        anchor_owner = {k: (base if k in anchors_by_file.get(base, {}) else None) for k in anchors}
+        anchor_keys = sorted(anchors, key=len, reverse=True)
         with open(src) as f:
             wf = yaml.safe_load(f) or {}
         for section in wf.values():
+            # `main:` is a single module (a dict), the other sections lists of modules
+            if isinstance(section, dict):
+                section = [section]
             if not isinstance(section, list):
                 continue
-            for module in section:
-                opts = module.get("option") if isinstance(module, dict) else None
+            for mod in section:     # not `module`: a Snakemake keyword at the start of a statement
+                if isinstance(mod, dict) and mod.get("module") in renames:
+                    renamed[mod["module"]] += 1
+                    mod["module"] = renames[mod["module"]]
+                opts = mod.get("option") if isinstance(mod, dict) else None
                 if not isinstance(opts, list):
                     continue
-                for i, opt in enumerate(opts):
-                    k = match(opt) if isinstance(opt, str) else None
+                expanded_opts = []
+                for opt in opts:
+                    k = match(opt, keys) if isinstance(opt, str) else None
                     if k is not None:
-                        opts[i] = f"{k} {flags[k]}".rstrip()
-                        used[k] += 1
+                        val = flags[k]
+                        if isinstance(val, list):
+                            for item in val:
+                                expanded_opts.append(f"{k} {item}".rstrip())
+                        else:
+                            expanded_opts.append(f"{k} {val}".rstrip())
+                        used[(owner[k], k)] += 1
+                    else:
+                        expanded_opts.append(opt)
+                opts = expanded_opts
+                if not anchors:
+                    mod["option"] = opts
+                    continue
+                new_opts = []
+                for opt in opts:
+                    a = match(opt, anchor_keys) if isinstance(opt, str) else None
+                    if a is not None:
+                        present = {flag_of(o) for o in opts} - {None}
+                        clash = [f for f in map(flag_of, anchors[a]) if f in present]
+                        if clash:
+                            raise ValueError(
+                                f"workflow_inserts: {src} module {mod.get('module')} already sets "
+                                f"{clash}; override it instead of inserting a second one")
+                        new_opts.extend(anchors[a])
+                        inserted[(anchor_owner[a], a)] += 1
+                    new_opts.append(opt)
+                mod["option"] = new_opts
         with open(dst, "w") as f:
             yaml.dump(wf, f, default_flow_style=False, sort_keys=False)
-    unused = [k for k, n in used.items() if n == 0]
+
+    def name(fk):
+        f, k = fk
+        return f"{f}::{k}" if f else k
+    unused = [name(fk) for fk, n in used.items() if n == 0]
     if unused and log is not None:
         log(f"workflow_overrides: flags not found in any template under {wfs_base}: {unused}")
+    missing = [name(fk) for fk, n in inserted.items() if n == 0]
+    if missing:
+        raise ValueError(f"workflow_inserts: anchor flags not found in any template under {wfs_base}: {missing}")
+    if inserted and log is not None:
+        log(f"workflow_inserts: {dict((name(fk), anchors_by_file[fk[0]][fk[1]]) for fk in inserted)} inserted "
+            f"{dict((name(fk), n) for fk, n in inserted.items())}")
+    not_found = [k for k, n in renamed.items() if n == 0]
+    if not_found:
+        raise ValueError(f"workflow_modules: modules not found in any template under {wfs_base}: {not_found}")
+    if renamed and log is not None:
+        log(f"workflow_modules: {renames} renamed {renamed}")
     return out_dir
 
 
@@ -176,3 +399,58 @@ def resolve_config_section(config_dict, primary_key=None, fallback_keys=None, in
         if k not in res and k in config_dict:
             res[k] = copy.deepcopy(config_dict[k])
     return res
+
+
+def resolve_step_config(default_repo_path, overrides=None, output_path=None):
+    """
+    Resolves configuration for a workflow step:
+    - If `overrides` is a string (path to custom YAML), returns that path directly.
+    - If `overrides` is None or empty dict: returns `default_repo_path`.
+    - If `overrides` is a dict: loads `default_repo_path`, deep-merges `overrides`,
+      writes the effective resolved YAML to `output_path`, and returns `output_path`.
+    """
+    if not overrides:
+        return default_repo_path
+
+    if isinstance(overrides, str):
+        return overrides
+
+    if not os.path.exists(default_repo_path):
+        raise FileNotFoundError(f"Default config not found: {default_repo_path}")
+
+    with open(default_repo_path, 'r') as f:
+        resolved = yaml.safe_load(f) or {}
+
+    def _deep_merge(base, overlay):
+        for k, v in overlay.items():
+            if k in base and isinstance(base[k], dict) and isinstance(v, dict):
+                _deep_merge(base[k], v)
+            else:
+                base[k] = copy.deepcopy(v)
+
+    _deep_merge(resolved, overrides)
+
+    if output_path:
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        with open(output_path, 'w') as f:
+            yaml.dump(resolved, f, default_flow_style=False, sort_keys=False)
+        return output_path
+
+    return default_repo_path
+
+
+def check_dataset_yml(path, name, years):
+    """Refuse to publish an empty or partial dataset. The skimmer runs with skipbadfiles, so a
+    processor error on every chunk becomes an empty registry, runner.py still exits 0, and without
+    this the handoff YAML would be published as `<name>: {}` (it was, once: the mixer's JCM
+    lookup bug)."""
+    with open(path) as f:
+        entry = (yaml.safe_load(f) or {}).get(name) or {}
+    def nfiles(node):
+        if isinstance(node, dict):
+            return sum(nfiles(v) for v in node.values())
+        return len(node) if isinstance(node, list) else 0
+    empty = [y for y in years if not nfiles((entry.get(y) or {}).get('picoAOD'))]
+    if empty:
+        raise ValueError(f"{path}: dataset {name!r} has no files for {empty} -- the skim failed; "
+                         f"see the per-year logs (bad_files) before publishing")

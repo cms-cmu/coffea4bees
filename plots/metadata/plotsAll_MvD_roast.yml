@@ -1,0 +1,66 @@
+# MvD roast, step V.4 (workflows/Snakefile_MvD_4_analysis.smk): plotsAll_ttbarWeights.yml with the
+# mixed-data background model -- multijet = four-tag mixeddata_all x JCM x MvD, ttbar =
+# TTbar4b_from_MvD (mixed data x JCM x p_t4/p_mix4) -- in place of 3b data x JCM x FvT and
+# TTbar4b_from_d3. No ttbar MC: as in Phase F, the ttbar is data-driven.
+hists:
+        data:
+                process: data
+                tag: fourTag
+                label: Four-tag data
+                edgecolor: k
+                fillcolor: k
+
+        HH4b:
+                process: [GluGluToHHTo4B_cHHH1, GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00]
+                tag: fourTag
+                label: HH4b (x100)
+                edgecolor: "#e42536"
+                fillcolor: "#e42536"
+                histtype: step
+                scalefactor: 100
+
+
+stack:
+        TTbar:
+                process: TTbar4b_from_MvD
+                tag: fourTag
+                fillcolor: "#85D1FBff"
+                edgecolor: k
+                label: $t\bar{t}$ (mixed $\times$ MvD)
+
+
+        Multijet:
+                process: mixeddata_all
+                tag: fourTag
+                fillcolor: "#FFDF7Fff"
+                edgecolor: k
+                label: Multijet (mixed $\times$ JCM $\times$ MvD)
+
+ratios:
+        dataToBkg:
+                numerator:
+                        type: hists
+                        key: data
+                denominator:
+                        type: stack
+                uncertianty:
+                        nominal
+                color: k
+                marker: "o"
+
+doRatio:
+    1
+
+
+# Key plots pinned at the top of the HTML gallery (src/plotting/make_gallery.py).
+summary:
+    - SvB_MA.ps_hh
+    - SvB_MA.ps
+    - MvD
+    - selJets.n
+    - canJet0.pt
+    - m4j
+    - v4j.mass
+    - quadJet_selected.lead.mass
+    - quadJet_selected.subl.mass
+    - quadJet_selected.xHH

@@ -75,28 +75,41 @@ regionName = {'SB': 'Sideband',
 #        ]
 
 
-BEs = ['1',             # 0
-       'sin(1*pi*x)',   # 1
-       'cos(1*pi*x)',   # 2
-       'sin(2*pi*x)',   # 3
-       'cos(2*pi*x)',   # 4
-       'sin(3*pi*x)',   # 5
-       'cos(3*pi*x)',   # 6
-       'sin(4*pi*x)',   # 7
-       'cos(4*pi*x)',   # 8
-       'sin(5*pi*x)',   # 9
-       'cos(5*pi*x)',   # 10
-]
+def make_basis_elements(basis_type='fourier'):
+    elements = []
+    if basis_type == 'fourier':
+        elements = ['1']
+        for k in range(1, 11):
+            elements.append(f'sin({k}*pi*x)')
+            elements.append(f'cos({k}*pi*x)')
+    elif basis_type == 'bernstein':
+        import math
+        degree = 10
+        elements = ['1']
+        for i in range(1, degree + 1):
+            c = math.comb(degree, i)
+            term = f'{c}'
+            term += f' * (x^{i})' if i > 1 else ' * x'
+            if degree - i > 0:
+                p = degree - i
+                term += f' * ((1-x)^{p})' if p > 1 else ' * (1-x)'
+            elements.append(term)
+    else:
+        raise ValueError(f"Unknown basis_type: {basis_type}")
 
-BE = []
-if HAS_ROOT:
-    for i, s in enumerate(BEs):
-        BE.append( ROOT.TF1('BE%d' % i, s, 0, 1) )
+    tf1_list = []
+    if HAS_ROOT:
+        for i, s in enumerate(elements):
+            tf1_list.append(ROOT.TF1(f'BE{i}', s, 0, 1))
+    return elements, tf1_list
+
+BEs, BE = make_basis_elements('fourier')
 
 
 def print_log(string):
     print(string)
     log_file.write(string+"\n")
+    log_file.flush()
 
 
 def exists(path):
@@ -239,19 +252,8 @@ def combine_hists(input_file, hist_template, procs, years, debug=False, as_alias
 def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, years=None):
 
     if years is None:
-        years = args.years if hasattr(args, 'years') and args.years else ["2016", "2017", "2018"]
-    # Normalize year labels
-    norm_years = []
-    for y in years:
-        if y in ["UL17", "2017"]:
-            norm_years.append("2017")
-        elif y in ["UL18", "2018"]:
-            norm_years.append("2018")
-        elif y in ["UL16_preVFP", "UL16_postVFP", "UL16", "2016"]:
-            norm_years.append("2016")
-        else:
-            norm_years.append(y)
-    norm_years = list(dict.fromkeys(norm_years))
+        years = args.years if hasattr(args, 'years') and args.years else ["UL16_preVFP", "UL16_postVFP", "UL17", "UL18"]
+    norm_years = list(dict.fromkeys(years))
 
     year_map = {
         "2016": ["UL16_preVFP", "UL16_postVFP", "2016"],
@@ -260,6 +262,8 @@ def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel
         "UL16": ["UL16_preVFP", "UL16_postVFP", "2016"],
         "UL17": ["UL17", "2017"],
         "UL18": ["UL18", "2018"],
+        "UL16_preVFP": ["UL16_preVFP", "2016"],
+        "UL16_postVFP": ["UL16_postVFP", "2016"],
     }
 
     for y in norm_years:
@@ -281,9 +285,10 @@ def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel
                                       debug=args.debug,
                                       as_aliases=True)
 
-        f.cd(directory)
-        hist_data_obs.SetName("data_obs")
-        hist_data_obs.Write()
+        if hist_data_obs is not None:
+            f.cd(directory)
+            hist_data_obs.SetName("data_obs")
+            hist_data_obs.Write()
 
         #
         # multijet
@@ -333,11 +338,25 @@ def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel
                 hist_ttbar = None
         else:
             hist_ttbar = combine_hists(input_file_TT,
-                                       f"{var_name}_PROC_YEAR_threeTag_SR",
+                                       f"{var_name_multijet}_PROC_YEAR_threeTag_SR",
                                        years=year_map.get(y, [y]),
                                        procs=["TTbar4b_from_d3"],
                                        debug=args.debug,
                                        as_aliases=True)
+            if hist_ttbar is None:
+                hist_ttbar = combine_hists(input_file_TT,
+                                           f"{var_name}_PROC_v{mix_number}_YEAR_threeTag_SR",
+                                           years=year_map.get(y, [y]),
+                                           procs=["TTbar4b_from_d3"],
+                                           debug=args.debug,
+                                           as_aliases=True)
+            if hist_ttbar is None:
+                hist_ttbar = combine_hists(input_file_TT,
+                                           f"{var_name}_PROC_YEAR_threeTag_SR",
+                                           years=year_map.get(y, [y]),
+                                           procs=["TTbar4b_from_d3"],
+                                           debug=args.debug,
+                                           as_aliases=True)
             if hist_ttbar is None:
                 hist_ttbar = combine_hists(input_file_TT,
                                            f"{var_name}_PROC_YEAR_fourTag_SR",
@@ -353,6 +372,15 @@ def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel
             f.cd(directory)
             hist_ttbar.SetName("ttbar")
             hist_ttbar.Write()
+
+        if getattr(args, 'unify_background', False) and hist_ttbar is not None and hist_multijet is not None:
+            f.cd(directory)
+            hist_mj_only = hist_multijet.Clone("multijet_only")
+            hist_mj_only.Write()
+            hist_multijet.Add(hist_ttbar)
+            hist_multijet.Write("", ROOT.TObject.kOverwrite)
+            hist_bkg = hist_multijet.Clone("background")
+            hist_bkg.Write()
 
     return
 
@@ -371,7 +399,7 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, 
     mix_number = mix.replace(f"{args.mix_name}_v", "")
 
     if years is None:
-        years = args.years if hasattr(args, 'years') and args.years else ["2016", "2017", "2018"]
+        years = args.years if hasattr(args, 'years') and args.years else ["UL16_preVFP", "UL16_postVFP", "UL17", "UL18"]
 
     year_map = {
         "2016": ["UL16_preVFP", "UL16_postVFP", "2016"],
@@ -395,6 +423,9 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, 
                                   debug=args.debug,
                                   as_aliases=True)
 
+    if hist_data_obs is None:
+        raise ValueError(f"Could not find data_obs for mix {mix} (mix_number {mix_number}) in {input_file_mix}!")
+
     f.cd(directory)
     hist_data_obs.SetName("data_obs")
     hist_data_obs.Write()
@@ -406,7 +437,7 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, 
     var_name_multijet = var_name
     if args.use_kfold:
         if 'm4j' in args.var:
-                var_name_multijet = args.var + f'_FvT_{mix}_newSBDefSeedAve'
+            var_name_multijet = args.var + f'_FvT_{mix}_newSBDefSeedAve'
         else:
             var_name_multijet = var_name_multijet.replace(f"{SvB}_ps", f"{SvB}_FvT_{mix}_newSBDefSeedAve_ps")
     elif args.use_ZZinSB:
@@ -417,7 +448,6 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, 
         var_name_multijet = var_name_multijet.replace("_v","ZZandZHinSB_v")
     else:
         var_name_multijet = var_name_multijet.replace(f"{SvB}_ps", f"{SvB}_FvT_{mix}_newSBDef_ps")
-
 
     hist_multijet = combine_hists(input_file_data3b,
                                   f"{var_name_multijet}_PROC_YEAR_threeTag_SR",
@@ -432,6 +462,17 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, 
                                       procs=["data_3b_for_mixed", "data", "data_3b"],
                                       debug=args.debug,
                                       as_aliases=True)
+
+    if hist_multijet is None:
+        raise ValueError(f"Could not find multijet for mix {mix} (mix_number {mix_number}) in {input_file_data3b}!")
+
+    if hist_data_obs is not None and hist_multijet is not None:
+        if hist_data_obs.GetNbinsX() != hist_multijet.GetNbinsX():
+            raise ValueError(
+                f"Base histogram binning mismatch for {channel} in {mix}: "
+                f"data_obs has {hist_data_obs.GetNbinsX()} bins, but multijet has {hist_multijet.GetNbinsX()} bins! "
+                f"Verify input ROOT/coffea files have consistent bin definitions."
+            )
 
     f.cd(directory)
     hist_multijet.SetName("multijet")
@@ -450,10 +491,22 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, 
         ttbar_procs = ["TTTo2L2Nu", "TTToHadronic", "TTToSemiLeptonic"]
 
         hist_ttbar = combine_hists(input_file_TT,
-                                   f"{var_name}_PROC_YEAR_threeTag_SR",
+                                   f"{var_name_multijet}_PROC_YEAR_threeTag_SR",
                                    years=all_years,
                                    procs=["TTbar4b_from_d3"],
                                    debug=args.debug)
+        if hist_ttbar is None:
+            hist_ttbar = combine_hists(input_file_TT,
+                                       f"{var_name}_PROC_v{mix_number}_YEAR_threeTag_SR",
+                                       years=all_years,
+                                       procs=["TTbar4b_from_d3"],
+                                       debug=args.debug)
+        if hist_ttbar is None:
+            hist_ttbar = combine_hists(input_file_TT,
+                                       f"{var_name}_PROC_YEAR_threeTag_SR",
+                                       years=all_years,
+                                       procs=["TTbar4b_from_d3"],
+                                       debug=args.debug)
         if hist_ttbar is None:
             hist_ttbar = combine_hists(input_file_TT,
                                        f"{var_name}_PROC_YEAR_fourTag_SR",
@@ -467,38 +520,56 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, 
     f.cd(directory)
     hist_ttbar.SetName("ttbar")
     hist_ttbar.Write()
+
+    if getattr(args, 'unify_background', False) and hist_ttbar is not None and hist_multijet is not None:
+        f.cd(directory)
+        hist_mj_only = hist_multijet.Clone("multijet_only")
+        hist_mj_only.Write()
+        hist_multijet.Add(hist_ttbar)
+        hist_multijet.Write("", ROOT.TObject.kOverwrite)
+        hist_bkg = hist_multijet.Clone("background")
+        hist_bkg.Write()
+
     return
 
 
 def addMixes(f, directory, procs=['ttbar', 'multijet', 'data_obs']):
-    hists = []
+    if getattr(args, 'unify_background', False):
+        procs = list(dict.fromkeys(procs + ['multijet_only', 'background']))
+
+    try:
+        f.Get(directory).IsZombie()
+    except ReferenceError:
+        f.mkdir(directory)
+
     for process in procs:
         try:
             if args.debug: print(f"Trying {directory}/{process}")
             f.Get(f'{directory}/{process}').IsZombie()
         except ReferenceError:
+            h0 = f.Get(mixes[0] + '/' + directory + '/' + process)
+            if not h0 or h0.IsZombie():
+                continue
             if args.debug: print("appending", mixes[0] + '/' + directory + '/' + process)
-            hists.append( f.Get(mixes[0] + '/' + directory + '/' + process) )
+            h_avg = h0.Clone(f"{process}_avg_accum")
+            h_avg.SetDirectory(0)
 
             if ttAverage and process == 'ttbar':  # skip averaging if ttAverage and process == 'ttbar'
                 pass
             else:
                 for mix in mixes[1:]:
-                    hists[-1].Add( f.Get(mix + '/' + directory + '/' + process) )
-                hists[-1].Scale(1.0 / nMixes)
+                    hm = f.Get(mix + '/' + directory + '/' + process)
+                    if hm and not hm.IsZombie():
+                        h_avg.Add( hm )
+                h_avg.Scale(1.0 / nMixes)
 
-            if process == 'multijet' or process == 'ttbar':
-                for bin in range(1, hists[-1].GetSize() - 1):
-                    hists[-1].SetBinError(bin, nMixes**0.5 * hists[-1].GetBinError(bin))
-
-            try:
-                f.Get(directory).IsZombie()
-            except ReferenceError:
-                f.mkdir(directory)
+            if process in ['multijet', 'ttbar', 'background', 'multijet_only']:
+                for bin in range(1, h_avg.GetSize() - 1):
+                    h_avg.SetBinError(bin, nMixes**0.5 * h_avg.GetBinError(bin))
 
             f.cd(directory)
-
-            hists[-1].Write()
+            h_avg.SetName(process)
+            h_avg.Write("", ROOT.TObject.kOverwrite)
 
 
 def prepInput():
@@ -535,18 +606,8 @@ def prepInput():
     #
     #  Signal
     #
-    years = args.years if hasattr(args, 'years') and args.years else ["2016", "2017", "2018"]
-    norm_years = []
-    for y in years:
-        if y in ["UL17", "2017"]:
-            norm_years.append("2017")
-        elif y in ["UL18", "2018"]:
-            norm_years.append("2018")
-        elif y in ["UL16_preVFP", "UL16_postVFP", "UL16", "2016"]:
-            norm_years.append("2016")
-        else:
-            norm_years.append(y)
-    norm_years = list(dict.fromkeys(norm_years))
+    years = args.years if hasattr(args, 'years') and args.years else ["UL16_preVFP", "UL16_postVFP", "UL17", "UL18"]
+    norm_years = list(dict.fromkeys(years))
 
     year_map = {
         "2016": ["UL16_preVFP", "UL16_postVFP", "2016"],
@@ -555,8 +616,8 @@ def prepInput():
         "UL16": ["UL16_preVFP", "UL16_postVFP", "2016"],
         "UL17": ["UL17", "2017"],
         "UL18": ["UL18", "2018"],
-        "UL16_preVFP": ["UL16_preVFP"],
-        "UL16_postVFP": ["UL16_postVFP"],
+        "UL16_preVFP": ["UL16_preVFP", "2016"],
+        "UL16_postVFP": ["UL16_postVFP", "2016"],
     }
     all_years = []
     for y in years:
@@ -643,6 +704,20 @@ def prepInput_uproot():
         pickle.dump({"status": "CI_dummy_passed", "channel": channel, "mixes": mixes}, f_pkl)
     print_log(f"Successfully created {closure_file_out_pkl}")
 
+    closure_status_file = f"{output_dir}/closure_status.json"
+    import json
+    with open(closure_status_file, "w") as sf:
+        json.dump({
+            "channel": channel,
+            "var": args.var,
+            "rebin": int(args.rebin),
+            "passed": True,
+            "variance_passed": True,
+            "bias_passed": True,
+            "status": "CI_dummy_passed"
+        }, sf, indent=2)
+    print_log(f"Successfully created {closure_status_file}")
+
 
 def pearsonr(x, y, n=None):
     r, p_raw = scipy.stats.pearsonr(x, y)
@@ -662,9 +737,14 @@ def fTest(chi2_1, chi2_2, ndf_1, ndf_2):
     d1 = (ndf_1 - ndf_2)
     d2 = ndf_2
     print(f'd1, d2 = {d1}, {d2}')
+    if d1 <= 0 or d2 <= 0:
+        print("Warning: invalid NDF for fTest (d1 <= 0 or d2 <= 0), returning 1.0")
+        return 1.0
     N = (chi2_1 - chi2_2) / d1
     D = chi2_2 / d2
-    print('N, D = {N}, {D}')
+    print(f'N, D = {N}, {D}')
+    if D <= 0:
+        return 1.0
     fStat = N / D
     fProb = scipy.stats.f.cdf(fStat, d1, d2)
     expectedFStat = scipy.stats.distributions.f.isf(0.05, d1, d2)
@@ -683,14 +763,28 @@ class multijetEnsemble:
 
         self.output_yml = open(f'{output_dir}/0_variance_results.yml', 'w')
 
-        self.data_minus_ttbar = f.Get(f'{self.channel}/ttbar')
-        self.data_minus_ttbar.SetName(f'data_minus_ttbar_average_{self.channel}')
-        self.data_minus_ttbar.Scale(-1)
-        self.data_minus_ttbar.Add( f.Get(f'{self.channel}/data_obs') )
-        if isinstance(self.rebin, array.array):
-            self.data_minus_ttbar = rebin_histogram(self.data_minus_ttbar, self.rebin)
+        if getattr(args, 'unify_background', False):
+            self.data_minus_ttbar = f.Get(f'{self.channel}/data_obs').Clone(f'data_obs_average_{self.channel}')
+            self.data_minus_ttbar.SetDirectory(0)
+            if isinstance(self.rebin, array.array):
+                self.data_minus_ttbar = rebin_histogram(self.data_minus_ttbar, self.rebin)
+            else:
+                self.data_minus_ttbar.Rebin(self.rebin)
         else:
-            self.data_minus_ttbar.Rebin(self.rebin)
+            self.data_minus_ttbar = f.Get(f'{self.channel}/ttbar').Clone(f'data_minus_ttbar_average_{self.channel}')
+            self.data_minus_ttbar.SetDirectory(0)
+            self.data_minus_ttbar.Scale(-1)
+            h_data_obs = f.Get(f'{self.channel}/data_obs')
+            if self.data_minus_ttbar.GetNbinsX() != h_data_obs.GetNbinsX():
+                raise ValueError(
+                    f"Binning mismatch in multijetEnsemble for {self.channel}: "
+                    f"ttbar has {self.data_minus_ttbar.GetNbinsX()} bins, but data_obs has {h_data_obs.GetNbinsX()} bins!"
+                )
+            self.data_minus_ttbar.Add( h_data_obs )
+            if isinstance(self.rebin, array.array):
+                self.data_minus_ttbar = rebin_histogram(self.data_minus_ttbar, self.rebin)
+            else:
+                self.data_minus_ttbar.Rebin(self.rebin)
 
         self.average = f.Get(f'{self.channel}/multijet')
         self.average.SetName('%s_average_%s' % (self.average.GetName(), self.channel))
@@ -700,11 +794,16 @@ class multijetEnsemble:
         self.nBins   = self.average.GetSize() - 2  # size includes under/overflow bins
 
         print(f"Reading {self.channel}/signal")
-        self.signal = f.Get('%s/signal' % self.channel)
-        if isinstance(self.rebin, array.array):
-            self.signal = rebin_histogram(self.signal, self.rebin)
+        h_sig = f.Get('%s/signal' % self.channel)
+        if h_sig and not h_sig.IsZombie():
+            self.signal = h_sig.Clone(f'signal_rebin_{self.channel}')
+            self.signal.SetDirectory(0)
+            if isinstance(self.rebin, array.array):
+                self.signal = rebin_histogram(self.signal, self.rebin)
+            else:
+                self.signal.Rebin(self.rebin)
         else:
-            self.signal.Rebin(self.rebin)
+            self.signal = None
 
         self.f = f
         self.f.cd(self.channel)
@@ -725,6 +824,20 @@ class multijetEnsemble:
                 imodel.SetName('%s_rebin' % model.GetName())
                 imodel.Rebin(self.rebin)
             self.models_rebin.append(imodel)
+
+        if getattr(args, 'match_normalization', False):
+            int_target = self.data_minus_ttbar.Integral()
+            int_mj = self.average_rebin.Integral()
+            if int_mj > 0:
+                scale_mj = int_target / int_mj
+                print_log(f"[INFO] Matching multijet normalization to data - ttbar: scale = {scale_mj:.6f} "
+                          f"(target = {int_target:.2f}, original multijet = {int_mj:.2f})")
+                self.average.Scale(scale_mj)
+                self.average_rebin.Scale(scale_mj)
+                for m in self.models:
+                    m.Scale(scale_mj)
+                for mr in self.models_rebin:
+                    mr.Scale(scale_mj)
 
         self.nBins_rebin = self.average_rebin.GetSize() - 2
 
@@ -804,9 +917,11 @@ class multijetEnsemble:
         # scale dynamic range of each element to 1
         for i in range(1, len(B)):
             d = B[i].max() - B[i].min()
-            B[i] = B[i] / d
+            if d > 1e-12:
+                B[i] = B[i] / d
             d = B_no_rebin[i].max() - B_no_rebin[i].min()
-            B_no_rebin[i] = B_no_rebin[i] / d
+            if d > 1e-12:
+                B_no_rebin[i] = B_no_rebin[i] / d
 
         for i in range(len(S)):
             S[i] = S[i] / S[i, -1] * self.signal.GetBinContent(self.nBins_rebin) / h[-1]
@@ -824,8 +939,8 @@ class multijetEnsemble:
         self.ymax = {}
         self.fit_parameters, self.fit_parameters_error = {}, {}
         self.cUp, self.cDown = {}, {}
-        # self.fProb = {}
         self.basis = None
+        self.passed = False
         self.exit_message = ['--- None (%s) --- Multijet Ensemble' % self.channel.upper()]
         min_r = 1.0
 
@@ -844,6 +959,7 @@ class multijetEnsemble:
             if self.basis is None and abs(self.pearsonr[basis]['total'][1]) > probThreshold:
                 min_r = abs(self.pearsonr[basis]['total'][0])
                 self.basis = basis  # store first basis to satisfy min threshold. Will be used in closure fits
+                self.passed = True
                 self.exit_message = []
                 self.exit_message.append('-' * 50)
                 self.exit_message.append('%s channel' % self.channel.upper())
@@ -852,10 +968,11 @@ class multijetEnsemble:
                 self.exit_message.append('-' * 50)
 
         if self.basis is None:
+            self.passed = False
             self.basis = self.bases[ np.argmin([abs(self.pearsonr[basis]['total'][0]) for basis in self.bases]) ]
             self.exit_message = []
             self.exit_message.append('-' * 50)
-            self.exit_message.append('%s channel' % self.channel.upper())
+            self.exit_message.append('WARNING: %s channel multijet ensemble variance did not satisfy p-value > %0.1f%%' % (self.channel.upper(), 100 * probThreshold))
             self.exit_message.append('Minimized adjacent bin correlation abs(r) for multijet ensemble variance at basis %d:' % self.basis)
             self.exit_message.append('>> p-value, r-value = %2.0f%%, %0.2f ' % (100 * self.pearsonr[self.basis]['total'][1], self.pearsonr[self.basis]['total'][0]))
             self.exit_message.append('-' * 50)
@@ -986,7 +1103,7 @@ class multijetEnsemble:
         self.pvalue[basis], self.chi2[basis], self.ndf[basis] = self.multijet_TF1[basis].GetProb(), self.multijet_TF1[basis].GetChisquare(), self.multijet_TF1[basis].GetNDF()
         print("=" * 50)
         print('Fit multijet ensemble %s at basis %d' % (self.channel, basis))
-        print('chi2/ndf = %3.2f/%3d = %2.2f' % (self.chi2[basis], self.ndf[basis], self.chi2[basis] / self.ndf[basis]))
+        print('chi2/ndf = %3.2f/%3d = %2.2f' % (self.chi2[basis], self.ndf[basis], self.chi2[basis] / self.ndf[basis] if self.ndf[basis] > 0 else 0.0))
         print(' p-value = %0.2f' % self.pvalue[basis])
 
         self.ymax[basis] = self.multijet_TF1[basis].GetMaximum(1, self.nBins_ensemble)
@@ -1075,10 +1192,13 @@ class multijetEnsemble:
         ax.legend(fontsize='small', loc='best')
 
         rebin_name = '' if rebin else '_no_rebin'
+        basis_diag_dir = f"{output_dir}/basis_diagnostics"
+        os.makedirs(basis_diag_dir, exist_ok=True)
 
         plt.tight_layout()
-        fig.savefig( f"{output_dir}/{name}_basis{rebin_name}{basis}.pdf" )
-        fig.savefig( f"{output_dir}/{name}_basis{rebin_name}{basis}.png" )
+        fig.savefig( f"{basis_diag_dir}/{name}_basis{rebin_name}{basis}.png" )
+        if getattr(args, 'save_all_formats', False):
+            fig.savefig( f"{basis_diag_dir}/{name}_basis{rebin_name}{basis}.pdf" )
         plt.close(fig)
 
         fig, (ax) = plt.subplots(nrows=1)
@@ -1106,8 +1226,9 @@ class multijetEnsemble:
         ax.legend(fontsize='small', loc='best')
 
         plt.tight_layout()
-        fig.savefig( f"{output_dir}/{name}_additive_basis{rebin_name}{basis}.pdf" )
-        fig.savefig( f"{output_dir}/{name}_additive_basis{rebin_name}{basis}.png" )
+        fig.savefig( f"{basis_diag_dir}/{name}_additive_basis{rebin_name}{basis}.png" )
+        if getattr(args, 'save_all_formats', False):
+            fig.savefig( f"{basis_diag_dir}/{name}_additive_basis{rebin_name}{basis}.pdf" )
         plt.close(fig)
 
     
@@ -1147,8 +1268,9 @@ class multijetEnsemble:
         plt.legend(fontsize='small', loc='best')
 
         plt.tight_layout()
-        fig.savefig( f"{output_dir}/0_variance_pearsonr_multijet_variance.pdf" )
         fig.savefig( f"{output_dir}/0_variance_pearsonr_multijet_variance.png" )
+        if getattr(args, 'save_all_formats', False):
+            fig.savefig( f"{output_dir}/0_variance_pearsonr_multijet_variance.pdf" )
         plt.close(fig)
 
     
@@ -1313,8 +1435,9 @@ class multijetEnsemble:
 
         projection = '_'.join([str(d) for d in projection])
         try:
-            fig.savefig( f"{output_dir}/0_variance_parameters_basis{basis}_projection_{projection}.pdf" )
             fig.savefig( f"{output_dir}/0_variance_parameters_basis{basis}_projection_{projection}.png" )
+            if getattr(args, 'save_all_formats', False):
+                fig.savefig( f"{output_dir}/0_variance_parameters_basis{basis}_projection_{projection}.pdf" )
             plt.close(fig)
         except IndexError:
             print('Weird index error...')
@@ -1376,8 +1499,9 @@ class multijetEnsemble:
         (r, p) = self.pearsonr[basis]['total']
 
         plt.legend(fontsize='small', loc='upper left', ncol=2, title='Overall r=%0.2f (%2.0f%s)' % (r, p * 100, '\%'))
-        fig.savefig( f'{output_dir}/0_variance_pull_correlation_basis{basis}.pdf' )
         fig.savefig( f'{output_dir}/0_variance_pull_correlation_basis{basis}.png' )
+        if getattr(args, 'save_all_formats', False):
+            fig.savefig( f'{output_dir}/0_variance_pull_correlation_basis{basis}.pdf' )
         plt.close(fig)
 
     
@@ -1392,13 +1516,13 @@ class multijetEnsemble:
         #     'ratio' : 'numer A',
         #     'color' : 'ROOT.kBlack'}
         samples[closure_file_out]['%s/multijet_ensemble_average' % self.channel] = {
-            'label' : '#LTMultijet Model#GT',
+            'label' : '#LTMultijet Model#GT' if not getattr(args, 'unify_background', False) else '#LTBackground Model#GT',
             'legend': 2,
             'isData' : True,
             'ratio' : 'denom A',
             'color' : 'ROOT.kBlack'}
         samples[closure_file_out]['%s/multijet_ensemble' % self.channel] = {
-            'label' : 'Multijet Models',
+            'label' : 'Multijet Models' if not getattr(args, 'unify_background', False) else 'Background Models',
             'legend': 3,
             'stack' : 1,
             'ratio' : 'numer A',
@@ -1446,7 +1570,8 @@ class multijetEnsemble:
                       'lst_yspace'  : 0.036,
                       'lst_textsize': 0.028,
                       'rPadFraction': 0.5,
-                      'outputName'  : '0_variance_multijet_ensemble_basis%d' % (basis)}
+                      'outputName'  : '0_variance_multijet_ensemble_basis%d' % (basis),
+                      'save_all_formats': getattr(args, 'save_all_formats', False)}
 
         parameters['ratioLines'] = [[self.nBins_rebin * m + 0.5, parameters['rMin'], self.nBins_rebin * m + 0.5, parameters['rMax']] for m in range(1, nMixes + 1)]
 
@@ -1496,6 +1621,13 @@ class closure:
         else:
             self.data_obs_rebin.Rebin(self.rebin)
         self.nBins_rebin = self.data_obs_rebin.GetSize() - 2
+        if self.nBins_rebin != self.multijet.nBins_rebin:
+            raise ValueError(
+                f"FATAL: Inconsistent binning between variance and bias tests for channel {self.channel}! "
+                f"Variance test has {self.multijet.nBins_rebin} bins (from multijet.average_rebin), "
+                f"while bias test has {self.nBins_rebin} bins (from data_obs_rebin). "
+                f"Ensure base histograms in {closure_file_out} have identical number of bins!"
+            )
 
         self.bin_width = 1. / self.nBins_rebin
         self.fit_x_min = 0.5 + closure_fit_x_min / self.bin_width
@@ -1513,9 +1645,34 @@ class closure:
         self.data_obs_closure = ROOT.TH1F('data_obs_closure', '', self.nBins_closure, 0.5, 0.5 + self.nBins_closure)
         self.signal_closure   = ROOT.TH1F('signal_closure',   '', self.nBins_closure, 0.5, 0.5 + self.nBins_closure)
 
+        sem_diff_sq = np.zeros(self.nBins_rebin)
+        diff_by_mix = []
+        if getattr(args, 'include_ensemble_variance', False) and len(self.multijet.models_rebin) > 1:
+            for m_idx, mix in enumerate(mixes):
+                h_d = f.Get(f'{mix}/{self.channel}/data_obs')
+                if h_d and not h_d.IsZombie() and m_idx < len(self.multijet.models_rebin):
+                    h_d_r = h_d.Clone(f'{h_d.GetName()}_rebin_closure_eval')
+                    h_d_r.SetDirectory(0)
+                    if isinstance(self.rebin, array.array):
+                        h_d_r = rebin_histogram(h_d_r, self.rebin)
+                    else:
+                        h_d_r.Rebin(self.rebin)
+                    m_mr = self.multijet.models_rebin[m_idx]
+                    diff_arr = [h_d_r.GetBinContent(b) - m_mr.GetBinContent(b) for b in range(1, self.nBins_rebin + 1)]
+                    diff_by_mix.append(diff_arr)
+            if len(diff_by_mix) > 1:
+                diff_by_mix_arr = np.array(diff_by_mix)
+                sem_diff_sq = np.var(diff_by_mix_arr, axis=0, ddof=1) / len(diff_by_mix)
+                print_log(f"[INFO] Option B: Computed ensemble variance across {len(diff_by_mix)} pseudo-experiments.")
+                for b_i in range(self.nBins_rebin):
+                    print_log(f"       Bin {b_i+1}: SEM(diff) = {np.sqrt(sem_diff_sq[b_i]):.2f} (std = {np.sqrt(sem_diff_sq[b_i] * len(diff_by_mix)):.2f})")
+
         for _bin in range(1, self.nBins_rebin + 1):
             self.multijet_closure.SetBinContent(_bin, self.multijet.average_rebin.GetBinContent(_bin))
-            self.ttbar_closure   .SetBinContent(_bin, self.ttbar_rebin           .GetBinContent(_bin))
+            if getattr(args, 'unify_background', False):
+                self.ttbar_closure.SetBinContent(_bin, 0.0)
+            else:
+                self.ttbar_closure.SetBinContent(_bin, self.ttbar_rebin.GetBinContent(_bin))
             self.signal_closure  .SetBinContent(_bin, self.multijet.signal       .GetBinContent(_bin))
             self.data_obs_closure.SetBinContent(_bin, self.data_obs_rebin        .GetBinContent(_bin))
 
@@ -1525,7 +1682,12 @@ class closure:
             # self.multijet_closure.SetBinError  (_bin, self.multijet.average_rebin.GetBinError(_bin))
             # self.ttbar_closure   .SetBinError  (_bin, self.ttbar_rebin           .GetBinError(_bin))
             self.signal_closure  .SetBinError  (_bin, self.multijet.signal.GetBinError(_bin))
-            error = (self.data_obs_rebin.GetBinError(_bin)**2 + self.ttbar_rebin.GetBinError(_bin)**2 + self.multijet.average_rebin.GetBinError(_bin)**2 + (2.0 / nMixes)**2)**0.5  # adding 2 in quadrature improves gaussian approx of poisson errors
+            if getattr(args, 'unify_background', False):
+                error = (self.data_obs_rebin.GetBinError(_bin)**2 + self.multijet.average_rebin.GetBinError(_bin)**2 + (2.0 / nMixes)**2)**0.5
+            else:
+                error = (self.data_obs_rebin.GetBinError(_bin)**2 + self.ttbar_rebin.GetBinError(_bin)**2 + self.multijet.average_rebin.GetBinError(_bin)**2 + (2.0 / nMixes)**2)**0.5  # adding 2 in quadrature improves gaussian approx of poisson errors
+            if getattr(args, 'include_ensemble_variance', False) and len(diff_by_mix) > 1:
+                error = (error**2 + sem_diff_sq[_bin - 1])**0.5
             self.data_obs_closure.SetBinError  (_bin, error)
 
         for _bin in range(self.nBins_rebin + 1, self.nBins_closure + 1):
@@ -1546,8 +1708,12 @@ class closure:
         for _bin in range(1, self.nBins_rebin + 1):
             self.multijet_binned.SetBinContent(_bin, self.multijet.average_rebin.GetBinContent(_bin))
             self.multijet_binned.SetBinError  (_bin, self.multijet.average_rebin.GetBinError(_bin))
-            self.ttbar_binned   .SetBinContent(_bin, self.ttbar_rebin           .GetBinContent(_bin))
-            self.ttbar_binned   .SetBinError  (_bin, self.ttbar_rebin           .GetBinError(_bin))
+            if getattr(args, 'unify_background', False):
+                self.ttbar_binned.SetBinContent(_bin, 0.0)
+                self.ttbar_binned.SetBinError  (_bin, 0.0)
+            else:
+                self.ttbar_binned   .SetBinContent(_bin, self.ttbar_rebin           .GetBinContent(_bin))
+                self.ttbar_binned   .SetBinError  (_bin, self.ttbar_rebin           .GetBinError(_bin))
             self.signal_binned  .SetBinContent(_bin, self.multijet.signal       .GetBinContent(_bin))
             self.signal_binned  .SetBinError  (_bin, self.multijet.signal       .GetBinError(_bin))
             self.data_obs_binned.SetBinContent(_bin, self.data_obs_rebin        .GetBinContent(_bin))
@@ -1595,6 +1761,7 @@ class closure:
         self.fProb = {-1: np.nan}
         self.fProb_ss = {}
         self.basis = None
+        self.passed = False
         self.exit_message = ['--- NONE (%s) ---' % self.channel.upper()]
 
         for basis in self.bases:
@@ -1621,6 +1788,7 @@ class closure:
             self.fProb[next_basis] = fTest(self.chi2[basis], self.chi2[next_basis], self.ndf[basis], self.ndf[next_basis])
 
             if self.basis is None and (self.pvalue[basis] > probThreshold) and (self.fProb[next_basis] < 0.95):
+                self.passed = True
                 self.exit_message = []
                 print(self.pvalue)
                 print(self.fProb)
@@ -1637,7 +1805,11 @@ class closure:
                     self.exit_message.append('>> SS f-test = %2.0f%%! STRONG EVIDENCE FOR SPURIOUS SIGNAL SYSTEMATIC' % (100 * self.fProb_ss[basis]))
                 self.exit_message.append('-' * 50)
 
+        # Always generate p-values diagnostic plot
+        self.plotPValues()
+
         if self.basis is None:
+            self.passed = False
             for i, b in enumerate(self.bases[:-1]):
                 next_b = self.bases[i + 1]
                 if self.fProb[next_b] < 0.95:
@@ -1646,7 +1818,29 @@ class closure:
             if self.basis is None:
                 self.basis = self.bases[-1]
 
-        self.writeClosureResults(self.basis)
+            self.exit_message = []
+            self.exit_message.append('=' * 60)
+            self.exit_message.append(f'ERROR: Closure bias test FAILED for channel {self.channel.upper()}!')
+            self.exit_message.append(
+                f'No basis order in range [{self.bases[0]}, {self.bases[-1]}] satisfied both '
+                f'goodness-of-fit (p-value > {100 * probThreshold:.1f}%) and F-test (< 95%).'
+            )
+            self.exit_message.append(f'Goodness-of-fit threshold required: p-value > {100 * probThreshold:.1f}%')
+            self.exit_message.append('Summary of fit results by basis:')
+            for b in self.bases:
+                f_str = f"{100 * self.fProb[b]:.1f}%" if (b in self.fProb and not np.isnan(self.fProb[b])) else "N/A"
+                self.exit_message.append(
+                    f'  >> Basis {b:2d}: chi2 = {self.chi2[b]:.2f}, ndf = {self.ndf[b]:2d}, '
+                    f'p-value = {self.pvalue[b]:.2e}, F-test prob = {f_str}'
+                )
+            if getattr(args, 'ignore_failures', False):
+                self.exit_message.append(f'WARNING: Continuing with fallback basis {self.basis} (--ignore_failures was specified).')
+            self.exit_message.append('=' * 60)
+        else:
+            self.passed = True
+
+        if self.passed or getattr(args, 'ignore_failures', False):
+            self.writeClosureResults(self.basis)
 
     
     def write_to_yml(self, basis):
@@ -1684,23 +1878,25 @@ class closure:
                         return 0.0
 
                     BE_coefficient = pars[BE_idx]
+                    sigma_up = abs(self.cUp[basis][BE_idx]) / (nMixes**0.5)
+                    sigma_down = abs(self.cDown[basis][BE_idx]) / (nMixes**0.5)
                     if BE_coefficient > 0:
-                        return -BE_coefficient / abs(self.cUp  [basis][BE_idx])
+                        return -BE_coefficient / sigma_up
                     else:
-                        return -BE_coefficient / abs(self.cDown[basis][BE_idx])
+                        return -BE_coefficient / sigma_down
 
                 BE_idx += basis + 1  # only apply priors to higher order terms
                 if BE_idx > self.multijet.basis:
                     return 0.0
 
-                # use variance priors
+                # use variance priors scaled by 1/sqrt(nMixes) for the ensemble average
                 BE_coefficient = pars[BE_idx]
+                sigma_up = abs(self.multijet.cUp[self.multijet.basis][BE_idx]) / (nMixes**0.5)
+                sigma_down = abs(self.multijet.cDown[self.multijet.basis][BE_idx]) / (nMixes**0.5)
                 if BE_coefficient > 0:
-                    # return -BE_coefficient/(0.2581988897471611*abs(self.multijet.cUp  [self.multijet.basis][BE_idx]))
-                    return -BE_coefficient / abs(self.multijet.cUp  [self.multijet.basis][BE_idx])
+                    return -BE_coefficient / sigma_up
                 else:
-                    # return -BE_coefficient/(0.2581988897471611*abs(self.multijet.cDown[self.multijet.basis][BE_idx]))
-                    return -BE_coefficient / abs(self.multijet.cDown[self.multijet.basis][BE_idx])
+                    return -BE_coefficient / sigma_down
 
             # in distribution: evaluate basis elements times multijet
             p = 1.0
@@ -1709,7 +1905,10 @@ class closure:
                 p += pars[BE_idx] * self.basis_element[BE_idx][this_bin - 1]
 
             mj = self.multijet.average_rebin.GetBinContent(this_bin)
-            background = p * mj + self.ttbar_rebin.GetBinContent(this_bin)
+            if getattr(args, 'unify_background', False):
+                background = p * mj
+            else:
+                background = p * mj + self.ttbar_rebin.GetBinContent(this_bin)
             spuriousSignal = pars[n] * self.multijet.signal.GetBinContent(this_bin)
             # spuriousSignal = pars[n] * mj * self.multijet.basis_signal[max_basis][bin - 1]
 
@@ -1812,7 +2011,7 @@ class closure:
         self.getEigenvariations(basis)
         self.pvalue[basis], self.chi2[basis], self.ndf[basis] = self.closure_TF1[basis].GetProb(), self.closure_TF1[basis].GetChisquare(), self.closure_TF1[basis].GetNDF()
         print('Fit closure %s with %d basis elements. x_range = (%f, %f)' % (self.channel, basis, self.fit_x_min, fit_x_max))
-        print('chi2/ndf = %3.2f/%3d = %2.2f' % (self.chi2[basis], self.ndf[basis], self.chi2[basis] / self.ndf[basis]))
+        print('chi2/ndf = %3.2f/%3d = %2.2f' % (self.chi2[basis], self.ndf[basis], self.chi2[basis] / self.ndf[basis] if self.ndf[basis] > 0 else 0.0))
         print(' p-value = %0.2f' % self.pvalue[basis])
         print('nConstrained', nConstrained)
         print('nUnonstrained', nUnconstrained)
@@ -1825,9 +2024,26 @@ class closure:
         self.fit_parameters_error[basis] = np.array([self.closure_TF1[basis].GetParError (b) for b in range(n)])
         self.getParameterDistribution(basis)
 
-        for _bin in range(1, self.nBins_closure + 1):
+        for _bin in range(1, self.nBins_rebin + 1):
             self.closure_TH1[basis].SetBinContent(_bin, self.closure_TF1[basis].Eval(_bin))
             # self.closure_TH1[basis].SetBinError  (_bin, self.data_obs_closure.GetBinError(_bin))
+            self.closure_TH1[basis].SetBinError  (_bin, 0.0)
+
+        for i in range(n):
+            _bin = self.nBins_rebin + 1 + i
+            c_val = self.fit_parameters[basis][i]
+            if i > basis:
+                # Constrained parameter: pull relative to prior
+                sigma_prior = (abs(self.multijet.cUp[self.multijet.basis][i]) if c_val > 0 else abs(self.multijet.cDown[self.multijet.basis][i])) / (nMixes**0.5)
+                val = -c_val / sigma_prior if sigma_prior > 0 else (-c_val / self.fit_parameters_error[basis][i] if self.fit_parameters_error[basis][i] > 0 else 0.0)
+            else:
+                # Unconstrained parameter: pull relative to post-fit error
+                val = -c_val / self.fit_parameters_error[basis][i] if self.fit_parameters_error[basis][i] > 0 else 0.0
+            self.closure_TH1[basis].SetBinContent(_bin, val)
+            self.closure_TH1[basis].SetBinError  (_bin, 0.0)
+
+        for _bin in range(self.nBins_rebin + 1 + n, self.nBins_closure + 1):
+            self.closure_TH1[basis].SetBinContent(_bin, 0.0)
             self.closure_TH1[basis].SetBinError  (_bin, 0.0)
 
         self.f.cd(self.channel)
@@ -1856,7 +2072,7 @@ class closure:
 
         self.pvalue_ss[basis], self.chi2_ss[basis], self.ndf_ss[basis] = self.closure_TF1[basis].GetProb(), self.closure_TF1[basis].GetChisquare(), self.closure_TF1[basis].GetNDF()
         print('Fit spurious signal %s with %d basis elements' % (self.channel, basis))
-        print('chi2/ndf = %3.2f/%3d = %2.2f' % (self.chi2_ss[basis], self.ndf_ss[basis], self.chi2_ss[basis] / self.ndf_ss[basis]))
+        print('chi2/ndf = %3.2f/%3d = %2.2f' % (self.chi2_ss[basis], self.ndf_ss[basis], self.chi2_ss[basis] / self.ndf_ss[basis] if self.ndf_ss[basis] > 0 else 0.0))
         print(' p-value = %0.2f' % self.pvalue_ss[basis])
 
         print('SS f-test basis', basis)
@@ -2143,8 +2359,9 @@ class closure:
 
         # print('fig.savefig( ' + name+' )')
         plt.tight_layout()
-        fig.savefig( name )
         fig.savefig( name.replace('.pdf', '.png') )
+        if getattr(args, 'save_all_formats', False):
+            fig.savefig( name )
         plt.close(fig)
 
     
@@ -2181,104 +2398,15 @@ class closure:
         ax.legend(loc='upper left', fontsize='small')
 
         plt.tight_layout()
-        fig.savefig( f'{output_dir}/1_bias_pvalues.pdf' )
         fig.savefig( f'{output_dir}/1_bias_pvalues.png' )
+        if getattr(args, 'save_all_formats', False):
+            fig.savefig( f'{output_dir}/1_bias_pvalues.pdf' )
         plt.close(fig)
 
     
     def plotMix(self, mix):
-        samples = collections.OrderedDict()
-        samples[closure_file_out] = collections.OrderedDict()
-        use_binned = self.data_obs.GetXaxis().IsVariableBinSize() or isinstance(self.rebin, array.array)
-        data_name = 'data_obs_binned' if use_binned else 'data_obs'
-        mj_name   = 'multijet_binned' if use_binned else 'multijet'
-        tt_name   = 'ttbar_binned' if use_binned else 'ttbar'
-        sig_name  = 'signal_binned' if use_binned else 'signal'
-
-        if type(mix) is int:
-            samples[closure_file_out][f'{mixes[mix]}/{self.channel}/{data_name}'] = {
-                'label' : f'Mixed Data Set {mix}',
-                'legend': 1,
-                'isData' : True,
-                # 'drawOptions': 'P ex0',
-                'ratio' : 'numer A',
-                'color' : 'ROOT.kBlack'}
-        else:
-            samples[closure_file_out][f'{self.channel}/{data_name}'] = {
-                'label' : '#LTMixed Data#GT',
-                'legend': 1,
-                'isData' : True,
-                # 'drawOptions': 'P ex0',
-                'ratio' : 'numer A',
-                'color' : 'ROOT.kBlack'}
-            # samples[closure_file_out]['%s/ratio_c0_up'%(self.channel)] = {
-            #     'pad': 'rPad',
-            #     'drawOptions': 'HIST',
-            #     'color' : 'ROOT.kYellow'}
-        if type(mix) is int:
-            samples[closure_file_out][f'{mixes[mix]}/{self.channel}/{mj_name}'] = {
-                'label' : 'Multijet Model %d' % mix,
-                'legend': 2,
-                'stack' : 3,
-                'ratio' : 'denom A',
-                'color' : color_multijet} #ffdf7f
-                #'color' : 'ROOT.kYellow'}
-        else:
-            samples[closure_file_out][f'{self.channel}/{mj_name}'] = {
-                'label' : '#LTMultijet#GT',
-                'legend': 2,
-                'stack' : 3,
-                'ratio' : 'denom A',
-                'color' : color_multijet} #ffdf7f
-                #'color' : 'ROOT.kYellow'}
-        if not getattr(args, 'pure_qcd', False):
-            samples[closure_file_out][f'{self.channel}/{tt_name}'] = {
-                'label' : '#lower[0.10]{t#bar{t}}',
-                'legend': 3,
-                'stack' : 2,
-                'ratio' : 'denom A',
-                'color' : color_TTbar}
-        sig_scale = getattr(args, 'signal_scale', None)
-        if sig_scale is None:
-            sig_scale = 1.0 if self.channel in ['ttHbb', 'tth'] else 100.0
-        if sig_scale == 1.0:
-            sig_label = 't#bar{t}H' if self.channel in ['ttHbb', 'tth'] else 'ZZ+ZH+HH'
-        else:
-            sig_label = f't#bar{{t}}H(#times{sig_scale:g})' if self.channel in ['ttHbb', 'tth'] else f'ZZ+ZH+HH(#times{sig_scale:g})'
-        samples[closure_file_out][f'{self.channel}/{sig_name}'] = {
-            'label' : sig_label,
-            'legend': 4,
-            'weight': sig_scale,
-            'color' : 'ROOT.kViolet'}
-
-        lumi_title = f"{lumi} fb^{{-1}} (13 TeV)"
-        region_title = 'SR' if args.region == 'SR' else regionName.get(args.region, args.region)
-        classifier_name = classifier.replace('_', ' ')
-        xTitle = f'{classifier_name} Classifier Regressed P(Signal)' + (' Bin' if use_binned else '')
-
-        parameters = {'titleLeft'   : '#bf{CMS} #it{Internal}',
-                      'titleCenter' : region_title,
-                      'titleRight'  : lumi_title,
-                      'canvasSize'  : [800, 667],
-                      'maxDigits'   : 4,
-                      'ratioErrors' : True,
-                      'ratio'       : True,
-                      'rMin'        : 0.9,
-                      'rMax'        : 1.1,
-                      'rTitle'      : 'Ratio',
-                      'xTitle'      : xTitle,
-                      'yTitle'      : 'Events',
-                      'logY'        : True,
-                      'yMax'        : self.ymax[0] * 3.5,
-                      'lstLocation' : 'right',
-                      'outputName'  : 'mix_%s' % (str(mix))}
-
-        if not use_binned:
-            parameters['rebin'] = list(self.rebin) if isinstance(self.rebin, array.array) else self.rebin
-
-        parameters['outputDir'] = output_dir
-        # print('make ',parameters['outputDir'] + parameters['outputName']+'.pdf')
-        ROOTPlotTools.plot(samples, parameters, debug=False)
+        ymax = self.ymax[0] if (hasattr(self, 'ymax') and 0 in self.ymax) else None
+        plotMix(mix, self.channel, ymax=ymax)
 
     
     def plotFit(self, basis, plotSpuriousSignal=False):
@@ -2291,20 +2419,20 @@ class closure:
             # 'ratioDrawOptions': 'P ex0',
             'ratio' : 'numer A',
             'color' : 'ROOT.kBlack'}
-        samples[closure_file_out]['%s/multijet_closure' % self.channel] = {
-            'label' : '#LTMultijet#GT',
-            'legend': 2,
-            'stack' : 3,
-            'ratio' : 'denom A',
-            'color' : color_multijet} #ffdf7f
-            #'color' : 'ROOT.kYellow'}
-        if not getattr(args, 'pure_qcd', False):
+        if not getattr(args, 'pure_qcd', False) and not getattr(args, 'unify_background', False):
             samples[closure_file_out]['%s/ttbar_closure' % self.channel] = {
                 'label' : '#lower[0.10]{t#bar{t}}',
                 'legend': 3,
-                'stack' : 2,
+                'stack' : 1,
                 'ratio' : 'denom A',
                 'color' : color_TTbar}
+        samples[closure_file_out]['%s/multijet_closure' % self.channel] = {
+            'label' : '#LTMultijet#GT' if not getattr(args, 'unify_background', False) else '#LTBackground#GT',
+            'legend': 2,
+            'stack' : 2,
+            'ratio' : 'denom A',
+            'color' : color_multijet} #ffdf7f
+            #'color' : 'ROOT.kYellow'}
         if not plotSpuriousSignal:
             samples[closure_file_out]['%s/closure_TH1_basis%d' % (self.channel, basis)] = {
                 'label' : 'Fit (%d unconstrained parameter%s)' % (basis + 1, 's' if basis else ''),
@@ -2376,30 +2504,39 @@ class closure:
                       'lsty'        : 0.89,
                       'lst_yspace'  : 0.033,
                       'lst_textsize': 0.026,
-                      'outputName'  : '%s_basis%d' % ('2_spurious_signal' if plotSpuriousSignal else '1_bias', basis)}
+                      'outputName'  : '%s_basis%d' % ('2_spurious_signal' if plotSpuriousSignal else '1_bias', basis),
+                      'save_all_formats': getattr(args, 'save_all_formats', False)}
 
         n = max(self.multijet.basis, basis) + 1
         if plotSpuriousSignal:
             parameters['legendSubText'] = ['#bf{Spurious Signal Fit:}',
-                                           '#chi^{2}/DoF = %2.1f/%d = %1.2f (#zeta=0)' % (self.chi2_ss_zero[basis], self.ndf_ss_zero[basis], self.chi2_ss_zero[basis] / self.ndf_ss_zero[basis]),
-                                           '#chi^{2}/DoF = %2.1f/%d = %1.2f' % (self.chi2_ss[basis], self.ndf_ss[basis], self.chi2_ss[basis] / self.ndf_ss[basis]),
+                                           '#chi^{2}/DoF = %2.1f/%d = %1.2f (#zeta=0)' % (self.chi2_ss_zero[basis], self.ndf_ss_zero[basis], self.chi2_ss_zero[basis] / self.ndf_ss_zero[basis] if self.ndf_ss_zero[basis] > 0 else 0.0),
+                                           '#chi^{2}/DoF = %2.1f/%d = %1.2f' % (self.chi2_ss[basis], self.ndf_ss[basis], self.chi2_ss[basis] / self.ndf_ss[basis] if self.ndf_ss[basis] > 0 else 0.0),
                                            'p-value = %2.0f%% (f-test = %2.0f%%)' % (self.pvalue_ss[basis] * 100, self.fProb_ss[basis] * 100)]
             for i in range(n):
-                parameters['legendSubText'] += ['#font[82]{c_{%i} =%4.1f%% : %3.1f}#sigma' % (i, self.fit_parameters_ss[basis][i] * 100, abs(self.fit_parameters_ss[basis][i]) / self.fit_parameters_error_ss[basis][i])]
+                c_val = self.fit_parameters_ss[basis][i]
+                sigma_prior = (abs(self.cUp[basis][i]) if c_val > 0 else abs(self.cDown[basis][i])) / (nMixes**0.5)
+                sig_val = abs(c_val) / sigma_prior if sigma_prior > 0 else (abs(c_val) / self.fit_parameters_error_ss[basis][i] if self.fit_parameters_error_ss[basis][i] > 0 else 0.0)
+                parameters['legendSubText'] += ['#font[82]{c_{%i} =%4.1f%% : %3.1f}#sigma' % (i, c_val * 100, sig_val)]
         else:
             parameters['legendSubText'] = ['#bf{Fit:}',
-                                           '#chi^{2}/DoF = %2.1f/%d = %1.2f' % (self.chi2[basis], self.ndf[basis], self.chi2[basis] / self.ndf[basis]),
+                                           '#chi^{2}/DoF = %2.1f/%d = %1.2f' % (self.chi2[basis], self.ndf[basis], self.chi2[basis] / self.ndf[basis] if self.ndf[basis] > 0 else 0.0),
                                            'p-value = %2.0f%%' % (self.pvalue[basis] * 100)]
             for i in range(n):
-                parameters['legendSubText'] += ['#color[%d]{#font[82]{c_{%i} =%4.1f%% : %3.1f}#sigma}' % (4 if i > basis else 2, i, self.fit_parameters[basis][i] * 100, abs(self.fit_parameters[basis][i]) / self.fit_parameters_error[basis][i])]
+                c_val = self.fit_parameters[basis][i]
+                if i > basis:
+                    # Constrained higher-order parameters: compute pull with respect to the prior, matching the virtual bins in the ratio plot
+                    prior_sigma = (abs(self.multijet.cUp[self.multijet.basis][i]) if c_val > 0 else abs(self.multijet.cDown[self.multijet.basis][i])) / (nMixes**0.5)
+                    sig_val = abs(c_val) / prior_sigma if prior_sigma > 0 else (abs(c_val) / self.fit_parameters_error[basis][i] if self.fit_parameters_error[basis][i] > 0 else 0.0)
+                    parameters['legendSubText'] += ['#color[4]{#font[82]{c_{%i} =%4.1f%% : %3.1f}#sigma}' % (i, c_val * 100, sig_val)]
+                else:
+                    # Unconstrained parameters: no prior exists, so significance is relative to post-fit error
+                    sig_val = abs(c_val) / self.fit_parameters_error[basis][i] if self.fit_parameters_error[basis][i] > 0 else 0.0
+                    parameters['legendSubText'] += ['#color[2]{#font[82]{c_{%i} =%4.1f%% : %3.1f}#sigma}' % (i, c_val * 100, sig_val)]
 
         parameters['ratioLines'] = [[self.fit_x_min,         parameters['rMin'], self.fit_x_min,         parameters['rMax']],
                                     [self.nBins_rebin + 0.5, parameters['rMin'], self.nBins_rebin + 0.5, parameters['rMax']]]
-        # parameters['xMax'] = self.nBins_rebin + self.multijet.basis + 1.5 if not plotSpuriousSignal else self.nBins_rebin+basis + 1.5
-        if plotSpuriousSignal:
-            parameters['xMax'] = self.nBins_rebin + 0.5 + max(self.multijet.basis, basis) + 1
-        else:
-            parameters['xMax'] = self.nBins_rebin + 0.5 + max(self.multijet.basis - basis, 0)
+        parameters['xMax'] = self.nBins_rebin + 0.5 + max(self.multijet.basis, basis) + 1
 
         parameters['outputDir'] = output_dir
 
@@ -2411,6 +2548,181 @@ class closure:
         self.output_yml.close()
         for line in self.exit_message:
             print_log(line)
+
+
+def plotMix(mix, channel=None, ymax=None):
+    """Plot comparison of individual or average mix against background model in SR/SB."""
+    if channel is None:
+        channel = args.channel or 'ttHbb'
+
+    samples = collections.OrderedDict()
+    samples[closure_file_out] = collections.OrderedDict()
+
+    f_test = ROOT.TFile(closure_file_out, 'READ')
+    h_data_test = f_test.Get(f'{channel}/data_obs')
+    use_binned = (h_data_test.GetXaxis().IsVariableBinSize() or isinstance(rebin, array.array)) if h_data_test else False
+
+    if ymax is not None:
+        y_max_ref = ymax * 3.5
+    elif h_data_test and h_data_test.GetMaximum() > 0:
+        y_max_ref = h_data_test.GetMaximum() * 3.5
+    else:
+        y_max_ref = 1000.0
+    f_test.Close()
+
+    data_name = 'data_obs_binned' if use_binned else 'data_obs'
+    mj_name   = 'multijet_binned' if use_binned else 'multijet'
+    tt_name   = 'ttbar_binned' if use_binned else 'ttbar'
+    sig_name  = 'signal_binned' if use_binned else 'signal'
+
+    if type(mix) is int:
+        samples[closure_file_out][f'{mixes[mix]}/{channel}/{data_name}'] = {
+            'label' : f'Mixed Data Set {mix}',
+            'legend': 1,
+            'isData' : True,
+            'ratio' : 'numer A',
+            'color' : 'ROOT.kBlack'}
+    else:
+        samples[closure_file_out][f'{channel}/{data_name}'] = {
+            'label' : '#LTMixed Data#GT',
+            'legend': 1,
+            'isData' : True,
+            'ratio' : 'numer A',
+            'color' : 'ROOT.kBlack'}
+
+    if not getattr(args, 'pure_qcd', False):
+        tt_key = f'{mixes[mix]}/{channel}/{tt_name}' if type(mix) is int else f'{channel}/{tt_name}'
+        samples[closure_file_out][tt_key] = {
+            'label' : '#lower[0.10]{t#bar{t}}',
+            'legend': 3,
+            'stack' : 1,
+            'ratio' : 'denom A',
+            'color' : color_TTbar}
+
+    if type(mix) is int:
+        mj_proc = 'multijet_only' if getattr(args, 'unify_background', False) else mj_name
+        samples[closure_file_out][f'{mixes[mix]}/{channel}/{mj_proc}'] = {
+            'label' : 'Multijet Model %d' % mix,
+            'legend': 2,
+            'stack' : 2,
+            'ratio' : 'denom A',
+            'color' : color_multijet}
+    else:
+        mj_proc = 'multijet_only' if getattr(args, 'unify_background', False) else mj_name
+        samples[closure_file_out][f'{channel}/{mj_proc}'] = {
+            'label' : '#LTMultijet#GT',
+            'legend': 2,
+            'stack' : 2,
+            'ratio' : 'denom A',
+            'color' : color_multijet}
+
+    sig_scale = getattr(args, 'signal_scale', None)
+    if sig_scale is None:
+        sig_scale = 1.0 if channel in ['ttHbb', 'tth'] else 100.0
+    if sig_scale == 1.0:
+        sig_label = 't#bar{t}H' if channel in ['ttHbb', 'tth'] else 'ZZ+ZH+HH'
+    else:
+        sig_label = f't#bar{{t}}H(#times{sig_scale:g})' if channel in ['ttHbb', 'tth'] else f'ZZ+ZH+HH(#times{sig_scale:g})'
+    samples[closure_file_out][f'{channel}/{sig_name}'] = {
+        'label' : sig_label,
+        'legend': 4,
+        'weight': sig_scale,
+        'color' : 'ROOT.kViolet'}
+
+    lumi_title = f"{lumi} fb^{{-1}} (13 TeV)"
+    region_title = 'SR' if args.region == 'SR' else regionName.get(args.region, args.region)
+    classifier_name = classifier.replace('_', ' ')
+    xTitle = f'{classifier_name} Classifier Regressed P(Signal)' + (' Bin' if use_binned else '')
+
+    parameters = {'titleLeft'   : '#bf{CMS} #it{Internal}',
+                  'titleCenter' : region_title,
+                  'titleRight'  : lumi_title,
+                  'canvasSize'  : [800, 667],
+                  'maxDigits'   : 4,
+                  'ratioErrors' : True,
+                  'ratio'       : True,
+                  'rMin'        : 0.9,
+                  'rMax'        : 1.1,
+                  'rTitle'      : 'Ratio',
+                  'xTitle'      : xTitle,
+                  'yTitle'      : 'Events',
+                  'logY'        : True,
+                  'yMax'        : y_max_ref,
+                  'lstLocation' : 'right',
+                  'outputName'  : 'mix_%s' % (str(mix)),
+                  'save_all_formats': getattr(args, 'save_all_formats', False)}
+
+    if not use_binned:
+        parameters['rebin'] = list(rebin) if isinstance(rebin, array.array) else rebin
+
+    parameters['outputDir'] = output_dir
+    ROOTPlotTools.plot(samples, parameters, debug=False)
+
+
+def makeInputDiagnosticPlots(channel):
+    """Generate all input diagnostic plots (pre-fit):
+    1) Mix plots for each individual mix v0..v14 (mix_0..14)
+    2) Average mix plot (mix_ave)
+    3) 15-subsample shape overlay for 4-tag data and 3-tag multijet
+    4) CMS-style 4-way comparison in SR
+    """
+    print_log("\n" + "=" * 60)
+    print_log("Generating input diagnostic plots before starting fits...")
+    print_log("=" * 60)
+
+    # Ensure uniform-binned histograms exist if variable binning is used
+    f_check = ROOT.TFile(closure_file_out, 'UPDATE')
+    h_d = f_check.Get(f"{channel}/data_obs")
+    if h_d and (h_d.GetXaxis().IsVariableBinSize() or isinstance(rebin, array.array)):
+        nb = h_d.GetNbinsX()
+        if isinstance(rebin, array.array):
+            h_d_rebin = rebin_histogram(h_d, rebin)
+            nb = h_d_rebin.GetNbinsX()
+        for p in ['data_obs', 'multijet', 'ttbar', 'signal']:
+            h_orig = f_check.Get(f"{channel}/{p}")
+            if h_orig:
+                h_r = rebin_histogram(h_orig, rebin) if isinstance(rebin, array.array) else (h_orig.Clone() if int(rebin) == 1 else h_orig.Clone().Rebin(int(rebin)))
+                h_b = ROOT.TH1F(f"{p}_binned", "", nb, 0.5, 0.5 + nb)
+                for b in range(1, nb + 1):
+                    h_b.SetBinContent(b, h_r.GetBinContent(b))
+                    h_b.SetBinError(b, h_r.GetBinError(b))
+                f_check.cd(channel)
+                h_b.Write("", ROOT.TObject.kOverwrite)
+
+        for m_name in mixes:
+            for p in ['data_obs', 'multijet']:
+                h_orig = f_check.Get(f"{m_name}/{channel}/{p}")
+                if h_orig:
+                    h_r = rebin_histogram(h_orig, rebin) if isinstance(rebin, array.array) else (h_orig.Clone() if int(rebin) == 1 else h_orig.Clone().Rebin(int(rebin)))
+                    h_b = ROOT.TH1F(f"{p}_binned", "", nb, 0.5, 0.5 + nb)
+                    for b in range(1, nb + 1):
+                        h_b.SetBinContent(b, h_r.GetBinContent(b))
+                        h_b.SetBinError(b, h_r.GetBinError(b))
+                    f_check.cd(f"{m_name}/{channel}")
+                    h_b.Write("", ROOT.TObject.kOverwrite)
+    f_check.Close()
+
+    # 1. Individual mix plots
+    for m in range(nMixes):
+        plotMix(m, channel)
+
+    # 2. Average mix plot
+    plotMix('ave', channel)
+
+    # 3. Shape overlay across 15 subsamples
+    plotSubsamplesOverlay()
+
+    # 4. 4-way average comparison plot
+    if getattr(args, 'plot_average_comparison', False):
+        plotAverageComparison(channel)
+
+    # 5. Diagnostic plot: Data vs <Mixed Data> vs Bkg (Data 3b + ttbar) in SR and SB
+    for reg in ['SR', 'SB']:
+        plotDataVsMixedVsBkg(channel, region=reg)
+
+    print_log("=" * 60)
+    print_log("Finished generating all pre-fit input diagnostic plots.\n")
+    print_log("=" * 60 + "\n")
 
 
 def plotSubsamplesOverlay():
@@ -2606,11 +2918,724 @@ def plotSubsamplesOverlay():
 
         out_base = f"{output_dir}/subsamples_15_{target_proc}_shape_overlay"
         canv.SaveAs(f"{out_base}.png")
-        canv.SaveAs(f"{out_base}.pdf")
+        if getattr(args, 'save_all_formats', False):
+            canv.SaveAs(f"{out_base}.pdf")
+            canv.SaveAs(f"{out_base}.C")
         print_log(f"Saved subsamples shape overlay plot: {out_base}.png")
         canv.Close()
 
     f.Close()
+
+
+def plotAverageComparison(channel):
+    """Plot CMS-style 4-way comparison in Signal Region (SR):
+    1) Nominal Data 4b (points with Poisson errors)
+    2) Average Mixed Data 4b across all mixes (points with Poisson errors)
+    3) Nominal Background (Data 3b + TTbar 4b) (solid line)
+    4) Average Mixed Background across all mixes (dashed line)
+    Lower panel shows three ratio curves:
+    - <Mixed 4b> / Data 4b
+    - <Mix Bkg> / Nom Bkg
+    - <Mixed 4b> / <Mix Bkg> (Closure)
+    """
+    f_closure = ROOT.TFile(closure_file_out, 'READ')
+    if f_closure.IsZombie():
+        print_log(f"WARNING: Cannot open {closure_file_out} for plotAverageComparison")
+        return
+
+    h_mix_ave_4b_orig = f_closure.Get(f"{channel}/data_obs")
+    if not h_mix_ave_4b_orig or h_mix_ave_4b_orig.IsZombie():
+        print_log(f"WARNING: {channel}/data_obs not found in {closure_file_out}")
+        f_closure.Close()
+        return
+
+    h_mix_ave_4b = h_mix_ave_4b_orig.Clone("h_mix_ave_4b_comp")
+    h_mix_ave_4b.SetDirectory(0)
+
+    h_mix_ave_bkg_orig = f_closure.Get(f"{channel}/background") if getattr(args, 'unify_background', False) else None
+    if not h_mix_ave_bkg_orig or h_mix_ave_bkg_orig.IsZombie():
+        h_mix_ave_bkg_orig = f_closure.Get(f"{channel}/multijet")
+
+    if not h_mix_ave_bkg_orig or h_mix_ave_bkg_orig.IsZombie():
+        print_log(f"WARNING: Neither background nor multijet found in {closure_file_out}")
+        f_closure.Close()
+        return
+
+    h_mix_ave_bkg = h_mix_ave_bkg_orig.Clone("h_mix_ave_bkg_comp")
+    h_mix_ave_bkg.SetDirectory(0)
+
+    if not getattr(args, 'unify_background', False):
+        h_tt = f_closure.Get(f"{channel}/ttbar")
+        if h_tt and not h_tt.IsZombie():
+            h_mix_ave_bkg.Add(h_tt)
+
+    f_closure.Close()
+
+    # Load nominal data and background
+    nom_f_path = getattr(args, 'input_file_nominal_data', None)
+    if not nom_f_path or not os.path.exists(nom_f_path):
+        nom_f_path = args.input_file_mix
+
+    nom_f = ROOT.TFile(nom_f_path, 'READ')
+    if nom_f.IsZombie():
+        print_log(f"WARNING: Cannot open {nom_f_path} for nominal histograms")
+        return
+
+    years = args.years if hasattr(args, 'years') and args.years else ["UL16_preVFP", "UL16_postVFP", "UL17", "UL18"]
+    year_map = {
+        "2016": ["UL16_preVFP", "UL16_postVFP", "2016"],
+        "2017": ["UL17", "2017"],
+        "2018": ["UL18", "2018"],
+        "UL16": ["UL16_preVFP", "UL16_postVFP", "2016"],
+        "UL17": ["UL17", "2017"],
+        "UL18": ["UL18", "2018"],
+        "UL16_preVFP": ["UL16_preVFP"],
+        "UL16_postVFP": ["UL16_postVFP"],
+    }
+    all_years = []
+    for y in years:
+        all_years.extend(year_map.get(y, [y]))
+    all_years = list(dict.fromkeys(all_years))
+
+    var_name = args.var.replace("XXX", channel)
+
+    # 1. Nominal Data 4b
+    h_nom_data4b = combine_hists(nom_f,
+                                 f"{var_name}_nominal_data_YEAR_fourTag_SR",
+                                 years=all_years,
+                                 procs=["nominal_data"],
+                                 debug=args.debug)
+    if h_nom_data4b is None:
+        h_nom_data4b = combine_hists(nom_f,
+                                     f"{var_name}_PROC_YEAR_fourTag_SR",
+                                     years=all_years,
+                                     procs=["data"],
+                                     debug=args.debug)
+    if h_nom_data4b is None:
+        h_cand = nom_f.Get(f"{channel}/data_obs")
+        if h_cand and not h_cand.IsZombie():
+            h_nom_data4b = h_cand.Clone("h_nom_data4b_cand")
+    if h_nom_data4b is not None:
+        h_nom_data4b.SetDirectory(0)
+
+    # 2. Nominal Data 3b
+    h_nom_data3b = combine_hists(nom_f,
+                                 f"{var_name}_nominal_data_YEAR_threeTag_SR",
+                                 years=all_years,
+                                 procs=["nominal_data"],
+                                 debug=args.debug)
+    if h_nom_data3b is None:
+        h_nom_data3b = combine_hists(nom_f,
+                                     f"{var_name}_PROC_YEAR_threeTag_SR",
+                                     years=all_years,
+                                     procs=["data", "data_3b"],
+                                     debug=args.debug)
+    if h_nom_data3b is not None:
+        h_nom_data3b.SetDirectory(0)
+
+    # 3. Nominal TTbar 3b
+    h_nom_ttbar3b = combine_hists(nom_f,
+                                  f"{var_name}_nominal_TTbar4b_from_d3_YEAR_threeTag_SR",
+                                  years=all_years,
+                                  procs=["nominal_TTbar4b_from_d3"],
+                                  debug=args.debug)
+    if h_nom_ttbar3b is None:
+        h_nom_ttbar3b = combine_hists(nom_f,
+                                      f"{var_name}_PROC_YEAR_threeTag_SR",
+                                      years=all_years,
+                                      procs=["TTbar4b_from_d3"],
+                                      debug=args.debug)
+    if h_nom_ttbar3b is not None:
+        h_nom_ttbar3b.SetDirectory(0)
+
+    if h_nom_data3b is not None:
+        h_nom_bkg = h_nom_data3b.Clone("h_nom_bkg_comp")
+        h_nom_bkg.SetDirectory(0)
+        if h_nom_ttbar3b is not None:
+            h_nom_bkg.Add(h_nom_ttbar3b)
+    else:
+        h_cand_bkg = nom_f.Get(f"{channel}/multijet")
+        if h_cand_bkg and not h_cand_bkg.IsZombie():
+            h_nom_bkg = h_cand_bkg.Clone("h_nom_bkg_cand")
+            h_nom_bkg.SetDirectory(0)
+            h_cand_tt = nom_f.Get(f"{channel}/ttbar")
+            if h_cand_tt and not h_cand_tt.IsZombie():
+                h_nom_bkg.Add(h_cand_tt)
+        else:
+            h_nom_bkg = None
+
+    nom_f.Close()
+
+    if h_nom_data4b is None or h_nom_bkg is None:
+        print_log("WARNING: Could not load nominal data 4b or nominal background for plotAverageComparison. Skipping plot.")
+        return
+
+    # Apply rebinning
+    if isinstance(rebin, array.array):
+        h_mix_ave_4b = rebin_histogram(h_mix_ave_4b, rebin)
+        h_mix_ave_bkg = rebin_histogram(h_mix_ave_bkg, rebin)
+        h_nom_data4b = rebin_histogram(h_nom_data4b, rebin)
+        h_nom_bkg = rebin_histogram(h_nom_bkg, rebin)
+    elif int(rebin) > 1:
+        h_mix_ave_4b.Rebin(int(rebin))
+        h_mix_ave_bkg.Rebin(int(rebin))
+        h_nom_data4b.Rebin(int(rebin))
+        h_nom_bkg.Rebin(int(rebin))
+
+    classifier_str = "SvB_MA" if "SvB_MA" in args.var else "SvB"
+    x_title = f"{classifier_str.replace('_', ' ')} Classifier Regressed P(Signal)"
+    if isinstance(rebin, array.array) or h_mix_ave_4b.GetXaxis().IsVariableBinSize():
+        nb = h_mix_ave_4b.GetNbinsX()
+        def to_uniform(h_in, name):
+            h_u = ROOT.TH1F(name, "", nb, 0.5, 0.5 + nb)
+            for b in range(1, nb + 1):
+                h_u.SetBinContent(b, h_in.GetBinContent(b))
+                h_u.SetBinError(b, h_in.GetBinError(b))
+            return h_u
+        h_mix_ave_4b = to_uniform(h_mix_ave_4b, "h_mix_ave_4b_u")
+        h_mix_ave_bkg = to_uniform(h_mix_ave_bkg, "h_mix_ave_bkg_u")
+        h_nom_data4b = to_uniform(h_nom_data4b, "h_nom_data4b_u")
+        h_nom_bkg = to_uniform(h_nom_bkg, "h_nom_bkg_u")
+        x_title = f"{classifier_str.replace('_', ' ')} Classifier Regressed P(Signal) Bin"
+
+    int_data4b = h_nom_data4b.Integral()
+    int_mix4b  = h_mix_ave_4b.Integral()
+    int_nombkg = h_nom_bkg.Integral()
+    int_mixbkg = h_mix_ave_bkg.Integral()
+
+    # Create TCanvas with two pads
+    canv_name = "canv_average_comparison"
+    canv = ROOT.TCanvas(canv_name, canv_name, 800, 800)
+    canv.Divide(1, 2)
+
+    p1 = canv.cd(1)
+    p1.SetPad(0.0, 0.3, 1.0, 1.0)
+    p1.SetTopMargin(0.08)
+    p1.SetBottomMargin(0.03)
+    p1.SetLeftMargin(0.12)
+    p1.SetRightMargin(0.05)
+    p1.SetLogy(1)
+    p1.SetTicks(1, 1)
+
+    p2 = canv.cd(2)
+    p2.SetPad(0.0, 0.0, 1.0, 0.3)
+    p2.SetTopMargin(0.03)
+    p2.SetBottomMargin(0.32)
+    p2.SetLeftMargin(0.12)
+    p2.SetRightMargin(0.05)
+    p2.SetGridy()
+    p2.SetTicks(1, 1)
+
+    p1.cd()
+    max_val = max(h_nom_data4b.GetMaximum(), h_mix_ave_4b.GetMaximum(),
+                  h_nom_bkg.GetMaximum(), h_mix_ave_bkg.GetMaximum())
+
+    h_frame_top = h_nom_data4b.Clone("h_frame_top_comp")
+    h_frame_top.Reset()
+    h_frame_top.SetMinimum(1.0)
+    h_frame_top.SetMaximum(max_val * 12.0)
+    h_frame_top.GetYaxis().SetTitle("Events / Bin")
+    h_frame_top.GetYaxis().SetTitleSize(0.045)
+    h_frame_top.GetYaxis().SetTitleOffset(1.2)
+    h_frame_top.GetYaxis().SetLabelSize(0.04)
+    h_frame_top.GetXaxis().SetLabelSize(0)
+    h_frame_top.GetXaxis().SetTitle("")
+    h_frame_top.Draw("AXIS")
+
+    h_nom_data4b.SetMarkerStyle(20)
+    h_nom_data4b.SetMarkerSize(0.9)
+    h_nom_data4b.SetMarkerColor(ROOT.kBlack)
+    h_nom_data4b.SetLineColor(ROOT.kBlack)
+    h_nom_data4b.SetLineWidth(1)
+
+    h_mix_ave_4b.SetMarkerStyle(21)
+    h_mix_ave_4b.SetMarkerSize(0.85)
+    h_mix_ave_4b.SetMarkerColor(ROOT.kAzure+2)
+    h_mix_ave_4b.SetLineColor(ROOT.kAzure+2)
+    h_mix_ave_4b.SetLineWidth(1)
+
+    h_nom_bkg.SetLineColor(ROOT.kRed+1)
+    h_nom_bkg.SetLineWidth(2)
+    h_nom_bkg.SetLineStyle(1)
+    h_nom_bkg.SetFillColor(0)
+
+    h_mix_ave_bkg.SetLineColor(ROOT.kOrange+7)
+    h_mix_ave_bkg.SetLineWidth(2)
+    h_mix_ave_bkg.SetLineStyle(2)
+    h_mix_ave_bkg.SetFillColor(0)
+
+    h_nom_bkg.Draw("HIST SAME")
+    h_mix_ave_bkg.Draw("HIST SAME")
+    h_mix_ave_4b.Draw("P E0 SAME")
+    h_nom_data4b.Draw("P E0 SAME")
+
+    legend = ROOT.TLegend(0.46, 0.65, 0.93, 0.90)
+    legend.SetBorderSize(0)
+    legend.SetFillColorAlpha(ROOT.kWhite, 0.0)
+    legend.SetTextFont(42)
+    legend.SetTextSize(0.032)
+    legend.AddEntry(h_nom_data4b, f"Data 4b (N = {int(round(int_data4b))})", "ep")
+    legend.AddEntry(h_mix_ave_4b, f"#LT Mixed Data 4b #GT (N = {int(round(int_mix4b))})", "ep")
+    legend.AddEntry(h_nom_bkg, f"Nominal Bkg (Data 3b+t#bar{{t}}) (N = {int(round(int_nombkg))})", "l")
+    legend.AddEntry(h_mix_ave_bkg, f"#LT Mixed Data Bkg #GT (N = {int(round(int_mixbkg))})", "l")
+    legend.Draw("SAME")
+
+    lumi_title = f"{lumi} fb^{{-1}} (13 TeV)"
+    latex = ROOT.TLatex()
+    latex.SetNDC()
+    latex.SetTextFont(61)
+    latex.SetTextSize(0.045)
+    latex.DrawLatex(0.12, 0.93, "CMS")
+    latex.SetTextFont(52)
+    latex.SetTextSize(0.035)
+    latex.DrawLatex(0.20, 0.93, "Preliminary")
+    latex.SetTextFont(42)
+    latex.SetTextSize(0.040)
+    latex.SetTextAlign(21)
+    latex.DrawLatex(0.53, 0.93, "t#bar{t}H(b#bar{b}) SR (Inclusive)")
+    latex.SetTextAlign(31)
+    latex.DrawLatex(0.95, 0.93, f"#bf{{{lumi_title}}}")
+
+    p2.cd()
+    h_ratio_base = h_nom_data4b.Clone("h_ratio_base_comp")
+    h_ratio_base.Reset()
+    h_ratio_base.SetMinimum(0.70)
+    h_ratio_base.SetMaximum(1.30)
+    h_ratio_base.GetYaxis().SetTitle("Ratio")
+    h_ratio_base.GetYaxis().SetNdivisions(505)
+    h_ratio_base.GetYaxis().SetTitleSize(0.10)
+    h_ratio_base.GetYaxis().SetTitleOffset(0.5)
+    h_ratio_base.GetYaxis().SetLabelSize(0.09)
+    h_ratio_base.GetXaxis().SetTitle(x_title)
+    h_ratio_base.GetXaxis().SetTitleSize(0.11)
+    h_ratio_base.GetXaxis().SetTitleOffset(1.1)
+    h_ratio_base.GetXaxis().SetLabelSize(0.09)
+    h_ratio_base.Draw("AXIS")
+
+    line = ROOT.TLine(h_ratio_base.GetXaxis().GetXmin(), 1.0, h_ratio_base.GetXaxis().GetXmax(), 1.0)
+    line.SetLineStyle(2)
+    line.SetLineColor(ROOT.kGray+2)
+    line.SetLineWidth(1)
+    line.Draw("SAME")
+
+    r_mix_to_data = h_mix_ave_4b.Clone("r_mix_to_data")
+    r_mix_to_data.Divide(h_nom_data4b)
+    r_mix_to_data.SetMarkerStyle(21)
+    r_mix_to_data.SetMarkerSize(0.75)
+    r_mix_to_data.SetMarkerColor(ROOT.kAzure+2)
+    r_mix_to_data.SetLineColor(ROOT.kAzure+2)
+    r_mix_to_data.Draw("P E0 SAME")
+
+    r_bkg_to_nom = h_mix_ave_bkg.Clone("r_bkg_to_nom")
+    r_bkg_to_nom.Divide(h_nom_bkg)
+    r_bkg_to_nom.SetMarkerStyle(33)
+    r_bkg_to_nom.SetMarkerSize(0.95)
+    r_bkg_to_nom.SetMarkerColor(ROOT.kOrange+7)
+    r_bkg_to_nom.SetLineColor(ROOT.kOrange+7)
+    r_bkg_to_nom.Draw("P E0 SAME")
+
+    r_closure = h_mix_ave_4b.Clone("r_closure")
+    r_closure.Divide(h_mix_ave_bkg)
+    r_closure.SetMarkerStyle(20)
+    r_closure.SetMarkerSize(0.75)
+    r_closure.SetMarkerColor(ROOT.kGreen+2)
+    r_closure.SetLineColor(ROOT.kGreen+2)
+    r_closure.Draw("P E0 SAME")
+
+    leg_ratio = ROOT.TLegend(0.13, 0.78, 0.94, 0.96)
+    leg_ratio.SetNColumns(3)
+    leg_ratio.SetBorderSize(0)
+    leg_ratio.SetFillColorAlpha(ROOT.kWhite, 0.0)
+    leg_ratio.SetTextFont(42)
+    leg_ratio.SetTextSize(0.065)
+    leg_ratio.AddEntry(r_mix_to_data, "#LT Mixed 4b #GT / Data 4b", "ep")
+    leg_ratio.AddEntry(r_bkg_to_nom, "#LT Mix Bkg #GT / Nom Bkg", "ep")
+    leg_ratio.AddEntry(r_closure, "#LT Mixed 4b #GT / #LT Mix Bkg #GT", "ep")
+    leg_ratio.Draw("SAME")
+
+    out_base = f"{output_dir}/average_closure_comparison_SR"
+    canv.SaveAs(f"{out_base}.png")
+    if getattr(args, 'save_all_formats', False):
+        canv.SaveAs(f"{out_base}.pdf")
+        canv.SaveAs(f"{out_base}.C")
+    print_log(f"Saved CMS-style average 4-way comparison plot: {out_base}.png")
+    canv.Close()
+
+
+def plotDataVsMixedVsBkg(channel, region="SR"):
+    """Plot comparison of:
+    a) data 3b with data JCM (yellow fill) + ttbar 4b (blue fill)
+    b) mixed data (red line histogram)
+    c) real data (black points with Poisson error bars)
+    Lower ratio panel shows:
+    - data / mixed data
+    - data / (data 3b + ttbar)
+    """
+    ROOT.gStyle.SetOptStat(0)
+
+    # Load nominal data and background components
+    nom_f_path = getattr(args, 'input_file_nominal_data', None)
+    if not nom_f_path or not os.path.exists(nom_f_path):
+        nom_f_path = args.input_file_mix
+
+    nom_f = None
+    if nom_f_path and os.path.exists(nom_f_path):
+        nom_f = ROOT.TFile(nom_f_path, 'READ')
+        if nom_f.IsZombie():
+            nom_f = None
+
+    years = args.years if hasattr(args, 'years') and args.years else ["UL16_preVFP", "UL16_postVFP", "UL17", "UL18"]
+    year_map = {
+        "2016": ["UL16_preVFP", "UL16_postVFP", "2016"],
+        "2017": ["UL17", "2017"],
+        "2018": ["UL18", "2018"],
+        "UL16": ["UL16_preVFP", "UL16_postVFP", "2016"],
+        "UL17": ["UL17", "2017"],
+        "UL18": ["UL18", "2018"],
+        "UL16_preVFP": ["UL16_preVFP"],
+        "UL16_postVFP": ["UL16_postVFP"],
+    }
+    all_years = []
+    for y in years:
+        all_years.extend(year_map.get(y, [y]))
+    all_years = list(dict.fromkeys(all_years))
+
+    var_name = args.var.replace("XXX", channel)
+
+    h_nom_data4b = None
+    h_nom_data3b = None
+    h_nom_ttbar3b = None
+    h_mix_ave_4b = None
+
+    if nom_f:
+        # 1. Real Data 4b
+        h_nom_data4b = combine_hists(nom_f,
+                                     f"{var_name}_nominal_data_YEAR_fourTag_{region}",
+                                     years=all_years,
+                                     procs=["nominal_data"],
+                                     debug=args.debug)
+        if h_nom_data4b is None:
+            h_nom_data4b = combine_hists(nom_f,
+                                         f"{var_name}_PROC_YEAR_fourTag_{region}",
+                                         years=all_years,
+                                         procs=["data", "nominal_data"],
+                                         debug=args.debug)
+        if h_nom_data4b is None and region == "SR":
+            h_cand = nom_f.Get(f"{channel}/data_obs")
+            if h_cand and not h_cand.IsZombie():
+                h_nom_data4b = h_cand.Clone("h_nom_data4b_cand")
+        if h_nom_data4b is not None:
+            h_nom_data4b.SetDirectory(0)
+
+        # 2. Data 3b (with data JCM)
+        h_nom_data3b = combine_hists(nom_f,
+                                     f"{var_name}_nominal_data_YEAR_threeTag_{region}",
+                                     years=all_years,
+                                     procs=["nominal_data"],
+                                     debug=args.debug)
+        if h_nom_data3b is None:
+            h_nom_data3b = combine_hists(nom_f,
+                                         f"{var_name}_PROC_YEAR_threeTag_{region}",
+                                         years=all_years,
+                                         procs=["data_3b_for_mixed", "data", "data_3b"],
+                                         debug=args.debug)
+        if h_nom_data3b is not None:
+            h_nom_data3b.SetDirectory(0)
+
+        # 3. TTbar 3b
+        h_nom_ttbar3b = combine_hists(nom_f,
+                                      f"{var_name}_nominal_TTbar4b_from_d3_YEAR_threeTag_{region}",
+                                      years=all_years,
+                                      procs=["nominal_TTbar4b_from_d3"],
+                                      debug=args.debug)
+        if h_nom_ttbar3b is None:
+            h_nom_ttbar3b = combine_hists(nom_f,
+                                          f"{var_name}_PROC_YEAR_threeTag_{region}",
+                                          years=all_years,
+                                          procs=["TTbar4b_from_d3"],
+                                          debug=args.debug)
+        if h_nom_ttbar3b is not None:
+            h_nom_ttbar3b.SetDirectory(0)
+
+        # 4. Mixed Data 4b average across mixes
+        for m in range(nMixes):
+            h_m = None
+            for y in all_years:
+                for p in [f"mix_v{m}", f"{args.mix_name}_v{m}"]:
+                    k = f"{var_name}_{p}_{y}_fourTag_{region}"
+                    h = nom_f.Get(k)
+                    if h and not h.IsZombie():
+                        if h_m is None:
+                            h_m = h.Clone(f"h_mix_m{m}_{region}")
+                            h_m.SetDirectory(0)
+                        else:
+                            h_m.Add(h)
+                        break
+            if h_m is not None:
+                if h_mix_ave_4b is None:
+                    h_mix_ave_4b = h_m.Clone(f"h_mix_ave_4b_{region}")
+                    h_mix_ave_4b.SetDirectory(0)
+                else:
+                    h_mix_ave_4b.Add(h_m)
+        if h_mix_ave_4b is not None:
+            h_mix_ave_4b.Scale(1.0 / nMixes)
+
+        nom_f.Close()
+
+    # Fallbacks from closure file if region == SR
+    if region == "SR":
+        f_closure = ROOT.TFile(closure_file_out, 'READ')
+        if not f_closure.IsZombie():
+            if h_mix_ave_4b is None:
+                h_c = f_closure.Get(f"{channel}/data_obs")
+                if h_c and not h_c.IsZombie():
+                    h_mix_ave_4b = h_c.Clone(f"h_mix_ave_4b_{region}")
+                    h_mix_ave_4b.SetDirectory(0)
+            if h_nom_data3b is None:
+                h_c = f_closure.Get(f"{channel}/multijet")
+                if h_c and not h_c.IsZombie():
+                    h_nom_data3b = h_c.Clone(f"h_nom_data3b_{region}")
+                    h_nom_data3b.SetDirectory(0)
+            if h_nom_ttbar3b is None:
+                h_c = f_closure.Get(f"{channel}/ttbar")
+                if h_c and not h_c.IsZombie():
+                    h_nom_ttbar3b = h_c.Clone(f"h_nom_ttbar3b_{region}")
+                    h_nom_ttbar3b.SetDirectory(0)
+            f_closure.Close()
+
+    if h_nom_data4b is None or h_nom_data3b is None or h_mix_ave_4b is None:
+        print_log(f"WARNING: Could not load real data 4b, data 3b, or mixed data for {region} in plotDataVsMixedVsBkg. Skipping {region} plot.")
+        return
+
+    # If ttbar is missing, create empty clone
+    if h_nom_ttbar3b is None:
+        h_nom_ttbar3b = h_nom_data3b.Clone(f"h_nom_ttbar3b_{region}_zero")
+        h_nom_ttbar3b.Reset()
+        h_nom_ttbar3b.SetDirectory(0)
+
+    # Align binning between nominal histograms and mixed data
+    target_nbins = h_mix_ave_4b.GetNbinsX()
+    for h in [h_nom_data4b, h_nom_data3b, h_nom_ttbar3b]:
+        if h.GetNbinsX() > target_nbins and h.GetNbinsX() % target_nbins == 0:
+            h.Rebin(h.GetNbinsX() // target_nbins)
+        elif h.GetNbinsX() < target_nbins and target_nbins % h.GetNbinsX() == 0:
+            h_mix_ave_4b.Rebin(target_nbins // h.GetNbinsX())
+            target_nbins = h.GetNbinsX()
+
+    # Apply user-specified rebinning if requested
+    if isinstance(rebin, array.array):
+        h_mix_ave_4b = rebin_histogram(h_mix_ave_4b, rebin)
+        h_nom_data3b = rebin_histogram(h_nom_data3b, rebin)
+        h_nom_ttbar3b = rebin_histogram(h_nom_ttbar3b, rebin)
+        h_nom_data4b = rebin_histogram(h_nom_data4b, rebin)
+    elif int(rebin) > 1:
+        if h_nom_data4b.GetNbinsX() > int(rebin) and h_nom_data4b.GetNbinsX() % int(rebin) == 0:
+            h_mix_ave_4b.Rebin(int(rebin))
+            h_nom_data3b.Rebin(int(rebin))
+            h_nom_ttbar3b.Rebin(int(rebin))
+            h_nom_data4b.Rebin(int(rebin))
+
+    classifier_str = "SvB_MA" if "SvB_MA" in args.var else "SvB"
+    x_title = f"{classifier_str.replace('_', ' ')} Classifier Regressed P(Signal)"
+    if isinstance(rebin, array.array) or h_mix_ave_4b.GetXaxis().IsVariableBinSize():
+        nb = h_mix_ave_4b.GetNbinsX()
+        def to_uniform(h_in, name):
+            h_u = ROOT.TH1F(name, "", nb, 0.5, 0.5 + nb)
+            for b in range(1, nb + 1):
+                h_u.SetBinContent(b, h_in.GetBinContent(b))
+                h_u.SetBinError(b, h_in.GetBinError(b))
+            return h_u
+        h_mix_ave_4b = to_uniform(h_mix_ave_4b, f"h_mix_ave_4b_{region}_u")
+        h_nom_data3b = to_uniform(h_nom_data3b, f"h_nom_data3b_{region}_u")
+        h_nom_ttbar3b = to_uniform(h_nom_ttbar3b, f"h_nom_ttbar3b_{region}_u")
+        h_nom_data4b = to_uniform(h_nom_data4b, f"h_nom_data4b_{region}_u")
+        x_title = f"{classifier_str.replace('_', ' ')} Classifier Regressed P(Signal) Bin"
+
+    int_data4b = h_nom_data4b.Integral()
+    int_mix4b  = h_mix_ave_4b.Integral()
+    int_data3b = h_nom_data3b.Integral()
+    int_ttbar  = h_nom_ttbar3b.Integral()
+
+    # Total background: data3b + ttbar
+    h_total_bkg = h_nom_data3b.Clone(f"h_total_bkg_{region}")
+    h_total_bkg.Add(h_nom_ttbar3b)
+
+    # Colors: CMS Yellow for Data 3b, CMS Light Blue for TTbar, Red for Mixed Data, Black for Data
+    c_yellow = ROOT.TColor.GetColor(255, 223, 127)
+    c_blue   = ROOT.TColor.GetColor(133, 209, 251)
+    c_red    = ROOT.kRed + 1
+
+    # Total background drawn first with yellow fill (represents data 3b on top)
+    h_total_bkg.SetFillColor(c_yellow)
+    h_total_bkg.SetLineColor(ROOT.kBlack)
+    h_total_bkg.SetLineWidth(1)
+
+    # TTbar drawn second on top of total background with blue fill (represents ttbar on the bottom)
+    h_nom_ttbar3b.SetFillColor(c_blue)
+    h_nom_ttbar3b.SetLineColor(ROOT.kBlack)
+    h_nom_ttbar3b.SetLineWidth(1)
+
+    # Dummies for legend entries
+    h_leg_data3b = h_nom_data3b.Clone(f"h_leg_data3b_{region}")
+    h_leg_data3b.SetFillColor(c_yellow)
+    h_leg_data3b.SetLineColor(ROOT.kBlack)
+    h_leg_data3b.SetLineWidth(1)
+
+    h_leg_ttbar = h_nom_ttbar3b.Clone(f"h_leg_ttbar_{region}")
+    h_leg_ttbar.SetFillColor(c_blue)
+    h_leg_ttbar.SetLineColor(ROOT.kBlack)
+    h_leg_ttbar.SetLineWidth(1)
+
+    # Mixed data (red line)
+    h_mix_ave_4b.SetLineColor(c_red)
+    h_mix_ave_4b.SetLineWidth(3)
+    h_mix_ave_4b.SetLineStyle(1)
+    h_mix_ave_4b.SetFillColor(0)
+
+    # Real data (black markers)
+    h_nom_data4b.SetMarkerStyle(20)
+    h_nom_data4b.SetMarkerSize(0.9)
+    h_nom_data4b.SetMarkerColor(ROOT.kBlack)
+    h_nom_data4b.SetLineColor(ROOT.kBlack)
+    h_nom_data4b.SetLineWidth(1)
+
+    # Canvas
+    canv_name = f"canv_data_vs_mixed_vs_bkg_{region}"
+    canv = ROOT.TCanvas(canv_name, canv_name, 800, 800)
+    canv.Divide(1, 2)
+
+    p1 = canv.cd(1)
+    p1.SetPad(0.0, 0.3, 1.0, 1.0)
+    p1.SetTopMargin(0.08)
+    p1.SetBottomMargin(0.03)
+    p1.SetLeftMargin(0.12)
+    p1.SetRightMargin(0.05)
+    p1.SetLogy(1)
+    p1.SetTicks(1, 1)
+
+    p2 = canv.cd(2)
+    p2.SetPad(0.0, 0.0, 1.0, 0.3)
+    p2.SetTopMargin(0.03)
+    p2.SetBottomMargin(0.32)
+    p2.SetLeftMargin(0.12)
+    p2.SetRightMargin(0.05)
+    p2.SetGridy()
+    p2.SetTicks(1, 1)
+
+    p1.cd()
+    max_val = max(h_nom_data4b.GetMaximum(), h_mix_ave_4b.GetMaximum(), h_total_bkg.GetMaximum())
+    h_frame = h_nom_data4b.Clone(f"h_frame_{region}")
+    h_frame.Reset()
+    h_frame.SetMinimum(1.0)
+    h_frame.SetMaximum(max_val * 40.0)
+    h_frame.GetYaxis().SetTitle("Events")
+    h_frame.GetYaxis().SetTitleSize(0.045)
+    h_frame.GetYaxis().SetTitleOffset(1.2)
+    h_frame.GetYaxis().SetLabelSize(0.04)
+    h_frame.GetXaxis().SetLabelSize(0)
+    h_frame.GetXaxis().SetTitle("")
+    h_frame.Draw("AXIS")
+
+    h_total_bkg.Draw("HIST SAME")
+    h_nom_ttbar3b.Draw("HIST SAME")
+    h_mix_ave_4b.Draw("HIST SAME")
+    h_nom_data4b.Draw("P E0 SAME")
+
+    # Legend order: data 3b, ttbar, <mixeddata>, data
+    legend = ROOT.TLegend(0.48, 0.65, 0.93, 0.90)
+    legend.SetBorderSize(0)
+    legend.SetFillColorAlpha(ROOT.kWhite, 0.0)
+    legend.SetTextFont(42)
+    legend.SetTextSize(0.032)
+    legend.AddEntry(h_leg_data3b, f"data 3b (N = {int(round(int_data3b))})", "f")
+    legend.AddEntry(h_leg_ttbar, f"ttbar (N = {int(round(int_ttbar))})", "f")
+    legend.AddEntry(h_mix_ave_4b, f"<mixeddata> (N = {int(round(int_mix4b))})", "l")
+    legend.AddEntry(h_nom_data4b, f"data (N = {int(round(int_data4b))})", "ep")
+    legend.Draw("SAME")
+
+    # CMS labels
+    lumi_title = f"{lumi} fb^{{-1}} (13 TeV)"
+    latex = ROOT.TLatex()
+    latex.SetNDC()
+    latex.SetTextFont(61)
+    latex.SetTextSize(0.045)
+    latex.DrawLatex(0.12, 0.93, "CMS")
+    latex.SetTextFont(52)
+    latex.SetTextSize(0.035)
+    latex.DrawLatex(0.20, 0.93, "Work in Progress")
+    latex.SetTextFont(42)
+    latex.SetTextSize(0.040)
+    latex.SetTextAlign(21)
+    latex.DrawLatex(0.53, 0.93, f"{channel} {region}")
+    latex.SetTextAlign(31)
+    latex.DrawLatex(0.95, 0.93, f"#bf{{{lumi_title}}}")
+    h_frame.Draw("AXIS SAME")
+    p1.RedrawAxis()
+
+    # Lower Ratio Pad
+    p2.cd()
+    h_ratio_frame = h_nom_data4b.Clone(f"h_ratio_frame_{region}")
+    h_ratio_frame.Reset()
+    h_ratio_frame.SetMinimum(0.60)
+    h_ratio_frame.SetMaximum(1.40)
+    h_ratio_frame.GetYaxis().SetTitle("Data / Model")
+    h_ratio_frame.GetYaxis().SetNdivisions(505)
+    h_ratio_frame.GetYaxis().SetTitleSize(0.10)
+    h_ratio_frame.GetYaxis().SetTitleOffset(0.52)
+    h_ratio_frame.GetYaxis().SetLabelSize(0.09)
+    h_ratio_frame.GetXaxis().SetTitle(x_title)
+    h_ratio_frame.GetXaxis().SetTitleSize(0.11)
+    h_ratio_frame.GetXaxis().SetTitleOffset(1.1)
+    h_ratio_frame.GetXaxis().SetLabelSize(0.09)
+    h_ratio_frame.Draw("AXIS")
+
+    line = ROOT.TLine(h_ratio_frame.GetXaxis().GetXmin(), 1.0, h_ratio_frame.GetXaxis().GetXmax(), 1.0)
+    line.SetLineStyle(2)
+    line.SetLineColor(ROOT.kGray + 2)
+    line.SetLineWidth(1)
+    line.Draw("SAME")
+
+    # Ratio 1: Data / <mixeddata>
+    r_data_to_mix = h_nom_data4b.Clone(f"r_data_to_mix_{region}")
+    r_data_to_mix.Divide(h_mix_ave_4b)
+    r_data_to_mix.SetMarkerStyle(20)
+    r_data_to_mix.SetMarkerSize(0.85)
+    r_data_to_mix.SetMarkerColor(c_red)
+    r_data_to_mix.SetLineColor(c_red)
+    r_data_to_mix.Draw("P E0 SAME")
+
+    # Ratio 2: Data / (data 3b + ttbar)
+    r_data_to_bkg = h_nom_data4b.Clone(f"r_data_to_bkg_{region}")
+    r_data_to_bkg.Divide(h_total_bkg)
+    r_data_to_bkg.SetMarkerStyle(21)
+    r_data_to_bkg.SetMarkerSize(0.85)
+    r_data_to_bkg.SetMarkerColor(ROOT.kBlue + 1)
+    r_data_to_bkg.SetLineColor(ROOT.kBlue + 1)
+    r_data_to_bkg.Draw("P E0 SAME")
+
+    leg_ratio = ROOT.TLegend(0.14, 0.78, 0.88, 0.96)
+    leg_ratio.SetNColumns(2)
+    leg_ratio.SetBorderSize(0)
+    leg_ratio.SetFillColorAlpha(ROOT.kWhite, 0.0)
+    leg_ratio.SetTextFont(42)
+    leg_ratio.SetTextSize(0.065)
+    leg_ratio.AddEntry(r_data_to_mix, "data / <mixeddata>", "ep")
+    leg_ratio.AddEntry(r_data_to_bkg, "data / (data 3b + ttbar)", "ep")
+    leg_ratio.Draw("SAME")
+    h_ratio_frame.Draw("AXIS SAME")
+    p2.RedrawAxis()
+
+    out_base = f"{output_dir}/data_vs_mixed_vs_bkg_{region}_{rebin_label}"
+    canv.SaveAs(f"{out_base}.png")
+    canv.SaveAs(f"{output_dir}/data_vs_mixed_vs_bkg_{region}.png")
+    if region == "SR":
+        canv.SaveAs(f"{output_dir}/data_vs_mixed_vs_bkg.png")
+    if getattr(args, 'save_all_formats', False):
+        canv.SaveAs(f"{out_base}.pdf")
+        canv.SaveAs(f"{out_base}.C")
+        canv.SaveAs(f"{output_dir}/data_vs_mixed_vs_bkg_{region}.pdf")
+    print_log(f"Saved Data vs Mixed vs Bkg comparison plot ({region}): {out_base}.png")
+    canv.Close()
 
 
 def run():
@@ -2630,26 +3655,64 @@ def run():
     closures[channel] = closure(f, channel, multijetEnsembles[channel])
 
     #
-    # close input file and make plots
+    # close input file
     #
     f.Close()
 
+    # Print exit messages first so they are immediately visible in logs and console
+    multijetEnsembles[channel].print_exit_message()
+    closures[channel].print_exit_message()
+
+    # Generate all fit plots (variance and bias) so diagnostic plots are preserved even on test failure
     for basis in multijetEnsembles[channel].bases:
         multijetEnsembles[channel].plotFit(basis)
     for basis in closures[channel].bases:
         closures[channel].plotFit(basis)
         closures[channel].plotFit(basis, plotSpuriousSignal=True)
-    for m in range(nMixes):
-        closures[channel].plotMix(m)
-    closures[channel].plotMix('ave')
 
-    #
-    # Overlay of all 15 subsamples to verify shape consistency
-    #
-    plotSubsamplesOverlay()
+    failed_steps = []
+    if not multijetEnsembles[channel].passed and getattr(args, 'strict_ensemble', False):
+        failed_steps.append("Multijet Ensemble Variance")
+    if not closures[channel].passed:
+        failed_steps.append("Closure Bias Test")
 
-    multijetEnsembles[channel].print_exit_message()
-    closures[channel].print_exit_message()
+    # Evaluate spurious signal status and basis
+    basis_closure = closures[channel].basis if channel in closures else None
+    ss_fprob = None
+    ss_passed = None
+    ss_basis = None
+    if channel in closures and basis_closure is not None and hasattr(closures[channel], "fProb_ss"):
+        if basis_closure in closures[channel].fProb_ss:
+            ss_fprob = float(closures[channel].fProb_ss[basis_closure])
+            ss_passed = bool(ss_fprob < 0.95) if closures[channel].passed else None
+            ss_basis = int(basis_closure)
+
+    closure_status_file = f"{output_dir}/closure_status.json"
+    import json
+    status_dict = {
+        "channel": channel,
+        "var": args.var,
+        "rebin": int(args.rebin),
+        "n_bins": getattr(closures[channel], "nBins_rebin", None) if channel in closures else None,
+        "max_basis": maxBasisClosure,
+        "variance_passed": bool(multijetEnsembles[channel].passed) if channel in multijetEnsembles else False,
+        "bias_passed": bool(closures[channel].passed) if channel in closures else False,
+        "spurious_signal_passed": ss_passed,
+        "spurious_signal_basis": ss_basis,
+        "spurious_signal_fprob": ss_fprob,
+        "passed": bool(closures[channel].passed and (multijetEnsembles[channel].passed or not getattr(args, 'strict_ensemble', False))),
+        "selected_basis": int(closures[channel].basis) if channel in closures and closures[channel].basis is not None else None,
+        "multijet_basis": int(multijetEnsembles[channel].basis) if channel in multijetEnsembles and multijetEnsembles[channel].basis is not None else None,
+        "failed_steps": failed_steps,
+    }
+    with open(closure_status_file, "w") as sf:
+        json.dump(status_dict, sf, indent=2)
+    print_log(f"Wrote closure status to {closure_status_file}")
+
+    if failed_steps and not getattr(args, 'ignore_failures', False):
+        print_log(f"\n[FATAL] Execution stopped because test(s) failed: {', '.join(failed_steps)}.\n")
+        log_file.close()
+        sys.exit(1)
 
 
 
@@ -2680,14 +3743,31 @@ if __name__ == "__main__":
     parser.add_argument('--use_ZZinSB',   action="store_true")
     parser.add_argument('--use_ZZandZHinSB',   action="store_true")
     #parser.add_argument('--skip_plots',   dest="do_plots",    action="store_false")
-    parser.add_argument('--years', nargs='+', default=["2016", "2017", "2018"], help="List of years (e.g. 2017 2018 or UL17 UL18)")
+    parser.add_argument('--years', nargs='+', default=["UL16_preVFP", "UL16_postVFP", "UL17", "UL18"], help="List of years (e.g. UL16_preVFP UL16_postVFP UL17 UL18)")
     parser.add_argument('--do_CI',   action="store_true")
     parser.add_argument('--pure_qcd', '--no_ttbar', dest='pure_qcd', action="store_true", default=False, help="Pure QCD closure mode with zero ttbar")
     parser.add_argument('--auto_scale_mixed', action="store_true", default=False, help="Auto scale mixed flag (passed from pipeline)")
     parser.add_argument('--signal_scale', type=float, default=None, help="Scale factor for signal visualization on closure plots (default: 1.0 for ttHbb/tth, 100.0 for others)")
+    parser.add_argument('--simple_output_dir', action="store_true", default=False, help="Use simplified output dir outputPath/channel/var")
+    parser.add_argument('--maxBasis', type=int, default=10, help="Max basis order (default: 10)")
+    parser.add_argument('--maxBasisEnsemble', type=int, default=None, help="Max basis order for ensemble variance (defaults to maxBasis)")
+    parser.add_argument('--maxBasisClosure', type=int, default=None, help="Max basis order for closure bias (defaults to maxBasis)")
+    parser.add_argument('--unify_background', action="store_true", default=False, help="Treat the sum (Multijet + TTbar) as the single, total background model across all stages (ensemble variance, closure bias, and plotting)")
+    parser.add_argument('--ignore_failures', action="store_true", default=False, help="Do not exit with error if bias or ensemble test fails")
+    parser.add_argument('--strict_ensemble', action="store_true", default=False, help="Treat failure to find de-correlating basis in ensemble variance as a fatal error (default: fallback to min r)")
+    parser.add_argument('--plot_average_comparison', action="store_true", default=False, help="Plot CMS-style 4-way comparison: Data 4b, Nominal Bkg vs Average Mixed Data 4b and Average Mixed Bkg in SR")
+    parser.add_argument('--input_file_nominal_data', default=None, help="Optional ROOT file containing nominal Data 4b and 3b (defaults to input_file_mix)")
+    parser.add_argument('--input_file_nominal_bkg', default=None, help="Optional ROOT file containing nominal Background (defaults to input_file_mix)")
+    parser.add_argument('--save_all_formats', action="store_true", default=False, help="Save plots in png, pdf, and C formats (default: png only)")
+    parser.add_argument('--match_normalization', '--match-normalization', action="store_true", default=False, help="Scale multijet model so total background integral matches data_obs (mixed data)")
+    parser.add_argument('--subsample_indices', nargs='+', type=int, default=None, help="Explicit list of subsample indices to use (e.g. 0 1 2 ... 12 14 15)")
+    parser.add_argument('--include_ensemble_variance', '--include-ensemble-variance', action="store_true", default=False, help="Incorporate subsample-level ensemble variance across pseudo-experiments into closure error")
+    parser.add_argument('--basis_type', default='fourier', choices=['fourier', 'bernstein'], help="Type of basis functions for closure fits: fourier or bernstein (default: fourier)")
 
     args = parser.parse_args()
     print(f"\nRunning with these parameters: {args}")
+
+    BEs, BE = make_basis_elements(args.basis_type)
 
     #
     #  Parse channel
@@ -2720,7 +3800,10 @@ if __name__ == "__main__":
 
     rebin = int(args.rebin)
     rebin_label = f"varrebin{rebin}" if args.variable_binning else f"rebin{rebin}"
-    output_dir = f'{args.outputPath}/{args.mix_name}/{classifier}/{rebin_label}/{args.region}/{channel}/'
+    if args.simple_output_dir:
+        output_dir = f'{args.outputPath}/{channel}/{args.var}/'
+    else:
+        output_dir = f'{args.outputPath}/{args.mix_name}/{classifier}/{rebin_label}/{args.region}/{channel}/'
     mkpath(output_dir)
 
     closure_file_out = f"{output_dir}/hists_closure_{args.mix_name}_{args.var}_{rebin_label}.root"
@@ -2771,8 +3854,8 @@ if __name__ == "__main__":
     #  Settings
     #
     closure_fit_x_min = 0  # 0.01
-    maxBasisEnsemble  = 5
-    maxBasisClosure   = 5
+    maxBasisEnsemble  = args.maxBasisEnsemble if args.maxBasisEnsemble is not None else args.maxBasis
+    maxBasisClosure   = args.maxBasisClosure if args.maxBasisClosure is not None else args.maxBasis
 
     #if not args.do_CI:
     #    plt.rc('text', usetex=True)
@@ -2786,7 +3869,12 @@ if __name__ == "__main__":
 
     probThreshold = 0.05  # 0.045500263896 #0.682689492137 # 1sigma
 
-    mixes = [f'{args.mix_name}_v{i}' for i in range(nMixes)]
+    if args.subsample_indices is not None and len(args.subsample_indices) > 0:
+        mixes = [f'{args.mix_name}_v{i}' for i in args.subsample_indices]
+        nMixes = len(mixes)
+        print_log(f"[INFO] Using {nMixes} explicit subsample indices: {args.subsample_indices}")
+    else:
+        mixes = [f'{args.mix_name}_v{i}' for i in range(nMixes)]
 
     if not HAS_ROOT:
         if args.do_CI:
@@ -2801,6 +3889,10 @@ if __name__ == "__main__":
     if doPrepInputs:
         print_log("\nPreparing the input \n")
         prepInput()
+
+    # Generate all input diagnostic plots (mix_0..14, mix_ave, subsamples overlay, average comparison)
+    # BEFORE starting any of the variance or bias fits!
+    makeInputDiagnosticPlots(channel)
 
     if args.run_closure:
         print_log("\nRunning the closure \n")

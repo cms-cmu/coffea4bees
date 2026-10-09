@@ -19,8 +19,8 @@ config.setdefault('dataset_location',   "coffea4bees/metadata/datasets/")
 config.setdefault('years', ['2022_EE', '2022_preEE', '2023_BPix', '2023_preBPix'])
 config.setdefault('dataset_name', 'mixeddata_all')
 # Path to the installed dataset metadata yaml. Declared as an input to
-# make_SvB_friendtrees_mixeddata so snakemake schedules the install step
-# (when invoked from Snakefile_Run3_make_mixeddata.smk) before the SvB job.
+# make_SvB_friendtrees_mixeddata. (It used to order this after the install step of the former
+# Snakefile_Run3_make_mixeddata.smk; mixed data is now made by Snakefile_MakeMixedData.smk.)
 # In standalone mode this just points at the committed yaml.
 config.setdefault('install_path',
     f"coffea4bees/metadata/datasets/{config['dataset_name']}.yml")
@@ -132,7 +132,7 @@ if config['reuse_legacy_friends']:
             ),
             legacy_json = LEGACY_SVB_JSON,
         output: f"{SvB_OUT}SvBfriend_mixeddata_data.json"
-        # container: None -> avoid nested apptainer under --profile lpc; ./run_container in the shell provides the container (see merge_cluster in Snakefile_Run3_make_synthetic).
+        # container: None -> avoid nested apptainer under --profile lpc; ./run_container in the shell provides the container (a container: directive would make snakemake enter apptainer, and ./run_container cannot enter it again).
         container: None
         log: f"{SvB_OUT}logs/merge_SvB_friendtrees_mixeddata.log"
         params:
@@ -169,7 +169,7 @@ else:
             ),
             data_json = "coffea4bees/metadata/friends/data_SvBfriend.json",
         output: f"{SvB_OUT}SvBfriend_mixeddata_data.json"
-        # container: None -> avoid nested apptainer under --profile lpc; ./run_container in the shell provides the container (see merge_cluster in Snakefile_Run3_make_synthetic).
+        # container: None -> avoid nested apptainer under --profile lpc; ./run_container in the shell provides the container (a container: directive would make snakemake enter apptainer, and ./run_container cannot enter it again).
         container: None
         log: f"{SvB_OUT}logs/merge_SvB_friendtrees_mixeddata.log"
         params:

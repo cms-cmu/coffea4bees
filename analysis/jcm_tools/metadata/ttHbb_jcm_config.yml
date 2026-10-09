@@ -11,3 +11,9 @@ tagJets: tagJets.n
 
 ignoreTT: False
 subtract3bTT: True
+
+ttbarProcesses:
+  - TTTo2L2Nu_stitched
+  - TTToSemiLeptonic_stitched
+  - TTToHadronic_stitched
+

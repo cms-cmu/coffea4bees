@@ -19,7 +19,7 @@ from coffea4bees.analysis.helpers.load_friend import (
 
 from coffea.analysis_tools import Weights, PackedSelection
 import numpy as np
-from src.physics.objects.jet_corrections import apply_jerc_corrections_jsonpog
+from coffea4bees.analysis.helpers.object_selection import apply_jet_calibration
 from src.physics.common import update_events
 from copy import copy
 import logging
@@ -48,6 +48,15 @@ class HemiMixer(Skimmer4b):
                 k_neighbors: int = 10,
                 collision_mode: str = "retry",
                 default_rank = 0,                 # int or [rp, rn] / (rp, rn) for per-side ranks
+                hemi_year_key: str = "merge_ul16",  # "year": one library per data year; "merge_ul16": UL16_pre/postVFP share UL16 (legacy)
+                mix_tags: str = "threeTag",       # events to mix: "threeTag" (the mixed data) | "fourTag" (4b mixing) | "threeTag_fourTag" (signal check)
+                exclude_source_event: bool | None = None,  # never match a hemi to its own event's library hemis (default: on for fourTag)
+                rank_selection: str = "fixed",    # "fixed": default_rank | "random": uniform in [0, k_random), keyed on mixing_seed
+                k_random: int | None = None,
+                mixing_seed: int = 0,
+                boost_acceptance_eta: float | None = None,  # boost-corrected matching: skip candidates whose boost moves a jet across |eta| = this
+                require_trigWeight: bool = True,  # MC only: without a trigWeight friend, fail or write unit weights
+                event_subsample: int = 1,         # mix only events with event % N == 0 (M.7 signal check); 1: all
                 object_selection_cfg: str = "coffea4bees/analysis/metadata/object_selection_thresholds.yml",
                 *args, **kwargs):
         super().__init__(
@@ -96,7 +105,46 @@ class HemiMixer(Skimmer4b):
         self.k_neighbors       = k_neighbors
         self.collision_mode    = collision_mode
         self.default_rank      = default_rank
-        logging.info(f"use_topk_matching = {self.use_topk_matching}, k_neighbors = {self.k_neighbors}, collision_mode = {self.collision_mode}, default_rank = {self.default_rank}")
+        if hemi_year_key not in ("year", "merge_ul16"):
+            raise ValueError(f"hemi_year_key must be 'year' or 'merge_ul16', got {hemi_year_key!r}")
+        self.hemi_year_key     = hemi_year_key
+        # "threeTag_fourTag": every preselected event (3b and 4b) is mixed -- the MakeMixedData M.7
+        # signal check, which asks what the mixing does to all the signal the data can contain. The
+        # 3b events get the JCM pseudo-tags as in the data; the 4b ones keep their real tags.
+        # "fourTag": 4b mixing -- 4b events, real tags, no JCM needed. Their own hemis are in the
+        # library, so the source-event veto defaults on.
+        if mix_tags not in ("threeTag", "fourTag", "threeTag_fourTag"):
+            raise ValueError(f"mix_tags must be 'threeTag', 'fourTag' or 'threeTag_fourTag', got {mix_tags!r}")
+        self.mix_tags          = mix_tags
+        # Unbiased, reproducible thinning by event number. Whoever builds the dataset from the output
+        # must divide the sample's sumw by N (MakeMixedData M7_dataset_yml does).
+        self.event_subsample   = int(event_subsample)
+        if self.event_subsample < 1:
+            raise ValueError(f"event_subsample must be >= 1, got {event_subsample!r}")
+        if self.apply_JCM is None and mix_tags != "fourTag":
+            raise ValueError(f"mix_tags={mix_tags!r} mixes 3b events, which need the JCM pseudo-tags (apply_JCM)")
+        # ttbar subtraction uses the FvT probability of the events being mixed; the default of
+        # subtract_ttbar_with_FvT is d3_to_t3, wrong for 4b events.
+        self.ttbar_var = {"threeTag": "d3_to_t3", "fourTag": "d4_to_t4"}.get(mix_tags)
+        if subtract_ttbar_with_weights and self.ttbar_var is None:
+            raise ValueError(f"subtract_ttbar_with_weights with mix_tags={mix_tags!r}: no single FvT variable for 3b and 4b events")
+        self.exclude_source_event = (mix_tags == "fourTag") if exclude_source_event is None else bool(exclude_source_event)
+        if rank_selection != "fixed" and not use_topk_matching:
+            raise ValueError("rank_selection='random' needs use_topk_matching=True")
+        if self.exclude_source_event and not use_topk_matching:
+            raise ValueError("exclude_source_event needs use_topk_matching=True")
+        self.rank_selection    = rank_selection
+        self.k_random          = k_random
+        self.mixing_seed       = int(mixing_seed)
+        if boost_acceptance_eta is not None and not use_boost_corrected_matching:
+            raise ValueError("boost_acceptance_eta only applies with use_boost_corrected_matching=True")
+        if boost_acceptance_eta is not None and not use_topk_matching:
+            raise ValueError("boost_acceptance_eta needs use_topk_matching=True")
+        self.boost_acceptance_eta = None if boost_acceptance_eta is None else float(boost_acceptance_eta)
+        self.require_trigWeight = require_trigWeight
+        logging.info(f"use_topk_matching = {self.use_topk_matching}, k_neighbors = {self.k_neighbors}, collision_mode = {self.collision_mode}, default_rank = {self.default_rank}, "
+                     f"mix_tags = {self.mix_tags}, exclude_source_event = {self.exclude_source_event}, rank_selection = {self.rank_selection}, "
+                     f"k_random = {self.k_random}, mixing_seed = {self.mixing_seed}, boost_acceptance_eta = {self.boost_acceptance_eta}")
 
         # Conditional matching variables based on boost correction mode
         if self.use_boost_corrected_matching:
@@ -137,7 +185,7 @@ class HemiMixer(Skimmer4b):
         #
         #  Load the hemisphere libraries
         #
-        year_str = year.replace("_preVFP", "").replace("_postVFP", "")
+        year_str = year if self.hemi_year_key == "year" else year.replace("_preVFP", "").replace("_postVFP", "")
 
         test_load_hemi_kdTrees = True
         if test_load_hemi_kdTrees:
@@ -203,7 +251,7 @@ class HemiMixer(Skimmer4b):
         # Calculate and apply Jet Energy Calibration
         #
         if config["do_jet_calibration"]:
-            jets = apply_jerc_corrections_jsonpog(event,
+            jets = apply_jet_calibration(event,
                                           corrections_metadata=self.corrections_metadata[year],
                                           isMC=config["isMC"],
                                           dataset=dataset
@@ -224,18 +272,32 @@ class HemiMixer(Skimmer4b):
         # Apply JCM
         #
         event["weight"] = weights.weight()
-        jcm_model = self.apply_JCM.get(year) if isinstance(self.apply_JCM, dict) else self.apply_JCM
-        weights, list_weight_names = add_pseudotagweights(
-            event,
-            weights,
-            JCM=jcm_model,
-            apply_FvT=False,
-            isDataForMixed=False,
-            list_weight_names=list_weight_names,
-            event_metadata=event.metadata,
-            year_label=year_label,
-            len_event=len(event),
-            )
+        # An explicit JCM_file is stored under "default" (__init__); the weights-file path is per year.
+        # Looking up only `year` returned None for the former, silently skipped the pseudo-tag
+        # weights, and every chunk then failed on the missing nJet_ps_and_tag.
+        if isinstance(self.apply_JCM, dict):
+            jcm_model = self.apply_JCM.get(year, self.apply_JCM.get("default"))
+            if jcm_model is None:
+                raise ValueError(f"apply_JCM is set but no JCM for year {year!r} (have {list(self.apply_JCM)})")
+        else:
+            jcm_model = self.apply_JCM
+        if jcm_model is None:
+            # 4b mixing (checked in __init__): real tags only, unit pseudo-tag weight
+            event["pseudoTagWeight"]   = np.ones(len(event), dtype=float)
+            event["nJet_pseudotagged"] = np.zeros(len(event), dtype=int)
+            event["nJet_ps_and_tag"]   = ak.num(event.tagJet, axis=1)
+        else:
+            weights, list_weight_names = add_pseudotagweights(
+                event,
+                weights,
+                JCM=jcm_model,
+                apply_FvT=False,
+                isDataForMixed=False,
+                list_weight_names=list_weight_names,
+                event_metadata=event.metadata,
+                year_label=year_label,
+                len_event=len(event),
+                )
 
 
         #
@@ -248,10 +310,23 @@ class HemiMixer(Skimmer4b):
                 # trigWeight = trigWeight_file.arrays(['event', 'trigWeight_Data', 'trigWeight_MC'], entry_start=estart,entry_stop=estop)
                 # if not ak.all(trigWeight.event == event.event):
                 #     raise ValueError('trigWeight events do not match events ttree')
-                trigWeight = self.friends.get("trigWeight").arrays(target)
-
-                event["trigWeight_Data"] = trigWeight.Data
-                event["trigWeight_MC"]   = trigWeight.MC
+                friend = self.friends.get("trigWeight")
+                # a friend index that does not cover this sample returns None (or raises)
+                try:
+                    trigWeight = friend.arrays(target) if friend is not None else None
+                except Exception as e:
+                    logging.warning(f"trigWeight friend lookup failed for {target}: {e}")
+                    trigWeight = None
+                if trigWeight is not None:
+                    event["trigWeight_Data"] = trigWeight.Data
+                    event["trigWeight_MC"]   = trigWeight.MC
+                elif self.require_trigWeight:
+                    raise ValueError(f"no trigWeight friend for {dataset} (set require_trigWeight: false to write unit weights)")
+                else:
+                    # e.g. the Run 3 ggF signal, which no trigger-weight friend covers yet
+                    logging.warning(f"no trigWeight friend for {dataset}: writing unit trigger weights")
+                    event["trigWeight_Data"] = np.ones(len(event))
+                    event["trigWeight_MC"]   = np.ones(len(event))
 
 
         selections = PackedSelection()
@@ -259,7 +334,10 @@ class HemiMixer(Skimmer4b):
         selections.add( "passNoiseFilter", event.passNoiseFilter)
         selections.add( "passHLT", ( event.passHLT if config["cut_on_HLT_decision"] else np.full(len(event), True)  ) )
         selections.add( 'passJetMult',   event.passJetMult )
-        selections.add( "passThreeTag", event.threeTag)
+        mix_tag = {"threeTag": event.threeTag, "fourTag": event.fourTag}.get(self.mix_tags, event.threeTag | event.fourTag)
+        if self.event_subsample > 1:
+            mix_tag = mix_tag & (ak.to_numpy(event.event) % self.event_subsample == 0)
+        selections.add( "passThreeTag", mix_tag)
 
         cumulative_cuts = ["lumimask"]
         self._cutFlow.fill( "all",             event[selections.all(*cumulative_cuts)], allTag=True )
@@ -290,8 +368,9 @@ class HemiMixer(Skimmer4b):
 
             self._cutFlow.fill( "passNTag_btagSF", event[selections.all(*cumulative_cuts)], allTag=True )
 
-        selection = event.lumimask & event.passNoiseFilter & event.passJetMult & event.threeTag
-        if not config["isMC"]: selection = selection & event.passHLT
+        # The same cuts as selev below. The old `& passHLT only for data` disagreed with it for Run 3
+        # MC, where cut_on_HLT_decision is on: "additional branches do not match the selected events".
+        selection = selections.all(*cumulative_cuts)
 
         selev = event[selections.all(*cumulative_cuts)]
 
@@ -300,7 +379,7 @@ class HemiMixer(Skimmer4b):
         #
         if self.subtract_ttbar_with_weights:
 
-            pass_ttbar_filter_selev = subtract_ttbar_with_FvT(selev, dataset, year)
+            pass_ttbar_filter_selev = subtract_ttbar_with_FvT(selev, dataset, year, tt_vs_mj_var=self.ttbar_var)
 
             pass_ttbar_filter = np.full( len(event), True)
             pass_ttbar_filter[ selections.all(*cumulative_cuts) ] = pass_ttbar_filter_selev
@@ -347,6 +426,11 @@ class HemiMixer(Skimmer4b):
                 default_rank=self.default_rank,
                 collision_mode=self.collision_mode,
                 use_boost_corrected_matching=self.use_boost_corrected_matching,
+                exclude_source_event=self.exclude_source_event,
+                rank_selection=self.rank_selection,
+                k_random=self.k_random,
+                mixing_seed=self.mixing_seed,
+                boost_acceptance_eta=self.boost_acceptance_eta,
             )
         elif test_load_hemi_kdTrees:
             all_hemis = replace_hemis_load_kdTrees(all_hemis=all_hemis, hemi_jet_ranges=hemi_jet_ranges,
@@ -406,10 +490,22 @@ class HemiMixer(Skimmer4b):
         neg_hemi_new = neg_hemi_new[not_same_event_selev]
         n_event      = len(selev)
 
+        #
+        #  Signal check (mix_tags threeTag_fourTag): record where each mixed event came from, before
+        #  its jets are replaced -- its input tag, and its untagged loose-jet count (the JCM argument).
+        #  processor_HH4b reads the files as two datasets by origin and weights the 3b-origin events
+        #  by the JCM (MakeMixedData M.7).
+        #
+        origin_vars = []
+        if self.mix_tags != "threeTag":
+            selev["mixInputFourTag"] = ak.values_astype(selev.fourTag, np.int8)
+            selev["mixInputNUntagged"] = ak.num(selev.Jet[selev.Jet.selected & ~selev.Jet.tagged_loose], axis=1)
+            origin_vars = ["mixInputFourTag", "mixInputNUntagged"]
+
 
         old_hemi_output_vars = ["thrust_phi",  "event", "run", "luminosityBlock", "weight", "hemisphereId"]
         new_hemi_output_vars = old_hemi_output_vars + ["match_dist", "match_rank", "nSelJet", "nTagJet", "nJet"]
-        output_vars = []
+        output_vars = list(origin_vars)
 
         for var_name in old_hemi_output_vars:
             selev[f"posHemiOld_{var_name}"] = pos_hemi[var_name]

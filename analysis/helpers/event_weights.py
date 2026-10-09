@@ -109,6 +109,8 @@ def add_pseudotagweights(
     len_event: int = None,
     label3b: str = "threeTag",
     lowpt: bool = False,
+    subsample_jcms: dict = None,
+    year: str = None,
 ):
     """
     Add pseudo-tagging weights to the selected events and update the weights object.
@@ -136,7 +138,7 @@ def add_pseudotagweights(
     event["weight_noJCM_noFvT"] = weights.partial_weight(include=all_weights)
 
     # MvD path for mixeddata_all: apply JCM to fourTag events, then MvD weight
-    if  apply_MvD:
+    if apply_MvD:
         if not JCM:
             logging.error("Need JCM to use apply_MvD!!!")
 
@@ -145,8 +147,15 @@ def add_pseudotagweights(
         event["Jet_untagged_loose"] = event.Jet[selected_jets & ~tagged_loose]
         fourTag = ak.to_numpy(event["fourTag"]).astype(bool)
         jcm_weight = np.ones(len(event), dtype=float)
+        # The mixed-data JCM is fit per selected-jet multiplicity (make_jcm_weights.py on
+        # selJets_noJCM.n, mixeddata_all four-tag as the "3b" sample) and the MvD / SvB trainings
+        # apply it by nSelJets (apply_JCM_from_list); JCM(k) is that fit's weight for nSelJets = k+3.
+        # So the argument is nSelJets - 3, NOT nUntaggedLoose + 1 (the 3b-data definition, below):
+        # the two agree only with exactly four loose tags, and a mixed event carrying five or more
+        # was under-weighted (-4.7 % of the four-tag SB yield in the Run 3 MvD roast, 2026-09-27).
+        n_selected = ak.sum(selected_jets[fourTag], axis=1)
         jcm_weight[fourTag], _ = JCM(
-            ak.num(event[fourTag]["Jet_untagged_loose"], axis=1) + 1,
+            n_selected - 3,
             event.event[fourTag],
         )
 
@@ -414,8 +423,7 @@ def add_pseudotagweights(
                 logging.debug( f"weight_d3_to_t3 {event.weight_d3_to_t3[:10]}\n" )
 
         else:
-            weight_noFvT = np.copy(event.weight)
-            weight_noFvT = np.where(
+            weight_noFvT = ak.where(
                 event[label3b],
                 event["pseudoTagWeight"], # * event["pseudoTagWeight_lowpt"],
                 1.0
@@ -423,6 +431,61 @@ def add_pseudotagweights(
             weights.add("no_FvT", weight_noFvT)
             list_weight_names.append("no_FvT")
             logging.debug( f"no_FvT {weights.partial_weight(include=['no_FvT'])[:10]}\n" )
+
+        # Multi-subsample weights (Stage F_1 single-pass background model)
+        if subsample_jcms:
+            n_3tag_events = int(np.sum(event[label3b]))
+            nUntagged_jets_3tag = ak.num(event[event[label3b]]['Jet_untagged_loose'], axis=1) if n_3tag_events > 0 else []
+            event_numbers_3tag = event.event[event[label3b]] if n_3tag_events > 0 else []
+
+            weights_era = year
+            if weights_era == "2018":
+                weights_era = "UL18"
+            elif weights_era == "2017":
+                weights_era = "UL17"
+            elif weights_era == "2016":
+                weights_era = "UL16_preVFP"
+
+            base_event_weight = np.array(event.weight, dtype=float, copy=True)
+            for v_name, jcm_entry in subsample_jcms.items():
+                if isinstance(jcm_entry, dict):
+                    jcm_v = jcm_entry.get(weights_era) or jcm_entry.get(year_label) or jcm_entry.get(year) or jcm_entry.get("default")
+                else:
+                    jcm_v = jcm_entry
+
+                if jcm_v is not None and n_3tag_events > 0:
+                    if hasattr(jcm_v, "JCM_weights") and len(jcm_v.JCM_weights) > 0:
+                        w_arr = np.array(jcm_v.JCM_weights, dtype=float)
+                        w_table = np.zeros(len(w_arr) + 1, dtype=float)
+                        w_table[1:] = w_arr
+                        n_untagged_np = ak.to_numpy(nUntagged_jets_3tag).astype(int)
+                        clamped_idx = np.clip(n_untagged_np, 0, len(w_table) - 1)
+                        w_jcm_v = w_table[clamped_idx]
+                    else:
+                        w_jcm_v, _ = jcm_v(nUntagged_jets_3tag, event_numbers_3tag)
+                else:
+                    w_jcm_v = np.ones(n_3tag_events, dtype=float)
+
+                fvt_field = f"FvT_{v_name}" if f"FvT_{v_name}" in event.fields else "FvT"
+                fvt_obj = getattr(event, fvt_field) if fvt_field in event.fields else None
+
+                w_data_v = np.copy(base_event_weight)
+                w_t4_v = np.copy(base_event_weight)
+                w_t3_v = np.copy(base_event_weight)
+
+                if n_3tag_events > 0 and fvt_obj is not None:
+                    mask3 = np.asarray(event[label3b]).astype(bool)
+                    base_w = base_event_weight[mask3]
+                    fvt_val = np.asarray(fvt_obj.FvT[mask3])
+                    w_data_v[mask3] = base_w * w_jcm_v * fvt_val
+                    if hasattr(fvt_obj, "d3_to_t4"):
+                        w_t4_v[mask3] = base_w * w_jcm_v * np.asarray(fvt_obj.d3_to_t4[mask3])
+                    if hasattr(fvt_obj, "d3_to_t3"):
+                        w_t3_v[mask3] = base_w * w_jcm_v * np.asarray(fvt_obj.d3_to_t3[mask3])
+
+                event[f"weight_{v_name}"] = w_data_v
+                event[f"weight_d3_to_t4_{v_name}"] = w_t4_v
+                event[f"weight_d3_to_t3_{v_name}"] = w_t3_v
 
     return weights, list_weight_names
 

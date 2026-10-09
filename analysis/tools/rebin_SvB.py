@@ -74,7 +74,7 @@ def load_bkg_evaluator(bkg_path, bkg_type="total"):
         data = coffea.util.load(bkg_path)
         hists = data.get("hists", data)
         # Use fine histogram if available
-        hist_name = "SvB_MA.ps_ttHbb_fine" if "SvB_MA.ps_ttHbb_fine" in hists else "SvB_MA.ps"
+        hist_name = "SvB_MA.ps"
         h = hists[hist_name]
         
         # Multijet: data threeTag SR

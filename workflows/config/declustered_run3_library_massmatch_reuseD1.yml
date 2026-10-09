@@ -1,0 +1,20 @@
+# ==============================================================================
+# declustered_run3_library_massmatch (variant B) restarted on the faster code, reusing a D.1
+# ==============================================================================
+# The m/pT-matching variant without its own D.1: the splitting library is the one roast
+# libB_run3_20260930_4e3ad63-da2340e built and published (D.1 does not depend on
+# mass_match_weight, which only enters the D.3 lookup), so this runs D.3, D.4, D.6 only.
+# libB itself was stopped after its D.3 lost its shared Dask scheduler.
+#
+#   roast new --config coffea4bees/workflows/config/declustered_run3_library_massmatch_reuseD1.yml \
+#       --label libB2_run3 --step cmslpc:coffea4bees/workflows/Snakefile_DeClustered.smk
+#
+base: coffea4bees/workflows/config/declustered_run3_library_massmatch.yml
+
+label: "declustered_run3_library_massmatch_reuseD1"
+
+inputs:
+  # lists are replaced, not merged: the base's three upstreams + the library roast
+  upstream_roasts: [nominal_run3_nontight_20260925_0c53380-193851f, mixeddata_run3_20260926_956d4bf-aca8a4e,
+                    nominal_run3_20260922_3f9e199-1e0504f, libB_run3_20260930_4e3ad63-da2340e]
+  splitting_library: "{roast:libB_run3_20260930_4e3ad63-da2340e}/splitting_library/splitting_library.yml"

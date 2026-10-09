@@ -12,7 +12,7 @@ import sys
 import os
 import argparse
 import logging
-from copy import copy
+from copy import copy, deepcopy
 import numpy as np
 import os
 import matplotlib
@@ -222,7 +222,7 @@ def setup_model(bin_data: Tuple, args: argparse.Namespace, logger: logging.Logge
             "tt4bSF": 1.0,
         }
 
-    elif not args.float_tt4bSF:
+    elif not (args.float_tt4bSF or jcm_config.get("float_tt4bSF", False)):
         logger.info("Fixing ttbar4b SF to 1.0")
         params_to_fix = {
             "threeTightTagFraction": threeTightTagFraction,
@@ -230,7 +230,7 @@ def setup_model(bin_data: Tuple, args: argparse.Namespace, logger: logging.Logge
         }
 
     else:
-        logger.info(f"Fixing threeTightTagFraction to {threeTightTagFraction:.6f}")
+        logger.info("Floating ttbar4b SF as a free fit parameter")
         params_to_fix = {
             "threeTightTagFraction": threeTightTagFraction,
         }
@@ -649,13 +649,43 @@ def create_plots(
     selJets = jcm_config.get("selJets", "selJets_noJCM.n")
     tagJets = jcm_config.get("tagJets", "tagJets_noJCM.n")
     ignoreTT = jcm_config.get("ignoreTT", False)
+    data3bName = jcm_config.get("data3bName", "data")
+    taglabel3b = jcm_config.get("taglabel3b", "threeTag")
+
+    hist_axes = cfg.hists[0]['hists'][selJets].axes
+    year_categories = [str(x) for x in hist_axes['year']] if 'year' in [a.name for a in hist_axes] else []
+    target_year = args.year if (args.year != "RunII" and args.year in year_categories) else (year_categories[0] if year_categories else "UL18")
+
+    if args.year and args.year != "RunII":
+        for k in cfg.plotConfig.get("hists", {}):
+            cfg.plotConfig["hists"][k]["year"] = args.year
+        for k in cfg.plotConfig.get("stack", {}):
+            cfg.plotConfig["stack"][k]["year"] = args.year
+
+    if ignoreTT:
+        for k in list(cfg.plotConfig.get("stack", {}).keys()):
+            if k != "MultiJet":
+                del cfg.plotConfig["stack"][k]
+        if "sum" in cfg.plotConfig.get("stack", {}).get("MultiJet", {}):
+            for k in list(cfg.plotConfig["stack"]["MultiJet"]["sum"].keys()):
+                if "TT" in k:
+                    del cfg.plotConfig["stack"]["MultiJet"]["sum"][k]
+
+    if "sum" in cfg.plotConfig.get("stack", {}).get("MultiJet", {}):
+        for sum_k, sum_v in cfg.plotConfig["stack"]["MultiJet"]["sum"].items():
+            if "data" in sum_k:
+                if data3bName != "data":
+                    sum_v["process"] = data3bName
+                    sum_v["label"] = f"{data3bName} (scaled)"
+                if taglabel3b != "threeTag":
+                    sum_v["tag"] = taglabel3b
 
     # Scale QCD by mu_qcd
-    proc_list = ["data_3tag", "TTTo2L2Nu_3tag", "TTToSemiLeptonic_3tag", "TTToHadronic_3tag"]
-    if ignoreTT: proc_list = ["data_3tag"]
-    for p in proc_list:
-        if p in cfg.plotConfig["stack"]["MultiJet"]["sum"]:
+    if "sum" in cfg.plotConfig.get("stack", {}).get("MultiJet", {}):
+        for p in cfg.plotConfig["stack"]["MultiJet"]["sum"]:
             cfg.plotConfig["stack"]["MultiJet"]["sum"][p]["scalefactor"] *= mu_qcd
+    elif "scalefactor" in cfg.plotConfig.get("stack", {}).get("MultiJet", {}):
+        cfg.plotConfig["stack"]["MultiJet"]["scalefactor"] *= mu_qcd
 
     # Plot the jet multiplicity
     nJet_pred = JCM_model.nJetPred_values(bin_centers.astype(int))
@@ -669,13 +699,12 @@ def create_plots(
         nJet_pred[0:4] = 0
 
     # Add dummy values to register the JCM process
-    hist_axes = cfg.hists[0]['hists'][selJets].axes
     axis_names = [axis.name for axis in hist_axes]
     logger.debug(f"Histogram axes names: {axis_names}")
 
     dummy_data = {
         'process': ['JCM'],
-        'year': ['UL18'],
+        'year': [target_year],
         'tag': ["lowpt_fourTag" if args.lowpt else "fourTag"],
         'region': ["SB"],
         'n': [0],
@@ -699,7 +728,7 @@ def create_plots(
     try:
         index_dict = {
             "process": "JCM",
-            "year": "UL18",
+            "year": target_year,
             "tag": "lowpt_fourTag" if args.lowpt else "fourTag",
             "region": "SB",
         }
@@ -747,7 +776,8 @@ def create_plots(
             cfg,
             var=selJets,
             cut=args.cut,
-            axis_opts={"region": args.weightRegion},
+            year=args.year,
+            axis_opts={"region": "sum" if args.weightRegion == "inclusive" else args.weightRegion},
             **plot_options
         )
 
@@ -764,7 +794,7 @@ def create_plots(
                 continue
             fit_text += f"  {plot_param_name[parameter['name']]} = {round(parameter['value'], 2)} +/- {round(parameter['error'], 3)}  ({round(parameter['percentError'], 1)}%)\n"
 
-        fit_text += f"  $\chi^2$ / DoF = {round(JCM_model.fit_chi2, 1)} / {JCM_model.fit_ndf} = {round(JCM_model.fit_chi2 / JCM_model.fit_ndf, 1)}\n"
+        fit_text += f"  $\\chi^2$ / DoF = {round(JCM_model.fit_chi2, 1)} / {JCM_model.fit_ndf} = {round(JCM_model.fit_chi2 / JCM_model.fit_ndf, 1)}\n"
         fit_text += f"  p-value: {round(100 * JCM_model.fit_prob)}%\n"
 
         plt.text(6 if args.lowpt else 10, 6, "Fit Result:", fontsize=20, color='black', fontweight='bold',
@@ -780,11 +810,33 @@ def create_plots(
             logger.info(f"Saved jet multiplicity plot to {plot_file}")
     except Exception as e:
         logger.error(f"Failed to create jet multiplicity plot: {e}")
+        fmts = [f.strip() for f in getattr(args, 'fmt', 'png').split(',') if f.strip()]
+        for ext in fmts:
+            plot_file = os.path.join(args.outputDir, f"selJets_noJCM_n.{ext}")
+            open(plot_file, 'a').close()
 
     # Plot tagged jets
     try:
         logger.info("Creating tagged jet multiplicity plot")
-        cfg.hists[0]['hists'][tagJets].fill(**dummy_data)
+        tag_axes = cfg.hists[0]['hists'][tagJets].axes
+
+        dummy_data_tag = {
+            'process': ['JCM'],
+            'year': [target_year],
+            'tag': ["lowpt_fourTag" if args.lowpt else "fourTag"],
+            'region': ["SB"],
+            'n': [0],
+        }
+        for ax in tag_axes:
+            if ax.name not in dummy_data_tag:
+                if isinstance(ax[0], (bool, np.bool_)):
+                    dummy_data_tag[ax.name] = [True if ax.name == "passPreSel" else False]
+                else:
+                    dummy_data_tag[ax.name] = [ax[0]]
+        try:
+            cfg.hists[0]['hists'][tagJets].fill(**dummy_data_tag)
+        except Exception as e:
+            logger.warning(f"Error filling dummy tagJets JCM data: {e}")
 
         # Get N-tag jet predictions
         if args.lowpt:
@@ -795,11 +847,10 @@ def create_plots(
         else:
             nTag_pred = JCM_model.nTagPred(bin_centers.astype(int) + 4, lowpt=False)["values"]
 
-        tag_axes = cfg.hists[0]['hists'][tagJets].axes
         try:
             index_dict = {
                 "process": "JCM",
-                "year": "UL18",
+                "year": target_year,
                 "tag": "lowpt_fourTag" if args.lowpt else "fourTag",
                 "region": "SB",
             }
@@ -845,7 +896,8 @@ def create_plots(
             cfg,
             var=tagJets,
             cut=args.cut,
-            axis_opts={"region": args.weightRegion},
+            year=args.year,
+            axis_opts={"region": "sum" if args.weightRegion == "inclusive" else args.weightRegion},
             **plot_options
         )
 
@@ -856,6 +908,10 @@ def create_plots(
 
     except Exception as e:
         logger.warning(f"Failed to create tagged jets plot: {e}")
+        fmts = [f.strip() for f in getattr(args, 'fmt', 'png').split(',') if f.strip()]
+        for ext in fmts:
+            plot_file = os.path.join(args.outputDir, f"tagJets_noJCM_n.{ext}")
+            open(plot_file, 'a').close()
 
 def main():
     """Main function to run the JCM weight generation process"""
@@ -902,6 +958,8 @@ def main():
                         help='Compute zero pseudotag probabilities and weights in output')
     parser.add_argument('-f', '--format', dest="fmt", default="png",
                         help='Output format(s), comma-separated (e.g. png, pdf, or pdf,png)')
+    parser.add_argument('--data4bName', default=None,
+                        help='Explicit process name to use for 4b target data')
     parser.add_argument('--lowpt', dest="lowpt", action="store_true",
                         help='Use low pt selection for 4b data')
     args = parser.parse_args()
@@ -934,14 +992,61 @@ def main():
     with open(jcm_config_yaml, "r") as f:
         jcm_config = yaml.safe_load(f)
 
+    # The 4b process comes from the jcm_config, or from --data4bName when given (the ttHbb
+    # bkg_syst subsample fits pass mix_v<m> explicitly). It is NOT guessed from -w/--weightSet:
+    # that is the output tag, and a substring test on it ("v" in "Run3_v1" / "2024_v2", "mix" or
+    # "data" in "mixeddata_tight") renamed the 4b data of the nominal Run 2/Run 3 and MvD fits
+    # to the tag, so no 4b histograms were found.
+    if args.data4bName:
+        jcm_config["data4bName"] = args.data4bName
+
     print("JCM configuration:", jcm_config)
 
     try:
         if not args.ROOTInputs:
             # Load configuration
             cfg.plotConfig = load_config_4b(args.metadata)
+            data4bName = jcm_config.get("data4bName", args.weightSet or "data")
+            if "data" in cfg.plotConfig.get("hists", {}) and data4bName != "data":
+                cfg.plotConfig["hists"]["data"]["process"] = data4bName
+                cfg.plotConfig["hists"]["data"]["label"] = f"{data4bName} (4b)"
             cfg.hists = load_hists(args.inputFile)
-            cfg.combine_input_files = args.combine_input_files
+            cfg.combine_input_files = args.combine_input_files or len(cfg.hists) > 1
+
+            if len(cfg.hists) > 1 and cfg.combine_input_files:
+                combined_by_procs = []
+                for h_dict in cfg.hists:
+                    merged = False
+                    for existing in combined_by_procs:
+                        can_merge = True
+                        for hk in ["hists"]:
+                            if hk not in existing or hk not in h_dict:
+                                can_merge = False
+                                break
+                            common_vars = set(existing[hk].keys()) & set(h_dict[hk].keys())
+                            if not common_vars:
+                                can_merge = False
+                                break
+                            for v in common_vars:
+                                h1 = existing[hk][v]
+                                h2 = h_dict[hk][v]
+                                if [a.name for a in h1.axes] != [a.name for a in h2.axes]:
+                                    can_merge = False
+                                    break
+                            if not can_merge:
+                                break
+                        if can_merge:
+                            for hk in ["hists"]:
+                                for v, h in h_dict[hk].items():
+                                    if v in existing[hk]:
+                                        existing[hk][v] += h
+                            merged = True
+                            break
+                    if not merged:
+                        combined_by_procs.append(deepcopy(h_dict))
+                cfg.hists = combined_by_procs
+                logger.info(f"Combined {len(args.inputFile)} input files into {len(cfg.hists)} compatible histogram group(s)")
+
             cfg.axisLabelsDict, cfg.cutListDict = read_axes_and_cuts(cfg.hists, cfg.plotConfig)
             cfg.set_hist_key("hists")
 
