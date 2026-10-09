@@ -3,518 +3,758 @@ counts4:
         passJetMult: 13.36
         passPreSel: 1.57
         passDiJetMass: 1.57
-        SR: 1.19
-        SB: 0.37
+        SR: 0.45
+        SB: 1.13
     ttHbb_UL17:
         passJetMult: 10.77
         passPreSel: 1.23
         passDiJetMass: 1.23
-        SR: 0.93
-        SB: 0.29
+        SR: 0.34
+        SB: 0.89
     ttHbb_UL16_preVFP:
         passJetMult: 10.86
         passPreSel: 1.11
         passDiJetMass: 1.11
-        SR: 0.87
-        SB: 0.23
+        SR: 0.29
+        SB: 0.81
     ttHbb_UL16_postVFP:
         passJetMult: 8.34
         passPreSel: 0.77
         passDiJetMass: 0.77
-        SR: 0.6
-        SB: 0.17
+        SR: 0.24
+        SB: 0.54
     data_UL18D:
         passJetMult: 9974.0
-        passPreSel: 384.0
-        passDiJetMass: 384.0
-        SR: 214.0
-        SB: 168.0
+        passPreSel: 385.0
+        passDiJetMass: 385.0
+        SR: 45.0
+        SB: 340.0
     data_UL18C:
         passJetMult: 9974.0
-        passPreSel: 387.0
-        passDiJetMass: 387.0
-        SR: 206.0
-        SB: 176.0
+        passPreSel: 391.0
+        passDiJetMass: 391.0
+        SR: 51.0
+        SB: 340.0
     data_UL18B:
         passJetMult: 9976.0
-        passPreSel: 412.0
-        passDiJetMass: 412.0
-        SR: 211.0
-        SB: 199.0
+        passPreSel: 415.0
+        passDiJetMass: 415.0
+        SR: 46.0
+        SB: 369.0
     data_UL18A:
         passJetMult: 9903.0
-        passPreSel: 321.0
-        passDiJetMass: 321.0
-        SR: 189.0
-        SB: 128.0
+        passPreSel: 322.0
+        passDiJetMass: 322.0
+        SR: 45.0
+        SB: 277.0
     data_UL17F:
         passJetMult: 9962.0
-        passPreSel: 406.0
-        passDiJetMass: 406.0
-        SR: 219.0
-        SB: 184.0
+        passPreSel: 408.0
+        passDiJetMass: 408.0
+        SR: 61.0
+        SB: 347.0
     data_UL17E:
         passJetMult: 9956.0
-        passPreSel: 431.0
-        passDiJetMass: 431.0
-        SR: 231.0
-        SB: 195.0
+        passPreSel: 433.0
+        passDiJetMass: 433.0
+        SR: 49.0
+        SB: 384.0
     data_UL17D:
         passJetMult: 9941.0
-        passPreSel: 581.0
-        passDiJetMass: 581.0
-        SR: 332.0
-        SB: 247.0
+        passPreSel: 584.0
+        passDiJetMass: 584.0
+        SR: 75.0
+        SB: 509.0
     data_UL17C:
         passJetMult: 9951.0
-        passPreSel: 534.0
-        passDiJetMass: 534.0
-        SR: 287.0
-        SB: 243.0
+        passPreSel: 539.0
+        passDiJetMass: 539.0
+        SR: 66.0
+        SB: 473.0
     data_UL16_preVFPF:
         passJetMult: 9894.0
         passPreSel: 266.0
         passDiJetMass: 266.0
-        SR: 150.0
-        SB: 116.0
+        SR: 40.0
+        SB: 226.0
     data_UL16_preVFPE:
         passJetMult: 9879.0
-        passPreSel: 201.0
-        passDiJetMass: 201.0
-        SR: 102.0
-        SB: 99.0
+        passPreSel: 203.0
+        passDiJetMass: 203.0
+        SR: 33.0
+        SB: 170.0
     data_UL16_preVFPD:
         passJetMult: 9870.0
         passPreSel: 293.0
         passDiJetMass: 293.0
-        SR: 162.0
-        SB: 129.0
+        SR: 58.0
+        SB: 235.0
     data_UL16_preVFPC:
         passJetMult: 9860.0
         passPreSel: 271.0
         passDiJetMass: 271.0
-        SR: 151.0
-        SB: 118.0
+        SR: 44.0
+        SB: 227.0
     data_UL16_postVFPH:
         passJetMult: 9839.0
-        passPreSel: 312.0
-        passDiJetMass: 312.0
-        SR: 169.0
-        SB: 139.0
+        passPreSel: 315.0
+        passDiJetMass: 315.0
+        SR: 64.0
+        SB: 251.0
     data_UL16_postVFPG:
         passJetMult: 9878.0
-        passPreSel: 235.0
-        passDiJetMass: 235.0
-        SR: 127.0
-        SB: 107.0
+        passPreSel: 237.0
+        passDiJetMass: 237.0
+        SR: 35.0
+        SB: 202.0
     data_UL16_postVFPF:
         passJetMult: 8973.0
-        passPreSel: 228.0
-        passDiJetMass: 228.0
-        SR: 142.0
-        SB: 86.0
+        passPreSel: 229.0
+        passDiJetMass: 229.0
+        SR: 43.0
+        SB: 186.0
     TTbar_from_d3_UL18D:
+        passPreSel: 20.86
+        passDiJetMass: 20.86
+        SR: 3.6
+        SB: 17.26
     TTbar_from_d3_UL18C:
+        passPreSel: 22.48
+        passDiJetMass: 22.48
+        SR: 3.8
+        SB: 18.68
     TTbar_from_d3_UL18B:
+        passPreSel: 20.9
+        passDiJetMass: 20.9
+        SR: 3.3
+        SB: 17.6
     TTbar_from_d3_UL18A:
+        passPreSel: 18.43
+        passDiJetMass: 18.43
+        SR: 3.44
+        SB: 14.99
     TTbar_from_d3_UL17F:
+        passPreSel: 29.85
+        passDiJetMass: 29.85
+        SR: 5.02
+        SB: 24.83
     TTbar_from_d3_UL17E:
+        passPreSel: 24.99
+        passDiJetMass: 24.99
+        SR: 4.87
+        SB: 20.12
     TTbar_from_d3_UL17D:
+        passPreSel: 29.64
+        passDiJetMass: 29.64
+        SR: 5.63
+        SB: 24.02
     TTbar_from_d3_UL17C:
+        passPreSel: 28.63
+        passDiJetMass: 28.63
+        SR: 6.28
+        SB: 22.35
     TTbar_from_d3_UL16_preVFPF:
+        passPreSel: 12.57
+        passDiJetMass: 12.57
+        SR: 2.72
+        SB: 9.85
     TTbar_from_d3_UL16_preVFPE:
+        passPreSel: 13.33
+        passDiJetMass: 13.33
+        SR: 2.64
+        SB: 10.7
     TTbar_from_d3_UL16_preVFPD:
+        passPreSel: 13.03
+        passDiJetMass: 13.03
+        SR: 2.48
+        SB: 10.54
     TTbar_from_d3_UL16_preVFPC:
+        passPreSel: 11.6
+        passDiJetMass: 11.6
+        SR: 2.08
+        SB: 9.52
     TTbar_from_d3_UL16_postVFPH:
+        passPreSel: 10.5
+        passDiJetMass: 10.5
+        SR: 2.03
+        SB: 8.46
     TTbar_from_d3_UL16_postVFPG:
+        passPreSel: 10.91
+        passDiJetMass: 10.91
+        SR: 2.01
+        SB: 8.9
     TTbar_from_d3_UL16_postVFPF:
+        passPreSel: 10.33
+        passDiJetMass: 10.33
+        SR: 1.98
+        SB: 8.35
 counts3:
     ttHbb_UL18:
         passJetMult: 13.36
         passPreSel: 0.58
         passDiJetMass: 0.58
-        SR: 0.42
-        SB: 0.16
+        SR: 0.13
+        SB: 0.45
     ttHbb_UL17:
         passJetMult: 10.77
         passPreSel: 0.46
         passDiJetMass: 0.46
-        SR: 0.34
-        SB: 0.12
+        SR: 0.11
+        SB: 0.35
     ttHbb_UL16_preVFP:
         passJetMult: 10.86
         passPreSel: 0.5
         passDiJetMass: 0.5
-        SR: 0.38
-        SB: 0.12
+        SR: 0.13
+        SB: 0.37
     ttHbb_UL16_postVFP:
         passJetMult: 8.34
         passPreSel: 0.37
         passDiJetMass: 0.37
-        SR: 0.29
-        SB: 0.09
+        SR: 0.1
+        SB: 0.28
     data_UL18D:
         passJetMult: 9974.0
         passPreSel: 376.7
         passDiJetMass: 376.7
-        SR: 201.2
-        SB: 173.53
+        SR: 43.06
+        SB: 333.64
     data_UL18C:
         passJetMult: 9974.0
         passPreSel: 370.32
         passDiJetMass: 370.32
-        SR: 192.54
-        SB: 175.3
+        SR: 45.6
+        SB: 324.73
     data_UL18B:
         passJetMult: 9976.0
         passPreSel: 377.12
         passDiJetMass: 377.12
-        SR: 205.05
-        SB: 169.74
+        SR: 47.25
+        SB: 329.87
     data_UL18A:
         passJetMult: 9903.0
         passPreSel: 357.85
         passDiJetMass: 357.85
-        SR: 191.25
-        SB: 164.14
+        SR: 44.4
+        SB: 313.45
     data_UL17F:
         passJetMult: 9962.0
         passPreSel: 470.75
         passDiJetMass: 470.75
-        SR: 250.76
-        SB: 217.17
+        SR: 57.21
+        SB: 413.54
     data_UL17E:
         passJetMult: 9956.0
         passPreSel: 445.81
         passDiJetMass: 445.81
-        SR: 243.86
-        SB: 200.03
+        SR: 60.91
+        SB: 384.9
     data_UL17D:
         passJetMult: 9941.0
         passPreSel: 469.25
         passDiJetMass: 469.25
-        SR: 254.34
-        SB: 212.88
+        SR: 61.63
+        SB: 407.62
     data_UL17C:
         passJetMult: 9951.0
         passPreSel: 473.88
         passDiJetMass: 473.88
-        SR: 255.49
-        SB: 216.67
+        SR: 65.15
+        SB: 408.73
     data_UL16_preVFPF:
         passJetMult: 9894.0
         passPreSel: 258.11
         passDiJetMass: 258.11
-        SR: 146.97
-        SB: 109.71
+        SR: 43.63
+        SB: 214.49
     data_UL16_preVFPE:
         passJetMult: 9879.0
         passPreSel: 262.29
         passDiJetMass: 262.29
-        SR: 146.47
-        SB: 114.32
+        SR: 43.59
+        SB: 218.7
     data_UL16_preVFPD:
         passJetMult: 9870.0
         passPreSel: 265.91
         passDiJetMass: 265.91
-        SR: 149.31
-        SB: 115.23
+        SR: 45.94
+        SB: 219.97
     data_UL16_preVFPC:
         passJetMult: 9860.0
         passPreSel: 255.27
         passDiJetMass: 255.27
-        SR: 140.95
-        SB: 112.79
+        SR: 41.75
+        SB: 213.52
     data_UL16_postVFPH:
         passJetMult: 9839.0
         passPreSel: 253.73
         passDiJetMass: 253.73
-        SR: 144.34
-        SB: 108.49
+        SR: 39.82
+        SB: 213.9
     data_UL16_postVFPG:
         passJetMult: 9878.0
         passPreSel: 251.67
         passDiJetMass: 251.66
-        SR: 143.79
-        SB: 106.83
+        SR: 44.22
+        SB: 207.44
     data_UL16_postVFPF:
         passJetMult: 8973.0
         passPreSel: 223.51
         passDiJetMass: 223.51
-        SR: 129.32
-        SB: 93.13
+        SR: 37.45
+        SB: 186.06
     TTbar_from_d3_UL18D:
+        passPreSel: 75.21
+        passDiJetMass: 75.21
+        SR: 13.64
+        SB: 61.57
     TTbar_from_d3_UL18C:
+        passPreSel: 77.36
+        passDiJetMass: 77.36
+        SR: 14.88
+        SB: 62.48
     TTbar_from_d3_UL18B:
+        passPreSel: 75.98
+        passDiJetMass: 75.98
+        SR: 13.95
+        SB: 62.03
     TTbar_from_d3_UL18A:
+        passPreSel: 65.54
+        passDiJetMass: 65.54
+        SR: 13.61
+        SB: 51.93
     TTbar_from_d3_UL17F:
+        passPreSel: 99.05
+        passDiJetMass: 99.05
+        SR: 20.59
+        SB: 78.45
     TTbar_from_d3_UL17E:
+        passPreSel: 89.7
+        passDiJetMass: 89.7
+        SR: 20.08
+        SB: 69.62
     TTbar_from_d3_UL17D:
+        passPreSel: 101.06
+        passDiJetMass: 101.06
+        SR: 22.61
+        SB: 78.45
     TTbar_from_d3_UL17C:
+        passPreSel: 101.66
+        passDiJetMass: 101.66
+        SR: 24.0
+        SB: 77.66
     TTbar_from_d3_UL16_preVFPF:
+        passPreSel: 58.01
+        passDiJetMass: 58.01
+        SR: 13.25
+        SB: 44.76
     TTbar_from_d3_UL16_preVFPE:
+        passPreSel: 60.31
+        passDiJetMass: 60.31
+        SR: 13.38
+        SB: 46.94
     TTbar_from_d3_UL16_preVFPD:
+        passPreSel: 59.31
+        passDiJetMass: 59.31
+        SR: 12.67
+        SB: 46.64
     TTbar_from_d3_UL16_preVFPC:
+        passPreSel: 54.62
+        passDiJetMass: 54.62
+        SR: 11.73
+        SB: 42.89
     TTbar_from_d3_UL16_postVFPH:
+        passPreSel: 51.15
+        passDiJetMass: 51.15
+        SR: 11.49
+        SB: 39.66
     TTbar_from_d3_UL16_postVFPG:
+        passPreSel: 51.51
+        passDiJetMass: 51.51
+        SR: 11.51
+        SB: 40.0
     TTbar_from_d3_UL16_postVFPF:
+        passPreSel: 47.3
+        passDiJetMass: 47.3
+        SR: 10.23
+        SB: 37.07
 counts4_unit:
     ttHbb_UL18:
         passJetMult: 9504.0
         passPreSel: 1264.0
         passDiJetMass: 1264.0
-        SR: 956.0
-        SB: 300.0
+        SR: 381.0
+        SB: 883.0
     ttHbb_UL17:
         passJetMult: 9505.0
         passPreSel: 1265.0
         passDiJetMass: 1265.0
-        SR: 964.0
-        SB: 292.0
+        SR: 360.0
+        SB: 905.0
     ttHbb_UL16_preVFP:
         passJetMult: 9650.0
         passPreSel: 1046.0
         passDiJetMass: 1046.0
-        SR: 822.0
-        SB: 222.0
+        SR: 274.0
+        SB: 772.0
     ttHbb_UL16_postVFP:
         passJetMult: 9561.0
         passPreSel: 1040.0
         passDiJetMass: 1040.0
-        SR: 798.0
-        SB: 239.0
+        SR: 302.0
+        SB: 738.0
     data_UL18D:
         passJetMult: 9974.0
-        passPreSel: 384.0
-        passDiJetMass: 384.0
-        SR: 214.0
-        SB: 168.0
+        passPreSel: 385.0
+        passDiJetMass: 385.0
+        SR: 45.0
+        SB: 340.0
     data_UL18C:
         passJetMult: 9974.0
-        passPreSel: 387.0
-        passDiJetMass: 387.0
-        SR: 206.0
-        SB: 176.0
+        passPreSel: 391.0
+        passDiJetMass: 391.0
+        SR: 51.0
+        SB: 340.0
     data_UL18B:
         passJetMult: 9976.0
-        passPreSel: 412.0
-        passDiJetMass: 412.0
-        SR: 211.0
-        SB: 199.0
+        passPreSel: 415.0
+        passDiJetMass: 415.0
+        SR: 46.0
+        SB: 369.0
     data_UL18A:
         passJetMult: 9903.0
-        passPreSel: 321.0
-        passDiJetMass: 321.0
-        SR: 189.0
-        SB: 128.0
+        passPreSel: 322.0
+        passDiJetMass: 322.0
+        SR: 45.0
+        SB: 277.0
     data_UL17F:
         passJetMult: 9962.0
-        passPreSel: 406.0
-        passDiJetMass: 406.0
-        SR: 219.0
-        SB: 184.0
+        passPreSel: 408.0
+        passDiJetMass: 408.0
+        SR: 61.0
+        SB: 347.0
     data_UL17E:
         passJetMult: 9956.0
-        passPreSel: 431.0
-        passDiJetMass: 431.0
-        SR: 231.0
-        SB: 195.0
+        passPreSel: 433.0
+        passDiJetMass: 433.0
+        SR: 49.0
+        SB: 384.0
     data_UL17D:
         passJetMult: 9941.0
-        passPreSel: 581.0
-        passDiJetMass: 581.0
-        SR: 332.0
-        SB: 247.0
+        passPreSel: 584.0
+        passDiJetMass: 584.0
+        SR: 75.0
+        SB: 509.0
     data_UL17C:
         passJetMult: 9951.0
-        passPreSel: 534.0
-        passDiJetMass: 534.0
-        SR: 287.0
-        SB: 243.0
+        passPreSel: 539.0
+        passDiJetMass: 539.0
+        SR: 66.0
+        SB: 473.0
     data_UL16_preVFPF:
         passJetMult: 9894.0
         passPreSel: 266.0
         passDiJetMass: 266.0
-        SR: 150.0
-        SB: 116.0
+        SR: 40.0
+        SB: 226.0
     data_UL16_preVFPE:
         passJetMult: 9879.0
-        passPreSel: 201.0
-        passDiJetMass: 201.0
-        SR: 102.0
-        SB: 99.0
+        passPreSel: 203.0
+        passDiJetMass: 203.0
+        SR: 33.0
+        SB: 170.0
     data_UL16_preVFPD:
         passJetMult: 9870.0
         passPreSel: 293.0
         passDiJetMass: 293.0
-        SR: 162.0
-        SB: 129.0
+        SR: 58.0
+        SB: 235.0
     data_UL16_preVFPC:
         passJetMult: 9860.0
         passPreSel: 271.0
         passDiJetMass: 271.0
-        SR: 151.0
-        SB: 118.0
+        SR: 44.0
+        SB: 227.0
     data_UL16_postVFPH:
         passJetMult: 9839.0
-        passPreSel: 312.0
-        passDiJetMass: 312.0
-        SR: 169.0
-        SB: 139.0
+        passPreSel: 315.0
+        passDiJetMass: 315.0
+        SR: 64.0
+        SB: 251.0
     data_UL16_postVFPG:
         passJetMult: 9878.0
-        passPreSel: 235.0
-        passDiJetMass: 235.0
-        SR: 127.0
-        SB: 107.0
+        passPreSel: 237.0
+        passDiJetMass: 237.0
+        SR: 35.0
+        SB: 202.0
     data_UL16_postVFPF:
         passJetMult: 8973.0
-        passPreSel: 228.0
-        passDiJetMass: 228.0
-        SR: 142.0
-        SB: 86.0
+        passPreSel: 229.0
+        passDiJetMass: 229.0
+        SR: 43.0
+        SB: 186.0
     TTbar_from_d3_UL18D:
+        passPreSel: 9494.0
+        passDiJetMass: 9494.0
+        SR: 1017.0
+        SB: 8477.0
     TTbar_from_d3_UL18C:
+        passPreSel: 9499.0
+        passDiJetMass: 9499.0
+        SR: 1050.0
+        SB: 8449.0
     TTbar_from_d3_UL18B:
+        passPreSel: 9477.0
+        passDiJetMass: 9477.0
+        SR: 1103.0
+        SB: 8374.0
     TTbar_from_d3_UL18A:
+        passPreSel: 9510.0
+        passDiJetMass: 9510.0
+        SR: 1091.0
+        SB: 8419.0
     TTbar_from_d3_UL17F:
+        passPreSel: 9473.0
+        passDiJetMass: 9473.0
+        SR: 1116.0
+        SB: 8357.0
     TTbar_from_d3_UL17E:
+        passPreSel: 9426.0
+        passDiJetMass: 9426.0
+        SR: 1222.0
+        SB: 8204.0
     TTbar_from_d3_UL17D:
+        passPreSel: 9214.0
+        passDiJetMass: 9214.0
+        SR: 1230.0
+        SB: 7984.0
     TTbar_from_d3_UL17C:
+        passPreSel: 9315.0
+        passDiJetMass: 9315.0
+        SR: 1257.0
+        SB: 8058.0
     TTbar_from_d3_UL16_preVFPF:
+        passPreSel: 9556.0
+        passDiJetMass: 9556.0
+        SR: 1535.0
+        SB: 8021.0
     TTbar_from_d3_UL16_preVFPE:
+        passPreSel: 9580.0
+        passDiJetMass: 9580.0
+        SR: 1481.0
+        SB: 8099.0
     TTbar_from_d3_UL16_preVFPD:
+        passPreSel: 9475.0
+        passDiJetMass: 9475.0
+        SR: 1506.0
+        SB: 7969.0
     TTbar_from_d3_UL16_preVFPC:
+        passPreSel: 9510.0
+        passDiJetMass: 9510.0
+        SR: 1475.0
+        SB: 8035.0
     TTbar_from_d3_UL16_postVFPH:
+        passPreSel: 9439.0
+        passDiJetMass: 9439.0
+        SR: 1459.0
+        SB: 7980.0
     TTbar_from_d3_UL16_postVFPG:
+        passPreSel: 9548.0
+        passDiJetMass: 9547.0
+        SR: 1592.0
+        SB: 7955.0
     TTbar_from_d3_UL16_postVFPF:
+        passPreSel: 8682.0
+        passDiJetMass: 8682.0
+        SR: 1390.0
+        SB: 7292.0
 counts3_unit:
     ttHbb_UL18:
         passJetMult: 9504.0
         passPreSel: 7582.0
         passDiJetMass: 7582.0
-        SR: 5701.0
-        SB: 1847.0
+        SR: 1937.0
+        SB: 5645.0
     ttHbb_UL17:
         passJetMult: 9505.0
         passPreSel: 7582.0
         passDiJetMass: 7582.0
-        SR: 5693.0
-        SB: 1850.0
+        SR: 1922.0
+        SB: 5660.0
     ttHbb_UL16_preVFP:
         passJetMult: 9650.0
         passPreSel: 8119.0
         passDiJetMass: 8119.0
-        SR: 6104.0
-        SB: 1964.0
+        SR: 2072.0
+        SB: 6047.0
     ttHbb_UL16_postVFP:
         passJetMult: 9561.0
         passPreSel: 8009.0
         passDiJetMass: 8009.0
-        SR: 6078.0
-        SB: 1887.0
+        SR: 2023.0
+        SB: 5986.0
     data_UL18D:
         passJetMult: 9974.0
         passPreSel: 9494.0
         passDiJetMass: 9494.0
-        SR: 4619.0
-        SB: 4745.0
+        SR: 1017.0
+        SB: 8477.0
     data_UL18C:
         passJetMult: 9974.0
         passPreSel: 9499.0
         passDiJetMass: 9499.0
-        SR: 4526.0
-        SB: 4812.0
+        SR: 1050.0
+        SB: 8449.0
     data_UL18B:
         passJetMult: 9976.0
         passPreSel: 9477.0
         passDiJetMass: 9477.0
-        SR: 4630.0
-        SB: 4711.0
+        SR: 1103.0
+        SB: 8374.0
     data_UL18A:
         passJetMult: 9903.0
         passPreSel: 9510.0
         passDiJetMass: 9510.0
-        SR: 4609.0
-        SB: 4735.0
+        SR: 1091.0
+        SB: 8419.0
     data_UL17F:
         passJetMult: 9962.0
         passPreSel: 9473.0
         passDiJetMass: 9473.0
-        SR: 4668.0
-        SB: 4675.0
+        SR: 1116.0
+        SB: 8357.0
     data_UL17E:
         passJetMult: 9956.0
         passPreSel: 9426.0
         passDiJetMass: 9426.0
-        SR: 4822.0
-        SB: 4499.0
+        SR: 1222.0
+        SB: 8204.0
     data_UL17D:
         passJetMult: 9941.0
         passPreSel: 9214.0
         passDiJetMass: 9214.0
-        SR: 4655.0
-        SB: 4458.0
+        SR: 1230.0
+        SB: 7984.0
     data_UL17C:
         passJetMult: 9951.0
         passPreSel: 9315.0
         passDiJetMass: 9315.0
-        SR: 4698.0
-        SB: 4518.0
+        SR: 1257.0
+        SB: 8058.0
     data_UL16_preVFPF:
         passJetMult: 9894.0
         passPreSel: 9556.0
         passDiJetMass: 9556.0
-        SR: 5040.0
-        SB: 4383.0
+        SR: 1535.0
+        SB: 8021.0
     data_UL16_preVFPE:
         passJetMult: 9879.0
         passPreSel: 9580.0
         passDiJetMass: 9580.0
-        SR: 4978.0
-        SB: 4484.0
+        SR: 1481.0
+        SB: 8099.0
     data_UL16_preVFPD:
         passJetMult: 9870.0
         passPreSel: 9475.0
         passDiJetMass: 9475.0
-        SR: 4929.0
-        SB: 4422.0
+        SR: 1506.0
+        SB: 7969.0
     data_UL16_preVFPC:
         passJetMult: 9860.0
         passPreSel: 9510.0
         passDiJetMass: 9510.0
-        SR: 4933.0
-        SB: 4442.0
+        SR: 1475.0
+        SB: 8035.0
     data_UL16_postVFPH:
         passJetMult: 9839.0
         passPreSel: 9439.0
         passDiJetMass: 9439.0
-        SR: 5038.0
-        SB: 4314.0
+        SR: 1459.0
+        SB: 7980.0
     data_UL16_postVFPG:
         passJetMult: 9878.0
         passPreSel: 9548.0
         passDiJetMass: 9547.0
-        SR: 5098.0
-        SB: 4357.0
+        SR: 1592.0
+        SB: 7955.0
     data_UL16_postVFPF:
         passJetMult: 8973.0
         passPreSel: 8682.0
         passDiJetMass: 8682.0
-        SR: 4620.0
-        SB: 3962.0
+        SR: 1390.0
+        SB: 7292.0
     TTbar_from_d3_UL18D:
+        passPreSel: 9494.0
+        passDiJetMass: 9494.0
+        SR: 1017.0
+        SB: 8477.0
     TTbar_from_d3_UL18C:
+        passPreSel: 9499.0
+        passDiJetMass: 9499.0
+        SR: 1050.0
+        SB: 8449.0
     TTbar_from_d3_UL18B:
+        passPreSel: 9477.0
+        passDiJetMass: 9477.0
+        SR: 1103.0
+        SB: 8374.0
     TTbar_from_d3_UL18A:
+        passPreSel: 9510.0
+        passDiJetMass: 9510.0
+        SR: 1091.0
+        SB: 8419.0
     TTbar_from_d3_UL17F:
+        passPreSel: 9473.0
+        passDiJetMass: 9473.0
+        SR: 1116.0
+        SB: 8357.0
     TTbar_from_d3_UL17E:
+        passPreSel: 9426.0
+        passDiJetMass: 9426.0
+        SR: 1222.0
+        SB: 8204.0
     TTbar_from_d3_UL17D:
+        passPreSel: 9214.0
+        passDiJetMass: 9214.0
+        SR: 1230.0
+        SB: 7984.0
     TTbar_from_d3_UL17C:
+        passPreSel: 9315.0
+        passDiJetMass: 9315.0
+        SR: 1257.0
+        SB: 8058.0
     TTbar_from_d3_UL16_preVFPF:
+        passPreSel: 9556.0
+        passDiJetMass: 9556.0
+        SR: 1535.0
+        SB: 8021.0
     TTbar_from_d3_UL16_preVFPE:
+        passPreSel: 9580.0
+        passDiJetMass: 9580.0
+        SR: 1481.0
+        SB: 8099.0
     TTbar_from_d3_UL16_preVFPD:
+        passPreSel: 9475.0
+        passDiJetMass: 9475.0
+        SR: 1506.0
+        SB: 7969.0
     TTbar_from_d3_UL16_preVFPC:
+        passPreSel: 9510.0
+        passDiJetMass: 9510.0
+        SR: 1475.0
+        SB: 8035.0
     TTbar_from_d3_UL16_postVFPH:
+        passPreSel: 9439.0
+        passDiJetMass: 9439.0
+        SR: 1459.0
+        SB: 7980.0
     TTbar_from_d3_UL16_postVFPG:
+        passPreSel: 9548.0
+        passDiJetMass: 9547.0
+        SR: 1592.0
+        SB: 7955.0
     TTbar_from_d3_UL16_postVFPF:
+        passPreSel: 8682.0
+        passDiJetMass: 8682.0
+        SR: 1390.0
+        SB: 7292.0
