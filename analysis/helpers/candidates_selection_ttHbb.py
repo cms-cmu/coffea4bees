@@ -378,11 +378,7 @@ def _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB=False, cand_cfg=Non
             if "SvB_MA_q_score" in quadJet.fields:
                 q_scores = quadJet.SvB_MA_q_score
             elif "SvB_MA" in selev.fields and "q_1234" in selev["SvB_MA"].fields:
-                q_scores = np.concatenate([
-                    selev.SvB_MA.q_1234[:, np.newaxis],
-                    selev.SvB_MA.q_1324[:, np.newaxis],
-                    selev.SvB_MA.q_1423[:, np.newaxis],
-                ], axis=1)
+                q_scores = _pairing_q_scores(selev.SvB_MA, quadJet)
 
             if q_scores is not None:
                 best_q_idx = ak.argmax(q_scores, axis=1, keepdims=True)
@@ -394,6 +390,21 @@ def _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB=False, cand_cfg=Non
                 selev["dijet_both_qscore_SvB_gt_0p9"] = ak.zip({
                     "mass": ak.unflatten(flat_m_q, counts),
                 })
+
+
+# Classifier q scores are per jet partition (12|34, 13|24, 14|23). The 3 nominal pairings are these
+# partitions in order; the 6 can_ttH pairings are the same 3 partitions with canH = (01), (02), (03)
+# (pairings 0-2) and with the canH/canTT slots swapped (pairings 3-5), so pairing i uses partition i % 3.
+_Q_PARTITIONS = ("q_1234", "q_1324", "q_1423")
+_CAN_TTH_Q_INDEX = [0, 1, 2, 0, 1, 2]
+
+
+def _pairing_q_scores(clf_out, quadJet):
+    """Per-pairing q scores [event][pairing] from a classifier output record (FvT/SvB/SvB_MA)."""
+    q_scores = np.concatenate([clf_out[q][:, np.newaxis] for q in _Q_PARTITIONS], axis=1)
+    if "canH" in quadJet.fields:
+        q_scores = q_scores[:, _CAN_TTH_Q_INDEX]
+    return q_scores
 
 
 def _apply_ml_scores_ttHbb(
@@ -423,11 +434,7 @@ def _apply_ml_scores_ttHbb(
         apply_FvT = True
 
     if apply_FvT and ("FvT" in selev.fields):
-        quadJet["FvT_q_score"] = np.concatenate([
-            selev.FvT.q_1234[:, np.newaxis],
-            selev.FvT.q_1324[:, np.newaxis],
-            selev.FvT.q_1423[:, np.newaxis],
-        ], axis=1)
+        quadJet["FvT_q_score"] = _pairing_q_scores(selev.FvT, quadJet)
 
     if run_SvB:
         need_svb = (classifier_SvB is not None and "SvB" not in selev.fields)
@@ -443,17 +450,9 @@ def _apply_ml_scores_ttHbb(
             compute_SvB_ttHbb(selev, tmp_mask, SvB=clf_svb, SvB_MA=clf_svb_ma, doCheck=False)
 
         if "SvB" in selev.fields:
-            quadJet["SvB_q_score"] = np.concatenate([
-                selev.SvB.q_1234[:, np.newaxis],
-                selev.SvB.q_1324[:, np.newaxis],
-                selev.SvB.q_1423[:, np.newaxis],
-            ], axis=1)
+            quadJet["SvB_q_score"] = _pairing_q_scores(selev.SvB, quadJet)
         if "SvB_MA" in selev.fields:
-            quadJet["SvB_MA_q_score"] = np.concatenate([
-                selev.SvB_MA.q_1234[:, np.newaxis],
-                selev.SvB_MA.q_1324[:, np.newaxis],
-                selev.SvB_MA.q_1423[:, np.newaxis],
-            ], axis=1)
+            quadJet["SvB_MA_q_score"] = _pairing_q_scores(selev.SvB_MA, quadJet)
 
     if run_SvB and classifier_SvB_FeynNet is not None:
         tmp_mask_fn = (
@@ -523,11 +522,11 @@ def create_cand_jet_dijet_quadjet_ttHbb(
     quadJet = _build_can_ttH_quadjets(selev, diJet, diJetDr, cand_cfg, isRun3)   ### also runs _select_can_ttH_quadjet
     del diJetDr
 
-    # apply_FvT = _apply_ml_scores_ttHbb(
-    #     selev, quadJet, apply_FvT, classifier_FvT,
-    #     run_SvB, run_systematics, classifier_SvB, classifier_SvB_MA, classifier_SvB_FeynNet,
-    #     weights, list_weight_names, analysis_selections, label3b,
-    # )
+    _apply_ml_scores_ttHbb(
+        selev, quadJet, apply_FvT, classifier_FvT,
+        run_SvB, run_systematics, classifier_SvB, classifier_SvB_MA, classifier_SvB_FeynNet,
+        weights, list_weight_names, analysis_selections, label3b,
+    )
 
     _assign_output_vars_can_ttH(selev, diJet, quadJet, run_SvB, cand_cfg)
     del diJet, quadJet
