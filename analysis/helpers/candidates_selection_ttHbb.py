@@ -487,13 +487,13 @@ def create_cand_jet_dijet_quadjet_ttHbb(
     list_weight_names: list[str] = None,
     analysis_selections: ak.Array = None,
     cand_cfg: dict = None,
-    pairing: str = "can_ttH",
+    pairing: str = "nominal",
 ):
     """Creates candidate jets, dijets, and quadjets for ttHbb analysis.
 
     pairing:
-        'can_ttH' (default): 6 ordered canH/canTT pairings (_build_can_ttH_dijets/_build_can_ttH_quadjets).
-        'nominal': 3 st/pt-sorted lead/subl pairings (_build_dijets_ttHbb/_build_quadjets_ttHbb) with ML scores.
+        'nominal' (default): 3 st/pt-sorted lead/subl pairings (_build_dijets_ttHbb/_build_quadjets_ttHbb).
+        'can_ttH': 6 ordered canH/canTT pairings (_build_can_ttH_dijets/_build_can_ttH_quadjets).
     """
     selev = cand_jet_selection(selev, include_lowptjets, cand_cfg=cand_cfg)
     selev["v4j"] = selev.canJet.sum(axis=1)

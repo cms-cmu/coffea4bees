@@ -17,8 +17,8 @@ class ttHbbProcessor(HH4bBaseProcessor):
     Inherits core event/object selection and corrections from HH4bBaseProcessor
     while isolating ttHbb SvB score derivation and histogram filling (skipping HH mass plots).
 
-    pairing selects the candidate pairing: 'can_ttH' (default, 6 ordered canH/canTT pairings)
-    or 'nominal' (3 st/pt-sorted lead/subl pairings, see create_cand_jet_dijet_quadjet_ttHbb).
+    pairing selects the candidate pairing: 'nominal' (default, 3 st/pt-sorted lead/subl pairings)
+    or 'can_ttH' (6 ordered canH/canTT pairings, see create_cand_jet_dijet_quadjet_ttHbb).
 
     On ttHbb MC (processName starting with "ttHbb") jets are also truth-labeled (H/t/o),
     quadJet_truth (the truth H-H / t-t pairing) is stored and the truth histograms are filled.
@@ -45,7 +45,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
         plot_ttbar_with_weights=True,
         hist_cuts=[],
         classify_Z_decay=False,
-        pairing="can_ttH",
+        pairing="nominal",
         corrections_metadata: dict = None,
         **kwargs,
     ):
