@@ -235,6 +235,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
                 isDataForMixed=self.config['isDataForMixed'],
                 event_metadata=event.metadata,
                 year_override=self.year_override,
+                can_ttH=self.pairing == "can_ttH",
                 classify_Z_decay=self.classify_Z_decay,
                 truth_pairing_forced=self._is_ttHbb_MC() and self.pairing == "can_ttH",
             )
@@ -258,6 +259,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
                 event_metadata=event.metadata,
                 weight_name="weight_d3_to_t4",
                 year_override=self.year_override,
+                can_ttH=self.pairing == "can_ttH",
             )
 
             hist_t3 = filling_ttHbb_histograms(
@@ -274,6 +276,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
                 event_metadata=event.metadata,
                 weight_name="weight_d3_to_t3",
                 year_override=self.year_override,
+                can_ttH=self.pairing == "can_ttH",
             )
 
             hists.append(hist_t4)

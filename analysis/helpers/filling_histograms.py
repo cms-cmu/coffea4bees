@@ -536,6 +536,7 @@ def filling_ttHbb_histograms(
     year_override: bool = False,
     classify_Z_decay: bool = False,
     truth_pairing_forced: bool = False,
+    can_ttH: bool = False,
 ):
     """Fills baseline event/object histograms and ttHbb-specific discriminants.
     Skips all HH4b mass window plots (xHH, dijet_HHSR, m4j_hh).
@@ -548,6 +549,9 @@ def filling_ttHbb_histograms(
     is the truth H-H dijet and .subl the truth t-t dijet; quadJet_selected stays the
     algorithm's choice), also fills quadJet_truth 2D dR(H,H) vs pT(HH)/mass(HH),
     dR(t,t) vs pT(tt)/mass(tt) and H vs tt planes.
+
+    If can_ttH is True (can_ttH pairing), the lead/subl dijet histograms are named and labeled
+    canH/canTT (e.g. quadJet_selected.canH_vs_canTT_m instead of quadJet_selected.lead_vs_subl_m).
     """
     if year_override:
         year = _apply_year_override(year)
@@ -582,48 +586,35 @@ def filling_ttHbb_histograms(
 
     fill += Muon.plot(("selMuons", "Selected Muons"), "selMuon")
 
-    fill += QuadJetHistsSelected(("quadJet_selected", "Selected Quad Jet"), "quadJet_selected")
-    fill += QuadJetHistsMinDr(("quadJet_min_dr", "Min dR Quad Jet"), "quadJet_min_dr")
+    # Dijet histogram names and axis labels: canH/canTT for the can_ttH pairing (lead = canH, subl = canTT),
+    # lead/subl otherwise. The filled fields are always quadJet.lead/subl.
+    n1, n2 = ("canH", "canTT") if can_ttH else ("lead", "subl")
+    L1, L2 = ("canH", "canTT") if can_ttH else ("Lead", "Subl")
+
+    quadJet_template_skip = ["lead_vs_subl_m"] if can_ttH else []
+    fill += QuadJetHistsSelected(("quadJet_selected", "Selected Quad Jet"), "quadJet_selected", skip=quadJet_template_skip)
+    fill += QuadJetHistsMinDr(("quadJet_min_dr", "Min dR Quad Jet"), "quadJet_min_dr", skip=quadJet_template_skip)
+    if can_ttH:
+        # template lead_vs_subl_m, renamed
+        for qj in ["quadJet_selected", "quadJet_min_dr"]:
+            fill += hist.add(
+                f"{qj}.{n1}_vs_{n2}_m",
+                (100, 0, 1000, (f"{qj}.lead.mass", f"{L1} Boson Candidate Mass")),
+                (100, 0, 1000, (f"{qj}.subl.mass", f"{L2} Boson Candidate Mass")),
+            )
 
     # Dijet pT (x) vs dR between the two jets of that same dijet (y), selected pairing
     fill += hist.add(
-        "quadJet_selected.lead_pt_vs_dr_jj",
-        (50, 0, 1000, ("quadJet_selected.lead.pt", "Lead Dijet p_{T} [GeV]")),
-        (50, 0, 5, ("quadJet_selected.lead.dr", "Lead Dijet $\\Delta$R(j,j)")),
+        f"quadJet_selected.{n1}_pt_vs_dr_jj",
+        (50, 0, 1000, ("quadJet_selected.lead.pt", f"{L1} Dijet p_{{T}} [GeV]")),
+        (50, 0, 5, ("quadJet_selected.lead.dr", f"{L1} Dijet $\\Delta$R(j,j)")),
     )
     fill += hist.add(
-        "quadJet_selected.subl_pt_vs_dr_jj",
-        (50, 0, 1000, ("quadJet_selected.subl.pt", "Subl Dijet p_{T} [GeV]")),
-        (50, 0, 5, ("quadJet_selected.subl.dr", "Subl Dijet $\\Delta$R(j,j)")),
+        f"quadJet_selected.{n2}_pt_vs_dr_jj",
+        (50, 0, 1000, ("quadJet_selected.subl.pt", f"{L2} Dijet p_{{T}} [GeV]")),
+        (50, 0, 5, ("quadJet_selected.subl.dr", f"{L2} Dijet $\\Delta$R(j,j)")),
     )
 
-    # Selected pairing split by the line subl_dR = -0.768 + 1.28 * lead_dR (dR within each dijet).
-    # Events on the other side of the line are masked (None) and not filled.
-    dr_line = -0.768 + 1.28 * selev.quadJet_selected.lead.dr
-    above_dr_line = selev.quadJet_selected.subl.dr > dr_line
-    selev["quadJet_selected_aboveDrLine"] = ak.mask(selev.quadJet_selected, above_dr_line)
-    selev["quadJet_selected_belowDrLine"] = ak.mask(selev.quadJet_selected, ~above_dr_line)
-    for qj in ["quadJet_selected_aboveDrLine", "quadJet_selected_belowDrLine"]:
-        fill += hist.add(
-            f"{qj}.lead_vs_subl_m",
-            (100, 0, 1000, (f"{qj}.lead.mass", "Lead Dijet Mass [GeV]")),
-            (100, 0, 1000, (f"{qj}.subl.mass", "Subl Dijet Mass [GeV]")),
-        )
-        fill += hist.add(
-            f"{qj}.lead_pt_vs_dr_jj",
-            (50, 0, 1000, (f"{qj}.lead.pt", "Lead Dijet p_{T} [GeV]")),
-            (50, 0, 5, (f"{qj}.lead.dr", "Lead Dijet $\\Delta$R(j,j)")),
-        )
-        fill += hist.add(
-            f"{qj}.subl_pt_vs_dr_jj",
-            (50, 0, 1000, (f"{qj}.subl.pt", "Subl Dijet p_{T} [GeV]")),
-            (50, 0, 5, (f"{qj}.subl.dr", "Subl Dijet $\\Delta$R(j,j)")),
-        )
-        fill += hist.add(
-            f"{qj}.lead_vs_subl_dr",
-            (50, 0, 5, (f"{qj}.lead.dr", "Lead Dijet $\\Delta$R(j,j)")),
-            (50, 0, 5, (f"{qj}.subl.dr", "Subl Dijet $\\Delta$R(j,j)")),
-        )
 
     # Same plots for each canH/canTT ranking category from _select_can_ttH_quadjet.
     # Categories without the random tie-breaker can pass several pairings per event: every
@@ -634,24 +625,24 @@ def filling_ttHbb_histograms(
         qj = f"quadJet_{cat}"
         selev[qj] = selev.quadJet[selev.quadJet[cat]]
         fill += hist.add(
-            f"{qj}.lead_vs_subl_m",
-            (100, 0, 1000, (f"{qj}.lead.mass", "Lead Dijet Mass [GeV]")),
-            (100, 0, 1000, (f"{qj}.subl.mass", "Subl Dijet Mass [GeV]")),
+            f"{qj}.{n1}_vs_{n2}_m",
+            (100, 0, 1000, (f"{qj}.lead.mass", f"{L1} Dijet Mass [GeV]")),
+            (100, 0, 1000, (f"{qj}.subl.mass", f"{L2} Dijet Mass [GeV]")),
         )
         fill += hist.add(
-            f"{qj}.lead_pt_vs_dr_jj",
-            (50, 0, 1000, (f"{qj}.lead.pt", "Lead Dijet p_{T} [GeV]")),
-            (50, 0, 5, (f"{qj}.lead.dr", "Lead Dijet $\\Delta$R(j,j)")),
+            f"{qj}.{n1}_pt_vs_dr_jj",
+            (50, 0, 1000, (f"{qj}.lead.pt", f"{L1} Dijet p_{{T}} [GeV]")),
+            (50, 0, 5, (f"{qj}.lead.dr", f"{L1} Dijet $\\Delta$R(j,j)")),
         )
         fill += hist.add(
-            f"{qj}.subl_pt_vs_dr_jj",
-            (50, 0, 1000, (f"{qj}.subl.pt", "Subl Dijet p_{T} [GeV]")),
-            (50, 0, 5, (f"{qj}.subl.dr", "Subl Dijet $\\Delta$R(j,j)")),
+            f"{qj}.{n2}_pt_vs_dr_jj",
+            (50, 0, 1000, (f"{qj}.subl.pt", f"{L2} Dijet p_{{T}} [GeV]")),
+            (50, 0, 5, (f"{qj}.subl.dr", f"{L2} Dijet $\\Delta$R(j,j)")),
         )
         fill += hist.add(
-            f"{qj}.lead_vs_subl_dr",
-            (50, 0, 5, (f"{qj}.lead.dr", "Lead Dijet $\\Delta$R(j,j)")),
-            (50, 0, 5, (f"{qj}.subl.dr", "Subl Dijet $\\Delta$R(j,j)")),
+            f"{qj}.{n1}_vs_{n2}_dr",
+            (50, 0, 5, (f"{qj}.lead.dr", f"{L1} Dijet $\\Delta$R(j,j)")),
+            (50, 0, 5, (f"{qj}.subl.dr", f"{L2} Dijet $\\Delta$R(j,j)")),
         )
 
     # fill += hist.add(
@@ -678,29 +669,29 @@ def filling_ttHbb_histograms(
     # Same, but for all pairings per event (one entry per pairing,
     # each filled with the full event weight; region is that of the selected pairing)
     fill += hist.add(
-        "quadJet_all.lead_vs_subl_m",
-        (100, 0, 1000, ("quadJet.lead.mass", "Lead Dijet Mass [GeV]")),
-        (100, 0, 1000, ("quadJet.subl.mass", "Subl Dijet Mass [GeV]")),
+        f"quadJet_all.{n1}_vs_{n2}_m",
+        (100, 0, 1000, ("quadJet.lead.mass", f"{L1} Dijet Mass [GeV]")),
+        (100, 0, 1000, ("quadJet.subl.mass", f"{L2} Dijet Mass [GeV]")),
     )
     fill += hist.add(
-        "quadJet_all.lead_vs_subl_dr",
-        (50, 0, 5, ("quadJet.lead.dr", "Lead Dijet $\\Delta$R(j,j)")),
-        (50, 0, 5, ("quadJet.subl.dr", "Subl Dijet $\\Delta$R(j,j)")),
+        f"quadJet_all.{n1}_vs_{n2}_dr",
+        (50, 0, 5, ("quadJet.lead.dr", f"{L1} Dijet $\\Delta$R(j,j)")),
+        (50, 0, 5, ("quadJet.subl.dr", f"{L2} Dijet $\\Delta$R(j,j)")),
     )
     fill += hist.add(
-        "quadJet_all.lead_vs_subl_pt",
-        (50, 0, 1000, ("quadJet.lead.pt", "Lead Dijet p_{T} [GeV]")),
-        (50, 0, 1000, ("quadJet.subl.pt", "Subl Dijet p_{T} [GeV]")),
+        f"quadJet_all.{n1}_vs_{n2}_pt",
+        (50, 0, 1000, ("quadJet.lead.pt", f"{L1} Dijet p_{{T}} [GeV]")),
+        (50, 0, 1000, ("quadJet.subl.pt", f"{L2} Dijet p_{{T}} [GeV]")),
     )
     fill += hist.add(
-        "quadJet_all.lead_pt_vs_dr_jj",
-        (50, 0, 1000, ("quadJet.lead.pt", "Lead Dijet p_{T} [GeV]")),
-        (50, 0, 5, ("quadJet.lead.dr", "Lead Dijet $\\Delta$R(j,j)")),
+        f"quadJet_all.{n1}_pt_vs_dr_jj",
+        (50, 0, 1000, ("quadJet.lead.pt", f"{L1} Dijet p_{{T}} [GeV]")),
+        (50, 0, 5, ("quadJet.lead.dr", f"{L1} Dijet $\\Delta$R(j,j)")),
     )
     fill += hist.add(
-        "quadJet_all.subl_pt_vs_dr_jj",
-        (50, 0, 1000, ("quadJet.subl.pt", "Subl Dijet p_{T} [GeV]")),
-        (50, 0, 5, ("quadJet.subl.dr", "Subl Dijet $\\Delta$R(j,j)")),
+        f"quadJet_all.{n2}_pt_vs_dr_jj",
+        (50, 0, 1000, ("quadJet.subl.pt", f"{L2} Dijet p_{{T}} [GeV]")),
+        (50, 0, 5, ("quadJet.subl.dr", f"{L2} Dijet $\\Delta$R(j,j)")),
     )
     # Lead vs subl dijet 2D planes (like lead_vs_subl_m) for the selected pairing.
     # dr/deta/dphi are between the two jets *within* each dijet.
@@ -712,19 +703,19 @@ def filling_ttHbb_histograms(
     ]
     for var, (nb, lo, hi), label in lead_vs_subl_vars:
         fill += hist.add(
-            f"quadJet_selected.lead_vs_subl_{var}",
-            (nb, lo, hi, (f"quadJet_selected.lead.{var}", f"Lead Dijet {label}")),
-            (nb, lo, hi, (f"quadJet_selected.subl.{var}", f"Subl Dijet {label}")),
+            f"quadJet_selected.{n1}_vs_{n2}_{var}",
+            (nb, lo, hi, (f"quadJet_selected.lead.{var}", f"{L1} Dijet {label}")),
+            (nb, lo, hi, (f"quadJet_selected.subl.{var}", f"{L2} Dijet {label}")),
         )
     fill += hist.add(
-        "quadJet_all.m_lead_vs_dr_jj",
-        (100, 0, 1000, ("quadJet.lead.mass", "Lead Dijet Mass [GeV]")),
-        (50, 0, 5, ("quadJet.lead.dr", "Lead Dijet $\\Delta$R(j,j)")),
+        f"quadJet_all.m_{n1}_vs_dr_jj",
+        (100, 0, 1000, ("quadJet.lead.mass", f"{L1} Dijet Mass [GeV]")),
+        (50, 0, 5, ("quadJet.lead.dr", f"{L1} Dijet $\\Delta$R(j,j)")),
     )
     fill += hist.add(
-        "quadJet_all.m_subl_vs_dr_jj",
-        (100, 0, 1000, ("quadJet.subl.mass", "Subl Dijet Mass [GeV]")),
-        (50, 0, 5, ("quadJet.subl.dr", "Subl Dijet $\\Delta$R(j,j)")),
+        f"quadJet_all.m_{n2}_vs_dr_jj",
+        (100, 0, 1000, ("quadJet.subl.mass", f"{L2} Dijet Mass [GeV]")),
+        (50, 0, 5, ("quadJet.subl.dr", f"{L2} Dijet $\\Delta$R(j,j)")),
     )
 
     if classify_Z_decay:
@@ -732,15 +723,15 @@ def filling_ttHbb_histograms(
         is_Zbb = z_result["hadronic_masks"]["Z -> bb"]
         selev["weight_Zbb"] = ak.where(is_Zbb, selev[weight_name], 0.0)
         fill += hist.add(
-            "quadJet_selected.lead_vs_subl_m_Zbb",
-            (100, 0, 1000, ("quadJet_selected.lead.mass", "Lead Boson Candidate Mass")),
-            (100, 0, 1000, ("quadJet_selected.subl.mass", "Subl Boson Candidate Mass")),
+            f"quadJet_selected.{n1}_vs_{n2}_m_Zbb",
+            (100, 0, 1000, ("quadJet_selected.lead.mass", f"{L1} Boson Candidate Mass")),
+            (100, 0, 1000, ("quadJet_selected.subl.mass", f"{L2} Boson Candidate Mass")),
             weight="weight_Zbb",
         )
         fill += hist.add(
-            "quadJet_min_dr.lead_vs_subl_m_Zbb",
-            (100, 0, 1000, ("quadJet_min_dr.lead.mass", "Lead Boson Candidate Mass")),
-            (100, 0, 1000, ("quadJet_min_dr.subl.mass", "Subl Boson Candidate Mass")),
+            f"quadJet_min_dr.{n1}_vs_{n2}_m_Zbb",
+            (100, 0, 1000, ("quadJet_min_dr.lead.mass", f"{L1} Boson Candidate Mass")),
+            (100, 0, 1000, ("quadJet_min_dr.subl.mass", f"{L2} Boson Candidate Mass")),
             weight="weight_Zbb",
         )
 

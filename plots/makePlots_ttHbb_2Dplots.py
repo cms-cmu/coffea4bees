@@ -109,7 +109,7 @@ def doPlots(varList, sr_params: dict, proc_tag_pairs: List[Tuple[str, str]], reg
     for v in varList:
         print(f"Plotting 2D variable: {v}")
 
-        is_mass_plane = ('lead_vs_subl_m' in v or 'leadstmass_vs_sublstmass' in v or
+        is_mass_plane = ('lead_vs_subl_m' in v or 'canH_vs_canTT_m' in v or 'leadstmass_vs_sublstmass' in v or
                          'close_vs_other_m' in v)
 
         for proc, tag in proc_tag_pairs:
