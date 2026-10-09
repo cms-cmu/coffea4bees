@@ -72,6 +72,8 @@ runs:
     - MakeMixedData
   mixeddata_run3.yml:
     - MakeMixedData
+  mixeddata_run3_2024.yml:
+    - MakeMixedData
   mixeddata_run3_4bmix.yml:
     - MakeMixedData
   mixeddata_run3_4bmix_noboost.yml:
