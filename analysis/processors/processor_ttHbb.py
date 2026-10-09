@@ -9,12 +9,22 @@ from coffea4bees.analysis.processors.processor_HH4b import HH4bBaseProcessor, _U
 from coffea4bees.analysis.helpers.filling_histograms import filling_ttHbb_histograms
 from coffea4bees.analysis.helpers.SvB_helpers_ttHbb import set_ttHbb_SvB_vars
 from coffea4bees.analysis.helpers.candidates_selection_ttHbb import create_cand_jet_dijet_quadjet_ttHbb
+from coffea4bees.analysis.helpers.truth_tools import label_jet_truth_parent
 
 class ttHbbProcessor(HH4bBaseProcessor):
     """
     Fully decoupled Coffea processor for ttH(bb) analysis workflows.
     Inherits core event/object selection and corrections from HH4bBaseProcessor
     while isolating ttHbb SvB score derivation and histogram filling (skipping HH mass plots).
+
+    pairing selects the candidate pairing: 'can_ttH' (default, 6 ordered canH/canTT pairings)
+    or 'nominal' (3 st/pt-sorted lead/subl pairings, see create_cand_jet_dijet_quadjet_ttHbb).
+
+    On ttHbb MC (processName starting with "ttHbb") jets are also truth-labeled (H/t/o),
+    quadJet_truth (the truth H-H / t-t pairing) is stored and the truth histograms are filled.
+    Truth labels never filter events, so quadJet/quadJet_selected and all other histograms are
+    unaffected; quadJet_truth is None for events without a full H,H,t,t candidate-jet match.
+    quadJet_truth and its histograms need the canH/canTT slots, so only exist for pairing='can_ttH'.
     """
     def __init__(
         self,
@@ -35,11 +45,13 @@ class ttHbbProcessor(HH4bBaseProcessor):
         plot_ttbar_with_weights=True,
         hist_cuts=[],
         classify_Z_decay=False,
+        pairing="can_ttH",
         corrections_metadata: dict = None,
         **kwargs,
     ):
         logging.info("Initializing decoupled ttHbbProcessor")
         self.classify_Z_decay = classify_Z_decay
+        self.pairing = pairing
         if weights is None:
             weights = "coffea4bees/metadata/weights/weights_ttHbb.yml"
         super().__init__(
@@ -62,6 +74,19 @@ class ttHbbProcessor(HH4bBaseProcessor):
             **kwargs,
         )
 
+    def _is_ttHbb_MC(self):
+        return self.config["isMC"] and self.processName.startswith("ttHbb")
+
+    def apply_selection(self, event):
+        """On ttHbb MC, attach truth parent labels to every jet before object selection so selJet/canJet inherit them."""
+        if self._is_ttHbb_MC():
+            if "GenPart" in event.fields:
+                for name, values in label_jet_truth_parent(event.Jet, event.GenPart).items():
+                    event["Jet", name] = values
+            else:
+                event["Jet", "truthParent"] = ak.unflatten(np.full(ak.sum(ak.num(event.Jet)), "o"), ak.num(event.Jet))
+        return super().apply_selection(event)
+
     def load_SvB(self, event):
         """Load SvB scores and derive native ttHbb fields without running HH4b setSvBVars."""
         for k in self.friends:
@@ -75,9 +100,40 @@ class ttHbbProcessor(HH4bBaseProcessor):
                 except Exception as e:
                     logging.warning(f"Failed loading SvB friend tree {k} in ttHbbProcessor: {e}")
 
+    @staticmethod
+    def _truth_pairing(diJet, quadJet):
+        """Return the truth quadJet pairing per event: the pairing whose canH dijet (lead,
+        slot 0) is the 2 truth-H canJets and whose canTT dijet (subl, slot 1) is the 2
+        truth-t canJets. Events where canJet.truthParent is not exactly {H, H, t, t} get
+        None. quadJet itself (incl. 'selected') is not modified, so quadJet_selected stays
+        the algorithm's choice.
+
+        Args:
+            diJet: dijet array, shape [event][6 pairings][2 dijets], as built by
+                _build_can_ttH_dijets (slot 0 = canH, slot 1 = canTT, unsorted).
+                diJet.lead / diJet.subl are the two constituent jets of each dijet.
+            quadJet: quadJet array, shape [event][6 pairings], as built by _build_can_ttH_quadjets.
+
+        Returns:
+            quadJet_truth: shape [event], option type (None for events with no truth pairing).
+        """
+        # A dijet is H-H (t-t) if both of its constituent jets are H (t); shape [event][6][2].
+        dijet_is_HH = (diJet.lead.truthParent == "H") & (diJet.subl.truthParent == "H")
+        dijet_is_tt = (diJet.lead.truthParent == "t") & (diJet.subl.truthParent == "t")
+
+        # The 6 pairings are ordered, so exactly one has H-H in slot 0 and t-t in slot 1.
+        pairing_is_truth = dijet_is_HH[:, :, 0] & dijet_is_tt[:, :, 1]
+        event_has_truth_pairing = ak.any(pairing_is_truth, axis=1)
+
+        quadJet_truth = quadJet[ak.argmax(pairing_is_truth, axis=1, keepdims=True)][:, 0]
+        return ak.mask(quadJet_truth, event_has_truth_pairing)
+
     def build_candidates(self, selev, weights, list_weight_names, analysis_selections, processOutput):
-        """Build unconstrained di-jets and quad-jets candidates for ttHbb."""
-        return create_cand_jet_dijet_quadjet_ttHbb(
+        """Build canH/canTT di-jet and quad-jet candidates for ttHbb (same algorithm for data
+        and MC). On ttHbb MC also store quadJet_truth: the truth H-H (lead) / t-t (subl) pairing,
+        for events where canJet.truthParent is exactly {H, H, t, t} (None otherwise).
+        """
+        selev = create_cand_jet_dijet_quadjet_ttHbb(
             selev,
             apply_FvT=self.apply_FvT,
             classifier_FvT=self.clf_FvT,
@@ -92,7 +148,14 @@ class ttHbbProcessor(HH4bBaseProcessor):
             list_weight_names=list_weight_names,
             analysis_selections=analysis_selections,
             cand_cfg=self.cand_cfg,
+            pairing=self.pairing,
         )
+
+        if self._is_ttHbb_MC() and self.pairing == "can_ttH":
+            ### truth H-H/t-t pairing; quadJet_selected stays the algorithm's choice
+            selev["quadJet_truth"] = self._truth_pairing(selev.diJet, selev.quadJet)
+
+        return selev
 
     def fill_detailed_cutflows(self, selev):
         """Fill detailed cutflow histograms after ttHbb candidate building."""
@@ -173,6 +236,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
                 event_metadata=event.metadata,
                 year_override=self.year_override,
                 classify_Z_decay=self.classify_Z_decay,
+                truth_pairing_forced=self._is_ttHbb_MC() and self.pairing == "can_ttH",
             )
 
             if not self.plot_ttbar_with_weights or self.processName != "data":
