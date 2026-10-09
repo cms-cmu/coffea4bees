@@ -1,0 +1,57 @@
+# ==============================================================================
+# Phase B.2 REPRODUCIBILITY CANARY for the 2023 production (analysis_ttHbb_run3_2023_b2.yml)
+# ==============================================================================
+# Same machinery as the 2023 B.2 config (processor, trigger-weight v1 friend map, weights, runner/config settings) run in the
+# repo's own test mode (Snakefile `test: true` -> runner `-t`: maxchunks 1, local executor, no condor/dask) on ONE chunk each of
+# 2022_EE data era E, 2022_EE TTToHadronic_stitched and 2024 data era C (invoke with those three explicit targets), to be compared
+# event by event with mmarcheg's existing 2022/2024 HCR_input friends. Separate output paths; outputs only in /eos/user/j/jgaytanv.
+label: "ttHbb_run3_b2_canary_trigv1"
+output_path: "/eos/user/j/jgaytanv/ttHbb/4b/output/ttHbb_run3_2023_b2_pt25_trigv1/canary/"
+cern_user: "jgaytanv"
+test: true
+
+dataset:
+  - "data"
+  - "TTToHadronic_stitched"
+
+year_eras:
+  2022_EE:
+    - "E"
+  '2024':
+    - "C"
+
+classifier_inputs:
+  processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+  friend_file: "coffea4bees/metadata/friends/friends_ttHbb_Run3_trigv1.yml"
+  weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
+  datasets:
+    - "data"
+    - "TTToHadronic_stitched"
+  runner:
+    condor_cores: 1
+    worker_memory: 8GB
+    chunksize: 10000
+    condor: true
+    shared_dask: true
+    run_performance: true
+    max_workers: 500
+    condor_transfer_input_files:
+      - src/
+      - coffea4bees/analysis/
+      - coffea4bees/metadata/
+    lxplus_eos_scratch: "/eos/user/j/jgaytanv/ttHbb/4b/barista_scratch"
+    skipbadfiles: false
+    dashboard_address: 0
+    test_files: 1
+  config:
+    blind: true
+    apply_JCM: false
+    apply_FvT: false
+    apply_trigWeight: true
+    apply_btagSF: true
+    apply_boosted_veto: false
+    run_SvB: false
+    top_reconstruction: slow
+    fill_histograms: true
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
+    make_classifier_input: root://eosuser.cern.ch//eos/user/j/jgaytanv/ttHbb/4b/Run3_v1/b2_2023_pt25_trigv1_canary/
