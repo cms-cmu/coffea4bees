@@ -105,6 +105,12 @@ analysis_config:
 hemi_library:
   config_template: "coffea4bees/analysis/metadata/make_hemi_library_4b.yml"
   study_threshold: 1000        # min per-category count for study_hemispheres.py
+  # Prescale the library to ~2M hemispheres (John, 2026-10-09). 2024 is one 110 fb^-1 year: its full
+  # library is 12.86M hemispheres (the largest 2022/2023 year: 1.76M), and every M.2 mixer worker
+  # loads its year's whole library, ~3 GB per million (era H measured 1.13 GB for 0.52M on load
+  # alone) -- the 8 GB workers died (KilledWorker) in mixeddata_run3_2024_20261009_ac4bb63-5786026.
+  # Every era keeps the same fraction of its files (here 0.156, 177 of 1144), so eras keep their weight.
+  max_hemis: 2000000
 
 # ------------------------------------------------------------------------------
 # M.2: mixing (3b data events, hemispheres replaced from the library)
