@@ -9,12 +9,14 @@
 #                       --configfile coffea4bees/workflows/config/nominal_run3_feynnet.yml
 #
 # Nothing upstream is re-made. JCM, FvT and SvB_MA are all read from the published
-# production nominal_run3_20260922_3f9e199-1e0504f -- pinned by explicit URL, NOT {roast_id},
+# production nominal_run3_20261008_f839489-a481023 (the first with the v3 trigger weights;
+# was nominal_run3_20260922_3f9e199-1e0504f) -- pinned by explicit URL, NOT {roast_id},
 # which here would name this roast, where no B/C/D outputs exist.
 #
 # Three Combine channels from the same F.1 histograms:
 #   * HH4b               -- the base channel, SvB_MA.ps_hh_fine, untouched. Must reproduce the
-#                           production's blinded stat-only Asimov: limit 3.70 (2.61-5.30), sig 0.80.
+#                           production's blinded stat-only Asimov: limit 3.91 (2.77-5.54), sig 0.616
+#                           (nominal_run3_20261008; 3.70 / 0.80 for the Sep 22 production).
 #                           If it does not, something other than the SvB changed; stop there.
 #   * HH4b_FeynNet       -- SvB_FeynNet.p_ggHH_vs_bkg, 50 bins. Events FeynNet routes to ZZ/ZH (-1)
 #                           or that fail minPs (-2) fall in underflow, as for ps_hh. Kept so the
@@ -40,12 +42,12 @@ output_path: "output/Run3_nominal_feynnet/"
 analysis_config:
   config:
     friends:
-      FvT: "{roast:nominal_run3_20260922_3f9e199-1e0504f}/friend/FvT_nominal/result.json@@analysis.0.merged"
-      SvB_MA: "{roast:nominal_run3_20260922_3f9e199-1e0504f}/friend/SvB_nominal/result.json@@analysis.0.merged"
+      FvT: "{roast:nominal_run3_20261008_f839489-a481023}/friend/FvT_nominal/result.json@@analysis.0.merged"
+      SvB_MA: "{roast:nominal_run3_20261008_f839489-a481023}/friend/SvB_nominal/result.json@@analysis.0.merged"
     # The production's own Phase B fit, read from its EOS handoff area (jetCombinatoricModel
     # opens it through fsspec). Not the metadata/weights/JCM/Run3_nominal/ symlink, which points
     # at the older checked-in Run3/v2 fit.
-    JCM_file: "{roast:nominal_run3_20260922_3f9e199-1e0504f}/handoff/jetCombinatoricModel_SB_Run3_v1.yml"
+    JCM_file: "{roast:nominal_run3_20261008_f839489-a481023}/handoff/jetCombinatoricModel_SB_Run3_v1.yml"
     # Lists replace, so restate the base's three and add SvB_FeynNet (per-year, friends_HH4b.yml).
     friends_include: [trigWeight, FvT, SvB_MA, SvB_FeynNet]
 

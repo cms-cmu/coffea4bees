@@ -310,11 +310,14 @@ analysis_config:
     # Run 3 four-tag definition: tight btagPNetB working point.
     fourTag_use_tight: true
 
-# Blessed from nominal_run3_20260922_3f9e199-1e0504f, the first full Run 3 production. Until a
-# reference existed the cutflow was only dumped, never compared; now a rerun is checked against
-# it. Note this is a *regression* check -- it detects change, not correctness. These counts carry
-# that production's 2.1 % SR non-closure (and the 2023_preBPix 1.059 / 2023_BPix 0.967 split), so
-# any work that deliberately changes the background model -- per-era JCM fits being the obvious
+# Blessed from nominal_run3_20261008_f839489-a481023 (re-blessed 2026-10-09; first blessed from
+# nominal_run3_20260922_3f9e199-1e0504f), the first production with the v3 trigger weights
+# (trigweights_Run3_v3.json: 2022 HLT legs, per-era L1, 2023 jet leg; ttbar weighted counts move
+# by -7..+3 % per era, unweighted counts unchanged). Note this is a *regression* check -- it
+# detects change, not correctness. These counts carry that production's C.4 closure
+# (data/Bkg SR 0.986: 2022_preEE 1.042 / 2022_EE 0.969 / 2023_preBPix 1.017 / 2023_BPix 0.926;
+# the multijet model is ~4.6 % above Sep 22's at preselection, from the retrained FvT), so any
+# work that deliberately changes the background model -- per-era JCM fits being the obvious
 # candidate -- means re-blessing all four references, not just this one.
 known_counts: "coffea4bees/analysis/tests/known_fullCounts_Run3_nominal.yml"
 
