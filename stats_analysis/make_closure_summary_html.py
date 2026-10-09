@@ -24,6 +24,7 @@ def parse_args():
     parser.add_argument("--summary", "-s", required=True, help="Path to closure_summary.json")
     parser.add_argument("--output_dir", "-d", required=True, help="Base Stage F_2 output directory")
     parser.add_argument("--output", "-o", default=None, help="Output HTML path (default: <output_dir>/closure_summary.html)")
+    parser.add_argument("--region", "-r", default="SR", help="Closure region (default: SR)")
     parser.add_argument("--title", "-t", default="Two-Stage Closure Summary", help="Dashboard title")
     return parser.parse_args()
 
@@ -155,7 +156,7 @@ def collect_ttbar_plots(ttbar_dir: Path, base_dir: Path) -> list[dict]:
     return items
 
 
-def collect_candidates(summary_data: dict, out_dir: Path) -> dict:
+def collect_candidates(summary_data: dict, out_dir: Path, region: str = "SR") -> dict:
     passing_rebins = summary_data.get("passing_rebins", [])
     evaluations = summary_data.get("all_evaluations", [])
 
@@ -171,7 +172,7 @@ def collect_candidates(summary_data: dict, out_dir: Path) -> dict:
             continue
         # Search for candidate directory under closure_fits
         pattern = f"rebin{r_val}"
-        matched_dirs = list(out_dir.glob(f"closure_fits/*/*/{pattern}/SR/{channel}"))
+        matched_dirs = list(out_dir.glob(f"closure_fits/*/*/{pattern}/{region}/{channel}"))
         cand_dir = matched_dirs[0] if matched_dirs else None
         plots_data = collect_plots(cand_dir, out_dir) if cand_dir else {"visible": {}, "hidden": {}}
         vis_plots = sum(len(v) for v in plots_data["visible"].values())
@@ -212,7 +213,7 @@ def collect_candidates(summary_data: dict, out_dir: Path) -> dict:
     ttbar_plots = collect_ttbar_plots(ttbar_dir, out_dir)
     ttbar_cutflow_html = "ttbar_MC_vs_d3_cutflow.html" if (out_dir / "ttbar_MC_vs_d3_cutflow.html").exists() else None
 
-    return {"channel": channel, "var": var, "passing_rebins": passing_rebins,
+    return {"channel": channel, "var": var, "region": region, "passing_rebins": passing_rebins,
             "candidates": candidates_info, "ttbar_plots": ttbar_plots,
             "ttbar_cutflow_html": ttbar_cutflow_html}
 
@@ -239,6 +240,8 @@ def gallery_items(info: dict) -> list[dict]:
                     item = {"path": it["path"], "group": f"{tag} · {cat}{kind}", "name": it["name"], "kind": "img"}
                     if it["name"] in KEY_PLOTS:
                         item["summary"] = KEY_PLOTS.index(it["name"])
+                    elif it["name"].startswith("data_vs_mixed_vs_bkg"):
+                        item["summary"] = 0
                     items.append(item)
     for it in info["ttbar_plots"]:
         items.append({"path": it["path"], "group": "TTbar MC vs data-driven (d3)", "name": it["name"], "kind": "img"})
@@ -257,7 +260,8 @@ def verdict_section(info: dict) -> str:
             f"<td><span class='chip {'pass' if c['passed'] else 'fail'}'>{'ELIGIBLE' if c['passed'] else 'EXCLUDED'}</span></td>"
             f"<td class='num'>{c['visible_plots']} <span class='na'>+ {c['hidden_plots']} projections</span></td></tr>")
     passing = info["passing_rebins"]
-    meta = (f"channel <b>{html.escape(str(info['channel']))}</b> &nbsp;·&nbsp; variable <b>{html.escape(str(info['var']))}</b>"
+    region_display = info.get("region", "SR")
+    meta = (f"channel <b>{html.escape(str(info['channel']))}</b> &nbsp;·&nbsp; region <b>{html.escape(str(region_display))}</b> &nbsp;·&nbsp; variable <b>{html.escape(str(info['var']))}</b>"
             f" &nbsp;·&nbsp; passing rebins: " + (f"<b class='ok'>{', '.join(str(r) for r in passing)}</b>" if passing else "<b class='bad'>none</b>"))
     if info["ttbar_cutflow_html"]:
         meta += f" &nbsp;·&nbsp; <a href='{info['ttbar_cutflow_html']}' target='_blank'>ttbar MC vs d3 cutflow</a>"
@@ -300,12 +304,12 @@ document.querySelectorAll('section.verdict tbody tr').forEach(tr => tr.onclick =
 """
 
 
-def generate_html(summary_data: dict, out_dir: Path, title: str) -> str:
+def generate_html(summary_data: dict, out_dir: Path, title: str, region: str = "SR") -> str:
     """The page of barista's plot galleries (src/plotting/make_gallery.py) with the verdict table on top."""
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))       # barista root
     from src.plotting.make_gallery import PAGE
 
-    info = collect_candidates(summary_data, out_dir)
+    info = collect_candidates(summary_data, out_dir, region=region)
     page = (PAGE.replace("__TITLE__", html.escape(title))
                 .replace("__ITEMS__", json.dumps(gallery_items(info), separators=(",", ":"))))
     hooks = {
@@ -335,7 +339,7 @@ def main():
     with open(summary_path, "r") as f:
         summary_data = json.load(f)
 
-    html_content = generate_html(summary_data, out_dir, args.title)
+    html_content = generate_html(summary_data, out_dir, args.title, region=args.region)
 
     out_file = Path(args.output) if args.output else out_dir / "closure_summary.html"
     out_file.parent.mkdir(parents=True, exist_ok=True)

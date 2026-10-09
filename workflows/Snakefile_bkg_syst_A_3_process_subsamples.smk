@@ -41,10 +41,8 @@ include: "helpers/bkg_syst_common.smk"
 if "A2_STUDY" not in globals():            # standalone: A_2 provides the dataset
     include: "Snakefile_bkg_syst_A_2_make_subsamples.smk"
 
-# ── Stage A_3 Runtime Config Staging (Generated into {out_a3}configs/) ────────
-from helpers.stage_configs import stage_phaseA_3_configs
-# own name: cfg_files is reassigned by later includes (F_1), and input functions run after parsing
-A3_CFG_FILES = stage_phaseA_3_configs(config, out_a3, SUBSAMPLES)['process_subsamples']
+# ── Stage A_3 Base Config ─────────────────────────────────────────────────────
+A3_CFG = config.get('subsample_processor_config', "coffea4bees/workflows/config/analysis_config_bkg_syst_subsamples.yml")
 
 ci_json = config['classifier_inputs_json']
 friend_json = config['mixeddata_friend_json']
@@ -75,7 +73,7 @@ rule all_friends_mixeddata:
 rule process_subsample_single_pass:
     input:
         ds_file = MULTISAMPLE_DATASET,
-        cfg = lambda w: A3_CFG_FILES[w.v],
+        cfg = A3_CFG,
     output:
         coffea = f"{out_a3}histAll_{channel}_mixeddata_v{{v}}.coffea",
         json_meta = f"{out_a3}histAll_{channel}_mixeddata_v{{v}}.json",
@@ -90,6 +88,8 @@ rule process_subsample_single_pass:
         condor_flags = condor_flags,
         python_bin = python_bin,
         weights_file = config.get('weights_file', f"coffea4bees/metadata/weights/weights_{channel}.yml"),
+        friend_base = lambda wildcards: f"{config['mixeddata_friend_base'].rstrip('/')}/v{wildcards.v}/",
+        classifier_input_base = lambda wildcards: f"{config['classifier_inputs_base'].rstrip('/')}/v{wildcards.v}/",
     shell:
         """
         set -eo pipefail
@@ -102,6 +102,8 @@ rule process_subsample_single_pass:
             --weights {params.weights_file} \
             --output-path {params.output_path} \
             --output $(basename {output.coffea}) \
+            --friend-base {params.friend_base} \
+            --config-overrides make_classifier_input={params.classifier_input_base} make_friend_SvB={params.friend_base} \
             {params.condor_flags} 2>&1 | tee {log}
         test -s {output.json_meta}      # runner's friend manifest (HCR_input + SvB_MA): C and F read it
         """

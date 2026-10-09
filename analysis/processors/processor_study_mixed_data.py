@@ -22,7 +22,12 @@ class analysis(HH4bBaseProcessor):
             **kwargs,
     ):
         logging.info(f"\nLoading JCM from file: {JCM_file}, apply_JCM = {apply_JCM}")
-        self._mixed_JCM = jetCombinatoricModel(JCM_file) if apply_JCM else None
+        self._mixed_JCM = None
+        if apply_JCM:
+            if isinstance(JCM_file, dict):
+                self._mixed_JCM = {yr: jetCombinatoricModel(p) for yr, p in JCM_file.items() if p}
+            elif isinstance(JCM_file, str):
+                self._mixed_JCM = {"default": jetCombinatoricModel(JCM_file)}
 
         # Mixed data does not need standard pseudotag weight computation, SvB scoring,
         # b-tag SF, or FvT; pseudoTagWeight is updated in custom_processing instead.
@@ -65,7 +70,14 @@ class analysis(HH4bBaseProcessor):
 
         # Update pseudoTagWeight for mixed data (replaces standard add_pseudotagweights)
         logging.info(f"pseudoTagWeight before update: {selev.pseudoTagWeight[:10]}")
-        update_pseudoTagWeight_of_mixed_data(selev, self._mixed_JCM)
+        jcm_model = (
+            self._mixed_JCM.get(self.year)
+            or self._mixed_JCM.get(getattr(self, "year_label", None))
+            or self._mixed_JCM.get("default")
+            if isinstance(self._mixed_JCM, dict)
+            else self._mixed_JCM
+        )
+        update_pseudoTagWeight_of_mixed_data(selev, jcm_model)
         logging.info(f"pseudoTagWeight after update:  {selev.pseudoTagWeight[:10]}")
 
         # Build candidates (must follow fourTag cut)

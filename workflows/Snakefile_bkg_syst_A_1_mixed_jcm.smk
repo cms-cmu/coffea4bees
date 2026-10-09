@@ -34,7 +34,14 @@ MJ = config.get('mixed_jcm') or {}
 A1_REGION = MJ.get('region', 'SB')
 A1_JCM_TAG = "mixeddata"
 A1_JCM_DIR = f"{out_a1}JCM_{A1_JCM_TAG}/"
-MIXED_JCM = f"{A1_JCM_DIR}jetCombinatoricModel_{A1_REGION}_{A1_JCM_TAG}.yml"
+
+if per_year_jcm:
+    MIXED_JCM = [f"{A1_JCM_DIR}jetCombinatoricModel_{A1_REGION}_{A1_JCM_TAG}_{year}.yml" for year in YEARS]
+    MIXED_JCM_DICT = {year: f"{A1_JCM_DIR}jetCombinatoricModel_{A1_REGION}_{A1_JCM_TAG}_{year}.yml" for year in YEARS}
+else:
+    MIXED_JCM = f"{A1_JCM_DIR}jetCombinatoricModel_{A1_REGION}_{A1_JCM_TAG}.yml"
+    MIXED_JCM_DICT = MIXED_JCM
+
 A1_HIST_CONFIG = f"{out_a1}analysis_config_mixed.yml"
 A1_HISTALL = f"{out_a1}histAll_mixedJCM.coffea"
 
@@ -134,28 +141,54 @@ rule A1_jcm_config:
             cfg.setdefault('ttbarProcesses', TTBAR)
         write_yaml(output[0], cfg)
 
-rule A1_fit:
-    input:
-        # the merged file: make_jcm_weights.py keeps the LAST input file holding each process
-        # (jcm_tools/helpers.py:loadHistograms), so per-year inputs would fit one year of mixed data
-        hists = A1_HISTALL,
-        jcm_config = f"{out_a1}jcm_config_mixed.yml"
-    output: MIXED_JCM
-    log: f"{out_a1}logs/fit.log"
-    params:
-        cut = f"-c {MJ['cut']}" if MJ.get('cut') else ""
-    shell:
-        """
-        set -eo pipefail
-        export MPLCONFIGDIR="/tmp/matplotlib"
-        mkdir -p $MPLCONFIGDIR {A1_JCM_DIR}
-        {container_wrapper} {python_bin} coffea4bees/analysis/jcm_tools/make_jcm_weights.py -o {A1_JCM_DIR} \
-            -i {input.hists} -r {A1_REGION} -w {A1_JCM_TAG} --data4bName data {params.cut} \
-            --jcm_config {input.jcm_config} 2>&1 | tee {log}
-        ls {A1_JCM_DIR} 2>&1 | tee -a {log}
-        """
+if per_year_jcm:
+    rule A1_fit_per_year:
+        input:
+            hists = A1_HISTALL,
+            jcm_config = f"{out_a1}jcm_config_mixed.yml"
+        output: f"{A1_JCM_DIR}jetCombinatoricModel_{A1_REGION}_{A1_JCM_TAG}_{{year}}.yml"
+        log: f"{out_a1}logs/fit_{{year}}.log"
+        wildcard_constraints:
+            year = "|".join(YEARS)
+        params:
+            cut = f"-c {MJ['cut']}" if MJ.get('cut') else ""
+        shell:
+            """
+            set -eo pipefail
+            export MPLCONFIGDIR="/tmp/matplotlib"
+            mkdir -p $MPLCONFIGDIR {A1_JCM_DIR}
+            {container_wrapper} {python_bin} coffea4bees/analysis/jcm_tools/make_jcm_weights.py -o {A1_JCM_DIR} \
+                -i {input.hists} -r {A1_REGION} -w {A1_JCM_TAG}_{wildcards.year} --data4bName data {params.cut} \
+                --year {wildcards.year} --jcm_config {input.jcm_config} 2>&1 | tee {log}
+            ls {A1_JCM_DIR} 2>&1 | tee -a {log}
+            """
+else:
+    rule A1_fit:
+        input:
+            # the merged file: make_jcm_weights.py keeps the LAST input file holding each process
+            # (jcm_tools/helpers.py:loadHistograms), so per-year inputs would fit one year of mixed data
+            hists = A1_HISTALL,
+            jcm_config = f"{out_a1}jcm_config_mixed.yml"
+        output: MIXED_JCM
+        log: f"{out_a1}logs/fit.log"
+        params:
+            cut = f"-c {MJ['cut']}" if MJ.get('cut') else ""
+        shell:
+            """
+            set -eo pipefail
+            export MPLCONFIGDIR="/tmp/matplotlib"
+            mkdir -p $MPLCONFIGDIR {A1_JCM_DIR}
+            {container_wrapper} {python_bin} coffea4bees/analysis/jcm_tools/make_jcm_weights.py -o {A1_JCM_DIR} \
+                -i {input.hists} -r {A1_REGION} -w {A1_JCM_TAG} --data4bName data {params.cut} \
+                --jcm_config {input.jcm_config} 2>&1 | tee {log}
+            ls {A1_JCM_DIR} 2>&1 | tee -a {log}
+            """
 
 rule all_bkg_syst_A_1:
-    input: [MIXED_JCM] if SUB_SOURCE == 'split' else [JCM_HISTS]
+    input: (MIXED_JCM if isinstance(MIXED_JCM, list) else [MIXED_JCM]) if SUB_SOURCE == 'split' else [JCM_HISTS]
 
-localrules: A1_fetch, A1_hist_config, A1_merge_hists, A1_jcm_config, A1_fit, all_bkg_syst_A_1
+localrules: A1_fetch, A1_hist_config, A1_merge_hists, A1_jcm_config, all_bkg_syst_A_1
+if per_year_jcm:
+    localrules: A1_fit_per_year
+else:
+    localrules: A1_fit

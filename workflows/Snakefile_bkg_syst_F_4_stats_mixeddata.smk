@@ -64,6 +64,7 @@
 
 import os
 import sys
+from datetime import datetime
 
 if not workflow.configfiles:
     configfile: "coffea4bees/workflows/config/analysis_ttHbb_bkg_syst.yml"
@@ -73,6 +74,18 @@ include: "helpers/common.smk"
 phase_e_cfg = resolve_config_section(config, primary_key='phase_e', fallback_keys=['phaseE', 'closure'])
 for k, v in phase_e_cfg.items():
     config.setdefault(k, v)
+
+# Unblinded evaluation on mock average mixed data
+config['blind'] = False
+if 'analysis_config' in config and isinstance(config['analysis_config'], dict):
+    if 'config' in config['analysis_config'] and isinstance(config['analysis_config']['config'], dict):
+        config['analysis_config']['config']['blind'] = False
+if 'combine_flags' in config:
+    config['combine_flags'] = config['combine_flags'].replace('--blind', '').strip()
+for ch_name, ch_cfg in config.get('channels', {}).items():
+    ch_cfg['blind'] = False
+    if 'combine_flags' in ch_cfg:
+        ch_cfg['combine_flags'] = ch_cfg['combine_flags'].replace('--blind', '').strip()
 
 config.setdefault('label', "ttHbb_mixeddata")
 config.setdefault('output_path', "output/ttHbb_mixeddata_closure/")
@@ -128,6 +141,12 @@ config.setdefault('combine_container', "/cvmfs/unpacked.cern.ch/gitlab-registry.
 config.setdefault('container_wrapper', "./run_container combine")
 config.setdefault('stats_container_wrapper', config.get('container_wrapper', "./run_container combine"))
 
+def get_region_for_channel(channel):
+    ch_config = config.get('channels', {}).get(channel, {})
+    if 'region' in ch_config:
+        return ch_config['region']
+    return 'SR'
+
 # Closure systematic path resolution
 def get_bkgsyst_for_channel(channel, rebin=None):
     ch_config = config.get('channels', {}).get(channel, {})
@@ -156,10 +175,10 @@ def get_bkgsyst_for_channel(channel, rebin=None):
 for ch_name, ch_config in config.get('channels', {}).items():
     ch_config.setdefault('bkgsyst', get_bkgsyst_for_channel(ch_name))
 
-# Filter channels applicable for mixeddata (variables present in mixeddata ntuples)
+# Filter channels applicable for mixeddata (variables/cuts present in mixeddata ntuples)
 mixeddata_channels = [
     ch for ch, ch_cfg in config.get('channels', {}).items()
-    if ch_cfg.get('variable') in ["SvB_MA.ps_ttHbb", "SvB_MA.ps_ttHbb_gt6"]
+    if ch_cfg.get('cut', 'sum') in ['sum', '', 'pass_nSelJets_gt6']
 ]
 
 wildcard_constraints:
@@ -190,12 +209,6 @@ def get_stat_only_flag(channel=None):
         return ''
     return '--stat_only' if str(val) == '--stat-only' else str(val)
 
-def get_region_for_channel(channel):
-    ch_config = config.get('channels', {}).get(channel, {})
-    if 'region' in ch_config:
-        return ch_config['region']
-    return 'SR'
-
 module stat_analysis:
     snakefile: "rules/stat_analysis.smk"
     config: config
@@ -204,17 +217,36 @@ module combine:
     snakefile: os.path.join(os.getcwd(), "src/stat_analysis/combine.smk")
     config: config
 
-def get_combine_targets_F_4(wildcards):
-    checkpoint_output = checkpoints.evaluate_closure_candidates.get().output[0]
-    import json
+def get_target_rebins_F_4():
+    explicit_rebins = config.get('f4_rebins') or config.get('stat_analysis_rebins')
+    if explicit_rebins:
+        if isinstance(explicit_rebins, (int, str)):
+            return [int(r) for r in str(explicit_rebins).split()]
+        else:
+            return [int(r) for r in explicit_rebins]
+    closure_summary_path = f"{out}bkg_syst_F_2_run_two_stage_closure/closure_summary.json"
+    if os.path.exists(closure_summary_path):
+        import json
+        try:
+            with open(closure_summary_path, "r") as f:
+                data = json.load(f)
+            return data.get("passing_rebins", [])
+        except Exception as e:
+            print(f"[Snakemake] Error reading {closure_summary_path}: {e}")
+            return []
+    closure_reg = config.get('closure_region', config.get('region', 'SR'))
     try:
+        checkpoint_output = checkpoints.evaluate_closure_candidates.get(region=closure_reg).output[0]
+        import json
         with open(checkpoint_output, "r") as f:
             data = json.load(f)
-        passing_rebins = data.get("passing_rebins", [])
+        return data.get("passing_rebins", [])
     except Exception as e:
-        print(f"[Snakemake] Error reading {checkpoint_output}: {e}")
-        passing_rebins = []
+        print(f"[Snakemake] Error reading checkpoint: {e}")
+        return []
 
+def get_combine_targets_F_4(wildcards):
+    passing_rebins = get_target_rebins_F_4()
     if not passing_rebins:
         print("[Snakemake] Notice: No candidate rebin scheme passed the two-stage closure test. Stage F_4 Mixed Data Combine targets will be empty.")
         return []
@@ -235,11 +267,119 @@ def get_combine_targets_F_4(wildcards):
                 f"{ch_dir}impacts/datacard_impacts__{sig}.pdf",
                 f"{ch_dir}gof/datacard_gof__{sig}.pdf",
             ])
+        targets.append(f"{out_f4}stat_analysis_unblinded_mixeddata_rebin{r}/summary.html")
     return targets
+
+# Resolve absolute CERNBox destination path
+cern_user = config.get("cern_user") or os.environ.get("CERN_USER") or os.environ.get("USER", "")
+cern_path = config.get("cern_path", "www/ttHbb/Plots_declib16nc/")
+if not cern_path.startswith("/"):
+    first_letter = cern_user[0]
+    cern_path = f"/eos/user/{first_letter}/{cern_user}/{cern_path}"
+
+# The first rule defined remains the default target
+rule final_output:
+    input:
+        get_combine_targets_F_4,
+        f"{out_f4}summary.html"
+    params:
+        output_dir = f"{datetime.now().strftime('%Y%m%d')}_{config['label']}/",
+        cern_path = cern_path,
+        email = lambda wildcards: config.get('email', "")
+    shell:
+        """
+        echo "Copying results to eos"
+        if [ -f "proxy/x509_proxy" ]; then
+            export X509_USER_PROXY="$(pwd)/proxy/x509_proxy"
+        fi
+        bash src/tools/copy_files_to_cernbox.sh -s {config[output_path]} -d {params.cern_path}{params.output_dir} -t || echo "Warning: copy to EOS failed. Skipping remote upload."
+        if [ -n "{params.email}" ]; then
+            echo "Workflow for {config[label]} completed successfully on $(date)." | mail -s "Snakemake Success: {config[label]}" "{params.email}" || echo "Warning: failed to send success notification email."
+        fi
+        """
 
 rule all_bkg_syst_F_4:
     input:
-        get_combine_targets_F_4
+        get_combine_targets_F_4,
+        f"{out_f4}summary.html"
+
+def get_stat_summary_rebin_inputs_F_4(wildcards):
+    r = wildcards.rebin
+    inputs = []
+    for channel in mixeddata_channels:
+        sig = config['channels'][channel].get('signallabel')
+        if not sig:
+            continue
+        ch_dir = f"{out_f4}stat_analysis_unblinded_mixeddata_rebin{r}/{channel}/"
+        inputs.extend([
+            f"{ch_dir}limits/datacard_limits__{sig}.json",
+            f"{ch_dir}significance/datacard_significance__{sig}.json",
+            f"{ch_dir}likelihood_scan/datacard_likelihood_scan__{sig}.pdf",
+            f"{ch_dir}postfit/datacard_postfit__{sig}.pdf",
+            f"{ch_dir}impacts/datacard_impacts__{sig}.pdf",
+            f"{ch_dir}gof/datacard_gof__{sig}.pdf",
+        ])
+    return inputs
+
+rule stat_summary_rebin_F_4:
+    input:
+        get_stat_summary_rebin_inputs_F_4
+    output:
+        html = f"{out_f4}stat_analysis_unblinded_mixeddata_rebin{{rebin}}/summary.html",
+        md = f"{out_f4}stat_analysis_unblinded_mixeddata_rebin{{rebin}}/summary.md"
+    log: f"{out}logs/stat_summary_rebin_F_4_{{rebin}}.log"
+    params:
+        stat_dir = lambda wildcards: f"{out_f4}stat_analysis_unblinded_mixeddata_rebin{wildcards.rebin}",
+        channels = " ".join(f"--channel {ch}={cfg['signallabel']}" for ch, cfg in config.get('channels', {}).items() if cfg.get('signallabel')),
+        variables = " ".join(f"--variable {ch}={cfg['variable']}" for ch, cfg in config.get('channels', {}).items() if cfg.get('signallabel') and cfg.get('variable')),
+        blind = "",
+        label = lambda wildcards: f"{config.get('label', 'mixeddata')}_rebin{wildcards.rebin}",
+        container_wrapper = "./run_container",
+        python_bin = "python3"
+    container: None
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {log})
+        if [ -f src/stat_analysis/stat_summary.py ]; then
+            {params.container_wrapper} {params.python_bin} src/stat_analysis/stat_summary.py {params.stat_dir} \
+                -o {output.html} --md {output.md} {params.channels} {params.variables} {params.blind} \
+                --label {params.label} 2>&1 | tee {log}
+        else
+            echo "src/stat_analysis/stat_summary.py not found" > {output.html}
+            touch {output.md}
+        fi
+        """
+
+def get_stat_summary_master_inputs_F_4(wildcards):
+    passing_rebins = get_target_rebins_F_4()
+    return [f"{out_f4}stat_analysis_unblinded_mixeddata_rebin{r}/summary.html" for r in passing_rebins]
+
+rule stat_summary_master_F_4:
+    input:
+        get_stat_summary_master_inputs_F_4
+    output:
+        html = f"{out_f4}summary.html",
+        md = f"{out_f4}summary.md"
+    log: f"{out}logs/stat_summary_master_F_4.log"
+    params:
+        stat_dir = out_f4,
+        title = "Stage_F_4_Unblinded_Mixed_Data_Combine_Summary",
+        label = f"{config.get('label', 'mixeddata')}",
+        container_wrapper = "./run_container",
+        python_bin = "python3"
+    container: None
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {log})
+        {params.container_wrapper} {params.python_bin} src/stat_analysis/stat_summary_multi_rebin.py \
+            -d {params.stat_dir} \
+            -o {output.html} --md {output.md} \
+            --title {params.title} \
+            --label {params.label} \
+            --unblind 2>&1 | tee {log}
+        """
 
 n_models_f4 = int(config.get('n_subsamples', config.get('n_models', config.get('n_samples', 16))))
 subsample_indices_f4 = config.get('subsample_indices', list(range(n_models_f4)))
@@ -296,9 +436,12 @@ use rule make_combine_inputs from stat_analysis as make_combine_inputs_mixeddata
             + (f"--cut {config['channels'][wildcards.channel]['cut']} " if 'cut' in config['channels'][wildcards.channel] and config['channels'][wildcards.channel]['cut'] not in ['', 'sum'] else '')
             + (f"--data_process {config['channels'][wildcards.channel]['data_process']} " if 'data_process' in config['channels'][wildcards.channel] else '')
             + f"--multijet_process {config['channels'][wildcards.channel].get('multijet_process', config['make_combine_inputs']['multijet_process'])} "
-            f"--tt_processes {' '.join(config['channels'][wildcards.channel].get('tt_processes', config['make_combine_inputs']['tt_processes']))}"
+            + f"--tt_processes {' '.join(config['channels'][wildcards.channel].get('tt_processes', config['make_combine_inputs']['tt_processes']))} "
+            + ("--unify_background " if config.get('unify_background', False) else "")
         ),
         container_wrapper = config['stats_container_wrapper']
     log: f"{out}logs/make_combine_inputs_unblinded_mixeddata_rebin{{rebin}}_{{channel}}.log"
 
-localrules: all_bkg_syst_F_4, make_mixeddata_ave_json, make_combine_inputs_mixeddata
+use rule * from combine as *
+
+localrules: final_output, all_bkg_syst_F_4, make_mixeddata_ave_json, make_combine_inputs_mixeddata, stat_summary_rebin_F_4, stat_summary_master_F_4

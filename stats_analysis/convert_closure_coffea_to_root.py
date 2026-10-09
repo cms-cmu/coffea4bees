@@ -339,10 +339,12 @@ def main():
                     if reg not in h.axes['region']:
                         continue
 
-                    for proc in ['ttHbb', 'GluGluToHHTo4B_cHHH1', 'ZH4b', 'ZZ4b', 'data', 'TTbar4b_from_d3']:
+                    procs_to_check = list(dict.fromkeys([args.channel, 'ttHbb', 'GluGluToHHTo4B_cHHH1', 'ZH4b', 'ZZ4b', 'data', 'TTbar4b_from_d3']))
+                    for proc in procs_to_check:
                         if proc in h.axes['process']:
                             for yr in h.axes['year']:
-                                for tag in ['threeTag', 'fourTag']:
+                                tags_to_extract = ['fourTag'] if proc == 'data' else ['threeTag', 'fourTag']
+                                for tag in tags_to_extract:
                                     h_cand = slice_1d(h, proc, yr, tag, reg)
                                     if h_cand is not None:
                                         root_dict[f"{stem}_{proc}_{yr}_{tag}_{reg}"] = to_uproot_hist(h_cand)

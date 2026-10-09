@@ -5,43 +5,17 @@ to create pseudo-data observation for unblinded Combine testing.
 """
 import os
 import sys
+
+if os.getcwd() not in sys.path:
+    sys.path.insert(0, os.getcwd())
+
 import copy
 import json
 import argparse
 import numpy as np
+from collections import defaultdict
 from coffea.util import load
-
-
-def extract_1d_dict(h, process, year, tag, region):
-    sel = {'process': process, 'year': year, 'tag': tag, 'region': region}
-    for ax in h.axes:
-        if ax.name.startswith(('pass', 'fail')) and ax.name not in sel:
-            sel[ax.name] = sum
-    h_1d = h[sel]
-    if len(h_1d.axes) > 1:
-        coord_axes = [ax.name for ax in h_1d.axes if ax.name not in ['process', 'year', 'tag', 'region']]
-        h_1d = h_1d.project(coord_axes[-1])
-
-    coord_axis = h_1d.axes[-1]
-    edges = np.array(coord_axis.edges, dtype=float).tolist()
-    centers = np.array(coord_axis.centers, dtype=float).tolist()
-    vals = np.array(h_1d.values(flow=True), dtype=float)
-    vars_ = h_1d.variances(flow=True)
-    if vars_ is None:
-        vars_ = vals.copy()
-    else:
-        vars_ = np.array(vars_, dtype=float)
-
-    return {
-        'edges': edges,
-        'centers': centers,
-        'values': vals[1:-1],
-        'variances': vars_[1:-1],
-        'underflow_value': float(vals[0]),
-        'underflow_variance': float(vars_[0]),
-        'overflow_value': float(vals[-1]),
-        'overflow_variance': float(vars_[-1])
-    }
+from src.tools.convert_hist_to_json import extract_hist_data
 
 
 def main():
@@ -72,35 +46,50 @@ def main():
             print(f"Warning: {var} not found in {args.nominal_json}, skipping.")
             continue
 
+        print(f"Processing variable: {var}")
+        accumulated = defaultdict(lambda: defaultdict(list))
+        ref_dicts = {}
+
+        for v in args.subsamples:
+            fpath = os.path.join(args.closure_dir, args.file_template.format(v=v))
+            if not os.path.exists(fpath):
+                raise FileNotFoundError(f"Missing mixeddata coffea file: {fpath}")
+
+            cdata = load(fpath)
+            h = cdata["hists"][var]
+            axis_indices = {ax.name: idx for idx, ax in enumerate(h.axes)}
+            standard_axes = {'process', 'year', 'tag', 'region', 'variation'}
+            custom_axes = [ax.name for ax in h.axes[:-1] if ax.name not in standard_axes]
+            var_axis = h.axes[-1]
+            edges = var_axis.edges.tolist()
+            centers = var_axis.centers.tolist()
+            base_regions = list(h.axes['region']) if 'region' in axis_indices else ['SR', 'SB']
+
+            for yr in args.years:
+                for iregion in base_regions:
+                    sel = {'process': f'mix_v{v}', 'year': yr, 'tag': 'fourTag', 'region': iregion}
+                    region_hists = extract_hist_data(h, sel, custom_axes, axis_indices, edges, centers)
+                    for suffix, d in region_hists.items():
+                        region_name = f"{iregion}{suffix}"
+                        accumulated[yr][region_name].append(d)
+                        if region_name not in ref_dicts:
+                            ref_dicts[region_name] = d
+
         for yr in args.years:
-            if "data" not in out_json[var] or yr not in out_json[var]["data"] or "fourTag" not in out_json[var]["data"][yr]:
-                continue
-            regions = list(out_json[var]["data"][yr]["fourTag"].keys())
+            for region_name, d_list in accumulated[yr].items():
+                if not d_list:
+                    continue
+                N = len(d_list)
+                val_list = [np.array(d["values"], dtype=float) for d in d_list]
+                var_list = [np.array(d["variances"], dtype=float) for d in d_list]
 
-            for region in regions:
-                val_list = []
-                var_list = []
-                ref_dict = None
-
-                for v in args.subsamples:
-                    fpath = os.path.join(args.closure_dir, args.file_template.format(v=v))
-                    if not os.path.exists(fpath):
-                        raise FileNotFoundError(f"Missing mixeddata coffea file: {fpath}")
-                    h_data = load(fpath)["hists"][var]
-                    mix_proc = f"mix_v{v}"
-                    d_1d = extract_1d_dict(h_data, mix_proc, yr, "fourTag", region)
-                    val_list.append(d_1d["values"])
-                    var_list.append(d_1d["variances"])
-                    if ref_dict is None:
-                        ref_dict = d_1d
-
-                N = len(args.subsamples)
                 ave_values = np.mean(val_list, axis=0)
                 ave_variances = np.sum(var_list, axis=0) / (N ** 2)
 
+                ref = ref_dicts[region_name]
                 ave_json_hist = {
-                    "edges": ref_dict["edges"],
-                    "centers": ref_dict["centers"],
+                    "edges": ref["edges"],
+                    "centers": ref["centers"],
                     "values": ave_values.tolist(),
                     "variances": ave_variances.tolist(),
                     "underflow_value": 0.0,
@@ -110,14 +99,15 @@ def main():
                 }
 
                 # 1. Replace 'data' in fourTag region with the average mixed data
-                out_json[var]["data"][yr]["fourTag"][region] = ave_json_hist
+                if "data" in out_json[var] and yr in out_json[var]["data"] and "fourTag" in out_json[var]["data"][yr]:
+                    out_json[var]["data"][yr]["fourTag"][region_name] = ave_json_hist
 
                 # 2. Also register 'mix_ave' as a distinct process
                 if "mix_ave" not in out_json[var]:
                     out_json[var]["mix_ave"] = {}
                 if yr not in out_json[var]["mix_ave"]:
                     out_json[var]["mix_ave"][yr] = {"fourTag": {}}
-                out_json[var]["mix_ave"][yr]["fourTag"][region] = ave_json_hist
+                out_json[var]["mix_ave"][yr]["fourTag"][region_name] = ave_json_hist
 
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
     print(f"Writing output to {args.output}...")

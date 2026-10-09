@@ -31,6 +31,8 @@ def main():
     parser.add_argument("--var", default="SvB_MA.ps", help="Variable name in JSON")
     parser.add_argument("--years", nargs="+", default=["UL16_preVFP", "UL16_postVFP", "UL17", "UL18"],
                         help="List of years to export")
+    parser.add_argument("--regions", nargs="+", default=["SR", "SB"],
+                        help="List of regions to export (default: SR SB)")
     parser.add_argument("--dummy", action="store_true", default=False,
                         help="Generate fallback/dummy signal histograms if input JSON is missing")
     args = parser.parse_args()
@@ -63,29 +65,31 @@ def main():
                     raise KeyError(f"Could not find histogram matching {args.var} in {args.input}. Keys: {list(hists_dict.keys())}")
 
                 tot_integral = 0.0
-                for y in args.years:
-                    if y not in h_match.axes['year'] or 'ttHbb' not in h_match.axes['process']:
-                        continue
-                    sel = {'process': 'ttHbb', 'year': y, 'tag': 'fourTag', 'region': 'SR'}
-                    for ax in h_match.axes.name:
-                        if ax.startswith(('pass', 'fail')) and ax not in sel:
-                            sel[ax] = sum
-                    sub = h_match[sel]
-                    if len(sub.axes) > 1:
-                        sub = sub.project(sub.axes[-1].name)
-                    edges = np.array(sub.axes[0].edges, dtype=np.float64)
-                    vals = np.array(sub.values(), dtype=np.float64)
-                    vars_ = np.array(sub.variances(), dtype=np.float64) if sub.variances() is not None else vals
+                for reg in args.regions:
+                    for y in args.years:
+                        if y not in h_match.axes['year'] or 'ttHbb' not in h_match.axes['process'] or reg not in h_match.axes['region']:
+                            continue
+                        sel = {'process': 'ttHbb', 'year': y, 'tag': 'fourTag', 'region': reg}
+                        for ax in h_match.axes.name:
+                            if ax.startswith(('pass', 'fail')) and ax not in sel:
+                                sel[ax] = sum
+                        sub = h_match[sel]
+                        if len(sub.axes) > 1:
+                            sub = sub.project(sub.axes[-1].name)
+                        edges = np.array(sub.axes[0].edges, dtype=np.float64)
+                        vals = np.array(sub.values(), dtype=np.float64)
+                        vars_ = np.array(sub.variances(), dtype=np.float64) if sub.variances() is not None else vals
 
-                    h_root = ROOT.TH1F(f"{var_prefix}_ttHbb_{y}_fourTag_SR", f"{var_prefix}_ttHbb_{y}_fourTag_SR",
-                                       len(edges) - 1, array.array("d", edges))
-                    for b in range(1, len(edges)):
-                        h_root.SetBinContent(b, vals[b - 1])
-                        h_root.SetBinError(b, vars_[b - 1] ** 0.5)
-                    h_root.Write("", ROOT.TObject.kOverwrite)
-                    tot_integral += float(vals.sum())
-                    print(f"  {var_prefix}_ttHbb_{y}_fourTag_SR: {vals.sum():.2f}")
+                        h_root = ROOT.TH1F(f"{var_prefix}_ttHbb_{y}_fourTag_{reg}", f"{var_prefix}_ttHbb_{y}_fourTag_{reg}",
+                                           len(edges) - 1, array.array("d", edges))
+                        for b in range(1, len(edges)):
+                            h_root.SetBinContent(b, vals[b - 1])
+                            h_root.SetBinError(b, vars_[b - 1] ** 0.5)
+                        h_root.Write("", ROOT.TObject.kOverwrite)
+                        tot_integral += float(vals.sum())
+                        print(f"  {var_prefix}_ttHbb_{y}_fourTag_{reg}: {vals.sum():.2f}")
                 print(f"Successfully created {args.output} from {args.input} (integral: {tot_integral:.2f})")
+
             else:
                 with open(args.input) as f:
                     d = json.load(f)
@@ -174,32 +178,34 @@ def main():
                         raise KeyError(f"Could not find histogram matching {args.var} in {args.input}. Keys: {list(hists_dict.keys())}")
 
                     tot_integral = 0.0
-                    for y in args.years:
-                        if y not in h_match.axes['year'] or 'ttHbb' not in h_match.axes['process']:
-                            continue
-                        sel = {'process': 'ttHbb', 'year': y, 'tag': 'fourTag', 'region': 'SR'}
-                        for ax in h_match.axes.name:
-                            if ax.startswith(('pass', 'fail')) and ax not in sel:
-                                sel[ax] = sum
-                        sub = h_match[sel]
-                        if len(sub.axes) > 1:
-                            sub = sub.project(sub.axes[-1].name)
-                        edges = np.array(sub.axes[0].edges, dtype=np.float64)
-                        vals = np.array(sub.values(), dtype=np.float64)
-                        vars_ = np.array(sub.variances(), dtype=np.float64) if sub.variances() is not None else vals
+                    for reg in args.regions:
+                        for y in args.years:
+                            if y not in h_match.axes['year'] or 'ttHbb' not in h_match.axes['process'] or reg not in h_match.axes['region']:
+                                continue
+                            sel = {'process': 'ttHbb', 'year': y, 'tag': 'fourTag', 'region': reg}
+                            for ax in h_match.axes.name:
+                                if ax.startswith(('pass', 'fail')) and ax not in sel:
+                                    sel[ax] = sum
+                            sub = h_match[sel]
+                            if len(sub.axes) > 1:
+                                sub = sub.project(sub.axes[-1].name)
+                            edges = np.array(sub.axes[0].edges, dtype=np.float64)
+                            vals = np.array(sub.values(), dtype=np.float64)
+                            vars_ = np.array(sub.variances(), dtype=np.float64) if sub.variances() is not None else vals
 
-                        widths = np.diff(edges)
-                        if len(edges) > 1 and not np.allclose(widths, widths[0]):
-                            out_h = hist.Hist.new.Var(edges, name="h").Weight()
-                        else:
-                            out_h = hist.Hist.new.Reg(len(edges) - 1, edges[0], edges[-1], name="h").Weight()
-                        out_h.view().value = vals
-                        out_h.view().variance = vars_
+                            widths = np.diff(edges)
+                            if len(edges) > 1 and not np.allclose(widths, widths[0]):
+                                out_h = hist.Hist.new.Var(edges, name="h").Weight()
+                            else:
+                                out_h = hist.Hist.new.Reg(len(edges) - 1, edges[0], edges[-1], name="h").Weight()
+                            out_h.view().value = vals
+                            out_h.view().variance = vars_
 
-                        f_out[f"{var_prefix}_ttHbb_{y}_fourTag_SR"] = out_h
-                        tot_integral += float(vals.sum())
-                        print(f"  {var_prefix}_ttHbb_{y}_fourTag_SR: {vals.sum():.2f}")
+                            f_out[f"{var_prefix}_ttHbb_{y}_fourTag_{reg}"] = out_h
+                            tot_integral += float(vals.sum())
+                            print(f"  {var_prefix}_ttHbb_{y}_fourTag_{reg}: {vals.sum():.2f}")
                     print(f"Successfully created {args.output} from {args.input} (integral: {tot_integral:.2f})")
+
                 else:
                     with open(args.input) as f:
                         d = json.load(f)

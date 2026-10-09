@@ -29,8 +29,8 @@
 #   - Framework: PyTorch with HCR (Hierarchical Classifier for Resonances).
 #   - Inputs: Jet kinematics (pT, eta, phi, mass, deepJet/PNet b-tag scores),
 #     candidate quadjet pairings, and event-level variables.
-#   - Training Schedule: EarlyStopStep with validation benchmarking.
-#   - Precision: Mixed precision (bf16 or fp16).
+#   - Training Schedule: FixedStep (20 epochs, cosine LR schedule).
+#   - Precision: Pure FP32 (precision: "") to prevent logit-exponentiation normalization drift.
 #   - Hardware Allocation: 1 GPU per training instance (SLURM partition: GPU-shared / work).
 #
 # INPUTS:
@@ -60,13 +60,16 @@ n_models = int(config.get('n_models', config.get('n_subsamples', 16)))
 subsample_indices = config.get('subsample_indices', list(range(n_models)))
 if isinstance(subsample_indices, str):
     subsample_indices = [int(x) for x in subsample_indices.split()]
+elif isinstance(subsample_indices, int):
+    subsample_indices = [subsample_indices]
 MIX_INDICES = [int(x) for x in subsample_indices]
 
 out_c = f"{out}bkg_syst_C_FvT/"
 os.makedirs(out_c, exist_ok=True)
 
-from helpers.stage_configs import stage_phaseC_configs
-cfg_files = stage_phaseC_configs(config, out_c)
+if not globals().get("_BKG_SYST_C_MODEL_CONFIG_INCLUDED", False):
+    _BKG_SYST_C_MODEL_CONFIG_INCLUDED = True
+    include: "helpers/bkg_syst_c_model_config.smk"
 
 if not globals().get("_CLASSIFIER_WORKFLOW_INCLUDED", False):
     _CLASSIFIER_WORKFLOW_INCLUDED = True
