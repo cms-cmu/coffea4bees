@@ -128,7 +128,14 @@ mixing:
   # lost a tag (found in mixeddata_run3_4bmix_20260930_2e4bcf8-2f1d90b; the 3b JCM fit hid it).
   boost_acceptance_eta: 2.4
   worker_memory: 8GB
-  chunksize: 100000
+  # 50000, not 100000: with the ~2M-hemisphere library (~4.4 GB) a 100k-event chunk put workers over
+  # 8 GB (data_2024G chunk345 killed 4 workers in a row; mixeddata_run3_2024_20261009_e1faf1e-07a4f49).
+  chunksize: 50000
+  # No skipbadfiles: a transient XRootD read error (fsspec_xrootd 'I/O operation on closed file') then
+  # raises and dask retries the chunk (dask_retries 3) instead of dropping it -- 2 of 2284 chunks were
+  # dropped that way in e1faf1e-07a4f49, failing the integrity check after ~4 h of mixing.
+  runner:
+    skipbadfiles: false
 
 # ------------------------------------------------------------------------------
 # M.3: validation + mixed-data JCM (mixeddata_all as the "3b" sample, float_t)
@@ -150,6 +157,8 @@ ttbar_psdata:
   worker_memory: 6GB
   chunksize: 100000
   picosize: 100000
+  runner:
+    skipbadfiles: false   # as mixing.runner: retry transient read errors, never drop a chunk
 
 # ------------------------------------------------------------------------------
 # M.7: signal check -- signal MC (every preselected event, 3b and 4b) mixed with M.2's settings and

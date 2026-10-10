@@ -45,7 +45,9 @@ def _m2_config(template, jcm, dst, seed=None):
     with open(template) as f:
         tmpl = yaml.safe_load(f) or {}
     step = int(MIX.get('chunksize', 100000))
-    runner = {**(tmpl.get('runner') or {}),
+    # mixing.runner: runner overrides (e.g. skipbadfiles: false), as ttbar_psdata.runner for M.5.
+    # M7_config starts from this config, so the signal mixing inherits them.
+    runner = {**(tmpl.get('runner') or {}), **(MIX.get('runner') or {}),
               'worker_memory': MIX.get('worker_memory', '8GB'), 'chunksize': step}
     section = {**(tmpl.get('config') or {}),
                'base_path': f"{PUB}/picoAOD/{MIX_NAME}",
