@@ -78,6 +78,14 @@ def resolve_object_selection_config(cfg: dict, year) -> dict:
     return base
 
 
+def _is_bool_array(array: ak.Array) -> bool:
+    """True when the (jagged) array holds booleans rather than integers."""
+    t = ak.type(array)
+    while hasattr(t, "content"):      # ArrayType / ListType / OptionType -> leaf NumpyType
+        t = t.content
+    return getattr(t, "primitive", None) == "bool"
+
+
 #: Tagger used before ``btag_algo`` was configurable per era in corrections.yml.
 #: Only used as a fallback for metadata blocks that predate the key.
 _LEGACY_BTAG_ALGO = {True: 'btagPNetB', False: 'btagDeepFlavB'}
@@ -499,7 +507,13 @@ def jet_selection(
             )
 
         event['Jet', 'puId'] = 10
-        if 'jetId' in event.Jet.fields: ###### temporary hack before using nanoV15
+        if 'jetId' in event.Jet.fields and _is_bool_array(event.Jet.jetId):
+            # Skims of NanoAOD v15 (2024: no Jet_jetId branch) store the jet ID evaluated below
+            # (passJetId_loose) as a boolean Jet_jetId -- e.g. the 2024 mixed data -- which the
+            # jetId >= 2 bitmask test would reject for every jet (True == 1).
+            event['Jet', 'passJetId_loose'] = event.Jet.jetId
+            event['Jet', 'passJetId'] = event.Jet.jetId
+        elif 'jetId' in event.Jet.fields: ###### temporary hack before using nanoV15
             event['Jet', 'passJetId_loose'] = event.Jet.jetId >= 2
             event['Jet', 'passJetId'] = event.Jet.jetId >= 2
         else:
