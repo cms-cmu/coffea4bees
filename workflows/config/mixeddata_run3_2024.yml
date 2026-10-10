@@ -42,7 +42,8 @@ publish_base: "{eos_prod}/{roast_id}"
 # Products of other roasts (checked by `roast new`, see src/tools/roast.py:check_inputs)
 # ------------------------------------------------------------------------------
 inputs:
-  upstream_roasts: [nominal_run3_2024_nontight_20261008_c1cd0fe-4e83031, nominal_run3_20261008_f839489-a481023]
+  upstream_roasts: [nominal_run3_2024_nontight_20261008_c1cd0fe-4e83031, nominal_run3_20261008_f839489-a481023,
+                    mixeddata_run3_2024_20261010_c773450-d2f388f]
   # ttbar subtraction in M.1 (4b data, FvT.d4_to_t4) and M.2 (3b data, FvT.d3_to_t3): the
   # non-tight 2024 FvT (Phase C of that roast; C.4 closure SR 0.994 +- 0.001). Must cover the data
   # picoAODs in analysis_config.dataset_location (same data.yml as that roast).
@@ -57,6 +58,9 @@ inputs:
   # Optional: reuse another mixeddata roast's hemisphere library (its <publish_base>/hemilib) and
   # skip M.1 -- e.g. when only the mixing rank / matcher changes. Add that roast to upstream_roasts.
   # hemilib: "{eos_prod}/<mixeddata roast id>/hemilib"
+  # The 2M-hemisphere 2024 library (M.1 of that roast; its M.3 failed on the boolean Jet_jetId of
+  # the 2024 mixed picoAODs, fixed in jet_selection).
+  hemilib: "{eos_prod}/mixeddata_run3_2024_20261010_c773450-d2f388f/hemilib"
 
 # Eras as they appear in metadata/datasets/data.yml (picoAOD keys) — same as nominal_run3_2024_nontight.yml.
 # '2024' MUST stay quoted: unquoted it parses as an int and misses the string-keyed metadata.
