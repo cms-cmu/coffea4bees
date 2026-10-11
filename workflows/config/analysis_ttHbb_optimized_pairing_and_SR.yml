@@ -73,7 +73,7 @@ trigger_weights:
   config:
     use_vectorized: false
     tagger: DeepJet
-    make_classifier_input: "root://cmseos.fnal.gov//store/user/smurthy/ttHbb/{roast_id}/classifier_inputs/"
+    make_classifier_input: "{eos_prod}/{roast_id}/classifier_inputs/"
 
 # ==============================================================================
 # PHASE B: CALIBRATION & CLASSIFIER INPUTS (JCM & Friendtrees)
@@ -128,7 +128,7 @@ classifier_inputs:
     run_SvB: false
     top_reconstruction: slow
     fill_histograms: true
-    make_classifier_input: "root://cmseos.fnal.gov//store/user/smurthy/ttHbb/{roast_id}/classifier_inputs/"
+    make_classifier_input: "{eos_prod}/{roast_id}/classifier_inputs/"
     pairing: can_ttH
 
 # ==============================================================================
@@ -172,7 +172,7 @@ classifier_setting:
 # the classifier's parse.mapping, which deserializes with fsspec and so accepts root:// URLs.
 # The fvt/svb blocks below must point at these same two URLs.
 handoff:
-  eos_base: "root://cmseos.fnal.gov//store/user/smurthy/ttHbb/{roast_id}/handoff"
+  eos_base: "{eos_prod}/{roast_id}/handoff"
 
 # ==============================================================================
 # PHASE C: FvT (falcon).  Self-contained per roast: models and friends go to the roast's own
@@ -184,7 +184,7 @@ handoff:
 # ==============================================================================
 fvt:
   gpu_qos: medium
-  eos_base: "root://cmseos.fnal.gov//store/user/smurthy/ttHbb/{roast_id}"
+  eos_base: "{eos_prod}/{roast_id}"
   plot_base: "{web_prod}/{roast_id}/classifier"
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/ttHbb/FvT"
@@ -197,15 +197,15 @@ fvt:
   friend: "{eos_base}/friend/{label}"
   train_template: "model: {eos_base}/classifier/{label}"
   eval_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/{label}"
-  metadata: "root://cmseos.fnal.gov//store/user/smurthy/ttHbb/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input"
+  metadata: "{eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input"
   workflow_overrides:
     --metadata: "coffea4bees/metadata/datasets/"
     --JCM-weight:
-      - 'year:UL16_preVFP root://cmseos.fnal.gov//store/user/smurthy/ttHbb/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml@@JCM_weights'
-      - 'year:UL16_postVFP root://cmseos.fnal.gov//store/user/smurthy/ttHbb/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml@@JCM_weights'
-      - 'year:UL17 root://cmseos.fnal.gov//store/user/smurthy/ttHbb/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL17.yml@@JCM_weights'
-      - 'year:UL18 root://cmseos.fnal.gov//store/user/smurthy/ttHbb/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL18.yml@@JCM_weights'
-    '--friends ""': "root://cmseos.fnal.gov//store/user/smurthy/ttHbb/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input"
+      - 'year:UL16_preVFP {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml@@JCM_weights'
+      - 'year:UL16_postVFP {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml@@JCM_weights'
+      - 'year:UL17 {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL17.yml@@JCM_weights'
+      - 'year:UL18 {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL18.yml@@JCM_weights'
+    '--friends ""': "{eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input"
 
 # ==============================================================================
 # PHASE C.4 (cmslpc, roast step C4): FvT closure -- the processor on data with JCM x FvT (no
@@ -228,7 +228,7 @@ fvt_closure:
 svb:
   gpu_qos: medium
   train_runtime: 180
-  eos_base: "root://cmseos.fnal.gov//store/user/smurthy/ttHbb/{roast_id}"
+  eos_base: "{eos_prod}/{roast_id}"
   plot_base: "{web_prod}/{roast_id}/classifier"
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/ttHbb/SvB"
@@ -241,15 +241,15 @@ svb:
   friend: "{eos_base}/friend/{label}"
   train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_ttHbb_stitched"
   eval_template: "model: {eos_base}/classifier/{label}, SvB: {eos_base}/friend/{label}"
-  metadata: "root://cmseos.fnal.gov//store/user/smurthy/ttHbb/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input"
+  metadata: "{eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input"
   workflow_overrides:
     --metadata: "coffea4bees/metadata/datasets/"
     --JCM-weight:
-      - 'year:UL16_preVFP root://cmseos.fnal.gov//store/user/smurthy/ttHbb/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml@@JCM_weights'
-      - 'year:UL16_postVFP root://cmseos.fnal.gov//store/user/smurthy/ttHbb/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml@@JCM_weights'
-      - 'year:UL17 root://cmseos.fnal.gov//store/user/smurthy/ttHbb/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL17.yml@@JCM_weights'
-      - 'year:UL18 root://cmseos.fnal.gov//store/user/smurthy/ttHbb/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL18.yml@@JCM_weights'
-    '--friends ""': "root://cmseos.fnal.gov//store/user/smurthy/ttHbb/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input"
+      - 'year:UL16_preVFP {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml@@JCM_weights'
+      - 'year:UL16_postVFP {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml@@JCM_weights'
+      - 'year:UL17 {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL17.yml@@JCM_weights'
+      - 'year:UL18 {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL18.yml@@JCM_weights'
+    '--friends ""': "{eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input"
 
 # ==============================================================================
 # PHASE F.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
