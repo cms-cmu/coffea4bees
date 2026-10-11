@@ -178,3 +178,6 @@ signal_check:
   subsample: 10             # mix only signal events with event % 10 == 0 (sumw / 10); 1 = all
   mixeddata_subsample: 10   # mixeddata_all SvB pass: event % 10 == 0, weights x 10; 1 = all
   chunksize: 20000
+  # runner overrides for the mixeddata_all SvB pass (default 100k-event chunks): the SvB on the fly
+  # killed 8 GB workers on two different chunks (mixeddata_run3_2024_20261010_952524e-5ddc954)
+  mixeddata_runner: {chunksize: 20000}
