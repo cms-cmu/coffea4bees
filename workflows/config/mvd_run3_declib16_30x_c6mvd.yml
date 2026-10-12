@@ -1,0 +1,94 @@
+# ==============================================================================
+# 30x c6 MvD + c6 SvB on the 16x DECLUSTERED background model -- V.2, V.2c, V.3, V.4
+# ==============================================================================
+# mvd_run3_30x_c6mvd.yml applied to mvd_run3_declib16_30x.yml: the 30x MvD trained with the c6 candidate-
+# jet features (the MvD must see every feature an SvB trained against it sees), and here V.3 is the
+# c6 SvB against it (same features). SvB-only variants (other feature sets) reuse this roast's MvD
+# through overlays, as mvd_run3_30x_c6mvd_{c5,c5b,c6}.yml do for the 3b mixed data.
+#
+# The c6 set here is c6_norawF WITHOUT `area` (15 CanJet features): the declustering library does not
+# carry Jet_area or Jet_rawFactor (declustered_run3.yml library_carry_fields), so in the declustered
+# classifier inputs CanJet_area == 0 and CanJet_rawFactor == 0 for every jet (data: area 0.49 +- 0.04).
+# With `area` the MvD would separate declustered from data on it alone, and the SvB signal from the
+# declustered background. Adding area to library_carry_fields means re-running the 16x sample.
+#
+#   roast new --config coffea4bees/workflows/config/mvd_run3_declib16_30x_c6mvd.yml --label mvd_declib16_30x_c6mvd_run3 \
+#       --step falcon:coffea4bees/workflows/Snakefile_MvD_2_train.smk \
+#       --step cmslpc:coffea4bees/workflows/Snakefile_MvD.smk \
+#       --step falcon:coffea4bees/workflows/Snakefile_MvD_3_svb.smk
+#   roast submit <id> --step MvD_2_train                   # falcon: MvD 30x c6
+#   roast submit <id> --step MvD --targets all_V2c         # cmslpc: closure with this MvD
+#   roast submit <id> --step MvD_3_svb                     # falcon: SvB 30x c6 vs this MvD
+#   roast submit <id> --step MvD --targets all_V4          # cmslpc: analysis + stat-only limits
+#
+# Compare against mvd_declib16_30x_run3_20261012_0048151-43f8b32 (kinematic 30x MvD + SvB, same model).
+base: coffea4bees/workflows/config/mvd_run3_declib16_30x.yml
+
+label: "mvd_run3_declib16_30x_c6mvd"
+
+mvd:
+  label: "MvD_30x_c6"
+  output_dir: "output/MvD_30x_c6/"
+  workflow_overrides:
+    # 1 evaluator, as mvd_run3_30x_c6mvd: with 2 the c6 MvD evaluation hit 45.8 GB against the 40 GB
+    # half-GPU MPS limit
+    --max-evaluators: '1'
+  # This step's common.yml (overrides the top-level classifier_setting for the MvD step only)
+  classifier_setting:
+    - module: ml.DataLoader
+      option:
+        - optimize_sliceable_dataset: true
+    - module: ROOT
+      option:
+        - friend_allow_missing: false
+    - module: cms.CollisionData
+      option:
+        - eras:
+            2022_preEE: [B, C, D]
+            2022_EE: [E, F, G]
+            2023_preBPix: [C01, C02, C11, C12, C3, C4]
+            2023_BPix: [D1, D2]
+    - module: HCR.InputBranch
+      option:
+        - feature_ancillary: [xW, nSelJets, xbW, year]
+        - mass_regions: [SR, SB]
+        - feature_CanJet: &c6_noarea ['pt', 'eta', 'phi', 'mass', 'btagScore', 'btagPNetCvB', 'btagPNetCvL', 'btagPNetQvG', 'PNetRegPtRawRes', 'chHEF', 'neHEF', 'chEmEF', 'neEmEF', 'muEF', 'nConstituents']
+
+svb_mvd:
+  label: "SvB_MvD_30x_c6_c6mvd"
+  output_dir: "output/SvB_MvD_30x_c6_c6mvd/"
+  # src/classifier/plot_inputs.py rebuilds the model with the default 4 CanJet features and fails on a
+  # wider checkpoint (diagnostic only)
+  plot_inputs: false
+  train_template: "model: {eos_base}/classifier/{label}, MvD: {eos_base}/friend/MvD_30x_c6"
+  classifier_setting:
+    - module: ml.DataLoader
+      option:
+        - optimize_sliceable_dataset: true
+    - module: ROOT
+      option:
+        - friend_allow_missing: false
+    - module: cms.CollisionData
+      option:
+        - eras:
+            2022_preEE: [B, C, D]
+            2022_EE: [E, F, G]
+            2023_preBPix: [C01, C02, C11, C12, C3, C4]
+            2023_BPix: [D1, D2]
+    - module: HCR.InputBranch
+      option:
+        - feature_ancillary: [xW, nSelJets, xbW, year]
+        - mass_regions: [SR, SB]
+        - feature_CanJet: *c6_noarea
+
+# p_mix4 floor 0.01, as mvd_run3_30x_c6mvd (the c6 MvD is sharper; 0.05 clipped real weight there:
+# V.2c SR / SB 1.043 / 1.059 at 0.05, 1.006 / 1.019 at 0.01)
+mvd_pmix4_floor: 0.01
+
+closure:
+  label: "MvD_30x_c6_closure"
+
+analysis:
+  label: "MvD_30x_c6mvd_c6"
+
+combine_outdir: "datacards/HH4b_run3_MvD_declib16_30x_c6mvd_c6"
