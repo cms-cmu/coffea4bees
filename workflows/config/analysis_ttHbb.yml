@@ -129,6 +129,7 @@ classifier_inputs:
     top_reconstruction: slow
     fill_histograms: true
     make_classifier_input: "{eos_prod}/{roast_id}/classifier_inputs/"
+    pairing: nominal
 
 # ==============================================================================
 # PHASE C & D: CLASSIFIER SETTINGS (Entirely on falcon / PSC)
@@ -281,6 +282,7 @@ analysis_config:
     hist_cuts: ["pass_nSelJets_gt6", "passLeptonVeto"]
     top_reconstruction: fast
     plot_ttbar_with_weights: true
+    pairing: nominal
 
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
 plot_extra_arguments: ""

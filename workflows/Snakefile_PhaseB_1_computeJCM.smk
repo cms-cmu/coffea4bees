@@ -207,9 +207,9 @@ if per_year_jcm:
         shell:
             """
             set -eo pipefail
-            export MPLCONFIGDIR="/tmp/matplotlib_${{wildcards.year}}"
+            export MPLCONFIGDIR="/tmp/matplotlib_{wildcards.year}"
             mkdir -p $MPLCONFIGDIR {params.output_dir}
-            echo "Computing JCM for year ${{wildcards.year}}" 2>&1 | tee -a {log}
+            echo "Computing JCM for year {wildcards.year}" 2>&1 | tee -a {log}
             {params.run_container_wrapper} {params.python_bin} coffea4bees/analysis/jcm_tools/make_jcm_weights.py \
                 -o {params.output_dir} \
                 -r {params.region} \

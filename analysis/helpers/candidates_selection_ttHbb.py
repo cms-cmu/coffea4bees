@@ -16,6 +16,127 @@ from coffea4bees.analysis.helpers.FvT_helpers import compute_FvT
 from coffea4bees.analysis.helpers.hist_templates import ttHbbSvBHists
 
 
+def _build_can_ttH_dijets(selev, cand_cfg=None, isRun3=False):
+    canJet = selev["canJet"]
+    pairing = [np.array([[0, 2], [0, 1], [0, 1], [2, 0], [1, 0], [1, 0]]), 
+                np.array([[1, 3], [2, 3], [3, 2], [3, 1], [3, 2], [2, 3]])]
+    diJet = canJet[:, pairing[0]] + canJet[:, pairing[1]]    ### contains [[82.8, -1.18], [-1.11, 82.8], [79, 2.63]] per event for each value and represents the two dijets in the three possible pairing
+    diJet["lead"] = canJet[:, pairing[0]]  ### represents in lead "jet" in the two dijets in each of the three possible pairing
+    diJet["subl"] = canJet[:, pairing[1]]  ### represents in subl "jet" in the two dijets in each of the three possible pairing
+    diJet["st"] = diJet["lead"].pt + diJet["subl"].pt
+    diJet["dr"] = diJet["lead"].delta_r(diJet["subl"])
+    diJet["dphi"] = diJet["lead"].delta_phi(diJet["subl"])
+    diJet["deta"] = diJet["lead"].eta - diJet["subl"].eta
+    diJetDr = diJet[ak.argsort(diJet.dr, axis=2, ascending=True)]
+
+    del canJet, pairing
+    return diJet, diJetDr
+
+def _build_can_ttH_quadjets(selev, diJet, diJetDr, cand_cfg=None, isRun3=False):
+    """Build quadjet candidates and assign signal regions for ttHbb."""
+    rng_0 = Squares("quadJetSelection")
+    rng_1 = rng_0.shift(1)
+    rng_2 = rng_0.shift(2)
+    rng_3 = rng_0.shift(3)
+    rng_4 = rng_0.shift(4)
+    rng_5 = rng_0.shift(5)
+    counter = selev.event
+
+    quadJet = ak.zip({
+        "canH": diJet[:, :, 0],
+        "canTT": diJet[:, :, 1],
+        ### lead/subl/close/other/passDiJetMass kept so downstream (_assign_output_vars_ttHbb, processors) works unchanged
+        "lead": diJet[:, :, 0],
+        "subl": diJet[:, :, 1],
+        "close": diJetDr[:, :, 0],
+        "other": diJetDr[:, :, 1],
+        "passDiJetMass": ak.all((0. < diJet.mass) & (diJet.mass < 2000.), axis=2),
+        "random": np.concatenate([
+            rng_0.uniform(counter, low=0.1, high=0.9)[:, np.newaxis],
+            rng_1.uniform(counter, low=0.1, high=0.9)[:, np.newaxis],
+            rng_2.uniform(counter, low=0.1, high=0.9)[:, np.newaxis],
+            rng_3.uniform(counter, low=0.1, high=0.9)[:, np.newaxis],
+            rng_4.uniform(counter, low=0.1, high=0.9)[:, np.newaxis],
+            rng_5.uniform(counter, low=0.1, high=0.9)[:, np.newaxis],
+        ], axis=1),
+    })
+
+    quadJet["dr"] = quadJet["canH"].delta_r(quadJet["canTT"])
+    quadJet["dphi"] = quadJet["canH"].delta_phi(quadJet["canTT"])
+    quadJet["deta"] = quadJet["canH"].eta - quadJet["canTT"].eta
+    quadJet["v4jmass"] = selev["v4j"].mass[:, np.newaxis]   ### pairings axis is regular (no sort), so broadcast explicitly
+
+    ### one quadJet entry per pairing: canH is slot 0, canTT is slot 1 of each pairing
+    canH_min_mass, canH_max_mass = 80, 170
+    canH_min_pt_offset, canH_min_pt_scale, canH_min_dr_offset = -50., 160., 0.18
+    canH_max_pt_offset, canH_max_pt_scale, canH_max_dr_offset = -256., 1125., -1.06
+    canTT_min_pt_offset, canTT_min_pt_scale, canTT_min_dr_offset = 234.286, 149.878, 3.371
+    canTT_max_pt_offset, canTT_max_pt_scale, canTT_max_dr_offset = 144.615, 33.799, 3.723
+
+
+    canH, canTT = quadJet["canH"], quadJet["canTT"]
+
+    quadJet["pass_canH_mass"] = (canH_min_mass < canH.mass) & (canH.mass < canH_max_mass)
+
+    quadJet["pass_canH_PtDR"] = (
+        (canH_min_dr_offset + (canH_min_pt_scale / (canH.pt - canH_min_pt_offset)) < canH.dr) &
+        (canH.dr < np.minimum(canH_max_dr_offset + (canH_max_pt_scale / (canH.pt - canH_max_pt_offset))  , 4)) &   ### minimum: 4 is a cap, not a floor
+        (canH.pt >= canH_min_pt_offset)
+    )
+
+    quadJet["pass_canTT_PtDR"] = (
+        (canTT_min_dr_offset + (canTT_min_pt_scale / (canTT.pt - canTT_min_pt_offset)) < canTT.dr) &
+        (canTT.dr < np.minimum( canTT_max_dr_offset + (canTT_max_pt_scale / (canTT.pt - canTT_max_pt_offset)) , 4) ) &
+        (canTT.pt <= canTT_max_pt_offset) & (canTT.dr >= 2)
+    )
+
+    ### above the line canTT_dR = -0.768 + 1.28 * canH_dR (dR between the two jets within each dijet)
+    quadJet["pass_canH_canTT_DR"] = canTT.dr > (-0.768 + 1.28 * canH.dr)
+
+    ### number of pairings (of 6) passing each PtDR cut, and both together
+    selev["nPairs"] = ak.zip({
+        "pass_canH_PtDR": ak.sum(quadJet.pass_canH_PtDR, axis=1),
+        "pass_canTT_PtDR": ak.sum(quadJet.pass_canTT_PtDR, axis=1),
+        "pass_canH_canTT_PtDR": ak.sum(quadJet.pass_canH_PtDR & quadJet.pass_canTT_PtDR, axis=1),
+    })
+
+    _select_can_ttH_quadjet(quadJet, cand_cfg)
+    _assign_SR_SB_ttHbb_oblong(quadJet, cand_cfg, full_space=True)   ### SR = whole (canH, canTT) mass plane, SB empty
+
+    return quadJet
+
+def _select_can_ttH_quadjet(quadJet, cand_cfg=None):
+    m_lead = quadJet["canH"].mass
+    m_subl = quadJet["canTT"].mass
+
+    # Ranking: prioritize MDR passing pairings, with random tie-breaker
+    quadJet["rank"] = (
+        quadJet.random 
+        + (quadJet.pass_canH_PtDR * 20)
+        + (quadJet.pass_canTT_PtDR * 10)
+        # + quadJet.pass_canH_mass
+    )
+    quadJet["selected"] = quadJet.rank == ak.max(quadJet.rank, axis=1, keepdims=True)
+
+    rank_canH_PtDR = quadJet.pass_canH_PtDR
+    rank_canTT_PtDR = quadJet.pass_canTT_PtDR
+    rank_canH_canTT = (rank_canH_PtDR * 20) + (rank_canTT_PtDR * 10)    
+    quadJet["rank_pass_canH_PtDr"] = (rank_canH_PtDR == ak.max(rank_canH_PtDR, axis=1, keepdims=True)) & (rank_canH_PtDR > 0)
+    quadJet["rank_pass_canTT_PtDr"] = (rank_canTT_PtDR == ak.max(rank_canTT_PtDR, axis=1, keepdims=True)) & (rank_canTT_PtDR > 0)
+    quadJet["rank_pass_canH_canTT_PtDr"] = (rank_canH_canTT == ak.max(rank_canH_canTT, axis=1, keepdims=True)) & (rank_canH_canTT > 0)
+    
+def _assign_output_vars_can_ttH(selev, diJet, quadJet, run_SvB=False, cand_cfg=None):
+    """Assign the standard ttHbb candidate fields plus canH/canTT-specific fields to selev."""
+    _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB, cand_cfg)
+
+    selev["canH_mass_selected"] = selev.quadJet_selected.canH.mass
+    selev["canTT_mass_selected"] = selev.quadJet_selected.canTT.mass
+
+    selev["pass_canH_mass"] = selev.quadJet_selected.pass_canH_mass
+    selev["pass_canH_PtDR"] = selev.quadJet_selected.pass_canH_PtDR
+    selev["pass_canTT_PtDR"] = selev.quadJet_selected.pass_canTT_PtDR
+
+
 def _build_dijets_ttHbb(selev, cand_cfg=None, isRun3=False):
     """Build dijet pairs and compute dijet-level variables for ttHbb.
     
@@ -65,8 +186,38 @@ def _build_dijets_ttHbb(selev, cand_cfg=None, isRun3=False):
 
 
 def _select_quadjet_ttHbb(quadJet, cand_cfg=None):
-    """Pick best quadjet pairing and assign ttHbb SR/SB regions.
-    
+    """Pick best quadjet pairing and assign ttHbb SR/SB regions (see _assign_SR_SB_ttHbb)."""
+    _assign_SR_SB_ttHbb(quadJet, cand_cfg)
+
+    # Ranking: prioritize MDR passing pairings, with random tie-breaker
+    quadJet["rank"] = (
+        10 * quadJet.passDiJetMass
+        + quadJet.lead.passMDR
+        + quadJet.subl.passMDR
+        + quadJet.random
+    )
+    quadJet["selected"] = quadJet.rank == np.max(quadJet.rank, axis=1)
+
+
+def _assign_SR_SB_ttHbb_oblong(quadJet, cand_cfg=None, full_space=False):
+    m_lead = quadJet["lead"].mass
+    m_subl = quadJet["subl"].mass
+
+    ### SR = inside ellipse centered at (m_lead, m_subl) = (125, 190); width/height are full axis lengths
+    center_lead, center_subl = 125., 190.
+    width, height = 40., 130.
+    quadJet["SR"] = (((m_lead - center_lead) / (width / 2))**2 + ((m_subl - center_subl) / (height / 2))**2) <= 1
+    quadJet["SB"] = (~quadJet["SR"])
+
+    # Compute Euclidean radial distance for monitoring
+    quadJet["rH"] = np.sqrt((m_lead - 125.0)**2 + (m_subl - 125.0)**2)
+
+
+def _assign_SR_SB_ttHbb(quadJet, cand_cfg=None, full_space=False):
+    """Assign ttHbb SR/SB regions in the (m_lead, m_subl) plane.
+
+    full_space=True: SR is the whole (m_lead, m_subl) plane, SB is empty (no arm selection).
+
     SR Modes:
         - 'baseline' (default): Original cross [85, 185] / [90, 185] GeV up to 1000 GeV
             Horizontal arm: m_subl in [85, 185] GeV, m_lead in [25, 1000] GeV
@@ -99,22 +250,11 @@ def _select_quadjet_ttHbb(quadJet, cand_cfg=None):
         in_v_arm = (m_lead >= 90.0) & (m_lead <= 185.0) & (m_subl >= 25.0) & (m_subl <= 1000.0)
 
     quadJet["SR"] = in_h_arm | in_v_arm
-
     in_analysis_box = (m_lead >= 25.0) & (m_lead <= 1000.0) & (m_subl >= 25.0) & (m_subl <= 1000.0)
     quadJet["SB"] = in_analysis_box & (~quadJet["SR"])
 
-
     # Compute Euclidean radial distance for monitoring
     quadJet["rH"] = np.sqrt((m_lead - 125.0)**2 + (m_subl - 125.0)**2)
-
-    # Ranking: prioritize MDR passing pairings, with random tie-breaker
-    quadJet["rank"] = (
-        10 * quadJet.passDiJetMass
-        + quadJet.lead.passMDR
-        + quadJet.subl.passMDR
-        + quadJet.random
-    )
-    quadJet["selected"] = quadJet.rank == np.max(quadJet.rank, axis=1)
 
 
 def _build_quadjets_ttHbb(selev, diJet, diJetDr, cand_cfg=None, isRun3=False):
@@ -238,11 +378,7 @@ def _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB=False, cand_cfg=Non
             if "SvB_MA_q_score" in quadJet.fields:
                 q_scores = quadJet.SvB_MA_q_score
             elif "SvB_MA" in selev.fields and "q_1234" in selev["SvB_MA"].fields:
-                q_scores = np.concatenate([
-                    selev.SvB_MA.q_1234[:, np.newaxis],
-                    selev.SvB_MA.q_1324[:, np.newaxis],
-                    selev.SvB_MA.q_1423[:, np.newaxis],
-                ], axis=1)
+                q_scores = _pairing_q_scores(selev.SvB_MA, quadJet)
 
             if q_scores is not None:
                 best_q_idx = ak.argmax(q_scores, axis=1, keepdims=True)
@@ -254,6 +390,21 @@ def _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB=False, cand_cfg=Non
                 selev["dijet_both_qscore_SvB_gt_0p9"] = ak.zip({
                     "mass": ak.unflatten(flat_m_q, counts),
                 })
+
+
+# Classifier q scores are per jet partition (12|34, 13|24, 14|23). The 3 nominal pairings are these
+# partitions in order; the 6 can_ttH pairings are the same 3 partitions with canH = (01), (02), (03)
+# (pairings 0-2) and with the canH/canTT slots swapped (pairings 3-5), so pairing i uses partition i % 3.
+_Q_PARTITIONS = ("q_1234", "q_1324", "q_1423")
+_CAN_TTH_Q_INDEX = [0, 1, 2, 0, 1, 2]
+
+
+def _pairing_q_scores(clf_out, quadJet):
+    """Per-pairing q scores [event][pairing] from a classifier output record (FvT/SvB/SvB_MA)."""
+    q_scores = np.concatenate([clf_out[q][:, np.newaxis] for q in _Q_PARTITIONS], axis=1)
+    if "canH" in quadJet.fields:
+        q_scores = q_scores[:, _CAN_TTH_Q_INDEX]
+    return q_scores
 
 
 def _apply_ml_scores_ttHbb(
@@ -283,11 +434,7 @@ def _apply_ml_scores_ttHbb(
         apply_FvT = True
 
     if apply_FvT and ("FvT" in selev.fields):
-        quadJet["FvT_q_score"] = np.concatenate([
-            selev.FvT.q_1234[:, np.newaxis],
-            selev.FvT.q_1324[:, np.newaxis],
-            selev.FvT.q_1423[:, np.newaxis],
-        ], axis=1)
+        quadJet["FvT_q_score"] = _pairing_q_scores(selev.FvT, quadJet)
 
     if run_SvB:
         need_svb = (classifier_SvB is not None and "SvB" not in selev.fields)
@@ -303,17 +450,9 @@ def _apply_ml_scores_ttHbb(
             compute_SvB_ttHbb(selev, tmp_mask, SvB=clf_svb, SvB_MA=clf_svb_ma, doCheck=False)
 
         if "SvB" in selev.fields:
-            quadJet["SvB_q_score"] = np.concatenate([
-                selev.SvB.q_1234[:, np.newaxis],
-                selev.SvB.q_1324[:, np.newaxis],
-                selev.SvB.q_1423[:, np.newaxis],
-            ], axis=1)
+            quadJet["SvB_q_score"] = _pairing_q_scores(selev.SvB, quadJet)
         if "SvB_MA" in selev.fields:
-            quadJet["SvB_MA_q_score"] = np.concatenate([
-                selev.SvB_MA.q_1234[:, np.newaxis],
-                selev.SvB_MA.q_1324[:, np.newaxis],
-                selev.SvB_MA.q_1423[:, np.newaxis],
-            ], axis=1)
+            quadJet["SvB_MA_q_score"] = _pairing_q_scores(selev.SvB_MA, quadJet)
 
     if run_SvB and classifier_SvB_FeynNet is not None:
         tmp_mask_fn = (
@@ -348,24 +487,48 @@ def create_cand_jet_dijet_quadjet_ttHbb(
     list_weight_names: list[str] = None,
     analysis_selections: ak.Array = None,
     cand_cfg: dict = None,
+    pairing: str = "nominal",
 ):
-    """Creates candidate jets, dijets, and quadjets unconstrained for ttHbb analysis."""
+    """Creates candidate jets, dijets, and quadjets for ttHbb analysis.
+
+    pairing:
+        'nominal' (default): 3 st/pt-sorted lead/subl pairings (_build_dijets_ttHbb/_build_quadjets_ttHbb).
+        'can_ttH': 6 ordered canH/canTT pairings (_build_can_ttH_dijets/_build_can_ttH_quadjets).
+    """
     selev = cand_jet_selection(selev, include_lowptjets, cand_cfg=cand_cfg)
     selev["v4j"] = selev.canJet.sum(axis=1)
 
     _compute_vbf_variables(selev, cand_cfg)
 
-    diJet, diJetDr = _build_dijets_ttHbb(selev, cand_cfg, isRun3)
-    quadJet = _build_quadjets_ttHbb(selev, diJet, diJetDr, cand_cfg, isRun3)
+    if pairing == "nominal":
+        diJet, diJetDr = _build_dijets_ttHbb(selev, cand_cfg, isRun3)
+        quadJet = _build_quadjets_ttHbb(selev, diJet, diJetDr, cand_cfg, isRun3)
+        del diJetDr
+
+        _apply_ml_scores_ttHbb(
+            selev, quadJet, apply_FvT, classifier_FvT,
+            run_SvB, run_systematics, classifier_SvB, classifier_SvB_MA, classifier_SvB_FeynNet,
+            weights, list_weight_names, analysis_selections, label3b,
+        )
+
+        _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB, cand_cfg)
+        del diJet, quadJet
+        return selev
+
+    if pairing != "can_ttH":
+        raise ValueError(f"Unknown ttHbb pairing '{pairing}', expected 'can_ttH' or 'nominal'")
+
+    diJet, diJetDr = _build_can_ttH_dijets(selev, cand_cfg, isRun3)
+    quadJet = _build_can_ttH_quadjets(selev, diJet, diJetDr, cand_cfg, isRun3)   ### also runs _select_can_ttH_quadjet
     del diJetDr
 
-    apply_FvT = _apply_ml_scores_ttHbb(
+    _apply_ml_scores_ttHbb(
         selev, quadJet, apply_FvT, classifier_FvT,
         run_SvB, run_systematics, classifier_SvB, classifier_SvB_MA, classifier_SvB_FeynNet,
         weights, list_weight_names, analysis_selections, label3b,
     )
 
-    _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB, cand_cfg)
+    _assign_output_vars_can_ttH(selev, diJet, quadJet, run_SvB, cand_cfg)
     del diJet, quadJet
 
     return selev
