@@ -147,7 +147,7 @@ fvt:
       - 'year:2024 coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2024_pt25_fNjetR_v1.yml@@JCM_weights'
     '--friends ""': 'coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3.json@@HCR_input coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2023_trigv1.json@@HCR_input coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2024_clean_v1.json@@HCR_input'
     'evaluate.yml::--friends ""': 'coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3.json@@HCR_input coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2023_trigv1.json@@HCR_input coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2024_clean_v1_fullcov.json@@HCR_input'
-  train_mem: 120000      # orchestrator (user-requested): ~0.97 GB per M loaded + 4.8 GB (2022 15.46M -> 19.8 GB, 2024 67.37M -> 70.2 GB); ~110M combined -> ~112 GB
+  train_mem: 118000      # orchestrator (user-requested): whole single-GPU H100 NVL slot (TotalMemory 118000); S2 predicts 102.37M loaded -> ~104.2 GB (~0.97 GB/M + 4.8 GB)
   eval_mem: 120000       # 2022 evaluate 29.8 GB, 2024 ~76 GB image size; not below 120000 (single-GPU H100 NVL nodes have 115 GB)
   train_runtime: 1440    # est. ~10-11 h (2022 1.5 h, 2024 6.25 h); flavour "tomorrow"
   eval_runtime: 1440
