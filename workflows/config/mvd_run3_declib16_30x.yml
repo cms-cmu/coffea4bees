@@ -49,8 +49,9 @@ mvd:
     --metadata: "{roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/handoff/classifier_metadata"
     --JCM-weight: '"source:mixed_all" {roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/handoff/jetCombinatoricModel_SB_mixeddata_tight.yml@@JCM_weights'
     '--friends ""': "{roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/handoff/classifier_inputs_MvD.json@@HCR_input"
-    # 3 parallel evaluators at n=54 exceed falcon's 40 GB half-GPU MPS limit (as mvd_run3_30x)
-    --max-evaluators: '2'
+    # 1 evaluator: at n=54 on the 16x declustered model 2 reached 42.1 GB against falcon's 40 GB
+    # half-GPU MPS limit (roast mvd_declib16_30x_run3_20261012_0048151-43f8b32, SLURM 53226)
+    --max-evaluators: '1'
   workflow_inserts:
     # merged with the base's --data-source insert (--data-mixed-all-name)
     --training: [--architecture, {n_features: 54}]
