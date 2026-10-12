@@ -176,6 +176,12 @@ class HemiMixer(Skimmer4b):
                 "Jet_nSVs", "Jet_nConstituents", "Jet_area", "Jet_rawFactor",
                 "Jet_chHEF", "Jet_neHEF", "Jet_chEmEF", "Jet_neEmEF", "Jet_muEF",
             ]
+            # 2024 tags with UParT (corrections.yml btag_algo), and the hemisphere library counted
+            # nTagJet with it: carry its score and pt regression too, or jet_selection on the mixed
+            # data finds no b-tag branch.
+            if self.corrections_metadata[year].get("btag_algo") == "btagUParTAK4B":
+                self.jet_branches += ["Jet_btagUParTAK4B", "Jet_UParTAK4RegPtRawCorr",
+                                      "Jet_UParTAK4RegPtRawCorrNeutrino", "Jet_UParTAK4RegPtRawRes"]
         else:
             self.jet_branches += ["Jet_btagDeepFlavB", "Jet_bRegCorr"]
 
@@ -355,8 +361,9 @@ class HemiMixer(Skimmer4b):
 
         #
         # Add Btag SF
+        # 2024 uses UParT, which has only WP-based SFs (no shape SF) yet: skip it, as processor_HH4b does.
         #
-        if config["isMC"]:
+        if config["isMC"] and year != "2024":
 
             weights, list_weight_names = add_btagweights( event, weights,
                                                           list_weight_names=list_weight_names,

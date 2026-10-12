@@ -15,12 +15,15 @@
 #                      data/ttbar -> cutflow (synthetic 4b next to data 4b, same selection)
 #   D.5 monitoring     plots (synthetic vs 4b data, ttbar MC), cutflow page, PDF sampling-test gallery
 #   D.6 signal check   signal MC declustered the same way: does the Higgs-candidate peak wash out?
+#   (M.5 ttbar PS      only with a `ttbar_psdata:` section: the ttbar pseudodata made here, from
+#                      validation.ttbar, as MakeMixedData's M.5 -- instead of inputs.ttbar_psdata)
 #
 # Everything this roast consumes comes from another roast, named under `inputs:` and checked by
 # `roast new`: the FvT and the data/ttbar histograms of the NON-TIGHT production
 # (config/nominal_run3_nontight.yml) -- the declustering, like the mixing, is non-tight, and the
 # tight FvT covers only tight-4b events (it silently drops the rest; see mixeddata_run3.yml) --
-# and the ttbar pseudodata of a mixeddata roast (folded into the consumer dataset).
+# and the ttbar pseudodata of a mixeddata roast (folded into the consumer dataset), unless it is
+# made here.
 #
 # Products are published to `publish_base` on EOS; the dataset YAML under <publish_base>/handoff/
 # is what consumer roasts read (runner.py -m accepts root:// URLs). Nothing is installed into the
@@ -178,13 +181,33 @@ if ALL_NAME is not None:
     if not SUBTRACT_TT:
         raise ValueError("declustering.all_dataset_name needs subtract_ttbar: true (a multijet-only model)")
 
-# ttbar pseudodata (subtract_ttbar only): another roast's published dataset YAML, fetched locally.
+# ttbar pseudodata (subtract_ttbar only), either
+#   * another roast's published dataset YAML (inputs.ttbar_psdata), fetched locally, or
+#   * made here (a `ttbar_psdata:` section, keys as in mixeddata_run2.yml): MakeMixedData's M.5 step
+#     (Snakefile_MakeMixedData_5_ttbar_psdata.smk) over validation.ttbar -- the ttbar MC of the
+#     upstream histograms, so the pseudodata is the same sample (e.g. stitched) the D.4/D.5 check and
+#     the FvT subtraction use -- published as <PUB>/handoff/<dataset_name>.yml.
+PS = config.get('ttbar_psdata') or {}
 PS_INPUT = INPUTS.get('ttbar_psdata')
-if SUBTRACT_TT and not str(PS_INPUT or "").startswith("root://"):
+BUILD_PS = SUBTRACT_TT and bool(PS)
+if BUILD_PS and PS_INPUT:
+    raise ValueError("ttbar pseudodata: give either inputs.ttbar_psdata (another roast's) or a ttbar_psdata: "
+                     "section (made here), not both -- set inputs.ttbar_psdata: null to drop an inherited one")
+if SUBTRACT_TT and not BUILD_PS and not str(PS_INPUT or "").startswith("root://"):
     raise ValueError("subtract_ttbar: true needs inputs.ttbar_psdata, a root:// URL to a published ttbar "
-                     "pseudodata dataset YAML (e.g. a mixeddata roast's handoff/ttbar_PSData.yml)")
-PS_NAME = str(DECL.get('ttbar_psdata_name', 'ttbar_PSData'))
-PS_DATASET = f"{INPUT_DIR}{PS_NAME}.yml"
+                     "pseudodata dataset YAML (e.g. a mixeddata roast's handoff/ttbar_PSData.yml), or a "
+                     "ttbar_psdata: section to make it here")
+if BUILD_PS:
+    PS_NAME = str(PS.get('dataset_name', 'ttbar_PSData'))
+    if 'psdata' not in PS_NAME.lower():
+        # processor_config tells pseudodata (isPSData: data-like, no MC weights) by its name
+        raise ValueError(f"ttbar_psdata.dataset_name {PS_NAME!r} must contain 'PSData'")
+    PS_DATASET = f"{out}M5/handoff/{PS_NAME}.yml"       # the M.5 step's local copy
+    PS_URL = f"{HANDOFF}/{PS_NAME}.yml"                 # what D.4 reads, after M5_publish
+else:
+    PS_NAME = str(DECL.get('ttbar_psdata_name', 'ttbar_PSData'))
+    PS_DATASET = f"{INPUT_DIR}{PS_NAME}.yml"
+    PS_URL = PS_INPUT
 
 # Container / runner invocation, as in Snakefile_MakeMixedData.smk (config['test'] parsed above)
 _wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
@@ -255,20 +278,29 @@ rule fetch_inputs:
         for f in {params.hists} {params.hist_config}; do echo "fetched $f" | tee -a {log}; done
         """
 
-rule fetch_psdata:
-    output: PS_DATASET
-    log: f"{INPUT_DIR}fetch_psdata.log"
-    params:
-        url = PS_INPUT or ""
-    shell:
-        """
-        set -eo pipefail
-        {EOS_PROXY}
-        xrdcp -f "{params.url}" {output} 2>&1 | tee {log}
-        echo "fetched {params.url}" | tee -a {log}
-        """
+if not BUILD_PS:
+    rule fetch_psdata:
+        output: PS_DATASET
+        log: f"{INPUT_DIR}fetch_psdata.log"
+        params:
+            url = PS_INPUT or ""
+        shell:
+            """
+            set -eo pipefail
+            {EOS_PROXY}
+            xrdcp -f "{params.url}" {output} 2>&1 | tee {log}
+            echo "fetched {params.url}" | tee -a {log}
+            """
+
+    localrules: fetch_psdata
 
 # ── Steps ─────────────────────────────────────────────────────────────────────
+
+# ttbar pseudodata made here: M5_config / M5_psdata (per year, condor) / M5_merge / M5_dataset_yml /
+# M5_check / M5_publish -> PS_DATASET + PS_URL. Independent of D.1-D.3.
+if BUILD_PS:
+    include: "Snakefile_MakeMixedData_5_ttbar_psdata.smk"
+PS_PUBLISHED = [M5_PUBLISHED] if BUILD_PS else []
 
 include: "Snakefile_DeClustered_1_cluster.smk"
 include: "Snakefile_DeClustered_2_pdfs.smk"
@@ -286,6 +318,7 @@ rule all_DeClustered:
         rules.all_D3.input,
         rules.all_D4.input,
         rules.all_D5.input,
-        rules.all_D6.input
+        rules.all_D6.input,
+        PS_PUBLISHED
 
-localrules: fetch_inputs, fetch_psdata, all_DeClustered
+localrules: fetch_inputs, all_DeClustered

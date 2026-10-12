@@ -137,7 +137,8 @@ use rule analysis_processor from analysis as analysis_trigger_weights with:
             "-t" if config.get("test", False) else "",
             config.get("additional_parameters", "")
         ])),
-        run_container_wrapper = config['analysis_container_wrapper']
+        run_container_wrapper = config['analysis_container_wrapper'],
+        python_bin = config['python_bin']
 
 rule merge_friendtree_json:
     input: expand(f"{config['output_path']}trigger_weights/trigger_weights__{{dataset}}__{{year}}.json", dataset=config['dataset'], year=years)

@@ -14,8 +14,14 @@ friends:
     # trigger weight was being silently skipped for all Run 3 MC despite
     # apply_trigWeight: true. The new index covers TTTo{2L2Nu,SemiLeptonic,
     # Hadronic}, their _stitched counterparts, and ttHbb over all 5 Run 3 eras.
-    # HH4b/VBF/NMSSM signals are still uncovered, exactly as before.
-    trigWeight: "coffea4bees/metadata/friends/trigweights_Run3_v1.json@@trigWeight"
+    # Now trigweights_Run3_v3.json (2026-10-07), made with the TriggerSFVectorized fixes (2022 HLT legs,
+    # per-era L1 curves, 2023 2D jet leg):
+    #   2022/2023 TT/TTbb/ttHbb  roast trigweights_run3_mc_20261007_f839489-6d2497e
+    #   2022/2023 SM ggF signal  roast trigweights_run3_signal_eras_20261007_27bc66d-ef555a7
+    #   2024 (all of the above)  carried over from v1 (unchanged by the fixes; mmarcheg's area)
+    # It adds the 2022/2023 SM ggF signal (77 picoAODs). The 2024-only ggF couplings, VBF and
+    # NMSSM are still uncovered.
+    trigWeight: "coffea4bees/metadata/friends/trigweights_Run3_v3.json@@trigWeight"
     FvT: root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_v2/friend/FvT/result.json@@analysis.0.merged
     MvD: root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_MvDladder_c6norawF_30x/friend/MvD/result.json@@analysis.0.merged
     SvB: "coffea4bees/metadata/friends/data_SvBfriend.json@@SvB"
