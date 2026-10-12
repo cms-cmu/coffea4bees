@@ -92,6 +92,10 @@ runs:
     - MvD
     - MvD_2_train
     - MvD_3_svb
+  mvd_run3_2024.yml:
+    - MvD
+    - MvD_2_train
+    - MvD_3_svb
   mvd_run3_30x.yml:
     - MvD
     - MvD_2_train
