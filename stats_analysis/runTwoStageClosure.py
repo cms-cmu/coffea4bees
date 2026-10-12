@@ -1878,8 +1878,9 @@ class closure:
                         return 0.0
 
                     BE_coefficient = pars[BE_idx]
-                    sigma_up = abs(self.cUp[basis][BE_idx]) / (nMixes**0.5)
-                    sigma_down = abs(self.cDown[basis][BE_idx]) / (nMixes**0.5)
+                    prior_scale = 1.0 if getattr(args, 'no_sqrt_n_priors', False) else (nMixes**0.5)
+                    sigma_up = abs(self.cUp[basis][BE_idx]) / prior_scale
+                    sigma_down = abs(self.cDown[basis][BE_idx]) / prior_scale
                     if BE_coefficient > 0:
                         return -BE_coefficient / sigma_up
                     else:
@@ -1889,10 +1890,11 @@ class closure:
                 if BE_idx > self.multijet.basis:
                     return 0.0
 
-                # use variance priors scaled by 1/sqrt(nMixes) for the ensemble average
+                # use variance priors scaled by 1/sqrt(nMixes) for the ensemble average (or 1.0 if no_sqrt_n_priors)
                 BE_coefficient = pars[BE_idx]
-                sigma_up = abs(self.multijet.cUp[self.multijet.basis][BE_idx]) / (nMixes**0.5)
-                sigma_down = abs(self.multijet.cDown[self.multijet.basis][BE_idx]) / (nMixes**0.5)
+                prior_scale = 1.0 if getattr(args, 'no_sqrt_n_priors', False) else (nMixes**0.5)
+                sigma_up = abs(self.multijet.cUp[self.multijet.basis][BE_idx]) / prior_scale
+                sigma_down = abs(self.multijet.cDown[self.multijet.basis][BE_idx]) / prior_scale
                 if BE_coefficient > 0:
                     return -BE_coefficient / sigma_up
                 else:
@@ -2034,7 +2036,8 @@ class closure:
             c_val = self.fit_parameters[basis][i]
             if i > basis:
                 # Constrained parameter: pull relative to prior
-                sigma_prior = (abs(self.multijet.cUp[self.multijet.basis][i]) if c_val > 0 else abs(self.multijet.cDown[self.multijet.basis][i])) / (nMixes**0.5)
+                prior_scale = 1.0 if getattr(args, 'no_sqrt_n_priors', False) else (nMixes**0.5)
+                sigma_prior = (abs(self.multijet.cUp[self.multijet.basis][i]) if c_val > 0 else abs(self.multijet.cDown[self.multijet.basis][i])) / prior_scale
                 val = -c_val / sigma_prior if sigma_prior > 0 else (-c_val / self.fit_parameters_error[basis][i] if self.fit_parameters_error[basis][i] > 0 else 0.0)
             else:
                 # Unconstrained parameter: pull relative to post-fit error
@@ -2515,7 +2518,8 @@ class closure:
                                            'p-value = %2.0f%% (f-test = %2.0f%%)' % (self.pvalue_ss[basis] * 100, self.fProb_ss[basis] * 100)]
             for i in range(n):
                 c_val = self.fit_parameters_ss[basis][i]
-                sigma_prior = (abs(self.cUp[basis][i]) if c_val > 0 else abs(self.cDown[basis][i])) / (nMixes**0.5)
+                prior_scale = 1.0 if getattr(args, 'no_sqrt_n_priors', False) else (nMixes**0.5)
+                sigma_prior = (abs(self.cUp[basis][i]) if c_val > 0 else abs(self.cDown[basis][i])) / prior_scale
                 sig_val = abs(c_val) / sigma_prior if sigma_prior > 0 else (abs(c_val) / self.fit_parameters_error_ss[basis][i] if self.fit_parameters_error_ss[basis][i] > 0 else 0.0)
                 parameters['legendSubText'] += ['#font[82]{c_{%i} =%4.1f%% : %3.1f}#sigma' % (i, c_val * 100, sig_val)]
         else:
@@ -2526,7 +2530,8 @@ class closure:
                 c_val = self.fit_parameters[basis][i]
                 if i > basis:
                     # Constrained higher-order parameters: compute pull with respect to the prior, matching the virtual bins in the ratio plot
-                    prior_sigma = (abs(self.multijet.cUp[self.multijet.basis][i]) if c_val > 0 else abs(self.multijet.cDown[self.multijet.basis][i])) / (nMixes**0.5)
+                    prior_scale = 1.0 if getattr(args, 'no_sqrt_n_priors', False) else (nMixes**0.5)
+                    prior_sigma = (abs(self.multijet.cUp[self.multijet.basis][i]) if c_val > 0 else abs(self.multijet.cDown[self.multijet.basis][i])) / prior_scale
                     sig_val = abs(c_val) / prior_sigma if prior_sigma > 0 else (abs(c_val) / self.fit_parameters_error[basis][i] if self.fit_parameters_error[basis][i] > 0 else 0.0)
                     parameters['legendSubText'] += ['#color[4]{#font[82]{c_{%i} =%4.1f%% : %3.1f}#sigma}' % (i, c_val * 100, sig_val)]
                 else:
@@ -3762,6 +3767,7 @@ if __name__ == "__main__":
     parser.add_argument('--match_normalization', '--match-normalization', action="store_true", default=False, help="Scale multijet model so total background integral matches data_obs (mixed data)")
     parser.add_argument('--subsample_indices', nargs='+', type=int, default=None, help="Explicit list of subsample indices to use (e.g. 0 1 2 ... 12 14 15)")
     parser.add_argument('--include_ensemble_variance', '--include-ensemble-variance', action="store_true", default=False, help="Incorporate subsample-level ensemble variance across pseudo-experiments into closure error")
+    parser.add_argument('--no_sqrt_n_priors', '--no-sqrt-n-priors', action="store_true", default=False, help="Do not scale variance priors by 1/sqrt(nMixes)")
     parser.add_argument('--basis_type', default='fourier', choices=['fourier', 'bernstein'], help="Type of basis functions for closure fits: fourier or bernstein (default: fourier)")
 
     args = parser.parse_args()
