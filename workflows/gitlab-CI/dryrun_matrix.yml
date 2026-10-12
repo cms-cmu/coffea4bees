@@ -92,6 +92,14 @@ runs:
     - MvD
     - MvD_2_train
     - MvD_3_svb
+  mvd_run3_declib16.yml:
+    - MvD
+    - MvD_2_train
+    - MvD_3_svb
+  mvd_run3_declib16_30x.yml:
+    - MvD
+    - MvD_2_train
+    - MvD_3_svb
   declustered_run3.yml:
     - DeClustered
   declustered_run3_library.yml:
