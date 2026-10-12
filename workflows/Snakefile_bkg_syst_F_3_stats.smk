@@ -203,13 +203,17 @@ def get_stat_only_flag(channel=None):
         return ''
     return '--stat_only' if str(val) == '--stat-only' else str(val)
 
-module stat_analysis:
-    snakefile: "rules/stat_analysis.smk"
-    config: config
+if not globals().get("_STAT_ANALYSIS_MODULE_DEFINED", False):
+    _STAT_ANALYSIS_MODULE_DEFINED = True
+    module stat_analysis:
+        snakefile: "rules/stat_analysis.smk"
+        config: config
 
-module combine:
-    snakefile: os.path.join(os.getcwd(), "src/stat_analysis/combine.smk")
-    config: config
+if not globals().get("_COMBINE_MODULE_DEFINED", False):
+    _COMBINE_MODULE_DEFINED = True
+    module combine:
+        snakefile: os.path.join(os.getcwd(), "src/stat_analysis/combine.smk")
+        config: config
 
 # Resolve absolute CERNBox destination path
 # final_output only (not in any all_* target; a roast publishes with `roast publish`)
@@ -220,7 +224,7 @@ if not cern_path.startswith("/"):
     cern_path = f"/eos/user/{first_letter}/{cern_user}/{cern_path}"
 
 # The first rule defined in the master file remains the default target
-rule final_output:
+rule final_output_F_3:
     input:
         lambda wildcards: rules.all_bkg_syst_F_3.input
     params:
@@ -394,7 +398,7 @@ use rule make_combine_inputs from stat_analysis with:
         signal = lambda wildcards: wildcards.channel,
         tag_flags = lambda wildcards: (
             f"{config['channels'][wildcards.channel].get('combine_flags', config['combine_flags'])} "
-            f"--region {get_region_for_channel(wildcards.channel)} "
+            + (f"--region {get_region_for_channel(wildcards.channel)} " if '--region' not in config['channels'][wildcards.channel].get('combine_flags', config['combine_flags']) else "")
             + (f"--cut {config['channels'][wildcards.channel]['cut']} " if 'cut' in config['channels'][wildcards.channel] and config['channels'][wildcards.channel]['cut'] not in ['', 'sum'] else '')
             + (f"--data_process {config['channels'][wildcards.channel]['data_process']} " if 'data_process' in config['channels'][wildcards.channel] else '')
             + f"--multijet_process {config['channels'][wildcards.channel].get('multijet_process', config['make_combine_inputs']['multijet_process'])} "
@@ -404,6 +408,8 @@ use rule make_combine_inputs from stat_analysis with:
         container_wrapper = config['stats_container_wrapper']
     log: f"{out}logs/make_combine_inputs_rebin{{rebin}}_{{channel}}.log"
 
-use rule * from combine as *
+if not globals().get("_USE_RULE_COMBINE_DONE", False):
+    _USE_RULE_COMBINE_DONE = True
+    use rule * from combine as *
 
-localrules: final_output, all_bkg_syst_F_3, convert_hist_to_json, make_combine_inputs, stat_summary_rebin_F_3, stat_summary_master_F_3
+localrules: final_output_F_3, all_bkg_syst_F_3, convert_hist_to_json, make_combine_inputs, stat_summary_rebin_F_3, stat_summary_master_F_3

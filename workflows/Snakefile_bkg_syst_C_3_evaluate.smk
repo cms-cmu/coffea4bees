@@ -90,9 +90,13 @@ if not globals().get("_EXTRACT_FRIEND_MANIFEST_INCLUDED", False):
         shell:
             """
             mkdir -p $(dirname {output.json})
-            if [ -z "$X509_USER_PROXY" ] && [ -f ./proxy/x509_proxy ]; then
+            if [ -z "${{X509_USER_PROXY:-}}" ] && [ -f ./proxy/x509_proxy ]; then
                 export X509_USER_PROXY="$PWD/proxy/x509_proxy"
             fi
+            if [ -d /workspace/shared/certificates ] && [ ! -d /etc/grid-security/certificates ]; then
+                mkdir -p /etc/grid-security && ln -sfn /workspace/shared/certificates /etc/grid-security/certificates
+            fi
+            export X509_CERT_DIR=/etc/grid-security/certificates
             if command -v xrdcp &>/dev/null; then
                 TMP_RES=$(mktemp -p . --suffix=.json)
                 if [[ "{params.eos_base}" == root://* ]]; then

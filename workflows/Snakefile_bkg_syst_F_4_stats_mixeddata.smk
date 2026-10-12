@@ -75,18 +75,9 @@ phase_e_cfg = resolve_config_section(config, primary_key='phase_e', fallback_key
 for k, v in phase_e_cfg.items():
     config.setdefault(k, v)
 
-# Unblinded evaluation on mock average mixed data
-config['blind'] = False
-if 'analysis_config' in config and isinstance(config['analysis_config'], dict):
-    if 'config' in config['analysis_config'] and isinstance(config['analysis_config']['config'], dict):
-        config['analysis_config']['config']['blind'] = False
-if 'combine_flags' in config:
-    config['combine_flags'] = config['combine_flags'].replace('--blind', '').strip()
-for ch_name, ch_cfg in config.get('channels', {}).items():
-    ch_cfg['blind'] = False
-    if 'combine_flags' in ch_cfg:
-        ch_cfg['combine_flags'] = ch_cfg['combine_flags'].replace('--blind', '').strip()
-
+# F_4 runs unblinded statistical interpretation on mock average mixed data.
+# The unblinded mode is scoped to F_4 paths (containing 'unblinded' or 'mixeddata')
+# so the global config for blinded F_3 remains untouched.
 config.setdefault('label', "ttHbb_mixeddata")
 config.setdefault('output_path', "output/ttHbb_mixeddata_closure/")
 config.setdefault('phase_f_output_path', "output/ttHbb/")
@@ -209,13 +200,17 @@ def get_stat_only_flag(channel=None):
         return ''
     return '--stat_only' if str(val) == '--stat-only' else str(val)
 
-module stat_analysis:
-    snakefile: "rules/stat_analysis.smk"
-    config: config
+if not globals().get("_STAT_ANALYSIS_MODULE_DEFINED", False):
+    _STAT_ANALYSIS_MODULE_DEFINED = True
+    module stat_analysis:
+        snakefile: "rules/stat_analysis.smk"
+        config: config
 
-module combine:
-    snakefile: os.path.join(os.getcwd(), "src/stat_analysis/combine.smk")
-    config: config
+if not globals().get("_COMBINE_MODULE_DEFINED", False):
+    _COMBINE_MODULE_DEFINED = True
+    module combine:
+        snakefile: os.path.join(os.getcwd(), "src/stat_analysis/combine.smk")
+        config: config
 
 def get_target_rebins_F_4():
     explicit_rebins = config.get('f4_rebins') or config.get('stat_analysis_rebins')
@@ -278,7 +273,7 @@ if not cern_path.startswith("/"):
     cern_path = f"/eos/user/{first_letter}/{cern_user}/{cern_path}"
 
 # The first rule defined remains the default target
-rule final_output:
+rule final_output_F_4:
     input:
         get_combine_targets_F_4,
         f"{out_f4}summary.html"
@@ -442,6 +437,8 @@ use rule make_combine_inputs from stat_analysis as make_combine_inputs_mixeddata
         container_wrapper = config['stats_container_wrapper']
     log: f"{out}logs/make_combine_inputs_unblinded_mixeddata_rebin{{rebin}}_{{channel}}.log"
 
-use rule * from combine as *
+if not globals().get("_USE_RULE_COMBINE_DONE", False):
+    _USE_RULE_COMBINE_DONE = True
+    use rule * from combine as *
 
-localrules: final_output, all_bkg_syst_F_4, make_mixeddata_ave_json, make_combine_inputs_mixeddata, stat_summary_rebin_F_4, stat_summary_master_F_4
+localrules: final_output_F_4, all_bkg_syst_F_4, make_mixeddata_ave_json, make_combine_inputs_mixeddata, stat_summary_rebin_F_4, stat_summary_master_F_4
