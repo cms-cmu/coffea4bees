@@ -20,12 +20,13 @@
 # leaking from an under-powered FvT.
 #
 # Phase B is not re-run. Its two outputs -- the JCM fit and the classifier-input manifest -- are
-# read from the production nominal_run3_20260922_3f9e199-1e0504f, pinned by explicit URL to its
-# EOS handoff/ area, NOT {roast_id}, which here names this roast, where no B outputs exist.
+# read from the production nominal_run3_20261008_f839489-a481023 (the first with the v3 trigger
+# weights; was nominal_run3_20260922_3f9e199-1e0504f), pinned by explicit URL to its EOS handoff/
+# area, NOT {roast_id}, which here names this roast, where no B outputs exist.
 # (JCM pseudoTagProb 0.0893 -- not the older fit behind metadata/weights/JCM/Run3_nominal/.)
 #
-# What to compare against the nominal (limit 3.70 (2.61-5.30), sig 0.80, Z(b>0) 0.54,
-# C.4 SR closure 1.021 +- 0.003):
+# What to compare against the nominal nominal_run3_20261008 (limit 3.91 (2.77-5.54), sig 0.616,
+# C.4 SR closure 0.986 +- 0.003; the Sep 22 nominal was 3.70 / 0.80 / 1.021):
 #   * C.4 SR closure, all years and per era -- does the 30x FvT close the 2.1 % / era split?
 #   * the HH4b channel's limit/significance, and Z with empty-background bins merged: at 240 bins
 #     ps_hh_fine had 4 zero-background top bins that these stat-only cards reward.
@@ -44,10 +45,10 @@ handoff:
 fvt:
   label: "FvT_30x"
   output_dir: "output/FvT_30x/"
-  metadata: "{roast:nominal_run3_20260922_3f9e199-1e0504f}/handoff/classifier_inputs_nominal_run3_20260922_3f9e199-1e0504f.json@@HCR_input"
+  metadata: "{roast:nominal_run3_20261008_f839489-a481023}/handoff/classifier_inputs_nominal_run3_20261008_f839489-a481023.json@@HCR_input"
   workflow_overrides:
-    --JCM-weight: '"" {roast:nominal_run3_20260922_3f9e199-1e0504f}/handoff/jetCombinatoricModel_SB_Run3_v1.yml@@JCM_weights'
-    '--friends ""': "{roast:nominal_run3_20260922_3f9e199-1e0504f}/handoff/classifier_inputs_nominal_run3_20260922_3f9e199-1e0504f.json@@HCR_input"
+    --JCM-weight: '"" {roast:nominal_run3_20261008_f839489-a481023}/handoff/jetCombinatoricModel_SB_Run3_v1.yml@@JCM_weights'
+    '--friends ""': "{roast:nominal_run3_20261008_f839489-a481023}/handoff/classifier_inputs_nominal_run3_20261008_f839489-a481023.json@@HCR_input"
     # The template's 3 parallel evaluators (one per k-fold model) at n=54 hit 41.2 GB against the
     # 40 GB half-GPU MPS limit ~10 min in, and falcon cancels the job (4 attempts, 2026-09-24).
     # 2 evaluators ~27 GB, at the cost of a second pass (~80 min instead of ~40).
@@ -60,7 +61,7 @@ fvt:
 fvt_closure:
   # Same pinned JCM. Remote, so Snakefile_PhaseC_4 gives it no input edge; the processor reads it
   # through fsspec.
-  JCM_file: "{roast:nominal_run3_20260922_3f9e199-1e0504f}/handoff/jetCombinatoricModel_SB_Run3_v1.yml"
+  JCM_file: "{roast:nominal_run3_20261008_f839489-a481023}/handoff/jetCombinatoricModel_SB_Run3_v1.yml"
   # There are no Phase B.1 wJCM ttbar singlefiles in this roast to reuse; reprocess the 12 TT jobs.
   # Same code, JCM and config as the nominal's B.1 wJCM pass, so the ttbar should come out the same.
   reuse_wJCM_ttbar: false
@@ -76,10 +77,10 @@ svb:
   output_dir: "output/SvB_30x_floor/"
   # The background FvT is THIS roast's 30x Phase C output.
   train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_30x"
-  metadata: "{roast:nominal_run3_20260922_3f9e199-1e0504f}/handoff/classifier_inputs_nominal_run3_20260922_3f9e199-1e0504f.json@@HCR_input"
+  metadata: "{roast:nominal_run3_20261008_f839489-a481023}/handoff/classifier_inputs_nominal_run3_20261008_f839489-a481023.json@@HCR_input"
   workflow_overrides:
-    --JCM-weight: '"" {roast:nominal_run3_20260922_3f9e199-1e0504f}/handoff/jetCombinatoricModel_SB_Run3_v1.yml@@JCM_weights'
-    '--friends ""': "{roast:nominal_run3_20260922_3f9e199-1e0504f}/handoff/classifier_inputs_nominal_run3_20260922_3f9e199-1e0504f.json@@HCR_input"
+    --JCM-weight: '"" {roast:nominal_run3_20261008_f839489-a481023}/handoff/jetCombinatoricModel_SB_Run3_v1.yml@@JCM_weights'
+    '--friends ""': "{roast:nominal_run3_20261008_f839489-a481023}/handoff/classifier_inputs_nominal_run3_20261008_f839489-a481023.json@@HCR_input"
   # Same width as the FvT (the SvB_SRonly_30x study trained this on falcon at n=54, full schedule).
   # Same p_d3 floor as analysis_config.config.FvT_pd3_floor, on the FvT background reweighting
   # (HCR.SvB.Background; --norm is only in that module).
@@ -92,7 +93,7 @@ analysis_config:
     friends:
       FvT: "{eos_prod}/{roast_id}/friend/FvT_30x/result.json@@analysis.0.merged"
       SvB_MA: "{eos_prod}/{roast_id}/friend/SvB_30x_floor/result.json@@analysis.0.merged"
-    JCM_file: "{roast:nominal_run3_20260922_3f9e199-1e0504f}/handoff/jetCombinatoricModel_SB_Run3_v1.yml"
+    JCM_file: "{roast:nominal_run3_20261008_f839489-a481023}/handoff/jetCombinatoricModel_SB_Run3_v1.yml"
     # The 30x FvT is over-confident on a handful of events: of 29.3M evaluated, 43 have
     # p_d3 < 1e-3 and 7 have |FvT| > 1e6 (worst -2.6e28, where the nominal FvT gives 0.8), which
     # alone wrecked the first C4 closure sums. Floor p_d3 at 0.01 -> |FvT|, d3_to_t3/t4 <= 100

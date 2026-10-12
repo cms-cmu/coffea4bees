@@ -28,10 +28,18 @@ base: coffea4bees/workflows/config/mvd_run3.yml
 
 label: "mvd_run3_declib16"
 
-# FIXME before `roast new`: DECLIB16_ROAST_ID = the declustered_run3_library_16x roast
+# The 16x sample: declib16_run3_20261011_b948dfc-33f3094 (declustered_run3_library_16x.yml).
+# The nominal inputs come from nominal_run3_20261008_f839489-a481023 (v3 trigger weights: the ggF
+# and ttbar classifier inputs, the B.1 JCM + histograms and the F.1 analysis config). mvd_run3.yml
+# still reads the 2026-09-22 nominal, so every nominal key is restated here (dicts merge).
 inputs:
-  upstream_roasts: [nominal_run3_20260922_3f9e199-1e0504f, DECLIB16_ROAST_ID]
-  mixeddata_all: "{roast:DECLIB16_ROAST_ID}/handoff/mixeddata_all_declib16.yml"
+  upstream_roasts: [nominal_run3_20261008_f839489-a481023, declib16_run3_20261011_b948dfc-33f3094]
+  mixeddata_all: "{roast:declib16_run3_20261011_b948dfc-33f3094}/handoff/mixeddata_all_declib16.yml"
+  classifier_inputs: "{roast:nominal_run3_20261008_f839489-a481023}/handoff/classifier_inputs_nominal_run3_20261008_f839489-a481023.json"
+  classifier_inputs_config: "{roast:nominal_run3_20261008_f839489-a481023}/output/Run3_nominal/classifier_inputs/classifier_inputs_config.yml"
+  JCM: "{roast:nominal_run3_20261008_f839489-a481023}/handoff/jetCombinatoricModel_SB_Run3_v1.yml"
+  jcm_hists: "{roast:nominal_run3_20261008_f839489-a481023}/output/Run3_nominal/computeJCM/histAll_NoJCM.coffea"
+  analysis_config: "{roast:nominal_run3_20261008_f839489-a481023}/output/Run3_nominal/analysis_config.yml"
 
 mixed_dataset_name: mixeddata_all_declib16
 
