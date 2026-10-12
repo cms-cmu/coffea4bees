@@ -73,9 +73,69 @@ include: "helpers/bkg_syst_common.smk"
 
 mix_name = config.get('mix_name', f"{channel}_bkg_syst")
 
-# ── Stage F_1 Runtime Config Staging ──────────────────────────────────────────
-from helpers.stage_configs import stage_phaseF_1_configs
-cfg_files = stage_phaseF_1_configs(config, out_f1)
+per_year_jcm = bool(config.get('per_year_jcm', (config.get('phaseB_1', {}) or {}).get('per_year_jcm', False)))
+
+def get_all_analysis_jcm_inputs(wildcards):
+    if per_year_jcm:
+        return [f"{out_b1}jetCombinatoricModel_SB_mix_v{m}_{y}.yml" for m in SUBSAMPLES for y in YEARS]
+    return [f"{out_b1}jetCombinatoricModel_SB_mix_v{m}.yml" for m in SUBSAMPLES]
+
+# ── Stage F_1 Runtime Config Generation ───────────────────────────────────────
+rule stage_phaseF_1_config:
+    input:
+        base_cfg = config.get('analysis_config_mixeddata_bkgs', "coffea4bees/workflows/config/analysis_config_mixeddata_bkgs.yml"),
+        jcm = get_all_analysis_jcm_inputs,
+        fvt = expand(f"{out_c}friends/friends_FvT_{mix_name}_v{{m}}.json", m=SUBSAMPLES),
+    output:
+        cfg = f"{out_f1}analysis_config_mixeddata_bkgs.yml"
+    run:
+        with open(input.base_cfg, 'r') as f:
+            data_cfg = yaml.safe_load(f) or {}
+
+        user_analysis_cfg = (config.get('analysis_config') or {}).get('config', {})
+        if isinstance(user_analysis_cfg, dict):
+            data_cfg.setdefault('config', {}).update(user_analysis_cfg)
+
+        phase_f_cfg = config.get('phase_f_1', config.get('bkg_syst_F_1', config.get('phase_f', {})))
+        if isinstance(phase_f_cfg.get('config'), dict):
+            data_cfg.setdefault('config', {}).update(phase_f_cfg['config'])
+        if isinstance(phase_f_cfg.get('runner'), dict):
+            data_cfg.setdefault('runner', {}).update(phase_f_cfg['runner'])
+
+        # Enforce blinding: default True
+        data_cfg.setdefault('config', {})['blind'] = phase_f_cfg.get('config', {}).get('blind', user_analysis_cfg.get('blind', True))
+
+        jcm_file = {}
+        for m in SUBSAMPLES:
+            v_name = f"v{m}"
+            if per_year_jcm:
+                jcm_file[v_name] = {}
+                for y in YEARS:
+                    jcm_file[v_name][y] = os.path.join(out_b1, f"jetCombinatoricModel_SB_mix_v{m}_{y}.yml")
+            else:
+                jcm_file[v_name] = os.path.join(out_b1, f"jetCombinatoricModel_SB_mix_v{m}.yml")
+
+        friends_dict = {
+            "trigWeight": config.get('trigweights_file', "coffea4bees/metadata/friends/trigweights_Run2_v2.json@@trigWeight"),
+            "SvB_MA": config['data_svb_friend'],
+        }
+        for m in SUBSAMPLES:
+            friends_dict[f"FvT_v{m}"] = f"{out_c}friends/friends_FvT_{mix_name}_v{m}.json@@FvT"
+        friends_dict["FvT"] = friends_dict[f"FvT_v{SUBSAMPLES[0]}"]
+
+        data_cfg['config']['JCM_file'] = jcm_file
+        data_cfg['config']['subsample_names'] = [f"v{m}" for m in SUBSAMPLES]
+        data_cfg['config']['friends'] = friends_dict
+
+        # Stage F_1 explicitly requires JCM, FvT, trigger weights, and ttbar estimation from 3b data
+        data_cfg['config']['apply_JCM'] = True
+        data_cfg['config']['apply_FvT'] = True
+        data_cfg['config']['apply_trigWeight'] = True
+        data_cfg['config']['plot_ttbar_with_weights'] = True
+
+        os.makedirs(os.path.dirname(output.cfg), exist_ok=True)
+        with open(output.cfg, 'w') as f:
+            yaml.dump(data_cfg, f, default_flow_style=False, sort_keys=False)
 
 closure_plot_cfg = config.get(
     'closure_plot_config',
@@ -85,7 +145,7 @@ closure_plot_cfg = config.get(
 wildcard_constraints:
     m = r"\d+"
 
-localrules: all_bkg_syst_F_1, all_bkg_syst_F_1_hists, make_plots_closure, make_gallery_closure, stage_bkg_syst_friend_manifest, stage_bkg_syst_jcm, stage_bkg_syst_jcm_per_year
+localrules: all_bkg_syst_F_1, all_bkg_syst_F_1_hists, make_plots_closure, make_gallery_closure, stage_phaseF_1_config
 
 # ── Master Target Rule ────────────────────────────────────────────────────────
 rule all_bkg_syst_F_1:
@@ -151,15 +211,11 @@ if HANDOFF_EOS and 'make_subsample_jcm_b1' not in _defined_rules:
             fi
             """
 
-def get_all_analysis_jcm_inputs(wildcards):
-    if per_year_jcm:
-        return [f"{out_b1}jetCombinatoricModel_SB_mix_v{m}_{y}.yml" for m in SUBSAMPLES for y in YEARS]
-    return [f"{out_b1}jetCombinatoricModel_SB_mix_v{m}.yml" for m in SUBSAMPLES]
 
 # ── Data Background Model Processor (Single Pass over Collision Data) ──────────
 rule analysis_data_closure:
     input:
-        cfg = cfg_files['config'],
+        cfg = f"{out_f1}analysis_config_mixeddata_bkgs.yml",
         jcm = get_all_analysis_jcm_inputs,
         fvt = expand(f"{out_c}friends/friends_FvT_{mix_name}_v{{m}}.json", m=SUBSAMPLES),
     output:

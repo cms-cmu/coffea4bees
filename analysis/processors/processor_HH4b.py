@@ -253,6 +253,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         compute_hemi_mixing_diagnostics: bool = False,
         plot_extra_canjet_vars: bool = False,
         subsample_names: list[str] | None = None,
+        tag_list: list[str] | None = None,
     ):
 
         logging.debug("\nInitialize Analysis Processor")
@@ -261,6 +262,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.cand_cfg = load_candidates_selection_config(candidates_selection_cfg) if candidates_selection_cfg else None
         self.blind = blind
         self.fourTag_use_tight = fourTag_use_tight
+        self.tag_list = list(tag_list) if tag_list is not None else ["threeTag", "fourTag"]
 
         import os
         self.weights_data = {}
@@ -1874,6 +1876,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 year_override=self.year_override,
                 compute_hemi_mixing_diagnostics=self.compute_hemi_mixing_diagnostics,
                 plot_extra_canjet_vars=self.plot_extra_canjet_vars,
+                tag_list=self.tag_list,
             )
             if not self.plot_ttbar_with_weights and not self.plot_ttbar_with_MvD_weights:
                 return hist_nom
@@ -1900,6 +1903,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     weight_noFvT_override="weight_d3_to_t4_noFvT",
                     year_override=self.year_override,
                     plot_extra_canjet_vars=self.plot_extra_canjet_vars,
+                    tag_list=self.tag_list,
                 )
 
                 hist_t3 = filling_nominal_histograms(
@@ -1920,6 +1924,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     weight_noFvT_override="weight_d3_to_t3_noFvT",
                     year_override=self.year_override,
                     plot_extra_canjet_vars=self.plot_extra_canjet_vars,
+                    tag_list=self.tag_list,
                 )
                 hists += [hist_t4, hist_t3]
 

@@ -3,6 +3,7 @@
 # ==============================================================================
 label: "ttHbb"
 output_path: "output/ttHbb/"
+unify_background: true
 # No cern_user/cern_path: publishing goes through `roast publish` (per-user roast config).
 
 dataset:
@@ -305,6 +306,7 @@ make_combine_inputs:
   rebin: 12
   stat_only: ""
   bkgsyst: "coffea4bees/stats_analysis/files/HIG-24-010/zz/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_zz_rebin1.pkl"
+  unify_background: true
 
 combine_flags: "--three_tag threeTag --four_tag fourTag --region sum --blind"
 likelihood_scan_points: 40

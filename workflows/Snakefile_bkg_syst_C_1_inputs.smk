@@ -60,8 +60,9 @@ MIX_INDICES = [int(x) for x in subsample_indices]
 out_c = f"{out}bkg_syst_C_FvT/"
 os.makedirs(out_c, exist_ok=True)
 
-from helpers.stage_configs import stage_phaseC_configs
-cfg_files = stage_phaseC_configs(config, out_c)
+if not globals().get("_BKG_SYST_C_MODEL_CONFIG_INCLUDED", False):
+    _BKG_SYST_C_MODEL_CONFIG_INCLUDED = True
+    include: "helpers/bkg_syst_c_model_config.smk"
 
 if not globals().get("_CLASSIFIER_WORKFLOW_INCLUDED", False):
     _CLASSIFIER_WORKFLOW_INCLUDED = True
