@@ -18,3 +18,9 @@ inputs:
   upstream_roasts: [nominal_run3_nontight_20260925_0c53380-193851f, mixeddata_run3_20260926_956d4bf-aca8a4e,
                     nominal_run3_20260922_3f9e199-1e0504f, libB_run3_20260930_4e3ad63-da2340e]
   splitting_library: "{roast:libB_run3_20260930_4e3ad63-da2340e}/splitting_library/splitting_library.yml"
+
+declustering:
+  library:
+    # libB predates `area` in the base's carry list (2026-10-12): restate the list it was built with
+    carry_fields: [btagScore, jetId, btagPNetCvB, btagPNetCvL, btagPNetQvG, btagPNetTauVJet,
+                   PNetRegPtRawRes, nSVs, chHEF, neHEF, chEmEF, neEmEF, muEF, nConstituents]
