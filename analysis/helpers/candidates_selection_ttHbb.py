@@ -100,7 +100,11 @@ def _select_quadjet_ttHbb(quadJet, cand_cfg=None):
 
     quadJet["SR"] = in_h_arm | in_v_arm
 
-    in_analysis_box = (m_lead >= 25.0) & (m_lead <= 1000.0) & (m_subl >= 25.0) & (m_subl <= 1000.0)
+    sb_cfg = (cand_cfg or {}).get("sb_ttHbb", {})
+    sb_min = (cand_cfg or {}).get("sb_min") or sb_cfg.get("sb_min", 25.0)
+    sb_max = (cand_cfg or {}).get("sb_max") or sb_cfg.get("sb_max", 500.0)
+
+    in_analysis_box = (m_lead >= sb_min) & (m_lead <= sb_max) & (m_subl >= sb_min) & (m_subl <= sb_max)
     quadJet["SB"] = in_analysis_box & (~quadJet["SR"])
 
 
