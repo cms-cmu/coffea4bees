@@ -119,8 +119,9 @@ class SubSampler(Skimmer4b):
         #
         # Calculate and apply btag scale factors
         #### AGE to add btag JES
+        # 2024 uses UParT, which has only WP-based SFs (no shape SF) yet: skip it, as processor_HH4b does.
         #
-        if config["isMC"]:
+        if config["isMC"] and year != "2024":
 
             weights, list_weight_names = add_btagweights( event, weights,
                                                           list_weight_names=list_weight_names,

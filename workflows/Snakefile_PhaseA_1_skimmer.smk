@@ -127,10 +127,14 @@ data_targets = [
 
 all_skim_files = mc_targets + data_targets
 modified_datasets_path = f"{config['output_path']}modified_datasets/modified_datasets.yml"
+new_datasets_path = f"{config['output_path']}modified_datasets/new_datasets.yml"
+event_counts_path = f"{config['output_path']}checks/event_counts.yml"
 
 rule all_skims:
     input:
-        modified_datasets_path
+        modified_datasets_path,
+        new_datasets_path,
+        [] if config.get('test', False) else event_counts_path
 
 rule create_skimmer_config:
     input: workflow.configfiles if workflow.configfiles else []
@@ -213,9 +217,13 @@ if include_data:
                 {params.extra_arguments} 2>&1 | tee {log}
             """
 
+# modified_datasets.yml: the full datasets metadata with the skims added (input to later phases).
+# new_datasets.yml: only the added picoAOD entries, to read and to merge into coffea4bees/metadata.
 rule modify_datasets:
     input: all_skim_files
-    output: modified_datasets_path
+    output:
+        modified = modified_datasets_path,
+        new = new_datasets_path
     log: f"{config['output_path']}logs/modify_datasets.log"
     params:
         dataset_location = config['dataset_location'],
@@ -224,10 +232,31 @@ rule modify_datasets:
     shell:
         """
         set -eo pipefail
-        mkdir -p $(dirname {output}) $(dirname {log})
+        mkdir -p $(dirname {output.modified}) $(dirname {log})
         echo "Modifying datasets file to point to skimmer outputs" 2>&1 | tee {log}
         {params.run_container_wrapper} {params.python_bin} src/tools/merge_yaml_datasets.py \
             -m {params.dataset_location} \
             -f {input} \
-            -o {output} 2>&1 | tee -a {log}
+            -o {output.modified} \
+            -n {output.new} 2>&1 | tee -a {log}
+        """
+
+# Every skim must have read every event DBS has for its input dataset; fails the workflow otherwise.
+# Skipped in test mode, where only a slice of each dataset is skimmed.
+rule check_event_counts:
+    input: all_skim_files
+    output: event_counts_path
+    log: f"{config['output_path']}logs/check_event_counts.log"
+    params:
+        dataset_location = config['dataset_location'],
+        run_container_wrapper = config['analysis_container_wrapper'],
+        python_bin = config['python_bin']
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {output}) $(dirname {log})
+        {params.run_container_wrapper} {params.python_bin} src/tools/check_event_counts.py \
+            -f {input} \
+            -m {params.dataset_location} \
+            -o {output} 2>&1 | tee {log}
         """
