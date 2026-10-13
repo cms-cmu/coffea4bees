@@ -99,8 +99,9 @@ def cand_jet_selection(
     ):
         if _feat in canJet_raw.fields:
             canJet[_feat] = canJet_raw[_feat]
-    if "hadronFlavour" in selev.Jet.fields:
-        canJet["hadronFlavour"] = canJet_raw.hadronFlavour
+    for _truth in ("hadronFlavour", "truthParent", "truthFromH", "truthFromTop", "truthB"):
+        if _truth in selev.Jet.fields:
+            canJet[_truth] = canJet_raw[_truth]
     del canJet_raw
 
     #

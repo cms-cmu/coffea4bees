@@ -229,7 +229,8 @@ use rule make_combine_inputs from stat_analysis with:
             + (f"--cut {config['channels'][wildcards.channel]['cut']} " if 'cut' in config['channels'][wildcards.channel] and config['channels'][wildcards.channel]['cut'] not in ['', 'sum'] else '')
             + (f"--data_process {config['channels'][wildcards.channel]['data_process']} " if 'data_process' in config['channels'][wildcards.channel] else '')
             + f"--multijet_process {config['channels'][wildcards.channel].get('multijet_process', config['make_combine_inputs']['multijet_process'])} "
-            f"--tt_processes {' '.join(config['channels'][wildcards.channel].get('tt_processes', config['make_combine_inputs']['tt_processes']))}"
+            f"--tt_processes {' '.join(config['channels'][wildcards.channel].get('tt_processes', config['make_combine_inputs']['tt_processes']))} "
+            + ("--unify_background " if (config.get('unify_background', False) or config.get('make_combine_inputs', {}).get('unify_background', False) or config['channels'][wildcards.channel].get('unify_background', False)) else "")
         ),
         container_wrapper = config['stats_container_wrapper']
     log: f"{config['output_path']}logs/make_combine_inputs_{{channel}}.log"

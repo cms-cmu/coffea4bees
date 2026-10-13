@@ -40,7 +40,8 @@ if "MIXED_JCM" not in globals():           # standalone: A_1 provides the JCM
     include: "Snakefile_bkg_syst_A_1_mixed_jcm.smk"
 
 from helpers.multisample_dataset import (build_multisample_dataset, registry_files, seed_files,
-                                         template_seed_file, template_split_file)
+                                         template_seed_file, template_split_file,
+                                         is_templated_dataset, build_multisample_dataset_from_templated)
 
 A2_STUDY = f"{out_a2}study_{MIX_NAME}.coffea"
 
@@ -71,10 +72,11 @@ if SUB_SOURCE == 'split':
         run:
             with open(input.template) as f:
                 tmpl = yaml.safe_load(f) or {}
+            jcm_input = MIXED_JCM_DICT if per_year_jcm else (input.jcm[0] if isinstance(input.jcm, list) else input.jcm)
             section = {**(tmpl.get('config') or {}),
                        'base_path': f"{PUB}/picoAOD/subsamples/v{wildcards.v}",
                        'apply_JCM': True,
-                       'JCM_file': input.jcm,          # not the template's *_splitting.txt
+                       'JCM_file': jcm_input,          # not the template's *_splitting.txt
                        'mixed_subsample': int(wildcards.v),
                        'n_subsamples': N_SUBSAMPLES}
             cfg = _a2_runner_config(tmpl, section, "coffea4bees/skimmer/processor/split_mixed_data.py")
@@ -132,8 +134,9 @@ if SUB_SOURCE == 'split':
         run:
             with open(input.template) as f:
                 tmpl = yaml.safe_load(f) or {}
+            jcm_input = MIXED_JCM_DICT if per_year_jcm else (input.jcm[0] if isinstance(input.jcm, list) else input.jcm)
             # this run's mixed-data JCM, not the template's hard-coded *_splitting.txt
-            section = {**(tmpl.get('config') or {}), 'apply_JCM': True, 'JCM_file': input.jcm}
+            section = {**(tmpl.get('config') or {}), 'apply_JCM': True, 'JCM_file': jcm_input}
             write_yaml(output[0], _a2_runner_config(
                 tmpl, section, "coffea4bees/analysis/processors/processor_study_mixed_data.py"))
 
@@ -185,9 +188,14 @@ else:
             psdata = PS_DATASET
         output: MULTISAMPLE_DATASET
         run:
-            write_yaml(output[0], build_multisample_dataset(seed_files(input.mixed, MIX_NAME, N_SUBSAMPLES),
-                                                            input.psdata, PS_NAME, YEARS, SUB_NAME,
-                                                            template_seed_file(MIX_NAME)))
+            if is_templated_dataset(input.mixed, MIX_NAME, YEARS):
+                write_yaml(output[0], build_multisample_dataset_from_templated(input.mixed, MIX_NAME,
+                                                                              input.psdata, PS_NAME,
+                                                                              YEARS, SUB_NAME))
+            else:
+                write_yaml(output[0], build_multisample_dataset(seed_files(input.mixed, MIX_NAME, N_SUBSAMPLES),
+                                                                input.psdata, PS_NAME, YEARS, SUB_NAME,
+                                                                template_seed_file(MIX_NAME)))
 
 rule A2_classifier_metadata:
     """C's classifier merges every YAML of its --metadata directory and looks the mixed samples up by
@@ -198,8 +206,17 @@ rule A2_classifier_metadata:
         repo = config.get('dataset_location', "coffea4bees/metadata/datasets/"),
     output: directory(CLASSIFIER_METADATA)
     run:
-        from helpers.stage_configs import build_classifier_metadata
-        skipped = build_classifier_metadata(input.repo, input.dataset, output[0], SUB_NAME)
+        import glob, shutil, yaml
+        os.makedirs(output[0], exist_ok=True)
+        skipped = []
+        for path in sorted(glob.glob(os.path.join(input.repo, "*.yml"))):
+            with open(path) as f:
+                keys = set(yaml.safe_load(f) or {})
+            if SUB_NAME in keys:
+                skipped.append(os.path.basename(path))
+                continue
+            shutil.copy(path, output[0])
+        shutil.copy(input.dataset, output[0])
         print(f"classifier metadata: {output[0]} (skipped {skipped}: they define {SUB_NAME})")
 
 rule all_bkg_syst_A_2:

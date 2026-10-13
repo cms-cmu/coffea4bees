@@ -124,9 +124,19 @@ if isinstance(raw_rebins, (int, str)):
 else:
     REBIN_CANDIDATES = [int(r) for r in raw_rebins]
 
+closure_region = config.get('closure_region', config.get('region', 'SR'))
+raw_closure_regions = config.get('closure_regions', [closure_region, 'SB'] if closure_region != 'SB' else ['SR', 'SB'])
+if isinstance(raw_closure_regions, str):
+    CLOSURE_REGIONS = [r.strip() for r in raw_closure_regions.split()]
+else:
+    CLOSURE_REGIONS = list(raw_closure_regions)
+if closure_region not in CLOSURE_REGIONS:
+    CLOSURE_REGIONS.insert(0, closure_region)
+
 rebin_str = f"rebin{config.get('rebin', REBIN_CANDIDATES[0])}"
-closure_output_dir = f"{out_f2}closure_fits/{mix_name}/{classifier}/{rebin_str}/SR/{channel}/"
+closure_output_dir = f"{out_f2}closure_fits/{mix_name}/{classifier}/{rebin_str}/{closure_region}/{channel}/"
 closure_pkl = f"{closure_output_dir}hists_closure_{mix_name}_{var}_{rebin_str}.pkl"
+
 
 # TTbar comparison outputs
 ttbar_compare_plot_config = config.get('ttbar_compare_plot_config', "coffea4bees/plots/metadata/plotsTTbar_MCvsFromD3.yml")
@@ -137,12 +147,18 @@ TTBAR_COMPARISON_OUTPUTS = [
     f"{out_f2}ttbar_MC_vs_d3_cutflow.txt",
 ]
 
-localrules: all_bkg_syst_F_2, coffea_to_root_closure, make_signal_root_closure, run_two_stage_closure, evaluate_closure_candidates, make_closure_summary_html, check_closure_validation, make_plots_ttbar_MC_vs_d3, ttbar_MC_vs_d3_cutflow, all_ttbar_MC_vs_d3
+wildcard_constraints:
+    region = "[A-Za-z0-9_]+",
+    rebin = r"\d+",
+
+localrules: all_bkg_syst_F_2, copy_official_closure_summary, coffea_to_root_closure, make_signal_root_closure, run_two_stage_closure, evaluate_closure_candidates, make_closure_summary_html, check_closure_validation, make_plots_ttbar_MC_vs_d3, ttbar_MC_vs_d3_cutflow, all_ttbar_MC_vs_d3
 
 rule all_bkg_syst_F_2:
     input:
         f"{out_f2}closure_summary.json",
-        f"{out_f2}closure_summary.html"
+        f"{out_f2}closure_summary.html",
+        expand(f"{out_f2}closure_summary_{{region}}.json", region=CLOSURE_REGIONS),
+        expand(f"{out_f2}closure_summary_{{region}}.html", region=CLOSURE_REGIONS),
 
 n_models_closure = int(config.get('n_subsamples', config.get('n_models', config.get('n_samples', 16))))
 
@@ -159,6 +175,7 @@ def get_closure_coffea_inputs(wildcards):
     inputs = {
         'bkg': f"{out}bkg_syst_F_1_analysis/histAll_mixeddata_bkgs.coffea",
         'mix': [f"{out_a3}histAll_{channel}_mixeddata_v{v}.coffea" for v in subsample_indices_closure],
+        'nominal': config['nominal_coffea'],
     }
     return inputs
 
@@ -188,6 +205,7 @@ rule coffea_to_root_closure:
         {params.container_wrapper} {params.python_bin} {input.script} \
             --closure_dir {params.closure_dir} \
             --bkg_coffea {params.bkg_coffea} \
+            --nominal_coffea {input.nominal} \
             --mixed_dir {params.mixed_dir} \
             --channel {params.channel} \
             --mix_name {params.mix_name} \
@@ -230,13 +248,14 @@ rule run_two_stage_closure:
         sigroot = config.get('input_file_sig', f"{out_f2}root_inputs/hist_signal_ttHbb.root"),
         script = "coffea4bees/stats_analysis/runTwoStageClosure.py"
     output:
-        pkl = f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{{rebin}}/SR/{channel}/hists_closure_{mix_name}_{var}_rebin{{rebin}}.pkl",
-        status = f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{{rebin}}/SR/{channel}/closure_status.json"
+        pkl = f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{{rebin}}/{{region}}/{channel}/hists_closure_{mix_name}_{var}_rebin{{rebin}}.pkl",
+        status = f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{{rebin}}/{{region}}/{channel}/closure_status.json"
     params:
         combine_cmd = combine_cmd,
         mix_name = mix_name,
         var = var,
         channel = channel,
+        region = "{region}",
         rebin = "{rebin}",
         output_dir = f"{out_f2}closure_fits/",
         maxBasis = config.get('max_basis', 10),
@@ -248,6 +267,7 @@ rule run_two_stage_closure:
             (" --match_normalization" if config.get('match_closure_normalization', False) else "") +
             (" --include_ensemble_variance" if config.get('include_ensemble_variance', False) else "") +
             (" --unify_background" if config.get('unify_background', False) else "") +
+            (" --no_sqrt_n_priors" if config.get('no_sqrt_n_priors', False) else "") +
             (f" --basis_type {config.get('basis_type', 'fourier')}" if config.get('basis_type') else "") +
             f" --subsample_indices {' '.join(str(v) for v in subsample_indices_closure)}" +
             " --ignore_failures"
@@ -257,16 +277,17 @@ rule run_two_stage_closure:
         input_file_sig = lambda wildcards, input: config.get('input_file_sig', input.sigroot),
         input_file_TT = lambda wildcards, input: config.get('input_file_TT', input.inroot),
     log:
-        f"{out_f2}logs/run_two_stage_closure_rebin{{rebin}}.log"
+        f"{out_f2}logs/run_two_stage_closure_rebin{{rebin}}_{{region}}.log"
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.pkl}) $(dirname {log})
-        rm -f {params.output_dir}/{params.mix_name}/{classifier}/rebin{wildcards.rebin}/SR/{params.channel}/hists_closure_*.root
+        rm -f {params.output_dir}/{params.mix_name}/{classifier}/rebin{wildcards.rebin}/{wildcards.region}/{params.channel}/hists_closure_*.root
         {params.combine_cmd} {input.script} \
             --mix_name {params.mix_name} \
             --var {params.var} \
             --channel {params.channel} \
+            --region {wildcards.region} \
             --rebin {params.rebin} \
             --maxBasis {params.maxBasis} \
             --outputPath {params.output_dir} \
@@ -282,20 +303,21 @@ rule run_two_stage_closure:
         fi
         if [ ! -f {output.status} ]; then
             echo '{{"passed": false, "rebin": {wildcards.rebin}, "error": "Missing status file"}}' > {output.status}
+
         fi
         """
 
 checkpoint evaluate_closure_candidates:
     input:
-        status_files = expand(
-            f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{{rebin}}/SR/{channel}/closure_status.json",
+        status_files = lambda wildcards: expand(
+            f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{{rebin}}/{wildcards.region}/{channel}/closure_status.json",
             rebin=REBIN_CANDIDATES
         ),
         script = "coffea4bees/stats_analysis/evaluate_closure_candidates.py",
     output:
-        summary = f"{out_f2}closure_summary.json"
+        summary = f"{out_f2}closure_summary_{{region}}.json"
     log:
-        f"{out_f2}logs/evaluate_closure_candidates.log"
+        f"{out_f2}logs/evaluate_closure_candidates_{{region}}.log"
     params:
         channel = channel,
         container_wrapper = config['analysis_container_wrapper'],
@@ -312,19 +334,20 @@ checkpoint evaluate_closure_candidates:
 
 rule make_closure_summary_html:
     input:
-        summary = f"{out_f2}closure_summary.json",
-        status_files = expand(
-            f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{{rebin}}/SR/{channel}/closure_status.json",
+        summary = f"{out_f2}closure_summary_{{region}}.json",
+        status_files = lambda wildcards: expand(
+            f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{{rebin}}/{wildcards.region}/{channel}/closure_status.json",
             rebin=REBIN_CANDIDATES
         ),
         script = "coffea4bees/stats_analysis/make_closure_summary_html.py"
     output:
-        html = f"{out_f2}closure_summary.html"
+        html = f"{out_f2}closure_summary_{{region}}.html"
     log:
-        f"{out_f2}logs/make_closure_summary_html.log"
+        f"{out_f2}logs/make_closure_summary_html_{{region}}.log"
     params:
         output_dir = out_f2,
-        title = f"Stage F_2 Two-Stage Closure ({channel} - {var})",
+        region = "{region}",
+        title = lambda wildcards: f"Stage F_2 Two-Stage Closure ({channel} - {var} - {wildcards.region})",
         container_wrapper = config['analysis_container_wrapper'],
         python_bin = config['python_bin']
     shell:
@@ -334,25 +357,40 @@ rule make_closure_summary_html:
         {params.container_wrapper} {params.python_bin} {input.script} \
             --summary {input.summary} \
             --output_dir {params.output_dir} \
+            --region {params.region} \
             --output {output.html} 2>&1 | tee {log}
+        """
+
+rule copy_official_closure_summary:
+    input:
+        json = f"{out_f2}closure_summary_{closure_region}.json",
+        html = f"{out_f2}closure_summary_{closure_region}.html",
+    output:
+        json = f"{out_f2}closure_summary.json",
+        html = f"{out_f2}closure_summary.html",
+    shell:
+        """
+        cp -f {input.json} {output.json}
+        cp -f {input.html} {output.html}
         """
 
 rule check_closure_validation:
     input:
-        closure_pkl = f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{{rebin}}/SR/{channel}/hists_closure_{mix_name}_{var}_rebin{{rebin}}.pkl",
+        closure_pkl = f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{{rebin}}/{closure_region}/{channel}/hists_closure_{mix_name}_{var}_rebin{{rebin}}.pkl",
         script = "coffea4bees/stats_analysis/tests/dumpTwoStageInputs.py"
     output:
         validation_txt = f"{out_f2}closure_validation_{config['label']}_rebin{{rebin}}.txt",
         counts_yml = f"{out_f2}closure_counts_{config['label']}_rebin{{rebin}}.yml"
     log:
-        f"{out_f2}logs/closure_validation_{config['label']}_rebin{{rebin}}.log"
+        f"{out_f2}logs/closure_validation_{config['label']}_rebin{{rebin}}_{closure_region}.log"
     params:
         combine_cmd = combine_cmd,
-        root_file = lambda wildcards: f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{wildcards.rebin}/SR/{channel}/hists_closure_{mix_name}_{var}_rebin{wildcards.rebin}.root",
+        root_file = lambda wildcards: f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{wildcards.rebin}/{closure_region}/{channel}/hists_closure_{mix_name}_{var}_rebin{wildcards.rebin}.root",
         known_counts = lambda wildcards: config.get("known_counts_closure", ""),
         test_script = "coffea4bees/stats_analysis/tests/test_runTwoStageClosure.py",
-        output_dir = lambda wildcards: f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{wildcards.rebin}/SR/{channel}/",
+        output_dir = lambda wildcards: f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{wildcards.rebin}/{closure_region}/{channel}/",
         channel = channel
+
     shell:
         """
         set -eo pipefail

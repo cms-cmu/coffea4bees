@@ -3,6 +3,7 @@
 # ==============================================================================
 label: "ttHbb"
 output_path: "output/ttHbb/"
+unify_background: true
 # No cern_user/cern_path: publishing goes through `roast publish` (per-user roast config).
 
 dataset:
@@ -129,6 +130,7 @@ classifier_inputs:
     top_reconstruction: slow
     fill_histograms: true
     make_classifier_input: "{eos_prod}/{roast_id}/classifier_inputs/"
+    pairing: nominal
 
 # ==============================================================================
 # PHASE C & D: CLASSIFIER SETTINGS (Entirely on falcon / PSC)
@@ -281,6 +283,7 @@ analysis_config:
     hist_cuts: ["pass_nSelJets_gt6", "passLeptonVeto"]
     top_reconstruction: fast
     plot_ttbar_with_weights: true
+    pairing: nominal
 
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
 plot_extra_arguments: ""
@@ -303,6 +306,7 @@ make_combine_inputs:
   rebin: 12
   stat_only: ""
   bkgsyst: "coffea4bees/stats_analysis/files/HIG-24-010/zz/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_zz_rebin1.pkl"
+  unify_background: true
 
 combine_flags: "--three_tag threeTag --four_tag fourTag --region sum --blind"
 likelihood_scan_points: 40

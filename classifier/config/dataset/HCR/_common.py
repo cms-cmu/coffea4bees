@@ -98,8 +98,9 @@ def _debug_print_weight(df: pd.DataFrame):
                 str(len(bylabel)),
                 str(bylabel[Columns.weight].sum()),
             )
-        tables.append(table)
-    logging.debug("The following events are loaded:", *tables)
+    logging.debug("The following events are loaded:")
+    for item in tables:
+        logging.debug("%s", item)
     return df
 
 
