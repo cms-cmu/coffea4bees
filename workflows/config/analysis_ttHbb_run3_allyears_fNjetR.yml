@@ -151,7 +151,7 @@ fvt:
     # partially covered 2024 picoAODs are removed from an evaluate-only metadata dir (else FriendTreeError -> hang, 10-13 run 12909404).
     'evaluate.yml::--metadata': 'coffea4bees/metadata/datasets_eval_run3_fullcov/'
   train_mem: 118000      # orchestrator (user-requested): whole single-GPU H100 NVL slot (TotalMemory 118000); S2 predicts 102.37M loaded -> ~104.2 GB (~0.97 GB/M + 4.8 GB)
-  eval_mem: 192000       # jgaytanv-e7, user-ordered (GPU asap): 64 cpus x 3000; measured evaluate RSS peak 185.5 GB (12909404); limit not enforced
+  eval_mem: 144000       # USER DECISION via jgaytanv-e7 (fastest start): 48 cpus; RECORD ONLY - running job 12912978 was condor_qedit-ed 189000/63 -> 144000/48; measured eval RSS 185.5 GB, limit not enforced
   train_runtime: 1440    # est. ~10-11 h (2022 1.5 h, 2024 6.25 h); flavour "tomorrow"
   eval_runtime: 1440
   retries: 1
