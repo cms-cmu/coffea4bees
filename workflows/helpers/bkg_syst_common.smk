@@ -126,9 +126,13 @@ config.setdefault('nominal_json', config['nominal_coffea'].removesuffix(".coffea
 if INPUTS.get('classifier_inputs'):
     config['nominal_classifier_inputs'] = str(INPUTS['classifier_inputs'])
 config['data_svb_friend'] = str(INPUTS['SvB'])
+if INPUTS.get('SvB_MA'):
+    config['data_svb_ma_friend'] = str(INPUTS['SvB_MA'])
 # ...and the SvB model that made that friend: A_3 evaluates it on the mixed subsamples, so mixed data
 # and data are scored by the same SvB in the closure
 config['mixed_svb_model'] = str(INPUTS['SvB_model'])
+if INPUTS.get('SvB_MA_model'):
+    config['mixed_svb_ma_model'] = str(INPUTS['SvB_MA_model'])
 MIXED_DATASET = f"{A_INPUT_DIR}{MIX_NAME}.yml"      # local copy: A_2 reads the seeds' file lists
 
 # The multi-sample closure dataset A_2 assembles: mixeddata_4b (samples mix_v<k>) or

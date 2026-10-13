@@ -111,9 +111,31 @@ out_f2 = f"{out}bkg_syst_F_2_run_two_stage_closure/"
 if 'out_a3' not in globals():     # standalone: no bkg_syst_common
     out_a3 = f"{out}bkg_syst_A_3_process_subsamples/"
 mix_name = config['mix_name']
-classifier = config['classifier']
 channel = config['channel']
-var = config['variable']
+
+raw_classifiers = config.get('classifiers', [config.get('classifier', "SvB_MA")])
+if isinstance(raw_classifiers, str):
+    CLASSIFIERS = [c.strip() for c in raw_classifiers.split() if c.strip()]
+else:
+    CLASSIFIERS = list(raw_classifiers)
+primary_classifier = CLASSIFIERS[0]
+classifier = primary_classifier
+
+default_subvar = config.get('variable_substem', 'ps_ttHbb')
+cfg_var_map = config.get('classifier_variables', {})
+var_map = {}
+for c in CLASSIFIERS:
+    if c in cfg_var_map:
+        var_map[c] = cfg_var_map[c]
+    elif c == config.get('classifier'):
+        var_map[c] = config.get('variable', f"{c}_{default_subvar}")
+    else:
+        var_map[c] = f"{c}_{default_subvar}"
+
+def get_var_for_classifier(clf):
+    return var_map.get(clf, f"{clf}_{default_subvar}")
+
+var = get_var_for_classifier(primary_classifier)
 
 raw_rebins = config.get('closure_rebin_candidates', [config.get('rebin', 12)])
 if isinstance(raw_rebins, (int, str)):
@@ -148,10 +170,12 @@ TTBAR_COMPARISON_OUTPUTS = [
 ]
 
 wildcard_constraints:
-    region = "[A-Za-z0-9_]+",
+    classifier = "|".join(CLASSIFIERS),
+    var = "|".join(dict.fromkeys(var_map.values())),
+    region = "|".join(CLOSURE_REGIONS),
     rebin = r"\d+",
 
-localrules: all_bkg_syst_F_2, copy_official_closure_summary, coffea_to_root_closure, make_signal_root_closure, run_two_stage_closure, evaluate_closure_candidates, make_closure_summary_html, check_closure_validation, make_plots_ttbar_MC_vs_d3, ttbar_MC_vs_d3_cutflow, all_ttbar_MC_vs_d3
+localrules: all_bkg_syst_F_2, copy_official_closure_summary, copy_official_closure_summary_region, coffea_to_root_closure, make_signal_root_closure, run_two_stage_closure, evaluate_closure_candidates, make_closure_summary_html, check_closure_validation, make_plots_ttbar_MC_vs_d3, ttbar_MC_vs_d3_cutflow, all_ttbar_MC_vs_d3
 
 rule all_bkg_syst_F_2:
     input:
@@ -159,6 +183,8 @@ rule all_bkg_syst_F_2:
         f"{out_f2}closure_summary.html",
         expand(f"{out_f2}closure_summary_{{region}}.json", region=CLOSURE_REGIONS),
         expand(f"{out_f2}closure_summary_{{region}}.html", region=CLOSURE_REGIONS),
+        expand(f"{out_f2}summary_{{classifier}}_{{region}}.json", classifier=CLASSIFIERS, region=CLOSURE_REGIONS),
+        expand(f"{out_f2}summary_{{classifier}}_{{region}}.html", classifier=CLASSIFIERS, region=CLOSURE_REGIONS),
 
 n_models_closure = int(config.get('n_subsamples', config.get('n_models', config.get('n_samples', 16))))
 
@@ -225,7 +251,7 @@ rule make_signal_root_closure:
         container_wrapper = config['analysis_container_wrapper'],
         python_bin = config['python_bin'],
         in_file = lambda wildcards, input: input.signal_file,
-        var = var,
+        vars = " ".join(dict.fromkeys(var_map.values())),
         years = " ".join(YEARS),
         extra_args = "--dummy" if config.get('test', False) else "",
     log:
@@ -236,7 +262,7 @@ rule make_signal_root_closure:
         mkdir -p $(dirname {output}) $(dirname {log})
         {params.container_wrapper} {params.python_bin} {input.script} \
             -i {params.in_file} \
-            --var {params.var} \
+            --vars {params.vars} \
             --years {params.years} \
             {params.extra_args} \
             -o {output} 2>&1 | tee {log}
@@ -248,12 +274,13 @@ rule run_two_stage_closure:
         sigroot = config.get('input_file_sig', f"{out_f2}root_inputs/hist_signal_ttHbb.root"),
         script = "coffea4bees/stats_analysis/runTwoStageClosure.py"
     output:
-        pkl = f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{{rebin}}/{{region}}/{channel}/hists_closure_{mix_name}_{var}_rebin{{rebin}}.pkl",
-        status = f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{{rebin}}/{{region}}/{channel}/closure_status.json"
+        pkl = f"{out_f2}closure_fits/{mix_name}/{{classifier}}/rebin{{rebin}}/{{region}}/{channel}/hists_closure_{mix_name}_{{var}}_rebin{{rebin}}.pkl",
+        status = f"{out_f2}closure_fits/{mix_name}/{{classifier}}/rebin{{rebin}}/{{region}}/{channel}/closure_status_{{var}}.json"
     params:
         combine_cmd = combine_cmd,
         mix_name = mix_name,
-        var = var,
+        classifier = "{classifier}",
+        var = "{var}",
         channel = channel,
         region = "{region}",
         rebin = "{rebin}",
@@ -277,14 +304,15 @@ rule run_two_stage_closure:
         input_file_sig = lambda wildcards, input: config.get('input_file_sig', input.sigroot),
         input_file_TT = lambda wildcards, input: config.get('input_file_TT', input.inroot),
     log:
-        f"{out_f2}logs/run_two_stage_closure_rebin{{rebin}}_{{region}}.log"
+        f"{out_f2}logs/run_two_stage_closure_{{classifier}}_{{var}}_rebin{{rebin}}_{{region}}.log"
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.pkl}) $(dirname {log})
-        rm -f {params.output_dir}/{params.mix_name}/{classifier}/rebin{wildcards.rebin}/{wildcards.region}/{params.channel}/hists_closure_*.root
+        rm -f {params.output_dir}/{params.mix_name}/{wildcards.classifier}/rebin{wildcards.rebin}/{wildcards.region}/{params.channel}/hists_closure_*.root
         {params.combine_cmd} {input.script} \
             --mix_name {params.mix_name} \
+            --classifier {params.classifier} \
             --var {params.var} \
             --channel {params.channel} \
             --region {wildcards.region} \
@@ -301,23 +329,25 @@ rule run_two_stage_closure:
         if [ ! -f {output.pkl} ]; then
             touch {output.pkl}
         fi
-        if [ ! -f {output.status} ]; then
-            echo '{{"passed": false, "rebin": {wildcards.rebin}, "error": "Missing status file"}}' > {output.status}
-
+        status_src="{params.output_dir}/{params.mix_name}/{wildcards.classifier}/rebin{wildcards.rebin}/{wildcards.region}/{params.channel}/closure_status.json"
+        if [ ! -f "$status_src" ]; then
+            echo '{{"passed": false, "rebin": {wildcards.rebin}, "error": "Missing status file"}}' > "$status_src"
         fi
+        cp -f "$status_src" {output.status}
         """
 
 checkpoint evaluate_closure_candidates:
     input:
         status_files = lambda wildcards: expand(
-            f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{{rebin}}/{wildcards.region}/{channel}/closure_status.json",
-            rebin=REBIN_CANDIDATES
+            f"{out_f2}closure_fits/{mix_name}/{wildcards.classifier}/rebin{{rebin}}/{wildcards.region}/{channel}/closure_status_{var}.json",
+            rebin=REBIN_CANDIDATES,
+            var=get_var_for_classifier(wildcards.classifier)
         ),
         script = "coffea4bees/stats_analysis/evaluate_closure_candidates.py",
     output:
-        summary = f"{out_f2}closure_summary_{{region}}.json"
+        summary = f"{out_f2}summary_{{classifier}}_{{region}}.json"
     log:
-        f"{out_f2}logs/evaluate_closure_candidates_{{region}}.log"
+        f"{out_f2}logs/evaluate_closure_candidates_{{classifier}}_{{region}}.log"
     params:
         channel = channel,
         container_wrapper = config['analysis_container_wrapper'],
@@ -334,20 +364,21 @@ checkpoint evaluate_closure_candidates:
 
 rule make_closure_summary_html:
     input:
-        summary = f"{out_f2}closure_summary_{{region}}.json",
+        summary = f"{out_f2}summary_{{classifier}}_{{region}}.json",
         status_files = lambda wildcards: expand(
-            f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{{rebin}}/{wildcards.region}/{channel}/closure_status.json",
-            rebin=REBIN_CANDIDATES
+            f"{out_f2}closure_fits/{mix_name}/{wildcards.classifier}/rebin{{rebin}}/{wildcards.region}/{channel}/closure_status_{var}.json",
+            rebin=REBIN_CANDIDATES,
+            var=get_var_for_classifier(wildcards.classifier)
         ),
         script = "coffea4bees/stats_analysis/make_closure_summary_html.py"
     output:
-        html = f"{out_f2}closure_summary_{{region}}.html"
+        html = f"{out_f2}summary_{{classifier}}_{{region}}.html"
     log:
-        f"{out_f2}logs/make_closure_summary_html_{{region}}.log"
+        f"{out_f2}logs/make_closure_summary_html_{{classifier}}_{{region}}.log"
     params:
         output_dir = out_f2,
         region = "{region}",
-        title = lambda wildcards: f"Stage F_2 Two-Stage Closure ({channel} - {var} - {wildcards.region})",
+        title = lambda wildcards: f"Stage F_2 Two-Stage Closure ({channel} - {wildcards.classifier} - {wildcards.region})",
         container_wrapper = config['analysis_container_wrapper'],
         python_bin = config['python_bin']
     shell:
@@ -363,8 +394,8 @@ rule make_closure_summary_html:
 
 rule copy_official_closure_summary:
     input:
-        json = f"{out_f2}closure_summary_{closure_region}.json",
-        html = f"{out_f2}closure_summary_{closure_region}.html",
+        json = f"{out_f2}summary_{primary_classifier}_{closure_region}.json",
+        html = f"{out_f2}summary_{primary_classifier}_{closure_region}.html",
     output:
         json = f"{out_f2}closure_summary.json",
         html = f"{out_f2}closure_summary.html",
@@ -374,9 +405,22 @@ rule copy_official_closure_summary:
         cp -f {input.html} {output.html}
         """
 
+rule copy_official_closure_summary_region:
+    input:
+        json = f"{out_f2}summary_{primary_classifier}_{{region}}.json",
+        html = f"{out_f2}summary_{primary_classifier}_{{region}}.html",
+    output:
+        json = f"{out_f2}closure_summary_{{region}}.json",
+        html = f"{out_f2}closure_summary_{{region}}.html",
+    shell:
+        """
+        cp -f {input.json} {output.json}
+        cp -f {input.html} {output.html}
+        """
+
 rule check_closure_validation:
     input:
-        closure_pkl = f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{{rebin}}/{closure_region}/{channel}/hists_closure_{mix_name}_{var}_rebin{{rebin}}.pkl",
+        closure_status = f"{out_f2}closure_fits/{mix_name}/{primary_classifier}/rebin{{rebin}}/{closure_region}/{channel}/closure_status_{get_var_for_classifier(primary_classifier)}.json",
         script = "coffea4bees/stats_analysis/tests/dumpTwoStageInputs.py"
     output:
         validation_txt = f"{out_f2}closure_validation_{config['label']}_rebin{{rebin}}.txt",
@@ -385,10 +429,10 @@ rule check_closure_validation:
         f"{out_f2}logs/closure_validation_{config['label']}_rebin{{rebin}}_{closure_region}.log"
     params:
         combine_cmd = combine_cmd,
-        root_file = lambda wildcards: f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{wildcards.rebin}/{closure_region}/{channel}/hists_closure_{mix_name}_{var}_rebin{wildcards.rebin}.root",
+        root_file = lambda wildcards: f"{out_f2}closure_fits/{mix_name}/{primary_classifier}/rebin{wildcards.rebin}/{closure_region}/{channel}/hists_closure_{mix_name}_{get_var_for_classifier(primary_classifier)}_rebin{wildcards.rebin}.root",
         known_counts = lambda wildcards: config.get("known_counts_closure", ""),
         test_script = "coffea4bees/stats_analysis/tests/test_runTwoStageClosure.py",
-        output_dir = lambda wildcards: f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{wildcards.rebin}/{closure_region}/{channel}/",
+        output_dir = lambda wildcards: f"{out_f2}closure_fits/{mix_name}/{primary_classifier}/rebin{wildcards.rebin}/{closure_region}/{channel}/",
         channel = channel
 
     shell:

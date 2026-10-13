@@ -791,9 +791,11 @@ def filling_ttHbb_histograms(
 
     # SvB without the FvT reweighting (3b: JCM only), as filling_nominal_histograms does for HH4b.
     # Only for the nominal fill: the TTbar*_from_d3 fills (weight_name != "weight") are FvT-derived.
-    if (weight_name == "weight" and "weight_noFvT" in selev.fields
-            and "SvB_MA" in selev.fields and "ps_ttHbb" in selev.SvB_MA.fields):
-        fill += ttHbbSvBHists(("SvB_MA_noFvT", "SvB MA Classifier (no FvT)"), "SvB_MA", weight="weight_noFvT")
+    if weight_name == "weight" and "weight_noFvT" in selev.fields:
+        if "SvB_MA" in selev.fields and "ps_ttHbb" in selev.SvB_MA.fields:
+            fill += ttHbbSvBHists(("SvB_MA_noFvT", "SvB MA Classifier (no FvT)"), "SvB_MA", weight="weight_noFvT")
+        if "SvB" in selev.fields and "ps_ttHbb" in selev.SvB.fields:
+            fill += ttHbbSvBHists(("SvB_noFvT", "SvB Classifier (no FvT)"), "SvB", weight="weight_noFvT")
 
     if subsample_names:
         for v_name in subsample_names:
@@ -805,13 +807,13 @@ def filling_ttHbb_histograms(
                 w_var = f"weight_{v_name}"
 
             if w_var in selev.fields:
-                # 1. SvB_MA (crucial discriminant for Combine closure fits)
+                # 1. SvB discriminants (for Combine closure fits)
                 if "SvB_MA" in selev.fields and "ps_ttHbb" in selev["SvB_MA"].fields:
                     fill += ttHbbSvBHists((f"SvB_MA_{v_name}", f"SvB_MA {v_name} Classifier"), "SvB_MA", weight=w_var)
-                elif "SvB" in selev.fields and "ps_ttHbb" in selev["SvB"].fields:
+                if "SvB" in selev.fields and "ps_ttHbb" in selev["SvB"].fields:
                     fill += ttHbbSvBHists((f"SvB_{v_name}", f"SvB {v_name} Classifier"), "SvB", weight=w_var)
 
-                # For TTbar backgrounds, only SvB_MA is needed by closure fits
+                # For TTbar backgrounds, only SvB discriminants are needed by closure fits
                 if processName != "data":
                     continue
 

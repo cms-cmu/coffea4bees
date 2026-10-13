@@ -42,12 +42,36 @@ if "A2_STUDY" not in globals():            # standalone: A_2 provides the datase
     include: "Snakefile_bkg_syst_A_2_make_subsamples.smk"
 
 # ── Stage A_3 Base Config ─────────────────────────────────────────────────────
-A3_CFG = config.get('subsample_processor_config', "coffea4bees/workflows/config/analysis_config_bkg_syst_subsamples.yml")
+A3_CFG_TEMPLATE = config.get('subsample_processor_config', "coffea4bees/workflows/config/analysis_config_bkg_syst_subsamples.yml")
+A3_CFG_STAGED = f"{out_a3}configs/analysis_config_bkg_syst_subsamples.yml"
+
+rule stage_subsample_processor_config:
+    input:
+        template = A3_CFG_TEMPLATE,
+    output:
+        staged = A3_CFG_STAGED,
+    run:
+        with open(input.template) as f:
+            cfg = yaml.safe_load(f)
+        classifiers = config.get('classifiers', [config.get('classifier', 'SvB_MA')])
+        if isinstance(classifiers, str):
+            classifiers = [c.strip() for c in classifiers.split() if c.strip()]
+        if 'SvB' in classifiers and 'mixed_svb_model' in config:
+            cfg['config']['SvB'] = [{'path': config['mixed_svb_model'], 'name': 'Final'}]
+        else:
+            cfg['config']['SvB'] = None
+        if 'SvB_MA' in classifiers:
+            ma_model = config.get('mixed_svb_ma_model', config.get('mixed_svb_model'))
+            if ma_model:
+                cfg['config']['SvB_MA'] = [{'path': ma_model, 'name': 'Final'}]
+        else:
+            cfg['config']['SvB_MA'] = None
+        write_yaml(output.staged, cfg)
 
 ci_json = config['classifier_inputs_json']
 friend_json = config['mixeddata_friend_json']
 
-localrules: all_bkg_syst_A_3, A3_merge_mixed, A3_plot_config, A3_validation, all_subsample_coffea, all_classifier_inputs_mixeddata, all_friends_mixeddata, merge_classifier_inputs_mixeddata_json, merge_mixeddata_friends_json
+localrules: all_bkg_syst_A_3, stage_subsample_processor_config, A3_merge_mixed, A3_plot_config, A3_validation, all_subsample_coffea, all_classifier_inputs_mixeddata, all_friends_mixeddata, merge_classifier_inputs_mixeddata_json, merge_mixeddata_friends_json
 
 # ── Master Target Rules ───────────────────────────────────────────────────────
 rule all_bkg_syst_A_3:
@@ -73,7 +97,7 @@ rule all_friends_mixeddata:
 rule process_subsample_single_pass:
     input:
         ds_file = MULTISAMPLE_DATASET,
-        cfg = A3_CFG,
+        cfg = A3_CFG_STAGED,
     output:
         coffea = f"{out_a3}histAll_{channel}_mixeddata_v{{v}}.coffea",
         json_meta = f"{out_a3}histAll_{channel}_mixeddata_v{{v}}.json",

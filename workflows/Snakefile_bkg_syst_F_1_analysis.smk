@@ -117,8 +117,13 @@ rule stage_phaseF_1_config:
 
         friends_dict = {
             "trigWeight": config.get('trigweights_file', "coffea4bees/metadata/friends/trigweights_Run2_v2.json@@trigWeight"),
-            "SvB_MA": config['data_svb_friend'],
         }
+        if 'data_svb_friend' in config:
+            friends_dict["SvB"] = config['data_svb_friend']
+        if 'data_svb_ma_friend' in config:
+            friends_dict["SvB_MA"] = config['data_svb_ma_friend']
+        elif 'data_svb_friend' in config and "SvB_MA" not in friends_dict:
+            friends_dict["SvB_MA"] = config['data_svb_friend']
         for m in SUBSAMPLES:
             friends_dict[f"FvT_v{m}"] = f"{out_c}friends/friends_FvT_{mix_name}_v{m}.json@@FvT"
         friends_dict["FvT"] = friends_dict[f"FvT_v{SUBSAMPLES[0]}"]
