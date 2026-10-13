@@ -273,13 +273,16 @@ analysis_config:
   config:
     blind: true
     apply_FvT: true
+    friends:   # this roast's own Phase C/D outputs (the checked-in analysis_ttHbb.yml keeps the static friends for CI)
+      FvT: "{eos_prod}/{roast_id}/friend/FvT_ttHbb_stitched/result.json@@analysis.0.merged"
+      SvB_MA: "{eos_prod}/{roast_id}/friend/SvB_ttHbb_stitched/result.json@@analysis.0.merged"
     apply_JCM: true
     apply_trigWeight: true
     apply_btagSF: true
     apply_boosted_veto: false
     apply_lepton_veto: false
     run_SvB: true
-    SvB_MA: true
+    SvB_MA: null
     SvB: null
     hist_cuts: ["pass_nSelJets_gt6", "passLeptonVeto"]
     top_reconstruction: fast
