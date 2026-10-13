@@ -53,11 +53,19 @@ rule stage_subsample_processor_config:
     run:
         with open(input.template) as f:
             cfg = yaml.safe_load(f)
-        cfg.setdefault('config', {})
-        if 'mixed_svb_model' in config:
+        classifiers = config.get('classifiers', [config.get('classifier', 'SvB_MA')])
+        if isinstance(classifiers, str):
+            classifiers = [c.strip() for c in classifiers.split() if c.strip()]
+        if 'SvB' in classifiers and 'mixed_svb_model' in config:
             cfg['config']['SvB'] = [{'path': config['mixed_svb_model'], 'name': 'Final'}]
-        if 'mixed_svb_ma_model' in config:
-            cfg['config']['SvB_MA'] = [{'path': config['mixed_svb_ma_model'], 'name': 'Final'}]
+        else:
+            cfg['config']['SvB'] = None
+        if 'SvB_MA' in classifiers:
+            ma_model = config.get('mixed_svb_ma_model', config.get('mixed_svb_model'))
+            if ma_model:
+                cfg['config']['SvB_MA'] = [{'path': ma_model, 'name': 'Final'}]
+        else:
+            cfg['config']['SvB_MA'] = None
         write_yaml(output.staged, cfg)
 
 ci_json = config['classifier_inputs_json']

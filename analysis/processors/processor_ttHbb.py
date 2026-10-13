@@ -47,11 +47,13 @@ class ttHbbProcessor(HH4bBaseProcessor):
         classify_Z_decay=False,
         pairing="nominal",
         corrections_metadata: dict = None,
+        ttbb_scale: float = 1.0,
         **kwargs,
     ):
         logging.info("Initializing decoupled ttHbbProcessor")
         self.classify_Z_decay = classify_Z_decay
         self.pairing = pairing
+        self.ttbb_scale = float(ttbb_scale)
         if weights is None:
             weights = "coffea4bees/metadata/weights/weights_ttHbb.yml"
         super().__init__(
@@ -77,6 +79,29 @@ class ttHbbProcessor(HH4bBaseProcessor):
     def _is_ttHbb_MC(self):
         return self.config["isMC"] and self.processName.startswith("ttHbb")
 
+    def process_shift(self, event, shift_name, weights, list_weight_names):
+        """Process one systematic shift (or nominal), applying ttbb_scale to tt+B events if requested."""
+        scale = getattr(self, "ttbb_scale", 1.0)
+        if scale == 1.0 and "ttbb_scale" in self.config:
+            scale = float(self.config["ttbb_scale"])
+
+        if (
+            scale != 1.0
+            and self.config.get("isMC", False)
+            and "genTtbarId" in event.fields
+            and "ttbb_scale" not in list_weight_names
+        ):
+            from coffea4bees.analysis.helpers.ttbar_categories import is_ttB
+            ttb_mask = np.asarray(ak.to_numpy(is_ttB(event.genTtbarId)))
+            scale_factor = np.where(ttb_mask, scale, 1.0)
+            weights.add("ttbb_scale", scale_factor)
+            list_weight_names.append("ttbb_scale")
+            logging.info(
+                f"Applied ttbb_scale={scale} to {int(np.sum(ttb_mask))} / {len(event)} ttB events in {self.dataset}"
+            )
+
+        return super().process_shift(event, shift_name, weights, list_weight_names)
+
     def apply_selection(self, event):
         """On ttHbb MC, attach truth parent labels to every jet before object selection so selJet/canJet inherit them."""
         if self._is_ttHbb_MC():
@@ -91,6 +116,8 @@ class ttHbbProcessor(HH4bBaseProcessor):
         """Load SvB scores and derive native ttHbb fields without running HH4b setSvBVars."""
         for k in self.friends:
             if k.startswith("SvB") and not k.startswith("SvB_FeynNet"):
+                if k in getattr(self, "_skip_svb_legacy", set()):
+                    continue
                 logging.debug(f"Loading ttHbb SvB friend tree for {k}")
                 try:
                     result = self.friends[k].arrays(self.target)

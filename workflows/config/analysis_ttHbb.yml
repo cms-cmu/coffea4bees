@@ -480,10 +480,6 @@ analysis_config:
     chunksize: 10000
     dashboard_address: 0
   config:
-    friends:
-      FvT: "{eos_prod}/{roast_id}/friend/FvT_ttHbb_stitched/result.json@@analysis.0.merged"
-      SvB: "{eos_prod}/{roast_id}/friend/SvB_ttHbb_stitched/result.json@@analysis.0.merged"
-      SvB_MA: "{eos_prod}/{roast_id}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
     blind: true
     apply_FvT: true
     apply_JCM: true
@@ -492,7 +488,7 @@ analysis_config:
     apply_boosted_veto: false
     apply_lepton_veto: false
     run_SvB: true
-    SvB_MA: null
+    SvB_MA: true
     SvB: null
     candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
     hist_cuts: ["pass_nSelJets_gt6", "passLeptonVeto"]
@@ -515,7 +511,6 @@ known_counts_full: "none"
 convert_hist_to_json:
   histos: 
     - "SvB_MA.ps"
-    - "SvB.ps"
     - "SvB_MA.ps_ttHbb"
 
 combine_outdir: "datacards/"
@@ -540,16 +535,7 @@ channels:
     closure_subdir: "ttHbb"
     region: "SR"
     cut: "sum"
-    stat_only: true
-    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
-  ttHbb_SvB_ps:
-    signallabel: "ttHbb"
-    othersignal: ""
-    variable: "SvB.ps"
-    signal: "ttHbb"
-    closure_subdir: "ttHbb"
-    region: "SR"
-    cut: "sum"
+    rebin: 1
     stat_only: true
     combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
   ttHbb_SvB_MA_ps_ttHbb:
@@ -560,6 +546,8 @@ channels:
     closure_subdir: "ttHbb"
     region: "SR"
     cut: "sum"
+    rebin: 12
     stat_only: true
     combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+
 

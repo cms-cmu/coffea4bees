@@ -223,7 +223,7 @@ use rule make_combine_inputs from stat_analysis with:
         variable = lambda wildcards: config['channels'][wildcards.channel]['variable'],
         syst_file = lambda wildcards, input: f"--syst_file {config['make_combine_inputs']['syst_file']}" if config['make_combine_inputs']['syst_file'] else "",
         bkg_syst_file = lambda wildcards, input: f'--bkg_syst_file "{input.bkgsyst}"' if getattr(input, 'bkgsyst', None) else "",
-        rebin = lambda wildcards, input: config['make_combine_inputs']['rebin'],
+        rebin = lambda wildcards, input: config['channels'][wildcards.channel].get('rebin', config['make_combine_inputs'].get('rebin', 1)),
         metadata = lambda wildcards: config['make_combine_inputs']['metadata_template'].format(channel=wildcards.channel.split('_')[0]),
         output_dir = lambda wildcards: f"{config['output_path']}stat_analysis/{wildcards.channel}/datacards/",
         variable_binning = lambda wildcards, input: config['make_combine_inputs']['variable_binning'],

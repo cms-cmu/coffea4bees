@@ -171,6 +171,7 @@ TTBAR_COMPARISON_OUTPUTS = [
 
 wildcard_constraints:
     classifier = "|".join(CLASSIFIERS),
+    var = "|".join(dict.fromkeys(var_map.values())),
     region = "|".join(CLOSURE_REGIONS),
     rebin = r"\d+",
 
@@ -273,13 +274,13 @@ rule run_two_stage_closure:
         sigroot = config.get('input_file_sig', f"{out_f2}root_inputs/hist_signal_ttHbb.root"),
         script = "coffea4bees/stats_analysis/runTwoStageClosure.py"
     output:
-        pkl = f"{out_f2}closure_fits/{mix_name}/{{classifier}}/rebin{{rebin}}/{{region}}/{channel}/hists_closure_done.pkl",
-        status = f"{out_f2}closure_fits/{mix_name}/{{classifier}}/rebin{{rebin}}/{{region}}/{channel}/closure_status.json"
+        pkl = f"{out_f2}closure_fits/{mix_name}/{{classifier}}/rebin{{rebin}}/{{region}}/{channel}/hists_closure_{mix_name}_{{var}}_rebin{{rebin}}.pkl",
+        status = f"{out_f2}closure_fits/{mix_name}/{{classifier}}/rebin{{rebin}}/{{region}}/{channel}/closure_status_{{var}}.json"
     params:
         combine_cmd = combine_cmd,
         mix_name = mix_name,
         classifier = "{classifier}",
-        var = lambda wildcards: get_var_for_classifier(wildcards.classifier),
+        var = "{var}",
         channel = channel,
         region = "{region}",
         rebin = "{rebin}",
@@ -303,7 +304,7 @@ rule run_two_stage_closure:
         input_file_sig = lambda wildcards, input: config.get('input_file_sig', input.sigroot),
         input_file_TT = lambda wildcards, input: config.get('input_file_TT', input.inroot),
     log:
-        f"{out_f2}logs/run_two_stage_closure_{{classifier}}_rebin{{rebin}}_{{region}}.log"
+        f"{out_f2}logs/run_two_stage_closure_{{classifier}}_{{var}}_rebin{{rebin}}_{{region}}.log"
     shell:
         """
         set -eo pipefail
@@ -325,17 +326,22 @@ rule run_two_stage_closure:
             --years {params.years} \
             --nMixes {params.nMixes} \
             {params.extra_args} 2>&1 | tee {log}
-        touch {output.pkl}
-        if [ ! -f {output.status} ]; then
-            echo '{{"passed": false, "rebin": {wildcards.rebin}, "error": "Missing status file"}}' > {output.status}
+        if [ ! -f {output.pkl} ]; then
+            touch {output.pkl}
         fi
+        status_src="{params.output_dir}/{params.mix_name}/{wildcards.classifier}/rebin{wildcards.rebin}/{wildcards.region}/{params.channel}/closure_status.json"
+        if [ ! -f "$status_src" ]; then
+            echo '{{"passed": false, "rebin": {wildcards.rebin}, "error": "Missing status file"}}' > "$status_src"
+        fi
+        cp -f "$status_src" {output.status}
         """
 
 checkpoint evaluate_closure_candidates:
     input:
         status_files = lambda wildcards: expand(
-            f"{out_f2}closure_fits/{mix_name}/{wildcards.classifier}/rebin{{rebin}}/{wildcards.region}/{channel}/closure_status.json",
-            rebin=REBIN_CANDIDATES
+            f"{out_f2}closure_fits/{mix_name}/{wildcards.classifier}/rebin{{rebin}}/{wildcards.region}/{channel}/closure_status_{var}.json",
+            rebin=REBIN_CANDIDATES,
+            var=get_var_for_classifier(wildcards.classifier)
         ),
         script = "coffea4bees/stats_analysis/evaluate_closure_candidates.py",
     output:
@@ -360,8 +366,9 @@ rule make_closure_summary_html:
     input:
         summary = f"{out_f2}summary_{{classifier}}_{{region}}.json",
         status_files = lambda wildcards: expand(
-            f"{out_f2}closure_fits/{mix_name}/{wildcards.classifier}/rebin{{rebin}}/{wildcards.region}/{channel}/closure_status.json",
-            rebin=REBIN_CANDIDATES
+            f"{out_f2}closure_fits/{mix_name}/{wildcards.classifier}/rebin{{rebin}}/{wildcards.region}/{channel}/closure_status_{var}.json",
+            rebin=REBIN_CANDIDATES,
+            var=get_var_for_classifier(wildcards.classifier)
         ),
         script = "coffea4bees/stats_analysis/make_closure_summary_html.py"
     output:
@@ -413,7 +420,7 @@ rule copy_official_closure_summary_region:
 
 rule check_closure_validation:
     input:
-        closure_status = f"{out_f2}closure_fits/{mix_name}/{primary_classifier}/rebin{{rebin}}/{closure_region}/{channel}/closure_status.json",
+        closure_status = f"{out_f2}closure_fits/{mix_name}/{primary_classifier}/rebin{{rebin}}/{closure_region}/{channel}/closure_status_{get_var_for_classifier(primary_classifier)}.json",
         script = "coffea4bees/stats_analysis/tests/dumpTwoStageInputs.py"
     output:
         validation_txt = f"{out_f2}closure_validation_{config['label']}_rebin{{rebin}}.txt",
