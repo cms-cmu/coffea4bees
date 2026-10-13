@@ -55,9 +55,11 @@ def _local_copy(path, tmp):
 #: Jet fields that must NOT be carried from the library. The clustered (hence library) b-jet
 #: four-vectors already include the b-jet regression (cand_jet_selection: canJet = raw * bRegCorr),
 #: so the synthetic picoAODs write unit regression factors; carrying the real ones would apply them
-#: twice. rawFactor / area are JEC inputs: re-deriving corrections from them on a synthetic pT
-#: would be wrong.
-NOT_CARRIABLE = ("bRegCorr", "PNetRegPtRawCorr", "PNetRegPtRawCorrNeutrino", "rawFactor", "area")
+#: twice. rawFactor is a JEC input relative to the original jet's pT: meaningless on a synthetic pT.
+#: area (also a JEC input) is carriable: Run 3 synthetic data is never re-corrected (processor_HH4b
+#: isSyntheticData: jets taken as stored), and the c6 classifiers read it -- without it every
+#: declustered jet has area 0 against ~0.49 in data.
+NOT_CARRIABLE = ("bRegCorr", "PNetRegPtRawCorr", "PNetRegPtRawCorrNeutrino", "rawFactor")
 
 #: Carried fields written back as integers
 INTEGER_FIELDS = ("jetId", "puId", "nSVs", "nConstituents", "hadronFlavour")
