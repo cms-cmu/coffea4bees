@@ -146,7 +146,8 @@ fvt:
       - 'year:2023_BPix coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2023_BPix_pt25_fNjetR_v1.yml@@JCM_weights'
       - 'year:2024 coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2024_pt25_fNjetR_v1.yml@@JCM_weights'
     '--friends ""': 'coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3.json@@HCR_input coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2023_trigv1.json@@HCR_input coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2024_clean_v1.json@@HCR_input'
-    'evaluate.yml::--friends ""': 'coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3.json@@HCR_input coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2023_trigv1.json@@HCR_input coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2024_clean_v1_fullcov.json@@HCR_input'
+    # jgaytanv-e7 (2026-10-13): 2023 B.2 friends migrated to phys_top -> evaluate reads the *_phystop index (train.yml keeps the trained-with paths)
+    'evaluate.yml::--friends ""': 'coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3.json@@HCR_input coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2023_trigv1_phystop.json@@HCR_input coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2024_clean_v1_fullcov.json@@HCR_input'
     # R1(b) (orchestrator jgaytanv-e7, 2026-10-13): evaluate's TARGET list comes from --metadata, not from the friend index, so the 31
     # partially covered 2024 picoAODs are removed from an evaluate-only metadata dir (else FriendTreeError -> hang, 10-13 run 12909404).
     'evaluate.yml::--metadata': 'coffea4bees/metadata/datasets_eval_run3_fullcov/'
