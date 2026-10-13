@@ -44,6 +44,10 @@ handoff:
 mvd:
   label: "MvD_30x"
   output_dir: "output/MvD_30x/"
+  # Half a falcon GPU (40 GB): the classifier default mps:25 + light caps GPU memory at 20 GB and the
+  # n=54 MvD on the 16x declustered model trains at ~30 GB (SLURM 53996 cancelled). mps > 25 needs qos medium.
+  gpu_gres: "mps:50"
+  gpu_qos: "medium"
   metadata: "{roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/handoff/classifier_inputs_MvD.json@@HCR_input"
   workflow_overrides:
     --metadata: "{roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/handoff/classifier_metadata"
@@ -59,6 +63,8 @@ mvd:
 svb_mvd:
   label: "SvB_MvD_30x"
   output_dir: "output/SvB_MvD_30x/"
+  gpu_gres: "mps:50"     # as mvd:
+  gpu_qos: "medium"
   # The background weight is THIS roast's 30x MvD.
   train_template: "model: {eos_base}/classifier/{label}, MvD: {eos_base}/friend/MvD_30x"
   metadata: "{roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/handoff/classifier_inputs_MvD.json@@HCR_input"
