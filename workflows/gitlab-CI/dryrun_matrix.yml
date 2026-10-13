@@ -52,6 +52,13 @@ runs:
     - PhaseB_1_computeJCM
     - PhaseC
     - {snakefile: PhaseC_4_FvT_closure, upstream: ["computeJCM/singlefiles/", "metadata/weights/JCM/"]}
+  nominal_run3_2024.yml:
+    - PhaseB
+    - PhaseB_1_computeJCM
+    - PhaseC
+    - {snakefile: PhaseC_4_FvT_closure, upstream: ["computeJCM/singlefiles/", "metadata/weights/JCM/"]}
+    - PhaseD
+    - PhaseF
   nominal_run3_feynnet.yml:
     - PhaseF
   nominal_run3_fvt_closure_plots.yml:
@@ -85,6 +92,10 @@ runs:
   mixeddata_run3_4bmix_svbboot.yml:
     - MakeMixedData
   mvd_run3.yml:
+    - MvD
+    - MvD_2_train
+    - MvD_3_svb
+  mvd_run3_2024.yml:
     - MvD
     - MvD_2_train
     - MvD_3_svb
@@ -135,6 +146,8 @@ runs:
   trigweights_run3.yml:
     - TrigWeights
   trigweights_run3_signal.yml:
+    - TrigWeights
+  trigweights_run3_2024_signal.yml:
     - TrigWeights
 
 not_covered:
