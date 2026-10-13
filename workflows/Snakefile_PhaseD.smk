@@ -90,9 +90,17 @@ else:
         m_evaluate = mcfg.get('evaluate', True)
 
         m_model = mcfg.get('model', f"{m_eos_base}/classifier/{m_label}")
+        if isinstance(m_model, str):
+            m_model = m_model.format(eos_base=m_eos_base, label=m_label)
         m_friend = mcfg.get('friend', f"{m_eos_base}/friend/{m_label}")
+        if isinstance(m_friend, str):
+            m_friend = m_friend.format(eos_base=m_eos_base, label=m_label)
         m_train_template = mcfg.get('train_template', f"model: {m_model}, FvT: {m_eos_base}/friend/FvT_nominal")
+        if isinstance(m_train_template, str):
+            m_train_template = m_train_template.format(eos_base=m_eos_base, label=m_label, model=m_model, friend=m_friend)
         m_eval_template = mcfg.get('eval_template', f"model: {m_model}, SvB: {m_friend}")
+        if isinstance(m_eval_template, str):
+            m_eval_template = m_eval_template.format(eos_base=m_eos_base, label=m_label, model=m_model, friend=m_friend, SvB=m_friend)
 
         os.makedirs(m_output_dir, exist_ok=True)
         wfs_dir = f"{m_output_dir}/wfs"
@@ -142,6 +150,16 @@ else:
     first_label = first_cfg.get('label', svb_models[0][0])
     config['output_dir'] = first_cfg.get('output_dir', f"output/{first_label}")
     config['label'] = first_label
+
+    roast_id = config.get('roast_id', '')
+    eos_prod = config.get('eos_prod', '')
+    web_prod = config.get('web_prod', '')
+    default_metadata = f"{eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input"
+    default_plot_base = f"{web_prod}/{roast_id}/classifier"
+    raw_metadata = first_cfg.get('metadata', default_metadata)
+    raw_plot_base = first_cfg.get('plot_base', default_plot_base)
+    config['metadata'] = raw_metadata.format(eos_prod=eos_prod, roast_id=roast_id, web_prod=web_prod) if isinstance(raw_metadata, str) else raw_metadata
+    config['plot_base'] = raw_plot_base.format(eos_prod=eos_prod, roast_id=roast_id, web_prod=web_prod) if isinstance(raw_plot_base, str) else raw_plot_base
 
     include: "../../src/classifier/workflow/Snakefile"
 

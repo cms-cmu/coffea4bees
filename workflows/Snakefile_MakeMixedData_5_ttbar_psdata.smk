@@ -50,6 +50,10 @@ rule M5_config:
                               "aveAbsEta", "stNotCan", "SB", "selectedViewTruthMatch", "d13TruthMatch",
                               "genWeight"],
         }
+        if 'ttbb_scale' in PS:
+            section['ttbb_scale'] = float(PS['ttbb_scale'])
+        elif 'ttbb_scale' in config:
+            section['ttbb_scale'] = float(config['ttbb_scale'])
         cfg = processor_config(section, inherit_config=False,
                                processor="coffea4bees/skimmer/processor/sub_sample_MC.py",
                                runner=runner)

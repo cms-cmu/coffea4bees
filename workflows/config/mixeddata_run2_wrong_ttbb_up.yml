@@ -1,0 +1,54 @@
+# ==============================================================================
+# MIXED-DATA / TTBAR PSEUDODATA PRODUCTION — Run 2 (Wrong ttbb Up: 1.5)
+# Generates ttbar_PSData_wrong_ttbb_up with ttbb_scale: 1.5 via target all_M5
+# ==============================================================================
+
+label: "mixeddata_run2_wrong_ttbb_up"
+output_path: "output/{roast_id}/"
+publish_base: "{eos_prod}/{roast_id}"
+
+inputs:
+  upstream_roasts: [nominal_run2_20260919_a180b1a-a16559c]
+  FvT: "{roast:nominal_run2_20260919_a180b1a-a16559c}/friend/FvT_nominal/result.json@@analysis.0.merged"
+  JCM: "{roast:nominal_run2_20260919_a180b1a-a16559c}/output/TESTRun2/computeJCM/JCM_2024_v2/jetCombinatoricModel_SB_2024_v2.yml"
+  jcm_hists: "{roast:nominal_run2_20260919_a180b1a-a16559c}/output/TESTRun2/computeJCM/histAll_NoJCM.coffea"
+  SvB_model: "{eos_prod}/nominal_run2_20260919_a180b1a-a16559c/classifier/SvB_nominal/result.json"
+
+year_eras:
+  UL16_preVFP: ["C", "D", "E", "F"]
+  UL16_postVFP: ["F", "G", "H"]
+  UL17: ["C", "D", "E", "F"]
+  UL18: ["A", "B", "C", "D"]
+
+ttbar: ["TTToHadronic", "TTToSemiLeptonic", "TTTo2L2Nu"]
+fourTag_use_tight: false
+
+analysis_config:
+  processor: "coffea4bees/analysis/processors/processor_HH4b.py"
+  dataset_location: "coffea4bees/metadata/datasets/"
+  friend_file: "coffea4bees/metadata/friends/friends_HH4b.yml"
+  weights_file: "coffea4bees/metadata/weights/weights_HH4b_2024_v2.yml"
+  runner:
+    workers: 4
+    worker_memory: 8GB
+    dashboard_address: 0
+  config:
+    blind: false
+    apply_trigWeight: true
+    apply_btagSF: true
+    apply_boosted_veto: false
+    top_reconstruction: fast
+    run_SvB: false
+    SvB_MA: null
+    SvB: null
+    fourTag_use_tight: false
+
+# M.5: ttbar pseudodata with ttbb_scale: 1.5
+ttbar_psdata:
+  dataset_name: "ttbar_PSData_wrong_ttbb_up"
+  seed: 5
+  ttbb_scale: 1.5
+  require_trigWeight: true
+  worker_memory: 6GB
+  chunksize: 100000
+  picosize: 100000

@@ -1,0 +1,31 @@
+base: coffea4bees/workflows/config/analysis_ttHbb_bkg_syst_declib16nc.yml
+label: "ttHbb_bkg_syst_30x"
+output_path: "output/{roast_id}/"
+fvt_train_workflow:
+  main:
+    module: train
+    option:
+      - --max-loaders 2
+      - --max-trainers 1
+      - --device cuda cpu
+  model:
+    - module: HCR.FvT.baseline.Train
+      option:
+        - --architecture
+        - n_features: 54
+          use_kv_proj: true
+          use_attention_gate: true
+        - --kfolds 3
+        - --kfold-seed FvT random
+        - --kfold-seed-offsets 0
+        - --training FixedStep
+        - epoch: 20
+          bs_init: 2048
+        - --finetuning FixedStep
+        - epoch: 1
+          bs_init: 16384
+# Retain established Stage F closure & Combine settings:
+no_sqrt_n_priors: true
+max_basis: 4
+f3_rebins: [20, 24]
+precision: ""
