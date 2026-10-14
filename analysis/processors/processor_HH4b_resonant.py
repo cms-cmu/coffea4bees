@@ -892,7 +892,8 @@ class analysis(processor.ProcessorABC):
                     run_dilep_ttbar_crosscheck=self.run_dilep_ttbar_crosscheck,
                     top_reconstruction=self.top_reconstruction,
                     isDataForMixed=self.config['isDataForMixed'],
-                    event_metadata=event.metadata
+                    event_metadata=event.metadata,
+                    fill_histograms=self.fill_histograms,
                     )
 
             #

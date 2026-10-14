@@ -1,0 +1,57 @@
+# ==============================================================================
+# The kinematics + b-tag (c5) SvB against the declustered 30x c6 MvD -- V.3 + V.4 on top of mvd_run3_declib16_30x_c6mvd
+# ==============================================================================
+# As mvd_run3_30x_c6mvd_c5.yml for the 3b mixed data: the multijet weight is the 30x MvD trained with
+# the c6 jet features (without area, see mvd_run3_declib16_30x_c6mvd.yml) by roast mvd_declib16_30x_c6mvd_run3_20261013_e7d9186-d00d175,
+# so the MvD sees every feature this SvB sees. Only V.3 (this SvB) and V.4 run here.
+#
+#   roast new --config coffea4bees/workflows/config/mvd_run3_declib16_30x_c6mvd_btag.yml \
+#       --label mvd_declib16_30x_c6mvd_btag_run3 \
+#       --step falcon:coffea4bees/workflows/Snakefile_MvD_3_svb.smk \
+#       --step cmslpc:coffea4bees/workflows/Snakefile_MvD.smk
+#   roast submit <id> --step MvD_3_svb                     # falcon: SvB 30x btag vs the c6 MvD
+#   roast submit <id> --step MvD --targets all_V4          # cmslpc: analysis + stat-only limits
+base: coffea4bees/workflows/config/mvd_run3_declib16_30x_c6mvd.yml
+
+label: "mvd_run3_declib16_30x_c6mvd_btag"
+
+inputs:
+  upstream_roasts: [nominal_run3_20261008_f839489-a481023, declib16_run3_20261011_b948dfc-33f3094,
+                    mvd_declib16_run3_20261011_c41b495-f2d2cf8, mvd_declib16_30x_c6mvd_run3_20261013_e7d9186-d00d175]
+  # the MvD friend V.4 weights the declustered data with (V.3 reads it through svb_mvd.train_template)
+  mvd_friend: "{roast:mvd_declib16_30x_c6mvd_run3_20261013_e7d9186-d00d175}/friend/MvD_30x_c6/result.json"
+
+# V.4 builds its MvD friend URL from this block: the c6mvd roast's MvD_30x_c6 (V.2 is not run here).
+mvd:
+  eos_base: "{roast:mvd_declib16_30x_c6mvd_run3_20261013_e7d9186-d00d175}"
+  label: "MvD_30x_c6"
+
+svb_mvd:
+  label: "SvB_MvD_30x_btag_c6mvd"
+  output_dir: "output/SvB_MvD_30x_btag_c6mvd/"
+  train_template: "model: {eos_base}/classifier/{label}, MvD: {roast:mvd_declib16_30x_c6mvd_run3_20261013_e7d9186-d00d175}/friend/MvD_30x_c6"
+  # This step's common.yml (replaces the base's c6 setting for this step only)
+  classifier_setting:
+    - module: ml.DataLoader
+      option:
+        - optimize_sliceable_dataset: true
+    - module: ROOT
+      option:
+        - friend_allow_missing: false
+    - module: cms.CollisionData
+      option:
+        - eras:
+            2022_preEE: [B, C, D]
+            2022_EE: [E, F, G]
+            2023_preBPix: [C01, C02, C11, C12, C3, C4]
+            2023_BPix: [D1, D2]
+    - module: HCR.InputBranch
+      option:
+        - feature_ancillary: [xW, nSelJets, xbW, year]
+        - mass_regions: [SR, SB]
+        - feature_CanJet: ['pt', 'eta', 'phi', 'mass', 'btagScore']
+
+analysis:
+  label: "MvD_30x_c6mvd_btag"
+
+combine_outdir: "datacards/HH4b_run3_MvD_declib16_30x_c6mvd_btag"

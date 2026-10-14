@@ -159,7 +159,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         apply_FvT (bool): Whether to apply FvT classifier/friend tree.
         apply_boosted_veto (bool): Whether to apply boosted event veto.
         run_dilep_ttbar_crosscheck (bool): Whether to run dilepton ttbar crosscheck selection.
-        fill_histograms (bool): Whether to fill histograms.
+        fill_histograms (bool | str): Whether to fill histograms, or specific categories ('kinematics', 'fvt', 'SvB', 'all').
         hist_cuts (list): List of cut names for histogram filling.
         run_SvB (bool): Whether to run SvB classifier/friend tree.
         top_reconstruction (str | None): Top candidate reconstruction mode ('slow', 'fast', or None).
@@ -222,7 +222,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         apply_boosted_veto: bool = False,
         apply_lepton_veto: bool = False,
         run_dilep_ttbar_crosscheck: bool = False,
-        fill_histograms: bool = True,
+        fill_histograms: bool | str = True,
         hist_cuts = [],
         run_SvB: bool = True,
         run_SvB_FeynNet_comparison: bool = False,
@@ -1877,6 +1877,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 compute_hemi_mixing_diagnostics=self.compute_hemi_mixing_diagnostics,
                 plot_extra_canjet_vars=self.plot_extra_canjet_vars,
                 tag_list=self.tag_list,
+                fill_histograms=self.fill_histograms,
             )
             if not self.plot_ttbar_with_weights and not self.plot_ttbar_with_MvD_weights:
                 return hist_nom
@@ -1904,6 +1905,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     year_override=self.year_override,
                     plot_extra_canjet_vars=self.plot_extra_canjet_vars,
                     tag_list=self.tag_list,
+                    fill_histograms=self.fill_histograms,
                 )
 
                 hist_t3 = filling_nominal_histograms(
@@ -1925,6 +1927,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     year_override=self.year_override,
                     plot_extra_canjet_vars=self.plot_extra_canjet_vars,
                     tag_list=self.tag_list,
+                    fill_histograms=self.fill_histograms,
                 )
                 hists += [hist_t4, hist_t3]
 
@@ -1950,6 +1953,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     weight_noMvD_override="weight_mix4_to_t4_MvD_noMvD",
                     year_override=self.year_override,
                     plot_extra_canjet_vars=self.plot_extra_canjet_vars,
+                    fill_histograms=self.fill_histograms,
                 )
                 hists.append(hist_mvd_t4)
 

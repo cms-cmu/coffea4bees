@@ -1,9 +1,9 @@
 # ==============================================================================
-# 16x DECLUSTERED SAMPLE — Run 3, library declustering (libA), 16 seeds
+# 16x DECLUSTERED SAMPLE — Run 3, library declustering, 16 seeds
 # ==============================================================================
 # declustered_run3_library.yml (random among the k_neighbors = 20 nearest library splittings in
 # (log pT, |eta|); no distance cap -- the library default since 2026-10-04, unlike roast libA_run3
-# itself; one library per worker) run with 16 seeds on libA's published library (no D.1).
+# itself; one library per worker) run with 16 seeds on its own library (D.1; until 2026-10-12 libA's).
 # Each seed is an exchangeable declustered replica of the ttbar-subtracted 4b data; the replicas are
 # correlated through the shared 4b events (same clustered skeleton, only the splittings re-drawn).
 # The declustered analogue of the 4b mixing (mixeddata_run3_4bmix.yml). Products (handoff/):
@@ -17,17 +17,20 @@
 #
 #   roast new --config coffea4bees/workflows/config/declustered_run3_library_16x.yml \
 #       --label declib16_run3 --step cmslpc:coffea4bees/workflows/Snakefile_DeClustered.smk
-#   roast submit <id> --step DeClustered --targets all_D3     # 16 seeds x 4 years D3 condor jobs
+#   roast submit <id> --step DeClustered --targets all_D3     # D.1 library, then 16 seeds x 4 years D3
 #
 base: coffea4bees/workflows/config/declustered_run3_library.yml
 
 label: "declustered_run3_library_16x"
 
+# Builds its own library (D.1) since 2026-10-12: libA's lacks `area`, now in the base's carry_fields
+# for the c6 classifiers (declib16_run3_20261011_b948dfc-33f3094 reused libA: CanJet_area == 0 in every
+# declustered jet). To reproduce that roast instead, restore inputs.splitting_library (libA) and
+# the carry_fields list without area.
 inputs:
-  # lists are replaced, not merged: the base's three upstreams + the libA roast (its library)
+  # lists are replaced, not merged: the base's three upstreams
   upstream_roasts: [nominal_run3_nontight_20260925_0c53380-193851f, mixeddata_run3_20260926_956d4bf-aca8a4e,
-                    nominal_run3_20260922_3f9e199-1e0504f, libA_run3_20260930_4e3ad63-da2340e]
-  splitting_library: "{roast:libA_run3_20260930_4e3ad63-da2340e}/splitting_library/splitting_library.yml"
+                    nominal_run3_20260922_3f9e199-1e0504f]
 
 declustering:
   n_seeds: 16
@@ -36,6 +39,7 @@ declustering:
   multijet_dataset_name: "synthetic_data_lib16_multijet"
   all_dataset_name: "mixeddata_all_declib16"
 
-# D.6 is the libA roast's signal check verbatim (same library, method and signal seed): skip it.
+# D.6 skipped: it was libA's signal check verbatim. With this roast's own library (+ area) it is no
+# longer identical; enable it if the new library needs its own signal check.
 signal_check:
   enabled: false

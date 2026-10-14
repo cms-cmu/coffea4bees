@@ -212,6 +212,7 @@ classifier_inputs:
     - TTTo2L2Nu
   config:
     make_classifier_input: "{eos_prod}/{roast_id}/classifier_inputs/"
+    fill_histograms: false
     # The Run 3 trigger-weight index (metadata/friends/trigweights_Run3_v3.json, see
     # friends_HH4b.yml) covers every 2024 TTTo* picoAOD: a missing friend is an error.
     require_trigWeight: true

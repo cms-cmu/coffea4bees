@@ -246,6 +246,7 @@ classifier_inputs:
     - GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00
   config:
     make_classifier_input: "{eos_prod}/{roast_id}/classifier_inputs/"
+    fill_histograms: false
     # The Run 3 trigger-weight index (metadata/friends/trigweights_Run3_v3.json, see
     # friends_HH4b.yml) covers the TT family and the 2022/2023 ggF signal (roast
     # trigweights_run3_signal_eras_20261007_27bc66d-ef555a7): a missing friend is an error.
