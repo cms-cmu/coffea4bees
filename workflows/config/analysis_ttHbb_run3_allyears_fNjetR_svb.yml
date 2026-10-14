@@ -194,7 +194,7 @@ svb:
     'evaluate.yml::--friends ""': 'coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3.json@@HCR_input coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2023_trigv1_phystop.json@@HCR_input coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2024_clean_v1_fullcov.json@@HCR_input'
     # combined Run 3 FvT friend on phys_top: result_phystop.json (the original result.json points at deleted /eos/user chunks)
     '--friends label:data': 'root://eoscms.cern.ch//eos/cms/store/group/phys_top/jgaytanv/ttHbb/4b/Run3_v1/ttHbb_stitched/friend/FvT_ttHbb_run3_allyears_perEraJCM/result_phystop.json@@analysis.0.merged'
-  train_mem: 48000       # S2 refines
+  train_mem: 96000       # S2: 49.07 M loaded (multijet 42.41 M + ttbar 3.11 M + ttHbb 3.55 M) -> (0.97 GB/M + 4.8 GB) x 1.25 = 65.5 GB -> smallest of {48000, 96000, 118000} above it
   eval_mem: 144000
   train_runtime: 1440
   eval_runtime: 1440
