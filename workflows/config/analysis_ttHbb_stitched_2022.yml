@@ -115,7 +115,7 @@ classifier_inputs:
     apply_boosted_veto: false
     run_SvB: false
     top_reconstruction: slow
-    fill_histograms: true
+    fill_histograms: false
     make_classifier_input: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_stitched/
 
 # ==============================================================================

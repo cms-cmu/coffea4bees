@@ -128,7 +128,7 @@ classifier_inputs:
     apply_boosted_veto: false
     run_SvB: false
     top_reconstruction: slow
-    fill_histograms: true
+    fill_histograms: false
     make_classifier_input: "{eos_prod}/{roast_id}/classifier_inputs/"
     pairing: nominal
     candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"

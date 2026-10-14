@@ -74,7 +74,7 @@ classifier_inputs:
     apply_boosted_veto: false
     run_SvB: false
     top_reconstruction: slow
-    fill_histograms: true
+    fill_histograms: false
     candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
     make_classifier_input: root://eoscms.cern.ch//eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/Run3_v1/ttHbb_stitched/
 

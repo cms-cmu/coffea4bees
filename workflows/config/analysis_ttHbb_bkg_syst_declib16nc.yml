@@ -128,7 +128,7 @@ phaseB_1:
       apply_boosted_veto: false
       run_SvB: false
       top_reconstruction: "fast"
-      fill_histograms: true
+      fill_histograms: false
       hist_cuts:
         - "pass_nSelJets_gt6"
 
