@@ -48,12 +48,14 @@ class ttHbbProcessor(HH4bBaseProcessor):
         pairing="nominal",
         corrections_metadata: dict = None,
         ttbb_scale: float = 1.0,
+        fill_histograms=True,
         **kwargs,
     ):
         logging.info("Initializing decoupled ttHbbProcessor")
         self.classify_Z_decay = classify_Z_decay
         self.pairing = pairing
         self.ttbb_scale = float(ttbb_scale)
+        self.fill_histograms = fill_histograms
         if weights is None:
             weights = "coffea4bees/metadata/weights/weights_ttHbb.yml"
         super().__init__(
@@ -73,6 +75,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
             plot_ttbar_with_weights=plot_ttbar_with_weights,
             hist_cuts=hist_cuts,
             corrections_metadata=corrections_metadata,
+            fill_histograms=fill_histograms,
             **kwargs,
         )
 
@@ -272,6 +275,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
                 classify_Z_decay=self.classify_Z_decay,
                 truth_pairing_forced=self._is_ttHbb_MC() and self.pairing == "can_ttH",
                 subsample_names=getattr(self, "subsample_names", None),
+                fill_histograms=self.fill_histograms,
             )
 
             if not self.plot_ttbar_with_weights or self.processName != "data":
@@ -296,6 +300,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
                 year_override=self.year_override,
                 can_ttH=self.pairing == "can_ttH",
                 subsample_names=getattr(self, "subsample_names", None),
+                fill_histograms=self.fill_histograms,
             )
 
             hist_t3 = filling_ttHbb_histograms(
@@ -315,6 +320,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
                 year_override=self.year_override,
                 can_ttH=self.pairing == "can_ttH",
                 subsample_names=getattr(self, "subsample_names", None),
+                fill_histograms=self.fill_histograms,
             )
 
             hists.append(hist_t4)
