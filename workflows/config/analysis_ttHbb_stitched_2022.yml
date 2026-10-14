@@ -115,7 +115,7 @@ classifier_inputs:
     apply_boosted_veto: false
     run_SvB: false
     top_reconstruction: slow
-    fill_histograms: true
+    fill_histograms: false
     make_classifier_input: root://cmseos.fnal.gov//store/user/mmarcheg/ttHbb/Run3_v1/ttHbb_stitched/
 
 # ==============================================================================
@@ -218,6 +218,7 @@ analysis_config:
     hist_cuts: ["pass_nSelJets_gt6"]
     top_reconstruction: fast
     plot_ttbar_with_weights: true
+    fill_histograms: "SvB"
 
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
 known_counts: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"

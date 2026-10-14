@@ -62,6 +62,7 @@ def get_raw_jcm_config():
     res['config']['apply_JCM'] = False
     res['config']['apply_FvT'] = False
     res['config']['run_SvB'] = False
+    res['config']['fill_histograms'] = res['config'].get('fill_histograms', 'kinematics')
     for k in list(res['config'].keys()):
         if k.startswith('SvB') or k == 'FvT':
             res['config'][k] = None
