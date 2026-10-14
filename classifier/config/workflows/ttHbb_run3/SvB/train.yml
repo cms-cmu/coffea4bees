@@ -1,0 +1,42 @@
+main:
+  module: train
+  option:
+    - --max-loaders 1
+    - --max-trainers 1
+
+model:
+  - module: HCR.SvB.ttHbb.baseline.Train
+    option:
+      - --kfold-seed SvB random
+      - --kfold-seed-offsets 0
+      - --architecture
+      - n_features: 8
+        use_kv_proj: true
+        use_attention_gate: true
+      - --training FixedStep
+      - epoch: 20
+        bs_init: 1024
+      - --finetuning FinetuneStep
+      - epoch: 1
+        bs_init: 16384
+
+dataset:
+  - module: HCR.SvB.Background # load background dataset
+    option:
+      - --metadata coffea4bees/metadata/datasets/
+      - --norm 3
+      # ttHbb Run 3: the JCM and the HCR_input friends below are anchors for workflow_overrides
+      # (analysis_ttHbb_run3_allyears_fNjetR_svb.yml: per-era "year:<era>" JCM groups, 2022+2023+2024 indices)
+      - --JCM-weight "" coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2024_pt25_fNjetR_v1.yml@@JCM_weights
+      - --friends "" coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3.json@@HCR_input
+      - --friends label:data {FvT}/result.json@@analysis.0.merged # setup the path to FvT friend tree
+
+  - module: HCR.ttHbb.Signal # load ttHbb signal dataset
+    option:
+      - --metadata coffea4bees/metadata/datasets/
+      - --friends "" coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3.json@@HCR_input
+
+setting:
+  - module: IO
+    option:
+      - output: "{model}"
