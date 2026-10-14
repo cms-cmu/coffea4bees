@@ -51,3 +51,8 @@ fvt_train_workflow:
         - --finetuning FixedStep
         - epoch: 1
           bs_init: 16384
+
+analysis_config:
+  config:
+    FvT_pd3_floor: 0.01
+
