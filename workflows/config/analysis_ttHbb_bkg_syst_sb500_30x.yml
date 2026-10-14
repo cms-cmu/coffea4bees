@@ -1,0 +1,53 @@
+base: coffea4bees/workflows/config/analysis_ttHbb_bkg_syst.yml
+
+label: "ttHbb_bkg_syst_sb500_30x"
+output_path: "output/{roast_id}/"
+
+publish_base: "{eos_prod}/{roast_id}"
+handoff:
+  eos_base: "{eos_prod}/{roast_id}/handoff"
+
+inputs:
+  upstream_roasts:
+    nominal: ttHbb_stat_only_20261012_49432f5-e211288
+    mixeddata: mixeddata_run2_20260927_c39c264-0ce4d59
+  mixeddata_all: "{roast:mixeddata}/handoff/mixeddata_all.yml"
+  ttbar_psdata: "{roast:mixeddata}/handoff/ttbar_PSData.yml"
+  jcm_hists: "{roast:nominal}/{roast:nominal:output_path}computeJCM/histAll_NoJCM.coffea"
+  nominal_hists: "{roast:nominal}/{roast:nominal:output_path}histAll_{roast:nominal:label}.coffea"
+  classifier_inputs: "{roast:nominal}/handoff/classifier_inputs_{roast:nominal:id}.json"
+  SvB: "{roast:nominal}/friend/SvB_ttHbb_stitched/result.json@@analysis.0.merged"
+  SvB_model: "{roast:nominal}/classifier/SvB_ttHbb_stitched/result.json"
+  SvB_MA: "{roast:nominal}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
+  SvB_MA_model: "{roast:nominal}/classifier/SvB_MA_ttHbb_stitched/result.json"
+
+classifiers:
+  - "SvB_MA"
+  - "SvB"
+classifier_variables:
+  SvB_MA: "SvB_MA_ps_ttHbb"
+  SvB: "SvB_ps_ttHbb"
+
+fvt_train_workflow:
+  main:
+    module: train
+    option:
+      - --max-loaders 2
+      - --max-trainers 1
+      - --device cuda cpu
+  model:
+    - module: HCR.FvT.baseline.Train
+      option:
+        - --architecture
+        - n_features: 54
+          use_kv_proj: true
+          use_attention_gate: true
+        - --kfolds 3
+        - --kfold-seed FvT random
+        - --kfold-seed-offsets 0
+        - --training FixedStep
+        - epoch: 20
+          bs_init: 2048
+        - --finetuning FixedStep
+        - epoch: 1
+          bs_init: 16384
