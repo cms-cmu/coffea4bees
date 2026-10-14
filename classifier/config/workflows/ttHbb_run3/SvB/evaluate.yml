@@ -1,7 +1,11 @@
 main:
   module: evaluate
   option:
-    - --max-evaluators 3
+    # Phase D eval-memory ruling (orchestrator jgaytanv-e7, 2026-10-14): one evaluator at a time + 8x larger batches.
+    # EvalLoader enqueues every batch loader into a Manager queue before the first batch (~15.7 MB RSS each for this dataset):
+    # 3 x 12,786 queued loaders at the default batch_eval 2^15 -> ~720 GB predicted; 1 x 3,867 at 2^18 -> ~73 GB.
+    # batch_eval is output-neutral in eval mode (max rel. diff 6.9e-7, identical NaN pattern, on one picoAOD).
+    - --max-evaluators 1
     - --device cuda cpu # use GPU if available, fall back to CPU
 
 model:
@@ -37,3 +41,4 @@ setting:
   - module: ml.DataLoader
     option:
       - num_workers: 8
+      - batch_eval: 262144
