@@ -1,0 +1,35 @@
+# ttHbb Run 3, all eras (2022_preEE, 2022_EE, 2023_preBPix, 2023_BPix, 2024): Combine metadata for the
+# combined Run 3 chain (per-era fNjetR JCMs + combined FvT + SvB). Copy of ttHbb.yml with the bins renamed to the
+# 5 Run 3 eras. ttHbb_run3.yml (upstream) has only the four 2022/2023 bins; it is left unchanged.
+# make_combine_inputs matches a histogram year key to the bin that contains it (make_combine_inputs.py:228),
+# so every bin name ends with the runner's year key.
+# The uncertainty block is not read with --stat_only (make_combine_inputs.py:458); Run 3 luminosity nuisances
+# are still to be added before a result with systematics. BR_hbb is kept so the structure stays valid.
+processes:
+  signal:
+    ttHbb:
+      label: ttHbb
+      process: 0
+  background:
+    multijet:
+      label: 'multijet'
+      process: 1
+    tt:
+      label: 'tt'
+      process: 2
+bin:
+  - &22pre ttHbb_2022_preEE
+  - &22post ttHbb_2022_EE
+  - &23pre ttHbb_2023_preBPix
+  - &23post ttHbb_2023_BPix
+  - &24 ttHbb_2024
+
+uncertainty:
+  BR_hbb:
+    type: 'lnN'
+    years:
+      *22pre: [0.9748, 1.0248]
+      *22post: [0.9748, 1.0248]
+      *23pre: [0.9748, 1.0248]
+      *23post: [0.9748, 1.0248]
+      *24: [0.9748, 1.0248]
