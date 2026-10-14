@@ -5,6 +5,9 @@
 
 import os
 import yaml
+import glob
+import shutil
+import subprocess
 
 eos_base = config['eos_base']
 mix_name = config.get("mix_name", "ttHbb_bkg_syst")
@@ -73,7 +76,6 @@ rule stage_bkg_syst_c_model_config:
             meta_dir = f"{out_c}classifier_metadata/"
             if not os.path.isdir(meta_dir) or not os.listdir(meta_dir):
                 os.makedirs(meta_dir, exist_ok=True)
-                import glob, shutil, subprocess, yaml
                 repo = config.get('dataset_location', "coffea4bees/metadata/datasets/")
                 for path in sorted(glob.glob(os.path.join(repo, "*.yml"))):
                     with open(path) as f:
