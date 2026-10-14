@@ -47,28 +47,6 @@ config.setdefault('stats_container_wrapper', config.get('container_wrapper', "./
 config.setdefault('analysis_container_wrapper', config.get('analysis_wrapper', "./run_container"))
 
 # Decoupled config definitions and path resolution
-def get_bkgsyst_for_channel(channel):
-    ch_config = config['channels'].get(channel, {})
-    if 'bkgsyst' in ch_config and ch_config['bkgsyst']:
-        return ch_config['bkgsyst']
-    global_bkgsyst = config.get('make_combine_inputs', {}).get('bkgsyst') or config.get('bkgsyst')
-    if global_bkgsyst:
-        return global_bkgsyst.format(
-            output_path=config.get('output_path', 'output/'),
-            channel=channel,
-            closure_subdir=ch_config.get('closure_subdir', channel)
-        )
-    closure_subdir = ch_config.get('closure_subdir', channel)
-    closure_base = config.get('closure_base', "coffea4bees/stats_analysis/files/HIG-24-010")
-    return f"{closure_base}/{closure_subdir}/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_{closure_subdir}_rebin1.pkl"
-
-for channel, ch_config in config.get('channels', {}).items():
-    ch_config.setdefault('bkgsyst', get_bkgsyst_for_channel(channel))
-
-# Constrain channel wildcard
-wildcard_constraints:
-    channel = "|".join(config['channels'].keys()) if config['channels'] else "[a-zA-Z0-9_]+"
-
 def get_stat_only_flag(channel=None):
     if channel and channel in config.get('channels', {}):
         ch_val = config['channels'][channel].get('stat_only', None)
@@ -92,6 +70,33 @@ def get_stat_only_flag(channel=None):
     if str(val).lower() in ['false', '0', 'none', '']:
         return ''
     return '--stat_only' if str(val) == '--stat-only' else str(val)
+
+def get_bkgsyst_for_channel(channel):
+    if get_stat_only_flag(channel):
+        return []
+    ch_config = config['channels'].get(channel, {})
+    if 'bkgsyst' in ch_config and ch_config['bkgsyst']:
+        return ch_config['bkgsyst']
+    global_bkgsyst = config.get('make_combine_inputs', {}).get('bkgsyst') or config.get('bkgsyst')
+    if global_bkgsyst:
+        return global_bkgsyst.format(
+            output_path=config.get('output_path', 'output/'),
+            channel=channel,
+            closure_subdir=ch_config.get('closure_subdir', channel)
+        )
+    closure_subdir = ch_config.get('closure_subdir', channel)
+    closure_base = config.get('closure_base', "coffea4bees/stats_analysis/files/HIG-24-010")
+    candidate = f"{closure_base}/{closure_subdir}/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_{closure_subdir}_rebin1.pkl"
+    return candidate if os.path.exists(candidate) else []
+
+for channel, ch_config in config.get('channels', {}).items():
+    bkg_file = get_bkgsyst_for_channel(channel)
+    if bkg_file:
+        ch_config.setdefault('bkgsyst', bkg_file)
+
+# Constrain channel wildcard
+wildcard_constraints:
+    channel = "|".join(config['channels'].keys()) if config['channels'] else "[a-zA-Z0-9_]+"
 
 def get_region_for_channel(channel):
     # 1. Check channel-specific setting
@@ -217,7 +222,8 @@ use rule make_combine_inputs from stat_analysis with:
     params:
         variable = lambda wildcards: config['channels'][wildcards.channel]['variable'],
         syst_file = lambda wildcards, input: f"--syst_file {config['make_combine_inputs']['syst_file']}" if config['make_combine_inputs']['syst_file'] else "",
-        rebin = lambda wildcards, input: config['make_combine_inputs']['rebin'],
+        bkg_syst_file = lambda wildcards, input: f'--bkg_syst_file "{input.bkgsyst}"' if getattr(input, 'bkgsyst', None) else "",
+        rebin = lambda wildcards, input: config['channels'][wildcards.channel].get('rebin', config['make_combine_inputs'].get('rebin', 1)),
         metadata = lambda wildcards: config['make_combine_inputs']['metadata_template'].format(channel=wildcards.channel.split('_')[0]),
         output_dir = lambda wildcards: f"{config['output_path']}stat_analysis/{wildcards.channel}/datacards/",
         variable_binning = lambda wildcards, input: config['make_combine_inputs']['variable_binning'],

@@ -230,8 +230,9 @@ def get_target_rebins_F_4():
             print(f"[Snakemake] Error reading {closure_summary_path}: {e}")
             return []
     closure_reg = config.get('closure_region', config.get('region', 'SR'))
+    clf = config.get('classifier', 'SvB_MA')
     try:
-        checkpoint_output = checkpoints.evaluate_closure_candidates.get(region=closure_reg).output[0]
+        checkpoint_output = checkpoints.evaluate_closure_candidates.get(region=closure_reg, classifier=clf).output[0]
         import json
         with open(checkpoint_output, "r") as f:
             data = json.load(f)
