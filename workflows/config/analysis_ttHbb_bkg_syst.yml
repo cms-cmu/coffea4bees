@@ -307,6 +307,7 @@ analysis_config:
     hist_cuts: ["pass_nSelJets_gt6"]
     top_reconstruction: fast
     plot_ttbar_with_weights: true
+    fill_histograms: "SvB"
 
 # TWO-STAGE CLOSURE CANDIDATES & MULTI-BINNING
 closure_rebin_candidates:

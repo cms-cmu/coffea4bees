@@ -24,6 +24,6 @@ config:
   top_reconstruction: "fast"
   plot_ttbar_with_weights: true
   candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
-  fill_histograms: true
+  fill_histograms: "SvB"
   hist_cuts:
     - "pass_nSelJets_gt6"
