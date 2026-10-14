@@ -87,8 +87,13 @@ mvd_pmix4_floor: 0.01
 
 closure:
   label: "MvD_30x_c6_closure"
+  # canJets histograms of every classifier input (ParticleNet scores, energy fractions, nConstituents, area)
+  config:
+    plot_extra_canjet_vars: true
 
 analysis:
   label: "MvD_30x_c6mvd_c6"
+  config:
+    plot_extra_canjet_vars: true
 
 combine_outdir: "datacards/HH4b_run3_MvD_declib16_30x_c6mvd_c6"
