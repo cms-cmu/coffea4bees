@@ -68,10 +68,31 @@ rule stage_bkg_syst_c_model_config:
 
         sub_name = globals().get('SUB_NAME', config.get('multisample_dataset_name', 'mixeddata_4b'))
 
+        meta_dir = config.get('classifier_metadata')
+        if not meta_dir or not os.path.isdir(meta_dir):
+            meta_dir = f"{out_c}classifier_metadata/"
+            if not os.path.isdir(meta_dir) or not os.listdir(meta_dir):
+                os.makedirs(meta_dir, exist_ok=True)
+                import glob, shutil, subprocess, yaml
+                repo = config.get('dataset_location', "coffea4bees/metadata/datasets/")
+                for path in sorted(glob.glob(os.path.join(repo, "*.yml"))):
+                    with open(path) as f:
+                        keys = set(yaml.safe_load(f) or {})
+                    if sub_name in keys:
+                        continue
+                    shutil.copy(path, meta_dir)
+                target_ds = os.path.join(meta_dir, f"{sub_name}.yml")
+                if not os.path.exists(target_ds):
+                    local_ds = f"{out_a2}{sub_name}.yml"
+                    if os.path.exists(local_ds):
+                        shutil.copy(local_ds, target_ds)
+                    elif HANDOFF_EOS:
+                        subprocess.run(["xrdcp", "-f", "-s", f"{HANDOFF_EOS}/datasets/{sub_name}.yml", target_ds], check=False)
+
         mapping = {
             "m": str(m),
             "mix": str(m),
-            "metadata": config['classifier_metadata'],
+            "metadata": meta_dir,
             "mixed_name": sub_name,
             "model": f"{eos_base}/classifier/{mix_name}_v{m}",
             "FvT": f"{eos_base}/friend/FvT/{mix_name}_v{m}",
