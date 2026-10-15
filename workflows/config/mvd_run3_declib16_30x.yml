@@ -1,0 +1,89 @@
+# ==============================================================================
+# 30x MvD roast on the 16x DECLUSTERED background model -- V.2, V.2c, V.3, V.4 on top of mvd_run3_declib16
+# ==============================================================================
+# mvd_run3_30x.yml applied to mvd_run3_declib16.yml: both classifiers trained with n_features
+# 8 -> 54 (~30x the parameters), inserted before --training into the unchanged templates
+# (HH4b_Run3/{MvD,SvB}). The SvB trains against THIS roast's 30x MvD. Only the differences from
+# mvd_run3_declib16.yml (a `base:` overlay: dicts merge recursively, lists replace) -- its
+# --data-mixed-all-name inserts, the nominal_run3_20261008 (v3 trigger weight) inputs and the null
+# known_counts carry over.
+#
+#   roast new --config coffea4bees/workflows/config/mvd_run3_declib16_30x.yml --label mvd_declib16_30x_run3 \
+#       --step falcon:coffea4bees/workflows/Snakefile_MvD_2_train.smk \
+#       --step cmslpc:coffea4bees/workflows/Snakefile_MvD.smk \
+#       --step falcon:coffea4bees/workflows/Snakefile_MvD_3_svb.smk
+#   roast submit <id> --step MvD_2_train                   # falcon: MvD 30x
+#   roast submit <id> --step MvD --targets all_V2c         # cmslpc: MvD 30x closure
+#   roast submit <id> --step MvD_3_svb                     # falcon: SvB 30x vs declustered x JCM x MvD 30x
+#   roast submit <id> --step MvD --targets all_V4          # cmslpc: analysis + stat-only limits
+#
+# V.1 is not re-run: the merged classifier-input manifest (data, ttbar, ggF + mixeddata_all_declib16),
+# the classifier metadata and the tight JCM come from the 1x roast
+# mvd_declib16_run3_20261011_c41b495-f2d2cf8, pinned by URL to its EOS handoff/ area.
+#
+# What to compare against mvd_declib16_run3_20261011_c41b495-f2d2cf8 (1x):
+#   * V.2c closure: presel 1.005, SB 1.000, SR 0.995; per year SR 1.020 / 0.988 / 0.990 / 1.009
+#   * V.4: exp. limit 3.80 [2.67, 5.39], exp. significance 0.698
+#     (nominal_run3_30x_20261009_965f9cc-33f3094: 3.07 / 0.694)
+base: coffea4bees/workflows/config/mvd_run3_declib16.yml
+
+label: "mvd_run3_declib16_30x"
+
+inputs:
+  # lists replace: the base's two upstreams + the 1x MvD roast (its V.1 products)
+  upstream_roasts: [nominal_run3_20261008_f839489-a481023, declib16_run3_20261011_b948dfc-33f3094,
+                    mvd_declib16_run3_20261011_c41b495-f2d2cf8]
+  # V.1's tight JCM from the 1x roast (V.2c / V.4 processor weights)
+  mixed_jcm: "{roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/handoff/jetCombinatoricModel_SB_mixeddata_tight.yml"
+
+handoff:
+  # V.2 / V.3 read the 1x roast's handoff, which check_handoff_refs would otherwise reject as drift
+  # from this roast's (empty) handoff area.
+  allow_external_refs: true
+
+mvd:
+  label: "MvD_30x"
+  output_dir: "output/MvD_30x/"
+  # Half a falcon GPU (40 GB): the classifier default mps:25 + light caps GPU memory at 20 GB and the
+  # n=54 MvD on the 16x declustered model trains at ~30 GB (SLURM 53996 cancelled). mps > 25 needs qos medium.
+  gpu_gres: "mps:50"
+  gpu_qos: "medium"
+  metadata: "{roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/handoff/classifier_inputs_MvD.json@@HCR_input"
+  workflow_overrides:
+    --metadata: "{roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/handoff/classifier_metadata"
+    --JCM-weight: '"source:mixed_all" {roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/handoff/jetCombinatoricModel_SB_mixeddata_tight.yml@@JCM_weights'
+    '--friends ""': "{roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/handoff/classifier_inputs_MvD.json@@HCR_input"
+    # 1 evaluator: at n=54 on the 16x declustered model 2 reached 42.1 GB against falcon's 40 GB
+    # half-GPU MPS limit (roast mvd_declib16_30x_run3_20261012_0048151-43f8b32, SLURM 53226)
+    --max-evaluators: '1'
+  workflow_inserts:
+    # merged with the base's --data-source insert (--data-mixed-all-name)
+    --training: [--architecture, {n_features: 54}]
+
+svb_mvd:
+  label: "SvB_MvD_30x"
+  output_dir: "output/SvB_MvD_30x/"
+  gpu_gres: "mps:50"     # as mvd:
+  gpu_qos: "medium"
+  # The background weight is THIS roast's 30x MvD.
+  train_template: "model: {eos_base}/classifier/{label}, MvD: {eos_base}/friend/MvD_30x"
+  metadata: "{roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/handoff/classifier_inputs_MvD.json@@HCR_input"
+  workflow_overrides:
+    --metadata: "{roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/handoff/classifier_metadata"
+    --JCM-weight: '"source:mixed_all" {roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/handoff/jetCombinatoricModel_SB_mixeddata_tight.yml@@JCM_weights'
+    '--friends ""': "{roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/handoff/classifier_inputs_MvD.json@@HCR_input"
+  workflow_inserts:
+    # merged with the base's --data-source / evaluate.yml::--mc-processes inserts
+    --training: [--architecture, {n_features: 54}]
+
+# Floor p_mix4 at 0.05 in the processor steps (V.2c, V.4): MvD <= ~20, as mvd_run3_30x (the 30x MvD
+# on the 3b mixed data was over-confident on a few mixed events; closure SB 0.977 unfloored).
+mvd_pmix4_floor: 0.05
+
+closure:
+  label: "MvD_30x_closure"
+
+analysis:
+  label: "MvD_30x"
+
+combine_outdir: "datacards/HH4b_run3_MvD_declib16_30x"

@@ -26,6 +26,10 @@ SvB_MA.ps_ttHbb_gt6_lepveto : {"yscale":"log"}
 SvB_MA.ps : {"yscale":"log"}
 SvB_MA.ptt : {"yscale":"log"}
 SvB_MA.tt_vs_mj : {"yscale":"log"}
+SvB.ps_ttHbb : {"yscale":"log"}
+SvB.ps : {"yscale":"log"}
+SvB.ptt : {"yscale":"log"}
+SvB.tt_vs_mj : {"yscale":"log"}
 
 
 quadJet_selected.lead_vs_subl_m : {"2d":True}

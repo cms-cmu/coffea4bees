@@ -251,7 +251,11 @@ def _assign_SR_SB_ttHbb(quadJet, cand_cfg=None, full_space=False):
         in_v_arm = (m_lead >= 90.0) & (m_lead <= 185.0) & (m_subl >= 25.0) & (m_subl <= 1000.0)
 
     quadJet["SR"] = in_h_arm | in_v_arm
-    in_analysis_box = (m_lead >= 25.0) & (m_lead <= 1000.0) & (m_subl >= 25.0) & (m_subl <= 1000.0)
+    sb_cfg = (cand_cfg or {}).get("sb_ttHbb", {})
+    sb_min = (cand_cfg or {}).get("sb_min") or sb_cfg.get("sb_min", 25.0)
+    sb_max = (cand_cfg or {}).get("sb_max") or sb_cfg.get("sb_max", 500.0)
+
+    in_analysis_box = (m_lead >= sb_min) & (m_lead <= sb_max) & (m_subl >= sb_min) & (m_subl <= sb_max)
     quadJet["SB"] = in_analysis_box & (~quadJet["SR"])
 
     # Compute Euclidean radial distance for monitoring
@@ -325,6 +329,15 @@ def _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB=False, cand_cfg=Non
                 svb_ps = selev["SvB_MA"].pttHbb
             else:
                 svb_ps = None
+        elif "SvB" in selev.fields:
+            if "ps" in selev["SvB"].fields:
+                svb_ps = selev["SvB"].ps
+            elif "ps_ttHbb" in selev["SvB"].fields:
+                svb_ps = selev["SvB"].ps_ttHbb
+            elif "pttHbb" in selev["SvB"].fields:
+                svb_ps = selev["SvB"].pttHbb
+            else:
+                svb_ps = None
         elif "SvB_FeynNet" in selev.fields:
             svb_ps = 1.0 - selev["SvB_FeynNet"].p_bkg
         else:
@@ -334,16 +347,25 @@ def _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB=False, cand_cfg=Non
             selev["passSvB"] = svb_ps > svb_cfg.get('passSvB_min', 0.90)
             selev["failSvB"] = (svb_ps >= 0.0) & (svb_ps < svb_cfg.get('failSvB_max', 0.05))
 
-            if "SvB_MA" in selev.fields:
-                if "ps" in selev["SvB_MA"].fields:
-                    selev["SvB_MA", "ps"] = ak.where(selev["SvB_MA"].ps < 0.01, -2.0, selev["SvB_MA"].ps)
-                ps_np = ak.to_numpy(svb_ps)
-                # Cumulative signal quantiles (240 fine bins)
-                n_bins = len(ttHbbSvBHists.var_binning_ps_ttHbb) - 1
-                bin_idx = np.clip(np.digitize(ps_np, ttHbbSvBHists.var_binning_ps_ttHbb) - 1, 0, n_bins - 1)
-                ps_quantile = (bin_idx + 0.5) / float(n_bins)
-                ps_quantile = np.where(ps_np < 0.01, -2.0, ps_quantile)
-                selev["SvB_MA", "ps_ttHbb"] = ak.Array(ps_quantile)
+            for sname in ["SvB_MA", "SvB"]:
+                if sname in selev.fields:
+                    if "ps" in selev[sname].fields:
+                        selev[sname, "ps"] = ak.where(selev[sname].ps < 0.01, -2.0, selev[sname].ps)
+                        s_ps = selev[sname].ps
+                    elif "ps_ttHbb" in selev[sname].fields:
+                        s_ps = selev[sname].ps_ttHbb
+                    elif "pttHbb" in selev[sname].fields:
+                        s_ps = selev[sname].pttHbb
+                    else:
+                        s_ps = None
+                    if s_ps is not None:
+                        ps_np = ak.to_numpy(s_ps)
+                        # Cumulative signal quantiles (240 fine bins)
+                        n_bins = len(ttHbbSvBHists.var_binning_ps_ttHbb) - 1
+                        bin_idx = np.clip(np.digitize(ps_np, ttHbbSvBHists.var_binning_ps_ttHbb) - 1, 0, n_bins - 1)
+                        ps_quantile = (bin_idx + 0.5) / float(n_bins)
+                        ps_quantile = np.where(ps_np < 0.01, -2.0, ps_quantile)
+                        selev[sname, "ps_ttHbb"] = ak.Array(ps_quantile)
 
             pass_mask = selev.passSvB
             m_lead = selev.leadStM_selected

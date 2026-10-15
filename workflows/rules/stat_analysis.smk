@@ -101,6 +101,7 @@ rule make_combine_inputs:
     params:
         variable = "SvB_MA.ps_hh_fine",
         syst_file = lambda wildcards, input: f"--syst_file {input.injsonsyst}",
+        bkg_syst_file = lambda wildcards, input: f'--bkg_syst_file "{input.bkgsyst}"' if getattr(input, 'bkgsyst', None) else "",
         metadata = "coffea4bees/stats_analysis/metadata/HH4b.yml",
         rebin = 1,
         output_dir = "output/datacards/",
@@ -124,7 +125,7 @@ rule make_combine_inputs:
                 --var {params.variable} \
                 -f {input.injson} \
                 {params.syst_file} \
-                --bkg_syst_file {input.bkgsyst} \
+                {params.bkg_syst_file} \
                 --output_dir {params.output_dir} \
                 --rebin {params.rebin} \
                 {params.variable_binning} \

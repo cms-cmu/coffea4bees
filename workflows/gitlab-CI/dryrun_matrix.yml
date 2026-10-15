@@ -47,6 +47,18 @@ runs:
     - PhaseB_1_computeJCM
     - PhaseC
     - {snakefile: PhaseC_4_FvT_closure, upstream: ["computeJCM/singlefiles/", "metadata/weights/JCM/"]}
+  nominal_run3_2024_nontight.yml:
+    - PhaseB
+    - PhaseB_1_computeJCM
+    - PhaseC
+    - {snakefile: PhaseC_4_FvT_closure, upstream: ["computeJCM/singlefiles/", "metadata/weights/JCM/"]}
+  nominal_run3_2024.yml:
+    - PhaseB
+    - PhaseB_1_computeJCM
+    - PhaseC
+    - {snakefile: PhaseC_4_FvT_closure, upstream: ["computeJCM/singlefiles/", "metadata/weights/JCM/"]}
+    - PhaseD
+    - PhaseF
   nominal_run3_feynnet.yml:
     - PhaseF
   nominal_run3_fvt_closure_plots.yml:
@@ -67,6 +79,8 @@ runs:
     - MakeMixedData
   mixeddata_run3.yml:
     - MakeMixedData
+  mixeddata_run3_2024.yml:
+    - MakeMixedData
   mixeddata_run3_4bmix.yml:
     - MakeMixedData
   mixeddata_run3_4bmix_noboost.yml:
@@ -81,9 +95,31 @@ runs:
     - MvD
     - MvD_2_train
     - MvD_3_svb
+  mvd_run3_2024.yml:
+    - MvD
+    - MvD_2_train
+    - MvD_3_svb
   mvd_run3_30x.yml:
     - MvD
     - MvD_2_train
+    - MvD_3_svb
+  mvd_run3_declib16.yml:
+    - MvD
+    - MvD_2_train
+    - MvD_3_svb
+  mvd_run3_declib16_30x.yml:
+    - MvD
+    - MvD_2_train
+    - MvD_3_svb
+  mvd_run3_declib16_30x_c6mvd.yml:
+    - MvD
+    - MvD_2_train
+    - MvD_3_svb
+  mvd_run3_declib16_30x_c6mvd_btag.yml:
+    - MvD
+    - MvD_3_svb
+  mvd_run3_declib16_30x_c6mvd_pnet.yml:
+    - MvD
     - MvD_3_svb
   declustered_run3.yml:
     - DeClustered
@@ -114,9 +150,14 @@ runs:
   analysis_ttHbb_bkg_syst.yml:
     - bkg_syst
     - bkg_syst_AB
+  analysis_ttHbb_bkg_syst_declib16nc.yml:
+    - bkg_syst
+    - bkg_syst_AB
   trigweights_run3.yml:
     - TrigWeights
   trigweights_run3_signal.yml:
+    - TrigWeights
+  trigweights_run3_2024_signal.yml:
     - TrigWeights
 
 not_covered:

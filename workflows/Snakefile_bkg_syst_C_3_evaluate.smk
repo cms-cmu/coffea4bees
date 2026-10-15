@@ -59,8 +59,9 @@ MIX_INDICES = [int(x) for x in subsample_indices]
 out_c = f"{out}bkg_syst_C_FvT/"
 os.makedirs(out_c, exist_ok=True)
 
-from helpers.stage_configs import stage_phaseC_configs
-cfg_files = stage_phaseC_configs(config, out_c)
+if not globals().get("_BKG_SYST_C_MODEL_CONFIG_INCLUDED", False):
+    _BKG_SYST_C_MODEL_CONFIG_INCLUDED = True
+    include: "helpers/bkg_syst_c_model_config.smk"
 
 eos_base = config['eos_base']                     # set by bkg_syst_common (publish_base)
 mix_name = config.get("mix_name", "ttHbb_bkg_syst")
@@ -89,9 +90,13 @@ if not globals().get("_EXTRACT_FRIEND_MANIFEST_INCLUDED", False):
         shell:
             """
             mkdir -p $(dirname {output.json})
-            if [ -z "$X509_USER_PROXY" ] && [ -f ./proxy/x509_proxy ]; then
+            if [ -z "${{X509_USER_PROXY:-}}" ] && [ -f ./proxy/x509_proxy ]; then
                 export X509_USER_PROXY="$PWD/proxy/x509_proxy"
             fi
+            if [ -d /workspace/shared/certificates ] && [ ! -d /etc/grid-security/certificates ]; then
+                mkdir -p /etc/grid-security && ln -sfn /workspace/shared/certificates /etc/grid-security/certificates
+            fi
+            export X509_CERT_DIR=/etc/grid-security/certificates
             if command -v xrdcp &>/dev/null; then
                 TMP_RES=$(mktemp -p . --suffix=.json)
                 if [[ "{params.eos_base}" == root://* ]]; then
@@ -137,7 +142,7 @@ rule bkg_syst_C_handoff:
         touch {output.done}
         """
 
-localrules: bkg_syst_C_handoff
+localrules: bkg_syst_C_handoff, extract_friend_manifest
 
 rule all_bkg_syst_C_3:
     default_target: True

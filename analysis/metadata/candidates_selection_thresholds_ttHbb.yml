@@ -44,3 +44,7 @@ sr_ttHbb:
   h_max: 180.0
   m_min: 25.0
   arm_max: 400.0
+
+sb_ttHbb:
+  sb_min: 25.0
+  sb_max: 500.0

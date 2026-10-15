@@ -113,3 +113,30 @@ def build_multisample_dataset(samples, psdata_yaml, ps_name, years, name, templa
             raise ValueError(f"{psdata_yaml}: pseudodata file names contain XXX")
         dataset[year] = {'picoAOD': {'files_template': sorted(per_v[0][year]) + sorted(ps_files)}}
     return {name: dataset}
+
+
+def is_templated_dataset(dataset_yaml, mix_name, years):
+    """Check if the dataset already defines `files_template` (e.g. declustered seeds)."""
+    with open(dataset_yaml) as f:
+        entry = (yaml.safe_load(f) or {}).get(mix_name) or {}
+    first_year = years[0] if years else 'UL18'
+    return bool((entry.get(first_year, {}).get('picoAOD') or {}).get('files_template'))
+
+
+def build_multisample_dataset_from_templated(multijet_yaml, mj_name, psdata_yaml, ps_name, years, name):
+    """Assemble multisample dataset from already templated multijet dataset and psdata."""
+    with open(multijet_yaml) as f:
+        mj = (yaml.safe_load(f) or {}).get(mj_name) or {}
+    with open(psdata_yaml) as f:
+        ps = (yaml.safe_load(f) or {}).get(ps_name) or {}
+    n_samples = mj.get('nSamples', 16)
+    dataset = {'nSamples': n_samples, 'xs': {'Run2': 1, 'Run3': 1}}
+    for year in years:
+        ps_files = _all_files((ps.get(year) or {}).get('picoAOD'))
+        if not ps_files:
+            raise ValueError(f"{psdata_yaml}: no ttbar pseudodata files for {year}")
+        if any('XXX' in p for p in ps_files):
+            raise ValueError(f"{psdata_yaml}: pseudodata file names contain XXX")
+        mj_templates = list((mj.get(year, {}).get('picoAOD') or {}).get('files_template') or [])
+        dataset[year] = {'picoAOD': {'files_template': sorted(mj_templates) + sorted(ps_files)}}
+    return {name: dataset}

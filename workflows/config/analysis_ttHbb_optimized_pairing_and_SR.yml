@@ -129,7 +129,7 @@ classifier_inputs:
     apply_boosted_veto: false
     run_SvB: false
     top_reconstruction: slow
-    fill_histograms: true
+    fill_histograms: false
     make_classifier_input: "{eos_prod}/{roast_id}/classifier_inputs/"
     pairing: can_ttH
 

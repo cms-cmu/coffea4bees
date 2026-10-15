@@ -140,6 +140,7 @@ def get_raw_closure_config():
     # TTbar{4b,3b}_from_d3 histograms: the ttbar stacked by plotsAll_FvTClosure.yml
     res['config']['plot_ttbar_with_weights'] = True
     res['config']['run_SvB'] = False
+    res['config']['fill_histograms'] = res['config'].get('fill_histograms', 'kinematics+FvT')
     for k in list(res['config'].keys()):
         if k.startswith('SvB'):
             res['config'][k] = None

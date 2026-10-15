@@ -64,6 +64,7 @@ classifier_setting:
 classifier_inputs:
   config:
     make_classifier_input: "{eos_prod}/{roast_id}/classifier_inputs/"
+    fill_histograms: false
 
 # ==============================================================================
 # PHASE B -> C/D HANDOFF

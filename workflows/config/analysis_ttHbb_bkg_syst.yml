@@ -13,6 +13,9 @@
 #
 label: "ttHbb_bkg_syst"
 output_path: "output/{roast_id}/"
+per_year_jcm: true
+unify_background: true
+match_closure_normalization: false
 fourTag_use_tight: false
 # EOS area this workflow writes to: the A_2 subsample picoAODs (<publish_base>/picoAOD/subsamples/v<k>/),
 # the A_3 classifier inputs / SvB friends, the C models and FvT friends
@@ -142,7 +145,7 @@ phaseB_1:
       apply_boosted_veto: false
       run_SvB: false
       top_reconstruction: "fast"
-      fill_histograms: true
+      fill_histograms: false
       hist_cuts:
         - "pass_nSelJets_gt6"
 
@@ -204,7 +207,10 @@ fvt_train_workflow:
         - --no-detector-4b
         - --data-mixed-name {mixed_name}
         - --data-mixed-samples {mix}
-        - --JCM-weight "" {jcm}@@JCM_weights
+        - --JCM-weight year:UL16_preVFP {jcm_UL16_preVFP}@@JCM_weights
+        - --JCM-weight year:UL16_postVFP {jcm_UL16_postVFP}@@JCM_weights
+        - --JCM-weight year:UL17 {jcm_UL17}@@JCM_weights
+        - --JCM-weight year:UL18 {jcm_UL18}@@JCM_weights
         - --friends "" {nominal_ci}@@HCR_input {mixed_ci}@@HCR_input
   model:
     - module: HCR.FvT.baseline.Train
@@ -301,6 +307,7 @@ analysis_config:
     hist_cuts: ["pass_nSelJets_gt6"]
     top_reconstruction: fast
     plot_ttbar_with_weights: true
+    fill_histograms: "SvB"
 
 # TWO-STAGE CLOSURE CANDIDATES & MULTI-BINNING
 closure_rebin_candidates:

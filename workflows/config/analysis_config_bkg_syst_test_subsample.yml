@@ -19,6 +19,6 @@ config:
   apply_boosted_veto: false
   run_SvB: false
   top_reconstruction: "fast"
-  fill_histograms: true
+  fill_histograms: "kinematics"
   hist_cuts:
     - "pass_nSelJets_gt6"
