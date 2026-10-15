@@ -1856,9 +1856,10 @@ data:
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_data_skims/data_2025C01/picoAOD.chunk14.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_data_skims/data_2025C01/picoAOD.chunk15.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_data_skims/data_2025C01/picoAOD.chunk16.root
-        - root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_data_skims/data_2025C01/picoAOD.chunk17.root
-        - root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_data_skims/data_2025C01/picoAOD.chunk18.root
-        - root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_data_skims/data_2025C01/picoAOD.chunk19.root
+        # Removed (2026-10-15): picoAOD.chunk{17,18,19}.root hold only runs 392175-392251, none of which is in
+        # Cert_Collisions2025_391658_398903_Golden, so 0 events pass the analysis lumimask. B.2 then writes
+        # no classifier-input friend for them and the FvT training (friend_allow_missing: false) fails.
+        # The skimmer does not apply the lumimask, so the files exist on EOS; they contribute nothing.
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_data_skims/data_2025C01/picoAOD.chunk20.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_data_skims/data_2025C01/picoAOD.chunk21.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_data_skims/data_2025C01/picoAOD.chunk22.root
@@ -1971,8 +1972,10 @@ data:
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_data_skims/data_2025C11/picoAOD.chunk15.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_data_skims/data_2025C11/picoAOD.chunk16.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_data_skims/data_2025C11/picoAOD.chunk17.root
-        - root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_data_skims/data_2025C11/picoAOD.chunk18.root
-        - root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_data_skims/data_2025C11/picoAOD.chunk19.root
+        # Removed (2026-10-15): picoAOD.chunk{18,19}.root hold only runs 392175-392251, none of which is in
+        # Cert_Collisions2025_391658_398903_Golden, so 0 events pass the analysis lumimask. B.2 then writes
+        # no classifier-input friend for them and the FvT training (friend_allow_missing: false) fails.
+        # The skimmer does not apply the lumimask, so the files exist on EOS; they contribute nothing.
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_data_skims/data_2025C11/picoAOD.chunk20.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_data_skims/data_2025C11/picoAOD.chunk21.root
         - root://cmseos.fnal.gov//store/user/jda102/XX4b/2025_data_skims/data_2025C11/picoAOD.chunk22.root
