@@ -1,0 +1,14 @@
+# Phase F only: re-run the ttHbb analysis (histAll_ttHbb.coffea + plots) with the SR that also requires
+# nJet_selected >= 5, reusing the JCM weights and the FvT/SvB friend trees of an earlier roast
+# (its SB is the same mass-only bounded SB, so its FvT/SvB training is consistent with it).
+base: coffea4bees/workflows/config/analysis_ttHbb_optimized_pairing_and_SR.yml
+inputs:
+  upstream_roasts:
+    - ttHbb_optimized_pairing_SR_ellipse_SB350_700_20261014_d041f77-ec35cc5
+  FvT: "{roast:ttHbb_optimized_pairing_SR_ellipse_SB350_700_20261014_d041f77-ec35cc5}/friend/FvT_ttHbb_stitched/result.json@@analysis.0.merged"
+  SvB_MA: "{roast:ttHbb_optimized_pairing_SR_ellipse_SB350_700_20261014_d041f77-ec35cc5}/friend/SvB_ttHbb_stitched/result.json@@analysis.0.merged"
+analysis_config:
+  config:
+    friends:
+      FvT: "{roast:ttHbb_optimized_pairing_SR_ellipse_SB350_700_20261014_d041f77-ec35cc5}/friend/FvT_ttHbb_stitched/result.json@@analysis.0.merged"
+      SvB_MA: "{roast:ttHbb_optimized_pairing_SR_ellipse_SB350_700_20261014_d041f77-ec35cc5}/friend/SvB_ttHbb_stitched/result.json@@analysis.0.merged"
