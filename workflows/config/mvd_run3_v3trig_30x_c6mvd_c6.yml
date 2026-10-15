@@ -1,0 +1,51 @@
+# ==============================================================================
+# The c6 SvB against the 3b-mixed c6 MvD, with the v3 trigger weights -- V.1 + V.3 + V.4
+# ==============================================================================
+# mvd_run3_30x_c6mvd_c6.yml with the nominal inputs moved from nominal_run3_20260922 to
+# nominal_run3_20261008_f839489-a481023 (v3 trigger weights): the ggF / ttbar classifier inputs the
+# SvB trains on and the F.1 analysis config V.4 runs. Replaces mvd_run3_30x_c6mvd_c6_20260928.
+#
+# Reused, not retrained (John, 2026-10-14): the c6 MvD (mvd_run3_30x_c6mvd_20260928_d3f6ae2-aede48c,
+# MvD_30x_c6) and the tight mixed-data JCM it was trained against (mvd_run3_20260927's V.1), which
+# the SvB (--JCM-weight) and V.4 (inputs.mixed_jcm) keep using, so the background model is unchanged.
+#
+# V.1 runs here only for the merged classifier-input manifest (this roast's mixeddata_all inputs +
+# the 20261008 data / ttbar / ggF manifest) and the classifier metadata, which the SvB reads from
+# this roast's handoff. Its tight-JCM refit is published too, for comparison only.
+#
+#   roast new --config coffea4bees/workflows/config/mvd_run3_v3trig_30x_c6mvd_c6.yml \
+#       --label mvd_run3_v3trig_30x_c6mvd_c6 \
+#       --step cmslpc:coffea4bees/workflows/Snakefile_MvD.smk \
+#       --step falcon:coffea4bees/workflows/Snakefile_MvD_3_svb.smk
+#   roast submit <id> --step MvD --targets all_V1          # cmslpc: manifest + metadata (+ JCM refit)
+#   roast submit <id> --step MvD_3_svb                     # falcon: SvB 30x c6 vs the c6 MvD
+#   roast submit <id> --step MvD --targets all_V4          # cmslpc: analysis + stat-only limits
+base: coffea4bees/workflows/config/mvd_run3_30x_c6mvd_c6.yml
+
+label: "mvd_run3_v3trig_30x_c6mvd_c6"
+
+inputs:
+  upstream_roasts: [nominal_run3_20261008_f839489-a481023, mixeddata_run3_20260926_956d4bf-aca8a4e,
+                    mvd_run3_20260927_91be0e9-f18c44b, mvd_run3_30x_c6mvd_20260928_d3f6ae2-aede48c]
+  classifier_inputs: "{roast:nominal_run3_20261008_f839489-a481023}/handoff/classifier_inputs_nominal_run3_20261008_f839489-a481023.json"
+  classifier_inputs_config: "{roast:nominal_run3_20261008_f839489-a481023}/output/Run3_nominal/classifier_inputs/classifier_inputs_config.yml"
+  JCM: "{roast:nominal_run3_20261008_f839489-a481023}/handoff/jetCombinatoricModel_SB_Run3_v1.yml"
+  jcm_hists: "{roast:nominal_run3_20261008_f839489-a481023}/output/Run3_nominal/computeJCM/histAll_NoJCM.coffea"
+  analysis_config: "{roast:nominal_run3_20261008_f839489-a481023}/output/Run3_nominal/analysis_config.yml"
+  # inherited, unchanged: mixed_jcm (mvd_run3_20260927) and mvd_friend (the c6mvd roast's MvD_30x_c6)
+
+svb_mvd:
+  label: "SvB_MvD_30x_c6_c6mvd_v3trig"
+  output_dir: "output/SvB_MvD_30x_c6_c6mvd_v3trig/"
+  # this roast's V.1 manifest / metadata (new ggF / ttbar inputs); --JCM-weight stays mvd_run3_20260927's
+  metadata: "{eos_prod}/{roast_id}/handoff/classifier_inputs_MvD.json@@HCR_input"
+  workflow_overrides:
+    --metadata: "{eos_prod}/{roast_id}/handoff/classifier_metadata"
+    '--friends ""': "{eos_prod}/{roast_id}/handoff/classifier_inputs_MvD.json@@HCR_input"
+
+analysis:
+  label: "MvD_30x_c6mvd_c6_v3trig"
+  # the blessed counts are the 2026-09-22 nominal's (old trigger weights)
+  known_counts: null
+
+combine_outdir: "datacards/HH4b_run3_MvD_30x_c6mvd_c6_v3trig"
