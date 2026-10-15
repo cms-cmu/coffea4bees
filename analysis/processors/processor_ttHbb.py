@@ -91,6 +91,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
         if (
             scale != 1.0
             and self.config.get("isMC", False)
+            and not self._is_ttHbb_MC()
             and "genTtbarId" in event.fields
             and "ttbb_scale" not in list_weight_names
         ):
