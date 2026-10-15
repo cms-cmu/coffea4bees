@@ -101,7 +101,7 @@ def _build_can_ttH_quadjets(selev, diJet, diJetDr, cand_cfg=None, isRun3=False):
     })
 
     _select_can_ttH_quadjet(quadJet, cand_cfg)
-    _assign_SR_SB_ttHbb_oblong(quadJet, cand_cfg, full_space=True)   ### SR = whole (canH, canTT) mass plane, SB empty
+    _assign_SR_SB_ttHbb_oblong(quadJet, cand_cfg, full_space=True, nJet_selected=selev["nJet_selected"])   ### SR = whole (canH, canTT) mass plane, SB empty
 
     return quadJet
 
@@ -199,16 +199,22 @@ def _select_quadjet_ttHbb(quadJet, cand_cfg=None):
     quadJet["selected"] = quadJet.rank == np.max(quadJet.rank, axis=1)
 
 
-def _assign_SR_SB_ttHbb_oblong(quadJet, cand_cfg=None, full_space=False):
+def _assign_SR_SB_ttHbb_oblong(quadJet, cand_cfg=None, full_space=False, nJet_selected=None):
     m_lead = quadJet["lead"].mass
     m_subl = quadJet["subl"].mass
 
     ### SR = inside ellipse centered at (m_lead, m_subl) = (125, 300); width/height are full axis lengths
     center_lead, center_subl = 125., 300.
     width, height = 110., 700.
-    quadJet["SR"] = (((m_lead - center_lead) / (width / 2))**2 + ((m_subl - center_subl) / (height / 2))**2) <= 1
-    ### SB = outside the SR ellipse, bounded by canH mass <= 350 and canTT mass <= 700
-    quadJet["SB"] = (~quadJet["SR"]) & (m_lead <= 350.) & (m_subl <= 700.)
+    in_ellipse = (((m_lead - center_lead) / (width / 2))**2 + ((m_subl - center_subl) / (height / 2))**2) <= 1
+    ### SR additionally requires nJet_selected >= n_jets_min (default 5)
+    n_jets_min = (cand_cfg or {}).get("sr_ttHbb", {}).get("n_jets_min", 5)
+    if nJet_selected is None:
+        quadJet["SR"] = in_ellipse
+    else:
+        quadJet["SR"] = in_ellipse & (nJet_selected >= n_jets_min)[:, np.newaxis]
+    ### SB = outside the SR ellipse (mass only, so events failing nJets are not moved into SB), bounded by canH mass <= 350 and canTT mass <= 700
+    quadJet["SB"] = (~in_ellipse) & (m_lead <= 350.) & (m_subl <= 700.)
 
     # Compute Euclidean radial distance for monitoring
     quadJet["rH"] = np.sqrt((m_lead - 125.0)**2 + (m_subl - 125.0)**2)
