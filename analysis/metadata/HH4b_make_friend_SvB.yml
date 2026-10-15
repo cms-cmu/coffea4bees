@@ -1,8 +1,8 @@
 runner:
   workers: 4
   worker_memory: 2GB
-  friend_base: &friend_base root://cmsdata.phys.cmu.edu//store/group/HH4b/Run2/opendata_project/ 
-  # friend_base: &friend_base /srv/output/all_friends/
+  friend_base: &friend_base /srv/output/all_friends/
+  # friend_base: &friend_base root://cmsdata.phys.cmu.edu//store/group/HH4b/Run2/opendata_project/ 
   chunksize: 10000
 
 config:

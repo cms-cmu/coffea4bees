@@ -17,7 +17,8 @@ create_output_directory "$OUTPUT_DIR"
 # Modify the config file
 display_section_header "Modifying config"
 JOB_CONFIG=$OUTPUT_DIR/HH4b_make_friend_SvB.yml
-sed -e "s|/srv/output/tmp/|$OUTPUT_DIR|" \
+sed -e "s|/srv/output/all_friends/|$OUTPUT_DIR/|" \
+    -e "s|/srv/output/tmp/|$OUTPUT_DIR/|" \
     coffea4bees/analysis/metadata/HH4b_make_friend_SvB.yml > $JOB_CONFIG
 cat $JOB_CONFIG; echo
 

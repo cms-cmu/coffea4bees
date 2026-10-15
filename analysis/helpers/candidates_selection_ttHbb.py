@@ -203,11 +203,12 @@ def _assign_SR_SB_ttHbb_oblong(quadJet, cand_cfg=None, full_space=False):
     m_lead = quadJet["lead"].mass
     m_subl = quadJet["subl"].mass
 
-    ### SR = inside ellipse centered at (m_lead, m_subl) = (125, 190); width/height are full axis lengths
-    center_lead, center_subl = 125., 190.
-    width, height = 40., 130.
+    ### SR = inside ellipse centered at (m_lead, m_subl) = (125, 300); width/height are full axis lengths
+    center_lead, center_subl = 125., 300.
+    width, height = 110., 700.
     quadJet["SR"] = (((m_lead - center_lead) / (width / 2))**2 + ((m_subl - center_subl) / (height / 2))**2) <= 1
-    quadJet["SB"] = (~quadJet["SR"])
+    ### SB = outside the SR ellipse, bounded by canH mass <= 350 and canTT mass <= 700
+    quadJet["SB"] = (~quadJet["SR"]) & (m_lead <= 350.) & (m_subl <= 700.)
 
     # Compute Euclidean radial distance for monitoring
     quadJet["rH"] = np.sqrt((m_lead - 125.0)**2 + (m_subl - 125.0)**2)
