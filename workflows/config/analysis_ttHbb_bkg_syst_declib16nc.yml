@@ -57,7 +57,7 @@ ttbar_processes:
 inputs:
   upstream_roasts:
     declib: declib16nc_run2_20261003_3ab8302-b2d2dec      # DeClustered 16x no-cap Run 2 library
-    nominal: ttHbb_run2_20261003_f7183e9-cca392c          # ttHbb Run 2 nominal (B, C, C4, D, F)
+    nominal: ttHbb_optimized_pairing_SR_ellipse_SB350_700_20261014_d041f77-ec35cc5 # ttHbb Run 2 nominal with new SR/SB
     mixeddata: mixeddata_run2_20260927_c39c264-0ce4d59    # ttbar pseudodata
   # synthetic multijet data and ttbar pseudodata
   mixeddata_all: "{roast:declib}/handoff/synthetic_data_lib16nc_multijet.yml"
