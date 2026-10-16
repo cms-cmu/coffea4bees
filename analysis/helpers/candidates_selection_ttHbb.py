@@ -101,7 +101,8 @@ def _build_can_ttH_quadjets(selev, diJet, diJetDr, cand_cfg=None, isRun3=False):
     })
 
     _select_can_ttH_quadjet(quadJet, cand_cfg)
-    _assign_SR_SB_ttHbb_oblong(quadJet, cand_cfg, full_space=True, nJet_selected=selev["nJet_selected"])   ### SR = whole (canH, canTT) mass plane, SB empty
+    # _assign_SR_SB_ttHbb_oblong(quadJet, cand_cfg, full_space=True, nJet_selected=selev["nJet_selected"])   ### SR = whole (canH, canTT) mass plane, SB empty
+    _assign_SR_SB_ttHbb_asymetric_ellipse(quadJet, cand_cfg, full_space=True, nJet_selected=selev["nJet_selected"])   ### SR = whole (canH, canTT) mass plane, SB empty
 
     return quadJet
 
@@ -213,6 +214,37 @@ def _assign_SR_SB_ttHbb_oblong(quadJet, cand_cfg=None, full_space=False, nJet_se
         quadJet["SR"] = in_ellipse
     else:
         quadJet["SR"] = in_ellipse & (nJet_selected >= n_jets_min)[:, np.newaxis]
+    ### SB = outside the SR ellipse (mass only, so events failing nJets are not moved into SB), bounded by canH mass <= 350 and canTT mass <= 700
+    quadJet["SB"] = (~in_ellipse) & (m_lead <= 350.) & (m_subl <= 700.)
+
+    # Compute Euclidean radial distance for monitoring
+    quadJet["rH"] = np.sqrt((m_lead - 125.0)**2 + (m_subl - 125.0)**2)
+
+
+def _assign_SR_SB_ttHbb_asymetric_ellipse(quadJet, cand_cfg=None, full_space=False, nJet_selected=None):
+    """Assign ttHbb SR/SB with an asymmetric ellipse in the (m_lead, m_subl) plane.
+
+    The SR is two half-ellipses sharing the center (center_lead, center_subl) and the width, joined
+    at m_subl = center_subl: the upper half (m_subl >= center_subl) has full height h1 and the lower
+    half (m_subl < center_subl) has full height h2. Widths/heights are full axis lengths.
+        center = 200, h1 = (650 - center) * 2 -> upper half reaches m_subl = 650
+        h2 = (center - 100) * 2               -> lower half reaches m_subl = 100
+    """
+    m_lead = quadJet["lead"].mass
+    m_subl = quadJet["subl"].mass
+
+    center_lead, center_subl = 120., 200.
+    width = 110.
+    h1 = (650. - center_subl) * 2
+    h2 = (center_subl - 100.) * 2
+    half_height = ak.where(m_subl >= center_subl, h1 / 2, h2 / 2)
+    in_ellipse = (((m_lead - center_lead) / (width / 2))**2 + ((m_subl - center_subl) / half_height)**2) <= 1
+    ### SR additionally requires nJet_selected >= n_jets_min (default 5)
+    n_jets_min = (cand_cfg or {}).get("sr_ttHbb", {}).get("n_jets_min", 5)
+    # if nJet_selected is None:
+    quadJet["SR"] = in_ellipse
+    # else:
+        # quadJet["SR"] = in_ellipse & (nJet_selected >= n_jets_min)[:, np.newaxis]
     ### SB = outside the SR ellipse (mass only, so events failing nJets are not moved into SB), bounded by canH mass <= 350 and canTT mass <= 700
     quadJet["SB"] = (~in_ellipse) & (m_lead <= 350.) & (m_subl <= 700.)
 
