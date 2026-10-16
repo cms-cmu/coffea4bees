@@ -252,7 +252,7 @@ analysis_config:
     run_performance: false
 
 # ==============================================================================
-# STAGE F (not validated for HH4b yet: make_signal_root.py is ttHbb-only)
+# STAGE F: 3b data x JCM_v x FvT_v (F_1), two-stage closure (F_2), Combine (F_3/F_4)
 # ==============================================================================
 analysis_config_mixeddata_bkgs: "coffea4bees/workflows/config/analysis_config_mixeddata_bkgs_HH4b.yml"
 closure_plot_config: "coffea4bees/plots/metadata/plots_bkg_syst_closure_HH4b.yml"

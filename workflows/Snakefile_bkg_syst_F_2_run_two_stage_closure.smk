@@ -41,7 +41,7 @@
 #   2. Signal ROOT Preparation (`make_signal_root_closure`):
 #      - Extracts signal shape histograms from nominal stitched MC via
 #        `coffea4bees/stats_analysis/make_signal_root.py`.
-#      - Writes: `root_inputs/hist_signal_ttHbb.root`
+#      - Writes: `root_inputs/hist_signal_{channel}.root` (processes: `signal_processes`)
 #   3. Two-Stage Closure Fit (`run_two_stage_closure`):
 #      - Runs `coffea4bees/stats_analysis/runTwoStageClosure.py` inside Combine container.
 #      - Computes Stage 0 variance, Stage 1 bias decomposition, and Stage 2 spurious signal.
@@ -59,7 +59,7 @@
 #
 # OUTPUTS:
 #   - Merged Closure ROOT: output/.../bkg_syst_F_2_run_two_stage_closure/root_inputs/histAll_{label}.root
-#   - Signal ROOT: output/.../bkg_syst_F_2_run_two_stage_closure/root_inputs/hist_signal_ttHbb.root
+#   - Signal ROOT: output/.../bkg_syst_F_2_run_two_stage_closure/root_inputs/hist_signal_{channel}.root
 #   - Systematic Covariance Pickle: output/.../bkg_syst_F_2_run_two_stage_closure/closure_fits/.../hists_closure_*.pkl
 #   - Systematic Templates ROOT: output/.../bkg_syst_F_2_run_two_stage_closure/closure_fits/.../hists_closure_*.root
 #   - Validation Count Reports: output/.../bkg_syst_F_2_run_two_stage_closure/closure_counts_{label}.yml
@@ -241,17 +241,24 @@ rule coffea_to_root_closure:
             -o {output} 2>&1 | tee {log}
         """
 
+# Signal processes in inputs.nominal_hists that the closure reads as the signal shape (runTwoStageClosure
+# sums ttHbb for ttHbb, GluGluToHHTo4B_cHHH1 + ZZ4b + ZH4b for any other channel)
+SIGNAL_PROCESSES = list(config.get('signal_processes') or
+                        (["ttHbb"] if channel == "ttHbb" else ["GluGluToHHTo4B_cHHH1", "ZZ4b", "ZH4b"]))
+SIGNAL_ROOT = f"{out_f2}root_inputs/hist_signal_{channel}.root"
+
 rule make_signal_root_closure:
     input:
         script = "coffea4bees/stats_analysis/make_signal_root.py",
         signal_file = config['nominal_coffea'],        # inputs.nominal_hists, fetched (bkg_syst_common)
     output:
-        f"{out_f2}root_inputs/hist_signal_ttHbb.root"
+        SIGNAL_ROOT
     params:
         container_wrapper = config['analysis_container_wrapper'],
         python_bin = config['python_bin'],
         in_file = lambda wildcards, input: input.signal_file,
         vars = " ".join(dict.fromkeys(var_map.values())),
+        processes = " ".join(SIGNAL_PROCESSES),
         years = " ".join(YEARS),
         extra_args = "--dummy" if config.get('test', False) else "",
     log:
@@ -263,6 +270,7 @@ rule make_signal_root_closure:
         {params.container_wrapper} {params.python_bin} {input.script} \
             -i {params.in_file} \
             --vars {params.vars} \
+            --processes {params.processes} \
             --years {params.years} \
             {params.extra_args} \
             -o {output} 2>&1 | tee {log}
@@ -271,7 +279,7 @@ rule make_signal_root_closure:
 rule run_two_stage_closure:
     input:
         inroot = config.get('input_file_mix', f"{out_f2}root_inputs/histAll_{config['label']}.root"),
-        sigroot = config.get('input_file_sig', f"{out_f2}root_inputs/hist_signal_ttHbb.root"),
+        sigroot = config.get('input_file_sig', SIGNAL_ROOT),
         script = "coffea4bees/stats_analysis/runTwoStageClosure.py"
     output:
         pkl = f"{out_f2}closure_fits/{mix_name}/{{classifier}}/rebin{{rebin}}/{{region}}/{channel}/hists_closure_{mix_name}_{{var}}_rebin{{rebin}}.pkl",
