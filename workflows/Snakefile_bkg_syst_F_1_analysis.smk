@@ -284,7 +284,6 @@ rule make_plots_closure:
             -o {params.output_dir} \
             -m {input.plot_cfg} \
             --combine_input_files \
-            -p 4 \
             {params.extra_arguments} 2>&1 | tee {log}
         {params.container_wrapper} {params.python_bin} coffea4bees/plots/make_subsample_overlay_plots.py \
             -i {input.data_coffea} \

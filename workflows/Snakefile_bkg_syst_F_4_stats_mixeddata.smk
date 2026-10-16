@@ -219,7 +219,11 @@ def get_target_rebins_F_4():
             return [int(r) for r in str(explicit_rebins).split()]
         else:
             return [int(r) for r in explicit_rebins]
-    closure_summary_path = f"{out}bkg_syst_F_2_run_two_stage_closure/closure_summary.json"
+    closure_reg = config.get('closure_region', config.get('region', 'SR'))
+    clf = config.get('classifier', 'SvB_MA')
+    closure_summary_path = f"{out}bkg_syst_F_2_run_two_stage_closure/summary_{clf}_{closure_reg}.json"
+    if not os.path.exists(closure_summary_path):
+        closure_summary_path = f"{out}bkg_syst_F_2_run_two_stage_closure/closure_summary.json"
     if os.path.exists(closure_summary_path):
         import json
         try:
@@ -229,8 +233,6 @@ def get_target_rebins_F_4():
         except Exception as e:
             print(f"[Snakemake] Error reading {closure_summary_path}: {e}")
             return []
-    closure_reg = config.get('closure_region', config.get('region', 'SR'))
-    clf = config.get('classifier', 'SvB_MA')
     try:
         checkpoint_output = checkpoints.evaluate_closure_candidates.get(region=closure_reg, classifier=clf).output[0]
         import json
