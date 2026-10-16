@@ -176,6 +176,12 @@ PYTHON = config.get('python_bin', os.getenv("CONTAINER_PYTHON", "python"))
 # were OOM-killed and took cmslpc338 and cmslpc325 down (2026-09-30).
 CONDOR = "" if (config['test'] or os.getenv("CI")) else "--shared-dask --condor"
 TEST_FLAG = "-t" if config['test'] else ""
+# runner.py --eras: its default era list is a fixed set (A..I, C01.., D01.., I2, I3, ...) that lacks most
+# 2025 picoAOD keys (B01, E01, F01, G01, ...), and data eras outside it are dropped silently -- the first
+# 2025 M.1 built its library from 6 of 16 eras. Pass year_eras explicitly (era-keyed data YAMLs only;
+# MC ignores it). Configs with `years:` instead of `year_eras:` keep the runner default.
+_ERAS = sorted({e for eras in YEAR_ERAS.values() for e in eras})
+ERAS_ARG = f"--eras {' '.join(_ERAS)}" if _ERAS else ""
 
 # Shell prefix for any rule that writes to EOS: roast seeds ./proxy/x509_proxy in the checkout.
 # ${VAR:-}, not $VAR: snakemake runs shell blocks under `set -u`.
