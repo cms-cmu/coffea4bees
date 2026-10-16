@@ -391,10 +391,10 @@ def add_pseudotagweights(
                             f"over {n_threeTag} threeTag events"
                         )
 
+                fvt_clipped = np.clip(np.nan_to_num(event.FvT.FvT, nan=1.0, posinf=50.0, neginf=0.0), 0.0, 50.0)
                 weight = np.where(
                     event[label3b],
-                    # event["pseudoTagWeight"] * event["pseudoTagWeight_lowpt"] * event.FvT.FvT,
-                    event["pseudoTagWeight"] * event.FvT.FvT,
+                    event["pseudoTagWeight"] * fvt_clipped,
                     1.0
                 )
                 weights.add("FvT", weight)
@@ -402,22 +402,22 @@ def add_pseudotagweights(
                 logging.debug( f"FvT {weights.partial_weight(include=['FvT'])[:10]}\n" )
 
 
+                t4_clipped = np.clip(np.nan_to_num(event.FvT.d3_to_t4, nan=0.0, posinf=50.0, neginf=0.0), 0.0, 50.0)
                 weight_d3_to_t4 = ak.where(
                     event[label3b],
-                    event.weight * event.pseudoTagWeight * event.FvT.d3_to_t4,
+                    event.weight * event.pseudoTagWeight * t4_clipped,
                     event.weight
                 )
-                # weight_d3_to_t4 = ak.where(event[label3b], event.weight * event.pseudoTagWeight * event.pseudoTagWeight_lowpt * event.FvT.d3_to_t4, event.weight)
                 event["weight_d3_to_t4"] = weight_d3_to_t4
                 event["weight_d3_to_t4_noFvT"] = weight_d3_to_t4  # alias for _noFvT histogram TTbar4b filling
                 logging.debug( f"weight_d3_to_t4 {event.weight_d3_to_t4[:10]}\n" )
 
+                t3_clipped = np.clip(np.nan_to_num(event.FvT.d3_to_t3, nan=0.0, posinf=50.0, neginf=0.0), 0.0, 50.0)
                 weight_d3_to_t3 = ak.where(
                     event[label3b],
-                    event.weight * event.pseudoTagWeight * event.FvT.d3_to_t3,
+                    event.weight * event.pseudoTagWeight * t3_clipped,
                     event.weight
                 )
-                # weight_d3_to_t3 = ak.where(event[label3b], event.weight * event.pseudoTagWeight * event.pseudoTagWeight_lowpt * event.FvT.d3_to_t3, event.weight)
                 event["weight_d3_to_t3"] = weight_d3_to_t3
                 event["weight_d3_to_t3_noFvT"] = weight_d3_to_t3  # alias for _noFvT histogram TTbar3b filling
                 logging.debug( f"weight_d3_to_t3 {event.weight_d3_to_t3[:10]}\n" )
@@ -477,11 +477,15 @@ def add_pseudotagweights(
                     mask3 = np.asarray(event[label3b]).astype(bool)
                     base_w = base_event_weight[mask3]
                     fvt_val = np.asarray(fvt_obj.FvT[mask3])
+                    fvt_val = np.nan_to_num(fvt_val, nan=1.0, posinf=50.0, neginf=0.0)
+                    fvt_val = np.clip(fvt_val, 0.0, 50.0)
                     w_data_v[mask3] = base_w * w_jcm_v * fvt_val
                     if hasattr(fvt_obj, "d3_to_t4"):
-                        w_t4_v[mask3] = base_w * w_jcm_v * np.asarray(fvt_obj.d3_to_t4[mask3])
+                        t4_val = np.nan_to_num(np.asarray(fvt_obj.d3_to_t4[mask3]), nan=0.0, posinf=50.0, neginf=0.0)
+                        w_t4_v[mask3] = base_w * w_jcm_v * np.clip(t4_val, 0.0, 50.0)
                     if hasattr(fvt_obj, "d3_to_t3"):
-                        w_t3_v[mask3] = base_w * w_jcm_v * np.asarray(fvt_obj.d3_to_t3[mask3])
+                        t3_val = np.nan_to_num(np.asarray(fvt_obj.d3_to_t3[mask3]), nan=0.0, posinf=50.0, neginf=0.0)
+                        w_t3_v[mask3] = base_w * w_jcm_v * np.clip(t3_val, 0.0, 50.0)
 
                 event[f"weight_{v_name}"] = w_data_v
                 event[f"weight_d3_to_t4_{v_name}"] = w_t4_v
