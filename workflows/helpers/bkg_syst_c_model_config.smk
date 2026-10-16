@@ -20,6 +20,36 @@ for m in SUBSAMPLES:
     train_templates[mdir] = f"model: {eos_base}/classifier/{mix_name}_v{m}"
     eval_templates[mdir] = f"model: {eos_base}/classifier/{mix_name}_v{m}, FvT: {eos_base}/friend/FvT/{mix_name}_v{m}"
 
+# The classifier's --metadata is A_2's classifier_metadata/ directory, which exists only on the A/B host.
+# On a GPU host (roast BKG_C on falcon / Nautilus) fetch the copy bkg_syst_AB_handoff put on EOS; the
+# YAMLs list files by root:// URL, so they work from anywhere. Without it the trainer silently finds
+# no dataset metadata and fails with "Dataset loaded 0 events".
+CLASSIFIER_METADATA_DIR = config['classifier_metadata'].rstrip('/')
+_FETCH_METADATA = bool(HANDOFF_EOS) and not os.path.isdir(CLASSIFIER_METADATA_DIR)
+_METADATA_FETCHED = f"{out_c}handoff/classifier_metadata.fetched"
+
+if _FETCH_METADATA:
+    rule fetch_bkg_syst_classifier_metadata:
+        output:
+            touch(_METADATA_FETCHED)
+        params:
+            src = f"{HANDOFF_EOS}/classifier_metadata",
+            dst = CLASSIFIER_METADATA_DIR,
+        run:
+            import fsspec
+            fs, root = fsspec.core.url_to_fs(params.src)
+            # xrootd ls returns bare names: rebuild the full path
+            names = [os.path.basename(f.rstrip("/")) for f in fs.ls(root, detail=False)]
+            files = [n for n in names if n.endswith((".yml", ".yaml"))]
+            if not files:
+                raise ValueError(f"no dataset YAMLs in {params.src}: rerun bkg_syst_AB_handoff")
+            os.makedirs(params.dst, exist_ok=True)
+            for n in files:
+                fs.get(f"{root.rstrip('/')}/{n}", os.path.join(params.dst, n))
+            print(f"fetched {len(files)} dataset YAMLs {params.src} -> {params.dst}")
+
+    localrules: fetch_bkg_syst_classifier_metadata
+
 def _format_structure(obj, mapping):
     if isinstance(obj, str):
         res = obj
@@ -33,6 +63,8 @@ def _format_structure(obj, mapping):
     return obj
 
 rule stage_bkg_syst_c_model_config:
+    input:
+        [_METADATA_FETCHED] if _FETCH_METADATA else [],
     output:
         train = f"{out_c}models/mix_{{m}}/wfs/train.yml",
         eval = f"{out_c}models/mix_{{m}}/wfs/evaluate.yml",
