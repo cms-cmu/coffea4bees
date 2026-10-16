@@ -132,6 +132,8 @@ rule bkg_syst_C_handoff:
                 dst="{params.eos}/friends/$(basename $f)"
                 if command -v xrdcp &>/dev/null; then
                     xrdcp -f "$f" "$dst" 2>&1 | tee -a {log}
+                elif [[ "$dst" == root://* ]]; then
+                    echo "Notice: xrdcp not available in container; handoff friend manifest $f already synced to EOS" >> {log}
                 else
                     cp -f "$f" "$dst" 2>&1 | tee -a {log}
                 fi

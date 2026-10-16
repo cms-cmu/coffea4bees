@@ -1,4 +1,5 @@
 import awkward as ak
+import re
 from coffea4bees.analysis.helpers.hist_templates import (
     FvTHists,
     MvDHists,
@@ -870,8 +871,10 @@ def filling_ttHbb_histograms(
             if "SvB" in selev.fields and "ps_ttHbb" in selev.SvB.fields:
                 fill += ttHbbSvBHists(("SvB_noFvT", "SvB Classifier (no FvT)"), "SvB", weight="weight_noFvT")
 
-        # Minimal control checks when kinematics category is not already filled
-        if "kinematics" not in categories:
+        # Minimal control checks when kinematics category is not already filled:
+        # only run for nominal/v0 to verify execution without overhead
+        is_subsample_gt0 = bool(re.search(r"mix_v([1-9]|1[0-5])$", str(processName)))
+        if "kinematics" not in categories and not is_subsample_gt0:
             fill += Jet.plot(("selJets", "Selected Jets"), "selJet", skip=skip_all_but_n)
             fill += hist.add("v4j.mass", (120, 0, 1200, ("v4j.mass", "m_{4j} [GeV]")))
             fill += hist.add("v4j.pt", (100, 0, 1000, ("v4j.pt", "p_{T}^{4j} [GeV]")))
