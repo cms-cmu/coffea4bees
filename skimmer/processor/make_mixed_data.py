@@ -361,9 +361,10 @@ class HemiMixer(Skimmer4b):
 
         #
         # Add Btag SF
-        # 2024 uses UParT, which has only WP-based SFs (no shape SF) yet: skip it, as processor_HH4b does.
+        # 2024 and 2025 (= Summer24 MC) use UParT, which has only WP-based SFs (no shape SF) yet: skip it,
+        # as processor_HH4b does.
         #
-        if config["isMC"] and year != "2024":
+        if config["isMC"] and year not in ("2024", "2025"):
 
             weights, list_weight_names = add_btagweights( event, weights,
                                                           list_weight_names=list_weight_names,
