@@ -49,6 +49,8 @@ class ttHbbProcessor(HH4bBaseProcessor):
         corrections_metadata: dict = None,
         ttbb_scale: float = 1.0,
         fill_histograms=True,
+        svb_binning=None,
+        svb_binning_file=None,
         **kwargs,
     ):
         logging.info("Initializing decoupled ttHbbProcessor")
@@ -56,6 +58,31 @@ class ttHbbProcessor(HH4bBaseProcessor):
         self.pairing = pairing
         self.ttbb_scale = float(ttbb_scale)
         self.fill_histograms = fill_histograms
+
+        binning_source = svb_binning or svb_binning_file or kwargs.get("svb_binning") or kwargs.get("svb_binning_file")
+        self.svb_binning = {}
+        if binning_source:
+            if isinstance(binning_source, str):
+                import json, os
+                try:
+                    if binning_source.startswith("root://"):
+                        import fsspec
+                        with fsspec.open(binning_source, "r") as f:
+                            self.svb_binning = json.load(f)
+                        logging.info(f"Loaded dynamic SvB binning from {binning_source}")
+                    elif os.path.exists(binning_source):
+                        with open(binning_source, "r") as f:
+                            self.svb_binning = json.load(f)
+                        logging.info(f"Loaded dynamic SvB binning from {binning_source}")
+                    else:
+                        logging.warning(f"svb_binning file not found: {binning_source}, falling back to default")
+                except Exception as e:
+                    logging.warning(f"Failed to load svb_binning from {binning_source}: {e}, falling back to default")
+            elif isinstance(binning_source, dict):
+                self.svb_binning = binning_source
+            elif isinstance(binning_source, (list, np.ndarray)):
+                self.svb_binning = {"bin_edges": binning_source}
+
         if weights is None:
             weights = "coffea4bees/metadata/weights/weights_ttHbb.yml"
         super().__init__(
@@ -179,6 +206,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
             analysis_selections=analysis_selections,
             cand_cfg=self.cand_cfg,
             pairing=self.pairing,
+            svb_binning=self.svb_binning,
         )
 
         if self._is_ttHbb_MC() and self.pairing == "can_ttH":
