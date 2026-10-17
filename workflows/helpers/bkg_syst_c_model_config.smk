@@ -88,7 +88,7 @@ rule stage_bkg_syst_c_model_config:
                     local_ds = f"{out_a2}{sub_name}.yml"
                     if os.path.exists(local_ds):
                         shutil.copy(local_ds, target_ds)
-                    elif HANDOFF_EOS:
+                    elif HANDOFF_EOS and shutil.which("xrdcp"):
                         subprocess.run(["xrdcp", "-f", "-s", f"{HANDOFF_EOS}/datasets/{sub_name}.yml", target_ds], check=False)
 
         mapping = {
