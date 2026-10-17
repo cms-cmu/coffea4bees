@@ -257,8 +257,9 @@ analysis_config:
 analysis_config_mixeddata_bkgs: "coffea4bees/workflows/config/analysis_config_mixeddata_bkgs_HH4b.yml"
 closure_plot_config: "coffea4bees/plots/metadata/plots_bkg_syst_closure_HH4b.yml"
 classifier: "SvB_MA"
-variable: "SvB_MA_ps_hh"
-variable_substem: "ps_hh"
+# closure / fit variable: the 240-bin ps_hh_fine, as the HH4b nominal (ps_hh is coarse variable-width)
+variable: "SvB_MA_ps_hh_fine"
+variable_substem: "ps_hh_fine"
 
 closure_rebin_candidates:
   - 2
@@ -273,6 +274,7 @@ no_sqrt_n_priors: false
 
 convert_hist_to_json:
   histos:
+    - "SvB_MA.ps_hh_fine"
     - "SvB_MA.ps_hh"
     - "SvB_MA.ps_zh"
     - "SvB_MA.ps_zz"
@@ -298,7 +300,7 @@ channels:
   HH4b:
     signallabel: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb"
     othersignal: "ggHH_kl_0_kt_1_13p0TeV_hbbhbb ggHH_kl_2p45_kt_1_13p0TeV_hbbhbb ggHH_kl_5_kt_1_13p0TeV_hbbhbb"
-    variable: "SvB_MA.ps_hh"
+    variable: "SvB_MA.ps_hh_fine"
     signal: "GluGluToHHTo4B_cHHH1"
     # F_2 writes closure_fits/.../{channel}/ with channel = the top-level `channel` (HH4b)
     closure_subdir: "HH4b"
