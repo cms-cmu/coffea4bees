@@ -398,6 +398,14 @@ class HemiMixer(Skimmer4b):
             selection = selection & pass_ttbar_filter
             selev = selev[pass_ttbar_filter_selev]
 
+        #
+        #  Nothing to mix in this chunk: save no events (the chunk's source range is still recorded, so
+        #  the integrity check passes). With 25k-event chunks 6 of 4,052 2025 chunks got here and the
+        #  mixer raised "no jet_mult bins fired" (mixeddata_run3_2025_20261016_daa12d2-1f6f43d).
+        #
+        if len(selev) == 0:
+            return (np.zeros(len(event), dtype=bool), None, {})
+
 
         #
         # Identify tagged and pstagged jets

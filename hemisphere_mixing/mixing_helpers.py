@@ -864,6 +864,13 @@ def replace_hemis_topk_kdTrees(
         raise ValueError(f"all_hemis length must be 2*n_event (got {N}); expecting concat of pos+neg.")
     n_event = N // 2
 
+    # A chunk with no selected events (all_hemis empty) has nothing to mix: return it unchanged rather
+    # than raising "no jet_mult bins fired" below. Smaller chunks make this reachable -- with 25k-event
+    # chunks, 6 of 4,052 2025 chunks selected no events and failed the M.2 integrity check
+    # (mixeddata_run3_2025_20261016_daa12d2-1f6f43d).
+    if N == 0:
+        return all_hemis, np.ones(0, dtype=bool)
+
     # ─── Stage 1: per-bin top-K query (no jet fetch) ──────────────────────
     bin_records = []
 
