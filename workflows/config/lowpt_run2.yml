@@ -220,7 +220,7 @@ svb:
           - --kfold-seed SvB random
           - --kfold-seed-offsets 0
           - --architecture
-          - n_features: 30
+          - n_features: 8
             use_kv_proj: true
             use_attention_gate: true
           - --training FixedStep
