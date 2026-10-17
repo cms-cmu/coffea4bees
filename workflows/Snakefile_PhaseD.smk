@@ -183,7 +183,13 @@ rule compute_svb_binning:
         json = "{model_dir}/svb_quantiles.json",
     log:
         "{model_dir}/svb_quantiles.log",
+    container: ANALYSIS_CONTAINER
+    resources:
+        runtime = 60,
+        mem_mb  = 16000,
+    threads: 4
     params:
+        init              = INIT,
         classifier_inputs = lambda wildcards: str(config.get("metadata", "")).split("@@")[0],
         friend_result = lambda wildcards: f"{config.get('friends_dict', {}).get(wildcards.model_dir, config.get('friend', ''))}/result.json",
         sample_pattern = lambda wildcards: str(config.get("binning_sample_pattern", "ttHbb")),
@@ -193,7 +199,8 @@ rule compute_svb_binning:
         handoff_eos = lambda wildcards: str(config.get("handoff", {}).get("eos_base", "") if isinstance(config.get("handoff"), dict) else ""),
     shell:
         """
-        mkdir -p $(dirname {output.json}) $(dirname {log})
+        {params.init} && \
+        mkdir -p $(dirname {output.json}) $(dirname {log}) && \
         if [ -z "${{X509_USER_PROXY:-}}" ] && [ -f ./proxy/x509_proxy ]; then
             export X509_USER_PROXY="$PWD/proxy/x509_proxy"
         fi
@@ -212,5 +219,4 @@ rule compute_svb_binning:
         fi
         """
 
-localrules: compute_svb_binning
 
