@@ -29,18 +29,18 @@ handoff:
 
 inputs:
   upstream_roasts:
-    # Update nominal to point to the newly produced ttHbb_opt_param roast once completed
-    nominal: ttHbb_stat_only_20261012_49432f5-e211288
+    nominal: analysis_ttHbb_opt_param_20261017_86e4239-3ead386
+    nominal_b: ttHbb_stat_only_20261012_49432f5-e211288
     mixeddata: mixeddata_run2_20260927_c39c264-0ce4d59
   mixeddata_all: "{roast:mixeddata}/handoff/mixeddata_all.yml"
   ttbar_psdata: "{roast:mixeddata}/handoff/ttbar_PSData.yml"
-  jcm_hists: "{roast:nominal}/{roast:nominal:output_path}computeJCM/histAll_NoJCM.coffea"
+  jcm_hists: "{roast:nominal_b}/{roast:nominal_b:output_path}computeJCM/histAll_NoJCM.coffea"
   nominal_hists: "{roast:nominal}/{roast:nominal:output_path}histAll_{roast:nominal:label}.coffea"
-  classifier_inputs: "{roast:nominal}/handoff/classifier_inputs_{roast:nominal:id}.json"
-  SvB: "{roast:nominal}/friend/SvB_ttHbb_stitched/result.json@@analysis.0.merged"
-  SvB_model: "{roast:nominal}/classifier/SvB_ttHbb_stitched/result.json"
-  SvB_MA: "{roast:nominal}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
-  SvB_MA_model: "{roast:nominal}/classifier/SvB_MA_ttHbb_stitched/result.json"
+  classifier_inputs: "{roast:nominal_b}/handoff/classifier_inputs_{roast:nominal_b:id}.json"
+  SvB: "{roast:nominal}/friend/SvB_ttHbb_opt_param/result.json@@analysis.0.merged"
+  SvB_model: "{roast:nominal}/classifier/SvB_ttHbb_opt_param/result.json"
+  SvB_MA: "{roast:nominal}/friend/SvB_MA_ttHbb_opt_param/result.json@@analysis.0.merged"
+  SvB_MA_model: "{roast:nominal}/classifier/SvB_MA_ttHbb_opt_param/result.json"
 
 classifiers:
   - "SvB_MA"
