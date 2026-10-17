@@ -1,0 +1,80 @@
+# ==============================================================================
+# ttHbb Run 2 BACKGROUND SYSTEMATIC — Optimized FvT Architecture (n=24, 20 ep)
+# ==============================================================================
+# Layered on analysis_ttHbb_bkg_syst.yml, replacing the Stage C FvT model with the
+# optimized n=24 latent feature dimension and 20-epoch training schedule selected
+# from the 5-trial optimization campaign on PSC Bridges-2.
+#
+# USAGE:
+#   1. Run nominal stat-only chain first:
+#      roast new --config coffea4bees/workflows/config/analysis_ttHbb_opt_param.yml \
+#          --phases B,C,D,F
+#      roast submit <stat_only_roast_id>
+#
+#   2. Run background systematics chain:
+#      roast new --config coffea4bees/workflows/config/analysis_ttHbb_bkg_syst_opt_param.yml \
+#          --step cmslpc:coffea4bees/workflows/Snakefile_bkg_syst.smk
+#      roast submit <bkg_syst_roast_id> --step bkg_syst --targets all_pre_fvt
+#      roast submit <bkg_syst_roast_id> --step bkg_syst --targets all_post_fvt
+# ==============================================================================
+
+base: coffea4bees/workflows/config/analysis_ttHbb_bkg_syst.yml
+
+label: "ttHbb_bkg_syst_opt_param"
+output_path: "output/{roast_id}/"
+
+publish_base: "{eos_prod}/{roast_id}"
+handoff:
+  eos_base: "{eos_prod}/{roast_id}/handoff"
+
+inputs:
+  upstream_roasts:
+    # Update nominal to point to the newly produced ttHbb_opt_param roast once completed
+    nominal: ttHbb_stat_only_20261012_49432f5-e211288
+    mixeddata: mixeddata_run2_20260927_c39c264-0ce4d59
+  mixeddata_all: "{roast:mixeddata}/handoff/mixeddata_all.yml"
+  ttbar_psdata: "{roast:mixeddata}/handoff/ttbar_PSData.yml"
+  jcm_hists: "{roast:nominal}/{roast:nominal:output_path}computeJCM/histAll_NoJCM.coffea"
+  nominal_hists: "{roast:nominal}/{roast:nominal:output_path}histAll_{roast:nominal:label}.coffea"
+  classifier_inputs: "{roast:nominal}/handoff/classifier_inputs_{roast:nominal:id}.json"
+  SvB: "{roast:nominal}/friend/SvB_ttHbb_stitched/result.json@@analysis.0.merged"
+  SvB_model: "{roast:nominal}/classifier/SvB_ttHbb_stitched/result.json"
+  SvB_MA: "{roast:nominal}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
+  SvB_MA_model: "{roast:nominal}/classifier/SvB_MA_ttHbb_stitched/result.json"
+
+classifiers:
+  - "SvB_MA"
+  - "SvB"
+classifier_variables:
+  SvB_MA: "SvB_MA_ps_ttHbb"
+  SvB: "SvB_ps_ttHbb"
+
+fvt_train_workflow:
+  main:
+    module: train
+    option:
+      - --max-loaders 2
+      - --max-trainers 1
+      - --device cuda cpu
+  model:
+    - module: HCR.FvT.baseline.Train
+      option:
+        - --architecture
+        - n_features: 24
+          use_kv_proj: true
+          use_attention_gate: true
+        - --kfolds 3
+        - --kfold-seed FvT random
+        - --kfold-seed-offsets 0
+        - --training FixedStep
+        - epoch: 20
+          bs_init: 2048
+          lr_init: 0.005
+          lr_milestones: [14, 16, 18]
+        - --finetuning FixedStep
+        - epoch: 1
+          bs_init: 16384
+
+analysis_config:
+  config:
+    FvT_pd3_floor: 0.01
