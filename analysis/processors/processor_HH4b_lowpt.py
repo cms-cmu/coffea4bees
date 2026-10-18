@@ -58,6 +58,11 @@ class analysis(HH4bBaseProcessor):
         if apply_JCM:
             if isinstance(JCM_file, str):
                 self.apply_JCM = {"default": jetCombinatoricModel(JCM_file, lowpt_mode=True)}
+            elif isinstance(JCM_file, dict):
+                for year, jcm_path in JCM_file.items():
+                    if jcm_path:
+                        self.apply_JCM[year] = jetCombinatoricModel(jcm_path, lowpt_mode=True)
+                logging.info(f"Loaded JCM models for {len(self.apply_JCM)} eras from config: {list(self.apply_JCM.keys())}")
             elif self.weights_data:
                 for year, year_cfg in self.weights_data.items():
                     jcm_path = year_cfg.get("JCM_file") or year_cfg.get("JCM")

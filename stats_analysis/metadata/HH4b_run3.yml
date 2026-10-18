@@ -15,6 +15,7 @@ bin:
   - &22post HH4b_2022_EE
   - &23pre HH4b_2023_preBPix
   - &23post HH4b_2023_BPix
+  - &24 HH4b_2024
 
 # https://twiki.cern.ch/twiki/bin/view/CMS/TWikiLUM?rev=167#LumiComb  # https://gitlab.cern.ch/hh/naming-conventions
 # uncertainty:
