@@ -310,6 +310,7 @@ analysis_config:
     SvB: null
     top_reconstruction: fast
     plot_ttbar_with_weights: true
+    fill_histograms: "SvB"
 
 plot_config: "coffea4bees/plots/metadata/plotsAll_lowpt.yml"
 known_counts_fatal: false
