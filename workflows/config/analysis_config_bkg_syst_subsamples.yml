@@ -23,6 +23,6 @@ config:
     - path: "root://cmseos.fnal.gov//store/user/algomez/HH4b_prod/ttHbb_run2_20261003_f7183e9-cca392c/classifier/SvB_ttHbb_stitched/result.json"
       name: "Final"
   top_reconstruction: "fast"
-  fill_histograms: "kinematics"
+  fill_histograms: "kinematics+SvB"
   hist_cuts:
     - "pass_nSelJets_gt6"
