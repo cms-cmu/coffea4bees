@@ -341,9 +341,9 @@ channels:
   #   variable: "SvB_MA.ps_zz"
   #   signal: "ZZ4b"
   #   closure_subdir: "zz"
-  ZH4b:
-    signallabel: "ZH_bbbb"
-    othersignal: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb ZZ_bbbb"
-    variable: "SvB_MA.ps_zh"
-    signal: "ZH4b"
-    closure_subdir: "zh"
+  # ZH4b:
+  #   signallabel: "ZH_bbbb"
+  #   othersignal: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb ZZ_bbbb"
+  #   variable: "SvB_MA.ps_zh"
+  #   signal: "ZH4b"
+  #   closure_subdir: "zh"
