@@ -132,6 +132,13 @@ rule bkg_syst_C_handoff:
                 dst="{params.eos}/friends/$(basename $f)"
                 if command -v xrdcp &>/dev/null; then
                     xrdcp -f "$f" "$dst" 2>&1 | tee -a {log}
+                elif [[ "$dst" == root://* ]]; then
+                    # no xrdcp (the Nautilus orchestrator image): fsspec-xrootd; `cp` cannot write root://
+                    python3 -c 'import os, sys, fsspec
+fs, path = fsspec.core.url_to_fs(sys.argv[2])
+fs.makedirs(os.path.dirname(path), exist_ok=True)
+with fs.open(path, "wb") as out, open(sys.argv[1], "rb") as src:
+    out.write(src.read())' "$f" "$dst" 2>&1 | tee -a {log}
                 else
                     cp -f "$f" "$dst" 2>&1 | tee -a {log}
                 fi

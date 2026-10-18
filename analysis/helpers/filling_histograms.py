@@ -54,6 +54,7 @@ def filling_nominal_histograms(
     compute_hemi_mixing_diagnostics: bool = False,
     plot_extra_canjet_vars: bool = False,
     fill_histograms = True,
+    subsample_names: list = None,
 ):
     """Fills baseline event/object histograms and HH4b classifiers.
 
@@ -453,6 +454,22 @@ def filling_nominal_histograms(
                  (f"hemi_{coll}_neg_pt",
                   rf"$p_T$ {coll_label}-jet sum, $-$ hemi (inclusive) [GeV]")),
             )
+
+    # 5. PER-SUBSAMPLE BACKGROUND MODELS (bkg_syst F_1: 3b data x JCM_v x FvT_v in one pass). The
+    # weights weight_<v>, weight_d3_to_t{4,3}_<v> come from event_weights (subsample_jcms); the closure
+    # (convert_closure_coffea_to_root.py) reads <SvB>_<v>.<ps> per subsample. SvB_MA keeps the 240-bin
+    # ps_*_fine (the HH4b fit variable, ps_hh_fine); SvB gets the coarse hists only.
+    if subsample_names and run_SvB and "svb" in categories:
+        sub_weight = {"weight_d3_to_t4": "weight_d3_to_t4_{}", "weight_d3_to_t3": "weight_d3_to_t3_{}"}.get(weight_name, "weight_{}")
+        phh_fine = ["phh_hh_fine", "phh_fine"]
+        sub_skip = {"SvB_MA": phh_fine, "SvB": ["ps_zz_fine", "ps_zh_fine", "ps_hh_fine"] + phh_fine}
+        for v_name in subsample_names:
+            w_var = sub_weight.format(v_name)
+            if w_var not in selev.fields:
+                continue
+            for name, skip in sub_skip.items():
+                if name in selev.fields:
+                    fill += SvBHists((f"{name}_{v_name}", f"{name} {v_name} Classifier"), name, weight=w_var, skip=skip)
 
     # fill histograms
     fill(selev, hist)

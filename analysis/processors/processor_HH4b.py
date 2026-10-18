@@ -1878,6 +1878,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 plot_extra_canjet_vars=self.plot_extra_canjet_vars,
                 tag_list=self.tag_list,
                 fill_histograms=self.fill_histograms,
+                subsample_names=getattr(self, "subsample_names", None),
             )
             if not self.plot_ttbar_with_weights and not self.plot_ttbar_with_MvD_weights:
                 return hist_nom
@@ -1906,6 +1907,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     plot_extra_canjet_vars=self.plot_extra_canjet_vars,
                     tag_list=self.tag_list,
                     fill_histograms=self.fill_histograms,
+                    subsample_names=getattr(self, "subsample_names", None),
                 )
 
                 hist_t3 = filling_nominal_histograms(
@@ -1928,6 +1930,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     plot_extra_canjet_vars=self.plot_extra_canjet_vars,
                     tag_list=self.tag_list,
                     fill_histograms=self.fill_histograms,
+                    subsample_names=getattr(self, "subsample_names", None),
                 )
                 hists += [hist_t4, hist_t3]
 

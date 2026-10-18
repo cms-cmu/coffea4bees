@@ -1,0 +1,19 @@
+# HH4b Run 2 background systematic on the capped DeClustered library (declib16, distance cap 0.05).
+# Same chain and settings as analysis_HH4b_bkg_syst_declib16nc.yml; only the closure-sample source differs.
+#
+#   bin/roast new --config coffea4bees/workflows/config/analysis_HH4b_bkg_syst_declib16.yml \
+#       --phases BKG_AB,BKG_C,BKG_F --nautilus
+#
+base: coffea4bees/workflows/config/analysis_HH4b_bkg_syst_declib16nc.yml
+label: "HH4b_bkg_syst_declib16"
+mix_name: "HH4b_bkg_syst_declib16"
+
+inputs:
+  upstream_roasts:
+    declib: declib16_run2_20261003_f7183e9-9ae5088         # DeClustered 16x Run 2 library, distance cap 0.05
+    nominal: nominal_run2_20260919_a180b1a-a16559c
+    mixeddata: mixeddata_run2_20260927_c39c264-0ce4d59
+  mixeddata_all: "{roast:declib}/handoff/synthetic_data_lib16_multijet.yml"
+
+phase_e_fvt:
+  mix_name: "HH4b_bkg_syst_declib16"
