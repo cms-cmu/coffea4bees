@@ -240,13 +240,13 @@ def _assign_SR_SB_ttHbb_asymetric_ellipse(quadJet, cand_cfg=None, full_space=Fal
     half_height = ak.where(m_subl >= center_subl, h1 / 2, h2 / 2)
     in_ellipse = (((m_lead - center_lead) / (width / 2))**2 + ((m_subl - center_subl) / half_height)**2) <= 1
     ### SR additionally requires nJet_selected >= n_jets_min (default 5)
-    n_jets_min = (cand_cfg or {}).get("sr_ttHbb", {}).get("n_jets_min", 5)
+    # n_jets_min = (cand_cfg or {}).get("sr_ttHbb", {}).get("n_jets_min", 5)
     # if nJet_selected is None:
-    quadJet["SR"] = in_ellipse
+    #     quadJet["SR"] = in_ellipse
+    #     quadJet["SB"] = ((~in_ellipse) & (m_lead <= 350.) & (m_subl <= 700.))
     # else:
-        # quadJet["SR"] = in_ellipse & (nJet_selected >= n_jets_min)[:, np.newaxis]
-    ### SB = outside the SR ellipse (mass only, so events failing nJets are not moved into SB), bounded by canH mass <= 350 and canTT mass <= 700
-    quadJet["SB"] = (~in_ellipse) & (m_lead <= 350.) & (m_subl <= 700.)
+    quadJet["SR"] = in_ellipse & (nJet_selected >= 5)[:, np.newaxis]
+    quadJet["SB"] = ((~in_ellipse) & (m_lead <= 350.) & (m_subl <= 700.)) | (in_ellipse & (nJet_selected == 4)[:, np.newaxis])
 
     # Compute Euclidean radial distance for monitoring
     quadJet["rH"] = np.sqrt((m_lead - 125.0)**2 + (m_subl - 125.0)**2)
