@@ -767,11 +767,12 @@ def lowpt_jet_selection(
     lp_jetId_min = lp_cfg.get('jetId_min', 2)
 
     # Define low-pT jet selection criteria
+    pass_jet_id = event.Jet.passJetId if isRun3 else (event.Jet.jetId >= lp_jetId_min)
     event['Jet', 'selected_lowpt'] = (
         (event.Jet.pt >= lp_pt_min) &
         (np.abs(event.Jet.eta) <= lp_eta_max) &
         ~event.Jet.pileup &
-        (event.Jet.jetId >= lp_jetId_min) &
+        pass_jet_id &
         event.Jet.lepton_cleaned &
         ~event.Jet.selected  # Exclude already selected jets
     )
