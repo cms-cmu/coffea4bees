@@ -88,8 +88,25 @@ rule stage_bkg_syst_c_model_config:
                     local_ds = f"{out_a2}{sub_name}.yml"
                     if os.path.exists(local_ds):
                         shutil.copy(local_ds, target_ds)
-                    elif HANDOFF_EOS and shutil.which("xrdcp"):
-                        subprocess.run(["xrdcp", "-f", "-s", f"{HANDOFF_EOS}/datasets/{sub_name}.yml", target_ds], check=False)
+                    elif HANDOFF_EOS:
+                        xrdcp_bin = shutil.which("xrdcp")
+                        if not xrdcp_bin and os.path.exists("/cvmfs/cms.cern.ch/common/xrdcp"):
+                            xrdcp_bin = "/cvmfs/cms.cern.ch/common/xrdcp"
+                        if xrdcp_bin:
+                            subprocess.run([xrdcp_bin, "-f", "-s", f"{HANDOFF_EOS}/datasets/{sub_name}.yml", target_ds], check=False)
+                        else:
+                            try:
+                                import fsspec
+                                with fsspec.open(f"{HANDOFF_EOS}/datasets/{sub_name}.yml", "rb") as fin:
+                                    with open(target_ds, "wb") as fout:
+                                        fout.write(fin.read())
+                            except Exception as e:
+                                pass
+                if not os.path.exists(target_ds) or os.path.getsize(target_ds) == 0:
+                    raise FileNotFoundError(
+                        f"Stage C model config: required multisample dataset metadata '{target_ds}' is missing! "
+                        f"Checked local '{out_a2}{sub_name}.yml' and EOS '{HANDOFF_EOS}/datasets/{sub_name}.yml'."
+                    )
 
         mapping = {
             "m": str(m),
