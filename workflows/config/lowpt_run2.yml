@@ -240,6 +240,7 @@ svb:
       - module: HCR.SvB_lowpt.Signal
         option:
           - --metadata coffea4bees/metadata/datasets/
+          - --mc-processes ZH ggF
           - --friends "" {eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input_lowpt
     setting:
       - module: IO
@@ -261,6 +262,7 @@ svb:
       - module: HCR.SvB_lowpt.Eval
         option:
           - --metadata coffea4bees/metadata/datasets/
+          - --mc-processes ttbar ZH ggF
           - --max-workers 8
           - --friends "" {eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input_lowpt
     analysis:
