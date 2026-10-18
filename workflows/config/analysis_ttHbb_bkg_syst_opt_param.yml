@@ -40,6 +40,20 @@ classifier_variables:
   SvB_MA: "SvB_MA_ps_ttHbb"
   SvB: "SvB_ps_ttHbb"
 
+subsamples:
+  source: "seeds"
+  n: 16
+  dataset_name: "mixeddata_4b"
+  runner:
+    condor: true
+    shared_dask: true
+    worker_memory: "8GB"
+
+phase_e_fvt:
+  channel: "ttHbb"
+  mix_name: "ttHbb_bkg_syst_opt_param"
+  n_models: 16
+
 fvt_train_workflow:
   main:
     module: train

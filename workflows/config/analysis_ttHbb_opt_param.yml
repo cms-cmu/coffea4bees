@@ -226,17 +226,16 @@ fvt:
       - module: HCR.FvT.baseline.Train
         option:
           - --architecture
-          - n_features: 24
+          - n_features: 16
             use_kv_proj: true
             use_attention_gate: true
           - --kfolds 3
           - --kfold-seed FvT random
           - --kfold-seed-offsets 0
-          - --training FixedStep
-          - epoch: 20
+          - --training CosineAnnealing
+          - epoch: 15
             bs_init: 2048
             lr_init: 0.005
-            lr_milestones: [14, 16, 18]
           - --finetuning FixedStep
           - epoch: 1
             bs_init: 16384
@@ -523,6 +522,7 @@ analysis_config:
     hist_cuts: ["pass_nSelJets_gt6", "passLeptonVeto"]
     top_reconstruction: fast
     plot_ttbar_with_weights: true
+    FvT_pd3_floor: 0.01
     pairing: nominal
     fill_histograms: "SvB"
     svb_binning_file: "output/SvB_MA_ttHbb_opt_param/svb_quantiles.json"
