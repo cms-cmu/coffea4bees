@@ -203,6 +203,7 @@ fvt_closure:
   config:
     require_trigWeight: true
     friends_include: [trigWeight, FvT]
+    fill_histograms: "kinematics+FvT"
 
 # ==============================================================================
 # PHASE D: SvB (falcon or nautilus)
