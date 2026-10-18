@@ -20,7 +20,7 @@ handoff:
 inputs:
   upstream_roasts:
     declib: declib16nc_run2_20261003_3ab8302-b2d2dec
-    nominal: analysis_ttHbb_opt_param_20261017_86e4239-3ead386
+    nominal: analysis_ttHbb_opt_param_20261018_846d264-1e8d320
     nominal_b: ttHbb_stat_only_20261012_49432f5-e211288
     mixeddata: mixeddata_run2_20260927_c39c264-0ce4d59
   mixeddata_all: "{roast:declib}/handoff/synthetic_data_lib16nc_multijet.yml"
