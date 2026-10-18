@@ -57,6 +57,13 @@ runs:
     - PhaseB_1_computeJCM
     - PhaseC
     - {snakefile: PhaseC_4_FvT_closure, upstream: ["computeJCM/singlefiles/", "metadata/weights/JCM/"]}
+  nominal_run3_2025.yml:
+    - PhaseB
+    - PhaseB_1_computeJCM
+    - PhaseC
+    - {snakefile: PhaseC_4_FvT_closure, upstream: ["computeJCM/singlefiles/", "metadata/weights/JCM/"]}
+    - PhaseD
+    - PhaseF
   nominal_run3_2025_nontight_pd3floor.yml:
     - PhaseC_4_FvT_closure
   nominal_run3_2024.yml:

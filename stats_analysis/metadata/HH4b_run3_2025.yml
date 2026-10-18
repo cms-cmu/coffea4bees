@@ -1,0 +1,17 @@
+# HH4b_run3.yml for 2025 alone: one HH4b_2025 bin (make_combine_inputs suffix-matches the
+# histogram years to the bins, and HH4b_run3.yml has only the four 2022/2023 bins).
+# Statistics only, as HH4b_run3.yml (its systematics block is commented out).
+processes:
+  signal:
+    GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00:
+      label: ggHH_kl_1_kt_1_13p0TeV_hbbhbb
+      process: 0
+  background:
+    multijet:
+      label: 'multijet'
+      process: 1
+    tt:
+      label: 'tt'
+      process: 2
+bin:
+  - HH4b_2025
