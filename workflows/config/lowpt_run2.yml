@@ -39,7 +39,7 @@ year_eras:
 # PHASE B: CALIBRATION & CLASSIFIER INPUTS (JCM & Friendtrees)
 # ==============================================================================
 jcm_plot_config: "coffea4bees/plots/metadata/plotsAll_lowpt_noFvT.yml"
-jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/lowpt_jcm_config.yml"
+jcm_extra_arguments: "--lowpt --jcm_config coffea4bees/analysis/jcm_tools/metadata/lowpt_jcm_config.yml"
 jcm_datasets:
   - "data"
   - "TTToSemiLeptonic"
@@ -136,7 +136,7 @@ fvt:
           - --kfold-seed-offsets 0
           - --training FixedStep
           - --architecture
-          - n_features: 30
+          - n_features: 8
             use_kv_proj: true
             use_attention_gate: true
           - epoch: 20
