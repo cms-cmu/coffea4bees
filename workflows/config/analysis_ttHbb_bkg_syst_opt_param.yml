@@ -1,26 +1,16 @@
 # ==============================================================================
-# ttHbb Run 2 BACKGROUND SYSTEMATIC — Optimized FvT Architecture (n=24, 20 ep)
+# ttHbb Run 2 BACKGROUND SYSTEMATIC — Ratio-Closure Optimized FvT (n=16, 15 ep)
 # ==============================================================================
-# Layered on analysis_ttHbb_bkg_syst.yml, replacing the Stage C FvT model with the
-# optimized n=24 latent feature dimension and 20-epoch training schedule selected
-# from the 5-trial optimization campaign on PSC Bridges-2.
-#
-# USAGE:
-#   1. Run nominal stat-only chain first:
-#      roast new --config coffea4bees/workflows/config/analysis_ttHbb_opt_param.yml \
-#          --phases B,C,D,F
-#      roast submit <stat_only_roast_id>
-#
-#   2. Run background systematics chain:
-#      roast new --config coffea4bees/workflows/config/analysis_ttHbb_bkg_syst_opt_param.yml \
-#          --step cmslpc:coffea4bees/workflows/Snakefile_bkg_syst.smk
-#      roast submit <bkg_syst_roast_id> --step bkg_syst --targets all_pre_fvt
-#      roast submit <bkg_syst_roast_id> --step bkg_syst --targets all_post_fvt
+# Layered on analysis_ttHbb_bkg_syst_declib16nc.yml (DeClustered 16x library),
+# replacing Stage C with the winning n=16 architecture and 15-epoch cosine schedule
+# validated to pass Stage 1 Closure (p=8.8% at Basis 4, zero spurious signal penalty)
+# and enforcing FvT_pd3_floor: 0.01 against low-p_d3 weight divergence.
 # ==============================================================================
 
-base: coffea4bees/workflows/config/analysis_ttHbb_bkg_syst.yml
+base: coffea4bees/workflows/config/analysis_ttHbb_bkg_syst_declib16nc.yml
 
 label: "ttHbb_bkg_syst_opt_param"
+mix_name: "ttHbb_bkg_syst_opt_param"
 output_path: "output/{roast_id}/"
 
 publish_base: "{eos_prod}/{roast_id}"
@@ -29,10 +19,11 @@ handoff:
 
 inputs:
   upstream_roasts:
+    declib: declib16nc_run2_20261003_3ab8302-b2d2dec
     nominal: analysis_ttHbb_opt_param_20261017_86e4239-3ead386
     nominal_b: ttHbb_stat_only_20261012_49432f5-e211288
     mixeddata: mixeddata_run2_20260927_c39c264-0ce4d59
-  mixeddata_all: "{roast:mixeddata}/handoff/mixeddata_all.yml"
+  mixeddata_all: "{roast:declib}/handoff/synthetic_data_lib16nc_multijet.yml"
   ttbar_psdata: "{roast:mixeddata}/handoff/ttbar_PSData.yml"
   jcm_hists: "{roast:nominal_b}/{roast:nominal_b:output_path}computeJCM/histAll_NoJCM.coffea"
   nominal_hists: "{roast:nominal}/{roast:nominal:output_path}histAll_{roast:nominal:label}.coffea"
@@ -60,17 +51,16 @@ fvt_train_workflow:
     - module: HCR.FvT.baseline.Train
       option:
         - --architecture
-        - n_features: 24
+        - n_features: 16
           use_kv_proj: true
           use_attention_gate: true
         - --kfolds 3
         - --kfold-seed FvT random
         - --kfold-seed-offsets 0
-        - --training FixedStep
-        - epoch: 20
+        - --training CosineAnnealing
+        - epoch: 15
           bs_init: 2048
           lr_init: 0.005
-          lr_milestones: [14, 16, 18]
         - --finetuning FixedStep
         - epoch: 1
           bs_init: 16384
