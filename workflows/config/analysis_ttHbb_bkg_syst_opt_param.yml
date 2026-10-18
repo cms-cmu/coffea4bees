@@ -71,10 +71,11 @@ fvt_train_workflow:
         - --kfolds 3
         - --kfold-seed FvT random
         - --kfold-seed-offsets 0
-        - --training CosineAnnealing
+        - --training FixedStep
         - epoch: 15
           bs_init: 2048
           lr_init: 0.005
+          lr_milestones: [10, 11, 12, 13, 14]
         - --finetuning FixedStep
         - epoch: 1
           bs_init: 16384
