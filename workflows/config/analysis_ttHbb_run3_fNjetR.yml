@@ -288,7 +288,7 @@ make_combine_inputs:                 # analysis_ttHbb.yml:302-305, plus the Run 
   bkgsyst: "coffea4bees/stats_analysis/files/HIG-24-010/zz/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_zz_rebin1.pkl"
   # explicit path: the default template formats {channel} with channel.split('_')[0] = "ttHbb" (Snakefile_PhaseF_2_stats.smk:215),
   # i.e. the Run 2 bins
-  metadata_template: "coffea4bees/stats_analysis/metadata/ttHbb_run3_allyears.yml"
+  metadata_template: "coffea4bees/stats_analysis/metadata/ttHbb_run3.yml"
 
 combine_flags: "--three_tag threeTag --four_tag fourTag --region sum --blind"   # analysis_ttHbb.yml:307-312
 likelihood_scan_points: 40
