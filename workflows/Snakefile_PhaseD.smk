@@ -176,6 +176,16 @@ else:
         input:
             all_phase_d_targets
 
+def _format_binning_path(p, wildcards):
+    if not isinstance(p, str):
+        return p
+    eos_b = config.get("eos_base", "")
+    lbl = config.get("label", wildcards.model_dir.split("/")[-1])
+    try:
+        return p.format(eos_base=eos_b, label=lbl, model_dir=wildcards.model_dir)
+    except Exception:
+        return p
+
 rule compute_svb_binning:
     input:
         done = "{model_dir}/evaluate.done",
@@ -183,9 +193,14 @@ rule compute_svb_binning:
         json = "{model_dir}/svb_quantiles.json",
     log:
         "{model_dir}/svb_quantiles.log",
+    container: ANALYSIS_CONTAINER
+    resources:
+        runtime = 60,
+        mem_mb  = 8000,
+    threads: 1
     params:
         classifier_inputs = lambda wildcards: str(config.get("metadata", "")).split("@@")[0],
-        friend_result = lambda wildcards: f"{config.get('friends_dict', {}).get(wildcards.model_dir, config.get('friend', ''))}/result.json",
+        friend_result = lambda wildcards: f"{_format_binning_path(config.get('friends_dict', {}).get(wildcards.model_dir, config.get('friend', '')), wildcards)}/result.json",
         sample_pattern = lambda wildcards: str(config.get("binning_sample_pattern", "ttHbb")),
         selection = lambda wildcards: str(config.get("binning_selection", "inclusive")),
         bins = lambda wildcards: int(config.get("binning_bins", 240)),
@@ -212,5 +227,4 @@ rule compute_svb_binning:
         fi
         """
 
-localrules: compute_svb_binning
 
