@@ -84,7 +84,8 @@ def main():
     parser.add_argument("--pure_qcd", action="store_true", default=False,
                         help="Pure QCD mode with zero ttbar.")
     parser.add_argument("--hist_keys", nargs="+",
-                        default=['ps', 'ps_ttHbb', 'ps_ttHbb_fine', 'ps_zz', 'ps_zh', 'ps_hh'],
+                        default=['ps', 'ps_ttHbb', 'ps_ttHbb_fine', 'ps_zz', 'ps_zh', 'ps_hh',
+                                 'ps_zz_fine', 'ps_zh_fine', 'ps_hh_fine'],
                         help="Histogram variable stems to convert.")
     parser.add_argument("--nominal_coffea", nargs="*", default=[],
                         help="Optional nominal coffea files for signal (ttHbb) and baseline background.")

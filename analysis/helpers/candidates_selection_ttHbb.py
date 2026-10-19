@@ -126,9 +126,9 @@ def _select_can_ttH_quadjet(quadJet, cand_cfg=None):
     quadJet["rank_pass_canTT_PtDr"] = (rank_canTT_PtDR == ak.max(rank_canTT_PtDR, axis=1, keepdims=True)) & (rank_canTT_PtDR > 0)
     quadJet["rank_pass_canH_canTT_PtDr"] = (rank_canH_canTT == ak.max(rank_canH_canTT, axis=1, keepdims=True)) & (rank_canH_canTT > 0)
     
-def _assign_output_vars_can_ttH(selev, diJet, quadJet, run_SvB=False, cand_cfg=None):
+def _assign_output_vars_can_ttH(selev, diJet, quadJet, run_SvB=False, cand_cfg=None, svb_binning=None):
     """Assign the standard ttHbb candidate fields plus canH/canTT-specific fields to selev."""
-    _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB, cand_cfg)
+    _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB, cand_cfg, svb_binning=svb_binning)
 
     selev["canH_mass_selected"] = selev.quadJet_selected.canH.mass
     selev["canTT_mass_selected"] = selev.quadJet_selected.canTT.mass
@@ -330,7 +330,7 @@ def _build_quadjets_ttHbb(selev, diJet, diJetDr, cand_cfg=None, isRun3=False):
     return quadJet
 
 
-def _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB=False, cand_cfg=None):
+def _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB=False, cand_cfg=None, svb_binning=None):
     """Assign all derived candidate fields to selev."""
     selev["diJet"] = diJet
     selev["quadJet"] = quadJet
@@ -398,9 +398,17 @@ def _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB=False, cand_cfg=Non
                         s_ps = None
                     if s_ps is not None:
                         ps_np = ak.to_numpy(s_ps)
-                        # Cumulative signal quantiles (240 fine bins)
-                        n_bins = len(ttHbbSvBHists.var_binning_ps_ttHbb) - 1
-                        bin_idx = np.clip(np.digitize(ps_np, ttHbbSvBHists.var_binning_ps_ttHbb) - 1, 0, n_bins - 1)
+                        edges = None
+                        if isinstance(svb_binning, dict):
+                            edges = svb_binning.get(sname, svb_binning.get("bin_edges", None))
+                        elif isinstance(svb_binning, (list, np.ndarray)):
+                            edges = svb_binning
+                        if edges is None:
+                            edges = ttHbbSvBHists.var_binning_ps_ttHbb
+                        edges = np.asarray(edges, dtype=np.float64)
+                        # Cumulative signal quantiles
+                        n_bins = len(edges) - 1
+                        bin_idx = np.clip(np.digitize(ps_np, edges) - 1, 0, n_bins - 1)
                         ps_quantile = (bin_idx + 0.5) / float(n_bins)
                         ps_quantile = np.where(ps_np < 0.01, -2.0, ps_quantile)
                         selev[sname, "ps_ttHbb"] = ak.Array(ps_quantile)
@@ -549,6 +557,7 @@ def create_cand_jet_dijet_quadjet_ttHbb(
     analysis_selections: ak.Array = None,
     cand_cfg: dict = None,
     pairing: str = "nominal",
+    svb_binning=None,
 ):
     """Creates candidate jets, dijets, and quadjets for ttHbb analysis.
 
@@ -572,7 +581,7 @@ def create_cand_jet_dijet_quadjet_ttHbb(
             weights, list_weight_names, analysis_selections, label3b,
         )
 
-        _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB, cand_cfg)
+        _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB, cand_cfg, svb_binning=svb_binning)
         del diJet, quadJet
         return selev
 
@@ -589,7 +598,7 @@ def create_cand_jet_dijet_quadjet_ttHbb(
         weights, list_weight_names, analysis_selections, label3b,
     )
 
-    _assign_output_vars_can_ttH(selev, diJet, quadJet, run_SvB, cand_cfg)
+    _assign_output_vars_can_ttH(selev, diJet, quadJet, run_SvB, cand_cfg, svb_binning=svb_binning)
     del diJet, quadJet
 
     return selev

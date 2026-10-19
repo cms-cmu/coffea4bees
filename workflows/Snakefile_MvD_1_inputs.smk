@@ -63,7 +63,7 @@ rule V1_ci:
     wildcard_constraints:
         year = "|".join(YEARS)
     params:
-        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR]))
+        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR, ERAS_ARG]))
     shell:
         """
         set -eo pipefail
@@ -135,7 +135,7 @@ use rule analysis_processor from analysis as V1_hists with:
         datasets = MIX_NAME,
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
+        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR, ERAS_ARG])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 

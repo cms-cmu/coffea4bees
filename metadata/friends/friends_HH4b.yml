@@ -53,3 +53,7 @@ friends:
     is_parking: "coffea4bees/metadata/friends/isParkingfriend_2023_preBPix.json@@is_parking"
   2023_BPix: *friends_Run3
   '2024': *friends_Run3
+  # 2025 data runs with the Summer24 (2024) MC (TT.yml '2025' aliases the 2024 picoAODs). The
+  # trigWeight index is keyed by picoAOD path + UUID, so the 2024 TTTo* trigger-weight friends
+  # (2024 trigger-efficiency maps; 2025 uses the same two HLT paths) are picked up as they are.
+  '2025': *friends_Run3

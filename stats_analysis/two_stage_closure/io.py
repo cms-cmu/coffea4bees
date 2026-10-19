@@ -516,7 +516,9 @@ def prepInput():
         all_years.extend(year_map.get(y, [y]))
     all_years = list(dict.fromkeys(all_years))
 
-    sig_procs = ["ttHbb"] if channel in ["ttHbb", "tth"] else ["GluGluToHHTo4B_cHHH1", "ZZ4b", "ZH4b"]
+    # Run 2: ggF cHHH1 + ZZ4b + ZH4b; Run 3: the single ggF SM sample (no ZZ/ZH skims)
+    sig_procs = ["ttHbb"] if channel in ["ttHbb", "tth"] else ["GluGluToHHTo4B_cHHH1", "ZZ4b", "ZH4b",
+                                                               "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"]
     hist_signal = combine_hists(input_file_sig,
                                 f"{var_name}_PROC_YEAR_fourTag_SR",
                                 years=all_years,

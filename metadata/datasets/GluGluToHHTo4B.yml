@@ -378,7 +378,7 @@ GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00:
       sumw2_raw: 7245.558406810411
       sumw_raw: 195203.95581580012
       total_events: 6588007
-  '2024':
+  '2024': &GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024
     nanoAOD: /GluGluHHto4B_Par-c2-0p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM
     picoAOD:
       count: 1988270
@@ -397,6 +397,10 @@ GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00:
       sumw2_raw: 2185.0093876400724
       sumw_raw: 58893.33705250001
       total_events: 1988270
+  # 2025: no 2025 MC. As TT.yml: the Summer24 (2024) picoAODs and sumw with the '2025' corrections, triggers
+  # and luminosity (xs * L(2025) / sumw(2024 sample)); trigger weights from the 2024 signal friends
+  # (trigweights_Run3_v4.json, keyed by picoAOD path + UUID). An alias, not a copy.
+  '2025': *GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024
 GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p10:
   '2024':
     nanoAOD: /GluGluHHto4B_Par-c2-0p10-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24NanoAODv15-PowhegBugFix_150X_mcRun3_2024_realistic_v2-v2/NANOAODSIM

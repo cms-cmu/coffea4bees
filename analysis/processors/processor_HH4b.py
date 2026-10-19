@@ -1366,9 +1366,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         """
         if not (self.config["isMC"] and self.apply_btagSF):
             return weights, list_weight_names
-        # 2024 uses UParT tagger; only WP-based SFs (UParTAK4_wp_values) are                                                                       
-        # available — no shape SF exists yet. Skip btag SFs for this year.                                                                         
-        if self.year == "2024":                                                                                                                    
+        # 2024 uses UParT tagger; only WP-based SFs (UParTAK4_wp_values) are
+        # available — no shape SF exists yet. Skip btag SFs for this year, and for
+        # 2025, whose MC is the same Summer24 UParT MC (TT.yml '2025' aliases).
+        if self.year in ("2024", "2025"):
             return weights, list_weight_names
 
         weights, list_weight_names = add_btagweights(
@@ -1878,6 +1879,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 plot_extra_canjet_vars=self.plot_extra_canjet_vars,
                 tag_list=self.tag_list,
                 fill_histograms=self.fill_histograms,
+                subsample_names=getattr(self, "subsample_names", None),
             )
             if not self.plot_ttbar_with_weights and not self.plot_ttbar_with_MvD_weights:
                 return hist_nom
@@ -1906,6 +1908,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     plot_extra_canjet_vars=self.plot_extra_canjet_vars,
                     tag_list=self.tag_list,
                     fill_histograms=self.fill_histograms,
+                    subsample_names=getattr(self, "subsample_names", None),
                 )
 
                 hist_t3 = filling_nominal_histograms(
@@ -1928,6 +1931,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     plot_extra_canjet_vars=self.plot_extra_canjet_vars,
                     tag_list=self.tag_list,
                     fill_histograms=self.fill_histograms,
+                    subsample_names=getattr(self, "subsample_names", None),
                 )
                 hists += [hist_t4, hist_t3]
 

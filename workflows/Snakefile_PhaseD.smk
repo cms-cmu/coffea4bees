@@ -65,15 +65,20 @@ if len(svb_models) <= 1:
 
     include: "../../src/classifier/workflow/Snakefile"
 
+    all_single_inputs = list(rules.all.input)
+    if config.get('compute_binning', False):
+        all_single_inputs.append(f"{output_dir}/svb_quantiles.json")
+
     rule all_PhaseD:
         default_target: True
         input:
-            rules.all.input
+            all_single_inputs
 else:
     # Multi-model mode: train & evaluate multiple SvB classifiers (e.g. SvB and SvB_MA)
     train_templates = config.setdefault("train_templates", {})
     eval_templates = config.setdefault("eval_templates", {})
     models_dict = config.setdefault("models", {})
+    friends_dict = config.setdefault("friends_dict", {})
 
     eos_base_global = config.get('eos_base', "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/nominal_sel")
     config.setdefault('classifier_config_paths', "coffea4bees")
@@ -134,10 +139,13 @@ else:
         train_templates[m_output_dir] = m_train_template
         eval_templates[m_output_dir] = m_eval_template
         models_dict[m_output_dir] = m_model
+        friends_dict[m_output_dir] = m_friend
 
         all_phase_d_targets.extend([f"{m_output_dir}/train.done", f"{m_output_dir}/yields.html"])
         if m_evaluate:
             all_phase_d_targets.extend([f"{m_output_dir}/evaluate.done", f"{m_output_dir}/analyze.done"])
+            if mcfg.get('compute_binning', False):
+                all_phase_d_targets.append(f"{m_output_dir}/svb_quantiles.json")
         if m_plot_inputs:
             all_phase_d_targets.extend([f"{m_output_dir}/plot_inputs_raw.done", f"{m_output_dir}/plot_inputs_dataprep.done"])
         if m_plot_weights:
@@ -167,3 +175,56 @@ else:
         default_target: True
         input:
             all_phase_d_targets
+
+def _format_binning_path(p, wildcards):
+    if not isinstance(p, str):
+        return p
+    eos_b = config.get("eos_base", "")
+    lbl = config.get("label", wildcards.model_dir.split("/")[-1])
+    try:
+        return p.format(eos_base=eos_b, label=lbl, model_dir=wildcards.model_dir)
+    except Exception:
+        return p
+
+rule compute_svb_binning:
+    input:
+        done = "{model_dir}/evaluate.done",
+    output:
+        json = "{model_dir}/svb_quantiles.json",
+    log:
+        "{model_dir}/svb_quantiles.log",
+    container: ANALYSIS_CONTAINER
+    resources:
+        runtime = 60,
+        mem_mb  = 8000,
+    threads: 1
+    params:
+        classifier_inputs = lambda wildcards: str(config.get("metadata", "")).split("@@")[0],
+        friend_result = lambda wildcards: f"{_format_binning_path(config.get('friends_dict', {}).get(wildcards.model_dir, config.get('friend', '')), wildcards)}/result.json",
+        sample_pattern = lambda wildcards: str(config.get("binning_sample_pattern", "ttHbb")),
+        selection = lambda wildcards: str(config.get("binning_selection", "inclusive")),
+        bins = lambda wildcards: int(config.get("binning_bins", 240)),
+        min_ps = lambda wildcards: float(config.get("binning_min_ps", 0.01)),
+        handoff_eos = lambda wildcards: str(config.get("handoff", {}).get("eos_base", "") if isinstance(config.get("handoff"), dict) else ""),
+    shell:
+        """
+        mkdir -p $(dirname {output.json}) $(dirname {log})
+        if [ -z "${{X509_USER_PROXY:-}}" ] && [ -f ./proxy/x509_proxy ]; then
+            export X509_USER_PROXY="$PWD/proxy/x509_proxy"
+        fi
+        python3 coffea4bees/analysis/tools/rebin_SvB.py \
+            --friends "{params.friend_result}" \
+            --classifier-inputs "{params.classifier_inputs}" \
+            --sample-pattern "{params.sample_pattern}" \
+            --selection "{params.selection}" \
+            --key $(basename {wildcards.model_dir}) \
+            -n {params.bins} \
+            --min-ps {params.min_ps} \
+            --output-json {output.json} 2>&1 | tee {log}
+
+        if [ -n "{params.handoff_eos}" ]; then
+            xrdcp -f -p "{output.json}" "{params.handoff_eos}/$(basename {output.json})" 2>&1 | tee -a {log} || true
+        fi
+        """
+
+

@@ -386,6 +386,7 @@ svb_ma:
   plot_inputs: true
   plot_weights: true
   evaluate: true
+  compute_binning: true
   model: "{eos_base}/classifier/{label}"
   friend: "{eos_base}/friend/{label}"
   train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_ttHbb_stitched"
@@ -496,6 +497,7 @@ analysis_config:
     plot_ttbar_with_weights: true
     pairing: nominal
     fill_histograms: "SvB"
+    svb_binning_file: "output/SvB_MA_ttHbb_stitched/svb_quantiles.json"
 
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
 plot_extra_arguments: ""

@@ -81,7 +81,7 @@ use rule analysis_processor from analysis as M6_hists_mixed with:
         datasets = MIX_NAME,
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
+        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR, ERAS_ARG])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 
@@ -98,7 +98,7 @@ use rule analysis_processor from analysis as M6_hists_psdata with:
         datasets = PS_NAME,
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
+        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR, ERAS_ARG])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 
@@ -235,7 +235,7 @@ if MIX_SVB_BOOT:
             datasets = SUB_NAME,
             years = lambda wildcards: wildcards.year,
             config = lambda wildcards, input: input.config_file,
-            extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
+            extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR, ERAS_ARG])),
             run_container_wrapper = WRAPPER,
             python_bin = PYTHON
 
