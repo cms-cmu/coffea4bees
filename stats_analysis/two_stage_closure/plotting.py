@@ -70,7 +70,7 @@ def plotMix(mix, channel=None, ymax=None):
             'color' : color_TTbar}
 
     if type(mix) is int:
-        mj_proc = 'multijet_only' if getattr(args, 'unify_background', False) else mj_name
+        mj_proc = ('multijet_only_binned' if use_binned else 'multijet_only') if getattr(args, 'unify_background', False) else mj_name
         samples[closure_file_out][f'{mixes[mix]}/{channel}/{mj_proc}'] = {
             'label' : 'Multijet Model %d' % mix,
             'legend': 2,
@@ -78,7 +78,7 @@ def plotMix(mix, channel=None, ymax=None):
             'ratio' : 'denom A',
             'color' : color_multijet}
     else:
-        mj_proc = 'multijet_only' if getattr(args, 'unify_background', False) else mj_name
+        mj_proc = ('multijet_only_binned' if use_binned else 'multijet_only') if getattr(args, 'unify_background', False) else mj_name
         samples[closure_file_out][f'{channel}/{mj_proc}'] = {
             'label' : '#LTMultijet#GT',
             'legend': 2,
@@ -156,7 +156,8 @@ def makeInputDiagnosticPlots(channel):
         if isinstance(rebin, array.array):
             h_d_rebin = rebin_histogram(h_d, rebin)
             nb = h_d_rebin.GetNbinsX()
-        for p in ['data_obs', 'multijet', 'ttbar', 'signal']:
+        # every histogram the diagnostic plots read in binned form (multijet_only: unify_background)
+        for p in ['data_obs', 'multijet', 'multijet_only', 'ttbar', 'signal']:
             h_orig = f_check.Get(f"{channel}/{p}")
             if h_orig:
                 h_r = rebin_histogram(h_orig, rebin) if isinstance(rebin, array.array) else (h_orig.Clone() if int(rebin) == 1 else h_orig.Clone().Rebin(int(rebin)))
@@ -168,7 +169,7 @@ def makeInputDiagnosticPlots(channel):
                 h_b.Write("", ROOT.TObject.kOverwrite)
 
         for m_name in mixes:
-            for p in ['data_obs', 'multijet']:
+            for p in ['data_obs', 'multijet', 'multijet_only', 'ttbar']:
                 h_orig = f_check.Get(f"{m_name}/{channel}/{p}")
                 if h_orig:
                     h_r = rebin_histogram(h_orig, rebin) if isinstance(rebin, array.array) else (h_orig.Clone() if int(rebin) == 1 else h_orig.Clone().Rebin(int(rebin)))

@@ -1,0 +1,25 @@
+# bkg_syst B_1 validation (HH4b): processor_HH4b on subsample v0 with its own JCM -- Run 3: weights_HH4b.yml, tight four-tag
+processor: "coffea4bees/analysis/processors/processor_HH4b.py"
+weights: "coffea4bees/metadata/weights/weights_HH4b.yml"
+
+runner:
+  workers: 4
+  min_workers: 10
+  max_workers: 100
+  worker_memory: "6GB"
+  condor: true
+  shared_dask: true
+  chunksize: 100000
+
+config:
+  blind: false
+  apply_FvT: false
+  apply_JCM: true
+  apply_trigWeight: false
+  apply_btagSF: true
+  apply_boosted_veto: false
+  run_SvB: false
+  top_reconstruction: "fast"
+  fill_histograms: "kinematics"
+  # Run 3 four-tag definition (tight btagPNetB), as nominal_run3
+  fourTag_use_tight: true

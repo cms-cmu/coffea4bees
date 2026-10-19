@@ -117,6 +117,9 @@ WRAPPER = config['analysis_container_wrapper']
 PYTHON = config.get('python_bin', os.getenv("CONTAINER_PYTHON", "python"))
 CONDOR = "" if (config['test'] or os.getenv("CI")) else "--shared-dask --condor"
 TEST_FLAG = "-t" if config['test'] else ""
+# runner.py --eras: its default era list lacks most 2025 picoAOD keys (B01, E01, F01, G01, ...) and drops
+# data eras outside it silently (data, mixeddata_all). Pass year_eras explicitly, as Snakefile_MakeMixedData.smk.
+ERAS_ARG = f"--eras {' '.join(sorted({e for eras in YEAR_ERAS.values() for e in eras}))}"
 
 # SINGLE braces: spliced into shell blocks as {EOS_PROXY} (see Snakefile_MakeMixedData.smk).
 EOS_PROXY = ('if [ -z "${X509_USER_PROXY:-}" ] && [ -f ./proxy/x509_proxy ]; then '

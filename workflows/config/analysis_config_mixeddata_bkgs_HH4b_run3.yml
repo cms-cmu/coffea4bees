@@ -1,0 +1,29 @@
+# bkg_syst F_1 (HH4b): 3b data x JCM_v<k> x FvT_v<k> per subsample (the HH4b analysis_config_mixeddata_bkgs.yml) -- Run 3: weights_HH4b.yml, tight four-tag
+processor: "coffea4bees/analysis/processors/processor_HH4b.py"
+weights_file: "coffea4bees/metadata/weights/weights_HH4b.yml"
+dataset_location: "coffea4bees/metadata/datasets/"
+datasets_file: "coffea4bees/metadata/datasets/data.yml"
+
+runner:
+  workers: 4
+  worker_memory: "4GB"
+  condor: true
+  shared_dask: true
+  run_performance: true
+
+config:
+  tag_list:
+    - "threeTag"
+  blind: true
+  apply_FvT: true
+  apply_JCM: true
+  apply_trigWeight: true
+  apply_btagSF: true
+  apply_boosted_veto: false
+  run_SvB: true
+  SvB_MA: true
+  top_reconstruction: "fast"
+  plot_ttbar_with_weights: true
+  fill_histograms: "SvB"
+  # Run 3 four-tag definition (tight btagPNetB), as nominal_run3
+  fourTag_use_tight: true

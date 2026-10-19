@@ -1,0 +1,20 @@
+# bkg_syst B_1 (HH4b): JCM fit of one closure subsample's 4b (mix_v{m}, via --data4bName) against
+# 3b data - 3b ttbar. Same fit as the nominal B.1 (nominal_jcm_config.yml), with the subsample as 4b.
+taglabel4b: fourTag
+
+data3bName: data
+taglabel3b: threeTag
+taglabel3b_tt: threeTag
+
+selJets: selJets_noJCM.n
+tagJets: tagJets_noJCM.n
+
+ignoreTT: False
+subtract3bTT: True
+
+ttbarProcesses:
+  - TTTo2L2Nu
+  - TTToSemiLeptonic
+  - TTToHadronic
+
+float_t: true

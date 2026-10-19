@@ -48,6 +48,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
         pairing="nominal",
         corrections_metadata: dict = None,
         ttbb_scale: float = 1.0,
+        ttbar_scale: float = 1.0,
         fill_histograms=True,
         svb_binning=None,
         svb_binning_file=None,
@@ -57,6 +58,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
         self.classify_Z_decay = classify_Z_decay
         self.pairing = pairing
         self.ttbb_scale = float(ttbb_scale)
+        self.ttbar_scale = float(ttbar_scale)
         self.fill_histograms = fill_histograms
 
         binning_source = svb_binning or svb_binning_file or kwargs.get("svb_binning") or kwargs.get("svb_binning_file")
@@ -109,8 +111,20 @@ class ttHbbProcessor(HH4bBaseProcessor):
     def _is_ttHbb_MC(self):
         return self.config["isMC"] and self.processName.startswith("ttHbb")
 
+    def _is_ttbar_MC(self):
+        return (
+            self.config.get("isMC", False)
+            and not self._is_ttHbb_MC()
+            and (
+                self.processName.startswith("TTTo")
+                or self.processName.startswith("TT_")
+                or self.processName.startswith("TTbar")
+                or self.processName.startswith("TTbb")
+            )
+        )
+
     def process_shift(self, event, shift_name, weights, list_weight_names):
-        """Process one systematic shift (or nominal), applying ttbb_scale to tt+B events if requested."""
+        """Process one systematic shift (or nominal), applying ttbb_scale or ttbar_scale if requested."""
         scale = getattr(self, "ttbb_scale", 1.0)
         if scale == 1.0 and "ttbb_scale" in self.config:
             scale = float(self.config["ttbb_scale"])
@@ -129,6 +143,21 @@ class ttHbbProcessor(HH4bBaseProcessor):
             list_weight_names.append("ttbb_scale")
             logging.info(
                 f"Applied ttbb_scale={scale} to {int(np.sum(ttb_mask))} / {len(event)} ttB events in {self.dataset}"
+            )
+
+        scale_ttbar = getattr(self, "ttbar_scale", 1.0)
+        if scale_ttbar == 1.0 and "ttbar_scale" in self.config:
+            scale_ttbar = float(self.config["ttbar_scale"])
+
+        if (
+            scale_ttbar != 1.0
+            and self._is_ttbar_MC()
+            and "ttbar_scale" not in list_weight_names
+        ):
+            weights.add("ttbar_scale", np.full(len(event), scale_ttbar))
+            list_weight_names.append("ttbar_scale")
+            logging.info(
+                f"Applied ttbar_scale={scale_ttbar} to {len(event)} events in {self.dataset}"
             )
 
         return super().process_shift(event, shift_name, weights, list_weight_names)

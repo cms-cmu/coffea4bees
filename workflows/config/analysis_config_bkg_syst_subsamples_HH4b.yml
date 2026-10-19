@@ -1,0 +1,26 @@
+# bkg_syst A_3 (HH4b): processor_HH4b over each closure subsample (mixeddata_4b:v<k>). SvB_MA is set
+# at run time to the nominal roast's SvB model (stage_subsample_processor_config, inputs.SvB_model).
+processor: "coffea4bees/analysis/processors/processor_HH4b.py"
+weights: "coffea4bees/metadata/weights/weights_HH4b_2024_v2.yml"
+dataset_location: "coffea4bees/metadata/datasets/"
+
+runner:
+  workers: 4
+  min_workers: 25
+  max_workers: 200
+  worker_memory: "8GB"
+  write_coffea_output: true
+  condor: true
+  shared_dask: true
+
+config:
+  blind: true
+  apply_FvT: false
+  apply_JCM: false
+  apply_trigWeight: false
+  apply_btagSF: true
+  apply_boosted_veto: false
+  run_SvB: true
+  SvB_MA: null
+  top_reconstruction: "fast"
+  fill_histograms: "kinematics+SvB"

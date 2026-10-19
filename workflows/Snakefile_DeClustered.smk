@@ -216,6 +216,9 @@ WRAPPER = config['analysis_container_wrapper']
 PYTHON = config.get('python_bin', os.getenv("CONTAINER_PYTHON", "python"))
 CONDOR = "" if (config['test'] or os.getenv("CI")) else "--shared-dask --condor"
 TEST_FLAG = "-t" if config['test'] else ""
+# Snakefile_MakeMixedData_5_ttbar_psdata.smk (included below) passes ERAS_ARG to runner.py. Its only
+# dataset here is ttbar MC, for which runner.py ignores --eras: keep the runner default.
+ERAS_ARG = ""
 
 # Shell prefix for any rule that writes to EOS: roast seeds ./proxy/x509_proxy in the checkout.
 # ${VAR:-}, not $VAR: snakemake runs shell blocks under `set -u`. SINGLE braces: the string is

@@ -117,7 +117,7 @@ use rule analysis_processor from analysis as M7_mix with:
         datasets = " ".join(SIG_DATASETS),
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, ["-s", TEST_FLAG, CONDOR])),
+        extra_arguments = " ".join(filter(None, ["-s", TEST_FLAG, CONDOR, ERAS_ARG])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 
@@ -216,7 +216,7 @@ use rule analysis_processor from analysis as M7_hists_signal with:
         datasets = " ".join(SIG_DATASETS + list(SIG_3B.values()) + list(SIG_4B.values())),
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
+        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR, ERAS_ARG])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 
@@ -234,7 +234,7 @@ use rule analysis_processor from analysis as M7_hists_mixeddata with:
         datasets = MIX_NAME,
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
+        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR, ERAS_ARG])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 

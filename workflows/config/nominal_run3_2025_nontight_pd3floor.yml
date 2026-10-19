@@ -1,0 +1,42 @@
+# ==============================================================================
+# 2025 non-tight FvT closure (C.4 only) with the FvT p_d3 floor
+# ==============================================================================
+#   roast new --config coffea4bees/workflows/config/nominal_run3_2025_nontight_pd3floor.yml --phases C4
+#
+# Only the differences from nominal_run3_2025_nontight.yml (`base:` overlay). Phases B and C are
+# not re-run: the JCM fit and the FvT friend are read from the production
+# nominal_run3_2025_nontight_20261015_9ac9a30-b172c05, pinned by {roast:<id>}, NOT {roast_id}
+# (which here names this roast, where no B/C outputs exist).
+#
+# Why: that roast's C.4 closure was 2.09e9 predicted vs 916,460 4b data in the SB (11.4M vs 447,008
+# in the SR). The 2025 FvT is over-confident on a tail of events: 35,787 have |FvT| > 100, 326 have
+# |FvT| > 1e4, worst 1.5e11 (p_d3 ~ 1e-11, p_d4 ~ 0.999); 2024 non-tight has 9 above 100, max 4,564.
+# Same remedy as nominal_run3_30x: floor p_d3 at 0.01 -> |FvT|, d3_to_t3/t4 <= 100. Offline, a cap
+# at 100 on the stored FvT gives 3b x JCM x FvT = 889.5k (SB) / 433.5k (SR), closure ~0.98-0.99
+# with the 4b ttbar added.
+base: coffea4bees/workflows/config/nominal_run3_2025_nontight.yml
+
+label: "Run3_2025_nontight_pd3floor"
+output_path: "output/Run3_2025_nontight_pd3floor/"
+
+handoff:
+  # C.4 reads the base production's handoff/friend areas, which check_handoff_refs would otherwise
+  # reject as drift from this roast's (empty) handoff area.
+  allow_external_refs: true
+
+fvt_closure:
+  # The base production's JCM. Remote, so Snakefile_PhaseC_4 gives it no input edge; the processor
+  # reads it through fsspec.
+  JCM_file: "{roast:nominal_run3_2025_nontight_20261015_9ac9a30-b172c05}/handoff/jetCombinatoricModel_SB_Run3_2025_nontight_v1.yml"
+  # No Phase B.1 wJCM ttbar singlefiles in this roast to reuse; reprocess the TT jobs (same code,
+  # JCM and config as the base's B.1 wJCM pass, and the floor does not touch MC).
+  reuse_wJCM_ttbar: false
+  # Dump-only (file does not exist): the floored FvT changes the weighted 3b rows.
+  known_counts: "coffea4bees/analysis/tests/known_fullCounts_FvT_closure_Run3_2025_nontight_pd3floor.yml"
+
+analysis_config:
+  config:
+    friends:
+      FvT: "{roast:nominal_run3_2025_nontight_20261015_9ac9a30-b172c05}/friend/FvT_nominal/result.json@@analysis.0.merged"
+    JCM_file: "{roast:nominal_run3_2025_nontight_20261015_9ac9a30-b172c05}/handoff/jetCombinatoricModel_SB_Run3_2025_nontight_v1.yml"
+    FvT_pd3_floor: 0.01

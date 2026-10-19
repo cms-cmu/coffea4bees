@@ -397,6 +397,8 @@ rule make_mixeddata_ave_json:
         file_template = lambda wildcards: f"histAll_{a3_channel}_mixeddata_v{{v}}.coffea",
         script = "coffea4bees/stats_analysis/make_mixeddata_ave_json.py",
         subsamples = " ".join(str(v) for v in subsample_indices_f4),
+        # the channels' fit variables (the script defaults to SvB_MA.ps_ttHbb{,_gt6})
+        variables = " ".join(dict.fromkeys(cfg['variable'] for cfg in config.get('channels', {}).values() if cfg.get('variable'))),
         container_wrapper = "./run_container"
     container: None
     log: f"{out}logs/make_mixeddata_ave_json.log"
@@ -409,6 +411,7 @@ rule make_mixeddata_ave_json:
             -c {params.closure_dir} \
             --file_template '{params.file_template}' \
             --subsamples {params.subsamples} \
+            --variables {params.variables} \
             -o {output.ave_json} > {log} 2>&1
         """
 
