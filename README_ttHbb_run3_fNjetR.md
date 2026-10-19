@@ -39,11 +39,11 @@ apply the default model to these files, so Phase C.4 / F need that branch.
 | year | B.2 classifier inputs | trigger weights |
 |---|---|---|
 | 2022 | Matteo's `classifier_inputs_ttHbb_run3.json` (1040 entries, 30 GeV) | v1 |
-| 2023 | **new**: `classifier_inputs_ttHbb_run3_2023_trigv1.json` (850 entries, 25 GeV), produced on lxplus with `workflows/config/analysis_ttHbb_run3_2023_b2.yml` | v1 (pinned via the Run 3 keys of `metadata/friends/friends_ttHbb.yml`; master moved to v3 on 2026-10-07; v1 keeps all three years and all JCM fits consistent) |
+| 2023 | **new**: `classifier_inputs_ttHbb_run3_2023_trigv1.json` (850 entries, 25 GeV), produced on lxplus with the `classifier_inputs` block of `workflows/config/analysis_ttHbb_run3_fNjetR.yml` | v1 (pinned via the Run 3 keys of `metadata/friends/friends_ttHbb.yml`; master moved to v3 on 2026-10-07; v1 keeps all three years and all JCM fits consistent) |
 | 2024 | Matteo's 25 GeV index, cleaned: `classifier_inputs_ttHbb_run3_2024_clean_v1.json` | v1 |
 
 - 2023 eras: `2023_preBPix: [C01, C02, C11, C12, C3, C4]`, `2023_BPix: [D1, D2]` (the older defaults omit C3/C4 = 78% of preBPix).
-- A 1-chunk canary (`analysis_ttHbb_run3_b2_canary.yml`) showed the current code + v1 reproduces Matteo's 2022/2024
+- A 1-chunk canary of that block showed the current code + v1 reproduces Matteo's 2022/2024
   HCR_input friends exactly (float64 last-bit differences only).
 - **2024 index defect**: a chunk with 0 selected events returns before the friend dump (`processor_HH4b.py`), and the
   merge names friend files by picoAOD only (`src/runner/orchestrator.py`), so discontiguous ranges of one picoAOD
@@ -58,8 +58,8 @@ apply the default model to these files, so Phase C.4 / F need that branch.
 | run | config | result |
 |---|---|---|
 | 2022 only, combined 2022 JCM | `analysis_ttHbb_run3_fNjetR.yml` (on the earlier branch; same mechanics) | SB closure (Σ d3·JCM·FvT + Σ t4)/Σ d4 = 1.0029, ≤ 1.2σ in every nSelJets bin 4–10; baseline FvT (default JCM): 1.0184, +4..+7σ at nSelJets 5–8 |
-| 2024 only | `analysis_ttHbb_run3_2024_fNjetR.yml` | trained (70 GB RAM, 6h15m, H100); evaluation not completed (see §2 defect) |
-| **combined 2022+2023+2024** | `analysis_ttHbb_run3_allyears_fNjetR.yml` | trained (102.4 M loaded events, 128 GB RSS, 9h22m) and evaluated (196 GB RSS) |
+| 2024 only | (2024-only fvt block, not kept) | trained (70 GB RAM, 6h15m, H100); evaluation not completed (see §2 defect) |
+| **combined 2022+2023+2024** | `analysis_ttHbb_run3_fNjetR.yml` | trained (102.4 M loaded events, 128 GB RSS, 9h22m) and evaluated (196 GB RSS) |
 
 Combined config: 5 JCM groups (`--JCM-weight year:<era> <yml>@@JCM_weights`), 3 friend indices in one `--friends ""`,
 `year` added to `feature_ancillary`, `kfold.Merge --workers 2`.
