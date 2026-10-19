@@ -290,16 +290,15 @@ closure_rebin_candidates:
   - 20  # 12 bins (240 / 20)
   - 24  # 10 bins (240 / 24)
 max_basis: 10
-rebin: 12
+rebin: 16
+f3_rebins:
+  - 16
 no_sqrt_n_priors: false
 
 # COMBINE STATISTICAL INTERPRETATION & LIMITS
 convert_hist_to_json:
   histos:
     - "SvB_MA.ps_ttHbb"
-    - "SvB_MA.ps_ttHbb_gt6"
-    - "SvB_MA.ps_ttHbb_lepveto"
-    - "SvB_MA.ps_ttHbb_gt6_lepveto"
 
 combine_outdir: "bkg_syst_F_3_stats/datacards/"
 make_combine_inputs:
@@ -341,7 +340,7 @@ channels:
   ttHbb_gt6:
     signallabel: "ttHbb"
     othersignal: ""
-    variable: "SvB_MA.ps_ttHbb_gt6"
+    variable: "SvB_MA.ps_ttHbb"
     signal: "ttHbb"
     closure_subdir: "ttHbb"
     region: "SR"
@@ -350,7 +349,7 @@ channels:
   ttHbb_gt6_stat_only:
     signallabel: "ttHbb"
     othersignal: ""
-    variable: "SvB_MA.ps_ttHbb_gt6"
+    variable: "SvB_MA.ps_ttHbb"
     signal: "ttHbb"
     closure_subdir: "ttHbb"
     region: "SR"
@@ -360,7 +359,7 @@ channels:
   ttHbb_lepveto:
     signallabel: "ttHbb"
     othersignal: ""
-    variable: "SvB_MA.ps_ttHbb_lepveto"
+    variable: "SvB_MA.ps_ttHbb"
     signal: "ttHbb"
     closure_subdir: "ttHbb"
     region: "SR"
@@ -369,7 +368,7 @@ channels:
   ttHbb_lepveto_stat_only:
     signallabel: "ttHbb"
     othersignal: ""
-    variable: "SvB_MA.ps_ttHbb_lepveto"
+    variable: "SvB_MA.ps_ttHbb"
     signal: "ttHbb"
     closure_subdir: "ttHbb"
     region: "SR"
@@ -379,7 +378,7 @@ channels:
   ttHbb_gt6_lepveto:
     signallabel: "ttHbb"
     othersignal: ""
-    variable: "SvB_MA.ps_ttHbb_gt6_lepveto"
+    variable: "SvB_MA.ps_ttHbb"
     signal: "ttHbb"
     closure_subdir: "ttHbb"
     region: "SR"
@@ -388,7 +387,7 @@ channels:
   ttHbb_gt6_lepveto_stat_only:
     signallabel: "ttHbb"
     othersignal: ""
-    variable: "SvB_MA.ps_ttHbb_gt6_lepveto"
+    variable: "SvB_MA.ps_ttHbb"
     signal: "ttHbb"
     closure_subdir: "ttHbb"
     region: "SR"
