@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING
 
 from src.classifier.task import ArgParser
 
-from src.classifier.config.dataset.HCR import _group, _picoAOD
-from src.classifier.config.dataset.HCR._common import CommonEval, CommonTrain
+from . import _group, _picoAOD
+from ._common import CommonEval, CommonTrain
 from src.classifier.config.setting.df import Columns
 from src.classifier.config.setting.HCR import NTag
 

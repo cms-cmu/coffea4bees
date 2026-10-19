@@ -142,6 +142,12 @@ rule all_stats:
             f"{config['output_path']}stat_analysis/{channel}/likelihood_scan/datacard_likelihood_scan__{ch_config['signallabel']}.pdf"
             for channel, ch_config in config['channels'].items() if ch_config.get('signallabel')
         ] + [
+            f"{config['output_path']}stat_analysis/{channel}/impacts/datacard_impacts__{ch_config['signallabel']}.pdf"
+            for channel, ch_config in config['channels'].items() if ch_config.get('signallabel') and not get_stat_only_flag(channel)
+        ] + [
+            f"{config['output_path']}stat_analysis/{channel}/impacts/datacard_impacts_split__{ch_config['signallabel']}"
+            for channel, ch_config in config['channels'].items() if ch_config.get('signallabel') and not get_stat_only_flag(channel)
+        ] + [
             f"{config['output_path']}stat_analysis/summary.html",
         ]
 
@@ -160,6 +166,11 @@ def stat_summary_inputs(wildcards):
             f"{base}/{channel}/likelihood_scan/datacard_likelihood_scan__{sig}.pdf",
             f"{base}/{channel}/postfit/datacard_postfit__{sig}.pdf",
         ]
+        if not get_stat_only_flag(channel):
+            files += [
+                f"{base}/{channel}/impacts/datacard_impacts__{sig}.pdf",
+                f"{base}/{channel}/impacts/datacard_impacts_split__{sig}",
+            ]
     return files
 
 rule stat_summary:

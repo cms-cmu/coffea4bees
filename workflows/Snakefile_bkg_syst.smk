@@ -93,6 +93,11 @@ rule all_pre_fvt:
         rules.all_bkg_syst_B_1.input,
         rules.bkg_syst_AB_handoff.output
 
+# Post-FvT master target rule (Stage F: Analysis, Closure & Combine)
+rule all_post_fvt:
+    input:
+        rules.all_bkg_syst_F.input
+
 # Top master target rule (default_target: the C files mark their own all_* rules as default too)
 rule all_bkg_syst:
     default_target: True
@@ -102,4 +107,4 @@ rule all_bkg_syst:
         rules.all_bkg_syst_C.input,
         rules.all_bkg_syst_F.input
 
-localrules: all_bkg_syst, all_bkg_syst_A, all_pre_fvt, test_v0_jcm_closure, all_test_subsample_closure, all_bkg_syst_C_1
+localrules: all_bkg_syst, all_bkg_syst_A, all_pre_fvt, all_post_fvt, test_v0_jcm_closure, all_test_subsample_closure, all_bkg_syst_C_1

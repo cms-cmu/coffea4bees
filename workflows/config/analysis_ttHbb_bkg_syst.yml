@@ -325,9 +325,6 @@ rebin: 12
 convert_hist_to_json:
   histos:
     - "SvB_MA.ps_ttHbb"
-    - "SvB_MA.ps_ttHbb_gt6"
-    - "SvB_MA.ps_ttHbb_lepveto"
-    - "SvB_MA.ps_ttHbb_gt6_lepveto"
 
 combine_outdir: "bkg_syst_F_3_stats/datacards/"
 make_combine_inputs:
@@ -365,60 +362,4 @@ channels:
     cut: "sum"
     stat_only: true
     combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
-  ttHbb_gt6:
-    signallabel: "ttHbb"
-    othersignal: ""
-    variable: "SvB_MA.ps_ttHbb_gt6"
-    signal: "ttHbb"
-    closure_subdir: "ttHbb"
-    region: "SR"
-    cut: "pass_nSelJets_gt6"
-    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
-  ttHbb_gt6_stat_only:
-    signallabel: "ttHbb"
-    othersignal: ""
-    variable: "SvB_MA.ps_ttHbb_gt6"
-    signal: "ttHbb"
-    closure_subdir: "ttHbb"
-    region: "SR"
-    cut: "pass_nSelJets_gt6"
-    stat_only: true
-    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
-  ttHbb_lepveto:
-    signallabel: "ttHbb"
-    othersignal: ""
-    variable: "SvB_MA.ps_ttHbb_lepveto"
-    signal: "ttHbb"
-    closure_subdir: "ttHbb"
-    region: "SR"
-    cut: "passLeptonVeto"
-    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
-  ttHbb_lepveto_stat_only:
-    signallabel: "ttHbb"
-    othersignal: ""
-    variable: "SvB_MA.ps_ttHbb_lepveto"
-    signal: "ttHbb"
-    closure_subdir: "ttHbb"
-    region: "SR"
-    cut: "passLeptonVeto"
-    stat_only: true
-    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
-  ttHbb_gt6_lepveto:
-    signallabel: "ttHbb"
-    othersignal: ""
-    variable: "SvB_MA.ps_ttHbb_gt6_lepveto"
-    signal: "ttHbb"
-    closure_subdir: "ttHbb"
-    region: "SR"
-    cut: "pass_nSelJets_gt6_passLeptonVeto"
-    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
-  ttHbb_gt6_lepveto_stat_only:
-    signallabel: "ttHbb"
-    othersignal: ""
-    variable: "SvB_MA.ps_ttHbb_gt6_lepveto"
-    signal: "ttHbb"
-    closure_subdir: "ttHbb"
-    region: "SR"
-    cut: "pass_nSelJets_gt6_passLeptonVeto"
-    stat_only: true
-    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+
