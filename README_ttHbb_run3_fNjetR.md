@@ -50,7 +50,7 @@ apply the default model to these files, so Phase C.4 / F need that branch.
   overwrite one file. `Chunk.integrity()` flagged 19 stale sub-chunks (0.6% of 2024 data); `clean_v1` drops them
   (`.dropped.json` lists them). 31 picoAODs (1.04% of 2024 data) have friends not covering [0, N);
   `clean_v1_fullcov.json` (+ `.excluded.json`) is the evaluation-only index without them, and
-  `metadata/datasets_eval_run3_fullcov/` the matching dataset list for `evaluate.yml::--metadata` (evaluate takes
+  `metadata/datasets/archive/datasets_eval_run3_fullcov/` the matching dataset list for `evaluate.yml::--metadata` (evaluate takes
   its targets from the dataset metadata, so dropping files from the friend index alone does not skip them).
 
 ## 3. Trainings (Phase C, lxplus HTCondor GPUs)

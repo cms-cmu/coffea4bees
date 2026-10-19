@@ -151,7 +151,7 @@ fvt:
     'evaluate.yml::--friends ""': 'coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3.json@@HCR_input coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2023_trigv1_phystop.json@@HCR_input coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2024_clean_v1_fullcov.json@@HCR_input'
     # R1(b) (orchestrator jgaytanv-e7, 2026-10-13): evaluate's TARGET list comes from --metadata, not from the friend index, so the 31
     # partially covered 2024 picoAODs are removed from an evaluate-only metadata dir (else FriendTreeError -> hang, 10-13 run 12909404).
-    'evaluate.yml::--metadata': 'coffea4bees/metadata/datasets_eval_run3_fullcov/'
+    'evaluate.yml::--metadata': 'coffea4bees/metadata/datasets/archive/datasets_eval_run3_fullcov/'
     # jgaytanv-e7 (2026-10-13): kfold.Merge with 2 workers instead of 5 (insurance after the 12912978 BrokenProcessPool; cause most likely the EOS quota)
     'evaluate.yml::--workers': '2'
   train_mem: 118000      # orchestrator (user-requested): whole single-GPU H100 NVL slot (TotalMemory 118000); S2 predicts 102.37M loaded -> ~104.2 GB (~0.97 GB/M + 4.8 GB)
@@ -183,7 +183,7 @@ svb:
   workflow_overrides:
     # R-D1 (orchestrator jgaytanv-e7, 2026-10-14): train AND evaluate take their targets from the 31-file-free metadata dir: the FvT friend
     # has no entries for the 31 partially covered 2024 picoAODs, and a target without its friend raises in the loader (friend.py _match_chunks)
-    --metadata: 'coffea4bees/metadata/datasets_eval_run3_fullcov/'
+    --metadata: 'coffea4bees/metadata/datasets/archive/datasets_eval_run3_fullcov/'
     --JCM-weight:
       - 'year:2022_preEE coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2022_preEE_fNjetR_v1.yml@@JCM_weights'
       - 'year:2022_EE coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2022_EE_fNjetR_v1.yml@@JCM_weights'

@@ -150,7 +150,7 @@ fvt:
     'evaluate.yml::--friends ""': 'coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3.json@@HCR_input coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2023_trigv1_phystop.json@@HCR_input coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2024_clean_v1_fullcov.json@@HCR_input'
     # R1(b) (orchestrator jgaytanv-e7, 2026-10-13): evaluate's TARGET list comes from --metadata, not from the friend index, so the 31
     # partially covered 2024 picoAODs are removed from an evaluate-only metadata dir (else FriendTreeError -> hang, 10-13 run 12909404).
-    'evaluate.yml::--metadata': 'coffea4bees/metadata/datasets_eval_run3_fullcov/'
+    'evaluate.yml::--metadata': 'coffea4bees/metadata/datasets/archive/datasets_eval_run3_fullcov/'
     # jgaytanv-e7 (2026-10-13): kfold.Merge with 2 workers instead of 5 (insurance after the 12912978 BrokenProcessPool; cause most likely the EOS quota)
     'evaluate.yml::--workers': '2'
   train_mem: 118000      # orchestrator (user-requested): whole single-GPU H100 NVL slot (TotalMemory 118000); S2 predicts 102.37M loaded -> ~104.2 GB (~0.97 GB/M + 4.8 GB)

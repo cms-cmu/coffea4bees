@@ -1,3 +1,8 @@
+# VERBATIM COPY of coffea4bees/metadata/datasets/TT_stitched.yml (diff-identical apart from this header).
+# It lives here only because this directory is read as a whole: the classifier's --metadata entry is a directory whose
+# .yml files are merged (classifier/config/dataset/HCR/_picoAOD.py _metadata_arg), and runner.py's dataset_location dir
+# merges every .yml it holds (src/runner/dataset.py _load_metadata_path), so the evaluate-only data.yml beside it
+# cannot be combined with ../../datasets/ without loading the full `data` block a second time.
 TTTo2L2Nu_stitched:
   2022_EE:
     picoAOD:

@@ -1,3 +1,5 @@
+# VERBATIM COPY of coffea4bees/metadata/datasets/ttHbb.yml (diff-identical apart from this header); see TT_stitched.yml
+# in this directory for why the copy is needed (the directory is loaded as a whole by the classifier and by runner.py).
 ttHbb:
   UL16_postVFP:
     nanoAOD: /ttHTobb_M125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM

@@ -1,5 +1,5 @@
-# EVALUATE-ONLY copy of ../datasets/data.yml for the combined Run 3 FvT (orchestrator jgaytanv-e7 ruling R1(b), 2026-10-13).
-# Removed EXACTLY the 31 2024 data picoAODs listed in ../datasets/classifier_inputs_ttHbb_run3_2024_clean_v1_fullcov.excluded.json
+# EVALUATE-ONLY copy of ../../data.yml for the combined Run 3 FvT (orchestrator jgaytanv-e7 ruling R1(b), 2026-10-13).
+# Removed EXACTLY the 31 2024 data picoAODs listed in ../../classifier_inputs_ttHbb_run3_2024_clean_v1_fullcov.excluded.json
 # from data.'2024'.picoAOD.{F,G,H,I2}.files (F 1, G 25, H 3, I2 2): their HCR_input friends do not cover [0, N), and evaluate
 # takes its target list from this metadata (not from the friend index). count/saved_events/sumw/sumw2/total_events are
 # deliberately UNCHANGED (they still describe the full eras): do NOT use this copy for normalisation. Everything else is identical.
