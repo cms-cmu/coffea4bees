@@ -71,7 +71,7 @@ classifier_inputs:
     run_SvB: false
     top_reconstruction: slow
     fill_histograms: true
-    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_sb1000.yml"
     make_classifier_input: root://eoscms.cern.ch//eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/Run3_v1/ttHbb_stitched/
 
 # ==============================================================================
@@ -187,7 +187,7 @@ analysis_config:
     run_SvB: false
     top_reconstruction: fast
     fill_histograms: true
-    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_sb1000.yml"
     # Phase C FvT friend (kfold.Merge output of Snakefile_PhaseC_3_evaluate); runner.py merges this
     # over friend_file, so data gets trigWeight + FvT and MC keeps trigWeight only.
     friends:

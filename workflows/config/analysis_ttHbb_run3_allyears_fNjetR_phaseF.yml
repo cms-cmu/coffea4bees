@@ -66,7 +66,7 @@ classifier_inputs:
     run_SvB: false
     top_reconstruction: slow
     fill_histograms: true
-    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_sb1000.yml"
     make_classifier_input: root://eoscms.cern.ch//eos/cms/store/group/phys_higgs/ttHbb/mmarcheg/4b/Run3_v1/ttHbb_stitched/
 
 # ==============================================================================
@@ -239,7 +239,7 @@ analysis_config:
     top_reconstruction: fast
     plot_ttbar_with_weights: true     # analysis_ttHbb.yml:283: ttbar from 3b data (TTbar_from_d3) for the closure table / combine
     fill_histograms: true
-    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_sb1000.yml"
     friends:
       FvT: "root://eoscms.cern.ch//eos/cms/store/group/phys_top/jgaytanv/ttHbb/4b/Run3_v1/ttHbb_stitched/friend/FvT_ttHbb_run3_allyears_perEraJCM/result_phystop.json@@analysis.0.merged"
       SvB_MA: "root://eoscms.cern.ch//eos/cms/store/group/phys_top/jgaytanv/ttHbb/4b/Run3_v1/ttHbb_stitched/friend/SvB_ttHbb_run3_allyears_perEraJCM/result_phystop.json@@analysis.0.merged"

@@ -53,5 +53,5 @@ classifier_inputs:
     run_SvB: false
     top_reconstruction: slow
     fill_histograms: true
-    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_sb1000.yml"
     make_classifier_input: root://eosuser.cern.ch//eos/user/j/jgaytanv/ttHbb/4b/Run3_v1/b2_2023_pt25_trigv1_canary/
