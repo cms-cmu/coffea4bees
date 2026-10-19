@@ -240,7 +240,8 @@ class analysis(HH4bBaseProcessor):
                 top_reconstruction=self.top_reconstruction,
                 isDataForMixed=self.config['isDataForMixed'],
                 tag_list=["lowpt_fourTag", "lowpt_threeTag"],
-                event_metadata=event.metadata
+                event_metadata=event.metadata,
+                fill_histograms=self.fill_histograms,
             )
             if not self.plot_ttbar_with_weights:
                 return hist_nom
@@ -260,7 +261,8 @@ class analysis(HH4bBaseProcessor):
                 isDataForMixed=self.config['isDataForMixed'],
                 event_metadata=event.metadata,
                 tag_list=["lowpt_fourTag", "lowpt_threeTag"],
-                weight_name = "weight_d3_to_t4"
+                weight_name = "weight_d3_to_t4",
+                fill_histograms=self.fill_histograms,
             )
 
             hist_t3 = filling_nominal_histograms(
@@ -277,7 +279,8 @@ class analysis(HH4bBaseProcessor):
                 isDataForMixed=self.config['isDataForMixed'],
                 event_metadata=event.metadata,
                 tag_list=["lowpt_fourTag", "lowpt_threeTag"],
-                weight_name = "weight_d3_to_t3"
+                weight_name = "weight_d3_to_t3",
+                fill_histograms=self.fill_histograms,
             )
 
             return processor.accumulate([hist_nom, hist_t4, hist_t3])

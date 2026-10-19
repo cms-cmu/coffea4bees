@@ -176,6 +176,12 @@ class HemiMixer(Skimmer4b):
                 "Jet_nSVs", "Jet_nConstituents", "Jet_area", "Jet_rawFactor",
                 "Jet_chHEF", "Jet_neHEF", "Jet_chEmEF", "Jet_neEmEF", "Jet_muEF",
             ]
+            # 2024 tags with UParT (corrections.yml btag_algo), and the hemisphere library counted
+            # nTagJet with it: carry its score and pt regression too, or jet_selection on the mixed
+            # data finds no b-tag branch.
+            if self.corrections_metadata[year].get("btag_algo") == "btagUParTAK4B":
+                self.jet_branches += ["Jet_btagUParTAK4B", "Jet_UParTAK4RegPtRawCorr",
+                                      "Jet_UParTAK4RegPtRawCorrNeutrino", "Jet_UParTAK4RegPtRawRes"]
         else:
             self.jet_branches += ["Jet_btagDeepFlavB", "Jet_bRegCorr"]
 
@@ -355,8 +361,10 @@ class HemiMixer(Skimmer4b):
 
         #
         # Add Btag SF
+        # 2024 and 2025 (= Summer24 MC) use UParT, which has only WP-based SFs (no shape SF) yet: skip it,
+        # as processor_HH4b does.
         #
-        if config["isMC"]:
+        if config["isMC"] and year not in ("2024", "2025"):
 
             weights, list_weight_names = add_btagweights( event, weights,
                                                           list_weight_names=list_weight_names,
@@ -389,6 +397,14 @@ class HemiMixer(Skimmer4b):
 
             selection = selection & pass_ttbar_filter
             selev = selev[pass_ttbar_filter_selev]
+
+        #
+        #  Nothing to mix in this chunk: save no events (the chunk's source range is still recorded, so
+        #  the integrity check passes). With 25k-event chunks 6 of 4,052 2025 chunks got here and the
+        #  mixer raised "no jet_mult bins fired" (mixeddata_run3_2025_20261016_daa12d2-1f6f43d).
+        #
+        if len(selev) == 0:
+            return (np.zeros(len(event), dtype=bool), None, {})
 
 
         #

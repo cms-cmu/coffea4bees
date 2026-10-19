@@ -41,15 +41,37 @@ include: "helpers/bkg_syst_common.smk"
 if "A2_STUDY" not in globals():            # standalone: A_2 provides the dataset
     include: "Snakefile_bkg_syst_A_2_make_subsamples.smk"
 
-# ── Stage A_3 Runtime Config Staging (Generated into {out_a3}configs/) ────────
-from helpers.stage_configs import stage_phaseA_3_configs
-# own name: cfg_files is reassigned by later includes (F_1), and input functions run after parsing
-A3_CFG_FILES = stage_phaseA_3_configs(config, out_a3, SUBSAMPLES)['process_subsamples']
+# ── Stage A_3 Base Config ─────────────────────────────────────────────────────
+A3_CFG_TEMPLATE = config.get('subsample_processor_config', "coffea4bees/workflows/config/analysis_config_bkg_syst_subsamples.yml")
+A3_CFG_STAGED = f"{out_a3}configs/analysis_config_bkg_syst_subsamples.yml"
+
+rule stage_subsample_processor_config:
+    input:
+        template = A3_CFG_TEMPLATE,
+    output:
+        staged = A3_CFG_STAGED,
+    run:
+        with open(input.template) as f:
+            cfg = yaml.safe_load(f)
+        classifiers = config.get('classifiers', [config.get('classifier', 'SvB_MA')])
+        if isinstance(classifiers, str):
+            classifiers = [c.strip() for c in classifiers.split() if c.strip()]
+        if 'SvB' in classifiers and 'mixed_svb_model' in config:
+            cfg['config']['SvB'] = [{'path': config['mixed_svb_model'], 'name': 'Final'}]
+        else:
+            cfg['config']['SvB'] = None
+        if 'SvB_MA' in classifiers:
+            ma_model = config.get('mixed_svb_ma_model', config.get('mixed_svb_model'))
+            if ma_model:
+                cfg['config']['SvB_MA'] = [{'path': ma_model, 'name': 'Final'}]
+        else:
+            cfg['config']['SvB_MA'] = None
+        write_yaml(output.staged, cfg)
 
 ci_json = config['classifier_inputs_json']
 friend_json = config['mixeddata_friend_json']
 
-localrules: all_bkg_syst_A_3, A3_merge_mixed, A3_plot_config, A3_validation, all_subsample_coffea, all_classifier_inputs_mixeddata, all_friends_mixeddata, merge_classifier_inputs_mixeddata_json, merge_mixeddata_friends_json
+localrules: all_bkg_syst_A_3, stage_subsample_processor_config, A3_merge_mixed, A3_plot_config, A3_validation, all_subsample_coffea, all_classifier_inputs_mixeddata, all_friends_mixeddata, merge_classifier_inputs_mixeddata_json, merge_mixeddata_friends_json
 
 # ── Master Target Rules ───────────────────────────────────────────────────────
 rule all_bkg_syst_A_3:
@@ -75,7 +97,7 @@ rule all_friends_mixeddata:
 rule process_subsample_single_pass:
     input:
         ds_file = MULTISAMPLE_DATASET,
-        cfg = lambda w: A3_CFG_FILES[w.v],
+        cfg = A3_CFG_STAGED,
     output:
         coffea = f"{out_a3}histAll_{channel}_mixeddata_v{{v}}.coffea",
         json_meta = f"{out_a3}histAll_{channel}_mixeddata_v{{v}}.json",
@@ -90,6 +112,8 @@ rule process_subsample_single_pass:
         condor_flags = condor_flags,
         python_bin = python_bin,
         weights_file = config.get('weights_file', f"coffea4bees/metadata/weights/weights_{channel}.yml"),
+        friend_base = lambda wildcards: f"{config['mixeddata_friend_base'].rstrip('/')}/v{wildcards.v}/",
+        classifier_input_base = lambda wildcards: f"{config['classifier_inputs_base'].rstrip('/')}/v{wildcards.v}/",
     shell:
         """
         set -eo pipefail
@@ -102,6 +126,8 @@ rule process_subsample_single_pass:
             --weights {params.weights_file} \
             --output-path {params.output_path} \
             --output $(basename {output.coffea}) \
+            --friend-base {params.friend_base} \
+            --config-overrides make_classifier_input={params.classifier_input_base} make_friend_SvB={params.friend_base} \
             {params.condor_flags} 2>&1 | tee {log}
         test -s {output.json_meta}      # runner's friend manifest (HCR_input + SvB_MA): C and F read it
         """

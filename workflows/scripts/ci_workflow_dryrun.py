@@ -78,6 +78,7 @@ def main():
     ap.add_argument("--snakemake", default="snakemake", help='snakemake command (CI: "pixi run snakemake")')
     ap.add_argument("--jobs", type=int, default=4, help="parallel snakemake invocations")
     ap.add_argument("--only", default="", help="regex: dry-run only pairs whose 'config Snakefile' matches")
+    ap.add_argument("--output-dir", default="CI_output", help='output directory for CI dry runs (default: "CI_output")')
     args = ap.parse_args()
     if not WORKFLOWS.is_dir():
         raise SystemExit(f"run from the barista root ({WORKFLOWS} not found)")
@@ -113,11 +114,29 @@ def main():
         print(f"  FAIL {msg}")
 
     # 3. dry-run
+    ci_out = Path(args.output_dir)
+    ci_configs = ci_out / "configs"
+    ci_configs.mkdir(parents=True, exist_ok=True)
+
+    def prepare_ci_chain(chain_paths):
+        ci_chain = []
+        for c in chain_paths:
+            try:
+                rel = c.relative_to(CONFIGS)
+            except ValueError:
+                rel = Path(c.name)
+            target = ci_configs / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            text = c.read_text().replace("output/", f"{args.output_dir}/")
+            target.write_text(text)
+            ci_chain.append(str(target))
+        return ci_chain
+
     pairs = []
     for cfg, entries in runs.items():
         if not (CONFIGS / cfg).exists():
             continue
-        chain = [str(c) for c in base_chain(CONFIGS / cfg)]
+        chain = prepare_ci_chain(base_chain(CONFIGS / cfg))
         for e in entries:
             name, upstream = (e, []) if isinstance(e, str) else (e["snakefile"], e.get("upstream") or [])
             if not snakefile(name).exists() or not re.search(args.only, f"{cfg} {name}"):
@@ -125,7 +144,8 @@ def main():
             for test in ("false", "true"):
                 pairs.append((cfg, name, test, upstream,
                               [*sm, "-s", str(snakefile(name)), "--configfile", *chain,
-                               "--config", f"test={test}", "-n", "--nolock", "--quiet", "rules"]))
+                               "--config", f"test={test}", f"output_path={args.output_dir}/", f"output_dir={args.output_dir}/",
+                               "-n", "--nolock", "--quiet", "rules"]))
 
     def dryrun(pair):
         cfg, name, test, upstream, cmd = pair

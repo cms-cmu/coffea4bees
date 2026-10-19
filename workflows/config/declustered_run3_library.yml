@@ -38,10 +38,12 @@ declustering:
   library:
     # child jet properties taken from the library (btagScore always): the real b-tag, jet ID and
     # HCR classifier-input features (dump_friendtrees.py fills absent ones with 0). NOT the b-jet
-    # regression factors (the library jets are already regressed) nor the JEC inputs rawFactor/area
-    # (splitting_library.NOT_CARRIABLE).
+    # regression factors (the library jets are already regressed) nor the JEC input rawFactor
+    # (splitting_library.NOT_CARRIABLE). area added 2026-10-12 (John): the c6 classifiers read it and
+    # libraries built before then lack it (declib16_run3_20261011: CanJet_area == 0) -- a config that
+    # reuses such a library must restate the list without it (SplittingLibrary refuses missing fields).
     carry_fields: [btagScore, jetId, btagPNetCvB, btagPNetCvL, btagPNetQvG, btagPNetTauVJet,
-                   PNetRegPtRawRes, nSVs, chHEF, neHEF, chEmEF, neEmEF, muEF, nConstituents]
+                   PNetRegPtRawRes, nSVs, chHEF, neHEF, chEmEF, neEmEF, muEF, nConstituents, area]
     min_entries: 10            # below this an exact type falls back to same child b/j content
     scale_pt: true             # scale the children to the parent pT
     boost_z: true              # boost the children along z to the parent pz

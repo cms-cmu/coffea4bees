@@ -59,8 +59,9 @@ MIX_INDICES = [int(x) for x in subsample_indices]
 out_c = f"{out}bkg_syst_C_FvT/"
 os.makedirs(out_c, exist_ok=True)
 
-from helpers.stage_configs import stage_phaseC_configs
-cfg_files = stage_phaseC_configs(config, out_c)
+if not globals().get("_BKG_SYST_C_MODEL_CONFIG_INCLUDED", False):
+    _BKG_SYST_C_MODEL_CONFIG_INCLUDED = True
+    include: "helpers/bkg_syst_c_model_config.smk"
 
 eos_base = config['eos_base']                     # set by bkg_syst_common (publish_base)
 mix_name = config.get("mix_name", "ttHbb_bkg_syst")
@@ -89,9 +90,13 @@ if not globals().get("_EXTRACT_FRIEND_MANIFEST_INCLUDED", False):
         shell:
             """
             mkdir -p $(dirname {output.json})
-            if [ -z "$X509_USER_PROXY" ] && [ -f ./proxy/x509_proxy ]; then
+            if [ -z "${{X509_USER_PROXY:-}}" ] && [ -f ./proxy/x509_proxy ]; then
                 export X509_USER_PROXY="$PWD/proxy/x509_proxy"
             fi
+            if [ -d /workspace/shared/certificates ] && [ ! -d /etc/grid-security/certificates ]; then
+                mkdir -p /etc/grid-security && ln -sfn /workspace/shared/certificates /etc/grid-security/certificates
+            fi
+            export X509_CERT_DIR=/etc/grid-security/certificates
             if command -v xrdcp &>/dev/null; then
                 TMP_RES=$(mktemp -p . --suffix=.json)
                 if [[ "{params.eos_base}" == root://* ]]; then
@@ -127,6 +132,13 @@ rule bkg_syst_C_handoff:
                 dst="{params.eos}/friends/$(basename $f)"
                 if command -v xrdcp &>/dev/null; then
                     xrdcp -f "$f" "$dst" 2>&1 | tee -a {log}
+                elif [[ "$dst" == root://* ]]; then
+                    # no xrdcp (the Nautilus orchestrator image): fsspec-xrootd; `cp` cannot write root://
+                    python3 -c 'import os, sys, fsspec
+fs, path = fsspec.core.url_to_fs(sys.argv[2])
+fs.makedirs(os.path.dirname(path), exist_ok=True)
+with fs.open(path, "wb") as out, open(sys.argv[1], "rb") as src:
+    out.write(src.read())' "$f" "$dst" 2>&1 | tee -a {log}
                 else
                     cp -f "$f" "$dst" 2>&1 | tee -a {log}
                 fi
@@ -137,7 +149,7 @@ rule bkg_syst_C_handoff:
         touch {output.done}
         """
 
-localrules: bkg_syst_C_handoff
+localrules: bkg_syst_C_handoff, extract_friend_manifest
 
 rule all_bkg_syst_C_3:
     default_target: True

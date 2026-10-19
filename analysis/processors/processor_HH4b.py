@@ -159,7 +159,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         apply_FvT (bool): Whether to apply FvT classifier/friend tree.
         apply_boosted_veto (bool): Whether to apply boosted event veto.
         run_dilep_ttbar_crosscheck (bool): Whether to run dilepton ttbar crosscheck selection.
-        fill_histograms (bool): Whether to fill histograms.
+        fill_histograms (bool | str): Whether to fill histograms, or specific categories ('kinematics', 'fvt', 'SvB', 'all').
         hist_cuts (list): List of cut names for histogram filling.
         run_SvB (bool): Whether to run SvB classifier/friend tree.
         top_reconstruction (str | None): Top candidate reconstruction mode ('slow', 'fast', or None).
@@ -222,7 +222,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         apply_boosted_veto: bool = False,
         apply_lepton_veto: bool = False,
         run_dilep_ttbar_crosscheck: bool = False,
-        fill_histograms: bool = True,
+        fill_histograms: bool | str = True,
         hist_cuts = [],
         run_SvB: bool = True,
         run_SvB_FeynNet_comparison: bool = False,
@@ -253,6 +253,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         compute_hemi_mixing_diagnostics: bool = False,
         plot_extra_canjet_vars: bool = False,
         subsample_names: list[str] | None = None,
+        tag_list: list[str] | None = None,
     ):
 
         logging.debug("\nInitialize Analysis Processor")
@@ -261,6 +262,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.cand_cfg = load_candidates_selection_config(candidates_selection_cfg) if candidates_selection_cfg else None
         self.blind = blind
         self.fourTag_use_tight = fourTag_use_tight
+        self.tag_list = list(tag_list) if tag_list is not None else ["threeTag", "fourTag"]
 
         import os
         self.weights_data = {}
@@ -1364,9 +1366,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         """
         if not (self.config["isMC"] and self.apply_btagSF):
             return weights, list_weight_names
-        # 2024 uses UParT tagger; only WP-based SFs (UParTAK4_wp_values) are                                                                       
-        # available — no shape SF exists yet. Skip btag SFs for this year.                                                                         
-        if self.year == "2024":                                                                                                                    
+        # 2024 uses UParT tagger; only WP-based SFs (UParTAK4_wp_values) are
+        # available — no shape SF exists yet. Skip btag SFs for this year, and for
+        # 2025, whose MC is the same Summer24 UParT MC (TT.yml '2025' aliases).
+        if self.year in ("2024", "2025"):
             return weights, list_weight_names
 
         weights, list_weight_names = add_btagweights(
@@ -1874,6 +1877,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 year_override=self.year_override,
                 compute_hemi_mixing_diagnostics=self.compute_hemi_mixing_diagnostics,
                 plot_extra_canjet_vars=self.plot_extra_canjet_vars,
+                tag_list=self.tag_list,
+                fill_histograms=self.fill_histograms,
+                subsample_names=getattr(self, "subsample_names", None),
             )
             if not self.plot_ttbar_with_weights and not self.plot_ttbar_with_MvD_weights:
                 return hist_nom
@@ -1900,6 +1906,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     weight_noFvT_override="weight_d3_to_t4_noFvT",
                     year_override=self.year_override,
                     plot_extra_canjet_vars=self.plot_extra_canjet_vars,
+                    tag_list=self.tag_list,
+                    fill_histograms=self.fill_histograms,
+                    subsample_names=getattr(self, "subsample_names", None),
                 )
 
                 hist_t3 = filling_nominal_histograms(
@@ -1920,6 +1929,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     weight_noFvT_override="weight_d3_to_t3_noFvT",
                     year_override=self.year_override,
                     plot_extra_canjet_vars=self.plot_extra_canjet_vars,
+                    tag_list=self.tag_list,
+                    fill_histograms=self.fill_histograms,
+                    subsample_names=getattr(self, "subsample_names", None),
                 )
                 hists += [hist_t4, hist_t3]
 
@@ -1945,6 +1957,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     weight_noMvD_override="weight_mix4_to_t4_MvD_noMvD",
                     year_override=self.year_override,
                     plot_extra_canjet_vars=self.plot_extra_canjet_vars,
+                    fill_histograms=self.fill_histograms,
                 )
                 hists.append(hist_mvd_t4)
 

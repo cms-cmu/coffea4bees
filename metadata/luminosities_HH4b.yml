@@ -14,3 +14,13 @@ luminosities:
   2023_BPix: 9.451e3
   2023_preBPix: 17.794e3
   '2024': 109.95e3
+  # 2025: PRELIMINARY (2026-10-15). Recorded lumi of Cert_Collisions2025_391658_398903_Golden
+  # intersected with the DBS run/LS lists of the eight /ParkingHH{0,1}/Run2025*-PromptReco-v*/NANOAOD
+  # datasets that data.yml '2025' skims (all events processed; HH0 and HH1 carry identical LS):
+  #   brilcalc lumi -c web -u /fb --normtag normtag_BRIL.json (hfet25v05) -> 110.625 /fb   <- used
+  #   same, no normtag (online)                                         -> 111.187 /fb
+  #   full golden JSON: 110.628 (normtag_BRIL) / 111.190 (online); 846 golden LS absent from DBS carry 0.003 /fb
+  # normtag_PHYSICS.json does not cover 2025 yet: redo with it (and the final golden JSON) when it does.
+  # Do NOT derive the lumi from the skims' lumis_processed: it lists only LS with >=1 saved event (~1% low).
+  # The 2025 MC is the Summer24 (2024) MC (TT.yml '2025' aliases), normalised to this number.
+  '2025': 110.625e3

@@ -50,6 +50,10 @@ rule M5_config:
                               "aveAbsEta", "stNotCan", "SB", "selectedViewTruthMatch", "d13TruthMatch",
                               "genWeight"],
         }
+        if 'ttbb_scale' in PS:
+            section['ttbb_scale'] = float(PS['ttbb_scale'])
+        elif 'ttbb_scale' in config:
+            section['ttbb_scale'] = float(config['ttbb_scale'])
         cfg = processor_config(section, inherit_config=False,
                                processor="coffea4bees/skimmer/processor/sub_sample_MC.py",
                                runner=runner)
@@ -67,7 +71,7 @@ use rule analysis_processor from analysis as M5_psdata with:
         datasets = " ".join(TTBAR),
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, ["-s", TEST_FLAG, CONDOR])),
+        extra_arguments = " ".join(filter(None, ["-s", TEST_FLAG, CONDOR, ERAS_ARG])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 

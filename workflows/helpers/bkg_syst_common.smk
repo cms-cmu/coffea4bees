@@ -49,6 +49,9 @@ is_run3 = any(('202' in str(y) or 'Run3' in str(y)) for y in YEARS)
 config.setdefault('isRun3', is_run3)
 run_period = "Run3" if is_run3 else "Run2"
 
+per_year_jcm = bool(config.get('per_year_jcm', (config.get('phaseB_1') or {}).get('per_year_jcm', False)))
+config['per_year_jcm'] = per_year_jcm
+
 # ── 4. Subsamples ──────────────────────────────────────────────────────────────
 SUB = config.get('subsamples') or {}
 # Where the closure samples come from: `split` = 3b mixing (mixeddata_all split with the A_1 JCM),
@@ -61,6 +64,8 @@ subsample_indices = config.get('subsample_indices', phase_e_cfg.get('subsample_i
 if subsample_indices is not None:
     if isinstance(subsample_indices, str):
         subsample_indices = [int(x) for x in subsample_indices.split()]
+    elif isinstance(subsample_indices, int):
+        subsample_indices = [subsample_indices]
     SUBSAMPLES = [str(i) for i in subsample_indices]
     N_SUBSAMPLES = len(SUBSAMPLES)
 else:
@@ -121,9 +126,13 @@ config.setdefault('nominal_json', config['nominal_coffea'].removesuffix(".coffea
 if INPUTS.get('classifier_inputs'):
     config['nominal_classifier_inputs'] = str(INPUTS['classifier_inputs'])
 config['data_svb_friend'] = str(INPUTS['SvB'])
+if INPUTS.get('SvB_MA'):
+    config['data_svb_ma_friend'] = str(INPUTS['SvB_MA'])
 # ...and the SvB model that made that friend: A_3 evaluates it on the mixed subsamples, so mixed data
 # and data are scored by the same SvB in the closure
 config['mixed_svb_model'] = str(INPUTS['SvB_model'])
+if INPUTS.get('SvB_MA_model'):
+    config['mixed_svb_ma_model'] = str(INPUTS['SvB_MA_model'])
 MIXED_DATASET = f"{A_INPUT_DIR}{MIX_NAME}.yml"      # local copy: A_2 reads the seeds' file lists
 
 # The multi-sample closure dataset A_2 assembles: mixeddata_4b (samples mix_v<k>) or

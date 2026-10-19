@@ -181,7 +181,7 @@ def check_handoff_refs(config_dict):
         return
 
     problems = []
-    for section in ('fvt', 'svb', 'mvd', 'svb_mvd'):   # nominal C/D; MvD roast V.2/V.3
+    for section in ('fvt', 'svb', 'svb_ma', 'mvd', 'svb_mvd'):   # nominal C/D; MvD roast V.2/V.3
         blk = config_dict.get(section) or {}
         if not isinstance(blk, dict):
             continue

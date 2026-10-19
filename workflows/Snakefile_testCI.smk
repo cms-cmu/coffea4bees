@@ -412,9 +412,4 @@ rule analysis_cutflow_lowpt_Run2:
 
 rule workflow_validation:
     log: f"{output_dir}/workflow_validation.log"
-    shell:
-        """
-        pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseF.smk --configfile coffea4bees/workflows/config/nominal_run2.yml -n 2>&1 | tee -a {log}
-        pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseF.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml -n 2>&1 | tee -a {log}
-        pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseF.smk --configfile coffea4bees/workflows/config/nominal_run3.yml -n 2>&1 | tee -a {log}
-        """
+    shell: "python coffea4bees/workflows/scripts/ci_workflow_dryrun.py --snakemake 'pixi run snakemake' --output-dir {output_dir} 2>&1 | tee -a {log}"

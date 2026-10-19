@@ -203,13 +203,17 @@ def get_stat_only_flag(channel=None):
         return ''
     return '--stat_only' if str(val) == '--stat-only' else str(val)
 
-module stat_analysis:
-    snakefile: "rules/stat_analysis.smk"
-    config: config
+if not globals().get("_STAT_ANALYSIS_MODULE_DEFINED", False):
+    _STAT_ANALYSIS_MODULE_DEFINED = True
+    module stat_analysis:
+        snakefile: "rules/stat_analysis.smk"
+        config: config
 
-module combine:
-    snakefile: os.path.join(os.getcwd(), "src/stat_analysis/combine.smk")
-    config: config
+if not globals().get("_COMBINE_MODULE_DEFINED", False):
+    _COMBINE_MODULE_DEFINED = True
+    module combine:
+        snakefile: os.path.join(os.getcwd(), "src/stat_analysis/combine.smk")
+        config: config
 
 # Resolve absolute CERNBox destination path
 # final_output only (not in any all_* target; a roast publishes with `roast publish`)
@@ -220,7 +224,7 @@ if not cern_path.startswith("/"):
     cern_path = f"/eos/user/{first_letter}/{cern_user}/{cern_path}"
 
 # The first rule defined in the master file remains the default target
-rule final_output:
+rule final_output_F_3:
     input:
         lambda wildcards: rules.all_bkg_syst_F_3.input
     params:
@@ -239,27 +243,27 @@ rule final_output:
         fi
         """
 
-def get_combine_targets_F_3(wildcards):
+def get_target_rebins_F_3():
     explicit_rebins = config.get('f3_rebins') or config.get('stat_analysis_rebins')
     if explicit_rebins:
         if isinstance(explicit_rebins, (int, str)):
-            target_rebins = [int(r) for r in str(explicit_rebins).split()]
+            return [int(r) for r in str(explicit_rebins).split()]
         else:
-            target_rebins = [int(r) for r in explicit_rebins]
-    else:
-        closure_summary_path = f"{out}bkg_syst_F_2_run_two_stage_closure/closure_summary.json"
-        if os.path.exists(closure_summary_path):
-            import json
-            try:
-                with open(closure_summary_path, "r") as f:
-                    data = json.load(f)
-                target_rebins = data.get("passing_rebins", [15, 24])
-            except Exception as e:
-                print(f"[Snakemake] Error reading {closure_summary_path}: {e}")
-                target_rebins = [15, 24]
-        else:
-            target_rebins = [15, 24]
+            return [int(r) for r in explicit_rebins]
+    closure_summary_path = f"{out}bkg_syst_F_2_run_two_stage_closure/closure_summary.json"
+    if os.path.exists(closure_summary_path):
+        import json
+        try:
+            with open(closure_summary_path, "r") as f:
+                data = json.load(f)
+            return data.get("passing_rebins", [15, 24])
+        except Exception as e:
+            print(f"[Snakemake] Error reading {closure_summary_path}: {e}")
+            return [15, 24]
+    return [15, 24]
 
+def get_combine_targets_F_3(wildcards):
+    target_rebins = get_target_rebins_F_3()
     targets = []
     for r in target_rebins:
         for channel, ch_config in config.get('channels', {}).items():
@@ -275,11 +279,90 @@ def get_combine_targets_F_3(wildcards):
                 f"{ch_dir}likelihood_scan/datacard_likelihood_scan__{sig}.pdf",
                 f"{ch_dir}impacts/datacard_impacts__{sig}.pdf"
             ])
+        targets.append(f"{out_f3}stat_analysis_rebin{r}/summary.html")
     return targets
+
+def get_stat_summary_rebin_inputs_F_3(wildcards):
+    r = wildcards.rebin
+    inputs = []
+    for channel, ch_config in config.get('channels', {}).items():
+        sig = ch_config.get('signallabel')
+        if not sig:
+            continue
+        ch_dir = f"{out_f3}stat_analysis_rebin{r}/{channel}/"
+        inputs.extend([
+            f"{ch_dir}limits/datacard_limits__{sig}.json",
+            f"{ch_dir}significance/datacard_significance__{sig}.json",
+            f"{ch_dir}likelihood_scan/datacard_likelihood_scan__{sig}.pdf",
+            f"{ch_dir}postfit/datacard_postfit__{sig}.pdf",
+            f"{ch_dir}impacts/datacard_impacts__{sig}.pdf",
+        ])
+    return inputs
+
+
+rule stat_summary_rebin_F_3:
+    input:
+        get_stat_summary_rebin_inputs_F_3
+    output:
+        html = f"{out_f3}stat_analysis_rebin{{rebin}}/summary.html",
+        md = f"{out_f3}stat_analysis_rebin{{rebin}}/summary.md"
+    log: f"{out}logs/stat_summary_rebin_F_3_{{rebin}}.log"
+    params:
+        stat_dir = lambda wildcards: f"{out_f3}stat_analysis_rebin{wildcards.rebin}",
+        channels = " ".join(f"--channel {ch}={cfg['signallabel']}" for ch, cfg in config.get('channels', {}).items() if cfg.get('signallabel')),
+        variables = " ".join(f"--variable {ch}={cfg['variable']}" for ch, cfg in config.get('channels', {}).items() if cfg.get('signallabel') and cfg.get('variable')),
+        blind = lambda wildcards: "--blind" if "--blind" in config.get('combine_flags', '') else "",
+        label = lambda wildcards: f"{config.get('label', 'stat_analysis')}_rebin{wildcards.rebin}",
+        container_wrapper = "./run_container",
+        python_bin = "python3"
+    container: None
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {log})
+        if [ -f src/stat_analysis/stat_summary.py ]; then
+            {params.container_wrapper} {params.python_bin} src/stat_analysis/stat_summary.py {params.stat_dir} \
+                -o {output.html} --md {output.md} {params.channels} {params.variables} {params.blind} \
+                --label {params.label} 2>&1 | tee {log}
+        else
+            echo "src/stat_analysis/stat_summary.py not found" > {output.html}
+            touch {output.md}
+        fi
+        """
+
+def get_stat_summary_master_inputs_F_3(wildcards):
+    rebins = get_target_rebins_F_3()
+    return [f"{out_f3}stat_analysis_rebin{r}/summary.html" for r in rebins]
+
+rule stat_summary_master_F_3:
+    input:
+        get_stat_summary_master_inputs_F_3
+    output:
+        html = f"{out_f3}summary.html",
+        md = f"{out_f3}summary.md"
+    log: f"{out}logs/stat_summary_master_F_3.log"
+    params:
+        stat_dir = out_f3,
+        title = "Stage_F_3_Blinded_Combine_Summary",
+        label = f"{config.get('label', 'stat_analysis')}",
+        container_wrapper = "./run_container",
+        python_bin = "python3"
+    container: None
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {log})
+        {params.container_wrapper} {params.python_bin} src/stat_analysis/stat_summary_multi_rebin.py \
+            -d {params.stat_dir} \
+            -o {output.html} --md {output.md} \
+            --title {params.title} \
+            --label {params.label} 2>&1 | tee {log}
+        """
 
 rule all_bkg_syst_F_3:
     input:
-        get_combine_targets_F_3
+        get_combine_targets_F_3,
+        f"{out_f3}summary.html"
 
 use rule convert_hist_to_json from stat_analysis with:
     input:
@@ -315,7 +398,7 @@ use rule make_combine_inputs from stat_analysis with:
         signal = lambda wildcards: wildcards.channel,
         tag_flags = lambda wildcards: (
             f"{config['channels'][wildcards.channel].get('combine_flags', config['combine_flags'])} "
-            f"--region {get_region_for_channel(wildcards.channel)} "
+            + (f"--region {get_region_for_channel(wildcards.channel)} " if '--region' not in config['channels'][wildcards.channel].get('combine_flags', config['combine_flags']) else "")
             + (f"--cut {config['channels'][wildcards.channel]['cut']} " if 'cut' in config['channels'][wildcards.channel] and config['channels'][wildcards.channel]['cut'] not in ['', 'sum'] else '')
             + (f"--data_process {config['channels'][wildcards.channel]['data_process']} " if 'data_process' in config['channels'][wildcards.channel] else '')
             + f"--multijet_process {config['channels'][wildcards.channel].get('multijet_process', config['make_combine_inputs']['multijet_process'])} "
@@ -325,6 +408,8 @@ use rule make_combine_inputs from stat_analysis with:
         container_wrapper = config['stats_container_wrapper']
     log: f"{out}logs/make_combine_inputs_rebin{{rebin}}_{{channel}}.log"
 
-use rule * from combine as *
+if not globals().get("_USE_RULE_COMBINE_DONE", False):
+    _USE_RULE_COMBINE_DONE = True
+    use rule * from combine as *
 
-localrules: final_output, all_bkg_syst_F_3, convert_hist_to_json, make_combine_inputs
+localrules: final_output_F_3, all_bkg_syst_F_3, convert_hist_to_json, make_combine_inputs, stat_summary_rebin_F_3, stat_summary_master_F_3

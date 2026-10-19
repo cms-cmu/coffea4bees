@@ -28,7 +28,12 @@ class MixedDataSplitter(Skimmer4b):
 
         super().__init__(*args, **kwargs)
         logging.info(f"\nLoading JCM from file: {JCM_file} , apply_JCM = {apply_JCM}")
-        self.apply_JCM = jetCombinatoricModel(JCM_file) if apply_JCM else None
+        self.apply_JCM = None
+        if apply_JCM:
+            if isinstance(JCM_file, dict):
+                self.apply_JCM = {yr: jetCombinatoricModel(p) for yr, p in JCM_file.items() if p}
+            elif isinstance(JCM_file, str):
+                self.apply_JCM = {"default": jetCombinatoricModel(JCM_file)}
         self.n_subsamples = n_subsamples
         self.mixed_subsample = mixed_subsample
         self.skim4b = skim4b
@@ -73,7 +78,14 @@ class MixedDataSplitter(Skimmer4b):
         # Update pseudoTagWeight for mixed data
         #
         logging.debug(f"{chunk_str} event.pseudoTagWeight was {events.pseudoTagWeight[:10]} \n")
-        update_pseudoTagWeight_of_mixed_data( events, self.apply_JCM )
+        jcm_model = (
+            self.apply_JCM.get(year)
+            or self.apply_JCM.get(year.replace("2016", "UL16").replace("2017", "UL17").replace("2018", "UL18"))
+            or self.apply_JCM.get("default")
+            if isinstance(self.apply_JCM, dict)
+            else self.apply_JCM
+        )
+        update_pseudoTagWeight_of_mixed_data( events, jcm_model )
         logging.debug(f"{chunk_str} event.pseudoTagWeight is now {events.pseudoTagWeight[:10]} \n")
 
 

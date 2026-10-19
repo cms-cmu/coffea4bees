@@ -117,7 +117,7 @@ use rule analysis_processor from analysis as M7_mix with:
         datasets = " ".join(SIG_DATASETS),
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, ["-s", TEST_FLAG, CONDOR])),
+        extra_arguments = " ".join(filter(None, ["-s", TEST_FLAG, CONDOR, ERAS_ARG])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 
@@ -143,7 +143,7 @@ rule M7_dataset_yml:
             -o {output} 2>&1 | tee -a {log}
         """
 
-def _m7_hist_config(src, dst, datasets, jcm_file, mixed_data=False, subsample=1):
+def _m7_hist_config(src, dst, datasets, jcm_file, mixed_data=False, subsample=1, runner=None):
     """This roast's upstream (M.3) analysis config with the analysis SvB on the fly.
     Signal: the M.2 JCM on the 3b events (and on the 3b-origin mixed signal, processor_HH4b).
     mixed_data: M.6's mixeddata_all weighting (the M.3 JCM on the four-tag mixed events via the
@@ -176,6 +176,8 @@ def _m7_hist_config(src, dst, datasets, jcm_file, mixed_data=False, subsample=1)
         c.pop('JCM_file', None)
     elif mixed_data:
         c.update({'apply_MvD': True, 'apply_MvD_weight': False})
+    if runner:
+        cfg.setdefault('runner', {}).update(runner)
     if config['test']:
         cfg.setdefault('runner', {}).update({'condor': False, 'shared_dask': False})
     write_yaml(dst, cfg)
@@ -195,8 +197,10 @@ rule M7_hist_config_mixeddata:
         jcm = [] if MIX4B else MIXED_JCM        # 4b mixing has no mixed-data JCM (no M.3)
     output: M7_HIST_CONFIG['mixeddata']
     run:
+        # signal_check.mixeddata_runner: runner overrides for this pass (e.g. a smaller chunksize: the
+        # SvB evaluated on the fly on 100k-event chunks of the 2024 mixed data killed 8 GB workers)
         _m7_hist_config(input.hist_config, output[0], [MIXED_URL], None if MIX4B else input.jcm,
-                        mixed_data=True, subsample=MIX_SUBSAMPLE)
+                        mixed_data=True, subsample=MIX_SUBSAMPLE, runner=SIG.get('mixeddata_runner'))
 
 use rule analysis_processor from analysis as M7_hists_signal with:
     input:
@@ -212,7 +216,7 @@ use rule analysis_processor from analysis as M7_hists_signal with:
         datasets = " ".join(SIG_DATASETS + list(SIG_3B.values()) + list(SIG_4B.values())),
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
+        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR, ERAS_ARG])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 
@@ -230,7 +234,7 @@ use rule analysis_processor from analysis as M7_hists_mixeddata with:
         datasets = MIX_NAME,
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
+        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR, ERAS_ARG])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 

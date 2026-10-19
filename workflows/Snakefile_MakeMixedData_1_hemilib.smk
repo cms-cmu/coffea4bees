@@ -51,7 +51,7 @@ use rule analysis_processor from analysis as M1_cluster with:
         datasets = "data",
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
+        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR, ERAS_ARG])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 
@@ -64,11 +64,14 @@ rule M1_regroup:
     wildcard_constraints:
         year = "|".join(YEARS)
     params:
-        key = lambda wildcards: hemi_year(wildcards.year)
+        key = lambda wildcards: hemi_year(wildcards.year),
+        # hemi_library.max_hemis: prescale each year's library to about this many hemispheres,
+        # the same fraction from every era (a mixer worker loads its year's whole library).
+        max_hemis = f"--max-hemis {int(HEMI['max_hemis'])}" if HEMI.get('max_hemis') else ""
     shell:
         """
         {WRAPPER} {PYTHON} coffea4bees/workflows/scripts/regroup_hemi_library.py \
-            {params.key} {input} {output} 2>&1 | tee {log}
+            {params.key} {input} {output} {params.max_hemis} 2>&1 | tee {log}
         """
 
 rule M1_merge:

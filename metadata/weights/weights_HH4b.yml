@@ -16,5 +16,6 @@ weights:
   2023_preBPix: *weights_Run3
   2023_BPix: *weights_Run3
   "2024": *weights_Run3
+  "2025": *weights_Run3
 
 # Skip friends logic added to barista runner

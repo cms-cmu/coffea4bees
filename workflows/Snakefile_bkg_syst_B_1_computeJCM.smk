@@ -326,9 +326,8 @@ rule all_test_subsample_closure:
 def get_bkg_syst_AB_handoff_inputs(wildcards):
     res = {
         "classifier_inputs": expand(f"{out_a3}histAll_{channel}_mixeddata_v{{v}}.json", v=SUBSAMPLES),
-        # C's --metadata needs this run's multi-sample dataset (helpers/stage_configs.py rebuilds the
-        # classifier_metadata directory from it on the GPU host)
         "datasets": [MULTISAMPLE_DATASET],
+        "classifier_metadata": CLASSIFIER_METADATA,
     }
     if per_year_jcm:
         res["jcms"] = expand(f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml", m=range(N_SUBSAMPLES), year=YEARS)
@@ -345,7 +344,8 @@ rule bkg_syst_AB_handoff:
         f"{out}logs/bkg_syst_AB_handoff.log"
     params:
         eos = HANDOFF_EOS,
-        roast_id = config.get('roast_id', '')
+        roast_id = config.get('roast_id', ''),
+        label = config.get('label', f"{channel}_bkg_syst")
     shell:
         """
         set -eo pipefail
@@ -353,34 +353,57 @@ rule bkg_syst_AB_handoff:
         mkdir -p $(dirname {output.done}) $(dirname {log})
         echo "=== Background Systematics Stage A/B Handoff $(date) ===" > {log}
 
-        # Local copies to metadata/weights/JCM/ if running in roast
-        if [ -n "{params.roast_id}" ]; then
-            LOCAL_DIR="coffea4bees/metadata/weights/JCM/{params.roast_id}"
-            mkdir -p "$LOCAL_DIR"
-            for f in {input.jcms}; do
-                cp -f "$f" "$LOCAL_DIR/"
-                echo "Copied $f -> $LOCAL_DIR/" >> {log}
-            done
+        TAG="{params.roast_id}"
+        if [ -z "$TAG" ]; then
+            TAG="{params.label}"
         fi
 
-        # Remote copies to EOS if handoff.eos_base is configured
+        # 1. Local disk copies (similar to nominal roast under coffea4bees/metadata/)
+        LOCAL_JCM="coffea4bees/metadata/weights/JCM/$TAG"
+        LOCAL_CI="coffea4bees/metadata/datasets/$TAG"
+        LOCAL_META="coffea4bees/metadata/classifier_metadata/$TAG"
+        mkdir -p "$LOCAL_JCM" "$LOCAL_CI" "$LOCAL_META"
+
+        for f in {input.jcms}; do
+            cp -f "$f" "$LOCAL_JCM/"
+            echo "Copied JCM -> $LOCAL_JCM/$(basename $f)" >> {log}
+        done
+        for f in {input.classifier_inputs}; do
+            cp -f "$f" "$LOCAL_CI/"
+            echo "Copied classifier input -> $LOCAL_CI/$(basename $f)" >> {log}
+        done
+        if [ -d "{input.classifier_metadata}" ]; then
+            cp -rf "{input.classifier_metadata}/"* "$LOCAL_META/"
+            echo "Copied classifier_metadata -> $LOCAL_META/" >> {log}
+        fi
+
+        # 2. Remote copies to EOS if handoff.eos_base is configured
         if [ -n "{params.eos}" ]; then
             echo "Publishing to EOS handoff: {params.eos}" >> {log}
             if command -v eos &>/dev/null; then
                 eos mkdir -p $(echo "{params.eos}/JCM" | sed 's|^root://[^/]*//|/|') 2>/dev/null || true
                 eos mkdir -p $(echo "{params.eos}/classifier_inputs" | sed 's|^root://[^/]*//|/|') 2>/dev/null || true
+                eos mkdir -p $(echo "{params.eos}/classifier_metadata" | sed 's|^root://[^/]*//|/|') 2>/dev/null || true
+                eos mkdir -p $(echo "{params.eos}/datasets" | sed 's|^root://[^/]*//|/|') 2>/dev/null || true
             fi
             for f in {input.jcms}; do
                 dst="{params.eos}/JCM/$(basename $f)"
-                xrdcp -f "$f" "$dst" 2>&1 | tee -a {log}
+                xrdcp -f -p "$f" "$dst" 2>&1 | tee -a {log}
             done
             for f in {input.classifier_inputs}; do
                 dst="{params.eos}/classifier_inputs/$(basename $f)"
-                xrdcp -f "$f" "$dst" 2>&1 | tee -a {log}
+                xrdcp -f -p "$f" "$dst" 2>&1 | tee -a {log}
             done
             for f in {input.datasets}; do
-                xrdcp -f "$f" "{params.eos}/datasets/$(basename $f)" 2>&1 | tee -a {log}
+                xrdcp -f -p "$f" "{params.eos}/datasets/$(basename $f)" 2>&1 | tee -a {log}
             done
+            if [ -d "{input.classifier_metadata}" ]; then
+                for f in "{input.classifier_metadata}"/*; do
+                    if [ -f "$f" ]; then
+                        xrdcp -f -p "$f" "{params.eos}/classifier_metadata/$(basename $f)" 2>&1 | tee -a {log}
+                    fi
+                done
+            fi
         else
             echo "No handoff.eos_base configured; local outputs only" >> {log}
         fi

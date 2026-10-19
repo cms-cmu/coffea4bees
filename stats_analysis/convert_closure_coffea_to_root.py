@@ -84,7 +84,8 @@ def main():
     parser.add_argument("--pure_qcd", action="store_true", default=False,
                         help="Pure QCD mode with zero ttbar.")
     parser.add_argument("--hist_keys", nargs="+",
-                        default=['ps', 'ps_ttHbb', 'ps_ttHbb_fine', 'ps_zz', 'ps_zh', 'ps_hh'],
+                        default=['ps', 'ps_ttHbb', 'ps_ttHbb_fine', 'ps_zz', 'ps_zh', 'ps_hh',
+                                 'ps_zz_fine', 'ps_zh_fine', 'ps_hh_fine'],
                         help="Histogram variable stems to convert.")
     parser.add_argument("--nominal_coffea", nargs="*", default=[],
                         help="Optional nominal coffea files for signal (ttHbb) and baseline background.")
@@ -161,32 +162,30 @@ def main():
         for m, v in enumerate(subsample_list):
             logging.info(f"[Slot {m} <- v{v}] Processing subsample v{v} into closure model {m}...")
             for var_stem in args.hist_keys:
-                h_key = f"SvB_MA_v{v}.{var_stem}"
-                h = bkg_hists.get(h_key)
-                if h is None:
-                    h_key = f"SvB_v{v}.{var_stem}"
+                for clf in ["SvB", "SvB_MA"]:
+                    h_key = f"{clf}_v{v}.{var_stem}"
                     h = bkg_hists.get(h_key)
-                if h is None:
-                    continue
-
-                stem = f"SvB_MA_{var_stem}"
-                for reg in args.regions:
-                    if reg not in h.axes['region']:
+                    if h is None:
                         continue
-                    for yr in h.axes['year']:
-                        h_data_3b = slice_1d(h, 'data', yr, 'threeTag', reg)
-                        if h_data_3b is not None:
-                            u_hist = to_uproot_hist(h_data_3b)
-                            fvt_stem = f"SvB_MA_FvT_{args.mix_name}_v{m}_newSBDef_{var_stem}"
-                            root_dict[f"{fvt_stem}_data_{yr}_threeTag_{reg}"] = u_hist
-                            root_dict[f"{fvt_stem}_data_3b_for_mixed_{yr}_threeTag_{reg}"] = u_hist
-                        if not args.pure_qcd and 'TTbar4b_from_d3' in h.axes['process']:
-                            h_ttbar_3b = slice_1d(h, 'TTbar4b_from_d3', yr, 'threeTag', reg)
-                            if h_ttbar_3b is not None:
-                                u_ttbar_hist = to_uproot_hist(h_ttbar_3b)
-                                fvt_tt_stem = f"SvB_MA_FvT_{args.mix_name}_v{m}_newSBDef_{var_stem}"
-                                root_dict[f"{fvt_tt_stem}_TTbar4b_from_d3_{yr}_threeTag_{reg}"] = u_ttbar_hist
-                                root_dict[f"{stem}_TTbar4b_from_d3_v{m}_{yr}_threeTag_{reg}"] = u_ttbar_hist
+
+                    stem = f"{clf}_{var_stem}"
+                    for reg in args.regions:
+                        if reg not in h.axes['region']:
+                            continue
+                        for yr in h.axes['year']:
+                            h_data_3b = slice_1d(h, 'data', yr, 'threeTag', reg)
+                            if h_data_3b is not None:
+                                u_hist = to_uproot_hist(h_data_3b)
+                                fvt_stem = f"{clf}_FvT_{args.mix_name}_v{m}_newSBDef_{var_stem}"
+                                root_dict[f"{fvt_stem}_data_{yr}_threeTag_{reg}"] = u_hist
+                                root_dict[f"{fvt_stem}_data_3b_for_mixed_{yr}_threeTag_{reg}"] = u_hist
+                            if not args.pure_qcd and 'TTbar4b_from_d3' in h.axes['process']:
+                                h_ttbar_3b = slice_1d(h, 'TTbar4b_from_d3', yr, 'threeTag', reg)
+                                if h_ttbar_3b is not None:
+                                    u_ttbar_hist = to_uproot_hist(h_ttbar_3b)
+                                    fvt_tt_stem = f"{clf}_FvT_{args.mix_name}_v{m}_newSBDef_{var_stem}"
+                                    root_dict[f"{fvt_tt_stem}_TTbar4b_from_d3_{yr}_threeTag_{reg}"] = u_ttbar_hist
+                                    root_dict[f"{stem}_TTbar4b_from_d3_v{m}_{yr}_threeTag_{reg}"] = u_ttbar_hist
 
             # Mixed Data 4b ingestion
             mix_candidates = [
@@ -339,10 +338,12 @@ def main():
                     if reg not in h.axes['region']:
                         continue
 
-                    for proc in ['ttHbb', 'GluGluToHHTo4B_cHHH1', 'ZH4b', 'ZZ4b', 'data', 'TTbar4b_from_d3']:
+                    procs_to_check = list(dict.fromkeys([args.channel, 'ttHbb', 'GluGluToHHTo4B_cHHH1', 'ZH4b', 'ZZ4b', 'data', 'TTbar4b_from_d3']))
+                    for proc in procs_to_check:
                         if proc in h.axes['process']:
                             for yr in h.axes['year']:
-                                for tag in ['threeTag', 'fourTag']:
+                                tags_to_extract = ['fourTag'] if proc == 'data' else ['threeTag', 'fourTag']
+                                for tag in tags_to_extract:
                                     h_cand = slice_1d(h, proc, yr, tag, reg)
                                     if h_cand is not None:
                                         root_dict[f"{stem}_{proc}_{yr}_{tag}_{reg}"] = to_uproot_hist(h_cand)

@@ -20,9 +20,10 @@
 #   2022/2023 TT/TTbb/ttHbb  roast trigweights_run3_mc_20261007_f839489-6d2497e
 #   2022/2023 SM ggF signal  roast trigweights_run3_signal_eras_20261007_27bc66d-ef555a7
 #   2024 (all of the above)  carried over from v1 (unchanged by the fixes; mmarcheg's area)
+# v4 (2026-10-11) = v3 + the 2024 SM ggF signal (roast trigweights_run3_2024_signal_20261011_1728019-e0ccb17).
 friends:
   2022_preEE: &trigWeight_Run3
-    trigWeight: "coffea4bees/metadata/friends/trigweights_Run3_v3.json@@trigWeight"
+    trigWeight: "coffea4bees/metadata/friends/trigweights_Run3_v4.json@@trigWeight"
   2022_EE: *trigWeight_Run3
   2023_preBPix: *trigWeight_Run3
   2023_BPix: *trigWeight_Run3

@@ -1,0 +1,28 @@
+processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+weights: "coffea4bees/metadata/weights/weights_ttHbb.yml"
+dataset_location: "coffea4bees/metadata/datasets/"
+
+runner:
+  workers: 4
+  min_workers: 25
+  max_workers: 200
+  worker_memory: "8GB"
+  write_coffea_output: true
+  condor: true
+  shared_dask: true
+
+config:
+  blind: true
+  apply_FvT: false
+  apply_JCM: false
+  apply_trigWeight: false
+  apply_btagSF: true
+  apply_boosted_veto: false
+  run_SvB: true
+  SvB_MA:
+    - path: "root://cmseos.fnal.gov//store/user/algomez/HH4b_prod/ttHbb_run2_20261003_f7183e9-cca392c/classifier/SvB_ttHbb_stitched/result.json"
+      name: "Final"
+  top_reconstruction: "fast"
+  fill_histograms: "kinematics"
+  hist_cuts:
+    - "pass_nSelJets_gt6"

@@ -26,6 +26,10 @@ SvB_MA.ps_ttHbb_gt6_lepveto : {"yscale":"log"}
 SvB_MA.ps : {"yscale":"log"}
 SvB_MA.ptt : {"yscale":"log"}
 SvB_MA.tt_vs_mj : {"yscale":"log"}
+SvB.ps_ttHbb : {"yscale":"log"}
+SvB.ps : {"yscale":"log"}
+SvB.ptt : {"yscale":"log"}
+SvB.tt_vs_mj : {"yscale":"log"}
 
 
 quadJet_selected.lead_vs_subl_m : {"2d":True}
@@ -44,6 +48,51 @@ dijet_both_qscore_SvB_gt_0p9 : {"xlim":[0,250]}
 
 quadJet_min_dr.lead_vs_subl_m : {"2d":True}
 quadJet_min_dr.close_vs_other_m : {"2d":True}
+
+quadJet_selected.lead_pt_vs_dr_jj : {"2d":True}
+quadJet_selected.subl_pt_vs_dr_jj : {"2d":True}
+
+
+quadJet_all.lead_vs_subl_m : {"2d":True}
+quadJet_all.lead_vs_subl_dr : {"2d":True}
+quadJet_all.lead_vs_subl_pt : {"2d":True}
+
+
+quadJet_truth.pt_H_vs_dr_bb : {"2d":True, "shapes": [{"type": "hyperbola", "b": 235, "a": 2, "xrange": [100, 1000], "color": "magenta"}, {"type": "hyperbola", "b": 235, "xrange": [100, 1000], "color": "magenta"}]}
+quadJet_truth.pt_tt_vs_dr_bb : {"2d":True}
+quadJet_truth.m_H_vs_dr_bb : {"2d":True}
+quadJet_truth.m_tt_vs_dr_bb : {"2d":True}
+
+# can_ttH pairing: dijet histograms named canH/canTT instead of lead/subl
+quadJet_selected.canH_vs_canTT_m : {"2d":True}
+quadJet_min_dr.canH_vs_canTT_m : {"2d":True}
+quadJet_selected.canH_pt_vs_dr_jj : {"2d":True}
+quadJet_selected.canTT_pt_vs_dr_jj : {"2d":True}
+quadJet_selected.canH_vs_canTT_pt : {"2d":True}
+quadJet_selected.canH_vs_canTT_dr : {"2d":True}
+quadJet_selected.canH_vs_canTT_deta : {"2d":True}
+quadJet_selected.canH_vs_canTT_dphi : {"2d":True}
+quadJet_all.canH_vs_canTT_m : {"2d":True}
+quadJet_all.canH_vs_canTT_dr : {"2d":True}
+quadJet_all.canH_vs_canTT_pt : {"2d":True}
+quadJet_all.canH_pt_vs_dr_jj : {"2d":True}
+quadJet_all.canTT_pt_vs_dr_jj : {"2d":True}
+quadJet_all.m_canH_vs_dr_jj : {"2d":True}
+quadJet_all.m_canTT_vs_dr_jj : {"2d":True}
+quadJet_rank_pass_canH_PtDr.canH_vs_canTT_m : {"2d":True}
+quadJet_rank_pass_canH_PtDr.canH_pt_vs_dr_jj : {"2d":True}
+quadJet_rank_pass_canH_PtDr.canTT_pt_vs_dr_jj : {"2d":True}
+quadJet_rank_pass_canH_PtDr.canH_vs_canTT_dr : {"2d":True}
+quadJet_rank_pass_canTT_PtDr.canH_vs_canTT_m : {"2d":True}
+quadJet_rank_pass_canTT_PtDr.canH_pt_vs_dr_jj : {"2d":True}
+quadJet_rank_pass_canTT_PtDr.canTT_pt_vs_dr_jj : {"2d":True}
+quadJet_rank_pass_canTT_PtDr.canH_vs_canTT_dr : {"2d":True}
+quadJet_rank_pass_canH_canTT_PtDr.canH_vs_canTT_m : {"2d":True}
+quadJet_rank_pass_canH_canTT_PtDr.canH_pt_vs_dr_jj : {"2d":True}
+quadJet_rank_pass_canH_canTT_PtDr.canTT_pt_vs_dr_jj : {"2d":True}
+quadJet_rank_pass_canH_canTT_PtDr.canH_vs_canTT_dr : {"2d":True}
+quadJet_selected.canH_vs_canTT_m_Zbb : {"2d":True}
+quadJet_min_dr.canH_vs_canTT_m_Zbb : {"2d":True}
 
 FvT.FvT : {"yscale": "log"}
 FvT.frac_err : {"xlim": [0, 2]}
