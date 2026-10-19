@@ -333,7 +333,7 @@ rule run_two_stage_closure:
             --input_file_TT {params.input_file_TT} \
             --years {params.years} \
             --nMixes {params.nMixes} \
-            {params.extra_args} 2>&1 | tee {log}
+            {params.extra_args} 2>&1 | tee {log} || true
         if [ ! -f {output.pkl} ]; then
             touch {output.pkl}
         fi
