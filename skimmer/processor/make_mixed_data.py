@@ -361,9 +361,10 @@ class HemiMixer(Skimmer4b):
 
         #
         # Add Btag SF
-        # 2024 uses UParT, which has only WP-based SFs (no shape SF) yet: skip it, as processor_HH4b does.
+        # 2024 and 2025 (= Summer24 MC) use UParT, which has only WP-based SFs (no shape SF) yet: skip it,
+        # as processor_HH4b does.
         #
-        if config["isMC"] and year != "2024":
+        if config["isMC"] and year not in ("2024", "2025"):
 
             weights, list_weight_names = add_btagweights( event, weights,
                                                           list_weight_names=list_weight_names,
@@ -396,6 +397,14 @@ class HemiMixer(Skimmer4b):
 
             selection = selection & pass_ttbar_filter
             selev = selev[pass_ttbar_filter_selev]
+
+        #
+        #  Nothing to mix in this chunk: save no events (the chunk's source range is still recorded, so
+        #  the integrity check passes). With 25k-event chunks 6 of 4,052 2025 chunks got here and the
+        #  mixer raised "no jet_mult bins fired" (mixeddata_run3_2025_20261016_daa12d2-1f6f43d).
+        #
+        if len(selev) == 0:
+            return (np.zeros(len(event), dtype=bool), None, {})
 
 
         #

@@ -73,7 +73,7 @@ use rule analysis_processor from analysis as V4_hists with:
         datasets = lambda wildcards: wildcards.dataset,
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
+        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR, ERAS_ARG])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 
