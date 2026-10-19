@@ -105,7 +105,7 @@ jcm_datasets:
   - "TTTo2L2Nu_stitched"
   - "TTToSemiLeptonic_stitched"
   - "TTToHadronic_stitched"
-jcm_plot_config: "coffea4bees/plots/metadata/plots_JCM_ttHbb_stitched.yml"
+jcm_plot_config: "coffea4bees/plots/metadata/plots_JCM_ttHbb.yml"   # plots_JCM_ttHbb_stitched.yml (upstream value) does not exist in the repo
 jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb_stitched_jcm_config.yml -m coffea4bees/plots/metadata/plotsJCM_ttHbb_run3.yml -y Run3"
 # No Run 3 cutflow reference yet: only dump the cutflows (the known_fullCounts_JCM_* files are Run 2).
 jcm_known_counts_NoJCM: "none"
