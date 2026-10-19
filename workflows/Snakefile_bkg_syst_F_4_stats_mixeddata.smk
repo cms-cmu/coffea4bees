@@ -397,6 +397,8 @@ rule make_mixeddata_ave_json:
         subsamples = " ".join(str(v) for v in subsample_indices_f4),
         # the channels' fit variables (the script defaults to SvB_MA.ps_ttHbb{,_gt6})
         variables = " ".join(dict.fromkeys(cfg['variable'] for cfg in config.get('channels', {}).values() if cfg.get('variable'))),
+        # the workflow's years (the script defaults to the Run 2 UL list)
+        years = " ".join(config['years']) if isinstance(config.get('years'), list) else str(config.get('years', '')),
         container_wrapper = "./run_container"
     container: None
     log: f"{out}logs/make_mixeddata_ave_json.log"
@@ -410,6 +412,7 @@ rule make_mixeddata_ave_json:
             --file_template '{params.file_template}' \
             --subsamples {params.subsamples} \
             --variables {params.variables} \
+            --years {params.years} \
             -o {output.ave_json} > {log} 2>&1
         """
 
