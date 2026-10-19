@@ -3,7 +3,7 @@
 # ==============================================================================
 # Inputs for the combined Run 3 FvT model with per-era JCMs (2022 + 2023 + 2024). Produced alike to the existing 2022/2024
 # B.2 inputs: repo-setup selected-jet threshold (2023 = 25 GeV via object_selection_thresholds.yml era_overrides, the
-# processor default) and trigger weights PINNED to v1 (friends_ttHbb_Run3_trigv1.yml; master moved to v3 on 2026-10-07).
+# processor default) and trigger weights PINNED to v1 (Run 3 keys of friends_ttHbb.yml; friends_ttHbb_Run3.yml moved to v3 on 2026-10-07).
 # classifier_inputs below = the 2022 block of analysis_ttHbb_run3.yml except friend_file, make_classifier_input and three
 # runner keys (lxplus_eos_scratch, skipbadfiles: false -> fail loudly instead of silently skipping chunks, dashboard_address: 0).
 # Eras from data.yml (the Snakefile defaults drop C3/C4 and use "D"). No analysis_config/fvt blocks on purpose.
@@ -32,7 +32,7 @@ year_eras:
 
 classifier_inputs:
   processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
-  friend_file: "coffea4bees/metadata/friends/friends_ttHbb_Run3_trigv1.yml"
+  friend_file: "coffea4bees/metadata/friends/friends_ttHbb.yml"
   weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
   datasets:
     - "ttHbb"

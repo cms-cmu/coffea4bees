@@ -202,7 +202,7 @@ analysis_config:
   # the 31 partially covered 2024 picoAODs have no FvT/SvB friend entries; processor friends allow missing entries,
   # so such a chunk would silently get JCM-only weights and no blinding -> evaluate-only metadata dir without them
   dataset_location: "coffea4bees/metadata/datasets/archive/datasets_eval_run3_fullcov/"
-  friend_file: "coffea4bees/metadata/friends/friends_ttHbb_Run3_trigv1.yml"  # trigger weights pinned to v1
+  friend_file: "coffea4bees/metadata/friends/friends_ttHbb.yml"  # Run 3 keys = trigger weights pinned to v1
   weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
   runner:
     condor_cores: 1

@@ -39,7 +39,7 @@ apply the default model to these files, so Phase C.4 / F need that branch.
 | year | B.2 classifier inputs | trigger weights |
 |---|---|---|
 | 2022 | Matteo's `classifier_inputs_ttHbb_run3.json` (1040 entries, 30 GeV) | v1 |
-| 2023 | **new**: `classifier_inputs_ttHbb_run3_2023_trigv1.json` (850 entries, 25 GeV), produced on lxplus with `workflows/config/analysis_ttHbb_run3_2023_b2.yml` | v1 (pinned via `metadata/friends/friends_ttHbb_Run3_trigv1.yml`; master moved to v3 on 2026-10-07; v1 keeps all three years and all JCM fits consistent) |
+| 2023 | **new**: `classifier_inputs_ttHbb_run3_2023_trigv1.json` (850 entries, 25 GeV), produced on lxplus with `workflows/config/analysis_ttHbb_run3_2023_b2.yml` | v1 (pinned via the Run 3 keys of `metadata/friends/friends_ttHbb.yml`; master moved to v3 on 2026-10-07; v1 keeps all three years and all JCM fits consistent) |
 | 2024 | Matteo's 25 GeV index, cleaned: `classifier_inputs_ttHbb_run3_2024_clean_v1.json` | v1 |
 
 - 2023 eras: `2023_preBPix: [C01, C02, C11, C12, C3, C4]`, `2023_BPix: [D1, D2]` (the older defaults omit C3/C4 = 78% of preBPix).
