@@ -898,18 +898,6 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         return accumulator
 
-    def _apply_fvt_pd3_floor(self, fvt_field, event):
-        """Floor p_d3 and recompute FvT from p_m4 to bound weights on outlier events."""
-        if not self.FvT_pd3_floor:
-            return
-        if fvt_field not in event.fields:
-            return
-        fvt_arr = getattr(event, fvt_field)
-        if "pd3" in fvt_arr.fields and "pm4" in fvt_arr.fields:
-            low = fvt_arr.pd3 < self.FvT_pd3_floor
-            event[fvt_field, "FvT"] = np.where(low, fvt_arr.pm4 / self.FvT_pd3_floor, fvt_arr.FvT)
-            event[fvt_field, "pd3"] = np.where(low, self.FvT_pd3_floor, fvt_arr.pd3)
-
     def load_FvT(self, event):
         """Load FvT friend tree.
 
@@ -930,7 +918,6 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     arr = rename_FvT_friend(self.target, self.friends[f_key])
                     if arr is not None:
                         event[f_key] = arr
-                        self._apply_fvt_pd3_floor(f_key, event)
                         setFvTVars(f_key, event)
             if "FvT" not in event.fields and "FvT_v0" in event.fields:
                 event["FvT"] = event["FvT_v0"]
@@ -1038,7 +1025,15 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             if hasattr(event.FvT, "event") and not ak.all(event.FvT.event == event.event):
                 raise ValueError("ERROR: FvT events do not match events ttree")
 
-        self._apply_fvt_pd3_floor("FvT", event)
+        # An over-confident FvT can put p_d3 ~ 0 on a handful of outlier events, and every weight
+        # derived from it then explodes (FvT = p_m4/p_d3; d3_to_t3/t4 in setFvTVars). Floor p_d3
+        # and recompute FvT from p_m4 so the weight and the ttbar-from-3b ratios stay consistent.
+        # Events above the floor keep their stored values bit for bit.
+        if self.FvT_pd3_floor and "pd3" in event.FvT.fields and "pm4" in event.FvT.fields:
+            low = event.FvT.pd3 < self.FvT_pd3_floor
+            event["FvT", "FvT"] = np.where(low, event.FvT.pm4 / self.FvT_pd3_floor, event.FvT.FvT)
+            event["FvT", "pd3"] = np.where(low, self.FvT_pd3_floor, event.FvT.pd3)
+
         setFvTVars("FvT", event)
 
 

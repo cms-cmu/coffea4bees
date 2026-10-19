@@ -4,6 +4,11 @@
 label: "run2_lowpt"
 output_path: "output/run2_lowpt/"
 
+# Reference lowpt Run 2 production whose JCM / FvT / SvB the F.1 analysis reads by default
+inputs:
+  upstream_roasts:
+    lowpt_run2: lowpt_run2_20261017_ee4926d-23da795
+
 dataset:
   - "data"
   - "GluGluToHHTo4B_cHHH1"
@@ -297,10 +302,12 @@ analysis_config:
     blind: false
     apply_FvT: true
     apply_JCM: true
-    JCM_file: "coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_2024_v2.yml"
+    # JCM, FvT and SvB from the reference lowpt Run 2 roast (inputs.upstream_roasts.lowpt_run2),
+    # so F.1 (and CI) run without a fresh B/C/D. A new full roast repoints the alias to itself.
+    JCM_file: "coffea4bees/metadata/weights/JCM/{roast:lowpt_run2:id}/jetCombinatoricModel_SB_2024_v2.yml"
     friends:
-      FvT: "{eos_prod}/{roast_id}/friend/lowpt_FvT/result.json@@analysis.0.merged"
-      SvB_MA: "{eos_prod}/{roast_id}/friend/lowpt_SvB/result.json@@analysis.0.merged"
+      FvT: "{roast:lowpt_run2}/friend/lowpt_FvT/result.json@@analysis.0.merged"
+      SvB_MA: "{roast:lowpt_run2}/friend/lowpt_SvB/result.json@@analysis.0.merged"
     friends_include: [trigWeight, FvT, SvB_MA]
     apply_trigWeight: true
     apply_btagSF: true
