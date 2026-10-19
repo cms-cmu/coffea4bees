@@ -185,9 +185,9 @@ def _build_dijets_ttHbb(selev, cand_cfg=None, isRun3=False):
     return diJet, diJetDr
 
 
-def _select_quadjet_ttHbb(quadJet, cand_cfg=None):
+def _select_quadjet_ttHbb(quadJet, cand_cfg=None, n_selJets=None):
     """Pick best quadjet pairing and assign ttHbb SR/SB regions (see _assign_SR_SB_ttHbb)."""
-    _assign_SR_SB_ttHbb(quadJet, cand_cfg)
+    _assign_SR_SB_ttHbb(quadJet, cand_cfg, n_selJets=n_selJets)
 
     # Ranking: prioritize MDR passing pairings, with random tie-breaker
     quadJet["rank"] = (
@@ -214,7 +214,7 @@ def _assign_SR_SB_ttHbb_oblong(quadJet, cand_cfg=None, full_space=False):
     quadJet["rH"] = np.sqrt((m_lead - 125.0)**2 + (m_subl - 125.0)**2)
 
 
-def _assign_SR_SB_ttHbb(quadJet, cand_cfg=None, full_space=False):
+def _assign_SR_SB_ttHbb(quadJet, cand_cfg=None, full_space=False, n_selJets=None):
     """Assign ttHbb SR/SB regions in the (m_lead, m_subl) plane.
 
     full_space=True: SR is the whole (m_lead, m_subl) plane, SB is empty (no arm selection).
@@ -250,7 +250,12 @@ def _assign_SR_SB_ttHbb(quadJet, cand_cfg=None, full_space=False):
         in_h_arm = (m_subl >= 85.0) & (m_subl <= 185.0) & (m_lead >= 25.0) & (m_lead <= 1000.0)
         in_v_arm = (m_lead >= 90.0) & (m_lead <= 185.0) & (m_subl >= 25.0) & (m_subl <= 1000.0)
 
-    quadJet["SR"] = in_h_arm | in_v_arm
+    in_sr_shape = in_h_arm | in_v_arm
+    if n_selJets is not None:
+        quadJet["SR"] = in_sr_shape & (n_selJets > 4)
+    else:
+        quadJet["SR"] = in_sr_shape
+
     sb_cfg = (cand_cfg or {}).get("sb_ttHbb", {})
     sb_min = (cand_cfg or {}).get("sb_min") or sb_cfg.get("sb_min", 25.0)
     sb_max = (cand_cfg or {}).get("sb_max") or sb_cfg.get("sb_max", 500.0)
@@ -287,7 +292,8 @@ def _build_quadjets_ttHbb(selev, diJet, diJetDr, cand_cfg=None, isRun3=False):
     quadJet["deta"] = quadJet["lead"].eta - quadJet["subl"].eta
     quadJet["v4jmass"] = selev["v4j"].mass
 
-    _select_quadjet_ttHbb(quadJet, cand_cfg)
+    n_selJets = ak.num(selev.selJets) if "selJets" in selev.fields else ak.num(selev.selJet)
+    _select_quadjet_ttHbb(quadJet, cand_cfg, n_selJets=n_selJets)
 
     return quadJet
 
