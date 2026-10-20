@@ -353,7 +353,6 @@ checkpoint evaluate_closure_candidates:
         f"{out_f2}logs/evaluate_closure_candidates_{{classifier}}_{{region}}.log"
     params:
         channel = channel,
-        max_basis = config.get('max_basis', 5),
         container_wrapper = config['analysis_container_wrapper'],
         python_bin = config['python_bin']
     shell:
@@ -363,7 +362,6 @@ checkpoint evaluate_closure_candidates:
         {params.container_wrapper} {params.python_bin} {input.script} \
             --status-files {input.status_files} \
             --channel {params.channel} \
-            --max-basis {params.max_basis} \
             --output {output.summary} 2>&1 | tee {log}
         """
 
