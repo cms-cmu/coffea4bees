@@ -293,7 +293,7 @@ max_basis: 10
 rebin: 16
 f3_rebins:
   - 16
-no_sqrt_n_priors: false
+no_sqrt_n_priors: true
 
 # COMBINE STATISTICAL INTERPRETATION & LIMITS
 convert_hist_to_json:
