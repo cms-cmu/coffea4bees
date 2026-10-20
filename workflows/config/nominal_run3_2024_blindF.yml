@@ -26,5 +26,5 @@ analysis_config:
 
 # No C.4 in this roast: the F.1 vs C.4 crosscheck writes its placeholder (it passed, 576/576 entries, in
 # the unblinded F of nominal_run3_2024_20261011_852c1c2-be0604a; blinding only removes 4b SR data).
-# Dump-only until blessed (the blinded counts differ from the unblinded first F).
-known_counts: "coffea4bees/analysis/tests/known_fullCounts_Run3_2024_nominal_blind.yml"
+# The blinded counts, blessed from this rerun.
+known_counts: "coffea4bees/analysis/tests/known_fullCounts_Run3_2024_nominal.yml"

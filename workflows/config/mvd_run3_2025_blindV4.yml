@@ -26,5 +26,5 @@ svb_mvd:
   eos_base: "{roast:mvd_run3_2025_20261018_1b7885b-6284aae}"
 
 analysis:
-  # Dump-only until blessed (the blinded counts differ from the unblinded first V.4).
-  known_counts: "coffea4bees/analysis/tests/known_fullCounts_MvD_Run3_2025_blind.yml"
+  # The blinded counts, blessed from this rerun.
+  known_counts: "coffea4bees/analysis/tests/known_fullCounts_MvD_Run3_2025.yml"
