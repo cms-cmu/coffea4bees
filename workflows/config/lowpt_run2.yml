@@ -255,7 +255,7 @@ svb:
     main:
       module: evaluate
       option:
-        - --max-evaluators 1
+        - --max-evaluators 3
         - --device cuda cpu
     model:
       - module: HCR.SvB.ggF.baseline.Eval
@@ -274,7 +274,7 @@ svb:
       - module: kfold.Merge
         option:
           - --name SvB_MA
-          - --step 100000
+          - --step 200000
           - --workers 5
           - --clean
     setting:
@@ -283,7 +283,7 @@ svb:
           - output: "{SvB}"
       - module: ml.DataLoader
         option:
-          - num_workers: 8
+          - num_workers: 0
 
 # ==============================================================================
 # PHASE F.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
