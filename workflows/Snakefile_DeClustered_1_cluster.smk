@@ -87,16 +87,22 @@ use rule merging_coffea_files from analysis as D1_merge with:
 
 rule D1_library_regroup:
     """Every dataset key in one year's cluster output belongs to that year (same layout as the
-    hemisphere library's, hence the same script)."""
+    hemisphere library's, hence the same script). declustering.library.max_rows prescales each
+    year's library to about that many splittings, the same fraction of every era's files: every D.3
+    worker loads its year's whole library (~1 kB per row at load), so one 2024-sized year (~24M rows)
+    would not fit a condor worker."""
     input: f"{D1_OUT}cluster/splittings__{{year}}.coffea"
     output: f"{D1_OUT}library/per_year/splitting_library__{{year}}.yml"
     log: f"{D1_OUT}logs/library_regroup__{{year}}.log"
     wildcard_constraints:
         year = "|".join(YEARS)
+    params:
+        max_rows = f"--count-key saved_splittings --max-entries {int(LIB_OPTS['max_rows'])}" if LIB_OPTS.get('max_rows') else ""
     shell:
         """
+        set -eo pipefail
         {WRAPPER} {PYTHON} coffea4bees/workflows/scripts/regroup_hemi_library.py \
-            {wildcards.year} {input} {output} 2>&1 | tee {log}
+            {wildcards.year} {input} {output} {params.max_rows} 2>&1 | tee {log}
         """
 
 rule D1_library_consolidate:

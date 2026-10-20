@@ -162,6 +162,8 @@ runs:
     - DeClustered
   declustered_run3_library_16x.yml:
     - DeClustered
+  declustered_run3_2024_library_16x.yml:
+    - DeClustered
   declustered_run2_library_16x.yml:
     - DeClustered
   declustered_run2_library_16x_nocap.yml:

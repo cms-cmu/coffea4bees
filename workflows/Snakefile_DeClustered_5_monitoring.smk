@@ -152,7 +152,9 @@ if SVB_BOOT:
         input: UPSTREAM_HIST_CONFIG
         output: f"{SVB_BOOT_OUT}analysis_config_svb_dump.yml"
         run:
-            _d6_hist_config(input[0], output[0], [MJ_URL])     # SvB on the fly, unblinded, no FvT/JCM
+            # SvB on the fly, unblinded, no FvT/JCM. validation.svb_bootstrap_runner: runner overrides
+            # (e.g. chunksize 20000: the SvB on 100k-event chunks of 2024 mixed data killed 8 GB workers)
+            _d6_hist_config(input[0], output[0], [MJ_URL], runner=VAL.get('svb_bootstrap_runner'))
             with open(output[0]) as f:
                 cfg = yaml.safe_load(f)
             cfg['config'].update({'dump_SvB_in_SR': True, 'fill_histograms': False})
