@@ -324,6 +324,7 @@ analysis_config:
 plot_config: "coffea4bees/plots/metadata/plotsAll_lowpt.yml"
 known_counts_fatal: false
 known_counts_test: "coffea4bees/analysis/tests/known_Counts_lowpt_Run2.yml"
+test_chunksize: 10000   # chunksize used to produce known_counts_test (test mode runs maxchunks=1)
 known_counts_full: "none"
 
 # ==============================================================================
