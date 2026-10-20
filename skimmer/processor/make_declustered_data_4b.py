@@ -322,6 +322,15 @@ class DeClusterer(Skimmer4b):
         # added only for data, so MC with cut_on_HLT_decision failed the skimmer's length check.)
         selection = selections.all(*cumulative_cuts)
 
+        if len(selev) == 0:
+            # nothing to decluster (e.g. a 2024 chunk outside the golden JSON): cluster_bs returns an
+            # untyped (`unknown`) jet_flavor, whose == "b" raises inside awkward; the chunk was then
+            # dropped and failed the picoAOD integrity check in every seed
+            processOutput = {"total_jet": 0}
+            if splitting_library is not None:
+                processOutput["library_lookups"] = dict.fromkeys(splitting_library.lookup_counts, 0)
+            return (selection, None, processOutput)
+
         selev = cand_jet_selection(selev)
         canJet    = selev.canJet
         notCanJet = selev.notCanJet_coffea
