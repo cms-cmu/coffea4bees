@@ -67,7 +67,8 @@ classifier_inputs:
   runner:
     condor_cores: 1
     worker_memory: 8GB
-    chunksize: 10000
+    chunksize: 100000
+    min_workers: 50
     condor: true
     shared_dask: true
     run_performance: true
@@ -230,7 +231,8 @@ analysis_config:
   runner:
     condor_cores: 1
     worker_memory: 8GB
-    chunksize: 10000
+    chunksize: 100000
+    min_workers: 50
     max_workers: 150     # user decision 2026-10-14 (relaunch after the bigbird26 schedd overload: ~1,200 workers held spooling)
     dashboard_address: 0
     skipbadfiles: false
