@@ -136,6 +136,7 @@ rule D1_library_merge:
         for path in input:
             with open(path) as f:
                 for key, files in (yaml.safe_load(f) or {}).items():
+                    key = str(key)     # the consolidate rule's unquoted `2024:` parses as an int
                     files = [files] if isinstance(files, str) else list(files)
                     if key in merged:
                         raise ValueError(f"{path}: splitting library year {key} listed twice")
