@@ -137,6 +137,9 @@ validation:
   known_counts: null
   # the SvB on the fly over all 16 seeds (~100M events)
   svb_bootstrap_runner: {chunksize: 20000}
+  # the seed study's draw comparison reads every seed's picoAODs on the login node: 1 in 20 events
+  # (all 16 seeds x ~6.4M 2024 events were OOM-killed)
+  seed_study_subsample: 20
 
 # ------------------------------------------------------------------------------
 # D.6: signal check (2024 SM ggHH, declustered with seed 0 on this library)

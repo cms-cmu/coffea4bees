@@ -127,13 +127,17 @@ if SEED_STUDY:
             summary = f"{D5_OUT}seed_study/summary.yml"
         log: f"{D5_OUT}logs/seed_study.log"
         params:
-            years = " ".join(VAL.get('seed_study_years') or YEARS)
+            years = " ".join(VAL.get('seed_study_years') or YEARS),
+            # validation.seed_study_subsample: read only events with event % N == 0 of the picoAODs
+            # (runs on the login node; all 16 seeds of 2024 in memory were OOM-killed)
+            subsample = int(VAL.get('seed_study_subsample', 1))
         shell:
             """
             set -eo pipefail
             {EOS_PROXY}
             {WRAPPER} {PYTHON} coffea4bees/workflows/scripts/declustered_seed_study.py \
                 {input.registries} --outdir $(dirname {output.index}) --years {params.years} \
+                --event-subsample {params.subsample} \
                 --cutflow {input.cutflow} --hists {input.hists} --process-prefix {SYN_PREFIX} 2>&1 | tee {log}
             """
 
