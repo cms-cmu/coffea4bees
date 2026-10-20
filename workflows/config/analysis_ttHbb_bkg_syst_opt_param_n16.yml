@@ -1,0 +1,85 @@
+# ==============================================================================
+# ttHbb Run 2 BACKGROUND SYSTEMATIC — Option 2: Conservative FvT (n=16, wd=3e-4, 20 ep)
+# ==============================================================================
+# Layered on analysis_ttHbb_bkg_syst_declib16nc.yml (DeClustered 16x library).
+# Tests the conservative n=16 architecture with weight decay 3e-4 and 20-epoch
+# CosineAnnealing schedule validated on Nautilus (Z = 0.78 sigma, Delta L_val = -0.0044 vs 1x)
+# and enforcing FvT_pd3_floor: 0.01 against low-p_d3 weight divergence.
+# ==============================================================================
+
+base: coffea4bees/workflows/config/analysis_ttHbb_bkg_syst_declib16nc.yml
+
+label: "ttHbb_bkg_syst_opt_param_n16"
+mix_name: "ttHbb_bkg_syst_opt_param_n16"
+output_path: "output/{roast_id}/"
+
+publish_base: "{eos_prod}/{roast_id}"
+handoff:
+  eos_base: "{eos_prod}/{roast_id}/handoff"
+
+inputs:
+  upstream_roasts:
+    declib: declib16nc_run2_20261003_3ab8302-b2d2dec
+    nominal: analysis_ttHbb_opt_param_20261018_846d264-1e8d320
+    nominal_b: ttHbb_stat_only_20261012_49432f5-e211288
+    mixeddata: mixeddata_run2_20260927_c39c264-0ce4d59
+  mixeddata_all: "{roast:declib}/handoff/synthetic_data_lib16nc_multijet.yml"
+  ttbar_psdata: "{roast:mixeddata}/handoff/ttbar_PSData.yml"
+  jcm_hists: "{roast:nominal_b}/{roast:nominal_b:output_path}computeJCM/histAll_NoJCM.coffea"
+  nominal_hists: "{roast:nominal}/{roast:nominal:output_path}histAll_{roast:nominal:label}.coffea"
+  classifier_inputs: "{roast:nominal_b}/handoff/classifier_inputs_{roast:nominal_b:id}.json"
+  SvB: "{roast:nominal}/friend/SvB_ttHbb_opt_param/result.json@@analysis.0.merged"
+  SvB_model: "{roast:nominal}/classifier/SvB_ttHbb_opt_param/result.json"
+  SvB_MA: "{roast:nominal}/friend/SvB_MA_ttHbb_opt_param/result.json@@analysis.0.merged"
+  SvB_MA_model: "{roast:nominal}/classifier/SvB_MA_ttHbb_opt_param/result.json"
+
+classifiers:
+  - "SvB_MA"
+  - "SvB"
+classifier_variables:
+  SvB_MA: "SvB_MA_ps_ttHbb"
+  SvB: "SvB_ps_ttHbb"
+
+subsamples:
+  source: "seeds"
+  n: 16
+  dataset_name: "mixeddata_4b"
+  runner:
+    condor: true
+    shared_dask: true
+    worker_memory: "8GB"
+
+phase_e_fvt:
+  channel: "ttHbb"
+  mix_name: "ttHbb_bkg_syst_opt_param_n16"
+  n_models: 16
+
+fvt_train_workflow:
+  main:
+    module: train
+    option:
+      - --max-loaders 2
+      - --max-trainers 1
+      - --device cuda cpu
+  model:
+    - module: HCR.FvT.baseline.Train
+      option:
+        - --architecture
+        - n_features: 16
+          use_kv_proj: true
+          use_attention_gate: true
+        - --kfolds 3
+        - --kfold-seed FvT random
+        - --kfold-seed-offsets 0
+        - --training CosineAnnealing
+        - epoch: 20
+          bs_init: 2048
+          lr_init: 0.005
+          weight_decay: 0.0003
+        - --finetuning FixedStep
+        - epoch: 1
+          bs_init: 16384
+
+analysis_config:
+  config:
+    FvT_pd3_floor: 0.01
