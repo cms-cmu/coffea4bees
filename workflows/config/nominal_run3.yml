@@ -252,6 +252,8 @@ classifier_inputs:
     # trigweights_run3_signal_eras_20261007_27bc66d-ef555a7): a missing friend is an error.
     require_trigWeight: true
 
+jcm_extra_arguments: "--data4bName data"
+
 # ==============================================================================
 # PHASE F.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
 # ==============================================================================
