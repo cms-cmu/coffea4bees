@@ -288,6 +288,8 @@ use rule cutflow_closure_table from analysis as analysis_cutflow_closure_table w
         title = lambda wildcards: f"{config.get('label', 'analysis')}_cutflow_{wildcards.label}",
         multijet = "data3b",
         ttbar = lambda wildcards: config.get("closure_ttbar", "TTbar_from_d3"),
+        # further cutflow_closure.py options, e.g. "--compare ttHbb" to add the signal as extra columns
+        extra_arguments = lambda wildcards: config.get("closure_extra_arguments", ""),
         run_container_wrapper = config['analysis_container_wrapper'],
         python_bin = lambda wildcards: config.get("python_bin", "python")
 

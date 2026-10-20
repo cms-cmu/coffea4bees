@@ -291,6 +291,8 @@ analysis_config:
 
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
 plot_extra_arguments: ""
+# cutflow html: add the ttHbb signal as extra columns next to Bkg (cutflow_closure.py --compare)
+closure_extra_arguments: "--compare ttHbb"
 known_counts: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"
 # F.1 production counts depend on the roast's FvT/SvB training: flag a mismatch, don't fail
 # (applies in production only; CI, test=true, stays fatal)
