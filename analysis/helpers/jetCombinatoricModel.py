@@ -40,6 +40,11 @@ class jetCombinatoricModel:
         # fsspec so the JCM can be read straight from EOS (root://), e.g. a production
         # roast's handoff copy; local paths behave exactly as with open().
 
+        # f(nJet) x r^n JCM: pseudoTagProbSlope (alpha) and looseVetoFactor (r). Files without
+        # these keys keep alpha = 0, r = 1, i.e. the default model.
+        self.alpha = 0.0
+        self.r = 1.0
+
         if self.filename.endswith('txt'):
             self.data = {}
             with fsspec.open(self.filename, 'rt') as lines:
@@ -55,6 +60,8 @@ class jetCombinatoricModel:
             self.e = self.data[f'pairEnhancement{cut_suffix}']
             self.d = self.data[f'pairEnhancementDecay{cut_suffix}']
             self.t = self.data[f'threeTightTagFraction{cut_suffix}']
+            self.alpha = float(self.data.get(f'pseudoTagProbSlope{cut_suffix}', self.data.get('pseudoTagProbSlope', 0.0)))
+            self.r = float(self.data.get(f'looseVetoFactor{cut_suffix}', self.data.get('looseVetoFactor', 1.0)))
 
         else:
             with fsspec.open(self.filename, 'rt') as f:
@@ -67,11 +74,15 @@ class jetCombinatoricModel:
                 self.t = self.data.get(f'threeTightTagFraction{cut_suffix}', self.data.get('threeTightTagFraction'))
                 if self.p is None or self.e is None or self.d is None or self.t is None:
                     raise KeyError(f'pseudoTagProb{cut_suffix}')
+                self.alpha = float(self.data.get(f'pseudoTagProbSlope{cut_suffix}', self.data.get('pseudoTagProbSlope', 0.0)))
+                self.r = float(self.data.get(f'looseVetoFactor{cut_suffix}', self.data.get('looseVetoFactor', 1.0)))
                 if "JCM_weights" in self.data:
                     self.JCM_weights = self.data[f'JCM_weights']
 
             except KeyError:
                 logging.error(f'No {self.cut} key in JCM file. Keys are {self.data.keys()}')
+
+        logging.debug(f"JCM {self.filename}: pseudoTagProbSlope (alpha) = {self.alpha}, looseVetoFactor (r) = {self.r}")
 
     def __call__(self, num_untagged_jets, event=None):
         """
@@ -109,8 +120,11 @@ class jetCombinatoricModel:
 
         # Compute for all possible light jet counts (1 to max_nlt)
         for n_light in range(1, max_nlt + 1):
+            # f(nJet): p(nSelJets) = p * (nSelJets/4)**alpha with nSelJets = n_light + nbt (alpha = 0: constant p)
+            p = self.p * ((n_light + nbt) / 4.0) ** self.alpha if self.alpha else self.p
+
             # Calculate probability of zero pseudo-tags
-            all_probs[n_light, 0] = self.t * (1-self.p)**n_light
+            all_probs[n_light, 0] = self.t * (1-p)**n_light
 
             # Calculate for each number of pseudo-tags
             for npt in range(1, min(n_light + 1, maxPseudoTags + 1)):
@@ -121,7 +135,7 @@ class jetCombinatoricModel:
                 ncr = comb(n_light, npt, exact=True)
 
                 # Calculate the probability
-                w_npt = self.t * ncr * self.p**npt * (1-self.p)**nnt
+                w_npt = self.t * ncr * p**npt * (1-p)**nnt
 
                 # Apply enhancement for even number of tags
                 if (nt % 2) == 0:
@@ -163,27 +177,32 @@ class jetCombinatoricModel:
         comparison = r_reshaped > cumprobs_nonzero
         npt = np.sum(comparison, axis=1)
 
+        # Loose-veto factor: the returned weight times r**n_light. Applied after the npt sampling, which
+        # uses the per-npt probabilities only (r = 1: weight unchanged; not applied to the zero_npt weight).
+        if self.r != 1.0 and not self.zero_npt:
+            w = w * self.r ** nlt
+
         # Check if we have JCM_weights stored and compare with calculated values
         if hasattr(self, 'JCM_weights') and self.used_stored_weights:
-            # JCM_weights is a fixed list of 14 elements
-            logging.debug(f"Comparing calculated weights with stored JCM_weights for {'lowpt' if self.lowpt_mode else 'standard'} (fixed length={len(self.JCM_weights)})")
+            logging.debug(f"Comparing calculated weights with stored JCM_weights for {'lowpt' if self.lowpt_mode else 'standard'} (length={len(self.JCM_weights)})")
 
-            # Only compare up to the minimum length or max_nlt, whichever is smaller
-            compare_len = min(len(self.JCM_weights), len(total_weights[1:]))
+            # JCM_weights[i] is the weight for nSelJets = i + 4, i.e. n_light = i + 1; compare every
+            # stored entry up to max_nlt, including the r**n_light factor
+            weight_table = total_weights * self.r ** np.arange(len(total_weights)) if self.r != 1.0 else total_weights
+            compare_len = min(len(self.JCM_weights), max_nlt)
 
-            # Loop through relevant indices (starting from 1, since 0 is for jets with 0 light jets)
-            for i in range(1, compare_len):
-                if total_weights[i+1] > 0 and self.JCM_weights[i] > 0:
-                    rel_diff = abs(total_weights[i+1] - self.JCM_weights[i]) / self.JCM_weights[i]
-                    if rel_diff > 0.01:  # 1% threshold
-                        logging.warning(f"Calculated weight for {i} light jets ({total_weights[i+1]:.6f}) "
-                                    f"differs from stored weight ({self.JCM_weights[i]:.6f}) "
-                                    f"by {rel_diff*100:.2f}%")
+            for i in range(compare_len):
+                if self.JCM_weights[i] > 0:
+                    rel_diff = abs(weight_table[i+1] - self.JCM_weights[i]) / self.JCM_weights[i]
+                    if rel_diff > 1e-9:
+                        logging.error(f"Calculated weight for {i+1} light jets ({weight_table[i+1]:.12g}) "
+                                      f"differs from stored weight ({self.JCM_weights[i]:.12g}) "
+                                      f"by a relative {rel_diff:.3g}")
                     else:
-                        logging.debug(f"Calculated weight for {i} light jets matches stored weight within 1% for {'lowpt' if self.lowpt_mode else 'standard'}.")
+                        logging.debug(f"Calculated weight for {i+1} light jets matches stored weight to 1e-9 for {'lowpt' if self.lowpt_mode else 'standard'}.")
 
             # Check if we need more weights than what's stored
-            if max_nlt >= len(self.JCM_weights):
+            if max_nlt > len(self.JCM_weights):
                 logging.warning(f"Some events have more light jets ({max_nlt}) than available in "
                             f"JCM_weights (length={len(self.JCM_weights)}). "
                             f"Using calculated weights for these events.")

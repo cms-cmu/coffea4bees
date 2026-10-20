@@ -1,0 +1,753 @@
+{
+ "source_index": "classifier_inputs_ttHbb_run3_2024_clean_v1.json",
+ "rule": "user decision 2026-10-12: train on all indexed 2024 data (clean_v1) but EVALUATE without the 31 data picoAODs whose friend coverage does not span [0, picoAOD entries) (COVERAGE_AUDIT_RUN3_B2_INDICES.md); everything else identical",
+ "n_excluded": 31,
+ "covered_events_total": 1910000,
+ "uncovered_events_total": 1190000,
+ "excluded": [
+  {
+   "index_entry_in_clean_v1": 1218,
+   "era": "F",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024F/picoAOD.chunk209.root",
+   "pico_uuid": "91e52da4-349e-11f1-ae33-0cc47a4d7616",
+   "friend_ranges": [
+    [
+     10000,
+     100000
+    ]
+   ],
+   "covered_events": 90000,
+   "pico_entries": null,
+   "uncovered_ranges": [
+    [
+     0,
+     10000
+    ]
+   ],
+   "uncovered_events": 10000,
+   "kinds": [
+    "start_ne0"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1307,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk419.root",
+   "pico_uuid": "ecb82668-34a4-11f1-b3e2-0cc47a4c8eca",
+   "friend_ranges": [
+    [
+     20000,
+     100000
+    ]
+   ],
+   "covered_events": 80000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     0,
+     20000
+    ]
+   ],
+   "uncovered_events": 20000,
+   "kinds": [
+    "start_ne0"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1376,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk54.root",
+   "pico_uuid": "f50d3f7e-34a4-11f1-a7c2-0cc47a4d7606",
+   "friend_ranges": [
+    [
+     0,
+     20000
+    ]
+   ],
+   "covered_events": 20000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     20000,
+     100000
+    ]
+   ],
+   "uncovered_events": 80000,
+   "kinds": [
+    "trailing"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1377,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk57.root",
+   "pico_uuid": "1cc9ffd4-34a5-11f1-83b4-0cc47a4c8e8a",
+   "friend_ranges": [
+    [
+     30000,
+     100000
+    ]
+   ],
+   "covered_events": 70000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     0,
+     30000
+    ]
+   ],
+   "uncovered_events": 30000,
+   "kinds": [
+    "start_ne0"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1394,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk72.root",
+   "pico_uuid": "b5e519de-34a4-11f1-84cf-0cc47a4c8f2c",
+   "friend_ranges": [
+    [
+     0,
+     30000
+    ]
+   ],
+   "covered_events": 30000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     30000,
+     100000
+    ]
+   ],
+   "uncovered_events": 70000,
+   "kinds": [
+    "trailing"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1398,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk77.root",
+   "pico_uuid": "f8b36a0e-34a4-11f1-8de1-0cc47a4c8ea8",
+   "friend_ranges": [
+    [
+     0,
+     80000
+    ]
+   ],
+   "covered_events": 80000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     80000,
+     100000
+    ]
+   ],
+   "uncovered_events": 20000,
+   "kinds": [
+    "trailing"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1400,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk118.root",
+   "pico_uuid": "da4d2b36-34a4-11f1-b422-0cc47a4d75f8",
+   "friend_ranges": [
+    [
+     20000,
+     100000
+    ]
+   ],
+   "covered_events": 80000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     0,
+     20000
+    ]
+   ],
+   "uncovered_events": 20000,
+   "kinds": [
+    "start_ne0"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1407,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk87.root",
+   "pico_uuid": "fe3096a0-34a4-11f1-9491-0cc47a4d7650",
+   "friend_ranges": [
+    [
+     0,
+     40000
+    ]
+   ],
+   "covered_events": 40000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     40000,
+     100000
+    ]
+   ],
+   "uncovered_events": 60000,
+   "kinds": [
+    "trailing"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1423,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk103.root",
+   "pico_uuid": "eaaecb74-34a4-11f1-858c-0cc47a4c8ee2",
+   "friend_ranges": [
+    [
+     0,
+     30000
+    ]
+   ],
+   "covered_events": 30000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     30000,
+     100000
+    ]
+   ],
+   "uncovered_events": 70000,
+   "kinds": [
+    "trailing"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1443,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk123.root",
+   "pico_uuid": "c867cf66-34a4-11f1-bfdf-0cc47a4d7644",
+   "friend_ranges": [
+    [
+     0,
+     30000
+    ]
+   ],
+   "covered_events": 30000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     30000,
+     100000
+    ]
+   ],
+   "uncovered_events": 70000,
+   "kinds": [
+    "trailing"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1450,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk128.root",
+   "pico_uuid": "cac044b4-34a4-11f1-882d-0cc47a4d7664",
+   "friend_ranges": [
+    [
+     0,
+     50000
+    ]
+   ],
+   "covered_events": 50000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     50000,
+     100000
+    ]
+   ],
+   "uncovered_events": 50000,
+   "kinds": [
+    "trailing"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1475,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk155.root",
+   "pico_uuid": "f6a39388-34a4-11f1-b27e-0cc47a745294",
+   "friend_ranges": [
+    [
+     0,
+     20000
+    ]
+   ],
+   "covered_events": 20000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     20000,
+     100000
+    ]
+   ],
+   "uncovered_events": 80000,
+   "kinds": [
+    "trailing"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1480,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk198.root",
+   "pico_uuid": "a7145bfe-34a4-11f1-b430-0cc47a4c8e7e",
+   "friend_ranges": [
+    [
+     60000,
+     100000
+    ]
+   ],
+   "covered_events": 40000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     0,
+     60000
+    ]
+   ],
+   "uncovered_events": 60000,
+   "kinds": [
+    "start_ne0"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1482,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk161.root",
+   "pico_uuid": "13c830cc-34a5-11f1-a553-0cc47a4d7668",
+   "friend_ranges": [
+    [
+     0,
+     90000
+    ]
+   ],
+   "covered_events": 90000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     90000,
+     100000
+    ]
+   ],
+   "uncovered_events": 10000,
+   "kinds": [
+    "trailing"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1484,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk162.root",
+   "pico_uuid": "c081944e-34a4-11f1-bba2-0cc47a4c8e0e",
+   "friend_ranges": [
+    [
+     10000,
+     100000
+    ]
+   ],
+   "covered_events": 90000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     0,
+     10000
+    ]
+   ],
+   "uncovered_events": 10000,
+   "kinds": [
+    "start_ne0"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1498,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk176.root",
+   "pico_uuid": "f3a9479a-34a4-11f1-b9c6-0cc47a4d76c8",
+   "friend_ranges": [
+    [
+     0,
+     30000
+    ]
+   ],
+   "covered_events": 30000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     30000,
+     100000
+    ]
+   ],
+   "uncovered_events": 70000,
+   "kinds": [
+    "trailing"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1504,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk182.root",
+   "pico_uuid": "0453d13c-34a5-11f1-8930-0cc47a4d76cc",
+   "friend_ranges": [
+    [
+     80000,
+     100000
+    ]
+   ],
+   "covered_events": 20000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     0,
+     80000
+    ]
+   ],
+   "uncovered_events": 80000,
+   "kinds": [
+    "start_ne0"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1505,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk185.root",
+   "pico_uuid": "a714a6f4-34a4-11f1-bcdf-0cc47a74525a",
+   "friend_ranges": [
+    [
+     20000,
+     100000
+    ]
+   ],
+   "covered_events": 80000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     0,
+     20000
+    ]
+   ],
+   "uncovered_events": 20000,
+   "kinds": [
+    "start_ne0"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1549,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk229.root",
+   "pico_uuid": "e0f4b18e-34a4-11f1-a666-0cc47a4d767a",
+   "friend_ranges": [
+    [
+     10000,
+     100000
+    ]
+   ],
+   "covered_events": 90000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     0,
+     10000
+    ]
+   ],
+   "uncovered_events": 10000,
+   "kinds": [
+    "start_ne0"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1550,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk228.root",
+   "pico_uuid": "f25f832c-34a4-11f1-b07c-0cc47a4d76b8",
+   "friend_ranges": [
+    [
+     0,
+     70000
+    ]
+   ],
+   "covered_events": 70000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     70000,
+     100000
+    ]
+   ],
+   "uncovered_events": 30000,
+   "kinds": [
+    "trailing"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1554,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk232.root",
+   "pico_uuid": "a7139b74-34a4-11f1-a9bd-0cc47a4d7602",
+   "friend_ranges": [
+    [
+     0,
+     90000
+    ]
+   ],
+   "covered_events": 90000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     90000,
+     100000
+    ]
+   ],
+   "uncovered_events": 10000,
+   "kinds": [
+    "trailing"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1594,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk272.root",
+   "pico_uuid": "efdcdbe0-34a4-11f1-8c35-0cc47a4d7658",
+   "friend_ranges": [
+    [
+     50000,
+     100000
+    ]
+   ],
+   "covered_events": 50000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     0,
+     50000
+    ]
+   ],
+   "uncovered_events": 50000,
+   "kinds": [
+    "start_ne0"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1679,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk399.root",
+   "pico_uuid": "c94dc9f8-34a4-11f1-ada3-0cc47a4c8e56",
+   "friend_ranges": [
+    [
+     10000,
+     100000
+    ]
+   ],
+   "covered_events": 90000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     0,
+     10000
+    ]
+   ],
+   "uncovered_events": 10000,
+   "kinds": [
+    "start_ne0"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1680,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk398.root",
+   "pico_uuid": "fbc96018-34a4-11f1-b723-0cc47a4c8f10",
+   "friend_ranges": [
+    [
+     30000,
+     100000
+    ]
+   ],
+   "covered_events": 70000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     0,
+     30000
+    ]
+   ],
+   "uncovered_events": 30000,
+   "kinds": [
+    "start_ne0"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1712,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk390.root",
+   "pico_uuid": "088c202e-34a5-11f1-b032-0cc47a4c8ece",
+   "friend_ranges": [
+    [
+     0,
+     60000
+    ]
+   ],
+   "covered_events": 60000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     60000,
+     100000
+    ]
+   ],
+   "uncovered_events": 40000,
+   "kinds": [
+    "trailing"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1713,
+   "era": "G",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024G/picoAOD.chunk393.root",
+   "pico_uuid": "a7147a9e-34a4-11f1-8796-0cc47a4c8f2c",
+   "friend_ranges": [
+    [
+     50000,
+     100000
+    ]
+   ],
+   "covered_events": 50000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     0,
+     50000
+    ]
+   ],
+   "uncovered_events": 50000,
+   "kinds": [
+    "start_ne0"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1719,
+   "era": "H",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024H/picoAOD.chunk50.root",
+   "pico_uuid": "37dfa144-3490-11f1-b30c-0cc47a4c8f08",
+   "friend_ranges": [
+    [
+     0,
+     80000
+    ]
+   ],
+   "covered_events": 80000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     80000,
+     100000
+    ]
+   ],
+   "uncovered_events": 20000,
+   "kinds": [
+    "trailing"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1733,
+   "era": "H",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024H/picoAOD.chunk0.root",
+   "pico_uuid": "5cf5e1dc-3490-11f1-8841-0cc47a4c8e20",
+   "friend_ranges": [
+    [
+     0,
+     90000
+    ]
+   ],
+   "covered_events": 90000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     90000,
+     100000
+    ]
+   ],
+   "uncovered_events": 10000,
+   "kinds": [
+    "trailing"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1759,
+   "era": "H",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024H/picoAOD.chunk26.root",
+   "pico_uuid": "68139384-3490-11f1-a2b1-0cc47a74525a",
+   "friend_ranges": [
+    [
+     0,
+     20000
+    ]
+   ],
+   "covered_events": 20000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     20000,
+     100000
+    ]
+   ],
+   "uncovered_events": 80000,
+   "kinds": [
+    "trailing"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1796,
+   "era": "I2",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024I2/picoAOD.chunk12.root",
+   "pico_uuid": "4dca3e32-34a0-11f1-986a-0cc47a4c8f10",
+   "friend_ranges": [
+    [
+     0,
+     90000
+    ]
+   ],
+   "covered_events": 90000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     90000,
+     100000
+    ]
+   ],
+   "uncovered_events": 10000,
+   "kinds": [
+    "trailing"
+   ]
+  },
+  {
+   "index_entry_in_clean_v1": 1812,
+   "era": "I2",
+   "pico_path": "root://cmseos.fnal.gov//store/user/cguintob/XX4b/2025_Run3_skims/data_2024I2/picoAOD.chunk28.root",
+   "pico_uuid": "3b4f6db8-34a0-11f1-8127-0cc47a4d7614",
+   "friend_ranges": [
+    [
+     10000,
+     100000
+    ]
+   ],
+   "covered_events": 90000,
+   "pico_entries": 100000,
+   "uncovered_ranges": [
+    [
+     0,
+     10000
+    ]
+   ],
+   "uncovered_events": 10000,
+   "kinds": [
+    "start_ne0"
+   ]
+  }
+ ]
+}
