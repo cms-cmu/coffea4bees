@@ -40,7 +40,9 @@ skimmer:
   runner:
     condor_cores: 1
     worker_memory: 8GB
-    chunksize: 10000
+    chunksize: 100000
+    min_workers: 50
+    max_workers: 250
     picosize: 100000
     basketsize: 10000
     condor: true
@@ -63,7 +65,9 @@ trigger_weights:
   runner:
     condor_cores: 1
     worker_memory: 8GB
-    chunksize: 10000
+    chunksize: 100000
+    min_workers: 50
+    max_workers: 250
     condor: true
     shared_dask: true
     run_performance: true
@@ -111,7 +115,9 @@ classifier_inputs:
   runner:
     condor_cores: 1
     worker_memory: 8GB
-    chunksize: 10000
+    chunksize: 100000
+    min_workers: 50
+    max_workers: 250
     condor: true
     shared_dask: true
     run_performance: true
@@ -478,7 +484,9 @@ analysis_config:
   runner:
     workers: 4
     worker_memory: 8GB
-    chunksize: 10000
+    chunksize: 100000
+    min_workers: 50
+    max_workers: 250
     dashboard_address: 0
   config:
     blind: true
