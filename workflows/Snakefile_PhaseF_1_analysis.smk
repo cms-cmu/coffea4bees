@@ -108,6 +108,8 @@ rule create_analysis_config:
             cfg['runner']['condor'] = False
             cfg['runner']['shared_dask'] = False
             cfg['runner']['run_performance'] = False
+            # Test mode runs maxchunks=1, so chunksize fixes the event count the known counts were made with
+            cfg['runner']['chunksize'] = int(config.get('test_chunksize', 10000))
         os.makedirs(os.path.dirname(output[0]), exist_ok=True)
         with open(output[0], 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False)
