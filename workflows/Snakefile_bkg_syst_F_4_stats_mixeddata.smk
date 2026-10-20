@@ -371,12 +371,17 @@ rule stat_summary_master_F_4:
         """
         set -eo pipefail
         mkdir -p $(dirname {log})
-        {params.container_wrapper} {params.python_bin} src/stat_analysis/stat_summary_multi_rebin.py \
-            -d {params.stat_dir} \
-            -o {output.html} --md {output.md} \
-            --title {params.title} \
-            --label {params.label} \
-            --unblind 2>&1 | tee {log}
+        if ls -d {params.stat_dir}/stat_analysis_unblinded_mixeddata_rebin* >/dev/null 2>&1; then
+            {params.container_wrapper} {params.python_bin} src/stat_analysis/stat_summary_multi_rebin.py \
+                -d {params.stat_dir} \
+                -o {output.html} --md {output.md} \
+                --title {params.title} \
+                --label {params.label} \
+                --unblind 2>&1 | tee {log}
+        else
+            echo "No candidate rebin scheme passed closure." > {output.html}
+            echo "No candidate rebin scheme passed closure." > {output.md}
+        fi
         """
 
 n_models_f4 = int(config.get('n_subsamples', config.get('n_models', config.get('n_samples', 16))))

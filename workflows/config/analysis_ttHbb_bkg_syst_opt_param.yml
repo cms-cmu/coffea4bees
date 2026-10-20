@@ -12,6 +12,13 @@ base: coffea4bees/workflows/config/analysis_ttHbb_bkg_syst_declib16nc.yml
 label: "ttHbb_bkg_syst_opt_param"
 mix_name: "ttHbb_bkg_syst_opt_param"
 output_path: "output/{roast_id}/"
+match_closure_normalization: false
+max_basis: 5
+rebin: 20
+f3_rebins:
+  - 20
+f4_rebins:
+  - 20
 
 publish_base: "{eos_prod}/{roast_id}"
 handoff:

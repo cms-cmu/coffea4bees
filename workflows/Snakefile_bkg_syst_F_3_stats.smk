@@ -250,20 +250,35 @@ def get_target_rebins_F_3():
             return [int(r) for r in str(explicit_rebins).split()]
         else:
             return [int(r) for r in explicit_rebins]
-    closure_summary_path = f"{out}bkg_syst_F_2_run_two_stage_closure/closure_summary.json"
+    closure_reg = config.get('closure_region', config.get('region', 'SR'))
+    clf = config.get('classifier', 'SvB_MA')
+    closure_summary_path = f"{out}bkg_syst_F_2_run_two_stage_closure/summary_{clf}_{closure_reg}.json"
+    if not os.path.exists(closure_summary_path):
+        closure_summary_path = f"{out}bkg_syst_F_2_run_two_stage_closure/closure_summary.json"
     if os.path.exists(closure_summary_path):
         import json
         try:
             with open(closure_summary_path, "r") as f:
                 data = json.load(f)
-            return data.get("passing_rebins", [15, 24])
+            return data.get("passing_rebins", [])
         except Exception as e:
             print(f"[Snakemake] Error reading {closure_summary_path}: {e}")
-            return [15, 24]
-    return [15, 24]
+            return []
+    try:
+        checkpoint_output = checkpoints.evaluate_closure_candidates.get(region=closure_reg, classifier=clf).output[0]
+        import json
+        with open(checkpoint_output, "r") as f:
+            data = json.load(f)
+        return data.get("passing_rebins", [])
+    except Exception as e:
+        print(f"[Snakemake] Error reading checkpoint: {e}")
+        return []
 
 def get_combine_targets_F_3(wildcards):
     target_rebins = get_target_rebins_F_3()
+    if not target_rebins:
+        print("[Snakemake] Notice: No candidate rebin scheme passed the two-stage closure test. Stage F_3 Combine targets will be empty.")
+        return []
     targets = []
     for r in target_rebins:
         for channel, ch_config in config.get('channels', {}).items():
@@ -352,11 +367,16 @@ rule stat_summary_master_F_3:
         """
         set -eo pipefail
         mkdir -p $(dirname {log})
-        {params.container_wrapper} {params.python_bin} src/stat_analysis/stat_summary_multi_rebin.py \
-            -d {params.stat_dir} \
-            -o {output.html} --md {output.md} \
-            --title {params.title} \
-            --label {params.label} 2>&1 | tee {log}
+        if ls -d {params.stat_dir}/stat_analysis_rebin* >/dev/null 2>&1; then
+            {params.container_wrapper} {params.python_bin} src/stat_analysis/stat_summary_multi_rebin.py \
+                -d {params.stat_dir} \
+                -o {output.html} --md {output.md} \
+                --title {params.title} \
+                --label {params.label} 2>&1 | tee {log}
+        else
+            echo "No candidate rebin scheme passed closure." > {output.html}
+            echo "No candidate rebin scheme passed closure." > {output.md}
+        fi
         """
 
 rule all_bkg_syst_F_3:

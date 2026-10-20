@@ -16,6 +16,7 @@ def parse_args():
     parser.add_argument("--status-files", nargs="+", required=True, help="List of closure_status.json files")
     parser.add_argument("--channel", default="ttHbb", help="Analysis channel name")
     parser.add_argument("--output", "-o", required=True, help="Output closure_summary.json path")
+    parser.add_argument("--max-basis", type=int, default=None, help="Maximum allowed basis order (e.g. 5)")
     return parser.parse_args()
 
 
@@ -108,6 +109,16 @@ def main():
             ss_p = f"FAIL {ss_basis_str}".strip()
         else:
             ss_p = "-"
+
+        # Enforce max-basis constraint
+        if args.max_basis is not None and b_basis is not None and b_basis > args.max_basis:
+            data["passed"] = False
+            b_passed = False
+            bias_p = f"FAIL (basis {b_basis} > {args.max_basis})".strip()
+            if "failed_steps" not in data or data["failed_steps"] is None:
+                data["failed_steps"] = []
+            if "Max Basis Limit Exceeded" not in data["failed_steps"]:
+                data["failed_steps"].append(f"Max Basis Limit Exceeded (basis {b_basis} > {args.max_basis})")
 
         overall = "PASS" if data.get("passed") else "FAIL"
         log_lines.append(f"{str(rebin_val):<8} {str(n_bins):<8} {var_p:<16} {bias_p:<16} {ss_p:<16} {overall:<10}")
