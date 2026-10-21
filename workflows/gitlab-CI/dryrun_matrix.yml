@@ -125,6 +125,14 @@ runs:
     - MvD
     - MvD_2_train
     - MvD_3_svb
+  mvd_run3_2025_blindV4.yml:
+    - MvD
+  mvd_run3_2024_blindV4.yml:
+    - MvD
+  nominal_run3_2025_blindF.yml:
+    - PhaseF
+  nominal_run3_2024_blindF.yml:
+    - PhaseF
   mvd_run3_30x.yml:
     - MvD
     - MvD_2_train
