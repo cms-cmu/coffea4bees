@@ -290,6 +290,13 @@ rule analysis_test_Run3_2024:
     container: analysis_container
     shell: "source coffea4bees/scripts/analysis-test-Run3-2024.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
+
+rule analysis_test_Run3_2025:
+    output: f"{output_dir}/analysis_test_Run3_2025/test.coffea"
+    log: f"{output_dir}/analysis_test_Run3_2025.log"
+    container: analysis_container
+    shell: "source coffea4bees/scripts/analysis-test-Run3-2025.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
+
 rule analysis_cutflow_Run3:
     input: f"{output_dir}/analysis_test_Run3/test.coffea"
     output: f"{output_dir}/analysis_cutflow_Run3/test_dump_cutflow.yml"
@@ -303,6 +310,14 @@ rule analysis_cutflow_Run3_2024:
     log: f"{output_dir}/analysis_cutflow_Run3_2024.log"
     container: analysis_container
     shell: "source coffea4bees/scripts/analysis-cutflow-Run3-2024.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
+
+
+rule analysis_cutflow_Run3_2025:
+    input: f"{output_dir}/analysis_test_Run3_2025/test.coffea"
+    output: f"{output_dir}/analysis_cutflow_Run3_2025/test_dump_cutflow.yml"
+    log: f"{output_dir}/analysis_cutflow_Run3_2025.log"
+    container: analysis_container
+    shell: "source coffea4bees/scripts/analysis-cutflow-Run3-2025.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
 rule synthetic_dataset_make_dataset_Run3:
     output: f"{output_dir}/synthetic_dataset_make_dataset_Run3/picoaod_datasets_declustered_test_2023_BPix.yml"
