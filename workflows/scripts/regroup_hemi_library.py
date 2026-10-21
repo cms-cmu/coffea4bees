@@ -11,7 +11,10 @@ keeps the same fraction N / (total saved_hemis) of its files, evenly spaced over
 sorted file list, so the eras keep their proportions. A mixer worker loads its year's
 whole library (~3 GB per million hemispheres), which is what the cap bounds.
 
-Usage: regroup_hemi_library.py YEAR INFILE.coffea OUTFILE.yml [--max-hemis N]
+The DeClustered D.1 splitting library has the same layout and is regrouped here too, counting
+``--count-key saved_splittings`` instead (its cap: declustering.library.max_rows).
+
+Usage: regroup_hemi_library.py YEAR INFILE.coffea OUTFILE.yml [--max-hemis N] [--count-key KEY]
 """
 import argparse
 import os
@@ -32,8 +35,10 @@ def main():
     ap.add_argument("year")
     ap.add_argument("infile")
     ap.add_argument("outfile")
-    ap.add_argument("--max-hemis", type=int, default=0,
-                    help="prescale the library to about this many hemispheres (0: keep all)")
+    ap.add_argument("--max-hemis", "--max-entries", dest="max_hemis", type=int, default=0,
+                    help="prescale the library to about this many entries (0: keep all)")
+    ap.add_argument("--count-key", default="saved_hemis",
+                    help="per-dataset entry count in the .coffea (saved_splittings for a splitting library)")
     args = ap.parse_args()
 
     data = load(args.infile)
@@ -42,7 +47,9 @@ def main():
     if not any(value["files"] for value in datasets.values()):
         raise SystemExit(f"No hemisphere files found in {args.infile} for {args.year}")
 
-    total = sum(value.get("saved_hemis", 0) for value in datasets.values())
+    total = sum(value.get(args.count_key, 0) for value in datasets.values())
+    if args.max_hemis and not total:
+        raise SystemExit(f"--max-entries given but no dataset in {args.infile} has {args.count_key!r}")
     fraction = 1.0
     if args.max_hemis and total > args.max_hemis:
         fraction = args.max_hemis / total
@@ -53,12 +60,12 @@ def main():
         n_keep = len(ds_files) if fraction == 1.0 else max(1, round(fraction * len(ds_files)))
         keep = [ds_files[i * len(ds_files) // n_keep] for i in range(n_keep)]
         files.extend(keep)
-        kept_hemis += value.get("saved_hemis", 0) * n_keep / max(1, len(ds_files))
-        print(f"{key}: {n_keep}/{len(ds_files)} files, ~{value.get('saved_hemis', 0) * n_keep / max(1, len(ds_files)):,.0f} hemispheres")
+        kept_hemis += value.get(args.count_key, 0) * n_keep / max(1, len(ds_files))
+        print(f"{key}: {n_keep}/{len(ds_files)} files, ~{value.get(args.count_key, 0) * n_keep / max(1, len(ds_files)):,.0f} {args.count_key}")
 
     with open(args.outfile, "w") as fh:
         yaml.dump({args.year: files}, fh, default_flow_style=False)
-    print(f"{args.year}: {len(files)} hemisphere files, ~{kept_hemis:,.0f} of {total:,} hemispheres "
+    print(f"{args.year}: {len(files)} files, ~{kept_hemis:,.0f} of {total:,} {args.count_key} "
           f"(prescale fraction {fraction:.4f}) -> {args.outfile}")
 
 
