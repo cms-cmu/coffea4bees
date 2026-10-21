@@ -127,13 +127,17 @@ if SEED_STUDY:
             summary = f"{D5_OUT}seed_study/summary.yml"
         log: f"{D5_OUT}logs/seed_study.log"
         params:
-            years = " ".join(VAL.get('seed_study_years') or YEARS)
+            years = " ".join(VAL.get('seed_study_years') or YEARS),
+            # validation.seed_study_subsample: read only events with event % N == 0 of the picoAODs
+            # (runs on the login node; all 16 seeds of 2024 in memory were OOM-killed)
+            subsample = int(VAL.get('seed_study_subsample', 1))
         shell:
             """
             set -eo pipefail
             {EOS_PROXY}
             {WRAPPER} {PYTHON} coffea4bees/workflows/scripts/declustered_seed_study.py \
                 {input.registries} --outdir $(dirname {output.index}) --years {params.years} \
+                --event-subsample {params.subsample} \
                 --cutflow {input.cutflow} --hists {input.hists} --process-prefix {SYN_PREFIX} 2>&1 | tee {log}
             """
 
@@ -152,7 +156,9 @@ if SVB_BOOT:
         input: UPSTREAM_HIST_CONFIG
         output: f"{SVB_BOOT_OUT}analysis_config_svb_dump.yml"
         run:
-            _d6_hist_config(input[0], output[0], [MJ_URL])     # SvB on the fly, unblinded, no FvT/JCM
+            # SvB on the fly, unblinded, no FvT/JCM. validation.svb_bootstrap_runner: runner overrides
+            # (e.g. chunksize 20000: the SvB on 100k-event chunks of 2024 mixed data killed 8 GB workers)
+            _d6_hist_config(input[0], output[0], [MJ_URL], runner=VAL.get('svb_bootstrap_runner'))
             with open(output[0]) as f:
                 cfg = yaml.safe_load(f)
             cfg['config'].update({'dump_SvB_in_SR': True, 'fill_histograms': False})

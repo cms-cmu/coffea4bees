@@ -39,7 +39,7 @@ from coffea4bees.analysis.helpers.load_friend import (
 
 from coffea.analysis_tools import Weights, PackedSelection
 import numpy as np
-from coffea4bees.analysis.helpers.object_selection import apply_jet_calibration
+from coffea4bees.analysis.helpers.object_selection import apply_jet_calibration, _is_bool_array
 from src.physics.common import update_events
 from copy import copy
 import logging
@@ -281,8 +281,11 @@ class DeClusterer(Skimmer4b):
 
         #
         # Add Btag SF
+        # 2024 and 2025 (= Summer24 MC) use UParT, which has only WP-based SFs (no shape SF) yet: skip it,
+        # as processor_HH4b and the mixer do.
         #
-        if config["isMC"]:
+        apply_btagSF = config["isMC"] and year not in ("2024", "2025")
+        if apply_btagSF:
 
             weights, list_weight_names = add_btagweights( event, weights,
                                                           list_weight_names=list_weight_names,
@@ -319,6 +322,15 @@ class DeClusterer(Skimmer4b):
         # added only for data, so MC with cut_on_HLT_decision failed the skimmer's length check.)
         selection = selections.all(*cumulative_cuts)
 
+        if len(selev) == 0:
+            # nothing to decluster (e.g. a 2024 chunk outside the golden JSON): cluster_bs returns an
+            # untyped (`unknown`) jet_flavor, whose == "b" raises inside awkward; the chunk was then
+            # dropped and failed the picoAOD integrity check in every seed
+            processOutput = {"total_jet": 0}
+            if splitting_library is not None:
+                processOutput["library_lookups"] = dict.fromkeys(splitting_library.lookup_counts, 0)
+            return (selection, None, processOutput)
+
         selev = cand_jet_selection(selev)
         canJet    = selev.canJet
         notCanJet = selev.notCanJet_coffea
@@ -331,6 +343,7 @@ class DeClusterer(Skimmer4b):
 
         jets_for_clustering = ak.concatenate([canJet, notCanJet], axis=1)
         jets_for_clustering = jets_for_clustering[ak.argsort(jets_for_clustering.pt, axis=1, ascending=False)]
+        jetId_is_bool = "jetId" in jets_for_clustering.fields and _is_bool_array(jets_for_clustering.jetId)
 
         processOutput = {}
 
@@ -403,12 +416,19 @@ class DeClusterer(Skimmer4b):
         if config["isMC"]:
             out_branches["trigWeight_Data"] = selev.trigWeight_Data
             out_branches["trigWeight_MC"]   = selev.trigWeight_MC
-            out_branches["CMSbtag"]        = weights.partial_weight(include=["CMS_btag"])[selections.all(*cumulative_cuts)]
+            out_branches["CMSbtag"]        = (weights.partial_weight(include=["CMS_btag"])[selections.all(*cumulative_cuts)]
+                                              if apply_btagSF else np.ones(len(selev)))
 
         if config["isRun3"]:
             out_branches["Jet_PNetRegPtRawCorr"]         = ak.unflatten(np.full(total_jet, _UNIT_CORRECTION), n_jet)
             out_branches["Jet_PNetRegPtRawCorrNeutrino"] = ak.unflatten(np.full(total_jet, _UNIT_CORRECTION), n_jet)
-            out_branches["Jet_btagPNetB"]                = declustered_jets.btagScore
+            # the b-tag score goes into the era's tagger branch (corrections.yml btag_algo), which is
+            # what jet_selection reads back: 2024 tags with UParT, whose pt regression gets unit factors
+            btag_algo = self.corrections_metadata[year].get("btag_algo", "btagPNetB")
+            out_branches[f"Jet_{btag_algo}"]             = declustered_jets.btagScore
+            if btag_algo == "btagUParTAK4B":
+                out_branches["Jet_UParTAK4RegPtRawCorr"]         = ak.unflatten(np.full(total_jet, _UNIT_CORRECTION), n_jet)
+                out_branches["Jet_UParTAK4RegPtRawCorrNeutrino"] = ak.unflatten(np.full(total_jet, _UNIT_CORRECTION), n_jet)
 
         else:
             out_branches["Jet_bRegCorr"] = ak.unflatten(np.full(total_jet, _UNIT_CORRECTION), n_jet)
@@ -421,7 +441,11 @@ class DeClusterer(Skimmer4b):
                 if field == "btagScore":
                     continue
                 values = declustered_jets[field]
-                if field in INTEGER_FIELDS:
+                if field == "jetId" and jetId_is_bool:
+                    # NanoAOD v15 (2024) skims: the evaluated jet ID as a boolean, which jet_selection
+                    # reads as is -- as an integer, a carried pass (1) would fail its jetId >= 2 test
+                    values = ak.nan_to_num(values, nan=0) > 0
+                elif field in INTEGER_FIELDS:
                     values = ak.values_astype(ak.nan_to_num(values, nan=-1), np.int32)
                 out_branches[f"Jet_{field}"] = values
             # D.5 seed study: which library splitting each jet came from (-1: not declustered)
