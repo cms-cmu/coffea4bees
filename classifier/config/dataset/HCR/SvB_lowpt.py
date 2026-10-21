@@ -3,9 +3,9 @@ from __future__ import annotations
 from functools import partial
 from typing import TYPE_CHECKING
 
-from src.classifier.config.dataset.HCR import _group, _picoAOD
-from src.classifier.config.dataset.HCR._common import CommonEval, CommonTrain
-from src.classifier.config.dataset.HCR.SvB import (
+from . import _group, _picoAOD
+from ._common import CommonEval, CommonTrain
+from .SvB import (
     _Train as _TrainSvB,
     _common_selection,
     _norm,

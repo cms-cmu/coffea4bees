@@ -1,0 +1,30 @@
+# ==============================================================================
+# 2025 MvD V.4, BLINDED rerun on mvd_run3_2025_20261018_1b7885b-6284aae
+# ==============================================================================
+#   roast new --config coffea4bees/workflows/config/mvd_run3_2025_blindV4.yml --step cmslpc:coffea4bees/workflows/Snakefile_MvD.smk   # then --targets all_V4
+#
+# Only the differences from mvd_run3_2025.yml (`base:` overlay). A BLINDED rerun of the V.4 of
+# mvd_run3_2025_20261018_1b7885b-6284aae, whose first V.4 ran with blind: false and published unblinded 4b SR data
+# (taken down from CERNBox 2026-10-19). Nothing upstream is re-run: the tight mixed JCM, the MvD and the SvB_MvD friends are read from that roast.
+# The base now carries the blinding (4b SR data with any SvB ps > 0.8 dropped; MC and mixed data never blinded).
+base: coffea4bees/workflows/config/mvd_run3_2025.yml
+
+label: "mvd_run3_2025_blindV4"
+
+inputs:
+  upstream_roasts: [nominal_run3_2025_20261017_db7bbcd-feb07f3, mixeddata_run3_2025_20261016_daa12d2-15d1d03, mvd_run3_2025_20261018_1b7885b-6284aae]
+  # V.1's tight mixed-data JCM of the base MvD production (read through fsspec; V.1 is not re-run).
+  mixed_jcm: "{roast:mvd_run3_2025_20261018_1b7885b-6284aae}/handoff/jetCombinatoricModel_SB_mixeddata_tight.yml"
+
+handoff:
+  allow_external_refs: true
+
+# V.4 reads the MvD (V.2) and SvB_MvD (V.3) friends of the base MvD production.
+mvd:
+  eos_base: "{roast:mvd_run3_2025_20261018_1b7885b-6284aae}"
+svb_mvd:
+  eos_base: "{roast:mvd_run3_2025_20261018_1b7885b-6284aae}"
+
+analysis:
+  # The blinded counts, blessed from this rerun.
+  known_counts: "coffea4bees/analysis/tests/known_fullCounts_MvD_Run3_2025.yml"

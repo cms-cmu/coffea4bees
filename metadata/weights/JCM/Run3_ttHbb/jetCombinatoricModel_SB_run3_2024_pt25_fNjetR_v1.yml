@@ -1,0 +1,66 @@
+# f(nJet) x r^n JCM (pseudoTagProbSlope alpha + looseVetoFactor r), 2024_pt25, released 2026-10-07 by the LPC orchestrator.
+# Fit: make_jcm_weights.py -r SB, jcm_config = ttHbb_jcm_config.yml + f_njet_power: True + loose_veto_factor: True,
+#   coffea4bees ttHbb_jcm_fnjet e6251666 (master 668b95f7 + local JCM commits), barista f7183e9f.
+# Input: our Phase B.1 NoJCM histograms output/ttHbb_run3_2024_rmeas/computeJCM/histAll_NoJCM.coffea on LPC, selected jets 25 GeV (repo setup), eras 2024;
+#   B.1 processed with coffea4bees 8ce45369 / barista f7183e9f.
+# chi2/ndf = 1697.07/10 = 169.707, p = 10^-358.2; r = 1.1101, alpha = 0.489.
+# JCM_weights: nSelJets 4..20 (17 entries). The fit used nJet bins 4..14; entries for nSelJets >= 15 are model extrapolation
+#   (first 12 entries identical to the fit's own list; 3b events with nSelJets >= 16 are < 3e-7 of the sample).
+pseudoTagProb:
+        0.06601071098772576
+pseudoTagProb_err:
+        0.005661914317205121
+pseudoTagProb_pererr:
+        8.577266071649971
+pairEnhancement:
+        0.06995136876373172
+pairEnhancement_err:
+        0.10177061423899773
+pairEnhancement_pererr:
+        145.48766669990255
+pairEnhancementDecay:
+        0.1000000000003141
+pairEnhancementDecay_err:
+        1.0893353538555508
+pairEnhancementDecay_pererr:
+        1089.3353538521292
+tt4bSF:
+        1.0
+tt4bSF_err:
+        0
+tt4bSF_pererr:
+        0.0
+threeTightTagFraction:
+        0.5480170235964232
+threeTightTagFraction_err:
+        0
+threeTightTagFraction_pererr:
+        0.0
+pseudoTagProbSlope:
+        0.489258122577959
+pseudoTagProbSlope_err:
+        0.1829521469335871
+pseudoTagProbSlope_pererr:
+        37.39378836872254
+looseVetoFactor:
+        1.1101331028370887
+looseVetoFactor_err:
+        0.016363586173873276
+looseVetoFactor_pererr:
+        1.474020199204403
+mu_qcd:
+        0.1058443239041879
+chi^2:
+        1697.0708659870063
+ndf:
+        10
+chi^2/ndf:
+        169.70708659870064
+p-value:
+        0.0
+n5b_pred:
+        210193.04416996005
+n5b_true:
+        211688.0
+JCM_weights:
+        [0.0429682386740583, 0.10180135982384655, 0.1764899761921328, 0.2670128594147657, 0.3734122068982737, 0.4958058473588823, 0.6344127069690753, 0.7895842730392744, 0.9618378733441807, 1.1518897898784881, 1.360687355344892, 1.5894397673033394, 1.8396476819402918, 2.1131318555256233, 2.4120612531894334, 2.738981170763627, 3.096842025840949]

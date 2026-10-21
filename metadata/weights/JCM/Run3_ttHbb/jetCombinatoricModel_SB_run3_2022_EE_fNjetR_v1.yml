@@ -1,0 +1,66 @@
+# f(nJet) x r^n JCM (pseudoTagProbSlope alpha + looseVetoFactor r), 2022_EE, released 2026-10-08 by the LPC orchestrator.
+# Fit: make_jcm_weights.py -r SB -y 2022_EE, jcm_config = ttHbb_jcm_config.yml + f_njet_power: True + loose_veto_factor: True,
+#   coffea4bees ttHbb_jcm_fnjet e6251666 (master 668b95f7 + local JCM commits), barista f7183e9f.
+# Input: our Phase B.1 NoJCM histograms output/ttHbb_stitched_2022_rmeas/computeJCM/histAll_NoJCM.coffea on LPC (selected jets 30 GeV,
+#   repo setup; identical inputs to the 2022 fNjetR_v1/v2 full-year file), B.1 processed with coffea4bees 8ce45369 / barista f7183e9f.
+# chi2/ndf = 2.61/10 = 0.261, p = 0.99; r = 1.0903, alpha = 0.269.
+# JCM_weights: nSelJets 4..20 (17 entries). The fit used nJet bins 4..14; entries for nSelJets >= 15 are model extrapolation
+#   (first 12 entries identical to the fit's own list; 2022 has no 3b events with nSelJets >= 16).
+pseudoTagProb:
+        0.05992739533501107
+pseudoTagProb_err:
+        0.0006605706115796062
+pseudoTagProb_pererr:
+        1.1022848696941188
+pairEnhancement:
+        0.09152581292524996
+pairEnhancement_err:
+        0.015250740851235074
+pairEnhancement_pererr:
+        16.66277562996409
+pairEnhancementDecay:
+        0.46707392269002246
+pairEnhancementDecay_err:
+        0.08310552624570627
+pairEnhancementDecay_pererr:
+        17.79279942820956
+tt4bSF:
+        1.0
+tt4bSF_err:
+        0
+tt4bSF_pererr:
+        0.0
+threeTightTagFraction:
+        0.4822326117763267
+threeTightTagFraction_err:
+        0
+threeTightTagFraction_pererr:
+        0.0
+pseudoTagProbSlope:
+        0.26880738232273305
+pseudoTagProbSlope_err:
+        0.034859902855997035
+pseudoTagProbSlope_pererr:
+        12.968357697164679
+looseVetoFactor:
+        1.0902954590200211
+looseVetoFactor_err:
+        0.0038092741783683722
+looseVetoFactor_pererr:
+        0.34937999116241597
+mu_qcd:
+        0.0670120318529103
+chi^2:
+        2.614631950601391
+ndf:
+        10
+chi^2/ndf:
+        0.2614631950601391
+p-value:
+        0.9890978846784979
+n5b_pred:
+        13100.258276970675
+n5b_true:
+        13102.0
+JCM_weights:
+        [0.03439221862523799, 0.07515623605301767, 0.12310682346743665, 0.17829865580901133, 0.2408676929056772, 0.3110320061970256, 0.3890830459308949, 0.4753807133604608, 0.5703518659914026, 0.6744912163139002, 0.7883639088467306, 0.9126093434003566, 1.0479459931938608, 1.1951770774074884, 1.3551970170477337, 1.528998647951501, 1.7176811953805324]

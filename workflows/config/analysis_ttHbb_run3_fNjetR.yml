@@ -1,0 +1,313 @@
+# ==============================================================================
+# ttHbb Run 3 (2022 + 2023 + 2024), per-era f(nJet) x r^n JCMs: the ONE config of the combined chain
+# ==============================================================================
+# Every step below runs with this file; the block each Snakefile reads is named (CERN lxplus, outputs on CERN EOS):
+#   B.1  per-era JCM fits ........ Snakefile_PhaseB_1_computeJCM.smk      jcm_* keys + analysis_config (JCM/FvT/SvB forced off)
+#        committed as metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_<era>[_pt25]_fNjetR_v1.yml:
+#        f(nJet) = f0 (nJet/4)^alpha and the 3b loose-veto factor r^(nJet-3); the processor loader
+#        (analysis/helpers/jetCombinatoricModel.py, test analysis/tests/test_jcm_fnjetr_loader.py) reads alpha and r.
+#   B.2  2023 classifier inputs .. Snakefile_PhaseB_2_make_classifier_friendtree.smk   classifier_inputs block
+#        2022/2024 inputs are mmarcheg's (analysis_ttHbb_run3.yml, analysis_ttHbb_run3_2024.yml; 2024 cleaned into
+#        classifier_inputs_ttHbb_run3_2024_clean_v1*.json). The 2023 ones were produced with this block, restricted with
+#        `--config years=2023_preBPix,2023_BPix`; index classifier_inputs_ttHbb_run3_2023_trigv1[_phystop].json.
+#   C    combined Run 3 FvT ...... Snakefile_PhaseC.smk     classifier_setting + fvt blocks (templates classifier/config/workflows/ttHbb_run3/FvT/)
+#   D    SvB ..................... Snakefile_PhaseD.smk     svb block (templates classifier/config/workflows/ttHbb_run3/SvB/)
+#   F.1  analysis + plots ........ Snakefile_PhaseF_1_analysis.smk   analysis_config, plot_config
+#   F.2  stat-only blind cards ... Snakefile_PhaseF_2_stats.smk      make_combine_inputs + channels (stats_analysis/metadata/ttHbb_run3.yml)
+#        Snakefile_PhaseF.smk runs F.1 + F.2.
+# Products: /eos/cms/store/group/phys_top/jgaytanv/ttHbb/4b/Run3_v1/ttHbb_stitched/{reports,classifier,friend}/
+#   (FvT_ttHbb_run3_allyears_perEraJCM, SvB_ttHbb_run3_allyears_perEraJCM; the result_phystop.json indices point there),
+#   Phase F output under output_path below, plots at https://jgaytanv.web.cern.ch/plots/ttHbb/. The fvt/svb eos_base is
+#   /eos/user because kfold.Merge --clean needs delete rights the phys_top area does not give; products were migrated after.
+# Rerun: ./run_container snakemake -s coffea4bees/workflows/Snakefile_<Phase>.smk --configfile coffea4bees/workflows/config/analysis_ttHbb_run3_fNjetR.yml
+#   GPU rules (C, D) on lxplus need --apptainer-args "<lxplus_gpu args> --env TMPDIR=/tmp --env _CONDOR_SCRATCH_DIR=/tmp"
+#   (src/data_formats/root/io.py temp dir is not bound in the per-rule container); after an abort add --rerun-triggers input
+#   so a recorded training is not repeated.
+# Trigger weights are pinned to trigweights_Run3_v1.json for every step (Run 3 keys of metadata/friends/friends_ttHbb.yml).
+# label/output_path name the existing Phase F products on EOS and are kept unchanged across the rename of this file.
+# Per-era JCM loader: commit 1a9cd11e.
+label: "ttHbb_run3_allyears_phaseF"
+output_path: "/eos/user/j/jgaytanv/ttHbb/4b/output/ttHbb_run3_allyears_phaseF/"
+cern_user: "jgaytanv"
+cern_path: "www/plots/ttHbb/analysis/4b/"
+
+# Run 2 ttHbb precedent (analysis_ttHbb.yml:8-10): ttHbb + data only; the ttbar comes from 3b data through the FvT
+# (plot_ttbar_with_weights -> TTbar4b_from_d3), and make_combine_inputs refuses two ttbar estimates.
+dataset:
+  - "ttHbb"
+  - "data"
+
+year_eras:
+  2022_preEE: ["B", "C", "D"]
+  2022_EE: ["E", "F", "G"]
+  2023_preBPix: ["C01", "C02", "C11", "C12", "C3", "C4"]
+  2023_BPix: ["D1", "D2"]
+  "2024": ["C", "D", "E", "F", "G", "H", "I2", "I3"]
+
+# ==============================================================================
+# PHASE B.2: CLASSIFIER INPUTS (friend trees for FvT / SvB training), 2023 production
+# ==============================================================================
+# The 2022 block of analysis_ttHbb_run3.yml except friend_file (v1 pin), make_classifier_input and three runner keys
+# (lxplus_eos_scratch; skipbadfiles: false -> fail loudly instead of silently skipping chunks; dashboard_address: 0).
+# Selected-jet threshold = the repo setup (2023: 25 GeV via object_selection_thresholds.yml era_overrides). Run it for the
+# 2023 eras only (`--config years=2023_preBPix,2023_BPix`): with the full year_eras above it would plan 2022/2024 too.
+# Outputs went to the /eos/user path below and were migrated to phys_top (classifier_inputs_ttHbb_run3_2023_trigv1_phystop.json).
+# A 1-chunk canary of this block (2022_EE data E, 2022_EE TTToHadronic_stitched, 2024 data C, test mode) reproduced
+# mmarcheg's 2022/2024 HCR_input friends exactly (float64 last-bit differences only).
+classifier_inputs:
+  processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+  friend_file: "coffea4bees/metadata/friends/friends_ttHbb.yml"
+  weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
+  datasets:
+    - "ttHbb"
+    - "data"
+    - "TTTo2L2Nu_stitched"
+    - "TTToSemiLeptonic_stitched"
+    - "TTToHadronic_stitched"
+  runner:
+    condor_cores: 1
+    worker_memory: 8GB
+    chunksize: 100000
+    min_workers: 50
+    condor: true
+    shared_dask: true
+    run_performance: true
+    max_workers: 500
+    condor_transfer_input_files:
+      - src/
+      - coffea4bees/analysis/
+      - coffea4bees/metadata/
+    lxplus_eos_scratch: "/eos/user/j/jgaytanv/ttHbb/4b/barista_scratch"
+    skipbadfiles: false
+    dashboard_address: 0
+  config:
+    blind: true
+    apply_JCM: false
+    apply_FvT: false
+    apply_trigWeight: true
+    apply_btagSF: true
+    apply_boosted_veto: false
+    run_SvB: false
+    top_reconstruction: slow
+    fill_histograms: true
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_sb1000.yml"
+    make_classifier_input: root://eosuser.cern.ch//eos/user/j/jgaytanv/ttHbb/4b/Run3_v1/b2_2023_pt25_trigv1/
+
+# ==============================================================================
+# PHASE B.1: JET COMBINATORIC MODEL (Snakefile_PhaseB_1_computeJCM.smk)
+# ==============================================================================
+# Runs the analysis processor (analysis_config below, JCM/FvT/SvB forced off) on data and the
+# stitched ttbar, fits the JCM in the SB (tag run3_v1), then reruns with the JCM applied.
+# The fit is committed as metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2022_v1.yml
+# (the Snakemake tag stays run3_v1: it names the existing output directory on EOS).
+tag: "run3_v1"
+jcm_datasets:
+  - "data"
+  - "TTTo2L2Nu_stitched"
+  - "TTToSemiLeptonic_stitched"
+  - "TTToHadronic_stitched"
+jcm_plot_config: "coffea4bees/plots/metadata/plots_JCM_ttHbb.yml"   # plots_JCM_ttHbb_stitched.yml (upstream value) does not exist in the repo
+jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb_stitched_jcm_config.yml -m coffea4bees/plots/metadata/plotsJCM_ttHbb_run3.yml -y Run3"
+# No Run 3 cutflow reference yet: only dump the cutflows (the known_fullCounts_JCM_* files are Run 2).
+jcm_known_counts_NoJCM: "none"
+jcm_known_counts_wJCM: "none"
+
+# ==============================================================================
+# PHASE C: FvT CLASSIFIER (Snakefile_PhaseC_{1,2,3}_*.smk; GPU rules run as HTCondor jobs on lxplus)
+# ==============================================================================
+classifier_setting:
+  - module: ml.DataLoader
+    option:
+      - optimize_sliceable_dataset: true
+  - module: ROOT
+    option:
+      - friend_allow_missing: false
+  - module: cms.CollisionData
+    option:
+      - eras:
+          2022_preEE: [B, C, D]
+          2022_EE: [E, F, G]
+          2023_preBPix: [C01, C02, C11, C12, C3, C4]
+          2023_BPix: [D1, D2]
+          '2024': [C, D, E, F, G, H, I2, I3]
+  - module: cms.MC_TTbar
+    option:
+      - datasets:
+          - TTToSemiLeptonic_stitched
+          - TTToHadronic_stitched
+          - TTTo2L2Nu_stitched
+  - module: HCR.InputBranch
+    option:
+      # `year` re-added: add_year keeps the first two digits of the era (22/23/24), no longer constant with
+      # 2022 + 2023 + 2024 trained together (with a single year it normalises to NaN).
+      - feature_ancillary: [xW, nSelJets, xbW, year]
+
+fvt:
+  eos_base: "root://eosuser.cern.ch//eos/user/j/jgaytanv/ttHbb/4b/Run3_v1/ttHbb_stitched"
+  plot_base: "root://eosuser.cern.ch//eos/user/j/jgaytanv/www/plots/ttHbb/analysis/4b"
+  classifier_config_paths: "coffea4bees"
+  wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_run3/FvT"
+  label: "FvT_ttHbb_run3_allyears_perEraJCM"
+  output_dir: "output/FvT_ttHbb_run3_allyears_perEraJCM/"
+  plot_inputs: true
+  plot_weights: true
+  evaluate: true
+  model: "{eos_base}/classifier/{label}"
+  friend: "{eos_base}/friend/{label}"
+  train_template: "model: {eos_base}/classifier/{label}"
+  eval_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/{label}"
+  metadata: "coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3.json@@HCR_input"  # plot rules only (2022 index); training/evaluation friends below
+  workflow_overrides:
+    --JCM-weight:
+      - 'year:2022_preEE coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2022_preEE_fNjetR_v1.yml@@JCM_weights'
+      - 'year:2022_EE coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2022_EE_fNjetR_v1.yml@@JCM_weights'
+      - 'year:2023_preBPix coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2023_preBPix_pt25_fNjetR_v1.yml@@JCM_weights'
+      - 'year:2023_BPix coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2023_BPix_pt25_fNjetR_v1.yml@@JCM_weights'
+      - 'year:2024 coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2024_pt25_fNjetR_v1.yml@@JCM_weights'
+    '--friends ""': 'coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3.json@@HCR_input coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2023_trigv1.json@@HCR_input coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2024_clean_v1.json@@HCR_input'
+    # jgaytanv-e7 (2026-10-13): 2023 B.2 friends migrated to phys_top -> evaluate reads the *_phystop index (train.yml keeps the trained-with paths)
+    'evaluate.yml::--friends ""': 'coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3.json@@HCR_input coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2023_trigv1_phystop.json@@HCR_input coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2024_clean_v1_fullcov.json@@HCR_input'
+    # R1(b) (orchestrator jgaytanv-e7, 2026-10-13): evaluate's TARGET list comes from --metadata, not from the friend index, so the 31
+    # partially covered 2024 picoAODs are removed from an evaluate-only metadata dir (else FriendTreeError -> hang, 10-13 run 12909404).
+    'evaluate.yml::--metadata': 'coffea4bees/metadata/datasets/archive/datasets_eval_run3_fullcov/'
+    # jgaytanv-e7 (2026-10-13): kfold.Merge with 2 workers instead of 5 (insurance after the 12912978 BrokenProcessPool; cause most likely the EOS quota)
+    'evaluate.yml::--workers': '2'
+  train_mem: 118000      # orchestrator (user-requested): whole single-GPU H100 NVL slot (TotalMemory 118000); S2 predicts 102.37M loaded -> ~104.2 GB (~0.97 GB/M + 4.8 GB)
+  eval_mem: 144000       # USER DECISION via jgaytanv-e7 (fastest start): 48 cpus; RECORD ONLY - running job 12912978 was condor_qedit-ed 189000/63 -> 144000/48; measured eval RSS 185.5 GB, limit not enforced
+  train_runtime: 1440    # est. ~10-11 h (2022 1.5 h, 2024 6.25 h); flavour "tomorrow"
+  eval_runtime: 1440
+  retries: 1
+
+# ==============================================================================
+# PHASE D: SvB CLASSIFIER (Snakefile_PhaseD.smk; GPU rules run as HTCondor jobs on lxplus)
+# ==============================================================================
+# ttHbb signal (4b SR MC) vs background = 3b SR data x per-era JCM x combined Run 3 FvT ("multijet") + 4b SR stitched ttbar.
+# Products go to /eos/user first (kfold.Merge --clean deletes fragments, which phys_top rw!d forbids); migrated afterwards.
+svb:
+  eos_base: "root://eosuser.cern.ch//eos/user/j/jgaytanv/ttHbb/4b/Run3_v1/ttHbb_stitched"
+  plot_base: "root://eosuser.cern.ch//eos/user/j/jgaytanv/www/plots/ttHbb/analysis/4b"
+  classifier_config_paths: "coffea4bees"
+  wfs_base: "coffea4bees/classifier/config/workflows/ttHbb_run3/SvB"
+  label: "SvB_ttHbb_run3_allyears_perEraJCM"
+  output_dir: "output/SvB_ttHbb_run3_allyears_perEraJCM/"
+  plot_inputs: true
+  plot_weights: true
+  evaluate: true
+  model: "{eos_base}/classifier/{label}"
+  friend: "{eos_base}/friend/{label}"
+  train_template: "model: {eos_base}/classifier/{label}, FvT: root://eoscms.cern.ch//eos/cms/store/group/phys_top/jgaytanv/ttHbb/4b/Run3_v1/ttHbb_stitched/friend/FvT_ttHbb_run3_allyears_perEraJCM"
+  eval_template: "model: {eos_base}/classifier/{label}, SvB: {eos_base}/friend/{label}"
+  metadata: "coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3.json@@HCR_input"  # plot rules only (2022 index); training/evaluation friends below
+  workflow_overrides:
+    # R-D1 (orchestrator jgaytanv-e7, 2026-10-14): train AND evaluate take their targets from the 31-file-free metadata dir: the FvT friend
+    # has no entries for the 31 partially covered 2024 picoAODs, and a target without its friend raises in the loader (friend.py _match_chunks)
+    --metadata: 'coffea4bees/metadata/datasets/archive/datasets_eval_run3_fullcov/'
+    --JCM-weight:
+      - 'year:2022_preEE coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2022_preEE_fNjetR_v1.yml@@JCM_weights'
+      - 'year:2022_EE coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2022_EE_fNjetR_v1.yml@@JCM_weights'
+      - 'year:2023_preBPix coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2023_preBPix_pt25_fNjetR_v1.yml@@JCM_weights'
+      - 'year:2023_BPix coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2023_BPix_pt25_fNjetR_v1.yml@@JCM_weights'
+      - 'year:2024 coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2024_pt25_fNjetR_v1.yml@@JCM_weights'
+    '--friends ""': 'coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3.json@@HCR_input coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2023_trigv1_phystop.json@@HCR_input coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2024_clean_v1.json@@HCR_input'
+    'evaluate.yml::--friends ""': 'coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3.json@@HCR_input coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2023_trigv1_phystop.json@@HCR_input coffea4bees/metadata/datasets/classifier_inputs_ttHbb_run3_2024_clean_v1_fullcov.json@@HCR_input'
+    # combined Run 3 FvT friend on phys_top: result_phystop.json (the original result.json points at deleted /eos/user chunks)
+    '--friends label:data': 'root://eoscms.cern.ch//eos/cms/store/group/phys_top/jgaytanv/ttHbb/4b/Run3_v1/ttHbb_stitched/friend/FvT_ttHbb_run3_allyears_perEraJCM/result_phystop.json@@analysis.0.merged'
+  train_mem: 96000       # S2: 49.07 M loaded (multijet 42.41 M + ttbar 3.11 M + ttHbb 3.55 M) -> (0.97 GB/M + 4.8 GB) x 1.25 = 65.5 GB -> smallest of {48000, 96000, 118000} above it
+  eval_mem: 144000
+  train_runtime: 1440
+  eval_runtime: 1440
+  retries: 1
+
+# ==============================================================================
+# PHASE F.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING (Snakefile_PhaseF_1_analysis.smk)
+# ==============================================================================
+analysis_config:
+  processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+  # the 31 partially covered 2024 picoAODs have no FvT/SvB friend entries; processor friends allow missing entries,
+  # so such a chunk would silently get JCM-only weights and no blinding -> evaluate-only metadata dir without them
+  dataset_location: "coffea4bees/metadata/datasets/archive/datasets_eval_run3_fullcov/"
+  friend_file: "coffea4bees/metadata/friends/friends_ttHbb.yml"  # Run 3 keys = trigger weights pinned to v1
+  weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
+  runner:
+    condor_cores: 1
+    worker_memory: 8GB
+    chunksize: 100000
+    min_workers: 50
+    max_workers: 150     # user decision 2026-10-14 (relaunch after the bigbird26 schedd overload: ~1,200 workers held spooling)
+    dashboard_address: 0
+    skipbadfiles: false
+    lxplus_eos_scratch: "/eos/user/j/jgaytanv/ttHbb/4b/barista_scratch"
+    condor_transfer_input_files:
+      - src/
+      - coffea4bees/analysis/
+      - coffea4bees/metadata/
+  config:
+    blind: true
+    apply_JCM: true
+    # explicit per-era dict (processor key = event.metadata['year']); '2024' must stay a STRING: an integer key would
+    # select the multi-subsample JCM branch (processor_HH4b.py:279)
+    JCM_file:
+      2022_preEE: "coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2022_preEE_fNjetR_v1.yml"
+      2022_EE: "coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2022_EE_fNjetR_v1.yml"
+      2023_preBPix: "coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2023_preBPix_pt25_fNjetR_v1.yml"
+      2023_BPix: "coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2023_BPix_pt25_fNjetR_v1.yml"
+      "2024": "coffea4bees/metadata/weights/JCM/Run3_ttHbb/jetCombinatoricModel_SB_run3_2024_pt25_fNjetR_v1.yml"
+    apply_FvT: true
+    apply_trigWeight: true
+    apply_btagSF: true
+    apply_boosted_veto: false
+    apply_lepton_veto: false          # analysis_ttHbb.yml:277
+    run_SvB: true
+    SvB_MA: null                      # read from the friend below, no on-the-fly classifier (roast precedent, analysis_ttHbb.yml:268)
+    SvB: null                         # analysis_ttHbb.yml:280
+    hist_cuts: ["pass_nSelJets_gt6", "passLeptonVeto"]   # analysis_ttHbb.yml:281
+    top_reconstruction: fast
+    plot_ttbar_with_weights: true     # analysis_ttHbb.yml:283: ttbar from 3b data (TTbar_from_d3) for the closure table / combine
+    fill_histograms: true
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_sb1000.yml"
+    friends:
+      FvT: "root://eoscms.cern.ch//eos/cms/store/group/phys_top/jgaytanv/ttHbb/4b/Run3_v1/ttHbb_stitched/friend/FvT_ttHbb_run3_allyears_perEraJCM/result_phystop.json@@analysis.0.merged"
+      SvB_MA: "root://eoscms.cern.ch//eos/cms/store/group/phys_top/jgaytanv/ttHbb/4b/Run3_v1/ttHbb_stitched/friend/SvB_ttHbb_run3_allyears_perEraJCM/result_phystop.json@@analysis.0.merged"
+
+plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"   # analysis_ttHbb.yml:285
+plot_extra_arguments: ""
+known_counts: "none"
+known_counts_fatal: false
+additional_parameters: "--shared-dask --condor"
+# F.3: the Phase C.4 cross-check is not run; cutflow_crosscheck then writes a SKIPPED placeholder (rules/analysis.smk:195-197)
+
+# ==============================================================================
+# PHASE F.2: COMBINE STATISTICAL INTERPRETATION (Snakefile_PhaseF_2_stats.smk), stat-only and blind
+# ==============================================================================
+convert_hist_to_json:
+  histos:
+    - "SvB_MA.ps_ttHbb"
+
+combine_outdir: "datacards/"
+make_combine_inputs:                 # analysis_ttHbb.yml:302-305, plus the Run 3 metadata
+  rebin: 12
+  stat_only: ""
+  bkgsyst: "coffea4bees/stats_analysis/files/HIG-24-010/zz/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_zz_rebin1.pkl"
+  # explicit path: the default template formats {channel} with channel.split('_')[0] = "ttHbb" (Snakefile_PhaseF_2_stats.smk:215),
+  # i.e. the Run 2 bins
+  metadata_template: "coffea4bees/stats_analysis/metadata/ttHbb_run3.yml"
+
+combine_flags: "--three_tag threeTag --four_tag fourTag --region sum --blind"   # analysis_ttHbb.yml:307-312
+likelihood_scan_points: 40
+likelihood_scan_r_min: 0
+likelihood_scan_r_max: 2
+likelihood_scan_y_cut: 30
+likelihood_scan_y_max: 30
+
+channels:
+  ttHbb_run3_stat_only:              # template: analysis_ttHbb.yml:325-335 (ttHbb_stat_only)
+    signallabel: "ttHbb"
+    othersignal: ""
+    variable: "SvB_MA.ps_ttHbb"
+    signal: "ttHbb"
+    closure_subdir: "ttHbb"
+    region: "SR"
+    cut: "sum"
+    stat_only: true
+    bkgsyst: "coffea4bees/stats_analysis/files/HIG-24-010/zz/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_zz_rebin1.pkl"
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"

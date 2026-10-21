@@ -25,6 +25,48 @@ def dump_input_friend(
     dump_naming: str = _NAMING,
 ):
     selection = _build_cutflow(*selections)
+    if len(events) == 0:
+        n = len(selection)
+        canjet_fields = {
+            feat: ak.unflatten(np.zeros(0, dtype=np.float32), np.zeros(n, dtype=int))
+            for feat in (
+                "pt", "eta", "phi", "mass",
+                "btagScore", "btagPNetCvB", "btagPNetCvL", "btagPNetQvG", "btagPNetTauVJet",
+                "PNetRegPtRawRes", "nSVs", "chHEF", "neHEF", "chEmEF", "neEmEF", "muEF",
+                "nConstituents", "area", "rawFactor",
+            )
+        }
+        notcanjet_fields = {
+            "pt": ak.unflatten(np.zeros(0, dtype=np.float32), np.zeros(n, dtype=int)),
+            "eta": ak.unflatten(np.zeros(0, dtype=np.float32), np.zeros(n, dtype=int)),
+            "phi": ak.unflatten(np.zeros(0, dtype=np.float32), np.zeros(n, dtype=int)),
+            "mass": ak.unflatten(np.zeros(0, dtype=np.float32), np.zeros(n, dtype=int)),
+            "isSelJet": ak.unflatten(np.zeros(0, dtype=bool), np.zeros(n, dtype=int)),
+        }
+        base_dict = {
+            "CanJet": ak.zip(canjet_fields),
+            "NotCanJet": ak.zip(notcanjet_fields),
+        }
+        seljet_labels = [seljet_label] if isinstance(seljet_label, str) else list(seljet_label)
+        mass_regions = ["ZZSR", "ZHSR", "HHSR", "SR", "SB"]
+        numpy_fields = {
+            k: np.zeros(n, dtype=bool) for k in mass_regions + [fourTag_label, threeTag_label, "passHLT"]
+        }
+        for k in ["xbW", "xW"]:
+            numpy_fields[k] = np.zeros(n, dtype=np.float32)
+        for k in seljet_labels:
+            numpy_fields[k] = np.zeros(n, dtype=np.int32)
+        weight_field = {"weight": np.zeros(n, dtype=np.float32)}
+        merged_dict = {**base_dict, **numpy_fields, **weight_field}
+        data = ak.Array(merged_dict)
+        return dump_friend(
+            events=events,
+            output=output,
+            name=name,
+            data=data,
+            dump_naming=dump_naming,
+        )
+
     padded = akext.pad.selected()
     # Build the dictionary step by step, then pass to ak.Array
     canjet_fields = {
@@ -103,10 +145,10 @@ def dump_JCM_weight(
     pseudo_tag: str = "pseudoTagWeight",
     dump_naming: str = _NAMING,
 ):
-    if pseudo_tag not in events.fields:
-        weight = np.ones(len(selections[0]), dtype=np.float64)
+    selection = _build_cutflow(*selections)
+    if len(events) == 0 or pseudo_tag not in events.fields:
+        weight = np.ones(len(selection), dtype=np.float64)
     else:
-        selection = _build_cutflow(*selections)
         padded = akext.pad.selected(1)
         weight = padded(events[pseudo_tag], selection)
     return dump_friend(
@@ -142,10 +184,10 @@ def dump_FvT_weight(  ### TODO: replace with proper evaluation code
     FvT_name: tuple[str, ...] = ("FvT", "FvT"),
     dump_naming: str = "{path1}/{name}_{uuid}_{start}_{stop}_{path0}",
 ):
-    if not has_record(events, FvT_name) == FvT_name:
-        weight = np.ones(len(selections[0]), dtype=np.float64)
+    selection = _build_cutflow(*selections)
+    if len(events) == 0 or not has_record(events, FvT_name) == FvT_name:
+        weight = np.ones(len(selection), dtype=np.float64)
     else:
-        selection = _build_cutflow(*selections)
         padded = akext.pad.selected(1)
         weight = padded(get_field(events, FvT_name), selection)
     return dump_friend(
@@ -227,6 +269,27 @@ def dump_top_reconstruction(
     *selections: ak.Array,
     dump_naming: str = _NAMING,
 ):
+    selection = _build_cutflow(*selections)
+    if len(events) == 0:
+        n = len(selection)
+        top_reco_fields = [
+            "b_pt", "b_eta", "b_phi", "b_mass", "b_puId", "b_jetId", "b_btagScore",
+            "p_pt", "p_eta", "p_phi", "p_mass",
+            "W_p_pt", "W_p_eta", "W_p_phi", "W_p_mass",
+            "W_pW_pt", "W_pW_eta", "W_pW_phi", "W_pW_mass",
+            "W_l_pt", "W_l_eta", "W_l_phi", "W_l_mass", "W_l_puId", "W_l_jetId", "W_l_btagScore",
+            "W_j_pt", "W_j_eta", "W_j_phi", "W_j_mass", "W_j_puId", "W_j_jetId", "W_j_btagScore",
+            "mbW", "xW", "xt", "xbW", "xWt", "xWbW", "rWbW",
+        ]
+        data = ak.zip({f: np.zeros(n, dtype=np.float32) for f in top_reco_fields})
+        return dump_friend(
+            events=events,
+            output=output,
+            name=name,
+            data=data,
+            dump_naming=dump_naming,
+        )
+
     data = ak.zip(
         {
             "b_pt": events["top_cand"].b.pt,
@@ -271,7 +334,6 @@ def dump_top_reconstruction(
             "rWbW": events["top_cand"].rWbW,
         }
     )
-    selection = _build_cutflow(*selections)
     padded = akext.pad.selected()
     data = padded(data, selection)
     return dump_friend(
@@ -321,6 +383,25 @@ def dump_SvB(
     *selections: ak.Array,
     dump_naming: str = _NAMING,
 ):
+    selection = _build_cutflow(*selections)
+    if len(events) == 0:
+        n = len(selection)
+        all_fields = [
+            'pmj', 'ptt', 'pzz', 'pzh', 'phh', 'pttHbb',
+            'q_1234', 'q_1324', 'q_1423',
+            'ps', 'passMinPs', 'zz', 'zh', 'hh',
+            'ps_zz', 'ps_zh', 'ps_hh', 'ps_ttHbb',
+            'tt_vs_mj'
+        ]
+        data = ak.zip({f: np.zeros(n, dtype=np.float32) for f in all_fields})
+        return dump_friend(
+            events=events,
+            output=output,
+            name=name,
+            data=data,
+            dump_naming=dump_naming,
+        )
+
     ev_name = events[name]
     fields = ev_name.fields
     data_dict = {}
@@ -335,7 +416,6 @@ def dump_SvB(
             data_dict[f] = getattr(ev_name, f)
 
     data = ak.zip(data_dict)
-    selection = _build_cutflow(*selections)
     padded = akext.pad.selected()
     data = padded(data, selection)
     return dump_friend(

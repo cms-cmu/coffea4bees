@@ -145,9 +145,10 @@ rule D6_dataset_yml:
             -o {output} 2>&1 | tee -a {log}
         """
 
-def _d6_hist_config(src, dst, datasets, subsample=1):
+def _d6_hist_config(src, dst, datasets, subsample=1, runner=None):
     """D.4's upstream (non-tight) analysis config with the analysis SvB on the fly, unblinded,
-    thinned by event % subsample (processor_HH4b weights the kept events by N)."""
+    thinned by event % subsample (processor_HH4b weights the kept events by N). ``runner``: runner
+    overrides for the pass (e.g. a smaller chunksize, as MakeMixedData's signal_check.mixeddata_runner)."""
     with open(src) as f:
         cfg = yaml.safe_load(f) or {}
     tight = (cfg.get('config') or {}).get('fourTag_use_tight', False)
@@ -170,6 +171,8 @@ def _d6_hist_config(src, dst, datasets, subsample=1):
               'require_trigWeight': False,    # Run 3 ggF has no trigger-weight friend
               'blind': False,
               'event_subsample': subsample})
+    if runner:
+        cfg.setdefault('runner', {}).update(runner)
     if config['test']:
         cfg.setdefault('runner', {}).update({'condor': False, 'shared_dask': False})
     write_yaml(dst, cap_workers(cfg))
@@ -184,7 +187,9 @@ rule D6_hist_config_declustered:
     input: UPSTREAM_HIST_CONFIG
     output: D6_HIST_CONFIG['declustered']
     run:
-        _d6_hist_config(input[0], output[0], [DECL_DATA_URL], subsample=DATA_SUBSAMPLE)
+        # signal_check.declustered_runner: runner overrides for the declustered-data SvB pass
+        _d6_hist_config(input[0], output[0], [DECL_DATA_URL], subsample=DATA_SUBSAMPLE,
+                        runner=SIG.get('declustered_runner'))
 
 use rule analysis_processor from analysis as D6_hists_signal with:
     input:

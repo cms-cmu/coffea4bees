@@ -123,9 +123,14 @@ ZH4b:
       sumw2_raw: 1866307.7946118847
       sumw_raw: 2788033.462461001
       total_events: 4703421
+  '2024':
+    nanoAOD: root://cmsio3.rc.ufl.edu//store/user/ekoenig/Run3_private_production/2024/mc/ZH_ZToBB_HToBB_M-125_2024/
+    picoAOD:
+      files:
+      - dummy
   xs:
     Run2: '0.7612*0.5824*0.1512'
-    Run3: 1
+    Run3: '0.9361 * 0.576 * 0.1512'
 ggZH4b:
   UL16_postVFP:
     nanoAOD: /ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM
@@ -324,6 +329,12 @@ ggZH4b:
       sumw_diff: 605421364014178.2
       sumw_raw: 605421398620707.4
       total_events: 5532821
+  '2024':
+    nanoAOD: root://cmsio3.rc.ufl.edu//store/user/ekoenig/Run3_private_production/2024/mc/ggZH_HToBB_ZToBB_M-125_2024/
+    picoAOD:
+      files:
+      - dummy
   xs:
     Run2: '0.1227*0.5824*0.1512'
-    Run3: 1
+    Run3: '0.1347pb  0.576 *0.1512'
+

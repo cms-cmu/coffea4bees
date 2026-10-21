@@ -165,8 +165,11 @@ class HCREnsemble:
         # ancillary features
         a = batch[Input.ancillary]
         # Mismatch fix: The GBN parameter scaling in the trained HCR model expects
-        # the inputs in the order ['xW', 'nSelJets', 'xbW', 'year'].
-        model_features = ["xW", "nSelJets", "xbW", "year"]
+        # the inputs in the order ['xW', 'nSelJets', 'xbW', 'year'] -- minus the ones the
+        # model was trained without (single-year models, e.g. 2024, drop `year`).
+        model_features = [k for k in ("xW", "nSelJets", "xbW", "year") if k in self.ancillary]
+        if len(model_features) != len(self.ancillary):
+            raise ValueError(f"HCR evaluation: unsupported ancillary features {self.ancillary}")
         for i, k in enumerate(model_features):
             match k:
                 case "year":

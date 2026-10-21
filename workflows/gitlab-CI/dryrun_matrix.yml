@@ -89,6 +89,12 @@ runs:
     - PhaseD
     - PhaseF
     - PhaseF_1_analysis
+  analysis_ttHbb_run3_fNjetR.yml:    # combined Run 3 ttHbb chain (per-era fNjetR JCMs, FvT, SvB, Phase F); no Phase A (skims are upstream's)
+    - PhaseB
+    - PhaseC
+    - PhaseD
+    - PhaseF
+    - PhaseF_1_analysis
   mixeddata_run2.yml:
     - MakeMixedData
   mixeddata_run3.yml:
@@ -119,6 +125,14 @@ runs:
     - MvD
     - MvD_2_train
     - MvD_3_svb
+  mvd_run3_2025_blindV4.yml:
+    - MvD
+  mvd_run3_2024_blindV4.yml:
+    - MvD
+  nominal_run3_2025_blindF.yml:
+    - PhaseF
+  nominal_run3_2024_blindF.yml:
+    - PhaseF
   mvd_run3_30x.yml:
     - MvD
     - MvD_2_train
@@ -161,6 +175,8 @@ runs:
   declustered_run3_library_sigcheck_massmatch.yml:
     - DeClustered
   declustered_run3_library_16x.yml:
+    - DeClustered
+  declustered_run3_2024_library_16x.yml:
     - DeClustered
   declustered_run2_library_16x.yml:
     - DeClustered

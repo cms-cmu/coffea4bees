@@ -2,12 +2,12 @@
 # Phase B: Master Coordinator Workflow for JCM Computation and Classifier Inputs Preparation
 
 include: "Snakefile_PhaseB_1_computeJCM.smk"
-include: "Snakefile_PhaseB_2_make_classifier_friendtree.smk"
 
 # ---------------------------------------------------------------------------
 # Phase B -> C/D handoff
 # ---------------------------------------------------------------------------
-# B.1 fits the JCM and B.2 builds the classifier-input manifest; Phases C, D, C.4 and F.1 all
+# B.1 fits the JCM and in the second pass simultaneously produces validation
+# plots and the classifier-input manifest; Phases C, D, C.4 and F.1 all
 # read them.  Two kinds of consumer, so two transports:
 #
 #   * C.4 and F.1 run the analysis processor on cmslpc, and jetCombinatoricModel opens the JCM
@@ -50,7 +50,7 @@ HANDOFF_MANIFEST = _handoff.get(
 rule phaseB_handoff:
     input:
         jcm = ALL_JCM_INPUTS,
-        manifest = f"{config['output_path']}classifier_inputs/classifier_inputs_friends.json"
+        manifest = f"{CI_OUTPUT_PATH}classifier_inputs_friends.json"
     output:
         jcm = HANDOFF_JCM,
         manifest = HANDOFF_MANIFEST,

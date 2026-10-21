@@ -7,7 +7,7 @@ hists:
     fillcolor: k            
 
   HH4b:
-      process: GluGluToHHTo4B_cHHH1
+      process: [GluGluToHHTo4B_cHHH1, GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00]
       tag: lowpt_fourTag
       label: HH4b (x100)
       edgecolor: "#e42536"

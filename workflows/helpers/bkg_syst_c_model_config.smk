@@ -5,6 +5,9 @@
 
 import os
 import yaml
+import glob
+import shutil
+import subprocess
 
 eos_base = config['eos_base']
 mix_name = config.get("mix_name", "ttHbb_bkg_syst")
@@ -100,10 +103,47 @@ rule stage_bkg_syst_c_model_config:
 
         sub_name = globals().get('SUB_NAME', config.get('multisample_dataset_name', 'mixeddata_4b'))
 
+        meta_dir = config.get('classifier_metadata')
+        if not meta_dir or not os.path.isdir(meta_dir):
+            meta_dir = f"{out_c}classifier_metadata/"
+            if not os.path.isdir(meta_dir) or not os.listdir(meta_dir):
+                os.makedirs(meta_dir, exist_ok=True)
+                repo = config.get('dataset_location', "coffea4bees/metadata/datasets/")
+                for path in sorted(glob.glob(os.path.join(repo, "*.yml"))):
+                    with open(path) as f:
+                        keys = set(yaml.safe_load(f) or {})
+                    if sub_name in keys:
+                        continue
+                    shutil.copy(path, meta_dir)
+                target_ds = os.path.join(meta_dir, f"{sub_name}.yml")
+                if not os.path.exists(target_ds):
+                    local_ds = f"{out_a2}{sub_name}.yml"
+                    if os.path.exists(local_ds):
+                        shutil.copy(local_ds, target_ds)
+                    elif HANDOFF_EOS:
+                        xrdcp_bin = shutil.which("xrdcp")
+                        if not xrdcp_bin and os.path.exists("/cvmfs/cms.cern.ch/common/xrdcp"):
+                            xrdcp_bin = "/cvmfs/cms.cern.ch/common/xrdcp"
+                        if xrdcp_bin:
+                            subprocess.run([xrdcp_bin, "-f", "-s", f"{HANDOFF_EOS}/datasets/{sub_name}.yml", target_ds], check=False)
+                        else:
+                            try:
+                                import fsspec
+                                with fsspec.open(f"{HANDOFF_EOS}/datasets/{sub_name}.yml", "rb") as fin:
+                                    with open(target_ds, "wb") as fout:
+                                        fout.write(fin.read())
+                            except Exception as e:
+                                pass
+                if not os.path.exists(target_ds) or os.path.getsize(target_ds) == 0:
+                    raise FileNotFoundError(
+                        f"Stage C model config: required multisample dataset metadata '{target_ds}' is missing! "
+                        f"Checked local '{out_a2}{sub_name}.yml' and EOS '{HANDOFF_EOS}/datasets/{sub_name}.yml'."
+                    )
+
         mapping = {
             "m": str(m),
             "mix": str(m),
-            "metadata": config['classifier_metadata'],
+            "metadata": meta_dir,
             "mixed_name": sub_name,
             "model": f"{eos_base}/classifier/{mix_name}_v{m}",
             "FvT": f"{eos_base}/friend/FvT/{mix_name}_v{m}",

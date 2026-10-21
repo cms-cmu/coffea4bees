@@ -760,7 +760,11 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 selev = selev[pass_ttbar_filter_selev]
 
         if len(selev) == 0:
-            return processOutput
+            hist = {}
+            friends = self.dump_friend_trees(selev, analysis_selections, shift_name)
+            del selev, event, weights, analysis_selections
+            gc.collect()
+            return hist | processOutput | friends
 
         with self._stage(f"{label}:reconstruct_tops"):
             # Reconstruct top candidates
@@ -1603,19 +1607,20 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             )
 
         if self.make_classifier_input is not None:
-            region_keys = ["SR", "SB"]
-            if "ZZSR" in selev["quadJet_selected"].fields or "HHSR" in selev["quadJet_selected"].fields:
-                region_keys = ["ZZSR", "ZHSR", "HHSR", "SR", "SB"]
-            for k in region_keys:
-                if k in selev["quadJet_selected"].fields:
-                    selev[k] = selev["quadJet_selected"][k]
-                elif k == "HHSR" and "SR" in selev["quadJet_selected"].fields:
-                    selev[k] = selev["quadJet_selected"]["SR"]
-                elif "SR" in selev["quadJet_selected"].fields:
-                    selev[k] = ak.zeros_like(selev["quadJet_selected"]["SR"], dtype=bool)
-                else:
-                    selev[k] = ak.zeros(len(selev), dtype=bool)
-            selev["nSelJets"] = ak.num(selev.selJet)
+            if len(selev) > 0:
+                region_keys = ["SR", "SB"]
+                if "ZZSR" in selev["quadJet_selected"].fields or "HHSR" in selev["quadJet_selected"].fields:
+                    region_keys = ["ZZSR", "ZHSR", "HHSR", "SR", "SB"]
+                for k in region_keys:
+                    if k in selev["quadJet_selected"].fields:
+                        selev[k] = selev["quadJet_selected"][k]
+                    elif k == "HHSR" and "SR" in selev["quadJet_selected"].fields:
+                        selev[k] = selev["quadJet_selected"]["SR"]
+                    elif "SR" in selev["quadJet_selected"].fields:
+                        selev[k] = ak.zeros_like(selev["quadJet_selected"]["SR"], dtype=bool)
+                    else:
+                        selev[k] = ak.zeros(len(selev), dtype=bool)
+                selev["nSelJets"] = ak.num(selev.selJet)
 
             from ..helpers.dump_friendtrees import dump_input_friend
             weight = "weight_noJCM_noFvT"

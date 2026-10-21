@@ -58,7 +58,9 @@ def apply_dilep_ttbar_selection(event: ak.Array, isRun3: bool = False) -> ak.Arr
     jet_mask = event.nJet_tagged_loose >= 2
 
     # Require MET > 40 GeV
-    met_mask = event.MET.pt > 30
+    # NanoAOD v15 (the 2025 skims) renamed MET -> PFMET; older skims (2024 and before) keep MET.
+    met = event.MET if "MET" in event.fields else event.PFMET
+    met_mask = met.pt > 30
 
     quarkonia_veto = (event.mll > 10)
     z_veto = abs(event.mll - 91.2) > 10
