@@ -498,7 +498,7 @@ def create_combine_root_file( file_to_convert,
             cb.SetGroup("ps_fsr", psfsrSysts)
             cb.SetGroup("btag", btagSysts)
 
-            for isyst in metadata['uncertainty']:
+            for isyst in metadata.get('uncertainty', {}):   # e.g. HH4b_run3.yml defines none (stat-only Run 3)
                 if 'mtop' in isyst: mtopSysts.append(isyst)
                 else: othersSysts.append(isyst)
                 syst_years = metadata['uncertainty'][isyst].get('years', {})

@@ -57,7 +57,7 @@ ttbar_processes:
 inputs:
   upstream_roasts:
     declib: declib16nc_run2_20261003_3ab8302-b2d2dec      # DeClustered 16x no-cap Run 2 library
-    nominal: ttHbb_run2_20261003_f7183e9-cca392c          # ttHbb Run 2 nominal (B, C, C4, D, F)
+    nominal: ttHbb_optimized_pairing_SR_ellipse_SB350_700_20261014_d041f77-ec35cc5 # ttHbb Run 2 nominal with new SR/SB
     mixeddata: mixeddata_run2_20260927_c39c264-0ce4d59    # ttbar pseudodata
   # synthetic multijet data and ttbar pseudodata
   mixeddata_all: "{roast:declib}/handoff/synthetic_data_lib16nc_multijet.yml"
@@ -261,6 +261,8 @@ analysis_config:
   runner:
     workers: 8
     chunksize: 100000
+    min_workers: 50
+    max_workers: 250
     condor: false
     shared_dask: false
     run_performance: false
@@ -297,9 +299,6 @@ no_sqrt_n_priors: false
 convert_hist_to_json:
   histos:
     - "SvB_MA.ps_ttHbb"
-    - "SvB_MA.ps_ttHbb_gt6"
-    - "SvB_MA.ps_ttHbb_lepveto"
-    - "SvB_MA.ps_ttHbb_gt6_lepveto"
 
 combine_outdir: "bkg_syst_F_3_stats/datacards/"
 make_combine_inputs:
@@ -341,7 +340,7 @@ channels:
   ttHbb_gt6:
     signallabel: "ttHbb"
     othersignal: ""
-    variable: "SvB_MA.ps_ttHbb_gt6"
+    variable: "SvB_MA.ps_ttHbb"
     signal: "ttHbb"
     closure_subdir: "ttHbb"
     region: "SR"
@@ -350,7 +349,7 @@ channels:
   ttHbb_gt6_stat_only:
     signallabel: "ttHbb"
     othersignal: ""
-    variable: "SvB_MA.ps_ttHbb_gt6"
+    variable: "SvB_MA.ps_ttHbb"
     signal: "ttHbb"
     closure_subdir: "ttHbb"
     region: "SR"
@@ -360,7 +359,7 @@ channels:
   ttHbb_lepveto:
     signallabel: "ttHbb"
     othersignal: ""
-    variable: "SvB_MA.ps_ttHbb_lepveto"
+    variable: "SvB_MA.ps_ttHbb"
     signal: "ttHbb"
     closure_subdir: "ttHbb"
     region: "SR"
@@ -369,7 +368,7 @@ channels:
   ttHbb_lepveto_stat_only:
     signallabel: "ttHbb"
     othersignal: ""
-    variable: "SvB_MA.ps_ttHbb_lepveto"
+    variable: "SvB_MA.ps_ttHbb"
     signal: "ttHbb"
     closure_subdir: "ttHbb"
     region: "SR"
@@ -379,7 +378,7 @@ channels:
   ttHbb_gt6_lepveto:
     signallabel: "ttHbb"
     othersignal: ""
-    variable: "SvB_MA.ps_ttHbb_gt6_lepveto"
+    variable: "SvB_MA.ps_ttHbb"
     signal: "ttHbb"
     closure_subdir: "ttHbb"
     region: "SR"
@@ -388,7 +387,7 @@ channels:
   ttHbb_gt6_lepveto_stat_only:
     signallabel: "ttHbb"
     othersignal: ""
-    variable: "SvB_MA.ps_ttHbb_gt6_lepveto"
+    variable: "SvB_MA.ps_ttHbb"
     signal: "ttHbb"
     closure_subdir: "ttHbb"
     region: "SR"
