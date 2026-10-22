@@ -84,7 +84,7 @@ if not base:
     ssh = ((m.get("hosts") or {}).get("cmslpc") or {}).get("ssh", "")
     user = ssh.split("@", 1)[0] if "@" in ssh else ""
     if user:
-	base = f"root://cmseos.fnal.gov//store/user/{user}/HH4b_prod"
+        base = f"root://cmseos.fnal.gov//store/user/{user}/HH4b_prod"
 if base:
     return f"{base.rstrip('/')}/{rid}"
 print(f"WARNING: no usable manifest for upstream roast {rid} (looked in {manifest}); "
