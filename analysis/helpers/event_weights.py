@@ -134,6 +134,9 @@ def add_pseudotagweights(
 
     # Calculate weight without JCM and FvT
     all_weights = ['genweight', 'CMS_bbbb_resolved_ggf_triggerEffSF', f'CMS_pileup_{year_label}', 'CMS_btag']
+    for w_name in ('ttbb_scale', 'ttbar_scale'):
+        if w_name in list_weight_names or (hasattr(weights, '_weights') and w_name in weights._weights):
+            all_weights.append(w_name)
     logging.debug( f"noJCM_noFVT partial {weights.partial_weight(include=all_weights)[:10]}" )
     event["weight_noJCM_noFvT"] = weights.partial_weight(include=all_weights)
 
