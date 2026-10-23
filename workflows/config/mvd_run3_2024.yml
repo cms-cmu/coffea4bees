@@ -9,7 +9,7 @@
 #
 #   * upstreams     the tight 2024 nominal roast (nominal_run3_2024.yml: B.1 JCM + histograms,
 #                   B.2 classifier inputs incl. the SM ggF signal, the F.1 config) and the 2024
-#                   mixed data mixeddata_run3_2024_20261010_952524e-5ddc954 (non-tight library and
+#                   mixed data mixeddata_run3_2024_20261022_d7a35ab-8470e14 (non-tight library and
 #                   mixing, 2024 non-tight JCM + FvT; V.1 re-selects it with the tight selection).
 #   * eras          2024 C-I3 in one year; `year` dropped from the HCR ancillary features (constant
 #                   with one year: zero variance -> NaN input).
@@ -33,20 +33,20 @@ output_path: "output/{roast_id}/"
 publish_base: "{eos_prod}/{roast_id}"
 
 inputs:
-  upstream_roasts: [nominal_run3_2024_20261011_852c1c2-be0604a, mixeddata_run3_2024_20261010_952524e-5ddc954]
+  upstream_roasts: [nominal_run3_2024_20261021_975a18e-e176976, mixeddata_run3_2024_20261022_d7a35ab-8470e14]
   # Built with the NON-tight 4b hemisphere library; V.1 / V.4 re-select it with the tight selection.
-  mixeddata_all: "{roast:mixeddata_run3_2024_20261010_952524e-5ddc954}/handoff/mixeddata_all.yml"
+  mixeddata_all: "{roast:mixeddata_run3_2024_20261022_d7a35ab-8470e14}/handoff/mixeddata_all.yml"
   # Tight 2024 Phase B.2: the data / ttbar / ggF classifier-input manifest, and the config that made
   # it (V.1 makes the mixeddata_all inputs with exactly that config).
-  classifier_inputs: "{roast:nominal_run3_2024_20261011_852c1c2-be0604a}/handoff/classifier_inputs_nominal_run3_2024_20261011_852c1c2-be0604a.json"
-  classifier_inputs_config: "{roast:nominal_run3_2024_20261011_852c1c2-be0604a}/output/Run3_2024_nominal/classifier_inputs/classifier_inputs_config.yml"
+  classifier_inputs: "{roast:nominal_run3_2024_20261021_975a18e-e176976}/handoff/classifier_inputs_nominal_run3_2024_20261021_975a18e-e176976.json"
+  classifier_inputs_config: "{roast:nominal_run3_2024_20261021_975a18e-e176976}/output/Run3_2024_nominal/classifier_inputs/classifier_inputs_config.yml"
   # Tight 2024 B.1 JCM (the one the B.2 config above applies) and its data + ttbar histograms, which
   # the tight mixed-data JCM fit reuses (analysis_config_noJCM.yml is read from the same directory).
-  JCM: "{roast:nominal_run3_2024_20261011_852c1c2-be0604a}/handoff/jetCombinatoricModel_SB_Run3_2024_v1.yml"
-  jcm_hists: "{roast:nominal_run3_2024_20261011_852c1c2-be0604a}/output/Run3_2024_nominal/computeJCM/histAll_NoJCM.coffea"
+  JCM: "{roast:nominal_run3_2024_20261021_975a18e-e176976}/handoff/jetCombinatoricModel_SB_Run3_2024_v1.yml"
+  jcm_hists: "{roast:nominal_run3_2024_20261021_975a18e-e176976}/output/Run3_2024_nominal/computeJCM/histAll_NoJCM.coffea"
   # Tight 2024 F.1 runner config (made by `--step F --targets create_analysis_config`): V.4 swaps
   # FvT -> MvD, the JCM and SvB_MA, nothing else.
-  analysis_config: "{roast:nominal_run3_2024_20261011_852c1c2-be0604a}/output/Run3_2024_nominal/analysis_config.yml"
+  analysis_config: "{roast:nominal_run3_2024_20261021_975a18e-e176976}/output/Run3_2024_nominal/analysis_config.yml"
 
 # Eras as in nominal_run3_2024.yml. '2024' MUST stay quoted (string-keyed metadata).
 year_eras:
