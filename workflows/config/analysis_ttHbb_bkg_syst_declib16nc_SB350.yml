@@ -6,3 +6,6 @@ label: "ttHbb_bkg_syst_declib16nc"
 inputs:
   upstream_roasts:
     nominal: ttHbb_optimized_pairing_SR_ellipse_SB350_700_20261014_d041f77-ec35cc5
+analysis_config:
+  config:
+    pairing: can_ttH   # the SB350 nominal roast was run with can_ttH: A_3, B_1 and F_1 must use the same SR/SB

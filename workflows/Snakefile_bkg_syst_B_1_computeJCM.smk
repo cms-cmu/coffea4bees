@@ -236,6 +236,8 @@ rule stage_test_subsample_config:
         container_wrapper = config['analysis_container_wrapper'],
         python_bin = python_bin,
         years_opt = f"--years {' '.join(YEARS)}" if per_year_jcm else "",
+        pairing_opt = (f"--pairing {config['analysis_config']['config']['pairing']}"
+                       if ((config.get('analysis_config') or {}).get('config') or {}).get('pairing') else ""),
     shell:
         """
         set -eo pipefail
@@ -244,7 +246,7 @@ rule stage_test_subsample_config:
             --base-config {input.proc_cfg} \
             --jcm-files {input.jcm} \
             --output {output.cfg} \
-            {params.years_opt} 2>&1 | tee {log}
+            {params.years_opt} {params.pairing_opt} 2>&1 | tee {log}
         """
 
 rule test_processor_subsample_with_jcm:

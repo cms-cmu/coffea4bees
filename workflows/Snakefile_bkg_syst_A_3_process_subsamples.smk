@@ -66,6 +66,9 @@ rule stage_subsample_processor_config:
                 cfg['config']['SvB_MA'] = [{'path': ma_model, 'name': 'Final'}]
         else:
             cfg['config']['SvB_MA'] = None
+        pairing = ((config.get('analysis_config') or {}).get('config') or {}).get('pairing')
+        if pairing:
+            cfg['config']['pairing'] = pairing
         write_yaml(output.staged, cfg)
 
 ci_json = config['classifier_inputs_json']
