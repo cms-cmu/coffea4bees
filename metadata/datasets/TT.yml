@@ -1129,7 +1129,7 @@ TTToHadronic:
   # (barista corrections.yml '2025' = Run3-25Prompt-Summer24: 2025 PU profile, JEC/JER, veto maps on
   # Summer24 MC), the '2025' triggers (= 2024 paths) and the 2025 luminosity (luminosities_HH4b.yml), so
   # the MC is normalised as xs * L(2025) / sumw(2024 sample). Same picoAODs, same sumw: an alias, not a copy.
-  '2025': *TTToHadronic_2024
+'2025': *TTToHadronic_2024
 TTToHadronic_for_mixed:
   UL16_postVFP:
     picoAOD:
