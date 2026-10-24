@@ -898,6 +898,15 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         return accumulator
 
+    def _apply_fvt_floor(self, arr):
+        """Floor p_d3 at self.FvT_pd3_floor and recompute FvT = p_m4 / floor for outliers."""
+        if self.FvT_pd3_floor and arr is not None and "pd3" in arr.fields and "pm4" in arr.fields:
+            low = arr.pd3 < self.FvT_pd3_floor
+            if np.any(low):
+                arr["FvT"] = np.where(low, arr.pm4 / self.FvT_pd3_floor, arr.FvT)
+                arr["pd3"] = np.where(low, self.FvT_pd3_floor, arr.pd3)
+        return arr
+
     def load_FvT(self, event):
         """Load FvT friend tree.
 
@@ -917,6 +926,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                 if f_key in self.friends:
                     arr = rename_FvT_friend(self.target, self.friends[f_key])
                     if arr is not None:
+                        arr = self._apply_fvt_floor(arr)
                         event[f_key] = arr
                         setFvTVars(f_key, event)
             if "FvT" not in event.fields and "FvT_v0" in event.fields:
@@ -926,11 +936,14 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         if "FvT" in self.friends:
             FvT_arr = rename_FvT_friend(self.target, self.friends["FvT"])
             if FvT_arr is not None:
+                FvT_arr = self._apply_fvt_floor(FvT_arr)
                 event["FvT"] = FvT_arr
                 FvT_loaded = True
                 if self.config["isDataForMixed"] or self.config["isTTForMixed"]:
                     for _FvT_name in event.metadata["FvT_names"]:
-                        event[_FvT_name] = rename_FvT_friend(self.target, self.friends[_FvT_name])
+                        _arr = rename_FvT_friend(self.target, self.friends[_FvT_name])
+                        _arr = self._apply_fvt_floor(_arr)
+                        event[_FvT_name] = _arr
                         event[_FvT_name, _FvT_name] = event[_FvT_name].FvT
             else:
                 logging.debug(f"No FvT friend tree entries found for {self.target}. Skipping.")
