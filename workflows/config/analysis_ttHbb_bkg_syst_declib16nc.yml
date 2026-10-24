@@ -267,6 +267,7 @@ analysis_config:
     shared_dask: false
     run_performance: false
   config:
+    pairing: can_ttH
     fourTag_use_tight: false
     blind: false
     FvT_pd3_floor: 0.01

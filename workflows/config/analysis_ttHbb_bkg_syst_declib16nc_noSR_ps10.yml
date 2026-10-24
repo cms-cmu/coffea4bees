@@ -24,7 +24,9 @@ phase_e_fvt:
 
 analysis_config:
   config:
+    pairing: can_ttH
     FvT_pd3_floor: 0.01
+    FvT_max_clamp: 3.0
 
 fvt_train_workflow:
   main:

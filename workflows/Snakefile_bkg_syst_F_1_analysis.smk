@@ -143,6 +143,14 @@ rule stage_phaseF_1_config:
         fvt_floor = phase_f_cfg.get('config', {}).get('FvT_pd3_floor', phase_f_cfg.get('FvT_pd3_floor', config.get('FvT_pd3_floor', user_analysis_cfg.get('FvT_pd3_floor', 0.01))))
         data_cfg.setdefault('config', {})['FvT_pd3_floor'] = float(fvt_floor)
 
+        default_pairing = 'can_ttH' if channel == 'ttHbb' else 'nominal'
+        pairing = phase_f_cfg.get('config', {}).get('pairing', user_analysis_cfg.get('pairing', config.get('pairing', default_pairing)))
+        data_cfg.setdefault('config', {})['pairing'] = pairing
+
+        fvt_clamp = phase_f_cfg.get('config', {}).get('FvT_max_clamp', user_analysis_cfg.get('FvT_max_clamp', config.get('FvT_max_clamp', None)))
+        if fvt_clamp is not None:
+            data_cfg.setdefault('config', {})['FvT_max_clamp'] = float(fvt_clamp)
+
         jcm_file = {}
         for m in SUBSAMPLES:
             v_name = f"v{m}"
@@ -188,11 +196,12 @@ closure_plot_cfg = config.get(
 wildcard_constraints:
     m = r"\d+"
 
-localrules: all_bkg_syst_F_1, all_bkg_syst_F_1_hists, make_plots_closure, make_gallery_closure, stage_phaseF_1_config
+localrules: all_bkg_syst_F_1, all_bkg_syst_F_1_hists, make_plots_closure, make_gallery_closure, stage_phaseF_1_config, validate_f1_normalization
 
 # ── Master Target Rule ────────────────────────────────────────────────────────
 rule all_bkg_syst_F_1:
     input:
+        f"{out_f1}validation_normalization.done",
         f"{out_f1}plots/plots_done.txt",
         f"{out_f1}plots/gallery.html"
 
@@ -314,10 +323,35 @@ rule analysis_data_closure:
             {params.condor_flags} 2>&1 | tee {log}
         """
 
+# ── Validate Background Normalization (Hard Abort if Multijet Yield is Unphysical) 
+rule validate_f1_normalization:
+    input:
+        coffea = f"{out_f1}histAll_mixeddata_bkgs.coffea"
+    output:
+        done = f"{out_f1}validation_normalization.done"
+    log:
+        f"{out_f1}logs/validate_normalization.log"
+    params:
+        container_wrapper = container_wrapper,
+        python_bin = python_bin
+    resources:
+        mem_mb = 4000,
+        cpus_per_task = 1,
+        runtime = 15
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {output.done}) $(dirname {log})
+        {params.container_wrapper} {params.python_bin} coffea4bees/analysis/tools/validate_f1_normalization.py \
+            -i {input.coffea} \
+            -o {output.done} 2>&1 | tee {log}
+        """
+
 # ── Closure Comparison & Multi-Subsample Overlay Plots ────────────────────────
 rule make_plots_closure:
     input:
         data_coffea = f"{out_f1}histAll_mixeddata_bkgs.coffea",
+        norm_valid = f"{out_f1}validation_normalization.done",
         mixed_coffea = expand(f"{out_a3}histAll_{channel}_mixeddata_v{{m}}.coffea", m=SUBSAMPLES),
         plot_cfg = closure_plot_cfg
     output:

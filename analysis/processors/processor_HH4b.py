@@ -217,6 +217,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         apply_btagSF: bool = True,
         apply_FvT: bool = True,
         FvT_pd3_floor: float = 0.0,
+        FvT_max_clamp: float = None,
         MvD_pmix4_floor: float = 0.0,
         event_subsample: int = 1,
         apply_boosted_veto: bool = False,
@@ -322,6 +323,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.apply_btagSF = apply_btagSF
         self.apply_FvT = apply_FvT
         self.FvT_pd3_floor = FvT_pd3_floor  # 0 = off; see load_FvT
+        self.FvT_max_clamp = float(FvT_max_clamp) if FvT_max_clamp is not None else None
         self.MvD_pmix4_floor = MvD_pmix4_floor  # 0 = off; see load_MvD
         # Keep only events with event % N == 0, weighted by N (unbiased, reproducible thinning for
         # expensive passes, e.g. MakeMixedData M.7's SvB-on-the-fly histograms of mixeddata_all). 1: off.
@@ -899,12 +901,16 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         return accumulator
 
     def _apply_fvt_floor(self, arr):
-        """Floor p_d3 at self.FvT_pd3_floor and recompute FvT = p_m4 / floor for outliers."""
-        if self.FvT_pd3_floor and arr is not None and "pd3" in arr.fields and "pm4" in arr.fields:
-            low = arr.pd3 < self.FvT_pd3_floor
-            if np.any(low):
-                arr["FvT"] = np.where(low, arr.pm4 / self.FvT_pd3_floor, arr.FvT)
-                arr["pd3"] = np.where(low, self.FvT_pd3_floor, arr.pd3)
+        """Floor p_d3 at self.FvT_pd3_floor and recompute FvT = p_m4 / floor for outliers.
+        Optionally clamp FvT at self.FvT_max_clamp."""
+        if arr is not None:
+            if self.FvT_pd3_floor and "pd3" in arr.fields and "pm4" in arr.fields:
+                low = arr.pd3 < self.FvT_pd3_floor
+                if np.any(low):
+                    arr["FvT"] = np.where(low, arr.pm4 / self.FvT_pd3_floor, arr.FvT)
+                    arr["pd3"] = np.where(low, self.FvT_pd3_floor, arr.pd3)
+            if self.FvT_max_clamp is not None and "FvT" in arr.fields:
+                arr["FvT"] = np.minimum(arr.FvT, self.FvT_max_clamp)
         return arr
 
     def load_FvT(self, event):
