@@ -1,0 +1,74 @@
+# ==============================================================================
+# Run 3 SvB WITHOUT the multi-attention (MA) block, 1x (nominal) capacity -- Phases D and F only,
+# on top of the production nominal_run3_20261008_f839489-a481023
+# ==============================================================================
+# Only the differences from nominal_run3.yml (`base:` overlay; dicts merge recursively, lists replace).
+#
+#   roast new --config coffea4bees/workflows/config/nominal_run3_svb1x_noMA.yml --phases D,F \
+#             --label nominal_run3_svb1x_noMA
+#
+# The one physics change: the SvB is retrained with `--architecture {attention: false}`. HCRArch
+# (src/classifier/ml/models/HCR.py) then builds the HCR with useOthJets="", so the two
+# MinimalAttention blocks (non-candidate jets attending to each other, then dijets attending to
+# them) are not built: the non-candidate jets no longer enter the network at all. Everything else
+# is the nominal SvB: "1x" = the default n_features 8 (not the 30x n_features 54), same template
+# (classifier/config/workflows/HH4b_Run3/SvB: 3 k-folds, one seed, 20 epochs + 1 finetune), same
+# inputs. As in nominal_run3_30x.yml there is no forked template: `workflow_inserts` adds the flag
+# before `--training` in the run's copy (helpers/common.smk: write_workflow_overrides); the resolved
+# train.yml is in {svb.output_dir}/wfs/. Evaluation reads the architecture from the saved model, so
+# evaluate.yml needs no change.
+#
+# Reused from nominal_run3_20261008_f839489-a481023, NOT recomputed: skims, Phase B (JCM fit +
+# classifier-input friend trees, read from its EOS handoff/), Phase C (FvT_nominal: the SvB's
+# background reweighting and F.1's 3b model) and C.4. Redone here: D (SvB train + evaluate) and
+# F (F.1 histograms with the new SvB friend, F.2 Combine).
+#
+# Compare against that roast's D/F (exp. limit 3.91 (2.77-5.54) x SM, sig 0.616, stat-only, blind
+# Asimov, SvB_MA.ps_hh_fine):
+#   * limit / significance, and Z with zero-background bins merged (see nominal_run3_30x.yml);
+#   * the F.1 cutflow: no row depends on the SvB (blind: false), so it must equal the blessed
+#     nominal counts exactly -- known_counts below is that file, warn-only.
+# `SvB_MA` below is only the analysis's friend/field name (setSvBVars), unrelated to "MA" here.
+base: coffea4bees/workflows/config/nominal_run3.yml
+
+label: "Run3_nominal_svb1x_noMA"
+output_path: "output/Run3_nominal_svb1x_noMA/"
+
+inputs:
+  upstream_roasts: [nominal_run3_20261008_f839489-a481023]
+
+handoff:
+  # D and F read the nominal production's handoff/friend areas, which check_handoff_refs would
+  # otherwise reject as drift from this roast's (empty) handoff area.
+  allow_external_refs: true
+
+# As captured by nominal_run3_20261008 (falcon medium QOS; the GPU share stays the default mps:25).
+gpu_qos: "medium"
+
+svb:
+  label: "SvB_1x_noMA"
+  output_dir: "output/SvB_1x_noMA/"
+  # The background FvT is the nominal production's Phase C output, as its own SvB used.
+  train_template: "model: {eos_base}/classifier/{label}, FvT: {roast:nominal_run3_20261008_f839489-a481023}/friend/FvT_nominal"
+  metadata: "{roast:nominal_run3_20261008_f839489-a481023}/handoff/classifier_inputs_nominal_run3_20261008_f839489-a481023.json@@HCR_input"
+  workflow_overrides:
+    --JCM-weight: '"" {roast:nominal_run3_20261008_f839489-a481023}/handoff/jetCombinatoricModel_SB_Run3_v1.yml@@JCM_weights'
+    '--friends ""': "{roast:nominal_run3_20261008_f839489-a481023}/handoff/classifier_inputs_nominal_run3_20261008_f839489-a481023.json@@HCR_input"
+  # No multi-attention block; n_features stays the default 8. Before --training so FixedStep keeps
+  # its kwargs dict, which must directly follow it.
+  workflow_inserts:
+    --training: [--architecture, {attention: false}]
+
+analysis_config:
+  config:
+    friends:
+      FvT: "{roast:nominal_run3_20261008_f839489-a481023}/friend/FvT_nominal/result.json@@analysis.0.merged"
+      SvB_MA: "{eos_prod}/{roast_id}/friend/SvB_1x_noMA/result.json@@analysis.0.merged"
+    JCM_file: "{roast:nominal_run3_20261008_f839489-a481023}/handoff/jetCombinatoricModel_SB_Run3_v1.yml"
+
+# No C.4 in this roast: the F.1 vs C.4 crosscheck writes its placeholder. The blessed nominal counts
+# (from nominal_run3_20261008) are the reference instead -- warn-only, so a mismatch is reported in
+# cutflow_validation_*.txt without stopping F.2.
+known_counts_fatal: false
+
+combine_outdir: "datacards/HH4b_run3_svb1x_noMA"
