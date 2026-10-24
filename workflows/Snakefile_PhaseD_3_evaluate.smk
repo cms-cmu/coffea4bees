@@ -77,6 +77,10 @@ if eval_dataset:
             """
             {params.init} && \
             PORT=$(shuf -i 10200-10300 -n 1) && \
+            TMP_BASE="${{SLURM_TMPDIR:-${{LOCAL:-${{_CONDOR_SCRATCH_DIR:-${{TMPDIR:-/tmp}}}}}}}}" && \
+            SCRATCH_DIR=$(mktemp -d -p "$TMP_BASE" eval_scratch_XXXXXX) && \
+            trap 'rm -rf "$SCRATCH_DIR"' EXIT && \
+            EVAL_SCRATCH="$SCRATCH_DIR" \
             CLASSIFIER_CONFIG_PATHS={params.classifier_config_paths} \
             python -m src.classifier.task.main \
                 template "{{{params.template_str}}}" {params.wfs_base}/evaluate_{params.dataset}.yml \
@@ -110,6 +114,10 @@ else:
             """
             {params.init} && \
             PORT=$(shuf -i 10200-10300 -n 1) && \
+            TMP_BASE="${{SLURM_TMPDIR:-${{LOCAL:-${{_CONDOR_SCRATCH_DIR:-${{TMPDIR:-/tmp}}}}}}}}" && \
+            SCRATCH_DIR=$(mktemp -d -p "$TMP_BASE" eval_scratch_XXXXXX) && \
+            trap 'rm -rf "$SCRATCH_DIR"' EXIT && \
+            EVAL_SCRATCH="$SCRATCH_DIR" \
             CLASSIFIER_CONFIG_PATHS={params.classifier_config_paths} \
             python -m src.classifier.task.main \
                 template "{{{params.template_str}}}" {params.wfs_base}/evaluate.yml \

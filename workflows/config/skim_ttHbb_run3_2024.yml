@@ -56,6 +56,8 @@ skimmer:
     # only completed after a rerun at 100000. At 100000 this sample is ~25 chunks
     # total, comfortably clear of that.
     chunksize: 100000
+    min_workers: 50
+    max_workers: 250
     picosize: 100000
     basketsize: 10000
     condor: true

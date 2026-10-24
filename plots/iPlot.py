@@ -108,6 +108,11 @@ plot("canJet0.pt", region="SR", doRatio=1, process="data", year=["UL16_preVFP","
 plot2d("quadJet_min_dr.close_vs_other_m", process="Multijet", region="SR", cut="failSvB")
 plot2d("quadJet_min_dr.close_vs_other_m", process="Multijet", region="SR", cut="failSvB", full=True)
 
+# 2D with several processes: doRatio=True (default) plots the ratio second/first,
+# doRatio=False sums them into one map. Use norm=True and rlim to set the ratio colour range
+plot2d("quadJet_selected.canH_vs_canTT_m", process=["ttHbb","Multijet"], region="sum", norm=True, rlim=[0,5])
+plot2d("quadJet_selected.canH_vs_canTT_m", process=["ttHbb","Multijet"], region="sum", doRatio=False)
+
 # Unsup4b plots with SB and SRSB as composite regions
 plot("v4j.mass", region="SRSB")
 plot2d("quadJet_selected.lead_vs_subl_m", process="data3b", region="SRSB")
@@ -240,7 +245,8 @@ def plot2d(var: str = 'quadJet_selected.lead_vs_subl_m',
 
     Args:
         var: Variable to plot
-        process: Process to plot (default: "HH4b")
+        process: Process to plot (default: "HH4b"). A list of several
+            processes is either ratioed or summed, see doRatio below.
         cut: Selection cut to apply (default: None — no cut applied)
         region: Region to plot (default: "SR")
         axis_opts: Dictionary of axis options
@@ -248,6 +254,17 @@ def plot2d(var: str = 'quadJet_selected.lead_vs_subl_m',
         **kwargs: Additional plotting options
             tag: Override the tag ("threeTag"/"fourTag") set for this
                     process in the metadata YAML
+            doRatio: Only matters when process is a list of 2+ processes
+                    (default: True).
+                    True  -> draw ONE map holding the ratio second/first,
+                             e.g. process=['ttHbb', 'Multijet'] gives
+                             Multijet/ttHbb. Only the first two are used.
+                    False -> SUM the processes into a single combined map.
+                    A single process is plotted as is, whatever doRatio is.
+            norm: With a ratio, scale each histogram to unit area first.
+            rlim: Colour range of the ratio map (default (0, 2)). Bins
+                    outside it are left blank, so with raw yields use a
+                    wider range or norm=True.
 
     Returns:
         Optional tuple of (figure, axes) if debug mode is enabled

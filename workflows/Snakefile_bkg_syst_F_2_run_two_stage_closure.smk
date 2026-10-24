@@ -86,7 +86,6 @@ config.setdefault('classifier', "SvB_MA")
 config.setdefault('variable', "SvB_MA_ps_ttHbb")
 config.setdefault('channel', "ttHbb")
 config.setdefault('rebin', "1")
-config.setdefault('years_closure', "UL16_preVFP UL16_postVFP UL17 UL18")
 config.setdefault('closure_extra_args', "")
 config.setdefault('scale_mixed', 1.0)
 default_combine_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container combine"
@@ -103,6 +102,8 @@ if isinstance(raw_years, str):
 else:
     YEARS = [str(y) for y in raw_years]
 config['years'] = YEARS
+# closure years: the workflow's years unless set (was a hardcoded Run 2 list, which broke Run 3)
+config.setdefault('years_closure', ' '.join(YEARS))
 
 out = config['output_path']
 if not out.endswith("/"):

@@ -39,7 +39,9 @@ skimmer:
   runner:
     condor_cores: 1
     worker_memory: 8GB
-    chunksize: 10000
+    chunksize: 100000
+    min_workers: 50
+    max_workers: 250
     picosize: 100000
     basketsize: 10000
     condor: true
@@ -62,7 +64,9 @@ trigger_weights:
   runner:
     condor_cores: 1
     worker_memory: 8GB
-    chunksize: 10000
+    chunksize: 100000
+    min_workers: 50
+    max_workers: 250
     condor: true
     shared_dask: true
     run_performance: true
@@ -112,7 +116,9 @@ classifier_inputs:
   runner:
     condor_cores: 1
     worker_memory: 8GB
-    chunksize: 10000
+    chunksize: 100000
+    min_workers: 50
+    max_workers: 250
     condor: true
     shared_dask: true
     run_performance: true
@@ -264,7 +270,9 @@ analysis_config:
   runner:
     workers: 4
     worker_memory: 8GB
-    chunksize: 10000
+    chunksize: 100000
+    min_workers: 50
+    max_workers: 250
     dashboard_address: 0
   # CI runs F.1 from this file (test=true), so it keeps the static ttHbb_stitched friends and
   # JCM from friend_file/weights_file.  A roast repoints F.1/C.4 at its own Phase B/C/D outputs in
@@ -291,6 +299,8 @@ analysis_config:
 
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
 plot_extra_arguments: ""
+# cutflow html: add the ttHbb signal as extra columns next to Bkg (cutflow_closure.py --compare)
+closure_extra_arguments: "--compare ttHbb"
 known_counts: "coffea4bees/analysis/tests/known_Counts_ttHbb.yml"
 # F.1 production counts depend on the roast's FvT/SvB training: flag a mismatch, don't fail
 # (applies in production only; CI, test=true, stays fatal)

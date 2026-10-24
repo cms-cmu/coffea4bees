@@ -255,7 +255,7 @@ svb:
     main:
       module: evaluate
       option:
-        - --max-evaluators 1
+        - --max-evaluators 3
         - --device cuda cpu
     model:
       - module: HCR.SvB.ggF.baseline.Eval
@@ -274,7 +274,7 @@ svb:
       - module: kfold.Merge
         option:
           - --name SvB_MA
-          - --step 100000
+          - --step 200000
           - --workers 5
           - --clean
     setting:
@@ -283,7 +283,7 @@ svb:
           - output: "{SvB}"
       - module: ml.DataLoader
         option:
-          - num_workers: 8
+          - num_workers: 0
 
 # ==============================================================================
 # PHASE F.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
@@ -294,7 +294,9 @@ analysis_config:
   friend_file: "coffea4bees/metadata/friends/friends_HH4b_lowpt.yml"
   weights_file: "coffea4bees/metadata/weights/weights_HH4b_lowpt.yml"
   runner:
-    chunksize: 10000
+    chunksize: 100000
+    min_workers: 50
+    max_workers: 250
     workers: 4
     worker_memory: 8GB
     dashboard_address: 0
@@ -322,6 +324,7 @@ analysis_config:
 plot_config: "coffea4bees/plots/metadata/plotsAll_lowpt.yml"
 known_counts_fatal: false
 known_counts_test: "coffea4bees/analysis/tests/known_Counts_lowpt_Run2.yml"
+test_chunksize: 10000   # chunksize used to produce known_counts_test (test mode runs maxchunks=1)
 known_counts_full: "none"
 
 # ==============================================================================

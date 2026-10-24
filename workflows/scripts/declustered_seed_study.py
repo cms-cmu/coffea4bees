@@ -63,7 +63,7 @@ def _registry_files(path, years):
     return files, lookups
 
 
-def _read(files):
+def _read(files, subsample=1):
     import awkward as ak
     import uproot
     # one file at a time, as mixeddata_validation_report.py seeds: uproot.iterate with a byte step_size
@@ -74,7 +74,11 @@ def _read(files):
             tree = f["Events"]
             if "Jet_lib_index" not in tree.keys():
                 raise SystemExit(f"{fp}: no Jet_lib_index branch (declustered before the seed study existed)")
-            parts.append(tree.arrays(BRANCHES, library="ak"))
+            ev = tree.arrays(BRANCHES, library="ak")
+            if subsample > 1:
+                # the same source events in every seed: the pair statistics stay exact on the subset
+                ev = ev[np.asarray(ev.event) % subsample == 0]
+            parts.append(ev)
     ev = ak.concatenate(parts) if parts else None
     if ev is None or len(ev) == 0:
         raise SystemExit(f"no events in {files[:2]}...")
@@ -103,7 +107,7 @@ def _pair(a, b):
             "draws_a": int(ak.sum(ak.num(da))), "draws_b": int(ak.sum(ak.num(db)))}
 
 
-def draws_study(registries, years, outdir):
+def draws_study(registries, years, outdir, subsample=1):
     import awkward as ak
     n = len(registries)
     per_seed = [_registry_files(r, years) for r in registries]
@@ -116,7 +120,7 @@ def draws_study(registries, years, outdir):
         for s, (files, _) in enumerate(per_seed):
             if not files.get(year):
                 raise SystemExit(f"{registries[s]}: no files for {year}")
-            seeds.append(_read(files[year]))
+            seeds.append(_read(files[year], subsample))
         rows = np.concatenate([ak.to_numpy(ak.flatten(d["draws"])) for d in seeds]).astype(np.int64)
         reuse[year] = np.bincount(np.bincount(rows)) if len(rows) else np.zeros(1, dtype=int)
         for i in range(n):
@@ -317,11 +321,13 @@ def main():
     ap.add_argument("--process-prefix", default="syn", help="sample prefix of the seeds (<prefix>_v<s>)")
     ap.add_argument("--vars", nargs="*", default=DEFAULT_VARS)
     ap.add_argument("--no-draws", action="store_true", help="skip reading the picoAODs")
+    ap.add_argument("--event-subsample", type=int, default=1,
+                    help="draws: keep only events with event %% N == 0 (memory; 2024 holds ~100M events over 16 seeds)")
     a = ap.parse_args()
     n = len(a.registries)
     if n < 2:
         raise SystemExit("the seed study needs at least 2 seeds")
-    draws = None if a.no_draws else draws_study(a.registries, a.years, a.outdir)
+    draws = None if a.no_draws else draws_study(a.registries, a.years, a.outdir, a.event_subsample)
     cutflow_rows = neff_cutflow(a.cutflow, a.process_prefix, n) if a.cutflow else []
     hist_neff = neff_hists(a.hists, a.process_prefix, n, a.vars) if a.hists else {}
     write_outputs(a.outdir, n, draws, cutflow_rows, hist_neff)
