@@ -46,8 +46,8 @@ def parse_args():
     parser.add_argument(
         "--max-sr-yield",
         type=float,
-        default=400000.0,
-        help="Maximum acceptable SR yield for multijet data background (default: 400000)",
+        default=800000.0,
+        help="Maximum acceptable SR yield for multijet data background (default: 800000)",
     )
     parser.add_argument(
         "--min-ratio",
