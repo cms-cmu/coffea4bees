@@ -1053,6 +1053,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             event["FvT", "FvT"] = np.where(low, event.FvT.pm4 / self.FvT_pd3_floor, event.FvT.FvT)
             event["FvT", "pd3"] = np.where(low, self.FvT_pd3_floor, event.FvT.pd3)
 
+        if self.FvT_max_clamp is not None and "FvT" in event.FvT.fields:
+            event["FvT", "FvT"] = np.minimum(event.FvT.FvT, self.FvT_max_clamp)
+
         setFvTVars("FvT", event)
 
 
