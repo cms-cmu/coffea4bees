@@ -141,9 +141,14 @@ else:
         models_dict[m_output_dir] = m_model
         friends_dict[m_output_dir] = m_friend
 
-        all_phase_d_targets.extend([f"{m_output_dir}/train.done", f"{m_output_dir}/yields.html"])
+        all_phase_d_targets.extend([
+            f"{m_output_dir}/train.done",
+            f"{m_output_dir}/yields.html",
+            f"{m_output_dir}/analyze.done",
+            f"{m_output_dir}/gallery.done",
+        ])
         if m_evaluate:
-            all_phase_d_targets.extend([f"{m_output_dir}/evaluate.done", f"{m_output_dir}/analyze.done"])
+            all_phase_d_targets.append(f"{m_output_dir}/evaluate.done")
             if mcfg.get('compute_binning', False):
                 all_phase_d_targets.append(f"{m_output_dir}/svb_quantiles.json")
         if m_plot_inputs:

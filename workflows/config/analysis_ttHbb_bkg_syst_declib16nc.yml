@@ -269,6 +269,7 @@ analysis_config:
   config:
     fourTag_use_tight: false
     blind: false
+    FvT_pd3_floor: 0.01
     apply_FvT: false
     apply_JCM: false
     apply_trigWeight: false
