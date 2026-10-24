@@ -466,8 +466,11 @@ def add_pseudotagweights(
                         w_jcm_v = w_table[clamped_idx]
                     else:
                         w_jcm_v, _ = jcm_v(nUntagged_jets_3tag, event_numbers_3tag)
+                elif n_3tag_events > 0:
+                    available = list(jcm_entry.keys()) if isinstance(jcm_entry, dict) else str(jcm_entry)
+                    raise RuntimeError(f"Missing JCM model for subsample {v_name} era '{weights_era}' (available: {available})")
                 else:
-                    w_jcm_v = np.ones(n_3tag_events, dtype=float)
+                    w_jcm_v = np.empty(0, dtype=float)
 
                 fvt_field = f"FvT_{v_name}" if f"FvT_{v_name}" in event.fields else "FvT"
                 fvt_obj = getattr(event, fvt_field) if fvt_field in event.fields else None

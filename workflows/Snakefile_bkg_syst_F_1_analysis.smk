@@ -72,13 +72,48 @@ if not workflow.configfiles:
 include: "helpers/bkg_syst_common.smk"
 
 mix_name = config.get('mix_name', f"{channel}_bkg_syst")
+roast_id = config.get('roast_id') or config.get('label') or 'nominal'
 
-per_year_jcm = bool(config.get('per_year_jcm', (config.get('phaseB_1', {}) or {}).get('per_year_jcm', False)))
+def _detect_per_year_jcm():
+    if 'per_year_jcm' in config:
+        return bool(config['per_year_jcm'])
+    if (config.get('phaseB_1', {}) or {}).get('per_year_jcm') is not None:
+        return bool(config['phaseB_1']['per_year_jcm'])
+    sample_y = YEARS[0] if YEARS else "UL16_preVFP"
+    m0 = SUBSAMPLES[0] if SUBSAMPLES else 0
+    candidates = [
+        f"{out_b1}jetCombinatoricModel_SB_mix_v{m0}_{sample_y}.yml",
+        f"coffea4bees/metadata/weights/JCM/jetCombinatoricModel_SB_mix_v{m0}_{sample_y}.yml",
+        f"coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_mix_v{m0}_{sample_y}.yml",
+    ]
+    if any(os.path.exists(p) for p in candidates):
+        return True
+    if os.path.isdir(out_b1):
+        for f in os.listdir(out_b1):
+            if f.startswith(f"jetCombinatoricModel_SB_mix_v{m0}_") and f.endswith(".yml"):
+                return True
+    return False
+
+per_year_jcm = _detect_per_year_jcm()
+
+def _resolve_jcm(m, year=None):
+    filename = f"jetCombinatoricModel_SB_mix_v{m}_{year}.yml" if year else f"jetCombinatoricModel_SB_mix_v{m}.yml"
+    candidates = [
+        os.path.join(out_b1, filename),
+        os.path.join(f"coffea4bees/metadata/weights/JCM/{roast_id}", filename),
+        os.path.join("coffea4bees/metadata/weights/JCM", filename),
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    if HANDOFF_EOS:
+        return os.path.join(out_b1, filename)
+    raise FileNotFoundError(f"Could not locate JCM file '{filename}' in {out_b1}, coffea4bees/metadata/weights/JCM/, or EOS handoff")
 
 def get_all_analysis_jcm_inputs(wildcards):
     if per_year_jcm:
-        return [f"{out_b1}jetCombinatoricModel_SB_mix_v{m}_{y}.yml" for m in SUBSAMPLES for y in YEARS]
-    return [f"{out_b1}jetCombinatoricModel_SB_mix_v{m}.yml" for m in SUBSAMPLES]
+        return [_resolve_jcm(m, y) for m in SUBSAMPLES for y in YEARS]
+    return [_resolve_jcm(m) for m in SUBSAMPLES]
 
 # ── Stage F_1 Runtime Config Generation ───────────────────────────────────────
 rule stage_phaseF_1_config:
@@ -105,15 +140,18 @@ rule stage_phaseF_1_config:
         # Enforce blinding: default True
         data_cfg.setdefault('config', {})['blind'] = phase_f_cfg.get('config', {}).get('blind', user_analysis_cfg.get('blind', True))
 
+        fvt_floor = phase_f_cfg.get('config', {}).get('FvT_pd3_floor', phase_f_cfg.get('FvT_pd3_floor', config.get('FvT_pd3_floor', user_analysis_cfg.get('FvT_pd3_floor', 0.01))))
+        data_cfg.setdefault('config', {})['FvT_pd3_floor'] = float(fvt_floor)
+
         jcm_file = {}
         for m in SUBSAMPLES:
             v_name = f"v{m}"
             if per_year_jcm:
                 jcm_file[v_name] = {}
                 for y in YEARS:
-                    jcm_file[v_name][y] = os.path.join(out_b1, f"jetCombinatoricModel_SB_mix_v{m}_{y}.yml")
+                    jcm_file[v_name][y] = _resolve_jcm(m, y)
             else:
-                jcm_file[v_name] = os.path.join(out_b1, f"jetCombinatoricModel_SB_mix_v{m}.yml")
+                jcm_file[v_name] = _resolve_jcm(m)
 
         friends_dict = {
             "trigWeight": config.get('trigweights_file', "coffea4bees/metadata/friends/trigweights_Run2_v2.json@@trigWeight"),
@@ -185,19 +223,30 @@ if HANDOFF_EOS and 'extract_friend_manifest' not in _defined_rules:
             fi
             """
 
-if HANDOFF_EOS and 'make_subsample_jcm_b1' not in _defined_rules:
+if 'make_subsample_jcm_b1' not in _defined_rules:
     rule stage_bkg_syst_jcm:
         output:
             f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}.yml"
         params:
-            src = f"{HANDOFF_EOS}/JCM/jetCombinatoricModel_SB_mix_v{{m}}.yml"
+            eos_src = f"{HANDOFF_EOS}/JCM/jetCombinatoricModel_SB_mix_v{{m}}.yml" if HANDOFF_EOS else "",
+            meta_roast = f"coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_mix_v{{m}}.yml",
+            meta = f"coffea4bees/metadata/weights/JCM/jetCombinatoricModel_SB_mix_v{{m}}.yml",
         shell:
             """
             mkdir -p $(dirname {output})
-            if command -v xrdcp &>/dev/null; then
-                xrdcp -f '{params.src}' '{output}'
+            if [ -f '{params.meta_roast}' ]; then
+                cp -f '{params.meta_roast}' '{output}'
+            elif [ -f '{params.meta}' ]; then
+                cp -f '{params.meta}' '{output}'
+            elif [ -n '{params.eos_src}' ]; then
+                if command -v xrdcp &>/dev/null; then
+                    xrdcp -f '{params.eos_src}' '{output}'
+                else
+                    cp -f '{params.eos_src}' '{output}'
+                fi
             else
-                cp -f '{params.src}' '{output}'
+                echo "ERROR: JCM for v{wildcards.m} not found in metadata or EOS" >&2
+                exit 1
             fi
             """
 
@@ -205,14 +254,25 @@ if HANDOFF_EOS and 'make_subsample_jcm_b1' not in _defined_rules:
         output:
             f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml"
         params:
-            src = f"{HANDOFF_EOS}/JCM/jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml"
+            eos_src = f"{HANDOFF_EOS}/JCM/jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml" if HANDOFF_EOS else "",
+            meta_roast = f"coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml",
+            meta = f"coffea4bees/metadata/weights/JCM/jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml",
         shell:
             """
             mkdir -p $(dirname {output})
-            if command -v xrdcp &>/dev/null; then
-                xrdcp -f '{params.src}' '{output}'
+            if [ -f '{params.meta_roast}' ]; then
+                cp -f '{params.meta_roast}' '{output}'
+            elif [ -f '{params.meta}' ]; then
+                cp -f '{params.meta}' '{output}'
+            elif [ -n '{params.eos_src}' ]; then
+                if command -v xrdcp &>/dev/null; then
+                    xrdcp -f '{params.eos_src}' '{output}'
+                else
+                    cp -f '{params.eos_src}' '{output}'
+                fi
             else
-                cp -f '{params.src}' '{output}'
+                echo "ERROR: JCM for v{wildcards.m}_{wildcards.year} not found in metadata or EOS" >&2
+                exit 1
             fi
             """
 

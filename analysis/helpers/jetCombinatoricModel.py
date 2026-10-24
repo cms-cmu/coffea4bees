@@ -71,7 +71,8 @@ class jetCombinatoricModel:
                     self.JCM_weights = self.data[f'JCM_weights']
 
             except KeyError:
-                logging.error(f'No {self.cut} key in JCM file. Keys are {self.data.keys()}')
+                logging.error(f'No {self.cut} key in JCM file {self.filename}. Keys are {list(self.data.keys()) if isinstance(self.data, dict) else "not a dict"}')
+                raise
 
     def __call__(self, num_untagged_jets, event=None):
         """

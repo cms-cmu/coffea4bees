@@ -1,0 +1,51 @@
+# ==============================================================================
+# ttHbb Run 2 BACKGROUND SYSTEMATIC — DeClustered Library 16nc, --no-SR, Prescale 3
+# ==============================================================================
+# Layered on analysis_ttHbb_bkg_syst_declib16nc.yml (DeClustered 16x library).
+# Reuses pre-FvT stages A and B from the previous declib16nc roast.
+# Trains 16 FvT models on GPU (Nautilus) excluding signal region (--no-SR)
+# and with --ttbar-3b-prescale 3.
+# ==============================================================================
+
+base: coffea4bees/workflows/config/analysis_ttHbb_bkg_syst_declib16nc.yml
+
+label: "ttHbb_declib16nc_noSR_ps3"
+mix_name: "ttHbb_declib16nc_noSR_ps3"
+output_path: "output/{roast_id}/"
+
+publish_base: "{eos_prod}/{roast_id}"
+handoff:
+  eos_base: "{eos_prod}/{roast_id}/handoff"
+
+phase_e_fvt:
+  channel: "ttHbb"
+  mix_name: "ttHbb_declib16nc_noSR_ps3"
+  n_models: 16
+
+analysis_config:
+  config:
+    FvT_pd3_floor: 0.01
+
+fvt_train_workflow:
+  main:
+    module: train
+    option:
+      - --max-loaders 2
+      - --max-trainers 1
+      - --device cuda cpu
+  dataset:
+    - module: HCR.FvT.TrainBaseline
+      option:
+        - --no-SR
+        - --ttbar-3b-prescale 3
+        - --metadata {metadata}
+        - --max-workers 20
+        - --data-source detector mixed
+        - --no-detector-4b
+        - --data-mixed-name {mixed_name}
+        - --data-mixed-samples {mix}
+        - --JCM-weight year:UL16_preVFP {jcm_UL16_preVFP}@@JCM_weights
+        - --JCM-weight year:UL16_postVFP {jcm_UL16_postVFP}@@JCM_weights
+        - --JCM-weight year:UL17 {jcm_UL17}@@JCM_weights
+        - --JCM-weight year:UL18 {jcm_UL18}@@JCM_weights
+        - --friends "" {nominal_ci}@@HCR_input {mixed_ci}@@HCR_input
