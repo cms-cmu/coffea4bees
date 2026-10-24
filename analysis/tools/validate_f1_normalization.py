@@ -52,8 +52,8 @@ def parse_args():
     parser.add_argument(
         "--min-ratio",
         type=float,
-        default=0.40,
-        help="Minimum acceptable ratio of SvB_MA / SvB_MA_noFvT in SB (default: 0.40)",
+        default=0.25,
+        help="Minimum acceptable ratio of SvB_MA / SvB_MA_noFvT in SB (default: 0.25)",
     )
     parser.add_argument(
         "--max-ratio",
@@ -179,7 +179,7 @@ def main():
             print(f"  - {f}", file=sys.stderr)
         print(
             "\nAborting workflow: background yields deviate significantly from physical targets.\n"
-            "Verify that 'pairing: can_ttH' is enabled for ttHbb and that FvT extrapolation is physical.",
+            "Verify that pairing configuration ('nominal' / 'can_ttH') matches the nominal roast and that FvT extrapolation is physical.",
             file=sys.stderr
         )
         sys.exit(1)

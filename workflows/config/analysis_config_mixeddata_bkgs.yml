@@ -11,7 +11,7 @@ runner:
   run_performance: true
 
 config:
-  pairing: can_ttH
+  pairing: nominal
   tag_list:
     - "threeTag"
   blind: true

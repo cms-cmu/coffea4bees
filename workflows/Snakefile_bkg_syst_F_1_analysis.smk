@@ -143,7 +143,7 @@ rule stage_phaseF_1_config:
         fvt_floor = phase_f_cfg.get('config', {}).get('FvT_pd3_floor', phase_f_cfg.get('FvT_pd3_floor', config.get('FvT_pd3_floor', user_analysis_cfg.get('FvT_pd3_floor', 0.01))))
         data_cfg.setdefault('config', {})['FvT_pd3_floor'] = float(fvt_floor)
 
-        default_pairing = 'can_ttH' if channel == 'ttHbb' else 'nominal'
+        default_pairing = 'nominal'
         pairing = phase_f_cfg.get('config', {}).get('pairing', user_analysis_cfg.get('pairing', config.get('pairing', default_pairing)))
         data_cfg.setdefault('config', {})['pairing'] = pairing
 
