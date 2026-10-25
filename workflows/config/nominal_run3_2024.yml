@@ -195,7 +195,7 @@ svb:
 jcm_known_counts_NoJCM: "coffea4bees/analysis/tests/known_fullCounts_JCM_NoJCM_Run3_2024.yml"
 jcm_known_counts_wJCM: "coffea4bees/analysis/tests/known_fullCounts_JCM_wJCM_Run3_2024.yml"
 
-# B.1's only MC is the three inclusive TT samples, which trigweights_Run3_v4.json covers for 2024
+# B.1's only MC is the three inclusive TT samples, which trigweights_Run3_v5.json covers for 2024
 # (TTTo{Hadronic,SemiLeptonic,2L2Nu}_2024, every picoAOD in TT.yml).
 # Keep the hard error here explicitly: the JCM fit rides on the 3b ttbar
 # subtraction, so a trigger weight silently skipped here (the warning is only visible inside the
@@ -235,7 +235,7 @@ classifier_inputs:
   config:
     make_classifier_input: "{eos_prod}/{roast_id}/classifier_inputs/"
     fill_histograms: false
-    # The Run 3 trigger-weight index (metadata/friends/trigweights_Run3_v4.json, see
+    # The Run 3 trigger-weight index (metadata/friends/trigweights_Run3_v5.json, see
     # friends_HH4b.yml) covers every 2024 TTTo* and SM ggF picoAOD: a missing friend is an error.
     require_trigWeight: true
 

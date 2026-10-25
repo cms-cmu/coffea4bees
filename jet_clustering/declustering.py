@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import awkward as ak
 import vector as vec
@@ -706,21 +707,19 @@ def make_synthetic_event(input_jets, input_pdfs, declustering_rand_seed=66, *, b
 
     # Get number of expected output jets
     jet_clustering_summary = ["".join(ak.to_list(i)) for i in input_jets.jet_flavor]
-    n_declustered_jets_per_event = [s.count('b') + s.count('j') for s in jet_clustering_summary]
+    n_declustered_jets_per_event = np.array([s.count('b') + s.count('j') for s in jet_clustering_summary], dtype=np.int64)
 
-    n_total_declustered_jets = np.sum(n_declustered_jets_per_event)
-
-    flat_declustered_pt         = np.zeros(n_total_declustered_jets)
-    flat_declustered_eta        = np.zeros(n_total_declustered_jets)
-    flat_declustered_phi        = np.zeros(n_total_declustered_jets)
-    flat_declustered_mass       = np.zeros(n_total_declustered_jets)
-    flat_declustered_jet_flavor = np.full (n_total_declustered_jets, "X")
-    flat_declustered_btagScore  = np.full(n_total_declustered_jets, -1.0)
     # + lib_index: the library row each jet's splitting was drawn from (-1: never declustered)
     carry_fields = list(library.carry_fields) + ["lib_index"] if library is not None else []
     if library is not None and "lib_index" not in input_jets.fields:
         input_jets = ak.with_field(input_jets, ak.values_astype(ak.full_like(input_jets.pt, -1), np.float64), "lib_index")
-    flat_declustered_carry = {field: np.full(n_total_declustered_jets, np.nan) for field in carry_fields}
+
+    # Accepted declusterings, per try: the events' indices, their jet counts and the flat jet fields.
+    # Assembled per event at the end, so an event may end with a jet count other than expected.
+    accepted_index  = [np.zeros(0, dtype=np.int64)]
+    accepted_counts = [np.zeros(0, dtype=np.int64)]
+    accepted_flat   = {field: [np.zeros(0)] for field in ["pt", "eta", "phi", "mass", "btag_string", *carry_fields]}
+    accepted_flat["jet_flavor"] = [np.zeros(0, dtype="<U1")]
 
     num_trys = 0
 
@@ -760,56 +759,66 @@ def make_synthetic_event(input_jets, input_pdfs, declustering_rand_seed=66, *, b
 
         min_dr2 = ak.min(ak.min(delta_r2_matrix_masked, axis=1), axis=1)
 
-        pass_dr2_mask_local = min_dr2 > (dr_threshold ** 2)
+        pass_dr2_mask_local = np.asarray(ak.fill_none(min_dr2 > (dr_threshold ** 2), False), dtype=bool)
+
+        # A last-resort ("coarse") library splitting can change a jet's b/j content, and so the
+        # event's number of declustered jets: retry those events like a failed dR check
+        n_jets_local = np.asarray(ak.num(declustered_events), dtype=np.int64)
+        pass_count_mask_local = n_jets_local == n_declustered_jets_per_event[to_decluster_indicies]
 
         if num_trys > max_event_retry:
             print(f"Bailing on dR check with {np.sum(events_to_decluster_mask == True)}\n")
-            pass_dr2_mask_local = ak.ones_like(pass_dr2_mask_local, dtype=bool)  # All True
+            n_changed = int(np.sum(~pass_count_mask_local))
+            if n_changed:
+                logging.warning(f"make_synthetic_event: {n_changed} events keep a declustering that changed their number of jets")
+            pass_mask_local = np.ones(len(to_decluster_indicies), dtype=bool)  # All True
+        else:
+            pass_mask_local = pass_dr2_mask_local & pass_count_mask_local
 
+        update_indicies_global = to_decluster_indicies[pass_mask_local]
+        new_jets_flat = ak.flatten(declustered_events[pass_mask_local])
 
-        sucessful_deccluster_event_indicies = np.where(pass_dr2_mask_local)
-
-        # which events passed dr_mask
-        events_to_update = np.zeros(n_total_declustered_jets, dtype=bool)
-        update_indicies_global = to_decluster_indicies[sucessful_deccluster_event_indicies]
-        events_to_update[update_indicies_global] = True
-
-        jet_replace_mask = [value for value, count in zip(events_to_update, n_declustered_jets_per_event) for _ in range(count)]
-
-        new_jets_flat = ak.flatten(declustered_events[sucessful_deccluster_event_indicies])
-
-        flat_declustered_pt        [jet_replace_mask]    = new_jets_flat.pt
-        flat_declustered_eta       [jet_replace_mask]    = new_jets_flat.eta
-        flat_declustered_phi       [jet_replace_mask]    = new_jets_flat.phi
-        flat_declustered_mass      [jet_replace_mask]    = new_jets_flat.mass
-        flat_declustered_jet_flavor[jet_replace_mask]    = new_jets_flat.jet_flavor
-        flat_declustered_btagScore [jet_replace_mask] = [float(str(i)) for i in new_jets_flat.btag_string]
+        accepted_index.append(update_indicies_global)
+        accepted_counts.append(n_jets_local[pass_mask_local])
+        accepted_flat["pt"].append(np.asarray(new_jets_flat.pt, dtype=np.float64))
+        accepted_flat["eta"].append(np.asarray(new_jets_flat.eta, dtype=np.float64))
+        accepted_flat["phi"].append(np.asarray(new_jets_flat.phi, dtype=np.float64))
+        accepted_flat["mass"].append(np.asarray(new_jets_flat.mass, dtype=np.float64))
+        accepted_flat["jet_flavor"].append(np.asarray(ak.to_list(new_jets_flat.jet_flavor), dtype="<U1"))
+        accepted_flat["btag_string"].append(np.array([float(str(i)) for i in new_jets_flat.btag_string], dtype=np.float64))
         for field in carry_fields:
-            flat_declustered_carry[field][jet_replace_mask] = np.asarray(new_jets_flat[field], dtype=np.float64)
+            accepted_flat[field].append(np.asarray(new_jets_flat[field], dtype=np.float64))
         events_to_decluster_mask[update_indicies_global] = False
         num_trys += 1
 
+    # Per-event jets in input event order
+    event_order = np.argsort(np.concatenate(accepted_index), kind="stable")
+    counts = np.concatenate(accepted_counts)
+
+    def _per_event(field):
+        return ak.unflatten(np.concatenate(accepted_flat[field]), counts)[event_order]
+
+    flat_declustered_carry = {field: _per_event(field) for field in carry_fields}
     # A carried btagScore is the unrounded float (btag_string holds 3 decimals)
-    if "btagScore" in flat_declustered_carry:
-        flat_declustered_btagScore = flat_declustered_carry.pop("btagScore")
+    btagScore = flat_declustered_carry.pop("btagScore") if "btagScore" in flat_declustered_carry else _per_event("btag_string")
 
     #
     #  Assigning the flavor bit (for writting out the synthetic datasets
     #
-    flat_declustered_flavor_bit  = np.full(shape=len(flat_declustered_pt), fill_value=1)
-    flat_is_j_mask = flat_declustered_jet_flavor == "j"
-    flat_declustered_flavor_bit[flat_is_j_mask] = 0
+    jet_flavor = _per_event("jet_flavor")
+    flat_jet_flavor = np.concatenate(accepted_flat["jet_flavor"])
+    flat_declustered_flavor_bit = np.where(flat_jet_flavor == "j", 0, 1)
 
     newly_declustered_events = ak.zip(
         {
-            "pt":         ak.unflatten(flat_declustered_pt,             n_declustered_jets_per_event),
-            "eta":        ak.unflatten(flat_declustered_eta,            n_declustered_jets_per_event),
-            "phi":        ak.unflatten(flat_declustered_phi,            n_declustered_jets_per_event),
-            "mass":       ak.unflatten(flat_declustered_mass,           n_declustered_jets_per_event),
-            "jet_flavor": ak.unflatten(flat_declustered_jet_flavor,     n_declustered_jets_per_event),
-            "btagScore":  ak.unflatten(flat_declustered_btagScore,      n_declustered_jets_per_event),
-            "jet_flavor_bit": ak.unflatten(flat_declustered_flavor_bit, n_declustered_jets_per_event),
-            **{field: ak.unflatten(values, n_declustered_jets_per_event) for field, values in flat_declustered_carry.items()},
+            "pt":         _per_event("pt"),
+            "eta":        _per_event("eta"),
+            "phi":        _per_event("phi"),
+            "mass":       _per_event("mass"),
+            "jet_flavor": jet_flavor,
+            "btagScore":  btagScore,
+            "jet_flavor_bit": ak.unflatten(flat_declustered_flavor_bit, counts)[event_order],
+            **flat_declustered_carry,
         },
         with_name="PtEtaPhiMLorentzVector",
         behavior=vector.behavior,

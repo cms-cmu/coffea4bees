@@ -112,6 +112,9 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# The coffea outputs can pickle barista objects (src.*); run from the barista root, so make it importable
+export PYTHONPATH="${PWD}${PYTHONPATH:+:$PYTHONPATH}"
+
 # Select python binary with coffea
 if [ -n "$PYTHON_BIN" ]; then
     PYTHON_CMD="$PYTHON_BIN"

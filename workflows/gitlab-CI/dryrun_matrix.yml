@@ -214,6 +214,8 @@ runs:
     - TrigWeights
   trigweights_run3_2024_signal.yml:
     - TrigWeights
+  trigweights_run3_2024_regfix.yml:
+    - TrigWeights
 
 not_covered:
   PhaseB_computeJCM: "no production config"
