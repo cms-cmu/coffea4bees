@@ -57,7 +57,7 @@ ttbar_processes:
 inputs:
   upstream_roasts:
     declib: declib16nc_run2_20261003_3ab8302-b2d2dec      # DeClustered 16x no-cap Run 2 library
-    nominal: ttHbb_optimized_pairing_SR_ellipse_SB350_700_20261014_d041f77-ec35cc5 # ttHbb Run 2 nominal with new SR/SB
+    nominal: ttHbb_stat_only_20261012_49432f5-e211288    # ttHbb Run 2 nominal (pairing: nominal, cross SR)
     mixeddata: mixeddata_run2_20260927_c39c264-0ce4d59    # ttbar pseudodata
   # synthetic multijet data and ttbar pseudodata
   mixeddata_all: "{roast:declib}/handoff/synthetic_data_lib16nc_multijet.yml"
@@ -68,6 +68,15 @@ inputs:
   classifier_inputs: "{roast:nominal}/handoff/classifier_inputs_{roast:nominal:id}.json"
   SvB: "{roast:nominal}/friend/SvB_ttHbb_stitched/result.json@@analysis.0.merged"
   SvB_model: "{roast:nominal}/classifier/SvB_ttHbb_stitched/result.json"
+  SvB_MA: "{roast:nominal}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
+  SvB_MA_model: "{roast:nominal}/classifier/SvB_MA_ttHbb_stitched/result.json"
+
+classifiers:
+  - "SvB_MA"
+  - "SvB"
+classifier_variables:
+  SvB_MA: "SvB_MA_ps_ttHbb"
+  SvB: "SvB_ps_ttHbb"
 
 worker_memory: "8GB"
 
@@ -267,6 +276,7 @@ analysis_config:
     shared_dask: false
     run_performance: false
   config:
+    pairing: nominal
     fourTag_use_tight: false
     blind: false
     FvT_pd3_floor: 0.01
