@@ -196,6 +196,7 @@ fvt_train_workflow:
         - --max-workers 20
         - --data-source detector mixed
         - --no-detector-4b
+        - --ttbar-3b-prescale 3
         - --data-mixed-name {mixed_name}
         - --data-mixed-samples {mix}
         - --JCM-weight year:UL16_preVFP {jcm_UL16_preVFP}@@JCM_weights
@@ -280,6 +281,7 @@ analysis_config:
     fourTag_use_tight: false
     blind: false
     FvT_pd3_floor: 0.01
+    FvT_max_clamp: 3.0
     apply_FvT: false
     apply_JCM: false
     apply_trigWeight: false
