@@ -180,7 +180,7 @@ fvt_train_workflow:
     - module: HCR.FvT.baseline.Train
       option:
         - --architecture
-        - n_features: 24
+        - n_features: 8
           use_kv_proj: true
           use_attention_gate: true
         - --kfolds 3
