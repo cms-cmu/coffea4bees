@@ -196,7 +196,7 @@ fvt_train_workflow:
         - --max-workers 20
         - --data-source detector mixed
         - --no-detector-4b
-        - --ttbar-3b-prescale 3
+        - --ttbar-3b-prescale 10
         - --data-mixed-name {mixed_name}
         - --data-mixed-samples {mix}
         - --JCM-weight year:UL16_preVFP {jcm_UL16_preVFP}@@JCM_weights
