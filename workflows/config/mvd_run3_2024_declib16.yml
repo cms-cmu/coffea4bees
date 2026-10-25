@@ -1,0 +1,65 @@
+# ==============================================================================
+# MvD roast on the 2024 16x DECLUSTERED background model -- all of V.1-V.4 on top of mvd_run3_2024
+# ==============================================================================
+# mvd_run3_2024.yml with the mixed data swapped for mixeddata_all_declib16_2024: the 2024 4b data
+# declustered 16 times with the 2024 splitting library (roast from
+# declustered_run3_2024_library_16x.yml), all 16 seeds as ONE sample. Only the differences from
+# mvd_run3_2024.yml; a `base:` overlay (dicts merge recursively, lists replace). The base and this
+# file have the same single 2024 year, so no stale year_eras keys survive the merge.
+#
+#   roast new --config coffea4bees/workflows/config/mvd_run3_2024_declib16.yml --label mvd_declib16_run3_2024 \
+#       --step cmslpc:coffea4bees/workflows/Snakefile_MvD.smk \
+#       --step nautilus:coffea4bees/workflows/Snakefile_MvD_2_train.smk \
+#       --step nautilus:coffea4bees/workflows/Snakefile_MvD_3_svb.smk
+#   roast submit <id> --step MvD --targets all_V1          # cmslpc: inputs + tight JCM refit
+#   roast submit <id> --step MvD_2_train                   # MvD (declustered vs data)
+#   roast submit <id> --step MvD --targets all_V2c         # cmslpc: closure
+#   roast submit <id> --step MvD_3_svb                     # SvB vs declustered x JCM x MvD
+#   roast submit <id> --step MvD --targets all_V4          # cmslpc: analysis + stat-only limits (blind)
+#
+# Normalisation: the model is 16x the 4b statistics with unit weights. Nothing divides by 16: V.1's
+# tight JCM fit floats its normalisation t (mixed_jcm.float_t, inherited) and absorbs the 1/16, and
+# every later weight (multijet, TTbar4b_from_MvD, the classifier --JCM-weight) uses that JCM. Do not
+# also pass --multijet-scale anywhere. The 16 seeds share the 4b events, so the fit and training
+# statistical errors treat correlated copies as independent.
+#
+# The name: mixeddata_all_<tag>, because the runner and analysis recognise the MvD background model
+# by that prefix (Snakefile_MvD.smk: mixed_dataset_name). It is declustered data, not mixed data.
+base: coffea4bees/workflows/config/mvd_run3_2024.yml
+
+label: "mvd_run3_2024_declib16"
+
+# The nominal inputs (tight 2024 B.1 JCM + histograms, B.2 classifier inputs, F.1 config) are the
+# base's; only the background model changes: declib16_run3_2024_20261025_04afcc2-5d7ad77, made from
+# declustered_run3_2024_library_16x.yml after the UParT regression fix.
+inputs:
+  upstream_roasts: [nominal_run3_2024_20261021_975a18e-e176976, declib16_run3_2024_20261025_04afcc2-5d7ad77]
+  mixeddata_all: "{roast:declib16_run3_2024_20261025_04afcc2-5d7ad77}/handoff/mixeddata_all_declib16_2024.yml"
+
+mixed_dataset_name: mixeddata_all_declib16_2024
+
+mixed_jcm:
+  # fit seed: mvd_run3_2024's 0.478 for the 1x mixed data / 16 (the fit floats it)
+  threeTightTagFraction: 0.03
+
+# V.2 / V.3: the classifier data loader reads the `mixeddata_all` key unless told the name. Inserted
+# before every --data-source (Snakefile_MvD.smk refuses the roast without it).
+mvd:
+  workflow_inserts:
+    --data-source: ["--data-mixed-all-name mixeddata_all_declib16_2024"]
+
+svb_mvd:
+  workflow_inserts:
+    --data-source: ["--data-mixed-all-name mixeddata_all_declib16_2024"]
+    # lists replace: mvd_run3_2024's insert restated, plus the name
+    'evaluate.yml::--mc-processes': ["--data-source detector mixed_all", "--data-mixed-all-name mixeddata_all_declib16_2024"]
+
+closure:
+  # nothing blessed for this model yet: the first run dumps the cutflow for blessing
+  known_counts: null
+
+analysis:
+  known_counts: null
+
+make_combine_inputs:
+  multijet_process: mixeddata_all_declib16_2024
