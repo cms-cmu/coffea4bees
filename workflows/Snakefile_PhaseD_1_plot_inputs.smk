@@ -39,4 +39,5 @@ rule all_svb_plot_inputs:
     input:
         f"{OUTPUT_DIR}/plot_inputs_raw.done",
         f"{OUTPUT_DIR}/plot_inputs_dataprep.done",
-        f"{OUTPUT_DIR}/plot_weights.done"
+        f"{OUTPUT_DIR}/plot_weights.done",
+        f"{OUTPUT_DIR}/gallery.done"

@@ -36,6 +36,9 @@ runs:
     - PhaseC_4_FvT_closure
     - PhaseD
     - PhaseF
+  nominal_run3_svb1x_noMA.yml:
+    - PhaseD
+    - PhaseF
   nominal_run3_quadjet_run2.yml:
     - PhaseB
     - PhaseC
@@ -118,6 +121,10 @@ runs:
     - MvD_2_train
     - MvD_3_svb
   mvd_run3_2024.yml:
+    - MvD
+    - MvD_2_train
+    - MvD_3_svb
+  mvd_run3_2024_declib16.yml:
     - MvD
     - MvD_2_train
     - MvD_3_svb

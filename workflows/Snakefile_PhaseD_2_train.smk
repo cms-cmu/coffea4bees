@@ -38,4 +38,6 @@ include: "../../src/classifier/workflow/Snakefile"
 rule all_svb_training:
     input:
         f"{OUTPUT_DIR}/train.done",
-        f"{OUTPUT_DIR}/analyze.done"
+        f"{OUTPUT_DIR}/yields.html",
+        f"{OUTPUT_DIR}/analyze.done",
+        f"{OUTPUT_DIR}/gallery.done"

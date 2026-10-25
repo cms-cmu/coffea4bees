@@ -46,6 +46,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
         hist_cuts=[],
         classify_Z_decay=False,
         pairing="nominal",
+        FvT_max_clamp=None,
         corrections_metadata: dict = None,
         ttbb_scale: float = 1.0,
         ttbar_scale: float = 1.0,
@@ -105,6 +106,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
             hist_cuts=hist_cuts,
             corrections_metadata=corrections_metadata,
             fill_histograms=fill_histograms,
+            FvT_max_clamp=FvT_max_clamp,
             **kwargs,
         )
 
