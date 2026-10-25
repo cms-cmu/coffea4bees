@@ -179,12 +179,18 @@ fvt_train_workflow:
   model:
     - module: HCR.FvT.baseline.Train
       option:
+        - --architecture
+        - n_features: 24
+          use_kv_proj: true
+          use_attention_gate: true
         - --kfolds 3
         - --kfold-seed FvT random
         - --kfold-seed-offsets 0
-        - --training FixedStep
+        - --training CosineAnnealing
         - epoch: 20
-          bs_init: 1024
+          bs_init: 2048
+          lr_init: 0.005
+          weight_decay: 0.0003
         - --finetuning FixedStep
         - epoch: 1
           bs_init: 16384
