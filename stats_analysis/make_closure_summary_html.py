@@ -160,9 +160,11 @@ def collect_candidates(summary_data: dict, out_dir: Path, region: str = "SR") ->
     passing_rebins = summary_data.get("passing_rebins", [])
     evaluations = summary_data.get("all_evaluations", [])
 
-    # Extract common metadata
-    channel = evaluations[0].get("channel", "ttHbb") if evaluations else "ttHbb"
-    var = evaluations[0].get("var", "SvB_MA_ps_ttHbb") if evaluations else "SvB_MA_ps_ttHbb"
+    # Extract common metadata from first valid evaluation
+    valid_evs = [ev for ev in evaluations if ev.get("var") or ev.get("channel")]
+    channel = valid_evs[0].get("channel", "ttHbb") if valid_evs else "ttHbb"
+    var = valid_evs[0].get("var", "SvB_MA_ps_ttHbb") if valid_evs else "SvB_MA_ps_ttHbb"
+    clf = "SvB_MA" if "SvB_MA" in var else ("SvB" if "SvB" in var else "*")
 
     # Find candidates and plots
     candidates_info = []
@@ -172,8 +174,14 @@ def collect_candidates(summary_data: dict, out_dir: Path, region: str = "SR") ->
             continue
         # Search for candidate directory under closure_fits
         pattern = f"rebin{r_val}"
-        matched_dirs = list(out_dir.glob(f"closure_fits/*/*/{pattern}/{region}/{channel}"))
-        cand_dir = matched_dirs[0] if matched_dirs else None
+        matched_dirs = list(out_dir.glob(f"closure_fits/*/{clf}/{pattern}/{region}/{channel}"))
+        cand_dir = None
+        for d in matched_dirs:
+            if any(d.glob("*.png")):
+                cand_dir = d
+                break
+        if cand_dir is None and matched_dirs:
+            cand_dir = matched_dirs[0]
         plots_data = collect_plots(cand_dir, out_dir) if cand_dir else {"visible": {}, "hidden": {}}
         vis_plots = sum(len(v) for v in plots_data["visible"].values())
         hid_plots = sum(len(v) for v in plots_data["hidden"].values())

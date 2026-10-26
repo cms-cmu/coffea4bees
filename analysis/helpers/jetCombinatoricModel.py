@@ -80,7 +80,8 @@ class jetCombinatoricModel:
                     self.JCM_weights = self.data[f'JCM_weights']
 
             except KeyError:
-                logging.error(f'No {self.cut} key in JCM file. Keys are {self.data.keys()}')
+                logging.error(f'No {self.cut} key in JCM file {self.filename}. Keys are {list(self.data.keys()) if isinstance(self.data, dict) else "not a dict"}')
+                raise
 
         logging.debug(f"JCM {self.filename}: pseudoTagProbSlope (alpha) = {self.alpha}, looseVetoFactor (r) = {self.r}")
 

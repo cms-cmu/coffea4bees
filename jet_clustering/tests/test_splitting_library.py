@@ -394,6 +394,56 @@ class libraryDeclusteringTestCase(unittest.TestCase):
                              event_ids=self.event_ids, library_selection="random", library_max_distance=None)
         self.assertEqual(lib2.lookup_counts["single_candidate"], 0)
 
+    def _content_changing_library(self, n_bad_tries):
+        """A view of the library whose lookup answers every three-jet target with a two-jet ("bb")
+        row for its first n_bad_tries calls -- as the coarse fallback level can change a jet's b/j
+        content (2024 library, data_2024E chunk74)."""
+        import copy
+        lib = copy.copy(self.lib)
+        lib.lookup_counts = dict.fromkeys(self.lib.lookup_counts, 0)
+        bb_row = int(np.where(lib.flavor == "bb")[0][0])
+        calls = {"n": 0}
+
+        def lookup(flavor, *args, **kwargs):
+            index, level = SplittingLibrary.lookup(lib, flavor, *args, **kwargs)
+            if calls["n"] < n_bad_tries:
+                three = np.array([f.count("b") + f.count("j") == 3 for f in flavor], dtype=bool)
+                index[three] = bb_row
+            calls["n"] += 1
+            return index, level
+        lib.lookup = lookup
+        return lib
+
+    def test_content_change_retried(self):
+        """A declustering that changes an event's jet count is retried; a later try that keeps the
+        content is used, so the output matches the expected jet counts."""
+        out = make_synthetic_event(self.clustered, None, declustering_rand_seed=0, b_pt_threshold=30,
+                                   library=self._content_changing_library(1), event_ids=self.event_ids)
+        n_in = [sum(f.count("b") + f.count("j") for f in ev) for ev in ak.to_list(self.clustered.jet_flavor)]
+        self.assertEqual(ak.to_list(ak.num(out)), n_in)
+
+    def test_content_change_kept_after_bailing(self):
+        """If every try changes the content, the event keeps its changed jet count instead of
+        crashing the chunk; the other events and every field stay aligned."""
+        out = make_synthetic_event(self.clustered, None, declustering_rand_seed=0, b_pt_threshold=30,
+                                   library=self._content_changing_library(10_000), event_ids=self.event_ids)
+        flavors = ak.to_list(self.clustered.jet_flavor)
+        n_in = [sum(f.count("b") + f.count("j") for f in ev) for ev in flavors]
+        leaves = [[f.count("b") + f.count("j") for f in ev] for ev in flavors]
+        has_three = [3 in ev for ev in leaves]          # a three-jet jet: always answered with "bb"
+        small = [max(ev) <= 2 for ev in leaves]         # no jet that could contain one
+        self.assertTrue(any(has_three))
+        n_out = ak.to_list(ak.num(out))
+        self.assertEqual(len(n_out), len(n_in))
+        for n_o, n_i, changed, unchanged in zip(n_out, n_in, has_three, small):
+            self.assertLessEqual(n_o, n_i)
+            if changed:
+                self.assertLess(n_o, n_i)
+            if unchanged:
+                self.assertEqual(n_o, n_i)
+        for field in ("eta", "jet_flavor", "btagScore", "jet_flavor_bit", "lib_index"):
+            self.assertEqual(ak.to_list(ak.num(out[field])), n_out)
+
     def test_seeds_differ(self):
         a, b = self._run(0), self._run(1)
         self.assertFalse(np.allclose(np.asarray(ak.flatten(a.pt)), np.asarray(ak.flatten(b.pt))))

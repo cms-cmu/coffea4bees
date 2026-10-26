@@ -76,6 +76,7 @@ rule all_bkg_syst_C_1:
         expand(f"{out_c}models/mix_{{m}}/plot_inputs_raw.done", m=MIX_INDICES),
         expand(f"{out_c}models/mix_{{m}}/plot_inputs_dataprep.done", m=MIX_INDICES),
         expand(f"{out_c}models/mix_{{m}}/plot_weights.done", m=MIX_INDICES),
+        expand(f"{out_c}models/mix_{{m}}/gallery.done", m=MIX_INDICES),
 
 rule all_bkg_syst_C_1_analyze:
     input:
