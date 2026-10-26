@@ -48,6 +48,13 @@ mixed_jcm:
 mvd:
   workflow_inserts:
     --data-source: ["--data-mixed-all-name mixeddata_all_declib16_2024"]
+  # Split evaluation (barista eval-split, first real test): the detector data and the 16x declustered
+  # sample are evaluated by separate GPU jobs, then evaluate_combine sums the two friends into the
+  # usual friend/MvD/result.json. 186000 is what the unsplit 2024 MvD evaluation finally needed.
+  eval_splits:
+    detector: {--data-source: detector}
+    declustered: {--data-source: mixed_all}
+  eval_split_mem: 186000
 
 svb_mvd:
   workflow_inserts:
