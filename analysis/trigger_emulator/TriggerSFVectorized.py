@@ -61,7 +61,9 @@ TRGSF_FILES = {
 # Era codes (Marina_triggerHelper.py convention): the second-half era of 2022 and the first of 2023
 # keep the calendar year, the others get their own code. The HLT maps exist once per year and are
 # shared by both eras; the L1 curves are per era (L1All_preEE/postEE, L1_HTT280er_preBPix/postBPix).
-TRIGGER_ERA_CODES = {"2022_preEE": 2021, "2022_EE": 2022, "2023_preBPix": 2023, "2023_BPix": 2020}
+TRIGGER_ERA_CODES = {"2022_preEE": 2021, "2022_EE": 2022, "2023_preBPix": 2023, "2023_BPix": 2020,
+                     # no 2025 trigger-efficiency maps yet; 2025 runs the 2024 HLT pair (triggers_HH4b.yml)
+                     "2025": 2024}
 
 
 def trigger_era_code(year_key, year_label):

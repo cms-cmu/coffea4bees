@@ -266,6 +266,7 @@ class TestTriggerSFVectorized(unittest.TestCase):
         self.assertEqual(trigger_era_code("2023_preBPix", "2023"), 2023)
         self.assertEqual(trigger_era_code("2023_BPix", "2023"), 2020)
         self.assertEqual(trigger_era_code("2024", "2024"), 2024)
+        self.assertEqual(trigger_era_code("2025", "2025"), 2024)
         self.assertEqual(trigger_era_code("UL18", "2018"), 2018)
 
     def test_l1_curve_per_era(self):
