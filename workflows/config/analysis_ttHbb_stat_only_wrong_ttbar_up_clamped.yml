@@ -1,0 +1,128 @@
+label: analysis_ttHbb_stat_only_wrong_ttbar_up_clamped
+output_path: output/analysis_ttHbb_stat_only_wrong_ttbar_up_clamped/
+unify_background: true
+ttbar_scale: 1.5
+
+dataset:
+  - ttHbb
+  - data
+
+year_eras:
+  UL16_preVFP:
+    - C
+    - D
+    - E
+    - F
+  UL16_postVFP:
+    - F
+    - G
+    - H
+  UL17:
+    - C
+    - D
+    - E
+    - F
+  UL18:
+    - A
+    - B
+    - C
+    - D
+
+per_year_jcm: true
+
+analysis_config:
+  processor: coffea4bees/analysis/processors/processor_ttHbb.py
+  dataset_location: coffea4bees/metadata/datasets/
+  friend_file: coffea4bees/metadata/friends/friends_ttHbb.yml
+  weights_file: coffea4bees/metadata/weights/weights_ttHbb.yml
+  runner:
+    workers: 4
+    worker_memory: 8GB
+    chunksize: 10000
+    min_workers: 50
+    max_workers: 250
+    dashboard_address: 0
+  config:
+    JCM_file:
+      UL16_preVFP: root://cmseos.fnal.gov//store/user/algomez/HH4b_prod/analysis_ttHbb_stat_only_wrong_ttbar_up_20261021_f82849e-41dd17d/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml
+      UL16_postVFP: root://cmseos.fnal.gov//store/user/algomez/HH4b_prod/analysis_ttHbb_stat_only_wrong_ttbar_up_20261021_f82849e-41dd17d/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml
+      UL17: root://cmseos.fnal.gov//store/user/algomez/HH4b_prod/analysis_ttHbb_stat_only_wrong_ttbar_up_20261021_f82849e-41dd17d/handoff/jetCombinatoricModel_SB_2024_v2_UL17.yml
+      UL18: root://cmseos.fnal.gov//store/user/algomez/HH4b_prod/analysis_ttHbb_stat_only_wrong_ttbar_up_20261021_f82849e-41dd17d/handoff/jetCombinatoricModel_SB_2024_v2_UL18.yml
+    friends:
+      FvT: root://cmseos.fnal.gov//store/user/algomez/HH4b_prod/analysis_ttHbb_stat_only_wrong_ttbar_up_20261021_f82849e-41dd17d/friend/FvT_ttHbb_stitched/result.json@@analysis.0.merged
+      SvB_MA: root://cmseos.fnal.gov//store/user/algomez/HH4b_prod/ttHbb_stat_only_20261012_49432f5-e211288/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged
+    friends_include:
+      - trigWeight
+      - FvT
+      - SvB_MA
+    blind: true
+    apply_FvT: true
+    apply_JCM: true
+    apply_trigWeight: true
+    apply_btagSF: true
+    apply_boosted_veto: false
+    apply_lepton_veto: false
+    run_SvB: true
+    SvB_MA: true
+    SvB: null
+    clamp_ttbar_to_data: true
+    candidates_selection_cfg: coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml
+    hist_cuts:
+      - pass_nSelJets_gt6
+      - passLeptonVeto
+    top_reconstruction: fast
+    plot_ttbar_with_weights: true
+    pairing: nominal
+    ttbar_scale: 1.5
+    svb_binning_file: root://cmseos.fnal.gov//store/user/algomez/HH4b_prod/ttHbb_stat_only_20261012_49432f5-e211288/handoff/svb_quantiles.json
+
+plot_config: coffea4bees/plots/metadata/plotsAll_ttHbb.yml
+plot_extra_arguments: ''
+known_counts: coffea4bees/analysis/tests/known_Counts_ttHbb.yml
+known_counts_fatal: false
+known_counts_test: coffea4bees/analysis/tests/known_Counts_ttHbb.yml
+known_counts_full: none
+
+convert_hist_to_json:
+  histos:
+    - SvB_MA.ps
+    - SvB_MA.ps_ttHbb
+
+combine_outdir: datacards/
+make_combine_inputs:
+  rebin: 12
+  stat_only: --stat_only
+  unify_background: true
+
+combine_flags: --three_tag threeTag --four_tag fourTag --region sum --blind
+likelihood_scan_points: 40
+likelihood_scan_r_min: 0
+likelihood_scan_r_max: 2
+likelihood_scan_y_cut: 30
+likelihood_scan_y_max: 30
+
+channels:
+  ttHbb_SvB_MA_ps:
+    signallabel: ttHbb
+    othersignal: ''
+    variable: SvB_MA.ps
+    signal: ttHbb
+    closure_subdir: ttHbb
+    region: SR
+    cut: sum
+    rebin: 1
+    stat_only: true
+    combine_flags: --three_tag threeTag --four_tag fourTag --region SR --blind
+  ttHbb_SvB_MA_ps_ttHbb:
+    signallabel: ttHbb
+    othersignal: ''
+    variable: SvB_MA.ps_ttHbb
+    signal: ttHbb
+    closure_subdir: ttHbb
+    region: SR
+    cut: sum
+    rebin: 12
+    stat_only: true
+    combine_flags: --three_tag threeTag --four_tag fourTag --region SR --blind
+
+roast_id: analysis_ttHbb_stat_only_wrong_ttbar_up_20261021_f82849e-41dd17d
