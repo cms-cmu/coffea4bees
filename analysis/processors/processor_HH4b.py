@@ -218,6 +218,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         apply_FvT: bool = True,
         FvT_pd3_floor: float = 0.0,
         FvT_max_clamp: float = None,
+        clamp_ttbar_to_data: bool = False,
         MvD_pmix4_floor: float = 0.0,
         event_subsample: int = 1,
         apply_boosted_veto: bool = False,
@@ -324,6 +325,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.apply_FvT = apply_FvT
         self.FvT_pd3_floor = FvT_pd3_floor  # 0 = off; see load_FvT
         self.FvT_max_clamp = float(FvT_max_clamp) if FvT_max_clamp is not None else None
+        self.clamp_ttbar_to_data = clamp_ttbar_to_data
         self.MvD_pmix4_floor = MvD_pmix4_floor  # 0 = off; see load_MvD
         # Keep only events with event % N == 0, weighted by N (unbiased, reproducible thinning for
         # expensive passes, e.g. MakeMixedData M.7's SvB-on-the-fly histograms of mixeddata_all). 1: off.
@@ -1772,6 +1774,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             len_event=len(event),
             subsample_jcms=getattr(self, "subsample_jcms", None),
             year=self.year,
+            clamp_ttbar_to_data=self.clamp_ttbar_to_data,
         )
 
     def events_for_display(self, selev, processOutput):

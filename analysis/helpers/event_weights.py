@@ -111,6 +111,7 @@ def add_pseudotagweights(
     lowpt: bool = False,
     subsample_jcms: dict = None,
     year: str = None,
+    clamp_ttbar_to_data: bool = False,
 ):
     """
     Add pseudo-tagging weights to the selected events and update the weights object.
@@ -394,10 +395,27 @@ def add_pseudotagweights(
                             f"over {n_threeTag} threeTag events"
                         )
 
-                weight = np.where(
+                fvt_val = event.FvT.FvT
+                t4_val = event.FvT.d3_to_t4
+                if clamp_ttbar_to_data:
+                    # When p_t4 > p_d4, FvT = (p_d4 - p_t4)/p_d3 < 0.
+                    # Total 4b prediction from 3b data is p_d4 / p_d3 = FvT + d3_to_t4.
+                    # Clamping:
+                    #   - Multijet: FvT is clamped to 0.0 (never negative)
+                    #   - TTbar4b: d3_to_t4 is clamped to total_d4_ratio = FvT + d3_to_t4 (never > data 4b)
+                    # For every event: FvT_eff + d3_to_t4_eff == total_d4_ratio,
+                    # strictly preserving total background yield and normalization.
+                    neg_fvt = fvt_val < 0
+                    total_d4_ratio = fvt_val + t4_val
+                    fvt_eff = ak.where(neg_fvt, 0.0, fvt_val)
+                    t4_eff = ak.where(neg_fvt, total_d4_ratio, t4_val)
+                else:
+                    fvt_eff = fvt_val
+                    t4_eff = t4_val
+
+                weight = ak.where(
                     event[label3b],
-                    # event["pseudoTagWeight"] * event["pseudoTagWeight_lowpt"] * event.FvT.FvT,
-                    event["pseudoTagWeight"] * event.FvT.FvT,
+                    event["pseudoTagWeight"] * fvt_eff,
                     1.0
                 )
                 weights.add("FvT", weight)
@@ -407,7 +425,7 @@ def add_pseudotagweights(
 
                 weight_d3_to_t4 = ak.where(
                     event[label3b],
-                    event.weight * event.pseudoTagWeight * event.FvT.d3_to_t4,
+                    event.weight * event.pseudoTagWeight * t4_eff,
                     event.weight
                 )
                 # weight_d3_to_t4 = ak.where(event[label3b], event.weight * event.pseudoTagWeight * event.pseudoTagWeight_lowpt * event.FvT.d3_to_t4, event.weight)
@@ -483,9 +501,18 @@ def add_pseudotagweights(
                     mask3 = np.asarray(event[label3b]).astype(bool)
                     base_w = base_event_weight[mask3]
                     fvt_val = np.asarray(fvt_obj.FvT[mask3])
-                    w_data_v[mask3] = base_w * w_jcm_v * fvt_val
-                    if hasattr(fvt_obj, "d3_to_t4"):
-                        w_t4_v[mask3] = base_w * w_jcm_v * np.asarray(fvt_obj.d3_to_t4[mask3])
+                    t4_val = np.asarray(fvt_obj.d3_to_t4[mask3]) if hasattr(fvt_obj, "d3_to_t4") else None
+                    if clamp_ttbar_to_data and t4_val is not None:
+                        neg_fvt = fvt_val < 0
+                        total_d4 = fvt_val + t4_val
+                        fvt_eff = np.where(neg_fvt, 0.0, fvt_val)
+                        t4_eff = np.where(neg_fvt, total_d4, t4_val)
+                    else:
+                        fvt_eff = fvt_val
+                        t4_eff = t4_val
+                    w_data_v[mask3] = base_w * w_jcm_v * fvt_eff
+                    if t4_eff is not None:
+                        w_t4_v[mask3] = base_w * w_jcm_v * t4_eff
                     if hasattr(fvt_obj, "d3_to_t3"):
                         w_t3_v[mask3] = base_w * w_jcm_v * np.asarray(fvt_obj.d3_to_t3[mask3])
 
