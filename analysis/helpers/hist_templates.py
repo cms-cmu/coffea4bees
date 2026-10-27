@@ -70,7 +70,10 @@ class ttHbbSvBHists(Template):
         0.940025, 0.941757, 0.943559, 0.945363, 0.947212, 0.949136, 0.951156, 0.953290,
         0.955459, 0.957721, 0.960348, 0.963245, 0.966371, 0.970208, 0.975576, 1.000000
     ])
-    ps_ttHbb = H((240, 0, 1, ('ps_ttHbb', "Cumulative Signal Quantile (240 bins)")))
+    # Placeholder: gt6-specific quantile edges to be recomputed from nSelJets>6 signal MC
+    var_binning_ps_ttHbb_gt6 = var_binning_ps_ttHbb
+    ps_ttHbb     = H((240, 0, 1, ('ps_ttHbb',     "Cumulative Signal Quantile (240 bins)")))
+    ps_ttHbb_gt6 = H((240, 0, 1, ('ps_ttHbb_gt6', "Cumulative Signal Quantile nJets>6 (240 bins)")))
 
 
 class DijetSvBHists(Template):
