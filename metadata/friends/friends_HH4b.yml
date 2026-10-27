@@ -23,8 +23,12 @@ friends:
     # v4 (2026-10-11) = v3 + the 2024 SM ggF signal (7 picoAODs), roast
     # trigweights_run3_2024_signal_20261011_1728019-e0ccb17 (current 2024 JEC; the 2024 TT entries
     # predate the b-jet regression). The 2024-only ggF couplings, VBF and NMSSM are still uncovered.
-    # v5 (2026-10-26) = v4 + 2024 EFT ggF coupling variations (9 datasets, 62 picoAOD chunks),
-    # sourced from roast nominal_run3_2024_20261023_50aabb8-fc91bc2 trigWeights output.
+    # v5 (2026-10-21) = v4 with the HH4b 2024 entries (TTTo* x3 from cguintob's 2025_Run3_skims + the
+    # SM ggF signal; 3600 picoAODs) remade after the UParT regression fix (barista !273), roast
+    # trigweights_run3_2024_regfix_20261021_f82849e-b311e97. ttHbb's 2024 stitched-TT entries are left
+    # as in v4 (friends_ttHbb_Run3.yml still points at v4).
+    # v5 extended (2026-10-26): + 2024 EFT ggF coupling variations (9 datasets, 62 picoAOD chunks),
+    # sourced from roast nominal_run3_2024_20261023_50aabb8-fc91bc2 trigWeights output (3662 total).
     trigWeight: "coffea4bees/metadata/friends/trigweights_Run3_v5.json@@trigWeight"
     FvT: root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_v2/friend/FvT/result.json@@analysis.0.merged
     MvD: root://cmseos.fnal.gov//store/user/jda102/HH4b_Run3_MvDladder_c6norawF_30x/friend/MvD/result.json@@analysis.0.merged
