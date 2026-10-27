@@ -330,6 +330,21 @@ def _build_quadjets_ttHbb(selev, diJet, diJetDr, cand_cfg=None, isRun3=False):
     return quadJet
 
 
+# Classifier q scores are per jet partition (12|34, 13|24, 14|23). The 3 nominal pairings are these
+# partitions in order; the 6 can_ttH pairings are the same 3 partitions with canH = (01), (02), (03)
+# (pairings 0-2) and with the canH/canTT slots swapped (pairings 3-5), so pairing i uses partition i % 3.
+_Q_PARTITIONS = ("q_1234", "q_1324", "q_1423")
+_CAN_TTH_Q_INDEX = [0, 1, 2, 0, 1, 2]
+
+
+def _pairing_q_scores(clf_out, quadJet):
+    """Per-pairing q scores [event][pairing] from a classifier output record (FvT/SvB/SvB_MA)."""
+    q_scores = np.concatenate([clf_out[q][:, np.newaxis] for q in _Q_PARTITIONS], axis=1)
+    if "canH" in quadJet.fields:
+        q_scores = q_scores[:, _CAN_TTH_Q_INDEX]
+    return q_scores
+
+
 def _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB=False, cand_cfg=None, svb_binning=None):
     """Assign all derived candidate fields to selev."""
     selev["diJet"] = diJet
@@ -459,21 +474,6 @@ def _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB=False, cand_cfg=Non
                 selev["dijet_both_qscore_SvB_gt_0p9"] = ak.zip({
                     "mass": ak.unflatten(flat_m_q, counts),
                 })
-
-
-# Classifier q scores are per jet partition (12|34, 13|24, 14|23). The 3 nominal pairings are these
-# partitions in order; the 6 can_ttH pairings are the same 3 partitions with canH = (01), (02), (03)
-# (pairings 0-2) and with the canH/canTT slots swapped (pairings 3-5), so pairing i uses partition i % 3.
-_Q_PARTITIONS = ("q_1234", "q_1324", "q_1423")
-_CAN_TTH_Q_INDEX = [0, 1, 2, 0, 1, 2]
-
-
-def _pairing_q_scores(clf_out, quadJet):
-    """Per-pairing q scores [event][pairing] from a classifier output record (FvT/SvB/SvB_MA)."""
-    q_scores = np.concatenate([clf_out[q][:, np.newaxis] for q in _Q_PARTITIONS], axis=1)
-    if "canH" in quadJet.fields:
-        q_scores = q_scores[:, _CAN_TTH_Q_INDEX]
-    return q_scores
 
             if "SvB_MA" in selev.fields:
                 ps_np = ak.to_numpy(svb_ps)
