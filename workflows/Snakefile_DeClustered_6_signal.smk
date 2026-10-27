@@ -225,23 +225,6 @@ use rule analysis_processor from analysis as D6_hists_declustered with:
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 
-use rule analysis_processor from analysis as D6_hists_declustered with:
-    input:
-        runner_script = "runner.py",
-        config_file = D6_HIST_CONFIG['declustered'],
-        published = DECL_DATA_DONE
-    output: f"{D6_OUT}singlefiles/hist__{DECL_DATA_NAME}__{{year}}.coffea"
-    log: f"{D6_OUT}logs/hists_declustered__{{year}}.log"
-    wildcard_constraints:
-        year = "|".join(YEARS)
-    params:
-        datasets = DECL_DATA_NAME,
-        years = lambda wildcards: wildcards.year,
-        config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
-        run_container_wrapper = WRAPPER,
-        python_bin = PYTHON
-
 use rule merging_coffea_files from analysis as D6_merge_hists with:
     input:
         files = expand(f"{D6_OUT}singlefiles/hist__signal__{{year}}.coffea", year=YEARS)

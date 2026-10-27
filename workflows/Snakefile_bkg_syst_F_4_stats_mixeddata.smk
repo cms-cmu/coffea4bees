@@ -297,7 +297,11 @@ rule final_output_F_4:
         """
 
 def get_combine_targets_F_4(wildcards):
-    checkpoint_output = checkpoints.evaluate_closure_candidates.get().output[0]
+    try:
+        checkpoint_output = checkpoints.select_closure_rebin.get().output[0]
+    except Exception as e:
+        print(f"[Snakemake] Error reading checkpoint select_closure_rebin: {e}")
+        return []
     import json
     try:
         with open(checkpoint_output, "r") as f:

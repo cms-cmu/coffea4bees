@@ -176,7 +176,7 @@ wildcard_constraints:
     region = "|".join(CLOSURE_REGIONS),
     rebin = r"\d+",
 
-localrules: all_bkg_syst_F_2, copy_official_closure_summary, copy_official_closure_summary_region, coffea_to_root_closure, make_signal_root_closure, run_two_stage_closure, evaluate_closure_candidates, make_closure_summary_html, check_closure_validation, make_plots_ttbar_MC_vs_d3, ttbar_MC_vs_d3_cutflow, all_ttbar_MC_vs_d3
+localrules: all_bkg_syst_F_2, copy_official_closure_summary, copy_official_closure_summary_region, coffea_to_root_closure, make_signal_root_closure, run_two_stage_closure, evaluate_closure_candidates, select_closure_rebin, make_closure_summary_html, check_closure_validation, make_plots_ttbar_MC_vs_d3, ttbar_MC_vs_d3_cutflow, all_ttbar_MC_vs_d3
 
 rule all_bkg_syst_F_2:
     input:
@@ -422,16 +422,16 @@ rule copy_official_closure_summary_region:
         cp -f {input.html} {output.html}
         """
 
-checkpoint evaluate_closure_candidates:
+checkpoint select_closure_rebin:
     input:
         status_files = expand(
             f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{{rebin}}/SR/{channel}/closure_status.json",
             rebin=REBIN_CANDIDATES
         )
     output:
-        summary = f"{out_f2}closure_summary.json"
+        summary = f"{out_f2}closure_rebin_summary.json"
     log:
-        f"{out_f2}logs/evaluate_closure_candidates.log"
+        f"{out_f2}logs/select_closure_rebin.log"
     run:
         import json
         passing_rebins = []
