@@ -180,8 +180,6 @@ class ttHbbProcessor(HH4bBaseProcessor):
         """Load SvB scores and derive native ttHbb fields without running HH4b setSvBVars."""
         for k in self.friends:
             if k.startswith("SvB") and not k.startswith("SvB_FeynNet"):
-                if k in getattr(self, "_skip_svb_legacy", set()):
-                    continue
                 logging.debug(f"Loading ttHbb SvB friend tree for {k}")
                 try:
                     result = self.friends[k].arrays(self.target)

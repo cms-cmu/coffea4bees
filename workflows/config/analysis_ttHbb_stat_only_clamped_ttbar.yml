@@ -78,7 +78,7 @@ analysis_config:
     apply_lepton_veto: false
     run_SvB: true
     clamp_ttbar_to_data: true
-    SvB_MA: null
+    SvB_MA: true
     SvB: null
     candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
     hist_cuts: ["pass_nSelJets_gt6", "passLeptonVeto"]
@@ -99,7 +99,6 @@ known_counts_full: "none"
 convert_hist_to_json:
   histos: 
     - "SvB_MA.ps"
-    - "SvB.ps"
     - "SvB_MA.ps_ttHbb"
 
 combine_outdir: "datacards/"
@@ -120,17 +119,6 @@ channels:
     signallabel: "ttHbb"
     othersignal: ""
     variable: "SvB_MA.ps"
-    signal: "ttHbb"
-    closure_subdir: "ttHbb"
-    region: "SR"
-    cut: "sum"
-    rebin: 1
-    stat_only: true
-    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
-  ttHbb_SvB_ps:
-    signallabel: "ttHbb"
-    othersignal: ""
-    variable: "SvB.ps"
     signal: "ttHbb"
     closure_subdir: "ttHbb"
     region: "SR"
