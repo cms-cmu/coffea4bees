@@ -300,7 +300,8 @@ class closure:
                     if BE_idx > max_basis:
                         return 0.0
                     BE_coefficient = pars[BE_idx]
-                    prior_scale = 1.0 if getattr(args, 'no_sqrt_n_priors', False) else (nMixes**0.5)
+                    # prior_scale = 1.0 if getattr(args, 'no_sqrt_n_priors', False) else (nMixes**0.5)
+                    prior_scale = 1.0
                     sigma_up = abs(self.cUp[basis][BE_idx]) / prior_scale
                     sigma_down = abs(self.cDown[basis][BE_idx]) / prior_scale
                     if BE_coefficient > 0:
@@ -313,7 +314,8 @@ class closure:
                     return 0.0
 
                 BE_coefficient = pars[BE_idx]
-                prior_scale = 1.0 if getattr(args, 'no_sqrt_n_priors', False) else (nMixes**0.5)
+                # prior_scale = 1.0 if getattr(args, 'no_sqrt_n_priors', False) else (nMixes**0.5)
+                prior_scale = 1.0
                 sigma_up = abs(self.multijet.cUp[self.multijet.basis][BE_idx]) / prior_scale
                 sigma_down = abs(self.multijet.cDown[self.multijet.basis][BE_idx]) / prior_scale
                 if BE_coefficient > 0:
@@ -448,7 +450,8 @@ class closure:
             _bin = self.nBins_rebin + 1 + i
             c_val = self.fit_parameters[basis][i]
             if i > basis:
-                prior_scale = 1.0 if getattr(args, 'no_sqrt_n_priors', False) else (nMixes**0.5)
+                # prior_scale = 1.0 if getattr(args, 'no_sqrt_n_priors', False) else (nMixes**0.5)
+                prior_scale = 1.0
                 sigma_prior = (abs(self.multijet.cUp[self.multijet.basis][i]) if c_val > 0 else abs(self.multijet.cDown[self.multijet.basis][i])) / prior_scale
                 val = -c_val / sigma_prior if sigma_prior > 0 else (-c_val / self.fit_parameters_error[basis][i] if self.fit_parameters_error[basis][i] > 0 else 0.0)
             else:
@@ -876,7 +879,8 @@ class closure:
                                            'p-value = %2.0f%% (f-test = %2.0f%%)' % (self.pvalue_ss[basis] * 100, self.fProb_ss[basis] * 100)]
             for i in range(n):
                 c_val = self.fit_parameters_ss[basis][i]
-                prior_scale = 1.0 if getattr(args, 'no_sqrt_n_priors', False) else (nMixes**0.5)
+                # prior_scale = 1.0 if getattr(args, 'no_sqrt_n_priors', False) else (nMixes**0.5)
+                prior_scale = 1.0
                 sigma_prior = (abs(self.cUp[basis][i]) if c_val > 0 else abs(self.cDown[basis][i])) / prior_scale
                 sig_val = abs(c_val) / sigma_prior if sigma_prior > 0 else (abs(c_val) / self.fit_parameters_error_ss[basis][i] if self.fit_parameters_error_ss[basis][i] > 0 else 0.0)
                 parameters['legendSubText'] += ['#font[82]{c_{%i} =%4.1f%% : %3.1f}#sigma' % (i, c_val * 100, sig_val)]
@@ -887,7 +891,8 @@ class closure:
             for i in range(n):
                 c_val = self.fit_parameters[basis][i]
                 if i > basis:
-                    prior_scale = 1.0 if getattr(args, 'no_sqrt_n_priors', False) else (nMixes**0.5)
+                    # prior_scale = 1.0 if getattr(args, 'no_sqrt_n_priors', False) else (nMixes**0.5)
+                    prior_scale = 1.0
                     prior_sigma = (abs(self.multijet.cUp[self.multijet.basis][i]) if c_val > 0 else abs(self.multijet.cDown[self.multijet.basis][i])) / prior_scale
                     sig_val = abs(c_val) / prior_sigma if prior_sigma > 0 else (abs(c_val) / self.fit_parameters_error[basis][i] if self.fit_parameters_error[basis][i] > 0 else 0.0)
                     parameters['legendSubText'] += ['#color[4]{#font[82]{c_{%i} =%4.1f%% : %3.1f}#sigma}' % (i, c_val * 100, sig_val)]

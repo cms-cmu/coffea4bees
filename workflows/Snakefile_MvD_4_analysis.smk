@@ -16,6 +16,9 @@
 
 V4_OUT = f"{out}V4/"
 V4 = config.get('analysis') or {}
+# 2024 / 2025 data is blinded (helpers/common.smk: BLIND_YEARS). Set here, not inherited: the
+# upstream F.1 config may predate the blinding.
+require_blind(YEARS, (V4.get('config') or {}).get('blind'), "V.4 analysis.config")
 V4_LABEL = V4.get('label', "MvD")
 V4_PLOT_CONFIG = mvd_plot_config(V4.get('plot_config', "coffea4bees/plots/metadata/plotsAll_MvD_roast.yml"))
 V4_SIGNAL = list(V4.get('signal_datasets', ["GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"]))

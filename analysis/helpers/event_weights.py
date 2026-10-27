@@ -134,6 +134,9 @@ def add_pseudotagweights(
 
     # Calculate weight without JCM and FvT
     all_weights = ['genweight', 'CMS_bbbb_resolved_ggf_triggerEffSF', f'CMS_pileup_{year_label}', 'CMS_btag']
+    for w_name in ('ttbb_scale', 'ttbar_scale'):
+        if w_name in list_weight_names or (hasattr(weights, '_weights') and w_name in weights._weights):
+            all_weights.append(w_name)
     logging.debug( f"noJCM_noFVT partial {weights.partial_weight(include=all_weights)[:10]}" )
     event["weight_noJCM_noFvT"] = weights.partial_weight(include=all_weights)
 
@@ -463,8 +466,11 @@ def add_pseudotagweights(
                         w_jcm_v = w_table[clamped_idx]
                     else:
                         w_jcm_v, _ = jcm_v(nUntagged_jets_3tag, event_numbers_3tag)
+                elif n_3tag_events > 0:
+                    available = list(jcm_entry.keys()) if isinstance(jcm_entry, dict) else str(jcm_entry)
+                    raise RuntimeError(f"Missing JCM model for subsample {v_name} era '{weights_era}' (available: {available})")
                 else:
-                    w_jcm_v = np.ones(n_3tag_events, dtype=float)
+                    w_jcm_v = np.empty(0, dtype=float)
 
                 fvt_field = f"FvT_{v_name}" if f"FvT_{v_name}" in event.fields else "FvT"
                 fvt_obj = getattr(event, fvt_field) if fvt_field in event.fields else None

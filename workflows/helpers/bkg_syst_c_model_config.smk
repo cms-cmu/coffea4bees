@@ -16,12 +16,17 @@ nominal_ci = phase_c_cfg.get(
     'nominal_classifier_inputs',
     config.get('nominal_classifier_inputs', 'coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json')
 )
+config.setdefault('metadata', f"{nominal_ci}@@HCR_input")
 train_templates = config.setdefault("train_templates", {})
 eval_templates = config.setdefault("eval_templates", {})
+models_dict = config.setdefault("models", {})
+friends_dict = config.setdefault("friends_dict", {})
 for m in SUBSAMPLES:
     mdir = f"{out_c}models/mix_{m}"
     train_templates[mdir] = f"model: {eos_base}/classifier/{mix_name}_v{m}"
     eval_templates[mdir] = f"model: {eos_base}/classifier/{mix_name}_v{m}, FvT: {eos_base}/friend/FvT/{mix_name}_v{m}"
+    models_dict[mdir] = f"{eos_base}/classifier/{mix_name}_v{m}"
+    friends_dict[mdir] = f"{eos_base}/friend/FvT/{mix_name}_v{m}"
 
 # The classifier's --metadata is A_2's classifier_metadata/ directory, which exists only on the A/B host.
 # On a GPU host (roast BKG_C on falcon / Nautilus) fetch the copy bkg_syst_AB_handoff put on EOS; the

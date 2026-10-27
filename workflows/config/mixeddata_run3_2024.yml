@@ -5,10 +5,10 @@
 # the layered merge is a dict merge, so the base's 2022/2023 year_eras keys would survive next to 2024.
 # What differs from mixeddata_run3.yml:
 #   * eras        2024 C, D, E, F, G, H, I2, I3 (data.yml picoAOD keys).
-#   * FvT + JCM   from the 2024 non-tight roast nominal_run3_2024_nontight_20261008_c1cd0fe-4e83031
-#                 (config/nominal_run3_2024_nontight.yml, phases B, C, C4; archived). C.4 closure there:
-#                 SR 0.994 +- 0.001, SB 1.004 +- 0.001 -- but its B.1 JCM fit is poor (chi2/ndf 2390),
-#                 accepted for the mixing (John, 2026-10-08).
+#   * FvT + JCM   from the 2024 non-tight roast nominal_run3_2024_nontight_20261021_975a18e-e176976
+#                 (config/nominal_run3_2024_nontight.yml, phases B, C, C4): the rerun after the UParT
+#                 regression fix (barista !273), superseding nominal_run3_2024_nontight_20261008_c1cd0fe-4e83031
+#                 (C.4 SR 0.994 +- 0.001, SB 1.004 +- 0.001; B.1 JCM chi2/ndf 2390, accepted, John 2026-10-08).
 #   * SvB (M.7)   the Run 3 (2022/2023) nominal SvB of nominal_run3_20261008_f839489-a481023: no 2024 SvB
 #                 exists. It takes `year` as an input (22/23 in training), so on 2024 (year 24) it
 #                 extrapolates -- fine for M.7, which is a shape diagnostic.
@@ -42,25 +42,23 @@ publish_base: "{eos_prod}/{roast_id}"
 # Products of other roasts (checked by `roast new`, see src/tools/roast.py:check_inputs)
 # ------------------------------------------------------------------------------
 inputs:
-  upstream_roasts: [nominal_run3_2024_nontight_20261008_c1cd0fe-4e83031, nominal_run3_20261008_f839489-a481023,
-                    mixeddata_run3_2024_20261010_c773450-d2f388f]
+  upstream_roasts: [nominal_run3_2024_nontight_20261021_975a18e-e176976, nominal_run3_20261008_f839489-a481023]
   # ttbar subtraction in M.1 (4b data, FvT.d4_to_t4) and M.2 (3b data, FvT.d3_to_t3): the
   # non-tight 2024 FvT (Phase C of that roast; C.4 closure SR 0.994 +- 0.001). Must cover the data
   # picoAODs in analysis_config.dataset_location (same data.yml as that roast).
-  FvT: "{roast:nominal_run3_2024_nontight_20261008_c1cd0fe-4e83031}/friend/FvT_nominal/result.json@@analysis.0.merged"
+  FvT: "{roast:nominal_run3_2024_nontight_20261021_975a18e-e176976}/friend/FvT_nominal/result.json@@analysis.0.merged"
   # Non-tight JCM: M.2 applies it as pseudo-tag weights. Its data + ttbar histograms feed the
   # mixed-data JCM fit (M.3), so both must come from the same selection as the mixing.
-  JCM: "{roast:nominal_run3_2024_nontight_20261008_c1cd0fe-4e83031}/output/Run3_2024_nontight/computeJCM/JCM_Run3_2024_nontight_v1/jetCombinatoricModel_SB_Run3_2024_nontight_v1.yml"
-  jcm_hists: "{roast:nominal_run3_2024_nontight_20261008_c1cd0fe-4e83031}/output/Run3_2024_nontight/computeJCM/histAll_NoJCM.coffea"
+  JCM: "{roast:nominal_run3_2024_nontight_20261021_975a18e-e176976}/output/Run3_2024_nontight/computeJCM/JCM_Run3_2024_nontight_v1/jetCombinatoricModel_SB_Run3_2024_nontight_v1.yml"
+  jcm_hists: "{roast:nominal_run3_2024_nontight_20261021_975a18e-e176976}/output/Run3_2024_nontight/computeJCM/histAll_NoJCM.coffea"
   # M.7 signal check: the analysis SvB (nominal Run 3, Phase D), evaluated on the fly on the
   # original and the mixed signal MC and on mixeddata_all.
   SvB_model: "{eos_prod}/nominal_run3_20261008_f839489-a481023/classifier/SvB_nominal/result.json"
   # Optional: reuse another mixeddata roast's hemisphere library (its <publish_base>/hemilib) and
   # skip M.1 -- e.g. when only the mixing rank / matcher changes. Add that roast to upstream_roasts.
   # hemilib: "{eos_prod}/<mixeddata roast id>/hemilib"
-  # The 2M-hemisphere 2024 library (M.1 of that roast; its M.3 failed on the boolean Jet_jetId of
-  # the 2024 mixed picoAODs, fixed in jet_selection).
-  hemilib: "{eos_prod}/mixeddata_run3_2024_20261010_c773450-d2f388f/hemilib"
+  # No reuse after the UParT regression fix (barista !273): the library stores corrected jets, so
+  # M.1 is rerun (the c773450 library has the double-regressed pT).
 
 # Eras as they appear in metadata/datasets/data.yml (picoAOD keys) — same as nominal_run3_2024_nontight.yml.
 # '2024' MUST stay quoted: unquoted it parses as an int and misses the string-keyed metadata.
@@ -133,7 +131,9 @@ mixing:
   boost_acceptance_eta: 2.4
   # 12GB, not 8GB: the ~2M-hemisphere library alone holds workers at ~5.2 GB of 7.45 GiB, and
   # data_2024C chunk4 [0,50000) killed 4 workers in a row (silent OOM; mixeddata_run3_2024_20261010_c773450-d2f388f).
-  worker_memory: 12GB
+  # 16GB, not 12GB: after the UParT regression fix (2.01M-hemisphere library) data_2024C chunk30 [0,50000)
+  # killed 4 workers in a row at 12GB (mixeddata_run3_2024_20261022_d7a35ab-8470e14).
+  worker_memory: 16GB
   # 50000, not 100000: with the ~2M-hemisphere library (~4.4 GB) a 100k-event chunk put workers over
   # 8 GB (data_2024G chunk345 killed 4 workers in a row; mixeddata_run3_2024_20261009_e1faf1e-07a4f49).
   chunksize: 50000
@@ -159,7 +159,7 @@ mixed_jcm:
 ttbar_psdata:
   dataset_name: "ttbar_PSData"
   seed: 5
-  require_trigWeight: true     # trigweights_Run3_v3.json covers every 2024 TTTo* picoAOD
+  require_trigWeight: true     # trigweights_Run3_v5.json covers every 2024 TTTo* picoAOD
   worker_memory: 6GB
   chunksize: 100000
   picosize: 100000

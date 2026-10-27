@@ -87,6 +87,10 @@ def get_raw_analysis_config():
                 cfg['config']['JCM_file'] = jcm_candidate
     return cfg
 
+# 2024 / 2025 data is blinded (helpers/common.smk: BLIND_YEARS)
+require_blind(DATA_YEARS if 'data' in DATA_DATASETS else [], (get_raw_analysis_config().get('config') or {}).get('blind'),
+              f"F.1 analysis_config.config ({config['label']})")
+
 analysis_config_path = f"{config['output_path']}analysis_config.yml"
 
 def get_analysis_config_inputs(wildcards):

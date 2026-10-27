@@ -1,0 +1,79 @@
+# ==============================================================================
+# 2024 MvD roast on the 16x DECLUSTERED background model -- all of V.1-V.4 on top of mvd_run3_2024
+# ==============================================================================
+# mvd_run3_2024.yml with the 2024 mixed data swapped for mixeddata_all_declib16_2024: the 2024 4b
+# data declustered 16 times with its own (prescaled, 3.5M-row) splitting library, all 16 seeds as ONE
+# sample (roast declib16_run3_2024_20261025_d23bf9a-616755c, declustered_run3_2024_library_16x.yml,
+# remade after the UParT regression fix; the pre-fix roast was declib16_run3_2024_20261020_95e76d3-d10d916).
+# The 2024 analogue of mvd_run3_declib16.yml. Only the differences from mvd_run3_2024.yml; a `base:`
+# overlay (dicts merge recursively, lists replace). The base's tight 2024 nominal inputs and the
+# blinded V.4 (analysis.config.blind) are kept.
+#
+#   roast new --config coffea4bees/workflows/config/mvd_run3_2024_declib16.yml --label mvd_declib16_run3_2024 \
+#       --step cmslpc:coffea4bees/workflows/Snakefile_MvD.smk \
+#       --step nautilus:coffea4bees/workflows/Snakefile_MvD_2_train.smk \
+#       --step nautilus:coffea4bees/workflows/Snakefile_MvD_3_svb.smk
+#   roast submit <id> --step MvD --targets all_V1          # cmslpc: inputs + tight JCM refit
+#   roast submit <id> --step MvD_2_train                   # nautilus: MvD (declustered vs data)
+#   roast submit <id> --step MvD --targets all_V2c         # cmslpc: closure
+#   roast submit <id> --step MvD_3_svb                     # nautilus: SvB vs declustered x JCM x MvD
+#   roast submit <id> --step MvD --targets all_V4          # cmslpc: analysis + stat-only limits (blind)
+#
+# Normalisation as mvd_run3_declib16.yml: 16x the 4b statistics with unit weights; V.1's tight JCM
+# fit floats t (mixed_jcm.float_t, inherited) and absorbs the 1/16. No --multijet-scale anywhere.
+# The 16 seeds share the 4b events (SvB-bootstrap N_eff 4.4 pooled, ~10-20 above SvB 0.025), and
+# the library is prescaled 23.9M -> 3.5M rows, so each splitting is reused ~7x more than in 2022/23.
+#
+# The declustered sample was made from the NON-tight 2024 4b data (FvT + JCM hists of
+# nominal_run3_2024_nontight_20261021_975a18e-e176976); V.1 / V.4 re-select it with the tight
+# selection, as for the 2024 mixed data. Declustered jets carry Jet_area (library carry_fields).
+base: coffea4bees/workflows/config/mvd_run3_2024.yml
+
+label: "mvd_run3_2024_declib16"
+
+# The nominal keys (classifier_inputs, JCM, jcm_hists, analysis_config: tight 2024 nominal
+# nominal_run3_2024_20261021_975a18e-e176976) are inherited; dicts merge, the list replaces.
+inputs:
+  upstream_roasts: [nominal_run3_2024_20261021_975a18e-e176976, declib16_run3_2024_20261025_d23bf9a-616755c]
+  mixeddata_all: "{roast:declib16_run3_2024_20261025_d23bf9a-616755c}/handoff/mixeddata_all_declib16_2024.yml"
+
+mixed_dataset_name: mixeddata_all_declib16_2024
+
+mixed_jcm:
+  # fit seed: mvd_run3_2024's 0.478 for the 1x mixed data / 16 (the fit floats it)
+  threeTightTagFraction: 0.03
+
+# V.2 / V.3: the classifier data loader reads the `mixeddata_all` key unless told the name. Inserted
+# before every --data-source (Snakefile_MvD.smk refuses the roast without it).
+mvd:
+  workflow_inserts:
+    --data-source: ["--data-mixed-all-name mixeddata_all_declib16_2024"]
+  # Split evaluation (barista eval-split, first real test): the detector data and the 16x declustered
+  # sample are evaluated by separate GPU jobs, then evaluate_combine sums the two friends into the
+  # usual friend/MvD/result.json. 186000 is what the unsplit 2024 MvD evaluation finally needed.
+  eval_splits:
+    detector: {--data-source: detector}
+    declustered: {--data-source: mixed_all}
+  eval_split_mem: 186000
+
+svb_mvd:
+  workflow_inserts:
+    --data-source: ["--data-mixed-all-name mixeddata_all_declib16_2024"]
+    # lists replace: mvd_run3_2024's insert restated, plus the name
+    'evaluate.yml::--mc-processes': ["--data-source detector mixed_all", "--data-mixed-all-name mixeddata_all_declib16_2024"]
+  # Split evaluation as for the MvD (V.2): the detector data with the ggF signal, and the 16x
+  # declustered sample alone (an empty --mc-processes selects no MC), so each event is in one split.
+  eval_splits:
+    detector: {--data-source: detector}
+    declustered: {--data-source: mixed_all, --mc-processes: ""}
+  eval_split_mem: 186000
+
+closure:
+  # nothing blessed for this model yet (mvd_run3_2024's counts are the 2024 mixed data's)
+  known_counts: null
+
+analysis:
+  known_counts: null
+
+make_combine_inputs:
+  multijet_process: mixeddata_all_declib16_2024

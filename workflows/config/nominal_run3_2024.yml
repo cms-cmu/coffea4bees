@@ -205,7 +205,7 @@ svb:
 jcm_known_counts_NoJCM: "coffea4bees/analysis/tests/known_fullCounts_JCM_NoJCM_Run3_2024.yml"
 jcm_known_counts_wJCM: "coffea4bees/analysis/tests/known_fullCounts_JCM_wJCM_Run3_2024.yml"
 
-# B.1's only MC is the three inclusive TT samples, which trigweights_Run3_v4.json covers for 2024
+# B.1's only MC is the three inclusive TT samples, which trigweights_Run3_v5.json covers for 2024
 # (TTTo{Hadronic,SemiLeptonic,2L2Nu}_2024, every picoAOD in TT.yml).
 # Keep the hard error here explicitly: the JCM fit rides on the 3b ttbar
 # subtraction, so a trigger weight silently skipped here (the warning is only visible inside the
@@ -254,7 +254,7 @@ classifier_inputs:
   config:
     make_classifier_input: "{eos_prod}/{roast_id}/classifier_inputs/"
     fill_histograms: false
-    # The Run 3 trigger-weight index (metadata/friends/trigweights_Run3_v4.json, see
+    # The Run 3 trigger-weight index (metadata/friends/trigweights_Run3_v5.json, see
     # friends_HH4b.yml) covers every 2024 TTTo* and SM ggF picoAOD: a missing friend is an error.
     require_trigWeight: true
 
@@ -281,10 +281,11 @@ analysis_config:
       # manifest: data, ttbar, signal). The processor loads SvB* friends before falling back to
       # on-the-fly evaluation; the friend key (SvB_MA) is the field name the analysis uses.
       SvB_MA: "{eos_prod}/{roast_id}/friend/SvB_nominal/result.json@@analysis.0.merged"
-    # blind: true would drop 4b SR events with any SvB ps > 0.8 from the histograms AND the
-    # cutflow, and the F.1 vs C.4 cutflow cross-check would then flag the 4b data unless
-    # crosscheck_ignore covers it. Combine is run on Asimov instead (combine_flags: --blind).
-    blind: false
+    # Blind: 4b SR data events with any SvB ps > 0.8 are dropped from the F.1 histograms and cutflow
+    # (processor_HH4b._get_blind_flag; MC and mixed data are never blinded). The F.1 vs C.4 cutflow
+    # crosscheck then ignores data*:counts4* by default. Combine stays on Asimov (combine_flags: --blind).
+    # Steps without an SvB friend (B.1, B.2, C.4) skip the blinding with a warning.
+    blind: true
     apply_FvT: true
     apply_JCM: true
     # THIS roast's JCM fit (Phase B.1 handoff copy; the same file C.4, the FvT and the SvB use).

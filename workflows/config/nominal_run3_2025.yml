@@ -271,10 +271,11 @@ analysis_config:
       # manifest: data, ttbar, signal). The processor loads SvB* friends before falling back to
       # on-the-fly evaluation; the friend key (SvB_MA) is the field name the analysis uses.
       SvB_MA: "{eos_prod}/{roast_id}/friend/SvB_nominal/result.json@@analysis.0.merged"
-    # blind: true would drop 4b SR events with any SvB ps > 0.8 from the histograms AND the
-    # cutflow, and the F.1 vs C.4 cutflow cross-check would then flag the 4b data unless
-    # crosscheck_ignore covers it. Combine is run on Asimov instead (combine_flags: --blind).
-    blind: false
+    # Blind: 4b SR data events with any SvB ps > 0.8 are dropped from the F.1 histograms and cutflow
+    # (processor_HH4b._get_blind_flag; MC and mixed data are never blinded). The F.1 vs C.4 cutflow
+    # crosscheck then ignores data*:counts4* by default. Combine stays on Asimov (combine_flags: --blind).
+    # Steps without an SvB friend (B.1, B.2, C.4) skip the blinding with a warning.
+    blind: true
     apply_FvT: true
     apply_JCM: true
     # THIS roast's JCM fit (Phase B.1 handoff copy; the same file C.4, the FvT and the SvB use).
