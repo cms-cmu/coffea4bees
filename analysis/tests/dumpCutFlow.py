@@ -1,4 +1,10 @@
 import argparse
+import os
+import sys
+# Ensure the barista root (three levels up from this file) is on sys.path so
+# that cloudpickle can find the 'src' module when deserializing coffea files
+# that contain truth-level or other src-dependent histogram objects.
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 from coffea.util import load
 
 def print_counts(counts, name, cut_list):
