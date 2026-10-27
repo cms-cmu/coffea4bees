@@ -61,6 +61,12 @@ svb_mvd:
     --data-source: ["--data-mixed-all-name mixeddata_all_declib16_2024"]
     # lists replace: mvd_run3_2024's insert restated, plus the name
     'evaluate.yml::--mc-processes': ["--data-source detector mixed_all", "--data-mixed-all-name mixeddata_all_declib16_2024"]
+  # Split evaluation as for the MvD (V.2): the detector data with the ggF signal, and the 16x
+  # declustered sample alone (an empty --mc-processes selects no MC), so each event is in one split.
+  eval_splits:
+    detector: {--data-source: detector}
+    declustered: {--data-source: mixed_all, --mc-processes: ""}
+  eval_split_mem: 186000
 
 closure:
   # nothing blessed for this model yet (mvd_run3_2024's counts are the 2024 mixed data's)
