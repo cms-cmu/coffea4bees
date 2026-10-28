@@ -5,7 +5,7 @@ workflow_validation_coffea4bees:
   # Every .smk compiles, every top-level Snakefile is in dryrun_matrix.yml, and every
   # (production config, Snakefile) pair there dry-runs with test=false/true. Offline, ~10 s.
   script:
-    - python coffea4bees/workflows/scripts/ci_workflow_dryrun.py --snakemake "pixi run snakemake"
+    - python coffea4bees/workflows/scripts/ci_workflow_dryrun.py --snakemake "pixi run --environment ci snakemake"
 
 # phaseE_prep_test_coffea4bees:
 #   stage: mixeddata
