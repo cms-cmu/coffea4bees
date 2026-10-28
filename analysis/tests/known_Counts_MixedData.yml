@@ -418,12 +418,12 @@ counts3:
 
     mix_v9_2017:
         passJetMult: 986.0
-        passPreSel: 1.49
-        passDiJetMass: 0.41
+        passPreSel: 1.52
+        passDiJetMass: 0.44
         SR: 0.03
-        SB: 0.37
+        SB: 0.4
         passSvB: 0.0
-        failSvB: 1.09
+        failSvB: 1.13
 
     mix_v9_2016:
         passJetMult: 969.0
@@ -472,12 +472,12 @@ counts3:
 
     mix_v7_2017:
         passJetMult: 992.0
-        passPreSel: 2.25
+        passPreSel: 2.33
         passDiJetMass: 0.51
         SR: 0.25
         SB: 0.26
         passSvB: 0.0
-        failSvB: 1.41
+        failSvB: 1.5
 
     mix_v7_2016:
         passJetMult: 983.0

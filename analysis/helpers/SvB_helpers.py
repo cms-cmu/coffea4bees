@@ -335,10 +335,21 @@ def setFvTVars(FvTName, event):
                 event[FvTName, var] = np.ones(len(event))
 
     fvt = getattr(event, FvTName)
-    event[FvTName, "frac_err"]   = fvt.std / fvt.FvT
-    event[FvTName, "d4_to_t4"]   = fvt.pt4 / fvt.pd4
+
+    # Physical clamping: P(ttbar 4b | data 4b) = pt4 / pd4 <= 1.
+    # When pt4 >= pd4, cap pt4 at pd4 so multijet pm4 = pd4 - pt4 >= 0.
+    # This prevents negative multijet weights (FvT >= 0) and sets d3_to_t4 = pd4 / pd3.
+    pt4_clamped = np.minimum(fvt.pt4, fvt.pd4)
+    event[FvTName, "pt4_raw"] = fvt.pt4
+    event[FvTName, "pt4"] = pt4_clamped
+    event[FvTName, "pm4"] = fvt.pd4 - pt4_clamped
+    event[FvTName, "FvT"] = (fvt.pd4 - pt4_clamped) / fvt.pd3
+
+    fvt_val = event[FvTName, "FvT"]
+    event[FvTName, "frac_err"]   = np.where(fvt_val > 0, fvt.std / np.maximum(fvt_val, 1e-7), 0.0)
+    event[FvTName, "d4_to_t4"]   = pt4_clamped / fvt.pd4
     event[FvTName, "d3_to_t3"]   = fvt.pt3 / fvt.pd3
-    event[FvTName, "d3_to_t4"]   = fvt.pt4 / fvt.pd3
+    event[FvTName, "d3_to_t4"]   = pt4_clamped / fvt.pd3
 
 
 
