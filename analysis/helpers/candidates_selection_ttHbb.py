@@ -292,8 +292,22 @@ def _assign_SR_SB_ttHbb(quadJet, cand_cfg=None, full_space=False):
     sb_cfg = (cand_cfg or {}).get("sb_ttHbb", {})
     sb_min = (cand_cfg or {}).get("sb_min") or sb_cfg.get("sb_min", 25.0)
     sb_max = (cand_cfg or {}).get("sb_max") or sb_cfg.get("sb_max", 500.0)
+    sb_mode = (cand_cfg or {}).get("sb_mode") or sb_cfg.get("mode", "box")
+    corner_veto = (
+        (cand_cfg or {}).get("corner_veto", False)
+        or sb_cfg.get("corner_veto", False)
+        or (sb_mode in ["corner_veto", "sb_corner_veto", "corner_veto_250"])
+    )
+    corner_m_lead = (cand_cfg or {}).get("corner_m_lead", sb_cfg.get("corner_m_lead", 250.0))
+    corner_m_subl = (cand_cfg or {}).get("corner_m_subl", sb_cfg.get("corner_m_subl", 250.0))
+    diag_sum_max = (cand_cfg or {}).get("diag_sum_max", sb_cfg.get("diag_sum_max", None))
 
     in_analysis_box = (m_lead >= sb_min) & (m_lead <= sb_max) & (m_subl >= sb_min) & (m_subl <= sb_max)
+    if corner_veto:
+        in_analysis_box = in_analysis_box & ~((m_lead > corner_m_lead) & (m_subl > corner_m_subl))
+    if diag_sum_max is not None:
+        in_analysis_box = in_analysis_box & ((m_lead + m_subl) <= diag_sum_max)
+
     quadJet["SB"] = in_analysis_box & (~quadJet["SR"])
 
     # Compute Euclidean radial distance for monitoring
