@@ -11,6 +11,7 @@ runner:
   run_performance: true
 
 config:
+  pairing: nominal
   tag_list:
     - "threeTag"
   blind: true
@@ -21,7 +22,6 @@ config:
   apply_boosted_veto: false
   run_SvB: true
   SvB_MA: true
-  pairing: nominal
   top_reconstruction: "fast"
   plot_ttbar_with_weights: true
   candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"

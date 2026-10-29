@@ -626,25 +626,6 @@ def filling_ttHbb_histograms(
     """Fills baseline event/object histograms and ttHbb-specific discriminants.
     Skips all HH4b mass window plots (xHH, dijet_HHSR, m4j_hh).
 
-    fill_histograms can be:
-      - True / 'all': fills all histogram categories (kinematics, pairing, fvt, svb)
-      - False / None: skips filling and returns empty dict
-      - 'kinematics': basic event and object kinematics, 1D quadjets
-      - 'pairing': heavy 2D planes, ranking categories, quadJet_all (all 6 pairings)
-      - 'kinematics+FvT': kinematics + FvT distributions
-      - 'SvB': SvB discriminants + minimal checks (selJets.n, v4j.mass, v4j.pt)
-
-    If classify_Z_decay is True (e.g. for ttZ samples), also fills
-    quadJet_selected.lead_vs_subl_m_Zbb, the same 2D mass plane restricted to
-    events where the gen-level Z decayed to bb (under pairing category).
-
-    If truth_pairing_forced is True (processor_ttHbb_truth MC, where quadJet_truth.lead
-    is the truth H-H dijet and .subl the truth t-t dijet; quadJet_selected stays the
-    algorithm's choice), also fills quadJet_truth 2D dR(H,H) vs pT(HH)/mass(HH),
-    dR(t,t) vs pT(tt)/mass(tt) and H vs tt planes (under pairing category).
-
-    If can_ttH is True (can_ttH pairing), the lead/subl dijet histograms are named and labeled
-    canH/canTT (e.g. quadJet_selected.canH_vs_canTT_m instead of quadJet_selected.lead_vs_subl_m).
     """
     categories = parse_fill_histograms(fill_histograms)
     if not categories:

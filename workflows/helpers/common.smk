@@ -454,3 +454,17 @@ def check_dataset_yml(path, name, years):
     if empty:
         raise ValueError(f"{path}: dataset {name!r} has no files for {empty} -- the skim failed; "
                          f"see the per-year logs (bad_files) before publishing")
+
+
+# Years whose 4b data stays blinded (John, 2026-10-15). An analysis pass that histograms their data
+# with the SvB (F.1, MvD V.4) must run the processor with blind: true, which drops the four-tag SR
+# events with any SvB ps > 0.8 from the histograms and cutflows. Combine is on Asimov regardless
+# (combine_flags --blind). The closure passes (C.4, V.2c) have no SvB, so the processor cannot blind
+# them and they are not checked. `allow_unblinded_data: true` (top level) opts a config out.
+BLIND_YEARS = {"2024", "2025"}
+
+def require_blind(years, blind, what):
+    years = sorted({str(y) for y in years} & BLIND_YEARS)
+    if years and blind is not True and not config.get('allow_unblinded_data', False):
+        raise ValueError(f"{what}: data years {years} must be blinded -- set blind: true (or "
+                         f"allow_unblinded_data: true at the top level to opt out deliberately)")

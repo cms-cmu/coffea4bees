@@ -16,19 +16,25 @@ nominal_ci = phase_c_cfg.get(
     'nominal_classifier_inputs',
     config.get('nominal_classifier_inputs', 'coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json')
 )
+config.setdefault('metadata', f"{nominal_ci}@@HCR_input")
 train_templates = config.setdefault("train_templates", {})
 eval_templates = config.setdefault("eval_templates", {})
+models_dict = config.setdefault("models", {})
+friends_dict = config.setdefault("friends_dict", {})
 for m in SUBSAMPLES:
     mdir = f"{out_c}models/mix_{m}"
     train_templates[mdir] = f"model: {eos_base}/classifier/{mix_name}_v{m}"
     eval_templates[mdir] = f"model: {eos_base}/classifier/{mix_name}_v{m}, FvT: {eos_base}/friend/FvT/{mix_name}_v{m}"
+    models_dict[mdir] = f"{eos_base}/classifier/{mix_name}_v{m}"
+    friends_dict[mdir] = f"{eos_base}/friend/FvT/{mix_name}_v{m}"
 
 # The classifier's --metadata is A_2's classifier_metadata/ directory, which exists only on the A/B host.
 # On a GPU host (roast BKG_C on falcon / Nautilus) fetch the copy bkg_syst_AB_handoff put on EOS; the
 # YAMLs list files by root:// URL, so they work from anywhere. Without it the trainer silently finds
 # no dataset metadata and fails with "Dataset loaded 0 events".
+_handoff_in = config.get('input_handoff_eos') or globals().get('INPUT_HANDOFF_EOS') or HANDOFF_EOS
 CLASSIFIER_METADATA_DIR = config['classifier_metadata'].rstrip('/')
-_FETCH_METADATA = bool(HANDOFF_EOS) and not os.path.isdir(CLASSIFIER_METADATA_DIR)
+_FETCH_METADATA = bool(_handoff_in) and not os.path.isdir(CLASSIFIER_METADATA_DIR)
 _METADATA_FETCHED = f"{out_c}handoff/classifier_metadata.fetched"
 
 if _FETCH_METADATA:
@@ -36,7 +42,7 @@ if _FETCH_METADATA:
         output:
             touch(_METADATA_FETCHED)
         params:
-            src = f"{HANDOFF_EOS}/classifier_metadata",
+            src = f"{_handoff_in}/classifier_metadata",
             dst = CLASSIFIER_METADATA_DIR,
         run:
             import fsspec
@@ -78,28 +84,30 @@ rule stage_bkg_syst_c_model_config:
         roast_tag = config.get('roast_id', config.get('label', f"{channel}_bkg_syst"))
 
         # Determine defaults based on EOS handoff or local disk copies
-        if HANDOFF_EOS:
-            default_mixed_ci = f"{HANDOFF_EOS}/classifier_inputs/histAll_{channel}_mixeddata_v{{m}}.json"
+        first_jcm = f"{out_b1}jetCombinatoricModel_SB_mix_v0.yml"
+        has_local_jcm = os.path.exists(first_jcm)
+        if _handoff_in and not has_local_jcm:
+            default_mixed_ci = f"{_handoff_in}/classifier_inputs/histAll_{channel}_mixeddata_v{{m}}.json"
             if per_year_jcm:
-                default_jcm = f"{HANDOFF_EOS}/JCM/jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml"
+                default_jcm = f"{_handoff_in}/JCM/jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml"
             else:
-                default_jcm = f"{HANDOFF_EOS}/JCM/jetCombinatoricModel_SB_mix_v{{m}}.yml"
+                default_jcm = f"{_handoff_in}/JCM/jetCombinatoricModel_SB_mix_v{{m}}.yml"
         else:
             local_jcm_dir = f"coffea4bees/metadata/weights/JCM/{roast_tag}"
             local_ci_file = f"coffea4bees/metadata/datasets/{roast_tag}/histAll_{channel}_mixeddata_v{{m}}.json"
             if os.path.exists(local_jcm_dir):
                 default_jcm = f"{local_jcm_dir}/jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml" if per_year_jcm else f"{local_jcm_dir}/jetCombinatoricModel_SB_mix_v{{m}}.yml"
             else:
-                default_jcm = f"{out}bkg_syst_B_1_computeJCM/jetCombinatoricModel_SB_mix_v{{m}}.yml"
+                default_jcm = f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}.yml"
 
             if os.path.exists(os.path.dirname(local_ci_file)):
                 default_mixed_ci = local_ci_file
             else:
-                default_mixed_ci = f"{out}{default_subsample_dir}/histAll_{channel}_mixeddata_v{{m}}.json"
+                default_mixed_ci = f"{out_a3}histAll_{channel}_mixeddata_v{{m}}.json"
 
         mixed_ci_template = phase_c_cfg.get('mixed_classifier_inputs_template') or config.get('mixed_classifier_inputs_template') or default_mixed_ci
         jcm_template = phase_c_cfg.get('jcm_template') or config.get('jcm_template') or default_jcm
-        jcm_dir = os.path.dirname(jcm_template) if jcm_template else os.path.join(out, "bkg_syst_B_1_computeJCM")
+        jcm_dir = os.path.dirname(jcm_template) if jcm_template else os.path.join(out_b1)
 
         sub_name = globals().get('SUB_NAME', config.get('multisample_dataset_name', 'mixeddata_4b'))
 
@@ -120,16 +128,16 @@ rule stage_bkg_syst_c_model_config:
                     local_ds = f"{out_a2}{sub_name}.yml"
                     if os.path.exists(local_ds):
                         shutil.copy(local_ds, target_ds)
-                    elif HANDOFF_EOS:
+                    elif _handoff_in:
                         xrdcp_bin = shutil.which("xrdcp")
                         if not xrdcp_bin and os.path.exists("/cvmfs/cms.cern.ch/common/xrdcp"):
                             xrdcp_bin = "/cvmfs/cms.cern.ch/common/xrdcp"
                         if xrdcp_bin:
-                            subprocess.run([xrdcp_bin, "-f", "-s", f"{HANDOFF_EOS}/datasets/{sub_name}.yml", target_ds], check=False)
+                            subprocess.run([xrdcp_bin, "-f", "-s", f"{_handoff_in}/datasets/{sub_name}.yml", target_ds], check=False)
                         else:
                             try:
                                 import fsspec
-                                with fsspec.open(f"{HANDOFF_EOS}/datasets/{sub_name}.yml", "rb") as fin:
+                                with fsspec.open(f"{_handoff_in}/datasets/{sub_name}.yml", "rb") as fin:
                                     with open(target_ds, "wb") as fout:
                                         fout.write(fin.read())
                             except Exception as e:
@@ -137,7 +145,7 @@ rule stage_bkg_syst_c_model_config:
                 if not os.path.exists(target_ds) or os.path.getsize(target_ds) == 0:
                     raise FileNotFoundError(
                         f"Stage C model config: required multisample dataset metadata '{target_ds}' is missing! "
-                        f"Checked local '{out_a2}{sub_name}.yml' and EOS '{HANDOFF_EOS}/datasets/{sub_name}.yml'."
+                        f"Checked local '{out_a2}{sub_name}.yml' and EOS '{_handoff_in}/datasets/{sub_name}.yml'."
                     )
 
         mapping = {

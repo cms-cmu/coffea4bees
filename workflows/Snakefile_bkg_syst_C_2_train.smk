@@ -81,3 +81,25 @@ rule all_bkg_syst_C_2:
     input:
         expand(f"{out_c}models/mix_{{m}}/train.done", m=MIX_INDICES),
         expand(f"{out_c}models/mix_{{m}}/yields.html", m=MIX_INDICES),
+        expand(f"{out_c}models/mix_{{m}}/analyze.done", m=MIX_INDICES),
+        expand(f"{out_c}models/mix_{{m}}/gallery.done", m=MIX_INDICES),
+        f"{out_c}training_summary.html"
+
+# ── Cross-Sample Training Summary Dashboard ───────────────────────────────────
+rule bkg_syst_training_summary:
+    input:
+        expand(f"{out_c}models/mix_{{m}}/analyze.done", m=MIX_INDICES),
+        expand(f"{out_c}models/mix_{{m}}/gallery.done", m=MIX_INDICES),
+        expand(f"{out_c}models/mix_{{m}}/yields.html", m=MIX_INDICES),
+    output:
+        html = f"{out_c}training_summary.html"
+    params:
+        models_dir = f"{out_c}models",
+        title = lambda wildcards: f"FvT Training Summary — {config.get('roast_id', config.get('label', 'bkg_syst'))}"
+    shell:
+        """
+        python3 src/classifier/training_summary.py \
+            --models-dir {params.models_dir} \
+            --output {output.html} \
+            --title "{params.title}"
+        """

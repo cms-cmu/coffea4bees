@@ -31,12 +31,12 @@ counts4:
 counts3:
     data_3b_for_mixed_2018:
         passJetMult: 984.0
-        passPreSel: 43.76
-        passDiJetMass: 15.37
+        passPreSel: 43.93
+        passDiJetMass: 15.54
         SR: 5.52
-        SB: 9.85
+        SB: 10.02
         passSvB: 0.42
-        failSvB: 29.09
+        failSvB: 29.27
 
     data_3b_for_mixed_2017:
         passJetMult: 987.0

@@ -8,6 +8,7 @@ import shutil
 import yaml
 import copy
 import re
+import json
 
 include: "common.smk"
 
@@ -95,6 +96,174 @@ out_f2 = f"{out}bkg_syst_F_2_run_two_stage_closure/"
 out_f3 = f"{out}bkg_syst_F_3_stats/"
 out_f4 = f"{out}bkg_syst_F_4_stats_mixeddata/"
 
+_handoff = config.get('handoff') or {}
+if not isinstance(_handoff, dict):
+    _handoff = {}
+HANDOFF_EOS = str(_handoff.get('eos_base') or "").rstrip('/')
+
+
+def _find_upstream_roast_dir(rid, config_dict=None):
+    """Locate the output directory of an upstream roast on local disk."""
+    if not rid:
+        return None
+    if os.path.isdir(rid):
+        return rid
+
+    # 1. Inspect manifest roasts/<rid>/roast.json
+    manifest = os.path.join("roasts", rid, "roast.json")
+    if os.path.exists(manifest):
+        try:
+            with open(manifest) as fh:
+                m = json.load(fh) or {}
+            captured = os.path.join("roasts", rid, "config.yml")
+            rel_out = f"output/{rid}/"
+            if os.path.exists(captured):
+                with open(captured) as cf:
+                    cfg_cap = yaml.safe_load(cf) or {}
+                if isinstance(cfg_cap.get("output_path"), str):
+                    rel_out = cfg_cap["output_path"].replace("{roast_id}", rid)
+            if not rel_out.endswith("/"):
+                rel_out += "/"
+
+            for h_name, h_info in (m.get("hosts") or {}).items():
+                chk = os.path.expanduser(h_info.get("checkout") or "")
+                if chk and os.path.isdir(chk):
+                    cand = os.path.join(chk, rel_out)
+                    if os.path.isdir(cand):
+                        return cand
+        except Exception as e:
+            print(f"bkg_syst: note: error reading {manifest}: {e}")
+
+    # 2. Check local relative paths
+    for cand in [
+        f"output/{rid}/",
+        f"output/{rid.rsplit('_', 2)[0]}/" if '_' in rid else None,
+    ]:
+        if cand and os.path.isdir(cand):
+            return cand
+
+    # 3. Check common LPC / Falcon paths
+    try:
+        import getpass
+        login = os.environ.get("USER") or getpass.getuser()
+    except Exception:
+        login = "unknown"
+
+    label = rid.rsplit('_', 2)[0] if '_' in rid else rid
+    candidates = [
+        f"/uscms_data/d3/{login}/HH4b/prod/{rid}/barista/output/{rid}/",
+        f"/uscms_data/d3/{login}/HH4b/barista/output/{rid}/",
+        f"/uscms_data/d3/{login}/HH4b/barista/output/{label}/",
+        f"/uscms_data/d3/{login}/HH4b/barista/output/ttHbb_bkg_syst_declib16nc/",
+        os.path.expanduser(f"~/nobackup/HH4b/prod/{rid}/barista/output/{rid}/"),
+        os.path.expanduser(f"~/work/prod/{rid}/barista/output/{rid}/"),
+    ]
+    for cand in candidates:
+        if os.path.isdir(cand):
+            return cand
+
+    return None
+
+
+def _resolve_upstream_pre_fvt(config_dict):
+    """Find the upstream roast id or path for pre-FvT stages (A_1..A_3, B_1)."""
+    aliases = upstream_aliases(config_dict)
+    for k in ('upstream_pre_fvt', 'upstream_bkg_syst', 'upstream_stages_ab'):
+        val = config_dict.get(k)
+        if val:
+            return aliases.get(str(val), str(val))
+    for alias_key in ('pre_fvt', 'upstream_pre_fvt', 'bkg_syst', 'upstream_bkg_syst'):
+        if alias_key in aliases:
+            return aliases[alias_key]
+    return None
+
+
+def _resolve_upstream_fvt(config_dict):
+    """Find the upstream roast id or path for Stage C (FvT)."""
+    aliases = upstream_aliases(config_dict)
+    for k in ('upstream_fvt', 'upstream_stage_c'):
+        val = config_dict.get(k)
+        if val:
+            return aliases.get(str(val), str(val))
+    for alias_key in ('fvt', 'upstream_fvt'):
+        if alias_key in aliases:
+            return aliases[alias_key]
+    return None
+
+
+# ── 5b. Upstream Roast Resolution & Stage Linking ─────────────────────────────
+_pre_fvt_ref = _resolve_upstream_pre_fvt(config)
+UPSTREAM_PRE_FVT_ID = _pre_fvt_ref
+UPSTREAM_PRE_FVT_DIR = None
+INPUT_HANDOFF_EOS = HANDOFF_EOS
+A_INPUT_DIR_OVERRIDE = None
+
+if _pre_fvt_ref:
+    UPSTREAM_PRE_FVT_DIR = _find_upstream_roast_dir(_pre_fvt_ref, config)
+    try:
+        up_eos = _upstream_base(_pre_fvt_ref, _placeholders['eos_prod'])
+        INPUT_HANDOFF_EOS = f"{up_eos.rstrip('/')}/handoff"
+    except Exception:
+        pass
+    config['input_handoff_eos'] = INPUT_HANDOFF_EOS
+
+    if UPSTREAM_PRE_FVT_DIR:
+        up_dir = UPSTREAM_PRE_FVT_DIR.rstrip("/") + "/"
+        print(f"bkg_syst: detected upstream pre-FvT outputs at {up_dir}")
+        if os.path.isdir(f"{up_dir}bkg_syst_A_1_mixed_jcm"):
+            out_a1 = f"{up_dir}bkg_syst_A_1_mixed_jcm/"
+        if os.path.isdir(f"{up_dir}bkg_syst_A_2_make_subsamples"):
+            out_a2 = f"{up_dir}bkg_syst_A_2_make_subsamples/"
+        if os.path.isdir(f"{up_dir}bkg_syst_A_3_process_subsamples"):
+            out_a3 = f"{up_dir}bkg_syst_A_3_process_subsamples/"
+        if os.path.isdir(f"{up_dir}bkg_syst_B_1_computeJCM"):
+            out_b1 = f"{up_dir}bkg_syst_B_1_computeJCM/"
+        if os.path.isdir(f"{up_dir}inputs"):
+            A_INPUT_DIR_OVERRIDE = f"{up_dir}inputs/"
+
+        # Auto-create symlinks in the current output directory so relative lookups and publish succeed
+        if os.path.abspath(out) != os.path.abspath(up_dir):
+            os.makedirs(out, exist_ok=True)
+            for sname in ["bkg_syst_A_1_mixed_jcm", "bkg_syst_A_2_make_subsamples",
+                          "bkg_syst_A_3_process_subsamples", "bkg_syst_B_1_computeJCM", "inputs"]:
+                s_src = os.path.join(up_dir, sname)
+                s_dst = os.path.join(out, sname)
+                if os.path.exists(s_src) and not os.path.exists(s_dst):
+                    try:
+                        os.symlink(os.path.abspath(s_src), s_dst)
+                        print(f"bkg_syst: auto-linked {s_dst} -> {s_src}")
+                    except OSError as err:
+                        print(f"bkg_syst: warning: could not link {s_src} to {s_dst}: {err}")
+
+_fvt_ref = _resolve_upstream_fvt(config)
+UPSTREAM_FVT_ID = _fvt_ref
+UPSTREAM_FVT_DIR = None
+FVT_HANDOFF_EOS = HANDOFF_EOS
+
+if _fvt_ref:
+    UPSTREAM_FVT_DIR = _find_upstream_roast_dir(_fvt_ref, config)
+    try:
+        up_fvt_eos = _upstream_base(_fvt_ref, _placeholders['eos_prod'])
+        FVT_HANDOFF_EOS = f"{up_fvt_eos.rstrip('/')}/handoff"
+    except Exception:
+        pass
+    config['fvt_handoff_eos'] = FVT_HANDOFF_EOS
+
+    if UPSTREAM_FVT_DIR:
+        up_fvt = UPSTREAM_FVT_DIR.rstrip("/") + "/"
+        print(f"bkg_syst: detected upstream FvT outputs at {up_fvt}")
+        if os.path.isdir(f"{up_fvt}bkg_syst_C_FvT"):
+            out_c = f"{up_fvt}bkg_syst_C_FvT/"
+            if os.path.abspath(out) != os.path.abspath(up_fvt):
+                os.makedirs(out, exist_ok=True)
+                s_dst = os.path.join(out, "bkg_syst_C_FvT")
+                if not os.path.exists(s_dst):
+                    try:
+                        os.symlink(os.path.abspath(out_c), s_dst)
+                        print(f"bkg_syst: auto-linked {s_dst} -> {out_c}")
+                    except OSError as err:
+                        print(f"bkg_syst: warning: could not link {out_c} to {s_dst}: {err}")
+
 # ── 6. Inputs: a mixeddata roast + the analysis' nominal roast ─────────────────
 # From the MakeMixedData roast (its handoff/ YAMLs): the mixed data and the ttbar pseudodata. The
 # mixed-data JCM that splits them into subsamples is fit here (A_1), in the analysis selection.
@@ -113,7 +282,7 @@ PS_NAME = os.path.basename(PS_URL).removesuffix(".yml")
 JCM_HISTS_URL = str(INPUTS['jcm_hists'])
 JCM_HIST_CONFIG_URL = str(INPUTS.get('analysis_config_noJCM')
                           or f"{os.path.dirname(JCM_HISTS_URL)}/analysis_config_noJCM.yml")
-A_INPUT_DIR = f"{out}inputs/"
+A_INPUT_DIR = A_INPUT_DIR_OVERRIDE if A_INPUT_DIR_OVERRIDE else f"{out}inputs/"
 JCM_HISTS = f"{A_INPUT_DIR}{os.path.basename(JCM_HISTS_URL)}"
 JCM_HIST_CONFIG = f"{A_INPUT_DIR}{os.path.basename(JCM_HIST_CONFIG_URL)}"
 PS_DATASET = f"{A_INPUT_DIR}{PS_NAME}.yml"
@@ -180,4 +349,4 @@ def write_yaml(path, obj):
 
 module analysis:
     snakefile: "rules/analysis.smk"     # resolved from the including Snakefile (workflows/)
-    config: config
+config: config
