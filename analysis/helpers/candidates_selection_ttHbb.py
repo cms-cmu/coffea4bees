@@ -330,6 +330,21 @@ def _build_quadjets_ttHbb(selev, diJet, diJetDr, cand_cfg=None, isRun3=False):
     return quadJet
 
 
+# Classifier q scores are per jet partition (12|34, 13|24, 14|23). The 3 nominal pairings are these
+# partitions in order; the 6 can_ttH pairings are the same 3 partitions with canH = (01), (02), (03)
+# (pairings 0-2) and with the canH/canTT slots swapped (pairings 3-5), so pairing i uses partition i % 3.
+_Q_PARTITIONS = ("q_1234", "q_1324", "q_1423")
+_CAN_TTH_Q_INDEX = [0, 1, 2, 0, 1, 2]
+
+
+def _pairing_q_scores(clf_out, quadJet):
+    """Per-pairing q scores [event][pairing] from a classifier output record (FvT/SvB/SvB_MA)."""
+    q_scores = np.concatenate([clf_out[q][:, np.newaxis] for q in _Q_PARTITIONS], axis=1)
+    if "canH" in quadJet.fields:
+        q_scores = q_scores[:, _CAN_TTH_Q_INDEX]
+    return q_scores
+
+
 def _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB=False, cand_cfg=None, svb_binning=None):
     """Assign all derived candidate fields to selev."""
     selev["diJet"] = diJet
@@ -460,20 +475,70 @@ def _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB=False, cand_cfg=Non
                     "mass": ak.unflatten(flat_m_q, counts),
                 })
 
+            if "SvB_MA" in selev.fields:
+                ps_np = ak.to_numpy(svb_ps)
+                # Inclusive quantiles
+                n_bins = len(ttHbbSvBHists.var_binning_ps_ttHbb) - 1
+                bin_idx = np.clip(np.digitize(ps_np, ttHbbSvBHists.var_binning_ps_ttHbb) - 1, 0, n_bins - 1)
+                ps_quantile = (bin_idx + 0.5) / float(n_bins)
+                selev["SvB_MA", "ps_ttHbb"] = ak.Array(ps_quantile)
 
-# Classifier q scores are per jet partition (12|34, 13|24, 14|23). The 3 nominal pairings are these
-# partitions in order; the 6 can_ttH pairings are the same 3 partitions with canH = (01), (02), (03)
-# (pairings 0-2) and with the canH/canTT slots swapped (pairings 3-5), so pairing i uses partition i % 3.
-_Q_PARTITIONS = ("q_1234", "q_1324", "q_1423")
-_CAN_TTH_Q_INDEX = [0, 1, 2, 0, 1, 2]
+                # gt6 quantiles
+                n_bins_gt6 = len(ttHbbSvBHists.var_binning_ps_ttHbb_gt6) - 1
+                bin_idx_gt6 = np.clip(np.digitize(ps_np, ttHbbSvBHists.var_binning_ps_ttHbb_gt6) - 1, 0, n_bins_gt6 - 1)
+                ps_quantile_gt6 = (bin_idx_gt6 + 0.5) / float(n_bins_gt6)
+                selev["SvB_MA", "ps_ttHbb_gt6"] = ak.Array(ps_quantile_gt6)
 
+            pass_mask = selev.passSvB
+            m_lead = selev.leadStM_selected
+            m_subl = selev.sublStM_selected
 
-def _pairing_q_scores(clf_out, quadJet):
-    """Per-pairing q scores [event][pairing] from a classifier output record (FvT/SvB/SvB_MA)."""
-    q_scores = np.concatenate([clf_out[q][:, np.newaxis] for q in _Q_PARTITIONS], axis=1)
-    if "canH" in quadJet.fields:
-        q_scores = q_scores[:, _CAN_TTH_Q_INDEX]
-    return q_scores
+            counts = ak.where(pass_mask, 2, 0)
+            pairs = ak.concatenate([m_lead[:, np.newaxis], m_subl[:, np.newaxis]], axis=1)
+            flat_m = ak.flatten(pairs[pass_mask])
+            dijet_both = ak.unflatten(flat_m, counts)
+
+            selev["dijet_SvB_gt_0p9"] = ak.zip({
+                "lead_m": ak.where(~pass_mask, -2.0, m_lead),
+                "subl_m": ak.where(~pass_mask, -2.0, m_subl),
+            })
+            selev["dijet_both_SvB_gt_0p9"] = ak.zip({
+                "mass": dijet_both,
+            })
+
+            # Also retain 0.8 threshold for comparison
+            pass_mask_0p8 = svb_ps > 0.80
+            counts_0p8 = ak.where(pass_mask_0p8, 2, 0)
+            flat_m_0p8 = ak.flatten(pairs[pass_mask_0p8])
+            selev["dijet_SvB_gt_0p8"] = ak.zip({
+                "lead_m": ak.where(~pass_mask_0p8, -2.0, m_lead),
+                "subl_m": ak.where(~pass_mask_0p8, -2.0, m_subl),
+            })
+            selev["dijet_both_SvB_gt_0p8"] = ak.zip({
+                "mass": ak.unflatten(flat_m_0p8, counts_0p8),
+            })
+
+            # Single dedicated monitoring plot: dijet mass using network q-score best pairing (both pairs)
+            q_scores = None
+            if "SvB_MA_q_score" in quadJet.fields:
+                q_scores = quadJet.SvB_MA_q_score
+            elif "SvB_MA" in selev.fields and "q_1234" in selev["SvB_MA"].fields:
+                q_scores = np.concatenate([
+                    selev.SvB_MA.q_1234[:, np.newaxis],
+                    selev.SvB_MA.q_1324[:, np.newaxis],
+                    selev.SvB_MA.q_1423[:, np.newaxis],
+                ], axis=1)
+
+            if q_scores is not None:
+                best_q_idx = ak.argmax(q_scores, axis=1, keepdims=True)
+                quadJet_best_q = quadJet[best_q_idx][:, 0]
+                m_lead_q = quadJet_best_q.lead.mass
+                m_subl_q = quadJet_best_q.subl.mass
+                pairs_q = ak.concatenate([m_lead_q[:, np.newaxis], m_subl_q[:, np.newaxis]], axis=1)
+                flat_m_q = ak.flatten(pairs_q[pass_mask])
+                selev["dijet_both_qscore_SvB_gt_0p9"] = ak.zip({
+                    "mass": ak.unflatten(flat_m_q, counts),
+                })
 
 
 def _apply_ml_scores_ttHbb(

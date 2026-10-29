@@ -113,7 +113,7 @@ setup_coffea4bees:
     - export PIXI_NO_PATH_UPDATE=1
     - curl -fsSL https://pixi.sh/install.sh | PIXI_HOME=$CI_PROJECT_DIR/barista_framework/.pixi-bin bash
     - export PATH="$CI_PROJECT_DIR/barista_framework/.pixi-bin/bin:$PATH"
-    - pixi install
+    - pixi install --environment ci
   artifacts:
     paths:
       - barista_framework/

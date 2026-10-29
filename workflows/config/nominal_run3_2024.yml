@@ -40,12 +40,22 @@ output_path: "output/Run3_2024_nominal/"
 # the 2022/2023 Run3_v1 / Run3_nontight_v1 and the 2024 non-tight Run3_2024_nontight_v1 so the
 # productions' JCM files can never be confused.
 tag: "Run3_2024_v1"
+jcm_extra_arguments: "--data4bName data"
 
 # Datasets for the main analysis processor (Phase F.1: only its config is made here; the MvD roast
 # runs it). Phase B.2 has its own list (classifier_inputs.datasets); B.1/C.4 use data + ttbar.
 dataset:
   - "data"
+  - "GluGlutoHHto4B_kl-0p00_kt-1p00_c2-0p00"
+  - "GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00"
   - "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"
+  - "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p10"
+  - "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35"
+  - "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-3p00"
+  - "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-m2p00"
+  - "GluGlutoHHto4B_kl-2p45_kt-1p00_c2-0p00"
+  - "GluGlutoHHto4B_kl-5p00_kt-1p00_c2-0p00"
+  - "GluGlutoHHto4B_kl-m20p00_kt-1p00_c2-2p24"
 
 # Eras as they appear in metadata/datasets/data.yml (picoAOD keys), all eight 2024 eras.
 # '2024' MUST stay quoted: unquoted it parses as an int and misses the string-keyed metadata.
@@ -231,7 +241,16 @@ classifier_inputs:
     - TTToHadronic
     - TTToSemiLeptonic
     - TTTo2L2Nu
+    - GluGlutoHHto4B_kl-0p00_kt-1p00_c2-0p00
+    - GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00
     - GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00
+    - GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p10
+    - GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35
+    - GluGlutoHHto4B_kl-1p00_kt-1p00_c2-3p00
+    - GluGlutoHHto4B_kl-1p00_kt-1p00_c2-m2p00
+    - GluGlutoHHto4B_kl-2p45_kt-1p00_c2-0p00
+    - GluGlutoHHto4B_kl-5p00_kt-1p00_c2-0p00
+    - GluGlutoHHto4B_kl-m20p00_kt-1p00_c2-2p24
   config:
     make_classifier_input: "{eos_prod}/{roast_id}/classifier_inputs/"
     fill_histograms: false

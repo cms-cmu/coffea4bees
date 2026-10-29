@@ -176,7 +176,7 @@ wildcard_constraints:
     region = "|".join(CLOSURE_REGIONS),
     rebin = r"\d+",
 
-localrules: all_bkg_syst_F_2, copy_official_closure_summary, copy_official_closure_summary_region, coffea_to_root_closure, make_signal_root_closure, run_two_stage_closure, evaluate_closure_candidates, make_closure_summary_html, check_closure_validation, make_plots_ttbar_MC_vs_d3, ttbar_MC_vs_d3_cutflow, all_ttbar_MC_vs_d3
+localrules: all_bkg_syst_F_2, copy_official_closure_summary, copy_official_closure_summary_region, coffea_to_root_closure, make_signal_root_closure, run_two_stage_closure, evaluate_closure_candidates, select_closure_rebin, make_closure_summary_html, check_closure_validation, make_plots_ttbar_MC_vs_d3, ttbar_MC_vs_d3_cutflow, all_ttbar_MC_vs_d3
 
 rule all_bkg_syst_F_2:
     input:
@@ -421,6 +421,61 @@ rule copy_official_closure_summary_region:
         cp -f {input.json} {output.json}
         cp -f {input.html} {output.html}
         """
+
+checkpoint select_closure_rebin:
+    input:
+        status_files = expand(
+            f"{out_f2}closure_fits/{mix_name}/{classifier}/rebin{{rebin}}/SR/{channel}/closure_status.json",
+            rebin=REBIN_CANDIDATES
+        )
+    output:
+        summary = f"{out_f2}closure_rebin_summary.json"
+    log:
+        f"{out_f2}logs/select_closure_rebin.log"
+    run:
+        import json
+        passing_rebins = []
+        summary_records = []
+        log_lines = []
+        log_lines.append("=" * 70)
+        log_lines.append(f"TWO-STAGE CLOSURE EVALUATION SUMMARY ({channel}):")
+        log_lines.append(f"{'Rebin':<8} {'Bins':<8} {'Variance':<12} {'Bias':<12} {'Overall':<10} {'Selected Basis'}")
+        log_lines.append("-" * 70)
+        for sf in input.status_files:
+            try:
+                with open(sf, "r") as jf:
+                    data = json.load(jf)
+            except Exception as e:
+                data = {"passed": False, "rebin": None, "error": str(e)}
+            
+            rebin_val = data.get("rebin")
+            n_bins = data.get("n_bins")
+            if n_bins is None and rebin_val:
+                try:
+                    n_bins = 240 // int(rebin_val)
+                except Exception:
+                    n_bins = "?"
+            var_p = "PASS" if data.get("variance_passed") else "FAIL"
+            bias_p = "PASS" if data.get("bias_passed") else "FAIL"
+            overall = "PASS" if data.get("passed") else "FAIL"
+            basis = data.get("selected_basis", "-")
+            log_lines.append(f"{str(rebin_val):<8} {str(n_bins):<8} {var_p:<12} {bias_p:<12} {overall:<10} {str(basis)}")
+            summary_records.append(data)
+            if data.get("passed"):
+                passing_rebins.append(int(rebin_val))
+        log_lines.append("=" * 70)
+        log_lines.append(f"Passing rebins eligible for Combine: {passing_rebins}")
+        summary_text = "\n".join(log_lines)
+        print("\n" + summary_text + "\n")
+        
+        with open(log[0], "w") as lf:
+            lf.write(summary_text + "\n")
+
+        with open(output.summary, "w") as out_f:
+            json.dump({
+                "passing_rebins": passing_rebins,
+                "all_evaluations": summary_records
+            }, out_f, indent=2)
 
 rule check_closure_validation:
     input:

@@ -180,4 +180,4 @@ def write_yaml(path, obj):
 
 module analysis:
     snakefile: "rules/analysis.smk"     # resolved from the including Snakefile (workflows/)
-    config: config
+config: config
