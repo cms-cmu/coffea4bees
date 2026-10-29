@@ -13,6 +13,8 @@ label: "ttHbb_declib16nc_noSR_ps3"
 mix_name: "ttHbb_declib16nc_noSR_ps3"
 output_path: "output/{roast_id}/"
 
+upstream_pre_fvt: "ttHbb_bkg_syst_declib16nc"
+
 publish_base: "{eos_prod}/{roast_id}"
 handoff:
   eos_base: "{eos_prod}/{roast_id}/handoff"

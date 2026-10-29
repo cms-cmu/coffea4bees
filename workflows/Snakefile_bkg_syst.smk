@@ -99,12 +99,27 @@ rule all_post_fvt:
         rules.all_bkg_syst_F.input
 
 # Top master target rule (default_target: the C files mark their own all_* rules as default too)
-rule all_bkg_syst:
-    default_target: True
-    input:
-        rules.all_bkg_syst_A.input,
-        rules.all_bkg_syst_B_1.input,
-        rules.all_bkg_syst_C.input,
-        rules.all_bkg_syst_F.input
+_has_up_pre_fvt = bool(globals().get('UPSTREAM_PRE_FVT_ID'))
+_has_up_fvt = bool(globals().get('UPSTREAM_FVT_ID'))
+
+if _has_up_pre_fvt and _has_up_fvt:
+    rule all_bkg_syst:
+        default_target: True
+        input:
+            rules.all_bkg_syst_F.input
+elif _has_up_pre_fvt:
+    rule all_bkg_syst:
+        default_target: True
+        input:
+            rules.all_bkg_syst_C.input,
+            rules.all_bkg_syst_F.input
+else:
+    rule all_bkg_syst:
+        default_target: True
+        input:
+            rules.all_bkg_syst_A.input,
+            rules.all_bkg_syst_B_1.input,
+            rules.all_bkg_syst_C.input,
+            rules.all_bkg_syst_F.input
 
 localrules: all_bkg_syst, all_bkg_syst_A, all_pre_fvt, all_post_fvt, test_v0_jcm_closure, all_test_subsample_closure, all_bkg_syst_C_1

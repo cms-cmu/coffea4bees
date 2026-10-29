@@ -215,13 +215,15 @@ per_year_jcm = bool(config.get('per_year_jcm', (config.get('phaseB_1', {}) or {}
 # Staging rules for cross-cluster execution under roast (fetching from EOS handoff if not local).
 # Only when F_1 runs without the stage that makes the file (Snakefile_bkg_syst.smk includes B_1 and
 # C before F: two rules for one output are ambiguous).
+_handoff_in = config.get('input_handoff_eos') or globals().get('INPUT_HANDOFF_EOS') or HANDOFF_EOS
+_fvt_handoff = config.get('fvt_handoff_eos') or globals().get('FVT_HANDOFF_EOS') or HANDOFF_EOS
 _defined_rules = {r.name for r in workflow.rules}
-if HANDOFF_EOS and 'extract_friend_manifest' not in _defined_rules:
+if (_fvt_handoff or HANDOFF_EOS) and 'extract_friend_manifest' not in _defined_rules:
     rule stage_bkg_syst_friend_manifest:
         output:
             f"{out_c}friends/friends_FvT_{mix_name}_v{{m}}.json"
         params:
-            src = f"{HANDOFF_EOS}/friends/friends_FvT_{mix_name}_v{{m}}.json"
+            src = f"{_fvt_handoff}/friends/friends_FvT_{mix_name}_v{{m}}.json"
         shell:
             """
             mkdir -p $(dirname {output})
@@ -237,7 +239,7 @@ if 'make_subsample_jcm_b1' not in _defined_rules:
         output:
             f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}.yml"
         params:
-            eos_src = f"{HANDOFF_EOS}/JCM/jetCombinatoricModel_SB_mix_v{{m}}.yml" if HANDOFF_EOS else "",
+            eos_src = f"{_handoff_in}/JCM/jetCombinatoricModel_SB_mix_v{{m}}.yml" if _handoff_in else "",
             meta_roast = f"coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_mix_v{{m}}.yml",
             meta = f"coffea4bees/metadata/weights/JCM/jetCombinatoricModel_SB_mix_v{{m}}.yml",
         shell:
@@ -263,7 +265,7 @@ if 'make_subsample_jcm_b1' not in _defined_rules:
         output:
             f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml"
         params:
-            eos_src = f"{HANDOFF_EOS}/JCM/jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml" if HANDOFF_EOS else "",
+            eos_src = f"{_handoff_in}/JCM/jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml" if _handoff_in else "",
             meta_roast = f"coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml",
             meta = f"coffea4bees/metadata/weights/JCM/jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml",
         shell:
