@@ -84,8 +84,11 @@ rule stage_bkg_syst_c_model_config:
         roast_tag = config.get('roast_id', config.get('label', f"{channel}_bkg_syst"))
 
         # Determine defaults based on EOS handoff or local disk copies
-        first_jcm = f"{out_b1}jetCombinatoricModel_SB_mix_v0.yml"
-        has_local_jcm = os.path.exists(first_jcm)
+        if per_year_jcm:
+            has_local_jcm = bool(glob.glob(f"{out_b1}jetCombinatoricModel_SB_mix_v0_*.yml"))
+        else:
+            has_local_jcm = os.path.exists(f"{out_b1}jetCombinatoricModel_SB_mix_v0.yml")
+
         if _handoff_in and not has_local_jcm:
             default_mixed_ci = f"{_handoff_in}/classifier_inputs/histAll_{channel}_mixeddata_v{{m}}.json"
             if per_year_jcm:
@@ -98,10 +101,14 @@ rule stage_bkg_syst_c_model_config:
             if os.path.exists(local_jcm_dir):
                 default_jcm = f"{local_jcm_dir}/jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml" if per_year_jcm else f"{local_jcm_dir}/jetCombinatoricModel_SB_mix_v{{m}}.yml"
             else:
-                default_jcm = f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}.yml"
+                default_jcm = f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml" if per_year_jcm else f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}.yml"
 
             if os.path.exists(os.path.dirname(local_ci_file)):
                 default_mixed_ci = local_ci_file
+            elif os.path.exists(f"{out_a3}histAll_{channel}_mixeddata_v{{m}}.json"):
+                default_mixed_ci = f"{out_a3}histAll_{channel}_mixeddata_v{{m}}.json"
+            elif os.path.exists(f"{out_a3}classifier_inputs/classifier_inputs_mixeddata_{channel}_v{{m}}.json"):
+                default_mixed_ci = f"{out_a3}classifier_inputs/classifier_inputs_mixeddata_{channel}_v{{m}}.json"
             else:
                 default_mixed_ci = f"{out_a3}histAll_{channel}_mixeddata_v{{m}}.json"
 
