@@ -261,6 +261,8 @@ def plot2d(var: str = 'quadJet_selected.lead_vs_subl_m',
                              Multijet/ttHbb. Only the first two are used.
                     False -> SUM the processes into a single combined map.
                     A single process is plotted as is, whatever doRatio is.
+            title: Replace the default "<region>  (<cut>)" title; do_title=False
+                    removes the title (2D plots).
             norm: With a ratio, scale each histogram to unit area first.
             rlim: Colour range of the ratio map (default (0, 2)). Bins
                     outside it are left blank, so with raw yields use a

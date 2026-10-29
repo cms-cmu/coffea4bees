@@ -18,6 +18,7 @@ config:
   apply_btagSF: true
   apply_boosted_veto: false
   run_SvB: false
+  pairing: nominal
   top_reconstruction: "fast"
   fill_histograms: "kinematics"
   hist_cuts:

@@ -13,6 +13,7 @@ def parse_args():
     parser.add_argument("--jcm-files", nargs="+", required=True, help="One or more calibrated JCM YAML files")
     parser.add_argument("--output", required=True, help="Path to write staged analysis config YAML")
     parser.add_argument("--years", nargs="*", default=None, help="Optional list of years for per-year mapping")
+    parser.add_argument("--pairing", default=None, help="Optional pairing override written to config.pairing (e.g. nominal, can_ttH)")
     return parser.parse_args()
 
 
@@ -28,6 +29,8 @@ def main():
 
     config.setdefault("config", {})
     config["config"]["apply_JCM"] = True
+    if args.pairing:
+        config["config"]["pairing"] = args.pairing
 
     if len(args.jcm_files) == 1:
         config["config"]["JCM_file"] = args.jcm_files[0]

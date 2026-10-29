@@ -1,0 +1,12 @@
+# ttHbb Run 2 background systematic with the DeClustered library (declib16nc), reading the
+# *nominal* products (JCM histograms, classifier inputs, SvB friend/model, nominal histograms) from the
+# can_ttH asymmetric-ellipse SR (nJet>=5) + SB (nJet==4 inside the ellipse) roast. A_3, B_1 and F_1 run
+# the same can_ttH pairing so every region definition matches the nominal products.
+base: coffea4bees/workflows/config/analysis_ttHbb_bkg_syst_declib16nc.yml
+label: "ttHbb_bkg_syst_declib16nc_nJet4SB"
+inputs:
+  upstream_roasts:
+    nominal: ttHbb_asymEllipse_nJet4SB_20261017_aa1ba89-f610a88
+analysis_config:
+  config:
+    pairing: can_ttH

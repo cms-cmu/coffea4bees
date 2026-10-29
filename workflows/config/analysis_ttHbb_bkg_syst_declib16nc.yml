@@ -276,7 +276,7 @@ analysis_config:
     shared_dask: false
     run_performance: false
   config:
-    pairing: nominal
+    pairing: nominal   # must match the pairing of the nominal roast in inputs.upstream_roasts (JCM 3b/ttbar hists, SvB)
     fourTag_use_tight: false
     blind: false
     FvT_pd3_floor: 0.01
