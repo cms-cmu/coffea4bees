@@ -290,7 +290,7 @@ rule run_two_stage_closure:
         region = "{region}",
         rebin = "{rebin}",
         output_dir = f"{out_f2}closure_fits/",
-        maxBasis = config.get('max_basis', 10),
+        maxBasis = config.get('max_basis', 5),
         years = config.get('years_closure', ' '.join(YEARS)),
         nMixes = len(subsample_indices_closure),
         subsample_indices = " ".join(str(v) for v in subsample_indices_closure),

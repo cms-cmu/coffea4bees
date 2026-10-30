@@ -320,19 +320,7 @@ closure_rebin_candidates:
   - 16  # 15 bins (240 / 16)
   - 20  # 12 bins (240 / 20)
   - 24  # 10 bins (240 / 24)
-max_basis: 10
-rebin: 12
-
-
-# TWO-STAGE CLOSURE CANDIDATES & MULTI-BINNING
-closure_rebin_candidates:
-  - 2   # 120 bins (240 / 2)
-  - 12  # 20 bins (240 / 12)
-  - 15  # 16 bins (240 / 15)
-  - 16  # 15 bins (240 / 16)
-  - 20  # 12 bins (240 / 20)
-  - 24  # 10 bins (240 / 24)
-max_basis: 10
+max_basis: 5
 rebin: 12
 
 
