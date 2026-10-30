@@ -6,6 +6,8 @@ base: coffea4bees/workflows/config/analysis_ttHbb_bkg_syst_declib16nc.yml
 label: "ttHbb_bkg_syst_declib16nc_corner_veto"
 output_path: "output/{roast_id}/"
 
+upstream_pre_fvt: "pre_fvt"
+
 # Nominal roast carrying the corner veto SB selection (Step B JCM and classifier inputs)
 # Baseline nominal roast providing the trained SvB models
 inputs:
@@ -13,6 +15,10 @@ inputs:
     declib: declib16nc_run2_20261003_3ab8302-b2d2dec
     nominal: ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11
     mixeddata: mixeddata_run2_20260927_c39c264-0ce4d59
+    pre_fvt: analysis_ttHbb_bkg_syst_declib16nc_corner_veto_20261029_ee431c4-5508ecf
+
+  # From upstream bkg_syst pre-FvT handoff:
+  input_handoff_eos: "{roast:pre_fvt}/handoff"
 
   # From the corner veto nominal roast:
   jcm_hists: "{roast:nominal}/{roast:nominal:output_path}computeJCM/histAll_NoJCM.coffea"
