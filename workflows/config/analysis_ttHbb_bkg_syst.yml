@@ -188,9 +188,6 @@ classifier_setting:
   - module: HCR.InputBranch
     option:
       - feature_ancillary: [xW, nSelJets, xbW, year]
-  - module: ml.Training
-    option:
-      - precision: fp16
 
 fvt_train_workflow:
   main:
@@ -271,7 +268,6 @@ phase_e_fvt:
   plot_base: "{web_prod}/{roast_id}/classifier_plots"
   # nominal_classifier_inputs: inputs.classifier_inputs; the per-subsample mixed classifier inputs and
   # JCMs default to this roast's A_3 / B_1 outputs (helpers/stage_configs.py:stage_phaseC_configs)
-  precision: "fp16"
   # GPU resources (falcon): qos light allows <= 25 MPS per job and 3 jobs per user; medium 50 MPS but
   # 1 job and 8 h. mps:50 on light (the Snakefile default) is refused (QOSMaxGRESPerJob), so: light +
   # mps:25 -> 3 trainings in parallel. On Bridges-2: gpu_partition: GPU-shared, slurm_account:

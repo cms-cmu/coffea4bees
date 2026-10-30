@@ -178,9 +178,6 @@ classifier_setting:
   - module: HCR.InputBranch
     option:
       - feature_ancillary: [xW, nSelJets, xbW, year]
-  - module: ml.Training
-    option:
-      - precision: fp16
 
 fvt_train_workflow:
   main:
@@ -256,7 +253,6 @@ phase_e_fvt:
   mix_name: "ttHbb_bkg_syst_declib16nc"
   n_models: 16
   plot_base: "{web_prod}/{roast_id}/classifier_plots"
-  precision: "fp16"
   gpu_gres: "mps:25"
   plot_inputs: false
   plot_weights: false
