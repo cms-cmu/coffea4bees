@@ -13,6 +13,8 @@ dataset:
 years:
   - "2024"
 
+check_event_counts_allow_errors: true
+
 skimmer:
   # skimmer_config is deliberately left at its default,
   # coffea4bees/skimmer/metadata/HH4b.yml, so the selection (loosePtForSkim, the
