@@ -102,7 +102,9 @@ def init_context(args):
         channel = "ttHbb"
     config.channel = channel
 
-    if not args.var.find("SvB_MA") == -1:
+    if args.classifier:
+        classifier = args.classifier
+    elif not args.var.find("SvB_MA") == -1:
         classifier = "SvB_MA"
     elif not args.var.find("SvB") == -1:
         classifier = "SvB"

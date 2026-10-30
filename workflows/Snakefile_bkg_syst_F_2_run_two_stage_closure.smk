@@ -329,7 +329,7 @@ rule run_two_stage_closure:
             --input_file_TT {params.input_file_TT} \
             --years {params.years} \
             --nMixes {params.nMixes} \
-            {params.extra_args} 2>&1 | tee {log}
+            {params.extra_args} 2>&1 | tee {log} || true
         if [ ! -f {output.pkl} ]; then
             touch {output.pkl}
         fi
@@ -343,9 +343,8 @@ rule run_two_stage_closure:
 checkpoint evaluate_closure_candidates:
     input:
         status_files = lambda wildcards: expand(
-            f"{out_f2}closure_fits/{mix_name}/{wildcards.classifier}/rebin{{rebin}}/{wildcards.region}/{channel}/closure_status_{var}.json",
-            rebin=REBIN_CANDIDATES,
-            var=get_var_for_classifier(wildcards.classifier)
+            f"{out_f2}closure_fits/{mix_name}/{wildcards.classifier}/rebin{{rebin}}/{wildcards.region}/{channel}/closure_status_{get_var_for_classifier(wildcards.classifier)}.json",
+            rebin=REBIN_CANDIDATES
         ),
         script = "coffea4bees/stats_analysis/evaluate_closure_candidates.py",
     output:
@@ -370,9 +369,8 @@ rule make_closure_summary_html:
     input:
         summary = f"{out_f2}summary_{{classifier}}_{{region}}.json",
         status_files = lambda wildcards: expand(
-            f"{out_f2}closure_fits/{mix_name}/{wildcards.classifier}/rebin{{rebin}}/{wildcards.region}/{channel}/closure_status_{var}.json",
-            rebin=REBIN_CANDIDATES,
-            var=get_var_for_classifier(wildcards.classifier)
+            f"{out_f2}closure_fits/{mix_name}/{wildcards.classifier}/rebin{{rebin}}/{wildcards.region}/{channel}/closure_status_{get_var_for_classifier(wildcards.classifier)}.json",
+            rebin=REBIN_CANDIDATES
         ),
         script = "coffea4bees/stats_analysis/make_closure_summary_html.py"
     output:
