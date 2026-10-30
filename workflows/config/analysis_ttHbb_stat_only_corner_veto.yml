@@ -7,8 +7,8 @@
 
 base: coffea4bees/workflows/config/analysis_ttHbb.yml
 
-label: "ttHbb_stat_only_corner_veto"
-output_path: "output/{roast_id}/"
+label: "ttHbb"
+output_path: "output/ttHbb/"
 
 candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
 
