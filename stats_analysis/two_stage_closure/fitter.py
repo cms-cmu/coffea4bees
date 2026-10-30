@@ -69,6 +69,19 @@ class closure:
                 f"Ensure base histograms in {closure_file_out} have identical number of bins!"
             )
 
+        # Option 1: Account for un-averaged static ttbar_PSData across subsamples
+        # Because ttbar_PSData is static across all pseudo-experiments, its statistical variance
+        # was artificially divided by nMixes when data_obs was averaged via TH1::Add and Scale(1/nMixes).
+        # We restore the full single-realization ttbar variance: sigma_new^2 = sigma_data^2 + (1 - 1/nMixes)*sigma_ttbar^2
+        if not getattr(args, 'pure_qcd', False) and nMixes > 1 and self.ttbar_rebin is not None:
+            print_log(f"[INFO] Option 1 (Static ttbar correction): Restoring un-averaged ttbar uncertainty for {nMixes} subsamples")
+            for _bin in range(1, self.nBins_rebin + 1):
+                err_data = self.data_obs_rebin.GetBinError(_bin)
+                err_tt = self.ttbar_rebin.GetBinError(_bin)
+                corr_var = (1.0 - 1.0 / nMixes) * (err_tt ** 2)
+                new_err = (err_data ** 2 + corr_var) ** 0.5
+                self.data_obs_rebin.SetBinError(_bin, new_err)
+
         self.bin_width = 1. / self.nBins_rebin
         self.fit_x_min = 0.5 + closure_fit_x_min / self.bin_width
 
