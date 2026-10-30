@@ -250,7 +250,8 @@ rule check_event_counts:
     params:
         dataset_location = config['dataset_location'],
         run_container_wrapper = config['analysis_container_wrapper'],
-        python_bin = config['python_bin']
+        python_bin = config['python_bin'],
+        allow_errors = config.get('check_event_counts_allow_errors', False)
     shell:
         """
         set -eo pipefail
@@ -258,5 +259,6 @@ rule check_event_counts:
         {params.run_container_wrapper} {params.python_bin} src/tools/check_event_counts.py \
             -f {input} \
             -m {params.dataset_location} \
-            -o {output} 2>&1 | tee {log}
+            -o {output} \
+            $([ "{params.allow_errors}" = "True" ] && echo "--allow-errors") 2>&1 | tee {log}
         """
