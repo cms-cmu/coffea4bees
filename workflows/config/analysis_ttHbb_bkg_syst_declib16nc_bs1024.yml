@@ -1,0 +1,47 @@
+# ==============================================================================
+# ttHbb Run 2 BACKGROUND SYSTEMATIC — DeClustered 16x with bs_init 1024
+# ==============================================================================
+# Layered on analysis_ttHbb_bkg_syst_declib16nc.yml (DeClustered 16x library).
+# Reuses pre-FvT stages A and B from upstream ttHbb_bkg_syst_declib16nc.
+# Uses bs_init: 1024 for 1-to-1 optimization parity with nominal stat_only baseline.
+# ==============================================================================
+
+base: coffea4bees/workflows/config/analysis_ttHbb_bkg_syst_declib16nc.yml
+
+label: "analysis_ttHbb_bkg_syst_declib16nc_bs1024"
+mix_name: "ttHbb_bkg_syst_declib16nc_bs1024"
+output_path: "output/{roast_id}/"
+
+upstream_pre_fvt: "ttHbb_bkg_syst_declib16nc"
+
+publish_base: "{eos_prod}/{roast_id}"
+handoff:
+  eos_base: "{eos_prod}/{roast_id}/handoff"
+
+train_mem: 32000
+eval_mem: 24000
+
+phase_e_fvt:
+  channel: "ttHbb"
+  mix_name: "ttHbb_bkg_syst_declib16nc_bs1024"
+  n_models: 16
+
+fvt_train_workflow:
+  main:
+    module: train
+    option:
+      - --max-loaders 2
+      - --max-trainers 1
+      - --device cuda cpu
+  model:
+    - module: HCR.FvT.baseline.Train
+      option:
+        - --kfolds 3
+        - --kfold-seed FvT random
+        - --kfold-seed-offsets 0
+        - --training FixedStep
+        - epoch: 20
+          bs_init: 1024
+        - --finetuning FixedStep
+        - epoch: 1
+          bs_init: 16384
