@@ -1,0 +1,21 @@
+# ==============================================================================
+# ttHbb Run 2 BACKGROUND SYSTEMATIC (Snakefile_bkg_syst.smk) with DeClustered Library (declib16nc)
+# with Sideband Corner Veto
+# ==============================================================================
+base: coffea4bees/workflows/config/analysis_ttHbb_bkg_syst_declib16nc.yml
+label: "ttHbb_bkg_syst_declib16nc_corner_veto"
+output_path: "output/{roast_id}/"
+
+# Nominal roast carrying the corner veto SB selection
+inputs:
+  upstream_roasts:
+    declib: declib16nc_run2_20261003_3ab8302-b2d2dec
+    nominal: ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11
+    mixeddata: mixeddata_run2_20260927_c39c264-0ce4d59
+
+# Candidates selection threshold with corner veto
+candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
+phaseA_3:
+  analysis:
+    config:
+      candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
