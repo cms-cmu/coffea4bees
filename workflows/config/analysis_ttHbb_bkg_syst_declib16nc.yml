@@ -302,7 +302,7 @@ closure_rebin_candidates:
   - 16  # 15 bins (240 / 16)
   - 20  # 12 bins (240 / 20)
   - 24  # 10 bins (240 / 24)
-max_basis: 10
+max_basis: 5
 rebin: 12
 no_sqrt_n_priors: false
 
