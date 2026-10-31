@@ -1,0 +1,1080 @@
+counts4:
+    data_2025G11:
+        passJetMult: 9659061.0
+        passPreSel: 424819.0
+        passDiJetMass: 148213.0
+        SR_woTrig: 36014.0
+        SR: 36014.0
+        SB_woTrig: 71669.0
+        SB: 71669.0
+
+    data_2025G01:
+        passJetMult: 9661074.0
+        passPreSel: 423932.0
+        passDiJetMass: 148267.0
+        SR_woTrig: 35854.0
+        SR: 35854.0
+        SB_woTrig: 71738.0
+        SB: 71738.0
+
+    data_2025F12:
+        passJetMult: 3311371.0
+        passPreSel: 146063.0
+        passDiJetMass: 51454.0
+        SR_woTrig: 12553.0
+        SR: 12553.0
+        SB_woTrig: 24435.0
+        SB: 24435.0
+
+    data_2025F11:
+        passJetMult: 8372608.0
+        passPreSel: 374787.0
+        passDiJetMass: 131203.0
+        SR_woTrig: 31867.0
+        SR: 31867.0
+        SB_woTrig: 63067.0
+        SB: 63067.0
+
+    data_2025F02:
+        passJetMult: 3313880.0
+        passPreSel: 146383.0
+        passDiJetMass: 51210.0
+        SR_woTrig: 12390.0
+        SR: 12390.0
+        SB_woTrig: 24523.0
+        SB: 24523.0
+
+    data_2025F01:
+        passJetMult: 8374142.0
+        passPreSel: 376489.0
+        passDiJetMass: 131929.0
+        SR_woTrig: 31741.0
+        SR: 31741.0
+        SB_woTrig: 63587.0
+        SB: 63587.0
+
+    data_2025E11:
+        passJetMult: 6188116.0
+        passPreSel: 284279.0
+        passDiJetMass: 100973.0
+        SR_woTrig: 24231.0
+        SR: 24231.0
+        SB_woTrig: 48075.0
+        SB: 48075.0
+
+    data_2025E01:
+        passJetMult: 6186751.0
+        passPreSel: 284056.0
+        passDiJetMass: 101177.0
+        SR_woTrig: 24302.0
+        SR: 24302.0
+        SB_woTrig: 48333.0
+        SB: 48333.0
+
+    data_2025D11:
+        passJetMult: 11463625.0
+        passPreSel: 537969.0
+        passDiJetMass: 191191.0
+        SR_woTrig: 45716.0
+        SR: 45716.0
+        SB_woTrig: 90815.0
+        SB: 90815.0
+
+    data_2025D01:
+        passJetMult: 11460377.0
+        passPreSel: 536855.0
+        passDiJetMass: 191173.0
+        SR_woTrig: 46038.0
+        SR: 46038.0
+        SB_woTrig: 90772.0
+        SB: 90772.0
+
+    data_2025C12:
+        passJetMult: 3529481.0
+        passPreSel: 170132.0
+        passDiJetMass: 59586.0
+        SR_woTrig: 14368.0
+        SR: 14368.0
+        SB_woTrig: 28246.0
+        SB: 28246.0
+
+    data_2025C11:
+        passJetMult: 5755491.0
+        passPreSel: 280042.0
+        passDiJetMass: 98354.0
+        SR_woTrig: 23716.0
+        SR: 23716.0
+        SB_woTrig: 46957.0
+        SB: 46957.0
+
+    data_2025C02:
+        passJetMult: 3528706.0
+        passPreSel: 170461.0
+        passDiJetMass: 59525.0
+        SR_woTrig: 14435.0
+        SR: 14435.0
+        SB_woTrig: 28509.0
+        SB: 28509.0
+
+    data_2025C01:
+        passJetMult: 5755321.0
+        passPreSel: 279228.0
+        passDiJetMass: 97925.0
+        SR_woTrig: 23350.0
+        SR: 23350.0
+        SB_woTrig: 46788.0
+        SB: 46788.0
+
+    data_2025B11:
+        passJetMult: 117370.0
+        passPreSel: 5869.0
+        passDiJetMass: 2036.0
+        SR_woTrig: 483.0
+        SR: 483.0
+        SB_woTrig: 956.0
+        SB: 956.0
+
+    data_2025B01:
+        passJetMult: 116920.0
+        passPreSel: 5681.0
+        passDiJetMass: 1980.0
+        SR_woTrig: 477.0
+        SR: 477.0
+        SB_woTrig: 965.0
+        SB: 965.0
+
+    TTbar_from_d3_2025G11:
+        passPreSel: 15861.11
+        passDiJetMass: 7759.58
+        SR: 2307.59
+        SB: 3707.6
+
+    TTbar_from_d3_2025G01:
+        passPreSel: 15887.98
+        passDiJetMass: 7793.72
+        SR: 2318.06
+        SB: 3734.06
+
+    TTbar_from_d3_2025F12:
+        passPreSel: 5322.85
+        passDiJetMass: 2622.92
+        SR: 781.66
+        SB: 1256.34
+
+    TTbar_from_d3_2025F11:
+        passPreSel: 13505.87
+        passDiJetMass: 6650.91
+        SR: 1987.58
+        SB: 3176.5
+
+    TTbar_from_d3_2025F02:
+        passPreSel: 5311.8
+        passDiJetMass: 2626.95
+        SR: 787.11
+        SB: 1247.93
+
+    TTbar_from_d3_2025F01:
+        passPreSel: 13506.65
+        passDiJetMass: 6644.57
+        SR: 1982.19
+        SB: 3165.04
+
+    TTbar_from_d3_2025E11:
+        passPreSel: 10368.97
+        passDiJetMass: 5182.0
+        SR: 1524.7
+        SB: 2483.53
+
+    TTbar_from_d3_2025E01:
+        passPreSel: 10372.24
+        passDiJetMass: 5175.73
+        SR: 1534.23
+        SB: 2463.9
+
+    TTbar_from_d3_2025D11:
+        passPreSel: 19256.54
+        passDiJetMass: 9667.87
+        SR: 2880.76
+        SB: 4590.96
+
+    TTbar_from_d3_2025D01:
+        passPreSel: 19224.39
+        passDiJetMass: 9619.61
+        SR: 2865.89
+        SB: 4567.31
+
+    TTbar_from_d3_2025C12:
+        passPreSel: 6386.06
+        passDiJetMass: 3178.67
+        SR: 956.51
+        SB: 1506.57
+
+    TTbar_from_d3_2025C11:
+        passPreSel: 10371.7
+        passDiJetMass: 5175.78
+        SR: 1540.69
+        SB: 2458.97
+
+    TTbar_from_d3_2025C02:
+        passPreSel: 6366.71
+        passDiJetMass: 3168.7
+        SR: 945.63
+        SB: 1503.71
+
+    TTbar_from_d3_2025C01:
+        passPreSel: 10376.27
+        passDiJetMass: 5181.07
+        SR: 1537.3
+        SB: 2463.75
+
+    TTbar_from_d3_2025B11:
+        passPreSel: 204.2
+        passDiJetMass: 99.72
+        SR: 29.01
+        SB: 47.83
+
+    TTbar_from_d3_2025B01:
+        passPreSel: 198.61
+        passDiJetMass: 96.98
+        SR: 27.44
+        SB: 47.28
+
+    TTToSemiLeptonic_2025:
+        passJetMult: 2152592.72
+        passPreSel: 61334.69
+        passDiJetMass: 28169.58
+        SR_woTrig: 8591.0
+        SR: 8044.2
+        SB_woTrig: 14341.6
+        SB: 13490.17
+
+    TTToHadronic_2025:
+        passJetMult: 3297995.75
+        passPreSel: 86760.85
+        passDiJetMass: 45520.93
+        SR_woTrig: 14679.92
+        SR: 14026.29
+        SB_woTrig: 22354.27
+        SB: 21419.78
+
+    TTTo2L2Nu_2025:
+        passJetMult: 213018.06
+        passPreSel: 10249.36
+        passDiJetMass: 4108.71
+        SR_woTrig: 1213.1
+        SR: 1111.22
+        SB_woTrig: 2185.6
+        SB: 2013.34
+
+
+
+counts3:
+    data_2025G11:
+        passJetMult: 9659061.0
+        passPreSel: 421230.68
+        passDiJetMass: 144155.85
+        SR_woTrig: 34888.74
+        SR: 34888.74
+        SB_woTrig: 69936.48
+        SB: 69936.48
+
+    data_2025G01:
+        passJetMult: 9661074.0
+        passPreSel: 421303.84
+        passDiJetMass: 144570.56
+        SR_woTrig: 34873.5
+        SR: 34873.5
+        SB_woTrig: 70188.53
+        SB: 70188.53
+
+    data_2025F12:
+        passJetMult: 3311371.0
+        passPreSel: 144516.1
+        passDiJetMass: 49975.0
+        SR_woTrig: 12086.62
+        SR: 12086.62
+        SB_woTrig: 24219.77
+        SB: 24219.77
+
+    data_2025F11:
+        passJetMult: 8372608.0
+        passPreSel: 365722.06
+        passDiJetMass: 126537.04
+        SR_woTrig: 30494.31
+        SR: 30494.31
+        SB_woTrig: 61249.03
+        SB: 61249.03
+
+    data_2025F02:
+        passJetMult: 3313880.0
+        passPreSel: 144432.52
+        passDiJetMass: 49993.11
+        SR_woTrig: 12083.88
+        SR: 12083.88
+        SB_woTrig: 24182.98
+        SB: 24182.98
+
+    data_2025F01:
+        passJetMult: 8374142.0
+        passPreSel: 365477.67
+        passDiJetMass: 126320.99
+        SR_woTrig: 30494.83
+        SR: 30494.83
+        SB_woTrig: 61043.98
+        SB: 61043.98
+
+    data_2025E11:
+        passJetMult: 6188116.0
+        passPreSel: 273483.96
+        passDiJetMass: 95988.9
+        SR_woTrig: 22947.07
+        SR: 22947.07
+        SB_woTrig: 46138.23
+        SB: 46138.23
+
+    data_2025E01:
+        passJetMult: 6186751.0
+        passPreSel: 273649.35
+        passDiJetMass: 96050.45
+        SR_woTrig: 23012.86
+        SR: 23012.86
+        SB_woTrig: 46167.83
+        SB: 46167.83
+
+    data_2025D11:
+        passJetMult: 11463625.0
+        passPreSel: 507928.73
+        passDiJetMass: 178297.72
+        SR_woTrig: 42684.57
+        SR: 42684.57
+        SB_woTrig: 85608.74
+        SB: 85608.74
+
+    data_2025D01:
+        passJetMult: 11460377.0
+        passPreSel: 507707.65
+        passDiJetMass: 178025.75
+        SR_woTrig: 42760.97
+        SR: 42760.97
+        SB_woTrig: 85328.3
+        SB: 85328.3
+
+    data_2025C12:
+        passJetMult: 3529481.0
+        passPreSel: 160812.2
+        passDiJetMass: 55984.91
+        SR_woTrig: 13403.09
+        SR: 13403.09
+        SB_woTrig: 26843.87
+        SB: 26843.87
+
+    data_2025C11:
+        passJetMult: 5755491.0
+        passPreSel: 261874.62
+        passDiJetMass: 91263.16
+        SR_woTrig: 21871.77
+        SR: 21871.77
+        SB_woTrig: 43814.62
+        SB: 43814.62
+
+    data_2025C02:
+        passJetMult: 3528706.0
+        passPreSel: 160694.17
+        passDiJetMass: 55852.59
+        SR_woTrig: 13426.25
+        SR: 13426.25
+        SB_woTrig: 26805.14
+        SB: 26805.14
+
+    data_2025C01:
+        passJetMult: 5755321.0
+        passPreSel: 262175.62
+        passDiJetMass: 91300.07
+        SR_woTrig: 21869.08
+        SR: 21869.08
+        SB_woTrig: 43875.74
+        SB: 43875.74
+
+    data_2025B11:
+        passJetMult: 117370.0
+        passPreSel: 5237.22
+        passDiJetMass: 1805.36
+        SR_woTrig: 427.56
+        SR: 427.56
+        SB_woTrig: 872.8
+        SB: 872.8
+
+    data_2025B01:
+        passJetMult: 116920.0
+        passPreSel: 5223.91
+        passDiJetMass: 1817.76
+        SR_woTrig: 439.97
+        SR: 439.97
+        SB_woTrig: 872.91
+        SB: 872.91
+
+    TTbar_from_d3_2025G11:
+        passPreSel: 18723.92
+        passDiJetMass: 11088.74
+        SR: 3466.87
+        SB: 5222.59
+
+    TTbar_from_d3_2025G01:
+        passPreSel: 18752.03
+        passDiJetMass: 11132.48
+        SR: 3475.18
+        SB: 5261.18
+
+    TTbar_from_d3_2025F12:
+        passPreSel: 6322.37
+        passDiJetMass: 3773.3
+        SR: 1177.01
+        SB: 1782.47
+
+    TTbar_from_d3_2025F11:
+        passPreSel: 16015.93
+        passDiJetMass: 9551.12
+        SR: 2996.68
+        SB: 4489.96
+
+    TTbar_from_d3_2025F02:
+        passPreSel: 6300.69
+        passDiJetMass: 3763.57
+        SR: 1180.71
+        SB: 1766.64
+
+    TTbar_from_d3_2025F01:
+        passPreSel: 16011.71
+        passDiJetMass: 9538.72
+        SR: 2992.71
+        SB: 4476.07
+
+    TTbar_from_d3_2025E11:
+        passPreSel: 12267.46
+        passDiJetMass: 7388.26
+        SR: 2288.21
+        SB: 3478.59
+
+    TTbar_from_d3_2025E01:
+        passPreSel: 12272.64
+        passDiJetMass: 7394.43
+        SR: 2298.99
+        SB: 3473.56
+
+    TTbar_from_d3_2025D11:
+        passPreSel: 22784.33
+        passDiJetMass: 13762.08
+        SR: 4295.93
+        SB: 6448.81
+
+    TTbar_from_d3_2025D01:
+        passPreSel: 22741.03
+        passDiJetMass: 13706.67
+        SR: 4285.99
+        SB: 6418.45
+
+    TTbar_from_d3_2025C12:
+        passPreSel: 7452.23
+        passDiJetMass: 4470.92
+        SR: 1405.23
+        SB: 2093.65
+
+    TTbar_from_d3_2025C11:
+        passPreSel: 12099.06
+        passDiJetMass: 7263.25
+        SR: 2264.37
+        SB: 3400.05
+
+    TTbar_from_d3_2025C02:
+        passPreSel: 7443.87
+        passDiJetMass: 4464.93
+        SR: 1392.98
+        SB: 2091.89
+
+    TTbar_from_d3_2025C01:
+        passPreSel: 12101.9
+        passDiJetMass: 7267.03
+        SR: 2267.36
+        SB: 3405.59
+
+    TTbar_from_d3_2025B11:
+        passPreSel: 242.78
+        passDiJetMass: 144.33
+        SR: 44.75
+        SB: 67.64
+
+    TTbar_from_d3_2025B01:
+        passPreSel: 235.56
+        passDiJetMass: 139.56
+        SR: 42.84
+        SB: 66.07
+
+    TTToSemiLeptonic_2025:
+        passJetMult: 2152592.72
+        passPreSel: 62182.28
+        passDiJetMass: 33468.01
+        SR_woTrig: 10727.41
+        SR: 9803.55
+        SB_woTrig: 17343.54
+        SB: 15883.71
+
+    TTToHadronic_2025:
+        passJetMult: 3297995.75
+        passPreSel: 127187.94
+        passDiJetMass: 80054.83
+        SR_woTrig: 27385.67
+        SR: 25768.72
+        SB_woTrig: 39140.68
+        SB: 36886.36
+
+    TTTo2L2Nu_2025:
+        passJetMult: 213018.06
+        passPreSel: 5381.56
+        passDiJetMass: 2314.86
+        SR_woTrig: 717.57
+        SR: 645.42
+        SB_woTrig: 1243.56
+        SB: 1125.48
+
+
+
+counts4_unit:
+    data_2025G11:
+        passJetMult: 9659061.0
+        passPreSel: 424819.0
+        passDiJetMass: 148213.0
+        SR_woTrig: 36014.0
+        SR: 36014.0
+        SB_woTrig: 71669.0
+        SB: 71669.0
+
+    data_2025G01:
+        passJetMult: 9661074.0
+        passPreSel: 423932.0
+        passDiJetMass: 148267.0
+        SR_woTrig: 35854.0
+        SR: 35854.0
+        SB_woTrig: 71738.0
+        SB: 71738.0
+
+    data_2025F12:
+        passJetMult: 3311371.0
+        passPreSel: 146063.0
+        passDiJetMass: 51454.0
+        SR_woTrig: 12553.0
+        SR: 12553.0
+        SB_woTrig: 24435.0
+        SB: 24435.0
+
+    data_2025F11:
+        passJetMult: 8372608.0
+        passPreSel: 374787.0
+        passDiJetMass: 131203.0
+        SR_woTrig: 31867.0
+        SR: 31867.0
+        SB_woTrig: 63067.0
+        SB: 63067.0
+
+    data_2025F02:
+        passJetMult: 3313880.0
+        passPreSel: 146383.0
+        passDiJetMass: 51210.0
+        SR_woTrig: 12390.0
+        SR: 12390.0
+        SB_woTrig: 24523.0
+        SB: 24523.0
+
+    data_2025F01:
+        passJetMult: 8374142.0
+        passPreSel: 376489.0
+        passDiJetMass: 131929.0
+        SR_woTrig: 31741.0
+        SR: 31741.0
+        SB_woTrig: 63587.0
+        SB: 63587.0
+
+    data_2025E11:
+        passJetMult: 6188116.0
+        passPreSel: 284279.0
+        passDiJetMass: 100973.0
+        SR_woTrig: 24231.0
+        SR: 24231.0
+        SB_woTrig: 48075.0
+        SB: 48075.0
+
+    data_2025E01:
+        passJetMult: 6186751.0
+        passPreSel: 284056.0
+        passDiJetMass: 101177.0
+        SR_woTrig: 24302.0
+        SR: 24302.0
+        SB_woTrig: 48333.0
+        SB: 48333.0
+
+    data_2025D11:
+        passJetMult: 11463625.0
+        passPreSel: 537969.0
+        passDiJetMass: 191191.0
+        SR_woTrig: 45716.0
+        SR: 45716.0
+        SB_woTrig: 90815.0
+        SB: 90815.0
+
+    data_2025D01:
+        passJetMult: 11460377.0
+        passPreSel: 536855.0
+        passDiJetMass: 191173.0
+        SR_woTrig: 46038.0
+        SR: 46038.0
+        SB_woTrig: 90772.0
+        SB: 90772.0
+
+    data_2025C12:
+        passJetMult: 3529481.0
+        passPreSel: 170132.0
+        passDiJetMass: 59586.0
+        SR_woTrig: 14368.0
+        SR: 14368.0
+        SB_woTrig: 28246.0
+        SB: 28246.0
+
+    data_2025C11:
+        passJetMult: 5755491.0
+        passPreSel: 280042.0
+        passDiJetMass: 98354.0
+        SR_woTrig: 23716.0
+        SR: 23716.0
+        SB_woTrig: 46957.0
+        SB: 46957.0
+
+    data_2025C02:
+        passJetMult: 3528706.0
+        passPreSel: 170461.0
+        passDiJetMass: 59525.0
+        SR_woTrig: 14435.0
+        SR: 14435.0
+        SB_woTrig: 28509.0
+        SB: 28509.0
+
+    data_2025C01:
+        passJetMult: 5755321.0
+        passPreSel: 279228.0
+        passDiJetMass: 97925.0
+        SR_woTrig: 23350.0
+        SR: 23350.0
+        SB_woTrig: 46788.0
+        SB: 46788.0
+
+    data_2025B11:
+        passJetMult: 117370.0
+        passPreSel: 5869.0
+        passDiJetMass: 2036.0
+        SR_woTrig: 483.0
+        SR: 483.0
+        SB_woTrig: 956.0
+        SB: 956.0
+
+    data_2025B01:
+        passJetMult: 116920.0
+        passPreSel: 5681.0
+        passDiJetMass: 1980.0
+        SR_woTrig: 477.0
+        SR: 477.0
+        SB_woTrig: 965.0
+        SB: 965.0
+
+    TTbar_from_d3_2025G11:
+        passPreSel: 8341898.0
+        passDiJetMass: 2656686.0
+        SR: 677449.0
+        SB: 1344018.0
+
+    TTbar_from_d3_2025G01:
+        passPreSel: 8342924.0
+        passDiJetMass: 2660605.0
+        SR: 676148.0
+        SB: 1347073.0
+
+    TTbar_from_d3_2025F12:
+        passPreSel: 2855126.0
+        passDiJetMass: 919571.0
+        SR: 234096.0
+        SB: 464505.0
+
+    TTbar_from_d3_2025F11:
+        passPreSel: 7206314.0
+        passDiJetMass: 2319179.0
+        SR: 588826.0
+        SB: 1170345.0
+
+    TTbar_from_d3_2025F02:
+        passPreSel: 2856680.0
+        passDiJetMass: 919653.0
+        SR: 234276.0
+        SB: 463939.0
+
+    TTbar_from_d3_2025F01:
+        passPreSel: 7205311.0
+        passDiJetMass: 2316678.0
+        SR: 589201.0
+        SB: 1168622.0
+
+    TTbar_from_d3_2025E11:
+        passPreSel: 5333533.0
+        passDiJetMass: 1748743.0
+        SR: 442178.0
+        SB: 877580.0
+
+    TTbar_from_d3_2025E01:
+        passPreSel: 5333112.0
+        passDiJetMass: 1748289.0
+        SR: 442606.0
+        SB: 876905.0
+
+    TTbar_from_d3_2025D11:
+        passPreSel: 9871521.0
+        passDiJetMass: 3231495.0
+        SR: 816412.0
+        SB: 1621580.0
+
+    TTbar_from_d3_2025D01:
+        passPreSel: 9869425.0
+        passDiJetMass: 3228986.0
+        SR: 818898.0
+        SB: 1617710.0
+
+    TTbar_from_d3_2025C12:
+        passPreSel: 3081814.0
+        passDiJetMass: 1000841.0
+        SR: 253071.0
+        SB: 501599.0
+
+    TTbar_from_d3_2025C11:
+        passPreSel: 5021033.0
+        passDiJetMass: 1632254.0
+        SR: 412765.0
+        SB: 818798.0
+
+    TTbar_from_d3_2025C02:
+        passPreSel: 3081147.0
+        passDiJetMass: 999648.0
+        SR: 253272.0
+        SB: 501400.0
+
+    TTbar_from_d3_2025C01:
+        passPreSel: 5021263.0
+        passDiJetMass: 1630672.0
+        SR: 412412.0
+        SB: 818434.0
+
+    TTbar_from_d3_2025B11:
+        passPreSel: 101800.0
+        passDiJetMass: 32892.0
+        SR: 8230.0
+        SB: 16581.0
+
+    TTbar_from_d3_2025B01:
+        passPreSel: 101653.0
+        passDiJetMass: 33032.0
+        SR: 8381.0
+        SB: 16639.0
+
+    TTToSemiLeptonic_2025:
+        passJetMult: 25094564.0
+        passPreSel: 684344.0
+        passDiJetMass: 318472.0
+        SR_woTrig: 90471.0
+        SR: 90471.0
+        SB_woTrig: 151925.0
+        SB: 151925.0
+
+    TTToHadronic_2025:
+        passJetMult: 36646798.0
+        passPreSel: 929718.0
+        passDiJetMass: 490472.0
+        SR_woTrig: 150972.0
+        SR: 150972.0
+        SB_woTrig: 230053.0
+        SB: 230053.0
+
+    TTTo2L2Nu_2025:
+        passJetMult: 9600724.0
+        passPreSel: 452697.0
+        passDiJetMass: 185573.0
+        SR_woTrig: 49926.0
+        SR: 49926.0
+        SB_woTrig: 90194.0
+        SB: 90194.0
+
+
+
+counts3_unit:
+    data_2025G11:
+        passJetMult: 9659061.0
+        passPreSel: 8341898.0
+        passDiJetMass: 2656686.0
+        SR_woTrig: 677449.0
+        SR: 677449.0
+        SB_woTrig: 1344018.0
+        SB: 1344018.0
+
+    data_2025G01:
+        passJetMult: 9661074.0
+        passPreSel: 8342924.0
+        passDiJetMass: 2660605.0
+        SR_woTrig: 676148.0
+        SR: 676148.0
+        SB_woTrig: 1347073.0
+        SB: 1347073.0
+
+    data_2025F12:
+        passJetMult: 3311371.0
+        passPreSel: 2855126.0
+        passDiJetMass: 919571.0
+        SR_woTrig: 234096.0
+        SR: 234096.0
+        SB_woTrig: 464505.0
+        SB: 464505.0
+
+    data_2025F11:
+        passJetMult: 8372608.0
+        passPreSel: 7206314.0
+        passDiJetMass: 2319179.0
+        SR_woTrig: 588826.0
+        SR: 588826.0
+        SB_woTrig: 1170345.0
+        SB: 1170345.0
+
+    data_2025F02:
+        passJetMult: 3313880.0
+        passPreSel: 2856680.0
+        passDiJetMass: 919653.0
+        SR_woTrig: 234276.0
+        SR: 234276.0
+        SB_woTrig: 463939.0
+        SB: 463939.0
+
+    data_2025F01:
+        passJetMult: 8374142.0
+        passPreSel: 7205311.0
+        passDiJetMass: 2316678.0
+        SR_woTrig: 589201.0
+        SR: 589201.0
+        SB_woTrig: 1168622.0
+        SB: 1168622.0
+
+    data_2025E11:
+        passJetMult: 6188116.0
+        passPreSel: 5333533.0
+        passDiJetMass: 1748743.0
+        SR_woTrig: 442178.0
+        SR: 442178.0
+        SB_woTrig: 877580.0
+        SB: 877580.0
+
+    data_2025E01:
+        passJetMult: 6186751.0
+        passPreSel: 5333112.0
+        passDiJetMass: 1748289.0
+        SR_woTrig: 442606.0
+        SR: 442606.0
+        SB_woTrig: 876905.0
+        SB: 876905.0
+
+    data_2025D11:
+        passJetMult: 11463625.0
+        passPreSel: 9871521.0
+        passDiJetMass: 3231495.0
+        SR_woTrig: 816412.0
+        SR: 816412.0
+        SB_woTrig: 1621580.0
+        SB: 1621580.0
+
+    data_2025D01:
+        passJetMult: 11460377.0
+        passPreSel: 9869425.0
+        passDiJetMass: 3228986.0
+        SR_woTrig: 818898.0
+        SR: 818898.0
+        SB_woTrig: 1617710.0
+        SB: 1617710.0
+
+    data_2025C12:
+        passJetMult: 3529481.0
+        passPreSel: 3081814.0
+        passDiJetMass: 1000841.0
+        SR_woTrig: 253071.0
+        SR: 253071.0
+        SB_woTrig: 501599.0
+        SB: 501599.0
+
+    data_2025C11:
+        passJetMult: 5755491.0
+        passPreSel: 5021033.0
+        passDiJetMass: 1632254.0
+        SR_woTrig: 412765.0
+        SR: 412765.0
+        SB_woTrig: 818798.0
+        SB: 818798.0
+
+    data_2025C02:
+        passJetMult: 3528706.0
+        passPreSel: 3081147.0
+        passDiJetMass: 999648.0
+        SR_woTrig: 253272.0
+        SR: 253272.0
+        SB_woTrig: 501400.0
+        SB: 501400.0
+
+    data_2025C01:
+        passJetMult: 5755321.0
+        passPreSel: 5021263.0
+        passDiJetMass: 1630672.0
+        SR_woTrig: 412412.0
+        SR: 412412.0
+        SB_woTrig: 818434.0
+        SB: 818434.0
+
+    data_2025B11:
+        passJetMult: 117370.0
+        passPreSel: 101800.0
+        passDiJetMass: 32892.0
+        SR_woTrig: 8230.0
+        SR: 8230.0
+        SB_woTrig: 16581.0
+        SB: 16581.0
+
+    data_2025B01:
+        passJetMult: 116920.0
+        passPreSel: 101653.0
+        passDiJetMass: 33032.0
+        SR_woTrig: 8381.0
+        SR: 8381.0
+        SB_woTrig: 16639.0
+        SB: 16639.0
+
+    TTbar_from_d3_2025G11:
+        passPreSel: 8341898.0
+        passDiJetMass: 2656686.0
+        SR: 677449.0
+        SB: 1344018.0
+
+    TTbar_from_d3_2025G01:
+        passPreSel: 8342924.0
+        passDiJetMass: 2660605.0
+        SR: 676148.0
+        SB: 1347073.0
+
+    TTbar_from_d3_2025F12:
+        passPreSel: 2855126.0
+        passDiJetMass: 919571.0
+        SR: 234096.0
+        SB: 464505.0
+
+    TTbar_from_d3_2025F11:
+        passPreSel: 7206314.0
+        passDiJetMass: 2319179.0
+        SR: 588826.0
+        SB: 1170345.0
+
+    TTbar_from_d3_2025F02:
+        passPreSel: 2856680.0
+        passDiJetMass: 919653.0
+        SR: 234276.0
+        SB: 463939.0
+
+    TTbar_from_d3_2025F01:
+        passPreSel: 7205311.0
+        passDiJetMass: 2316678.0
+        SR: 589201.0
+        SB: 1168622.0
+
+    TTbar_from_d3_2025E11:
+        passPreSel: 5333533.0
+        passDiJetMass: 1748743.0
+        SR: 442178.0
+        SB: 877580.0
+
+    TTbar_from_d3_2025E01:
+        passPreSel: 5333112.0
+        passDiJetMass: 1748289.0
+        SR: 442606.0
+        SB: 876905.0
+
+    TTbar_from_d3_2025D11:
+        passPreSel: 9871521.0
+        passDiJetMass: 3231495.0
+        SR: 816412.0
+        SB: 1621580.0
+
+    TTbar_from_d3_2025D01:
+        passPreSel: 9869425.0
+        passDiJetMass: 3228986.0
+        SR: 818898.0
+        SB: 1617710.0
+
+    TTbar_from_d3_2025C12:
+        passPreSel: 3081814.0
+        passDiJetMass: 1000841.0
+        SR: 253071.0
+        SB: 501599.0
+
+    TTbar_from_d3_2025C11:
+        passPreSel: 5021033.0
+        passDiJetMass: 1632254.0
+        SR: 412765.0
+        SB: 818798.0
+
+    TTbar_from_d3_2025C02:
+        passPreSel: 3081147.0
+        passDiJetMass: 999648.0
+        SR: 253272.0
+        SB: 501400.0
+
+    TTbar_from_d3_2025C01:
+        passPreSel: 5021263.0
+        passDiJetMass: 1630672.0
+        SR: 412412.0
+        SB: 818434.0
+
+    TTbar_from_d3_2025B11:
+        passPreSel: 101800.0
+        passDiJetMass: 32892.0
+        SR: 8230.0
+        SB: 16581.0
+
+    TTbar_from_d3_2025B01:
+        passPreSel: 101653.0
+        passDiJetMass: 33032.0
+        SR: 8381.0
+        SB: 16639.0
+
+    TTToSemiLeptonic_2025:
+        passJetMult: 25094564.0
+        passPreSel: 11473908.0
+        passDiJetMass: 6394125.0
+        SR_woTrig: 1889259.0
+        SR: 1889259.0
+        SB_woTrig: 3052125.0
+        SB: 3052125.0
+
+    TTToHadronic_2025:
+        passJetMult: 36646798.0
+        passPreSel: 17563737.0
+        passDiJetMass: 11444022.0
+        SR_woTrig: 3778801.0
+        SR: 3778801.0
+        SB_woTrig: 5269760.0
+        SB: 5269760.0
+
+    TTTo2L2Nu_2025:
+        passJetMult: 9600724.0
+        passPreSel: 4598467.0
+        passDiJetMass: 1995499.0
+        SR_woTrig: 561921.0
+        SR: 561921.0
+        SB_woTrig: 973181.0
+        SB: 973181.0
+
+
+

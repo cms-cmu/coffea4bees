@@ -216,9 +216,10 @@ WRAPPER = config['analysis_container_wrapper']
 PYTHON = config.get('python_bin', os.getenv("CONTAINER_PYTHON", "python"))
 CONDOR = "" if (config['test'] or os.getenv("CI")) else "--shared-dask --condor"
 TEST_FLAG = "-t" if config['test'] else ""
-# Snakefile_MakeMixedData_5_ttbar_psdata.smk (included below) passes ERAS_ARG to runner.py. Its only
-# dataset here is ttbar MC, for which runner.py ignores --eras: keep the runner default.
-ERAS_ARG = ""
+# runner.py --eras: its default era list lacks most 2025 picoAOD keys (B01, E01, F01, G01, ...) and drops
+# data eras outside it silently. Pass year_eras explicitly to every runner.py rule, as Snakefile_MvD.smk
+# (MC, e.g. the ttbar pseudodata of Snakefile_MakeMixedData_5_ttbar_psdata.smk, ignores --eras).
+ERAS_ARG = f"--eras {' '.join(sorted({e for eras in YEAR_ERAS.values() for e in eras}))}"
 
 # Shell prefix for any rule that writes to EOS: roast seeds ./proxy/x509_proxy in the checkout.
 # ${VAR:-}, not $VAR: snakemake runs shell blocks under `set -u`. SINGLE braces: the string is

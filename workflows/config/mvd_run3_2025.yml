@@ -6,11 +6,14 @@
 #
 # A standalone copy of mvd_run3_2024.yml (the layered merge would keep its '2024' year_eras). What differs:
 #
-#   * upstreams     the tight 2025 nominal roast nominal_run3_2025_20261017_db7bbcd-feb07f3 (B.1 JCM + histograms,
-#                   B.2 classifier inputs incl. the '2025' = 2024 SM ggF alias, the F.1 config; FvT result: exp.
-#                   limit 3.09 x SM, C.4 SR 0.992) and the 2025 mixed data mixeddata_run3_2025_20261016_daa12d2-15d1d03
-#                   (non-tight library + mixing on the 2025 non-tight JCM + FvT; M.6 SR 1.004, SB 1.013; V.1
-#                   re-selects it with the tight selection).
+#   * upstreams     the tight 2025 nominal roast nominal_run3_2025_20261027_1809191-df306da (B.1 JCM + histograms,
+#                   B.2 classifier inputs incl. the '2025' = 2024 SM ggF alias, the F.1 config; its FvT C.4
+#                   closes at SR 0.946 / SB 0.953, under study -- MvD does not use it) and the 2025 regfix mixed
+#                   data mixeddata_run3_2025_20261027_cea2f98-6c5c9c3 (non-tight library + mixing on the 2025
+#                   non-tight JCM + FvT; M.6 SR 0.986, SB 1.003; V.1 re-selects it with the tight selection).
+#                   The tight roast's B wrote no classifier_inputs_config.yml (classifier inputs are made in
+#                   analysis_data_wJCM); a copy of the 20261017 roast's file with the roast id swapped was placed
+#                   in its EOS output for V.1 (as for mvd_run3_2024).
 #   * eras          the 16 2025 picoAOD keys, one year; `year` dropped from the HCR ancillary features.
 #   * MC            no 2025 MC: '2025' = Summer24 ttbar and ggF (TT.yml / GluGluToHHTo4B.yml aliases), 2025 lumi.
 #   * MvD floor     mvd_pmix4_floor 0.01 (as the 30x MvD roasts): the 2025 FvT was over-confident on a tail
@@ -34,20 +37,20 @@ output_path: "output/{roast_id}/"
 publish_base: "{eos_prod}/{roast_id}"
 
 inputs:
-  upstream_roasts: [nominal_run3_2025_20261017_db7bbcd-feb07f3, mixeddata_run3_2025_20261016_daa12d2-15d1d03]
+  upstream_roasts: [nominal_run3_2025_20261027_1809191-df306da, mixeddata_run3_2025_20261027_cea2f98-6c5c9c3]
   # Built with the NON-tight 4b hemisphere library; V.1 / V.4 re-select it with the tight selection.
-  mixeddata_all: "{roast:mixeddata_run3_2025_20261016_daa12d2-15d1d03}/handoff/mixeddata_all.yml"
+  mixeddata_all: "{roast:mixeddata_run3_2025_20261027_cea2f98-6c5c9c3}/handoff/mixeddata_all.yml"
   # Tight 2025 Phase B.2: the data / ttbar / ggF classifier-input manifest, and the config that made
   # it (V.1 makes the mixeddata_all inputs with exactly that config).
-  classifier_inputs: "{roast:nominal_run3_2025_20261017_db7bbcd-feb07f3}/handoff/classifier_inputs_nominal_run3_2025_20261017_db7bbcd-feb07f3.json"
-  classifier_inputs_config: "{roast:nominal_run3_2025_20261017_db7bbcd-feb07f3}/output/Run3_2025_nominal/classifier_inputs/classifier_inputs_config.yml"
+  classifier_inputs: "{roast:nominal_run3_2025_20261027_1809191-df306da}/handoff/classifier_inputs_nominal_run3_2025_20261027_1809191-df306da.json"
+  classifier_inputs_config: "{roast:nominal_run3_2025_20261027_1809191-df306da}/output/Run3_2025_nominal/classifier_inputs/classifier_inputs_config.yml"
   # Tight 2025 B.1 JCM (the one the B.2 config above applies) and its data + ttbar histograms, which
   # the tight mixed-data JCM fit reuses (analysis_config_noJCM.yml is read from the same directory).
-  JCM: "{roast:nominal_run3_2025_20261017_db7bbcd-feb07f3}/handoff/jetCombinatoricModel_SB_Run3_2025_v1.yml"
-  jcm_hists: "{roast:nominal_run3_2025_20261017_db7bbcd-feb07f3}/output/Run3_2025_nominal/computeJCM/histAll_NoJCM.coffea"
+  JCM: "{roast:nominal_run3_2025_20261027_1809191-df306da}/handoff/jetCombinatoricModel_SB_Run3_2025_v1.yml"
+  jcm_hists: "{roast:nominal_run3_2025_20261027_1809191-df306da}/output/Run3_2025_nominal/computeJCM/histAll_NoJCM.coffea"
   # Tight 2025 F.1 runner config (made by `--step F --targets create_analysis_config`): V.4 swaps
   # FvT -> MvD, the JCM and SvB_MA, nothing else.
-  analysis_config: "{roast:nominal_run3_2025_20261017_db7bbcd-feb07f3}/output/Run3_2025_nominal/analysis_config.yml"
+  analysis_config: "{roast:nominal_run3_2025_20261027_1809191-df306da}/output/Run3_2025_nominal/analysis_config.yml"
 
 # Eras as in nominal_run3_2025.yml. '2025' MUST stay quoted (string-keyed metadata).
 year_eras:
