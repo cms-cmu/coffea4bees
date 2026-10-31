@@ -248,6 +248,27 @@ class closure:
                     self.exit_message.append('>> SS f-test = %2.0f%%! STRONG EVIDENCE FOR SPURIOUS SIGNAL SYSTEMATIC' % (100 * self.fProb_ss[basis]))
                 self.exit_message.append('-' * 50)
 
+        # Check maximum basis order if no lower basis order passed
+        last_basis = self.bases[-1]
+        if self.basis is None and (self.pvalue[last_basis] > probThreshold):
+            self.passed = True
+            self.exit_message = []
+            print(self.pvalue)
+            print(self.fProb)
+            self.basis = last_basis
+            self.exit_message.append('-' * 50)
+            self.exit_message.append('%s channel' % self.channel.upper())
+            self.exit_message.append('Satisfied goodness of fit at maximum basis order')
+            self.exit_message.append('>> %d, %d basis elements (variance, bias)' % (self.multijet.basis, self.basis))
+            f_prob_val = self.fProb.get(last_basis, np.nan)
+            f_prob_str = f"{100 * f_prob_val:.0f}%" if not np.isnan(f_prob_val) else "N/A"
+            self.exit_message.append('>> p-value = %2.0f%%, f-test = %s with %d basis elements (p-value above threshold)' % (100 * self.pvalue[last_basis], f_prob_str, last_basis))
+            if self.fProb_ss.get(last_basis, 0) < 0.95:
+                self.exit_message.append('>> SS f-test = %2.0f%%. Do not need to include spurious signal systematic :)' % (100 * self.fProb_ss.get(last_basis, 0)))
+            else:
+                self.exit_message.append('>> SS f-test = %2.0f%%! STRONG EVIDENCE FOR SPURIOUS SIGNAL SYSTEMATIC' % (100 * self.fProb_ss.get(last_basis, 0)))
+            self.exit_message.append('-' * 50)
+
         self.plotPValues()
 
         if self.basis is None:
