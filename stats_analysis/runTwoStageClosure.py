@@ -202,6 +202,19 @@ def run():
             ss_passed = bool(ss_fprob < 0.95) if closures[channel].passed else None
             ss_basis = int(basis_closure)
 
+    highest_b = None
+    highest_p = None
+    all_pvalues = {}
+    if channel in closures and hasattr(closures[channel], "bases") and hasattr(closures[channel], "pvalue"):
+        cbases = closures[channel].bases
+        if cbases:
+            highest_b = int(cbases[-1])
+            if highest_b in closures[channel].pvalue:
+                highest_p = float(closures[channel].pvalue[highest_b])
+            for b in cbases:
+                if b in closures[channel].pvalue:
+                    all_pvalues[int(b)] = float(closures[channel].pvalue[b])
+
     closure_status_file = f"{output_dir}/closure_status.json"
     rebin_status_val = int(args.rebin) if not isinstance(config.rebin, (list, np.ndarray)) else list(config.rebin)
     status_dict = {
@@ -217,6 +230,9 @@ def run():
         "spurious_signal_fprob": ss_fprob,
         "passed": bool(closures[channel].passed and (multijetEnsembles[channel].passed or not getattr(args, 'strict_ensemble', False))),
         "selected_basis": int(closures[channel].basis) if channel in closures and closures[channel].basis is not None else None,
+        "highest_basis": highest_b,
+        "highest_basis_pvalue": highest_p,
+        "all_bias_pvalues": all_pvalues,
         "multijet_basis": int(multijetEnsembles[channel].basis) if channel in multijetEnsembles and multijetEnsembles[channel].basis is not None else None,
         "failed_steps": failed_steps,
     }

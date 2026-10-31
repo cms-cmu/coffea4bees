@@ -131,6 +131,14 @@ rule stage_phaseF_1_config:
         if isinstance(user_analysis_cfg, dict):
             data_cfg.setdefault('config', {}).update(user_analysis_cfg)
 
+        cand_sel_cfg = (
+            config.get('candidates_selection_cfg')
+            or user_analysis_cfg.get('candidates_selection_cfg')
+            or (config.get('phase_f_1') or {}).get('config', {}).get('candidates_selection_cfg')
+        )
+        if cand_sel_cfg:
+            data_cfg.setdefault('config', {})['candidates_selection_cfg'] = cand_sel_cfg
+
         phase_f_cfg = config.get('phase_f_1', config.get('bkg_syst_F_1', config.get('phase_f', {})))
         if isinstance(phase_f_cfg.get('config'), dict):
             data_cfg.setdefault('config', {}).update(phase_f_cfg['config'])
