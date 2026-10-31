@@ -1,0 +1,52 @@
+# ==============================================================================
+# ttHbb Run 2 BACKGROUND SYSTEMATIC — DeClustered 16x with sb500 and bs_init 1024
+# ==============================================================================
+# 1. Base: coffea4bees/workflows/config/analysis_ttHbb_bkg_syst_declib16nc.yml
+# 2. Uses bs_init: 1024 for FvT baseline training (1-to-1 parity with nominal stat-only)
+# 3. Candidate selection thresholds use sb500 (sb_min: 25.0, sb_max: 500.0)
+# 4. Two-stage closure (Stage F.2):
+#    - max_basis: 5 (modes <= 5)
+#    - no_sqrt_n_priors: false (includes sqrt(N) uncertainty correction on synthetic data average)
+# ==============================================================================
+
+base: coffea4bees/workflows/config/analysis_ttHbb_bkg_syst_declib16nc.yml
+
+label: "analysis_ttHbb_bkg_syst_sb500_bs1024"
+mix_name: "ttHbb_bkg_syst_sb500_bs1024"
+output_path: "output/{roast_id}/"
+
+publish_base: "{eos_prod}/{roast_id}"
+handoff:
+  eos_base: "{eos_prod}/{roast_id}/handoff"
+
+train_mem: 32000
+eval_mem: 24000
+
+# Stage F_2: Two-stage closure constraints
+max_basis: 5
+no_sqrt_n_priors: false
+
+phase_e_fvt:
+  channel: "ttHbb"
+  mix_name: "ttHbb_bkg_syst_sb500_bs1024"
+  n_models: 16
+
+fvt_train_workflow:
+  main:
+    module: train
+    option:
+      - --max-loaders 2
+      - --max-trainers 1
+      - --device cuda cpu
+  model:
+    - module: HCR.FvT.baseline.Train
+      option:
+        - --kfolds 3
+        - --kfold-seed FvT random
+        - --kfold-seed-offsets 0
+        - --training FixedStep
+        - epoch: 20
+          bs_init: 1024
+        - --finetuning FixedStep
+        - epoch: 1
+          bs_init: 16384
