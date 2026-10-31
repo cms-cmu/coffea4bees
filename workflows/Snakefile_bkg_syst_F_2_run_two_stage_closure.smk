@@ -108,7 +108,9 @@ config.setdefault('years_closure', ' '.join(YEARS))
 out = config['output_path']
 if not out.endswith("/"):
     out += "/"
-out_f2 = f"{out}bkg_syst_F_2_run_two_stage_closure/"
+out_f2 = config.get('out_f2', f"{out}bkg_syst_F_2_run_two_stage_closure/")
+if not out_f2.endswith("/"):
+    out_f2 += "/"
 if 'out_a3' not in globals():     # standalone: no bkg_syst_common
     out_a3 = f"{out}bkg_syst_A_3_process_subsamples/"
 mix_name = config['mix_name']
