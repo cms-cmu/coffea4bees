@@ -77,39 +77,36 @@ def rescale_x_axis(hist_old, xMin_old=300, xMax_old=1200, xMin_new=0, xMax_new=1
 
     xBinCenter_old_list   = [hist_old.GetXaxis().GetBinCenter(bin) for bin in range(1, n_bins_old + 1)]
     xBinLowEdge_old_list  = [hist_old.GetXaxis().GetBinLowEdge(bin) for bin in range(1, n_bins_old + 1)]
-    xBinHighEdge_old_list = [hist_old.GetXaxis().GetBinLowEdge(bin) + hist_old.GetXaxis().GetBinWidth(bin) for bin in range(1, n_bins_old + 1)]
-    content_old_list    = [hist_old.GetBinContent(bin) for bin in range(1, n_bins_old + 1)]
-    error_old_list      = [hist_old.GetBinError(bin) for bin in range(1, n_bins_old + 1)]
+    xBinHighEdge_old_list = [hist_old.GetXaxis().GetBinUpEdge(bin) for bin in range(1, n_bins_old + 1)]
+    content_old_list      = [hist_old.GetBinContent(bin) for bin in range(1, n_bins_old + 1)]
+    error_old_list        = [hist_old.GetBinError(bin) for bin in range(1, n_bins_old + 1)]
 
     existing_hist = ROOT.gDirectory.Get(hist_name)
     if existing_hist:
         existing_hist.Delete()  
 
     underflow_bin_new = 0
-    for bin in range(n_bins_old, 0, -1):
-        xBinLowEdge_old = xBinLowEdge_old_list[bin-1]
-        if xBinLowEdge_old < xMin_old:
-            underflow_bin_new = bin - 1
+    for b in range(n_bins_old, 0, -1):
+        if xBinHighEdge_old_list[b-1] <= xMin_old + 1e-7:
+            underflow_bin_new = b
             break
-    
-    overflow_bin_new = n_bins_old + 1
-    for bin in range(1, n_bins_old + 1):
-        xBinHighEdge_old = xBinHighEdge_old_list[bin-1]
-        if xBinHighEdge_old >= xMax_old:
-            overflow_bin_new = bin - 1
-            break
-    
-    underflow_new = underflow_old + np.sum([content_old_list[bin-1] for bin in range(1, underflow_bin_new+1)])
-    overflow_new  = overflow_old  + np.sum([content_old_list[bin-1] for bin in range(overflow_bin_new, n_bins_old+1)])
-    underflow_err_new = np.sqrt(underflow_bin_new)
-    overflow_err_new = np.sqrt(overflow_bin_new)
 
-    content_new_list = content_old_list[underflow_bin_new+1 : overflow_bin_new]
-    error_new_list   = error_old_list[underflow_bin_new+1 : overflow_bin_new]
-    
-    n_bins_new = overflow_bin_new - underflow_bin_new - 1
+    overflow_bin_new = n_bins_old + 1
+    for b in range(1, n_bins_old + 1):
+        if xBinLowEdge_old_list[b-1] >= xMax_old - 1e-7:
+            overflow_bin_new = b
+            break
+
+    content_new_list = content_old_list[underflow_bin_new : overflow_bin_new - 1]
+    error_new_list   = error_old_list[underflow_bin_new : overflow_bin_new - 1]
+    n_bins_new = len(content_new_list)
+
+    underflow_new = underflow_old + np.sum(content_old_list[:underflow_bin_new])
+    underflow_err_new = np.sqrt(underflow_err_old**2 + np.sum(np.array(error_old_list[:underflow_bin_new])**2))
+    overflow_new = overflow_old + np.sum(content_old_list[overflow_bin_new-1:])
+    overflow_err_new = np.sqrt(overflow_err_old**2 + np.sum(np.array(error_old_list[overflow_bin_new-1:])**2))
+
     hist_new = ROOT.TH1F(hist_name, hist_title, n_bins_new, xMin_new, xMax_new)
-    
     for bin in range(1, n_bins_new + 1):
         hist_new.SetBinContent(bin, content_new_list[bin-1])
         hist_new.SetBinError(bin, error_new_list[bin-1])
@@ -151,10 +148,14 @@ def combine_hists(input_file, hist_template, procs, years, debug=False, as_alias
                 else:
                     hist.Add(h_obj.Clone())
 
-    if hist is not None and 'm4j' in hist_template:
-        m4j_min = float(config.args.m4j_xmin) if config.args and hasattr(config.args, 'm4j_xmin') else 390.0
-        m4j_max = float(config.args.m4j_xmax) if config.args and hasattr(config.args, 'm4j_xmax') else 1200.0
-        hist = rescale_x_axis(hist, xMin_old=m4j_min, xMax_old=m4j_max, xMin_new=0, xMax_new=1)
+    if hist is not None:
+        if 'm4j' in hist_template:
+            m4j_min = float(config.args.m4j_xmin) if config.args and hasattr(config.args, 'm4j_xmin') else 390.0
+            m4j_max = float(config.args.m4j_xmax) if config.args and hasattr(config.args, 'm4j_xmax') else 1200.0
+            hist = rescale_x_axis(hist, xMin_old=m4j_min, xMax_old=m4j_max, xMin_new=0, xMax_new=1)
+        elif getattr(config, 'min_svb', 0.0) > 0 and ('SvB' in hist_template or 'SvB_MA' in hist_template):
+            min_svb = float(config.min_svb)
+            hist = rescale_x_axis(hist, xMin_old=min_svb, xMax_old=1.0, xMin_new=0, xMax_new=1)
 
     return hist
 
