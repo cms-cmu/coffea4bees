@@ -1,12 +1,11 @@
 # ==============================================================================
 # ttHbb Run 2 BACKGROUND SYSTEMATIC — DeClustered 16x with sb500 and bs_init 1024
 # ==============================================================================
-# 1. Base: coffea4bees/workflows/config/analysis_ttHbb_bkg_syst_declib16nc.yml
-# 2. Uses bs_init: 1024 for FvT baseline training (1-to-1 parity with nominal stat-only)
-# 3. Candidate selection thresholds use sb500 (sb_min: 25.0, sb_max: 500.0)
-# 4. Two-stage closure (Stage F.2):
-#    - max_basis: 5 (modes <= 5)
-#    - no_sqrt_n_priors: false (includes sqrt(N) uncertainty correction on synthetic data average)
+# Reuses Stages A and B (subsamples, classifier inputs, JCM fits) from the
+# existing sb500 roast: analysis_ttHbb_bkg_syst_sb500_20261011_6724c7f-5ba6029
+#
+# Only Stages C (FvT training with bs_init: 1024) and F (two-stage closure + Combine)
+# need to be run!
 # ==============================================================================
 
 base: coffea4bees/workflows/config/analysis_ttHbb_bkg_syst_declib16nc.yml
@@ -14,6 +13,9 @@ base: coffea4bees/workflows/config/analysis_ttHbb_bkg_syst_declib16nc.yml
 label: "analysis_ttHbb_bkg_syst_sb500_bs1024"
 mix_name: "ttHbb_bkg_syst_sb500_bs1024"
 output_path: "output/{roast_id}/"
+
+# Reuses Stages A and B from the Oct 11 sb500 reference roast (103,480 events in SB)
+upstream_pre_fvt: "analysis_ttHbb_bkg_syst_sb500_20261011_6724c7f-5ba6029"
 
 publish_base: "{eos_prod}/{roast_id}"
 handoff:
