@@ -481,15 +481,16 @@ def plotAverageComparison(channel):
     all_years = list(dict.fromkeys(all_years))
 
     var_name = args.var.replace("XXX", channel)
+    region_tag = getattr(args, 'region', 'SR')
 
     h_nom_data4b = combine_hists(nom_f,
-                                 f"{var_name}_nominal_data_YEAR_fourTag_SR",
+                                 f"{var_name}_nominal_data_YEAR_fourTag_{region_tag}",
                                  years=all_years,
                                  procs=["nominal_data"],
                                  debug=args.debug)
     if h_nom_data4b is None:
         h_nom_data4b = combine_hists(nom_f,
-                                     f"{var_name}_PROC_YEAR_fourTag_SR",
+                                     f"{var_name}_PROC_YEAR_fourTag_{region_tag}",
                                      years=all_years,
                                      procs=["data"],
                                      debug=args.debug)
@@ -501,13 +502,13 @@ def plotAverageComparison(channel):
         h_nom_data4b.SetDirectory(0)
 
     h_nom_data3b = combine_hists(nom_f,
-                                 f"{var_name}_nominal_data_YEAR_threeTag_SR",
+                                 f"{var_name}_nominal_data_YEAR_threeTag_{region_tag}",
                                  years=all_years,
                                  procs=["nominal_data"],
                                  debug=args.debug)
     if h_nom_data3b is None:
         h_nom_data3b = combine_hists(nom_f,
-                                     f"{var_name}_PROC_YEAR_threeTag_SR",
+                                     f"{var_name}_PROC_YEAR_threeTag_{region_tag}",
                                      years=all_years,
                                      procs=["data", "data_3b"],
                                      debug=args.debug)
@@ -515,13 +516,13 @@ def plotAverageComparison(channel):
         h_nom_data3b.SetDirectory(0)
 
     h_nom_ttbar3b = combine_hists(nom_f,
-                                  f"{var_name}_nominal_TTbar4b_from_d3_YEAR_threeTag_SR",
+                                  f"{var_name}_nominal_TTbar4b_from_d3_YEAR_threeTag_{region_tag}",
                                   years=all_years,
                                   procs=["nominal_TTbar4b_from_d3"],
                                   debug=args.debug)
     if h_nom_ttbar3b is None:
         h_nom_ttbar3b = combine_hists(nom_f,
-                                      f"{var_name}_PROC_YEAR_threeTag_SR",
+                                      f"{var_name}_PROC_YEAR_threeTag_{region_tag}",
                                       years=all_years,
                                       procs=["TTbar4b_from_d3"],
                                       debug=args.debug)

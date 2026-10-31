@@ -162,6 +162,7 @@ def combine_hists(input_file, hist_template, procs, years, debug=False, as_alias
 def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, years=None):
     ROOT = config.ROOT
     args = config.args
+    region_tag = getattr(args, 'region', 'SR')
 
     if years is None:
         years = args.years if hasattr(args, 'years') and args.years else ["UL16_preVFP", "UL16_postVFP", "UL17", "UL18"]
@@ -187,7 +188,7 @@ def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel
         mix_number = mix.replace(f"{args.mix_name}_v", "")
 
         hist_data_obs = combine_hists(input_file_mix,
-                                      f"{var_name}_PROC_YEAR_fourTag_SR",
+                                      f"{var_name}_PROC_YEAR_fourTag_{region_tag}",
                                       years=year_map.get(y, [y]),
                                       procs=[f"mix_v{mix_number}", f"syn_v{mix_number}", f"{args.mix_name}_v{mix_number}"],
                                       debug=args.debug,
@@ -216,14 +217,14 @@ def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel
             var_name_multijet = var_name_multijet.replace(f"{SvB}_ps", f"{SvB}_FvT_{mix}_newSBDef_ps")
 
         hist_multijet = combine_hists(input_file_data3b,
-                                      f"{var_name_multijet}_PROC_YEAR_threeTag_SR",
+                                      f"{var_name_multijet}_PROC_YEAR_threeTag_{region_tag}",
                                       years=year_map.get(y, [y]),
                                       procs=["data_3b_for_mixed", "data", "data_3b"],
                                       debug=args.debug,
                                       as_aliases=True)
         if hist_multijet is None:
             hist_multijet = combine_hists(input_file_data3b,
-                                          f"{var_name}_PROC_YEAR_threeTag_SR",
+                                          f"{var_name}_PROC_YEAR_threeTag_{region_tag}",
                                           years=year_map.get(y, [y]),
                                           procs=["data_3b_for_mixed", "data", "data_3b"],
                                           debug=args.debug,
@@ -242,28 +243,28 @@ def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel
                 hist_ttbar = None
         else:
             hist_ttbar = combine_hists(input_file_TT,
-                                       f"{var_name_multijet}_PROC_YEAR_threeTag_SR",
+                                       f"{var_name_multijet}_PROC_YEAR_threeTag_{region_tag}",
                                        years=year_map.get(y, [y]),
                                        procs=["TTbar4b_from_d3"],
                                        debug=args.debug,
                                        as_aliases=True)
             if hist_ttbar is None:
                 hist_ttbar = combine_hists(input_file_TT,
-                                           f"{var_name}_PROC_v{mix_number}_YEAR_threeTag_SR",
+                                           f"{var_name}_PROC_v{mix_number}_YEAR_threeTag_{region_tag}",
                                            years=year_map.get(y, [y]),
                                            procs=["TTbar4b_from_d3"],
                                            debug=args.debug,
                                            as_aliases=True)
             if hist_ttbar is None:
                 hist_ttbar = combine_hists(input_file_TT,
-                                           f"{var_name}_PROC_YEAR_threeTag_SR",
+                                           f"{var_name}_PROC_YEAR_threeTag_{region_tag}",
                                            years=year_map.get(y, [y]),
                                            procs=["TTbar4b_from_d3"],
                                            debug=args.debug,
                                            as_aliases=True)
             if hist_ttbar is None:
                 hist_ttbar = combine_hists(input_file_TT,
-                                           f"{var_name}_PROC_YEAR_fourTag_SR",
+                                           f"{var_name}_PROC_YEAR_fourTag_{region_tag}",
                                            years=year_map.get(y, [y]),
                                            procs=["TTTo2L2Nu_for_mixed", "TTToHadronic_for_mixed", "TTToSemiLeptonic_for_mixed"],
                                            debug=args.debug,
@@ -290,6 +291,7 @@ def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel
 def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, years=None):
     ROOT = config.ROOT
     args = config.args
+    region_tag = getattr(args, 'region', 'SR')
 
     directory = f"{mix}/{channel}"
     f.mkdir(directory)
@@ -317,7 +319,7 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, 
     all_years = list(dict.fromkeys(all_years))
 
     hist_data_obs = combine_hists(input_file_mix,
-                                  f"{var_name}_PROC_YEAR_fourTag_SR",
+                                  f"{var_name}_PROC_YEAR_fourTag_{region_tag}",
                                   years=all_years,
                                   procs=[f"mix_v{mix_number}", f"syn_v{mix_number}", f"{args.mix_name}_v{mix_number}"],
                                   debug=args.debug,
@@ -348,14 +350,14 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, 
         var_name_multijet = var_name_multijet.replace(f"{SvB}_ps", f"{SvB}_FvT_{mix}_newSBDef_ps")
 
     hist_multijet = combine_hists(input_file_data3b,
-                                  f"{var_name_multijet}_PROC_YEAR_threeTag_SR",
+                                  f"{var_name_multijet}_PROC_YEAR_threeTag_{region_tag}",
                                   years=all_years,
                                   procs=["data_3b_for_mixed", "data", "data_3b"],
                                   debug=args.debug,
                                   as_aliases=True)
     if hist_multijet is None:
         hist_multijet = combine_hists(input_file_data3b,
-                                      f"{var_name}_PROC_YEAR_threeTag_SR",
+                                      f"{var_name}_PROC_YEAR_threeTag_{region_tag}",
                                       years=all_years,
                                       procs=["data_3b_for_mixed", "data", "data_3b"],
                                       debug=args.debug,
@@ -385,25 +387,25 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, 
             hist_ttbar = None
     else:
         hist_ttbar = combine_hists(input_file_TT,
-                                   f"{var_name_multijet}_PROC_YEAR_threeTag_SR",
+                                   f"{var_name_multijet}_PROC_YEAR_threeTag_{region_tag}",
                                    years=all_years,
                                    procs=["TTbar4b_from_d3"],
                                    debug=args.debug)
         if hist_ttbar is None:
             hist_ttbar = combine_hists(input_file_TT,
-                                       f"{var_name}_PROC_v{mix_number}_YEAR_threeTag_SR",
+                                       f"{var_name}_PROC_v{mix_number}_YEAR_threeTag_{region_tag}",
                                        years=all_years,
                                        procs=["TTbar4b_from_d3"],
                                        debug=args.debug)
         if hist_ttbar is None:
             hist_ttbar = combine_hists(input_file_TT,
-                                       f"{var_name}_PROC_YEAR_threeTag_SR",
+                                       f"{var_name}_PROC_YEAR_threeTag_{region_tag}",
                                        years=all_years,
                                        procs=["TTbar4b_from_d3"],
                                        debug=args.debug)
         if hist_ttbar is None:
             hist_ttbar = combine_hists(input_file_TT,
-                                       f"{var_name}_PROC_YEAR_fourTag_SR",
+                                       f"{var_name}_PROC_YEAR_fourTag_{region_tag}",
                                        years=all_years,
                                        procs=["TTTo2L2Nu_for_mixed", "TTToHadronic_for_mixed", "TTToSemiLeptonic_for_mixed"],
                                        debug=args.debug)
@@ -517,16 +519,17 @@ def prepInput():
     all_years = list(dict.fromkeys(all_years))
 
     # Run 2: ggF cHHH1 + ZZ4b + ZH4b; Run 3: the single ggF SM sample (no ZZ/ZH skims)
+    region_tag = getattr(args, 'region', 'SR')
     sig_procs = ["ttHbb"] if channel in ["ttHbb", "tth"] else ["GluGluToHHTo4B_cHHH1", "ZZ4b", "ZH4b",
                                                                "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"]
     hist_signal = combine_hists(input_file_sig,
-                                f"{var_name}_PROC_YEAR_fourTag_SR",
+                                f"{var_name}_PROC_YEAR_fourTag_{region_tag}",
                                 years=all_years,
                                 procs=sig_procs, 
                                 debug=args.debug)
     if hist_signal is None:
         hist_signal = combine_hists(input_file_mix,
-                                    f"{var_name}_PROC_YEAR_fourTag_SR",
+                                    f"{var_name}_PROC_YEAR_fourTag_{region_tag}",
                                     years=all_years,
                                     procs=["mix_v0"],
                                     debug=args.debug)
