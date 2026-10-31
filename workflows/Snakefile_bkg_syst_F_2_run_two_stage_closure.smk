@@ -300,6 +300,7 @@ rule run_two_stage_closure:
             (" --include_ensemble_variance" if config.get('include_ensemble_variance', False) else "") +
             (" --unify_background" if config.get('unify_background', False) else "") +
             (" --no_sqrt_n_priors" if config.get('no_sqrt_n_priors', False) else "") +
+            (" --skip_first_bin" if config.get('skip_first_bin', False) else "") +
             (f" --basis_type {config.get('basis_type', 'fourier')}" if config.get('basis_type') else "")
         ).strip(),
         input_file_mix = lambda wildcards, input: config.get('input_file_mix', input.inroot),

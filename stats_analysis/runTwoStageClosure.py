@@ -79,6 +79,7 @@ def get_parser():
     parser.add_argument('--include_ensemble_variance', '--include-ensemble-variance', action="store_true", default=False, help="Incorporate subsample-level ensemble variance")
     parser.add_argument('--no_sqrt_n_priors', '--no-sqrt-n-priors', action="store_true", default=False, help="Do not scale variance priors by 1/sqrt(nMixes)")
     parser.add_argument('--basis_type',            default='fourier', choices=['fourier', 'bernstein'], help="Type of basis functions")
+    parser.add_argument('--skip_first_bin',        action="store_true", default=False, help="Exclude first bin after rebinning from closure tests")
     return parser
 
 
@@ -138,6 +139,7 @@ def init_context(args):
 
     config.lumi = args.lumi
     config.closure_fit_x_min = 0
+    config.skip_first_bin = getattr(args, 'skip_first_bin', False)
     config.maxBasisEnsemble = args.maxBasisEnsemble if args.maxBasisEnsemble is not None else args.maxBasis
     config.maxBasisClosure = args.maxBasisClosure if args.maxBasisClosure is not None else args.maxBasis
 

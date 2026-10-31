@@ -110,8 +110,12 @@ class multijetEnsemble:
         self.f.cd(self.channel)
         self.nBins_ensemble = self.nBins_rebin * nMixes
         self.bin_width = 1. / self.nBins_rebin
-        self.fit_bin_min = int(1 + closure_fit_x_min // self.bin_width)
-        self.nBins_fit = self.nBins_rebin - int(closure_fit_x_min // self.bin_width)
+        if getattr(config, 'skip_first_bin', False) or getattr(args, 'skip_first_bin', False):
+            self.fit_bin_min = 2
+            self.nBins_fit = self.nBins_rebin - 1
+        else:
+            self.fit_bin_min = int(1 + closure_fit_x_min // self.bin_width)
+            self.nBins_fit = self.nBins_rebin - int(closure_fit_x_min // self.bin_width)
         self.multijet_ensemble_average  = ROOT.TH1F('multijet_ensemble_average', '', self.nBins_ensemble, 0.5, 0.5 + self.nBins_ensemble)
         self.multijet_ensemble          = ROOT.TH1F('multijet_ensemble'        , '', self.nBins_ensemble, 0.5, 0.5 + self.nBins_ensemble)
         self.data_minus_ttbar_ensemble  = ROOT.TH1F('data_minus_ttbar_ensemble', '', self.nBins_ensemble, 0.5, 0.5 + self.nBins_ensemble)
@@ -365,11 +369,12 @@ class multijetEnsemble:
             self.multijet_TH1[basis].SetBinError(_bin, 0.0)
 
         pulls = []
-        bins = range(self.fit_bin_min, self.nBins_ensemble + 1)
-        for _bin in bins:
-            error = self.multijet_ensemble_average.GetBinError(_bin)
-            pull = (self.multijet_TF1[basis].Eval(_bin) - self.multijet_ensemble_average.GetBinContent(_bin)) / error if error > 0 else 0
-            pulls.append(pull)
+        for m in range(nMixes):
+            for b in range(self.fit_bin_min, self.nBins_rebin + 1):
+                _bin = m * self.nBins_rebin + b
+                error = self.multijet_ensemble_average.GetBinError(_bin)
+                pull = (self.multijet_TF1[basis].Eval(_bin) - self.multijet_ensemble_average.GetBinContent(_bin)) / error if error > 0 else 0
+                pulls.append(pull)
         self.pulls[basis] = np.array(pulls)
 
         xs = np.array([self.pulls[basis][m * self.nBins_fit : (m + 1) * self.nBins_fit - 1] for m in range(nMixes)])

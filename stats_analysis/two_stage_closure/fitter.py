@@ -83,7 +83,10 @@ class closure:
                 self.data_obs_rebin.SetBinError(_bin, new_err)
 
         self.bin_width = 1. / self.nBins_rebin
-        self.fit_x_min = 0.5 + closure_fit_x_min / self.bin_width
+        if getattr(config, 'skip_first_bin', False) or getattr(args, 'skip_first_bin', False):
+            self.fit_x_min = 1.5001
+        else:
+            self.fit_x_min = 0.5 + closure_fit_x_min / self.bin_width
 
         self.basis_element = self.multijet.basis_element
         self.basis_element_no_rebin = self.multijet.basis_element_no_rebin
@@ -447,7 +450,8 @@ class closure:
         print(' p-value = %0.2f' % self.pvalue[basis])
         print('nConstrained', nConstrained)
         print('nUnonstrained', nUnconstrained)
-        print('expected ndfs = ', self.nBins_rebin - nUnconstrained)
+        n_data_bins = self.nBins_rebin - 1 if (getattr(config, 'skip_first_bin', False) or getattr(args, 'skip_first_bin', False)) else self.nBins_rebin
+        print('expected ndfs = ', n_data_bins - nUnconstrained)
 
         self.ymax[basis] = self.closure_TF1[basis].GetMaximum(1, self.nBins_closure)
         self.fit_parameters[basis], self.fit_parameters_error[basis] = [], []
