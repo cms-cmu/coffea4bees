@@ -840,18 +840,12 @@ def plotDataVsMixedVsBkg(channel, region="SR"):
             h_nom_ttbar3b.SetDirectory(0)
 
         for m in range(nMixes):
-            h_m = None
-            for y in all_years:
-                for p in [f"mix_v{m}", f"{args.mix_name}_v{m}"]:
-                    k = f"{var_name}_{p}_{y}_fourTag_{region}"
-                    h = nom_f.Get(k)
-                    if h and not h.IsZombie():
-                        if h_m is None:
-                            h_m = h.Clone(f"h_mix_m{m}_{region}")
-                            h_m.SetDirectory(0)
-                        else:
-                            h_m.Add(h)
-                        break
+            h_m = combine_hists(nom_f,
+                                f"{var_name}_PROC_YEAR_fourTag_{region}",
+                                years=all_years,
+                                procs=[f"mix_v{m}", f"{args.mix_name}_v{m}"],
+                                debug=args.debug,
+                                as_aliases=True)
             if h_m is not None:
                 if h_mix_ave_4b is None:
                     h_mix_ave_4b = h_m.Clone(f"h_mix_ave_4b_{region}")
