@@ -259,7 +259,13 @@ rule check_cutflow:
         # failed job, so the verdict and the counts go to undeclared *_result.txt / *_failed.yml
         # siblings that survive a failure and still get published.
         result="$(dirname {output.validation_txt})/$(basename {output.validation_txt} .txt)_result.txt"
-        ( grep -A80 "Running cutflow comparison" {log} || grep "Skipping cutflow comparison" {log} || true ) > "$result"
+        # Everything from the comparison header to the end of the log: a fixed grep -A window
+        # cut the verdict off once the table grew past it and hid the failing processes.
+        if grep -q "Running cutflow comparison" {log}; then
+            sed -n '/Running cutflow comparison/,$p' {log} > "$result"
+        else
+            ( grep "Skipping cutflow comparison" {log} || true ) > "$result"
+        fi
         if [ $status -ne 0 ]; then
             [ -f "{output.cutflow_yml}" ] && cp "{output.cutflow_yml}" "$(dirname {output.cutflow_yml})/$(basename {output.cutflow_yml} .yml)_failed.yml"
             if [ "{params.fatal}" = "false" ] && [ -f "{output.cutflow_yml}" ]; then
