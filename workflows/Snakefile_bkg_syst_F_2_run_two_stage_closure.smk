@@ -303,7 +303,10 @@ rule run_two_stage_closure:
             (" --unify_background" if config.get('unify_background', False) else "") +
             (" --no_sqrt_n_priors" if config.get('no_sqrt_n_priors', False) else "") +
             (" --skip_first_bin" if config.get('skip_first_bin', False) else "") +
-            (f" --basis_type {config.get('basis_type', 'fourier')}" if config.get('basis_type') else "")
+            (f" --min_svb {config['min_svb']}" if config.get('min_svb') is not None and float(config.get('min_svb', 0.0)) > 0 else "") +
+            (f" --basis_type {config.get('basis_type', 'fourier')}" if config.get('basis_type') else "") +
+            f" --subsample_indices {' '.join(str(v) for v in subsample_indices_closure)}" +
+            " --ignore_failures"
         ).strip(),
         input_file_mix = lambda wildcards, input: config.get('input_file_mix', input.inroot),
         input_file_data3b = lambda wildcards, input: config.get('input_file_data3b', input.inroot),

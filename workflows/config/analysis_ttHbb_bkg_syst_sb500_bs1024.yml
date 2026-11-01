@@ -25,8 +25,21 @@ train_mem: 32000
 eval_mem: 24000
 
 # Stage F_2: Two-stage closure constraints
-max_basis: 5
+match_closure_normalization: true
+include_ensemble_variance: true
+basis_type: fourier
+max_basis: 4
+min_svb: 0.05
 no_sqrt_n_priors: false
+f3_rebins:
+  - 20
+  - 24
+closure_rebin_candidates:
+  - 12
+  - 15
+  - 16
+  - 20
+  - 24
 
 phase_e_fvt:
   channel: "ttHbb"
