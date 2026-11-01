@@ -305,8 +305,7 @@ rule run_two_stage_closure:
             (" --skip_first_bin" if config.get('skip_first_bin', False) else "") +
             (f" --min_svb {config['min_svb']}" if config.get('min_svb') is not None and float(config.get('min_svb', 0.0)) > 0 else "") +
             (f" --basis_type {config.get('basis_type', 'fourier')}" if config.get('basis_type') else "") +
-            f" --subsample_indices {' '.join(str(v) for v in subsample_indices_closure)}" +
-            " --ignore_failures"
+            f" --subsample_indices {' '.join(str(v) for v in subsample_indices_closure)}"
         ).strip(),
         input_file_mix = lambda wildcards, input: config.get('input_file_mix', input.inroot),
         input_file_data3b = lambda wildcards, input: config.get('input_file_data3b', input.inroot),
