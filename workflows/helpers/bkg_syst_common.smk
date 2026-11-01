@@ -92,7 +92,9 @@ out_b1 = f"{out}bkg_syst_B_1_computeJCM/"
 out_c1 = f"{out}bkg_syst_C_1_inputs/"
 out_c  = f"{out}bkg_syst_C_FvT/"
 out_f1 = f"{out}bkg_syst_F_1_analysis/"
-out_f2 = f"{out}bkg_syst_F_2_run_two_stage_closure/"
+out_f2 = config.get('out_f2', f"{out}bkg_syst_F_2_run_two_stage_closure/")
+if not out_f2.endswith("/"):
+    out_f2 += "/"
 out_f3 = f"{out}bkg_syst_F_3_stats/"
 out_f4 = f"{out}bkg_syst_F_4_stats_mixeddata/"
 
@@ -200,11 +202,27 @@ A_INPUT_DIR_OVERRIDE = None
 
 if _pre_fvt_ref:
     UPSTREAM_PRE_FVT_DIR = _find_upstream_roast_dir(_pre_fvt_ref, config)
-    try:
-        up_eos = _upstream_base(_pre_fvt_ref, _placeholders['eos_prod'])
-        INPUT_HANDOFF_EOS = f"{up_eos.rstrip('/')}/handoff"
-    except Exception:
-        pass
+    up_cfg_path = os.path.join("roasts", _pre_fvt_ref, "config.yml")
+    up_handoff_eos = None
+    if os.path.exists(up_cfg_path):
+        try:
+            with open(up_cfg_path) as cf:
+                up_cfg = yaml.safe_load(cf) or {}
+            if isinstance(up_cfg.get('handoff'), dict) and up_cfg['handoff'].get('eos_base'):
+                up_handoff_eos = up_cfg['handoff']['eos_base'].rstrip('/')
+        except Exception:
+            pass
+
+    if up_handoff_eos:
+        INPUT_HANDOFF_EOS = up_handoff_eos
+    elif config.get('input_handoff_eos'):
+        INPUT_HANDOFF_EOS = config['input_handoff_eos'].rstrip('/')
+    else:
+        try:
+            up_eos = _upstream_base(_pre_fvt_ref, _placeholders['eos_prod'])
+            INPUT_HANDOFF_EOS = f"{up_eos.rstrip('/')}/handoff"
+        except Exception:
+            pass
     config['input_handoff_eos'] = INPUT_HANDOFF_EOS
 
     if UPSTREAM_PRE_FVT_DIR:
@@ -242,11 +260,27 @@ FVT_HANDOFF_EOS = HANDOFF_EOS
 
 if _fvt_ref:
     UPSTREAM_FVT_DIR = _find_upstream_roast_dir(_fvt_ref, config)
-    try:
-        up_fvt_eos = _upstream_base(_fvt_ref, _placeholders['eos_prod'])
-        FVT_HANDOFF_EOS = f"{up_fvt_eos.rstrip('/')}/handoff"
-    except Exception:
-        pass
+    up_cfg_path = os.path.join("roasts", _fvt_ref, "config.yml")
+    up_fvt_handoff_eos = None
+    if os.path.exists(up_cfg_path):
+        try:
+            with open(up_cfg_path) as cf:
+                up_cfg = yaml.safe_load(cf) or {}
+            if isinstance(up_cfg.get('handoff'), dict) and up_cfg['handoff'].get('eos_base'):
+                up_fvt_handoff_eos = up_cfg['handoff']['eos_base'].rstrip('/')
+        except Exception:
+            pass
+
+    if up_fvt_handoff_eos:
+        FVT_HANDOFF_EOS = up_fvt_handoff_eos
+    elif config.get('fvt_handoff_eos'):
+        FVT_HANDOFF_EOS = config['fvt_handoff_eos'].rstrip('/')
+    else:
+        try:
+            up_fvt_eos = _upstream_base(_fvt_ref, _placeholders['eos_prod'])
+            FVT_HANDOFF_EOS = f"{up_fvt_eos.rstrip('/')}/handoff"
+        except Exception:
+            pass
     config['fvt_handoff_eos'] = FVT_HANDOFF_EOS
 
     if UPSTREAM_FVT_DIR:

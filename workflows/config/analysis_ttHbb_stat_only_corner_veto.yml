@@ -1,0 +1,27 @@
+# ==============================================================================
+# ttHbb Run 2 NOMINAL STAT-ONLY ANALYSIS — Sideband Corner Veto
+# ==============================================================================
+# Evaluates baseline ttHbb analysis using the modified Sideband (SB) with
+# the high-mass corner vetoed (m_lead > 250 && m_subl > 250).
+# ==============================================================================
+
+base: coffea4bees/workflows/config/analysis_ttHbb.yml
+
+label: "ttHbb"
+output_path: "output/ttHbb/"
+
+candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
+
+jcm_known_counts_fatal: false
+
+classifier_inputs:
+  candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
+  config:
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
+
+analysis_config:
+  config:
+    friends:
+      FvT: "{eos_prod}/{roast_id}/friend/FvT_ttHbb_stitched/result.json@@analysis.0.merged"
+      SvB_MA: "{eos_prod}/{roast_id}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"

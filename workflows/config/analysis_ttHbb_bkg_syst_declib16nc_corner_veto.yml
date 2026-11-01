@@ -1,0 +1,40 @@
+# ==============================================================================
+# ttHbb Run 2 BACKGROUND SYSTEMATIC (Snakefile_bkg_syst.smk) with DeClustered Library (declib16nc)
+# with Sideband Corner Veto
+# ==============================================================================
+base: coffea4bees/workflows/config/analysis_ttHbb_bkg_syst_declib16nc.yml
+label: "ttHbb_bkg_syst_declib16nc_corner_veto"
+output_path: "output/{roast_id}/"
+
+upstream_pre_fvt: "pre_fvt"
+
+# Nominal roast carrying the corner veto SB selection (Step B JCM and classifier inputs)
+# Baseline nominal roast providing the trained SvB models
+inputs:
+  upstream_roasts:
+    declib: declib16nc_run2_20261003_3ab8302-b2d2dec
+    nominal: ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11
+    mixeddata: mixeddata_run2_20260927_c39c264-0ce4d59
+    pre_fvt: analysis_ttHbb_bkg_syst_declib16nc_corner_veto_20261029_ee431c4-5508ecf
+
+  # From upstream bkg_syst pre-FvT handoff:
+  input_handoff_eos: "{roast:pre_fvt}/handoff"
+
+  # From the corner veto nominal roast:
+  jcm_hists: "{roast:nominal}/{roast:nominal:output_path}computeJCM/histAll_NoJCM.coffea"
+  classifier_inputs: "{roast:nominal}/handoff/classifier_inputs_{roast:nominal:id}.json"
+  nominal_hists: "{roast:nominal}/{roast:nominal:output_path}histAll_{roast:nominal:label}.coffea"
+  SvB: "{roast:nominal}/friend/SvB_ttHbb_stitched/result.json@@analysis.0.merged"
+  SvB_model: "{roast:nominal}/classifier/SvB_ttHbb_stitched/result.json"
+  SvB_MA: "{roast:nominal}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
+  SvB_MA_model: "{roast:nominal}/classifier/SvB_MA_ttHbb_stitched/result.json"
+
+# Candidates selection threshold with corner veto
+candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
+analysis_config:
+  config:
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
+phaseA_3:
+  analysis:
+    config:
+      candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"

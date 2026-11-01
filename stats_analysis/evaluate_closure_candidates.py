@@ -81,10 +81,36 @@ def main():
         var_basis_str = f"(basis {v_basis})" if v_basis is not None else ""
         var_p = f"{'PASS' if v_passed else 'FAIL'} {var_basis_str}".strip()
 
+        # Check for highest Fourier mode info if missing
+        if "highest_basis_pvalue" not in data and sf.exists():
+            bias_yml_path = sf.parent / "1_bias_results.yml"
+            if bias_yml_path.exists():
+                try:
+                    import yaml
+                    with open(bias_yml_path, "r") as byf:
+                        bias_res = yaml.safe_load(byf) or {}
+                    int_bases = sorted([int(k) for k in bias_res.keys() if str(k).lstrip('-').isdigit()])
+                    if int_bases:
+                        hb = int_bases[-1]
+                        hb_info = bias_res.get(hb) or bias_res.get(str(hb))
+                        if isinstance(hb_info, dict) and "pvalue" in hb_info:
+                            data["highest_basis"] = hb
+                            data["highest_basis_pvalue"] = float(hb_info["pvalue"])
+                        data["all_bias_pvalues"] = {b: float(bias_res.get(b, {}).get("pvalue", float("nan"))) for b in int_bases if isinstance(bias_res.get(b), dict)}
+                except Exception:
+                    pass
+
         # Bias
         b_passed = data.get("bias_passed", False)
         b_basis = data.get("selected_basis")
-        bias_basis_str = f"(basis {b_basis})" if b_passed and b_basis is not None else ("(no basis)" if not b_passed else "")
+        if b_passed and b_basis is not None:
+            bias_basis_str = f"(basis {b_basis})"
+        elif not b_passed and data.get("highest_basis") is not None and data.get("highest_basis_pvalue") is not None:
+            hb = data["highest_basis"]
+            hp = data["highest_basis_pvalue"]
+            bias_basis_str = f"(max b{hb}: p={hp*100:.1f}%)"
+        else:
+            bias_basis_str = "(no basis)" if not b_passed else ""
         bias_p = f"{'PASS' if b_passed else 'FAIL'} {bias_basis_str}".strip()
 
         # Spurious Signal

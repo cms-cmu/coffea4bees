@@ -77,39 +77,36 @@ def rescale_x_axis(hist_old, xMin_old=300, xMax_old=1200, xMin_new=0, xMax_new=1
 
     xBinCenter_old_list   = [hist_old.GetXaxis().GetBinCenter(bin) for bin in range(1, n_bins_old + 1)]
     xBinLowEdge_old_list  = [hist_old.GetXaxis().GetBinLowEdge(bin) for bin in range(1, n_bins_old + 1)]
-    xBinHighEdge_old_list = [hist_old.GetXaxis().GetBinLowEdge(bin) + hist_old.GetXaxis().GetBinWidth(bin) for bin in range(1, n_bins_old + 1)]
-    content_old_list    = [hist_old.GetBinContent(bin) for bin in range(1, n_bins_old + 1)]
-    error_old_list      = [hist_old.GetBinError(bin) for bin in range(1, n_bins_old + 1)]
+    xBinHighEdge_old_list = [hist_old.GetXaxis().GetBinUpEdge(bin) for bin in range(1, n_bins_old + 1)]
+    content_old_list      = [hist_old.GetBinContent(bin) for bin in range(1, n_bins_old + 1)]
+    error_old_list        = [hist_old.GetBinError(bin) for bin in range(1, n_bins_old + 1)]
 
     existing_hist = ROOT.gDirectory.Get(hist_name)
     if existing_hist:
         existing_hist.Delete()  
 
     underflow_bin_new = 0
-    for bin in range(n_bins_old, 0, -1):
-        xBinLowEdge_old = xBinLowEdge_old_list[bin-1]
-        if xBinLowEdge_old < xMin_old:
-            underflow_bin_new = bin - 1
+    for b in range(n_bins_old, 0, -1):
+        if xBinHighEdge_old_list[b-1] <= xMin_old + 1e-7:
+            underflow_bin_new = b
             break
-    
-    overflow_bin_new = n_bins_old + 1
-    for bin in range(1, n_bins_old + 1):
-        xBinHighEdge_old = xBinHighEdge_old_list[bin-1]
-        if xBinHighEdge_old >= xMax_old:
-            overflow_bin_new = bin - 1
-            break
-    
-    underflow_new = underflow_old + np.sum([content_old_list[bin-1] for bin in range(1, underflow_bin_new+1)])
-    overflow_new  = overflow_old  + np.sum([content_old_list[bin-1] for bin in range(overflow_bin_new, n_bins_old+1)])
-    underflow_err_new = np.sqrt(underflow_bin_new)
-    overflow_err_new = np.sqrt(overflow_bin_new)
 
-    content_new_list = content_old_list[underflow_bin_new+1 : overflow_bin_new]
-    error_new_list   = error_old_list[underflow_bin_new+1 : overflow_bin_new]
-    
-    n_bins_new = overflow_bin_new - underflow_bin_new - 1
+    overflow_bin_new = n_bins_old + 1
+    for b in range(1, n_bins_old + 1):
+        if xBinLowEdge_old_list[b-1] >= xMax_old - 1e-7:
+            overflow_bin_new = b
+            break
+
+    content_new_list = content_old_list[underflow_bin_new : overflow_bin_new - 1]
+    error_new_list   = error_old_list[underflow_bin_new : overflow_bin_new - 1]
+    n_bins_new = len(content_new_list)
+
+    underflow_new = underflow_old + np.sum(content_old_list[:underflow_bin_new])
+    underflow_err_new = np.sqrt(underflow_err_old**2 + np.sum(np.array(error_old_list[:underflow_bin_new])**2))
+    overflow_new = overflow_old + np.sum(content_old_list[overflow_bin_new-1:])
+    overflow_err_new = np.sqrt(overflow_err_old**2 + np.sum(np.array(error_old_list[overflow_bin_new-1:])**2))
+
     hist_new = ROOT.TH1F(hist_name, hist_title, n_bins_new, xMin_new, xMax_new)
-    
     for bin in range(1, n_bins_new + 1):
         hist_new.SetBinContent(bin, content_new_list[bin-1])
         hist_new.SetBinError(bin, error_new_list[bin-1])
@@ -151,10 +148,14 @@ def combine_hists(input_file, hist_template, procs, years, debug=False, as_alias
                 else:
                     hist.Add(h_obj.Clone())
 
-    if hist is not None and 'm4j' in hist_template:
-        m4j_min = float(config.args.m4j_xmin) if config.args and hasattr(config.args, 'm4j_xmin') else 390.0
-        m4j_max = float(config.args.m4j_xmax) if config.args and hasattr(config.args, 'm4j_xmax') else 1200.0
-        hist = rescale_x_axis(hist, xMin_old=m4j_min, xMax_old=m4j_max, xMin_new=0, xMax_new=1)
+    if hist is not None:
+        if 'm4j' in hist_template:
+            m4j_min = float(config.args.m4j_xmin) if config.args and hasattr(config.args, 'm4j_xmin') else 390.0
+            m4j_max = float(config.args.m4j_xmax) if config.args and hasattr(config.args, 'm4j_xmax') else 1200.0
+            hist = rescale_x_axis(hist, xMin_old=m4j_min, xMax_old=m4j_max, xMin_new=0, xMax_new=1)
+        elif getattr(config, 'min_svb', 0.0) > 0 and ('SvB' in hist_template or 'SvB_MA' in hist_template):
+            min_svb = float(config.min_svb)
+            hist = rescale_x_axis(hist, xMin_old=min_svb, xMax_old=1.0, xMin_new=0, xMax_new=1)
 
     return hist
 
@@ -162,6 +163,7 @@ def combine_hists(input_file, hist_template, procs, years, debug=False, as_alias
 def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, years=None):
     ROOT = config.ROOT
     args = config.args
+    region_tag = getattr(args, 'region', 'SR')
 
     if years is None:
         years = args.years if hasattr(args, 'years') and args.years else ["UL16_preVFP", "UL16_postVFP", "UL17", "UL18"]
@@ -187,7 +189,7 @@ def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel
         mix_number = mix.replace(f"{args.mix_name}_v", "")
 
         hist_data_obs = combine_hists(input_file_mix,
-                                      f"{var_name}_PROC_YEAR_fourTag_SR",
+                                      f"{var_name}_PROC_YEAR_fourTag_{region_tag}",
                                       years=year_map.get(y, [y]),
                                       procs=[f"mix_v{mix_number}", f"syn_v{mix_number}", f"{args.mix_name}_v{mix_number}"],
                                       debug=args.debug,
@@ -216,14 +218,14 @@ def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel
             var_name_multijet = var_name_multijet.replace(f"{SvB}_ps", f"{SvB}_FvT_{mix}_newSBDef_ps")
 
         hist_multijet = combine_hists(input_file_data3b,
-                                      f"{var_name_multijet}_PROC_YEAR_threeTag_SR",
+                                      f"{var_name_multijet}_PROC_YEAR_threeTag_{region_tag}",
                                       years=year_map.get(y, [y]),
                                       procs=["data_3b_for_mixed", "data", "data_3b"],
                                       debug=args.debug,
                                       as_aliases=True)
         if hist_multijet is None:
             hist_multijet = combine_hists(input_file_data3b,
-                                          f"{var_name}_PROC_YEAR_threeTag_SR",
+                                          f"{var_name}_PROC_YEAR_threeTag_{region_tag}",
                                           years=year_map.get(y, [y]),
                                           procs=["data_3b_for_mixed", "data", "data_3b"],
                                           debug=args.debug,
@@ -242,28 +244,28 @@ def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel
                 hist_ttbar = None
         else:
             hist_ttbar = combine_hists(input_file_TT,
-                                       f"{var_name_multijet}_PROC_YEAR_threeTag_SR",
+                                       f"{var_name_multijet}_PROC_YEAR_threeTag_{region_tag}",
                                        years=year_map.get(y, [y]),
                                        procs=["TTbar4b_from_d3"],
                                        debug=args.debug,
                                        as_aliases=True)
             if hist_ttbar is None:
                 hist_ttbar = combine_hists(input_file_TT,
-                                           f"{var_name}_PROC_v{mix_number}_YEAR_threeTag_SR",
+                                           f"{var_name}_PROC_v{mix_number}_YEAR_threeTag_{region_tag}",
                                            years=year_map.get(y, [y]),
                                            procs=["TTbar4b_from_d3"],
                                            debug=args.debug,
                                            as_aliases=True)
             if hist_ttbar is None:
                 hist_ttbar = combine_hists(input_file_TT,
-                                           f"{var_name}_PROC_YEAR_threeTag_SR",
+                                           f"{var_name}_PROC_YEAR_threeTag_{region_tag}",
                                            years=year_map.get(y, [y]),
                                            procs=["TTbar4b_from_d3"],
                                            debug=args.debug,
                                            as_aliases=True)
             if hist_ttbar is None:
                 hist_ttbar = combine_hists(input_file_TT,
-                                           f"{var_name}_PROC_YEAR_fourTag_SR",
+                                           f"{var_name}_PROC_YEAR_fourTag_{region_tag}",
                                            years=year_map.get(y, [y]),
                                            procs=["TTTo2L2Nu_for_mixed", "TTToHadronic_for_mixed", "TTToSemiLeptonic_for_mixed"],
                                            debug=args.debug,
@@ -290,6 +292,7 @@ def writeYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel
 def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, years=None):
     ROOT = config.ROOT
     args = config.args
+    region_tag = getattr(args, 'region', 'SR')
 
     directory = f"{mix}/{channel}"
     f.mkdir(directory)
@@ -317,7 +320,7 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, 
     all_years = list(dict.fromkeys(all_years))
 
     hist_data_obs = combine_hists(input_file_mix,
-                                  f"{var_name}_PROC_YEAR_fourTag_SR",
+                                  f"{var_name}_PROC_YEAR_fourTag_{region_tag}",
                                   years=all_years,
                                   procs=[f"mix_v{mix_number}", f"syn_v{mix_number}", f"{args.mix_name}_v{mix_number}"],
                                   debug=args.debug,
@@ -348,14 +351,14 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, 
         var_name_multijet = var_name_multijet.replace(f"{SvB}_ps", f"{SvB}_FvT_{mix}_newSBDef_ps")
 
     hist_multijet = combine_hists(input_file_data3b,
-                                  f"{var_name_multijet}_PROC_YEAR_threeTag_SR",
+                                  f"{var_name_multijet}_PROC_YEAR_threeTag_{region_tag}",
                                   years=all_years,
                                   procs=["data_3b_for_mixed", "data", "data_3b"],
                                   debug=args.debug,
                                   as_aliases=True)
     if hist_multijet is None:
         hist_multijet = combine_hists(input_file_data3b,
-                                      f"{var_name}_PROC_YEAR_threeTag_SR",
+                                      f"{var_name}_PROC_YEAR_threeTag_{region_tag}",
                                       years=all_years,
                                       procs=["data_3b_for_mixed", "data", "data_3b"],
                                       debug=args.debug,
@@ -385,25 +388,25 @@ def addYears(f, input_file_data3b, input_file_TT, input_file_mix, mix, channel, 
             hist_ttbar = None
     else:
         hist_ttbar = combine_hists(input_file_TT,
-                                   f"{var_name_multijet}_PROC_YEAR_threeTag_SR",
+                                   f"{var_name_multijet}_PROC_YEAR_threeTag_{region_tag}",
                                    years=all_years,
                                    procs=["TTbar4b_from_d3"],
                                    debug=args.debug)
         if hist_ttbar is None:
             hist_ttbar = combine_hists(input_file_TT,
-                                       f"{var_name}_PROC_v{mix_number}_YEAR_threeTag_SR",
+                                       f"{var_name}_PROC_v{mix_number}_YEAR_threeTag_{region_tag}",
                                        years=all_years,
                                        procs=["TTbar4b_from_d3"],
                                        debug=args.debug)
         if hist_ttbar is None:
             hist_ttbar = combine_hists(input_file_TT,
-                                       f"{var_name}_PROC_YEAR_threeTag_SR",
+                                       f"{var_name}_PROC_YEAR_threeTag_{region_tag}",
                                        years=all_years,
                                        procs=["TTbar4b_from_d3"],
                                        debug=args.debug)
         if hist_ttbar is None:
             hist_ttbar = combine_hists(input_file_TT,
-                                       f"{var_name}_PROC_YEAR_fourTag_SR",
+                                       f"{var_name}_PROC_YEAR_fourTag_{region_tag}",
                                        years=all_years,
                                        procs=["TTTo2L2Nu_for_mixed", "TTToHadronic_for_mixed", "TTToSemiLeptonic_for_mixed"],
                                        debug=args.debug)
@@ -517,16 +520,17 @@ def prepInput():
     all_years = list(dict.fromkeys(all_years))
 
     # Run 2: ggF cHHH1 + ZZ4b + ZH4b; Run 3: the single ggF SM sample (no ZZ/ZH skims)
+    region_tag = getattr(args, 'region', 'SR')
     sig_procs = ["ttHbb"] if channel in ["ttHbb", "tth"] else ["GluGluToHHTo4B_cHHH1", "ZZ4b", "ZH4b",
                                                                "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"]
     hist_signal = combine_hists(input_file_sig,
-                                f"{var_name}_PROC_YEAR_fourTag_SR",
+                                f"{var_name}_PROC_YEAR_fourTag_{region_tag}",
                                 years=all_years,
                                 procs=sig_procs, 
                                 debug=args.debug)
     if hist_signal is None:
         hist_signal = combine_hists(input_file_mix,
-                                    f"{var_name}_PROC_YEAR_fourTag_SR",
+                                    f"{var_name}_PROC_YEAR_fourTag_{region_tag}",
                                     years=all_years,
                                     procs=["mix_v0"],
                                     debug=args.debug)

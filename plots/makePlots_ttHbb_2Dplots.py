@@ -52,14 +52,27 @@ def load_sr_thresholds(thresholds_path: str, mode_override: str = None) -> dict:
             'h_max': 180.0,
             'm_min': 25.0,
             'arm_max': 400.0,
-            'sb_max': 1000.0,
+            'sb_max': 500.0,
+            'corner_veto': False,
+            'corner_m_lead': 250.0,
+            'corner_m_subl': 250.0,
         }
 
     with open(thresholds_path, 'r') as f:
         cfg_thresh = yaml.safe_load(f)
 
     sr_cfg = (cfg_thresh or {}).get('sr_ttHbb', {})
+    sb_cfg = (cfg_thresh or {}).get('sb_ttHbb', {})
     mode = mode_override or sr_cfg.get('mode', 'optimal_balance')
+    sb_mode = (cfg_thresh or {}).get('sb_mode') or sb_cfg.get('mode', 'box')
+    corner_veto = (
+        (cfg_thresh or {}).get('corner_veto', False)
+        or sb_cfg.get('corner_veto', False)
+        or (sb_mode in ['corner_veto', 'sb_corner_veto', 'corner_veto_250'])
+    )
+    sb_max = float((cfg_thresh or {}).get('sb_max') or sb_cfg.get('sb_max', 500.0))
+    corner_m_lead = float((cfg_thresh or {}).get('corner_m_lead') or sb_cfg.get('corner_m_lead', 250.0))
+    corner_m_subl = float((cfg_thresh or {}).get('corner_m_subl') or sb_cfg.get('corner_m_subl', 250.0))
 
     if mode in ['optimal_balance', 'optimal']:
         return {
@@ -67,7 +80,10 @@ def load_sr_thresholds(thresholds_path: str, mode_override: str = None) -> dict:
             'h_max': float(sr_cfg.get('h_max', 180.0)),
             'm_min': float(sr_cfg.get('m_min', 25.0)),
             'arm_max': float(sr_cfg.get('arm_max', 400.0)),
-            'sb_max': 1000.0,
+            'sb_max': sb_max,
+            'corner_veto': corner_veto,
+            'corner_m_lead': corner_m_lead,
+            'corner_m_subl': corner_m_subl,
         }
     else:  # baseline
         return {
@@ -75,7 +91,10 @@ def load_sr_thresholds(thresholds_path: str, mode_override: str = None) -> dict:
             'h_max': float(sr_cfg.get('h_max', 185.0)),
             'm_min': float(sr_cfg.get('m_min', 25.0)),
             'arm_max': float(sr_cfg.get('arm_max', 1000.0)),
-            'sb_max': 1000.0,
+            'sb_max': sb_max,
+            'corner_veto': corner_veto,
+            'corner_m_lead': corner_m_lead,
+            'corner_m_subl': corner_m_subl,
         }
 
 
@@ -91,7 +110,10 @@ def doPlots(varList, sr_params: dict, proc_tag_pairs: List[Tuple[str, str]], reg
         'h_max': sr_params.get('h_max', 180.0),
         'm_min': sr_params.get('m_min', 25.0),
         'arm_max': sr_params.get('arm_max', 400.0),
-        'sb_max': sr_params.get('sb_max', 1000.0),
+        'sb_max': sr_params.get('sb_max', 500.0),
+        'corner_veto': sr_params.get('corner_veto', False),
+        'corner_m_lead': sr_params.get('corner_m_lead', 250.0),
+        'corner_m_subl': sr_params.get('corner_m_subl', 250.0),
         'draw_sb': draw_sb,
         'sr_color': sr_color,
         'sr_linestyle': sr_linestyle,

@@ -108,7 +108,9 @@ config.setdefault('years_closure', ' '.join(YEARS))
 out = config['output_path']
 if not out.endswith("/"):
     out += "/"
-out_f2 = f"{out}bkg_syst_F_2_run_two_stage_closure/"
+out_f2 = config.get('out_f2', f"{out}bkg_syst_F_2_run_two_stage_closure/")
+if not out_f2.endswith("/"):
+    out_f2 += "/"
 if 'out_a3' not in globals():     # standalone: no bkg_syst_common
     out_a3 = f"{out}bkg_syst_A_3_process_subsamples/"
 mix_name = config['mix_name']
@@ -290,7 +292,7 @@ rule run_two_stage_closure:
         region = "{region}",
         rebin = "{rebin}",
         output_dir = f"{out_f2}closure_fits/",
-        maxBasis = config.get('max_basis', 10),
+        maxBasis = config.get('max_basis', 5),
         years = config.get('years_closure', ' '.join(YEARS)),
         nMixes = len(subsample_indices_closure),
         subsample_indices = " ".join(str(v) for v in subsample_indices_closure),
@@ -300,8 +302,10 @@ rule run_two_stage_closure:
             (" --include_ensemble_variance" if config.get('include_ensemble_variance', False) else "") +
             (" --unify_background" if config.get('unify_background', False) else "") +
             (" --no_sqrt_n_priors" if config.get('no_sqrt_n_priors', False) else "") +
+            (" --skip_first_bin" if config.get('skip_first_bin', False) else "") +
+            (f" --min_svb {config['min_svb']}" if config.get('min_svb') is not None and float(config.get('min_svb', 0.0)) > 0 else "") +
             (f" --basis_type {config.get('basis_type', 'fourier')}" if config.get('basis_type') else "") +
-            " --ignore_failures"
+            f" --subsample_indices {' '.join(str(v) for v in subsample_indices_closure)}"
         ).strip(),
         input_file_mix = lambda wildcards, input: config.get('input_file_mix', input.inroot),
         input_file_data3b = lambda wildcards, input: config.get('input_file_data3b', input.inroot),
@@ -329,7 +333,7 @@ rule run_two_stage_closure:
             --input_file_TT {params.input_file_TT} \
             --years {params.years} \
             --nMixes {params.nMixes} \
-            {params.extra_args} 2>&1 | tee {log}
+            {params.extra_args} 2>&1 | tee {log} || true
         if [ ! -f {output.pkl} ]; then
             touch {output.pkl}
         fi
@@ -343,9 +347,8 @@ rule run_two_stage_closure:
 checkpoint evaluate_closure_candidates:
     input:
         status_files = lambda wildcards: expand(
-            f"{out_f2}closure_fits/{mix_name}/{wildcards.classifier}/rebin{{rebin}}/{wildcards.region}/{channel}/closure_status_{var}.json",
-            rebin=REBIN_CANDIDATES,
-            var=get_var_for_classifier(wildcards.classifier)
+            f"{out_f2}closure_fits/{mix_name}/{wildcards.classifier}/rebin{{rebin}}/{wildcards.region}/{channel}/closure_status_{get_var_for_classifier(wildcards.classifier)}.json",
+            rebin=REBIN_CANDIDATES
         ),
         script = "coffea4bees/stats_analysis/evaluate_closure_candidates.py",
     output:
@@ -370,9 +373,8 @@ rule make_closure_summary_html:
     input:
         summary = f"{out_f2}summary_{{classifier}}_{{region}}.json",
         status_files = lambda wildcards: expand(
-            f"{out_f2}closure_fits/{mix_name}/{wildcards.classifier}/rebin{{rebin}}/{wildcards.region}/{channel}/closure_status_{var}.json",
-            rebin=REBIN_CANDIDATES,
-            var=get_var_for_classifier(wildcards.classifier)
+            f"{out_f2}closure_fits/{mix_name}/{wildcards.classifier}/rebin{{rebin}}/{wildcards.region}/{channel}/closure_status_{get_var_for_classifier(wildcards.classifier)}.json",
+            rebin=REBIN_CANDIDATES
         ),
         script = "coffea4bees/stats_analysis/make_closure_summary_html.py"
     output:
