@@ -1,0 +1,139 @@
+# ==============================================================================
+# Run 2 nominal chain with the CoReNet FvT: C, C4, D, F on top of nominal_run2; Phase B reused
+# from the HCR production nominal_run2_20260919_a180b1a-a16559c (jda102, archived, read-only)
+# ==============================================================================
+# Only the differences from nominal_run2.yml (`base:` overlay; dicts merge recursively, lists
+# replace). `base:` is resolved only by src/tools/roast.py (_load_layered_config / capture_config);
+# by hand BOTH files go to --configfile and the run is named explicitly:
+#
+#   ./run_container snakemake -s coffea4bees/workflows/Snakefile_Phase<X>.smk \
+#       --configfile coffea4bees/workflows/config/nominal_run2.yml \
+#                    coffea4bees/workflows/config/nominal_run2_corenet.yml \
+#       ... --config roast_id=<run id> eos_prod=root://cmseos.fnal.gov//store/user/<lpc user>/HH4b_prod
+#
+# Phases run: C = FvT_corenet (CoReNet.FvT.baseline.Train/Eval with --network
+# classifier/config/corenet/HH4b.yml, otherwise the HH4b_2024_v2 HCR FvT templates; the event
+# features are the classifier_setting feature_ancillary of the base, [xW, nSelJets, xbW, year]),
+# C4 = its closure, D = the unchanged HCR SvB (HH4b_2024_v2/SvB) trained on 3b x JCM x THIS FvT,
+# F = F.1 analysis + F.2 stat-only limits. The comparison target is the HCR roast's F.2 limits and
+# its C4 / F.1 cutflows.
+#
+# Phase B is NOT run. The HCR roast's Phase B products are reused:
+#   * the classifier-input manifest and the JCM fit are its committed handoff copies (coffea4bees
+#     66da1381), read as plain tracked paths, exactly as its captured config did
+#     (roasts/nominal_run2_20260919_a180b1a-a16559c/config.yml lines 88-91, 115-118, 185):
+#       coffea4bees/metadata/datasets/classifier_inputs_nominal_run2_20260919_a180b1a-a16559c.json
+#       coffea4bees/metadata/weights/JCM/nominal_run2_20260919_a180b1a-a16559c/jetCombinatoricModel_SB_2024_v2.yml
+#     (the friend trees the manifest names live under that roast's EOS area, classifier_inputs/).
+#   * B.1's wJCM ttbar histograms for C4: its singlefiles are not archived, so C4 reads the TT
+#     processes out of the merged histAll_wJCM.coffea on its EOS archive through {roast:hcr}
+#     (inputs.upstream_roasts alias; helpers/common.smk resolves it from roasts/<id>/roast.json,
+#     src/tools/roast.py check_inputs validates it at `roast new`).
+# Everything this run writes lands under {eos_prod}/{roast_id}/ (the reader's own area) and
+# output/ in this checkout -- nothing under the HCR roast's area.
+#
+# What changes vs the base:
+#   * fvt           FvT_corenet templates, label / output_dir FvT_corenet (model, friends and
+#                   output/ never collide with FvT_nominal); manifest + JCM = the committed HCR
+#                   copies instead of {eos_prod}/{roast_id}/handoff (which this run never writes);
+#                   plot_inputs / plot_weights off (src/classifier/plot_inputs.py, plot_weights.py
+#                   rebuild the HCR network from the checkpoint and cannot read a CoReNet one).
+#   * svb           HCR SvB templates unchanged, but train_template FvT -> friend/FvT_corenet and
+#                   manifest + JCM = the committed HCR copies. plot_inputs stays as the base (HCR).
+#   * fvt_closure   JCM = the committed HCR copy (the default would be .../JCM/{roast_id}/, which
+#                   does not exist for this run), ttbar from the HCR B.1 merged wJCM file (the FvT
+#                   does not touch MC), known counts (known_fullCounts_FvT_closure.yml = the HCR
+#                   FvT's C4 cutflow) warn-only so the diff vs HCR is reported, not fatal.
+#   * analysis_config  the HCR roast's captured F.1 settings (its config.yml lines 157-201): data
+#                   in `dataset`, blind: false, friends FvT -> friend/FvT_corenet and SvB_MA ->
+#                   THIS run's Phase D, JCM_file = the committed HCR copy, SvB_MA: null (scores
+#                   from the friend, not an on-the-fly model), require_trigWeight: false (ZZ4b
+#                   UL16 still has no entry in metadata/friends/trigweights_Run2_v2.json).
+#   * known_counts  F.1 compared warn-only against known_fullCounts_TESTRun2.yml (the HCR F.1).
+#   * no web publishing: fvt/svb plot_base "" (plots local under output/<label>/plots), and
+#                   Phase F is run with targets `all_analysis all_stats` so `final_output`
+#                   (Snakefile_PhaseF.smk, copy to CERNBox) is never scheduled.
+#   * hosts:        roast's phase table: C, D on Bridges-2 (`roast new --bridges2`; the profile's
+#                   set-resources for train/evaluate override the *_runtime keys below, see the
+#                   submit --extra in the plan), C4 and F on cmslpc with HTCondor.
+base: coffea4bees/workflows/config/nominal_run2.yml
+
+# F.1 label / output_path (also C4's parent dir: output/Run2_corenet/FvT_closure/).
+label: "Run2_corenet"
+output_path: "output/Run2_corenet/"
+
+# ------------------------------------------------------------------------------
+# Remote products of the HCR roast (read-only). Only URLs under that roast's EOS area may go
+# here (roast.py check_inputs); the committed local copies are named in the blocks below.
+# ------------------------------------------------------------------------------
+inputs:
+  upstream_roasts: {hcr: nominal_run2_20260919_a180b1a-a16559c}
+  # Its Phase B.1 wJCM pass, merged and archived (singlefiles are not): the ttbar MC for C.4.
+  # output/TESTRun2/ is that roast's captured output_path.
+  wJCM_ttbar: &hcr_wJCM "{roast:hcr}/output/TESTRun2/computeJCM/histAll_wJCM.coffea"
+
+# F.1 datasets as the HCR roast actually ran them (its captured config lines 14-22): data + the
+# signals the SvB friend covers. Lists replace. No ttbar MC (plot_ttbar_with_weights).
+dataset:
+  - "data"
+  - "GluGluToHHTo4B_cHHH1"
+  - "GluGluToHHTo4B_cHHH0"
+  - "GluGluToHHTo4B_cHHH2p45"
+  - "GluGluToHHTo4B_cHHH5"
+  - "ZH4b"
+  - "ZZ4b"
+  - "ggZH4b"
+
+fvt:
+  label: "FvT_corenet"
+  wfs_base: "coffea4bees/classifier/config/workflows/HH4b_2024_v2/FvT_corenet"
+  output_dir: "output/FvT_corenet/"
+  plot_base: ""            # plots under output/FvT_corenet/plots (no CERNBox)
+  plot_inputs: false
+  plot_weights: false
+  metadata: &hcr_manifest "coffea4bees/metadata/datasets/classifier_inputs_nominal_run2_20260919_a180b1a-a16559c.json@@HCR_input"
+  workflow_overrides:
+    --JCM-weight: &hcr_JCM_flag '"" coffea4bees/metadata/weights/JCM/nominal_run2_20260919_a180b1a-a16559c/jetCombinatoricModel_SB_2024_v2.yml@@JCM_weights'
+    '--friends ""': *hcr_manifest
+  # falcon only (src/classifier/workflow/Snakefile train/evaluate resources, minutes): the HCR
+  # Run 2 FvT took ~5.5 h at mps:50; at the default mps:25 / qos light allow a day.
+  # Bridges-2: ignored, the profile's set-resources win (raise them per submit, see the plan).
+  train_runtime: 1440
+  eval_runtime: 1440
+
+svb:
+  plot_base: ""
+  train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_corenet"
+  metadata: *hcr_manifest
+  workflow_overrides:
+    --JCM-weight: *hcr_JCM_flag
+    '--friends ""': *hcr_manifest
+  train_runtime: 1440
+  eval_runtime: 1440
+
+fvt_closure:
+  JCM_file: &hcr_JCM "coffea4bees/metadata/weights/JCM/nominal_run2_20260919_a180b1a-a16559c/jetCombinatoricModel_SB_2024_v2.yml"
+  wJCM_ttbar_from: *hcr_wJCM
+  # known_fullCounts_FvT_closure.yml is the HCR FvT's C4 cutflow: compare, do not fail
+  known_counts_fatal: false
+
+analysis_config:
+  config:
+    friends:
+      FvT: "{eos_prod}/{roast_id}/friend/FvT_corenet/result.json@@analysis.0.merged"
+      SvB_MA: "{eos_prod}/{roast_id}/friend/SvB_nominal/result.json@@analysis.0.merged"
+    # Run 2 data is not blinded (base: true). blind: true would drop 4b SR events with SvB ps > 0.8
+    # from histograms and cutflow and break the F.1 vs C.4 cross-check.
+    blind: false
+    JCM_file: *hcr_JCM
+    # ZZ4b UL16 picoAODs were re-skimmed and trigweights_Run2_v2.json still has no entry for them:
+    # warning instead of error, as in the HCR roast (its ZZ4b 2016 yield is likewise unweighted).
+    require_trigWeight: false
+    # scores come from the SvB_MA friend above; `true` would evaluate the weights_file model instead
+    SvB_MA: null
+
+# F.1: known_fullCounts_TESTRun2.yml is the HCR roast's F.1 cutflow (rules/analysis.smk
+# get_known_cutflow_flag would otherwise look for known_fullCounts_Run2_corenet.yml and skip the
+# comparison) -> compare warn-only.
+known_counts: "coffea4bees/analysis/tests/known_fullCounts_TESTRun2.yml"
+known_counts_fatal: false
