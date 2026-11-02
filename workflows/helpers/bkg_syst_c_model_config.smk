@@ -113,7 +113,11 @@ rule stage_bkg_syst_c_model_config:
                 default_mixed_ci = f"{out_a3}histAll_{channel}_mixeddata_v{{m}}.json"
 
         mixed_ci_template = phase_c_cfg.get('mixed_classifier_inputs_template') or config.get('mixed_classifier_inputs_template') or default_mixed_ci
+        for pk, pv in _placeholders.items():
+            mixed_ci_template = mixed_ci_template.replace("{" + pk + "}", str(pv))
         jcm_template = phase_c_cfg.get('jcm_template') or config.get('jcm_template') or default_jcm
+        for pk, pv in _placeholders.items():
+            jcm_template = jcm_template.replace("{" + pk + "}", str(pv))
         jcm_dir = os.path.dirname(jcm_template) if jcm_template else os.path.join(out_b1)
 
         sub_name = globals().get('SUB_NAME', config.get('multisample_dataset_name', 'mixeddata_4b'))
