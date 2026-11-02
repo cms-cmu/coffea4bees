@@ -1,0 +1,34 @@
+# ==============================================================================
+# 2024 nominal FvT trained with the CoReNet network -- Phase C only, on top of nominal_run3_2024
+# ==============================================================================
+# Only the differences from nominal_run3_2024.yml (`base:` overlay; dicts merge recursively, lists
+# replace -- see nominal_run3_quadjet_run2.yml).
+#
+#   roast:    `roast new --config <this file>`, then submit ONLY step C.
+#   by hand:  snakemake --configfile coffea4bees/workflows/config/nominal_run3_2024.yml \
+#                       --configfile coffea4bees/workflows/config/nominal_run3_2024_corenet.yml
+#             (this file alone is NOT a complete config).
+#
+# Purpose: Phase C with this config trains the FvT with the CoReNet network
+# (classifier/config/workflows/HH4b_Run3/FvT_corenet: CoReNet.FvT.baseline.Train/Eval with
+# --network classifier/config/corenet/HH4b.yml, otherwise the HCR FvT templates) into a separate
+# label, FvT_corenet, so its model, friend trees and output/ directory never collide with the HCR
+# FvT_nominal.
+#
+# plot_inputs / plot_weights are off: those rules (src/classifier/plot_inputs.py, plot_weights.py)
+# rebuild the HCR network from the checkpoint and cannot read a CoReNet one.
+#
+# Deliberately NOT changed (PhaseC only for now): svb.train_template and
+# analysis_config.config.friends.FvT still name friend/FvT_nominal, so C.4, D and F would read the
+# HCR FvT, not this one.
+base: coffea4bees/workflows/config/nominal_run3_2024.yml
+
+# Only used outside a roast, where {roast_id} falls back to label.
+label: "nominal_run3_2024_corenet"
+
+fvt:
+  label: "FvT_corenet"
+  wfs_base: "coffea4bees/classifier/config/workflows/HH4b_Run3/FvT_corenet"
+  output_dir: "output/FvT_corenet/"
+  plot_inputs: false
+  plot_weights: false

@@ -1,0 +1,23 @@
+# HH -> 4b for the barista classifier: the four candidate jets (CanJet) and up to eight other jets (NotCanJet).
+# `event:` and `labels:` are filled in by barista from the dataset settings (InputBranch.feature_ancillary,
+# MultiClass.trainable_labels); the output name below is a placeholder, the classes come from the dataset.
+objects:
+  canjets:    {features: [pt, eta, phi, mass], max: 4}
+  notcanjets: {features: [pt, eta, phi, mass], max: 8}
+  b:     canjets pt 4        # listed first: its leading jet fixes the eta reflection
+  other: notcanjets pt 8
+hypotheses:
+  HH:
+    H1: [b, b]
+    H2: [b, b]
+    context: other
+outputs:
+  main: HH
+combine: [HH]
+training:
+  features: 4
+  attention_heads: 2
+  attention_gate: false     # the HCR defaults (HCRArch: use_attention_gate=False, use_kv_proj=False)
+  kv_projection: false
+  phase_symmetric: true
+  reflect_eta: true
