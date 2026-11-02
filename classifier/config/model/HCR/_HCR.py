@@ -88,6 +88,7 @@ class HCRTrain(KFoldTrain):
             finetuning_schedule=finetuning,
             benchmarks=HCRBenchmarks(
                 rocs=self.rocs,
+                fit_quality=getattr(self, "fit_quality", ()),
             ),
             model=self.model,
             pretrained_weights=self.opts.pretrained_weights or None,

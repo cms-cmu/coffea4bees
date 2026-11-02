@@ -209,14 +209,16 @@ if _pre_fvt_ref:
             with open(up_cfg_path) as cf:
                 up_cfg = yaml.safe_load(cf) or {}
             if isinstance(up_cfg.get('handoff'), dict) and up_cfg['handoff'].get('eos_base'):
-                up_handoff_eos = up_cfg['handoff']['eos_base'].rstrip('/')
+                raw_up_handoff = up_cfg['handoff']['eos_base'].rstrip('/')
+                up_eos = _upstream_base(_pre_fvt_ref, _placeholders['eos_prod'])
+                up_handoff_eos = raw_up_handoff.replace("{eos_prod}/{roast_id}", up_eos).replace("{roast_id}", _pre_fvt_ref).replace("{eos_prod}", _placeholders['eos_prod'])
         except Exception:
             pass
 
-    if up_handoff_eos:
-        INPUT_HANDOFF_EOS = up_handoff_eos
-    elif config.get('input_handoff_eos'):
+    if config.get('input_handoff_eos') and '{' not in config['input_handoff_eos']:
         INPUT_HANDOFF_EOS = config['input_handoff_eos'].rstrip('/')
+    elif up_handoff_eos:
+        INPUT_HANDOFF_EOS = up_handoff_eos
     else:
         try:
             up_eos = _upstream_base(_pre_fvt_ref, _placeholders['eos_prod'])
@@ -267,14 +269,16 @@ if _fvt_ref:
             with open(up_cfg_path) as cf:
                 up_cfg = yaml.safe_load(cf) or {}
             if isinstance(up_cfg.get('handoff'), dict) and up_cfg['handoff'].get('eos_base'):
-                up_fvt_handoff_eos = up_cfg['handoff']['eos_base'].rstrip('/')
+                raw_up_fvt = up_cfg['handoff']['eos_base'].rstrip('/')
+                up_fvt_eos = _upstream_base(_fvt_ref, _placeholders['eos_prod'])
+                up_fvt_handoff_eos = raw_up_fvt.replace("{eos_prod}/{roast_id}", up_fvt_eos).replace("{roast_id}", _fvt_ref).replace("{eos_prod}", _placeholders['eos_prod'])
         except Exception:
             pass
 
-    if up_fvt_handoff_eos:
-        FVT_HANDOFF_EOS = up_fvt_handoff_eos
-    elif config.get('fvt_handoff_eos'):
+    if config.get('fvt_handoff_eos') and '{' not in config['fvt_handoff_eos']:
         FVT_HANDOFF_EOS = config['fvt_handoff_eos'].rstrip('/')
+    elif up_fvt_handoff_eos:
+        FVT_HANDOFF_EOS = up_fvt_handoff_eos
     else:
         try:
             up_fvt_eos = _upstream_base(_fvt_ref, _placeholders['eos_prod'])
