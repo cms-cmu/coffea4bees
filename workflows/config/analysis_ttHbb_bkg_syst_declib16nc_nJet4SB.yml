@@ -7,6 +7,15 @@ label: "ttHbb_bkg_syst_declib16nc_nJet4SB"
 inputs:
   upstream_roasts:
     nominal: ttHbb_asymEllipse_nJet4SB_20261017_aa1ba89-f610a88
+  # That roast trained a single SvB model (SvB_ttHbb_stitched) and used it as the SvB_MA classifier,
+  # so SvB_MA points at the same files as SvB (the base config expects a separate SvB_MA_ttHbb_stitched).
+  SvB_MA: "{roast:nominal}/friend/SvB_ttHbb_stitched/result.json@@analysis.0.merged"
+  SvB_MA_model: "{roast:nominal}/classifier/SvB_ttHbb_stitched/result.json"
+# Only SvB_MA: scoring the same model again as SvB would duplicate the evaluation and histograms.
+classifiers:
+  - "SvB_MA"
+classifier_variables:
+  SvB_MA: "SvB_MA_ps_ttHbb"
 analysis_config:
   config:
     pairing: can_ttH
