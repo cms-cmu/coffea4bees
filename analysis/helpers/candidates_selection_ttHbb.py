@@ -387,60 +387,77 @@ def _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB=False, cand_cfg=Non
 
     svb_cfg = (cand_cfg or {}).get('svb', {})
     if run_SvB:
+        # Generic SvB classifier discovery: find all SvB classifiers (e.g. SvB, SvB_MA, etc.)
+        svb_names = [f for f in selev.fields if f.startswith("SvB") and not f.startswith("SvB_FeynNet")]
+        primary_svb = None
         if "SvB_MA" in selev.fields:
-            if "ps" in selev["SvB_MA"].fields:
-                svb_ps = selev["SvB_MA"].ps
-            elif "ps_ttHbb" in selev["SvB_MA"].fields:
-                svb_ps = selev["SvB_MA"].ps_ttHbb
-            elif "pttHbb" in selev["SvB_MA"].fields:
-                svb_ps = selev["SvB_MA"].pttHbb
-            else:
-                svb_ps = None
+            primary_svb = "SvB_MA"
         elif "SvB" in selev.fields:
-            if "ps" in selev["SvB"].fields:
-                svb_ps = selev["SvB"].ps
-            elif "ps_ttHbb" in selev["SvB"].fields:
-                svb_ps = selev["SvB"].ps_ttHbb
-            elif "pttHbb" in selev["SvB"].fields:
-                svb_ps = selev["SvB"].pttHbb
+            primary_svb = "SvB"
+        elif svb_names:
+            primary_svb = svb_names[0]
+
+        if primary_svb is not None:
+            if "ps" in selev[primary_svb].fields:
+                svb_ps = selev[primary_svb].ps
+            elif "ps_ttHbb" in selev[primary_svb].fields:
+                svb_ps = selev[primary_svb].ps_ttHbb
+            elif "pttHbb" in selev[primary_svb].fields:
+                svb_ps = selev[primary_svb].pttHbb
             else:
                 svb_ps = None
         elif "SvB_FeynNet" in selev.fields:
             svb_ps = 1.0 - selev["SvB_FeynNet"].p_bkg
         else:
             svb_ps = None
+
         if svb_ps is not None:
-            selev["pass_ps_min"] = svb_ps >= svb_cfg.get('ps_min', 0.01)
+            ps_min_threshold = svb_cfg.get('ps_min', 0.01)
+            selev["pass_ps_min"] = svb_ps >= ps_min_threshold
             selev["passSvB"] = svb_ps > svb_cfg.get('passSvB_min', 0.90)
             selev["failSvB"] = (svb_ps >= 0.0) & (svb_ps < svb_cfg.get('failSvB_max', 0.05))
 
-            for sname in ["SvB_MA", "SvB"]:
-                if sname in selev.fields:
-                    if "ps" in selev[sname].fields:
-                        selev[sname, "ps"] = ak.where(selev[sname].ps < 0.01, -2.0, selev[sname].ps)
-                        s_ps = selev[sname].ps
-                    elif "ps_ttHbb" in selev[sname].fields:
-                        s_ps = selev[sname].ps_ttHbb
-                    elif "pttHbb" in selev[sname].fields:
-                        s_ps = selev[sname].pttHbb
-                    else:
-                        s_ps = None
-                    if s_ps is not None:
-                        ps_np = ak.to_numpy(s_ps)
-                        edges = None
-                        if isinstance(svb_binning, dict):
-                            edges = svb_binning.get(sname, svb_binning.get("bin_edges", None))
-                        elif isinstance(svb_binning, (list, np.ndarray)):
-                            edges = svb_binning
-                        if edges is None:
-                            edges = ttHbbSvBHists.var_binning_ps_ttHbb
-                        edges = np.asarray(edges, dtype=np.float64)
-                        # Cumulative signal quantiles
-                        n_bins = len(edges) - 1
-                        bin_idx = np.clip(np.digitize(ps_np, edges) - 1, 0, n_bins - 1)
-                        ps_quantile = (bin_idx + 0.5) / float(n_bins)
-                        ps_quantile = np.where(ps_np < 0.01, -2.0, ps_quantile)
-                        selev[sname, "ps_ttHbb"] = ak.Array(ps_quantile)
+            # Clamp all SvB classifiers at ps < ps_min_threshold -> -2.0 (underflow sentinel)
+            # and compute cumulative quantile distributions for both inclusive and gt6
+            for sname in svb_names:
+                if "ps" in selev[sname].fields:
+                    selev[sname, "ps"] = ak.where(selev[sname].ps < ps_min_threshold, -2.0, selev[sname].ps)
+                    s_ps = selev[sname].ps
+                elif "ps_ttHbb" in selev[sname].fields:
+                    selev[sname, "ps_ttHbb"] = ak.where(selev[sname].ps_ttHbb < ps_min_threshold, -2.0, selev[sname].ps_ttHbb)
+                    s_ps = selev[sname].ps_ttHbb
+                elif "pttHbb" in selev[sname].fields:
+                    selev[sname, "pttHbb"] = ak.where(selev[sname].pttHbb < ps_min_threshold, -2.0, selev[sname].pttHbb)
+                    s_ps = selev[sname].pttHbb
+                else:
+                    s_ps = None
+
+                if s_ps is not None:
+                    ps_np = ak.to_numpy(s_ps)
+                    edges = None
+                    if isinstance(svb_binning, dict):
+                        edges = svb_binning.get(sname, svb_binning.get("bin_edges", None))
+                    elif isinstance(svb_binning, (list, np.ndarray)):
+                        edges = svb_binning
+                    if edges is None:
+                        edges = ttHbbSvBHists.var_binning_ps_ttHbb
+                    edges = np.asarray(edges, dtype=np.float64)
+
+                    # Inclusive cumulative signal quantiles (240 bins)
+                    n_bins = len(edges) - 1
+                    bin_idx = np.clip(np.digitize(ps_np, edges) - 1, 0, n_bins - 1)
+                    ps_quantile = (bin_idx + 0.5) / float(n_bins)
+                    ps_quantile = np.where(ps_np < ps_min_threshold, -2.0, ps_quantile)
+                    selev[sname, "ps_ttHbb"] = ak.Array(ps_quantile)
+
+                    # gt6 cumulative signal quantiles (240 bins)
+                    edges_gt6 = ttHbbSvBHists.var_binning_ps_ttHbb_gt6
+                    edges_gt6 = np.asarray(edges_gt6, dtype=np.float64)
+                    n_bins_gt6 = len(edges_gt6) - 1
+                    bin_idx_gt6 = np.clip(np.digitize(ps_np, edges_gt6) - 1, 0, n_bins_gt6 - 1)
+                    ps_quantile_gt6 = (bin_idx_gt6 + 0.5) / float(n_bins_gt6)
+                    ps_quantile_gt6 = np.where(ps_np < ps_min_threshold, -2.0, ps_quantile_gt6)
+                    selev[sname, "ps_ttHbb_gt6"] = ak.Array(ps_quantile_gt6)
 
             pass_mask = selev.passSvB
             m_lead = selev.leadStM_selected
@@ -477,71 +494,6 @@ def _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB=False, cand_cfg=Non
                 q_scores = quadJet.SvB_MA_q_score
             elif "SvB_MA" in selev.fields and "q_1234" in selev["SvB_MA"].fields:
                 q_scores = _pairing_q_scores(selev.SvB_MA, quadJet)
-
-            if q_scores is not None:
-                best_q_idx = ak.argmax(q_scores, axis=1, keepdims=True)
-                quadJet_best_q = quadJet[best_q_idx][:, 0]
-                m_lead_q = quadJet_best_q.lead.mass
-                m_subl_q = quadJet_best_q.subl.mass
-                pairs_q = ak.concatenate([m_lead_q[:, np.newaxis], m_subl_q[:, np.newaxis]], axis=1)
-                flat_m_q = ak.flatten(pairs_q[pass_mask])
-                selev["dijet_both_qscore_SvB_gt_0p9"] = ak.zip({
-                    "mass": ak.unflatten(flat_m_q, counts),
-                })
-
-            if "SvB_MA" in selev.fields:
-                ps_np = ak.to_numpy(svb_ps)
-                # Inclusive quantiles
-                n_bins = len(ttHbbSvBHists.var_binning_ps_ttHbb) - 1
-                bin_idx = np.clip(np.digitize(ps_np, ttHbbSvBHists.var_binning_ps_ttHbb) - 1, 0, n_bins - 1)
-                ps_quantile = (bin_idx + 0.5) / float(n_bins)
-                selev["SvB_MA", "ps_ttHbb"] = ak.Array(ps_quantile)
-
-                # gt6 quantiles
-                n_bins_gt6 = len(ttHbbSvBHists.var_binning_ps_ttHbb_gt6) - 1
-                bin_idx_gt6 = np.clip(np.digitize(ps_np, ttHbbSvBHists.var_binning_ps_ttHbb_gt6) - 1, 0, n_bins_gt6 - 1)
-                ps_quantile_gt6 = (bin_idx_gt6 + 0.5) / float(n_bins_gt6)
-                selev["SvB_MA", "ps_ttHbb_gt6"] = ak.Array(ps_quantile_gt6)
-
-            pass_mask = selev.passSvB
-            m_lead = selev.leadStM_selected
-            m_subl = selev.sublStM_selected
-
-            counts = ak.where(pass_mask, 2, 0)
-            pairs = ak.concatenate([m_lead[:, np.newaxis], m_subl[:, np.newaxis]], axis=1)
-            flat_m = ak.flatten(pairs[pass_mask])
-            dijet_both = ak.unflatten(flat_m, counts)
-
-            selev["dijet_SvB_gt_0p9"] = ak.zip({
-                "lead_m": ak.where(~pass_mask, -2.0, m_lead),
-                "subl_m": ak.where(~pass_mask, -2.0, m_subl),
-            })
-            selev["dijet_both_SvB_gt_0p9"] = ak.zip({
-                "mass": dijet_both,
-            })
-
-            # Also retain 0.8 threshold for comparison
-            pass_mask_0p8 = svb_ps > 0.80
-            counts_0p8 = ak.where(pass_mask_0p8, 2, 0)
-            flat_m_0p8 = ak.flatten(pairs[pass_mask_0p8])
-            selev["dijet_SvB_gt_0p8"] = ak.zip({
-                "lead_m": ak.where(~pass_mask_0p8, -2.0, m_lead),
-                "subl_m": ak.where(~pass_mask_0p8, -2.0, m_subl),
-            })
-            selev["dijet_both_SvB_gt_0p8"] = ak.zip({
-                "mass": ak.unflatten(flat_m_0p8, counts_0p8),
-            })
-
-            # Single dedicated monitoring plot: dijet mass using network q-score best pairing (both pairs)
-            q_scores = None
-            if "SvB_MA_q_score" in quadJet.fields:
-                q_scores = quadJet.SvB_MA_q_score
-            elif "SvB_MA" in selev.fields and "q_1234" in selev["SvB_MA"].fields:
-                q_scores = np.concatenate([
-                    selev.SvB_MA.q_1234[:, np.newaxis],
-                    selev.SvB_MA.q_1324[:, np.newaxis],
-                    selev.SvB_MA.q_1423[:, np.newaxis],
-                ], axis=1)
 
             if q_scores is not None:
                 best_q_idx = ak.argmax(q_scores, axis=1, keepdims=True)
