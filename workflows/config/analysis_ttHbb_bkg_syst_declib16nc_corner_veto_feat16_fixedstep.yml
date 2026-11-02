@@ -1,0 +1,32 @@
+# ==============================================================================
+# ttHbb Run 2 BACKGROUND SYSTEMATIC — DeClustered 16x Corner Veto
+# Config 1: 16 Features + FixedStep Schedule (Proven Champion)
+# ==============================================================================
+# Layered on analysis_ttHbb_bkg_syst_declib16nc_corner_veto.yml.
+# Reuses pre-FvT stages A and B from upstream pre_fvt roast:
+#   analysis_ttHbb_bkg_syst_declib16nc_corner_veto_20261029_ee431c4-5508ecf
+# Upgrades FvT architecture to 16 features with FixedStep learning rate schedule
+# (20 epochs, bs_init: 1024, finetuning 1 epoch at bs: 16384).
+# Optimized for maximum ttbar MC transfer preservation and compact weight tails.
+# ==============================================================================
+
+base: coffea4bees/workflows/config/analysis_ttHbb_bkg_syst_declib16nc_corner_veto.yml
+
+label: "ttHbb_bkg_syst_declib16nc_corner_veto_feat16_fixedstep"
+output_path: "output/{roast_id}/"
+
+fvt_train_workflow:
+  model:
+    - module: HCR.FvT.baseline.Train
+      option:
+        - --architecture
+        - n_features: 16
+        - --kfolds 3
+        - --kfold-seed FvT random
+        - --kfold-seed-offsets 0
+        - --training FixedStep
+        - bs_init: 1024
+          epoch: 20
+        - --finetuning FixedStep
+        - bs_init: 16384
+          epoch: 1

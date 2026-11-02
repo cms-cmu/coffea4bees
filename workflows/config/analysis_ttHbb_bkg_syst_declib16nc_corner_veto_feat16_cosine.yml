@@ -1,0 +1,35 @@
+# ==============================================================================
+# ttHbb Run 2 BACKGROUND SYSTEMATIC — DeClustered 16x Corner Veto
+# Config 2: 16 Features + CosineAnnealing Schedule (Synthesis Candidate)
+# ==============================================================================
+# Layered on analysis_ttHbb_bkg_syst_declib16nc_corner_veto.yml.
+# Reuses pre-FvT stages A and B from upstream pre_fvt roast:
+#   analysis_ttHbb_bkg_syst_declib16nc_corner_veto_20261029_ee431c4-5508ecf
+# Upgrades FvT architecture to 16 features with CosineAnnealing LR schedule
+# (25 epochs, bs_init: 1024, lr_init: 0.005, eta_min: 1.22e-6,
+#  finetuning 1 epoch at bs: 16384).
+# Optimized for negative weight suppression and 4b-vs-3b data discrimination.
+# ==============================================================================
+
+base: coffea4bees/workflows/config/analysis_ttHbb_bkg_syst_declib16nc_corner_veto.yml
+
+label: "ttHbb_bkg_syst_declib16nc_corner_veto_feat16_cosine"
+output_path: "output/{roast_id}/"
+
+fvt_train_workflow:
+  model:
+    - module: HCR.FvT.baseline.Train
+      option:
+        - --architecture
+        - n_features: 16
+        - --kfolds 3
+        - --kfold-seed FvT random
+        - --kfold-seed-offsets 0
+        - --training CosineAnnealing
+        - bs_init: 1024
+          epoch: 25
+          lr_init: 0.005
+          eta_min: 1.22e-6
+        - --finetuning FixedStep
+        - bs_init: 16384
+          epoch: 1

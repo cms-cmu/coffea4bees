@@ -90,6 +90,12 @@ class Train(HCRTrain):
             )
         return rocs
 
+    @property
+    def fit_quality(self):
+        from src.classifier.ml.benchmarks.fit_quality import FvTFitQuality
+
+        return [FvTFitQuality()]
+
 
 class Eval(HCREval):
     model = "FvT"
