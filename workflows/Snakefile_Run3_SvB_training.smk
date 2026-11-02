@@ -196,7 +196,6 @@ rule train:
         {params.init} && \
         PORT=$(shuf -i 10000-60000 -n 1) && \
         CLASSIFIER_CONFIG_PATHS={params.classifier_config_paths} \
-        CLASSIFIER_CHECKPOINT_DIR=$PWD/$(dirname {output.flag}) \
         python -m src.classifier.task.main \
             template "{{{params.template_str}}}" {input.train_yml} \
             -from {params.wfs_base}/common.yml \
@@ -276,7 +275,6 @@ rule evaluate:
                XRD_CONNECTIONRETRY=5 XRD_CONNECTIONWINDOW=60 && \
         PORT=$(shuf -i 10000-60000 -n 1) && \
         CLASSIFIER_CONFIG_PATHS={params.classifier_config_paths} \
-        CLASSIFIER_CHECKPOINT_DIR=$PWD/$(dirname {output.flag}) \
         python -m src.classifier.task.main \
             template "{{{params.template_str}}}" {input.eval_yml} \
             -from {params.wfs_base}/common.yml \
