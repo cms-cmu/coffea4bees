@@ -3,8 +3,8 @@
 # Evaluates impact of overall ttbar mismodeling (+50%) across all stages (B, C, D, F)
 # ==============================================================================
 
-label: "analysis_ttHbb_stat_only_wrong_ttbar_up"
-output_path: "output/analysis_ttHbb_stat_only_wrong_ttbar_up/"
+label: "ttHbb_stat_only_wrong_ttbar_up"
+output_path: "output/ttHbb_stat_only_wrong_ttbar_up/"
 unify_background: true
 ttbar_scale: 1.5
 

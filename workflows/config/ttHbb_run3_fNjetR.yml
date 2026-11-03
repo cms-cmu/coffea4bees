@@ -7,7 +7,7 @@
 #        f(nJet) = f0 (nJet/4)^alpha and the 3b loose-veto factor r^(nJet-3); the processor loader
 #        (analysis/helpers/jetCombinatoricModel.py, test analysis/tests/test_jcm_fnjetr_loader.py) reads alpha and r.
 #   B.2  2023 classifier inputs .. Snakefile_PhaseB_2_make_classifier_friendtree.smk   classifier_inputs block
-#        2022/2024 inputs are mmarcheg's (analysis_ttHbb_run3.yml, analysis_ttHbb_run3_2024.yml; 2024 cleaned into
+#        2022/2024 inputs are mmarcheg's (ttHbb_run3.yml, ttHbb_run3_2024.yml; 2024 cleaned into
 #        classifier_inputs_ttHbb_run3_2024_clean_v1*.json). The 2023 ones were produced with this block, restricted with
 #        `--config years=2023_preBPix,2023_BPix`; index classifier_inputs_ttHbb_run3_2023_trigv1[_phystop].json.
 #   C    combined Run 3 FvT ...... Snakefile_PhaseC.smk     classifier_setting + fvt blocks (templates classifier/config/workflows/ttHbb_run3/FvT/)
@@ -19,7 +19,7 @@
 #   (FvT_ttHbb_run3_allyears_perEraJCM, SvB_ttHbb_run3_allyears_perEraJCM; the result_phystop.json indices point there),
 #   Phase F output under output_path below, plots at https://jgaytanv.web.cern.ch/plots/ttHbb/. The fvt/svb eos_base is
 #   /eos/user because kfold.Merge --clean needs delete rights the phys_top area does not give; products were migrated after.
-# Rerun: ./run_container snakemake -s coffea4bees/workflows/Snakefile_<Phase>.smk --configfile coffea4bees/workflows/config/analysis_ttHbb_run3_fNjetR.yml
+# Rerun: ./run_container snakemake -s coffea4bees/workflows/Snakefile_<Phase>.smk --configfile coffea4bees/workflows/config/ttHbb_run3_fNjetR.yml
 #   GPU rules (C, D) on lxplus need --apptainer-args "<lxplus_gpu args> --env TMPDIR=/tmp --env _CONDOR_SCRATCH_DIR=/tmp"
 #   (src/data_formats/root/io.py temp dir is not bound in the per-rule container); after an abort add --rerun-triggers input
 #   so a recorded training is not repeated.
@@ -31,7 +31,7 @@ output_path: "/eos/user/j/jgaytanv/ttHbb/4b/output/ttHbb_run3_allyears_phaseF/"
 cern_user: "jgaytanv"
 cern_path: "www/plots/ttHbb/analysis/4b/"
 
-# Run 2 ttHbb precedent (analysis_ttHbb.yml:8-10): ttHbb + data only; the ttbar comes from 3b data through the FvT
+# Run 2 ttHbb precedent (ttHbb.yml:8-10): ttHbb + data only; the ttbar comes from 3b data through the FvT
 # (plot_ttbar_with_weights -> TTbar4b_from_d3), and make_combine_inputs refuses two ttbar estimates.
 dataset:
   - "ttHbb"
@@ -47,7 +47,7 @@ year_eras:
 # ==============================================================================
 # PHASE B.2: CLASSIFIER INPUTS (friend trees for FvT / SvB training), 2023 production
 # ==============================================================================
-# The 2022 block of analysis_ttHbb_run3.yml except friend_file (v1 pin), make_classifier_input and three runner keys
+# The 2022 block of ttHbb_run3.yml except friend_file (v1 pin), make_classifier_input and three runner keys
 # (lxplus_eos_scratch; skipbadfiles: false -> fail loudly instead of silently skipping chunks; dashboard_address: 0).
 # Selected-jet threshold = the repo setup (2023: 25 GeV via object_selection_thresholds.yml era_overrides). Run it for the
 # 2023 eras only (`--config years=2023_preBPix,2023_BPix`): with the full year_eras above it would plan 2022/2024 too.
@@ -256,20 +256,20 @@ analysis_config:
     apply_trigWeight: true
     apply_btagSF: true
     apply_boosted_veto: false
-    apply_lepton_veto: false          # analysis_ttHbb.yml:277
+    apply_lepton_veto: false          # ttHbb.yml:277
     run_SvB: true
-    SvB_MA: null                      # read from the friend below, no on-the-fly classifier (roast precedent, analysis_ttHbb.yml:268)
-    SvB: null                         # analysis_ttHbb.yml:280
-    hist_cuts: ["pass_nSelJets_gt6", "passLeptonVeto"]   # analysis_ttHbb.yml:281
+    SvB_MA: null                      # read from the friend below, no on-the-fly classifier (roast precedent, ttHbb.yml:268)
+    SvB: null                         # ttHbb.yml:280
+    hist_cuts: ["pass_nSelJets_gt6", "passLeptonVeto"]   # ttHbb.yml:281
     top_reconstruction: fast
-    plot_ttbar_with_weights: true     # analysis_ttHbb.yml:283: ttbar from 3b data (TTbar_from_d3) for the closure table / combine
+    plot_ttbar_with_weights: true     # ttHbb.yml:283: ttbar from 3b data (TTbar_from_d3) for the closure table / combine
     fill_histograms: true
     candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_sb1000.yml"
     friends:
       FvT: "root://eoscms.cern.ch//eos/cms/store/group/phys_top/jgaytanv/ttHbb/4b/Run3_v1/ttHbb_stitched/friend/FvT_ttHbb_run3_allyears_perEraJCM/result_phystop.json@@analysis.0.merged"
       SvB_MA: "root://eoscms.cern.ch//eos/cms/store/group/phys_top/jgaytanv/ttHbb/4b/Run3_v1/ttHbb_stitched/friend/SvB_ttHbb_run3_allyears_perEraJCM/result_phystop.json@@analysis.0.merged"
 
-plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"   # analysis_ttHbb.yml:285
+plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"   # ttHbb.yml:285
 plot_extra_arguments: ""
 known_counts: "none"
 known_counts_fatal: false
@@ -284,7 +284,7 @@ convert_hist_to_json:
     - "SvB_MA.ps_ttHbb"
 
 combine_outdir: "datacards/"
-make_combine_inputs:                 # analysis_ttHbb.yml:302-305, plus the Run 3 metadata
+make_combine_inputs:                 # ttHbb.yml:302-305, plus the Run 3 metadata
   rebin: 12
   stat_only: ""
   bkgsyst: "coffea4bees/stats_analysis/files/HIG-24-010/zz/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_zz_rebin1.pkl"
@@ -292,7 +292,7 @@ make_combine_inputs:                 # analysis_ttHbb.yml:302-305, plus the Run 
   # i.e. the Run 2 bins
   metadata_template: "coffea4bees/stats_analysis/metadata/ttHbb_run3.yml"
 
-combine_flags: "--three_tag threeTag --four_tag fourTag --region sum --blind"   # analysis_ttHbb.yml:307-312
+combine_flags: "--three_tag threeTag --four_tag fourTag --region sum --blind"   # ttHbb.yml:307-312
 likelihood_scan_points: 40
 likelihood_scan_r_min: 0
 likelihood_scan_r_max: 2
@@ -300,7 +300,7 @@ likelihood_scan_y_cut: 30
 likelihood_scan_y_max: 30
 
 channels:
-  ttHbb_run3_stat_only:              # template: analysis_ttHbb.yml:325-335 (ttHbb_stat_only)
+  ttHbb_run3_stat_only:              # template: ttHbb.yml:325-335 (ttHbb_stat_only)
     signallabel: "ttHbb"
     othersignal: ""
     variable: "SvB_MA.ps_ttHbb"

@@ -18,7 +18,7 @@ The pipeline is organized into modular **Phases (A through F)** reflecting the f
 | **Phase F** | Analysis Processor & CMS Combine Stats | **`cmslpc`** | CPU (Condor + Dask + Combine container) |
 
 > [!TIP]
-> **Configuration Best Practice**: While Snakemake supports direct command-line parameter overrides (e.g. `--config dataset=ttHbb year=UL18`), the **recommended and reproducible approach** is to run workflows using a centralized YAML configuration file passed via `--configfile` (e.g. `--configfile coffea4bees/workflows/config/nominal_run2.yml` or `coffea4bees/workflows/config/analysis_ttHbb.yml`). CLI `--config` flags should only be used for temporary or targeted overrides (such as `--config test=true` or single-dataset evaluation).
+> **Configuration Best Practice**: While Snakemake supports direct command-line parameter overrides (e.g. `--config dataset=ttHbb year=UL18`), the **recommended and reproducible approach** is to run workflows using a centralized YAML configuration file passed via `--configfile` (e.g. `--configfile coffea4bees/workflows/config/nominal_run2.yml` or `coffea4bees/workflows/config/ttHbb.yml`). CLI `--config` flags should only be used for temporary or targeted overrides (such as `--config test=true` or single-dataset evaluation).
 
 ---
 
@@ -96,15 +96,15 @@ flowchart TD
 ```bash
 # Run full Phase A (Skim + Trigger Weights) via config file on cmslpc
 ./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseA.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml
+    --configfile coffea4bees/workflows/config/ttHbb.yml
 
 # Run only the skimmer
 ./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseA_1_skimmer.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml
+    --configfile coffea4bees/workflows/config/ttHbb.yml
 
 # Run only trigger weights calculation
 ./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseA_2_trigWeights.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml
+    --configfile coffea4bees/workflows/config/ttHbb.yml
 ```
 
 ---
@@ -133,17 +133,17 @@ flowchart TD
 ```bash
 # Run full Phase B (JCM + Classifier Inputs) on cmslpc
 ./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseB.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
+    --configfile coffea4bees/workflows/config/ttHbb.yml \
     --cores 8
 
 # Run only Phase B.1 JCM computation (New analysis only)
 ./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseB_1_computeJCM.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
+    --configfile coffea4bees/workflows/config/ttHbb.yml \
     --cores 4
 
 # Run only Phase B.2 Classifier friend tree inputs creation (All analyses)
 ./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseB_2_make_classifier_friendtree.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
+    --configfile coffea4bees/workflows/config/ttHbb.yml \
     --cores 8
 ```
 
@@ -179,27 +179,27 @@ flowchart TD
 ```bash
 # Run full Phase C master pipeline
 ./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseC.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
+    --configfile coffea4bees/workflows/config/ttHbb.yml \
     --cores 8
 
 # Run only Phase C.1 Diagnostic plotting
 ./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseC_1_plot_inputs.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
+    --configfile coffea4bees/workflows/config/ttHbb.yml \
     --cores 4
 
 # Run only Phase C.2 Model training & loss/ROC analysis (If retraining FvT)
 ./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseC_2_train.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
+    --configfile coffea4bees/workflows/config/ttHbb.yml \
     --cores 8
 
 # Run Phase C.3 evaluation on ALL datasets (If background estimation changed)
 ./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseC_3_evaluate.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
+    --configfile coffea4bees/workflows/config/ttHbb.yml \
     --cores 8
 
 # Run Phase C.3 evaluation on a SINGLE dataset (e.g. ttHbb)
 ./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseC_3_evaluate.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
+    --configfile coffea4bees/workflows/config/ttHbb.yml \
     --config dataset=ttHbb \
     --cores 4
 ```
@@ -235,27 +235,27 @@ flowchart TD
 ```bash
 # Run full Phase D master pipeline
 ./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseD.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
+    --configfile coffea4bees/workflows/config/ttHbb.yml \
     --cores 8
 
 # Run only Phase D.1 Diagnostic plotting
 ./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseD_1_plot_inputs.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
+    --configfile coffea4bees/workflows/config/ttHbb.yml \
     --cores 4
 
 # Run only Phase D.2 SvB training & analysis (If retraining SvB)
 ./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseD_2_train.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
+    --configfile coffea4bees/workflows/config/ttHbb.yml \
     --cores 8
 
 # Run Phase D.3 SvB evaluation on ALL datasets (Required for All Analyses)
 ./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseD_3_evaluate.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
+    --configfile coffea4bees/workflows/config/ttHbb.yml \
     --cores 8
 
 # Run Phase D.3 SvB evaluation on a single dataset (e.g. ttHbb)
 ./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseD_3_evaluate.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
+    --configfile coffea4bees/workflows/config/ttHbb.yml \
     --config dataset=ttHbb \
     --cores 4
 ```
@@ -389,7 +389,7 @@ Because Phase E mixes multiple data-driven and MC components, ensuring the corre
 Always dry-run (`-n` or `-np`) before launching large jobs:
 ```bash
 ./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb.yml \
+    --configfile coffea4bees/workflows/config/ttHbb.yml \
     --config test=true \
     -np
 ```

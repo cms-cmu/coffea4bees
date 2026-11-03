@@ -56,7 +56,7 @@
 import os
 
 if not workflow.configfiles:
-    configfile: "coffea4bees/workflows/config/analysis_ttHbb_bkg_syst.yml"
+    configfile: "coffea4bees/workflows/config/ttHbb_bkg_syst.yml"
 
 include: "helpers/bkg_syst_common.smk"
 

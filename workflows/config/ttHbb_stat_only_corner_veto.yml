@@ -5,7 +5,7 @@
 # the high-mass corner vetoed (m_lead > 250 && m_subl > 250).
 # ==============================================================================
 
-base: coffea4bees/workflows/config/analysis_ttHbb.yml
+base: coffea4bees/workflows/config/ttHbb.yml
 
 label: "ttHbb"
 output_path: "output/ttHbb/"
