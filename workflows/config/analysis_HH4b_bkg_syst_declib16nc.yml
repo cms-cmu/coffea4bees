@@ -1,7 +1,7 @@
 # ==============================================================================
 # HH4b Run 2 BACKGROUND SYSTEMATIC (Snakefile_bkg_syst.smk) with DeClustered Library (declib16nc)
 # ==============================================================================
-# The HH4b counterpart of analysis_ttHbb_bkg_syst_declib16nc.yml: 16 closure subsamples from the Run 2
+# The HH4b counterpart of ttHbb_bkg_syst_declib16nc.yml: 16 closure subsamples from the Run 2
 # declustered library (declib16nc seeds + ttbar pseudodata), a JCM + FvT per subsample, the two-stage
 # closure fit, and Combine datacards. Inputs come from upstream roasts (see `inputs:`); everything
 # written is this roast's: local output under output/{roast_id}/, EOS under {eos_prod}/{roast_id}/.

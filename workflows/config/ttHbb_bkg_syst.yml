@@ -7,11 +7,12 @@
 # products under {eos_prod}/{roast_id}/. No user names: {eos_prod} / {web_prod} come from the roast
 # user's profile (helpers/common.smk), and publishing goes through `roast publish`.
 #
-#   roast new --config coffea4bees/workflows/config/analysis_ttHbb_bkg_syst.yml \
+#   roast new --config coffea4bees/workflows/config/ttHbb_bkg_syst.yml \
 #       --step cmslpc:coffea4bees/workflows/Snakefile_bkg_syst.smk
 #   roast submit <id> --step bkg_syst --targets all_pre_fvt      # A_1-A_3 + B_1
 #
 label: "ttHbb_bkg_syst"
+category: "ttHbb_bkg_syst"
 output_path: "output/{roast_id}/"
 per_year_jcm: true
 unify_background: true

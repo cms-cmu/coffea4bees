@@ -18,7 +18,7 @@ dataset:
   - "TTToSemiLeptonic_stitched"
   - "TTToHadronic_stitched"
 
-# 2024 only (2022 runs with analysis_ttHbb_run3.yml). '2024' must stay quoted: unquoted it parses as an
+# 2024 only (2022 runs with ttHbb_run3.yml). '2024' must stay quoted: unquoted it parses as an
 # int and the string-keyed year lookups (friends, luminosities) miss it. Era I is split into I2/I3.
 year_eras:
   '2024':
