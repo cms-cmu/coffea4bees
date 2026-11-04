@@ -12,6 +12,9 @@ base: coffea4bees/workflows/config/ttHbb_stat_only_corner_veto.yml
 label: "ttHbb_stat_only_corner_veto"
 output_path: "output/ttHbb/"
 
+handoff:
+  allow_external_refs: true
+
 # Products read from upstream roast
 inputs:
   upstream_roasts:
