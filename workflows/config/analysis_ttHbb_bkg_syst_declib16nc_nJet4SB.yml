@@ -16,9 +16,6 @@ classifiers:
   - "SvB_MA"
 classifier_variables:
   SvB_MA: "SvB_MA_ps_ttHbb"
-# Let the whole workflow finish when the closure bias / ensemble-variance tests do not pass
-# (the old nJet4SB roast ran this way; the workflow no longer passes --ignore_failures itself).
-closure_extra_args: "--ignore_failures"
 analysis_config:
   config:
     pairing: can_ttH
