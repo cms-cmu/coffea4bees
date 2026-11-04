@@ -155,7 +155,7 @@ class Train(HCRTrain):
     def fit_quality(self):
         from src.classifier.ml.benchmarks.fit_quality import FvTFitQuality
 
-        return [FvTFitQuality()]
+        return [FvTFitQuality(source="d3", source_floor=self.opts.fit_quality_floor)]
 
 
 class Eval(HCREval):
