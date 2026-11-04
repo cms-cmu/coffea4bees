@@ -24,6 +24,42 @@ def _roc_data_selection(batch: BatchType):
     }
 
 
+def _roc_data_sb_selection(batch: BatchType):
+    import torch
+
+    is_data = batch[Input.label].new(MultiClass.indices("d4", "d3"))
+    is_data = torch.isin(batch[Input.label], is_data)
+    is_sb = (batch[Input.region] & MassRegion.SB) != 0 if Input.region in batch else torch.ones_like(is_data)
+    mask = is_data & is_sb
+    return {
+        "y_pred": batch[Output.class_prob][mask],
+        "y_true": batch[Input.label][mask],
+        "weight": batch[Input.weight][mask],
+    }
+
+
+def _roc_ttbar_sb_selection(batch: BatchType):
+    import torch
+
+    is_sb = (batch[Input.region] & MassRegion.SB) != 0 if Input.region in batch else torch.ones(len(batch[Input.label]), dtype=torch.bool, device=batch[Input.label].device)
+    return {
+        "y_pred": batch[Output.class_prob][is_sb],
+        "y_true": batch[Input.label][is_sb],
+        "weight": batch[Input.weight][is_sb],
+    }
+
+
+def _roc_ttbar_sr_selection(batch: BatchType):
+    import torch
+
+    is_sr = (batch[Input.region] & MassRegion.SR) != 0 if Input.region in batch else torch.zeros(len(batch[Input.label]), dtype=torch.bool, device=batch[Input.label].device)
+    return {
+        "y_pred": batch[Output.class_prob][is_sr],
+        "y_true": batch[Input.label][is_sr],
+        "weight": batch[Input.weight][is_sr],
+    }
+
+
 class Train(HCRTrain):
     argparser = ArgParser(description="Train FvT")
     model = "FvT"
@@ -70,6 +106,15 @@ class Train(HCRTrain):
                 pos=("d4",),
             ),
         ]
+        if (d4 := "d4" in MultiClass.labels) and (d3 := "d3" in MultiClass.labels):
+            rocs.append(
+                ROC(
+                    name="4b vs 3b data SB",
+                    selection=_roc_data_sb_selection,
+                    bins=ROC_BIN,
+                    pos=("d4",),
+                )
+            )
         if "t4" in MultiClass.labels:
             rocs.append(
                 ROC(
@@ -84,6 +129,22 @@ class Train(HCRTrain):
                 ROC(
                     name="ttbar vs data",
                     selection=roc_nominal_selection,
+                    bins=ROC_BIN,
+                    pos=tts,
+                )
+            )
+            rocs.append(
+                ROC(
+                    name="ttbar vs data SB",
+                    selection=_roc_ttbar_sb_selection,
+                    bins=ROC_BIN,
+                    pos=tts,
+                )
+            )
+            rocs.append(
+                ROC(
+                    name="ttbar vs data SR",
+                    selection=_roc_ttbar_sr_selection,
                     bins=ROC_BIN,
                     pos=tts,
                 )
