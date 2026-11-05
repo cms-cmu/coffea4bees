@@ -95,6 +95,16 @@ class add_year(add_column):
 
 
 @dataclass
+class add_era(add_column):
+    """`era` column from an `era:<index>` group label (detector data loaded per era)."""
+
+    key: str = field(init=False, default="era")
+    pattern: str = field(init=False, default=r"era:(?P<era>\d+)")
+    default: None = field(init=False, default=None)
+    dtype: type = field(init=False, default=float)
+
+
+@dataclass
 class add_single_label(_regex):
     rename: dict[str, str] = None
 
