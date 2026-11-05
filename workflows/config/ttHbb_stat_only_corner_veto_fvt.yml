@@ -147,6 +147,12 @@ fvt:
 # Phase F: Analysis config
 analysis_config:
   config:
+    apply_JCM: true
+    JCM_file:
+      UL16_preVFP: "{roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml"
+      UL16_postVFP: "{roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml"
+      UL17: "{roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL17.yml"
+      UL18: "{roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL18.yml"
     friends:
       FvT: "{eos_prod}/{roast_id}/friend/FvT_ttHbb_stitched/result.json@@analysis.0.merged"
       SvB_MA: "{roast:upstream}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"

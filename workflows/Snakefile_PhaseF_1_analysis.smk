@@ -77,14 +77,25 @@ def get_raw_analysis_config():
     cfg = resolve_config_section(config, primary_key='analysis_config', fallback_keys=['analysis'])
     if config.get('per_year_jcm', False) and 'config' in cfg and cfg['config'].get('apply_JCM'):
         if 'JCM_file' not in cfg['config'] or not cfg['config']['JCM_file']:
-            tag = config.get('tag', '2024_v2')
-            roast_id = config.get('roast_id', config.get('label', 'nominal'))
-            jcm_candidate = {
-                yr: f"coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_{tag}_{yr}.yml"
-                for yr in config.get('year_eras', {}).keys()
-            }
-            if all(os.path.exists(p) for p in jcm_candidate.values()):
-                cfg['config']['JCM_file'] = jcm_candidate
+            inputs_jcm = (config.get('inputs') or {}).get('JCM')
+            if isinstance(inputs_jcm, dict):
+                cfg['config']['JCM_file'] = dict(inputs_jcm)
+            else:
+                tag = config.get('tag', '2024_v2')
+                roast_id = config.get('roast_id', config.get('label', 'nominal'))
+                jcm_candidate = {
+                    yr: f"coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_{tag}_{yr}.yml"
+                    for yr in config.get('year_eras', {}).keys()
+                }
+                if all(os.path.exists(p) for p in jcm_candidate.values()):
+                    cfg['config']['JCM_file'] = jcm_candidate
+                else:
+                    raise ValueError(
+                        f"per_year_jcm is True for {config.get('roast_id', config.get('label'))}, "
+                        f"but no per-year JCM files could be found under analysis_config.config.JCM_file, "
+                        f"inputs.JCM, or coffea4bees/metadata/weights/JCM/{roast_id}/. "
+                        f"Failing fast to prevent silent fallback to single Run2 JCM."
+                    )
     return cfg
 
 # 2024 / 2025 data is blinded (helpers/common.smk: BLIND_YEARS)

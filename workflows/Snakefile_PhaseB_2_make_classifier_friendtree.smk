@@ -195,6 +195,12 @@ rule create_classifier_inputs_config:
             else:
                 new_jcm_file = str(rules.output_computeJCM.input[0])
                 cfg['config']['JCM_file'] = new_jcm_file
+        elif bool(config.get('per_year_jcm', False)):
+            inputs_jcm = (config.get('inputs') or {}).get('JCM')
+            if isinstance(inputs_jcm, dict):
+                if 'config' not in cfg or not isinstance(cfg['config'], dict):
+                    cfg['config'] = {}
+                cfg['config']['JCM_file'] = dict(inputs_jcm)
         if config.get("test", False):
             if 'runner' not in cfg or not isinstance(cfg['runner'], dict):
                 cfg['runner'] = {}

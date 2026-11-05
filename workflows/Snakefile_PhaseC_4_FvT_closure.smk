@@ -101,6 +101,8 @@ per_year_jcm = bool(config.get('per_year_jcm', False))
 if per_year_jcm:
     if isinstance(closure_cfg.get('JCM_file'), dict):
         jcm_file = closure_cfg['JCM_file']
+    elif isinstance((config.get('inputs') or {}).get('JCM'), dict):
+        jcm_file = dict(config['inputs']['JCM'])
     else:
         jcm_file = {
             yr: f"coffea4bees/metadata/weights/JCM/{config['roast_id']}/jetCombinatoricModel_SB_{tag}_{yr}.yml"
