@@ -7,7 +7,7 @@
 # fold models, zero training epochs, and the Baseline benchmark records the fit quality.
 # Upstream roasts are only read. Everything this writes is under config["output_path"].
 #
-# Targets: all_fit_quality (default: every entry + summary), fitq_validate (the first entry only,
+# Targets: all_fit_quality (default: every entry + index.html), fitq_validate (the first entry only,
 # to check the replay reproduces the original training before spending GPUs on the rest), or
 # <output_path>/<name>/fit_quality.json for one entry.
 
@@ -118,7 +118,7 @@ for _n, _p in PLAN.items():
 rule all_fit_quality:
     default_target: True
     input:
-        f"{OUT}/summary.md",
+        f"{OUT}/index.html",
 
 
 rule fitq_validate:
@@ -141,6 +141,8 @@ rule fitq_replay:
         runtime=360,
     params:
         replay=lambda wc: f"{OUT}/{wc.name}/replay",
+        report=lambda wc: f"{OUT}/{wc.name}/report",
+        title=lambda wc: f"{ENTRIES[wc.name].get('method', wc.name)} {ENTRIES[wc.name].get('era', '')}".strip(),
         args=lambda wc: " ".join(
             [
                 f"--train-wf {PLAN[wc.name]['train_wf']}",
@@ -158,84 +160,24 @@ rule fitq_replay:
         rm -rf {params.replay}
         CLASSIFIER_CONFIG_PATHS=coffea4bees python -m src.classifier.fit_quality_replay \
             {params.args} --output {params.replay} --run > {log} 2>&1
+        rm -rf {params.report}
+        python -m src.classifier.fit_quality_report entry --result {params.replay}/result.json --stage baseline \
+            --consistency {params.replay}/consistency.json --wf-check {params.replay}/train_wf_check.json \
+            --name {wildcards.name} --title "{params.title}" --out {params.report} >> {log} 2>&1
         cp {params.replay}/fit_quality.json {output}
         """
-
-
-def _get(d, *keys):
-    for k in keys:
-        if not isinstance(d, dict):
-            return None
-        d = d.get(k)
-    return d
 
 
 rule fitq_summary:
     input:
         expand(f"{OUT}/{{name}}/fit_quality.json", name=list(PLAN)),
     output:
-        md=f"{OUT}/summary.md",
-        js=f"{OUT}/summary.json",
-    run:
-        rows = []
-        for name, plan in PLAN.items():
-            with open(f"{OUT}/{name}/fit_quality.json") as f:
-                fq = json.load(f)["current"]
-            extra = {}
-            for fn in ("consistency.json", "train_wf_check.json"):
-                p = f"{OUT}/{name}/replay/{fn}"
-                if os.path.exists(p):
-                    with open(p) as f:
-                        extra[fn] = json.load(f)
-            cons = extra.get("consistency.json", {})
-            q = fq.get("fit_quality", {})
-            prox = _get(fq, "online_proxies", "fit_quality") or {}
-            rows.append({
-                "name": name,
-                "era": ENTRIES[name].get("era"),
-                "method": ENTRIES[name].get("method"),
-                "upstream": plan["upstream"],
-                "floor": plan["floor"],
-                "faithful": cons.get("faithful"),
-                "max_abs_diff": cons.get("max_abs_diff"),
-                "train_wf_identical": _get(extra, "train_wf_check.json", "identical"),
-                "neg_fraction": _get(q, "weights", "neg_fraction"),
-                "w_p99": _get(q, "weights", "p99"),
-                "w_max": _get(q, "weights", "max"),
-                "calib_t4": _get(q, "ttbar_mc_comparison", "calib_t4_prob_to_mc"),
-                "transfer_to_t4": _get(q, "ttbar_mc_comparison", "transfer_d3_to_t4_to_mc"),
-                "chi2_pt4": _get(q, "closure", "chi2_ndf_pt4"),
-                "chi2_pt1": _get(q, "closure", "chi2_ndf_pt1"),
-                "chi2_w": _get(q, "closure", "chi2_ndf_fvt"),
-                "composite": _get(q, "closure", "composite_chi2_ndf"),
-                "norm_sb": _get(q, "closure", "norm_closure_sb"),
-                "loss_sb": prox.get("loss_sb"),
-                "loss_sr": prox.get("loss_sr"),
-                "chi2_t4_sb": prox.get("chi2_t4_sb"),
-                "chi2_t4_sr": prox.get("chi2_t4_sr"),
-                "gates": _get(q, "verdict", "all_gates_passed"),
-            })
-        with open(output.js, "w") as f:
-            json.dump(rows, f, indent=2)
-
-        def fmt(v):
-            if v is None:
-                return "-"
-            if isinstance(v, bool):
-                return "yes" if v else "NO"
-            if isinstance(v, float):
-                return f"{v:.4g}"
-            return str(v)
-
-        cols = ["era", "method", "faithful", "max_abs_diff", "train_wf_identical", "neg_fraction", "w_p99",
-                "w_max", "calib_t4", "transfer_to_t4", "chi2_pt4", "chi2_pt1", "chi2_w", "composite",
-                "norm_sb", "loss_sb", "loss_sr", "chi2_t4_sb", "chi2_t4_sr", "gates"]
-        with open(output.md, "w") as f:
-            f.write("# Fit-quality replay summary\n\n")
-            f.write("Validation-split, fold-averaged (fvt_benchmark --stage baseline). `faithful`: every fold's "
-                    f"replayed val loss/AUCs within {TOLERANCE} of the original final epoch. "
-                    "`train_wf_identical`: regenerated train.yml == the upstream's archived one (- = none archived).\n\n")
-            f.write("| " + " | ".join(["name"] + cols) + " |\n")
-            f.write("|" + "---|" * (len(cols) + 1) + "\n")
-            for r in rows:
-                f.write("| " + " | ".join([r["name"]] + [fmt(r[c]) for c in cols]) + " |\n")
+        html=f"{OUT}/index.html",
+    params:
+        entries=" ".join(f"{OUT}/{n}/report" for n in PLAN),
+        title=config.get("fit_quality_title", "Fit-quality benchmarks"),
+    shell:
+        """
+        python -m src.classifier.fit_quality_report summary --entries {params.entries} \
+            --title "{params.title}" --out {output.html}
+        """

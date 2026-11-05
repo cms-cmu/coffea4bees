@@ -27,9 +27,11 @@
 # (data.yml) and a TT.yml comment.
 #
 # Outputs (all under output_path): <name>/fit_quality.json, <name>/replay/{result.json,
-# consistency.json, train_wf_check.json, replay.log}, summary.md / summary.json.
+# consistency.json, train_wf_check.json, replay.log}, <name>/report/{entry.json, plots/}, index.html
+# (tables of every metric, closure / transfer plots, train-val gap vs k-fold spread).
 
 label: "fit_quality_replay_run3"
+fit_quality_title: "Run 3 FvT / MvD fit quality (replayed)"
 output_path: "output/fit_quality_replay_run3/"
 
 inputs:
