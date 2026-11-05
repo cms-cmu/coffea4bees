@@ -183,6 +183,8 @@ runs:
     - DeClustered
   declustered_run3_library_16x.yml:
     - DeClustered
+  fit_quality_replay_run3.yml:
+    - FitQualityReplay
   declustered_run3_2024_library_16x.yml:
     - DeClustered
   declustered_run2_library_16x.yml:

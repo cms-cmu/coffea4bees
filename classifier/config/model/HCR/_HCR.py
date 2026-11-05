@@ -60,6 +60,14 @@ class HCRTrain(KFoldTrain):
         help=f"fine-tuning scheduler {parse.EMBED}",
     )
     argparser.add_argument(
+        "--fit-quality-floor",
+        type=float,
+        default=1e-6,
+        help="lower bound on the source probability (p_d3 for FvT, p_mix4 for MvD) in the "
+             "fit-quality benchmark's transfer weight; set it to the analysis floor "
+             "(FvT_pd3_floor / mvd_pmix4_floor) to benchmark the weights the analysis applies",
+    )
+    argparser.add_argument(
         "--pretrained-weights",
         default="",
         help="directory containing pretrained .pkl files named with _offset{N}_. "

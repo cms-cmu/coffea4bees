@@ -211,10 +211,34 @@ class _ggF(_MCDataset):
         return filelists
 
 
+def _era_index(eras: list[str]) -> dict[str, int]:
+    """Era key -> index of its run period (leading letters, in order of first appearance), so
+    streams / reprocessings of one period share an index (2025: B01, B11 -> 0; C01..C12 -> 1)."""
+    import re
+
+    periods = []
+    for e in eras:
+        p = re.match(r"[A-Za-z]*", str(e)).group(0) or str(e)
+        if p not in periods:
+            periods.append(p)
+    return {e: periods.index(re.match(r"[A-Za-z]*", str(e)).group(0) or str(e)) for e in eras}
+
+
 def _data(self: Data, metadata: str):
     filelists = []
     if "detector" in self.data_sources:
+        per_era = getattr(self.opts, "era_feature", False)
         for year, eras in CollisionData.eras.items():
+            if per_era:
+                index = _era_index(eras)
+                for e in eras:
+                    filelists.append(
+                        [
+                            f"label:data,year:{year},source:detector,era:{index[e]}",
+                            metadata + f".data.{year}.picoAOD.{e}.files",
+                        ]
+                    )
+                continue
             filelists.append(
                 [
                     f"label:data,year:{year},source:detector",

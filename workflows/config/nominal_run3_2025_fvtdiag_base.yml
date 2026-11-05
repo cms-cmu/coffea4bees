@@ -1,0 +1,38 @@
+# ==============================================================================
+# DIAGNOSTIC (D, baseline): retrain the tight 2025 FvT with the current code, train + analyze only
+# ==============================================================================
+# One of four 2025 FvT diagnostics on the B outputs (classifier inputs, JCM: handoff on EOS) of
+# nominal_run3_2025_20261027_1809191-df306da, whose FvT does not close in the SB (replayed fit
+# quality: fvt_sb chi2/ndf 17 folds summed, the same bias on training and validation events; a
+# tilt in w). All four use the nominal k-fold split (seed offset 0) and differ only in:
+#   nominal_run3_2025_fvtdiag_base.yml     D  nominal schedule, current code (reference)
+#   nominal_run3_2025_fvtdiag_long40.yml   A  40 epochs, LR decay from epoch 35 (under-fit?)
+#   nominal_run3_2025_fvtdiag_ttbar080.yml B  4b ttbar MC weights x0.80 (2025 4-tag efficiency?)
+#   nominal_run3_2025_fvtdiag_era.yml      C  run-period index as an ancillary input (era drift?)
+# The current code records the fit-quality benchmark after every epoch, so analyze's
+# plots/analyze/HCR/index_group_1.html has the SB closure chi2/ndf vs epoch, and
+# `python -m src.classifier.fvt_benchmark --result <model>/result.json` the train/val table.
+# No evaluation (friend trees) and no C.4: the comparison is the training's own fit quality.
+#
+#   roast new --config coffea4bees/workflows/config/nominal_run3_2025_fvtdiag_base.yml --phases C --nautilus
+# ==============================================================================
+base: coffea4bees/workflows/config/nominal_run3_2025.yml
+
+label: "Run3_2025_nominal_fvtdiag_base"
+output_path: "output/Run3_2025_nominal_fvtdiag_base/"
+
+handoff:
+  allow_external_refs: true
+
+fvt:
+  # inputs from the tight roast's B; the model goes to THIS roast's EOS area (fvt.eos_base)
+  metadata: "{roast:nominal_run3_2025_20261027_1809191-df306da}/handoff/classifier_inputs_nominal_run3_2025_20261027_1809191-df306da.json@@HCR_input"
+  evaluate: false
+  plot_inputs: false
+  plot_weights: false
+  workflow_overrides:
+    --JCM-weight: '"" {roast:nominal_run3_2025_20261027_1809191-df306da}/handoff/jetCombinatoricModel_SB_Run3_2025_v1.yml@@JCM_weights'
+    '--friends ""': "{roast:nominal_run3_2025_20261027_1809191-df306da}/handoff/classifier_inputs_nominal_run3_2025_20261027_1809191-df306da.json@@HCR_input"
+  workflow_inserts:
+    # the fit-quality benchmark with the analysis floor on p_d3 (FvT_pd3_floor), as the replay
+    --kfolds: ["--fit-quality-floor 0.01"]
