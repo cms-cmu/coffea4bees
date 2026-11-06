@@ -78,7 +78,7 @@ include: "Snakefile_bkg_syst_C_2_train.smk"
 include: "Snakefile_bkg_syst_C_3_evaluate.smk"
 include: "Snakefile_bkg_syst_C_4_closure.smk"
 
-localrules: all_bkg_syst_C, all_bkg_syst_C_all, all_bkg_syst_C_plots, all_bkg_syst_C_inputs, all_bkg_syst_C_train, all_bkg_syst_C_eval, all_bkg_syst_C_4, all_bkg_syst_C_4_alias
+localrules: all_bkg_syst_C, all_bkg_syst_C_all, all_bkg_syst_C_plots, all_bkg_syst_C_inputs, all_bkg_syst_C_train, all_bkg_syst_C_eval, all_bkg_syst_C_4, all_bkg_syst_C_4_alias, all_bkg_syst_C_pilot
 
 # ── Master Target ─────────────────────────────────────────────────────────────
 rule all_bkg_syst_C:

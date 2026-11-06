@@ -300,6 +300,28 @@ if os.path.abspath(base_output) != os.path.abspath(F1_OUTPUT_PATH.rstrip('/')):
             if not os.path.exists(dst) and not os.path.islink(dst):
                 os.symlink(os.path.relpath(src, os.path.dirname(dst)), dst)
 
+    rule legacy_nominal_plots:
+        input: f"{F1_OUTPUT_PATH}plots_{config['label']}/plots_done.txt"
+        output: f"{base_output}plots_{config['label']}/plots_done.txt"
+        run:
+            import os
+            dst = output[0]
+            src = input[0]
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            if not os.path.exists(dst) and not os.path.islink(dst):
+                os.symlink(os.path.relpath(src, os.path.dirname(dst)), dst)
+
+    rule legacy_nominal_cutflow:
+        input: f"{F1_OUTPUT_PATH}cutflow_validation_{config['label']}.txt"
+        output: f"{base_output}cutflow_validation_{config['label']}.txt"
+        run:
+            import os
+            dst = output[0]
+            src = input[0]
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            if not os.path.exists(dst) and not os.path.islink(dst):
+                os.symlink(os.path.relpath(src, os.path.dirname(dst)), dst)
+
 use rule make_plots from analysis with:
     input:
         coffea_file = f"{F1_OUTPUT_PATH}histAll_{config['label']}.coffea",

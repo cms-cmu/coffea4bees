@@ -75,18 +75,72 @@ if not globals().get("_CLASSIFIER_WORKFLOW_INCLUDED", False):
     _CLASSIFIER_WORKFLOW_INCLUDED = True
     include: "../../src/classifier/workflow/Snakefile"
 
+pilot_subsample = str(config.get('pilot_subsample', MIX_INDICES[0] if MIX_INDICES else '0'))
+
 # ── Master Target ─────────────────────────────────────────────────────────────
 rule all_bkg_syst_C_2:
     default_target: True
     input:
+        f"{out_c}models/mix_{pilot_subsample}/quality_gate.done",
         expand(f"{out_c}models/mix_{{m}}/train.done", m=MIX_INDICES),
         expand(f"{out_c}models/mix_{{m}}/yields.html", m=MIX_INDICES),
         expand(f"{out_c}models/mix_{{m}}/analyze.done", m=MIX_INDICES),
         expand(f"{out_c}models/mix_{{m}}/gallery.done", m=MIX_INDICES),
         f"{out_c}training_summary.html"
 
+# ── Pilot Gating Dashboard & Quality Gate ─────────────────────────────────────
+rule bkg_syst_pilot_summary:
+    input:
+        train = f"{out_c}models/mix_{pilot_subsample}/train.done",
+        yields = f"{out_c}models/mix_{pilot_subsample}/yields.html",
+        analyze = f"{out_c}models/mix_{pilot_subsample}/analyze.done",
+        gallery = f"{out_c}models/mix_{pilot_subsample}/gallery.done",
+    output:
+        html = f"{out_c}models/mix_{pilot_subsample}/training_summary.html"
+    params:
+        models_dir = f"{out_c}models/mix_{pilot_subsample}",
+        title = lambda wildcards: f"FvT Pilot (mix_{pilot_subsample}) Training Summary — {config.get('roast_id', config.get('label', 'bkg_syst'))}"
+    shell:
+        """
+        python3 src/classifier/training_summary.py \
+            --models-dir {params.models_dir} \
+            --output {output.html} \
+            --title "{params.title}"
+        """
+
+rule bkg_syst_pilot_quality_gate:
+    input:
+        train = f"{out_c}models/mix_{pilot_subsample}/train.done",
+        yields = f"{out_c}models/mix_{pilot_subsample}/yields.html",
+        analyze = f"{out_c}models/mix_{pilot_subsample}/analyze.done",
+        gallery = f"{out_c}models/mix_{pilot_subsample}/gallery.done",
+        summary = f"{out_c}models/mix_{pilot_subsample}/training_summary.html",
+    output:
+        token = f"{out_c}models/mix_{pilot_subsample}/quality_gate.done"
+    params:
+        models_dir = f"{out_c}models/mix_{pilot_subsample}",
+        max_chi2 = config.get('fvt_max_chi2_ndf', config.get('max_chi2_ndf', 5.0)),
+        metric = config.get('fvt_quality_metric', 'chi2_ndf_fvt'),
+    shell:
+        """
+        python3 src/classifier/check_fvt_quality.py \
+            --models-dir {params.models_dir} \
+            --max-chi2 {params.max_chi2} \
+            --metric {params.metric} \
+            --output-token {output.token}
+        """
+
+rule all_bkg_syst_C_pilot:
+    input:
+        f"{out_c}models/mix_{pilot_subsample}/train.done",
+        f"{out_c}models/mix_{pilot_subsample}/yields.html",
+        f"{out_c}models/mix_{pilot_subsample}/analyze.done",
+        f"{out_c}models/mix_{pilot_subsample}/gallery.done",
+        f"{out_c}models/mix_{pilot_subsample}/training_summary.html",
+        f"{out_c}models/mix_{pilot_subsample}/quality_gate.done"
+
 # ── Cross-Sample Training Summary Dashboard ───────────────────────────────────
-localrules: bkg_syst_training_summary
+localrules: bkg_syst_training_summary, bkg_syst_pilot_summary, bkg_syst_pilot_quality_gate, all_bkg_syst_C_pilot
 
 rule bkg_syst_training_summary:
     input:
