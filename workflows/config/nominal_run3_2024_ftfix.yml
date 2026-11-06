@@ -1,0 +1,41 @@
+# ==============================================================================
+# 2024 nominal REDO from the FvT fits (C, C4, D, F) with the finetune fix
+# ==============================================================================
+# Retrains the FvT (C) and the SvB (D) of nominal_run3_2024_20261021_975a18e-e176976
+# on THAT roast's B outputs (classifier-input manifest + JCM fit: its handoff on EOS), then the FvT
+# closure (C4) and the analysis + stat-only limits (F). Same config as nominal_run3_2024.yml; the only change
+# is in the code: HH4b_Run3/FvT (and SvB's background reweighting through the new FvT) now finetune
+# with FinetuneStep (lr 1e-4) instead of FixedStep (lr 1e-2), which undid the end-of-Training
+# calibration of the FvT (2025 diagnostics: SB fvt_sb chi2/ndf worse in 27 of 30 folds, up to 11.6).
+# Models, friends and results go to THIS roast's EOS area; B is not rerun.
+#
+#   roast new --config coffea4bees/workflows/config/nominal_run3_2024_ftfix.yml --phases C,C4,D,F --nautilus
+# ==============================================================================
+base: coffea4bees/workflows/config/nominal_run3_2024.yml
+
+label: "Run3_2024_nominal_ftfix"
+output_path: "output/Run3_2024_nominal_ftfix/"
+
+handoff:
+  allow_external_refs: true
+
+fvt:
+  metadata: "{roast:nominal_run3_2024_20261021_975a18e-e176976}/handoff/classifier_inputs_nominal_run3_2024_20261021_975a18e-e176976.json@@HCR_input"
+  workflow_overrides:
+    --JCM-weight: '"" {roast:nominal_run3_2024_20261021_975a18e-e176976}/handoff/jetCombinatoricModel_SB_Run3_2024_v1.yml@@JCM_weights'
+    '--friends ""': "{roast:nominal_run3_2024_20261021_975a18e-e176976}/handoff/classifier_inputs_nominal_run3_2024_20261021_975a18e-e176976.json@@HCR_input"
+
+svb:
+  metadata: "{roast:nominal_run3_2024_20261021_975a18e-e176976}/handoff/classifier_inputs_nominal_run3_2024_20261021_975a18e-e176976.json@@HCR_input"
+  workflow_overrides:
+    --JCM-weight: '"" {roast:nominal_run3_2024_20261021_975a18e-e176976}/handoff/jetCombinatoricModel_SB_Run3_2024_v1.yml@@JCM_weights'
+    '--friends ""': "{roast:nominal_run3_2024_20261021_975a18e-e176976}/handoff/classifier_inputs_nominal_run3_2024_20261021_975a18e-e176976.json@@HCR_input"
+
+fvt_closure:
+  JCM_file: "{roast:nominal_run3_2024_20261021_975a18e-e176976}/handoff/jetCombinatoricModel_SB_Run3_2024_v1.yml"
+  # B.1's wJCM ttbar histograms are in the upstream roast, not here
+  reuse_wJCM_ttbar: false
+
+analysis_config:
+  config:
+    JCM_file: "{roast:nominal_run3_2024_20261021_975a18e-e176976}/handoff/jetCombinatoricModel_SB_Run3_2024_v1.yml"
