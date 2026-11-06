@@ -40,7 +40,7 @@
 # EXECUTION TARGETS:
 #   - `all_bkg_syst_A`: Run all of Stage A (A_1 through A_3)
 #   - `all_bkg_syst_B_1`: Run Stage B_1 JCM calibration
-#   - `all_bkg_syst_C_1`, `all_bkg_syst_C_2`, `all_bkg_syst_C_3`: Stage C
+#   - `all_bkg_syst_C_1`, `all_bkg_syst_C_2`, `all_bkg_syst_C_3`, `all_bkg_syst_C_4`: Stage C
 #   - `all_bkg_syst_F_1`, `all_bkg_syst_F_2`, `all_bkg_syst_F_3`, `all_bkg_syst_F_4`: Stage F
 #   - `all_bkg_syst_F`: Run all Stage F sub-workflows
 #   - `all_bkg_syst`: Run the entire end-to-end background systematics pipeline
@@ -122,4 +122,4 @@ else:
             rules.all_bkg_syst_C.input,
             rules.all_bkg_syst_F.input
 
-localrules: all_bkg_syst, all_bkg_syst_A, all_pre_fvt, all_post_fvt, test_v0_jcm_closure, all_test_subsample_closure, all_bkg_syst_C_1
+localrules: all_bkg_syst, all_bkg_syst_A, all_pre_fvt, all_post_fvt, test_v0_jcm_closure, all_test_subsample_closure, all_bkg_syst_C_1, all_bkg_syst_C_4

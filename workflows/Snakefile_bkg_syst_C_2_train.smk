@@ -86,6 +86,8 @@ rule all_bkg_syst_C_2:
         f"{out_c}training_summary.html"
 
 # ── Cross-Sample Training Summary Dashboard ───────────────────────────────────
+localrules: bkg_syst_training_summary
+
 rule bkg_syst_training_summary:
     input:
         expand(f"{out_c}models/mix_{{m}}/analyze.done", m=MIX_INDICES),

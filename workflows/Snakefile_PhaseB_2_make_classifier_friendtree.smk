@@ -3,7 +3,16 @@ import copy
 import yaml
 
 # Fallback defaults for backwards compatibility or running direct
-config.setdefault('output_path', "output/classifier_inputs/")
+config.setdefault('output_path', "output/PhaseB_2_classifier_inputs/")
+base_output = config.get('output_path', 'output/PhaseB_2_classifier_inputs/')
+if not base_output.endswith('/'):
+    base_output += '/'
+if base_output.rstrip('/').endswith('classifier_inputs') or base_output.rstrip('/').endswith('PhaseB_2_classifier_inputs'):
+    CI_OUTPUT_PATH = base_output
+else:
+    CI_OUTPUT_PATH = os.path.join(base_output, 'PhaseB_2_classifier_inputs/')
+if not CI_OUTPUT_PATH.endswith('/'):
+    CI_OUTPUT_PATH += '/'
 config.setdefault('dataset_location', "coffea4bees/metadata/datasets/")
 config.setdefault('processor', "coffea4bees/analysis/processors/processor_HH4b.py")
 config.setdefault('test', False)
@@ -119,7 +128,7 @@ def get_raw_classifier_inputs_config():
     # Config block for processor
     if 'config' not in res or not isinstance(res['config'], dict):
         res['config'] = {}
-    res['config'].setdefault('make_classifier_input', f"{config['output_path']}classifier_inputs/")
+    res['config'].setdefault('make_classifier_input', CI_OUTPUT_PATH)
     res['config'].setdefault('fill_histograms', False)
     res['config']['apply_FvT'] = False
     res['config']['run_SvB'] = False
@@ -129,16 +138,16 @@ def get_raw_classifier_inputs_config():
 
     return res
 
-ci_config_path = f"{config['output_path']}classifier_inputs/classifier_inputs_config.yml"
+ci_config_path = f"{CI_OUTPUT_PATH}classifier_inputs_config.yml"
 
 mc_json_targets = expand(
-    f"{config['output_path']}classifier_inputs/classifier_inputs_dataset_{{dataset}}__{{year}}.json",
+    f"{CI_OUTPUT_PATH}classifier_inputs_dataset_{{dataset}}__{{year}}.json",
     dataset=mc_datasets,
     year=years
 )
 
 data_json_targets = [
-    f"{config['output_path']}classifier_inputs/classifier_inputs_data__{y}_{era}.json"
+    f"{CI_OUTPUT_PATH}classifier_inputs_data__{y}_{era}.json"
     for y, era in data_year_era_pairs
 ]
 
@@ -146,7 +155,16 @@ all_ci_json_files = mc_json_targets + data_json_targets
 
 rule all_classifier_inputs:
     input:
-        f"{config['output_path']}classifier_inputs/classifier_inputs_friends.json"
+        f"{CI_OUTPUT_PATH}classifier_inputs_friends.json"
+    run:
+        import os
+        legacy_ci = os.path.join(base_output, 'classifier_inputs')
+        if os.path.abspath(legacy_ci) != os.path.abspath(CI_OUTPUT_PATH.rstrip('/')):
+            if not os.path.exists(legacy_ci) and not os.path.islink(legacy_ci):
+                try:
+                    os.symlink(os.path.basename(CI_OUTPUT_PATH.rstrip('/')), legacy_ci)
+                except OSError:
+                    pass
 
 def _has_rule(name):
     # hasattr(rules, name) doesn't work here: when Phase B.2 is run standalone
@@ -168,7 +186,10 @@ def get_classifier_inputs_config_inputs(wildcards):
     rule_names = {r.name for r in workflow.rules}
     if 'output_computeJCM' in rule_names:
         if bool(config.get('per_year_jcm', False)):
-            jcm_out = globals().get('JCM_OUTPUT_PATH', os.path.join(config.get('output_path', 'output/'), 'computeJCM/'))
+            jcm_out = globals().get('JCM_OUTPUT_PATH')
+            if not jcm_out:
+                cand = os.path.join(config.get('output_path', 'output/'), 'PhaseB_1_computeJCM/')
+                jcm_out = cand if os.path.exists(cand) else os.path.join(config.get('output_path', 'output/'), 'computeJCM/')
             jcm_tag = config.get('tag', '2024_v2')
             inputs.extend([f"{jcm_out}JCM_{jcm_tag}/jetCombinatoricModel_SB_{jcm_tag}_{yr}.yml" for yr in years])
         else:
@@ -186,7 +207,10 @@ rule create_classifier_inputs_config:
             if 'config' not in cfg or not isinstance(cfg['config'], dict):
                 cfg['config'] = {}
             if bool(config.get('per_year_jcm', False)):
-                jcm_out = globals().get('JCM_OUTPUT_PATH', os.path.join(config.get('output_path', 'output/'), 'computeJCM/'))
+                jcm_out = globals().get('JCM_OUTPUT_PATH')
+                if not jcm_out:
+                    cand = os.path.join(config.get('output_path', 'output/'), 'PhaseB_1_computeJCM/')
+                    jcm_out = cand if os.path.exists(cand) else os.path.join(config.get('output_path', 'output/'), 'computeJCM/')
                 jcm_tag = config.get('tag', '2024_v2')
                 cfg['config']['JCM_file'] = {
                     str(yr): f"{jcm_out}JCM_{jcm_tag}/jetCombinatoricModel_SB_{jcm_tag}_{yr}.yml"
@@ -215,11 +239,11 @@ rule classifier_inputs_mc:
     input:
         runner_script = "runner.py",
         config_file = ci_config_path
-    output: f"{config['output_path']}classifier_inputs/classifier_inputs_dataset_{{dataset}}__{{year}}.json"
-    log: f"{config['output_path']}logs/classifier_inputs_dataset_{{dataset}}__{{year}}.log"
+    output: f"{CI_OUTPUT_PATH}classifier_inputs_dataset_{{dataset}}__{{year}}.json"
+    log: f"{CI_OUTPUT_PATH}logs/classifier_inputs_dataset_{{dataset}}__{{year}}.log"
     params:
         processor = lambda wildcards: get_raw_classifier_inputs_config().get('processor', 'coffea4bees/analysis/processors/processor_HH4b.py'),
-        output_dir = f"{config['output_path']}classifier_inputs/",
+        output_dir = CI_OUTPUT_PATH,
         extra_arguments = lambda wildcards: " ".join(filter(None, [
             "-t" if config.get("test", False) else "",
             config.get("additional_parameters", "")
@@ -244,11 +268,11 @@ rule classifier_inputs_data:
     input:
         runner_script = "runner.py",
         config_file = ci_config_path
-    output: f"{config['output_path']}classifier_inputs/classifier_inputs_data__{{year}}_{{era}}.json"
-    log: f"{config['output_path']}logs/classifier_inputs_data__{{year}}_{{era}}.log"
+    output: f"{CI_OUTPUT_PATH}classifier_inputs_data__{{year}}_{{era}}.json"
+    log: f"{CI_OUTPUT_PATH}logs/classifier_inputs_data__{{year}}_{{era}}.log"
     params:
         processor = lambda wildcards: get_raw_classifier_inputs_config().get('processor', 'coffea4bees/analysis/processors/processor_HH4b.py'),
-        output_dir = f"{config['output_path']}classifier_inputs/",
+        output_dir = CI_OUTPUT_PATH,
         extra_arguments = lambda wildcards: " ".join(filter(None, [
             "-t" if config.get("test", False) else "",
             config.get("additional_parameters", "")
@@ -272,8 +296,8 @@ rule classifier_inputs_data:
 
 rule merge_classifier_inputs_friends:
     input: all_ci_json_files
-    output: f"{config['output_path']}classifier_inputs/classifier_inputs_friends.json"
-    log: f"{config['output_path']}logs/merge_classifier_inputs_friends.log"
+    output: f"{CI_OUTPUT_PATH}classifier_inputs_friends.json"
+    log: f"{CI_OUTPUT_PATH}logs/merge_classifier_inputs_friends.log"
     params:
         run_container_wrapper = config['analysis_container_wrapper'],
         python_bin = config['python_bin']
@@ -286,3 +310,5 @@ rule merge_classifier_inputs_friends:
             -i {input} \
             -o {output} 2>&1 | tee -a {log}
         """
+
+localrules: create_classifier_inputs_config, merge_classifier_inputs_friends, all_classifier_inputs
