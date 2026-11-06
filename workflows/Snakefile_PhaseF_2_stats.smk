@@ -233,14 +233,17 @@ rule stat_summary:
         fi
         """
 
-def get_nominal_coffea(wildcards):
-    f1_cand = f"{base_output}PhaseF_1_analysis/histAll_{config['label']}.coffea"
-    root_cand = f"{base_output}histAll_{config['label']}.coffea"
-    return f1_cand if os.path.exists(f1_cand) else (root_cand if os.path.exists(root_cand) else f1_cand)
+if (base_output.rstrip('/').endswith(('V4', 'V4_analysis'))
+        or 'TTbar4b_from_MvD' in config.get('make_combine_inputs', {}).get('tt_processes', [])):
+    nominal_coffea_file = f"{base_output}histAll_{config['label']}.coffea"
+elif os.path.exists(f"{base_output}histAll_{config['label']}.coffea") and not os.path.exists(f"{base_output}PhaseF_1_analysis/histAll_{config['label']}.coffea"):
+    nominal_coffea_file = f"{base_output}histAll_{config['label']}.coffea"
+else:
+    nominal_coffea_file = f"{base_output}PhaseF_1_analysis/histAll_{config['label']}.coffea"
 
 use rule convert_hist_to_json from stat_analysis with:
     input:
-        coffea_file = get_nominal_coffea,
+        coffea_file = nominal_coffea_file,
         script = "src/tools/convert_hist_to_json.py"
     output: f"{F2_OUTPUT_PATH}histAll_{config['label']}.json"
     params:
