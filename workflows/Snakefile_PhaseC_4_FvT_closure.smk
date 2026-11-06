@@ -29,10 +29,15 @@ import copy
 import yaml
 
 config.setdefault('label', "FvT_closure")
-base_output = config.get('output_path', 'output/FvT_closure/')
+base_output = config.get('output_path', 'output/PhaseC_4_FvT_closure/')
 if not base_output.endswith('/'):
     base_output += '/'
-CLOSURE_PATH = base_output if base_output.rstrip('/').endswith('FvT_closure') else os.path.join(base_output, 'FvT_closure/')
+if base_output.rstrip('/').endswith('FvT_closure') or base_output.rstrip('/').endswith('PhaseC_4_FvT_closure'):
+    CLOSURE_PATH = base_output
+else:
+    CLOSURE_PATH = os.path.join(base_output, 'PhaseC_4_FvT_closure/')
+if not CLOSURE_PATH.endswith('/'):
+    CLOSURE_PATH += '/'
 
 config.setdefault('test', False)
 is_test = config.get('test', False)
@@ -70,10 +75,15 @@ MC_DATASETS = [d for d in datasets if d != 'data']
 # event_weights.py: `apply_FvT and "FvT" in event.fields`; rename_FvT_friend returns None for MC).
 # MC histograms are therefore identical to Phase B.1's wJCM pass, so by default the ttbar
 # singlefiles from there are merged in instead of being reprocessed (saves the 12 MC jobs).
-REUSE_WJCM_TTBAR = closure_cfg.get('reuse_wJCM_ttbar', True)
+REUSE_WJCM_TTBAR = closure_cfg.get('reuse_wJCM_ttbar', config.get('reuse_wJCM_ttbar', True))
 if isinstance(REUSE_WJCM_TTBAR, str):
     REUSE_WJCM_TTBAR = REUSE_WJCM_TTBAR.lower() in ("true", "1", "yes")
-JCM_OUTPUT_PATH = closure_cfg.get('jcm_output_path', os.path.join(base_output, 'computeJCM/'))
+jcm_out = closure_cfg.get('jcm_output_path')
+if not jcm_out:
+    cand_b1 = os.path.join(base_output, 'PhaseB_1_computeJCM/')
+    cand_old = os.path.join(base_output, 'computeJCM/')
+    jcm_out = cand_b1 if os.path.exists(cand_b1) else (cand_old if os.path.exists(cand_old) else cand_b1)
+JCM_OUTPUT_PATH = jcm_out
 if not JCM_OUTPUT_PATH.endswith('/'):
     JCM_OUTPUT_PATH += '/'
 
@@ -101,6 +111,8 @@ per_year_jcm = bool(config.get('per_year_jcm', False))
 if per_year_jcm:
     if isinstance(closure_cfg.get('JCM_file'), dict):
         jcm_file = closure_cfg['JCM_file']
+    elif isinstance((config.get('inputs') or {}).get('JCM'), dict):
+        jcm_file = dict(config['inputs']['JCM'])
     else:
         jcm_file = {
             yr: f"coffea4bees/metadata/weights/JCM/{config['roast_id']}/jetCombinatoricModel_SB_{tag}_{yr}.yml"
@@ -173,6 +185,15 @@ rule all_FvT_closure:
         f"{CLOSURE_PATH}cutflow_validation_FvT_closure.txt",
         f"{CLOSURE_PATH}cutflow_FvT_closure.html",
         TTBAR_COMPARISON_OUTPUTS
+    run:
+        import os
+        legacy_closure = os.path.join(base_output, 'FvT_closure')
+        if os.path.abspath(legacy_closure) != os.path.abspath(CLOSURE_PATH.rstrip('/')):
+            if not os.path.exists(legacy_closure) and not os.path.islink(legacy_closure):
+                try:
+                    os.symlink(os.path.basename(CLOSURE_PATH.rstrip('/')), legacy_closure)
+                except OSError:
+                    pass
 
 # ttbar MC vs the FvT-derived estimate alone (e.g. on an existing C.4 output):
 #   snakemake -s ... all_ttbar_MC_vs_d3
@@ -368,4 +389,4 @@ rule ttbar_MC_vs_d3_cutflow:
         fi
         """
 
-localrules: create_FvT_closure_config, select_ttbar_upstream, merge_FvT_closure, make_plots_FvT_closure, check_cutflow_FvT_closure, FvT_cutflow_closure_table, make_plots_ttbar_MC_vs_d3, make_plots_ttbar3b_MC_vs_d3, ttbar_MC_vs_d3_cutflow
+localrules: create_FvT_closure_config, select_ttbar_upstream, merge_FvT_closure, make_plots_FvT_closure, check_cutflow_FvT_closure, FvT_cutflow_closure_table, make_plots_ttbar_MC_vs_d3, make_plots_ttbar3b_MC_vs_d3, ttbar_MC_vs_d3_cutflow, all_FvT_closure

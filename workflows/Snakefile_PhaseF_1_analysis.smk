@@ -4,6 +4,15 @@ import shutil
 # Fallback defaults for backwards compatibility or running direct
 config.setdefault('label', "nominal_wNewSvB")
 config.setdefault('output_path', "output/nominal_wNewSvB/")
+base_output = config.get('output_path', "output/nominal_wNewSvB/")
+if not base_output.endswith('/'):
+    base_output += '/'
+if base_output.rstrip('/').endswith('PhaseF_1_analysis'):
+    F1_OUTPUT_PATH = base_output
+else:
+    F1_OUTPUT_PATH = os.path.join(base_output, 'PhaseF_1_analysis/')
+if not F1_OUTPUT_PATH.endswith('/'):
+    F1_OUTPUT_PATH += '/'
 config.setdefault('analysis_config', "coffea4bees/analysis/metadata/HH4b_2024_v2.yml")
 config.setdefault('processor', "coffea4bees/analysis/processors/processor_HH4b.py")
 config.setdefault('friend_file', "coffea4bees/metadata/friends/friends_HH4b.yml")
@@ -53,12 +62,12 @@ MC_DATASETS = [d for d in config['dataset'] if d not in DATA_DATASETS]
 
 DATA_YEARS = [str(y) for y in config['year_eras'].keys()]
 DATA_YEAR_ERA = [(str(yr), era) for yr, eras in config['year_eras'].items() for era in eras] if 'data' in DATA_DATASETS else []
-DATA_ERA_FILES = [f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{yr}_{era}.coffea" for yr, era in DATA_YEAR_ERA]
+DATA_ERA_FILES = [f"{F1_OUTPUT_PATH}singlefiles/histAll_{config['label']}_data__{yr}_{era}.coffea" for yr, era in DATA_YEAR_ERA]
 
 DATA_NOERA_DATASETS = [d for d in DATA_DATASETS if d != 'data']
 DATA_NOERA_FILES = expand(
     "{output_path}singlefiles/histAll_" + config['label'] + "__{dataset}__{year}.coffea",
-    output_path=config['output_path'],
+    output_path=F1_OUTPUT_PATH,
     dataset=DATA_NOERA_DATASETS,
     year=DATA_YEARS
 ) if DATA_NOERA_DATASETS else []
@@ -66,7 +75,7 @@ DATA_NOERA_FILES = expand(
 ALL_DATA_FILES = DATA_ERA_FILES + DATA_NOERA_FILES
 MC_FILES = expand(
     "{output_path}singlefiles/histAll_" + config['label'] + "__{dataset}__{year}.coffea",
-    output_path=config['output_path'],
+    output_path=F1_OUTPUT_PATH,
     dataset=MC_DATASETS,
     year=DATA_YEARS
 ) if MC_DATASETS else []
@@ -77,21 +86,32 @@ def get_raw_analysis_config():
     cfg = resolve_config_section(config, primary_key='analysis_config', fallback_keys=['analysis'])
     if config.get('per_year_jcm', False) and 'config' in cfg and cfg['config'].get('apply_JCM'):
         if 'JCM_file' not in cfg['config'] or not cfg['config']['JCM_file']:
-            tag = config.get('tag', '2024_v2')
-            roast_id = config.get('roast_id', config.get('label', 'nominal'))
-            jcm_candidate = {
-                yr: f"coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_{tag}_{yr}.yml"
-                for yr in config.get('year_eras', {}).keys()
-            }
-            if all(os.path.exists(p) for p in jcm_candidate.values()):
-                cfg['config']['JCM_file'] = jcm_candidate
+            inputs_jcm = (config.get('inputs') or {}).get('JCM')
+            if isinstance(inputs_jcm, dict):
+                cfg['config']['JCM_file'] = dict(inputs_jcm)
+            else:
+                tag = config.get('tag', '2024_v2')
+                roast_id = config.get('roast_id', config.get('label', 'nominal'))
+                jcm_candidate = {
+                    yr: f"coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_{tag}_{yr}.yml"
+                    for yr in config.get('year_eras', {}).keys()
+                }
+                if all(os.path.exists(p) for p in jcm_candidate.values()):
+                    cfg['config']['JCM_file'] = jcm_candidate
+                else:
+                    raise ValueError(
+                        f"per_year_jcm is True for {config.get('roast_id', config.get('label'))}, "
+                        f"but no per-year JCM files could be found under analysis_config.config.JCM_file, "
+                        f"inputs.JCM, or coffea4bees/metadata/weights/JCM/{roast_id}/. "
+                        f"Failing fast to prevent silent fallback to single Run2 JCM."
+                    )
     return cfg
 
 # 2024 / 2025 data is blinded (helpers/common.smk: BLIND_YEARS)
 require_blind(DATA_YEARS if 'data' in DATA_DATASETS else [], (get_raw_analysis_config().get('config') or {}).get('blind'),
               f"F.1 analysis_config.config ({config['label']})")
 
-analysis_config_path = f"{config['output_path']}analysis_config.yml"
+analysis_config_path = f"{F1_OUTPUT_PATH}analysis_config.yml"
 
 def get_analysis_config_inputs(wildcards):
     inputs = list(workflow.configfiles) if workflow.configfiles else []
@@ -129,16 +149,35 @@ module analysis:
 
 def get_analysis_targets(wildcards):
     return [
-        f"{config['output_path']}histAll_{config['label']}.coffea",
-        f"{config['output_path']}plots_{config['label']}/plots_done.txt",
-        f"{config['output_path']}cutflow_validation_{config['label']}.txt",
-        f"{config['output_path']}cutflow_{config['label']}.yml",
-        f"{config['output_path']}cutflow_{config['label']}.html",             # closure table
-        f"{config['output_path']}cutflow_crosscheck_{config['label']}.html",  # vs Phase C.4
+        f"{F1_OUTPUT_PATH}histAll_{config['label']}.coffea",
+        f"{F1_OUTPUT_PATH}plots_{config['label']}/plots_done.txt",
+        f"{F1_OUTPUT_PATH}cutflow_validation_{config['label']}.txt",
+        f"{F1_OUTPUT_PATH}cutflow_{config['label']}.yml",
+        f"{F1_OUTPUT_PATH}cutflow_{config['label']}.html",             # closure table
+        f"{F1_OUTPUT_PATH}cutflow_crosscheck_{config['label']}.html",  # vs Phase C.4
     ]
 
 rule all_analysis:
     input: get_analysis_targets
+    run:
+        import os
+        if os.path.abspath(base_output) != os.path.abspath(F1_OUTPUT_PATH.rstrip('/')):
+            os.makedirs(base_output, exist_ok=True)
+            links = [
+                (f"histAll_{config['label']}.coffea", f"PhaseF_1_analysis/histAll_{config['label']}.coffea"),
+                (f"plots_{config['label']}", f"PhaseF_1_analysis/plots_{config['label']}"),
+                (f"cutflow_{config['label']}.html", f"PhaseF_1_analysis/cutflow_{config['label']}.html"),
+                (f"cutflow_{config['label']}.yml", f"PhaseF_1_analysis/cutflow_{config['label']}.yml"),
+                (f"cutflow_validation_{config['label']}.txt", f"PhaseF_1_analysis/cutflow_validation_{config['label']}.txt"),
+                (f"cutflow_crosscheck_{config['label']}.html", f"PhaseF_1_analysis/cutflow_crosscheck_{config['label']}.html"),
+            ]
+            for link_name, target in links:
+                dst = os.path.join(base_output, link_name)
+                if not os.path.exists(dst) and not os.path.islink(dst):
+                    try:
+                        os.symlink(target, dst)
+                    except OSError:
+                        pass
 
 if config.get("test", False):
     # Quick Test / CI Mode: single command for all data years/eras and single command for all signals
@@ -146,13 +185,13 @@ if config.get("test", False):
     MC_TEST_TARGETS = []
 
     if DATA_DATASETS:
-        DATA_TEST_TARGETS.append(f"{config['output_path']}singlefiles/histAll_{config['label']}_data.coffea")
+        DATA_TEST_TARGETS.append(f"{F1_OUTPUT_PATH}singlefiles/histAll_{config['label']}_data.coffea")
         use rule analysis_processor from analysis as analysis_data with:
             input: 
                 runner_script = "runner.py",
                 config_file = analysis_config_path
-            output: f"{config['output_path']}singlefiles/histAll_{config['label']}_data.coffea"
-            log: f"{config['output_path']}logs/analysis_{config['label']}_data.log"
+            output: f"{F1_OUTPUT_PATH}singlefiles/histAll_{config['label']}_data.coffea"
+            log: f"{F1_OUTPUT_PATH}logs/analysis_{config['label']}_data.log"
             params:
                 datasets = " ".join(DATA_DATASETS),
                 years = " ".join(DATA_YEARS),
@@ -164,13 +203,13 @@ if config.get("test", False):
                 run_container_wrapper = config['analysis_container_wrapper']
 
     if MC_DATASETS:
-        MC_TEST_TARGETS.append(f"{config['output_path']}singlefiles/histAll_{config['label']}_signals.coffea")
+        MC_TEST_TARGETS.append(f"{F1_OUTPUT_PATH}singlefiles/histAll_{config['label']}_signals.coffea")
         use rule analysis_processor from analysis as analysis_MC with:
             input: 
                 runner_script = "runner.py",
                 config_file = analysis_config_path
-            output: f"{config['output_path']}singlefiles/histAll_{config['label']}_signals.coffea"
-            log: f"{config['output_path']}logs/analysis_{config['label']}_signals.log"
+            output: f"{F1_OUTPUT_PATH}singlefiles/histAll_{config['label']}_signals.coffea"
+            log: f"{F1_OUTPUT_PATH}logs/analysis_{config['label']}_signals.log"
             params:
                 datasets = " ".join(MC_DATASETS),
                 years = " ".join(DATA_YEARS),
@@ -185,12 +224,12 @@ if config.get("test", False):
         input:
             files = DATA_TEST_TARGETS + MC_TEST_TARGETS,
             script = "src/tools/merge_coffea_files.py"
-        output: f"{config['output_path']}histAll_{config['label']}.coffea"
+        output: f"{F1_OUTPUT_PATH}histAll_{config['label']}.coffea"
         params:
             run_performance = False,
             run_container_wrapper = config['analysis_container_wrapper']
         container: None
-        log: f"{config['output_path']}logs/merging_files.log"
+        log: f"{F1_OUTPUT_PATH}logs/merging_files.log"
 
     rule all_data:
         input: DATA_TEST_TARGETS
@@ -205,8 +244,8 @@ else:
             input: 
                 runner_script = "runner.py",
                 config_file = analysis_config_path
-            output: f"{config['output_path']}singlefiles/histAll_{config['label']}_data__{{year}}_{{era}}.coffea"
-            log: f"{config['output_path']}logs/analysis_{config['label']}_data__{{year}}_{{era}}.log"
+            output: f"{F1_OUTPUT_PATH}singlefiles/histAll_{config['label']}_data__{{year}}_{{era}}.coffea"
+            log: f"{F1_OUTPUT_PATH}logs/analysis_{config['label']}_data__{{year}}_{{era}}.log"
             params:
                 datasets = "data",
                 years = lambda wildcards: wildcards.year,
@@ -222,8 +261,8 @@ else:
             input: 
                 runner_script = "runner.py",
                 config_file = analysis_config_path
-            output: f"{config['output_path']}singlefiles/histAll_{config['label']}__{{dataset}}__{{year}}.coffea"
-            log: f"{config['output_path']}logs/analysis_{config['label']}_{{dataset}}_{{year}}.log"
+            output: f"{F1_OUTPUT_PATH}singlefiles/histAll_{config['label']}__{{dataset}}__{{year}}.coffea"
+            log: f"{F1_OUTPUT_PATH}logs/analysis_{config['label']}_{{dataset}}_{{year}}.log"
             params:
                 datasets = lambda wildcards: wildcards.dataset,
                 years = lambda wildcards: wildcards.year,
@@ -237,12 +276,12 @@ else:
         input:
             files = ALL_DATA_FILES + MC_FILES,
             script = "src/tools/merge_coffea_files.py"
-        output: f"{config['output_path']}histAll_{config['label']}.coffea"
+        output: f"{F1_OUTPUT_PATH}histAll_{config['label']}.coffea"
         params:
             run_performance = False,
             run_container_wrapper = config['analysis_container_wrapper']
         container: None
-        log: f"{config['output_path']}logs/merging_files.log"
+        log: f"{F1_OUTPUT_PATH}logs/merging_files.log"
 
     rule all_data:
         input: ALL_DATA_FILES
@@ -250,15 +289,70 @@ else:
     rule all_signals:
         input: MC_FILES
 
+f1_nominal_coffea = f"{F1_OUTPUT_PATH}histAll_{config['label']}.coffea"
+root_nominal_coffea = f"{base_output}histAll_{config['label']}.coffea"
+if os.path.exists(root_nominal_coffea) and not os.path.exists(f1_nominal_coffea):
+    os.makedirs(os.path.dirname(f1_nominal_coffea), exist_ok=True)
+    try:
+        os.link(root_nominal_coffea, f1_nominal_coffea)
+    except OSError:
+        try:
+            os.symlink(os.path.relpath(root_nominal_coffea, os.path.dirname(f1_nominal_coffea)), f1_nominal_coffea)
+        except OSError:
+            pass
+
+if os.path.abspath(base_output) != os.path.abspath(F1_OUTPUT_PATH.rstrip('/')):
+    rule legacy_nominal_coffea:
+        input: f"{F1_OUTPUT_PATH}histAll_{config['label']}.coffea"
+        output: f"{base_output}histAll_{config['label']}.coffea"
+        run:
+            import os, shutil
+            dst = output[0]
+            src = input[0]
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            if not os.path.exists(dst) and not os.path.islink(dst):
+                try:
+                    os.link(src, dst)
+                except OSError:
+                    shutil.copy2(src, dst)
+
+    rule legacy_nominal_plots:
+        input: f"{F1_OUTPUT_PATH}plots_{config['label']}/plots_done.txt"
+        output: f"{base_output}plots_{config['label']}/plots_done.txt"
+        run:
+            import os, shutil
+            dst = output[0]
+            src = input[0]
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            if not os.path.exists(dst) and not os.path.islink(dst):
+                try:
+                    os.link(src, dst)
+                except OSError:
+                    shutil.copy2(src, dst)
+
+    rule legacy_nominal_cutflow:
+        input: f"{F1_OUTPUT_PATH}cutflow_validation_{config['label']}.txt"
+        output: f"{base_output}cutflow_validation_{config['label']}.txt"
+        run:
+            import os, shutil
+            dst = output[0]
+            src = input[0]
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            if not os.path.exists(dst) and not os.path.islink(dst):
+                try:
+                    os.link(src, dst)
+                except OSError:
+                    shutil.copy2(src, dst)
+
 use rule make_plots from analysis with:
     input:
-        coffea_file = f"{config['output_path']}histAll_{config['label']}.coffea",
+        coffea_file = f"{F1_OUTPUT_PATH}histAll_{config['label']}.coffea",
         metadata_file = config['plot_config'],
         plot_script = "coffea4bees/plots/makePlots.py"
-    output: f"{config['output_path']}plots_{config['label']}/plots_done.txt"
-    log: f"{config['output_path']}logs/make_plots.log"
+    output: f"{F1_OUTPUT_PATH}plots_{config['label']}/plots_done.txt"
+    log: f"{F1_OUTPUT_PATH}logs/make_plots.log"
     params:
-        output_dir = f"{config['output_path']}plots_{config['label']}/",
+        output_dir = f"{F1_OUTPUT_PATH}plots_{config['label']}/",
         # the shared rule plots from params.metadata (input.metadata_file only tracks the file):
         # without this line F.1 silently plotted with the generic default plotsAll.yml, whose
         # ttbar stack is the MC (dropped: no TTTo* in the file) instead of TTbar4b_from_d3
@@ -274,11 +368,11 @@ use rule make_plots from analysis with:
 
 use rule check_cutflow from analysis with:
     input:
-        coffea_file = f"{config['output_path']}histAll_{config['label']}.coffea"
+        coffea_file = f"{F1_OUTPUT_PATH}histAll_{config['label']}.coffea"
     output:
-        validation_txt = f"{config['output_path']}cutflow_validation_{config['label']}.txt",
-        cutflow_yml = f"{config['output_path']}cutflow_{config['label']}.yml"
-    log: f"{config['output_path']}logs/cutflow_validation_{config['label']}.log"
+        validation_txt = f"{F1_OUTPUT_PATH}cutflow_validation_{config['label']}.txt",
+        cutflow_yml = f"{F1_OUTPUT_PATH}cutflow_{config['label']}.yml"
+    log: f"{F1_OUTPUT_PATH}logs/cutflow_validation_{config['label']}.log"
     params:
         known_counts = lambda wildcards: config.get("known_counts", ""),
         error_threshold = lambda wildcards: config.get("error_threshold", "0.001"),
@@ -300,13 +394,18 @@ use rule cutflow_closure_table from analysis as analysis_cutflow_closure_table w
         run_container_wrapper = config['analysis_container_wrapper'],
         python_bin = lambda wildcards: config.get("python_bin", "python")
 
+def _get_crosscheck_ref():
+    cand_c4 = f"{base_output}PhaseC_4_FvT_closure/cutflow_FvT_closure.yml"
+    cand_old = f"{base_output}FvT_closure/cutflow_FvT_closure.yml"
+    return cand_c4 if os.path.exists(cand_c4) else (cand_old if os.path.exists(cand_old) else cand_c4)
+
 # Cross-check against Phase C.4 (FvT closure): same processor, same data, same JCM x FvT, so every
 # shared dataset must give identical weighted and raw 3b/4b cutflows (SvB only adds histograms).
 # A mismatch means the two passes did not use the same weights (e.g. a different JCM file) or
 # selection (e.g. blinding). Reference path: `crosscheck_reference` (default: the C.4 dump).
 use rule cutflow_crosscheck from analysis as analysis_cutflow_crosscheck with:
     params:
-        reference = lambda wildcards: config.get("crosscheck_reference", f"{config['output_path']}FvT_closure/cutflow_FvT_closure.yml"),
+        reference = lambda wildcards: config.get("crosscheck_reference", _get_crosscheck_ref()),
         title = lambda wildcards: f"{config.get('label', 'analysis')}_cutflow_crosscheck_{wildcards.label}",
         label_a = lambda wildcards: f"F.1_{wildcards.label}",
         label_b = "C.4_FvT_closure",
@@ -318,4 +417,4 @@ use rule cutflow_crosscheck from analysis as analysis_cutflow_crosscheck with:
         run_container_wrapper = config['analysis_container_wrapper'],
         python_bin = lambda wildcards: config.get("python_bin", "python")
 
-localrules: merging_files, make_plots, check_cutflow, analysis_cutflow_closure_table, analysis_cutflow_crosscheck
+localrules: merging_files, make_plots, check_cutflow, analysis_cutflow_closure_table, analysis_cutflow_crosscheck, all_analysis, legacy_nominal_coffea, legacy_nominal_plots, legacy_nominal_cutflow

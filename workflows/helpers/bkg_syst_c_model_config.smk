@@ -71,9 +71,23 @@ def _format_structure(obj, mapping):
         return [_format_structure(elem, mapping) for elem in obj]
     return obj
 
+pilot_subsample = str(config.get('pilot_subsample', SUBSAMPLES[0] if SUBSAMPLES else '0'))
+
+def _pilot_gate_input(wildcards):
+    deps = []
+    if _FETCH_METADATA:
+        deps.append(_METADATA_FETCHED)
+    pilot_gate_enabled = config.get('pilot_gate', True)
+    if pilot_gate_enabled and len(SUBSAMPLES) > 1:
+        if str(wildcards.m) != str(pilot_subsample):
+            token = f"{out_c}models/mix_{pilot_subsample}/quality_gate.done"
+            if os.path.exists(token) or "bkg_syst_pilot_quality_gate" in workflow.rules:
+                deps.append(token)
+    return deps
+
 rule stage_bkg_syst_c_model_config:
     input:
-        [_METADATA_FETCHED] if _FETCH_METADATA else [],
+        _pilot_gate_input,
     output:
         train = f"{out_c}models/mix_{{m}}/wfs/train.yml",
         eval = f"{out_c}models/mix_{{m}}/wfs/evaluate.yml",

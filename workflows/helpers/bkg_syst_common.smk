@@ -91,6 +91,7 @@ out_a3 = f"{out}bkg_syst_A_3_process_subsamples/"
 out_b1 = f"{out}bkg_syst_B_1_computeJCM/"
 out_c1 = f"{out}bkg_syst_C_1_inputs/"
 out_c  = f"{out}bkg_syst_C_FvT/"
+out_c4 = f"{out}bkg_syst_C_4_closure/"
 out_f1 = f"{out}bkg_syst_F_1_analysis/"
 out_f2 = config.get('out_f2', f"{out}bkg_syst_F_2_run_two_stage_closure/")
 if not out_f2.endswith("/"):
