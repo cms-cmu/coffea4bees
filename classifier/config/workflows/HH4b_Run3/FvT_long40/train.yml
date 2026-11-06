@@ -35,7 +35,10 @@ model:
       - epoch: 40
         bs_init: 1024
         lr_milestones: [35, 36, 37, 38, 39, 40, 41, 42, 43, 44]
-      - --finetuning FixedStep # setup finetuning schedule
+      # FinetuneStep (lr 1e-4), as the other HCR templates. This was FixedStep, whose default lr_init 1e-2
+      # made the finetune a full-lr epoch with a fresh Adam after the decay: it undid the end-of-Training
+      # calibration (2025 FvT diagnostics, Nov 2026: SB fvt_sb chi2/ndf worse in 27 of 30 folds, up to 11.6).
+      - --finetuning FinetuneStep
       - epoch: 1
         bs_init: 16384
 

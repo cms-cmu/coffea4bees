@@ -1,0 +1,25 @@
+# ==============================================================================
+# DIAGNOSTIC (2025 FvT stability, closure-gated, k-fold seed offset 0): train + analyze only
+# ==============================================================================
+# Second round of the 2025 FvT diagnostics (first round: nominal_run3_2025_fvtdiag_base.yml and co).
+# The first round showed the SB closure of a training wandering by up to x10 from epoch to epoch at
+# the constant lr (epochs 1-15) and the final model's closure depending on that draw (nominal 2025:
+# fvt_sb chi2/ndf 17; retrains of the same config: ~2). This round tests two remedies on the same
+# inputs (nominal_run3_2025_20261027_1809191-df306da's B outputs) with two k-fold seed offsets each:
+#   nominal_run3_2025_fvtdiag_swa.yml / _swa_s1.yml      SWA over the lr plateau
+#   nominal_run3_2025_fvtdiag_ema.yml / _ema_s1.yml      EMA over the lr plateau
+#   nominal_run3_2025_fvtdiag_gated.yml / _gated_s1.yml  closure-gated lr decay
+# This one: template HH4b_Run3/FvT_gated: LR decay starts when the TRAINING-split fvt_sb closure excess is <= 0.75 per 100k (from epoch 10; forced at 30), 5 decay epochs.
+# References: fvtdiag_base (seed 0, 2.04), the fvtseed1 replay (seed 1, 2.0), nominal (seed 0, 17).
+#
+#   roast new --config coffea4bees/workflows/config/nominal_run3_2025_fvtdiag_gated.yml --phases C --nautilus
+# ==============================================================================
+base: coffea4bees/workflows/config/nominal_run3_2025_fvtdiag_base.yml
+
+label: "Run3_2025_nominal_fvtdiag_gated"
+output_path: "output/Run3_2025_nominal_fvtdiag_gated/"
+
+fvt:
+  wfs_base: "coffea4bees/classifier/config/workflows/HH4b_Run3/FvT_gated"
+  # up to 35 epochs (gate forced at 30 + 5 decay)
+  train_runtime: 900
