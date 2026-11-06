@@ -289,6 +289,17 @@ else:
     rule all_signals:
         input: MC_FILES
 
+if os.path.abspath(base_output) != os.path.abspath(F1_OUTPUT_PATH.rstrip('/')):
+    rule legacy_nominal_coffea:
+        input: f"{F1_OUTPUT_PATH}histAll_{config['label']}.coffea"
+        output: f"{base_output}histAll_{config['label']}.coffea"
+        run:
+            import os
+            dst = output[0]
+            src = input[0]
+            if not os.path.exists(dst) and not os.path.islink(dst):
+                os.symlink(os.path.relpath(src, os.path.dirname(dst)), dst)
+
 use rule make_plots from analysis with:
     input:
         coffea_file = f"{F1_OUTPUT_PATH}histAll_{config['label']}.coffea",
