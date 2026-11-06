@@ -98,6 +98,13 @@ def get_raw_analysis_config():
                 }
                 if all(os.path.exists(p) for p in jcm_candidate.values()):
                     cfg['config']['JCM_file'] = jcm_candidate
+                else:
+                    raise ValueError(
+                        f"per_year_jcm is True for {config.get('roast_id', config.get('label'))}, "
+                        f"but no per-year JCM files could be found under analysis_config.config.JCM_file, "
+                        f"inputs.JCM, or coffea4bees/metadata/weights/JCM/{roast_id}/. "
+                        f"Failing fast to prevent silent fallback to single Run2 JCM."
+                    )
     return cfg
 
 # 2024 / 2025 data is blinded (helpers/common.smk: BLIND_YEARS)
