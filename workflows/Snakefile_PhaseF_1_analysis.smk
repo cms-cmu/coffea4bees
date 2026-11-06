@@ -289,38 +289,60 @@ else:
     rule all_signals:
         input: MC_FILES
 
+f1_nominal_coffea = f"{F1_OUTPUT_PATH}histAll_{config['label']}.coffea"
+root_nominal_coffea = f"{base_output}histAll_{config['label']}.coffea"
+if os.path.exists(root_nominal_coffea) and not os.path.exists(f1_nominal_coffea):
+    os.makedirs(os.path.dirname(f1_nominal_coffea), exist_ok=True)
+    try:
+        os.link(root_nominal_coffea, f1_nominal_coffea)
+    except OSError:
+        try:
+            os.symlink(os.path.relpath(root_nominal_coffea, os.path.dirname(f1_nominal_coffea)), f1_nominal_coffea)
+        except OSError:
+            pass
+
 if os.path.abspath(base_output) != os.path.abspath(F1_OUTPUT_PATH.rstrip('/')):
     rule legacy_nominal_coffea:
         input: f"{F1_OUTPUT_PATH}histAll_{config['label']}.coffea"
         output: f"{base_output}histAll_{config['label']}.coffea"
         run:
-            import os
+            import os, shutil
             dst = output[0]
             src = input[0]
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
             if not os.path.exists(dst) and not os.path.islink(dst):
-                os.symlink(os.path.relpath(src, os.path.dirname(dst)), dst)
+                try:
+                    os.link(src, dst)
+                except OSError:
+                    shutil.copy2(src, dst)
 
     rule legacy_nominal_plots:
         input: f"{F1_OUTPUT_PATH}plots_{config['label']}/plots_done.txt"
         output: f"{base_output}plots_{config['label']}/plots_done.txt"
         run:
-            import os
+            import os, shutil
             dst = output[0]
             src = input[0]
             os.makedirs(os.path.dirname(dst), exist_ok=True)
             if not os.path.exists(dst) and not os.path.islink(dst):
-                os.symlink(os.path.relpath(src, os.path.dirname(dst)), dst)
+                try:
+                    os.link(src, dst)
+                except OSError:
+                    shutil.copy2(src, dst)
 
     rule legacy_nominal_cutflow:
         input: f"{F1_OUTPUT_PATH}cutflow_validation_{config['label']}.txt"
         output: f"{base_output}cutflow_validation_{config['label']}.txt"
         run:
-            import os
+            import os, shutil
             dst = output[0]
             src = input[0]
             os.makedirs(os.path.dirname(dst), exist_ok=True)
             if not os.path.exists(dst) and not os.path.islink(dst):
-                os.symlink(os.path.relpath(src, os.path.dirname(dst)), dst)
+                try:
+                    os.link(src, dst)
+                except OSError:
+                    shutil.copy2(src, dst)
 
 use rule make_plots from analysis with:
     input:
@@ -395,4 +417,4 @@ use rule cutflow_crosscheck from analysis as analysis_cutflow_crosscheck with:
         run_container_wrapper = config['analysis_container_wrapper'],
         python_bin = lambda wildcards: config.get("python_bin", "python")
 
-localrules: merging_files, make_plots, check_cutflow, analysis_cutflow_closure_table, analysis_cutflow_crosscheck, all_analysis
+localrules: merging_files, make_plots, check_cutflow, analysis_cutflow_closure_table, analysis_cutflow_crosscheck, all_analysis, legacy_nominal_coffea, legacy_nominal_plots, legacy_nominal_cutflow
