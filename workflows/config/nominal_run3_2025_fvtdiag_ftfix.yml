@@ -1,0 +1,15 @@
+# ==============================================================================
+# DIAGNOSTIC (2025 FvT, finetune fix, k-fold seed offset 0): train + analyze only
+# ==============================================================================
+# Confirms the finetune fix: HH4b_Run3/FvT now finetunes with FinetuneStep (lr 1e-4) instead of
+# FixedStep (default lr 1e-2, a full-lr epoch with a fresh Adam after the lr decay, which undid the
+# end-of-Training calibration in 27 of 30 folds of the 2025 diagnostics). Same inputs and schedule as
+# nominal_run3_2025_fvtdiag_base.yml (end of Training fvt_sb 2.34 summed; after the old finetune 2.04);
+# expected: the finetune keeps the end-of-Training closure (per fold 0.75-1.92 in all earlier runs).
+#
+#   roast new --config coffea4bees/workflows/config/nominal_run3_2025_fvtdiag_ftfix.yml --phases C --nautilus
+# ==============================================================================
+base: coffea4bees/workflows/config/nominal_run3_2025_fvtdiag_base.yml
+
+label: "Run3_2025_nominal_fvtdiag_ftfix"
+output_path: "output/Run3_2025_nominal_fvtdiag_ftfix/"
