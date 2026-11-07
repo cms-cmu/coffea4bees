@@ -175,6 +175,7 @@ handoff:
 # ==============================================================================
 fvt:
   gpu_qos: medium
+  gpu_mem: 24000
   eos_base: "{eos_prod}/{roast_id}"
   plot_base: "{web_prod}/{roast_id}/classifier"
   classifier_config_paths: "coffea4bees"
@@ -214,7 +215,7 @@ fvt:
           - --training FixedStep
           - epoch: 20
             bs_init: 1024
-          - --finetuning FixedStep
+          - --finetuning FinetuneStep
           - epoch: 1
             bs_init: 16384
     setting:
@@ -269,6 +270,7 @@ fvt_closure:
 # ==============================================================================
 svb:
   gpu_qos: medium
+  gpu_mem: 24000
   train_runtime: 180
   eos_base: "{eos_prod}/{roast_id}"
   plot_base: "{web_prod}/{roast_id}/classifier"

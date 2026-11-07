@@ -1,0 +1,23 @@
+# ==============================================================================
+# ttHbb Run 2 NOMINAL STAT-ONLY ANALYSIS — Wrong ttbb UP (1.5x) (CosineAnnealing FvT)
+# ==============================================================================
+
+base: coffea4bees/workflows/config/ttHbb_stat_only_wrong_ttbb_up.yml
+
+label: "ttHbb_stat_only_wrong_ttbb_up_cosine"
+output_path: "output/ttHbb_stat_only_wrong_ttbb_up_cosine/"
+
+fvt:
+  train_workflow:
+    model:
+      - module: HCR.FvT.baseline.Train
+        option:
+          - --kfolds 3
+          - --kfold-seed FvT random
+          - --kfold-seed-offsets 0
+          - --training CosineAnnealing
+          - bs_init: 1024
+            epoch: 20
+          - --finetuning FinetuneStep
+          - bs_init: 16384
+            epoch: 1
