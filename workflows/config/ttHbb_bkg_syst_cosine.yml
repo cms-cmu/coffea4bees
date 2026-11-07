@@ -14,6 +14,12 @@ label: "ttHbb_bkg_syst_cosine"
 
 upstream_pre_fvt: "pre_fvt"
 
+stat_analysis_rebins:
+  - 24
+f3_rebins:
+  - 24
+closure_extra_args: "--ignore_failures"
+
 inputs:
   upstream_roasts:
     declib: declib16nc_run2_20261003_3ab8302-b2d2dec
