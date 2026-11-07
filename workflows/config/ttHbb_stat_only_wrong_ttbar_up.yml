@@ -7,6 +7,7 @@ label: "ttHbb_stat_only_wrong_ttbar_up"
 output_path: "output/ttHbb_stat_only_wrong_ttbar_up/"
 unify_background: true
 ttbar_scale: 1.5
+candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
 
 dataset:
   - "ttHbb"
@@ -134,7 +135,7 @@ classifier_inputs:
     fill_histograms: true
     make_classifier_input: "{eos_prod}/{roast_id}/classifier_inputs/"
     pairing: nominal
-    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
     ttbar_scale: 1.5
 
 # ==============================================================================
@@ -390,7 +391,7 @@ analysis_config:
     run_SvB: true
     SvB_MA: true
     SvB: null
-    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml"
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
     hist_cuts: ["pass_nSelJets_gt6", "passLeptonVeto"]
     top_reconstruction: fast
     plot_ttbar_with_weights: true
