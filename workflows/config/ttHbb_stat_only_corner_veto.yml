@@ -66,6 +66,7 @@ classifier_setting:
 # Phase C FvT training & evaluation
 fvt:
   gpu_qos: medium
+  gpu_mem: 24000
   eos_base: "{eos_prod}/{roast_id}"
   plot_base: "{web_prod}/{roast_id}/classifier"
   classifier_config_paths: "coffea4bees"
