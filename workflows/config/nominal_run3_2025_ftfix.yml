@@ -32,6 +32,8 @@ svb:
     '--friends ""': "{roast:nominal_run3_2025_20261027_1809191-df306da}/handoff/classifier_inputs_nominal_run3_2025_20261027_1809191-df306da.json@@HCR_input"
 
 fvt_closure:
+  # new FvT: the FvT-weighted cutflow entries change, so dump (no such file yet) instead of comparing
+  known_counts: "coffea4bees/analysis/tests/known_fullCounts_FvT_closure_Run3_2025_ftfix.yml"
   JCM_file: "{roast:nominal_run3_2025_20261027_1809191-df306da}/handoff/jetCombinatoricModel_SB_Run3_2025_v1.yml"
   # B.1's wJCM ttbar histograms are in the upstream roast, not here
   reuse_wJCM_ttbar: false
@@ -39,3 +41,6 @@ fvt_closure:
 analysis_config:
   config:
     JCM_file: "{roast:nominal_run3_2025_20261027_1809191-df306da}/handoff/jetCombinatoricModel_SB_Run3_2025_v1.yml"
+
+# F.1 cutflow: new FvT + SvB weights, dump only (no such file yet), then bless
+known_counts: "coffea4bees/analysis/tests/known_fullCounts_Run3_2025_nominal_ftfix.yml"
