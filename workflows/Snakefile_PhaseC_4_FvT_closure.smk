@@ -90,7 +90,17 @@ if not JCM_OUTPUT_PATH.endswith('/'):
 # A roast without its own Phase B (C.4 only) takes the ttbar from ANOTHER roast's B.1 instead:
 # wJCM_ttbar_from = that roast's merged computeJCM/histAll_wJCM.coffea (its singlefiles are not
 # archived), read in place over xrootd and cut down to the TT processes (select_ttbar_upstream).
-WJCM_TTBAR_FROM = closure_cfg.get('wJCM_ttbar_from')
+WJCM_TTBAR_FROM = closure_cfg.get('wJCM_ttbar_from') or config.get('wJCM_ttbar_from')
+if not WJCM_TTBAR_FROM and REUSE_WJCM_TTBAR:
+    cand_singlefiles = [f"{JCM_OUTPUT_PATH}singlefiles/hist__{ds}__{yr}_wJCM.coffea" for ds in MC_DATASETS if ds.startswith('TT') for yr in DATA_YEARS]
+    if not all(os.path.exists(f) for f in cand_singlefiles):
+        upstream = (config.get('inputs', {}).get('upstream_roasts', {}).get('upstream')
+                    or config.get('roast', {}).get('upstream'))
+        if upstream:
+            eos_prod = config.get('eos_prod', 'root://cmseos.fnal.gov//store/user/algomez/HH4b_prod')
+            channel = config.get('channel', 'ttHbb')
+            cand_url = f"{eos_prod}/{upstream}/output/{channel}/computeJCM/histAll_wJCM.coffea"
+            WJCM_TTBAR_FROM = cand_url
 TT_DATASETS = [ds for ds in MC_DATASETS if ds.startswith('TT')]
 UPSTREAM_TTBAR = f"{CLOSURE_PATH}singlefiles/hist__TTbar_upstream_wJCM.coffea"
 
