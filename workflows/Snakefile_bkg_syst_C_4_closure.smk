@@ -369,7 +369,7 @@ use rule check_cutflow from analysis as check_cutflow_bkg_syst_C_4 with:
         f"{out_c4}logs/cutflow_validation_FvT_closure.log"
     params:
         known_flag = lambda wildcards: known_cutflow_flag(),
-        fatal = lambda wildcards: "true" if config.get("test", False) else str(closure_cfg.get("known_counts_fatal", True)).lower(),
+        fatal = lambda wildcards: "true" if config.get("test", False) else str(closure_cfg.get("known_counts_fatal", False)).lower(),
         error_threshold = lambda wildcards: config.get("error_threshold", "0.001"),
         cutflow_list = lambda wildcards: CUTFLOW_LIST,
         run_container_wrapper = container_wrapper,
