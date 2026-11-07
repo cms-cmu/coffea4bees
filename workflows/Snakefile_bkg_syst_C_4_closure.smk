@@ -230,6 +230,25 @@ rule all_ttbar_MC_vs_d3_bkg_syst:
     input:
         TTBAR_COMPARISON_OUTPUTS
 
+# ── Staging Rules for Cross-Cluster Execution ─────────────────────────────────
+_fvt_handoff = config.get('fvt_handoff_eos') or globals().get('FVT_HANDOFF_EOS') or HANDOFF_EOS
+_defined_rules = {r.name for r in workflow.rules}
+if (_fvt_handoff or HANDOFF_EOS) and 'stage_bkg_syst_c4_friend_manifest' not in _defined_rules:
+    rule stage_bkg_syst_c4_friend_manifest:
+        output:
+            f"{out_c}friends/friends_FvT_{mix_name}_v{{m}}.json"
+        params:
+            src = f"{_fvt_handoff}/friends/friends_FvT_{mix_name}_v{{m}}.json"
+        shell:
+            """
+            mkdir -p $(dirname {output})
+            if command -v xrdcp &>/dev/null; then
+                xrdcp -f '{params.src}' '{output}'
+            else
+                cp -f '{params.src}' '{output}'
+            fi
+            """
+
 # ── Config Creation Rule ──────────────────────────────────────────────────────
 rule create_bkg_syst_C_4_config:
     input:
