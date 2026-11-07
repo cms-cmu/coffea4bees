@@ -8,7 +8,7 @@
 # GPU training (Stage BKG_C) without re-running CPU subsample generation.
 # ==============================================================================
 
-base: coffea4bees/workflows/config/ttHbb_bkg_syst.yml
+base: coffea4bees/workflows/config/ttHbb_bkg_syst_declib16nc_corner_veto.yml
 
 label: "ttHbb_bkg_syst_cosine"
 
@@ -16,9 +16,10 @@ upstream_pre_fvt: "pre_fvt"
 
 inputs:
   upstream_roasts:
-    nominal: ttHbb_run2_20261003_f7183e9-cca392c
+    declib: declib16nc_run2_20261003_3ab8302-b2d2dec
+    nominal: ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11
     mixeddata: mixeddata_run2_20260927_c39c264-0ce4d59
-    pre_fvt: ttHbb_bkg_syst_v3
+    pre_fvt: analysis_ttHbb_bkg_syst_declib16nc_corner_veto_20261029_ee431c4-5508ecf
 
 fvt_train_workflow:
   model:
