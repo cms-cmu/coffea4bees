@@ -1,0 +1,25 @@
+# ==============================================================================
+# ttHbb Run 2 NOMINAL STAT-ONLY ANALYSIS — Corner Veto with CosineAnnealing FvT
+# ==============================================================================
+# Same as ttHbb_stat_only_corner_veto.yml, but trains FvT using CosineAnnealing
+# schedule to evaluate Sideband closure against FixedStep.
+# ==============================================================================
+
+base: coffea4bees/workflows/config/ttHbb_stat_only_corner_veto.yml
+
+label: "ttHbb_stat_only_corner_veto_cosine"
+
+fvt:
+  train_workflow:
+    model:
+      - module: HCR.FvT.baseline.Train
+        option:
+          - --kfolds 3
+          - --kfold-seed FvT random
+          - --kfold-seed-offsets 0
+          - --training CosineAnnealing
+          - bs_init: 1024
+            epoch: 20
+          - --finetuning FinetuneStep
+          - bs_init: 16384
+            epoch: 1

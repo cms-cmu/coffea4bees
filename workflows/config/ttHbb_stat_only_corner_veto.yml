@@ -1,27 +1,256 @@
 # ==============================================================================
-# ttHbb Run 2 NOMINAL STAT-ONLY ANALYSIS — Sideband Corner Veto
+# ttHbb Run 2 NOMINAL STAT-ONLY ANALYSIS — Corner Veto with Retrained FvT
 # ==============================================================================
-# Evaluates baseline ttHbb analysis using the modified Sideband (SB) with
-# the high-mass corner vetoed (m_lead > 250 && m_subl > 250).
+# Reuses Phase B (JCM & classifier inputs) and Phase D (SvB_MA models) from
+# upstream ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11.
+# Retrains Phase C (FvT) with FixedStep schedule and bug-fixed finetuning.
+# Evaluates Phase F with corner veto selection.
 # ==============================================================================
 
 base: coffea4bees/workflows/config/ttHbb.yml
 
-label: "ttHbb"
+label: "ttHbb_stat_only_corner_veto"
 output_path: "output/ttHbb/"
 
 candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
-
 jcm_known_counts_fatal: false
 
-classifier_inputs:
-  candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
-  config:
-    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
+handoff:
+  allow_external_refs: true
 
+# Products read from upstream roast
+inputs:
+  upstream_roasts:
+    upstream: ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11
+  classifier_inputs: "{roast:upstream}/handoff/classifier_inputs_ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11.json"
+  JCM:
+    UL16_preVFP: "{roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml"
+    UL16_postVFP: "{roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml"
+    UL17: "{roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL17.yml"
+    UL18: "{roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL18.yml"
+  SvB_MA: "{roast:upstream}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
+  svb_binning: "{roast:upstream}/handoff/svb_quantiles.json"
+
+# Phase C classifier settings
+classifier_setting:
+  - module: ml.DataLoader
+    option:
+      - optimize_sliceable_dataset: true
+      - num_workers: 2
+      - batch_eval: 65536
+  - module: ROOT
+    option:
+      - friend_allow_missing: false
+  - module: cms.MC_TTbar
+    option:
+      - datasets:
+          - TTToSemiLeptonic_stitched
+          - TTToHadronic_stitched
+          - TTTo2L2Nu_stitched
+  - module: cms.CollisionData
+    option:
+      - eras:
+          UL16_postVFP: [F, G, H]
+          UL16_preVFP: [C, D, E, F]
+          UL17: [B, C, D, E, F]
+          UL18: [A, B, C, D]
+        years:
+          - UL16_preVFP
+          - UL16_postVFP
+          - UL17
+          - UL18
+  - module: HCR.InputBranch
+    option:
+      - feature_ancillary: [xW, nSelJets, xbW, year]
+
+# Phase C FvT training & evaluation
+fvt:
+  gpu_qos: medium
+  gpu_mem: 24000
+  eos_base: "{eos_prod}/{roast_id}"
+  plot_base: "{web_prod}/{roast_id}/classifier"
+  classifier_config_paths: "coffea4bees"
+  label: "FvT_ttHbb_stitched"
+  output_dir: "output/FvT_ttHbb_stitched/"
+  plot_inputs: true
+  plot_weights: true
+  evaluate: true
+  model: "{eos_base}/classifier/{label}"
+  friend: "{eos_base}/friend/{label}"
+  train_template: "model: {eos_base}/classifier/{label}"
+  eval_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/{label}"
+  metadata: "{roast:upstream}/handoff/classifier_inputs_ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11.json@@HCR_input"
+  train_workflow:
+    main:
+      module: train
+      option:
+        - --max-loaders 2
+        - --max-trainers 3
+        - --device cuda cpu
+    dataset:
+      - module: HCR.FvT.TrainBaseline
+        option:
+          - --metadata coffea4bees/metadata/datasets/
+          - --max-workers 20
+          - --data-source detector
+          - --JCM-weight year:UL16_preVFP {roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml@@JCM_weights
+          - --JCM-weight year:UL16_postVFP {roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml@@JCM_weights
+          - --JCM-weight year:UL17 {roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL17.yml@@JCM_weights
+          - --JCM-weight year:UL18 {roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL18.yml@@JCM_weights
+          - --friends "" {roast:upstream}/handoff/classifier_inputs_ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11.json@@HCR_input
+    model:
+      - module: HCR.FvT.baseline.Train
+        option:
+          - --kfolds 3
+          - --kfold-seed FvT random
+          - --kfold-seed-offsets 0
+          - --training FixedStep
+          - bs_init: 1024
+            epoch: 20
+          - --finetuning FinetuneStep
+          - bs_init: 16384
+            epoch: 1
+    setting:
+      - module: IO
+        option:
+          - output: "{model}"
+  eval_workflow:
+    main:
+      module: evaluate
+      option:
+        - --max-evaluators 3
+        - --device cuda cpu
+    dataset:
+      - module: HCR.FvT.Eval
+        option:
+          - --metadata coffea4bees/metadata/datasets/
+          - --max-workers 8
+          - --data-source detector
+          - --friends "" {roast:upstream}/handoff/classifier_inputs_ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11.json@@HCR_input
+    model:
+      - module: HCR.FvT.baseline.Eval
+        option:
+          - --models
+          - Final
+          - "{model}/result.json"
+    analysis:
+      - module: kfold.Merge
+        option:
+          - --name FvT
+          - --step 100000
+          - --workers 4
+          - --clean
+    setting:
+      - module: IO
+        option:
+          - output: "{FvT}"
+      - module: ml.DataLoader
+        option:
+          - num_workers: 8
+
+# Phase F: Analysis config
 analysis_config:
   config:
+    apply_JCM: true
+    JCM_file:
+      UL16_preVFP: "{roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml"
+      UL16_postVFP: "{roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml"
+      UL17: "{roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL17.yml"
+      UL18: "{roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL18.yml"
     friends:
       FvT: "{eos_prod}/{roast_id}/friend/FvT_ttHbb_stitched/result.json@@analysis.0.merged"
-      SvB_MA: "{eos_prod}/{roast_id}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
+      SvB_MA: "{roast:upstream}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
+    svb_binning_file: "{roast:upstream}/handoff/svb_quantiles.json"
     candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
+
+# Phase F: Sub-categorized channels
+channels:
+  ttHbb:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB_MA.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: sum
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_stat_only:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB_MA.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: sum
+    stat_only: true
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_gt6:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB_MA.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: pass_nSelJets_gt6
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_gt6_stat_only:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB_MA.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: pass_nSelJets_gt6
+    stat_only: true
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_lepveto:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB_MA.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: passLeptonVeto
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_lepveto_stat_only:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB_MA.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: passLeptonVeto
+    stat_only: true
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_gt6_lepveto:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB_MA.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: pass_nSelJets_gt6_passLeptonVeto
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_gt6_lepveto_stat_only:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB_MA.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: pass_nSelJets_gt6_passLeptonVeto
+    stat_only: true
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+
+combine_flags: "--three_tag threeTag --four_tag fourTag --region sum --blind"
+combine_outdir: "datacards/"
+make_combine_inputs:
+  rebin: 12
+  stat_only: "--stat_only"
+  unify_background: true
+rebin: 12
+likelihood_scan_points: 40
+likelihood_scan_r_min: 0
+likelihood_scan_r_max: 2
+likelihood_scan_y_cut: 30
+likelihood_scan_y_max: 30
