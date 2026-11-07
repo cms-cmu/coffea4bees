@@ -3,6 +3,15 @@ import os
 # Fallback defaults for backwards compatibility or running direct
 config.setdefault('label', "nominal_wNewSvB")
 config.setdefault('output_path', "output/nominal_wNewSvB/")
+base_output = config.get('output_path', "output/nominal_wNewSvB/")
+if not base_output.endswith('/'):
+    base_output += '/'
+if base_output.rstrip('/').endswith('PhaseF_2_stats') or base_output.rstrip('/').endswith('stat_analysis'):
+    F2_OUTPUT_PATH = base_output
+else:
+    F2_OUTPUT_PATH = os.path.join(base_output, 'PhaseF_2_stats/')
+if not F2_OUTPUT_PATH.endswith('/'):
+    F2_OUTPUT_PATH += '/'
 config.setdefault('combine_flags', "--blind")
 config.setdefault('closure_base', "coffea4bees/stats_analysis/files/HIG-24-010")
 
@@ -127,33 +136,50 @@ module combine:
 rule all_stats:
     input:
         [
-            f"{config['output_path']}stat_analysis/{channel}/limits/datacard_limits__{ch_config['signallabel']}.json"
+            f"{F2_OUTPUT_PATH}{channel}/limits/datacard_limits__{ch_config['signallabel']}.json"
             for channel, ch_config in config['channels'].items() if ch_config.get('signallabel')
         ] + [
-            f"{config['output_path']}stat_analysis/{channel}/postfit/datacard_postfit__{ch_config['signallabel']}.pdf"
+            f"{F2_OUTPUT_PATH}{channel}/postfit/datacard_postfit__{ch_config['signallabel']}.pdf"
             for channel, ch_config in config['channels'].items() if ch_config.get('signallabel')
         ] + [
-            f"{config['output_path']}stat_analysis/{channel}/significance/datacard_significance__{ch_config['signallabel']}.log"
+            f"{F2_OUTPUT_PATH}{channel}/significance/datacard_significance__{ch_config['signallabel']}.log"
             for channel, ch_config in config['channels'].items() if ch_config.get('signallabel')
         ] + [
-            f"{config['output_path']}stat_analysis/{channel}/significance/datacard_significance__{ch_config['signallabel']}.json"
+            f"{F2_OUTPUT_PATH}{channel}/significance/datacard_significance__{ch_config['signallabel']}.json"
             for channel, ch_config in config['channels'].items() if ch_config.get('signallabel')
         ] + [
-            f"{config['output_path']}stat_analysis/{channel}/likelihood_scan/datacard_likelihood_scan__{ch_config['signallabel']}.pdf"
+            f"{F2_OUTPUT_PATH}{channel}/likelihood_scan/datacard_likelihood_scan__{ch_config['signallabel']}.pdf"
             for channel, ch_config in config['channels'].items() if ch_config.get('signallabel')
         ] + [
-            f"{config['output_path']}stat_analysis/{channel}/impacts/datacard_impacts__{ch_config['signallabel']}.pdf"
+            f"{F2_OUTPUT_PATH}{channel}/impacts/datacard_impacts__{ch_config['signallabel']}.pdf"
             for channel, ch_config in config['channels'].items() if ch_config.get('signallabel') and not get_stat_only_flag(channel)
         ] + [
-            f"{config['output_path']}stat_analysis/{channel}/impacts/datacard_impacts_split__{ch_config['signallabel']}"
+            f"{F2_OUTPUT_PATH}{channel}/impacts/datacard_impacts_split__{ch_config['signallabel']}"
             for channel, ch_config in config['channels'].items() if ch_config.get('signallabel') and not get_stat_only_flag(channel)
         ] + [
-            f"{config['output_path']}stat_analysis/summary.html",
+            f"{F2_OUTPUT_PATH}summary.html",
         ]
+    run:
+        import os
+        legacy_stats = os.path.join(base_output, 'stat_analysis')
+        if os.path.abspath(legacy_stats) != os.path.abspath(F2_OUTPUT_PATH.rstrip('/')):
+            if not os.path.exists(legacy_stats) and not os.path.islink(legacy_stats):
+                try:
+                    os.symlink(os.path.basename(F2_OUTPUT_PATH.rstrip('/')), legacy_stats)
+                except OSError:
+                    pass
+        legacy_json = os.path.join(base_output, f"histAll_{config['label']}.json")
+        f2_json = os.path.join(F2_OUTPUT_PATH, f"histAll_{config['label']}.json")
+        if os.path.abspath(legacy_json) != os.path.abspath(f2_json):
+            if not os.path.exists(legacy_json) and not os.path.islink(legacy_json):
+                try:
+                    os.symlink(os.path.relpath(f2_json, base_output), legacy_json)
+                except OSError:
+                    pass
 
 def stat_summary_inputs(wildcards):
     """Everything the summary page reads, for every channel with a signal label."""
-    base = f"{config['output_path']}stat_analysis"
+    base = F2_OUTPUT_PATH.rstrip('/')
     files = []
     for channel, ch_config in config['channels'].items():
         sig = ch_config.get('signallabel')
@@ -180,11 +206,11 @@ rule stat_summary:
     # Published by roast like the plot galleries (*.html).
     input: stat_summary_inputs
     output:
-        html = f"{config['output_path']}stat_analysis/summary.html",
-        md = f"{config['output_path']}stat_analysis/summary.md"
-    log: f"{config['output_path']}logs/stat_summary.log"
+        html = f"{F2_OUTPUT_PATH}summary.html",
+        md = f"{F2_OUTPUT_PATH}summary.md"
+    log: f"{F2_OUTPUT_PATH}logs/stat_summary.log"
     params:
-        stat_dir = f"{config['output_path']}stat_analysis",
+        stat_dir = F2_OUTPUT_PATH.rstrip('/'),
         channels = " ".join(f"--channel {ch}={cfg['signallabel']}" for ch, cfg in config['channels'].items() if cfg.get('signallabel')),
         variables = " ".join(f"--variable {ch}={cfg['variable']}" for ch, cfg in config['channels'].items() if cfg.get('signallabel') and cfg.get('variable')),
         blind = lambda wildcards: "--blind" if "--blind" in config.get('combine_flags', '') else "",
@@ -207,11 +233,19 @@ rule stat_summary:
         fi
         """
 
+if (base_output.rstrip('/').endswith(('V4', 'V4_analysis'))
+        or 'TTbar4b_from_MvD' in config.get('make_combine_inputs', {}).get('tt_processes', [])):
+    nominal_coffea_file = f"{base_output}histAll_{config['label']}.coffea"
+elif os.path.exists(f"{base_output}histAll_{config['label']}.coffea") and not os.path.exists(f"{base_output}PhaseF_1_analysis/histAll_{config['label']}.coffea"):
+    nominal_coffea_file = f"{base_output}histAll_{config['label']}.coffea"
+else:
+    nominal_coffea_file = f"{base_output}PhaseF_1_analysis/histAll_{config['label']}.coffea"
+
 use rule convert_hist_to_json from stat_analysis with:
     input:
-        coffea_file = f"{config['output_path']}histAll_{config['label']}.coffea",
+        coffea_file = nominal_coffea_file,
         script = "src/tools/convert_hist_to_json.py"
-    output: f"{config['output_path']}histAll_{config['label']}.json"
+    output: f"{F2_OUTPUT_PATH}histAll_{config['label']}.json"
     params:
         syst_flag=lambda wildcards, input: (
             f"{config['convert_hist_to_json']['syst_flag']} "
@@ -220,23 +254,23 @@ use rule convert_hist_to_json from stat_analysis with:
         ),
         container_wrapper = "./run_container"
     container: None
-    log: f"{config['output_path']}logs/convert_hist_to_json_{config['label']}.log"
+    log: f"{F2_OUTPUT_PATH}logs/convert_hist_to_json_{config['label']}.log"
 
 use rule make_combine_inputs from stat_analysis with:
     input:
-        injson = f"{config['output_path']}histAll_{config['label']}.json",
+        injson = f"{F2_OUTPUT_PATH}histAll_{config['label']}.json",
         injsonsyst = list([]),
         bkgsyst = lambda wildcards: get_bkgsyst_for_channel(wildcards.channel),
         script = "coffea4bees/stats_analysis/make_combine_inputs.py",
         metadata_file = lambda wildcards: config['make_combine_inputs']['metadata_template'].format(channel=wildcards.channel.split('_')[0])
-    output: f"{config['output_path']}stat_analysis/{{channel}}/datacards/datacard__{{channel}}.txt"
+    output: f"{F2_OUTPUT_PATH}{{channel}}/datacards/datacard__{{channel}}.txt"
     params:
         variable = lambda wildcards: config['channels'][wildcards.channel]['variable'],
         syst_file = lambda wildcards, input: f"--syst_file {config['make_combine_inputs']['syst_file']}" if config['make_combine_inputs']['syst_file'] else "",
         bkg_syst_file = lambda wildcards, input: f'--bkg_syst_file "{input.bkgsyst}"' if getattr(input, 'bkgsyst', None) else "",
         rebin = lambda wildcards, input: config['channels'][wildcards.channel].get('rebin', config['make_combine_inputs'].get('rebin', 1)),
         metadata = lambda wildcards: config['make_combine_inputs']['metadata_template'].format(channel=wildcards.channel.split('_')[0]),
-        output_dir = lambda wildcards: f"{config['output_path']}stat_analysis/{wildcards.channel}/datacards/",
+        output_dir = lambda wildcards: f"{F2_OUTPUT_PATH}{wildcards.channel}/datacards/",
         variable_binning = lambda wildcards, input: config['make_combine_inputs']['variable_binning'],
         stat_only = lambda wildcards, input: get_stat_only_flag(wildcards.channel),
         signal = lambda wildcards: wildcards.channel,
@@ -250,9 +284,9 @@ use rule make_combine_inputs from stat_analysis with:
             + ("--unify_background " if (config.get('unify_background', False) or config.get('make_combine_inputs', {}).get('unify_background', False) or config['channels'][wildcards.channel].get('unify_background', False)) else "")
         ),
         container_wrapper = config['stats_container_wrapper']
-    log: f"{config['output_path']}logs/make_combine_inputs_{{channel}}.log"
+    log: f"{F2_OUTPUT_PATH}logs/make_combine_inputs_{{channel}}.log"
 
 # Import all rules from combine module
 use rule * from combine as *
 
-localrules: convert_hist_to_json, make_combine_inputs, stat_summary
+localrules: convert_hist_to_json, make_combine_inputs, stat_summary, all_stats

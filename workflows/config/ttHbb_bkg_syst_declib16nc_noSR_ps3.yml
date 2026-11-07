@@ -1,16 +1,16 @@
 # ==============================================================================
-# ttHbb Run 2 BACKGROUND SYSTEMATIC — DeClustered Library 16nc, --no-SR, Prescale 10
+# ttHbb Run 2 BACKGROUND SYSTEMATIC — DeClustered Library 16nc, --no-SR, Prescale 3
 # ==============================================================================
-# Layered on analysis_ttHbb_bkg_syst_declib16nc.yml (DeClustered 16x library).
+# Layered on ttHbb_bkg_syst_declib16nc.yml (DeClustered 16x library).
 # Reuses pre-FvT stages A and B from the previous declib16nc roast.
 # Trains 16 FvT models on GPU (Nautilus) excluding signal region (--no-SR)
-# and with --ttbar-3b-prescale 10.
+# and with --ttbar-3b-prescale 3.
 # ==============================================================================
 
-base: coffea4bees/workflows/config/analysis_ttHbb_bkg_syst_declib16nc.yml
+base: coffea4bees/workflows/config/ttHbb_bkg_syst_declib16nc.yml
 
-label: "ttHbb_declib16nc_noSR_ps10"
-mix_name: "ttHbb_declib16nc_noSR_ps10"
+label: "ttHbb_declib16nc_noSR_ps3"
+mix_name: "ttHbb_declib16nc_noSR_ps3"
 output_path: "output/{roast_id}/"
 
 upstream_pre_fvt: "ttHbb_bkg_syst_declib16nc"
@@ -21,7 +21,7 @@ handoff:
 
 phase_e_fvt:
   channel: "ttHbb"
-  mix_name: "ttHbb_declib16nc_noSR_ps10"
+  mix_name: "ttHbb_declib16nc_noSR_ps3"
   n_models: 16
 
 analysis_config:
@@ -41,7 +41,7 @@ fvt_train_workflow:
     - module: HCR.FvT.TrainBaseline
       option:
         - --no-SR
-        - --ttbar-3b-prescale 10
+        - --ttbar-3b-prescale 3
         - --metadata {metadata}
         - --max-workers 20
         - --data-source detector mixed

@@ -91,6 +91,7 @@ out_a3 = f"{out}bkg_syst_A_3_process_subsamples/"
 out_b1 = f"{out}bkg_syst_B_1_computeJCM/"
 out_c1 = f"{out}bkg_syst_C_1_inputs/"
 out_c  = f"{out}bkg_syst_C_FvT/"
+out_c4 = f"{out}bkg_syst_C_4_closure/"
 out_f1 = f"{out}bkg_syst_F_1_analysis/"
 out_f2 = config.get('out_f2', f"{out}bkg_syst_F_2_run_two_stage_closure/")
 if not out_f2.endswith("/"):
@@ -310,7 +311,7 @@ if _fvt_ref:
 INPUTS = config.get('inputs') or {}
 for _key in ('mixeddata_all', 'ttbar_psdata', 'jcm_hists', 'nominal_hists', 'SvB', 'SvB_model'):
     if not INPUTS.get(_key):
-        raise ValueError(f"bkg_syst: inputs.{_key} is required (see analysis_ttHbb_bkg_syst.yml)")
+        raise ValueError(f"bkg_syst: inputs.{_key} is required (see ttHbb_bkg_syst.yml)")
 MIXED_URL = str(INPUTS['mixeddata_all'])
 MIX_NAME = os.path.basename(MIXED_URL).removesuffix(".yml")       # handoff/<dataset key>.yml
 PS_URL = str(INPUTS['ttbar_psdata'])

@@ -2,7 +2,7 @@
 # ttHbb Run 2 BACKGROUND SYSTEMATIC (Snakefile_bkg_syst.smk) with DeClustered Library (declib16nc)
 # with Sideband Corner Veto
 # ==============================================================================
-base: coffea4bees/workflows/config/analysis_ttHbb_bkg_syst_declib16nc.yml
+base: coffea4bees/workflows/config/ttHbb_bkg_syst_declib16nc.yml
 label: "ttHbb_bkg_syst_declib16nc_corner_veto"
 output_path: "output/{roast_id}/"
 

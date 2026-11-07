@@ -59,3 +59,11 @@ evaluate_coffea4bees:
     paths:
       - output/main_evaluate/diagnostics/logs.html
       - output/main_evaluate/chunks/*.root
+
+classifier_robustness_coffea4bees:
+  stage: classifier
+  extends: .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+  script:
+    - python -m pytest coffea4bees/classifier/tests/test_training_robustness.py -v

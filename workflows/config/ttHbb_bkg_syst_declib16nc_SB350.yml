@@ -1,7 +1,7 @@
 # ttHbb Run 2 background systematic with the DeClustered library (declib16nc), reading the
 # *nominal* products (JCM histograms, classifier inputs, SvB friend/model, nominal histograms) from the
 # can_ttH SR-ellipse + bounded-SB roast instead of the original nominal roast.
-base: coffea4bees/workflows/config/analysis_ttHbb_bkg_syst_declib16nc.yml
+base: coffea4bees/workflows/config/ttHbb_bkg_syst_declib16nc.yml
 label: "ttHbb_bkg_syst_declib16nc"
 inputs:
   upstream_roasts:

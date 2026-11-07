@@ -1,5 +1,5 @@
 # ttHbb Run 3 Combine metadata, all five eras (2022_preEE, 2022_EE, 2023_preBPix, 2023_BPix, 2024), used by the
-# combined Run 3 chain (workflows/config/analysis_ttHbb_run3_fNjetR.yml: per-era fNjetR JCMs + combined FvT + SvB).
+# combined Run 3 chain (workflows/config/ttHbb_run3_fNjetR.yml: per-era fNjetR JCMs + combined FvT + SvB).
 # Structure of ttHbb.yml with the bins renamed to the Run 3 eras. make_combine_inputs matches a histogram year key to
 # the bin that contains it (make_combine_inputs.py:228), so every bin name ends with the runner's year key.
 # The uncertainty block is not read with --stat_only (make_combine_inputs.py:458); the Run 3 luminosity nuisances

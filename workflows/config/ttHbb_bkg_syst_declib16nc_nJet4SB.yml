@@ -2,7 +2,7 @@
 # *nominal* products (JCM histograms, classifier inputs, SvB friend/model, nominal histograms) from the
 # can_ttH asymmetric-ellipse SR (nJet>=5) + SB (nJet==4 inside the ellipse) roast. A_3, B_1 and F_1 run
 # the same can_ttH pairing so every region definition matches the nominal products.
-base: coffea4bees/workflows/config/analysis_ttHbb_bkg_syst_declib16nc.yml
+base: coffea4bees/workflows/config/ttHbb_bkg_syst_declib16nc.yml
 label: "ttHbb_bkg_syst_declib16nc_nJet4SB"
 inputs:
   upstream_roasts:
