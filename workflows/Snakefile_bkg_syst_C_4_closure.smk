@@ -233,7 +233,7 @@ rule all_ttbar_MC_vs_d3_bkg_syst:
 # ── Staging Rules for Cross-Cluster Execution ─────────────────────────────────
 _fvt_handoff = config.get('fvt_handoff_eos') or globals().get('FVT_HANDOFF_EOS') or HANDOFF_EOS
 _defined_rules = {r.name for r in workflow.rules}
-if (_fvt_handoff or HANDOFF_EOS) and 'stage_bkg_syst_c4_friend_manifest' not in _defined_rules:
+if (_fvt_handoff or HANDOFF_EOS) and 'stage_bkg_syst_c4_friend_manifest' not in _defined_rules and 'extract_friend_manifest' not in _defined_rules:
     rule stage_bkg_syst_c4_friend_manifest:
         output:
             f"{out_c}friends/friends_FvT_{mix_name}_v{{m}}.json"
