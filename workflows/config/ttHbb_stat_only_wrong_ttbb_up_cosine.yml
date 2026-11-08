@@ -1,11 +1,32 @@
 # ==============================================================================
 # ttHbb Run 2 NOMINAL STAT-ONLY ANALYSIS — Wrong ttbb UP (1.5x) (CosineAnnealing FvT)
 # ==============================================================================
+# Evaluates impact of tt+bb mismodeling (+50%) across Phase B, C, C4, F.
+# Corner veto SB is applied across all stages.
+# SvB is NOT run; nominal SvB_MA friend trees and binning are inherited from
+# upstream nominal roast ttHbb_stat_only_corner_veto_cosine_20261106_0065bef-254b706.
+# ==============================================================================
 
 base: coffea4bees/workflows/config/ttHbb_stat_only_wrong_ttbb_up.yml
 
 label: "ttHbb_stat_only_wrong_ttbb_up_cosine"
 output_path: "output/ttHbb_stat_only_wrong_ttbb_up_cosine/"
+
+candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
+
+classifier_inputs:
+  config:
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
+
+handoff:
+  allow_external_refs: true
+
+inputs:
+  upstream_roasts:
+    nominal: ttHbb_stat_only_corner_veto_cosine_20261106_0065bef-254b706
+    upstream_svb: ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11
+  SvB_MA: "{roast:upstream_svb}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
+  svb_binning: "{roast:upstream_svb}/handoff/svb_quantiles.json"
 
 fvt:
   train_workflow:
@@ -21,3 +42,97 @@ fvt:
           - --finetuning FinetuneStep
           - bs_init: 16384
             epoch: 1
+
+analysis_config:
+  config:
+    friends:
+      FvT: "{eos_prod}/{roast_id}/friend/FvT_ttHbb_stitched/result.json@@analysis.0.merged"
+      SvB_MA: "{roast:upstream_svb}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
+    svb_binning_file: "{roast:upstream_svb}/handoff/svb_quantiles.json"
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
+
+channels:
+  ttHbb:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB_MA.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: sum
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_stat_only:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB_MA.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: sum
+    stat_only: true
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_gt6:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB_MA.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: pass_nSelJets_gt6
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_gt6_stat_only:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB_MA.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: pass_nSelJets_gt6
+    stat_only: true
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_lepveto:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB_MA.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: passLeptonVeto
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_lepveto_stat_only:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB_MA.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: passLeptonVeto
+    stat_only: true
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_gt6_lepveto:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB_MA.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: pass_nSelJets_gt6_passLeptonVeto
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_gt6_lepveto_stat_only:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB_MA.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: pass_nSelJets_gt6_passLeptonVeto
+    stat_only: true
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+
+combine_flags: "--three_tag threeTag --four_tag fourTag --region sum --blind"
+combine_outdir: "datacards/"
+make_combine_inputs:
+  rebin: 12
+  stat_only: "--stat_only"
+  unify_background: true
+rebin: 12
