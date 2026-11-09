@@ -66,7 +66,8 @@ CLOSURE_OPTION_KEYS = (
 )
 
 # ── Datasets & Years ──────────────────────────────────────────────────────────
-datasets = closure_cfg.get('datasets', ['data', 'TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic'])
+default_ttbar = config.get('ttbar_processes', ['TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic'])
+datasets = closure_cfg.get('datasets', ['data'] + list(default_ttbar))
 if isinstance(datasets, str):
     datasets = [d.strip() for d in datasets.split(",") if d.strip()]
 
@@ -183,7 +184,7 @@ def get_raw_c4_config():
     res['config']['apply_trigWeight'] = True
     res['config']['plot_ttbar_with_weights'] = True
     res['config']['run_SvB'] = False
-    res['config']['fill_histograms'] = res['config'].get('fill_histograms', 'kinematics+FvT')
+    res['config']['fill_histograms'] = closure_cfg.get('fill_histograms', 'kinematics+FvT')
     
     # Blinding
     res['config']['blind'] = True
