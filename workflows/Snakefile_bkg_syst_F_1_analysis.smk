@@ -426,7 +426,7 @@ rule make_gallery_closure:
 # ── Histogram Consistency Check vs Stage C_4 ──────────────────────────────────
 rule hist_crosscheck_bkg_syst_F_1:
     input:
-        data_coffea = f"{out_f1}closure_v0/histAll_data_v0.coffea"
+        data_coffea = f"{out_f1}histAll_mixeddata_bkgs.coffea"
     output:
         html = f"{out_f1}hist_crosscheck_bkg_syst_F_1.html",
         txt = f"{out_f1}hist_crosscheck_bkg_syst_F_1.txt"
