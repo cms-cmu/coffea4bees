@@ -9,6 +9,20 @@ workflow_validation_coffea4bees:
     - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
     - python coffea4bees/workflows/scripts/ci_workflow_dryrun.py --snakemake "$SNAKEMAKE"
 
+workflow_config_validation_coffea4bees:
+  stage: workflows
+  extends:
+    - .base_analysis_coffea4bees
+  # Audits CI workflow configs for base layering, parameter divergence (datasets, eras, flags),
+  # and reference integrity before workflows execute.
+  script:
+    - python coffea4bees/workflows/scripts/validate_config.py \
+        coffea4bees/workflows/config/nominal_run3_ci.yml \
+        coffea4bees/workflows/config/nominal_run3.yml \
+        coffea4bees/workflows/config/lowpt_run2.yml \
+        coffea4bees/workflows/config/ttHbb.yml \
+        coffea4bees/workflows/config/nominal_run2.yml
+
 # phaseE_prep_test_coffea4bees:
 #   stage: mixeddata
 #   allow_failure: true
