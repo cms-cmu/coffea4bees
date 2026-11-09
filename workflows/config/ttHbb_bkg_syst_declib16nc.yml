@@ -38,7 +38,7 @@ years:
 year_eras:
   UL16_preVFP: ["C", "D", "E", "F"]
   UL16_postVFP: ["F", "G", "H"]
-  UL17: ["B", "C", "D", "E", "F"]
+  UL17: ["C", "D", "E", "F"]
   UL18: ["A", "B", "C", "D"]
 
 phase_f_output_path: "inputs/"
