@@ -1,0 +1,50 @@
+# HH4b_Run3/MvD with a WARM START: the finetune-fix repair of an MvD trained with the old finetune.
+#
+# template:
+# - model: path to model
+#
+# The production config inserts `--pretrained-weights <earlier roast>/classifier/MvD` (one saved model
+# per fold, matched by offset; the same k-fold split as that training, so each fold's validation
+# events are still unseen). Those models had the old finetune (FixedStep, lr 1e-2 with a fresh Adam
+# after the decay), which undid the end-of-Training calibration; their end-of-Training checkpoints
+# are gone. A 1e-2 epoch on top of the 20 is, for the schedule, where the original training stood
+# before its decay (lr 1e-2 to epoch 15), so this reruns only the tail of HH4b_Run3/MvD's schedule
+# from it: 5 epochs at the final batch size, lr 2.5e-3 x 0.25 per epoch (2.5e-3 ... 9.8e-6, the
+# original epochs 16-20), then the fixed finetune (FinetuneStep, lr 1e-4). The Baseline benchmark
+# records the loaded (old) model before the repair.
+
+main:
+  module: train
+  option:
+    - --max-loaders 2
+    - --max-trainers 3
+
+dataset:
+  - module: HCR.MvD.TrainBaseline
+    option:
+      - --metadata coffea4bees/metadata/datasets_HH4b_Run3/archive/datasets_HH4b_Run3_2025_Run3_skims
+      - --max-workers 20
+      - --data-source mixed_all detector
+      - --JCM-weight "source:mixed_all" coffea4bees/analysis/weights/JCM/Run3_MvD/jetCombinatoricModel_SB_.yml@@JCM_weights
+      - --friends "" coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_MvD_Run3.json@@HCR_input
+
+model:
+  - module: HCR.MvD.baseline.Train
+    option:
+      - --kfolds 3
+      - --kfold-seed MvD random
+      - --kfold-seed-offsets 0
+      - --training FixedStep
+      - epoch: 5
+        bs_init: 16384
+        bs_milestones: []
+        lr_init: 2.5e-3
+        lr_milestones: [1, 2, 3, 4]
+      - --finetuning FinetuneStep
+      - epoch: 1
+        bs_init: 16384
+
+setting:
+  - module: IO
+    option:
+      - output: "{model}"

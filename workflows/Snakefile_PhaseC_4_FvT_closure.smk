@@ -64,7 +64,8 @@ CLOSURE_OPTION_KEYS = ('datasets', 'plot_config', 'JCM_file', 'known_counts', 'k
                        'reuse_wJCM_ttbar', 'jcm_output_path', 'closure_ttbar', 'ttbar_compare_plot_config', 'ttbar3b_compare_plot_config',
                        'wJCM_ttbar_from', 'known_counts_fatal')
 
-datasets = closure_cfg.get('datasets', ['data', 'TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic'])
+default_ttbar = config.get('ttbar_processes', ['TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic'])
+datasets = closure_cfg.get('datasets', ['data'] + list(default_ttbar))
 if isinstance(datasets, str):
     datasets = [d.strip() for d in datasets.split(",") if d.strip()]
 DATA_YEAR_ERA = [(str(yr), era) for yr, eras in config['year_eras'].items() for era in eras] if 'data' in datasets else []
@@ -90,7 +91,17 @@ if not JCM_OUTPUT_PATH.endswith('/'):
 # A roast without its own Phase B (C.4 only) takes the ttbar from ANOTHER roast's B.1 instead:
 # wJCM_ttbar_from = that roast's merged computeJCM/histAll_wJCM.coffea (its singlefiles are not
 # archived), read in place over xrootd and cut down to the TT processes (select_ttbar_upstream).
-WJCM_TTBAR_FROM = closure_cfg.get('wJCM_ttbar_from')
+WJCM_TTBAR_FROM = closure_cfg.get('wJCM_ttbar_from') or config.get('wJCM_ttbar_from')
+if not WJCM_TTBAR_FROM and REUSE_WJCM_TTBAR:
+    cand_singlefiles = [f"{JCM_OUTPUT_PATH}singlefiles/hist__{ds}__{yr}_wJCM.coffea" for ds in MC_DATASETS if ds.startswith('TT') for yr in DATA_YEARS]
+    if not all(os.path.exists(f) for f in cand_singlefiles):
+        upstream = (config.get('inputs', {}).get('upstream_roasts', {}).get('upstream')
+                    or config.get('roast', {}).get('upstream'))
+        if upstream:
+            eos_prod = config.get('eos_prod', 'root://cmseos.fnal.gov//store/user/algomez/HH4b_prod')
+            channel = config.get('channel', 'ttHbb')
+            cand_url = f"{eos_prod}/{upstream}/output/{channel}/computeJCM/histAll_wJCM.coffea"
+            WJCM_TTBAR_FROM = cand_url
 TT_DATASETS = [ds for ds in MC_DATASETS if ds.startswith('TT')]
 UPSTREAM_TTBAR = f"{CLOSURE_PATH}singlefiles/hist__TTbar_upstream_wJCM.coffea"
 
@@ -157,7 +168,7 @@ def get_raw_closure_config():
     # TTbar{4b,3b}_from_d3 histograms: the ttbar stacked by plotsAll_FvTClosure.yml
     res['config']['plot_ttbar_with_weights'] = True
     res['config']['run_SvB'] = False
-    res['config']['fill_histograms'] = res['config'].get('fill_histograms', 'kinematics+FvT')
+    res['config']['fill_histograms'] = closure_cfg.get('fill_histograms', 'kinematics+FvT')
     for k in list(res['config'].keys()):
         if k.startswith('SvB'):
             res['config'][k] = None

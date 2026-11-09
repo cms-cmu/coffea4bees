@@ -155,6 +155,7 @@ def get_analysis_targets(wildcards):
         f"{F1_OUTPUT_PATH}cutflow_{config['label']}.yml",
         f"{F1_OUTPUT_PATH}cutflow_{config['label']}.html",             # closure table
         f"{F1_OUTPUT_PATH}cutflow_crosscheck_{config['label']}.html",  # vs Phase C.4
+        f"{F1_OUTPUT_PATH}hist_crosscheck_{config['label']}.html",     # histogram check vs Phase C.4
     ]
 
 rule all_analysis:
@@ -170,6 +171,7 @@ rule all_analysis:
                 (f"cutflow_{config['label']}.yml", f"PhaseF_1_analysis/cutflow_{config['label']}.yml"),
                 (f"cutflow_validation_{config['label']}.txt", f"PhaseF_1_analysis/cutflow_validation_{config['label']}.txt"),
                 (f"cutflow_crosscheck_{config['label']}.html", f"PhaseF_1_analysis/cutflow_crosscheck_{config['label']}.html"),
+                (f"hist_crosscheck_{config['label']}.html", f"PhaseF_1_analysis/hist_crosscheck_{config['label']}.html"),
             ]
             for link_name, target in links:
                 dst = os.path.join(base_output, link_name)
@@ -417,4 +419,23 @@ use rule cutflow_crosscheck from analysis as analysis_cutflow_crosscheck with:
         run_container_wrapper = config['analysis_container_wrapper'],
         python_bin = lambda wildcards: config.get("python_bin", "python")
 
-localrules: merging_files, make_plots, check_cutflow, analysis_cutflow_closure_table, analysis_cutflow_crosscheck, all_analysis, legacy_nominal_coffea, legacy_nominal_plots, legacy_nominal_cutflow
+def _get_hist_crosscheck_ref():
+    cand_c4 = f"{base_output}PhaseC_4_FvT_closure/histAll_FvT_closure.coffea"
+    cand_old = f"{base_output}FvT_closure/histAll_FvT_closure.coffea"
+    return cand_c4 if os.path.exists(cand_c4) else (cand_old if os.path.exists(cand_old) else cand_c4)
+
+# Cross-check control kinematic histograms against Phase C.4 (FvT closure):
+# validates that selJets.n and v4j.mass (m4j) in Phase F agree identically with Phase C.4
+use rule hist_crosscheck from analysis as analysis_hist_crosscheck with:
+    params:
+        reference = lambda wildcards: config.get("hist_crosscheck_reference", _get_hist_crosscheck_ref()),
+        title = lambda wildcards: f"{config.get('label', 'analysis')}_hist_crosscheck_{wildcards.label}",
+        label_a = lambda wildcards: f"F.1_{wildcards.label}",
+        label_b = "C.4_FvT_closure",
+        tolerance = lambda wildcards: config.get("hist_crosscheck_tolerance", "0.0001"),
+        variables = lambda wildcards: config.get("hist_crosscheck_variables", "selJets.n,v4j.mass"),
+        regions = lambda wildcards: config.get("hist_crosscheck_regions", "SB"),
+        run_container_wrapper = config['analysis_container_wrapper'],
+        python_bin = lambda wildcards: config.get("python_bin", "python")
+
+localrules: merging_files, make_plots, check_cutflow, analysis_cutflow_closure_table, analysis_cutflow_crosscheck, analysis_hist_crosscheck, all_analysis, legacy_nominal_coffea, legacy_nominal_plots, legacy_nominal_cutflow
