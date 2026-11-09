@@ -204,14 +204,15 @@ closure_plot_cfg = config.get(
 wildcard_constraints:
     m = r"\d+"
 
-localrules: all_bkg_syst_F_1, all_bkg_syst_F_1_hists, make_plots_closure, make_gallery_closure, stage_phaseF_1_config, validate_f1_normalization
+localrules: all_bkg_syst_F_1, all_bkg_syst_F_1_hists, make_plots_closure, make_gallery_closure, stage_phaseF_1_config, validate_f1_normalization, hist_crosscheck_bkg_syst_F_1
 
 # ── Master Target Rule ────────────────────────────────────────────────────────
 rule all_bkg_syst_F_1:
     input:
         f"{out_f1}validation_normalization.done",
         f"{out_f1}plots/plots_done.txt",
-        f"{out_f1}plots/gallery.html"
+        f"{out_f1}plots/gallery.html",
+        f"{out_f1}hist_crosscheck_bkg_syst_F_1.html"
 
 # ── Histogram Only Target Rule (Before Plotting) ──────────────────────────────
 rule all_bkg_syst_F_1_hists:
@@ -421,3 +422,42 @@ rule make_gallery_closure:
             touch {output.gallery}
         fi
         """
+
+# ── Histogram Consistency Check vs Stage C_4 ──────────────────────────────────
+rule hist_crosscheck_bkg_syst_F_1:
+    input:
+        data_coffea = f"{out_f1}closure_v0/histAll_data_v0.coffea"
+    output:
+        html = f"{out_f1}hist_crosscheck_bkg_syst_F_1.html",
+        txt = f"{out_f1}hist_crosscheck_bkg_syst_F_1.txt"
+    log:
+        f"{out_f1}logs/hist_crosscheck.log"
+    params:
+        reference = f"{out_c4}histAll_FvT_closure_v0.coffea",
+        container_wrapper = container_wrapper,
+        python_bin = python_bin,
+        tolerance = "0.0001",
+        variables = "selJets.n,v4j.mass",
+        regions = "SB"
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {output.html}) $(dirname {log})
+        if [ ! -f src/tools/compare_coffea_hists.py ]; then
+            echo "src/tools/compare_coffea_hists.py not found; skipping histogram cross-check" 2>&1 | tee {log}
+            echo "<p>histogram cross-check not available</p>" > {output.html}
+            cp {log} {output.txt}
+        elif [ ! -f "{params.reference}" ]; then
+            echo "SKIPPED: reference .coffea file '{params.reference}' not found" 2>&1 | tee {log}
+            echo "<p>histogram cross-check skipped: reference file not found</p>" > {output.html}
+            cp {log} {output.txt}
+        else
+            {params.container_wrapper} {params.python_bin} src/tools/compare_coffea_hists.py \
+                {input.data_coffea} {params.reference} \
+                -o {output.html} --txt {output.txt} --title "Stage_F_1_hist_crosscheck" \
+                --label-a "Stage F.1" --label-b "Stage C.4" \
+                --variables "{params.variables}" --regions "{params.regions}" \
+                --tolerance {params.tolerance} 2>&1 | tee {log}
+        fi
+        """
+
