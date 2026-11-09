@@ -1,0 +1,56 @@
+# ==============================================================================
+# HH4b Run 3 (2022+2023) BACKGROUND SYSTEMATIC, finetune fix + deterministic seeds
+# ==============================================================================
+# analysis_HH4b_bkg_syst_declib16_run3.yml (first run: HH4b_bkg_syst_declib16_run3_20261017_75a0c1f-0c8bb0c)
+# with:
+#   - the FvT finetune fixed: FinetuneStep (lr 1e-4), not FixedStep (default lr 1e-2 with a fresh Adam
+#     after the decay, which undid the end-of-Training calibration; see HH4b_Run3/FvT, coffea4bees 0cdcea285);
+#   - the nominal inputs from the finetune-fix nominal redo nominal_run3_ftfix_20261106_1c7c8db-d5ec5c4
+#     (its SvB and final histograms). That redo reused the original nominal's Phase B, so the B products
+#     (JCM histograms, classifier-input manifest) come from nominal_run3_20261008_f839489-a481023;
+#   - barista master's deterministic training seeds (setting.ml.Training.seed, default 666): the 16
+#     subsample FvTs share, per fold, the initial weights, batch order and k-fold split, so their spread
+#     measures the data variance, not training randomness.
+#
+# Pilot first (Ale's gated pilot, coffea4bees 208849a51): BKG_AB, then BKG_C with
+# --targets all_bkg_syst_C_pilot (+ mix_0's evaluation), then BKG_C4 (FvT kinematic closure on mix_0);
+# the other 15 FvTs and BKG_F after the pilot's closure is checked.
+#
+#   bin/roast new --config coffea4bees/workflows/config/analysis_HH4b_bkg_syst_declib16_run3_ftfix.yml \
+#       --phases BKG_AB,BKG_C,BKG_C4,BKG_F --nautilus
+# ==============================================================================
+base: coffea4bees/workflows/config/analysis_HH4b_bkg_syst_declib16_run3.yml
+
+label: "HH4b_bkg_syst_declib16_run3_ftfix"
+
+inputs:
+  upstream_roasts:
+    declib: declib16_run3_20261011_b948dfc-33f3094          # DeClustered 16x Run 3 library
+    nominal: nominal_run3_ftfix_20261106_1c7c8db-d5ec5c4    # finetune-fix nominal redo (C, C4, D, F)
+    nominal_b: nominal_run3_20261008_f839489-a481023        # its Phase B (reused by the redo)
+    mixeddata: mixeddata_run3_20260926_956d4bf-aca8a4e      # ttbar pseudodata
+  jcm_hists: "{roast:nominal_b}/{roast:nominal_b:output_path}computeJCM/histAll_NoJCM.coffea"
+  classifier_inputs: "{roast:nominal_b}/handoff/classifier_inputs_{roast:nominal_b:id}.json"
+  nominal_hists: "{roast:nominal}/{roast:nominal:output_path}histAll_{roast:nominal:label}.coffea"
+  SvB: "{roast:nominal}/friend/SvB_nominal/result.json@@analysis.0.merged"
+  SvB_model: "{roast:nominal}/classifier/SvB_nominal/result.json"
+
+mix_name: "HH4b_bkg_syst_declib16_run3_ftfix"
+
+phase_e_fvt:
+  mix_name: "HH4b_bkg_syst_declib16_run3_ftfix"
+
+fvt_train_workflow:
+  model:   # list: restated in full (lists replace)
+    - module: HCR.FvT.baseline.Train
+      option:
+        - --kfolds 3
+        - --kfold-seed FvT random
+        - --kfold-seed-offsets 0
+        - --training FixedStep
+        - epoch: 20
+          bs_init: 1024
+        # FinetuneStep (lr 1e-4), as HH4b_Run3/FvT since 0cdcea285 (was FixedStep: lr 1e-2)
+        - --finetuning FinetuneStep
+        - epoch: 1
+          bs_init: 16384
