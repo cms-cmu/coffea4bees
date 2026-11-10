@@ -1,0 +1,45 @@
+# ==============================================================================
+# ttHbb Run 2 BACKGROUND SYSTEMATIC — Sideband Corner Veto with FixedStep FvT
+# ==============================================================================
+# Background systematic evaluation of ttHbb with Sideband Corner Veto using
+# FixedStep schedule and bug-fixed FinetuneStep, corresponding to nominal roast
+# ttHbb_stat_only_corner_veto_20261106_0065bef-0b95131.
+# Reuses pre-FvT stages A & B from analysis_ttHbb_bkg_syst_declib16nc_corner_veto_20261029_ee431c4-5508ecf
+# on EOS to allow direct GPU training (Stage BKG_C) without re-running CPU subsamples.
+# ==============================================================================
+
+base: coffea4bees/workflows/config/ttHbb_bkg_syst_declib16nc_corner_veto.yml
+
+label: "ttHbb_bkg_syst_corner_veto"
+
+upstream_pre_fvt: "pre_fvt"
+
+stat_analysis_rebins:
+  - 24
+f3_rebins:
+  - 24
+closure_extra_args: "--ignore_failures"
+
+fvt_closure:
+  known_counts_fatal: false
+
+inputs:
+  upstream_roasts:
+    declib: declib16nc_run2_20261003_3ab8302-b2d2dec
+    nominal: ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11
+    mixeddata: mixeddata_run2_20260927_c39c264-0ce4d59
+    pre_fvt: analysis_ttHbb_bkg_syst_declib16nc_corner_veto_20261029_ee431c4-5508ecf
+
+fvt_train_workflow:
+  model:
+    - module: HCR.FvT.baseline.Train
+      option:
+        - --kfolds 3
+        - --kfold-seed FvT random
+        - --kfold-seed-offsets 0
+        - --training FixedStep
+        - epoch: 20
+          bs_init: 1024
+        - --finetuning FinetuneStep
+        - epoch: 1
+          bs_init: 16384
