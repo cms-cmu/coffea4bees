@@ -1,0 +1,52 @@
+# bkg_syst Stage C_4 FvT closure against the SYNTHETIC four-tag sample the FvT was trained on.
+# In bkg_syst each FvT is trained with --no-detector-4b against one closure subsample (declustered
+# multijet + ttbar pseudodata, process mix_v<m> in the Stage A_3 histograms), so its closure is
+# checked against that subsample, not against the real four-tag data (that check belongs to the
+# nominal / stat-only workflow's C.4). makePlots runs on [C_4 histAll (model), A_3 histAll_*_v<m>]
+# with --combine_input_files.
+#   points  synthetic four-tag   mix_v0 (fourTag)        <- MIX_PROCESS, set per subsample
+#   stack   multijet = 3b data x JCM x FvT,  ttbar = TTbar4b_from_d3 (as plotsAll_FvTClosure.yml)
+# Histograms filled only in the C_4 run (FvT outputs need the FvT evaluated on the synthetic events,
+# which A_3 does not have) show no points.
+hists:
+        data:
+                process: mix_v0
+                tag: fourTag
+                label: Synthetic four-tag (mix_0)
+                edgecolor: k
+                fillcolor: k
+
+stack:
+        TTbar:
+                process: TTbar4b_from_d3
+                tag: threeTag
+                fillcolor: "#85D1FBff"
+                edgecolor: k
+                label: $t\bar{t}$
+
+        Multijet:
+                process: data
+                tag: threeTag
+                fillcolor: "#FFDF7Fff"
+                edgecolor: k
+                label: QCD multijet
+
+ratios:
+        dataToBkg:
+                numerator:
+                        type: hists
+                        key: data
+                denominator:
+                        type: stack
+                uncertianty:
+                        nominal
+                color: k
+                marker: "o"
+
+doRatio:
+    1
+
+skip_hists:
+    - m4j_hh
+    - m4j_zh
+    - m4j_zz
