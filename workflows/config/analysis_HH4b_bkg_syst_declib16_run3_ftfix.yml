@@ -54,3 +54,11 @@ fvt_train_workflow:
         - --finetuning FinetuneStep
         - epoch: 1
           bs_init: 16384
+
+# Stage C_4 (FvT kinematic closure) builds its processor config from `fvt_closure` over
+# `analysis_config`, neither of which carries the top-level fourTag_use_tight: without this the
+# closure counts the NON-tight 4b data against the tight-normalised model (pilot 2026-11-10:
+# data/bkg 1.72 SB, 1.74 SR, = the non-tight/tight 4b yield ratio 378,943 / 222,079).
+fvt_closure:
+  config:
+    fourTag_use_tight: true
