@@ -210,7 +210,7 @@ fvt_train_workflow:
         - --training FixedStep
         - epoch: 20
           bs_init: 1024
-        - --finetuning FixedStep
+        - --finetuning FinetuneStep
         - epoch: 1
           bs_init: 16384
   setting:
