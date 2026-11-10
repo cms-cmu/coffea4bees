@@ -50,3 +50,16 @@ skip_hists:
     - m4j_hh
     - m4j_zh
     - m4j_zz
+summary:
+    - FvT
+    - selJets.n
+    - canJet0.pt
+    - canJet3.pt
+    - m4j
+    - v4j.mass
+    - quadJet_selected.lead.mass
+    - quadJet_selected.subl.mass
+    - quadJet_selected.xHH
+    - xW
+    - xbW
+
