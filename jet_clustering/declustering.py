@@ -539,7 +539,8 @@ def _decluster_with_pdfs(input_jets_to_decluster, splitting_types, input_pdfs, s
 
         # Pre compute these to save time
         _s_mask = create_flavor_mask(input_jets_to_decluster, _s)
-        _num_samples   = np.sum(ak.num(input_jets_to_decluster[_s_mask]))
+        # numpy 2: keep this an int, sample_jet_templates uses it as an array shape
+        _num_samples   = int(np.sum(ak.num(input_jets_to_decluster[_s_mask])))
         _indicies = np.where(ak.flatten(_s_mask))
         _indicies_tuple = (_indicies[0].to_list())
 
@@ -626,10 +627,20 @@ def decluster_splitting_types(input_jets, splitting_types, input_pdfs, rand_seed
         fail_eta_b_mask = (A_is_b_mask & (np.abs(declustered_jets_A.eta) > 2.5)) | (B_is_b_mask & (np.abs(declustered_jets_B.eta) > 2.5))
 
         fail_dr_mask  = declustered_jets_A.delta_r(declustered_jets_B) < dr_threshold
-        clustering_fail = fail_pt_mask | fail_pt_b_mask | fail_eta_b_mask | fail_dr_mask
+
+        # A NaN child passes every comparison above, so non-finite pt/eta/phi is a failure too
+        # (not the mass: it can be NaN for a near-massless four-vector)
+        fail_nonfinite_mask = (
+            ~np.isfinite(declustered_jets_A.pt) | ~np.isfinite(declustered_jets_A.eta) | ~np.isfinite(declustered_jets_A.phi)
+            | ~np.isfinite(declustered_jets_B.pt) | ~np.isfinite(declustered_jets_B.eta) | ~np.isfinite(declustered_jets_B.phi)
+        )
+        clustering_fail = fail_pt_mask | fail_pt_b_mask | fail_eta_b_mask | fail_dr_mask | fail_nonfinite_mask
 
         if num_trys > max_jet_retry:
             print(f"Bailing with {np.sum(ak.num(input_jets_to_decluster))}\n")
+            if ak.any(fail_nonfinite_mask):
+                raise RuntimeError(f"decluster_splitting_types: {int(ak.sum(fail_nonfinite_mask))} declustered jets "
+                                   f"are still not finite after {max_jet_retry} retries")
             clustering_fail = ~(fail_pt_mask | ~fail_pt_mask)  # All False
 
         #
@@ -648,7 +659,7 @@ def decluster_splitting_types(input_jets, splitting_types, input_pdfs, rand_seed
     return unclustered_jets
 
 
-def make_synthetic_event_core(input_jets, input_pdfs, rand_seed, *, b_pt_threshold=40, dr_threshold=0.4, max_jet_retry=_MAX_NUM_JET_RETRY, chunk=None, debug=False, **library_kwargs):
+def make_synthetic_event_core(input_jets, input_pdfs, rand_seed, *, b_pt_threshold=40, dr_threshold=0.4, max_jet_retry=_MAX_NUM_JET_RETRY, chunk=None, debug=False, splitting_types_to_ignore=(), **library_kwargs):
 
     if debug:
         print(f"{chunk} make_synthetic_event_core rand_seed {rand_seed}\n")
@@ -657,6 +668,15 @@ def make_synthetic_event_core(input_jets, input_pdfs, rand_seed, *, b_pt_thresho
     #  Get all the different types of splitted needed
     #
     splitting_types = get_list_of_combined_jet_types(input_jets)
+
+    #
+    #  Splittings we deliberately do not decluster: each entry is a
+    #  (splitting_in, splitting_out) pair, e.g. ("bj", "b") leaves a "bj"
+    #  cluster intact and counts it as a single "b" jet downstream.
+    #
+    for _s in splitting_types_to_ignore:
+        if _s[0] in splitting_types:
+            splitting_types.remove(_s[0])
 
     if debug:
         print(f" (make_synthetic_event_core) splitting_types {splitting_types}")
@@ -669,6 +689,10 @@ def make_synthetic_event_core(input_jets, input_pdfs, rand_seed, *, b_pt_thresho
         input_jets = decluster_splitting_types(input_jets, splitting_types, input_pdfs, rand_seed, b_pt_threshold=b_pt_threshold, dr_threshold=dr_threshold, max_jet_retry=max_jet_retry, chunk=chunk, debug=debug, **library_kwargs)
 
         splitting_types = get_list_of_combined_jet_types(input_jets)
+
+        for _s in splitting_types_to_ignore:
+            if _s[0] in splitting_types:
+                splitting_types.remove(_s[0])
 
         if debug:
             print(f"(make_synthetic_event_core) splitting_types is now {splitting_types}")
@@ -685,7 +709,7 @@ def make_synthetic_event_core(input_jets, input_pdfs, rand_seed, *, b_pt_thresho
 
 def make_synthetic_event(input_jets, input_pdfs, declustering_rand_seed=66, *, b_pt_threshold=40, dr_threshold=0.4, max_jet_retry=_MAX_NUM_JET_RETRY, max_event_retry=_MAX_NUM_EVENT_RETRY, chunk=None, debug=False,
                          library=None, event_ids=None, library_scale_pt=True, library_boost_z=True,
-                         library_selection="rank", library_k_neighbors=20, library_max_distance=0.05):
+                         library_selection="rank", library_k_neighbors=20, library_max_distance=0.05, splitting_types_to_ignore=()):
     """Decluster every clustered jet of ``input_jets``.
 
     Default: sample the splittings from ``input_pdfs``. With ``library`` (a SplittingLibrary),
@@ -695,6 +719,7 @@ def make_synthetic_event(input_jets, input_pdfs, declustering_rand_seed=66, *, b
     (declustering_rand_seed, event retry, jet retry) and the jet's kinematics. ``event_ids`` ((n_events, 3) run,
     luminosityBlock, event) excludes self matches, and the library's carry fields (which
     ``input_jets`` must already have, NaN for combined jets) are propagated to the output.
+    ``splitting_types_to_ignore``: (splitting_in, splitting_out) pairs left clustered, e.g. [("bj", "b")].
     """
 
     if debug:
@@ -707,6 +732,14 @@ def make_synthetic_event(input_jets, input_pdfs, declustering_rand_seed=66, *, b
 
     # Get number of expected output jets
     jet_clustering_summary = ["".join(ak.to_list(i)) for i in input_jets.jet_flavor]
+
+    #
+    #  An ignored splitting is not declustered, so it contributes its
+    #  replacement flavour to the expected jet count, not its children.
+    #
+    for _s in splitting_types_to_ignore:
+        jet_clustering_summary = [s.replace(_s[0], _s[1]) for s in jet_clustering_summary]
+
     n_declustered_jets_per_event = np.array([s.count('b') + s.count('j') for s in jet_clustering_summary], dtype=np.int64)
 
     # + lib_index: the library row each jet's splitting was drawn from (-1: never declustered)
@@ -741,7 +774,8 @@ def make_synthetic_event(input_jets, input_pdfs, declustering_rand_seed=66, *, b
             library_kwargs = {}
 
         declustered_events = make_synthetic_event_core(input_jets[to_decluster_indicies], input_pdfs, 7 * num_trys + declustering_rand_seed, **library_kwargs,
-                                                       b_pt_threshold=b_pt_threshold, dr_threshold=dr_threshold, max_jet_retry=max_jet_retry, chunk=chunk, debug=debug)
+                                                       b_pt_threshold=b_pt_threshold, dr_threshold=dr_threshold, max_jet_retry=max_jet_retry, chunk=chunk, debug=debug,
+                                                       splitting_types_to_ignore=splitting_types_to_ignore)
 
         #
         #  Check the min dr

@@ -67,7 +67,12 @@ def sample_PDFs_vs_pT(input_jets_decluster, input_pdfs, rand_seed, splittings, c
     for iPt in range(n_pt_bins):
         min_pt = float(input_pdfs["pt_bins"][iPt])
         max_pt = float(input_pdfs["pt_bins"][iPt + 1]) if input_pdfs["pt_bins"][iPt + 1] != "inf" else np.inf
-        pt_masks.append((input_jets_decluster.pt > min_pt) & (input_jets_decluster.pt < max_pt))
+        # Every jet must fall in exactly one bin: the lowest bin is open downwards (as the highest is
+        # open upwards) and the bins are half-open [min_pt, max_pt), so a jet below the first edge or
+        # exactly on an edge is not left unsampled
+        if iPt == 0:
+            min_pt = -np.inf
+        pt_masks.append((input_jets_decluster.pt >= min_pt) & (input_jets_decluster.pt < max_pt))
 
 
     if debug:
@@ -153,10 +158,17 @@ def sample_PDFs_vs_pT(input_jets_decluster, input_pdfs, rand_seed, splittings, c
 
             else:
 
+                # An unsampled jet would keep the initial value 1.0, and zA = 1 makes the second child NaN
+                assigned = np.zeros(n_jets, dtype=bool)
                 for iPt in range(n_pt_bins):
                     pt_indices = np.where(ak.flatten(pt_masks[iPt]))[0]
                     sampled_data_x[pt_indices] = sampled_data_x_vs_pT[iPt][pt_indices]
                     sampled_data_y[pt_indices] = sampled_data_y_vs_pT[iPt][pt_indices]
+                    assigned[pt_indices] = True
+                if not assigned.all():
+                    bad_pts = np.asarray(ak.flatten(input_jets_decluster.pt))[~assigned][:10]
+                    raise RuntimeError(f"sample_PDFs_vs_pT: {int((~assigned).sum())} jets in no pT bin of {input_pdfs['pt_bins']}, "
+                                       f"first pT values: {bad_pts.tolist()}")
 
                 input_jets_decluster["zA"]     = ak.unflatten(sampled_data_x, ak.num(input_jets_decluster))
                 input_jets_decluster["thetaA"] = ak.unflatten(sampled_data_y, ak.num(input_jets_decluster))
