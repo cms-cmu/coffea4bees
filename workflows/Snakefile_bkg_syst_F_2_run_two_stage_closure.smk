@@ -430,7 +430,7 @@ rule make_closure_summary_html:
         f"{out_f2}logs/make_closure_summary_html_{{classifier}}.log"
     params:
         output_dir = out_f2,
-        title = lambda wildcards: f"Stage F_2 Two-Stage Closure ({channel} - {wildcards.classifier})",
+        title = lambda wildcards: f"Stage F_2 Two-Stage Closure - {channel} - {wildcards.classifier}",
         container_wrapper = config['analysis_container_wrapper'],
         python_bin = config['python_bin'],
         sb_arg = lambda wildcards, input: f"--summary-sb {input.summary_sb}" if hasattr(input, "summary_sb") else "",
