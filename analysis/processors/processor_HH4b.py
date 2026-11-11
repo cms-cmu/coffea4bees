@@ -788,7 +788,13 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         with self._stage(f"{label}:build_candidates"):
             # Build jet/dijet/quadjet candidates
-            selev = self.build_candidates(selev, weights, list_weight_names, analysis_selections, processOutput, shift_name=shift_name)
+            try:
+                selev = self.build_candidates(selev, weights, list_weight_names, analysis_selections, processOutput, shift_name=shift_name)
+            except TypeError as e:
+                if "shift_name" in str(e):
+                    selev = self.build_candidates(selev, weights, list_weight_names, analysis_selections, processOutput)
+                else:
+                    raise
 
 
         # Custom Processing in the derived classes

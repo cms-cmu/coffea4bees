@@ -220,6 +220,7 @@ runs:
     - TrigWeights
 
 not_covered:
+  full_syst: "production master workflow for full systematics, requires upstream bkg_syst and stat-only outputs"
   bkg_syst_A_1_make_mixeddata: "standalone Stage A_1 driver; no roast config yet (production config TBD)"
   bkg_syst_A_2_make_ttbar_psdata: "standalone Stage A_2 driver; no roast config yet (production config TBD)"
   bkg_syst_A_3_make_subsamples: "standalone Stage A_3 driver; no roast config yet (production config TBD)"

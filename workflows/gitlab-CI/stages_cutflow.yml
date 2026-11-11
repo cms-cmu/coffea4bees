@@ -86,7 +86,7 @@ check_cutflow_full_syst_ttHbb_coffea4bees:
     - setup_coffea4bees
     - merging_files_full_syst_ttHbb_coffea4bees
   script:
-    - pixi run snakemake output/ttHbb_full_syst/PhaseF_1_analysis/cutflow_validation_systematics.txt -s coffea4bees/workflows/Snakefile_full_syst_1_analysis.smk --configfile coffea4bees/workflows/config/ttHbb_full_syst.yml --config test=true --jobs 1
+    - source coffea4bees/scripts/analysis-full-syst-cutflow.sh --output-base /builds/$CI_PROJECT_PATH/output
   artifacts:
     paths:
       - barista_framework/output/ttHbb_full_syst/PhaseF_1_analysis/cutflow_validation_systematics.txt
