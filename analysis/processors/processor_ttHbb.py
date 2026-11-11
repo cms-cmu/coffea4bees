@@ -217,7 +217,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
         quadJet_truth = quadJet[ak.argmax(pairing_is_truth, axis=1, keepdims=True)][:, 0]
         return ak.mask(quadJet_truth, event_has_truth_pairing)
 
-    def build_candidates(self, selev, weights, list_weight_names, analysis_selections, processOutput):
+    def build_candidates(self, selev, weights, list_weight_names, analysis_selections, processOutput, shift_name=None):
         """Build canH/canTT di-jet and quad-jet candidates for ttHbb (same algorithm for data
         and MC). On ttHbb MC also store quadJet_truth: the truth H-H (lead) / t-t (subl) pairing,
         for events where canJet.truthParent is exactly {H, H, t, t} (None otherwise).
@@ -239,6 +239,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
             cand_cfg=self.cand_cfg,
             pairing=self.pairing,
             svb_binning=self.svb_binning,
+            shift_name=shift_name,
         )
 
         if self._is_ttHbb_MC() and self.pairing == "can_ttH":

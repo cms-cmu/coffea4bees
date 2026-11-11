@@ -541,11 +541,14 @@ def filling_syst_histograms(selev, weights, analysis_selections,
         if f.startswith("SvB") and not f.startswith("SvB_FeynNet")
     ]
     for name in svb_fields:
-        # Coarse-only for the extra SvB_mixedMvD study classifiers (drop the 5
-        _skip = ["ps", "ptt"] if name in ("SvB", "SvB_MA") else [
-            "ps", "ptt", "ps_zz_fine", "ps_zh_fine", "ps_hh_fine", "phh_hh_fine", "phh_fine"
-        ]
-        fill_SvB += SvBHists((name, f"{name} Classifier"), name, skip=_skip)
+        if "ps_ttHbb" in selev[name].fields:
+            fill_SvB += ttHbbSvBHists((name, f"{name} Classifier"), name)
+        else:
+            # Coarse-only for the extra SvB_mixedMvD study classifiers (drop the 5
+            _skip = ["ps", "ptt"] if name in ("SvB", "SvB_MA") else [
+                "ps", "ptt", "ps_zz_fine", "ps_zh_fine", "ps_hh_fine", "phh_hh_fine", "phh_fine"
+            ]
+            fill_SvB += SvBHists((name, f"{name} Classifier"), name, skip=_skip)
 
     fill_SvB(selev, hist_SvB, variation=shift_name, weight="weight")
 

@@ -522,6 +522,7 @@ def _apply_ml_scores_ttHbb(
     list_weight_names: list[str],
     analysis_selections: ak.Array,
     label3b: str,
+    shift_name: str = None,
 ):
     if classifier_FvT is not None:
         compute_FvT(
@@ -538,14 +539,15 @@ def _apply_ml_scores_ttHbb(
         quadJet["FvT_q_score"] = _pairing_q_scores(selev.FvT, quadJet)
 
     if run_SvB:
-        need_svb = (classifier_SvB is not None and "SvB" not in selev.fields)
-        need_svb_ma = (classifier_SvB_MA is not None and "SvB_MA" not in selev.fields)
+        is_kinematic_shift = bool(shift_name)
+        need_svb = (classifier_SvB is not None and ("SvB" not in selev.fields or is_kinematic_shift))
+        need_svb_ma = (classifier_SvB_MA is not None and ("SvB_MA" not in selev.fields or is_kinematic_shift))
         if need_svb or need_svb_ma:
             clf_svb = classifier_SvB if need_svb else None
             clf_svb_ma = classifier_SvB_MA if need_svb_ma else None
             tmp_mask = (
                 (selev.fourTag & quadJet[quadJet.selected][:, 0].SR)
-                if run_systematics
+                if (run_systematics or is_kinematic_shift)
                 else np.full(len(selev), True)
             )
             compute_SvB_ttHbb(selev, tmp_mask, SvB=clf_svb, SvB_MA=clf_svb_ma, doCheck=False)
@@ -556,17 +558,19 @@ def _apply_ml_scores_ttHbb(
             quadJet["SvB_MA_q_score"] = _pairing_q_scores(selev.SvB_MA, quadJet)
 
     if run_SvB and classifier_SvB_FeynNet is not None:
-        tmp_mask_fn = (
-            (selev.fourTag & quadJet[quadJet.selected][:, 0].SR)
-            if run_systematics
-            else np.full(len(selev), True)
-        )
-        compute_SvB_FeynNet(
-            selev,
-            tmp_mask_fn,
-            SvB_FeynNet=classifier_SvB_FeynNet,
-            doCheck=False,
-        )
+        is_kinematic_shift = bool(shift_name)
+        if "SvB_FeynNet" not in selev.fields or is_kinematic_shift:
+            tmp_mask_fn = (
+                (selev.fourTag & quadJet[quadJet.selected][:, 0].SR)
+                if (run_systematics or is_kinematic_shift)
+                else np.full(len(selev), True)
+            )
+            compute_SvB_FeynNet(
+                selev,
+                tmp_mask_fn,
+                SvB_FeynNet=classifier_SvB_FeynNet,
+                doCheck=False,
+            )
 
     return apply_FvT
 
@@ -590,6 +594,7 @@ def create_cand_jet_dijet_quadjet_ttHbb(
     cand_cfg: dict = None,
     pairing: str = "nominal",
     svb_binning=None,
+    shift_name: str = None,
 ):
     """Creates candidate jets, dijets, and quadjets for ttHbb analysis.
 
@@ -611,6 +616,7 @@ def create_cand_jet_dijet_quadjet_ttHbb(
             selev, quadJet, apply_FvT, classifier_FvT,
             run_SvB, run_systematics, classifier_SvB, classifier_SvB_MA, classifier_SvB_FeynNet,
             weights, list_weight_names, analysis_selections, label3b,
+            shift_name=shift_name,
         )
 
         _assign_output_vars_ttHbb(selev, diJet, quadJet, run_SvB, cand_cfg, svb_binning=svb_binning)
@@ -628,6 +634,7 @@ def create_cand_jet_dijet_quadjet_ttHbb(
         selev, quadJet, apply_FvT, classifier_FvT,
         run_SvB, run_systematics, classifier_SvB, classifier_SvB_MA, classifier_SvB_FeynNet,
         weights, list_weight_names, analysis_selections, label3b,
+        shift_name=shift_name,
     )
 
     _assign_output_vars_can_ttH(selev, diJet, quadJet, run_SvB, cand_cfg, svb_binning=svb_binning)
