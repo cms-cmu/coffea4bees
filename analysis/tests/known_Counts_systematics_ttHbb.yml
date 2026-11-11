@@ -1,107 +1,191 @@
 counts_fourTag:
   SR:
     ttHbb:
-      nominal: 0.094018
-      CMS_bbbb_resolved_ggf_triggerEffSFDown: 0.108946
-      CMS_bbbb_resolved_ggf_triggerEffSFUp: 0.110805
-      CMS_btag_cferr1Down: 0.086623
-      CMS_btag_cferr1Up: 0.102121
-      CMS_btag_cferr2Down: 0.090061
-      CMS_btag_cferr2Up: 0.09824
-      CMS_btag_hfDown: 0.097247
-      CMS_btag_hfUp: 0.089714
-      CMS_btag_hfstats1Down: 0.095698
-      CMS_btag_hfstats1Up: 0.092241
-      CMS_btag_hfstats2Down: 0.094094
-      CMS_btag_hfstats2Up: 0.093888
-      CMS_btag_lfDown: 0.085759
-      CMS_btag_lfUp: 0.100156
-      CMS_btag_lfstats1Down: 0.097718
-      CMS_btag_lfstats1Up: 0.090352
-      CMS_btag_lfstats2Down: 0.097245
-      CMS_btag_lfstats2Up: 0.090808
+      nominal: 0.314596
+      CMS_bbbb_resolved_ggf_triggerEffSFDown: 0.333871
+      CMS_bbbb_resolved_ggf_triggerEffSFUp: 0.340375
+      CMS_btag_cferr1Down: 0.2898
+      CMS_btag_cferr1Up: 0.340292
+      CMS_btag_cferr2Down: 0.301259
+      CMS_btag_cferr2Up: 0.328168
+      CMS_btag_hfDown: 0.324039
+      CMS_btag_hfUp: 0.30309
+      CMS_btag_hfstats1Down: 0.323439
+      CMS_btag_hfstats1Up: 0.305375
+      CMS_btag_hfstats2Down: 0.315134
+      CMS_btag_hfstats2Up: 0.313801
+      CMS_btag_lfDown: 0.28466
+      CMS_btag_lfUp: 0.337088
+      CMS_btag_lfstats1Down: 0.326954
+      CMS_btag_lfstats1Up: 0.302501
+      CMS_btag_lfstats2Down: 0.325264
+      CMS_btag_lfstats2Up: 0.304171
+      CMS_pileup_2016Down: 0.140053
+      CMS_pileup_2016Up: 0.138016
+      CMS_pileup_2017Down: 0.083276
+      CMS_pileup_2017Up: 0.078287
       CMS_pileup_2018Down: 0.096918
       CMS_pileup_2018Up: 0.090018
+      CMS_prefire_2016Down: 0.139881
+      CMS_prefire_2016Up: 0.138752
+      CMS_prefire_2017Down: 0.081664
+      CMS_prefire_2017Up: 0.080828
       CMS_prefire_2018Down: 0.094047
       CMS_prefire_2018Up: 0.093975
+      CMS_res_j_2016Down: 0.13938
+      CMS_res_j_2016Up: 0.138762
+      CMS_res_j_2017Down: 0.081493
+      CMS_res_j_2017Up: 0.081169
       CMS_res_j_2018Down: 0.093907
       CMS_res_j_2018Up: 0.094425
-      CMS_scale_j_Regrouped_AbsoluteDown: 0.093318
-      CMS_scale_j_Regrouped_AbsoluteUp: 0.094531
+      CMS_scale_j_Regrouped_AbsoluteDown: 0.309114
+      CMS_scale_j_Regrouped_AbsoluteUp: 0.318536
+      CMS_scale_j_Regrouped_Absolute_2016APVDown: 0.092148
+      CMS_scale_j_Regrouped_Absolute_2016APVUp: 0.092023
+      CMS_scale_j_Regrouped_Absolute_2016Down: 0.047244
+      CMS_scale_j_Regrouped_Absolute_2016Up: 0.047138
+      CMS_scale_j_Regrouped_Absolute_2017Down: 0.079271
+      CMS_scale_j_Regrouped_Absolute_2017Up: 0.081448
       CMS_scale_j_Regrouped_Absolute_2018Down: 0.093318
       CMS_scale_j_Regrouped_Absolute_2018Up: 0.092926
-      CMS_scale_j_Regrouped_BBEC1Down: 0.09199
-      CMS_scale_j_Regrouped_BBEC1Up: 0.093997
+      CMS_scale_j_Regrouped_BBEC1Down: 0.310661
+      CMS_scale_j_Regrouped_BBEC1Up: 0.316859
+      CMS_scale_j_Regrouped_BBEC1_2016APVDown: 0.092084
+      CMS_scale_j_Regrouped_BBEC1_2016APVUp: 0.092962
+      CMS_scale_j_Regrouped_BBEC1_2016Down: 0.04724
+      CMS_scale_j_Regrouped_BBEC1_2016Up: 0.047133
+      CMS_scale_j_Regrouped_BBEC1_2017Down: 0.079789
+      CMS_scale_j_Regrouped_BBEC1_2017Up: 0.081205
       CMS_scale_j_Regrouped_BBEC1_2018Down: 0.093907
       CMS_scale_j_Regrouped_BBEC1_2018Up: 0.094018
-      CMS_scale_j_Regrouped_EC2Down: 0.094018
-      CMS_scale_j_Regrouped_EC2Up: 0.094018
+      CMS_scale_j_Regrouped_EC2Down: 0.314596
+      CMS_scale_j_Regrouped_EC2Up: 0.314596
+      CMS_scale_j_Regrouped_EC2_2016APVDown: 0.092086
+      CMS_scale_j_Regrouped_EC2_2016APVUp: 0.092086
+      CMS_scale_j_Regrouped_EC2_2016Down: 0.04724
+      CMS_scale_j_Regrouped_EC2_2016Up: 0.04724
+      CMS_scale_j_Regrouped_EC2_2017Down: 0.081252
+      CMS_scale_j_Regrouped_EC2_2017Up: 0.081252
       CMS_scale_j_Regrouped_EC2_2018Down: 0.094018
       CMS_scale_j_Regrouped_EC2_2018Up: 0.094018
-      CMS_scale_j_Regrouped_FlavorQCDDown: 0.094658
-      CMS_scale_j_Regrouped_FlavorQCDUp: 0.093971
-      CMS_scale_j_Regrouped_HFDown: 0.094018
-      CMS_scale_j_Regrouped_HFUp: 0.094018
+      CMS_scale_j_Regrouped_FlavorQCDDown: 0.308827
+      CMS_scale_j_Regrouped_FlavorQCDUp: 0.321782
+      CMS_scale_j_Regrouped_HFDown: 0.314596
+      CMS_scale_j_Regrouped_HFUp: 0.314596
+      CMS_scale_j_Regrouped_HF_2016APVDown: 0.092086
+      CMS_scale_j_Regrouped_HF_2016APVUp: 0.092086
+      CMS_scale_j_Regrouped_HF_2016Down: 0.04724
+      CMS_scale_j_Regrouped_HF_2016Up: 0.04724
+      CMS_scale_j_Regrouped_HF_2017Down: 0.081252
+      CMS_scale_j_Regrouped_HF_2017Up: 0.081252
       CMS_scale_j_Regrouped_HF_2018Down: 0.094018
       CMS_scale_j_Regrouped_HF_2018Up: 0.094018
-      CMS_scale_j_Regrouped_RelativeBalDown: 0.095778
-      CMS_scale_j_Regrouped_RelativeBalUp: 0.093907
+      CMS_scale_j_Regrouped_RelativeBalDown: 0.317245
+      CMS_scale_j_Regrouped_RelativeBalUp: 0.314307
+      CMS_scale_j_Regrouped_RelativeSample_2016APVDown: 0.090486
+      CMS_scale_j_Regrouped_RelativeSample_2016APVUp: 0.092164
+      CMS_scale_j_Regrouped_RelativeSample_2016Down: 0.046505
+      CMS_scale_j_Regrouped_RelativeSample_2016Up: 0.04731
+      CMS_scale_j_Regrouped_RelativeSample_2017Down: 0.082178
+      CMS_scale_j_Regrouped_RelativeSample_2017Up: 0.0794
       CMS_scale_j_Regrouped_RelativeSample_2018Down: 0.095254
       CMS_scale_j_Regrouped_RelativeSample_2018Up: 0.091973
-      ps_fsrDown: 0.081766
-      ps_fsrUp: 0.101596
-      ps_isrDown: 0.094411
-      ps_isrUp: 0.093555
+      ps_fsrDown: 0.271121
+      ps_fsrUp: 0.339139
+      ps_isrDown: 0.313706
+      ps_isrUp: 0.315556
 fourTag:
   ttHbb:
-    nominal: 0.094018
-    CMS_bbbb_resolved_ggf_triggerEffSFDown: 0.108946
-    CMS_bbbb_resolved_ggf_triggerEffSFUp: 0.110805
-    CMS_btag_cferr1Down: 0.086623
-    CMS_btag_cferr1Up: 0.102121
-    CMS_btag_cferr2Down: 0.090061
-    CMS_btag_cferr2Up: 0.09824
-    CMS_btag_hfDown: 0.097247
-    CMS_btag_hfUp: 0.089714
-    CMS_btag_hfstats1Down: 0.095698
-    CMS_btag_hfstats1Up: 0.092241
-    CMS_btag_hfstats2Down: 0.094094
-    CMS_btag_hfstats2Up: 0.093888
-    CMS_btag_lfDown: 0.085759
-    CMS_btag_lfUp: 0.100156
-    CMS_btag_lfstats1Down: 0.097718
-    CMS_btag_lfstats1Up: 0.090352
-    CMS_btag_lfstats2Down: 0.097245
-    CMS_btag_lfstats2Up: 0.090808
+    nominal: 0.314596
+    CMS_bbbb_resolved_ggf_triggerEffSFDown: 0.333871
+    CMS_bbbb_resolved_ggf_triggerEffSFUp: 0.340375
+    CMS_btag_cferr1Down: 0.2898
+    CMS_btag_cferr1Up: 0.340292
+    CMS_btag_cferr2Down: 0.301259
+    CMS_btag_cferr2Up: 0.328168
+    CMS_btag_hfDown: 0.324039
+    CMS_btag_hfUp: 0.30309
+    CMS_btag_hfstats1Down: 0.323439
+    CMS_btag_hfstats1Up: 0.305375
+    CMS_btag_hfstats2Down: 0.315134
+    CMS_btag_hfstats2Up: 0.313801
+    CMS_btag_lfDown: 0.28466
+    CMS_btag_lfUp: 0.337088
+    CMS_btag_lfstats1Down: 0.326954
+    CMS_btag_lfstats1Up: 0.302501
+    CMS_btag_lfstats2Down: 0.325264
+    CMS_btag_lfstats2Up: 0.304171
+    CMS_pileup_2016Down: 0.140053
+    CMS_pileup_2016Up: 0.138016
+    CMS_pileup_2017Down: 0.083276
+    CMS_pileup_2017Up: 0.078287
     CMS_pileup_2018Down: 0.096918
     CMS_pileup_2018Up: 0.090018
+    CMS_prefire_2016Down: 0.139881
+    CMS_prefire_2016Up: 0.138752
+    CMS_prefire_2017Down: 0.081664
+    CMS_prefire_2017Up: 0.080828
     CMS_prefire_2018Down: 0.094047
     CMS_prefire_2018Up: 0.093975
+    CMS_res_j_2016Down: 0.13938
+    CMS_res_j_2016Up: 0.138762
+    CMS_res_j_2017Down: 0.081493
+    CMS_res_j_2017Up: 0.081169
     CMS_res_j_2018Down: 0.093907
     CMS_res_j_2018Up: 0.094425
-    CMS_scale_j_Regrouped_AbsoluteDown: 0.093318
-    CMS_scale_j_Regrouped_AbsoluteUp: 0.094531
+    CMS_scale_j_Regrouped_AbsoluteDown: 0.309114
+    CMS_scale_j_Regrouped_AbsoluteUp: 0.318536
+    CMS_scale_j_Regrouped_Absolute_2016APVDown: 0.092148
+    CMS_scale_j_Regrouped_Absolute_2016APVUp: 0.092023
+    CMS_scale_j_Regrouped_Absolute_2016Down: 0.047244
+    CMS_scale_j_Regrouped_Absolute_2016Up: 0.047138
+    CMS_scale_j_Regrouped_Absolute_2017Down: 0.079271
+    CMS_scale_j_Regrouped_Absolute_2017Up: 0.081448
     CMS_scale_j_Regrouped_Absolute_2018Down: 0.093318
     CMS_scale_j_Regrouped_Absolute_2018Up: 0.092926
-    CMS_scale_j_Regrouped_BBEC1Down: 0.09199
-    CMS_scale_j_Regrouped_BBEC1Up: 0.093997
+    CMS_scale_j_Regrouped_BBEC1Down: 0.310661
+    CMS_scale_j_Regrouped_BBEC1Up: 0.316859
+    CMS_scale_j_Regrouped_BBEC1_2016APVDown: 0.092084
+    CMS_scale_j_Regrouped_BBEC1_2016APVUp: 0.092962
+    CMS_scale_j_Regrouped_BBEC1_2016Down: 0.04724
+    CMS_scale_j_Regrouped_BBEC1_2016Up: 0.047133
+    CMS_scale_j_Regrouped_BBEC1_2017Down: 0.079789
+    CMS_scale_j_Regrouped_BBEC1_2017Up: 0.081205
     CMS_scale_j_Regrouped_BBEC1_2018Down: 0.093907
     CMS_scale_j_Regrouped_BBEC1_2018Up: 0.094018
-    CMS_scale_j_Regrouped_EC2Down: 0.094018
-    CMS_scale_j_Regrouped_EC2Up: 0.094018
+    CMS_scale_j_Regrouped_EC2Down: 0.314596
+    CMS_scale_j_Regrouped_EC2Up: 0.314596
+    CMS_scale_j_Regrouped_EC2_2016APVDown: 0.092086
+    CMS_scale_j_Regrouped_EC2_2016APVUp: 0.092086
+    CMS_scale_j_Regrouped_EC2_2016Down: 0.04724
+    CMS_scale_j_Regrouped_EC2_2016Up: 0.04724
+    CMS_scale_j_Regrouped_EC2_2017Down: 0.081252
+    CMS_scale_j_Regrouped_EC2_2017Up: 0.081252
     CMS_scale_j_Regrouped_EC2_2018Down: 0.094018
     CMS_scale_j_Regrouped_EC2_2018Up: 0.094018
-    CMS_scale_j_Regrouped_FlavorQCDDown: 0.094658
-    CMS_scale_j_Regrouped_FlavorQCDUp: 0.093971
-    CMS_scale_j_Regrouped_HFDown: 0.094018
-    CMS_scale_j_Regrouped_HFUp: 0.094018
+    CMS_scale_j_Regrouped_FlavorQCDDown: 0.308827
+    CMS_scale_j_Regrouped_FlavorQCDUp: 0.321782
+    CMS_scale_j_Regrouped_HFDown: 0.314596
+    CMS_scale_j_Regrouped_HFUp: 0.314596
+    CMS_scale_j_Regrouped_HF_2016APVDown: 0.092086
+    CMS_scale_j_Regrouped_HF_2016APVUp: 0.092086
+    CMS_scale_j_Regrouped_HF_2016Down: 0.04724
+    CMS_scale_j_Regrouped_HF_2016Up: 0.04724
+    CMS_scale_j_Regrouped_HF_2017Down: 0.081252
+    CMS_scale_j_Regrouped_HF_2017Up: 0.081252
     CMS_scale_j_Regrouped_HF_2018Down: 0.094018
     CMS_scale_j_Regrouped_HF_2018Up: 0.094018
-    CMS_scale_j_Regrouped_RelativeBalDown: 0.095778
-    CMS_scale_j_Regrouped_RelativeBalUp: 0.093907
+    CMS_scale_j_Regrouped_RelativeBalDown: 0.317245
+    CMS_scale_j_Regrouped_RelativeBalUp: 0.314307
+    CMS_scale_j_Regrouped_RelativeSample_2016APVDown: 0.090486
+    CMS_scale_j_Regrouped_RelativeSample_2016APVUp: 0.092164
+    CMS_scale_j_Regrouped_RelativeSample_2016Down: 0.046505
+    CMS_scale_j_Regrouped_RelativeSample_2016Up: 0.04731
+    CMS_scale_j_Regrouped_RelativeSample_2017Down: 0.082178
+    CMS_scale_j_Regrouped_RelativeSample_2017Up: 0.0794
     CMS_scale_j_Regrouped_RelativeSample_2018Down: 0.095254
     CMS_scale_j_Regrouped_RelativeSample_2018Up: 0.091973
-    ps_fsrDown: 0.081766
-    ps_fsrUp: 0.101596
-    ps_isrDown: 0.094411
-    ps_isrUp: 0.093555
+    ps_fsrDown: 0.271121
+    ps_fsrUp: 0.339139
+    ps_isrDown: 0.313706
+    ps_isrUp: 0.315556

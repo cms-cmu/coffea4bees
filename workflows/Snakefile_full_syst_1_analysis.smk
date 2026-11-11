@@ -41,9 +41,6 @@ if isinstance(is_test, str):
     is_test = is_test.lower() in ("true", "1", "yes")
 config['test'] = is_test
 
-if config['test']:
-    config['year_eras'] = {'UL18': ['A', 'B', 'C', 'D']}
-
 container_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
 config.setdefault('container_wrapper', container_wrapper)
 config.setdefault('analysis_container_wrapper', config.get('container_wrapper', container_wrapper))

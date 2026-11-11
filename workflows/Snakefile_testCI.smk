@@ -126,11 +126,12 @@ rule analysis_test_mixed:
 
 rule analysis_full_syst_test:
     output:
-        f"{output_dir}/ttHbb_full_syst/PhaseF_1_analysis/singlefiles/histAll_ttHbb_full_syst__ttHbb__UL18__others.coffea",
-        f"{output_dir}/ttHbb_full_syst/PhaseF_1_analysis/singlefiles/histAll_ttHbb_full_syst__ttHbb__UL18__jes.coffea",
+        expand(f"{output_dir}/ttHbb_full_syst/PhaseF_1_analysis/singlefiles/histAll_ttHbb_full_syst__ttHbb__{{year}}__{{syst_group}}.coffea",
+               year=['UL16_preVFP', 'UL16_postVFP', 'UL17', 'UL18'],
+               syst_group=['others', 'jes'])
     log: f"{output_dir}/analysis_full_syst_test.log"
     container: analysis_container
-    shell: "pixi run snakemake all_full_syst_singlefiles -s coffea4bees/workflows/Snakefile_full_syst_1_analysis.smk --configfile coffea4bees/workflows/config/ttHbb_full_syst.yml --config test=true output_path={output_dir}/ttHbb_full_syst/ --jobs 2 2>&1 | tee -a {log}"
+    shell: "pixi run snakemake all_full_syst_singlefiles -s coffea4bees/workflows/Snakefile_full_syst_1_analysis.smk --configfile coffea4bees/workflows/config/ttHbb_full_syst.yml --config test=true output_path={output_dir}/ttHbb_full_syst/ --jobs 4 2>&1 | tee -a {log}"
 
 rule skimmer_analysis_test:
     input: f"{output_dir}/skimmer_test/picoaod_datasets_GluGluToHHTo4B_cHHH0_UL18.yml"
@@ -246,8 +247,9 @@ rule skimmer_analysis_cutflow:
 
 rule analysis_full_syst_cutflow:    
     input:
-        f"{output_dir}/ttHbb_full_syst/PhaseF_1_analysis/singlefiles/histAll_ttHbb_full_syst__ttHbb__UL18__others.coffea",
-        f"{output_dir}/ttHbb_full_syst/PhaseF_1_analysis/singlefiles/histAll_ttHbb_full_syst__ttHbb__UL18__jes.coffea",
+        expand(f"{output_dir}/ttHbb_full_syst/PhaseF_1_analysis/singlefiles/histAll_ttHbb_full_syst__ttHbb__{{year}}__{{syst_group}}.coffea",
+               year=['UL16_preVFP', 'UL16_postVFP', 'UL17', 'UL18'],
+               syst_group=['others', 'jes'])
     output: f"{output_dir}/ttHbb_full_syst/PhaseF_1_analysis/cutflow_validation_systematics.txt"
     log: f"{output_dir}/analysis_full_syst_cutflow.log"
     container: analysis_container
