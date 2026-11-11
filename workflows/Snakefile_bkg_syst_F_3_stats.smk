@@ -250,17 +250,32 @@ def get_target_rebins_F_3():
             return [int(r) for r in str(explicit_rebins).split()]
         else:
             return [int(r) for r in explicit_rebins]
-    closure_summary_path = f"{out}bkg_syst_F_2_run_two_stage_closure/closure_summary.json"
+    closure_reg = config.get('closure_region', config.get('region', 'SR'))
+    clf = config.get('classifier', 'SvB_MA')
+    closure_summary_path = f"{out}bkg_syst_F_2_run_two_stage_closure/summary_{clf}_{closure_reg}.json"
+    if not os.path.exists(closure_summary_path):
+        closure_summary_path = f"{out}bkg_syst_F_2_run_two_stage_closure/closure_summary.json"
     if os.path.exists(closure_summary_path):
         import json
         try:
             with open(closure_summary_path, "r") as f:
                 data = json.load(f)
-            return data.get("passing_rebins", [15, 24])
+            passing = data.get("passing_rebins", [])
+            if passing:
+                return passing
         except Exception as e:
             print(f"[Snakemake] Error reading {closure_summary_path}: {e}")
-            return [15, 24]
-    return [15, 24]
+    try:
+        checkpoint_output = checkpoints.evaluate_closure_candidates.get(region=closure_reg, classifier=clf).output[0]
+        import json
+        with open(checkpoint_output, "r") as f:
+            data = json.load(f)
+        passing = data.get("passing_rebins", [])
+        if passing:
+            return passing
+    except Exception as e:
+        pass
+    return [24]
 
 def get_combine_targets_F_3(wildcards):
     target_rebins = get_target_rebins_F_3()

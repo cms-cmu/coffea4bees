@@ -48,6 +48,7 @@ sr_ttHbb:
 sb_ttHbb:
   sb_min: 25.0
   sb_max: 500.0
+  m_lead_max: 230.0
   corner_veto: false
   corner_m_lead: 250.0
   corner_m_subl: 250.0

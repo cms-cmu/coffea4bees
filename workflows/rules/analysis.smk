@@ -206,6 +206,53 @@ rule cutflow_crosscheck:
         """
 
 
+rule hist_crosscheck:
+    # Cross-phase histogram consistency check (src/tools/compare_coffea_hists.py in barista):
+    # compares control kinematic distributions (selJets.n, v4j.mass) between Phase F and Phase C.4
+    # in the unblinded Sideband (SB). The verdict is a report and does not fail the workflow unless --strict.
+    input:
+        coffea = "{output_path}histAll_{label}.coffea"
+    output:
+        html = "{output_path}hist_crosscheck_{label}.html",
+        txt = "{output_path}hist_crosscheck_{label}.txt"
+    wildcard_constraints:
+        output_path = ".*/",
+        label = "[^/]+"
+    log: "{output_path}logs/hist_crosscheck_{label}.log"
+    params:
+        reference = "",
+        title = lambda wildcards: f"{config.get('label', 'analysis')}_hist_crosscheck_{wildcards.label}",
+        label_a = lambda wildcards: wildcards.label,
+        label_b = "PhaseC_4",
+        tolerance = lambda wildcards: config.get("hist_crosscheck_tolerance", "0.0001"),
+        variables = lambda wildcards: config.get("hist_crosscheck_variables", "selJets.n,v4j.mass"),
+        regions = lambda wildcards: config.get("hist_crosscheck_regions", "SB"),
+        run_container_wrapper = "",
+        python_bin = lambda wildcards: config.get("python_bin", "python")
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {log})
+        if [ ! -f src/tools/compare_coffea_hists.py ]; then
+            echo "src/tools/compare_coffea_hists.py not found in this barista checkout; skipping histogram cross-check" 2>&1 | tee {log}
+            echo "<p>histogram cross-check not available (barista checkout predates src/tools/compare_coffea_hists.py)</p>" > {output.html}
+            cp {log} {output.txt}
+        elif [ -z "{params.reference}" ] || [ ! -f "{params.reference}" ]; then
+            echo "SKIPPED: reference .coffea file '{params.reference}' not found; nothing to compare {input.coffea} against" 2>&1 | tee {log}
+            echo "<p>histogram cross-check skipped: reference .coffea file <code>{params.reference}</code> not found</p>" > {output.html}
+            cp {log} {output.txt}
+        else
+            {params.run_container_wrapper} {params.python_bin} src/tools/compare_coffea_hists.py \
+                {input.coffea} {params.reference} \
+                -o {output.html} --txt {output.txt} --title "{params.title}" \
+                --label-a "{params.label_a}" --label-b "{params.label_b}" \
+                --variables "{params.variables}" --regions "{params.regions}" \
+                --tolerance {params.tolerance} 2>&1 | tee {log}
+        fi
+        """
+
+
+
 def get_known_cutflow_flag(wildcards):
     import os
     label = getattr(wildcards, 'label', config.get('label', ''))

@@ -64,7 +64,8 @@ CLOSURE_OPTION_KEYS = ('datasets', 'plot_config', 'JCM_file', 'known_counts', 'k
                        'reuse_wJCM_ttbar', 'jcm_output_path', 'closure_ttbar', 'ttbar_compare_plot_config', 'ttbar3b_compare_plot_config',
                        'wJCM_ttbar_from', 'known_counts_fatal')
 
-datasets = closure_cfg.get('datasets', ['data', 'TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic'])
+default_ttbar = config.get('ttbar_processes', ['TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic'])
+datasets = closure_cfg.get('datasets', ['data'] + list(default_ttbar))
 if isinstance(datasets, str):
     datasets = [d.strip() for d in datasets.split(",") if d.strip()]
 DATA_YEAR_ERA = [(str(yr), era) for yr, eras in config['year_eras'].items() for era in eras] if 'data' in datasets else []
@@ -167,7 +168,7 @@ def get_raw_closure_config():
     # TTbar{4b,3b}_from_d3 histograms: the ttbar stacked by plotsAll_FvTClosure.yml
     res['config']['plot_ttbar_with_weights'] = True
     res['config']['run_SvB'] = False
-    res['config']['fill_histograms'] = res['config'].get('fill_histograms', 'kinematics+FvT')
+    res['config']['fill_histograms'] = closure_cfg.get('fill_histograms', 'kinematics+FvT')
     for k in list(res['config'].keys()):
         if k.startswith('SvB'):
             res['config'][k] = None

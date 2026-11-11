@@ -81,7 +81,7 @@ def _pilot_gate_input(wildcards):
     if pilot_gate_enabled and len(SUBSAMPLES) > 1:
         if str(wildcards.m) != str(pilot_subsample):
             token = f"{out_c}models/mix_{pilot_subsample}/quality_gate.done"
-            if os.path.exists(token) or "bkg_syst_pilot_quality_gate" in workflow.rules:
+            if os.path.exists(token) or hasattr(rules, "bkg_syst_pilot_quality_gate") or any(r.name == "bkg_syst_pilot_quality_gate" for r in workflow.rules):
                 deps.append(token)
     return deps
 

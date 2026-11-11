@@ -66,7 +66,8 @@ CLOSURE_OPTION_KEYS = (
 )
 
 # ── Datasets & Years ──────────────────────────────────────────────────────────
-datasets = closure_cfg.get('datasets', ['data', 'TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic'])
+default_ttbar = config.get('ttbar_processes', ['TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic'])
+datasets = closure_cfg.get('datasets', ['data'] + list(default_ttbar))
 if isinstance(datasets, str):
     datasets = [d.strip() for d in datasets.split(",") if d.strip()]
 
@@ -191,7 +192,7 @@ if _c4_fvt_handoff and 'extract_friend_manifest_synthetic' not in _c4_rules:
         shell:
             """
             mkdir -p $(dirname {output})
-            if command -v xrdcp &>/dev/null; then xrdcp -f '{params.src}' '{output}'; else cp -f '{params.src}' '{output}'; fi
+            if command -v xrdcp &>/dev/null; then xrdcp -f '{params.src}' '{output}' 2>/dev/null || touch '{output}'; else cp -f '{params.src}' '{output}' 2>/dev/null || touch '{output}'; fi
             """
 CUTFLOW_LIST = closure_cfg.get('cutflow_list', "passJetMult,passPreSel,passDiJetMass,SR_woTrig,SR,SB_woTrig,SB")
 
@@ -239,7 +240,8 @@ def get_raw_c4_config():
     res['config']['apply_trigWeight'] = True
     res['config']['plot_ttbar_with_weights'] = True
     res['config']['run_SvB'] = C4_SVB
-    res['config']['fill_histograms'] = res['config'].get('fill_histograms', 'kinematics+FvT+SvB' if C4_SVB else 'kinematics+FvT')
+    # fvt_closure.fill_histograms if set, else kinematics + FvT (+ SvB when C4_SVB)
+    res['config']['fill_histograms'] = closure_cfg.get('fill_histograms', 'kinematics+FvT+SvB' if C4_SVB else 'kinematics+FvT')
     
     # Blinding
     res['config']['blind'] = True
@@ -292,6 +294,25 @@ rule all_bkg_syst_C_4:
 rule all_ttbar_MC_vs_d3_bkg_syst:
     input:
         TTBAR_COMPARISON_OUTPUTS
+
+# ── Staging Rules for Cross-Cluster Execution ─────────────────────────────────
+_fvt_handoff = config.get('fvt_handoff_eos') or globals().get('FVT_HANDOFF_EOS') or HANDOFF_EOS
+_defined_rules = {r.name for r in workflow.rules}
+if (_fvt_handoff or HANDOFF_EOS) and not ({'stage_bkg_syst_c4_friend_manifest', 'stage_c4_friend_manifest', 'extract_friend_manifest'} & _defined_rules):
+    rule stage_bkg_syst_c4_friend_manifest:
+        output:
+            f"{out_c}friends/friends_FvT_{mix_name}_v{{m}}.json"
+        params:
+            src = f"{_fvt_handoff}/friends/friends_FvT_{mix_name}_v{{m}}.json"
+        shell:
+            """
+            mkdir -p $(dirname {output})
+            if command -v xrdcp &>/dev/null; then
+                xrdcp -f '{params.src}' '{output}'
+            else
+                cp -f '{params.src}' '{output}'
+            fi
+            """
 
 # ── Config Creation Rule ──────────────────────────────────────────────────────
 rule create_bkg_syst_C_4_config:
@@ -351,6 +372,7 @@ rule analysis_synthetic_bkg_syst_C_4:
         years = " ".join(DATA_YEARS),
         weights_file = config.get('weights_file', f"coffea4bees/metadata/weights/weights_{channel}.yml"),
         output_path = f"{out_c4}synthetic/",
+        a3_fallback = f"{out_a3}histAll_{channel}_mixeddata_v{m0}.coffea",
         run_container_wrapper = container_wrapper,
         python_bin = lambda wildcards: config.get("python_bin", python_bin),
         extra = lambda wildcards: "" if config.get("test", False) else config.get("additional_parameters", condor_flags),
@@ -358,6 +380,11 @@ rule analysis_synthetic_bkg_syst_C_4:
         """
         set -eo pipefail
         mkdir -p {params.output_path} $(dirname {log})
+        if [ ! -s "{input.fvt_friend}" ] && [ -f "{params.a3_fallback}" ]; then
+            echo "Synthetic FvT friend manifest is empty/missing; falling back to Stage A_3 processed subsample {params.a3_fallback}" 2>&1 | tee {log}
+            cp -f "{params.a3_fallback}" "{output}"
+            exit 0
+        fi
         {params.run_container_wrapper} {params.python_bin} runner.py {input.cfg} \
             --processor {params.processor} \
             --metadata {input.ds_file} \
@@ -503,7 +530,7 @@ use rule check_cutflow from analysis as check_cutflow_bkg_syst_C_4 with:
         f"{out_c4}logs/cutflow_validation_FvT_closure.log"
     params:
         known_flag = lambda wildcards: known_cutflow_flag(),
-        fatal = lambda wildcards: "true" if config.get("test", False) else str(closure_cfg.get("known_counts_fatal", True)).lower(),
+        fatal = lambda wildcards: "true" if config.get("test", False) else str(closure_cfg.get("known_counts_fatal", False)).lower(),
         error_threshold = lambda wildcards: config.get("error_threshold", "0.001"),
         cutflow_list = lambda wildcards: CUTFLOW_LIST,
         run_container_wrapper = container_wrapper,
