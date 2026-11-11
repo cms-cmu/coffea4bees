@@ -137,7 +137,10 @@ rule all_bkg_syst_C_pilot:
         f"{out_c}models/mix_{pilot_subsample}/analyze.done",
         f"{out_c}models/mix_{pilot_subsample}/gallery.done",
         f"{out_c}models/mix_{pilot_subsample}/training_summary.html",
-        f"{out_c}models/mix_{pilot_subsample}/quality_gate.done"
+        f"{out_c}models/mix_{pilot_subsample}/quality_gate.done",
+        # the closure subsample's detector + synthetic FvT friends, evaluated and handed off (C_3),
+        # which C_4 compares against the synthetic sample
+        f"{out_c}handoff/bkg_syst_C_closure_handoff.done"
 
 # ── Cross-Sample Training Summary Dashboard ───────────────────────────────────
 localrules: bkg_syst_training_summary, bkg_syst_pilot_summary, bkg_syst_pilot_quality_gate, all_bkg_syst_C_pilot
