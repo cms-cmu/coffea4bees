@@ -132,6 +132,8 @@ analysis_full_syst_ttHbb_coffea4bees:
     paths:
       - barista_framework/output/ttHbb_full_syst/PhaseF_1_analysis/singlefiles/histAll_ttHbb_full_syst__ttHbb__*.coffea
       - barista_framework/output/ttHbb_full_syst/PhaseF_1_analysis/analysis_config.yml
+      - output/ttHbb_full_syst/PhaseF_1_analysis/singlefiles/histAll_ttHbb_full_syst__ttHbb__*.coffea
+      - output/ttHbb_full_syst/PhaseF_1_analysis/analysis_config.yml
 
 skimmer_analysis_test_coffea4bees:   
   stage: analysis   
