@@ -245,8 +245,9 @@ def _assign_SR_SB_ttHbb_asymetric_ellipse(quadJet, cand_cfg=None, full_space=Fal
     #     quadJet["SR"] = in_ellipse
     #     quadJet["SB"] = ((~in_ellipse) & (m_lead <= 350.) & (m_subl <= 700.))
     # else:
+    sb_m_lead_max = (cand_cfg or {}).get("sb_ttHbb", {}).get("m_lead_max", 230.)
     quadJet["SR"] = in_ellipse  & (nJet_selected >= 5)[:, np.newaxis]
-    quadJet["SB"] = ((~in_ellipse) & (m_lead <= 350.) & (m_subl <= 700.)) | (in_ellipse & (nJet_selected == 4)[:, np.newaxis])
+    quadJet["SB"] = ((~in_ellipse) & (m_lead <= sb_m_lead_max) & (m_subl <= 700.)) | (in_ellipse & (nJet_selected == 4)[:, np.newaxis])
 
     # Compute Euclidean radial distance for monitoring
     quadJet["rH"] = np.sqrt((m_lead - 125.0)**2 + (m_subl - 125.0)**2)

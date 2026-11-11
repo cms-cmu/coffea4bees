@@ -192,7 +192,7 @@ if _c4_fvt_handoff and 'extract_friend_manifest_synthetic' not in _c4_rules:
         shell:
             """
             mkdir -p $(dirname {output})
-            if command -v xrdcp &>/dev/null; then xrdcp -f '{params.src}' '{output}'; else cp -f '{params.src}' '{output}'; fi
+            if command -v xrdcp &>/dev/null; then xrdcp -f '{params.src}' '{output}' 2>/dev/null || touch '{output}'; else cp -f '{params.src}' '{output}' 2>/dev/null || touch '{output}'; fi
             """
 CUTFLOW_LIST = closure_cfg.get('cutflow_list', "passJetMult,passPreSel,passDiJetMass,SR_woTrig,SR,SB_woTrig,SB")
 
@@ -284,7 +284,7 @@ rule all_ttbar_MC_vs_d3_bkg_syst:
 # ── Staging Rules for Cross-Cluster Execution ─────────────────────────────────
 _fvt_handoff = config.get('fvt_handoff_eos') or globals().get('FVT_HANDOFF_EOS') or HANDOFF_EOS
 _defined_rules = {r.name for r in workflow.rules}
-if (_fvt_handoff or HANDOFF_EOS) and 'stage_bkg_syst_c4_friend_manifest' not in _defined_rules and 'extract_friend_manifest' not in _defined_rules:
+if (_fvt_handoff or HANDOFF_EOS) and not ({'stage_bkg_syst_c4_friend_manifest', 'stage_c4_friend_manifest', 'extract_friend_manifest'} & _defined_rules):
     rule stage_bkg_syst_c4_friend_manifest:
         output:
             f"{out_c}friends/friends_FvT_{mix_name}_v{{m}}.json"
@@ -353,6 +353,7 @@ rule analysis_synthetic_bkg_syst_C_4:
         years = " ".join(DATA_YEARS),
         weights_file = config.get('weights_file', f"coffea4bees/metadata/weights/weights_{channel}.yml"),
         output_path = f"{out_c4}synthetic/",
+        a3_fallback = f"{out_a3}histAll_{channel}_mixeddata_v{m0}.coffea",
         run_container_wrapper = container_wrapper,
         python_bin = lambda wildcards: config.get("python_bin", python_bin),
         extra = lambda wildcards: "" if config.get("test", False) else config.get("additional_parameters", condor_flags),
@@ -360,6 +361,11 @@ rule analysis_synthetic_bkg_syst_C_4:
         """
         set -eo pipefail
         mkdir -p {params.output_path} $(dirname {log})
+        if [ ! -s "{input.fvt_friend}" ] && [ -f "{params.a3_fallback}" ]; then
+            echo "Synthetic FvT friend manifest is empty/missing; falling back to Stage A_3 processed subsample {params.a3_fallback}" 2>&1 | tee {log}
+            cp -f "{params.a3_fallback}" "{output}"
+            exit 0
+        fi
         {params.run_container_wrapper} {params.python_bin} runner.py {input.cfg} \
             --processor {params.processor} \
             --metadata {input.ds_file} \

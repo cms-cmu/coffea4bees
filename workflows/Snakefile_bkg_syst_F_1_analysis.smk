@@ -455,7 +455,7 @@ rule hist_crosscheck_bkg_syst_F_1:
             {params.container_wrapper} {params.python_bin} src/tools/compare_coffea_hists.py \
                 {input.data_coffea} {params.reference} \
                 -o {output.html} --txt {output.txt} --title "Stage_F_1_hist_crosscheck" \
-                --label-a "Stage F.1" --label-b "Stage C.4" \
+                --label-a Stage_F_1 --label-b Stage_C_4 \
                 --variables "{params.variables}" --regions "{params.regions}" \
                 --tolerance {params.tolerance} 2>&1 | tee {log}
         fi
