@@ -446,11 +446,10 @@ section.verdict .na { color:var(--muted); }
 section.verdict .vnote { color:var(--muted); font-size:12px; margin-top:6px; }
 """
 
-VERDICT_JS = """<script>
-let currentRegion = 'SR';
+REGION_FILTER_JS = """window.currentRegion = 'SR';
 
-function switchRegion(reg) {
-  currentRegion = reg;
+window.switchRegion = function(reg) {
+  window.currentRegion = reg;
   document.querySelectorAll('.rtab-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.region === reg);
   });
@@ -460,27 +459,30 @@ function switchRegion(reg) {
   document.querySelectorAll('section.verdict tbody tr').forEach(r => r.classList.remove('sel'));
   q.value = '';
   render();
-}
+};
 
-document.querySelectorAll('section.verdict tbody tr').forEach(tr => tr.onclick = () => {
-  const on = tr.classList.contains('sel');
-  document.querySelectorAll('section.verdict tbody tr').forEach(r => r.classList.remove('sel'));
-  q.value = on ? '' : tr.dataset.rebin + ' '; if(!on) tr.classList.add('sel'); render();
-});
-</script>
-"""
-
-REGION_FILTER_JS = """let currentRegion = 'SR';
 function filtered(){
   const terms = q.value.toLowerCase().split(/\\s+/).filter(Boolean);
   return ITEMS.filter(it => {
-    if (it.region && it.region !== 'ALL' && it.region !== currentRegion) return false;
+    if (it.region && it.region !== 'ALL' && it.region !== window.currentRegion) return false;
     const hay = (it.group+'/'+it.name).toLowerCase();
     return terms.every(t => hay.includes(t));
   });
 }
 function _orig_filtered_unused(){
 """
+
+VERDICT_ROW_CLICK_JS = """render();
+document.querySelectorAll('section.verdict tbody tr').forEach(tr => {
+  tr.onclick = function() {
+    const on = this.classList.contains('sel');
+    document.querySelectorAll('section.verdict tbody tr').forEach(r => r.classList.remove('sel'));
+    q.value = on ? '' : this.dataset.rebin + ' ';
+    if (!on) this.classList.add('sel');
+    render();
+  };
+});
+</script>"""
 
 
 def generate_html(info_map: dict[str, dict], out_dir: Path, title: str) -> str:
@@ -529,7 +531,7 @@ def generate_html(info_map: dict[str, dict], out_dir: Path, title: str) -> str:
         "</style>": VERDICT_CSS + "</style>",
         '<main id="main"></main>': full_verdict_html + '<main id="main"></main>',
         "function filtered(){": REGION_FILTER_JS,
-        "</body>": VERDICT_JS + "</body>",
+        "render();\n</script>": VERDICT_ROW_CLICK_JS,
         # projection groups start collapsed
         "if(!$('#expandAll').checked && !cls) s.classList.add('closed');":
             "if((!$('#expandAll').checked || title.endsWith(' · projections')) && !cls) s.classList.add('closed');",
