@@ -137,8 +137,13 @@ dashboards:
 
   - match: "closure_summary.html"
     tag: "Stage F.2"
-    title: "Two-Stage Closure Summary"
-    desc: "Master closure verdict dashboard (variance, bias, spurious signal tests)"
+    title: "Two-Stage Closure Summary (SvB_MA)"
+    desc: "Master closure verdict dashboard with interactive SR/SB toggle (SvB_MA)"
+
+  - match: "summary_SvB.html"
+    tag: "Stage F.2"
+    title: "Two-Stage Closure Summary (SvB)"
+    desc: "Two-stage closure verdict dashboard with interactive SR/SB toggle (SvB)"
 
   - match: "summary.html"
     path_contains: "bkg_syst_F_4_stats_mixeddata"
