@@ -147,6 +147,7 @@ dashboards:
 
   - match: "summary.html"
     path_contains: "bkg_syst_F_4_stats_mixeddata"
+    path_excludes: "rebin"
     tag: "Stage F.4"
     title: "MixedData Unblinded Stats Summary"
     desc: "Statistical inference & limits on unblinded mixed data"
@@ -155,11 +156,12 @@ dashboards:
     path_contains: "bkg_syst_F_3_stats"
     path_excludes: "rebin"
     tag: "Stage F.3"
-    title: "Standard Stats Summary (Master)"
+    title: "Standard Stats Summary"
     desc: "Master multi-rebin statistical inference on standard dataset"
 
   - match: "summary.html"
-    path_contains: ["stat_analysis", "phasef"]
+    path_contains: ["phasef_2", "phasef", "stat_analysis"]
+    path_excludes: ["bkg_syst", "rebin"]
     tag: "Phase F.2"
     title: "Statistical Analysis Summary"
     desc: "Expected limits, significance, and likelihood scan overview"
