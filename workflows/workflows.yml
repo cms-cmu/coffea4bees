@@ -137,11 +137,17 @@ dashboards:
 
   - match: "closure_summary.html"
     tag: "Stage F.2"
-    title: "Two-Stage Closure Summary"
-    desc: "Master closure verdict dashboard (variance, bias, spurious signal tests)"
+    title: "Two-Stage Closure Summary (SvB_MA)"
+    desc: "Master closure verdict dashboard with interactive SR/SB toggle (SvB_MA)"
+
+  - match: "summary_SvB.html"
+    tag: "Stage F.2"
+    title: "Two-Stage Closure Summary (SvB)"
+    desc: "Two-stage closure verdict dashboard with interactive SR/SB toggle (SvB)"
 
   - match: "summary.html"
     path_contains: "bkg_syst_F_4_stats_mixeddata"
+    path_excludes: "rebin"
     tag: "Stage F.4"
     title: "MixedData Unblinded Stats Summary"
     desc: "Statistical inference & limits on unblinded mixed data"
@@ -150,11 +156,12 @@ dashboards:
     path_contains: "bkg_syst_F_3_stats"
     path_excludes: "rebin"
     tag: "Stage F.3"
-    title: "Standard Stats Summary (Master)"
+    title: "Standard Stats Summary"
     desc: "Master multi-rebin statistical inference on standard dataset"
 
   - match: "summary.html"
-    path_contains: ["stat_analysis", "phasef"]
+    path_contains: ["phasef_2", "phasef", "stat_analysis"]
+    path_excludes: ["bkg_syst", "rebin"]
     tag: "Phase F.2"
     title: "Statistical Analysis Summary"
     desc: "Expected limits, significance, and likelihood scan overview"
