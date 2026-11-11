@@ -45,29 +45,29 @@
 # USAGE INSTRUCTIONS (on cmslpc):
 #   Run only Stage F_1 (Analysis & Closure Plots):
 #     ./run_container snakemake -s coffea4bees/workflows/Snakefile_bkg_syst_F.smk \
-#       --configfile coffea4bees/workflows/config/analysis_ttHbb_bkg_syst.yml --cores 4 all_bkg_syst_F_1
+#       --configfile coffea4bees/workflows/config/ttHbb_bkg_syst.yml --cores 4 all_bkg_syst_F_1
 #
 #   Run only Stage F_2 (Two-Stage Closure Fit):
 #     ./run_container snakemake -s coffea4bees/workflows/Snakefile_bkg_syst_F.smk \
-#       --configfile coffea4bees/workflows/config/analysis_ttHbb_bkg_syst.yml --cores 4 all_bkg_syst_F_2
+#       --configfile coffea4bees/workflows/config/ttHbb_bkg_syst.yml --cores 4 all_bkg_syst_F_2
 #
 #   Run only Stage F_3 (Blinded Combine Statistical Interpretation):
 #     ./run_container snakemake -s coffea4bees/workflows/Snakefile_bkg_syst_F.smk \
-#       --configfile coffea4bees/workflows/config/analysis_ttHbb_bkg_syst.yml --cores 4 all_bkg_syst_F_3
+#       --configfile coffea4bees/workflows/config/ttHbb_bkg_syst.yml --cores 4 all_bkg_syst_F_3
 #
 #   Run only Stage F_4 (Unblinded Mixed Data Statistical Interpretation):
 #     ./run_container snakemake -s coffea4bees/workflows/Snakefile_bkg_syst_F.smk \
-#       --configfile coffea4bees/workflows/config/analysis_ttHbb_bkg_syst.yml --cores 4 all_bkg_syst_F_4
+#       --configfile coffea4bees/workflows/config/ttHbb_bkg_syst.yml --cores 4 all_bkg_syst_F_4
 #
 #   Run all Stage F:
 #     ./run_container snakemake -s coffea4bees/workflows/Snakefile_bkg_syst_F.smk \
-#       --configfile coffea4bees/workflows/config/analysis_ttHbb_bkg_syst.yml --cores 4 all_bkg_syst_F
+#       --configfile coffea4bees/workflows/config/ttHbb_bkg_syst.yml --cores 4 all_bkg_syst_F
 # ==============================================================================
 
 import os
 
 if not workflow.configfiles:
-    configfile: "coffea4bees/workflows/config/analysis_ttHbb_bkg_syst.yml"
+    configfile: "coffea4bees/workflows/config/ttHbb_bkg_syst.yml"
 
 include: "helpers/bkg_syst_common.smk"
 

@@ -6,6 +6,7 @@ from coffea.nanoevents.methods import vector
 
 sys.path.insert(0, os.getcwd())
 from coffea4bees.analysis.helpers.candidates_selection_ttHbb import create_cand_jet_dijet_quadjet_ttHbb
+from coffea4bees.analysis.helpers.candidates_selection import load_candidates_selection_config
 
 
 class quadJetTTHbbTestCase(unittest.TestCase):
@@ -82,6 +83,43 @@ class quadJetTTHbbTestCase(unittest.TestCase):
         self.assertIn("quadJet_selected", selev.fields)
         self.assertIn("SR", selev.region.fields)
         self.assertIn("SB", selev.region.fields)
+
+    def test_quadJets_ttHbb_corner_veto_config(self):
+        # Test loading the nominal thresholds (corner_veto is False by default)
+        nom_cfg = load_candidates_selection_config("coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb.yml")
+        self.assertFalse(nom_cfg.get("sb_ttHbb", {}).get("corner_veto", False))
+        selev_nom = create_cand_jet_dijet_quadjet_ttHbb(self.event, cand_cfg=nom_cfg)
+        self.assertIn("SB", selev_nom.region.fields)
+
+        # Test loading the corner veto thresholds option
+        cv_cfg = load_candidates_selection_config("coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml")
+        self.assertTrue(cv_cfg.get("sb_ttHbb", {}).get("corner_veto", False))
+        self.assertEqual(cv_cfg.get("sb_ttHbb", {}).get("corner_m_lead", 250.0), 250.0)
+        self.assertEqual(cv_cfg.get("sb_ttHbb", {}).get("corner_m_subl", 250.0), 250.0)
+        selev_cv = create_cand_jet_dijet_quadjet_ttHbb(self.event, cand_cfg=cv_cfg)
+        self.assertIn("SB", selev_cv.region.fields)
+
+        from coffea4bees.analysis.helpers.candidates_selection_ttHbb import _assign_SR_SB_ttHbb
+
+        # Test point in the corner: (280, 280) -> within [25, 500] but > 250 in both dijets
+        qj_nom = ak.Array([{"lead": {"mass": 280.0}, "subl": {"mass": 280.0}}])
+        _assign_SR_SB_ttHbb(qj_nom, cand_cfg=nom_cfg)
+        self.assertFalse(bool(qj_nom["SR"][0]))
+        self.assertTrue(bool(qj_nom["SB"][0]))  # In nominal SB
+
+        qj_cv = ak.Array([{"lead": {"mass": 280.0}, "subl": {"mass": 280.0}}])
+        _assign_SR_SB_ttHbb(qj_cv, cand_cfg=cv_cfg)
+        self.assertFalse(bool(qj_cv["SR"][0]))
+        self.assertFalse(bool(qj_cv["SB"][0]))  # Excluded from SB by corner veto!
+
+        # Test point outside corner: (280, 50) -> within [25, 500], one dijet > 250 but not both
+        qj_nom2 = ak.Array([{"lead": {"mass": 280.0}, "subl": {"mass": 50.0}}])
+        _assign_SR_SB_ttHbb(qj_nom2, cand_cfg=nom_cfg)
+        self.assertTrue(bool(qj_nom2["SB"][0]))
+
+        qj_cv2 = ak.Array([{"lead": {"mass": 280.0}, "subl": {"mass": 50.0}}])
+        _assign_SR_SB_ttHbb(qj_cv2, cand_cfg=cv_cfg)
+        self.assertTrue(bool(qj_cv2["SB"][0]))  # Retained in both!
 
 
 if __name__ == '__main__':

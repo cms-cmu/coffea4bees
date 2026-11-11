@@ -36,6 +36,14 @@
 #   └───────────────────────────────────┬────────────────────────────────────┘
 #                                       │ (Friend JSONs synced to cmslpc)
 #                                       ▼
+#   ┌────────────────────────────────────────────────────────────────────────┐
+#   │ STAGE C_4: FvT Kinematic, Mixed & ttbar Closure Verification (cmslpc)  │
+#   │ File: Snakefile_bkg_syst_C_4_closure.smk                               │
+#   │ Rules: analysis processor on data/ttbar, make_plots, cutflows          │
+#   │ Outputs: histAll_FvT_closure_v0.coffea, closure plots, ttbar MC vs d3  │
+#   └───────────────────────────────────┬────────────────────────────────────┘
+#                                       │
+#                                       ▼
 #         Downstream: Stage F_1 (analysis & closure check on cmslpc)
 #
 # MULTI-CLUSTER EXECUTION INSTRUCTIONS:
@@ -51,12 +59,16 @@
 #   Step 3 (Optional: Inspect feature plots & ROC curves):
 #     ssh cmslpc-el9.fnal.gov "bash -l -c 'cd <repo> && ./run_container snakemake \
 #       -s coffea4bees/workflows/Snakefile_bkg_syst_C_1_inputs.smk --cores 4 all_bkg_syst_C_1'"
+#
+#   Step 4 (FvT Kinematic & ttbar Closure on cmslpc):
+#     ssh cmslpc-el9.fnal.gov "bash -l -c 'cd <repo> && ./run_container snakemake \
+#       -s coffea4bees/workflows/Snakefile_bkg_syst_C_4_closure.smk --cores 4 all_bkg_syst_C_4'"
 # ==============================================================================
 
 import os
 
 if not workflow.configfiles:
-    configfile: "coffea4bees/workflows/config/analysis_ttHbb_bkg_syst.yml"
+    configfile: "coffea4bees/workflows/config/ttHbb_bkg_syst.yml"
 
 include: "helpers/bkg_syst_common.smk"
 
@@ -64,8 +76,9 @@ include: "helpers/bkg_syst_common.smk"
 include: "Snakefile_bkg_syst_C_1_inputs.smk"
 include: "Snakefile_bkg_syst_C_2_train.smk"
 include: "Snakefile_bkg_syst_C_3_evaluate.smk"
+include: "Snakefile_bkg_syst_C_4_closure.smk"
 
-localrules: all_bkg_syst_C, all_bkg_syst_C_all, all_bkg_syst_C_plots, all_bkg_syst_C_inputs, all_bkg_syst_C_train, all_bkg_syst_C_eval
+localrules: all_bkg_syst_C, all_bkg_syst_C_all, all_bkg_syst_C_plots, all_bkg_syst_C_inputs, all_bkg_syst_C_train, all_bkg_syst_C_eval, all_bkg_syst_C_4, all_bkg_syst_C_4_alias, all_bkg_syst_C_pilot
 
 # ── Master Target ─────────────────────────────────────────────────────────────
 rule all_bkg_syst_C:
@@ -79,7 +92,8 @@ rule all_bkg_syst_C_all:
     input:
         rules.all_bkg_syst_C_1.input,
         rules.all_bkg_syst_C_2.input,
-        rules.all_bkg_syst_C_3.input
+        rules.all_bkg_syst_C_3.input,
+        rules.all_bkg_syst_C_4.input
 
 rule all_bkg_syst_C_plots:
     input:
@@ -96,3 +110,7 @@ rule all_bkg_syst_C_train:
 rule all_bkg_syst_C_eval:
     input:
         rules.all_bkg_syst_C_3.input
+
+rule all_bkg_syst_C_4_alias:
+    input:
+        rules.all_bkg_syst_C_4.input

@@ -85,14 +85,14 @@ runs:
   lowpt_run2.yml:
     - PhaseF
     - PhaseF_1_analysis
-  analysis_ttHbb.yml:
+  ttHbb.yml:
     - PhaseA
     - PhaseB
     - PhaseC
     - PhaseD
     - PhaseF
     - PhaseF_1_analysis
-  analysis_ttHbb_run3_fNjetR.yml:    # combined Run 3 ttHbb chain (per-era fNjetR JCMs, FvT, SvB, Phase F); no Phase A (skims are upstream's)
+  ttHbb_run3_fNjetR.yml:    # combined Run 3 ttHbb chain (per-era fNjetR JCMs, FvT, SvB, Phase F); no Phase A (skims are upstream's)
     - PhaseB
     - PhaseC
     - PhaseD
@@ -183,6 +183,8 @@ runs:
     - DeClustered
   declustered_run3_library_16x.yml:
     - DeClustered
+  fit_quality_replay_run3.yml:
+    - FitQualityReplay
   declustered_run3_2024_library_16x.yml:
     - DeClustered
   declustered_run2_library_16x.yml:
@@ -193,10 +195,10 @@ runs:
     - DeClustered
   svbfeynnet_run3.yml:
     - SvBFeynNet_friendtrees_Run3
-  analysis_ttHbb_bkg_syst.yml:
+  ttHbb_bkg_syst.yml:
     - bkg_syst
     - bkg_syst_AB
-  analysis_ttHbb_bkg_syst_declib16nc.yml:
+  ttHbb_bkg_syst_declib16nc.yml:
     - bkg_syst
     - bkg_syst_AB
   analysis_HH4b_bkg_syst_declib16nc.yml:

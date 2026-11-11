@@ -20,13 +20,13 @@
 #
 # Usage:
 #   snakemake -s Snakefile_bkg_syst_A_2_make_ttbar_psdata.smk \
-#             --configfile config/analysis_ttHbb_bkg_syst.yml -np all_bkg_syst_A_2
+#             --configfile config/ttHbb_bkg_syst.yml -np all_bkg_syst_A_2
 # ==============================================================================
 
 import os
 
 if 'config' not in globals():
-    configfile: "coffea4bees/workflows/config/analysis_ttHbb_bkg_syst.yml"
+    configfile: "coffea4bees/workflows/config/ttHbb_bkg_syst.yml"
 
 include: "helpers/bkg_syst_common.smk"
 

@@ -1,0 +1,21 @@
+# ==============================================================================
+# DIAGNOSTIC (B, ttbar): the tight 2025 FvT with the four-tag ttbar MC weights x0.80
+# ==============================================================================
+# See nominal_run3_2025_fvtdiag_base.yml for the set. 2025 uses the Summer24 (2024) ttbar MC with no
+# b-tag SF, but the 2025 data has ~40% fewer four-tag per three-tag events than 2024 already
+# non-tight (4b/3b SB 0.055 vs 0.093) and the tight requirement keeps 0.589 of the non-tight 4b
+# (2024: 0.650), i.e. a lower b-tag efficiency the MC does not follow: the 4b ttbar component the FvT
+# subtracts (w = (p_d4 - p_t4) / p_d3; ~5% of the 4b SB) is likely too large. x0.80 = the 2025/2024
+# non-tight 4b data yield per lumi (749k / 937k); the three-tag ttbar is left as is.
+#
+#   roast new --config coffea4bees/workflows/config/nominal_run3_2025_fvtdiag_ttbar080.yml --phases C --nautilus
+# ==============================================================================
+base: coffea4bees/workflows/config/nominal_run3_2025_fvtdiag_base.yml
+
+label: "Run3_2025_nominal_fvtdiag_ttbar080"
+output_path: "output/Run3_2025_nominal_fvtdiag_ttbar080/"
+
+fvt:
+  workflow_inserts:
+    --kfolds: ["--fit-quality-floor 0.01"]
+    --data-source: ["--ttbar-4b-scale 0.80"]

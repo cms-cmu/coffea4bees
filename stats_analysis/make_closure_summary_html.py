@@ -197,6 +197,28 @@ def collect_candidates(summary_data: dict, out_dir: Path, region: str = "SR") ->
                 ss_fprob = parsed_fprob
                 ss_basis = ev.get("selected_basis")
 
+        # Highest Fourier mode / basis p-values for closure bias test
+        highest_b = ev.get("highest_basis")
+        highest_p = ev.get("highest_basis_pvalue")
+        all_pvals = ev.get("all_bias_pvalues", {})
+        if (highest_p is None or not all_pvals) and cand_dir:
+            bias_yml = cand_dir / "1_bias_results.yml"
+            if bias_yml.exists():
+                try:
+                    import yaml
+                    with open(bias_yml, "r") as byf:
+                        bias_res = yaml.safe_load(byf) or {}
+                    int_bases = sorted([int(k) for k in bias_res.keys() if str(k).lstrip('-').isdigit()])
+                    if int_bases:
+                        hb = int_bases[-1]
+                        hb_info = bias_res.get(hb) or bias_res.get(str(hb))
+                        if isinstance(hb_info, dict) and "pvalue" in hb_info:
+                            highest_b = hb
+                            highest_p = float(hb_info["pvalue"])
+                        all_pvals = {b: float(bias_res.get(b, {}).get("pvalue", float("nan"))) for b in int_bases if isinstance(bias_res.get(b), dict)}
+                except Exception:
+                    pass
+
         candidates_info.append({
             "rebin": r_val,
             "n_bins": ev.get("n_bins", "?"),
@@ -207,6 +229,9 @@ def collect_candidates(summary_data: dict, out_dir: Path, region: str = "SR") ->
             "spurious_signal_fprob": ss_fprob,
             "passed": ev.get("passed", False),
             "selected_basis": ev.get("selected_basis", None),
+            "highest_basis": highest_b,
+            "highest_basis_pvalue": highest_p,
+            "all_bias_pvalues": all_pvals,
             "multijet_basis": ev.get("multijet_basis", None),
             "failed_steps": ev.get("failed_steps", []),
             "plots": plots_data,
@@ -229,11 +254,15 @@ def collect_candidates(summary_data: dict, out_dir: Path, region: str = "SR") ->
 KEY_PLOTS = ["data_vs_mixed_vs_bkg", "1_bias_pvalues", "0_variance_pearsonr_multijet_variance"]
 
 
-def _chip(passed, basis=None, none_text="—"):
+def _chip(passed, basis=None, none_text="—", fail_extra=None, title=None):
     if passed is None:
         return f"<span class='na'>{none_text}</span>"
-    b = "" if basis is None or basis == -1 else f"<span class='basis'>basis {basis}</span>"
-    return f"<span class='chip {'pass' if passed else 'fail'}'>{'PASS' if passed else 'FAIL'}</span>{b}"
+    if passed:
+        b = "" if basis is None or basis == -1 else f"<span class='basis'>basis {basis}</span>"
+        return f"<span class='chip pass'>PASS</span>{b}"
+    t_attr = f" title='{html.escape(str(title))}'" if title else ""
+    b = f"<span class='basis fail_info'{t_attr}>{html.escape(str(fail_extra))}</span>" if fail_extra else ""
+    return f"<span class='chip fail'>FAIL</span>{b}"
 
 
 def gallery_items(info: dict) -> list[dict]:
@@ -259,11 +288,23 @@ def gallery_items(info: dict) -> list[dict]:
 def verdict_section(info: dict) -> str:
     rows = []
     for c in info["candidates"]:
+        bias_fail_str = None
+        bias_fail_title = None
+        if not c['bias_passed']:
+            hb = c.get('highest_basis')
+            hp = c.get('highest_basis_pvalue')
+            all_p = c.get('all_bias_pvalues', {})
+            title_parts = [f"b{b}: {p*100:.1f}%" for b, p in sorted(all_p.items()) if not (isinstance(p, float) and p != p)]
+            if title_parts:
+                bias_fail_title = f"Basis p-values: {', '.join(title_parts)}"
+            if hb is not None and hp is not None:
+                bias_fail_str = f"max b{hb}: p={hp*100:.1f}%"
+
         rows.append(
             f"<tr data-rebin='rebin{int(c['rebin']):02d}:' title='show only rebin {c['rebin']}'>"
             f"<td><b>{c['rebin']}</b></td><td>{c['n_bins']}</td>"
             f"<td>{_chip(c['variance_passed'], c.get('multijet_basis'))}</td>"
-            f"<td>{_chip(c['bias_passed'], c.get('selected_basis') if c['bias_passed'] else None)}</td>"
+            f"<td>{_chip(c['bias_passed'], c.get('selected_basis') if c['bias_passed'] else None, fail_extra=bias_fail_str, title=bias_fail_title)}</td>"
             f"<td>{_chip(c.get('spurious_signal_passed'), c.get('spurious_signal_basis'))}</td>"
             f"<td><span class='chip {'pass' if c['passed'] else 'fail'}'>{'ELIGIBLE' if c['passed'] else 'EXCLUDED'}</span></td>"
             f"<td class='num'>{c['visible_plots']} <span class='na'>+ {c['hidden_plots']} projections</span></td></tr>")
@@ -298,6 +339,7 @@ section.verdict tbody tr.sel td { background:#e8f0fd; }
 section.verdict .chip { display:inline-block; min-width:42px; text-align:center; padding:1px 7px; border-radius:4px; font-size:12px; font-weight:600; }
 section.verdict .chip.pass { background:#e3f4ea; color:#1f8a4c; } section.verdict .chip.fail { background:#fbe6e4; color:#c8372d; }
 section.verdict .basis { color:var(--muted); margin-left:6px; font-size:12px; }
+section.verdict .basis.fail_info { color:#c8372d; margin-left:6px; font-size:12px; font-weight:500; cursor:help; }
 section.verdict .na { color:var(--muted); }
 section.verdict .vnote { color:var(--muted); font-size:12px; margin-top:6px; }
 """

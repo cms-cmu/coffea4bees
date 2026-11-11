@@ -1,0 +1,36 @@
+# ==============================================================================
+# DIAGNOSTIC: retrain the tight 2025 FvT (C) with another k-fold seed offset, then its C.4 closure
+# ==============================================================================
+# The FvT of nominal_run3_2025_20261027_1809191-df306da closes at SR 0.946 / SB 0.953 (multijet ~5%
+# high everywhere), while the non-tight 2025 FvT (same inputs, same code) closes at SR 0.989 / SB 0.992
+# and the processor is cleared (nominal_run3_2025_c4test: identical table with the old processor).
+# This retrains on THAT roast's B outputs (classifier inputs, JCM: handoff on EOS) with
+# --kfold-seed-offsets 1 instead of 0, to tell training variance from a systematic effect.
+#
+#   roast new --config coffea4bees/workflows/config/nominal_run3_2025_fvtseed1.yml --phases C,C4 --nautilus
+# ==============================================================================
+base: coffea4bees/workflows/config/nominal_run3_2025.yml
+
+label: "Run3_2025_nominal_fvtseed1"
+output_path: "output/Run3_2025_nominal_fvtseed1/"
+
+handoff:
+  allow_external_refs: true
+
+fvt:
+  # inputs from the tight roast's B; model + friend go to THIS roast's EOS area (fvt.eos_base)
+  metadata: "{roast:nominal_run3_2025_20261027_1809191-df306da}/handoff/classifier_inputs_nominal_run3_2025_20261027_1809191-df306da.json@@HCR_input"
+  workflow_overrides:
+    --JCM-weight: '"" {roast:nominal_run3_2025_20261027_1809191-df306da}/handoff/jetCombinatoricModel_SB_Run3_2025_v1.yml@@JCM_weights'
+    '--friends ""': "{roast:nominal_run3_2025_20261027_1809191-df306da}/handoff/classifier_inputs_nominal_run3_2025_20261027_1809191-df306da.json@@HCR_input"
+    --kfold-seed-offsets: "1"
+
+fvt_closure:
+  JCM_file: "{roast:nominal_run3_2025_20261027_1809191-df306da}/handoff/jetCombinatoricModel_SB_Run3_2025_v1.yml"
+  reuse_wJCM_ttbar: false
+  # dump only (no such file)
+  known_counts: "coffea4bees/analysis/tests/known_fullCounts_FvT_closure_Run3_2025_fvtseed1.yml"
+
+analysis_config:
+  config:
+    JCM_file: "{roast:nominal_run3_2025_20261027_1809191-df306da}/handoff/jetCombinatoricModel_SB_Run3_2025_v1.yml"

@@ -3248,7 +3248,7 @@ if __name__ == "__main__":
     parser.add_argument('--auto_scale_mixed', action="store_true", default=False, help="Auto scale mixed flag (passed from pipeline)")
     parser.add_argument('--signal_scale', type=float, default=None, help="Scale factor for signal visualization on closure plots (default: 1.0 for ttHbb/tth, 100.0 for others)")
     parser.add_argument('--simple_output_dir', action="store_true", default=False, help="Use simplified output dir outputPath/channel/var")
-    parser.add_argument('--maxBasis', type=int, default=10, help="Max basis order (default: 10)")
+    parser.add_argument('--maxBasis', type=int, default=5, help="Max basis order (default: 5)")
     parser.add_argument('--maxBasisEnsemble', type=int, default=None, help="Max basis order for ensemble variance (defaults to maxBasis)")
     parser.add_argument('--maxBasisClosure', type=int, default=None, help="Max basis order for closure bias (defaults to maxBasis)")
     parser.add_argument('--unify_background', action="store_true", default=False, help="Treat the sum (Multijet + TTbar) as the single, total background model across all stages (ensemble variance, closure bias, and plotting)")

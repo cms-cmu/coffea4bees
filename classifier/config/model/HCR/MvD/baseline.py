@@ -88,6 +88,20 @@ class Train(HCRTrain):
             )
         return rocs
 
+    @property
+    def fit_quality(self):
+        from src.classifier.ml.benchmarks.fit_quality import FvTFitQuality
+
+        # The FvT benchmark with mixed data as the reweighted source: weight
+        # (p_d4 - p_t4) / p_mix4 on mix4 events, closure of d4 vs mix4 x weight in the SB.
+        return [
+            FvTFitQuality(
+                name="MvD_fit_quality",
+                source="mix4",
+                source_floor=self.opts.fit_quality_floor,
+            )
+        ]
+
 
 class Eval(HCREval):
     model = "MvD"

@@ -8,13 +8,15 @@ import re
 
 # Fallback defaults for backwards compatibility or running direct
 config.setdefault('label', "computeJCM")
-base_output = config.get('output_path', 'output/computeJCM/')
+base_output = config.get('output_path', 'output/PhaseB_1_computeJCM/')
 if not base_output.endswith('/'):
     base_output += '/'
-if not base_output.rstrip('/').endswith('computeJCM'):
-    JCM_OUTPUT_PATH = os.path.join(base_output, 'computeJCM/')
-else:
+if base_output.rstrip('/').endswith('computeJCM') or base_output.rstrip('/').endswith('PhaseB_1_computeJCM'):
     JCM_OUTPUT_PATH = base_output
+else:
+    JCM_OUTPUT_PATH = os.path.join(base_output, 'PhaseB_1_computeJCM/')
+if not JCM_OUTPUT_PATH.endswith('/'):
+    JCM_OUTPUT_PATH += '/'
 
 config.setdefault('test', False)
 
@@ -52,7 +54,10 @@ MC_DATASETS = [d for d in JCM_DATASETS if d != 'data']
 ci_base = config.get('output_path', base_output)
 if not ci_base.endswith('/'):
     ci_base += '/'
-CI_OUTPUT_PATH = ci_base if ci_base.rstrip('/').endswith('classifier_inputs') else os.path.join(ci_base, 'classifier_inputs/')
+if ci_base.rstrip('/').endswith('classifier_inputs') or ci_base.rstrip('/').endswith('PhaseB_2_classifier_inputs'):
+    CI_OUTPUT_PATH = ci_base
+else:
+    CI_OUTPUT_PATH = os.path.join(ci_base, 'PhaseB_2_classifier_inputs/')
 if not CI_OUTPUT_PATH.endswith('/'):
     CI_OUTPUT_PATH += '/'
 
@@ -172,6 +177,22 @@ rule output_computeJCM:
         f"{JCM_OUTPUT_PATH}cutflow_NoJCM.html",
         f"{JCM_OUTPUT_PATH}cutflow_wJCM.html",
         f"{CI_OUTPUT_PATH}classifier_inputs_friends.json"
+    run:
+        import os
+        legacy_jcm = os.path.join(base_output, 'computeJCM')
+        if os.path.abspath(legacy_jcm) != os.path.abspath(JCM_OUTPUT_PATH.rstrip('/')):
+            if not os.path.exists(legacy_jcm) and not os.path.islink(legacy_jcm):
+                try:
+                    os.symlink(os.path.basename(JCM_OUTPUT_PATH.rstrip('/')), legacy_jcm)
+                except OSError:
+                    pass
+        legacy_ci = os.path.join(base_output, 'classifier_inputs')
+        if os.path.abspath(legacy_ci) != os.path.abspath(CI_OUTPUT_PATH.rstrip('/')):
+            if not os.path.exists(legacy_ci) and not os.path.islink(legacy_ci):
+                try:
+                    os.symlink(os.path.basename(CI_OUTPUT_PATH.rstrip('/')), legacy_ci)
+                except OSError:
+                    pass
 
 rule create_noJCM_config:
     input: workflow.configfiles if workflow.configfiles else []

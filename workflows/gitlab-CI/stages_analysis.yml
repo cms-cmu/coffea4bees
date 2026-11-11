@@ -236,7 +236,7 @@ analysis_data_ttHbb_coffea4bees:
   extends:
     - .base_analysis_coffea4bees
   script:
-    - pixi run snakemake all_data -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/analysis_ttHbb.yml --config test=true --jobs 4
+    - pixi run snakemake all_data -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/ttHbb.yml --config test=true --jobs 4
   artifacts: 
     paths:
       - barista_framework/output/ttHbb/singlefiles/histAll_ttHbb_data.coffea
@@ -246,7 +246,7 @@ analysis_MC_ttHbb_coffea4bees:
   extends:
     - .base_analysis_coffea4bees
   script:
-    - pixi run snakemake all_signals -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/analysis_ttHbb.yml --config test=true --jobs 4
+    - pixi run snakemake all_signals -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/ttHbb.yml --config test=true --jobs 4
   artifacts: 
     paths:
       - barista_framework/output/ttHbb/singlefiles/histAll_ttHbb_signals.coffea

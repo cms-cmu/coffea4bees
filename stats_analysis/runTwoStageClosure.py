@@ -64,7 +64,7 @@ def get_parser():
     parser.add_argument('--auto_scale_mixed',      action="store_true", default=False, help="Auto scale mixed flag (passed from pipeline)")
     parser.add_argument('--signal_scale',          type=float, default=None, help="Scale factor for signal visualization")
     parser.add_argument('--simple_output_dir',     action="store_true", default=False, help="Use simplified output dir outputPath/channel/var")
-    parser.add_argument('--maxBasis',              type=int, default=10, help="Max basis order (default: 10)")
+    parser.add_argument('--maxBasis',              type=int, default=5, help="Max basis order (default: 5)")
     parser.add_argument('--maxBasisEnsemble',      type=int, default=None, help="Max basis order for ensemble variance (defaults to maxBasis)")
     parser.add_argument('--maxBasisClosure',       type=int, default=None, help="Max basis order for closure bias (defaults to maxBasis)")
     parser.add_argument('--unify_background',      action="store_true", default=False, help="Treat sum (Multijet + TTbar) as single background model")
@@ -79,6 +79,8 @@ def get_parser():
     parser.add_argument('--include_ensemble_variance', '--include-ensemble-variance', action="store_true", default=False, help="Incorporate subsample-level ensemble variance")
     parser.add_argument('--no_sqrt_n_priors', '--no-sqrt-n-priors', action="store_true", default=False, help="Do not scale variance priors by 1/sqrt(nMixes)")
     parser.add_argument('--basis_type',            default='fourier', choices=['fourier', 'bernstein'], help="Type of basis functions")
+    parser.add_argument('--skip_first_bin',        action="store_true", default=False, help="Exclude first bin after rebinning from closure tests")
+    parser.add_argument('--min_svb',               type=float, default=0.0, help="Remove all SvB content below this value before rebinning")
     return parser
 
 
@@ -102,7 +104,9 @@ def init_context(args):
         channel = "ttHbb"
     config.channel = channel
 
-    if not args.var.find("SvB_MA") == -1:
+    if args.classifier:
+        classifier = args.classifier
+    elif not args.var.find("SvB_MA") == -1:
         classifier = "SvB_MA"
     elif not args.var.find("SvB") == -1:
         classifier = "SvB"
@@ -136,6 +140,8 @@ def init_context(args):
 
     config.lumi = args.lumi
     config.closure_fit_x_min = 0
+    config.skip_first_bin = getattr(args, 'skip_first_bin', False)
+    config.min_svb = getattr(args, 'min_svb', 0.0)
     config.maxBasisEnsemble = args.maxBasisEnsemble if args.maxBasisEnsemble is not None else args.maxBasis
     config.maxBasisClosure = args.maxBasisClosure if args.maxBasisClosure is not None else args.maxBasis
 
@@ -200,6 +206,19 @@ def run():
             ss_passed = bool(ss_fprob < 0.95) if closures[channel].passed else None
             ss_basis = int(basis_closure)
 
+    highest_b = None
+    highest_p = None
+    all_pvalues = {}
+    if channel in closures and hasattr(closures[channel], "bases") and hasattr(closures[channel], "pvalue"):
+        cbases = closures[channel].bases
+        if cbases:
+            highest_b = int(cbases[-1])
+            if highest_b in closures[channel].pvalue:
+                highest_p = float(closures[channel].pvalue[highest_b])
+            for b in cbases:
+                if b in closures[channel].pvalue:
+                    all_pvalues[int(b)] = float(closures[channel].pvalue[b])
+
     closure_status_file = f"{output_dir}/closure_status.json"
     rebin_status_val = int(args.rebin) if not isinstance(config.rebin, (list, np.ndarray)) else list(config.rebin)
     status_dict = {
@@ -215,6 +234,9 @@ def run():
         "spurious_signal_fprob": ss_fprob,
         "passed": bool(closures[channel].passed and (multijetEnsembles[channel].passed or not getattr(args, 'strict_ensemble', False))),
         "selected_basis": int(closures[channel].basis) if channel in closures and closures[channel].basis is not None else None,
+        "highest_basis": highest_b,
+        "highest_basis_pvalue": highest_p,
+        "all_bias_pvalues": all_pvalues,
         "multijet_basis": int(multijetEnsembles[channel].basis) if channel in multijetEnsembles and multijetEnsembles[channel].basis is not None else None,
         "failed_steps": failed_steps,
     }

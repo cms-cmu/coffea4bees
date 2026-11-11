@@ -1,0 +1,40 @@
+# ==============================================================================
+# DIAGNOSTIC (C, era): the tight 2025 FvT with the run period as an ancillary input
+# ==============================================================================
+# See nominal_run3_2025_fvtdiag_base.yml for the set. The 2025 data / JCM-predicted 4b ratio in the SB
+# drifts through the year (B/C 1.08-1.15 -> G 0.91; 2024 drifts similarly, C 1.19 -> H 0.96), which an
+# FvT without a time input can only average over. --era-feature loads the data per era key and adds
+# `era` = index of its run period (B=0 ... G=5; the ParkingHH0/1 streams and PromptReco v1/v2 of a
+# period share it); ttbar MC events get an era drawn per event number from the data's per-period
+# fractions (three-tag SB data events, cutflow_wJCM of the nominal roast) so the input carries no
+# data-vs-MC information.
+#
+#   roast new --config coffea4bees/workflows/config/nominal_run3_2025_fvtdiag_era.yml --phases C --nautilus
+# ==============================================================================
+base: coffea4bees/workflows/config/nominal_run3_2025_fvtdiag_base.yml
+
+label: "Run3_2025_nominal_fvtdiag_era"
+output_path: "output/Run3_2025_nominal_fvtdiag_era/"
+
+classifier_setting:
+  - module: ml.DataLoader
+    option:
+      - optimize_sliceable_dataset: true
+  - module: ROOT
+    option:
+      - friend_allow_missing: false
+  - module: cms.CollisionData
+    option:
+      - eras:
+          '2025': [B01, B11, C01, C02, C11, C12, D01, D11, E01, E11, F01, F02, F11, F12, G01, G11]
+  - module: HCR.InputBranch
+    option:
+      # as nominal_run3_2025.yml, plus `era`
+      - feature_ancillary: [xW, nSelJets, xbW, era]
+      - mass_regions: [SR, SB]
+
+fvt:
+  workflow_inserts:
+    --kfolds: ["--fit-quality-floor 0.01"]
+    # periods B, C, D, E, F, G
+    --data-source: ["--era-feature", "--era-mc-fractions 0.0024,0.1938,0.2377,0.1288,0.2398,0.1975"]

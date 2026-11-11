@@ -1,0 +1,63 @@
+# ==============================================================================
+# 2022+2023 MvD on the 16x DECLUSTERED model: finetune-fix redo, WARM START from the original MvD
+# ==============================================================================
+# On top of mvd_run3_declib16_20261011_c41b495-f2d2cf8 (mvd_run3_declib16.yml). V.1 is not re-run: the
+# classifier-input manifest, classifier metadata and tight JCM are read from that roast's handoff.
+# V.2: HH4b_Run3/MvD_warm loads its saved fold models (same k-fold split) and reruns the schedule's
+# 5-epoch decay tail plus the fixed finetune (FinetuneStep, lr 1e-4; see mvd_run3_warm.yml). Then
+# V.2c, V.3 (SvB_MvD, retrained), V.4. Evaluations split by era group (detector + declustered of
+# those eras; the declustered manifest has the data's era keys); NRP evaluation pods are capped at
+# 64 Gi. The original ran its V.2/V.3 on falcon; this runs them on NRP (180 GB training pods, as the
+# 2024/2025 declustered trainings needed).
+#
+#   roast new --config coffea4bees/workflows/config/mvd_run3_declib16_warm.yml \
+#       --step nautilus:coffea4bees/workflows/Snakefile_MvD_2_train.smk \
+#       --step cmslpc:coffea4bees/workflows/Snakefile_MvD.smk \
+#       --step nautilus:coffea4bees/workflows/Snakefile_MvD_3_svb.smk
+#   roast submit <id> --step MvD_2_train ; roast submit <id> --step MvD --targets all_V2c
+#   roast submit <id> --step MvD_3_svb   ; roast submit <id> --step MvD --targets all_V4
+# ==============================================================================
+base: coffea4bees/workflows/config/mvd_run3_declib16.yml
+
+label: "mvd_run3_declib16_warm"
+
+inputs:
+  # lists replace: the base's two upstreams + the MvD roast whose V.1 and models are reused
+  upstream_roasts: [nominal_run3_20261008_f839489-a481023, declib16_run3_20261011_b948dfc-33f3094, mvd_declib16_run3_20261011_c41b495-f2d2cf8]
+  mixed_jcm: "{roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/handoff/jetCombinatoricModel_SB_mixeddata_tight.yml"
+
+handoff:
+  allow_external_refs: true
+
+mvd:
+  wfs_base: "coffea4bees/classifier/config/workflows/HH4b_Run3/MvD_warm"
+  metadata: "{roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/handoff/classifier_inputs_MvD.json@@HCR_input"
+  train_mem: 180000
+  workflow_overrides:
+    --metadata: "{roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/handoff/classifier_metadata"
+    --JCM-weight: '"source:mixed_all" {roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/handoff/jetCombinatoricModel_SB_mixeddata_tight.yml@@JCM_weights'
+    '--friends ""': "{roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/handoff/classifier_inputs_MvD.json@@HCR_input"
+  workflow_inserts:
+    --training: ["--pretrained-weights {roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/classifier/MvD"]
+  eval_splits:
+    y22pre: {--data-eras: [B, C, D]}
+    y22EE: {--data-eras: [E, F, G]}
+    y23pre: {--data-eras: [C01, C02, C11, C12, C3, C4]}
+    y23BPix: {--data-eras: [D1, D2]}
+  eval_split_mem: 63000
+
+svb_mvd:
+  metadata: "{roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/handoff/classifier_inputs_MvD.json@@HCR_input"
+  train_mem: 180000
+  workflow_overrides:
+    --metadata: "{roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/handoff/classifier_metadata"
+    --JCM-weight: '"source:mixed_all" {roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/handoff/jetCombinatoricModel_SB_mixeddata_tight.yml@@JCM_weights'
+    '--friends ""': "{roast:mvd_declib16_run3_20261011_c41b495-f2d2cf8}/handoff/classifier_inputs_MvD.json@@HCR_input"
+  # data and declustered data per era group (no MC), plus one MC-only job (ttbar, ggF)
+  eval_splits:
+    y22pre: {--data-eras: [B, C, D], --mc-processes: ''}
+    y22EE: {--data-eras: [E, F, G], --mc-processes: ''}
+    y23pre: {--data-eras: [C01, C02, C11, C12, C3, C4], --mc-processes: ''}
+    y23BPix: {--data-eras: [D1, D2], --mc-processes: ''}
+    MC: {--data-source: ''}
+  eval_split_mem: 63000

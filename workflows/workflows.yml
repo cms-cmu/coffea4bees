@@ -1,0 +1,207 @@
+# ==============================================================================
+# coffea4bees Workflows & Phases Registry for Roast
+# ==============================================================================
+# This file defines the analysis workflows, individual phases, default target hosts,
+# Snakemake entrypoints, multi-step phase expansions, dashboards, and stages
+# for roast production runs. Roast loads this file dynamically so barista remains
+# analysis-agnostic.
+
+# ------------------------------------------------------------------------------
+# Supported Analysis Channels
+# ------------------------------------------------------------------------------
+analyses:
+  default: "HH4b"
+  channels:
+    - name: "HH4b"
+      description: "HH -> 4b standard boosted/resolved analysis"
+    - name: "ttHbb"
+      description: "ttH(bb) multi-jet analysis"
+    - name: "HH4b_lowpt"
+      description: "HH -> 4b low-pT analysis"
+
+# ------------------------------------------------------------------------------
+# Phase Catalog: Maps each phase name to host, snakefile, and optional expansions.
+# ------------------------------------------------------------------------------
+phases:
+  # --- Nominal Pipeline ---
+  A:
+    host: cmslpc
+    snakefile: coffea4bees/workflows/Snakefile_PhaseA.smk
+    description: "Phase A: skimmer and trigger weights"
+
+  B:
+    host: cmslpc
+    snakefile: coffea4bees/workflows/Snakefile_PhaseB.smk
+    description: "Phase B: JCM computation and classifier friend trees"
+
+  C:
+    host: falcon
+    snakefile: coffea4bees/workflows/Snakefile_PhaseC.smk
+    expands: ["C", "C4"]
+    description: "Phase C: FvT classifier training and evaluation"
+
+  C4:
+    host: cmslpc
+    snakefile: coffea4bees/workflows/Snakefile_PhaseC_4_FvT_closure.smk
+    description: "Phase C.4: FvT data closure and validation"
+
+  D:
+    host: falcon
+    snakefile: coffea4bees/workflows/Snakefile_PhaseD.smk
+    description: "Phase D: SvB classifier training and evaluation"
+
+  F:
+    host: cmslpc
+    snakefile: coffea4bees/workflows/Snakefile_PhaseF.smk
+    description: "Phase F: full analysis and statistical inference"
+
+  # --- Background Systematics (bkg_syst) Pipeline ---
+  BKG_AB:
+    host: cmslpc
+    snakefile: coffea4bees/workflows/Snakefile_bkg_syst_AB.smk
+    description: "Bkg Syst: Stages A & B (mixeddata, subsamples, JCM)"
+
+  BKG_C:
+    host: falcon
+    snakefile: coffea4bees/workflows/Snakefile_bkg_syst_C.smk
+    expands: ["BKG_C", "BKG_C4"]
+    description: "Bkg Syst: Stage C (FvT classifier training on subsamples)"
+
+  BKG_C4:
+    host: cmslpc
+    snakefile: coffea4bees/workflows/Snakefile_bkg_syst_C_4_closure.smk
+    description: "Bkg Syst: Stage C.4 (FvT closure across subsamples)"
+
+  BKG_F:
+    host: cmslpc
+    snakefile: coffea4bees/workflows/Snakefile_bkg_syst_F.smk
+    description: "Bkg Syst: Stage F (two-stage closure and Combine stats)"
+
+  # --- Additional Workflows & Studies ---
+  DECLUSTERED:
+    host: cmslpc
+    snakefile: coffea4bees/workflows/Snakefile_DeClustered.smk
+    description: "DeClustered workflow"
+
+  MIXEDDATA:
+    host: cmslpc
+    snakefile: coffea4bees/workflows/Snakefile_MakeMixedData.smk
+    description: "MakeMixedData workflow"
+
+  MVD:
+    host: cmslpc
+    snakefile: coffea4bees/workflows/Snakefile_MvD.smk
+    description: "MvD classifier workflow"
+
+  TRIG_WEIGHTS:
+    host: cmslpc
+    snakefile: coffea4bees/workflows/Snakefile_TrigWeights.smk
+    description: "Trigger weights computation"
+
+  FIT_QUALITY:
+    host: cmslpc
+    snakefile: coffea4bees/workflows/Snakefile_FitQualityReplay.smk
+    description: "Fit quality replay workflow"
+
+# ------------------------------------------------------------------------------
+# Predefined Workflow Sequences
+# ------------------------------------------------------------------------------
+workflows:
+  nominal:
+    description: "Nominal HH4b analysis pipeline (B -> C -> C4 -> D -> F)"
+    phases: ["B", "C", "D", "F"]
+
+  full:
+    description: "Full nominal analysis pipeline starting from picoAOD (A -> B -> C -> C4 -> D -> F)"
+    phases: ["A", "B", "C", "D", "F"]
+
+  bkg_syst:
+    description: "Background systematic variation pipeline (BKG_C -> BKG_C4 -> BKG_F)"
+    phases: ["BKG_C", "BKG_F"]
+
+  bkg_syst_full:
+    description: "Full background systematic pipeline including Stage A/B"
+    phases: ["BKG_AB", "BKG_C", "BKG_F"]
+
+# ------------------------------------------------------------------------------
+# Primary Master Dashboards: Featured at the top of the roast summary index.html
+# ------------------------------------------------------------------------------
+dashboards:
+  - match: "training_summary.html"
+    tag: "Phase C"
+    tag_bkg: "Stage C"
+    title: "FvT Training Summary"
+    title_bkg: "FvT Training Summary (16 Models)"
+    desc: "Model AUCs, loss curves, and training evaluation metrics"
+    desc_bkg: "Cross-sample AUCs, loss curves, and overtraining evaluation metrics"
+
+  - match: "closure_summary.html"
+    tag: "Stage F.2"
+    title: "Two-Stage Closure Summary"
+    desc: "Master closure verdict dashboard (variance, bias, spurious signal tests)"
+
+  - match: "summary.html"
+    path_contains: "bkg_syst_F_4_stats_mixeddata"
+    tag: "Stage F.4"
+    title: "MixedData Unblinded Stats Summary"
+    desc: "Statistical inference & limits on unblinded mixed data"
+
+  - match: "summary.html"
+    path_contains: "bkg_syst_F_3_stats"
+    path_excludes: "rebin"
+    tag: "Stage F.3"
+    title: "Standard Stats Summary (Master)"
+    desc: "Master multi-rebin statistical inference on standard dataset"
+
+  - match: "summary.html"
+    path_contains: ["stat_analysis", "phasef"]
+    tag: "Phase F.2"
+    title: "Statistical Analysis Summary"
+    desc: "Expected limits, significance, and likelihood scan overview"
+
+  - match: "hist_crosscheck*.html"
+    tag: "Phase F.1"
+    tag_bkg: "Stage F.1"
+    title: "Histogram Cross-Check (F vs C.4)"
+    desc: "Direct validation that selJets.n and m4j (v4j.mass) match Phase C.4"
+
+  - match: "cutflow_crosscheck*.html"
+    tag: "Phase F.1"
+    tag_bkg: "Stage F.1"
+    title: "Cutflow Cross-Check (F vs C.4)"
+    desc: "Cut-by-cut weighted and raw event counts cross-check against Phase C.4"
+
+# ------------------------------------------------------------------------------
+# Analysis Stage Groupings (Shown in the roast summary index.html)
+# ------------------------------------------------------------------------------
+stages:
+  - id: "stage_f"
+    title: "📊 Stage F — Statistical Inference & Closure"
+    patterns: ["bkg_syst_f", "phasef", "closure_summary", "summary_svb", "stat_analysis"]
+    badge_cls: "chip-accent"
+
+  - id: "stage_c"
+    title: "🎯 Stage C — FvT Classifier & Closure"
+    patterns: ["bkg_syst_c", "phasec", "fvt_closure", "fvt"]
+    badge_cls: "chip-neutral"
+
+  - id: "stage_b"
+    title: "📈 Stage B — JCM Computation & Validation"
+    patterns: ["bkg_syst_b", "phaseb", "computejcm", "test_v0_closure"]
+    badge_cls: "chip-neutral"
+
+  - id: "stage_a"
+    title: "📁 Stage A — Subsamples & PicoAOD Validation"
+    patterns: ["bkg_syst_a", "phasea", "process_subsamples", "skimmer"]
+    badge_cls: "chip-neutral"
+
+# ------------------------------------------------------------------------------
+# Analysis-specific Publish / Archive Filter Rules
+# ------------------------------------------------------------------------------
+publish:
+  exclude:
+    - "*/classifier_inputs/classifier_inputs_dataset_*"
+
+archive:
+  exclude:
+    - "*/classifier_inputs/classifier_inputs_dataset_*"

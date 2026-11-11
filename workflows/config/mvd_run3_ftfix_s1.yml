@@ -1,0 +1,23 @@
+# ==============================================================================
+# 2022+2023 MvD (mixed 1x) redo with the finetune fix -- k-fold seed offset 1
+# ==============================================================================
+# As mvd_run3_ftfix.yml, with --kfold-seed-offsets 1 for the MvD (another train/validation split, and
+# a fresh random draw of the initial weights and batch order). The first redo
+# (mvd_run3_ftfix_20261107_1c7c8db-3d65ecc) trained a markedly weaker MvD than the original
+# mvd_run3_20260927_91be0e9-f18c44b on identical inputs and settings: validation loss ~0.617 vs
+# 0.609 and AUC (4b data vs mixed) 0.654-0.672 vs 0.676 in every fold, already from epoch 5, while the
+# 2025 MvD redo matched its original. This retrain tells a bad draw from a systematic effect; the
+# better of the two feeds V.2c / V.3 / V.4.
+#
+#   roast new --config coffea4bees/workflows/config/mvd_run3_ftfix_s1.yml \
+#       --step nautilus:coffea4bees/workflows/Snakefile_MvD_2_train.smk \
+#       --step cmslpc:coffea4bees/workflows/Snakefile_MvD.smk \
+#       --step nautilus:coffea4bees/workflows/Snakefile_MvD_3_svb.smk
+# ==============================================================================
+base: coffea4bees/workflows/config/mvd_run3_ftfix.yml
+
+label: "mvd_run3_ftfix_s1"
+
+mvd:
+  workflow_overrides:
+    --kfold-seed-offsets: "1"

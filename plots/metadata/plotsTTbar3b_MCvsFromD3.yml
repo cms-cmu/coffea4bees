@@ -1,0 +1,55 @@
+# Phase C.4: three-tag ttbar MC vs 3b data with the FvT d3 -> t3 weight applied (TTbar3b_from_d3 =
+# 3b data x JCM x d3_to_t3, needs plot_ttbar_with_weights, which Snakefile_PhaseC_4_FvT_closure.smk
+# forces). Both from histAll_FvT_closure.coffea; ratio = from-d3 / MC. Absolute normalisation, so
+# the ratio panel shows the rate and the shape difference together. The four-tag counterpart is
+# plotsTTbar_MCvsFromD3.yml.
+hists:
+        tt3_MC:
+                process: [TTToHadronic, TTToSemiLeptonic, TTTo2L2Nu]
+                tag: threeTag
+                label: $t\bar{t}$ 3b MC
+                fillcolor: k
+                edgecolor: k
+
+        tt3_from_d3:
+                process: TTbar3b_from_d3
+                tag: threeTag
+                label: $t\bar{t}$ 3b from 3b data (FvT d3->t3)
+                fillcolor: "#e42536"
+                edgecolor: "#e42536"
+
+ratios:
+        fromD3ToMC:
+                numerator:
+                        type: hists
+                        key: tt3_from_d3
+                denominator:
+                        type: hists
+                        key: tt3_MC
+                uncertianty:
+                        nominal
+                color: "#e42536"
+                marker: "o"
+
+doRatio: 1
+
+# Same removals as plotsAll_FvTClosure.yml, plus the FvT-score histograms: MC has no FvT friend,
+# so they are empty on the MC side (substring match, see makePlots.py).
+skip_hists:
+    - m4j_hh
+    - m4j_zh
+    - m4j_zz
+    - tagJets
+    - FvT
+
+# Pinned at the top of the HTML gallery (src/plotting/make_gallery.py).
+summary:
+    - selJets.n
+    - top_cand    
+    - canJet0.pt
+    - canJet3.pt
+    - m4j
+    - quadJet_selected.lead.mass
+    - quadJet_selected.subl.mass
+    - quadJet_selected.xHH
+    - xbW

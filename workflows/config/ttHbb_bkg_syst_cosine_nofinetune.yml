@@ -1,0 +1,43 @@
+# ==============================================================================
+# ttHbb Run 2 BACKGROUND SYSTEMATIC — CosineAnnealing FvT without Finetuning
+# ==============================================================================
+# Evaluates pure CosineAnnealing (20 epochs, no secondary Finetuning stage)
+# on the 16 background systematic subsample models.
+# Based on the test suite (04-cosine-nofinetune) which achieved:
+# - SB Normalization Bias: -0.41% (vs -0.93% with finetuning)
+# - chi2(FvT)/ndf: 0.935 (closest to 1.000)
+# - chi2(pt1)/ndf: 1.086
+# - Composite chi2/ndf: 1.222
+# Reuses pre-FvT stages A & B from ttHbb_bkg_syst_declib16nc_corner_veto on EOS
+# to allow direct GPU training (Stage BKG_C) without re-running CPU subsamples.
+# ==============================================================================
+
+base: coffea4bees/workflows/config/ttHbb_bkg_syst_declib16nc_corner_veto.yml
+
+label: "ttHbb_bkg_syst_cosine_nofinetune"
+
+upstream_pre_fvt: "pre_fvt"
+
+stat_analysis_rebins:
+  - 24
+f3_rebins:
+  - 24
+closure_extra_args: "--ignore_failures"
+
+inputs:
+  upstream_roasts:
+    declib: declib16nc_run2_20261003_3ab8302-b2d2dec
+    nominal: ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11
+    mixeddata: mixeddata_run2_20260927_c39c264-0ce4d59
+    pre_fvt: analysis_ttHbb_bkg_syst_declib16nc_corner_veto_20261029_ee431c4-5508ecf
+
+fvt_train_workflow:
+  model:
+    - module: HCR.FvT.baseline.Train
+      option:
+        - --kfolds 3
+        - --kfold-seed FvT random
+        - --kfold-seed-offsets 0
+        - --training CosineAnnealing
+        - epoch: 20
+          bs_init: 1024

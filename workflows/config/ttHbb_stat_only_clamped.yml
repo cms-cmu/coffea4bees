@@ -1,0 +1,41 @@
+# ==============================================================================
+# ttHbb Run 2 NOMINAL STAT-ONLY ANALYSIS — Clamped (Phase F only)
+# ==============================================================================
+# Evaluates baseline ttHbb analysis with physical probability clamping
+# (p_t4 <= p_d4) in Phase F, reading JCM, FvT friend trees, and SvB_MA
+# friend trees from the nominal production roast.
+# ==============================================================================
+
+base: coffea4bees/workflows/config/ttHbb.yml
+
+label: "ttHbb_stat_only_clamped"
+output_path: "output/ttHbb_stat_only_clamped/"
+
+handoff:
+  allow_external_refs: true
+
+inputs:
+  upstream_roasts:
+    nominal: ttHbb_stat_only_20261012_49432f5-e211288
+  JCM:
+    UL16_preVFP: "{roast:nominal}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml"
+    UL16_postVFP: "{roast:nominal}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml"
+    UL17: "{roast:nominal}/handoff/jetCombinatoricModel_SB_2024_v2_UL17.yml"
+    UL18: "{roast:nominal}/handoff/jetCombinatoricModel_SB_2024_v2_UL18.yml"
+  FvT: "{roast:nominal}/friend/FvT_ttHbb_stitched/result.json@@analysis.0.merged"
+  SvB_MA: "{roast:nominal}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
+  svb_binning: "{roast:nominal}/handoff/svb_quantiles.json"
+
+analysis_config:
+  config:
+    apply_JCM: true
+    JCM_file:
+      UL16_preVFP: "{roast:nominal}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml"
+      UL16_postVFP: "{roast:nominal}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml"
+      UL17: "{roast:nominal}/handoff/jetCombinatoricModel_SB_2024_v2_UL17.yml"
+      UL18: "{roast:nominal}/handoff/jetCombinatoricModel_SB_2024_v2_UL18.yml"
+    friends:
+      FvT: "{roast:nominal}/friend/FvT_ttHbb_stitched/result.json@@analysis.0.merged"
+      SvB_MA: "{roast:nominal}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
+    svb_binning_file: "{roast:nominal}/handoff/svb_quantiles.json"
+    ttbar_scale: 1.0

@@ -16,7 +16,7 @@ friends:
     FvT: *FvT
     SvB_MA: *SvB_MA
   # ---------------------------------------------------------------------------------------------
-  # Run 3 (ttHbb fNjetR chain, workflows/config/analysis_ttHbb_run3_fNjetR.yml): trigger weights
+  # Run 3 (ttHbb fNjetR chain, workflows/config/ttHbb_run3_fNjetR.yml): trigger weights
   # PINNED to trigweights_Run3_v1.json, the version the 2022/2024 Phase B.2 classifier inputs
   # and every per-era JCM fit were produced with, so the 2023 inputs and the combined Run 3
   # FvT/SvB/Phase F are consistent with them (friends_ttHbb_Run3.yml moved to v3/v4 in

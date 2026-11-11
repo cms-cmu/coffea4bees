@@ -211,10 +211,46 @@ class _ggF(_MCDataset):
         return filelists
 
 
+def _era_index(eras: list[str]) -> dict[str, int]:
+    """Era key -> index of its run period (leading letters, in order of first appearance), so
+    streams / reprocessings of one period share an index (2025: B01, B11 -> 0; C01..C12 -> 1)."""
+    import re
+
+    periods = []
+    for e in eras:
+        p = re.match(r"[A-Za-z]*", str(e)).group(0) or str(e)
+        if p not in periods:
+            periods.append(p)
+    return {e: periods.index(re.match(r"[A-Za-z]*", str(e)).group(0) or str(e)) for e in eras}
+
+
+def _selected_eras(self, eras):
+    """The year's era keys, restricted to --data-eras when it is given."""
+    keep = getattr(self.opts, "data_eras", None)
+    if keep is None:
+        return list(eras)
+    keep = {str(e) for e in keep}
+    return [e for e in eras if str(e) in keep]
+
+
 def _data(self: Data, metadata: str):
     filelists = []
     if "detector" in self.data_sources:
-        for year, eras in CollisionData.eras.items():
+        per_era = getattr(self.opts, "era_feature", False)
+        for year, all_eras in CollisionData.eras.items():
+            eras = _selected_eras(self, all_eras)
+            if not eras:
+                continue
+            if per_era:
+                index = _era_index(all_eras)    # the period index of the full year, split or not
+                for e in eras:
+                    filelists.append(
+                        [
+                            f"label:data,year:{year},source:detector,era:{index[e]}",
+                            metadata + f".data.{year}.picoAOD.{e}.files",
+                        ]
+                    )
+                continue
             filelists.append(
                 [
                     f"label:data,year:{year},source:detector",
@@ -257,6 +293,9 @@ def _mixeddata_all(self: Data, metadata: str):
         # point at a different mixed-data sample, e.g. mixeddata_all_rank0.
         ds_name = getattr(self.opts, "data_mixed_all_name", "mixeddata_all")
         for year, eras in CollisionData.eras.items():
+            eras = _selected_eras(self, eras)
+            if not eras:
+                continue
             filelists.append(
                 [
                     f"label:data,year:{year},source:mixed_all",
@@ -337,6 +376,14 @@ class Data(_PicoAOD):
              "data source. Default 'mixeddata_all'; set to e.g. "
              "'mixeddata_all_rank0' to read from a different mixed-data "
              "registry without renaming any committed yamls.",
+    )
+    argparser.add_argument(
+        "--data-eras",
+        metavar="ERA",
+        nargs="*",
+        default=None,
+        help="load only these era keys of CollisionData.eras (detector and mixed_all data), e.g. to "
+             "split an evaluation into smaller jobs per era (eval_splits); default: all eras",
     )
 
     @cached_property

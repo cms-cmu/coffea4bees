@@ -1,0 +1,67 @@
+# ==============================================================================
+# 2022+2023 MvD (mixed 1x) REDO with the finetune fix: V.2, V.2c, V.3, V.4 on top of mvd_run3_20260927_91be0e9-f18c44b
+# ==============================================================================
+# The MvD and its SvB were trained with HH4b_Run3/MvD's old finetune (FixedStep, lr 1e-2, a full-rate
+# epoch with a fresh Adam after the decay), which worsened the validation loss in every fold of the six
+# Run 3 MvD trainings (and, in the nominal FvT, undid the SB closure). HH4b_Run3/MvD now finetunes with
+# FinetuneStep (lr 1e-4). This redoes V.2 (MvD), V.2c (closure), V.3 (SvB_MvD) and V.4 (analysis +
+# stat-only limits); V.1 is not re-run: its products (merged classifier-input manifest, classifier
+# metadata, tight mixed-data JCM) are read from mvd_run3_20260927_91be0e9-f18c44b's EOS handoff, as mvd_run3_30x.yml does.
+# The MvD and SvB_MvD evaluations are split by era (--data-eras): the unsplit Run 3 evaluations no
+# longer fit the NRP evaluation pods (the 2024 nominal FvT evaluation was OOM-killed at 63 Gi).
+#
+#   roast new --config coffea4bees/workflows/config/mvd_run3_ftfix.yml \
+#       --step nautilus:coffea4bees/workflows/Snakefile_MvD_2_train.smk \
+#       --step cmslpc:coffea4bees/workflows/Snakefile_MvD.smk \
+#       --step nautilus:coffea4bees/workflows/Snakefile_MvD_3_svb.smk
+#   roast submit <id> --step MvD_2_train ; roast submit <id> --step MvD --targets all_V2c
+#   roast submit <id> --step MvD_3_svb   ; roast submit <id> --step MvD --targets all_V4
+# ==============================================================================
+base: coffea4bees/workflows/config/mvd_run3.yml
+
+label: "mvd_run3_ftfix"
+
+inputs:
+  # lists replace: the two upstreams of the base config + the MvD roast whose V.1 is reused
+  upstream_roasts: [nominal_run3_20260922_3f9e199-1e0504f, mixeddata_run3_20260926_956d4bf-aca8a4e, mvd_run3_20260927_91be0e9-f18c44b]
+  # V.1's tight mixed-data JCM (V.2c / V.4 processor weights)
+  mixed_jcm: "{roast:mvd_run3_20260927_91be0e9-f18c44b}/handoff/jetCombinatoricModel_SB_mixeddata_tight.yml"
+
+handoff:
+  # V.2 / V.3 read mvd_run3_20260927_91be0e9-f18c44b's handoff
+  allow_external_refs: true
+
+mvd:
+  metadata: "{roast:mvd_run3_20260927_91be0e9-f18c44b}/handoff/classifier_inputs_MvD.json@@HCR_input"
+  workflow_overrides:
+    --metadata: "{roast:mvd_run3_20260927_91be0e9-f18c44b}/handoff/classifier_metadata"
+    --JCM-weight: '"source:mixed_all" {roast:mvd_run3_20260927_91be0e9-f18c44b}/handoff/jetCombinatoricModel_SB_mixeddata_tight.yml@@JCM_weights'
+    '--friends ""': "{roast:mvd_run3_20260927_91be0e9-f18c44b}/handoff/classifier_inputs_MvD.json@@HCR_input"
+  eval_splits:
+    y22pre: {--data-eras: [B, C, D]}
+    y22EE: {--data-eras: [E, F, G]}
+    y23pre: {--data-eras: [C01, C02, C11, C12, C3, C4]}
+    y23BPix: {--data-eras: [D1, D2]}
+  eval_split_mem: 63000
+
+svb_mvd:
+  metadata: "{roast:mvd_run3_20260927_91be0e9-f18c44b}/handoff/classifier_inputs_MvD.json@@HCR_input"
+  workflow_overrides:
+    --metadata: "{roast:mvd_run3_20260927_91be0e9-f18c44b}/handoff/classifier_metadata"
+    --JCM-weight: '"source:mixed_all" {roast:mvd_run3_20260927_91be0e9-f18c44b}/handoff/jetCombinatoricModel_SB_mixeddata_tight.yml@@JCM_weights'
+    '--friends ""': "{roast:mvd_run3_20260927_91be0e9-f18c44b}/handoff/classifier_inputs_MvD.json@@HCR_input"
+  # data and mixed data per era group (no MC), plus one MC-only job (ttbar, ggF)
+  eval_splits:
+    y22pre: {--data-eras: [B, C, D], --mc-processes: ''}
+    y22EE: {--data-eras: [E, F, G], --mc-processes: ''}
+    y23pre: {--data-eras: [C01, C02, C11, C12, C3, C4], --mc-processes: ''}
+    y23BPix: {--data-eras: [D1, D2], --mc-processes: ''}
+    MC: {--data-source: ''}
+  eval_split_mem: 63000
+
+closure:
+  # new MvD: the MvD-weighted rows change; dump (no such file yet), then bless
+  known_counts: "coffea4bees/analysis/tests/known_fullCounts_MvD_closure_Run3_ftfix.yml"
+
+analysis:
+  known_counts: "coffea4bees/analysis/tests/known_fullCounts_MvD_Run3_ftfix.yml"

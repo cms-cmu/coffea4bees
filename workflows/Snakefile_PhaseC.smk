@@ -54,10 +54,50 @@ elif config.get('workflow_overrides') or config.get('workflow_inserts'):
 
 include: "../../src/classifier/workflow/Snakefile"
 
+# ── Training Summary Dashboard & Quality Gate ─────────────────────────────────
+localrules: phaseC_training_summary, phaseC_quality_gate
+
+rule phaseC_training_summary:
+    input:
+        rules.all.input
+    output:
+        html = f"{output_dir}/training_summary.html"
+    params:
+        models_dir = output_dir,
+        title = lambda wildcards: f"FvT Training Summary — {config.get('roast_id', config.get('label', 'FvT_nominal'))}"
+    shell:
+        """
+        python3 src/classifier/training_summary.py \
+            --models-dir {params.models_dir} \
+            --output {output.html} \
+            --title "{params.title}"
+        """
+
+rule phaseC_quality_gate:
+    input:
+        rules.all.input,
+        summary = f"{output_dir}/training_summary.html",
+    output:
+        token = f"{output_dir}/quality_gate.done"
+    params:
+        models_dir = output_dir,
+        max_chi2 = config.get('fvt_max_chi2_ndf', config.get('max_chi2_ndf', 5.0)),
+        metric = config.get('fvt_quality_metric', 'chi2_ndf_fvt'),
+    shell:
+        """
+        python3 src/classifier/check_fvt_quality.py \
+            --models-dir {params.models_dir} \
+            --max-chi2 {params.max_chi2} \
+            --metric {params.metric} \
+            --output-token {output.token}
+        """
+
 # default_target, not position: Snakemake takes the first rule of the top-level Snakefile
 # as the default, so adding a rule above this one would silently shrink the DAG to that
 # rule's own inputs.
 rule all_PhaseC:
     default_target: True
     input:
-        rules.all.input
+        rules.all.input,
+        f"{output_dir}/training_summary.html",
+        f"{output_dir}/quality_gate.done"

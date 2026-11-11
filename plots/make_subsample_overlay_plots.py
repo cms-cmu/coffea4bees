@@ -56,30 +56,33 @@ def slice_1d(h, process, region, tag='threeTag'):
         return None
 
 
-def plot_overlay(hists_per_subsample, var_name, region, out_dir, xlabel="Variable", yscale="linear"):
+def plot_overlay(hists_per_subsample, var_name, region, out_dir, xlabel="Variable", yscale="linear", sub_names=None):
     """Plot overlaid curves for all subsamples with a ratio-to-v0 bottom panel."""
     os.makedirs(out_dir, exist_ok=True)
     fig, (ax_top, ax_bot) = plt.subplots(
         2, 1, figsize=(8, 7), sharex=True, gridspec_kw={'height_ratios': [3, 1], 'hspace': 0.08}
     )
 
+    if sub_names is None:
+        sub_names = [f"v{m}" for m in range(len(hists_per_subsample))]
+
     ref_vals = None
     ref_edges = None
 
-    for m, h_1d in enumerate(hists_per_subsample):
+    for m, (sub_label, h_1d) in enumerate(zip(sub_names, hists_per_subsample)):
         if h_1d is None:
             continue
         edges = np.array(h_1d.axes[0].edges)
         vals = np.array(h_1d.values())
         color = COLORS[m % len(COLORS)]
 
-        if m == 0:
+        if ref_vals is None:
             ref_vals = vals
             ref_edges = edges
 
         # Plot step on top axis
         centers = 0.5 * (edges[:-1] + edges[1:])
-        ax_top.stairs(vals, edges, color=color, label=f"v{m}", linewidth=1.2, alpha=0.85)
+        ax_top.stairs(vals, edges, color=color, label=sub_label, linewidth=1.2, alpha=0.85)
 
         # Plot ratio on bottom axis
         if ref_vals is not None and len(ref_vals) == len(vals):
@@ -87,14 +90,16 @@ def plot_overlay(hists_per_subsample, var_name, region, out_dir, xlabel="Variabl
                 ratio = np.where(ref_vals > 0, vals / ref_vals, np.nan)
             ax_bot.stairs(ratio, edges, color=color, linewidth=1.2, alpha=0.85)
 
+    n_active = sum(1 for h in hists_per_subsample if h is not None)
     ax_top.set_ylabel("Events / bin", fontsize=12)
     ax_top.set_yscale(yscale)
-    ax_top.set_title(f"{var_name} [{region}] (16 Subsamples Background Model)", fontsize=13)
+    ax_top.set_title(f"{var_name} [{region}] ({n_active} Subsamples Background Model)", fontsize=13)
     ax_top.grid(True, linestyle="--", alpha=0.4)
     ax_top.legend(ncol=4, fontsize=8, loc="upper right")
 
+    first_sub = next((s for s, h in zip(sub_names, hists_per_subsample) if h is not None), "v0")
     ax_bot.set_xlabel(xlabel, fontsize=12)
-    ax_bot.set_ylabel("v / v0", fontsize=11)
+    ax_bot.set_ylabel(f"v / {first_sub}", fontsize=11)
     ax_bot.axhline(1.0, color="gray", linestyle="--", linewidth=1.0)
     ax_bot.set_ylim(0.7, 1.3)
     ax_bot.grid(True, linestyle="--", alpha=0.4)
@@ -111,13 +116,18 @@ def main():
     parser.add_argument("-o", "--output_dir", required=True, help="Output directory for plots")
     parser.add_argument("--channel", default="ttHbb", help="Channel name")
     parser.add_argument("--n_subsamples", type=int, default=16, help="Number of subsamples")
+    parser.add_argument("--subsamples", "--subsample_indices", nargs="+", default=None,
+                        help="Explicit list of subsample indices or labels to plot (e.g. 0 1 2 ...)")
     parser.add_argument("--regions", nargs="+", default=["SR", "SB"], help="Regions to plot")
     args = parser.parse_args()
 
     data = load(args.input)
     hists = data.get("hists", {})
 
-    subsamples = [f"v{m}" for m in range(args.n_subsamples)]
+    if args.subsamples:
+        subsamples = [f"v{m}" if not str(m).startswith('v') else str(m) for m in args.subsamples]
+    else:
+        subsamples = [f"v{m}" for m in range(args.n_subsamples)]
 
     # The channel's SvB_MA signal-probability histograms (ttHbb: ps_ttHbb; HH4b: ps_hh / ps_zh / ps_zz)
     ps_variants = CHANNEL_PS.get(args.channel, [f"ps_{args.channel}"])
@@ -156,7 +166,7 @@ def main():
                     sub_hists.append(None)
 
             if any(h is not None for h in sub_hists):
-                plot_overlay(sub_hists, tgt["name"], reg, args.output_dir, xlabel=tgt["xlabel"], yscale=tgt["yscale"])
+                plot_overlay(sub_hists, tgt["name"], reg, args.output_dir, xlabel=tgt["xlabel"], yscale=tgt["yscale"], sub_names=subsamples)
 
 
 if __name__ == "__main__":

@@ -17,8 +17,10 @@
 #   - FvT:   analysis_config.config.friends.FvT (this roast's Phase C friend; runner.py merges it over friend_file)
 # Outputs: {output_path}FvT_closure/{singlefiles/, histAll_FvT_closure.coffea, plots_FvT_closure/ (+index.html),
 #           cutflow_FvT_closure.{yml,html}, cutflow_validation_FvT_closure*.txt,
-#           plots_ttbar_MC_vs_d3/ (+index.html), ttbar_MC_vs_d3_cutflow.{html,txt}}
-#   The last two compare the 4b ttbar MC with TTbar4b_from_d3 (target all_ttbar_MC_vs_d3).
+#           plots_ttbar_MC_vs_d3/ (+index.html), plots_ttbar3b_MC_vs_d3/ (+index.html),
+#           ttbar_MC_vs_d3_cutflow.{html,txt}}
+#   The last three compare the ttbar MC with the FvT-derived estimate from 3b data: 4b MC vs
+#   TTbar4b_from_d3 (d3 -> t4) and 3b MC vs TTbar3b_from_d3 (d3 -> t3) (target all_ttbar_MC_vs_d3).
 #
 # roast: step "C4" (cmslpc) in src/tools/roast.py.
 
@@ -27,10 +29,15 @@ import copy
 import yaml
 
 config.setdefault('label', "FvT_closure")
-base_output = config.get('output_path', 'output/FvT_closure/')
+base_output = config.get('output_path', 'output/PhaseC_4_FvT_closure/')
 if not base_output.endswith('/'):
     base_output += '/'
-CLOSURE_PATH = base_output if base_output.rstrip('/').endswith('FvT_closure') else os.path.join(base_output, 'FvT_closure/')
+if base_output.rstrip('/').endswith('FvT_closure') or base_output.rstrip('/').endswith('PhaseC_4_FvT_closure'):
+    CLOSURE_PATH = base_output
+else:
+    CLOSURE_PATH = os.path.join(base_output, 'PhaseC_4_FvT_closure/')
+if not CLOSURE_PATH.endswith('/'):
+    CLOSURE_PATH += '/'
 
 config.setdefault('test', False)
 is_test = config.get('test', False)
@@ -54,10 +61,11 @@ closure_cfg = config.get('fvt_closure') or {}
 if not isinstance(closure_cfg, dict):
     closure_cfg = {}
 CLOSURE_OPTION_KEYS = ('datasets', 'plot_config', 'JCM_file', 'known_counts', 'known_counts_test', 'cutflow_list',
-                       'reuse_wJCM_ttbar', 'jcm_output_path', 'closure_ttbar', 'ttbar_compare_plot_config',
+                       'reuse_wJCM_ttbar', 'jcm_output_path', 'closure_ttbar', 'ttbar_compare_plot_config', 'ttbar3b_compare_plot_config',
                        'wJCM_ttbar_from', 'known_counts_fatal')
 
-datasets = closure_cfg.get('datasets', ['data', 'TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic'])
+default_ttbar = config.get('ttbar_processes', ['TTToSemiLeptonic', 'TTTo2L2Nu', 'TTToHadronic'])
+datasets = closure_cfg.get('datasets', ['data'] + list(default_ttbar))
 if isinstance(datasets, str):
     datasets = [d.strip() for d in datasets.split(",") if d.strip()]
 DATA_YEAR_ERA = [(str(yr), era) for yr, eras in config['year_eras'].items() for era in eras] if 'data' in datasets else []
@@ -68,17 +76,32 @@ MC_DATASETS = [d for d in datasets if d != 'data']
 # event_weights.py: `apply_FvT and "FvT" in event.fields`; rename_FvT_friend returns None for MC).
 # MC histograms are therefore identical to Phase B.1's wJCM pass, so by default the ttbar
 # singlefiles from there are merged in instead of being reprocessed (saves the 12 MC jobs).
-REUSE_WJCM_TTBAR = closure_cfg.get('reuse_wJCM_ttbar', True)
+REUSE_WJCM_TTBAR = closure_cfg.get('reuse_wJCM_ttbar', config.get('reuse_wJCM_ttbar', True))
 if isinstance(REUSE_WJCM_TTBAR, str):
     REUSE_WJCM_TTBAR = REUSE_WJCM_TTBAR.lower() in ("true", "1", "yes")
-JCM_OUTPUT_PATH = closure_cfg.get('jcm_output_path', os.path.join(base_output, 'computeJCM/'))
+jcm_out = closure_cfg.get('jcm_output_path')
+if not jcm_out:
+    cand_b1 = os.path.join(base_output, 'PhaseB_1_computeJCM/')
+    cand_old = os.path.join(base_output, 'computeJCM/')
+    jcm_out = cand_b1 if os.path.exists(cand_b1) else (cand_old if os.path.exists(cand_old) else cand_b1)
+JCM_OUTPUT_PATH = jcm_out
 if not JCM_OUTPUT_PATH.endswith('/'):
     JCM_OUTPUT_PATH += '/'
 
 # A roast without its own Phase B (C.4 only) takes the ttbar from ANOTHER roast's B.1 instead:
 # wJCM_ttbar_from = that roast's merged computeJCM/histAll_wJCM.coffea (its singlefiles are not
 # archived), read in place over xrootd and cut down to the TT processes (select_ttbar_upstream).
-WJCM_TTBAR_FROM = closure_cfg.get('wJCM_ttbar_from')
+WJCM_TTBAR_FROM = closure_cfg.get('wJCM_ttbar_from') or config.get('wJCM_ttbar_from')
+if not WJCM_TTBAR_FROM and REUSE_WJCM_TTBAR:
+    cand_singlefiles = [f"{JCM_OUTPUT_PATH}singlefiles/hist__{ds}__{yr}_wJCM.coffea" for ds in MC_DATASETS if ds.startswith('TT') for yr in DATA_YEARS]
+    if not all(os.path.exists(f) for f in cand_singlefiles):
+        upstream = (config.get('inputs', {}).get('upstream_roasts', {}).get('upstream')
+                    or config.get('roast', {}).get('upstream'))
+        if upstream:
+            eos_prod = config.get('eos_prod', 'root://cmseos.fnal.gov//store/user/algomez/HH4b_prod')
+            channel = config.get('channel', 'ttHbb')
+            cand_url = f"{eos_prod}/{upstream}/output/{channel}/computeJCM/histAll_wJCM.coffea"
+            WJCM_TTBAR_FROM = cand_url
 TT_DATASETS = [ds for ds in MC_DATASETS if ds.startswith('TT')]
 UPSTREAM_TTBAR = f"{CLOSURE_PATH}singlefiles/hist__TTbar_upstream_wJCM.coffea"
 
@@ -99,6 +122,8 @@ per_year_jcm = bool(config.get('per_year_jcm', False))
 if per_year_jcm:
     if isinstance(closure_cfg.get('JCM_file'), dict):
         jcm_file = closure_cfg['JCM_file']
+    elif isinstance((config.get('inputs') or {}).get('JCM'), dict):
+        jcm_file = dict(config['inputs']['JCM'])
     else:
         jcm_file = {
             yr: f"coffea4bees/metadata/weights/JCM/{config['roast_id']}/jetCombinatoricModel_SB_{tag}_{yr}.yml"
@@ -116,8 +141,11 @@ CUTFLOW_LIST = closure_cfg.get('cutflow_list', "passJetMult,passPreSel,passDiJet
 # Four-tag ttbar MC vs the FvT-derived estimate from 3b data (TTbar4b_from_d3), from the same merged
 # file and cutflow dump: a plot gallery and a cut-by-cut table. Needs ttbar MC in `datasets`.
 ttbar_compare_plot_config = closure_cfg.get('ttbar_compare_plot_config', "coffea4bees/plots/metadata/plotsTTbar_MCvsFromD3.yml")
+# Three-tag ttbar MC vs 3b data with the FvT d3 -> t3 weight applied (TTbar3b_from_d3): same file, own gallery.
+ttbar3b_compare_plot_config = closure_cfg.get('ttbar3b_compare_plot_config', "coffea4bees/plots/metadata/plotsTTbar3b_MCvsFromD3.yml")
 TTBAR_COMPARISON_OUTPUTS = [
     f"{CLOSURE_PATH}plots_ttbar_MC_vs_d3/plots_done.txt",
+    f"{CLOSURE_PATH}plots_ttbar3b_MC_vs_d3/plots_done.txt",
     f"{CLOSURE_PATH}ttbar_MC_vs_d3_cutflow.html",   # not cutflow_{label}.html: FvT_cutflow_closure_table owns that pattern
 ] if any(ds.startswith('TT') for ds in MC_DATASETS) else []
 
@@ -140,7 +168,7 @@ def get_raw_closure_config():
     # TTbar{4b,3b}_from_d3 histograms: the ttbar stacked by plotsAll_FvTClosure.yml
     res['config']['plot_ttbar_with_weights'] = True
     res['config']['run_SvB'] = False
-    res['config']['fill_histograms'] = res['config'].get('fill_histograms', 'kinematics+FvT')
+    res['config']['fill_histograms'] = closure_cfg.get('fill_histograms', 'kinematics+FvT')
     for k in list(res['config'].keys()):
         if k.startswith('SvB'):
             res['config'][k] = None
@@ -168,6 +196,15 @@ rule all_FvT_closure:
         f"{CLOSURE_PATH}cutflow_validation_FvT_closure.txt",
         f"{CLOSURE_PATH}cutflow_FvT_closure.html",
         TTBAR_COMPARISON_OUTPUTS
+    run:
+        import os
+        legacy_closure = os.path.join(base_output, 'FvT_closure')
+        if os.path.abspath(legacy_closure) != os.path.abspath(CLOSURE_PATH.rstrip('/')):
+            if not os.path.exists(legacy_closure) and not os.path.islink(legacy_closure):
+                try:
+                    os.symlink(os.path.basename(CLOSURE_PATH.rstrip('/')), legacy_closure)
+                except OSError:
+                    pass
 
 # ttbar MC vs the FvT-derived estimate alone (e.g. on an existing C.4 output):
 #   snakemake -s ... all_ttbar_MC_vs_d3
@@ -314,6 +351,25 @@ use rule make_plots from analysis as make_plots_ttbar_MC_vs_d3 with:
         python_bin = lambda wildcards: config.get("python_bin", "python")
     log: f"{CLOSURE_PATH}logs/make_plots_ttbar_MC_vs_d3.log"
 
+# 3b ttbar MC vs 3b data with FvT d3 -> t3 applied (TTbar3b_from_d3), the three-tag counterpart of the above
+use rule make_plots from analysis as make_plots_ttbar3b_MC_vs_d3 with:
+    input:
+        coffea_file = f"{CLOSURE_PATH}histAll_FvT_closure.coffea",
+        metadata_file = ttbar3b_compare_plot_config,
+        plot_script = "coffea4bees/plots/makePlots.py"
+    output: f"{CLOSURE_PATH}plots_ttbar3b_MC_vs_d3/plots_done.txt"
+    params:
+        output_dir = f"{CLOSURE_PATH}plots_ttbar3b_MC_vs_d3/",
+        metadata = ttbar3b_compare_plot_config,
+        extra_arguments = lambda wildcards: " ".join(filter(None, [
+            "-s xW -f png",
+            "--year " + (DATA_YEARS[0] if len(DATA_YEARS) == 1 else ("Run3" if any("202" in y for y in DATA_YEARS) else "RunII")),
+            config.get("plot_extra_arguments", ""),
+        ])),
+        run_container_wrapper = config['analysis_container_wrapper'],
+        python_bin = lambda wildcards: config.get("python_bin", "python")
+    log: f"{CLOSURE_PATH}logs/make_plots_ttbar3b_MC_vs_d3.log"
+
 # Cut-by-cut ttbar 4b (and 3b) MC vs TTbar_from_d3 (src/tools/cutflow_ttbar_compare.py in barista)
 rule ttbar_MC_vs_d3_cutflow:
     input:
@@ -344,4 +400,4 @@ rule ttbar_MC_vs_d3_cutflow:
         fi
         """
 
-localrules: create_FvT_closure_config, select_ttbar_upstream, merge_FvT_closure, make_plots_FvT_closure, check_cutflow_FvT_closure, FvT_cutflow_closure_table, make_plots_ttbar_MC_vs_d3, ttbar_MC_vs_d3_cutflow
+localrules: create_FvT_closure_config, select_ttbar_upstream, merge_FvT_closure, make_plots_FvT_closure, check_cutflow_FvT_closure, FvT_cutflow_closure_table, make_plots_ttbar_MC_vs_d3, make_plots_ttbar3b_MC_vs_d3, ttbar_MC_vs_d3_cutflow, all_FvT_closure

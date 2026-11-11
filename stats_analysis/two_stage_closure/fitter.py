@@ -69,8 +69,24 @@ class closure:
                 f"Ensure base histograms in {closure_file_out} have identical number of bins!"
             )
 
+        # Option 1: Account for un-averaged static ttbar_PSData across subsamples
+        # Because ttbar_PSData is static across all pseudo-experiments, its statistical variance
+        # was artificially divided by nMixes when data_obs was averaged via TH1::Add and Scale(1/nMixes).
+        # We restore the full single-realization ttbar variance: sigma_new^2 = sigma_data^2 + (1 - 1/nMixes)*sigma_ttbar^2
+        if not getattr(args, 'pure_qcd', False) and nMixes > 1 and self.ttbar_rebin is not None:
+            print_log(f"[INFO] Option 1 (Static ttbar correction): Restoring un-averaged ttbar uncertainty for {nMixes} subsamples")
+            for _bin in range(1, self.nBins_rebin + 1):
+                err_data = self.data_obs_rebin.GetBinError(_bin)
+                err_tt = self.ttbar_rebin.GetBinError(_bin)
+                corr_var = (1.0 - 1.0 / nMixes) * (err_tt ** 2)
+                new_err = (err_data ** 2 + corr_var) ** 0.5
+                self.data_obs_rebin.SetBinError(_bin, new_err)
+
         self.bin_width = 1. / self.nBins_rebin
-        self.fit_x_min = 0.5 + closure_fit_x_min / self.bin_width
+        if getattr(config, 'skip_first_bin', False) or getattr(args, 'skip_first_bin', False):
+            self.fit_x_min = 1.5001
+        else:
+            self.fit_x_min = 0.5 + closure_fit_x_min / self.bin_width
 
         self.basis_element = self.multijet.basis_element
         self.basis_element_no_rebin = self.multijet.basis_element_no_rebin
@@ -231,6 +247,27 @@ class closure:
                 else:
                     self.exit_message.append('>> SS f-test = %2.0f%%! STRONG EVIDENCE FOR SPURIOUS SIGNAL SYSTEMATIC' % (100 * self.fProb_ss[basis]))
                 self.exit_message.append('-' * 50)
+
+        # Check maximum basis order if no lower basis order passed
+        last_basis = self.bases[-1]
+        if self.basis is None and (self.pvalue[last_basis] > probThreshold):
+            self.passed = True
+            self.exit_message = []
+            print(self.pvalue)
+            print(self.fProb)
+            self.basis = last_basis
+            self.exit_message.append('-' * 50)
+            self.exit_message.append('%s channel' % self.channel.upper())
+            self.exit_message.append('Satisfied goodness of fit at maximum basis order')
+            self.exit_message.append('>> %d, %d basis elements (variance, bias)' % (self.multijet.basis, self.basis))
+            f_prob_val = self.fProb.get(last_basis, np.nan)
+            f_prob_str = f"{100 * f_prob_val:.0f}%" if not np.isnan(f_prob_val) else "N/A"
+            self.exit_message.append('>> p-value = %2.0f%%, f-test = %s with %d basis elements (p-value above threshold)' % (100 * self.pvalue[last_basis], f_prob_str, last_basis))
+            if self.fProb_ss.get(last_basis, 0) < 0.95:
+                self.exit_message.append('>> SS f-test = %2.0f%%. Do not need to include spurious signal systematic :)' % (100 * self.fProb_ss.get(last_basis, 0)))
+            else:
+                self.exit_message.append('>> SS f-test = %2.0f%%! STRONG EVIDENCE FOR SPURIOUS SIGNAL SYSTEMATIC' % (100 * self.fProb_ss.get(last_basis, 0)))
+            self.exit_message.append('-' * 50)
 
         self.plotPValues()
 
@@ -434,7 +471,8 @@ class closure:
         print(' p-value = %0.2f' % self.pvalue[basis])
         print('nConstrained', nConstrained)
         print('nUnonstrained', nUnconstrained)
-        print('expected ndfs = ', self.nBins_rebin - nUnconstrained)
+        n_data_bins = self.nBins_rebin - 1 if (getattr(config, 'skip_first_bin', False) or getattr(args, 'skip_first_bin', False)) else self.nBins_rebin
+        print('expected ndfs = ', n_data_bins - nUnconstrained)
 
         self.ymax[basis] = self.closure_TF1[basis].GetMaximum(1, self.nBins_closure)
         self.fit_parameters[basis], self.fit_parameters_error[basis] = [], []

@@ -1,0 +1,19 @@
+# ==============================================================================
+# DIAGNOSTIC (A, long): the tight 2025 FvT trained 40 epochs, LR decay from epoch 35
+# ==============================================================================
+# See nominal_run3_2025_fvtdiag_base.yml for the set. The nominal schedule (FixedStep, 20 epochs,
+# lr x0.25 per epoch from epoch 15) leaves the validation loss flat only from the LR drop on, and
+# the SB closure bias is the same on training and validation events (under-fit, not over-trained).
+# Template HH4b_Run3/FvT_long40: 40 epochs at the same batch-size schedule, LR decay from epoch 35.
+#
+#   roast new --config coffea4bees/workflows/config/nominal_run3_2025_fvtdiag_long40.yml --phases C --nautilus
+# ==============================================================================
+base: coffea4bees/workflows/config/nominal_run3_2025_fvtdiag_base.yml
+
+label: "Run3_2025_nominal_fvtdiag_long40"
+output_path: "output/Run3_2025_nominal_fvtdiag_long40/"
+
+fvt:
+  wfs_base: "coffea4bees/classifier/config/workflows/HH4b_Run3/FvT_long40"
+  # twice the epochs of the ~2 h nominal training per fold
+  train_runtime: 900

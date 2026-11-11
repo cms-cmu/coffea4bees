@@ -49,7 +49,7 @@ use rule analysis_processor from analysis as D4_hists with:
         datasets = " ".join([MJ_NAME] + ([PS_NAME] if SUBTRACT_TT else [])),
         years = lambda wildcards: wildcards.year,
         config = lambda wildcards, input: input.config_file,
-        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR])),
+        extra_arguments = " ".join(filter(None, [TEST_FLAG, CONDOR, ERAS_ARG])),
         run_container_wrapper = WRAPPER,
         python_bin = PYTHON
 

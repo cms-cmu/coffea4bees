@@ -67,7 +67,7 @@
 import os
 
 if not workflow.configfiles:
-    configfile: "coffea4bees/workflows/config/analysis_ttHbb_bkg_syst.yml"
+    configfile: "coffea4bees/workflows/config/ttHbb_bkg_syst.yml"
 
 include: "helpers/bkg_syst_common.smk"
 
@@ -130,6 +130,14 @@ rule stage_phaseF_1_config:
         user_analysis_cfg = (config.get('analysis_config') or {}).get('config', {})
         if isinstance(user_analysis_cfg, dict):
             data_cfg.setdefault('config', {}).update(user_analysis_cfg)
+
+        cand_sel_cfg = (
+            config.get('candidates_selection_cfg')
+            or user_analysis_cfg.get('candidates_selection_cfg')
+            or (config.get('phase_f_1') or {}).get('config', {}).get('candidates_selection_cfg')
+        )
+        if cand_sel_cfg:
+            data_cfg.setdefault('config', {})['candidates_selection_cfg'] = cand_sel_cfg
 
         phase_f_cfg = config.get('phase_f_1', config.get('bkg_syst_F_1', config.get('phase_f', {})))
         if isinstance(phase_f_cfg.get('config'), dict):
@@ -196,14 +204,15 @@ closure_plot_cfg = config.get(
 wildcard_constraints:
     m = r"\d+"
 
-localrules: all_bkg_syst_F_1, all_bkg_syst_F_1_hists, make_plots_closure, make_gallery_closure, stage_phaseF_1_config, validate_f1_normalization
+localrules: all_bkg_syst_F_1, all_bkg_syst_F_1_hists, make_plots_closure, make_gallery_closure, stage_phaseF_1_config, validate_f1_normalization, hist_crosscheck_bkg_syst_F_1
 
 # ── Master Target Rule ────────────────────────────────────────────────────────
 rule all_bkg_syst_F_1:
     input:
         f"{out_f1}validation_normalization.done",
         f"{out_f1}plots/plots_done.txt",
-        f"{out_f1}plots/gallery.html"
+        f"{out_f1}plots/gallery.html",
+        f"{out_f1}hist_crosscheck_bkg_syst_F_1.html"
 
 # ── Histogram Only Target Rule (Before Plotting) ──────────────────────────────
 rule all_bkg_syst_F_1_hists:
@@ -218,7 +227,7 @@ per_year_jcm = bool(config.get('per_year_jcm', (config.get('phaseB_1', {}) or {}
 _handoff_in = config.get('input_handoff_eos') or globals().get('INPUT_HANDOFF_EOS') or HANDOFF_EOS
 _fvt_handoff = config.get('fvt_handoff_eos') or globals().get('FVT_HANDOFF_EOS') or HANDOFF_EOS
 _defined_rules = {r.name for r in workflow.rules}
-if (_fvt_handoff or HANDOFF_EOS) and 'extract_friend_manifest' not in _defined_rules:
+if (_fvt_handoff or HANDOFF_EOS) and not ({'extract_friend_manifest', 'stage_c4_friend_manifest'} & _defined_rules):
     rule stage_bkg_syst_friend_manifest:
         output:
             f"{out_c}friends/friends_FvT_{mix_name}_v{{m}}.json"
@@ -413,3 +422,42 @@ rule make_gallery_closure:
             touch {output.gallery}
         fi
         """
+
+# ── Histogram Consistency Check vs Stage C_4 ──────────────────────────────────
+rule hist_crosscheck_bkg_syst_F_1:
+    input:
+        data_coffea = f"{out_f1}histAll_mixeddata_bkgs.coffea"
+    output:
+        html = f"{out_f1}hist_crosscheck_bkg_syst_F_1.html",
+        txt = f"{out_f1}hist_crosscheck_bkg_syst_F_1.txt"
+    log:
+        f"{out_f1}logs/hist_crosscheck.log"
+    params:
+        reference = f"{out_c4}histAll_FvT_closure_v0.coffea",
+        container_wrapper = container_wrapper,
+        python_bin = python_bin,
+        tolerance = "0.0001",
+        variables = "selJets.n,v4j.mass",
+        regions = "SB"
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {output.html}) $(dirname {log})
+        if [ ! -f src/tools/compare_coffea_hists.py ]; then
+            echo "src/tools/compare_coffea_hists.py not found; skipping histogram cross-check" 2>&1 | tee {log}
+            echo "<p>histogram cross-check not available</p>" > {output.html}
+            cp {log} {output.txt}
+        elif [ ! -f "{params.reference}" ]; then
+            echo "SKIPPED: reference .coffea file '{params.reference}' not found" 2>&1 | tee {log}
+            echo "<p>histogram cross-check skipped: reference file not found</p>" > {output.html}
+            cp {log} {output.txt}
+        else
+            {params.container_wrapper} {params.python_bin} src/tools/compare_coffea_hists.py \
+                {input.data_coffea} {params.reference} \
+                -o {output.html} --txt {output.txt} --title "Stage_F_1_hist_crosscheck" \
+                --label-a "Stage F.1" --label-b "Stage C.4" \
+                --variables "{params.variables}" --regions "{params.regions}" \
+                --tolerance {params.tolerance} 2>&1 | tee {log}
+        fi
+        """
+

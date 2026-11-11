@@ -6,16 +6,16 @@
 # What differs from mixeddata_run3_2024.yml:
 #   * eras        the 16 2025 picoAOD keys of data.yml (B..G x ParkingHH0/1, PromptReco v1/v2), as
 #                 nominal_run3_2025_nontight.yml.
-#   * FvT + JCM   from the 2025 non-tight roast nominal_run3_2025_nontight_20261015_9ac9a30-b172c05
-#                 (config/nominal_run3_2025_nontight.yml, phases B, C, C4; archived). JCM chi2/ndf 709.
-#                 Its own C.4 closure is broken by an over-confident FvT tail (35,787 events |FvT| > 100);
-#                 with FvT_pd3_floor 0.01 (nominal_run3_2025_nontight_pd3floor_20261016_daa12d2-72775f5)
-#                 it closes at SB 0.988, SR 0.978. The mixing only uses the FvT as a ttbar-removal
-#                 probability (rand > d4_to_t4 / d3_to_t3): the tail events have d3_to_t3 >> 1 with or
-#                 without the floor (floored: up to 100), so they are removed either way -- no floor here.
+#   * FvT + JCM   from the 2025 non-tight roast nominal_run3_2025_nontight_20261027_1809191-df306da
+#                 (config/nominal_run3_2025_nontight.yml, phases B, C, C4): the rerun after the UParT
+#                 regression fix (barista !273), FvT_pd3_floor 0.01 built in; C.4 closure SR 0.989, SB 0.992.
+#                 Supersedes nominal_run3_2025_nontight_20261015_9ac9a30-b172c05 (unfloored C.4 broken by an
+#                 over-confident FvT tail). The mixing only uses the FvT as a ttbar-removal probability
+#                 (rand > d4_to_t4 / d3_to_t3), so the floor plays no role here.
 #   * ttbar       '2025' = the 2024 Summer24 TTTo* (TT.yml alias), lumi-scaled to 110.625 /fb; trigger
 #                 weights from the 2024 friends; no b-tag SF (skipped for 2024/2025 in the mixer and M.5).
-#   * hemilib     the ~2M-hemisphere 16-era library of mixeddata_run3_2025_20261016_daa12d2-a494d4b (M.1 skipped).
+#   * hemilib     made here (M.1): no reuse after the regression fix -- the library stores corrected jets
+#                 (the a494d4b library has the double-regressed pT).
 #   * signal      M.7 off: there is no 2025 (or '2025'-mapped) signal MC.
 # ==============================================================================
 # Driven by Snakefile_MakeMixedData.smk (M.1 hemisphere library -> M.2 mix -> M.3 validate + mixed JCM
@@ -34,17 +34,16 @@ publish_base: "{eos_prod}/{roast_id}"
 # Products of other roasts (checked by `roast new`, see src/tools/roast.py:check_inputs)
 # ------------------------------------------------------------------------------
 inputs:
-  upstream_roasts: [nominal_run3_2025_nontight_20261015_9ac9a30-b172c05, mixeddata_run3_2025_20261016_daa12d2-a494d4b]
+  upstream_roasts: [nominal_run3_2025_nontight_20261027_1809191-df306da]
   # ttbar subtraction in M.1 (4b data, FvT.d4_to_t4) and M.2 (3b data, FvT.d3_to_t3): the non-tight
   # 2025 FvT (Phase C of that roast). Covers every data picoAOD in data.yml '2025' (1,021 files).
-  FvT: "{roast:nominal_run3_2025_nontight_20261015_9ac9a30-b172c05}/friend/FvT_nominal/result.json@@analysis.0.merged"
+  FvT: "{roast:nominal_run3_2025_nontight_20261027_1809191-df306da}/friend/FvT_nominal/result.json@@analysis.0.merged"
   # Non-tight JCM: M.2 applies it as pseudo-tag weights. Its data + ttbar histograms feed the
   # mixed-data JCM fit (M.3), so both must come from the same selection as the mixing.
-  JCM: "{roast:nominal_run3_2025_nontight_20261015_9ac9a30-b172c05}/output/Run3_2025_nontight/computeJCM/JCM_Run3_2025_nontight_v1/jetCombinatoricModel_SB_Run3_2025_nontight_v1.yml"
-  jcm_hists: "{roast:nominal_run3_2025_nontight_20261015_9ac9a30-b172c05}/output/Run3_2025_nontight/computeJCM/histAll_NoJCM.coffea"
-  # The 16-era 2025 library (M.1 of that roast: 11.2M hemispheres, prescaled 0.1785 -> 2.01M); its M.2
-  # ran out of memory (below), so this roast reuses the library and skips M.1.
-  hemilib: "{eos_prod}/mixeddata_run3_2025_20261016_daa12d2-a494d4b/hemilib"
+  JCM: "{roast:nominal_run3_2025_nontight_20261027_1809191-df306da}/output/Run3_2025_nontight/computeJCM/JCM_Run3_2025_nontight_v1/jetCombinatoricModel_SB_Run3_2025_nontight_v1.yml"
+  jcm_hists: "{roast:nominal_run3_2025_nontight_20261027_1809191-df306da}/output/Run3_2025_nontight/computeJCM/histAll_NoJCM.coffea"
+  # No hemilib reuse after the UParT regression fix (barista !273): the library stores corrected jets,
+  # so M.1 is rerun (the a494d4b library has the double-regressed pT).
 
 # Eras as they appear in metadata/datasets/data.yml (picoAOD keys) — same as nominal_run3_2025_nontight.yml.
 # '2025' MUST stay quoted: unquoted it parses as an int and misses the string-keyed metadata.

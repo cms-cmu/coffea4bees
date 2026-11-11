@@ -35,13 +35,13 @@
 #
 # USAGE:
 #   snakemake -s Snakefile_bkg_syst_A_3_make_subsamples.smk \
-#             --configfile config/analysis_ttHbb_bkg_syst.yml -np all_bkg_syst_A_3
+#             --configfile config/ttHbb_bkg_syst.yml -np all_bkg_syst_A_3
 # ==============================================================================
 
 import os
 
 if not workflow.configfiles:
-    configfile: "coffea4bees/workflows/config/analysis_ttHbb_bkg_syst.yml"
+    configfile: "coffea4bees/workflows/config/ttHbb_bkg_syst.yml"
 
 include: "helpers/bkg_syst_common.smk"
 

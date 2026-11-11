@@ -1,0 +1,44 @@
+# ==============================================================================
+# ttHbb Run 2 NOMINAL STAT-ONLY ANALYSIS — Wrong ttbb DOWN (0.5x) Clamped (Phase F only)
+# ==============================================================================
+# Evaluates ttbb mismodeling (-50%) with physical probability clamping
+# (p_t4 <= p_d4) in Phase F.
+# Reuses JCM and FvT friend trees from the wrong_ttbb_down roast,
+# and SvB_MA model/friend trees and SvB quantiles from the nominal production roast.
+# ==============================================================================
+
+base: coffea4bees/workflows/config/ttHbb.yml
+
+label: "ttHbb_stat_only_wrong_ttbb_down_clamped"
+output_path: "output/ttHbb_stat_only_wrong_ttbb_down_clamped/"
+ttbb_scale: 0.5
+
+handoff:
+  allow_external_refs: true
+
+inputs:
+  upstream_roasts:
+    wrong: analysis_ttHbb_stat_only_wrong_ttbb_down_20261022_5bb1316-4023854
+    nominal: ttHbb_stat_only_20261012_49432f5-e211288
+  JCM:
+    UL16_preVFP: "{roast:wrong}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml"
+    UL16_postVFP: "{roast:wrong}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml"
+    UL17: "{roast:wrong}/handoff/jetCombinatoricModel_SB_2024_v2_UL17.yml"
+    UL18: "{roast:wrong}/handoff/jetCombinatoricModel_SB_2024_v2_UL18.yml"
+  FvT: "{roast:wrong}/friend/FvT_ttHbb_stitched/result.json@@analysis.0.merged"
+  SvB_MA: "{roast:nominal}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
+  svb_binning: "{roast:nominal}/handoff/svb_quantiles.json"
+
+analysis_config:
+  config:
+    apply_JCM: true
+    JCM_file:
+      UL16_preVFP: "{roast:wrong}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml"
+      UL16_postVFP: "{roast:wrong}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml"
+      UL17: "{roast:wrong}/handoff/jetCombinatoricModel_SB_2024_v2_UL17.yml"
+      UL18: "{roast:wrong}/handoff/jetCombinatoricModel_SB_2024_v2_UL18.yml"
+    friends:
+      FvT: "{roast:wrong}/friend/FvT_ttHbb_stitched/result.json@@analysis.0.merged"
+      SvB_MA: "{roast:nominal}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
+    svb_binning_file: "{roast:nominal}/handoff/svb_quantiles.json"
+    ttbb_scale: 0.5

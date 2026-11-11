@@ -26,7 +26,7 @@
 #
 # USAGE:
 #   snakemake -s Snakefile_bkg_syst_A_4_process_subsamples.smk \
-#             --configfile config/analysis_ttHbb_bkg_syst.yml -np all_bkg_syst_A_4
+#             --configfile config/ttHbb_bkg_syst.yml -np all_bkg_syst_A_4
 # ==============================================================================
 
 import os
@@ -35,7 +35,7 @@ _SNAKEFILE_PROCESS_SUBSAMPLES_INCLUDED = True
 _SNAKEFILE_BKG_SYST_A_4_INCLUDED = True
 
 if not workflow.configfiles:
-    configfile: "coffea4bees/workflows/config/analysis_ttHbb_bkg_syst.yml"
+    configfile: "coffea4bees/workflows/config/ttHbb_bkg_syst.yml"
 
 include: "helpers/bkg_syst_common.smk"
 

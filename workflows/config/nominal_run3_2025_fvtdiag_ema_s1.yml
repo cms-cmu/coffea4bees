@@ -1,0 +1,12 @@
+# DIAGNOSTIC (2025 FvT stability, EMA, k-fold seed offset 1): as nominal_run3_2025_fvtdiag_ema.yml
+# with the k-fold seed offset of nominal_run3_2025_fvtseed1 (another train/validation split).
+#
+#   roast new --config coffea4bees/workflows/config/nominal_run3_2025_fvtdiag_ema_s1.yml --phases C --nautilus
+base: coffea4bees/workflows/config/nominal_run3_2025_fvtdiag_ema.yml
+
+label: "Run3_2025_nominal_fvtdiag_ema_s1"
+output_path: "output/Run3_2025_nominal_fvtdiag_ema_s1/"
+
+fvt:
+  workflow_overrides:
+    --kfold-seed-offsets: "1"

@@ -273,6 +273,10 @@ analysis_config:
     # helpers/common.smk falls back to the label (Run3_2025_nontight), which has no committed fit:
     # this config is only dry-run by CI (dryrun_matrix.yml), never executed standalone.
     JCM_file: coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_Run3_2025_nontight_v1.yml
+    # The 2025 FvT is over-confident in a tail (unfloored C.4 of nominal_run3_2025_nontight_20261015_
+    # 9ac9a30-b172c05 broke); floored at 0.01 it closed (nominal_run3_2025_nontight_pd3floor.yml). Built in
+    # from the start, as in nominal_run3_2025.yml. The mixer does not read it (rand > d3_to_t3 only).
+    FvT_pd3_floor: 0.01
     apply_trigWeight: true
     # The only per-year friends F.1 reads. The FvT / SvB_MA entries under `friends:` above are
     # named explicitly and are merged in after this filter, so they still override the per-year

@@ -127,7 +127,10 @@ ZH4b:
     nanoAOD: root://cmsio3.rc.ufl.edu//store/user/ekoenig/Run3_private_production/2024/mc/ZH_ZToBB_HToBB_M-125_2024/
     picoAOD:
       files:
-      - dummy
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/Run3_2024_skims/ZH4b_2024/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/Run3_2024_skims/ZH4b_2024/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/Run3_2024_skims/ZH4b_2024/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/Run3_2024_skims/ZH4b_2024/picoAOD.chunk3.root 
   xs:
     Run2: '0.7612*0.5824*0.1512'
     Run3: '0.9361 * 0.576 * 0.1512'
@@ -333,8 +336,18 @@ ggZH4b:
     nanoAOD: root://cmsio3.rc.ufl.edu//store/user/ekoenig/Run3_private_production/2024/mc/ggZH_HToBB_ZToBB_M-125_2024/
     picoAOD:
       files:
-      - dummy
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/Run3_2024_skims/ggZH4b_2024/picoAOD.chunk0.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/Run3_2024_skims/ggZH4b_2024/picoAOD.chunk1.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/Run3_2024_skims/ggZH4b_2024/picoAOD.chunk2.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/Run3_2024_skims/ggZH4b_2024/picoAOD.chunk3.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/Run3_2024_skims/ggZH4b_2024/picoAOD.chunk4.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/Run3_2024_skims/ggZH4b_2024/picoAOD.chunk5.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/Run3_2024_skims/ggZH4b_2024/picoAOD.chunk6.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/Run3_2024_skims/ggZH4b_2024/picoAOD.chunk7.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/Run3_2024_skims/ggZH4b_2024/picoAOD.chunk8.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/Run3_2024_skims/ggZH4b_2024/picoAOD.chunk9.root
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/Run3_2024_skims/ggZH4b_2024/picoAOD.chunk10.root
   xs:
     Run2: '0.1227*0.5824*0.1512'
-    Run3: '0.1347pb  0.576 *0.1512'
+    Run3: '0.1347 * 0.576 * 0.1512'
 

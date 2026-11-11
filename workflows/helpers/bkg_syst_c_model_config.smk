@@ -71,9 +71,23 @@ def _format_structure(obj, mapping):
         return [_format_structure(elem, mapping) for elem in obj]
     return obj
 
+pilot_subsample = str(config.get('pilot_subsample', SUBSAMPLES[0] if SUBSAMPLES else '0'))
+
+def _pilot_gate_input(wildcards):
+    deps = []
+    if _FETCH_METADATA:
+        deps.append(_METADATA_FETCHED)
+    pilot_gate_enabled = config.get('pilot_gate', True)
+    if pilot_gate_enabled and len(SUBSAMPLES) > 1:
+        if str(wildcards.m) != str(pilot_subsample):
+            token = f"{out_c}models/mix_{pilot_subsample}/quality_gate.done"
+            if os.path.exists(token) or hasattr(rules, "bkg_syst_pilot_quality_gate") or any(r.name == "bkg_syst_pilot_quality_gate" for r in workflow.rules):
+                deps.append(token)
+    return deps
+
 rule stage_bkg_syst_c_model_config:
     input:
-        [_METADATA_FETCHED] if _FETCH_METADATA else [],
+        _pilot_gate_input,
     output:
         train = f"{out_c}models/mix_{{m}}/wfs/train.yml",
         eval = f"{out_c}models/mix_{{m}}/wfs/evaluate.yml",
@@ -84,8 +98,11 @@ rule stage_bkg_syst_c_model_config:
         roast_tag = config.get('roast_id', config.get('label', f"{channel}_bkg_syst"))
 
         # Determine defaults based on EOS handoff or local disk copies
-        first_jcm = f"{out_b1}jetCombinatoricModel_SB_mix_v0.yml"
-        has_local_jcm = os.path.exists(first_jcm)
+        if per_year_jcm:
+            has_local_jcm = bool(glob.glob(f"{out_b1}jetCombinatoricModel_SB_mix_v0_*.yml"))
+        else:
+            has_local_jcm = os.path.exists(f"{out_b1}jetCombinatoricModel_SB_mix_v0.yml")
+
         if _handoff_in and not has_local_jcm:
             default_mixed_ci = f"{_handoff_in}/classifier_inputs/histAll_{channel}_mixeddata_v{{m}}.json"
             if per_year_jcm:
@@ -98,15 +115,23 @@ rule stage_bkg_syst_c_model_config:
             if os.path.exists(local_jcm_dir):
                 default_jcm = f"{local_jcm_dir}/jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml" if per_year_jcm else f"{local_jcm_dir}/jetCombinatoricModel_SB_mix_v{{m}}.yml"
             else:
-                default_jcm = f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}.yml"
+                default_jcm = f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml" if per_year_jcm else f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}.yml"
 
             if os.path.exists(os.path.dirname(local_ci_file)):
                 default_mixed_ci = local_ci_file
+            elif os.path.exists(f"{out_a3}histAll_{channel}_mixeddata_v{{m}}.json"):
+                default_mixed_ci = f"{out_a3}histAll_{channel}_mixeddata_v{{m}}.json"
+            elif os.path.exists(f"{out_a3}classifier_inputs/classifier_inputs_mixeddata_{channel}_v{{m}}.json"):
+                default_mixed_ci = f"{out_a3}classifier_inputs/classifier_inputs_mixeddata_{channel}_v{{m}}.json"
             else:
                 default_mixed_ci = f"{out_a3}histAll_{channel}_mixeddata_v{{m}}.json"
 
         mixed_ci_template = phase_c_cfg.get('mixed_classifier_inputs_template') or config.get('mixed_classifier_inputs_template') or default_mixed_ci
+        for pk, pv in _placeholders.items():
+            mixed_ci_template = mixed_ci_template.replace("{" + pk + "}", str(pv))
         jcm_template = phase_c_cfg.get('jcm_template') or config.get('jcm_template') or default_jcm
+        for pk, pv in _placeholders.items():
+            jcm_template = jcm_template.replace("{" + pk + "}", str(pv))
         jcm_dir = os.path.dirname(jcm_template) if jcm_template else os.path.join(out_b1)
 
         sub_name = globals().get('SUB_NAME', config.get('multisample_dataset_name', 'mixeddata_4b'))
