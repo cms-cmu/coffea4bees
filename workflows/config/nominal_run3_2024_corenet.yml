@@ -1,34 +1,79 @@
 # ==============================================================================
-# 2024 nominal FvT trained with the CoReNet network -- Phase C only, on top of nominal_run3_2024
+# 2024 nominal with the CoReNet FvT (C, C4, D, F) -- the CoReNet counterpart of
+# nominal_run3_2024_ftfix.yml
 # ==============================================================================
-# Only the differences from nominal_run3_2024.yml (`base:` overlay; dicts merge recursively, lists
-# replace -- see nominal_run3_quadjet_run2.yml).
+# Deliberately a line-for-line mirror of workflows/config/nominal_run3_2024_ftfix.yml (the HCR arm,
+# roast nominal_run3_2024_ftfix_20261106_1c7c8db-d5ec5c4), so that the ONLY differences between the
+# two runs are the FvT network and where its friends land. Both arms:
+#   * train on the SAME Phase B products of nominal_run3_2024_20261021_975a18e-e176976 (classifier
+#     input manifest + JCM fit, read from that roast's handoff on EOS); B is NOT rerun;
+#   * finetune with FinetuneStep (lr 1e-4), not FixedStep (lr 1e-2) -- see the HCR Run3 template;
+#   * retrain the SvB (D) on 3b x JCM x THIS run's FvT, then C4 closure and F analysis + limits.
 #
-#   roast:    `roast new --config <this file>`, then submit ONLY step C.
-#   by hand:  snakemake --configfile coffea4bees/workflows/config/nominal_run3_2024.yml \
-#                       --configfile coffea4bees/workflows/config/nominal_run3_2024_corenet.yml
-#             (this file alone is NOT a complete config).
+# What differs from nominal_run3_2024_ftfix.yml, and nothing else:
+#   * fvt      HH4b_Run3/FvT_corenet templates (CoReNet.FvT.baseline.Train/Eval with --network
+#              classifier/config/corenet/HH4b.yml); label / output_dir FvT_corenet so models,
+#              friends and output/ never collide with the HCR arm. plot_inputs / plot_weights off:
+#              src/classifier/plot_inputs.py and plot_weights.py rebuild the HCR network from the
+#              checkpoint and cannot read a CoReNet one.
+#   * svb      unchanged HCR SvB templates, but train_template's FvT -> friend/FvT_corenet.
+#   * analysis_config.friends.FvT -> this run's FvT_corenet friends (SvB_MA stays this run's D).
+#   * cutflows warn-only: the blessed counts are the HCR arm's, and a different FvT moves them.
+#   * no web publishing: fvt/svb plot_base "" (plots stay local under output/<label>/plots), and
+#     Phase F is run with targets `all_analysis all_stats` so final_output (Snakefile_PhaseF.smk,
+#     copy to CERNBox) is never scheduled.
 #
-# Purpose: Phase C with this config trains the FvT with the CoReNet network
-# (classifier/config/workflows/HH4b_Run3/FvT_corenet: CoReNet.FvT.baseline.Train/Eval with
-# --network classifier/config/corenet/HH4b.yml, otherwise the HCR FvT templates) into a separate
-# label, FvT_corenet, so its model, friend trees and output/ directory never collide with the HCR
-# FvT_nominal.
-#
-# plot_inputs / plot_weights are off: those rules (src/classifier/plot_inputs.py, plot_weights.py)
-# rebuild the HCR network from the checkpoint and cannot read a CoReNet one.
-#
-# Deliberately NOT changed (PhaseC only for now): svb.train_template and
-# analysis_config.config.friends.FvT still name friend/FvT_nominal, so C.4, D and F would read the
-# HCR FvT, not this one.
+#   roast new --config coffea4bees/workflows/config/nominal_run3_2024_corenet.yml --phases C,C4,D,F
+# ==============================================================================
 base: coffea4bees/workflows/config/nominal_run3_2024.yml
 
-# Only used outside a roast, where {roast_id} falls back to label.
-label: "nominal_run3_2024_corenet"
+label: "Run3_2024_corenet"
+output_path: "output/Run3_2024_corenet/"
+
+# C/D read a handoff this run does not publish (handoff.eos_base stays this run's own area).
+handoff:
+  allow_external_refs: true
+
+# Anchored so the upstream HCR roast cannot drift between the blocks below. Identical to the
+# references in nominal_run3_2024_ftfix.yml.
+inputs:
+  upstream_roasts: {hcr_B: nominal_run3_2024_20261021_975a18e-e176976}
+  manifest: &hcr_manifest "{roast:hcr_B}/handoff/classifier_inputs_nominal_run3_2024_20261021_975a18e-e176976.json@@HCR_input"
+  JCM: &hcr_JCM "{roast:hcr_B}/handoff/jetCombinatoricModel_SB_Run3_2024_v1.yml"
 
 fvt:
   label: "FvT_corenet"
   wfs_base: "coffea4bees/classifier/config/workflows/HH4b_Run3/FvT_corenet"
   output_dir: "output/FvT_corenet/"
+  plot_base: ""            # plots under output/FvT_corenet/plots, not CERNBox
   plot_inputs: false
   plot_weights: false
+  metadata: *hcr_manifest
+  workflow_overrides:
+    --JCM-weight: '"" {roast:hcr_B}/handoff/jetCombinatoricModel_SB_Run3_2024_v1.yml@@JCM_weights'
+    '--friends ""': *hcr_manifest
+
+svb:
+  plot_base: ""
+  train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_corenet"
+  metadata: *hcr_manifest
+  workflow_overrides:
+    --JCM-weight: '"" {roast:hcr_B}/handoff/jetCombinatoricModel_SB_Run3_2024_v1.yml@@JCM_weights'
+    '--friends ""': *hcr_manifest
+
+fvt_closure:
+  JCM_file: *hcr_JCM
+  # B.1's wJCM ttbar histograms live in the upstream roast, not here (as in the ftfix arm)
+  reuse_wJCM_ttbar: false
+  # the blessed counts are the HCR FvT's; a different FvT moves them, so compare, do not fail
+  known_counts_fatal: false
+
+analysis_config:
+  config:
+    friends:
+      FvT: "{eos_prod}/{roast_id}/friend/FvT_corenet/result.json@@analysis.0.merged"
+    JCM_file: *hcr_JCM
+
+# F.1: the blessed cutflow is the HCR arm's -> warn-only
+# (rules/analysis.smk check_cutflow reads this top-level key)
+known_counts_fatal: false

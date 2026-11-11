@@ -32,7 +32,11 @@ model:
       # FixedStep is defined in config/scheduler
       - epoch: 20 # setup kwargs for FixedStep
         bs_init: 1024 # equivalent to use FixedStep(epoch=20, bs_init=1024)
-      - --finetuning FixedStep # setup finetuning schedule
+      # FinetuneStep (lr 1e-4), matching the HCR Run3 template's ftfix. This was FixedStep, whose
+      # default lr_init 1e-2 made the finetune a full-lr epoch with a fresh Adam after the decay,
+      # undoing the end-of-Training calibration. Kept identical to the HCR arm for a like-for-like
+      # comparison.
+      - --finetuning FinetuneStep
       - epoch: 1
         bs_init: 16384
 
