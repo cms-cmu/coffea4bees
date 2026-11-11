@@ -86,12 +86,15 @@ check_cutflow_full_syst_ttHbb_coffea4bees:
     - setup_coffea4bees
     - merging_files_full_syst_ttHbb_coffea4bees
   script:
-    - source coffea4bees/scripts/analysis-full-syst-cutflow.sh --output-base /builds/$CI_PROJECT_PATH/output
+    - source coffea4bees/scripts/analysis-full-syst-cutflow.sh --output-base output
   artifacts:
     paths:
       - barista_framework/output/ttHbb_full_syst/PhaseF_1_analysis/cutflow_validation_systematics.txt
       - barista_framework/output/ttHbb_full_syst/PhaseF_1_analysis/cutflow_systematics.html
       - barista_framework/output/ttHbb_full_syst/PhaseF_1_analysis/cutflow_systematics.yml
+      - output/ttHbb_full_syst/PhaseF_1_analysis/cutflow_validation_systematics.txt
+      - output/ttHbb_full_syst/PhaseF_1_analysis/cutflow_systematics.html
+      - output/ttHbb_full_syst/PhaseF_1_analysis/cutflow_systematics.yml
 
 analysis_unsup_cutflow_coffea4bees:
   stage: cutflow

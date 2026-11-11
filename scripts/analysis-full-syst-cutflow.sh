@@ -28,7 +28,31 @@ echo ""
 create_output_directory "$OUTPUT_DIR"
 
 if [ ! -f "$INPUT_FILE" ]; then
+    for candidate in \
+        "output/ttHbb_full_syst/PhaseF_1_analysis/histAll_ttHbb_full_syst_signals_syst.coffea" \
+        "barista_framework/output/ttHbb_full_syst/PhaseF_1_analysis/histAll_ttHbb_full_syst_signals_syst.coffea" \
+        "${OUTPUT_BASE_DIR%/}/barista_framework/output/ttHbb_full_syst/PhaseF_1_analysis/histAll_ttHbb_full_syst_signals_syst.coffea" \
+        "${OUTPUT_BASE_DIR%/}/output/ttHbb_full_syst/PhaseF_1_analysis/histAll_ttHbb_full_syst_signals_syst.coffea" \
+        "${CI_PROJECT_DIR:-.}/barista_framework/output/ttHbb_full_syst/PhaseF_1_analysis/histAll_ttHbb_full_syst_signals_syst.coffea"
+    do
+        if [ -f "$candidate" ]; then
+            INPUT_FILE="$candidate"
+            INPUT_DIR="$(dirname "$candidate")"
+            OUTPUT_DIR="$INPUT_DIR"
+            OUTPUT_YML="${OUTPUT_DIR}/cutflow_systematics.yml"
+            OUTPUT_TXT="${OUTPUT_DIR}/cutflow_validation_systematics.txt"
+            OUTPUT_HTML="${OUTPUT_DIR}/cutflow_systematics.html"
+            echo "Found input coffea file at fallback path: $INPUT_FILE"
+            break
+        fi
+    done
+fi
+
+if [ ! -f "$INPUT_FILE" ]; then
     echo "Error: Input coffea file not found: $INPUT_FILE"
+    echo "Searched standard paths and fallbacks. Available files under output/:"
+    ls -la output/ || true
+    ls -la barista_framework/output/ || true
     exit 1
 fi
 

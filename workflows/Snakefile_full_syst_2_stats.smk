@@ -3,6 +3,53 @@
 #
 # Stage F.2: Full Systematics Combine Inputs, Plots, Gallery & Statistical Inference
 # ==============================================================================
+#
+# OVERVIEW & OBJECTIVE:
+# Transforms histogram outputs from Stage F.1 and upstream background closure models
+# into CMS Combine datacards and ROOT shape files, visualizes shape variations,
+# compiles an interactive HTML gallery, and executes the complete statistical inference
+# pipeline (limits, significance, likelihood scans, post-fit distributions, and impacts).
+#
+# KEY PIPELINE STAGES & RULES:
+#   1. Histogram JSON Serialization:
+#      - `convert_nominal_to_json_full_syst`: Extracts nominal histograms from upstream
+#        stat-only/nominal analysis and serializes them to `histAll_nominal.json`.
+#      - `convert_signal_syst_to_json_full_syst`: Serializes all signal systematic variations
+#        from Stage F.1 into `histAll_signals_syst.json`.
+#
+#   2. Combine Datacard & ROOT Shape Construction (`make_combine_inputs_full_syst`):
+#      - Integrates nominal background shapes, signal systematic variations, and background
+#        systematics closure transfer functions (`bkg_syst_file`).
+#      - Automatically harmonizes the histogram binning (`rebin`) to match the background
+#        closure determination (e.g. `rebin: 24` for ttHbb SvB_MA.ps_ttHbb).
+#      - Outputs CMS Combine text datacards (`datacard__<channel>.txt`) and binary shape
+#        ROOT files (`shapes.root`).
+#
+#   3. Systematic Variations Visualization & Gallery:
+#      - `plot_systematics_full_syst`: Invokes `coffea4bees/plots/make_syst_plots.py` to
+#        generate overlaid shape comparison plots (Nominal vs. Up vs. Down) and ratio
+#        panels for every systematic nuisance parameter.
+#      - `gallery_systematics_full_syst`: Invokes `src/plotting/make_gallery.py` to compile
+#        an interactive HTML gallery (`index.html`) displaying all systematic variation plots.
+#
+#   4. Statistical Inference (CMS Combine Suite):
+#      - `workspace`: Compiles text datacard into Combine physics workspace.
+#      - `limits`: Computes asymptotic CLs upper limits on signal strength modifier (r).
+#      - `significance`: Computes expected / blinded signal significance.
+#      - `likelihood_scan` & chunks: Evaluates profile likelihood scan across range of r.
+#      - `postfit`: Computes background-only and signal-plus-background post-fit shapes.
+#      - `impacts`: Full nuisance parameter fit suite (`impacts_initial_fit`, `impacts_do_fits`,
+#        `impacts_collect`) producing impact summary PDF.
+#      - `split_impacts`: Computes grouped and decoupled impact uncertainties.
+#
+#   5. Consolidated Statistical Summary (`stat_summary_full_syst`):
+#      - Ingests all statistical results, limit JSONs, significance logs, scans, and galleries,
+#        producing `summary.html` and `summary.md`.
+#
+# EXECUTION TARGETS:
+#   - `all_full_syst_F_2`: Master target building datacards, variation plots, galleries,
+#     complete Combine fits, and statistical summary report.
+# ==============================================================================
 import os
 import re
 

@@ -3,6 +3,49 @@
 #
 # Stage F.1: Signal Systematic Variations & Cross-Check Quality Gate
 # ==============================================================================
+#
+# OVERVIEW & OBJECTIVE:
+# Processes full experimental and theoretical systematic variations for signal MC
+# processes across all data-taking eras, verifies physics integrity against upstream
+# nominal baselines, and generates systematic cutflow validation reports.
+#
+# KEY PIPELINE STAGES & RULES:
+#   1. Configuration Generation (`create_analysis_config_full_syst`):
+#      Constructs a resolved runtime configuration dynamically based on roast parameters,
+#      injecting runner options, dataset mappings, and processor overrides.
+#
+#   2. Parallel Systematic Singlefiles (`analysis_signal_systematics`):
+#      Executes Coffea processor jobs partitioned by (dataset, year, systematic group):
+#        - `others`: Friend-tree weight variations (e.g. pileup, b-tagging SFs,
+#          PDF, renormalization/factorization scales, trigger efficiencies).
+#        - `jes`: Jet energy scale & resolution kinematic shifts evaluated through
+#          dedicated PyTorch classifier models on 4b Signal Region events.
+#      Distributes parallel Condor batch jobs via Dask on cmslpc.
+#
+#   3. Merging Singlefiles (`merge_signal_systematics`):
+#      Aggregates all per-era and per-variation Coffea singlefiles into a single unified
+#      signal systematics histogram file: `histAll_<label>_signals_syst.coffea`.
+#
+#   4. Nominal Signal Distribution Match Gate (`check_nominal_signal_match`):
+#      Integrity validation rule: compares the nominal signal distribution inside the
+#      full systematics output with the upstream nominal/stat-only reference.
+#      Strict check across key kinematic variables (e.g. SvB_MA, v4j.mass, selJets.n)
+#      in both SR and SB regions. If relative difference exceeds tolerance (1e-4),
+#      the rule fails with a non-zero exit code to halt the workflow immediately.
+#
+#   5. Systematic Cutflow Validation (`cutflow_systematics_table`):
+#      Extracts event yields across all nominal, up, and down systematic variations in
+#      the Signal Region, compares them against canonical reference counts
+#      (`known_Counts_systematics_<sig>.yml`), and generates:
+#        - `cutflow_validation_systematics.txt`: Raw diagnostic report
+#        - `cutflow_systematics.html`: Formatted interactive web table
+#        - `cutflow_systematics.yml`: Machine-readable output counts
+#
+# EXECUTION TARGETS:
+#   - `all_full_syst_singlefiles`: Build all per-dataset/year/group singlefiles
+#   - `all_full_syst_F_1`: Master target building merged output, nominal match
+#     cross-check, and systematic cutflow reports
+# ==============================================================================
 import os
 import shutil
 import yaml
