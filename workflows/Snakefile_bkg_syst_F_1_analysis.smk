@@ -344,7 +344,13 @@ rule validate_f1_normalization:
         f"{out_f1}logs/validate_normalization.log"
     params:
         container_wrapper = container_wrapper,
-        python_bin = python_bin
+        python_bin = python_bin,
+        # sanity bounds (validate_f1_normalization.py defaults: SB yield [20k, 200k], SR < 800k, FvT/noFvT
+        # [0.25, 2.5]) are sample-size dependent: Run 3 2022+2023 HH4b has ~207k SB multijet events, so
+        # productions set `f1_validation: {max_sb_yield: ..., ...}` (keys = the script's options)
+        bounds = lambda wildcards: " ".join(
+            f"--{k.replace('_', '-')} {v}" for k, v in (config.get('f1_validation') or {}).items()
+            if k in ('min_sb_yield', 'max_sb_yield', 'max_sr_yield', 'min_ratio', 'max_ratio')),
     resources:
         mem_mb = 4000,
         cpus_per_task = 1,
@@ -355,7 +361,7 @@ rule validate_f1_normalization:
         mkdir -p $(dirname {output.done}) $(dirname {log})
         {params.container_wrapper} {params.python_bin} coffea4bees/analysis/tools/validate_f1_normalization.py \
             -i {input.coffea} \
-            -o {output.done} 2>&1 | tee {log}
+            -o {output.done} {params.bounds} 2>&1 | tee {log}
         """
 
 # ── Closure Comparison & Multi-Subsample Overlay Plots ────────────────────────

@@ -1,0 +1,58 @@
+# ==============================================================================
+# HH4b Run 3 (2022+2023) BACKGROUND SYSTEMATIC on MIXED data (3b hemisphere mixing), finetune fix
+# ==============================================================================
+# The mixed-data counterpart of analysis_HH4b_bkg_syst_declib16_run3_ftfix.yml (16 declustered seeds):
+# the same chain and settings -- FvT finetune FinetuneStep, deterministic seeds (barista master), ftfix
+# nominal, tight four-tag from A_3 on, ttbar subtracted (unify_background: false), C_4 closure against
+# the synthetic subsample with SvB -- with the closure subsamples made from the Run 3 mixed data
+# (mixeddata_run3_20260926_956d4bf-aca8a4e, the sample the 22+23 MvD-mixed used) by the `split`
+# source, as the ttHbb mixed-data bkg_syst:
+#   A_1  mixed-data JCM: mixeddata_all as the "3b" sample against the 4b data + ttbar of the NON-TIGHT
+#        nominal (nominal_run3_nontight_20260925_0c53380-193851f). The mixed data is built with the
+#        non-tight four-tag definition, so A_1 requires (and checks) the non-tight histograms -- as
+#        the mixed-data roast's own M.3 fit.
+#   A_2  split into 16 subsamples (mixeddata_4b, mix_v0..v15) + ttbar pseudodata (as its M.4).
+#   A_3  subsample processing with the tight four-tag definition (inherited), as the declustered run.
+#   B_1  per-subsample JCMs against the TIGHT nominal's 3b data (phaseB_1.jcm.data_coffea), as the
+#        declustered run: inputs.jcm_hists is non-tight here, for A_1 only.
+#
+#   bin/roast new --config coffea4bees/workflows/config/analysis_HH4b_bkg_syst_mixed_run3_ftfix.yml \
+#       --phases BKG_AB,BKG_C,BKG_C4,BKG_F --nautilus
+#   (pilot first: BKG_AB, then BKG_C --targets all_bkg_syst_C_pilot, then BKG_C4)
+# ==============================================================================
+base: coffea4bees/workflows/config/analysis_HH4b_bkg_syst_declib16_run3_ftfix.yml
+
+label: "HH4b_bkg_syst_mixed_run3_ftfix"
+mix_name: "HH4b_bkg_syst_mixed_run3_ftfix"
+
+inputs:
+  upstream_roasts:
+    # `declib` (the declustered library) is inherited (dicts merge) but not read here
+    mixeddata: mixeddata_run3_20260926_956d4bf-aca8a4e      # the mixed data + ttbar pseudodata
+    nominal_nt: nominal_run3_nontight_20260925_0c53380-193851f  # non-tight B.1: A_1's JCM fit input
+  mixeddata_all: "{roast:mixeddata}/handoff/mixeddata_all.yml"
+  ttbar_psdata: "{roast:mixeddata}/handoff/ttbar_PSData.yml"
+  jcm_hists: "{roast:nominal_nt}/{roast:nominal_nt:output_path}computeJCM/histAll_NoJCM.coffea"
+  analysis_config_noJCM: "{roast:nominal_nt}/{roast:nominal_nt:output_path}computeJCM/analysis_config_noJCM.yml"
+
+# A_1: make_jcm_weights.py with mixeddata_all as the "3b" sample (as the mixed-data roast's M.3)
+mixed_jcm:
+  config: "coffea4bees/analysis/jcm_tools/metadata/mixeddata_all_config_Run3.yml"
+  region: "SB"
+  float_t: true
+
+# A_2: split the mixed data into 16 closure subsamples (Run 3 templates, as the mixed-data roast's M.4)
+subsamples:
+  source: "split"
+  n: 16
+  dataset_name: "mixeddata_4b"
+  split_template: "coffea4bees/skimmer/metadata/split_mixeddata_Run3.yml"
+  study_template: "coffea4bees/analysis/metadata/study_mixed_data_Run3.yml"
+
+# B_1: per-subsample JCMs against the tight nominal's 3b data (inputs.jcm_hists is the non-tight A_1 input)
+phaseB_1:
+  jcm:
+    data_coffea: "{roast:nominal_b}/{roast:nominal_b:output_path}computeJCM/histAll_NoJCM.coffea"
+
+phase_e_fvt:
+  mix_name: "HH4b_bkg_syst_mixed_run3_ftfix"

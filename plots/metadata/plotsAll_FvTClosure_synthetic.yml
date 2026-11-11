@@ -51,6 +51,9 @@ skip_hists:
     - m4j_zh
     - m4j_zz
 summary:
+    - SvB_MA.ps_hh
+    - SvB_MA.ps
+    - SvB_MA.tt_vs_mj
     - FvT
     - selJets.n
     - canJet0.pt
