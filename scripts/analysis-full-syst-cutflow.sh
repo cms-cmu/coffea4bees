@@ -57,7 +57,25 @@ if [ ! -f "$INPUT_FILE" ]; then
 fi
 
 echo "############### Running systematic cutflow analysis"
-python3 src/tools/cutflow_systematics.py "$INPUT_FILE" \
+CUTFLOW_TOOL=""
+for tool_candidate in \
+    "src/tools/cutflow_systematics.py" \
+    "coffea4bees/scripts/cutflow_systematics.py" \
+    "scripts/cutflow_systematics.py" \
+    "${CI_PROJECT_DIR:-.}/coffea4bees/scripts/cutflow_systematics.py" \
+    "${CI_PROJECT_DIR:-.}/scripts/cutflow_systematics.py"; do
+    if [ -f "$tool_candidate" ]; then
+        CUTFLOW_TOOL="$tool_candidate"
+        break
+    fi
+done
+
+if [ -z "$CUTFLOW_TOOL" ]; then
+    echo "Error: cutflow_systematics.py not found in any standard path"
+    exit 1
+fi
+
+python3 "$CUTFLOW_TOOL" "$INPUT_FILE" \
     --output-yml "$OUTPUT_YML" \
     --output-html "$OUTPUT_HTML" \
     --output-txt "$OUTPUT_TXT" \
