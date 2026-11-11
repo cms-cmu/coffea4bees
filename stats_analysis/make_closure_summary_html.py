@@ -29,6 +29,7 @@ def parse_args():
     parser.add_argument("--output", "-o", default=None, help="Output HTML path")
     parser.add_argument("--region", "-r", default="SR", help="Closure region for single region mode (default: SR)")
     parser.add_argument("--classifier", "-c", default=None, help="Classifier name (e.g. SvB_MA or SvB)")
+    parser.add_argument("--channel", default="", help="Analysis channel (e.g. ttHbb or HH4b)")
     parser.add_argument("--title", "-t", default=None, help="Dashboard title")
     return parser.parse_args()
 
@@ -587,7 +588,8 @@ def main():
         print(f"Warning: No valid summary JSON files found for classifier {clf} in {out_dir}; generating placeholder page.", file=sys.stderr)
         out_file = Path(args.output) if args.output else out_dir / (f"summary_{clf}.html" if clf else "closure_summary.html")
         out_file.parent.mkdir(parents=True, exist_ok=True)
-        title = args.title or f"Stage F_2 Two-Stage Closure ({clf or 'Summary'})"
+        clf_str = f"{args.channel} - {clf}" if args.channel else (clf or 'Summary')
+        title = args.title or f"Stage F_2 Two-Stage Closure ({clf_str})"
         placeholder = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -613,7 +615,8 @@ p {{ color: #cbd5e1; line-height: 1.5; }}
         print(f"Wrote placeholder closure summary: {out_file}")
         return
 
-    title = args.title or f"Stage F_2 Two-Stage Closure ({clf or 'Summary'})"
+    clf_str = f"{args.channel} - {clf}" if args.channel else (clf or 'Summary')
+    title = args.title or f"Stage F_2 Two-Stage Closure ({clf_str})"
     html_content = generate_html(info_map, out_dir, title)
 
     out_file = Path(args.output) if args.output else out_dir / (f"summary_{clf}.html" if clf else "closure_summary.html")

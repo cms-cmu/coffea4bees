@@ -430,7 +430,7 @@ rule make_closure_summary_html:
         f"{out_f2}logs/make_closure_summary_html_{{classifier}}.log"
     params:
         output_dir = out_f2,
-        title = lambda wildcards: f"Stage F_2 Two-Stage Closure - {channel} - {wildcards.classifier}",
+        channel = channel,
         container_wrapper = config['analysis_container_wrapper'],
         python_bin = config['python_bin'],
         sb_arg = lambda wildcards, input: f"--summary-sb {input.summary_sb}" if hasattr(input, "summary_sb") else "",
@@ -440,10 +440,10 @@ rule make_closure_summary_html:
         mkdir -p $(dirname {output.html}) $(dirname {log})
         {params.container_wrapper} {params.python_bin} {input.script} \
             --classifier {wildcards.classifier} \
+            --channel {params.channel} \
             --summary-sr {input.summary_sr} \
             {params.sb_arg} \
             --output_dir {params.output_dir} \
-            --title "{params.title}" \
             --output {output.html} 2>&1 | tee {log}
         """
 
