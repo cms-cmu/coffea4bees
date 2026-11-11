@@ -227,7 +227,7 @@ per_year_jcm = bool(config.get('per_year_jcm', (config.get('phaseB_1', {}) or {}
 _handoff_in = config.get('input_handoff_eos') or globals().get('INPUT_HANDOFF_EOS') or HANDOFF_EOS
 _fvt_handoff = config.get('fvt_handoff_eos') or globals().get('FVT_HANDOFF_EOS') or HANDOFF_EOS
 _defined_rules = {r.name for r in workflow.rules}
-if (_fvt_handoff or HANDOFF_EOS) and 'extract_friend_manifest' not in _defined_rules:
+if (_fvt_handoff or HANDOFF_EOS) and not ({'extract_friend_manifest', 'stage_c4_friend_manifest'} & _defined_rules):
     rule stage_bkg_syst_friend_manifest:
         output:
             f"{out_c}friends/friends_FvT_{mix_name}_v{{m}}.json"
