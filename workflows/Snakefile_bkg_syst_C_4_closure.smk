@@ -62,7 +62,7 @@ if not isinstance(closure_cfg, dict):
 CLOSURE_OPTION_KEYS = (
     'datasets', 'plot_config', 'JCM_file', 'known_counts', 'known_counts_test', 'cutflow_list',
     'reuse_wJCM_ttbar', 'jcm_output_path', 'closure_ttbar', 'ttbar_compare_plot_config',
-    'ttbar3b_compare_plot_config', 'wJCM_ttbar_from', 'known_counts_fatal'
+    'ttbar3b_compare_plot_config', 'wJCM_ttbar_from', 'known_counts_fatal', 'svb'
 )
 
 # ── Datasets & Years ──────────────────────────────────────────────────────────
@@ -213,6 +213,13 @@ def known_cutflow_flag():
     return f'--known-cutflow "{f}"' if os.path.exists(f) else '--known-cutflow "none"'
 
 # ── Staged Analysis Runtime Config Generation ─────────────────────────────────
+# SvB histograms in the closure (the analysis variable), when the production has an SvB friend:
+# the model side reads the nominal SvB friend (as F_1), the synthetic side the subsample's SvB_MA friend
+# written by Stage A_3. `fvt_closure: {svb: false}` turns it off.
+C4_SVB = bool(closure_cfg.get('svb', True)) and bool(config.get('data_svb_friend'))
+c4_synthetic_svb_friend = f"{out_a3}histAll_{channel}_mixeddata_v{m0}.json"
+
+
 def get_raw_c4_config():
     res = resolve_config_section(config, primary_key='fvt_closure', fallback_keys=['analysis_config', 'analysis'])
     for k in CLOSURE_OPTION_KEYS:
@@ -232,8 +239,9 @@ def get_raw_c4_config():
     res['config']['apply_FvT'] = True
     res['config']['apply_trigWeight'] = True
     res['config']['plot_ttbar_with_weights'] = True
-    res['config']['run_SvB'] = False
-    res['config']['fill_histograms'] = closure_cfg.get('fill_histograms', 'kinematics+FvT')
+    res['config']['run_SvB'] = C4_SVB
+    # fvt_closure.fill_histograms if set, else kinematics + FvT (+ SvB when C4_SVB)
+    res['config']['fill_histograms'] = closure_cfg.get('fill_histograms', 'kinematics+FvT+SvB' if C4_SVB else 'kinematics+FvT')
     
     # Blinding
     res['config']['blind'] = True
@@ -246,10 +254,16 @@ def get_raw_c4_config():
         friends_dict['trigWeight'] = trig_w
     res['config']['friends'] = friends_dict
 
-    # Clear SvB entries since SvB is not evaluated here
-    for k in list(res['config'].keys()):
-        if k.startswith('SvB'):
-            res['config'][k] = None
+    if C4_SVB:
+        # SvB from the nominal SvB friend, as Stage F_1 (data_svb_friend / data_svb_ma_friend)
+        res['config']['SvB_MA'] = True
+        res['config']['friends']['SvB'] = config['data_svb_friend']
+        res['config']['friends']['SvB_MA'] = config.get('data_svb_ma_friend', config['data_svb_friend'])
+    else:
+        # SvB not evaluated here
+        for k in list(res['config'].keys()):
+            if k.startswith('SvB'):
+                res['config'][k] = None
 
     if config.get("test", False):
         res.setdefault('runner', {})
@@ -322,6 +336,7 @@ rule create_bkg_syst_C_4_config:
 rule create_bkg_syst_C_4_synthetic_config:
     input:
         fvt_friend = c4_fvt_synthetic_manifest,
+        svb_friend = [c4_synthetic_svb_friend] if C4_SVB else [],
         configfiles = workflow.configfiles if workflow.configfiles else []
     output:
         c4_synthetic_config_path
@@ -334,6 +349,10 @@ rule create_bkg_syst_C_4_synthetic_config:
         c['apply_trigWeight'] = False
         c['plot_ttbar_with_weights'] = False
         c['friends'] = {'FvT': f"{c4_fvt_synthetic_manifest}@@FvT"}
+        if C4_SVB:
+            # the subsample's own SvB (A_3 friend manifest, SvB_MA = the nominal SvB on its events)
+            c['friends']['SvB'] = f"{c4_synthetic_svb_friend}@@SvB_MA"
+            c['friends']['SvB_MA'] = f"{c4_synthetic_svb_friend}@@SvB_MA"
         os.makedirs(os.path.dirname(output[0]), exist_ok=True)
         with open(output[0], 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False)

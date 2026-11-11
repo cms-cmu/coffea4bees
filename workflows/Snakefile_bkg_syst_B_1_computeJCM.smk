@@ -87,6 +87,23 @@ val_plot_cfg = val_section.get('plot_config', "coffea4bees/plots/metadata/plots_
 # The analysis data + ttbar noJCM histograms: by default the same inputs.jcm_hists A_1 fits the
 # mixed-data JCM against (fetched by A1_fetch)
 jcm_input_coffea = jcm_section.get('data_coffea') or JCM_HISTS
+# ... or other histograms, e.g. when A_1's mixed-data JCM needs the non-tight selection (the mixed data
+# is built non-tight) while the per-subsample JCMs follow the analysis' tight four-tag definition: a
+# remote `phaseB_1.jcm.data_coffea` is fetched next to the other inputs.
+_b1_data_url = str(jcm_input_coffea) if "://" in str(jcm_input_coffea) else ""
+if _b1_data_url:
+    jcm_input_coffea = f"{A_INPUT_DIR}b1_{os.path.basename(_b1_data_url)}"
+
+    rule B1_fetch_data_coffea:
+        output: jcm_input_coffea
+        params: src = _b1_data_url
+        shell:
+            """
+            set -eo pipefail
+            {EOS_PROXY}
+            mkdir -p $(dirname {output})
+            xrdcp -f '{params.src}' '{output}'
+            """
 
 per_year_jcm = bool(config.get('per_year_jcm', phaseB_1.get('per_year_jcm', False)))
 
