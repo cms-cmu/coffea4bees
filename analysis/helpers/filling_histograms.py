@@ -678,6 +678,13 @@ def filling_ttHbb_histograms(
         quadJet_template_skip = ["lead_vs_subl_m"] if can_ttH else []
         fill += QuadJetHistsSelected(("quadJet_selected", "Selected Quad Jet"), "quadJet_selected", skip=quadJet_template_skip)
         fill += QuadJetHistsMinDr(("quadJet_min_dr", "Min dR Quad Jet"), "quadJet_min_dr", skip=quadJet_template_skip)
+        if can_ttH:
+            # The template lead_vs_subl_m plane is skipped above: the can_ttH pairing fills it as canH vs canTT instead
+            fill += hist.add(
+                f"quadJet_selected.{n1}_vs_{n2}_m",
+                (100, 0, 1000, ("quadJet_selected.lead.mass", f"{L1} Boson Candidate Mass")),
+                (100, 0, 1000, ("quadJet_selected.subl.mass", f"{L2} Boson Candidate Mass")),
+            )
         fill += hist.add("v4j.mass", (120, 0, 1200, ("v4j.mass", "m_{4j} [GeV]")))
         fill += hist.add("v4j.pt", (100, 0, 1000, ("v4j.pt", "p_{T}^{4j} [GeV]")))
 
@@ -686,6 +693,8 @@ def filling_ttHbb_histograms(
         if can_ttH:
             # template lead_vs_subl_m, renamed
             for qj in ["quadJet_selected", "quadJet_min_dr"]:
+                if qj == "quadJet_selected" and "kinematics" in categories:
+                    continue  # already filled by the kinematics category
                 fill += hist.add(
                     f"{qj}.{n1}_vs_{n2}_m",
                     (100, 0, 1000, (f"{qj}.lead.mass", f"{L1} Boson Candidate Mass")),

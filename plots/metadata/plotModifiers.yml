@@ -66,8 +66,9 @@ quadJet_all.lead_vs_subl_dr : {"2d":True}
 quadJet_all.lead_vs_subl_pt : {"2d":True}
 
 
-quadJet_truth.pt_H_vs_dr_bb : {"2d":True, "shapes": [{"type": "hyperbola", "b": 235, "a": 2, "xrange": [100, 1000], "color": "magenta"}, {"type": "hyperbola", "b": 235, "xrange": [100, 1000], "color": "magenta"}]}
-quadJet_truth.pt_tt_vs_dr_bb : {"2d":True}
+# Magenta curves = the can_ttH PtDR cut windows of candidates_selection_ttHbb.py (_build_can_ttH_quadjets), y = a + b/(x + c)
+quadJet_truth.pt_H_vs_dr_bb : {"2d":True, "shapes": [{"type": "hyperbola", "a": 0.18, "b": 160, "c": 50, "xrange": [0, 1000], "yrange": [0, 4], "color": "magenta", "linewidth": 2}, {"type": "hyperbola", "a": -1.06, "b": 1125, "c": 256, "xrange": [0, 1000], "yrange": [0, 4], "color": "magenta", "linewidth": 2}]}
+quadJet_truth.pt_tt_vs_dr_bb : {"2d":True, "shapes": [{"type": "hyperbola", "a": 3.371, "b": 149.878, "c": -234.286, "branch": "left", "xrange": [0, 234.286], "yrange": [2, 4], "color": "magenta", "linewidth": 2}, {"type": "hyperbola", "a": 3.723, "b": 33.799, "c": -144.615, "branch": "left", "xrange": [0, 144.615], "yrange": [2, 4], "color": "magenta", "linewidth": 2}]}
 quadJet_truth.m_H_vs_dr_bb : {"2d":True}
 quadJet_truth.m_tt_vs_dr_bb : {"2d":True}
 
