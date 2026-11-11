@@ -182,8 +182,8 @@ def create_combine_root_file( file_to_convert,
                                 namevar = namevar.replace(stat, f'{stat}_{iyear.replace("UL", "20")}')
                                 break
 
-                        ### check for dedicated JESUnc per year, if not conitnue
-                        tmpvar = namevar.replace('Up','').replace('Down', '').replace('_postVFP', '').replace('_preVFP', '')
+                        ### check for dedicated JESUnc per year, if not continue
+                        tmpvar = namevar.replace('Up','').replace('Down', '').replace('_postVFP', '').replace('_preVFP', '').replace('APV', '')
                         if tmpvar not in mcSysts and not 'nominal' in tmpvar: mcSysts.append( tmpvar )
                         tmpvar = ''.join(tmpvar[-2:])
                         if tmpvar.isdigit() and int(tmpvar) != int(iyear[2:4]): continue

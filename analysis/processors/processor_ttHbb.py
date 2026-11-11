@@ -6,7 +6,10 @@ import awkward as ak
 from coffea.analysis_tools import PackedSelection
 from coffea import processor
 from coffea4bees.analysis.processors.processor_HH4b import HH4bBaseProcessor, _UNSET
-from coffea4bees.analysis.helpers.filling_histograms import filling_ttHbb_histograms
+from coffea4bees.analysis.helpers.filling_histograms import (
+    filling_ttHbb_histograms,
+    filling_syst_histograms,
+)
 from coffea4bees.analysis.helpers.SvB_helpers_ttHbb import set_ttHbb_SvB_vars
 from coffea4bees.analysis.helpers.candidates_selection_ttHbb import create_cand_jet_dijet_quadjet_ttHbb
 from coffea4bees.analysis.helpers.truth_tools import label_jet_truth_parent
@@ -217,7 +220,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
         quadJet_truth = quadJet[ak.argmax(pairing_is_truth, axis=1, keepdims=True)][:, 0]
         return ak.mask(quadJet_truth, event_has_truth_pairing)
 
-    def build_candidates(self, selev, weights, list_weight_names, analysis_selections, processOutput):
+    def build_candidates(self, selev, weights, list_weight_names, analysis_selections, processOutput, shift_name=None):
         """Build canH/canTT di-jet and quad-jet candidates for ttHbb (same algorithm for data
         and MC). On ttHbb MC also store quadJet_truth: the truth H-H (lead) / t-t (subl) pairing,
         for events where canJet.truthParent is exactly {H, H, t, t} (None otherwise).
@@ -239,6 +242,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
             cand_cfg=self.cand_cfg,
             pairing=self.pairing,
             svb_binning=self.svb_binning,
+            shift_name=shift_name,
         )
 
         if self._is_ttHbb_MC() and self.pairing == "can_ttH":
@@ -302,6 +306,11 @@ class ttHbbProcessor(HH4bBaseProcessor):
         selev["fail_nSelJets_le6"] = n_selJets <= 6
         selev["passLeptonVeto"] = selev.passLeptonVeto if "passLeptonVeto" in selev.fields else np.full(len(selev), True)
 
+
+        if "passSR" not in selev.fields:
+            selev["passSR"] = selev.passDiJetMass & selev["quadJet_selected"].SR
+        if "passSB" not in selev.fields:
+            selev["passSB"] = selev.passDiJetMass & selev["quadJet_selected"].SB
 
         selev["SR"] = selev.passSR
         selev["SB"] = selev.passSB
@@ -387,7 +396,16 @@ class ttHbbProcessor(HH4bBaseProcessor):
             hists.append(hist_t3)
             return processor.accumulate(hists)
 
-        return hist_dict
+        else:
+            return filling_syst_histograms(
+                selev,
+                weights,
+                analysis_selections,
+                shift_name=shift_name,
+                processName=self.processName,
+                year=self.year,
+                histCuts=self.histCuts,
+            )
 
 # Alias for standard runner entry point
 analysis = ttHbbProcessor

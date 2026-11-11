@@ -201,6 +201,9 @@ runs:
   ttHbb_bkg_syst_declib16nc.yml:
     - bkg_syst
     - bkg_syst_AB
+  ttHbb_full_syst.yml:
+    - {snakefile: full_syst, upstream: ["histAll", "stat_only"]}
+    - full_syst_1_analysis
   analysis_HH4b_bkg_syst_declib16nc.yml:
     - bkg_syst
     - bkg_syst_AB

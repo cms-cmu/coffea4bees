@@ -338,9 +338,11 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.run_dilep_ttbar_crosscheck = run_dilep_ttbar_crosscheck
         self.apply_boosted_veto = apply_boosted_veto
         self.apply_lepton_veto = apply_lepton_veto
+        self.run_systematics = ['others', 'jes'] if 'all' in run_systematics else run_systematics
 
         self.classifier_SvB = {}
-        if SvB is True and self.weights_data:
+        load_svb_from_weights = (SvB is True) or (SvB is not False and bool(self.run_systematics))
+        if load_svb_from_weights and self.weights_data:
             for year, year_cfg in self.weights_data.items():
                 if "SvB" in year_cfg:
                     self.classifier_SvB[year] = _init_classfier(year_cfg["SvB"])
@@ -348,7 +350,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             self.classifier_SvB = _init_classfier(SvB)
 
         self.classifier_SvB_MA = {}
-        if SvB_MA is True and self.weights_data:
+        load_svb_ma_from_weights = (SvB_MA is True) or (SvB_MA is not False and bool(self.run_systematics))
+        if load_svb_ma_from_weights and self.weights_data:
             for year, year_cfg in self.weights_data.items():
                 if "SvB_MA" in year_cfg:
                     self.classifier_SvB_MA[year] = _init_classfier(year_cfg["SvB_MA"])
@@ -374,7 +377,6 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             self.classifier_FvT = _init_classfier_FvT(FvT)
 
         self.corrections_metadata = corrections_metadata
-        self.run_systematics = ['others', 'jes'] if 'all' in run_systematics else run_systematics
         self.make_top_reconstruction = make_top_reconstruction
         self.make_classifier_input = make_classifier_input
         self.make_friend_JCM_weight = make_friend_JCM_weight
@@ -624,7 +626,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         # Determine which shifts to run
         with self._stage("build_shifts"):
-            if 'jes' in self.run_systematics:
+            if 'jes' in self.run_systematics and 'others' not in self.run_systematics:
+                # Dedicated JES/JER pass: do NOT include nominal to prevent
+                # double-counting nominal when merging with the 'others' coffea file.
                 shifts = []
                 shifts.extend([({"Jet": jets.JER.up}, f"CMS_res_j_{self.year_label}Up"), ({"Jet": jets.JER.down}, f"CMS_res_j_{self.year_label}Down")])
 
@@ -632,7 +636,17 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     shifts.extend( [ ({"Jet": jets[f"JES_{jesunc}"].up}, f"CMS_scale_j_{jesunc}Up"),
                                      ({"Jet": jets[f"JES_{jesunc}"].down}, f"CMS_scale_j_{jesunc}Down"), ] )
                 logging.info(f"\nJet variations {[name for _, name in shifts]}")
+            elif 'jes' in self.run_systematics and 'others' in self.run_systematics:
+                # Combined pass ('all'): single job runs nominal + weights followed by JES shifts
+                shifts = [({"Jet": jets}, None)]
+                shifts.extend([({"Jet": jets.JER.up}, f"CMS_res_j_{self.year_label}Up"), ({"Jet": jets.JER.down}, f"CMS_res_j_{self.year_label}Down")])
+
+                for jesunc in self.corrections_metadata[self.year]["jes_unc"]:
+                    shifts.extend( [ ({"Jet": jets[f"JES_{jesunc}"].up}, f"CMS_scale_j_{jesunc}Up"),
+                                     ({"Jet": jets[f"JES_{jesunc}"].down}, f"CMS_scale_j_{jesunc}Down"), ] )
+                logging.info(f"\nAll variations (nominal + weights + jets) {[name for _, name in shifts]}")
             else:
+                # Nominal pass or weight variations only ('others' / stat-only)
                 shifts = [({"Jet": jets}, None)]
 
         with self._stage("process_all_shifts"):
@@ -774,7 +788,13 @@ class HH4bBaseProcessor(processor.ProcessorABC):
 
         with self._stage(f"{label}:build_candidates"):
             # Build jet/dijet/quadjet candidates
-            selev = self.build_candidates(selev, weights, list_weight_names, analysis_selections, processOutput)
+            try:
+                selev = self.build_candidates(selev, weights, list_weight_names, analysis_selections, processOutput, shift_name=shift_name)
+            except TypeError as e:
+                if "shift_name" in str(e):
+                    selev = self.build_candidates(selev, weights, list_weight_names, analysis_selections, processOutput)
+                else:
+                    raise
 
 
         # Custom Processing in the derived classes
@@ -1449,7 +1469,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             selev["xbW"] = selev.top_cand.xbW
             selev["xW"] = selev.top_cand.xW
 
-    def build_candidates(self, selev, weights, list_weight_names, analysis_selections, processOutput):
+    def build_candidates(self, selev, weights, list_weight_names, analysis_selections, processOutput, shift_name=None):
         """Build di-jets and quad-jets candidates.
 
         Requires chunk-scoped variables: config (for isRun3)
@@ -1461,6 +1481,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             list_weight_names: List of weight names
             analysis_selections: Boolean mask for analysis selection
             processOutput: Output dictionary
+            shift_name: Systematic shift name (None for nominal)
 
         Returns:
             Updated selev with candidate information
@@ -1480,6 +1501,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             list_weight_names=list_weight_names,
             analysis_selections=analysis_selections,
             cand_cfg=self.cand_cfg,
+            shift_name=shift_name,
         )
 
 

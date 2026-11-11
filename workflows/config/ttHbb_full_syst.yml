@@ -1,0 +1,43 @@
+# ==============================================================================
+# ttHbb Run 2 FULL SYSTEMATICS ANALYSIS (Signal Systs + Closure Stats)
+# ==============================================================================
+base: coffea4bees/workflows/config/ttHbb.yml
+
+label: "ttHbb_full_syst"
+output_path: "output/ttHbb_full_syst/"
+processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+
+handoff:
+  allow_external_refs: true
+
+inputs:
+  nominal_hists: "/uscms_data/d3/algomez/HH4b/prod/ttHbb_stat_only_corner_veto_20261106_0065bef-0b95131/barista/output/ttHbb/PhaseF_1_analysis/histAll_ttHbb_stat_only_corner_veto.coffea"
+  bkg_syst_file: "coffea4bees/stats_analysis/files/HIG-24-010/zz/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_zz_rebin1.pkl"
+
+signal_datasets:
+  - "ttHbb"
+
+syst_groups:
+  - "others"
+  - "jes"
+
+rebin: 24
+
+channels:
+  ttHbb:
+    signallabel: "ttHbb"
+    variable: "SvB_MA.ps_ttHbb"
+    signal: "ttHbb"
+    region: "SR"
+    cut: "sum"
+    rebin: 24
+    stat_only: false
+    metadata: "coffea4bees/stats_analysis/metadata/ttHbb.yml"
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+
+make_combine_inputs:
+  stat_only: ""
+  rebin: 24
+  metadata_template: "coffea4bees/stats_analysis/metadata/{channel}.yml"
+  multijet_process: "data"
+  tt_processes: ["TTTo", "TTbar4b_from_d3"]

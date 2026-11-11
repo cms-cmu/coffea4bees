@@ -259,14 +259,14 @@ use rule convert_hist_to_json from stat_analysis with:
 use rule make_combine_inputs from stat_analysis with:
     input:
         injson = f"{F2_OUTPUT_PATH}histAll_{config['label']}.json",
-        injsonsyst = list([]),
+        injsonsyst = lambda wildcards: [config['make_combine_inputs']['syst_file']] if config.get('make_combine_inputs', {}).get('syst_file') else [],
         bkgsyst = lambda wildcards: get_bkgsyst_for_channel(wildcards.channel),
         script = "coffea4bees/stats_analysis/make_combine_inputs.py",
         metadata_file = lambda wildcards: config['make_combine_inputs']['metadata_template'].format(channel=wildcards.channel.split('_')[0])
     output: f"{F2_OUTPUT_PATH}{{channel}}/datacards/datacard__{{channel}}.txt"
     params:
         variable = lambda wildcards: config['channels'][wildcards.channel]['variable'],
-        syst_file = lambda wildcards, input: f"--syst_file {config['make_combine_inputs']['syst_file']}" if config['make_combine_inputs']['syst_file'] else "",
+        syst_file = lambda wildcards, input: f"--syst_file {input.injsonsyst[0]}" if (hasattr(input, 'injsonsyst') and input.injsonsyst) else (f"--syst_file {config['make_combine_inputs']['syst_file']}" if config.get('make_combine_inputs', {}).get('syst_file') else ""),
         bkg_syst_file = lambda wildcards, input: f'--bkg_syst_file "{input.bkgsyst}"' if getattr(input, 'bkgsyst', None) else "",
         rebin = lambda wildcards, input: config['channels'][wildcards.channel].get('rebin', config['make_combine_inputs'].get('rebin', 1)),
         metadata = lambda wildcards: config['make_combine_inputs']['metadata_template'].format(channel=wildcards.channel.split('_')[0]),
