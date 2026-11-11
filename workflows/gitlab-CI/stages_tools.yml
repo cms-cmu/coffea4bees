@@ -38,6 +38,7 @@ merging_files_full_syst_ttHbb_coffea4bees:
   artifacts:
     paths:
       - barista_framework/output/ttHbb_full_syst/PhaseF_1_analysis/histAll_ttHbb_full_syst_signals_syst.coffea
+      - output/ttHbb_full_syst/PhaseF_1_analysis/histAll_ttHbb_full_syst_signals_syst.coffea
 
 tools_make_jcm_weights_coffea4bees:    
   stage: tools
