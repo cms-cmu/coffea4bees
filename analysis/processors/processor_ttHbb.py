@@ -6,7 +6,10 @@ import awkward as ak
 from coffea.analysis_tools import PackedSelection
 from coffea import processor
 from coffea4bees.analysis.processors.processor_HH4b import HH4bBaseProcessor, _UNSET
-from coffea4bees.analysis.helpers.filling_histograms import filling_ttHbb_histograms
+from coffea4bees.analysis.helpers.filling_histograms import (
+    filling_ttHbb_histograms,
+    filling_syst_histograms,
+)
 from coffea4bees.analysis.helpers.SvB_helpers_ttHbb import set_ttHbb_SvB_vars
 from coffea4bees.analysis.helpers.candidates_selection_ttHbb import create_cand_jet_dijet_quadjet_ttHbb
 from coffea4bees.analysis.helpers.truth_tools import label_jet_truth_parent
@@ -304,6 +307,11 @@ class ttHbbProcessor(HH4bBaseProcessor):
         selev["passLeptonVeto"] = selev.passLeptonVeto if "passLeptonVeto" in selev.fields else np.full(len(selev), True)
 
 
+        if "passSR" not in selev.fields:
+            selev["passSR"] = selev.passDiJetMass & selev["quadJet_selected"].SR
+        if "passSB" not in selev.fields:
+            selev["passSB"] = selev.passDiJetMass & selev["quadJet_selected"].SB
+
         selev["SR"] = selev.passSR
         selev["SB"] = selev.passSB
         selev["region"] = ak.zip({"SR": selev.passSR, "SB": selev.passSB})
@@ -388,7 +396,16 @@ class ttHbbProcessor(HH4bBaseProcessor):
             hists.append(hist_t3)
             return processor.accumulate(hists)
 
-        return hist_dict
+        else:
+            return filling_syst_histograms(
+                selev,
+                weights,
+                analysis_selections,
+                shift_name=shift_name,
+                processName=self.processName,
+                year=self.year,
+                histCuts=self.histCuts,
+            )
 
 # Alias for standard runner entry point
 analysis = ttHbbProcessor

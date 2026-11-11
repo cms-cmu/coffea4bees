@@ -338,6 +338,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.run_dilep_ttbar_crosscheck = run_dilep_ttbar_crosscheck
         self.apply_boosted_veto = apply_boosted_veto
         self.apply_lepton_veto = apply_lepton_veto
+        self.run_systematics = ['others', 'jes'] if 'all' in run_systematics else run_systematics
 
         self.classifier_SvB = {}
         load_svb_from_weights = (SvB is True) or (SvB is not False and bool(self.run_systematics))
@@ -376,7 +377,6 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             self.classifier_FvT = _init_classfier_FvT(FvT)
 
         self.corrections_metadata = corrections_metadata
-        self.run_systematics = ['others', 'jes'] if 'all' in run_systematics else run_systematics
         self.make_top_reconstruction = make_top_reconstruction
         self.make_classifier_input = make_classifier_input
         self.make_friend_JCM_weight = make_friend_JCM_weight

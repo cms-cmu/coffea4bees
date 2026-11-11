@@ -78,18 +78,20 @@ skimmer_analysis_cutflow_coffea4bees:
     paths:
       - output/skimmer_analysis_cutflow/test_dump_skimmer_cutflow.yml
 
-analysis_systematics_cutflow_coffea4bees:
+check_cutflow_full_syst_ttHbb_coffea4bees:
   stage: cutflow
   extends:
     - .base_analysis_coffea4bees
-  needs: 
+  needs:
     - setup_coffea4bees
-    - analysis_systematics_test_coffea4bees
+    - merging_files_full_syst_ttHbb_coffea4bees
   script:
-    - source coffea4bees/scripts/analysis-systematics-cutflow.sh --output-base /builds/$CI_PROJECT_PATH/output
+    - pixi run snakemake output/ttHbb_full_syst/PhaseF_1_analysis/cutflow_validation_systematics.txt -s coffea4bees/workflows/Snakefile_full_syst_1_analysis.smk --configfile coffea4bees/workflows/config/ttHbb_full_syst.yml --config test=true --jobs 1
   artifacts:
     paths:
-      - output/analysis_systematics_cutflow/test_dump_systematics_cutflow.yml
+      - barista_framework/output/ttHbb_full_syst/PhaseF_1_analysis/cutflow_validation_systematics.txt
+      - barista_framework/output/ttHbb_full_syst/PhaseF_1_analysis/cutflow_systematics.html
+      - barista_framework/output/ttHbb_full_syst/PhaseF_1_analysis/cutflow_systematics.yml
 
 analysis_unsup_cutflow_coffea4bees:
   stage: cutflow

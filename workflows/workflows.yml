@@ -193,6 +193,11 @@ dashboards:
     title: "Signal Nominal Cross-Check (Full Syst vs Stat-Only)"
     desc: "Strict verification that signal nominal matches the baseline stat-only distribution"
 
+  - match: "cutflow_systematics*.html"
+    tag: "Stage F.1"
+    title: "Systematic Cutflow Validation"
+    desc: "Cutflow table of all signal systematic variations in fourTag SR with known counts validation"
+
 # ------------------------------------------------------------------------------
 # Analysis Stage Groupings (Shown in the roast summary index.html)
 # ------------------------------------------------------------------------------

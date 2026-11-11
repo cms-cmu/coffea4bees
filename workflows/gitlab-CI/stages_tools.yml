@@ -16,7 +16,7 @@ tools_memory_test_coffea4bees:
   stage: tools
   needs:
     - setup_coffea4bees
-    - analysis_systematics_test_coffea4bees
+    - analysis_signals_test_coffea4bees
   extends:
     - .base_analysis_coffea4bees
   script:
@@ -25,6 +25,19 @@ tools_memory_test_coffea4bees:
   artifacts:
     paths:
       - output/tools_memory_test/mprofile_ci_test.png
+
+merging_files_full_syst_ttHbb_coffea4bees:
+  stage: tools
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - analysis_full_syst_ttHbb_coffea4bees
+  script:
+    - pixi run snakemake output/ttHbb_full_syst/PhaseF_1_analysis/histAll_ttHbb_full_syst_signals_syst.coffea -s coffea4bees/workflows/Snakefile_full_syst_1_analysis.smk --configfile coffea4bees/workflows/config/ttHbb_full_syst.yml --config test=true --jobs 1
+  artifacts:
+    paths:
+      - barista_framework/output/ttHbb_full_syst/PhaseF_1_analysis/histAll_ttHbb_full_syst_signals_syst.coffea
 
 tools_make_jcm_weights_coffea4bees:    
   stage: tools

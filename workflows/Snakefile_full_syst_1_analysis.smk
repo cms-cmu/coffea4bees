@@ -41,6 +41,9 @@ if isinstance(is_test, str):
     is_test = is_test.lower() in ("true", "1", "yes")
 config['test'] = is_test
 
+if config['test']:
+    config['year_eras'] = {'UL18': ['A', 'B', 'C', 'D']}
+
 container_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
 config.setdefault('container_wrapper', container_wrapper)
 config.setdefault('analysis_container_wrapper', config.get('container_wrapper', container_wrapper))
@@ -118,12 +121,36 @@ def get_analysis_config_inputs(wildcards):
         inputs.append(ds_loc)
     return inputs
 
+def get_f1_master_targets(wildcards):
+    targets = [
+        MERGED_SIGNAL_SYST_COFFEA,
+        f"{F1_OUTPUT_PATH}cutflow_validation_systematics.txt",
+        f"{F1_OUTPUT_PATH}cutflow_systematics.html",
+        f"{F1_OUTPUT_PATH}cutflow_systematics.yml",
+    ]
+    nom = get_stat_only_coffea()
+    if nom and os.path.exists(nom):
+        targets.extend([
+            f"{F1_OUTPUT_PATH}signal_crosscheck.html",
+            f"{F1_OUTPUT_PATH}signal_crosscheck.txt",
+        ])
+    return targets
+
+rule all_full_syst_F_1:
+    input: get_f1_master_targets
+
+rule all_full_syst_singlefiles:
+    input: SIGNAL_SINGLE_FILES
+
 rule create_analysis_config_full_syst:
     input: get_analysis_config_inputs
     output: analysis_config_path
     run:
         import yaml, os
         cfg = get_raw_analysis_config()
+        for k in ['processor', 'weights_file', 'friend_file', 'dataset_location']:
+            if k not in cfg and config.get(k):
+                cfg[k] = config[k]
         if config.get("test", False):
             if 'runner' not in cfg or not isinstance(cfg['runner'], dict):
                 cfg['runner'] = {}
@@ -220,17 +247,39 @@ rule check_nominal_signal_match:
             --strict 2>&1 | tee {log}
         """
 
-def get_f1_master_targets(wildcards):
-    targets = [MERGED_SIGNAL_SYST_COFFEA]
-    nom = get_stat_only_coffea()
-    if nom and os.path.exists(nom):
-        targets.extend([
-            f"{F1_OUTPUT_PATH}signal_crosscheck.html",
-            f"{F1_OUTPUT_PATH}signal_crosscheck.txt",
-        ])
-    return targets
+def get_known_counts_file():
+    cand = config.get("known_counts_systematics", "")
+    if not cand:
+        sig = config.get('signal_datasets', ['ttHbb'])[0]
+        cand = f"coffea4bees/analysis/tests/known_Counts_systematics_{sig}.yml"
+    return cand if os.path.exists(cand) else ""
 
-rule all_full_syst_F_1:
-    input: get_f1_master_targets
+rule cutflow_systematics_table:
+    input:
+        coffea = MERGED_SIGNAL_SYST_COFFEA,
+        known_counts = lambda wildcards: [f for f in [get_known_counts_file()] if f]
+    output:
+        txt = f"{F1_OUTPUT_PATH}cutflow_validation_systematics.txt",
+        html = f"{F1_OUTPUT_PATH}cutflow_systematics.html",
+        yml = f"{F1_OUTPUT_PATH}cutflow_systematics.yml",
+    log:
+        f"{F1_OUTPUT_PATH}logs/cutflow_systematics.log"
+    params:
+        tolerance = config.get("cutflow_tolerance", 1e-3),
+        known_counts_arg = lambda wildcards, input: f"--known-counts {input.known_counts[0]}" if input.known_counts else "",
+        run_container_wrapper = config.get("analysis_container_wrapper", "./run_container"),
+        python_bin = lambda wildcards: config.get("python_bin", "python3"),
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {output.txt}) $(dirname {log})
+        {params.run_container_wrapper} {params.python_bin} src/tools/cutflow_systematics.py \
+            {input.coffea} \
+            {params.known_counts_arg} \
+            --output-txt {output.txt} \
+            --output-html {output.html} \
+            --output-yml {output.yml} \
+            --tolerance {params.tolerance} 2>&1 | tee {log}
+        """
 
-localrules: create_analysis_config_full_syst, merge_signal_systematics, check_nominal_signal_match, all_full_syst_F_1
+localrules: create_analysis_config_full_syst, merge_signal_systematics, check_nominal_signal_match, cutflow_systematics_table, all_full_syst_singlefiles, all_full_syst_F_1
