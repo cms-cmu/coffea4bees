@@ -149,8 +149,51 @@ else:
     c4_jcm_input = [] if "://" in str(c4_jcm_file) else [c4_jcm_file]
 
 c4_fvt_friend_manifest = f"{out_c}friends/friends_FvT_{mix_name}_v{m0}.json"
+# the FvT evaluated on the subsample's synthetic four-tag events (C_3 evaluate_synthetic)
+c4_fvt_synthetic_manifest = f"{out_c}friends_synthetic/friends_FvT_{mix_name}_v{m0}.json"
 
-plot_config = closure_cfg.get('plot_config', "coffea4bees/plots/metadata/plotsAll_FvTClosure.yml")
+# The closure is checked against the SYNTHETIC four-tag sample the FvT was trained on (process
+# mix_v<m0>: the subsample's declustered multijet + ttbar pseudodata), not against the real four-tag
+# data -- that check is the nominal workflow's C.4. `plot_config` is a template whose mix_v0 / mix_0
+# are set to the closure subsample.
+plot_config = closure_cfg.get('plot_config', "coffea4bees/plots/metadata/plotsAll_FvTClosure_synthetic.yml")
+c4_plot_config = f"{out_c4}plots_config_FvT_closure_synthetic_v{m0}.yml"
+c4_synthetic_config_path = f"{out_c4}synthetic/analysis_config_FvT_closure_synthetic_v{m0}.yml"
+c4_synthetic_hist = f"{out_c4}synthetic/histAll_{channel}_mixeddata_v{m0}_FvT.coffea"
+c4_closure_hist = f"{out_c4}histAll_FvT_closure_synthetic_v{m0}.coffea"
+SYNTHETIC_PROCESS = f"mix_v{m0}"
+
+# Cross-host runs (roast: C on the GPU host, C_4 on cmslpc): fetch the closure subsample's friend
+# manifests from the C handoff when this workflow does not make them. A generic {m} pattern, so the
+# rule also serves F_1 when both are included (F_1 skips its own copy then).
+_c4_fvt_handoff = config.get('fvt_handoff_eos') or globals().get('FVT_HANDOFF_EOS') or HANDOFF_EOS
+_c4_rules = {r.name for r in workflow.rules}
+if _c4_fvt_handoff and not ({'extract_friend_manifest', 'stage_bkg_syst_friend_manifest'} & _c4_rules):
+    rule stage_c4_friend_manifest:
+        output:
+            f"{out_c}friends/friends_FvT_{mix_name}_v{{m}}.json"
+        wildcard_constraints:
+            m = r"\d+"
+        params:
+            src = f"{_c4_fvt_handoff}/friends/friends_FvT_{mix_name}_v{{m}}.json"
+        shell:
+            """
+            mkdir -p $(dirname {output})
+            if command -v xrdcp &>/dev/null; then xrdcp -f '{params.src}' '{output}'; else cp -f '{params.src}' '{output}'; fi
+            """
+if _c4_fvt_handoff and 'extract_friend_manifest_synthetic' not in _c4_rules:
+    rule stage_c4_friend_manifest_synthetic:
+        output:
+            f"{out_c}friends_synthetic/friends_FvT_{mix_name}_v{{m}}.json"
+        wildcard_constraints:
+            m = r"\d+"
+        params:
+            src = f"{_c4_fvt_handoff}/friends_synthetic/friends_FvT_{mix_name}_v{{m}}.json"
+        shell:
+            """
+            mkdir -p $(dirname {output})
+            if command -v xrdcp &>/dev/null; then xrdcp -f '{params.src}' '{output}'; else cp -f '{params.src}' '{output}'; fi
+            """
 CUTFLOW_LIST = closure_cfg.get('cutflow_list', "passJetMult,passPreSel,passDiJetMass,SR_woTrig,SR,SB_woTrig,SB")
 
 ttbar_compare_plot_config = closure_cfg.get('ttbar_compare_plot_config', "coffea4bees/plots/metadata/plotsTTbar_MCvsFromD3.yml")
@@ -176,7 +219,13 @@ def get_raw_c4_config():
         res.pop(k, None)
     if 'config' not in res or not isinstance(res['config'], dict):
         res['config'] = {}
-    
+
+    # The four-tag definition: neither `fvt_closure` nor `analysis_config` carries the top-level
+    # fourTag_use_tight (Run 3), and without it the processor counts the non-tight four-tag events
+    # against the tight-normalised model (Run 3 bkg_syst pilot: data/bkg 1.72).
+    if 'fourTag_use_tight' not in res['config'] and 'fourTag_use_tight' in config:
+        res['config']['fourTag_use_tight'] = config['fourTag_use_tight']
+
     # Enable JCM and FvT reweighting
     res['config']['apply_JCM'] = True
     res['config']['JCM_file'] = c4_jcm_file
@@ -222,6 +271,7 @@ rule all_bkg_syst_C_4:
     default_target: True
     input:
         f"{out_c4}histAll_FvT_closure_v{m0}.coffea",
+        c4_closure_hist,
         f"{out_c4}plots_FvT_closure/plots_done.txt",
         f"{out_c4}cutflow_validation_FvT_closure.txt",
         f"{out_c4}cutflow_FvT_closure.html",
@@ -264,6 +314,90 @@ rule create_bkg_syst_C_4_config:
         os.makedirs(os.path.dirname(output[0]), exist_ok=True)
         with open(output[0], 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False)
+
+# ── The synthetic four-tag side: processor on subsample m0 with its FvT ───────
+# As Stage A_3 processes the subsample (same dataset and processor), with C_4's histogram set and
+# the FvT evaluated on the synthetic events, so the FvT-output histograms get synthetic entries.
+# No JCM (four-tag events) and no trigger weight (synthetic events have none), as A_3.
+rule create_bkg_syst_C_4_synthetic_config:
+    input:
+        fvt_friend = c4_fvt_synthetic_manifest,
+        configfiles = workflow.configfiles if workflow.configfiles else []
+    output:
+        c4_synthetic_config_path
+    run:
+        import yaml, os
+        cfg = get_raw_c4_config()
+        c = cfg['config']
+        c['apply_JCM'] = False
+        c.pop('JCM_file', None)
+        c['apply_trigWeight'] = False
+        c['plot_ttbar_with_weights'] = False
+        c['friends'] = {'FvT': f"{c4_fvt_synthetic_manifest}@@FvT"}
+        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
+        with open(output[0], 'w') as f:
+            yaml.dump(cfg, f, default_flow_style=False)
+
+rule analysis_synthetic_bkg_syst_C_4:
+    input:
+        cfg = c4_synthetic_config_path,
+        ds_file = MULTISAMPLE_DATASET,
+        fvt_friend = c4_fvt_synthetic_manifest,
+    output:
+        c4_synthetic_hist
+    log:
+        f"{out_c4}logs/analysis_synthetic_v{m0}.log"
+    params:
+        processor = lambda wildcards: get_raw_c4_config().get('processor', f"coffea4bees/analysis/processors/processor_{channel}.py"),
+        dataset = f"{SUB_NAME}:{m0}",
+        years = " ".join(DATA_YEARS),
+        weights_file = config.get('weights_file', f"coffea4bees/metadata/weights/weights_{channel}.yml"),
+        output_path = f"{out_c4}synthetic/",
+        run_container_wrapper = container_wrapper,
+        python_bin = lambda wildcards: config.get("python_bin", python_bin),
+        extra = lambda wildcards: "" if config.get("test", False) else config.get("additional_parameters", condor_flags),
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p {params.output_path} $(dirname {log})
+        {params.run_container_wrapper} {params.python_bin} runner.py {input.cfg} \
+            --processor {params.processor} \
+            --metadata {input.ds_file} \
+            --datasets {params.dataset} \
+            --years {params.years} \
+            --weights {params.weights_file} \
+            --output-path {params.output_path} \
+            --output $(basename {output}) \
+            {params.extra} 2>&1 | tee {log}
+        test -s {output}
+        """
+
+# model (C_4 histAll: 3b data x JCM x FvT, ttbar) + synthetic four-tag in one file for plots and table
+use rule merging_coffea_files from analysis as merge_bkg_syst_C_4_synthetic with:
+    input:
+        files = [f"{out_c4}histAll_FvT_closure_v{m0}.coffea", c4_synthetic_hist],
+        script = "src/tools/merge_coffea_files.py"
+    output:
+        c4_closure_hist
+    log:
+        f"{out_c4}logs/merge_FvT_closure_synthetic.log"
+    params:
+        run_performance = False,
+        run_container_wrapper = container_wrapper,
+        python_bin = lambda wildcards: config.get("python_bin", python_bin),
+        input_files = lambda wildcards, input: " ".join([f for f in input.files])
+
+rule bkg_syst_C_4_plot_config:
+    input:
+        plot_config
+    output:
+        c4_plot_config
+    run:
+        txt = open(input[0]).read()
+        txt = txt.replace("mix_v0", SYNTHETIC_PROCESS).replace("(mix_0)", f"(mix_{m0})")
+        os.makedirs(os.path.dirname(output[0]), exist_ok=True)
+        with open(output[0], 'w') as f:
+            f.write(txt)
 
 # ── Processor Execution Rules ─────────────────────────────────────────────────
 use rule analysis_processor from analysis as analysis_data_bkg_syst_C_4 with:
@@ -339,16 +473,17 @@ use rule merging_coffea_files from analysis as merge_bkg_syst_C_4 with:
         input_files = lambda wildcards, input: " ".join([f for f in (input.files if hasattr(input, 'files') else input) if not f.endswith('.py')])
 
 # ── Closure Plots ─────────────────────────────────────────────────────────────
+# closure plots: the model against the synthetic four-tag sample (mix_v<m0>), not the real four-tag data
 use rule make_plots from analysis as make_plots_bkg_syst_C_4 with:
     input:
-        coffea_file = f"{out_c4}histAll_FvT_closure_v{m0}.coffea",
-        metadata_file = plot_config,
+        coffea_file = c4_closure_hist,
+        metadata_file = c4_plot_config,
         plot_script = "coffea4bees/plots/makePlots.py"
     output:
         f"{out_c4}plots_FvT_closure/plots_done.txt"
     params:
         output_dir = f"{out_c4}plots_FvT_closure/",
-        metadata = plot_config,
+        metadata = c4_plot_config,
         extra_arguments = lambda wildcards: " ".join(filter(None, [
             "-s xW -f png",
             "--year " + (DATA_YEARS[0] if len(DATA_YEARS) == 1 else ("Run3" if any("202" in y for y in DATA_YEARS) else "RunII")),
@@ -377,11 +512,17 @@ use rule check_cutflow from analysis as check_cutflow_bkg_syst_C_4 with:
         python_bin = lambda wildcards: config.get("python_bin", python_bin)
     container: None
 
+# closure table from the merged file: the model columns as before, plus the synthetic four-tag sample
+# (mix_v<m0>, the FvT's target) compared with Bkg (--compare)
 use rule cutflow_closure_table from analysis as FvT_cutflow_closure_table_bkg_syst with:
+    input:
+        cutflow_yml = c4_closure_hist,
+        validation_txt = f"{out_c4}cutflow_validation_FvT_closure.txt"
     params:
         title = lambda wildcards: f"{config.get('label', 'bkg_syst')}_cutflow_v{m0}_{wildcards.label}",
         multijet = "data3b",
         ttbar = lambda wildcards: closure_cfg.get('closure_ttbar', "TTbar_from_d3"),
+        extra_arguments = f"--compare {SYNTHETIC_PROCESS}",
         run_container_wrapper = container_wrapper,
         python_bin = lambda wildcards: config.get("python_bin", python_bin)
 
@@ -456,6 +597,7 @@ rule ttbar_MC_vs_d3_cutflow_bkg_syst:
 
 localrules:
     create_bkg_syst_C_4_config, select_ttbar_upstream_bkg_syst, merge_bkg_syst_C_4,
+    create_bkg_syst_C_4_synthetic_config, merge_bkg_syst_C_4_synthetic, bkg_syst_C_4_plot_config,
     make_plots_bkg_syst_C_4, check_cutflow_bkg_syst_C_4, FvT_cutflow_closure_table_bkg_syst,
     make_plots_ttbar_MC_vs_d3_bkg_syst, make_plots_ttbar3b_MC_vs_d3_bkg_syst,
     ttbar_MC_vs_d3_cutflow_bkg_syst
