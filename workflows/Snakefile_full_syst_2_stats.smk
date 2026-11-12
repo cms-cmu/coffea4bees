@@ -103,8 +103,7 @@ config.setdefault('year_eras', {
     'UL18':         ['A', 'B', 'C', 'D'],
 })
 
-config.setdefault('container_wrapper', "./run_container combine")
-config.setdefault('stats_container_wrapper', config.get('container_wrapper', "./run_container combine"))
+config.setdefault('stats_container_wrapper', "./run_container combine")
 config.setdefault('analysis_container_wrapper', config.get('analysis_wrapper', "./run_container"))
 config.setdefault('python_bin', os.getenv("CONTAINER_PYTHON", "python3"))
 
@@ -305,9 +304,23 @@ rule make_combine_inputs_full_syst:
             {params.bkg_flag} \
             -r {params.rebin} \
             -o {params.output_dir} \
-            -v {params.variable} \
+            --var {params.variable} \
             -m {params.metadata} \
             {params.tag_flags} 2>&1 | tee {log}
+
+        echo "[$(date)] Combining datacards" | tee -a {log}
+        args=""
+        for file in $(find "{params.output_dir}" -maxdepth 1 -name "datacard_*.txt" ! -name "datacard__*.txt" | sort); do
+            base=$(basename "$file")
+            bin_name=$(echo "$base" | sed 's/^datacard_//; s/\.txt$//')
+            args="$args $bin_name=$base"
+        done
+        if [ -n "$args" ]; then
+            {params.container_wrapper} "cd {params.output_dir} && combineCards.py $args > datacard__{params.signal}.txt" 2>&1 | tee -a {log}
+        else
+            echo "Error: No datacards found to combine in {params.output_dir}!" | tee -a {log}
+            exit 1
+        fi
         """
 
 rule plot_systematics_full_syst:
@@ -321,18 +334,18 @@ rule plot_systematics_full_syst:
         out_dir = f"{F2_OUTPUT_PATH}{{channel}}/plots_systematics/",
         variable = lambda wildcards: config['channels'][wildcards.channel]['variable'].replace(".", "_"),
         signal = lambda wildcards: config['channels'][wildcards.channel].get('signallabel', wildcards.channel),
-        run_container_wrapper = config.get('analysis_container_wrapper', './run_container'),
+        container_wrapper = config['stats_container_wrapper'],
         python_bin = lambda wildcards: config.get("python_bin", "python3")
     log: f"{F2_OUTPUT_PATH}logs/plot_systematics_{{channel}}.log"
     shell:
         """
         set -eo pipefail
         mkdir -p {params.out_dir} $(dirname {log})
-        {params.run_container_wrapper} {params.python_bin} coffea4bees/plots/make_syst_plots.py \
+        {params.container_wrapper} {params.python_bin} coffea4bees/plots/make_syst_plots.py \
             -i {input.shapes} \
             -d {input.datacard} \
             -o {params.out_dir} \
-            -v {params.variable} \
+            --var {params.variable} \
             -s {params.signal} \
             -m {input.metadata} 2>&1 | tee {log}
         touch {output.done}
@@ -345,7 +358,7 @@ rule gallery_systematics_full_syst:
         html = f"{F2_OUTPUT_PATH}{{channel}}/plots_systematics/index.html"
     params:
         plot_dir = f"{F2_OUTPUT_PATH}{{channel}}/plots_systematics/",
-        title = lambda wildcards: f"Systematic Variations — {wildcards.channel}",
+        title = lambda wildcards: f"Systematic_Variations_{wildcards.channel}",
         run_container_wrapper = config.get('analysis_container_wrapper', './run_container'),
         python_bin = lambda wildcards: config.get("python_bin", "python3")
     log: f"{F2_OUTPUT_PATH}logs/gallery_systematics_{{channel}}.log"
@@ -355,8 +368,8 @@ rule gallery_systematics_full_syst:
         mkdir -p $(dirname {log})
         {params.run_container_wrapper} {params.python_bin} src/plotting/make_gallery.py \
             {params.plot_dir} \
-            --title "{params.title}" \
-            --output {output.html} 2>&1 | tee {log}
+            --title {params.title} \
+            --output $(basename {output.html}) 2>&1 | tee {log}
         """
 
 def stat_summary_inputs_full_syst(wildcards):
