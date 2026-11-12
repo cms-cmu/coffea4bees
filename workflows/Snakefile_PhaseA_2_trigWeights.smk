@@ -17,12 +17,12 @@ raw_datasets = (
     trig_cfg.get('datasets')
     or trig_cfg.get('dataset')
     or config.get('trigger_weights_datasets')
-    or [d for d in config.get('dataset', []) if d != 'data']
+    or config.get('dataset')
     or config.get('datasets', ['ttHbb'])
 )
 if isinstance(raw_datasets, str):
     raw_datasets = [d.strip() for d in raw_datasets.split(",") if d.strip()]
-config['dataset'] = raw_datasets
+config['dataset'] = [d for d in raw_datasets if d != 'data']
 
 # Parse boolean for test flag
 is_test = config.get('test', False)
