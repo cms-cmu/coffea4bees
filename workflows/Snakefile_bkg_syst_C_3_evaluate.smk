@@ -258,6 +258,39 @@ rule evaluate_synthetic:
         EVAL_SHELL
 
 
+
+# eval_host: orchard (barista src/classifier/workflow/Snakefile, roast --eval-on orchard): the
+# synthetic evaluation runs on CMU ORCHARD like the other evaluations, through
+# software/orchard/remote_train.py; its friend trees go to the paths in the staged workflow. With no
+# GPU rule left, BKG_C can then be driven from cmslpc (roast new --cmslpc).
+if globals().get("EVAL_HOST") == "orchard":
+    localrules: evaluate_synthetic_orchard
+    ruleorder: evaluate_synthetic_orchard > evaluate_synthetic
+
+    rule evaluate_synthetic_orchard:
+        input:
+            train_flag = f"{out_c}models/mix_{{m}}/train.done",
+            eval_wf    = f"{out_c}models/mix_{{m}}/wfs/evaluate_synthetic.yml",
+            common     = f"{out_c}models/mix_{{m}}/common.yml",
+        output:
+            flag = f"{out_c}models/mix_{{m}}/evaluate_synthetic.done",
+        log:
+            f"{out_c}models/mix_{{m}}/evaluate_synthetic.log",
+        wildcard_constraints:
+            m = r"\d+"
+        params:
+            model_dir               = lambda wildcards: f"{out_c}models/mix_{wildcards.m}",
+            classifier_config_paths = CLASSIFIER_CONFIG_PATHS,
+            opts                    = _orchard_opts("evaluate_synthetic"),
+        shell:
+            """
+            python3 software/orchard/remote_train.py \\
+                --model-dir {params.model_dir:q} --wf {input.eval_wf:q} --common {input.common:q} \\
+                --template '' --log {log:q} \\
+                --config-paths {params.classifier_config_paths:q} {params.opts}
+            touch {output.flag}
+            """
+
 rule extract_friend_manifest_synthetic:
     input:
         f"{out_c}models/mix_{{m}}/evaluate_synthetic.done"
