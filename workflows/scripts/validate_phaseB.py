@@ -44,14 +44,16 @@ def validate_jcm(jcm_path: str, cutflow_path: str) -> int:
         failures.append(f"No numeric parameters found in {jcm_path}")
 
     # Check NoJCM cutflow has non-zero data 3b/4b
-    data_keys = [k for k in cf if k.startswith("data")]
+    counts3 = cf.get("counts3", {})
+    counts4 = cf.get("counts4", {})
+    data_keys = sorted(k for k in (set(counts3) | set(counts4)) if k.startswith("data"))
     if not data_keys:
         failures.append(f"No data entries found in {cutflow_path}")
     else:
         print("\n=== Phase B.1 NoJCM Cutflow (passPreSel) ===")
-        for dk in sorted(data_keys):
-            three_b = cf[dk].get("threeTag", {}).get("passPreSel", 0)
-            four_b = cf[dk].get("fourTag", {}).get("passPreSel", 0)
+        for dk in data_keys:
+            three_b = float(counts3.get(dk, {}).get("passPreSel", 0))
+            four_b = float(counts4.get(dk, {}).get("passPreSel", 0))
             print(f"  {dk:<25} threeTag={three_b:.2f}  fourTag={four_b:.2f}")
             if three_b <= 0 or four_b <= 0:
                 failures.append(f"{dk} has non-positive passPreSel counts (3b={three_b}, 4b={four_b})")
@@ -87,10 +89,20 @@ def validate_classifier_inputs(
     print("=== Phase B.2 Cutflow Comparison (NoJCM vs wJCM at passPreSel) ===")
     print(f"{'Dataset':<28} {'Tag':<10} {'NoJCM':>12} {'wJCM':>12} {'Status':<6}")
     print("-" * 72)
-    for dk in sorted(k for k in cf_w if k.startswith("data")):
-        for tag, expect_same in [("threeTag", False), ("fourTag", True)]:
-            v_no = float(cf_no.get(dk, {}).get(tag, {}).get("passPreSel", 0.0))
-            v_w = float(cf_w.get(dk, {}).get(tag, {}).get("passPreSel", 0.0))
+    w_counts3 = cf_w.get("counts3", {})
+    w_counts4 = cf_w.get("counts4", {})
+    no_counts3 = cf_no.get("counts3", {})
+    no_counts4 = cf_no.get("counts4", {})
+    data_keys = sorted(k for k in (set(w_counts3) | set(w_counts4)) if k.startswith("data"))
+    if not data_keys:
+        failures.append(f"No data entries found in {cutflow_wjcm_path}")
+    for dk in data_keys:
+        for tag, no_map, w_map, expect_same in [
+            ("counts3", no_counts3, w_counts3, False),
+            ("counts4", no_counts4, w_counts4, True),
+        ]:
+            v_no = float(no_map.get(dk, {}).get("passPreSel", 0.0))
+            v_w = float(w_map.get(dk, {}).get("passPreSel", 0.0))
             if expect_same:
                 ok = abs(v_no - v_w) <= 1e-4 * max(1.0, abs(v_no))
                 if not ok:
