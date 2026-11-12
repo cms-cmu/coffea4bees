@@ -26,6 +26,7 @@ phaseA_1_skimmer_run2_coffea4bees:
     - setup_coffea4bees
   script:
     - pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseA_1_skimmer.smk --configfile coffea4bees/workflows/config/nominal_run2_ci.yml --config test=true dataset=GluGluToHHTo4B_cHHH1 year=UL18 --jobs 4
+    - python coffea4bees/workflows/scripts/validate_phaseA.py skimmer --new-datasets output/run2_nominal_ci/modified_datasets/new_datasets.yml --known coffea4bees/analysis/tests/known_PhaseA_run2.yml
   artifacts:
     when: always
     paths:
@@ -46,6 +47,7 @@ phaseA_2_trigWeights_run2_coffea4bees:
     - phaseA_1_skimmer_run2_coffea4bees
   script:
     - pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseA_2_trigWeights.smk --configfile coffea4bees/workflows/config/nominal_run2_ci.yml --config test=true dataset=GluGluToHHTo4B_cHHH1 year=UL18 trigger_weights_dataset_location=output/run2_nominal_ci/modified_datasets/modified_datasets.yml --jobs 4
+    - python coffea4bees/workflows/scripts/validate_phaseA.py trigweights --friends output/run2_nominal_ci/trigger_weights/trigger_weights_friends.json --known coffea4bees/analysis/tests/known_PhaseA_run2.yml
   artifacts:
     when: always
     paths:
@@ -53,6 +55,24 @@ phaseA_2_trigWeights_run2_coffea4bees:
       - output/run2_nominal_ci/logs/
       - barista_framework/output/run2_nominal_ci/trigger_weights/
       - barista_framework/output/run2_nominal_ci/logs/
+    expire_in: 1 day
+
+phaseA_3_trigValidation_run2_coffea4bees:
+  stage: analysis
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseA_1_skimmer_run2_coffea4bees
+    - phaseA_2_trigWeights_run2_coffea4bees
+  script:
+    - pixi run snakemake all_trig_validation -s coffea4bees/workflows/Snakefile_TrigWeights.smk --configfile coffea4bees/workflows/config/nominal_run2_ci.yml --config test=true dataset=GluGluToHHTo4B_cHHH1 year=UL18 dataset_location=output/run2_nominal_ci/modified_datasets/modified_datasets.yml trigger_weights_dataset_location=output/run2_nominal_ci/modified_datasets/modified_datasets.yml --jobs 4
+    - cat output/run2_nominal_ci/trig_validation/trig_validation.txt
+  artifacts:
+    when: always
+    paths:
+      - output/run2_nominal_ci/trig_validation/
+      - barista_framework/output/run2_nominal_ci/trig_validation/
     expire_in: 1 day
 
 # phaseE_prep_test_coffea4bees:

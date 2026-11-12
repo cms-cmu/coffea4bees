@@ -1,0 +1,15 @@
+# Known reference counts and weights for nominal Run 2 Phase A CI test
+# (GluGluToHHTo4B_cHHH1 UL18, test_files=1, maxchunks=2, chunksize=100000)
+skimmer:
+  GluGluToHHTo4B_cHHH1:
+    UL18:
+      total_events: 66000
+      saved_events: 17179
+      sumw: 1760.1949462890625
+      sumw2: 58.88192367553711
+
+trigger_weights:
+  num_entries: 17179
+  branches:
+    - Data
+    - MC

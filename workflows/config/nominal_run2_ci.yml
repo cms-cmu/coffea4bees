@@ -30,6 +30,13 @@ trigger_weights:
     chunksize: 100000
     workers: 4
 
+trig_validation:
+  runner:
+    test_files: 1
+    maxchunks: 2
+    chunksize: 100000
+    workers: 4
+
 # ==============================================================================
 # PHASE F.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
 # ==============================================================================

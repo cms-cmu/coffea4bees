@@ -35,7 +35,7 @@ for _d in TV_DATASETS:
 for _y in TV_YEARS:
     if _y not in years:
         raise ValueError(f"trig_validation.years: {_y} is not an A.2 year")
-TV_PLOT_YEARS = TV_YEARS + ["Run3"]
+TV_PLOT_YEARS = TV_YEARS + (["RunII"] if any(str(y).startswith("UL") for y in TV_YEARS) else ["Run3"])
 TV_SCRIPT = "coffea4bees/workflows/scripts/trig_validation.py"
 TV_WRAPPER = config['analysis_container_wrapper']
 TV_PYTHON = config['python_bin']
@@ -60,7 +60,7 @@ def _tv_config(variant):
         'SvB': None,
         'SvB_MA': None,
         'apply_btagSF': True,
-        'fourTag_use_tight': True,      # nominal Run 3 fourTag
+        'fourTag_use_tight': TV.get('fourTag_use_tight', not any(str(y).startswith('UL') for y in TV_YEARS)),
         'blind': False,
         'apply_trigWeight': variant == "HLT_SF",
         'require_trigWeight': variant == "HLT_SF",
@@ -75,7 +75,7 @@ def _tv_config(variant):
         'processor': "coffea4bees/analysis/processors/processor_HH4b.py",
         'dataset_location': config.get('dataset_location', "coffea4bees/metadata/datasets/"),
         'friend_file': "coffea4bees/metadata/friends/friends_HH4b.yml",
-        'weights_file': "coffea4bees/metadata/weights/weights_HH4b.yml",
+        'weights_file': TV.get('weights_file') or config.get('analysis_config', {}).get('weights_file') or "coffea4bees/metadata/weights/weights_HH4b.yml",
         'runner': runner,
         'config': c,
     }
