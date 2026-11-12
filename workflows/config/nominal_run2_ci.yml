@@ -6,6 +6,7 @@
 # executes cleanly inside GitLab CI.
 email: ""
 label: "run2_nominal_ci"
+roast_id: "run2_nominal_ci"
 output_path: "output/run2_nominal_ci/"
 
 # ==============================================================================
@@ -36,6 +37,30 @@ trig_validation:
     maxchunks: 2
     chunksize: 100000
     workers: 4
+
+# ==============================================================================
+# PHASE B: JCM COMPUTATION & CLASSIFIER INPUT FRIEND TREES
+# ==============================================================================
+jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/test_jcm_config.yml"
+
+jcm:
+  datasets:
+    - "data"
+    - "TTTo2L2Nu"
+    - "TTToSemiLeptonic"
+    - "TTToHadronic"
+  runner:
+    test_files: 1
+    maxchunks: 2
+    chunksize: 100000
+    workers: 4
+  config:
+    fill_histograms: "kinematics"
+
+classifier_inputs:
+  config:
+    make_classifier_input: "output/run2_nominal_ci/PhaseB_2_classifier_inputs/"
+    fill_histograms: "kinematics"
 
 # ==============================================================================
 # PHASE F.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
@@ -75,6 +100,3 @@ dataset:
 year_eras:
   UL18:
     - "A"
-    - "B"
-    - "C"
-    - "D"
