@@ -83,7 +83,6 @@ phaseB_1_computeJCM_run2_coffea4bees:
     - setup_coffea4bees
   script:
     - pixi run snakemake output/run2_nominal_ci/PhaseB_1_computeJCM/JCM_2024_v2/jetCombinatoricModel_SB_2024_v2.yml output/run2_nominal_ci/PhaseB_1_computeJCM/cutflow_validation_NoJCM.txt output/run2_nominal_ci/PhaseB_1_computeJCM/cutflow_NoJCM.html -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/nominal_run2_ci.yml --config test=true --jobs 4
-    - python coffea4bees/workflows/scripts/validate_phaseB.py jcm --jcm output/run2_nominal_ci/PhaseB_1_computeJCM/JCM_2024_v2/jetCombinatoricModel_SB_2024_v2.yml --cutflow output/run2_nominal_ci/PhaseB_1_computeJCM/cutflow_NoJCM.yml
   artifacts:
     when: always
     paths:
@@ -100,7 +99,7 @@ phaseB_2_classifier_inputs_run2_coffea4bees:
     - phaseB_1_computeJCM_run2_coffea4bees
   script:
     - pixi run snakemake all_PhaseB -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/nominal_run2_ci.yml --config test=true --jobs 4
-    - python coffea4bees/workflows/scripts/validate_phaseB.py classifier_inputs --friends output/run2_nominal_ci/PhaseB_2_classifier_inputs/classifier_inputs_friends.json --cutflow-nojcm output/run2_nominal_ci/PhaseB_1_computeJCM/cutflow_NoJCM.yml --cutflow-wjcm output/run2_nominal_ci/PhaseB_1_computeJCM/cutflow_wJCM.yml
+    - cat output/run2_nominal_ci/phaseB_validation.txt
   artifacts:
     when: always
     paths:
@@ -108,10 +107,12 @@ phaseB_2_classifier_inputs_run2_coffea4bees:
       - output/run2_nominal_ci/PhaseB_2_classifier_inputs/
       - output/run2_nominal_ci/handoff/
       - output/run2_nominal_ci/logs/
+      - output/run2_nominal_ci/phaseB_validation.txt
       - barista_framework/output/run2_nominal_ci/PhaseB_1_computeJCM/
       - barista_framework/output/run2_nominal_ci/PhaseB_2_classifier_inputs/
       - barista_framework/output/run2_nominal_ci/handoff/
       - barista_framework/output/run2_nominal_ci/logs/
+      - barista_framework/output/run2_nominal_ci/phaseB_validation.txt
     expire_in: 1 day
 
 # phaseE_prep_test_coffea4bees:

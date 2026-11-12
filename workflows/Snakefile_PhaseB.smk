@@ -2,6 +2,7 @@
 # Phase B: Master Coordinator Workflow for JCM Computation and Classifier Inputs Preparation
 
 include: "Snakefile_PhaseB_1_computeJCM.smk"
+include: "Snakefile_PhaseB_3_validation.smk"
 
 # ---------------------------------------------------------------------------
 # Phase B -> C/D handoff
@@ -50,7 +51,8 @@ HANDOFF_MANIFEST = _handoff.get(
 rule phaseB_handoff:
     input:
         jcm = ALL_JCM_INPUTS,
-        manifest = f"{CI_OUTPUT_PATH}classifier_inputs_friends.json"
+        manifest = f"{CI_OUTPUT_PATH}classifier_inputs_friends.json",
+        validation = phaseB_validation_path
     output:
         jcm = HANDOFF_JCM,
         manifest = HANDOFF_MANIFEST,
