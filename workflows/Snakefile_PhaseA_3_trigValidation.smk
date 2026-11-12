@@ -182,7 +182,7 @@ use rule make_plots from analysis as TV_plots with:
     params:
         output_dir = lambda wildcards: f"{TV_OUT}plots_{wildcards.tv_dataset}/{wildcards.plot_year}/",
         metadata = lambda wildcards: f"{TV_OUT}plots_{wildcards.tv_dataset}.yml",
-        extra_arguments = lambda wildcards, threads: f"-s xW -f png --year {wildcards.plot_year} -p {threads}",
+        extra_arguments = lambda wildcards: f"-s xW -f png --year {wildcards.plot_year}",
         run_container_wrapper = TV_WRAPPER,
         python_bin = TV_PYTHON
     log: f"{TV_OUT}logs/plots_{{tv_dataset}}_{{plot_year}}.log"

@@ -13,3 +13,6 @@ trigger_weights:
   branches:
     - Data
     - MC
+  branch_means:
+    Data: 0.4777
+    MC: 0.5994
