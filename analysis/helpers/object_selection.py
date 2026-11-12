@@ -765,6 +765,7 @@ def lowpt_jet_selection(
     lp_pt_min    = lp_cfg.get('pt_min', 15)
     lp_eta_max   = lp_cfg.get('eta_max', 2.4)
     lp_jetId_min = lp_cfg.get('jetId_min', 2)
+    lp_btag_wp   = lp_cfg.get('btag_wp', 'L') if isRun3 else 'L'
 
     # Define low-pT jet selection criteria
     pass_jet_id = event.Jet.passJetId if isRun3 else (event.Jet.jetId >= lp_jetId_min)
@@ -778,8 +779,9 @@ def lowpt_jet_selection(
     )
 
     # Tagging jets
-    event['Jet', 'tagged_lowpt'] = event.Jet.selected_lowpt & (event.Jet.btagScore >= corrections_metadata['btagWP']['L'])
-    event['Jet', 'tagged_loose_lowpt'] = event.Jet.selected_lowpt & (event.Jet.btagScore >= corrections_metadata['btagWP']['L'])
+    lp_wp_thresh = corrections_metadata['btagWP'][lp_btag_wp]
+    event['Jet', 'tagged_lowpt'] = event.Jet.selected_lowpt & (event.Jet.btagScore >= lp_wp_thresh)
+    event['Jet', 'tagged_loose_lowpt'] = event.Jet.selected_lowpt & (event.Jet.btagScore >= lp_wp_thresh)
 
     event['nJet_selected_lowpt'] = ak.sum(event.Jet.selected_lowpt, axis=1)
 
