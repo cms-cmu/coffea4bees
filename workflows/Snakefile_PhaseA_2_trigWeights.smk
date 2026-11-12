@@ -144,9 +144,14 @@ rule merge_friendtree_json:
     input: expand(f"{config['output_path']}trigger_weights/trigger_weights__{{dataset}}__{{year}}.json", dataset=config['dataset'], year=years)
     output: f"{config['output_path']}trigger_weights/trigger_weights_friends.json"
     log: f"{config['output_path']}logs/merge_friendtree_json.log"
+    params:
+        run_container_wrapper = config['analysis_container_wrapper'],
+        python_bin = config['python_bin']
     shell:
         """
-        ./run_container python -m src.friendtrees.merge_friend_meta \
+        set -eo pipefail
+        mkdir -p $(dirname {output}) $(dirname {log})
+        {params.run_container_wrapper} {params.python_bin} -m src.friendtrees.merge_friend_meta \
             -i {input} \
-            -o {output}
+            -o {output} 2>&1 | tee {log}
         """

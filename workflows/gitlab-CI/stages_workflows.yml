@@ -18,6 +18,43 @@ workflow_config_validation_coffea4bees:
   script:
     - python coffea4bees/workflows/scripts/validate_config.py --ci
 
+phaseA_1_skimmer_run2_coffea4bees:
+  stage: skimmer
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+  script:
+    - pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseA_1_skimmer.smk --configfile coffea4bees/workflows/config/nominal_run2_ci.yml --config test=true dataset=GluGluToHHTo4B_cHHH1 year=UL18 --jobs 4
+  artifacts:
+    when: always
+    paths:
+      - output/run2_nominal_ci/skimmer/
+      - output/run2_nominal_ci/modified_datasets/
+      - output/run2_nominal_ci/logs/
+      - barista_framework/output/run2_nominal_ci/skimmer/
+      - barista_framework/output/run2_nominal_ci/modified_datasets/
+      - barista_framework/output/run2_nominal_ci/logs/
+    expire_in: 1 day
+
+phaseA_2_trigWeights_run2_coffea4bees:
+  stage: friendtree
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseA_1_skimmer_run2_coffea4bees
+  script:
+    - pixi run snakemake -s coffea4bees/workflows/Snakefile_PhaseA_2_trigWeights.smk --configfile coffea4bees/workflows/config/nominal_run2_ci.yml --config test=true dataset=GluGluToHHTo4B_cHHH1 year=UL18 trigger_weights_dataset_location=output/run2_nominal_ci/modified_datasets/modified_datasets.yml --jobs 4
+  artifacts:
+    when: always
+    paths:
+      - output/run2_nominal_ci/trigger_weights/
+      - output/run2_nominal_ci/logs/
+      - barista_framework/output/run2_nominal_ci/trigger_weights/
+      - barista_framework/output/run2_nominal_ci/logs/
+    expire_in: 1 day
+
 # phaseE_prep_test_coffea4bees:
 #   stage: mixeddata
 #   allow_failure: true

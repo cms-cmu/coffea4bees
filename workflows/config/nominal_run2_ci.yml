@@ -1,0 +1,73 @@
+# ==============================================================================
+# Run 2 analysis CI config — standalone counterpart of nominal_run2.yml
+# ==============================================================================
+# Keeps processor and skimmer settings aligned with nominal_run2.yml while
+# omitting roast-scoped {eos_prod}/{roast_id} paths so each workflow phase
+# executes cleanly inside GitLab CI.
+email: ""
+label: "run2_nominal_ci"
+output_path: "output/run2_nominal_ci/"
+
+# ==============================================================================
+# PHASE A: SKIMMER & TRIGGER WEIGHTS
+# ==============================================================================
+skimmer:
+  runner:
+    test_files: 1
+    maxchunks: 2
+    chunksize: 100000
+    workers: 4
+    allowlist_sites:
+      - T3_CH_PSI
+      - T3_US_FNALLPC
+  config:
+    base_path: "output/run2_nominal_ci/skimmer/picoaods/"
+
+trigger_weights:
+  runner:
+    test_files: 1
+    maxchunks: 2
+    chunksize: 100000
+    workers: 4
+
+# ==============================================================================
+# PHASE F.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
+# ==============================================================================
+analysis_config:
+  processor: "coffea4bees/analysis/processors/processor_HH4b.py"
+  dataset_location: "coffea4bees/metadata/datasets/"
+  friend_file: "coffea4bees/metadata/friends/friends_HH4b.yml"
+  weights_file: "coffea4bees/metadata/weights/weights_HH4b_2024_v2.yml"
+  runner:
+    workers: 4
+    worker_memory: 8GB
+    dashboard_address: 0
+  config:
+    blind: false
+    apply_FvT: false
+    apply_JCM: false
+    apply_trigWeight: true
+    apply_btagSF: true
+    apply_boosted_veto: false
+    run_SvB: true
+    SvB_MA: true
+    SvB: null
+    top_reconstruction: fast
+    plot_ttbar_with_weights: false
+
+known_counts: "coffea4bees/analysis/tests/known_Counts.yml"
+plot_config: "coffea4bees/plots/metadata/plotsAll_ttbarWeights.yml"
+combine_flags: "--blind"
+
+dataset:
+  - "GluGluToHHTo4B_cHHH1"
+  - "TTTo2L2Nu"
+  - "TTToSemiLeptonic"
+  - "TTToHadronic"
+
+year_eras:
+  UL18:
+    - "A"
+    - "B"
+    - "C"
+    - "D"
