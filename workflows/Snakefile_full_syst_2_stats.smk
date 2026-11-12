@@ -72,6 +72,7 @@ if not F1_OUTPUT_PATH.endswith('/'):
 config.setdefault('combine_flags', "--blind")
 config.setdefault('closure_base', "coffea4bees/stats_analysis/files/HIG-24-010")
 config.setdefault('channels', {})
+config['channels'] = {k: v for k, v in config.get('channels', {}).items() if v and isinstance(v, dict)}
 config.setdefault('combine_outdir', "datacards/ttHbb")
 
 config.setdefault('convert_hist_to_json', {})
@@ -264,20 +265,36 @@ rule convert_signal_syst_to_json_full_syst:
             --histos {params.histos} 2>&1 | tee {log}
         """
 
+def get_metadata_for_channel(channel):
+    ch_cfg = config.get('channels', {}).get(channel, {})
+    if 'metadata' in ch_cfg and ch_cfg['metadata']:
+        return ch_cfg['metadata']
+    sig = ch_cfg.get('signal', ch_cfg.get('signallabel', 'ttHbb'))
+    tmpl = config.get('make_combine_inputs', {}).get('metadata_template', "coffea4bees/stats_analysis/metadata/{channel}.yml")
+    cand = tmpl.format(channel=sig)
+    if os.path.exists(cand):
+        return cand
+    cand2 = tmpl.format(channel=channel.split('_')[0])
+    if os.path.exists(cand2):
+        return cand2
+    if os.path.exists("coffea4bees/stats_analysis/metadata/ttHbb.yml"):
+        return "coffea4bees/stats_analysis/metadata/ttHbb.yml"
+    return cand
+
 rule make_combine_inputs_full_syst:
     input:
         injson = f"{F2_OUTPUT_PATH}histAll_nominal.json",
         injsonsyst = f"{F2_OUTPUT_PATH}histAll_signals_syst.json",
         bkgsyst = lambda wildcards: [get_bkgsyst_for_channel(wildcards.channel)] if get_bkgsyst_for_channel(wildcards.channel) else [],
         script = "coffea4bees/stats_analysis/make_combine_inputs.py",
-        metadata_file = lambda wildcards: config['make_combine_inputs']['metadata_template'].format(channel=wildcards.channel.split('_')[0])
+        metadata_file = lambda wildcards: get_metadata_for_channel(wildcards.channel)
     output:
         datacard = f"{F2_OUTPUT_PATH}{{channel}}/datacards/datacard__{{channel}}.txt",
         shapes = f"{F2_OUTPUT_PATH}{{channel}}/datacards/shapes.root"
     params:
         variable = lambda wildcards: config['channels'][wildcards.channel]['variable'],
         rebin = lambda wildcards, input: resolve_rebin_for_channel(wildcards.channel),
-        metadata = lambda wildcards: config['make_combine_inputs']['metadata_template'].format(channel=wildcards.channel.split('_')[0]),
+        metadata = lambda wildcards: get_metadata_for_channel(wildcards.channel),
         output_dir = lambda wildcards: f"{F2_OUTPUT_PATH}{wildcards.channel}/datacards/",
         variable_binning = lambda wildcards, input: config['make_combine_inputs']['variable_binning'],
         stat_only = lambda wildcards, input: get_stat_only_flag(wildcards.channel),
@@ -327,13 +344,14 @@ rule plot_systematics_full_syst:
     input:
         datacard = f"{F2_OUTPUT_PATH}{{channel}}/datacards/datacard__{{channel}}.txt",
         shapes = f"{F2_OUTPUT_PATH}{{channel}}/datacards/shapes.root",
-        metadata = lambda wildcards: config['make_combine_inputs']['metadata_template'].format(channel=wildcards.channel.split('_')[0])
+        metadata = lambda wildcards: get_metadata_for_channel(wildcards.channel)
     output:
         done = f"{F2_OUTPUT_PATH}{{channel}}/plots_systematics/plots_done.txt"
     params:
         out_dir = f"{F2_OUTPUT_PATH}{{channel}}/plots_systematics/",
         variable = lambda wildcards: config['channels'][wildcards.channel]['variable'].replace(".", "_"),
         signal = lambda wildcards: config['channels'][wildcards.channel].get('signallabel', wildcards.channel),
+        metadata = lambda wildcards: get_metadata_for_channel(wildcards.channel),
         container_wrapper = config['stats_container_wrapper'],
         python_bin = lambda wildcards: config.get("python_bin", "python3")
     log: f"{F2_OUTPUT_PATH}logs/plot_systematics_{{channel}}.log"

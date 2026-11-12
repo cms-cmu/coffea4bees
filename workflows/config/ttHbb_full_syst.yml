@@ -45,12 +45,42 @@ rebin: 24
 unify_background: true
 
 channels:
-  ttHbb:
+  inclusive:
     signallabel: "ttHbb"
     variable: "SvB_MA.ps_ttHbb"
     signal: "ttHbb"
     region: "SR"
     cut: "sum"
+    rebin: 24
+    stat_only: false
+    metadata: "coffea4bees/stats_analysis/metadata/ttHbb.yml"
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  lepton_veto:
+    signallabel: "ttHbb"
+    variable: "SvB_MA.ps_ttHbb"
+    signal: "ttHbb"
+    region: "SR"
+    cut: "passLeptonVeto"
+    rebin: 24
+    stat_only: false
+    metadata: "coffea4bees/stats_analysis/metadata/ttHbb.yml"
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  jets_gt6:
+    signallabel: "ttHbb"
+    variable: "SvB_MA.ps_ttHbb"
+    signal: "ttHbb"
+    region: "SR"
+    cut: "pass_nSelJets_gt6"
+    rebin: 24
+    stat_only: false
+    metadata: "coffea4bees/stats_analysis/metadata/ttHbb.yml"
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  jets_gt6_lepton_veto:
+    signallabel: "ttHbb"
+    variable: "SvB_MA.ps_ttHbb"
+    signal: "ttHbb"
+    region: "SR"
+    cut: "pass_nSelJets_gt6_passLeptonVeto"
     rebin: 24
     stat_only: false
     metadata: "coffea4bees/stats_analysis/metadata/ttHbb.yml"
