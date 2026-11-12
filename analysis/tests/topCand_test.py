@@ -20,7 +20,7 @@ class topCandRecoTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        self.inputFile = wrapper.args["inputFile"]
+        self.inputFile = wrapper.args.get("inputFile") if wrapper.args else None
 
 
         #

@@ -26,3 +26,11 @@ code_trig_emulator_coffea4bees:
     - .base_analysis_coffea4bees
   script:
     - source coffea4bees/scripts/code-trig-emulator.sh
+
+unit_tests_coffea4bees:
+  stage: code
+  extends:
+    - .base_analysis_coffea4bees
+  script:
+    - python3 coffea4bees/tests/run_unit_tests.py
+
