@@ -2,7 +2,6 @@ import unittest
 import argparse
 from coffea.util import load
 import yaml
-from parser import wrapper
 import sys
 from copy import copy
 
@@ -20,9 +19,6 @@ class topCandRecoTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        self.inputFile = wrapper.args.get("inputFile") if wrapper.args else None
-
-
         #
         # Test vectors from picos
         #   (from coffea4bees.analysis.helpers.topCandReconstruction import dumpTopCandidateTestVectors
