@@ -242,7 +242,7 @@ rule convert_nominal_to_json_full_syst:
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
         {params.run_container_wrapper} {params.python_bin} {input.script} \
-            -f {input.coffea_file} -o {output} \
+            -i {input.coffea_file} -o {output} \
             --histos {params.histos} 2>&1 | tee {log}
         """
 
@@ -261,7 +261,7 @@ rule convert_signal_syst_to_json_full_syst:
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
         {params.run_container_wrapper} {params.python_bin} {input.script} \
-            -f {input.coffea_file} -o {output} --syst_file \
+            -i {input.coffea_file} -o {output} --syst_file \
             --histos {params.histos} 2>&1 | tee {log}
         """
 
