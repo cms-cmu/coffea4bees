@@ -169,6 +169,125 @@ fvt:
           - output: "{FvT}"
 
 # ==============================================================================
+# PHASE D: SvB CLASSIFIER (CPU CI TEST)
+# ==============================================================================
+svb:
+  eos_base: "output/run2_nominal_ci/PhaseD_SvB"
+  plot_base: "output/run2_nominal_ci/PhaseD_SvB/plots"
+  classifier_config_paths: "coffea4bees"
+  wfs_base: "coffea4bees/classifier/config/workflows/HH4b_2024_v2/SvB"
+  label: "SvB_nominal"
+  output_dir: "output/run2_nominal_ci/PhaseD_SvB/"
+  plot_inputs: false
+  plot_weights: false
+  evaluate: true
+  model: "output/run2_nominal_ci/PhaseD_SvB/model"
+  friend: "output/run2_nominal_ci/PhaseD_SvB/friend"
+  train_template: "model: output/run2_nominal_ci/PhaseD_SvB/model, FvT: output/run2_nominal_ci/PhaseC_FvT/friend"
+  eval_template: "model: output/run2_nominal_ci/PhaseD_SvB/model, SvB: output/run2_nominal_ci/PhaseD_SvB/friend"
+  metadata: "output/run2_nominal_ci/PhaseB_2_classifier_inputs/classifier_inputs_friends.json@@HCR_input"
+  classifier_setting:
+    - module: ml.DataLoader
+      option:
+        - optimize_sliceable_dataset: true
+        - num_workers: 0
+    - module: ROOT
+      option:
+        - friend_allow_missing: true
+    - module: monitor.Log
+      option:
+        - forward_exception: false
+        - exit_on_exception: true
+    - module: monitor.Monitor
+      option:
+        - enable: false
+    - module: cms.CollisionData
+      option:
+        - eras:
+            UL18: ["A"]
+    - module: HCR.InputBranch
+      option:
+        - feature_ancillary: ["xW", "nSelJets", "xbW"]
+  train_workflow:
+    main:
+      module: train
+      option:
+        - --device cpu
+        - --max-loaders 1
+        - --max-trainers 1
+    model:
+      - module: HCR.SvB.ggF.baseline.Train
+        option:
+          - --roc-signal-by-category
+          - --kfolds 2
+          - --kfold-seed SvB random
+          - --kfold-seed-offsets 0
+          - --architecture
+          - n_features: 8
+            use_kv_proj: true
+            use_attention_gate: true
+          - --training FixedStep
+          - epoch: 1
+            bs_init: 512
+          - --finetuning FinetuneStep
+          - epoch: 1
+            bs_init: 1024
+    dataset:
+      - module: HCR.SvB.Background
+        option:
+          - --metadata coffea4bees/metadata/datasets/
+          - --max-workers 1
+          - --test-files 1
+          - --norm 3
+          - '--JCM-weight "" output/run2_nominal_ci/PhaseB_1_computeJCM/JCM_2024_v2/jetCombinatoricModel_SB_2024_v2.yml@@JCM_weights'
+          - '--friends "" output/run2_nominal_ci/PhaseB_2_classifier_inputs/classifier_inputs_friends.json@@HCR_input'
+          - '--friends label:data {FvT}/result.json@@analysis.0.merged'
+      - module: HCR.SvB.Signal
+        option:
+          - --metadata coffea4bees/metadata/datasets/
+          - --max-workers 1
+          - --test-files 1
+          - --mc-processes ggF
+          - --ggf-load-kl 1.0
+          - '--friends "" output/run2_nominal_ci/PhaseB_2_classifier_inputs/classifier_inputs_friends.json@@HCR_input'
+    setting:
+      - module: IO
+        option:
+          - output: "{model}"
+  eval_workflow:
+    main:
+      module: evaluate
+      option:
+        - --max-evaluators 1
+        - --device cpu
+    model:
+      - module: HCR.SvB.ggF.baseline.Eval
+        option:
+          - --models
+          - Final
+          - '{model}/result.json'
+    dataset:
+      - module: HCR.SvB.Eval
+        option:
+          - --metadata coffea4bees/metadata/datasets/
+          - --max-workers 1
+          - --test-files 1
+          - --mc-processes ttbar ggF
+          - --ggf-load-kl 1.0
+          - '--friends "" output/run2_nominal_ci/PhaseB_2_classifier_inputs/classifier_inputs_friends.json@@HCR_input'
+    analysis:
+      - module: kfold.Merge
+        option:
+          - --name SvB
+          - --step 100000
+          - --workers 1
+          - --clean
+    setting:
+      - module: IO
+        option:
+          - output: "{SvB}"
+
+# ==============================================================================
 # PHASE F.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
 # ==============================================================================
 analysis_config:

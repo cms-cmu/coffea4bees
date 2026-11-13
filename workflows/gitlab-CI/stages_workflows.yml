@@ -133,6 +133,25 @@ phaseC_fvt_run2_coffea4bees:
       - barista_framework/output/run2_nominal_ci/PhaseC_FvT/
     expire_in: 1 day
 
+phaseD_svb_run2_coffea4bees:
+  stage: classifier
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseB_2_classifier_inputs_run2_coffea4bees
+    - phaseC_fvt_run2_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE all_PhaseD -s coffea4bees/workflows/Snakefile_PhaseD.smk --configfile coffea4bees/workflows/config/nominal_run2_ci.yml --config test=true --jobs 2
+    - python coffea4bees/workflows/scripts/validate_phaseD.py --yields output/run2_nominal_ci/PhaseD_SvB/yields.json --model-result output/run2_nominal_ci/PhaseD_SvB/model/result.json --friend-result output/run2_nominal_ci/PhaseD_SvB/friend/result.json --output output/run2_nominal_ci/PhaseD_SvB/phaseD_validation.txt
+  artifacts:
+    when: always
+    paths:
+      - output/run2_nominal_ci/PhaseD_SvB/
+      - barista_framework/output/run2_nominal_ci/PhaseD_SvB/
+    expire_in: 1 day
+
 # phaseE_prep_test_coffea4bees:
 #   stage: mixeddata
 #   allow_failure: true
