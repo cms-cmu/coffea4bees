@@ -313,3 +313,8 @@ orchard:
   eval_pack_mem: 64
   eval_pack_wait: 900
 pilot_gate: false
+
+# F_4 mock analysis: ONE subsample (f4_subsample, default the first) as pseudo-data against the background
+# model fitted to it (f4_model_subsample, default the same), not the 16-subsample average against the nominal
+# background (fitted to real four-tag data, so that comparison measures mixed/declustered vs real data)
+f4_observation: subsample

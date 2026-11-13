@@ -424,9 +424,49 @@ rule make_mixeddata_ave_json:
             -o {output.ave_json} > {log} 2>&1
         """
 
+# f4_observation: subsample -- the mock analysis on ONE mixed subsample k (f4_subsample, default the
+# first) with the background model fitted to subsample j (f4_model_subsample, default k), instead of the
+# subsample average against the nominal background (which is fitted to real four-tag data, so that
+# comparison measures mixed vs real data, not the method). make_mixeddata_subsample_json.py.
+F4_OBSERVATION = str(config.get('f4_observation', 'average')).lower()
+F4_K = int(config.get('f4_subsample', subsample_indices_f4[0]))
+F4_J = int(config.get('f4_model_subsample', F4_K))
+_out_f1 = globals().get('out_f1', f"{out}bkg_syst_F_1_analysis/")
+subsample_mixeddata_json = f"{out_f4}histAll_{a3_channel}_mix_v{F4_K}_model_v{F4_J}.json"
+f4_injson = subsample_mixeddata_json if F4_OBSERVATION == 'subsample' else ave_mixeddata_json
+
+rule make_mixeddata_subsample_json:
+    input:
+        nominal_json = nominal_json,
+        bkg_coffea = f"{_out_f1}histAll_mixeddata_bkgs.coffea",
+        mixed_coffea = f"{out_a3}histAll_{a3_channel}_mixeddata_v{F4_K}.coffea",
+        script = "coffea4bees/stats_analysis/make_mixeddata_subsample_json.py",
+    output:
+        json = subsample_mixeddata_json
+    params:
+        variables = " ".join(dict.fromkeys(cfg['variable'] for cfg in config.get('channels', {}).values() if cfg.get('variable'))),
+        years = " ".join(config['years']) if isinstance(config.get('years'), list) else str(config.get('years', '')),
+        container_wrapper = "./run_container"
+    container: None
+    log: f"{out}logs/make_mixeddata_subsample_json.log"
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {output.json}) $(dirname {log})
+        {params.container_wrapper} python3 {input.script} \
+            -i {input.nominal_json} \
+            --bkg_coffea {input.bkg_coffea} \
+            --mixed_coffea {input.mixed_coffea} \
+            --subsample {F4_K} --model_subsample {F4_J} \
+            --variables {params.variables} \
+            --years {params.years} \
+            -o {output.json} 2>&1 | tee {log}
+        test -s {output.json}
+        """
+
 use rule make_combine_inputs from stat_analysis as make_combine_inputs_mixeddata with:
     input:
-        injson = ave_mixeddata_json,
+        injson = f4_injson,
         injsonsyst = list([]),
         bkgsyst = lambda wildcards: get_bkgsyst_for_channel(wildcards.channel, wildcards.rebin),
         script = "coffea4bees/stats_analysis/make_combine_inputs.py",
@@ -456,4 +496,4 @@ if not globals().get("_USE_RULE_COMBINE_DONE", False):
     _USE_RULE_COMBINE_DONE = True
     use rule * from combine as *
 
-localrules: final_output_F_4, all_bkg_syst_F_4, make_mixeddata_ave_json, make_combine_inputs_mixeddata, stat_summary_rebin_F_4, stat_summary_master_F_4
+localrules: final_output_F_4, all_bkg_syst_F_4, make_mixeddata_ave_json, make_mixeddata_subsample_json, make_combine_inputs_mixeddata, stat_summary_rebin_F_4, stat_summary_master_F_4

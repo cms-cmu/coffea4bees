@@ -341,3 +341,8 @@ f1_dataset: mixeddata_all_declib16_2024
 f1_dataset_location:
 - '{roast:declib}/handoff/mixeddata_all_declib16_2024.yml'
 closure_convert_args: --bkg_process mixeddata_all_declib16_2024 --bkg_tag fourTag --tt_process TTbar4b_from_MvD --tt_tag fourTag
+
+# F_4 mock analysis: ONE subsample (f4_subsample, default the first) as pseudo-data against the background
+# model fitted to it (f4_model_subsample, default the same), not the 16-subsample average against the nominal
+# background (fitted to real four-tag data, so that comparison measures mixed/declustered vs real data)
+f4_observation: subsample
