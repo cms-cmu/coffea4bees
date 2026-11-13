@@ -69,6 +69,9 @@ rule stage_subsample_processor_config:
         pairing = ((config.get('analysis_config') or {}).get('config') or {}).get('pairing')
         if pairing:
             cfg['config']['pairing'] = pairing
+        # subsample_hist_cuts: the mixed data's hist_cuts, e.g. the same jet-multiplicity slices as F_1
+        if config.get('subsample_hist_cuts'):
+            cfg['config']['hist_cuts'] = list(config['subsample_hist_cuts'])
         write_yaml(output.staged, cfg)
 
 ci_json = config['classifier_inputs_json']

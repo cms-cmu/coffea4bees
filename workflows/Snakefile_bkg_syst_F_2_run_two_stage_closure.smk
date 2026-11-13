@@ -246,6 +246,14 @@ def get_closure_coffea_inputs(wildcards):
     }
     return inputs
 
+# closure_hist_cut: one or more boolean hist-cut axes (processor hist_cuts, e.g. pass_nSelJets_eq4) that
+# the closure keeps at True -- in the background model, the mixed data and the nominal signal alike.
+# Every input histogram must have been filled with that cut (the converters fail on a missing axis).
+_closure_hist_cut = config.get('closure_hist_cut') or []
+if isinstance(_closure_hist_cut, str):
+    _closure_hist_cut = _closure_hist_cut.split()
+CLOSURE_HIST_CUT_ARGS = " ".join(f"--hist_cut {c}" for c in _closure_hist_cut)
+
 rule coffea_to_root_closure:
     input:
         unpack(get_closure_coffea_inputs),
@@ -264,7 +272,8 @@ rule coffea_to_root_closure:
         scale_mixed = config.get('scale_mixed', 1.0),
         # closure_convert_args: options of convert_closure_coffea_to_root.py only (e.g. the MvD method's
         # --bkg_process/--tt_process); closure_extra_args also goes to runTwoStageClosure.py
-        extra_args = " ".join(filter(None, [config.get('closure_extra_args', ''), config.get('closure_convert_args', '')]))
+        extra_args = " ".join(filter(None, [config.get('closure_extra_args', ''), config.get('closure_convert_args', ''),
+                                            CLOSURE_HIST_CUT_ARGS]))
     log:
         f"{out_f2}logs/coffea_to_root_closure.log"
     shell:
@@ -303,7 +312,7 @@ rule make_signal_root_closure:
         vars = " ".join(dict.fromkeys(var_map.values())),
         processes = " ".join(SIGNAL_PROCESSES),
         years = " ".join(YEARS),
-        extra_args = "--dummy" if config.get('test', False) else "",
+        extra_args = " ".join(filter(None, ["--dummy" if config.get('test', False) else "", CLOSURE_HIST_CUT_ARGS])),
     log:
         f"{out_f2}logs/make_signal_root_closure.log"
     shell:

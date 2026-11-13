@@ -27,6 +27,7 @@ except ImportError:
     hist = None
     HAS_UPROOT = False
 import numpy as np
+import hist
 
 YEAR_ALIASES = {"UL18": "2018", "UL17": "2017", "UL16_preVFP": "2016", "UL16_postVFP": "2016"}
 
@@ -103,6 +104,10 @@ def from_coffea(args, out):
                     if y not in h.axes['year'] or reg not in h.axes['region']:
                         continue
                     sel = {'process': proc, 'year': y, 'tag': 'fourTag', 'region': reg}
+                    for cut in args.hist_cut:
+                        if cut not in h.axes.name:
+                            raise KeyError(f"--hist_cut {cut}: no such axis in {key} ({args.input}); axes {list(h.axes.name)}")
+                        sel[cut] = hist.loc(True)
                     for ax in h.axes.name:
                         if ax.startswith(('pass', 'fail')) and ax not in sel:
                             sel[ax] = sum
@@ -167,7 +172,11 @@ def main():
                         help="List of regions to export (default: SR SB)")
     parser.add_argument("--dummy", action="store_true", default=False,
                         help="Generate fallback/dummy signal histograms if input JSON is missing")
+    parser.add_argument("--hist_cut", action="append", default=[],
+                        help="keep only events passing this boolean hist-cut axis (e.g. pass_nSelJets_eq4); .coffea input only")
     args = parser.parse_args()
+    if args.hist_cut and not args.input.endswith(".coffea"):
+        parser.error("--hist_cut needs a .coffea input (the JSON export has no hist-cut axes)")
 
     out_dir = os.path.dirname(args.output)
     if out_dir:
