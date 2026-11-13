@@ -3,8 +3,8 @@
 # ==============================================================================
 base: coffea4bees/workflows/config/ttHbb.yml
 
-label: "ttHbb_full_syst_cosine"
-output_path: "output/ttHbb_full_syst_cosine/"
+label: "ttHbb_full_syst"
+output_path: "output/ttHbb_full_syst/"
 processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
 
 handoff:
