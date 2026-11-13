@@ -125,8 +125,7 @@ phaseC_fvt_run2_coffea4bees:
   script:
     - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
     - $SNAKEMAKE all_PhaseC -s coffea4bees/workflows/Snakefile_PhaseC.smk --configfile coffea4bees/workflows/config/nominal_run2_ci.yml --config test=true --jobs 2
-    - ls -la output/run2_nominal_ci/PhaseC_FvT/ output/run2_nominal_ci/PhaseC_FvT/model/ output/run2_nominal_ci/PhaseC_FvT/friend/
-    - cat output/run2_nominal_ci/PhaseC_FvT/yields.json
+    - python coffea4bees/workflows/scripts/validate_phaseC.py --yields output/run2_nominal_ci/PhaseC_FvT/yields.json --model-result output/run2_nominal_ci/PhaseC_FvT/model/result.json --friend-result output/run2_nominal_ci/PhaseC_FvT/friend/result.json --output output/run2_nominal_ci/PhaseC_FvT/phaseC_validation.txt
   artifacts:
     when: always
     paths:
