@@ -173,6 +173,7 @@ rule stage_bkg_syst_c_model_config:
                         f"Checked local '{out_a2}{sub_name}.yml' and EOS '{_handoff_in}/datasets/{sub_name}.yml'."
                     )
 
+        data_svb_friend = config.get("data_svb_ma_friend") or config.get("data_svb_friend") or ""
         mapping = {
             "m": str(m),
             "mix": str(m),
@@ -182,6 +183,7 @@ rule stage_bkg_syst_c_model_config:
             "FvT": f"{eos_base}/friend/FvT/{mix_name}_v{m}",
             "nominal_ci": nominal_ci,
             "mixed_ci": mixed_ci_template.format(m=m),
+            "data_svb": data_svb_friend,
         }
         for y in YEARS:
             if "{year}" in jcm_template:
@@ -192,6 +194,21 @@ rule stage_bkg_syst_c_model_config:
                 mapping[f"jcm_{y}"] = f"{jcm_dir}/jetCombinatoricModel_SB_mix_v{m}.yml"
 
         raw_train_wf = config.get("fvt_train_workflow", config.get("train_workflow", {}))
+        formatted_train_wf = _format_structure(raw_train_wf, mapping)
+        if config.get("svb_sr_closure", True) and data_svb_friend:
+            svb_branch = config.get("svb_sr_branch", "p_sig ps")
+            if isinstance(svb_branch, (list, tuple)):
+                svb_branch = " ".join(str(x) for x in svb_branch)
+            for ds in (formatted_train_wf.get("dataset") or []):
+                if "FvT" in str(ds.get("module", "")):
+                    opts = list(ds.get("option") or [])
+                    if not any(str(o).startswith("--svb-branch") for o in opts):
+                        opts.append(f"--svb-branch {svb_branch}")
+                    mixed_svb = f"{mapping['mixed_ci']}@@SvB_MA"
+                    opts.append(f"--friends source:detector {data_svb_friend}")
+                    opts.append(f"--friends label:ttbar {data_svb_friend}")
+                    opts.append(f"--friends source:mixed {mixed_svb}")
+                    ds["option"] = opts
         raw_eval_wf = config.get("fvt_eval_workflow", config.get("eval_workflow", {}))
 
         common_cfg = config.get("classifier_setting", [
@@ -212,7 +229,7 @@ rule stage_bkg_syst_c_model_config:
         os.makedirs(os.path.dirname(output.common), exist_ok=True)
 
         with open(output.train, 'w') as f:
-            yaml.dump(_format_structure(raw_train_wf, mapping), f, default_flow_style=False, sort_keys=False)
+            yaml.dump(formatted_train_wf, f, default_flow_style=False, sort_keys=False)
         with open(output.eval, 'w') as f:
             yaml.dump(_format_structure(raw_eval_wf, mapping), f, default_flow_style=False, sort_keys=False)
         with open(output.common, 'w') as f:
