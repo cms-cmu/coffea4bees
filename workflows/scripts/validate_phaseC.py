@@ -128,8 +128,8 @@ def validate_friends(friend_result_path, lines):
 
     lines.append("")
     lines.append(f"=== Phase C Friend Trees ({len(chunk_paths)} file(s), {len(branches)} branches) ===")
-    lines.append(f"{'File':55s} {'Entries':>9s} {'NaNs':>6s} {'Infs':>6s} {'Mean(FvT)':>11s} Status")
-    lines.append("-" * 98)
+    lines.append(f"{'File':50s} {'Entries':>8s} {'Finite':>8s} {'Infs':>5s} {'Mean(FvT)':>10s} Status")
+    lines.append("-" * 93)
 
     for path, tree_name in chunk_paths:
         if not os.path.exists(path):
@@ -139,21 +139,38 @@ def validate_friends(friend_result_path, lines):
             n_entries = tree.num_entries
             arrays = tree.arrays(library="np")
 
-        n_nans = 0
         n_infs = 0
+        nan_mask = None
+        consistent_nans = True
         for b, arr in arrays.items():
             if np.issubdtype(arr.dtype, np.floating):
-                n_nans += int(np.isnan(arr).sum())
                 n_infs += int(np.isinf(arr).sum())
+                cur_nan = np.isnan(arr)
+                if nan_mask is None:
+                    nan_mask = cur_nan
+                elif not np.array_equal(nan_mask, cur_nan):
+                    consistent_nans = False
 
         fvt_arr = arrays["FvT"]
-        mean_fvt = float(np.mean(fvt_arr))
-        ok = n_entries > 0 and n_nans == 0 and n_infs == 0 and math.isfinite(mean_fvt) and mean_fvt > 0
-        short = path[-55:] if len(path) > 55 else path
-        lines.append(f"{short:55s} {n_entries:9d} {n_nans:6d} {n_infs:6d} {mean_fvt:11.4f} {'PASS' if ok else 'FAIL'}")
+        finite_fvt = fvt_arr[~np.isnan(fvt_arr)]
+        n_finite = int(len(finite_fvt))
+        mean_fvt = float(np.mean(finite_fvt)) if n_finite > 0 else float("nan")
+        ok = (
+            n_entries > 0
+            and n_finite > 0
+            and consistent_nans
+            and n_infs == 0
+            and math.isfinite(mean_fvt)
+            and mean_fvt > 0
+        )
+        short = path[-50:] if len(path) > 50 else path
+        lines.append(
+            f"{short:50s} {n_entries:8d} {n_finite:8d} {n_infs:5d} {mean_fvt:10.4f} {'PASS' if ok else 'FAIL'}"
+        )
         if not ok:
             raise AssertionError(
-                f"Invalid FvT friend tree {path}: entries={n_entries}, nans={n_nans}, infs={n_infs}, mean={mean_fvt}"
+                f"Invalid FvT friend tree {path}: entries={n_entries}, finite={n_finite}, "
+                f"consistent_nans={consistent_nans}, infs={n_infs}, mean={mean_fvt}"
             )
 
 
