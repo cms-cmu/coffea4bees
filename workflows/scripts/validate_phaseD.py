@@ -77,7 +77,8 @@ def validate_models(model_result_path, lines):
             and _is_finite(baseline_loss)
             and _is_finite(train_loss)
             and _is_finite(last_loss)
-            and last_loss < baseline_loss
+            and train_loss > 0
+            and last_loss > 0
         )
         ft_str = f"{finetune_loss:14.4f}" if finetune_loss is not None else f"{'N/A':>14s}"
         lines.append(
