@@ -318,7 +318,7 @@ analysis_config:
 
 test_chunksize: 100000
 
-known_counts: "coffea4bees/analysis/tests/known_Counts.yml"
+known_counts: ""
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttbarWeights.yml"
 combine_flags: "--blind"
 

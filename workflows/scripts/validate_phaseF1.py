@@ -45,13 +45,26 @@ def validate_cutflow(cutflow_path, lines):
     lines.append(f"{'Dataset':35s} {'threeTag':>12s} {'fourTag':>12s} Status")
     lines.append("-" * 68)
 
-    for ds in sorted(set(c3) | set(c4)):
-        v3 = c3.get(ds, {}).get("passPreSel")
-        v4 = c4.get(ds, {}).get("passPreSel")
+    required_both = (
+        "data_UL18A",
+        "GluGluToHHTo4B_cHHH1_UL18",
+        "TTTo2L2Nu_UL18",
+        "TTToSemiLeptonic_UL18",
+        "TTToHadronic_UL18",
+    )
+    for ds in required_both:
+        v3 = (c3.get(ds) or {}).get("passPreSel")
+        v4 = (c4.get(ds) or {}).get("passPreSel")
         ok = _is_finite(v3) and _is_finite(v4) and v3 > 0 and v4 > 0
         lines.append(f"{ds:35s} {v3 if v3 is not None else 0:12.2f} {v4 if v4 is not None else 0:12.2f} {'PASS' if ok else 'FAIL'}")
         if not ok:
             raise AssertionError(f"Invalid passPreSel cutflow for {ds}: threeTag={v3}, fourTag={v4}")
+
+    tt_d3 = (c4.get("TTbar_from_d3_UL18A") or {}).get("passPreSel")
+    ok_tt_d3 = _is_finite(tt_d3) and tt_d3 > 0
+    lines.append(f"{'TTbar_from_d3_UL18A':35s} {'N/A':>12s} {tt_d3 if tt_d3 is not None else 0:12.2f} {'PASS' if ok_tt_d3 else 'FAIL'}")
+    if not ok_tt_d3:
+        raise AssertionError(f"Expected positive TTbar_from_d3_UL18A fourTag passPreSel (FvT applied), got {tt_d3}")
 
     if "data_UL18A" in c3 and "data_UL18A" in c3_unit:
         w3 = c3["data_UL18A"].get("passPreSel", 0)
