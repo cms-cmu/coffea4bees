@@ -72,6 +72,7 @@ if not F1_OUTPUT_PATH.endswith('/'):
 config.setdefault('combine_flags', "--blind")
 config.setdefault('closure_base', "coffea4bees/stats_analysis/files/HIG-24-010")
 config.setdefault('channels', {})
+config['channels'] = {k: v for k, v in config.get('channels', {}).items() if v and isinstance(v, dict)}
 config.setdefault('combine_outdir', "datacards/ttHbb")
 
 config.setdefault('convert_hist_to_json', {})
@@ -103,8 +104,7 @@ config.setdefault('year_eras', {
     'UL18':         ['A', 'B', 'C', 'D'],
 })
 
-config.setdefault('container_wrapper', "./run_container combine")
-config.setdefault('stats_container_wrapper', config.get('container_wrapper', "./run_container combine"))
+config.setdefault('stats_container_wrapper', "./run_container combine")
 config.setdefault('analysis_container_wrapper', config.get('analysis_wrapper', "./run_container"))
 config.setdefault('python_bin', os.getenv("CONTAINER_PYTHON", "python3"))
 
@@ -242,7 +242,7 @@ rule convert_nominal_to_json_full_syst:
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
         {params.run_container_wrapper} {params.python_bin} {input.script} \
-            -f {input.coffea_file} -o {output} \
+            -i {input.coffea_file} -o {output} \
             --histos {params.histos} 2>&1 | tee {log}
         """
 
@@ -261,9 +261,25 @@ rule convert_signal_syst_to_json_full_syst:
         set -eo pipefail
         mkdir -p $(dirname {output}) $(dirname {log})
         {params.run_container_wrapper} {params.python_bin} {input.script} \
-            -f {input.coffea_file} -o {output} --syst_file \
+            -i {input.coffea_file} -o {output} --syst_file \
             --histos {params.histos} 2>&1 | tee {log}
         """
+
+def get_metadata_for_channel(channel):
+    ch_cfg = config.get('channels', {}).get(channel, {})
+    if 'metadata' in ch_cfg and ch_cfg['metadata']:
+        return ch_cfg['metadata']
+    sig = ch_cfg.get('signal', ch_cfg.get('signallabel', 'ttHbb'))
+    tmpl = config.get('make_combine_inputs', {}).get('metadata_template', "coffea4bees/stats_analysis/metadata/{channel}.yml")
+    cand = tmpl.format(channel=sig)
+    if os.path.exists(cand):
+        return cand
+    cand2 = tmpl.format(channel=channel.split('_')[0])
+    if os.path.exists(cand2):
+        return cand2
+    if os.path.exists("coffea4bees/stats_analysis/metadata/ttHbb.yml"):
+        return "coffea4bees/stats_analysis/metadata/ttHbb.yml"
+    return cand
 
 rule make_combine_inputs_full_syst:
     input:
@@ -271,14 +287,14 @@ rule make_combine_inputs_full_syst:
         injsonsyst = f"{F2_OUTPUT_PATH}histAll_signals_syst.json",
         bkgsyst = lambda wildcards: [get_bkgsyst_for_channel(wildcards.channel)] if get_bkgsyst_for_channel(wildcards.channel) else [],
         script = "coffea4bees/stats_analysis/make_combine_inputs.py",
-        metadata_file = lambda wildcards: config['make_combine_inputs']['metadata_template'].format(channel=wildcards.channel.split('_')[0])
+        metadata_file = lambda wildcards: get_metadata_for_channel(wildcards.channel)
     output:
         datacard = f"{F2_OUTPUT_PATH}{{channel}}/datacards/datacard__{{channel}}.txt",
         shapes = f"{F2_OUTPUT_PATH}{{channel}}/datacards/shapes.root"
     params:
         variable = lambda wildcards: config['channels'][wildcards.channel]['variable'],
         rebin = lambda wildcards, input: resolve_rebin_for_channel(wildcards.channel),
-        metadata = lambda wildcards: config['make_combine_inputs']['metadata_template'].format(channel=wildcards.channel.split('_')[0]),
+        metadata = lambda wildcards: get_metadata_for_channel(wildcards.channel),
         output_dir = lambda wildcards: f"{F2_OUTPUT_PATH}{wildcards.channel}/datacards/",
         variable_binning = lambda wildcards, input: config['make_combine_inputs']['variable_binning'],
         stat_only = lambda wildcards, input: get_stat_only_flag(wildcards.channel),
@@ -305,34 +321,49 @@ rule make_combine_inputs_full_syst:
             {params.bkg_flag} \
             -r {params.rebin} \
             -o {params.output_dir} \
-            -v {params.variable} \
+            --var {params.variable} \
             -m {params.metadata} \
             {params.tag_flags} 2>&1 | tee {log}
+
+        echo "[$(date)] Combining datacards" | tee -a {log}
+        args=""
+        for file in $(find "{params.output_dir}" -maxdepth 1 -name "datacard_*.txt" ! -name "datacard__*.txt" | sort); do
+            base=$(basename "$file")
+            bin_name=$(echo "$base" | sed 's/^datacard_//; s/\\.txt$//')
+            args="$args $bin_name=$base"
+        done
+        if [ -n "$args" ]; then
+            {params.container_wrapper} "cd {params.output_dir} && combineCards.py $args > datacard__{params.signal}.txt" 2>&1 | tee -a {log}
+        else
+            echo "Error: No datacards found to combine in {params.output_dir}!" | tee -a {log}
+            exit 1
+        fi
         """
 
 rule plot_systematics_full_syst:
     input:
         datacard = f"{F2_OUTPUT_PATH}{{channel}}/datacards/datacard__{{channel}}.txt",
         shapes = f"{F2_OUTPUT_PATH}{{channel}}/datacards/shapes.root",
-        metadata = lambda wildcards: config['make_combine_inputs']['metadata_template'].format(channel=wildcards.channel.split('_')[0])
+        metadata = lambda wildcards: get_metadata_for_channel(wildcards.channel)
     output:
         done = f"{F2_OUTPUT_PATH}{{channel}}/plots_systematics/plots_done.txt"
     params:
         out_dir = f"{F2_OUTPUT_PATH}{{channel}}/plots_systematics/",
         variable = lambda wildcards: config['channels'][wildcards.channel]['variable'].replace(".", "_"),
         signal = lambda wildcards: config['channels'][wildcards.channel].get('signallabel', wildcards.channel),
-        run_container_wrapper = config.get('analysis_container_wrapper', './run_container'),
+        metadata = lambda wildcards: get_metadata_for_channel(wildcards.channel),
+        container_wrapper = config['stats_container_wrapper'],
         python_bin = lambda wildcards: config.get("python_bin", "python3")
     log: f"{F2_OUTPUT_PATH}logs/plot_systematics_{{channel}}.log"
     shell:
         """
         set -eo pipefail
         mkdir -p {params.out_dir} $(dirname {log})
-        {params.run_container_wrapper} {params.python_bin} coffea4bees/plots/make_syst_plots.py \
+        {params.container_wrapper} {params.python_bin} coffea4bees/plots/make_syst_plots.py \
             -i {input.shapes} \
             -d {input.datacard} \
             -o {params.out_dir} \
-            -v {params.variable} \
+            --var {params.variable} \
             -s {params.signal} \
             -m {input.metadata} 2>&1 | tee {log}
         touch {output.done}
@@ -345,7 +376,7 @@ rule gallery_systematics_full_syst:
         html = f"{F2_OUTPUT_PATH}{{channel}}/plots_systematics/index.html"
     params:
         plot_dir = f"{F2_OUTPUT_PATH}{{channel}}/plots_systematics/",
-        title = lambda wildcards: f"Systematic Variations — {wildcards.channel}",
+        title = lambda wildcards: f"Systematic_Variations_{wildcards.channel}",
         run_container_wrapper = config.get('analysis_container_wrapper', './run_container'),
         python_bin = lambda wildcards: config.get("python_bin", "python3")
     log: f"{F2_OUTPUT_PATH}logs/gallery_systematics_{{channel}}.log"
@@ -355,8 +386,8 @@ rule gallery_systematics_full_syst:
         mkdir -p $(dirname {log})
         {params.run_container_wrapper} {params.python_bin} src/plotting/make_gallery.py \
             {params.plot_dir} \
-            --title "{params.title}" \
-            --output {output.html} 2>&1 | tee {log}
+            --title {params.title} \
+            --output $(basename {output.html}) 2>&1 | tee {log}
         """
 
 def stat_summary_inputs_full_syst(wildcards):

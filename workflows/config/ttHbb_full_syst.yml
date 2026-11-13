@@ -11,8 +11,28 @@ handoff:
   allow_external_refs: true
 
 inputs:
-  nominal_hists: "/uscms_data/d3/algomez/HH4b/prod/ttHbb_stat_only_corner_veto_20261106_0065bef-0b95131/barista/output/ttHbb/PhaseF_1_analysis/histAll_ttHbb_stat_only_corner_veto.coffea"
-  bkg_syst_file: "coffea4bees/stats_analysis/files/HIG-24-010/zz/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_zz_rebin1.pkl"
+  upstream_roasts:
+    stat_only: "ttHbb_stat_only_corner_veto_cosine_20261106_0065bef-254b706"
+    bkg_syst: "ttHbb_bkg_syst_cosine_20261107_3d31b54-a52c0a1"
+    nominal_svb: "ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11"
+  nominal_hists: "{roast:stat_only}/output/ttHbb/PhaseF_1_analysis/histAll_ttHbb_stat_only_corner_veto_cosine.coffea"
+  bkg_syst_file: "{roast:bkg_syst}/output/ttHbb_bkg_syst_cosine_20261107_3d31b54-a52c0a1/bkg_syst_F_2_run_two_stage_closure/closure_fits/ttHbb_bkg_syst_declib16nc/SvB_MA/rebin24/SR/ttHbb/hists_closure_ttHbb_bkg_syst_declib16nc_SvB_MA_ps_ttHbb_rebin24.pkl"
+  SvB_MA: "{roast:nominal_svb}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
+  svb_binning: "{roast:nominal_svb}/handoff/svb_quantiles.json"
+
+analysis_config:
+  processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+  weights_file: "coffea4bees/metadata/weights/weights_ttHbb_corner_veto.yml"
+  candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
+  config:
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
+    svb_binning_file: "{roast:nominal_svb}/handoff/svb_quantiles.json"
+    friends:
+      SvB_MA: "{roast:nominal_svb}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
+
+candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
+
+known_counts_systematics: "none"
 
 signal_datasets:
   - "ttHbb"
@@ -22,9 +42,10 @@ syst_groups:
   - "jes"
 
 rebin: 24
+unify_background: true
 
 channels:
-  ttHbb:
+  inclusive:
     signallabel: "ttHbb"
     variable: "SvB_MA.ps_ttHbb"
     signal: "ttHbb"
@@ -34,10 +55,41 @@ channels:
     stat_only: false
     metadata: "coffea4bees/stats_analysis/metadata/ttHbb.yml"
     combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  lepton_veto:
+    signallabel: "ttHbb"
+    variable: "SvB_MA.ps_ttHbb"
+    signal: "ttHbb"
+    region: "SR"
+    cut: "passLeptonVeto"
+    rebin: 24
+    stat_only: false
+    metadata: "coffea4bees/stats_analysis/metadata/ttHbb.yml"
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  jets_gt6:
+    signallabel: "ttHbb"
+    variable: "SvB_MA.ps_ttHbb"
+    signal: "ttHbb"
+    region: "SR"
+    cut: "pass_nSelJets_gt6"
+    rebin: 24
+    stat_only: false
+    metadata: "coffea4bees/stats_analysis/metadata/ttHbb.yml"
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  jets_gt6_lepton_veto:
+    signallabel: "ttHbb"
+    variable: "SvB_MA.ps_ttHbb"
+    signal: "ttHbb"
+    region: "SR"
+    cut: "pass_nSelJets_gt6_passLeptonVeto"
+    rebin: 24
+    stat_only: false
+    metadata: "coffea4bees/stats_analysis/metadata/ttHbb.yml"
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
 
 make_combine_inputs:
   stat_only: ""
   rebin: 24
+  unify_background: true
   metadata_template: "coffea4bees/stats_analysis/metadata/{channel}.yml"
   multijet_process: "data"
   tt_processes: ["TTTo", "TTbar4b_from_d3"]

@@ -68,6 +68,8 @@ if not cern_path.startswith("/"):
     first_letter = cern_user[0]
     cern_path = f"/eos/user/{first_letter}/{cern_user}/{cern_path}"
 
+config.setdefault('stats_container_wrapper', "./run_container combine")
+
 include: "Snakefile_full_syst_1_analysis.smk"
 include: "Snakefile_full_syst_2_stats.smk"
 
