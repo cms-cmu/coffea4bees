@@ -231,22 +231,29 @@ if _pre_fvt_ref:
     if UPSTREAM_PRE_FVT_DIR:
         up_dir = UPSTREAM_PRE_FVT_DIR.rstrip("/") + "/"
         print(f"bkg_syst: detected upstream pre-FvT outputs at {up_dir}")
-        if os.path.isdir(f"{up_dir}bkg_syst_A_1_mixed_jcm"):
+        # upstream_link_stages: which of the upstream's A_1, A_2, A_3, B_1 and inputs/ this roast
+        # reuses (default all). E.g. [A_1, A_2] keeps the upstream split subsamples but reruns A_3
+        # (another SvB) and B_1 (another JCM) here, with this roast's inputs/ (another nominal).
+        _link = config.get('upstream_link_stages') or ["A_1", "A_2", "A_3", "B_1", "inputs"]
+        _link = {str(s) for s in _link}
+        _stage_dirs = {"A_1": "bkg_syst_A_1_mixed_jcm", "A_2": "bkg_syst_A_2_make_subsamples",
+                       "A_3": "bkg_syst_A_3_process_subsamples", "B_1": "bkg_syst_B_1_computeJCM",
+                       "inputs": "inputs"}
+        if "A_1" in _link and os.path.isdir(f"{up_dir}bkg_syst_A_1_mixed_jcm"):
             out_a1 = f"{up_dir}bkg_syst_A_1_mixed_jcm/"
-        if os.path.isdir(f"{up_dir}bkg_syst_A_2_make_subsamples"):
+        if "A_2" in _link and os.path.isdir(f"{up_dir}bkg_syst_A_2_make_subsamples"):
             out_a2 = f"{up_dir}bkg_syst_A_2_make_subsamples/"
-        if os.path.isdir(f"{up_dir}bkg_syst_A_3_process_subsamples"):
+        if "A_3" in _link and os.path.isdir(f"{up_dir}bkg_syst_A_3_process_subsamples"):
             out_a3 = f"{up_dir}bkg_syst_A_3_process_subsamples/"
-        if os.path.isdir(f"{up_dir}bkg_syst_B_1_computeJCM"):
+        if "B_1" in _link and os.path.isdir(f"{up_dir}bkg_syst_B_1_computeJCM"):
             out_b1 = f"{up_dir}bkg_syst_B_1_computeJCM/"
-        if os.path.isdir(f"{up_dir}inputs"):
+        if "inputs" in _link and os.path.isdir(f"{up_dir}inputs"):
             A_INPUT_DIR_OVERRIDE = f"{up_dir}inputs/"
 
         # Auto-create symlinks in the current output directory so relative lookups and publish succeed
         if os.path.abspath(out) != os.path.abspath(up_dir):
             os.makedirs(out, exist_ok=True)
-            for sname in ["bkg_syst_A_1_mixed_jcm", "bkg_syst_A_2_make_subsamples",
-                          "bkg_syst_A_3_process_subsamples", "bkg_syst_B_1_computeJCM", "inputs"]:
+            for sname in [d for s, d in _stage_dirs.items() if s in _link]:
                 s_src = os.path.join(up_dir, sname)
                 s_dst = os.path.join(out, sname)
                 if os.path.exists(s_src) and not os.path.exists(s_dst):

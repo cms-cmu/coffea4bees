@@ -173,6 +173,28 @@ rule stage_bkg_syst_c_model_config:
                         f"Checked local '{out_a2}{sub_name}.yml' and EOS '{_handoff_in}/datasets/{sub_name}.yml'."
                     )
 
+        # classifier_metadata_extra: dataset YAMLs (paths or root:// URLs) the trainer needs besides the
+        # bkg_syst ones, e.g. the declustered library's mixeddata_all_<tag>.yml for the MvD method. The
+        # trainer takes one --metadata directory, so build this roast's own copy (never write into
+        # meta_dir: with upstream_link_stages it is another roast's output).
+        extra_meta = config.get('classifier_metadata_extra') or []
+        if extra_meta:
+            own_dir = f"{out_c}classifier_metadata_with_extra/"
+            os.makedirs(own_dir, exist_ok=True)
+            for path in sorted(glob.glob(os.path.join(meta_dir, "*.yml"))):
+                shutil.copy(path, own_dir)
+            for src in extra_meta:
+                for pk, pv in _placeholders.items():
+                    src = src.replace("{" + pk + "}", str(pv))
+                dst = os.path.join(own_dir, os.path.basename(src))
+                if "://" in src:
+                    import fsspec
+                    with fsspec.open(src, "rb") as fin, open(dst, "wb") as fout:
+                        fout.write(fin.read())
+                else:
+                    shutil.copy(src, dst)
+            meta_dir = own_dir
+
         mapping = {
             "m": str(m),
             "mix": str(m),

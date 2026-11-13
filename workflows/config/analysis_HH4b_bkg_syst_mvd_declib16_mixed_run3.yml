@@ -1,0 +1,173 @@
+# ==============================================================================
+# HH4b Run 3 (2022+2023) BACKGROUND SYSTEMATIC of the MvD-DECLUSTERED background, on MIXED data
+# ==============================================================================
+# Nominal background: the MvD-declustered model of mvd_run3_declib16_warm_20261108_b02b7c1-7321448
+# (the declustered library mixeddata_all_declib16, four-tag x JCM x MvD; ttbar TTbar4b_from_MvD; fit
+# variable its SvB_MvD, stored as SvB_MA). Systematic: a closure test of the MvD METHOD on the 16
+# hemisphere-mixed subsamples of analysis_HH4b_bkg_syst_mixed_run3_ftfix_20261111_526ece9-e14d68e:
+#   A_1, A_2  linked from that roast (same 16 subsamples, upstream_link_stages)
+#   A_3       rerun here: the subsamples scored with the MvD roast's SvB_MvD
+#   B_1       rerun here: per subsample, JCM of the declustered four-tag events to mix_v<m> four-tag
+#   C         per subsample, an MvD trained cold (the standard 20-epoch recipe) with the declustered
+#             library as mixed_all and mix_v<m> as the pseudo four-tag data (SR blinded, as data),
+#             evaluated on the declustered library (per-era splits, as the MvD roast)
+#   F_1       the declustered library x JCM_v x MvD_v per subsample (bkg_model: mvd)
+#   F_2..F_4  closure of each MvD_v model against its subsample, in SvB_MvD; datacards on the MvD
+#             nominal (multijet mixeddata_all_declib16 four-tag, tt TTbar4b_from_MvD)
+#
+#   bin/roast new --config coffea4bees/workflows/config/analysis_HH4b_bkg_syst_mvd_declib16_mixed_run3.yml \
+#       --phases BKG_AB,BKG_C,BKG_F --cmslpc
+#   (BKG_C on cmslpc with its trainings and evaluations on CMU ORCHARD; no BKG_C4: the C_4 closure
+#    plots are FvT-specific)
+# ==============================================================================
+base: coffea4bees/workflows/config/analysis_HH4b_bkg_syst_mixed_run3_ftfix.yml
+
+label: "HH4b_bkg_syst_mvd_declib16_mixed_run3"
+mix_name: "HH4b_bkg_syst_mvd_declib16_mixed_run3"
+bkg_model: mvd
+
+# reuse the mixed bkg_syst roast's A_1 (mixed-data JCM) and A_2 (the 16 split subsamples) only
+upstream_pre_fvt: "mixed_bkgsyst"
+upstream_link_stages: [A_1, A_2]
+
+inputs:
+  upstream_roasts:
+    mixed_bkgsyst: analysis_HH4b_bkg_syst_mixed_run3_ftfix_20261111_526ece9-e14d68e
+    mvd: mvd_run3_declib16_warm_20261108_b02b7c1-7321448          # the nominal MvD-declustered model
+    mvd_v1: mvd_declib16_run3_20261011_c41b495-f2d2cf8            # its V.1 inputs (manifest, JCM-fit histograms)
+  # nominal background (F_2 signal shape, F_3 / F_4 datacards): the MvD roast's V.4 histograms
+  nominal_hists: "{roast:mvd}/{roast:mvd:output_path}V4/histAll_MvD.coffea"
+  # SvB_MvD everywhere: A_3 scores the subsamples with the model, F_1 reads the friend (it covers
+  # mixeddata_all_declib16)
+  SvB: "{roast:mvd}/friend/SvB_MvD/result.json@@analysis.0.merged"
+  SvB_model: "{roast:mvd}/classifier/SvB_MvD/result.json"
+
+# B_1: per-subsample JCM, declustered four-tag ("3b") to mix_v<m> four-tag, on the MvD roast's V.1
+# histograms (declustered noJCM + nominal data / ttbar)
+phaseB_1:
+  jcm:
+    config: "coffea4bees/analysis/jcm_tools/metadata/mixeddata_declib16_subsample_jcm_config_Run3.yml"
+    data_coffea: "{roast:mvd_v1}/{roast:mvd_v1:output_path}V1/histAll_mixed_noJCM.coffea"
+
+# C: MvD per subsample. The trainer's --metadata directory gets the declustered library's YAML too;
+# nominal_ci = the MvD roast's classifier-input manifest (nominal + declustered inputs)
+classifier_metadata_extra:
+  - "{roast:declib}/handoff/mixeddata_all_declib16.yml"
+phase_e_fvt:
+  mix_name: "HH4b_bkg_syst_mvd_declib16_mixed_run3"
+  nominal_classifier_inputs: "{roast:mvd_v1}/handoff/classifier_inputs_MvD.json"
+yields_ratio: ["d4 / t4 + mix4"]
+fvt_max_chi2_ndf: 20.0              # quality gate on the MvD fit quality (recorded under the FvT names)
+pilot_gate: false                   # train all 16 at once (packed on ORCHARD), gate checked at the end
+
+fvt_train_workflow:
+  main:
+    module: train
+    option:
+      - --max-loaders 2
+      - --max-trainers 3
+      - --device cuda cpu
+  dataset:
+    - module: HCR.MvD.TrainBaseline
+      option:
+        - --metadata {metadata}
+        - --max-workers 20
+        - --data-source mixed_all mixed
+        - --data-mixed-all-name mixeddata_all_declib16
+        - --data-mixed-name {mixed_name}
+        - --data-mixed-samples {mix}
+        - --JCM-weight "source:mixed_all,year:2022_preEE" {jcm_2022_preEE}@@JCM_weights
+        - --JCM-weight "source:mixed_all,year:2022_EE" {jcm_2022_EE}@@JCM_weights
+        - --JCM-weight "source:mixed_all,year:2023_preBPix" {jcm_2023_preBPix}@@JCM_weights
+        - --JCM-weight "source:mixed_all,year:2023_BPix" {jcm_2023_BPix}@@JCM_weights
+        - --friends "" {nominal_ci}@@HCR_input {mixed_ci}@@HCR_input
+  model:
+    - module: HCR.MvD.baseline.Train
+      option:
+        - --kfolds 3
+        - --kfold-seed MvD random
+        - --kfold-seed-offsets 0
+        - --training FixedStep
+        - epoch: 20
+          bs_init: 1024
+        - --finetuning FinetuneStep
+        - epoch: 1
+          bs_init: 16384
+  setting:
+    - module: IO
+      option:
+        - output: "{model}"
+
+fvt_eval_workflow:
+  main:
+    module: evaluate
+    option:
+      - --max-evaluators 3
+      - --device cuda cpu
+  dataset:
+    - module: HCR.MvD.Eval
+      option:
+        - --metadata {metadata}
+        - --max-workers 8
+        - --data-source mixed_all
+        - --data-mixed-all-name mixeddata_all_declib16
+        - --friends "" {nominal_ci}@@HCR_input
+  model:
+    - module: HCR.MvD.baseline.Eval
+      option:
+        - --models
+        - Final
+        - "{model}/result.json"
+  analysis:
+    - module: kfold.Merge
+      option:
+        - --name MvD
+        - --step 100000
+        - --workers 4
+        - --clean
+  setting:
+    - module: IO
+      option:
+        - output: "{FvT}"
+    - module: ml.DataLoader
+      option:
+        - num_workers: 8
+
+# the declustered library is large: evaluate per year (as the MvD roast)
+eval_splits:
+  y22pre:
+    --data-eras: [B, C, D]
+  y22EE:
+    --data-eras: [E, F, G]
+  y23pre:
+    --data-eras: [C01, C02, C11, C12, C3, C4]
+  y23BPix:
+    --data-eras: [D1, D2]
+
+# CMU ORCHARD (roast --train-on/--eval-on orchard): MvD trainings need ~180 GB each (as the MvD roast),
+# so two per job; up to eight split evaluations per job; wait 15 min to fill a batch
+orchard:
+  time: "4:00:00"
+  pack: 2
+  pack_cpus: 16
+  pack_mem: 180
+  pack_wait: 900
+  eval_time: "8:00:00"
+  eval_pack: 8
+  eval_pack_cpus: 8
+  eval_pack_mem: 64
+  eval_pack_wait: 900
+
+# F_1: the declustered library with the 16 MvD_v models (bkg_model: mvd)
+analysis_config_mixeddata_bkgs: "coffea4bees/workflows/config/analysis_config_mvd_bkgs_HH4b_run3.yml"
+f1_dataset: mixeddata_all_declib16
+f1_dataset_location:
+  - "{roast:declib}/handoff/mixeddata_all_declib16.yml"
+
+# F_2: read the MvD-method model (declustered four-tag, TTbar4b_from_MvD four-tag) from the F_1 histograms
+closure_extra_args: "--bkg_process mixeddata_all_declib16 --bkg_tag fourTag --tt_process TTbar4b_from_MvD --tt_tag fourTag"
+
+# F_3 / F_4: datacards on the MvD nominal
+make_combine_inputs:
+  multijet_process: mixeddata_all_declib16
+  tt_processes: [TTbar4b_from_MvD]
