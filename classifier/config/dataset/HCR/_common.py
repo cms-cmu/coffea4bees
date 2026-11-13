@@ -147,13 +147,24 @@ class Common(LoadGroupedRoot):
         default=[],
         help="additional preprocessors",
     )
+    argparser.add_argument(
+        "--svb-branch",
+        nargs="+",
+        default=None,
+        help="optional SvB friend branch name(s) (e.g. p_sig ps) to load into Input.svb for SR closure benchmarking",
+    )
 
     @cache
     def from_root(self, groups: frozenset[str]):
         friends = []
+        has_svb = bool(getattr(self.opts, "svb_branch", None))
         for k, v in self.friends.items():
             if k <= groups:
-                friends.extend(v)
+                for f in v:
+                    if has_svb and f.name == "SvB_MA":
+                        f = f.copy()
+                        f.allow_missing = True
+                    friends.append(f)
 
         pres = []
         for g in chain(self._preprocess_from_opts, self._preprocess_by_group):
@@ -197,6 +208,21 @@ class Common(LoadGroupedRoot):
     def other_branches(self) -> set[str]: ...
 
 
+class _normalize_svb_col:
+    """Copy the first matching SvB branch into ``_svb`` for tensor conversion."""
+
+    def __init__(self, cols: list[str]):
+        self.cols = tuple(cols)
+
+    def __call__(self, df: pd.DataFrame) -> pd.DataFrame:
+        for col in self.cols:
+            if col in df.columns:
+                df["_svb"] = df[col]
+                return df
+        df["_svb"] = float("nan")
+        return df
+
+
 class CommonTrain(Common):
     trainable = True
 
@@ -231,6 +257,9 @@ class CommonTrain(Common):
             .add(Input.CanJet, "float32").columns(*InputBranch.feature_CanJet, target=InputBranch.n_CanJet)
             .add(Input.NotCanJet, "float32").columns(*InputBranch.feature_NotCanJet, target=InputBranch.n_NotCanJet, pad_value=InputBranch.pad_value)
         )
+        if getattr(self.opts, "svb_branch", None):
+            self.preprocessors.append(_normalize_svb_col(list(self.opts.svb_branch)))
+            self.to_tensor.add(Input.svb, "float32").columns("_svb")
         self.preprocessors.extend(
             [
                 map_selection_to_flag(
@@ -269,7 +298,7 @@ class CommonTrain(Common):
         return enum_dict(NTag)
 
     def other_branches(self):
-        return {
+        branches = {
             "ZZSR",
             "ZHSR",
             "HHSR",
@@ -281,6 +310,9 @@ class CommonTrain(Common):
             Columns.event,
             Columns.weight,
         }
+        if getattr(self.opts, "svb_branch", None):
+            branches.update(self.opts.svb_branch)
+        return branches
 
     def preprocess_by_group(self):
         ps = []
