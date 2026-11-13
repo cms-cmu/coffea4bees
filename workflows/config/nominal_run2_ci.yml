@@ -301,16 +301,22 @@ analysis_config:
     dashboard_address: 0
   config:
     blind: false
-    apply_FvT: false
-    apply_JCM: false
+    apply_FvT: true
+    apply_JCM: true
+    JCM_file: "output/run2_nominal_ci/PhaseB_1_computeJCM/JCM_2024_v2/jetCombinatoricModel_SB_2024_v2.yml"
     apply_trigWeight: true
     apply_btagSF: true
     apply_boosted_veto: false
     run_SvB: true
-    SvB_MA: true
+    SvB_MA: false
     SvB: null
+    friends:
+      FvT: "output/run2_nominal_ci/PhaseC_FvT/friend/result.json@@analysis.0.merged"
+      SvB: "output/run2_nominal_ci/PhaseD_SvB/friend/result.json@@analysis.0.merged"
     top_reconstruction: fast
-    plot_ttbar_with_weights: false
+    plot_ttbar_with_weights: true
+
+test_chunksize: 100000
 
 known_counts: "coffea4bees/analysis/tests/known_Counts.yml"
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttbarWeights.yml"

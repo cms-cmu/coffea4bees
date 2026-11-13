@@ -152,6 +152,26 @@ phaseD_svb_run2_coffea4bees:
       - barista_framework/output/run2_nominal_ci/PhaseD_SvB/
     expire_in: 1 day
 
+phaseF_1_analysis_run2_coffea4bees:
+  stage: workflows
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseB_1_computeJCM_run2_coffea4bees
+    - phaseC_fvt_run2_coffea4bees
+    - phaseD_svb_run2_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE output/run2_nominal_ci/PhaseF_1_analysis/histAll_run2_nominal_ci.coffea output/run2_nominal_ci/PhaseF_1_analysis/cutflow_run2_nominal_ci.yml output/run2_nominal_ci/PhaseF_1_analysis/cutflow_run2_nominal_ci.html output/run2_nominal_ci/PhaseF_1_analysis/plots_run2_nominal_ci/plots_done.txt -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/nominal_run2_ci.yml --config test=true 'dataset=["data","GluGluToHHTo4B_cHHH1","TTTo2L2Nu","TTToSemiLeptonic","TTToHadronic"]' --jobs 2
+    - python coffea4bees/workflows/scripts/validate_phaseF1.py --coffea output/run2_nominal_ci/PhaseF_1_analysis/histAll_run2_nominal_ci.coffea --cutflow output/run2_nominal_ci/PhaseF_1_analysis/cutflow_run2_nominal_ci.yml --output output/run2_nominal_ci/PhaseF_1_analysis/phaseF1_validation.txt
+  artifacts:
+    when: always
+    paths:
+      - output/run2_nominal_ci/PhaseF_1_analysis/
+      - barista_framework/output/run2_nominal_ci/PhaseF_1_analysis/
+    expire_in: 1 day
+
 # phaseE_prep_test_coffea4bees:
 #   stage: mixeddata
 #   allow_failure: true
