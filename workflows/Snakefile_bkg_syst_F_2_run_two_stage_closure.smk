@@ -262,7 +262,9 @@ rule coffea_to_root_closure:
         mix_name = mix_name,
         subsample_indices = " ".join(str(v) for v in subsample_indices_closure),
         scale_mixed = config.get('scale_mixed', 1.0),
-        extra_args = config.get('closure_extra_args', '')
+        # closure_convert_args: options of convert_closure_coffea_to_root.py only (e.g. the MvD method's
+        # --bkg_process/--tt_process); closure_extra_args also goes to runTwoStageClosure.py
+        extra_args = " ".join(filter(None, [config.get('closure_extra_args', ''), config.get('closure_convert_args', '')]))
     log:
         f"{out_f2}logs/coffea_to_root_closure.log"
     shell:

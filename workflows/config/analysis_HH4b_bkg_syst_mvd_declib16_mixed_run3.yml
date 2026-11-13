@@ -165,7 +165,8 @@ f1_dataset_location:
   - "{roast:declib}/handoff/mixeddata_all_declib16.yml"
 
 # F_2: read the MvD-method model (declustered four-tag, TTbar4b_from_MvD four-tag) from the F_1 histograms
-closure_extra_args: "--bkg_process mixeddata_all_declib16 --bkg_tag fourTag --tt_process TTbar4b_from_MvD --tt_tag fourTag"
+# (options of convert_closure_coffea_to_root.py only: closure_extra_args goes to runTwoStageClosure.py too)
+closure_convert_args: "--bkg_process mixeddata_all_declib16 --bkg_tag fourTag --tt_process TTbar4b_from_MvD --tt_tag fourTag"
 
 # F_3 / F_4: datacards on the MvD nominal
 make_combine_inputs:
