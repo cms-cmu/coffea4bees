@@ -63,6 +63,110 @@ classifier_inputs:
     fill_histograms: "kinematics"
 
 # ==============================================================================
+# PHASE C: FvT CLASSIFIER (CPU CI TEST)
+# ==============================================================================
+fvt:
+  eos_base: "output/run2_nominal_ci/PhaseC_FvT"
+  plot_base: "output/run2_nominal_ci/PhaseC_FvT/plots"
+  classifier_config_paths: "coffea4bees"
+  wfs_base: "coffea4bees/classifier/config/workflows/HH4b_2024_v2/FvT"
+  label: "FvT_nominal"
+  output_dir: "output/run2_nominal_ci/PhaseC_FvT/"
+  yields_ratio: ["d4 / d3 - t3 + t4"]
+  plot_inputs: false
+  plot_weights: false
+  evaluate: true
+  fvt_max_chi2_ndf: 1000.0
+  model: "output/run2_nominal_ci/PhaseC_FvT/model"
+  friend: "output/run2_nominal_ci/PhaseC_FvT/friend"
+  train_template: "model: output/run2_nominal_ci/PhaseC_FvT/model"
+  eval_template: "model: output/run2_nominal_ci/PhaseC_FvT/model, FvT: output/run2_nominal_ci/PhaseC_FvT/friend"
+  metadata: "output/run2_nominal_ci/PhaseB_2_classifier_inputs/classifier_inputs_friends.json@@HCR_input"
+  classifier_setting:
+    - module: ml.DataLoader
+      option:
+        - optimize_sliceable_dataset: true
+        - num_workers: 0
+    - module: ROOT
+      option:
+        - friend_allow_missing: false
+    - module: monitor.Log
+      option:
+        - forward_exception: false
+        - exit_on_exception: true
+    - module: monitor.Monitor
+      option:
+        - enable: false
+    - module: cms.CollisionData
+      option:
+        - eras:
+            UL18: ["A"]
+    - module: HCR.InputBranch
+      option:
+        - feature_ancillary: ["xW", "nSelJets", "xbW"]
+  train_workflow:
+    main:
+      module: train
+      option:
+        - --device cpu
+        - --max-loaders 1
+        - --max-trainers 1
+    dataset:
+      - module: HCR.FvT.TrainBaseline
+        option:
+          - --metadata coffea4bees/metadata/datasets/
+          - --max-workers 1
+          - --data-source detector
+          - '--JCM-weight "" output/run2_nominal_ci/PhaseB_1_computeJCM/JCM_2024_v2/jetCombinatoricModel_SB_2024_v2.yml@@JCM_weights'
+          - '--friends "" output/run2_nominal_ci/PhaseB_2_classifier_inputs/classifier_inputs_friends.json@@HCR_input'
+    model:
+      - module: HCR.FvT.baseline.Train
+        option:
+          - --kfolds 2
+          - --kfold-seed FvT random
+          - --kfold-seed-offsets 0
+          - --training FixedStep
+          - epoch: 1
+            bs_init: 512
+          - --finetuning FixedStep
+          - epoch: 1
+            bs_init: 1024
+    setting:
+      - module: IO
+        option:
+          - 'output: "{model}"'
+  eval_workflow:
+    main:
+      module: evaluate
+      option:
+        - --max-evaluators 1
+        - --device cpu
+    dataset:
+      - module: HCR.FvT.Eval
+        option:
+          - --metadata coffea4bees/metadata/datasets/
+          - --max-workers 1
+          - --data-source detector
+          - '--friends "" output/run2_nominal_ci/PhaseB_2_classifier_inputs/classifier_inputs_friends.json@@HCR_input'
+    model:
+      - module: HCR.FvT.baseline.Eval
+        option:
+          - --models
+          - Final
+          - '{model}/result.json'
+    analysis:
+      - module: kfold.Merge
+        option:
+          - --name FvT
+          - --step 100000
+          - --workers 1
+          - --clean
+    setting:
+      - module: IO
+        option:
+          - 'output: "{FvT}"'
+
+# ==============================================================================
 # PHASE F.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
 # ==============================================================================
 analysis_config:

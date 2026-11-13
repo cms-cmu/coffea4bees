@@ -115,6 +115,24 @@ phaseB_2_classifier_inputs_run2_coffea4bees:
       - barista_framework/output/run2_nominal_ci/phaseB_validation.txt
     expire_in: 1 day
 
+phaseC_fvt_run2_coffea4bees:
+  stage: classifier
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseB_2_classifier_inputs_run2_coffea4bees
+  script:
+    - pixi run snakemake all_PhaseC -s coffea4bees/workflows/Snakefile_PhaseC.smk --configfile coffea4bees/workflows/config/nominal_run2_ci.yml --config test=true --jobs 2
+    - ls -la output/run2_nominal_ci/PhaseC_FvT/ output/run2_nominal_ci/PhaseC_FvT/model/ output/run2_nominal_ci/PhaseC_FvT/friend/
+    - cat output/run2_nominal_ci/PhaseC_FvT/yields.json
+  artifacts:
+    when: always
+    paths:
+      - output/run2_nominal_ci/PhaseC_FvT/
+      - barista_framework/output/run2_nominal_ci/PhaseC_FvT/
+    expire_in: 1 day
+
 # phaseE_prep_test_coffea4bees:
 #   stage: mixeddata
 #   allow_failure: true
