@@ -135,7 +135,7 @@ fvt:
     setting:
       - module: IO
         option:
-          - 'output: "{model}"'
+          - output: "{model}"
   eval_workflow:
     main:
       module: evaluate
@@ -166,7 +166,7 @@ fvt:
     setting:
       - module: IO
         option:
-          - 'output: "{FvT}"'
+          - output: "{FvT}"
 
 # ==============================================================================
 # PHASE F.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING
