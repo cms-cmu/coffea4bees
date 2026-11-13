@@ -375,12 +375,12 @@ rule validate_f1_normalization:
         bounds = lambda wildcards: " ".join(
             f"--{k.replace('_', '-')} {v}" for k, v in (config.get('f1_validation') or {}).items()
             if k in ('min_sb_yield', 'max_sb_yield', 'max_sr_yield', 'min_ratio', 'max_ratio')),
+        # the script checks process `data` three-tag and FvT/noFvT ratios: FvT method only
+        skip = "1" if BKG_MODEL == "mvd" else "",
     resources:
         mem_mb = 4000,
         cpus_per_task = 1,
         runtime = 15
-        # the script checks process `data` three-tag and FvT/noFvT ratios: FvT method only
-        skip = "1" if BKG_MODEL == "mvd" else "",
     shell:
         """
         set -eo pipefail
