@@ -58,7 +58,7 @@ ttbar_processes:
 inputs:
   upstream_roasts:
     declib: declib16nc_run2_20261003_3ab8302-b2d2dec      # DeClustered 16x no-cap Run 2 library
-    nominal: ttHbb_stat_only_20261012_49432f5-e211288    # ttHbb Run 2 nominal (pairing: nominal, cross SR)
+    nominal: ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11    # ttHbb Run 2 nominal (pairing: nominal, corner veto)
     mixeddata: mixeddata_run2_20260927_c39c264-0ce4d59    # ttbar pseudodata
   # synthetic multijet data and ttbar pseudodata
   mixeddata_all: "{roast:declib}/handoff/synthetic_data_lib16nc_multijet.yml"
@@ -100,6 +100,9 @@ phaseA_3:
     workers: 4
     min_workers: 25
     max_workers: 200
+  analysis:
+    config:
+      candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
 
 # A_3 validation plots
 validation:
@@ -290,6 +293,9 @@ analysis_config:
     top_reconstruction: fast
     plot_ttbar_with_weights: true
     fill_histograms: "SvB"
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
+
+candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
 
 # TWO-STAGE CLOSURE CANDIDATES & MULTI-BINNING
 closure_rebin_candidates:
