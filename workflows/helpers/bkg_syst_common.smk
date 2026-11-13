@@ -229,7 +229,10 @@ if _pre_fvt_ref:
     config['input_handoff_eos'] = INPUT_HANDOFF_EOS
 
     if UPSTREAM_PRE_FVT_DIR:
-        up_dir = UPSTREAM_PRE_FVT_DIR.rstrip("/") + "/"
+        # the real path: on cmslpc ~/nobackup is a symlink to /uscms_data/..., which the analysis
+        # container binds while /uscms/home is not (runner.py inside it could not open the upstream
+        # mixeddata_4b.yml)
+        up_dir = os.path.realpath(UPSTREAM_PRE_FVT_DIR).rstrip("/") + "/"
         print(f"bkg_syst: detected upstream pre-FvT outputs at {up_dir}")
         # upstream_link_stages: which of the upstream's A_1, A_2, A_3, B_1 and inputs/ this roast
         # reuses (default all). E.g. [A_1, A_2] keeps the upstream split subsamples but reruns A_3
