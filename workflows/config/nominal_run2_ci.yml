@@ -89,7 +89,7 @@ fvt:
         - num_workers: 0
     - module: ROOT
       option:
-        - friend_allow_missing: false
+        - friend_allow_missing: true
     - module: monitor.Log
       option:
         - forward_exception: false
@@ -116,6 +116,7 @@ fvt:
         option:
           - --metadata coffea4bees/metadata/datasets/
           - --max-workers 1
+          - --test-files 1
           - --data-source detector
           - '--JCM-weight "" output/run2_nominal_ci/PhaseB_1_computeJCM/JCM_2024_v2/jetCombinatoricModel_SB_2024_v2.yml@@JCM_weights'
           - '--friends "" output/run2_nominal_ci/PhaseB_2_classifier_inputs/classifier_inputs_friends.json@@HCR_input'
@@ -146,6 +147,7 @@ fvt:
         option:
           - --metadata coffea4bees/metadata/datasets/
           - --max-workers 1
+          - --test-files 1
           - --data-source detector
           - '--friends "" output/run2_nominal_ci/PhaseB_2_classifier_inputs/classifier_inputs_friends.json@@HCR_input'
     model:
