@@ -329,7 +329,7 @@ rule make_combine_inputs_full_syst:
         args=""
         for file in $(find "{params.output_dir}" -maxdepth 1 -name "datacard_*.txt" ! -name "datacard__*.txt" | sort); do
             base=$(basename "$file")
-            bin_name=$(echo "$base" | sed 's/^datacard_//; s/\.txt$//')
+            bin_name=$(echo "$base" | sed 's/^datacard_//; s/\\.txt$//')
             args="$args $bin_name=$base"
         done
         if [ -n "$args" ]; then

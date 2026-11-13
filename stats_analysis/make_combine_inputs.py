@@ -491,6 +491,8 @@ def create_combine_root_file( file_to_convert,
             for nuisance in closureSysts:
                 cb.cp().process(closure_procs).AddSyst(cb, nuisance, 'shape', ch.SystMap()(1.0))
             cb.SetGroup("background" if unify_background else "multijet", closureSysts)
+            if not unify_background:
+                cb.SetGroup("background", closureSysts)
             
             btagSysts = []
             othersSysts = []
@@ -545,6 +547,10 @@ def create_combine_root_file( file_to_convert,
                 cb.SetGroup("signal_norm_xsbr", [
                     'pdf_Higgs_ggHH', 'BR_hbb', 'THU_HH'])
                 cb.SetGroup("signal_norm_xs", ['THU_HH', 'pdf_Higgs_ggHH'])
+
+            all_signal_systs = list(dict.fromkeys(btagSysts + othersSysts + psfsrSysts + mtopSysts))
+            if all_signal_systs:
+                cb.SetGroup("signal", all_signal_systs)
 
             cb.cp().backgrounds().ExtractShapes(
                 output, '$BIN/$PROCESS', '$BIN/$PROCESS_$SYSTEMATIC')
