@@ -72,6 +72,23 @@ def make_trigger_syst( json_input, root_output, name, rebin, four_tag='fourTag',
         root_output[f'CMS_bbbb_resolved_ggf_triggerEffSF{direction}'] = json_to_TH1(htrig, f"{name}{direction}", rebin)
 
 
+def syst_matches_year(syst_name, iyear, merge_ul16=False):
+    s = syst_name
+    if 'APV' in s or 'preVFP' in s:
+        return 'preVFP' in iyear or 'APV' in iyear
+    if 'postVFP' in s:
+        return 'postVFP' in iyear
+    if '2017' in s or s.endswith('17'):
+        return '17' in iyear
+    if '2018' in s or s.endswith('18'):
+        return '18' in iyear
+    if '2016' in s or s.endswith('16'):
+        if merge_ul16:
+            return '16' in iyear
+        return 'postVFP' in iyear
+    return True
+
+
 def create_combine_root_file( file_to_convert,
                                 rebin,
                                 var,
@@ -96,6 +113,7 @@ def create_combine_root_file( file_to_convert,
     region_key = region if cut in ["sum", ""] or not cut else f"{region}_{cut}"
     metadata = yaml.safe_load(open(metadata_file, 'r'))
     metadata['processes']['all'] = { **metadata['processes']['signal'], **metadata['processes']['background'] }
+    merge_ul16 = not any(('UL16_preVFP' in b or 'preVFP' in b) for b in metadata.get('bin', []))
     logging.info(f"Reading {file_to_convert}")
     with open(file_to_convert, 'r') as f: coffea_hists = json.load(f)
     if systematics_file:
@@ -182,11 +200,15 @@ def create_combine_root_file( file_to_convert,
                                 namevar = namevar.replace(stat, f'{stat}_{iyear.replace("UL", "20")}')
                                 break
 
-                        ### check for dedicated JESUnc per year, if not conitnue
-                        tmpvar = namevar.replace('Up','').replace('Down', '').replace('_postVFP', '').replace('_preVFP', '')
-                        if tmpvar not in mcSysts and not 'nominal' in tmpvar: mcSysts.append( tmpvar )
-                        tmpvar = ''.join(tmpvar[-2:])
-                        if tmpvar.isdigit() and int(tmpvar) != int(iyear[2:4]): continue
+                        ### check for dedicated JESUnc per year, if not continue
+                        if merge_ul16:
+                            syst_name = namevar.replace('Up','').replace('Down', '').replace('_postVFP', '').replace('_preVFP', '').replace('APV', '')
+                        else:
+                            syst_name = namevar.replace('Up','').replace('Down', '')
+                        if not syst_matches_year(syst_name, iyear, merge_ul16):
+                            continue
+                        if syst_name not in mcSysts and not 'nominal' in syst_name:
+                            mcSysts.append( syst_name )
                         
                         ### trigger efficiency
                         if 'triggerEffSFUp' in namevar:
@@ -212,6 +234,9 @@ def create_combine_root_file( file_to_convert,
                     if isinstance(root_hists[iy][ip], dict):
                         for iv, _ in list(root_hists[iy][ip].items()):
                             root_hists[iy][ip][iv].Add( root_hists[iy.replace('pre', 'post')][ip][iv.replace('preV', 'postV')] )
+                            clean_iv = iv.replace('_postVFP', '').replace('_preVFP', '').replace('APV', '')
+                            if clean_iv != iv:
+                                root_hists[iy][ip][clean_iv] = root_hists[iy][ip].pop(iv)
                     else:
                         root_hists[iy][ip].Add( root_hists[iy.replace('pre', 'post')][ip] )
                 del root_hists[iy.replace('pre', 'post')]
@@ -337,7 +362,7 @@ def create_combine_root_file( file_to_convert,
                             root_hists[channel][label][ivar].SetName(label)
                             root_hists[channel][label][ivar].SetTitle(f'{label}_{channel}')
                         else:
-                            tmpivar = ivar.replace("_preVFP", "")
+                            tmpivar = ivar.replace("_preVFP", "") if merge_ul16 else ivar
                             root_hists[channel][label][ivar] = root_hists[channel][label][ivar].Clone(f'{label}_{tmpivar}')
                             root_hists[channel][label][ivar].SetTitle(f'{label}_{tmpivar}_{channel}')
                 if not ip.startswith(label): del root_hists[channel][ip]
@@ -466,30 +491,23 @@ def create_combine_root_file( file_to_convert,
             for nuisance in closureSysts:
                 cb.cp().process(closure_procs).AddSyst(cb, nuisance, 'shape', ch.SystMap()(1.0))
             cb.SetGroup("background" if unify_background else "multijet", closureSysts)
+            if not unify_background:
+                cb.SetGroup("background", closureSysts)
             
             btagSysts = []
             othersSysts = []
             psfsrSysts = []
             mtopSysts = []
             for nuisance in mcSysts:
-                if ('2016' in nuisance) or ('UL16' in nuisance):
-                    if not merge_ul16:
-                        if ('UL16_preVFP' in nuisance and 'UL16_preVFP' in ibin) or ('UL16_postVFP' in nuisance and 'UL16_postVFP' in ibin):
-                            cb.cp().signals().AddSyst(cb, nuisance, 'shape', ch.SystMap('bin')([ibin], 1.0))
-                        elif 'UL16' not in nuisance and '2016' in nuisance and ('UL16' in ibin or '2016' in ibin):
-                            cb.cp().signals().AddSyst(cb, nuisance, 'shape', ch.SystMap('bin')([ibin], 1.0))
-                    else:
-                        nuisance = nuisance.replace('UL16_postVFP', '2016')
-                        if ('2016' in ibin):
-                            cb.cp().signals().AddSyst(cb, nuisance, 'shape', ch.SystMap('bin')([f'{ibin_label}_2016'], 1.0))
-                elif ('2017' in nuisance) or ('UL17' in nuisance):
-                    if ('2017' in ibin or 'UL17' in ibin):
-                        cb.cp().signals().AddSyst(cb, nuisance, 'shape', ch.SystMap('bin')([ibin], 1.0))
-                elif ('2018' in nuisance) or ('UL18' in nuisance):
-                    if ('2018' in ibin or 'UL18' in ibin):
-                        cb.cp().signals().AddSyst(cb, nuisance, 'shape', ch.SystMap('bin')([ibin], 1.0))
-                else:
-                    cb.cp().signals().AddSyst(cb, nuisance, 'shape', ch.SystMap()(1.0))
+                has_syst = any(
+                    (f"{nuisance}Up" in root_hists.get(ibin, {}).get(sig, {}) and
+                     f"{nuisance}Down" in root_hists.get(ibin, {}).get(sig, {}))
+                    for sig in signals
+                )
+                if not has_syst:
+                    continue
+
+                cb.cp().signals().AddSyst(cb, nuisance, 'shape', ch.SystMap()(1.0))
                 if 'btag' in nuisance:
                     btagSysts.append(nuisance)
                 elif 'ps_fsr' in nuisance:
@@ -530,6 +548,10 @@ def create_combine_root_file( file_to_convert,
                     'pdf_Higgs_ggHH', 'BR_hbb', 'THU_HH'])
                 cb.SetGroup("signal_norm_xs", ['THU_HH', 'pdf_Higgs_ggHH'])
 
+            all_signal_systs = list(dict.fromkeys(btagSysts + othersSysts + psfsrSysts + mtopSysts))
+            if all_signal_systs:
+                cb.SetGroup("signal", all_signal_systs)
+
             cb.cp().backgrounds().ExtractShapes(
                 output, '$BIN/$PROCESS', '$BIN/$PROCESS_$SYSTEMATIC')
             cb.cp().signals().ExtractShapes(
@@ -551,7 +573,7 @@ if __name__ == '__main__':
         description='Convert json hist to root TH1F', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-o', '--output_dir', dest="output_dir",
                         default="./datacards/", help='Output directory.')
-    parser.add_argument('--var', dest="variable", 
+    parser.add_argument('-v', '--var', dest="variable", 
                         default="SvB_MA.ps_hh_fine", help='Variable to make histograms.')
     parser.add_argument('-f', '--file', dest='file_to_convert',
                         default="histos/histAll.json", help="File with coffea hists")

@@ -72,10 +72,21 @@ phases:
     snakefile: coffea4bees/workflows/Snakefile_bkg_syst_C_4_closure.smk
     description: "Bkg Syst: Stage C.4 (FvT closure across subsamples)"
 
+  BKG_C4_MVD:
+    host: cmslpc
+    snakefile: coffea4bees/workflows/Snakefile_bkg_syst_C_4_mvd_closure.smk
+    description: "Bkg Syst (bkg_model: mvd): Stage C.4 kinematic closure of one MvD fit vs its mixed subsample"
+
   BKG_F:
     host: cmslpc
     snakefile: coffea4bees/workflows/Snakefile_bkg_syst_F.smk
     description: "Bkg Syst: Stage F (two-stage closure and Combine stats)"
+
+  # --- Full Systematics (full_syst) Pipeline ---
+  FULL_SYST:
+    host: cmslpc
+    snakefile: coffea4bees/workflows/Snakefile_full_syst.smk
+    description: "Full systematics pipeline (signal variations, cross-check, Combine stats)"
 
   # --- Additional Workflows & Studies ---
   DECLUSTERED:
@@ -122,6 +133,10 @@ workflows:
   bkg_syst_full:
     description: "Full background systematic pipeline including Stage A/B"
     phases: ["BKG_AB", "BKG_C", "BKG_F"]
+
+  full_syst:
+    description: "Full systematics analysis pipeline (signal variations + Combine stats)"
+    phases: ["FULL_SYST"]
 
 # ------------------------------------------------------------------------------
 # Primary Master Dashboards: Featured at the top of the roast summary index.html
@@ -178,13 +193,23 @@ dashboards:
     title: "Cutflow Cross-Check (F vs C.4)"
     desc: "Cut-by-cut weighted and raw event counts cross-check against Phase C.4"
 
+  - match: "signal_crosscheck*.html"
+    tag: "Stage F.1"
+    title: "Signal Nominal Cross-Check (Full Syst vs Stat-Only)"
+    desc: "Strict verification that signal nominal matches the baseline stat-only distribution"
+
+  - match: "cutflow_systematics*.html"
+    tag: "Stage F.1"
+    title: "Systematic Cutflow Validation"
+    desc: "Cutflow table of all signal systematic variations in fourTag SR with known counts validation"
+
 # ------------------------------------------------------------------------------
 # Analysis Stage Groupings (Shown in the roast summary index.html)
 # ------------------------------------------------------------------------------
 stages:
   - id: "stage_f"
     title: "📊 Stage F — Statistical Inference & Closure"
-    patterns: ["bkg_syst_f", "phasef", "closure_summary", "summary_svb", "stat_analysis"]
+    patterns: ["bkg_syst_f", "phasef", "closure_summary", "summary_svb", "stat_analysis", "full_syst"]
     badge_cls: "chip-accent"
 
   - id: "stage_c"

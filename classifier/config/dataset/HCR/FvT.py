@@ -19,6 +19,11 @@ def _data_selection(df: pd.DataFrame):
     return df[_common_selection(df) & (~(df["SR"] & df["fourTag"])) & df["passHLT"]]
 
 
+def _mixed_sr_selection(df: pd.DataFrame):
+    """Keep mixeddata_4b SR events so FvTFitQuality can evaluate SvB_MA.ps in SR."""
+    return df[_common_selection(df) & df["passHLT"]]
+
+
 def _ttbar_selection(df: pd.DataFrame):
     #return df[_common_selection(df) & df["passHLT"]]  # Use this line for Run3
     return df[_common_selection(df)]
@@ -152,15 +157,40 @@ class Train(CommonTrain):
             fractions = [float(x) for x in self.opts.era_mc_fractions.split(",")]
             ttbar_extra.append(lambda: _random_era(fractions))
 
+        if getattr(self.opts, "svb_branch", None):
+            data_ps = [
+                _group.fullmatch(
+                    ("label:data", "source:detector"),
+                    ("label:data", "source:synthetic"),
+                    processors=[
+                        lambda: _data_selection,
+                        lambda: add_label_index_from_column(threeTag="d3", fourTag="d4"),
+                    ],
+                    name="data selection",
+                ),
+                _group.fullmatch(
+                    ("label:data", "source:mixed"),
+                    processors=[
+                        lambda: _mixed_sr_selection,
+                        lambda: add_label_index_from_column(threeTag="d3", fourTag="d4"),
+                    ],
+                    name="mixed data selection (with SR)",
+                ),
+            ]
+        else:
+            data_ps = [
+                _group.fullmatch(
+                    ("label:data",),
+                    processors=[
+                        lambda: _data_selection,
+                        lambda: add_label_index_from_column(threeTag="d3", fourTag="d4"),
+                    ],
+                    name="data selection",
+                ),
+            ]
+
         ps = [
-            _group.fullmatch(
-                ("label:data",),
-                processors=[
-                    lambda: _data_selection,
-                    lambda: add_label_index_from_column(threeTag="d3", fourTag="d4"),
-                ],
-                name="data selection",
-            ),
+            *data_ps,
             _group.fullmatch(
                 ("source:mixed",),
                 ("source:synthetic",),

@@ -99,7 +99,7 @@ classifier_setting:
       # this reverts to the full decomposition simply by dropping this line once Run 3 ZZ/ZH
       # samples exist. Neither Run 3 training reads them today: the FvT selects on (SB | SR),
       # the SvB on --regions (default ["SR"]).
-      - mass_regions: [SR, SB]
+      # - mass_regions: [SR, SB]
 
 # ==============================================================================
 # PHASE B -> C/D HANDOFF
@@ -241,6 +241,9 @@ classifier_inputs:
     - TTToHadronic
     - TTToSemiLeptonic
     - TTTo2L2Nu
+    - ZH4b
+    - ZZ4b
+    - ggZH4b
     - GluGlutoHHto4B_kl-0p00_kt-1p00_c2-0p00
     - GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00
     - GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00

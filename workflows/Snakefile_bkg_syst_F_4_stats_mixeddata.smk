@@ -233,8 +233,11 @@ def get_target_rebins_F_4():
         except Exception as e:
             print(f"[Snakemake] Error reading {closure_summary_path}: {e}")
             return []
+    # Not yet run (F_2 in the same invocation): let Snakemake's IncompleteCheckpointException
+    # through, so it re-evaluates these targets once the checkpoint is done. Swallowing it left
+    # F_4 permanently empty whenever F_2 and F_4 ran in one `snakemake` call.
+    checkpoint_output = checkpoints.evaluate_closure_candidates.get(region=closure_reg, classifier=clf).output[0]
     try:
-        checkpoint_output = checkpoints.evaluate_closure_candidates.get(region=closure_reg, classifier=clf).output[0]
         import json
         with open(checkpoint_output, "r") as f:
             data = json.load(f)
@@ -296,42 +299,8 @@ rule final_output_F_4:
         fi
         """
 
-def get_combine_targets_F_4(wildcards):
-    try:
-        checkpoint_output = checkpoints.select_closure_rebin.get().output[0]
-    except Exception as e:
-        print(f"[Snakemake] Error reading checkpoint select_closure_rebin: {e}")
-        return []
-    import json
-    try:
-        with open(checkpoint_output, "r") as f:
-            data = json.load(f)
-        passing_rebins = data.get("passing_rebins", [])
-    except Exception as e:
-        print(f"[Snakemake] Error reading {checkpoint_output}: {e}")
-        passing_rebins = []
-
-    if not passing_rebins:
-        print("[Snakemake] Notice: No candidate rebin scheme passed the two-stage closure test. Stage F_4 Mixed Data Combine targets will be empty.")
-        return []
-
-    targets = []
-    for r in passing_rebins:
-        for channel in mixeddata_channels:
-            sig = config['channels'][channel].get('signallabel')
-            if not sig:
-                continue
-            ch_dir = f"{out_f4}stat_analysis_unblinded_mixeddata_rebin{r}/{channel}/"
-            targets.extend([
-                f"{ch_dir}limits/datacard_limits__{sig}.json",
-                f"{ch_dir}postfit/datacard_postfit__{sig}.pdf",
-                f"{ch_dir}significance/datacard_significance__{sig}.log",
-                f"{ch_dir}significance/datacard_significance__{sig}.json",
-                f"{ch_dir}likelihood_scan/datacard_likelihood_scan__{sig}.pdf",
-                f"{ch_dir}impacts/datacard_impacts__{sig}.pdf",
-                f"{ch_dir}gof/datacard_gof__{sig}.pdf",
-            ])
-    return targets
+# (a second get_combine_targets_F_4 here read checkpoint select_closure_rebin, which no target
+# requests, and swallowed its not-yet-run exception: F_4 always came out empty)
 
 rule all_bkg_syst_F_4:
     input:

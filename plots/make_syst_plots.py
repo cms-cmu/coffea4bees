@@ -1,4 +1,5 @@
 import os, sys
+sys.path.insert(0, os.getcwd())
 import ROOT
 import src.stat_analysis.plots.cmsstyle as CMS
 import argparse
@@ -37,12 +38,13 @@ if __name__ == '__main__':
                         default="shapes.root", help="File with root hists")
     parser.add_argument('-d', '--datacard', dest='datacard', type=str,
                         default="", help="Datacard created with input file")
-    parser.add_argument('-v', '--variable', dest='variable', type=str,
+    parser.add_argument('-v', '--var', '--variable', dest='variable', type=str,
                         default="SvB_MA_ps_hh_fine", help="Variable to plot")
     parser.add_argument('-s', '--signal', dest='signal',
                         default='GluGluToHHTo4B_cHHH1', help="Signal to plot")
     parser.add_argument('-m', '--metadata', dest='metadata',
                         default='coffea4bees/stats_analysis/metadata/HH4b.yml', help="Metadata file")
+    parser.add_argument('--xlabel', dest='xlabel', default=None, help="X-axis label for plots")
     # parser.add_argument('-r', '--rebin', dest='rebin', type=int,
     #                     default=15, help="Rebin")
     args = parser.parse_args()
@@ -51,10 +53,17 @@ if __name__ == '__main__':
     logging.info("\nRunning with these parameters: ")
     logging.info(args)
     
+    xlabel = args.xlabel
+    if not xlabel:
+        if "ttHbb" in args.variable:
+            xlabel = "SvB MA Classifier Regressed P(Signal) | P(ttHbb) is largest"
+        else:
+            xlabel = "SvB MA Classifier Regressed P(Signal) | P(HH) is largest"
+    
     logging.info(f"Reading {args.metadata}")
     metadata = yaml.safe_load(open(args.metadata, 'r'))
-    label_mj = metadata['processes']['background']['multijet']['label']
-    label_tt = metadata['processes']['background']['tt']['label']
+    label_mj = metadata['processes']['background'].get('multijet', {}).get('label', 'multijet')
+    label_tt = metadata['processes']['background'].get('tt', {}).get('label', 'tt')
     label_signal = metadata['processes']['signal'][args.signal]['label']
 
     with open('coffea4bees/stats_analysis/nuisance_names.json', 'r') as f:
@@ -62,16 +71,40 @@ if __name__ == '__main__':
 
     root_hists = ROOT.TFile.Open(args.inputfile)
 
-    nom_data = root_hists.Get(f'{metadata["bin"][0]}/data_obs').Clone()
+    first_bin = metadata["bin"][0]
+    is_unified = (root_hists.Get(f"{first_bin}/background") is not None)
+
+    nom_data = root_hists.Get(f'{first_bin}/data_obs').Clone()
     nom_data.Reset()
-    nom_tt = nom_data.Clone(label_tt)
-    nom_mj = nom_data.Clone(label_mj)
     nom_signal = nom_data.Clone(label_signal)
-    for ichannel in metadata['bin']:
-        nom_data.Add( root_hists.Get(f"{ichannel}/data_obs") )
-        nom_tt.Add( root_hists.Get(f"{ichannel}/{label_tt}" ))
-        nom_mj.Add( root_hists.Get(f"{ichannel}/{label_mj}") )
-        nom_signal.Add( root_hists.Get(f"{ichannel}/{label_signal}") )
+
+    if is_unified:
+        label_mj = "background"
+        label_tt = "background"
+        nom_bkg = nom_data.Clone("background")
+        for ichannel in metadata['bin']:
+            h_data = root_hists.Get(f"{ichannel}/data_obs")
+            if h_data: nom_data.Add(h_data)
+            h_b = root_hists.Get(f"{ichannel}/background")
+            if h_b: nom_bkg.Add(h_b)
+            h_s = root_hists.Get(f"{ichannel}/{label_signal}")
+            if h_s: nom_signal.Add(h_s)
+        nom_mj = nom_bkg
+        nom_tt = nom_data.Clone("tt_empty")
+        nom_tt.Reset()
+    else:
+        nom_tt = nom_data.Clone(label_tt)
+        nom_mj = nom_data.Clone(label_mj)
+        for ichannel in metadata['bin']:
+            h_data = root_hists.Get(f"{ichannel}/data_obs")
+            if h_data: nom_data.Add(h_data)
+            h_tt = root_hists.Get(f"{ichannel}/{label_tt}")
+            if h_tt: nom_tt.Add(h_tt)
+            h_mj = root_hists.Get(f"{ichannel}/{label_mj}")
+            if h_mj: nom_mj.Add(h_mj)
+            h_s = root_hists.Get(f"{ichannel}/{label_signal}")
+            if h_s: nom_signal.Add(h_s)
+
     nom_data = variable_to_regular_binning(nom_data)
     nom_tt = variable_to_regular_binning(nom_tt)
     nom_mj = variable_to_regular_binning(nom_mj)
@@ -104,13 +137,13 @@ if __name__ == '__main__':
     CMS.SetEnergy("13")
     CMS.ResetAdditionalInfo()
     bkg_can = CMS.cmsDiCanvas('bkg_can',0,xmax,0,ymax,0.8,1.2,
-                                "SvB MA Classifier Regressed P(Signal) | P(HH) is largest",
+                                xlabel,
                                 "Events", "Var/Nom",
                                     square=CMS.kSquare, extraSpace=0.05, iPos=iPos)
     bkg_can.cd(1)
     leg = CMS.cmsLeg(0.70, 0.89 - 0.05 * 4, 0.99, 0.89, textSize=0.04)
     tmp_bkg = nom_mj.Clone("tmp_bkg")
-    leg.AddEntry( tmp_bkg, f'Multijet', 'l' )
+    leg.AddEntry( tmp_bkg, 'Background' if is_unified else 'Multijet', 'l' )
     CMS.cmsDraw( tmp_bkg, 'histe', fstyle=0,  marker=1, alpha=1, lcolor=ROOT.kBlack, fcolor=ROOT.kBlack )
     CMS.GetcmsCanvasHist(bkg_can.cd(1)).GetXaxis().SetTitleSize(0.05)
     CMS.GetcmsCanvasHist(bkg_can.cd(1)).GetYaxis().SetTitleOffset(1.5)
@@ -135,7 +168,7 @@ if __name__ == '__main__':
     CMS.SetEnergy("13")
     CMS.ResetAdditionalInfo()
     nominal_can = CMS.cmsDiCanvas('nominal_can',0,xmax,0,ymax,0.8,1.2,
-                                "SvB MA Classifier Regressed P(Signal) | P(HH) is largest",
+                                xlabel,
                                 "Events", 'Data/Pred.',
                                     square=CMS.kSquare, extraSpace=0.05, iPos=iPos)
     nominal_can.cd(1)
@@ -143,10 +176,13 @@ if __name__ == '__main__':
     leg = CMS.cmsLeg(0.70, 0.89 - 0.05 * 4, 0.99, 0.89, textSize=0.04)
 
     stack = ROOT.THStack()
-    CMS.cmsDrawStack(stack, leg, {'ttbar': nom_tt, 'Multijet': nom_mj }, data= nom_data, palette=['#85D1FBff', '#FFDF7Fff'] )
+    if is_unified:
+        CMS.cmsDrawStack(stack, leg, {'Background': nom_mj }, data= nom_data, palette=['#FFDF7Fff'] )
+    else:
+        CMS.cmsDrawStack(stack, leg, {'ttbar': nom_tt, 'Multijet': nom_mj }, data= nom_data, palette=['#85D1FBff', '#FFDF7Fff'] )
     tmp_signal = nom_signal.Clone("tmp_signal")
     tmp_signal.Scale( 100 )
-    leg.AddEntry( tmp_signal, f'HH4b (x100)', 'l' )
+    leg.AddEntry( tmp_signal, f'{label_signal} (x100)', 'l' )
     CMS.cmsDraw( tmp_signal, 'hist', fstyle=0,  marker=1, alpha=1, lcolor=ROOT.kRed, fcolor=ROOT.kRed )
     CMS.GetcmsCanvasHist(nominal_can.cd(1)).GetYaxis().SetTitleOffset(1.5)
     CMS.GetcmsCanvasHist(nominal_can.cd(1)).GetYaxis().SetTitleSize(0.05)
@@ -154,7 +190,8 @@ if __name__ == '__main__':
     nominal_can.cd(2)
 
     bkg = nom_mj.Clone()
-    bkg.Add( nom_tt )
+    if not is_unified:
+        bkg.Add( nom_tt )
     print(nom_data.GetNbinsX())
     print(bkg.GetNbinsX())
     ratio = ROOT.TGraphAsymmErrors()
@@ -182,31 +219,38 @@ if __name__ == '__main__':
         for syst in list_systs:
             print(f"Processing {syst}")
             if 'bkg' in syst: 
-                nominal = nom_mj
-                label = label_mj
-                plot_label = 'Nominal Multijet'
+                label = 'background' if is_unified else label_mj
+                plot_label = 'Nominal Background' if is_unified else 'Nominal Multijet'
             else: 
-                nominal = nom_signal
                 label = label_signal
-                plot_label = 'Nominal HH4b'
+                plot_label = f'Nominal {label_signal}'
 
-            
-            nominal_hist = nominal.Clone(f"{syst}_nom")
-            up_hist = nominal.Clone(f"{syst}_up")
-            down_hist = nominal.Clone(f"{syst}_down")
-            up_hist.Reset()
-            down_hist.Reset()
+            # Find channels containing this systematic
+            found_bins = []
+            for ichannel in metadata['bin']:
+                h_up = root_hists.Get(f"{ichannel}/{label}_{syst}Up")
+                if h_up:
+                    found_bins.append(ichannel)
 
-            if syst.endswith(('2016', '2017', '2018')):
-                tmp = syst.split('_')[-1]
-                nominal_hist = root_hists.Get(f"HH4b_{tmp}/{label_signal}")
-                up_hist.Add( root_hists.Get(f"HH4b_{tmp}/{label}_{syst}Up") )
-                down_hist.Add( root_hists.Get(f"HH4b_{tmp}/{label}_{syst}Down") )
+            if not found_bins:
+                logging.warning(f"Could not find shapes for {label}_{syst}Up in any channel, skipping.")
+                continue
 
-            else:
-                for ichannel in metadata['bin']:
-                    up_hist.Add( root_hists.Get(f"{ichannel}/{label}_{syst}Up") )
-                    down_hist.Add( root_hists.Get(f"{ichannel}/{label}_{syst}Down") )
+            nominal_hist = root_hists.Get(f"{found_bins[0]}/{label}").Clone(f"{syst}_nom")
+            nominal_hist.Reset()
+            up_hist = nominal_hist.Clone(f"{syst}_up")
+            down_hist = nominal_hist.Clone(f"{syst}_down")
+
+            for ichannel in found_bins:
+                h_nom = root_hists.Get(f"{ichannel}/{label}")
+                if h_nom:
+                    nominal_hist.Add(h_nom)
+                h_up = root_hists.Get(f"{ichannel}/{label}_{syst}Up")
+                if h_up:
+                    up_hist.Add(h_up)
+                h_dn = root_hists.Get(f"{ichannel}/{label}_{syst}Down")
+                if h_dn:
+                    down_hist.Add(h_dn)
 
             nominal_hist = variable_to_regular_binning(nominal_hist)
             up_hist = variable_to_regular_binning(up_hist)
@@ -221,7 +265,7 @@ if __name__ == '__main__':
             CMS.SetEnergy("13")
             CMS.ResetAdditionalInfo()
             syst_can = CMS.cmsDiCanvas(f'{syst}_can',0,xmax,0,ymax,0.8,1.2,
-                                        "SvB MA Classifier Regressed P(Signal) | P(HH) is largest",
+                                        xlabel,
                                         "Events", 'Var/Nom',
                                             square=CMS.kSquare, extraSpace=0.05, iPos=iPos)
             syst_can.cd(1)
