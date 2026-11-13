@@ -1,0 +1,29 @@
+# bkg_syst F_1 (HH4b, bkg_model: mvd): the mixed_all (declustered) sample's four-tag events x JCM_v<k> x
+# MvD_v<k> per subsample -- the MvD method's background model, as the MvD roast's V.4 with one MvD per
+# subsample. F_1 sets dataset_location (f1_dataset_location), the friends, apply_MvD* and the JCMs.
+processor: "coffea4bees/analysis/processors/processor_HH4b.py"
+weights_file: "coffea4bees/metadata/weights/weights_HH4b.yml"
+
+runner:
+  workers: 4
+  worker_memory: "8GB"
+  condor: true
+  shared_dask: true
+  run_performance: true
+
+config:
+  tag_list:
+    - "fourTag"
+  blind: true
+  apply_FvT: false
+  apply_JCM: true
+  apply_trigWeight: true
+  apply_btagSF: true
+  apply_boosted_veto: false
+  run_SvB: true
+  SvB_MA: true
+  top_reconstruction: "fast"
+  plot_ttbar_with_weights: false
+  fill_histograms: "SvB"
+  # Run 3 four-tag definition (tight btagPNetB), as the MvD roast
+  fourTag_use_tight: true

@@ -73,6 +73,9 @@ include: "helpers/bkg_syst_common.smk"
 
 mix_name = config.get('mix_name', f"{channel}_bkg_syst")
 roast_id = config.get('roast_id') or config.get('label') or 'nominal'
+# bkg_model: fvt (default; 3b data x JCM_v x FvT_v) or mvd (the mixed_all sample of f1_dataset x
+# JCM_v x MvD_v: closure of the MvD method, the C stage trains MvD models)
+BKG_MODEL = str(config.get('bkg_model', 'fvt')).lower()
 
 def _detect_per_year_jcm():
     if 'per_year_jcm' in config:
@@ -178,19 +181,39 @@ rule stage_phaseF_1_config:
             friends_dict["SvB_MA"] = config['data_svb_ma_friend']
         elif 'data_svb_friend' in config and "SvB_MA" not in friends_dict:
             friends_dict["SvB_MA"] = config['data_svb_friend']
+        # The per-subsample classifier friends (C_3 manifests, key FvT whatever the model): FvT_v<m>
+        # on 3b data (FvT method), or MvD_v<m> on the mixed_all sample (bkg_model: mvd)
+        clf = "MvD" if BKG_MODEL == "mvd" else "FvT"
         for m in SUBSAMPLES:
-            friends_dict[f"FvT_v{m}"] = f"{out_c}friends/friends_FvT_{mix_name}_v{m}.json@@FvT"
-        friends_dict["FvT"] = friends_dict[f"FvT_v{SUBSAMPLES[0]}"]
+            friends_dict[f"{clf}_v{m}"] = f"{out_c}friends/friends_FvT_{mix_name}_v{m}.json@@FvT"
+        friends_dict[clf] = friends_dict[f"{clf}_v{SUBSAMPLES[0]}"]
 
         data_cfg['config']['JCM_file'] = jcm_file
         data_cfg['config']['subsample_names'] = [f"v{m}" for m in SUBSAMPLES]
         data_cfg['config']['friends'] = friends_dict
 
-        # Stage F_1 explicitly requires JCM, FvT, trigger weights, and ttbar estimation from 3b data
         data_cfg['config']['apply_JCM'] = True
-        data_cfg['config']['apply_FvT'] = True
         data_cfg['config']['apply_trigWeight'] = True
-        data_cfg['config']['plot_ttbar_with_weights'] = True
+        # f1_dataset_location: where runner finds f1_dataset (e.g. the declustered library's handoff
+        # mixeddata_all_<tag>.yml, a root:// URL; {roast:...} is resolved in the workflow config only)
+        if config.get('f1_dataset_location'):
+            loc = config['f1_dataset_location']
+            data_cfg['dataset_location'] = list(loc) if isinstance(loc, (list, tuple)) else [loc]
+            data_cfg.pop('datasets_file', None)
+        if BKG_MODEL == "mvd":
+            # MvD method: mixed_all four-tag x JCM_v (by nSelJets) x MvD_v, ttbar from p_t4/p_mix4
+            data_cfg['config']['apply_FvT'] = False
+            data_cfg['config']['plot_ttbar_with_weights'] = False
+            data_cfg['config']['apply_MvD'] = True
+            data_cfg['config']['apply_MvD_weight'] = True
+            data_cfg['config']['plot_ttbar_with_MvD_weights'] = True
+            data_cfg['config']['friends_include'] = ['trigWeight', *friends_dict]
+            if config.get('mvd_pmix4_floor'):
+                data_cfg['config']['MvD_pmix4_floor'] = float(config['mvd_pmix4_floor'])
+        else:
+            # FvT method: JCM, FvT, trigger weights, and ttbar estimation from 3b data
+            data_cfg['config']['apply_FvT'] = True
+            data_cfg['config']['plot_ttbar_with_weights'] = True
 
         os.makedirs(os.path.dirname(output.cfg), exist_ok=True)
         with open(output.cfg, 'w') as f:
@@ -309,7 +332,8 @@ rule analysis_data_closure:
         f"{out_f1}logs/analysis_data.log"
     params:
         processor = config.get('analysis_processor') or f"coffea4bees/analysis/processors/processor_{channel}.py",
-        dataset = "data",
+        # the background-model sample: 3b data (FvT method) or the mixed_all sample (bkg_model: mvd)
+        dataset = config.get('f1_dataset') or "data",
         years = " ".join(YEARS),
         output_path = out_f1,
         condor_flags = condor_flags,
@@ -351,6 +375,8 @@ rule validate_f1_normalization:
         bounds = lambda wildcards: " ".join(
             f"--{k.replace('_', '-')} {v}" for k, v in (config.get('f1_validation') or {}).items()
             if k in ('min_sb_yield', 'max_sb_yield', 'max_sr_yield', 'min_ratio', 'max_ratio')),
+        # the script checks process `data` three-tag and FvT/noFvT ratios: FvT method only
+        skip = "1" if BKG_MODEL == "mvd" else "",
     resources:
         mem_mb = 4000,
         cpus_per_task = 1,
@@ -359,6 +385,10 @@ rule validate_f1_normalization:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.done}) $(dirname {log})
+        if [ -n "{params.skip}" ]; then
+            echo "bkg_model mvd: FvT-method normalization check skipped" | tee {log} > {output.done}
+            exit 0
+        fi
         {params.container_wrapper} {params.python_bin} coffea4bees/analysis/tools/validate_f1_normalization.py \
             -i {input.coffea} \
             -o {output.done} {params.bounds} 2>&1 | tee {log}
@@ -385,11 +415,17 @@ rule make_plots_closure:
         channel = channel,
         n_models = N_SUBSAMPLES,
         container_wrapper = container_wrapper,
-        python_bin = python_bin
+        python_bin = python_bin,
+        # the closure plot configs name the FvT-method processes (data threeTag, TTbar4b_from_d3)
+        skip = "1" if BKG_MODEL == "mvd" else "",
     shell:
         """
         set -eo pipefail
         mkdir -p {params.output_dir} $(dirname {log})
+        if [ -n "{params.skip}" ]; then
+            echo "bkg_model mvd: F_1 closure plots skipped (FvT-method plot configs); see the F_2 closure fits" | tee {log} > {output.done}
+            exit 0
+        fi
         {params.container_wrapper} {params.python_bin} coffea4bees/plots/makePlots.py \
             {input.data_coffea} {input.mixed_coffea} \
             -o {params.output_dir} \

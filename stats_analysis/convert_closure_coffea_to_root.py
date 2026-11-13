@@ -100,6 +100,14 @@ def main():
     parser.add_argument("-o", "--output", required=True,
                         help="Path to output ROOT file.")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging.")
+    # The background model's process/tag in the consolidated F_1 histograms: 3b data (FvT method,
+    # default) or e.g. mixeddata_all_declib16 fourTag + TTbar4b_from_MvD fourTag (MvD method). The
+    # output keys keep the FvT-method names (data ... threeTag, TTbar4b_from_d3 ... threeTag), which
+    # runTwoStageClosure reads, whatever the model.
+    parser.add_argument("--bkg_process", default="data", help="multijet model process in the F_1 hists")
+    parser.add_argument("--bkg_tag", default="threeTag", help="its tag")
+    parser.add_argument("--tt_process", default="TTbar4b_from_d3", help="ttbar model process in the F_1 hists")
+    parser.add_argument("--tt_tag", default="threeTag", help="its tag")
     args, unknown = parser.parse_known_args()
 
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO,
@@ -141,18 +149,18 @@ def main():
                 if reg not in h.axes['region']:
                     continue
                 for yr in h.axes['year']:
-                    h_data_3b = slice_1d(h, 'data', yr, 'threeTag', reg)
+                    h_data_3b = slice_1d(h, args.bkg_process, yr, args.bkg_tag, reg)
                     if h_data_3b is not None:
                         u_hist = to_uproot_hist(h_data_3b)
                         root_dict[f"{stem}_data_{yr}_threeTag_{reg}"] = u_hist
                         root_dict[f"{stem}_nominal_data_{yr}_threeTag_{reg}"] = u_hist
-                    h_data_4b = slice_1d(h, 'data', yr, 'fourTag', reg)
+                    h_data_4b = slice_1d(h, 'data', yr, 'fourTag', reg) if args.bkg_process == 'data' else None
                     if h_data_4b is not None:
                         u_hist_4b = to_uproot_hist(h_data_4b)
                         root_dict[f"{stem}_data_{yr}_fourTag_{reg}"] = u_hist_4b
                         root_dict[f"{stem}_nominal_data_{yr}_fourTag_{reg}"] = u_hist_4b
-                    if not args.pure_qcd and 'TTbar4b_from_d3' in h.axes['process']:
-                        h_ttbar_3b = slice_1d(h, 'TTbar4b_from_d3', yr, 'threeTag', reg)
+                    if not args.pure_qcd and args.tt_process in h.axes['process']:
+                        h_ttbar_3b = slice_1d(h, args.tt_process, yr, args.tt_tag, reg)
                         if h_ttbar_3b is not None:
                             u_ttbar_hist = to_uproot_hist(h_ttbar_3b)
                             root_dict[f"{stem}_TTbar4b_from_d3_{yr}_threeTag_{reg}"] = u_ttbar_hist
@@ -173,14 +181,14 @@ def main():
                         if reg not in h.axes['region']:
                             continue
                         for yr in h.axes['year']:
-                            h_data_3b = slice_1d(h, 'data', yr, 'threeTag', reg)
+                            h_data_3b = slice_1d(h, args.bkg_process, yr, args.bkg_tag, reg)
                             if h_data_3b is not None:
                                 u_hist = to_uproot_hist(h_data_3b)
                                 fvt_stem = f"{clf}_FvT_{args.mix_name}_v{m}_newSBDef_{var_stem}"
                                 root_dict[f"{fvt_stem}_data_{yr}_threeTag_{reg}"] = u_hist
                                 root_dict[f"{fvt_stem}_data_3b_for_mixed_{yr}_threeTag_{reg}"] = u_hist
-                            if not args.pure_qcd and 'TTbar4b_from_d3' in h.axes['process']:
-                                h_ttbar_3b = slice_1d(h, 'TTbar4b_from_d3', yr, 'threeTag', reg)
+                            if not args.pure_qcd and args.tt_process in h.axes['process']:
+                                h_ttbar_3b = slice_1d(h, args.tt_process, yr, args.tt_tag, reg)
                                 if h_ttbar_3b is not None:
                                     u_ttbar_hist = to_uproot_hist(h_ttbar_3b)
                                     fvt_tt_stem = f"{clf}_FvT_{args.mix_name}_v{m}_newSBDef_{var_stem}"

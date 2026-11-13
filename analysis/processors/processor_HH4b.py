@@ -1104,6 +1104,18 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             event["MvD", "MvD"] = np.where(low, num / self.MvD_pmix4_floor, event.MvD.MvD)
             event["MvD", "p_mix4"] = np.where(low, self.MvD_pmix4_floor, event.MvD.p_mix4)
 
+        # per-subsample MvDs (bkg_syst closure of the MvD method): friends MvD_v<m>, same floor
+        for v_name in self.subsample_names:
+            key = f"MvD_{v_name}"
+            if key not in self.friends:
+                continue
+            event[key] = read_MvD_friend(self.target, self.friends[key])
+            if self.MvD_pmix4_floor and "p_mix4" in event[key].fields:
+                low = event[key].p_mix4 < self.MvD_pmix4_floor
+                num = event[key].p_d4 - event[key].p_t4 if "p_t4" in event[key].fields else event[key].p_d4
+                event[key, "MvD"] = np.where(low, num / self.MvD_pmix4_floor, event[key].MvD)
+                event[key, "p_mix4"] = np.where(low, self.MvD_pmix4_floor, event[key].p_mix4)
+
     def load_SvB(self, event):
         """Load SvB and SvB_MA scores from one of three sources (in priority order):
         1. Friend tree arrays (modern method, via --friends config)
@@ -2007,6 +2019,7 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     year_override=self.year_override,
                     plot_extra_canjet_vars=self.plot_extra_canjet_vars,
                     fill_histograms=self.fill_histograms,
+                    subsample_names=getattr(self, "subsample_names", None),
                 )
                 hists.append(hist_mvd_t4)
 

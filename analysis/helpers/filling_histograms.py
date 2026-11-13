@@ -461,7 +461,8 @@ def filling_nominal_histograms(
     # (convert_closure_coffea_to_root.py) reads <SvB>_<v>.<ps> per subsample. SvB_MA keeps the 240-bin
     # ps_*_fine (the HH4b fit variable, ps_hh_fine); SvB gets the coarse hists only.
     if subsample_names and run_SvB and "svb" in categories:
-        sub_weight = {"weight_d3_to_t4": "weight_d3_to_t4_{}", "weight_d3_to_t3": "weight_d3_to_t3_{}"}.get(weight_name, "weight_{}")
+        sub_weight = {"weight_d3_to_t4": "weight_d3_to_t4_{}", "weight_d3_to_t3": "weight_d3_to_t3_{}",
+                      "weight_mix4_to_t4_MvD": "weight_mix4_to_t4_MvD_{}"}.get(weight_name, "weight_{}")
         phh_fine = ["phh_hh_fine", "phh_fine"]
         sub_skip = {"SvB_MA": phh_fine, "SvB": ["ps_zz_fine", "ps_zh_fine", "ps_hh_fine"] + phh_fine}
         for v_name in subsample_names:

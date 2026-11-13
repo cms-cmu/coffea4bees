@@ -110,6 +110,17 @@ class Train(CommonTrain):
                 ],
                 name="detector data selection",
             ),
+            # a hemisphere-mixed subsample as pseudo four-tag data (bkg_syst closure of the MvD
+            # method, --data-source mixed_all mixed): selected and SR-blinded as the real data
+            _group.fullmatch(
+                ("source:mixed",),
+                processors=[
+                    lambda: _fill_nan,
+                    lambda: _data_selection,
+                    lambda: add_label_index_from_column(fourTag="d4"),
+                ],
+                name="mixed subsample as pseudo-data selection",
+            ),
             _group.fullmatch(
                 ("source:mixed_all",),
                 processors=[
