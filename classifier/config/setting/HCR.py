@@ -70,6 +70,7 @@ class Input(GlobalSetting):
     ancillary: str = "ancillary"
     CanJet: str = "CanJet"
     NotCanJet: str = "NotCanJet"
+    svb: str = "svb"
 
 
 class Output(GlobalSetting):
