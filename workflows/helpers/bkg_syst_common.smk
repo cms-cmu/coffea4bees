@@ -335,7 +335,11 @@ PS_DATASET = f"{A_INPUT_DIR}{PS_NAME}.yml"
 # The nominal Phase F histograms, fetched (coffea's load() reads local files only); F_3 converts
 # them to the datacard JSON next to them.
 NOMINAL_HISTS_URL = str(INPUTS['nominal_hists'])
-config['nominal_coffea'] = f"{A_INPUT_DIR}{os.path.basename(NOMINAL_HISTS_URL)}"
+# With upstream_link_stages, inputs/ may be the upstream roast's (A_1/A_2 read it), while this roast's
+# own inputs -- another nominal, another B_1 fit input -- must not be written there: they go to
+# OWN_INPUT_DIR, fetched by their own rules (A1_fetch_nominal, B1_fetch_data_coffea).
+OWN_INPUT_DIR = f"{out}inputs/" if (config.get('upstream_link_stages') and A_INPUT_DIR_OVERRIDE) else A_INPUT_DIR
+config['nominal_coffea'] = f"{OWN_INPUT_DIR}{os.path.basename(NOMINAL_HISTS_URL)}"
 config.setdefault('nominal_json', config['nominal_coffea'].removesuffix(".coffea") + ".json")
 # Read in place (fsspec / friend URLs)
 if INPUTS.get('classifier_inputs'):

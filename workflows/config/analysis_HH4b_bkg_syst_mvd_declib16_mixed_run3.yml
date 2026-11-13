@@ -28,7 +28,7 @@ bkg_model: mvd
 
 # reuse the mixed bkg_syst roast's A_1 (mixed-data JCM) and A_2 (the 16 split subsamples) only
 upstream_pre_fvt: "mixed_bkgsyst"
-upstream_link_stages: [A_1, A_2]
+upstream_link_stages: [A_1, A_2, inputs]   # inputs/: the A_1/A_2 inputs; this roast fetches its own nominal into its own inputs/
 
 inputs:
   upstream_roasts:
