@@ -1,25 +1,29 @@
 # ==============================================================================
-# HH4b Run 3 2024 BACKGROUND SYSTEMATIC: MvD-MIXED nominal, systematic on the 16x DECLUSTERED subsamples
+# HH4b Run 3 2024 BACKGROUND SYSTEMATIC of the MvD-DECLUSTERED background, on MIXED data
 # ==============================================================================
-# The mirror of analysis_HH4b_bkg_syst_mvd_declib16_mixed_run3.yml (22+23: MvD-declustered nominal,
-# systematic on the hemisphere-mixed subsamples), for 2024 with the roles swapped:
-#   nominal     the 2024 MvD-mixed model mvd_run3_2024_ftfix (mixed x JCM x MvD + TTbar4b_from_MvD; fit
-#               variable its SvB_MvD, stored as SvB_MA); V.1 inputs from mvd_run3_2024_20261023
-#   subsamples  the 16 seeds of the 2024 declustered library declib16_run3_2024_20261025 + the 2024 ttbar
-#               pseudodata: the same targets as analysis_HH4b_bkg_syst_declib16_run3_2024.yml (FvT)
-#   B_1         per subsample, JCM of the 2024 mixed library's four-tag events to mix_v<m> four-tag
+# The 2024 counterpart of analysis_HH4b_bkg_syst_mvd_declib16_mixed_run3.yml (2022+2023, roast
+# analysis_HH4b_bkg_syst_mvd_declib16_mixed_run3_20261112_0c87fed-476ba18), standalone (2024 settings as
+# analysis_HH4b_bkg_syst_declib16_run3_2024.yml: eras C..I3, trigweights_Run3_v6, HH4b_run3_2024.yml).
+#   nominal     the 2024 MvD-declustered model mvd_run3_2024_declib16_warm (mixeddata_all_declib16_2024
+#               four-tag x JCM x MvD, ttbar TTbar4b_from_MvD; fit variable its SvB_MvD, stored as SvB_MA);
+#               V.1 inputs (classifier-input manifest, noJCM histograms) from mvd_declib16_run3_2024_20261026
+#   A_1, A_2    run here (no 2024 FvT-on-mixed roast to link from): mixed-data JCM of the 2024 mixed data
+#               (mixeddata_run3_2024_20261022) against the NON-TIGHT 2024 nominal, then the split into 16
+#               subsamples + the 2024 ttbar pseudodata
+#   A_3         the subsamples scored with the nominal's SvB_MvD
+#   B_1         per subsample, JCM of the declustered four-tag events to mix_v<m> four-tag
 #   C           per subsample, an MvD trained cold (the standard 20-epoch recipe): d4 = mix_v<m>,
-#               mix4 = the 2024 mixed library (mixeddata_all) x JCM_v<m>, t4 = ttbar MC; evaluated on
-#               the mixed library, split by era group
+#               mix4 = the declustered library x JCM_v<m>, t4 = ttbar MC; evaluated on the library,
+#               split by era group; CMU ORCHARD, two trainings (180 GB each) per job
 #   C_4         BKG_C4_MVD: kinematic closure of MvD_v0 against mix_v0
-#   F           the mixed library x JCM_v x MvD_v (bkg_model: mvd); closure in SvB_MvD; datacards on
-#               the MvD-mixed nominal (multijet mixeddata_all four-tag, tt TTbar4b_from_MvD)
-# 2024 settings as the FvT config (eras C..I3, trigweights_Run3_v6, HH4b_run3_2024.yml).
+#   F           the library x JCM_v x MvD_v (bkg_model: mvd); closure in SvB_MvD; datacards on the
+#               MvD-declustered nominal
+# Compared with the 2024 FvT-on-declustered roast (analysis_HH4b_bkg_syst_declib16_run3_2024.yml).
 #
-#   bin/roast new --config coffea4bees/workflows/config/analysis_HH4b_bkg_syst_mvd_mixed_run3_2024.yml \
+#   bin/roast new --config coffea4bees/workflows/config/analysis_HH4b_bkg_syst_mvd_declib16_mixed_run3_2024.yml \
 #       --phases BKG_AB,BKG_C,BKG_C4_MVD,BKG_F --cmslpc --train-on orchard --eval-on orchard
 # ==============================================================================
-label: HH4b_bkg_syst_mvd_mixed_run3_2024
+label: HH4b_bkg_syst_mvd_declib16_mixed_run3_2024
 output_path: output/{roast_id}/
 per_year_jcm: false
 unify_background: false
@@ -29,7 +33,7 @@ publish_base: '{eos_prod}/{roast_id}'
 handoff:
   eos_base: '{eos_prod}/{roast_id}/handoff'
 channel: HH4b
-mix_name: HH4b_bkg_syst_mvd_mixed_run3_2024
+mix_name: HH4b_bkg_syst_mvd_declib16_mixed_run3_2024
 dataset_location: coffea4bees/metadata/datasets/
 weights_file: coffea4bees/metadata/weights/weights_HH4b.yml
 years:
@@ -52,24 +56,27 @@ ttbar_processes:
 - TTToHadronic
 inputs:
   upstream_roasts:
-    declib: declib16_run3_2024_20261025_d23bf9a-616755c
-    nominal: nominal_run3_2024_ftfix_20261106_1c7c8db-d5ec5c4
-    nominal_b: nominal_run3_2024_20261021_975a18e-e176976
     mixeddata: mixeddata_run3_2024_20261022_d7a35ab-8470e14
-    mvd: mvd_run3_2024_ftfix_20261107_1c7c8db-3d65ecc
-    mvd_v1: mvd_run3_2024_20261023_c1e0fcf-788068e
-  mixeddata_all: '{roast:declib}/handoff/synthetic_data_lib16_2024_multijet.yml'
+    nominal_nt: nominal_run3_2024_nontight_20261021_975a18e-e176976
+    nominal_b: nominal_run3_2024_20261021_975a18e-e176976
+    declib: declib16_run3_2024_20261025_d23bf9a-616755c
+    mvd: mvd_run3_2024_declib16_warm_20261108_b02b7c1-7321448
+    mvd_v1: mvd_declib16_run3_2024_20261026_e9a4dd4-e85d346
+  mixeddata_all: '{roast:mixeddata}/handoff/mixeddata_all.yml'
   ttbar_psdata: '{roast:mixeddata}/handoff/ttbar_PSData.yml'
-  jcm_hists: '{roast:nominal_b}/{roast:nominal_b:output_path}computeJCM/histAll_NoJCM.coffea'
-  nominal_hists: '{roast:mvd}/{roast:mvd:output_path}V4/histAll_MvD.coffea'
+  jcm_hists: '{roast:nominal_nt}/{roast:nominal_nt:output_path}computeJCM/histAll_NoJCM.coffea'
+  analysis_config_noJCM: '{roast:nominal_nt}/{roast:nominal_nt:output_path}computeJCM/analysis_config_noJCM.yml'
   classifier_inputs: '{roast:nominal_b}/handoff/classifier_inputs_{roast:nominal_b:id}.json'
+  nominal_hists: '{roast:mvd}/{roast:mvd:output_path}V4/histAll_MvD.coffea'
   SvB: '{roast:mvd}/friend/SvB_MvD/result.json@@analysis.0.merged'
   SvB_model: '{roast:mvd}/classifier/SvB_MvD/result.json'
 worker_memory: 8GB
 subsamples:
-  source: seeds
+  source: split
   n: 16
   dataset_name: mixeddata_4b
+  split_template: coffea4bees/skimmer/metadata/split_mixeddata_Run3.yml
+  study_template: coffea4bees/analysis/metadata/study_mixed_data_Run3.yml
   runner:
     condor: true
     shared_dask: true
@@ -95,7 +102,7 @@ validation:
 phaseB_1:
   per_year_jcm: false
   jcm:
-    config: coffea4bees/analysis/jcm_tools/metadata/mixeddata_subsample_jcm_config_Run3_2024.yml
+    config: coffea4bees/analysis/jcm_tools/metadata/mixeddata_declib16_subsample_jcm_config_Run3_2024.yml
     plot_config: coffea4bees/plots/metadata/plotsJCM.yml
     region: SB
     year: Run3
@@ -166,7 +173,7 @@ fvt_train_workflow:
     - --metadata {metadata}
     - --max-workers 20
     - --data-source mixed_all mixed
-    - --data-mixed-all-name mixeddata_all
+    - --data-mixed-all-name mixeddata_all_declib16_2024
     - --data-mixed-name {mixed_name}
     - --data-mixed-samples {mix}
     - --JCM-weight "source:mixed_all,year:2024" {jcm_2024}@@JCM_weights
@@ -199,7 +206,7 @@ fvt_eval_workflow:
     - --metadata {metadata}
     - --max-workers 8
     - --data-source mixed_all
-    - --data-mixed-all-name mixeddata_all
+    - --data-mixed-all-name mixeddata_all_declib16_2024
     - --friends "" {nominal_ci}@@HCR_input
   model:
   - module: HCR.MvD.baseline.Eval
@@ -223,7 +230,7 @@ fvt_eval_workflow:
     - num_workers: 8
 phase_e_fvt:
   channel: HH4b
-  mix_name: HH4b_bkg_syst_mvd_mixed_run3_2024
+  mix_name: HH4b_bkg_syst_mvd_declib16_mixed_run3_2024
   n_models: 16
   plot_base: '{web_prod}/{roast_id}/classifier_plots'
   precision: fp16
@@ -268,7 +275,7 @@ combine_outdir: bkg_syst_F_3_stats/datacards/
 make_combine_inputs:
   stat_only: ''
   metadata_template: coffea4bees/stats_analysis/metadata/HH4b_run3_2024.yml
-  multijet_process: mixeddata_all
+  multijet_process: mixeddata_all_declib16_2024
   unify_background: false
   tt_processes:
   - TTbar4b_from_MvD
@@ -312,21 +319,25 @@ orchard:
   time: '4:00:00'
   pack: 2
   pack_cpus: 16
-  pack_mem: 150
+  pack_mem: 180
   pack_wait: 900
   eval_time: '8:00:00'
-  eval_pack: 8
+  eval_pack: 4
   eval_pack_cpus: 8
-  eval_pack_mem: 64
+  eval_pack_mem: 96
   eval_pack_wait: 900
 pilot_gate: false
 bkg_model: mvd
+mixed_jcm:
+  config: coffea4bees/analysis/jcm_tools/metadata/mixeddata_all_config_Run3.yml
+  region: SB
+  float_t: true
 classifier_metadata_extra:
-- '{roast:mixeddata}/handoff/mixeddata_all.yml'
+- '{roast:declib}/handoff/mixeddata_all_declib16_2024.yml'
 yields_ratio:
 - d4 / t4 + mix4
 fvt_max_chi2_ndf: 20.0
-f1_dataset: mixeddata_all
+f1_dataset: mixeddata_all_declib16_2024
 f1_dataset_location:
-- '{roast:mixeddata}/handoff/mixeddata_all.yml'
-closure_convert_args: --bkg_process mixeddata_all --bkg_tag fourTag --tt_process TTbar4b_from_MvD --tt_tag fourTag
+- '{roast:declib}/handoff/mixeddata_all_declib16_2024.yml'
+closure_convert_args: --bkg_process mixeddata_all_declib16_2024 --bkg_tag fourTag --tt_process TTbar4b_from_MvD --tt_tag fourTag

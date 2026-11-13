@@ -12,7 +12,7 @@
 #               JCM-weight; trigger weights trigweights_Run3_v6.json; datacard template HH4b_run3_2024.yml
 #   GPU         CMU ORCHARD (roast --train-on/--eval-on orchard): two FvT trainings per job, FvT
 #               evaluations split by era group (the unsplit 2024 evaluation OOMs at 63 Gi), 8 per job
-# Compared with analysis_HH4b_bkg_syst_mvd_mixed_run3_2024.yml (the MvD-mixed method on the same subsamples).
+# Compared with analysis_HH4b_bkg_syst_mvd_declib16_mixed_run3_2024.yml (MvD-declustered, systematic on mixed data).
 #
 #   bin/roast new --config coffea4bees/workflows/config/analysis_HH4b_bkg_syst_declib16_run3_2024.yml \
 #       --phases BKG_AB,BKG_C,BKG_C4,BKG_F --cmslpc --train-on orchard --eval-on orchard

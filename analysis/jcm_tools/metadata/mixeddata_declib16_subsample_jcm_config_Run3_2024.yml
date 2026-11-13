@@ -1,0 +1,18 @@
+# Per-subsample mixed-data JCM for the bkg_syst closure of the MvD method (Run 3, 2024):
+# the declustered library's four-tag events (mixeddata_all_declib16_2024) as the "3b" sample, fit to each
+# hemisphere-mixed subsample's four-tag events (B_1 passes --data4bName mix_v<m>), as the MvD roast's
+# V.1 fit does with real four-tag data (mixeddata_all_config_Run3.yml). Applied by nSelJets.
+data4bName: data
+taglabel4b:   fourTag
+
+data3bName: mixeddata_all_declib16_2024
+taglabel3b:   fourTag
+
+taglabel3b_tt: threeTag
+
+selJets: selJets_noJCM.n
+tagJets: tagJets_noJCM.n
+
+subtract3bTT: False
+threeTightTagFraction: 0.47781   # acts as the fit seed when float_t is true
+float_t: true                    # mixed-data fit: derive t from data4b/(JCM·mixed_3b) normalization
