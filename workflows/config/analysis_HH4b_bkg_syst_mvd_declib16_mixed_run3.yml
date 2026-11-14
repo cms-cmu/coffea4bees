@@ -44,7 +44,14 @@ inputs:
 
 # B_1: per-subsample JCM, declustered four-tag ("3b") to mix_v<m> four-tag, on the MvD roast's V.1
 # histograms (declustered noJCM + nominal data / ttbar)
+# Per-ERA JCMs (one fit per subsample and year): with one JCM per subsample for all four eras, the
+# per-subsample models closed in the era sum but not per era (roast 20261112, mix_v0 / model v0 SR
+# 0.947 / 1.002 / 0.947 / 1.071 for 2022preEE / 2022EE / 2023preBPix / 2023BPix), which failed the F_4
+# GoF (saturated p = 0; chi2 268 -> 105 with per-era normalization). The MvD trainings, F_1 and
+# C_4_mvd already take one JCM per era ({jcm_<year>} in fvt_train_workflow).
+per_year_jcm: true
 phaseB_1:
+  per_year_jcm: true
   jcm:
     config: "coffea4bees/analysis/jcm_tools/metadata/mixeddata_declib16_subsample_jcm_config_Run3.yml"
     data_coffea: "{roast:mvd_v1}/{roast:mvd_v1:output_path}V1/histAll_mixed_noJCM.coffea"
