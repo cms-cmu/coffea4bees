@@ -246,8 +246,13 @@ def _assign_SR_SB_ttHbb_asymetric_ellipse(quadJet, cand_cfg=None, full_space=Fal
     #     quadJet["SB"] = ((~in_ellipse) & (m_lead <= 230.) & (m_subl <= 700.))
     # else:
     sb_m_lead_max = (cand_cfg or {}).get("sb_ttHbb", {}).get("m_lead_max", 230.)
-    quadJet["SR"] = in_ellipse ## & (nJet_selected >= 5)[:, np.newaxis]
-    quadJet["SB"] = ((~in_ellipse) & (m_lead <= sb_m_lead_max) & (m_subl <= 700.)) ## | (in_ellipse & (nJet_selected == 4)[:, np.newaxis])
+    # Branch ttH_SR_SB_nJet5: SR and SB both require nJet_selected >= 5 (events with exactly 4 selected
+    # jets are in neither region). ttH_new_SR has SR = in_ellipse, SB = outside, with no nJet cut.
+    if nJet_selected is None:
+        raise ValueError("ttHbb asymmetric-ellipse SR/SB with nJet_selected >= 5 needs nJet_selected")
+    n_jets_ok = (nJet_selected >= 5)[:, np.newaxis]
+    quadJet["SR"] = in_ellipse & n_jets_ok
+    quadJet["SB"] = ((~in_ellipse) & (m_lead <= sb_m_lead_max) & (m_subl <= 700.)) & n_jets_ok
 
     # Compute Euclidean radial distance for monitoring
     quadJet["rH"] = np.sqrt((m_lead - 125.0)**2 + (m_subl - 125.0)**2)
