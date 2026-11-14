@@ -182,7 +182,8 @@ def _synthetic_eval_wf(eval_wf: dict, train_wf: dict) -> dict:
 
     out = copy.deepcopy(eval_wf)
     t_opts = opts(train_wf, 'dataset')
-    keep = {flag_of(o): o for o in t_opts if flag_of(o) in ("--data-mixed-name", "--data-mixed-samples", "--friends")}
+    keep = {flag_of(o): o for o in t_opts if flag_of(o) in ("--data-mixed-name", "--data-mixed-samples")}
+    friends_opts = [o for o in t_opts if flag_of(o) == "--friends"]
     missing = {"--data-mixed-name", "--data-mixed-samples"} - set(keep)
     if missing:
         raise ValueError(f"train.yml has no {sorted(missing)}: not a synthetic-trained FvT")
@@ -196,8 +197,7 @@ def _synthetic_eval_wf(eval_wf: dict, train_wf: dict) -> dict:
         else:
             new.append(o)
     new += [keep["--data-mixed-name"], keep["--data-mixed-samples"]]
-    if "--friends" in keep:
-        new.append(keep["--friends"])
+    new.extend(friends_opts)
     for mod in out['dataset']:
         if isinstance(mod, dict) and 'option' in mod:
             mod['option'] = new
