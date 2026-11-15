@@ -265,8 +265,10 @@ def get_target_rebins_F_3():
                 return passing
         except Exception as e:
             print(f"[Snakemake] Error reading {closure_summary_path}: {e}")
+    # Not yet run (F_2 in the same invocation): let Snakemake's IncompleteCheckpointException
+    # through, so it re-evaluates these targets once the checkpoint is done.
+    checkpoint_output = checkpoints.evaluate_closure_candidates.get(region=closure_reg, classifier=clf).output[0]
     try:
-        checkpoint_output = checkpoints.evaluate_closure_candidates.get(region=closure_reg, classifier=clf).output[0]
         import json
         with open(checkpoint_output, "r") as f:
             data = json.load(f)
@@ -274,7 +276,7 @@ def get_target_rebins_F_3():
         if passing:
             return passing
     except Exception as e:
-        pass
+        print(f"[Snakemake] Error reading checkpoint: {e}")
     return [24]
 
 def get_combine_targets_F_3(wildcards):
