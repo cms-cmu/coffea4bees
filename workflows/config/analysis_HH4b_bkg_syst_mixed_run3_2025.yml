@@ -62,7 +62,8 @@ inputs:
   SvB: '{roast:nominal}/friend/SvB_nominal/result.json@@analysis.0.merged'
   SvB_model: '{roast:nominal}/classifier/SvB_nominal/result.json'
   analysis_config_noJCM: '{roast:nominal_nt}/{roast:nominal_nt:output_path}computeJCM/analysis_config_noJCM.yml'
-worker_memory: 8GB
+# 16 GB: the A_2 hemisphere study of one full Run 3 year OOM-killed its 8 GB workers (2024 MvD roast)
+worker_memory: 16GB
 subsamples:
   source: split
   n: 16
