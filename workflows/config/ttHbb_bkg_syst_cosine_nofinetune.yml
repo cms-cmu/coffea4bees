@@ -8,7 +8,7 @@
 # - chi2(FvT)/ndf: 0.935 (closest to 1.000)
 # - chi2(pt1)/ndf: 1.086
 # - Composite chi2/ndf: 1.222
-# Reuses pre-FvT stages A & B from ttHbb_bkg_syst_declib16nc_corner_veto on EOS
+# Reuses pre-FvT stages A & B from ttHbb_bkg_syst_declib16nc_20261113_60960f8-baa2ba4 on EOS
 # to allow direct GPU training (Stage BKG_C) without re-running CPU subsamples.
 # ==============================================================================
 
@@ -29,7 +29,7 @@ inputs:
     declib: declib16nc_run2_20261003_3ab8302-b2d2dec
     nominal: ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11
     mixeddata: mixeddata_run2_20260927_c39c264-0ce4d59
-    pre_fvt: analysis_ttHbb_bkg_syst_declib16nc_corner_veto_20261029_ee431c4-5508ecf
+    pre_fvt: ttHbb_bkg_syst_declib16nc_20261113_60960f8-baa2ba4
 
 fvt_train_workflow:
   model:
