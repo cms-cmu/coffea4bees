@@ -24,8 +24,10 @@ inputs:
   upstream_roasts:
     declib: declib16nc_run2_20261003_3ab8302-b2d2dec
     nominal: ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11
+    stat_only: ttHbb_stat_only_corner_veto_20261106_0065bef-0b95131
     mixeddata: mixeddata_run2_20260927_c39c264-0ce4d59
     pre_fvt: ttHbb_bkg_syst_declib16nc_20261113_60960f8-baa2ba4
+  nominal_hists: "{roast:stat_only}/{roast:stat_only:output_path}PhaseF_1_analysis/histAll_{roast:stat_only:label}.coffea"
 
 fvt_train_workflow:
   model:
