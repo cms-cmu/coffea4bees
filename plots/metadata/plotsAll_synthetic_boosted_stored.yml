@@ -1,0 +1,23 @@
+hists:
+  data:
+    process: data
+    tag: fourTag
+    label: Data
+    edgecolor: k
+    fillcolor: k
+
+stack: {}
+
+ratios: {}
+
+doRatio: 0
+
+regions: [SR]
+
+codes:
+  region:
+    SR: 2
+    2: SR
+  tag:
+    fourTag: 4
+    4: fourTag
