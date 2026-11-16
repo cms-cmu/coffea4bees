@@ -518,7 +518,18 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
         if isinstance(year_eras, dict) and year_eras:
             _set_setting_option(setting, "cms.CollisionData", "eras", {str(k): list(v) for k, v in year_eras.items()})
             if len(year_eras) <= 1:
-                _set_setting_option(setting, "HCR.InputBranch", "feature_ancillary", ["xW", "nSelJets", "xbW"])
+                existing_anc = None
+                for mod in setting:
+                    if isinstance(mod, dict) and mod.get("module") == "HCR.InputBranch":
+                        for item in mod.get("option") or []:
+                            if isinstance(item, dict) and "feature_ancillary" in item:
+                                existing_anc = item["feature_ancillary"]
+                                break
+                if isinstance(existing_anc, list):
+                    new_anc = [f for f in existing_anc if f != "year"]
+                else:
+                    new_anc = ["xW", "nSelJets", "xbW"]
+                _set_setting_option(setting, "HCR.InputBranch", "feature_ancillary", new_anc)
         _set_setting_option(setting, "monitor.Log", "forward_exception", False)
         _set_setting_option(setting, "monitor.Log", "exit_on_exception", True)
         _set_setting_option(setting, "monitor.Monitor", "enable", False)
@@ -530,16 +541,25 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
             twf = yaml.safe_load(f) or {}
         if isinstance(twf.get("main"), dict):
             twf["main"]["option"] = ["--device cpu", "--max-loaders 1", "--max-trainers 1"]
+        active_years = {str(k) for k in year_eras} if isinstance(year_eras, dict) and year_eras else None
         for entry in twf.get("dataset") or []:
             if not isinstance(entry, dict) or not isinstance(entry.get("option"), list):
                 continue
             opts = _replace_or_append_flag(entry["option"], "--max-workers", "--max-workers 1")
             opts = _replace_or_append_flag(opts, "--test-files", "--test-files 1")
-            if entry.get("module") == "HCR.SvB.Signal":
-                if not any(isinstance(o, str) and o.startswith("--mc-processes") for o in opts):
-                    opts.append("--mc-processes ggF")
-                if not any(isinstance(o, str) and o.startswith("--ggf-load-kl") for o in opts):
-                    opts.append("--ggf-load-kl 1.0")
+            if active_years is not None:
+                filtered_opts = []
+                for o in opts:
+                    if isinstance(o, str) and o.startswith("--JCM-weight year:"):
+                        tokens = o.split()
+                        yr = tokens[1].split(":", 1)[1] if len(tokens) > 1 and ":" in tokens[1] else ""
+                        if yr and yr not in active_years:
+                            continue
+                    filtered_opts.append(o)
+                opts = filtered_opts
+            if entry.get("module") in ("HCR.SvB.Signal", "HCR.SvB_lowpt.Signal"):
+                opts = _replace_or_append_flag(opts, "--mc-processes", "--mc-processes ggF")
+                opts = _replace_or_append_flag(opts, "--ggf-load-kl", "--ggf-load-kl 1.0")
             entry["option"] = opts
         for entry in twf.get("model") or []:
             if not isinstance(entry, dict) or not isinstance(entry.get("option"), list):
@@ -568,11 +588,9 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
                 continue
             opts = _replace_or_append_flag(entry["option"], "--max-workers", "--max-workers 1")
             opts = _replace_or_append_flag(opts, "--test-files", "--test-files 1")
-            if entry.get("module") == "HCR.SvB.Eval":
-                if not any(isinstance(o, str) and o.startswith("--mc-processes") for o in opts):
-                    opts.append("--mc-processes ttbar ggF")
-                if not any(isinstance(o, str) and o.startswith("--ggf-load-kl") for o in opts):
-                    opts.append("--ggf-load-kl 1.0")
+            if entry.get("module") in ("HCR.SvB.Eval", "HCR.SvB_lowpt.Eval"):
+                opts = _replace_or_append_flag(opts, "--mc-processes", "--mc-processes ttbar ggF")
+                opts = _replace_or_append_flag(opts, "--ggf-load-kl", "--ggf-load-kl 1.0")
             entry["option"] = opts
         for entry in ewf.get("analysis") or []:
             if isinstance(entry, dict) and isinstance(entry.get("option"), list):

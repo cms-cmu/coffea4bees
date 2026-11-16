@@ -73,6 +73,10 @@ raw_ci_datasets = (
 if isinstance(raw_ci_datasets, str):
     raw_ci_datasets = [d.strip() for d in raw_ci_datasets.split(",") if d.strip()]
 
+if is_test and config.get('dataset'):
+    _allowed_ds = set(config['dataset'] if isinstance(config['dataset'], list) else [d.strip() for d in str(config['dataset']).split(",") if d.strip()]) | set(JCM_DATASETS)
+    raw_ci_datasets = [d for d in raw_ci_datasets if d in _allowed_ds]
+
 PASS2_MC_DATASETS = list(dict.fromkeys([d for d in raw_ci_datasets if d != 'data'] + MC_DATASETS))
 
 tag = config.get('tag', "2024_v2")
@@ -96,6 +100,9 @@ def get_raw_jcm_config():
     # Nulling it here silently dropped the trigger weight for all ttbar MC (the warning only
     # shows in the dask workers) and inflated the 3b ttbar subtraction, worst for UL17/UL18.
     # FvT/SvB friends are not loaded because apply_FvT / run_SvB are False (same as Phase B.2).
+    res['config']['friends_include'] = ['trigWeight']
+    res['config'].pop('friends', None)
+    res['config'].pop('svb_binning_file', None)
 
     if config.get("test", False):
         if 'runner' not in res or not isinstance(res['runner'], dict):
@@ -105,8 +112,10 @@ def get_raw_jcm_config():
         res['runner']['run_performance'] = False
         res['runner'].setdefault('test_files', 1)
         res['runner'].setdefault('maxchunks', 2)
-        res['runner'].setdefault('chunksize', int(config.get('test_chunksize', 100000)))
+        res['runner']['chunksize'] = 100000
         res['runner'].setdefault('workers', 4)
+        if res['config'].get('top_reconstruction') == 'slow':
+            res['config']['top_reconstruction'] = 'fast'
 
     return res
 

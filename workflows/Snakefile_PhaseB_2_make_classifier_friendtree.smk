@@ -231,6 +231,8 @@ rule create_classifier_inputs_config:
             cfg['runner']['condor'] = False
             cfg['runner']['shared_dask'] = False
             cfg['runner']['run_performance'] = False
+            if cfg.get('config', {}).get('top_reconstruction') == 'slow':
+                cfg['config']['top_reconstruction'] = 'fast'
         os.makedirs(os.path.dirname(output[0]), exist_ok=True)
         with open(output[0], 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False)

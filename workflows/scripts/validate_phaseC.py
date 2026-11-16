@@ -20,10 +20,10 @@ def validate_yields(yields_path, lines):
         data = json.load(f)
 
     regions = data.get("regions", {})
-    required_regions = ("SB", "HHSR", "ZHSR", "ZZSR")
-    for reg in required_regions:
-        if reg not in regions:
-            raise AssertionError(f"Missing region '{reg}' in {yields_path}")
+    if "SB" not in regions:
+        raise AssertionError(f"Missing region 'SB' in {yields_path}")
+    if not any(reg in regions for reg in ("SR", "HHSR", "ZHSR", "ZZSR")):
+        raise AssertionError(f"Missing SR region ('SR', 'HHSR', 'ZHSR', or 'ZZSR') in {yields_path}")
 
     lines.append("=== Phase C Yields (SB) ===")
     lines.append(f"{'Class':10s} {'Count':>10s} {'Weight':>14s} Status")

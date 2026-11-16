@@ -95,11 +95,14 @@ def get_raw_analysis_config():
             else:
                 tag = config.get('tag', '2024_v2')
                 roast_id = config.get('roast_id', config.get('label', 'nominal'))
-                jcm_candidate = {
-                    yr: f"coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_{tag}_{yr}.yml"
-                    for yr in config.get('year_eras', {}).keys()
-                }
-                if all(os.path.exists(p) for p in jcm_candidate.values()):
+                b1_jcm_dir = f"{base_output.rstrip('/')}/PhaseB_1_computeJCM/JCM_{tag}"
+                handoff_jcm_dir = f"coffea4bees/metadata/weights/JCM/{roast_id}"
+                jcm_candidate = {}
+                for yr in config.get('year_eras', {}).keys():
+                    cand1 = f"{b1_jcm_dir}/jetCombinatoricModel_SB_{tag}_{yr}.yml"
+                    cand2 = f"{handoff_jcm_dir}/jetCombinatoricModel_SB_{tag}_{yr}.yml"
+                    jcm_candidate[yr] = cand1 if os.path.exists(cand1) else cand2
+                if jcm_candidate and all(os.path.exists(p) for p in jcm_candidate.values()):
                     cfg['config']['JCM_file'] = jcm_candidate
                 else:
                     raise ValueError(
@@ -141,21 +144,46 @@ rule create_analysis_config:
             # When Phase B/C/D outputs exist locally in test mode (e.g. end-to-end CI), bind them dynamically
             _roast_id = config.get('roast_id') or config.get('label') or 'TEST'
             _tag = config.get('tag', '2024_v2')
-            _local_jcm = f"coffea4bees/metadata/weights/JCM/{_roast_id}/jetCombinatoricModel_SB_{_tag}.yml"
-            if not os.path.exists(_local_jcm):
-                _local_jcm = f"{config.get('output_path', f'output/{_roast_id}/')}PhaseB_1_computeJCM/JCM_{_tag}/jetCombinatoricModel_SB_{_tag}.yml"
-            _local_fvt = f"output/{_roast_id}/friend/FvT_nominal/result.json"
-            _local_svb = f"output/{_roast_id}/friend/SvB_nominal/result.json"
-            if os.path.exists(_local_jcm) and os.path.exists(_local_fvt) and os.path.exists(_local_svb):
+            _b1_jcm_dir = f"{config.get('output_path', f'output/{_roast_id}/').rstrip('/')}/PhaseB_1_computeJCM/JCM_{_tag}"
+            _handoff_jcm_dir = f"coffea4bees/metadata/weights/JCM/{_roast_id}"
+            if config.get('per_year_jcm', False):
+                _local_jcm = {}
+                for _yr in DATA_YEARS:
+                    _cand1 = f"{_b1_jcm_dir}/jetCombinatoricModel_SB_{_tag}_{_yr}.yml"
+                    _cand2 = f"{_handoff_jcm_dir}/jetCombinatoricModel_SB_{_tag}_{_yr}.yml"
+                    _local_jcm[_yr] = _cand1 if os.path.exists(_cand1) else _cand2
+                _jcm_ok = bool(_local_jcm) and all(os.path.exists(p) for p in _local_jcm.values())
+            else:
+                _cand1 = f"{_b1_jcm_dir}/jetCombinatoricModel_SB_{_tag}.yml"
+                _cand2 = f"{_handoff_jcm_dir}/jetCombinatoricModel_SB_{_tag}.yml"
+                _local_jcm = _cand1 if os.path.exists(_cand1) else _cand2
+                _jcm_ok = os.path.exists(_local_jcm)
+
+            _fvt_label = (config.get('fvt') or {}).get('label', 'FvT_nominal')
+            _svb_label = (config.get('svb') or {}).get('label', 'SvB_nominal')
+            _svb_ma_label = (config.get('svb_ma') or {}).get('label')
+            _local_fvt = f"output/{_roast_id}/friend/{_fvt_label}/result.json"
+            _local_svb = f"output/{_roast_id}/friend/{_svb_label}/result.json"
+            _local_svb_ma = f"output/{_roast_id}/friend/{_svb_ma_label}/result.json" if _svb_ma_label else ""
+
+            if _jcm_ok and os.path.exists(_local_fvt) and (os.path.exists(_local_svb) or (_local_svb_ma and os.path.exists(_local_svb_ma))):
                 cfg.setdefault('config', {})['JCM_file'] = _local_jcm
-                cfg['config']['friends'] = {
-                    'FvT': f"{_local_fvt}@@analysis.0.merged",
-                    'SvB': f"{_local_svb}@@analysis.0.merged",
-                }
-                cfg['config']['SvB_MA'] = False
+                _friends = {'FvT': f"{_local_fvt}@@analysis.0.merged"}
+                _orig_friends = (cfg['config'].get('friends') or {})
+                _orig_inc = (cfg['config'].get('friends_include') or [])
+                if _local_svb_ma and os.path.exists(_local_svb_ma):
+                    _friends['SvB_MA'] = f"{_local_svb_ma}@@analysis.0.merged"
+                    if os.path.exists(_local_svb):
+                        _friends['SvB'] = f"{_local_svb}@@analysis.0.merged"
+                elif 'SvB_MA' in _orig_friends or 'SvB_MA' in _orig_inc:
+                    _friends['SvB_MA'] = f"{_local_svb}@@analysis.0.merged"
+                else:
+                    _friends['SvB'] = f"{_local_svb}@@analysis.0.merged"
+                cfg['config']['friends'] = _friends
+                cfg['config']['SvB_MA'] = False if 'SvB_MA' in _friends else None
+                cfg['config']['SvB'] = None
                 cfg['config']['blind'] = False
-                if not config.get('test_chunksize'):
-                    cfg['runner'].setdefault('chunksize', 100000)
+                cfg['runner']['chunksize'] = 100000
         os.makedirs(os.path.dirname(output[0]), exist_ok=True)
         with open(output[0], 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False)

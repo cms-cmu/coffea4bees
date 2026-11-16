@@ -227,7 +227,7 @@ rule compute_svb_binning:
     threads: 4
     params:
         init              = INIT,
-        classifier_inputs = lambda wildcards: str(config.get("metadata", "")).split("@@")[0],
+        classifier_inputs = lambda wildcards: str(config.get("metadata", "")).format(eos_prod=config.get("eos_prod", ""), roast_id=config.get("roast_id", "")).split("@@")[0],
         friend_result = lambda wildcards: f"{_format_binning_path(config.get('friends_dict', {}).get(wildcards.model_dir, config.get('friend', '')), wildcards)}/result.json",
         sample_pattern = lambda wildcards: str(config.get("binning_sample_pattern", "ttHbb")),
         selection = lambda wildcards: str(config.get("binning_selection", "inclusive")),
@@ -238,9 +238,9 @@ rule compute_svb_binning:
         """
         {params.init} && \
         mkdir -p $(dirname {output.json}) $(dirname {log}) && \
-        if [ -z "${{X509_USER_PROXY:-}}" ] && [ -f ./proxy/x509_proxy ]; then
-            export X509_USER_PROXY="$PWD/proxy/x509_proxy"
-        fi
+        if [ -z "${{X509_USER_PROXY:-}}" ] && [ -f ./proxy/x509_proxy ]; then \
+            export X509_USER_PROXY="$PWD/proxy/x509_proxy"; \
+        fi && \
         python3 coffea4bees/analysis/tools/rebin_SvB.py \
             --friends "{params.friend_result}" \
             --classifier-inputs "{params.classifier_inputs}" \
@@ -252,7 +252,12 @@ rule compute_svb_binning:
             --output-json {output.json} 2>&1 | tee {log}
 
         if [ -n "{params.handoff_eos}" ]; then
-            xrdcp -f -p "{output.json}" "{params.handoff_eos}/$(basename {output.json})" 2>&1 | tee -a {log} || true
+            if [[ "{params.handoff_eos}" == root://* ]]; then
+                xrdcp -f -p "{output.json}" "{params.handoff_eos}/$(basename {output.json})" 2>&1 | tee -a {log} || true
+            else
+                mkdir -p "{params.handoff_eos}"
+                cp -f "{output.json}" "{params.handoff_eos}/$(basename {output.json})" 2>&1 | tee -a {log}
+            fi
         fi
         """
 

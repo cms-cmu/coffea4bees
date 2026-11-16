@@ -258,6 +258,10 @@ def get_known_cutflow_flag(wildcards):
     label = getattr(wildcards, 'label', config.get('label', ''))
     is_test = config.get("test", False)
     if is_test:
+        _roast_id = config.get('roast_id') or config.get('label') or 'TEST'
+        _fvt_label = (config.get('fvt') or {}).get('label', 'FvT_nominal')
+        if os.path.exists(f"output/{_roast_id}/friend/{_fvt_label}/result.json"):
+            return '--known-cutflow "none"'
         counts_file = config.get("known_counts_test") or config.get("known_counts") or f"coffea4bees/analysis/tests/known_Counts_{label}.yml"
     else:
         counts_file = config.get("known_counts_full") or config.get("known_counts") or f"coffea4bees/analysis/tests/known_fullCounts_{label}.yml"

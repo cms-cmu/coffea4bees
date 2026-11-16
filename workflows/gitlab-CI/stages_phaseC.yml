@@ -19,3 +19,47 @@ phaseC_fvt_run2_coffea4bees:
       - barista_framework/output/TEST/classifier/FvT_nominal/
       - barista_framework/output/TEST/friend/FvT_nominal/
     expire_in: 1 day
+
+phaseC_fvt_lowpt_run2_coffea4bees:
+  stage: phaseC
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseB_2_classifier_inputs_lowpt_run2_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE all_PhaseC -s coffea4bees/workflows/Snakefile_PhaseC.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL18":["A"]}' --jobs 2
+    - python coffea4bees/workflows/scripts/validate_phaseC.py --yields output/lowpt_FvT/yields.json --model-result output/run2_lowpt/classifier/lowpt_FvT/result.json --friend-result output/run2_lowpt/friend/lowpt_FvT/result.json --output output/lowpt_FvT/phaseC_validation.txt
+  artifacts:
+    when: always
+    paths:
+      - output/lowpt_FvT/
+      - output/run2_lowpt/classifier/lowpt_FvT/
+      - output/run2_lowpt/friend/lowpt_FvT/
+      - barista_framework/output/lowpt_FvT/
+      - barista_framework/output/run2_lowpt/classifier/lowpt_FvT/
+      - barista_framework/output/run2_lowpt/friend/lowpt_FvT/
+    expire_in: 1 day
+
+phaseC_fvt_ttHbb_coffea4bees:
+  stage: phaseC
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseB_2_classifier_inputs_ttHbb_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE all_PhaseC -s coffea4bees/workflows/Snakefile_PhaseC.smk --configfile coffea4bees/workflows/config/ttHbb.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL18":["A"]}' --jobs 2
+    - python coffea4bees/workflows/scripts/validate_phaseC.py --yields output/FvT_ttHbb_stitched/yields.json --model-result output/ttHbb/classifier/FvT_ttHbb_stitched/result.json --friend-result output/ttHbb/friend/FvT_ttHbb_stitched/result.json --output output/FvT_ttHbb_stitched/phaseC_validation.txt
+  artifacts:
+    when: always
+    paths:
+      - output/FvT_ttHbb_stitched/
+      - output/ttHbb/classifier/FvT_ttHbb_stitched/
+      - output/ttHbb/friend/FvT_ttHbb_stitched/
+      - barista_framework/output/FvT_ttHbb_stitched/
+      - barista_framework/output/ttHbb/classifier/FvT_ttHbb_stitched/
+      - barista_framework/output/ttHbb/friend/FvT_ttHbb_stitched/
+    expire_in: 1 day

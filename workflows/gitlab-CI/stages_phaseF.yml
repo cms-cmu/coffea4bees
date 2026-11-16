@@ -18,3 +18,45 @@ phaseF_1_analysis_run2_coffea4bees:
       - output/TEST/PhaseF_1_analysis/
       - barista_framework/output/TEST/PhaseF_1_analysis/
     expire_in: 1 day
+
+phaseF_1_analysis_lowpt_run2_coffea4bees:
+  stage: phaseF
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseB_1_computeJCM_lowpt_run2_coffea4bees
+    - phaseB_2_classifier_inputs_lowpt_run2_coffea4bees
+    - phaseC_fvt_lowpt_run2_coffea4bees
+    - phaseD_svb_lowpt_run2_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE output/run2_lowpt/PhaseF_1_analysis/histAll_run2_lowpt.coffea output/run2_lowpt/PhaseF_1_analysis/cutflow_run2_lowpt.yml output/run2_lowpt/PhaseF_1_analysis/cutflow_run2_lowpt.html output/run2_lowpt/PhaseF_1_analysis/plots_run2_lowpt/plots_done.txt -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml --config test=true 'test_year_eras={"UL18":["A"]}' 'dataset=["data","GluGluToHHTo4B_cHHH1"]' --jobs 2
+    - python coffea4bees/workflows/scripts/validate_phaseF1.py --coffea output/run2_lowpt/PhaseF_1_analysis/histAll_run2_lowpt.coffea --cutflow output/run2_lowpt/PhaseF_1_analysis/cutflow_run2_lowpt.yml --output output/run2_lowpt/PhaseF_1_analysis/phaseF1_validation.txt
+  artifacts:
+    when: always
+    paths:
+      - output/run2_lowpt/PhaseF_1_analysis/
+      - barista_framework/output/run2_lowpt/PhaseF_1_analysis/
+    expire_in: 1 day
+
+phaseF_1_analysis_ttHbb_coffea4bees:
+  stage: phaseF
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseB_1_computeJCM_ttHbb_coffea4bees
+    - phaseB_2_classifier_inputs_ttHbb_coffea4bees
+    - phaseC_fvt_ttHbb_coffea4bees
+    - phaseD_svb_ttHbb_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE output/ttHbb/PhaseF_1_analysis/histAll_ttHbb.coffea output/ttHbb/PhaseF_1_analysis/cutflow_ttHbb.yml output/ttHbb/PhaseF_1_analysis/cutflow_ttHbb.html output/ttHbb/PhaseF_1_analysis/plots_ttHbb/plots_done.txt -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/ttHbb.yml --config test=true 'test_year_eras={"UL18":["A"]}' --jobs 2
+    - python coffea4bees/workflows/scripts/validate_phaseF1.py --coffea output/ttHbb/PhaseF_1_analysis/histAll_ttHbb.coffea --cutflow output/ttHbb/PhaseF_1_analysis/cutflow_ttHbb.yml --output output/ttHbb/PhaseF_1_analysis/phaseF1_validation.txt
+  artifacts:
+    when: always
+    paths:
+      - output/ttHbb/PhaseF_1_analysis/
+      - barista_framework/output/ttHbb/PhaseF_1_analysis/
+    expire_in: 1 day

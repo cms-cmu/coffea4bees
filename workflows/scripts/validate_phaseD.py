@@ -157,11 +157,37 @@ def validate_friends(friend_result_path, lines):
             )
 
 
+def validate_quantiles(quantiles_path, lines):
+    if not os.path.exists(quantiles_path):
+        raise AssertionError(f"Missing svb_quantiles.json: {quantiles_path}")
+    with open(quantiles_path) as f:
+        qdata = json.load(f)
+    if not isinstance(qdata, dict) or not qdata:
+        raise AssertionError(f"Empty or invalid quantiles JSON: {quantiles_path}")
+
+    key = "SvB_MA" if "SvB_MA" in qdata else next((k for k, v in qdata.items() if isinstance(v, list)), None)
+    if not key or not isinstance(qdata.get(key), list):
+        raise AssertionError(f"No quantile edge list found in {quantiles_path}")
+
+    edges = qdata[key]
+    if len(edges) < 2:
+        raise AssertionError(f"Expected >= 2 quantile edges under '{key}' in {quantiles_path}, got {len(edges)}")
+    if not all(_is_finite(e) and 0.0 <= float(e) <= 1.0 for e in edges):
+        raise AssertionError(f"Quantile edges out of [0, 1] or non-finite in {quantiles_path}: {edges[:5]}")
+    if not all(float(edges[i]) <= float(edges[i + 1]) for i in range(len(edges) - 1)) or float(edges[0]) >= float(edges[-1]):
+        raise AssertionError(f"Quantile edges not monotonically increasing in {quantiles_path}: {edges[:5]}")
+
+    lines.append("")
+    lines.append(f"=== Phase D Quantiles ({quantiles_path}) ===")
+    lines.append(f"  key={key}, bins={len(edges) - 1}, range=[{edges[0]}, {edges[-1]}]  PASS")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--yields", required=True, help="Path to Phase D yields.json")
     parser.add_argument("--model-result", required=True, help="Path to Phase D model/result.json")
     parser.add_argument("--friend-result", required=True, help="Path to Phase D friend/result.json")
+    parser.add_argument("--quantiles", default=None, help="Optional path to svb_quantiles.json")
     parser.add_argument("--output", default=None, help="Optional output validation summary text file")
     args = parser.parse_args()
 
@@ -169,6 +195,8 @@ def main():
     validate_yields(args.yields, lines)
     validate_models(args.model_result, lines)
     validate_friends(args.friend_result, lines)
+    if args.quantiles:
+        validate_quantiles(args.quantiles, lines)
     lines.append("")
     lines.append("Phase D validation PASSED.")
 

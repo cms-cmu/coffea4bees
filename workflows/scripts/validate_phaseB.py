@@ -6,7 +6,7 @@ import sys
 import yaml
 
 
-def _check_jcm_files(jcm_paths: list[str], cf_no: dict, failures: list[str]) -> None:
+def _check_jcm_files(jcm_paths: list[str], cf_no: dict, failures: list[str], is_lowpt: bool = False) -> None:
     """Validate fitted JCM YAML parameters and NoJCM cutflow counts."""
     print("=== Phase B.1 JCM Parameters ===")
     print(f"{'File':<35} {'Parameter':<30} {'Value':>15} {'Status':<6}")
@@ -49,13 +49,20 @@ def _check_jcm_files(jcm_paths: list[str], cf_no: dict, failures: list[str]) -> 
         for dk in data_keys:
             three_b = float(counts3.get(dk, {}).get("passPreSel", 0))
             four_b = float(counts4.get(dk, {}).get("passPreSel", 0))
-            print(f"  {dk:<25} threeTag={three_b:.2f}  fourTag={four_b:.2f}")
-            if three_b <= 0 or four_b <= 0:
-                failures.append(f"{dk} has non-positive NoJCM passPreSel counts (3b={three_b}, 4b={four_b})")
+            if is_lowpt:
+                four_jetmult = float(counts4.get(dk, {}).get("passJetMult", 0))
+                print(f"  {dk:<25} threeTag={three_b:.2f}  fourTag(passPreSel)={four_b:.2f}  passJetMult={four_jetmult:.2f}")
+                if three_b <= 0 or four_jetmult <= 0:
+                    failures.append(f"{dk} has non-positive NoJCM counts (3b_passPreSel={three_b}, passJetMult={four_jetmult})")
+            else:
+                print(f"  {dk:<25} threeTag={three_b:.2f}  fourTag={four_b:.2f}")
+                if three_b <= 0 or four_b <= 0:
+                    failures.append(f"{dk} has non-positive NoJCM passPreSel counts (3b={three_b}, 4b={four_b})")
 
 
 def _check_wjcm_and_friends(
     friends_path: str,
+    friends: dict,
     cf_no: dict,
     cf_w: dict,
     failures: list[str],
@@ -92,10 +99,7 @@ def _check_wjcm_and_friends(
                     failures.append(f"{dk} {tag}: threeTag did not change under JCM ({v_no} -> {v_w})")
             print(f"{dk:<28} {tag:<10} {v_no:>12.2f} {v_w:>12.2f} {'PASS' if ok else 'FAIL':<6}")
 
-    with open(friends_path) as f:
-        friends = json.load(f)
-
-    ci_block = friends.get("HCR_input") or (next(iter(friends.values())) if friends else None)
+    ci_block = friends.get("HCR_input") or friends.get("HCR_input_lowpt") or (next(iter(friends.values())) if friends else None)
     if not ci_block:
         failures.append(f"Empty friend metadata in {friends_path}")
         return
@@ -149,10 +153,13 @@ def main() -> int:
         cf_no = yaml.safe_load(f) or {}
     with open(args.cutflow_wjcm) as f:
         cf_w = yaml.safe_load(f) or {}
+    with open(args.friends) as f:
+        friends = json.load(f) or {}
 
+    is_lowpt = "HCR_input_lowpt" in friends
     failures: list[str] = []
-    _check_jcm_files(args.jcm, cf_no, failures)
-    _check_wjcm_and_friends(args.friends, cf_no, cf_w, failures, max_files=args.max_files)
+    _check_jcm_files(args.jcm, cf_no, failures, is_lowpt=is_lowpt)
+    _check_wjcm_and_friends(args.friends, friends, cf_no, cf_w, failures, max_files=args.max_files)
 
     if failures:
         print("\nFAILURES:")

@@ -86,11 +86,16 @@ runs:
   nominal_run3_ci.yml:
     - PhaseF_1_analysis
   lowpt_run2.yml:
+    - PhaseB
+    - PhaseB_1_computeJCM
+    - PhaseC
+    - PhaseD
     - PhaseF
     - PhaseF_1_analysis
   ttHbb.yml:
     - PhaseA
     - PhaseB
+    - PhaseB_1_computeJCM
     - PhaseC
     - PhaseD
     - PhaseF
