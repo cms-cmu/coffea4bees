@@ -11,19 +11,6 @@ analysis_cutflow_coffea4bees:
     paths:
       - output/analysis_cutflow/test_dump_cutflow.yml
 
-analysis_cutflow_Run3_2024_coffea4bees:
-  stage: cutflow
-  extends:
-    - .base_analysis_coffea4bees
-  needs:
-    - setup_coffea4bees
-    - analysis_test_Run3_2024_coffea4bees
-  script:
-    - source coffea4bees/scripts/analysis-cutflow-Run3-2024.sh --output-base /builds/$CI_PROJECT_PATH/output
-  artifacts:
-    paths:
-      - output/analysis_cutflow_Run3_2024/test_dump_cutflow.yml
-
 analysis_cutflow_Run3_2025_coffea4bees:
   stage: cutflow
   extends:
@@ -50,24 +37,6 @@ analysis_mixed_cutflow_coffea4bees:
     paths:
       - output/analysis_mixed_cutflow/test_dump_cutflow_mixed_data.yml
       - output/analysis_mixed_cutflow/test_dump_cutflow_mixed_bkg.yml
-
-check_cutflow_full_syst_ttHbb_coffea4bees:
-  stage: cutflow
-  extends:
-    - .base_analysis_coffea4bees
-  needs:
-    - setup_coffea4bees
-    - merging_files_full_syst_ttHbb_coffea4bees
-  script:
-    - source coffea4bees/scripts/analysis-full-syst-cutflow.sh --output-base output
-  artifacts:
-    paths:
-      - barista_framework/output/ttHbb_full_syst/PhaseF_1_analysis/cutflow_validation_systematics.txt
-      - barista_framework/output/ttHbb_full_syst/PhaseF_1_analysis/cutflow_systematics.html
-      - barista_framework/output/ttHbb_full_syst/PhaseF_1_analysis/cutflow_systematics.yml
-      - output/ttHbb_full_syst/PhaseF_1_analysis/cutflow_validation_systematics.txt
-      - output/ttHbb_full_syst/PhaseF_1_analysis/cutflow_systematics.html
-      - output/ttHbb_full_syst/PhaseF_1_analysis/cutflow_systematics.yml
 
 analysis_unsup_cutflow_coffea4bees:
   stage: cutflow

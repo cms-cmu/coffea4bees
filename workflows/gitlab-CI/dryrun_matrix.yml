@@ -83,8 +83,6 @@ runs:
     - PhaseF
   nominal_run3_fvt_closure_plots.yml:
     - PhaseC_4_FvT_closure
-  nominal_run3_ci.yml:
-    - PhaseF_1_analysis
   lowpt_run2.yml:
     - PhaseB
     - PhaseB_1_computeJCM

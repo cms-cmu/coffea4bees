@@ -18,16 +18,6 @@ analysis_signals_test_coffea4bees:
     paths:
       - output/analysis_signals_test/test_signal.coffea
 
-analysis_test_Run3_2024_coffea4bees:
-  stage: analysis
-  extends:
-    - .base_analysis_coffea4bees
-  script:
-    - source coffea4bees/scripts/analysis-test-Run3-2024.sh --output-base /builds/$CI_PROJECT_PATH/output
-  artifacts:
-    paths:
-      - output/analysis_test_Run3_2024/test.coffea
-
 analysis_test_Run3_2025_coffea4bees:
   stage: analysis
   extends:
@@ -101,19 +91,6 @@ analysis_test_mixed_coffea4bees:
       - output/analysis_test_mixed/testSignal_preUL.json
       - output/analysis_test_mixed/testSignal_UL.coffea
       - output/analysis_test_mixed/testSignal_UL.json
-
-analysis_full_syst_ttHbb_coffea4bees:
-  stage: analysis
-  extends:
-    - .base_analysis_coffea4bees
-  script:
-    - pixi run snakemake all_full_syst_singlefiles -s coffea4bees/workflows/Snakefile_full_syst_1_analysis.smk --configfile coffea4bees/workflows/config/ttHbb_full_syst.yml --config test=true --jobs 4
-  artifacts:
-    paths:
-      - barista_framework/output/ttHbb_full_syst/PhaseF_1_analysis/singlefiles/histAll_ttHbb_full_syst__ttHbb__*.coffea
-      - barista_framework/output/ttHbb_full_syst/PhaseF_1_analysis/analysis_config.yml
-      - output/ttHbb_full_syst/PhaseF_1_analysis/singlefiles/histAll_ttHbb_full_syst__ttHbb__*.coffea
-      - output/ttHbb_full_syst/PhaseF_1_analysis/analysis_config.yml
 
 synthetic_dataset_analyze_coffea4bees:
   stage: analysis   
