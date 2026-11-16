@@ -574,7 +574,7 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
             for item in opts:
                 if isinstance(item, dict) and "epoch" in item:
                     item["epoch"] = 1
-                    item["bs_init"] = min(int(item.get("bs_init", 1024)), 1024)
+                    item["bs_init"] = min(int(item.get("bs_init", 256)), 256)
             entry["option"] = opts
         _atomic_write_yaml(train_path, twf)
 

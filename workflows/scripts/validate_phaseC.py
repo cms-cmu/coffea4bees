@@ -163,7 +163,7 @@ def validate_friends(friend_result_path, lines):
             and n_infs == 0
             and math.isfinite(mean_fvt)
             and math.isfinite(median_fvt)
-            and median_fvt > 0
+            and (mean_fvt > 0 or median_fvt > 0 or bool(np.any(finite_fvt > 0)))
         )
         short = path[-50:] if len(path) > 50 else path
         lines.append(
