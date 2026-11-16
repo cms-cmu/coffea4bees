@@ -16,7 +16,7 @@ inputs:
     bkg_syst: "ttHbb_bkg_syst_cosine_nofinetune_20261115_60960f8-31731b5"
     nominal_svb: "ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11"
   nominal_hists: "{roast:stat_only}/output/ttHbb/PhaseF_1_analysis/histAll_ttHbb_stat_only_corner_veto.coffea"
-  bkg_syst_file: "{roast:bkg_syst}/output/ttHbb_bkg_syst_cosine_nofinetune_20261115_60960f8-31731b5/bkg_syst_F_2_run_two_stage_closure/closure_fits/ttHbb_bkg_syst_declib16nc/SvB_MA/rebin24/SR/ttHbb/hists_closure_ttHbb_bkg_syst_declib16nc_SvB_MA_ps_ttHbb_rebin24.pkl"
+  bkg_syst_file: "{roast:bkg_syst}/output/ttHbb_bkg_syst_cosine_nofinetune_20261115_60960f8-31731b5/bkg_syst_F_2_run_two_stage_closure/closure_fits/ttHbb_bkg_syst_declib16nc/SvB_MA/rebin20/SR/ttHbb/hists_closure_ttHbb_bkg_syst_declib16nc_SvB_MA_ps_ttHbb_rebin20.pkl"
   SvB_MA: "{roast:nominal_svb}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
   svb_binning: "{roast:nominal_svb}/handoff/svb_quantiles.json"
 
@@ -41,7 +41,7 @@ syst_groups:
   - "others"
   - "jes"
 
-rebin: 24
+rebin: 20
 unify_background: true
 
 channels:
@@ -51,7 +51,7 @@ channels:
     signal: "ttHbb"
     region: "SR"
     cut: "sum"
-    rebin: 24
+    rebin: 20
     stat_only: false
     metadata: "coffea4bees/stats_analysis/metadata/ttHbb.yml"
     combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
@@ -61,7 +61,7 @@ channels:
     signal: "ttHbb"
     region: "SR"
     cut: "passLeptonVeto"
-    rebin: 24
+    rebin: 20
     stat_only: false
     metadata: "coffea4bees/stats_analysis/metadata/ttHbb.yml"
     combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
@@ -71,7 +71,7 @@ channels:
     signal: "ttHbb"
     region: "SR"
     cut: "pass_nSelJets_gt6"
-    rebin: 24
+    rebin: 20
     stat_only: false
     metadata: "coffea4bees/stats_analysis/metadata/ttHbb.yml"
     combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
@@ -81,14 +81,14 @@ channels:
     signal: "ttHbb"
     region: "SR"
     cut: "pass_nSelJets_gt6_passLeptonVeto"
-    rebin: 24
+    rebin: 20
     stat_only: false
     metadata: "coffea4bees/stats_analysis/metadata/ttHbb.yml"
     combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
 
 make_combine_inputs:
   stat_only: ""
-  rebin: 24
+  rebin: 20
   unify_background: true
   metadata_template: "coffea4bees/stats_analysis/metadata/{channel}.yml"
   multijet_process: "data"
