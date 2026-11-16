@@ -1947,7 +1947,7 @@ class InputEmbed(nn.Module):
         j[:, 2:3, (1, 3, 5, 7, 9, 11)] = calcDeltaPhi(d, j[:, :, (1, 3, 5, 7, 9, 11)])
 
         d[:, 2:3, (0, 2, 4)] = calcDeltaPhi(q, d[:, :, (0, 2, 4)])
-        d[:, 2:3, (1, 3, 4)] = calcDeltaPhi(q, d[:, :, (1, 3, 5)])
+        d[:, 2:3, (1, 3, 5)] = calcDeltaPhi(q, d[:, :, (1, 3, 5)])
 
         q = torch.cat((q[:, :2, :], q[:, 3:, :]), 1)  # remove phi from quadjet features
 
