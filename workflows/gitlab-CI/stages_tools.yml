@@ -79,17 +79,3 @@ tools_perf_profile_coffea4bees:
     paths:
       - output/perf_profile/perf_profile.txt
       - output/perf_profile/perf_profile.csv
-
-merging_files_Run3_coffea4bees:
-  stage: tools
-  extends:
-    - .base_analysis_coffea4bees
-  needs:
-    - setup_coffea4bees
-    - analysis_data_Run3_coffea4bees
-    - analysis_MC_Run3_coffea4bees
-  script:
-    - pixi run snakemake output/run3_nominal/histAll_run3_nominal.coffea -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/nominal_run3_ci.yml --config test=true --jobs 4
-  artifacts:
-    paths:
-      - barista_framework/output/run3_nominal/histAll_run3_nominal.coffea

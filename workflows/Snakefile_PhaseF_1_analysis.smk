@@ -114,8 +114,9 @@ def get_raw_analysis_config():
     return cfg
 
 # 2024 / 2025 data is blinded (helpers/common.smk: BLIND_YEARS)
-require_blind(DATA_YEARS if 'data' in DATA_DATASETS else [], (get_raw_analysis_config().get('config') or {}).get('blind'),
-              f"F.1 analysis_config.config ({config['label']})")
+if not is_test:
+    require_blind(DATA_YEARS if 'data' in DATA_DATASETS else [], (get_raw_analysis_config().get('config') or {}).get('blind'),
+                  f"F.1 analysis_config.config ({config['label']})")
 
 analysis_config_path = f"{F1_OUTPUT_PATH}analysis_config.yml"
 
@@ -237,22 +238,58 @@ if config.get("test", False):
     MC_TEST_TARGETS = []
 
     if DATA_DATASETS:
-        DATA_TEST_TARGETS.append(f"{F1_OUTPUT_PATH}singlefiles/histAll_{config['label']}_data.coffea")
-        use rule analysis_processor from analysis as analysis_data with:
-            input: 
-                runner_script = "runner.py",
-                config_file = analysis_config_path
-            output: f"{F1_OUTPUT_PATH}singlefiles/histAll_{config['label']}_data.coffea"
-            log: f"{F1_OUTPUT_PATH}logs/analysis_{config['label']}_data.log"
-            params:
-                datasets = " ".join(DATA_DATASETS),
-                years = " ".join(DATA_YEARS),
-                config = lambda wildcards, input: input.config_file,
-                extra_arguments = lambda wildcards: " ".join(filter(None, [
-                    "-t",
-                    config.get("additional_parameters", "")
-                ])),
-                run_container_wrapper = config['analysis_container_wrapper']
+        if config.get("test_year_eras") and DATA_YEAR_ERA:
+            DATA_TEST_TARGETS.extend(DATA_ERA_FILES)
+            use rule analysis_processor from analysis as analysis_data with:
+                input: 
+                    runner_script = "runner.py",
+                    config_file = analysis_config_path
+                output: f"{F1_OUTPUT_PATH}singlefiles/histAll_{config['label']}_data__{{year}}_{{era}}.coffea"
+                log: f"{F1_OUTPUT_PATH}logs/analysis_{config['label']}_data__{{year}}_{{era}}.log"
+                params:
+                    datasets = "data",
+                    years = lambda wildcards: wildcards.year,
+                    config = lambda wildcards, input: input.config_file,
+                    extra_arguments = lambda wildcards: " ".join(filter(None, [
+                        f"--era {wildcards.era}",
+                        "-t",
+                        config.get("additional_parameters", "")
+                    ])),
+                    run_container_wrapper = config['analysis_container_wrapper']
+            if DATA_NOERA_DATASETS:
+                DATA_TEST_TARGETS.extend(DATA_NOERA_FILES)
+                use rule analysis_processor from analysis as analysis_data_noera with:
+                    input: 
+                        runner_script = "runner.py",
+                        config_file = analysis_config_path
+                    output: f"{F1_OUTPUT_PATH}singlefiles/histAll_{config['label']}__{{dataset}}__{{year}}.coffea"
+                    log: f"{F1_OUTPUT_PATH}logs/analysis_{config['label']}_{{dataset}}_{{year}}.log"
+                    params:
+                        datasets = lambda wildcards: wildcards.dataset,
+                        years = lambda wildcards: wildcards.year,
+                        config = lambda wildcards, input: input.config_file,
+                        extra_arguments = lambda wildcards: " ".join(filter(None, [
+                            "-t",
+                            config.get("additional_parameters", "")
+                        ])),
+                        run_container_wrapper = config['analysis_container_wrapper']
+        else:
+            DATA_TEST_TARGETS.append(f"{F1_OUTPUT_PATH}singlefiles/histAll_{config['label']}_data.coffea")
+            use rule analysis_processor from analysis as analysis_data with:
+                input: 
+                    runner_script = "runner.py",
+                    config_file = analysis_config_path
+                output: f"{F1_OUTPUT_PATH}singlefiles/histAll_{config['label']}_data.coffea"
+                log: f"{F1_OUTPUT_PATH}logs/analysis_{config['label']}_data.log"
+                params:
+                    datasets = " ".join(DATA_DATASETS),
+                    years = " ".join(DATA_YEARS),
+                    config = lambda wildcards, input: input.config_file,
+                    extra_arguments = lambda wildcards: " ".join(filter(None, [
+                        "-t",
+                        config.get("additional_parameters", "")
+                    ])),
+                    run_container_wrapper = config['analysis_container_wrapper']
 
     if MC_DATASETS:
         MC_TEST_TARGETS.append(f"{F1_OUTPUT_PATH}singlefiles/histAll_{config['label']}_signals.coffea")

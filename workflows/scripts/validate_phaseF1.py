@@ -45,10 +45,13 @@ def validate_cutflow(cutflow_path, lines):
     lines.append(f"{'Dataset':35s} {'threeTag':>12s} {'fourTag':>12s} Status")
     lines.append("-" * 68)
 
-    if "data_UL18A" not in c3:
-        raise AssertionError("Missing required dataset 'data_UL18A' in counts3")
-    if not any(ds in c3 for ds in ("GluGluToHHTo4B_cHHH1_UL18", "ttHbb_UL18")):
-        raise AssertionError("Expected at least one signal dataset ('GluGluToHHTo4B_cHHH1_UL18' or 'ttHbb_UL18') in counts3")
+    data_keys = sorted(k for k in c3 if k.startswith("data_"))
+    if not data_keys:
+        raise AssertionError("Missing required 'data_*' dataset in counts3")
+    sig_prefixes = ("GluGluToHHTo4B_", "GluGlutoHHto4B_", "ttHbb_")
+    sig_keys = sorted(k for k in c3 if k.startswith(sig_prefixes))
+    if not sig_keys:
+        raise AssertionError(f"Expected at least one signal dataset starting with {sig_prefixes} in counts3")
 
     non_ttbar_keys = sorted(k for k in (set(c3) | set(c4)) if not k.startswith("TTbar_from_d3"))
     is_lowpt = bool(non_ttbar_keys) and all((c4.get(ds) or {}).get("passPreSel", 0) == 0 for ds in non_ttbar_keys)
@@ -68,20 +71,25 @@ def validate_cutflow(cutflow_path, lines):
             if not ok:
                 raise AssertionError(f"Invalid passPreSel cutflow for {ds}: threeTag={v3}, fourTag={v4}")
 
-    tt_d3 = (c4.get("TTbar_from_d3_UL18A") or {}).get("passPreSel")
-    ok_tt_d3 = _is_finite(tt_d3) and tt_d3 > 0
-    lines.append(f"{'TTbar_from_d3_UL18A':35s} {'N/A':>12s} {tt_d3 if tt_d3 is not None else 0:12.2f} {'PASS' if ok_tt_d3 else 'FAIL'}")
-    if not ok_tt_d3:
-        raise AssertionError(f"Expected positive TTbar_from_d3_UL18A fourTag passPreSel (FvT applied), got {tt_d3}")
+    tt_d3_keys = sorted(k for k in c4 if k.startswith("TTbar_from_d3_"))
+    if not tt_d3_keys:
+        raise AssertionError("Expected at least one 'TTbar_from_d3_*' entry in counts4 (FvT applied)")
+    for tk in tt_d3_keys:
+        tt_d3 = (c4.get(tk) or {}).get("passPreSel")
+        ok_tt_d3 = _is_finite(tt_d3) and tt_d3 > 0
+        lines.append(f"{tk:35s} {'N/A':>12s} {tt_d3 if tt_d3 is not None else 0:12.2f} {'PASS' if ok_tt_d3 else 'FAIL'}")
+        if not ok_tt_d3:
+            raise AssertionError(f"Expected positive {tk} fourTag passPreSel (FvT applied), got {tt_d3}")
 
-    if "data_UL18A" in c3 and "data_UL18A" in c3_unit:
-        w3 = c3["data_UL18A"].get("passPreSel", 0)
-        u3 = c3_unit["data_UL18A"].get("passPreSel", 0)
-        if not (w3 > 0 and u3 > 0 and w3 != u3):
-            raise AssertionError(
-                f"Expected JCM*FvT weighted data_UL18A threeTag != unweighted ({w3} vs {u3})"
-            )
-        lines.append(f"  data_UL18A JCM*FvT reweight check: weighted={w3:.2f} vs raw={u3:.2f}  PASS")
+    for dk in data_keys:
+        if dk in c3 and dk in c3_unit:
+            w3 = c3[dk].get("passPreSel", 0)
+            u3 = c3_unit[dk].get("passPreSel", 0)
+            if not (w3 > 0 and u3 > 0 and w3 != u3):
+                raise AssertionError(
+                    f"Expected JCM*FvT weighted {dk} threeTag != unweighted ({w3} vs {u3})"
+                )
+            lines.append(f"  {dk} JCM*FvT reweight check: weighted={w3:.2f} vs raw={u3:.2f}  PASS")
 
 
 def main():

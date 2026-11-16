@@ -135,3 +135,95 @@ phaseB_2_classifier_inputs_ttHbb_coffea4bees:
       - barista_framework/coffea4bees/metadata/weights/JCM/ttHbb/
       - barista_framework/coffea4bees/metadata/datasets/classifier_inputs_ttHbb.json
     expire_in: 1 day
+
+phaseB_1_computeJCM_run3_coffea4bees:
+  stage: phaseB
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE output/Run3_nominal/PhaseB_1_computeJCM/JCM_Run3_v1/jetCombinatoricModel_SB_Run3_v1.yml output/Run3_nominal/PhaseB_1_computeJCM/cutflow_validation_NoJCM.txt output/Run3_nominal/PhaseB_1_computeJCM/cutflow_NoJCM.html -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/nominal_run3.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"2022_EE":["E"],"2023_BPix":["D1"],"2024":["C"]}' --jobs 4
+  artifacts:
+    when: always
+    paths:
+      - output/Run3_nominal/PhaseB_1_computeJCM/
+      - barista_framework/output/Run3_nominal/PhaseB_1_computeJCM/
+    expire_in: 1 day
+
+phaseB_2_classifier_inputs_run3_coffea4bees:
+  stage: phaseB
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseB_1_computeJCM_run3_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE all_PhaseB -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/nominal_run3.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"2022_EE":["E"],"2023_BPix":["D1"],"2024":["C"]}' --jobs 4
+    - cat output/Run3_nominal/phaseB_validation.txt
+  artifacts:
+    when: always
+    paths:
+      - output/Run3_nominal/PhaseB_1_computeJCM/
+      - output/Run3_nominal/PhaseB_2_classifier_inputs/
+      - output/Run3_nominal/handoff/
+      - output/Run3_nominal/logs/
+      - output/Run3_nominal/phaseB_validation.txt
+      - coffea4bees/metadata/weights/JCM/Run3_nominal/
+      - coffea4bees/metadata/datasets/classifier_inputs_Run3_nominal.json
+      - barista_framework/output/Run3_nominal/PhaseB_1_computeJCM/
+      - barista_framework/output/Run3_nominal/PhaseB_2_classifier_inputs/
+      - barista_framework/output/Run3_nominal/handoff/
+      - barista_framework/output/Run3_nominal/logs/
+      - barista_framework/output/Run3_nominal/phaseB_validation.txt
+      - barista_framework/coffea4bees/metadata/weights/JCM/Run3_nominal/
+      - barista_framework/coffea4bees/metadata/datasets/classifier_inputs_Run3_nominal.json
+    expire_in: 1 day
+
+phaseB_1_computeJCM_lowpt_run3_coffea4bees:
+  stage: phaseB
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE output/run3_lowpt/PhaseB_1_computeJCM/JCM_Run3_lowpt_v1/jetCombinatoricModel_SB_Run3_lowpt_v1_2022_EE.yml output/run3_lowpt/PhaseB_1_computeJCM/JCM_Run3_lowpt_v1/jetCombinatoricModel_SB_Run3_lowpt_v1_2023_BPix.yml output/run3_lowpt/PhaseB_1_computeJCM/JCM_Run3_lowpt_v1/jetCombinatoricModel_SB_Run3_lowpt_v1_2024.yml output/run3_lowpt/PhaseB_1_computeJCM/cutflow_validation_NoJCM.txt output/run3_lowpt/PhaseB_1_computeJCM/cutflow_NoJCM.html -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/lowpt_run3.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"2022_EE":["E"],"2023_BPix":["D1"],"2024":["C"]}' --jobs 4
+  artifacts:
+    when: always
+    paths:
+      - output/run3_lowpt/PhaseB_1_computeJCM/
+      - barista_framework/output/run3_lowpt/PhaseB_1_computeJCM/
+    expire_in: 1 day
+
+phaseB_2_classifier_inputs_lowpt_run3_coffea4bees:
+  stage: phaseB
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseB_1_computeJCM_lowpt_run3_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE all_PhaseB -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/lowpt_run3.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"2022_EE":["E"],"2023_BPix":["D1"],"2024":["C"]}' --jobs 4
+    - cat output/run3_lowpt/phaseB_validation.txt
+  artifacts:
+    when: always
+    paths:
+      - output/run3_lowpt/PhaseB_1_computeJCM/
+      - output/run3_lowpt/PhaseB_2_classifier_inputs/
+      - output/run3_lowpt/handoff/
+      - output/run3_lowpt/logs/
+      - output/run3_lowpt/phaseB_validation.txt
+      - coffea4bees/metadata/weights/JCM/run3_lowpt/
+      - coffea4bees/metadata/datasets/classifier_inputs_run3_lowpt.json
+      - barista_framework/output/run3_lowpt/PhaseB_1_computeJCM/
+      - barista_framework/output/run3_lowpt/PhaseB_2_classifier_inputs/
+      - barista_framework/output/run3_lowpt/handoff/
+      - barista_framework/output/run3_lowpt/logs/
+      - barista_framework/output/run3_lowpt/phaseB_validation.txt
+      - barista_framework/coffea4bees/metadata/weights/JCM/run3_lowpt/
+      - barista_framework/coffea4bees/metadata/datasets/classifier_inputs_run3_lowpt.json
+    expire_in: 1 day

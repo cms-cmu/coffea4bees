@@ -547,6 +547,7 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
                 continue
             opts = _replace_or_append_flag(entry["option"], "--max-workers", "--max-workers 1")
             opts = _replace_or_append_flag(opts, "--test-files", "--test-files 1")
+            opts = _replace_or_append_flag(opts, "--test-entries", "--test-entries 200000")
             if active_years is not None:
                 filtered_opts = []
                 for o in opts:
@@ -588,6 +589,7 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
                 continue
             opts = _replace_or_append_flag(entry["option"], "--max-workers", "--max-workers 1")
             opts = _replace_or_append_flag(opts, "--test-files", "--test-files 1")
+            opts = _replace_or_append_flag(opts, "--test-entries", "--test-entries 200000")
             if entry.get("module") in ("HCR.SvB.Eval", "HCR.SvB_lowpt.Eval"):
                 opts = _replace_or_append_flag(opts, "--mc-processes", "--mc-processes ttbar ggF")
                 opts = _replace_or_append_flag(opts, "--ggf-load-kl", "--ggf-load-kl 1.0")

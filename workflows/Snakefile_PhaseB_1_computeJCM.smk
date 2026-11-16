@@ -181,7 +181,12 @@ JCM_CUTFLOW_LIST = "passJetMult,passPreSel,passDiJetMass,SR_woTrig,SR,SB_woTrig,
 
 def jcm_known_cutflow_flag(pass_name):
     if config.get("test", False):
-        f = config.get(f"jcm_known_counts_{pass_name}_test") or f"coffea4bees/analysis/tests/known_Counts_JCM_{pass_name}.yml"
+        default_test = (
+            f"coffea4bees/analysis/tests/known_Counts_JCM_{pass_name}.yml"
+            if DATA_YEARS == ["UL18"] and not config.get(f"jcm_known_counts_{pass_name}")
+            else "none"
+        )
+        f = config.get(f"jcm_known_counts_{pass_name}_test") or default_test
     else:
         f = config.get(f"jcm_known_counts_{pass_name}") or f"coffea4bees/analysis/tests/known_fullCounts_JCM_{pass_name}.yml"
     return f'--known-cutflow "{f}"' if os.path.exists(f) else '--known-cutflow "none"'

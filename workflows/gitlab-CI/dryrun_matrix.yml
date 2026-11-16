@@ -92,6 +92,13 @@ runs:
     - PhaseD
     - PhaseF
     - PhaseF_1_analysis
+  lowpt_run3.yml:
+    - PhaseB
+    - PhaseB_1_computeJCM
+    - PhaseC
+    - PhaseD
+    - PhaseF
+    - PhaseF_1_analysis
   ttHbb.yml:
     - PhaseA
     - PhaseB
