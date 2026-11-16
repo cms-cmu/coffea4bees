@@ -155,22 +155,24 @@ def validate_friends(friend_result_path, lines):
         finite_fvt = fvt_arr[~np.isnan(fvt_arr)]
         n_finite = int(len(finite_fvt))
         mean_fvt = float(np.mean(finite_fvt)) if n_finite > 0 else float("nan")
+        median_fvt = float(np.median(finite_fvt)) if n_finite > 0 else float("nan")
         ok = (
             n_entries > 0
             and n_finite > 0
             and consistent_nans
             and n_infs == 0
             and math.isfinite(mean_fvt)
-            and mean_fvt > 0
+            and math.isfinite(median_fvt)
+            and median_fvt > 0
         )
         short = path[-50:] if len(path) > 50 else path
         lines.append(
-            f"{short:50s} {n_entries:8d} {n_finite:8d} {n_infs:5d} {mean_fvt:10.4f} {'PASS' if ok else 'FAIL'}"
+            f"{short:50s} {n_entries:8d} {n_finite:8d} {n_infs:5d} {median_fvt:10.4f} {'PASS' if ok else 'FAIL'}"
         )
         if not ok:
             raise AssertionError(
                 f"Invalid FvT friend tree {path}: entries={n_entries}, finite={n_finite}, "
-                f"consistent_nans={consistent_nans}, infs={n_infs}, mean={mean_fvt}"
+                f"consistent_nans={consistent_nans}, infs={n_infs}, mean={mean_fvt}, median={median_fvt}"
             )
 
 

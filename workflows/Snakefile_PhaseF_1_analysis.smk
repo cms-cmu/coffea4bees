@@ -183,6 +183,7 @@ rule create_analysis_config:
                 cfg['config']['SvB_MA'] = False if 'SvB_MA' in _friends else None
                 cfg['config']['SvB'] = None
                 cfg['config']['blind'] = False
+                cfg['config']['FvT_pd3_floor'] = cfg['config'].get('FvT_pd3_floor') or 0.01
                 cfg['runner']['chunksize'] = 100000
         os.makedirs(os.path.dirname(output[0]), exist_ok=True)
         with open(output[0], 'w') as f:
