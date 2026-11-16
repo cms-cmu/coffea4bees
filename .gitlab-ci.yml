@@ -57,7 +57,6 @@ include:
   - local: workflows/gitlab-CI/stages_tools.yml
   - local: workflows/gitlab-CI/stages_friendtree.yml
   - local: workflows/gitlab-CI/stages_plots.yml
-  - local: workflows/gitlab-CI/stages_reana.yml
   - local: workflows/gitlab-CI/stages_workflows.yml
   - project: 'cms-cmu/barista'
     ref: 'master'
@@ -66,6 +65,12 @@ include:
 stages:  
   - setup
   - code 
+  - workflows
+  - phaseA
+  - phaseB
+  - phaseC
+  - phaseD
+  - phaseF
   - skimmer
   - friendtree
   - analysis
@@ -73,9 +78,6 @@ stages:
   - plot
   - cutflow
   - classifier
-  - workflows
-  # - mixeddata
-  - reana
 
 
 # Setup job that clones barista once

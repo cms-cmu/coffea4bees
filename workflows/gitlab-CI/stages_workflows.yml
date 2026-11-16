@@ -19,7 +19,7 @@ workflow_config_validation_coffea4bees:
     - python coffea4bees/workflows/scripts/validate_config.py --ci
 
 phaseA_1_skimmer_run2_coffea4bees:
-  stage: skimmer
+  stage: phaseA
   extends:
     - .base_analysis_coffea4bees
   needs:
@@ -39,7 +39,7 @@ phaseA_1_skimmer_run2_coffea4bees:
     expire_in: 1 day
 
 phaseA_2_trigWeights_run2_coffea4bees:
-  stage: friendtree
+  stage: phaseA
   extends:
     - .base_analysis_coffea4bees
   needs:
@@ -58,7 +58,7 @@ phaseA_2_trigWeights_run2_coffea4bees:
     expire_in: 1 day
 
 phaseA_3_trigValidation_run2_coffea4bees:
-  stage: analysis
+  stage: phaseA
   extends:
     - .base_analysis_coffea4bees
   needs:
@@ -76,7 +76,7 @@ phaseA_3_trigValidation_run2_coffea4bees:
     expire_in: 1 day
 
 phaseB_1_computeJCM_run2_coffea4bees:
-  stage: analysis
+  stage: phaseB
   extends:
     - .base_analysis_coffea4bees
   needs:
@@ -91,7 +91,7 @@ phaseB_1_computeJCM_run2_coffea4bees:
     expire_in: 1 day
 
 phaseB_2_classifier_inputs_run2_coffea4bees:
-  stage: classifier
+  stage: phaseB
   extends:
     - .base_analysis_coffea4bees
   needs:
@@ -116,7 +116,7 @@ phaseB_2_classifier_inputs_run2_coffea4bees:
     expire_in: 1 day
 
 phaseC_fvt_run2_coffea4bees:
-  stage: classifier
+  stage: phaseC
   extends:
     - .base_analysis_coffea4bees
   needs:
@@ -134,7 +134,7 @@ phaseC_fvt_run2_coffea4bees:
     expire_in: 1 day
 
 phaseD_svb_run2_coffea4bees:
-  stage: classifier
+  stage: phaseD
   extends:
     - .base_analysis_coffea4bees
   needs:
@@ -153,7 +153,7 @@ phaseD_svb_run2_coffea4bees:
     expire_in: 1 day
 
 phaseF_1_analysis_run2_coffea4bees:
-  stage: workflows
+  stage: phaseF
   extends:
     - .base_analysis_coffea4bees
   needs:

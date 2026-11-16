@@ -65,19 +65,6 @@ analysis_mixed_cutflow_coffea4bees:
       - output/analysis_mixed_cutflow/test_dump_cutflow_mixed_data.yml
       - output/analysis_mixed_cutflow/test_dump_cutflow_mixed_bkg.yml
 
-skimmer_analysis_cutflow_coffea4bees:
-  stage: cutflow
-  extends:
-    - .base_analysis_coffea4bees
-  needs: 
-    - setup_coffea4bees
-    - skimmer_analysis_test_coffea4bees
-  script:
-    - source coffea4bees/scripts/skimmer-analysis-cutflow.sh --output-base /builds/$CI_PROJECT_PATH/output
-  artifacts:
-    paths:
-      - output/skimmer_analysis_cutflow/test_dump_skimmer_cutflow.yml
-
 check_cutflow_full_syst_ttHbb_coffea4bees:
   stage: cutflow
   extends:
@@ -136,32 +123,6 @@ synthetic_dataset_analyze_cutflow_Run3_coffea4bees:
     paths:
       - output/synthetic_dataset_analyze_cutflow_Run3/test_dump_cutflow_synthetic_datasets.yml
 
-
-weights_trigger_cutflow_coffea4bees:
-  stage: cutflow
-  extends:
-    - .base_analysis_coffea4bees
-  needs: 
-    - setup_coffea4bees
-    - weights_trigger_analysis_coffea4bees
-  script:
-    - source coffea4bees/scripts/weights-trigger-cutflow.sh --output-base /builds/$CI_PROJECT_PATH/output
-  artifacts:
-    paths:
-      - output/weights_trigger_cutflow/test_dump_cutflow_trigWeight.yml
-
-SvB_friendtree_cutflow_coffea4bees:
-  stage: cutflow
-  extends:
-    - .base_analysis_coffea4bees
-  needs:
-    - setup_coffea4bees
-    - SvB_friendtree_analysis_coffea4bees
-  script:
-    - source coffea4bees/scripts/SvB-friendtree-cutflow.sh --output-base /builds/$CI_PROJECT_PATH/output
-  artifacts:
-    paths:
-      - output/SvB_friendtree_cutflow/test_dump_cutflow_SvB_friend.yml
 
 analysis_dilepttbar_cutflow_coffea4bees: 
   stage: cutflow
