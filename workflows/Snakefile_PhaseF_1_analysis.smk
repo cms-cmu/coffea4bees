@@ -60,6 +60,9 @@ SYNTHETIC_DATA_PREFIXES = ('mixeddata', 'synthetic_data', 'datamixed', 'data_3b_
 DATA_DATASETS = [d for d in config['dataset'] if d == 'data' or any(d.startswith(p) for p in SYNTHETIC_DATA_PREFIXES)]
 MC_DATASETS = [d for d in config['dataset'] if d not in DATA_DATASETS]
 
+if config.get('test_year_eras') and isinstance(config['test_year_eras'], dict):
+    config['year_eras'] = config['test_year_eras']
+
 DATA_YEARS = [str(y) for y in config['year_eras'].keys()]
 DATA_YEAR_ERA = [(str(yr), era) for yr, eras in config['year_eras'].items() for era in eras] if 'data' in DATA_DATASETS else []
 DATA_ERA_FILES = [f"{F1_OUTPUT_PATH}singlefiles/histAll_{config['label']}_data__{yr}_{era}.coffea" for yr, era in DATA_YEAR_ERA]

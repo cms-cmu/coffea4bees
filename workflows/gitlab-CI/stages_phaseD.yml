@@ -8,7 +8,7 @@ phaseD_svb_run2_coffea4bees:
     - phaseC_fvt_run2_coffea4bees
   script:
     - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
-    - $SNAKEMAKE all_PhaseD -s coffea4bees/workflows/Snakefile_PhaseD.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true 'year_eras={"UL18":["A"]}' --jobs 2
+    - $SNAKEMAKE all_PhaseD -s coffea4bees/workflows/Snakefile_PhaseD.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL18":["A"]}' --jobs 2
     - python coffea4bees/workflows/scripts/validate_phaseD.py --yields output/SvB_nominal/yields.json --model-result output/TEST/classifier/SvB_nominal/result.json --friend-result output/TEST/friend/SvB_nominal/result.json --output output/SvB_nominal/phaseD_validation.txt
   artifacts:
     when: always

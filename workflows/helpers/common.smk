@@ -54,15 +54,12 @@ def _user_profile():
     lpc_user = pick('lpc_user', _login)
     cern_user = pick('cern_user', os.environ.get("CERN_USER") or _login)
     sharded = cern_user if "/" in cern_user else f"{cern_user[0]}/{cern_user}"
-    _is_test = str(config.get('test', False)).lower() in ('true', '1', 'yes')
-    _default_eos = "output" if _is_test else f"root://cmseos.fnal.gov//store/user/{lpc_user}/HH4b_prod"
-    _default_web = "output" if _is_test else f"root://eosuser.cern.ch//eos/user/{sharded}/www/HH4b/prod"
     return {
         'lpc_user': lpc_user,
         'cern_user': cern_user,
         # xrootd needs root://host//path, hence the doubled slash before an absolute path
-        'eos_prod': pick('eos_prod', _default_eos),
-        'web_prod': pick('web_prod', _default_web),
+        'eos_prod': pick('eos_prod', f"root://cmseos.fnal.gov//store/user/{lpc_user}/HH4b_prod"),
+        'web_prod': pick('web_prod', f"root://eosuser.cern.ch//eos/user/{sharded}/www/HH4b/prod"),
     }
 
 
@@ -219,6 +216,22 @@ def check_handoff_refs(config_dict):
 check_handoff_refs(config)
 
 
+def _atomic_write_yaml(path, data, sort_keys=False):
+    """Write YAML atomically via temp file + os.replace to prevent parallel dry-run file races."""
+    import tempfile
+    d = os.path.dirname(path) or "."
+    os.makedirs(d, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(prefix=".tmp_", suffix=".yml", dir=d)
+    try:
+        with os.fdopen(fd, "w") as f:
+            yaml.dump(data, f, default_flow_style=False, sort_keys=sort_keys)
+        os.replace(tmp, path)
+    except Exception:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+        raise
+
+
 def write_workflow_overrides(wfs_base, overrides, out_dir, log=None, inserts=None, modules=None):
     """Copy the classifier workflow templates in `wfs_base` (train.yml, evaluate.yml, ...) to
     `out_dir`, replacing command-line options by flag, and inserting new ones.
@@ -339,8 +352,7 @@ def write_workflow_overrides(wfs_base, overrides, out_dir, log=None, inserts=Non
                         inserted[(anchor_owner[a], a)] += 1
                     new_opts.append(opt)
                 mod["option"] = new_opts
-        with open(dst, "w") as f:
-            yaml.dump(wf, f, default_flow_style=False, sort_keys=False)
+        _atomic_write_yaml(dst, wf)
 
     def name(fk):
         f, k = fk
@@ -510,8 +522,7 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
         _set_setting_option(setting, "monitor.Log", "forward_exception", False)
         _set_setting_option(setting, "monitor.Log", "exit_on_exception", True)
         _set_setting_option(setting, "monitor.Monitor", "enable", False)
-        with open(common_path, "w") as f:
-            yaml.dump(cdata, f, default_flow_style=False, sort_keys=False)
+        _atomic_write_yaml(common_path, cdata)
 
     train_path = os.path.join(wfs_dir, "train.yml")
     if os.path.exists(train_path):
@@ -544,8 +555,7 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
                     item["epoch"] = 1
                     item["bs_init"] = min(int(item.get("bs_init", 1024)), 1024)
             entry["option"] = opts
-        with open(train_path, "w") as f:
-            yaml.dump(twf, f, default_flow_style=False, sort_keys=False)
+        _atomic_write_yaml(train_path, twf)
 
     eval_path = os.path.join(wfs_dir, "evaluate.yml")
     if os.path.exists(eval_path):
@@ -573,5 +583,4 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
         for entry in ewf.get("setting") or []:
             if isinstance(entry, dict) and entry.get("module") == "ml.DataLoader":
                 entry["option"] = [{"num_workers": 0}]
-        with open(eval_path, "w") as f:
-            yaml.dump(ewf, f, default_flow_style=False, sort_keys=False)
+        _atomic_write_yaml(eval_path, ewf)

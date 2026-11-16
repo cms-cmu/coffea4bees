@@ -10,7 +10,7 @@ phaseF_1_analysis_run2_coffea4bees:
     - phaseD_svb_run2_coffea4bees
   script:
     - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
-    - $SNAKEMAKE output/TEST/PhaseF_1_analysis/histAll_TEST.coffea output/TEST/PhaseF_1_analysis/cutflow_TEST.yml output/TEST/PhaseF_1_analysis/cutflow_TEST.html output/TEST/PhaseF_1_analysis/plots_TEST/plots_done.txt -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true 'year_eras={"UL18":["A"]}' 'dataset=["data","GluGluToHHTo4B_cHHH1","TTTo2L2Nu","TTToSemiLeptonic","TTToHadronic"]' --jobs 2
+    - $SNAKEMAKE output/TEST/PhaseF_1_analysis/histAll_TEST.coffea output/TEST/PhaseF_1_analysis/cutflow_TEST.yml output/TEST/PhaseF_1_analysis/cutflow_TEST.html output/TEST/PhaseF_1_analysis/plots_TEST/plots_done.txt -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true 'test_year_eras={"UL18":["A"]}' 'dataset=["data","GluGluToHHTo4B_cHHH1","TTTo2L2Nu","TTToSemiLeptonic","TTToHadronic"]' --jobs 2
     - python coffea4bees/workflows/scripts/validate_phaseF1.py --coffea output/TEST/PhaseF_1_analysis/histAll_TEST.coffea --cutflow output/TEST/PhaseF_1_analysis/cutflow_TEST.yml --output output/TEST/PhaseF_1_analysis/phaseF1_validation.txt
   artifacts:
     when: always

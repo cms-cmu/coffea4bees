@@ -10,6 +10,8 @@ is_test = config.get('test', False)
 if isinstance(is_test, str):
     is_test = is_test.lower() in ("true", "1", "yes")
 config['test'] = is_test
+if config.get('test_year_eras') and isinstance(config['test_year_eras'], dict):
+    config['year_eras'] = config['test_year_eras']
 
 fvt_cfg = resolve_config_section(config, primary_key='fvt', fallback_keys=['fvt_classifier', 'classifier'])
 for k, v in fvt_cfg.items():
@@ -40,19 +42,16 @@ os.makedirs(output_dir, exist_ok=True)
 
 if 'classifier_setting' in config:
     common_path = f"{output_dir}/common.yml"
-    with open(common_path, 'w') as f:
-        yaml.dump({'setting': config['classifier_setting']}, f, default_flow_style=False)
+    _atomic_write_yaml(common_path, {'setting': config['classifier_setting']})
     config['common'] = common_path
 
 if 'train_workflow' in config or 'eval_workflow' in config:
     wfs_dir = f"{output_dir}/wfs"
     os.makedirs(wfs_dir, exist_ok=True)
     if 'train_workflow' in config:
-        with open(f"{wfs_dir}/train.yml", 'w') as f:
-            yaml.dump(config['train_workflow'], f, default_flow_style=False)
+        _atomic_write_yaml(f"{wfs_dir}/train.yml", config['train_workflow'])
     if 'eval_workflow' in config:
-        with open(f"{wfs_dir}/evaluate.yml", 'w') as f:
-            yaml.dump(config['eval_workflow'], f, default_flow_style=False)
+        _atomic_write_yaml(f"{wfs_dir}/evaluate.yml", config['eval_workflow'])
     config['wfs_base'] = wfs_dir
 elif config.get('workflow_overrides') or config.get('workflow_inserts'):
     # Keep the checked-in templates, override options by flag (e.g. the roast's JCM / manifest)

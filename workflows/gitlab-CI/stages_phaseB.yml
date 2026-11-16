@@ -6,7 +6,7 @@ phaseB_1_computeJCM_run2_coffea4bees:
     - setup_coffea4bees
   script:
     - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
-    - $SNAKEMAKE output/TEST/PhaseB_1_computeJCM/JCM_2024_v2/jetCombinatoricModel_SB_2024_v2.yml output/TEST/PhaseB_1_computeJCM/cutflow_validation_NoJCM.txt output/TEST/PhaseB_1_computeJCM/cutflow_NoJCM.html -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true 'year_eras={"UL18":["A"]}' 'dataset=["GluGluToHHTo4B_cHHH1"]' --jobs 4
+    - $SNAKEMAKE output/TEST/PhaseB_1_computeJCM/JCM_2024_v2/jetCombinatoricModel_SB_2024_v2.yml output/TEST/PhaseB_1_computeJCM/cutflow_validation_NoJCM.txt output/TEST/PhaseB_1_computeJCM/cutflow_NoJCM.html -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL18":["A"]}' 'dataset=["GluGluToHHTo4B_cHHH1"]' --jobs 4
   artifacts:
     when: always
     paths:
@@ -23,7 +23,7 @@ phaseB_2_classifier_inputs_run2_coffea4bees:
     - phaseB_1_computeJCM_run2_coffea4bees
   script:
     - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
-    - $SNAKEMAKE all_PhaseB -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true 'year_eras={"UL18":["A"]}' 'dataset=["GluGluToHHTo4B_cHHH1"]' --jobs 4
+    - $SNAKEMAKE all_PhaseB -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL18":["A"]}' 'dataset=["GluGluToHHTo4B_cHHH1"]' --jobs 4
     - cat output/TEST/phaseB_validation.txt
   artifacts:
     when: always

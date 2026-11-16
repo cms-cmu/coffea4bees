@@ -43,6 +43,9 @@ if config.get('test', False) or os.getenv("CI"):
 else:
     config.setdefault('additional_parameters', "--shared-dask --condor --run-performance")
 
+if config.get('test_year_eras') and isinstance(config['test_year_eras'], dict):
+    config['year_eras'] = config['test_year_eras']
+
 years = list(config['year_eras'].keys()) if 'year_eras' in config and isinstance(config['year_eras'], dict) else config.get('years', config.get('year', ['UL18']))
 if isinstance(years, str):
     years = [years]
