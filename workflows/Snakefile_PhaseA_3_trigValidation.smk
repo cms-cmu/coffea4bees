@@ -53,6 +53,10 @@ def _tv_config(variant):
     runner.setdefault('write_coffea_output', True)
     if config.get('test', False):
         runner.update({'condor': False, 'shared_dask': False, 'run_performance': False})
+        runner.setdefault('test_files', 1)
+        runner.setdefault('maxchunks', 2)
+        runner.setdefault('chunksize', 100000)
+        runner.setdefault('workers', 4)
     c = {
         'apply_FvT': False,
         'apply_JCM': False,

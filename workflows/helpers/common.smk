@@ -54,12 +54,15 @@ def _user_profile():
     lpc_user = pick('lpc_user', _login)
     cern_user = pick('cern_user', os.environ.get("CERN_USER") or _login)
     sharded = cern_user if "/" in cern_user else f"{cern_user[0]}/{cern_user}"
+    _is_test = str(config.get('test', False)).lower() in ('true', '1', 'yes')
+    _default_eos = "output" if _is_test else f"root://cmseos.fnal.gov//store/user/{lpc_user}/HH4b_prod"
+    _default_web = "output" if _is_test else f"root://eosuser.cern.ch//eos/user/{sharded}/www/HH4b/prod"
     return {
         'lpc_user': lpc_user,
         'cern_user': cern_user,
         # xrootd needs root://host//path, hence the doubled slash before an absolute path
-        'eos_prod': pick('eos_prod', f"root://cmseos.fnal.gov//store/user/{lpc_user}/HH4b_prod"),
-        'web_prod': pick('web_prod', f"root://eosuser.cern.ch//eos/user/{sharded}/www/HH4b/prod"),
+        'eos_prod': pick('eos_prod', _default_eos),
+        'web_prod': pick('web_prod', _default_web),
     }
 
 
@@ -90,7 +93,8 @@ def _upstream_base(rid, own_eos_prod):
     print(f"WARNING: no usable manifest for upstream roast {rid} (looked in {manifest}); "
           f"assuming it lives under your own area. Commit roasts/{rid}/roast.json so this "
           f"resolves for everyone.")
-    return f"{own_eos_prod.rstrip('/')}/{rid}"
+    base_root = own_eos_prod if str(own_eos_prod).startswith("root://") else "root://cmseos.fnal.gov//store/user/algomez/HH4b_prod"
+    return f"{base_root.rstrip('/')}/{rid}"
 
 
 def _upstream_config_value(rid, key):
@@ -468,3 +472,106 @@ def require_blind(years, blind, what):
     if years and blind is not True and not config.get('allow_unblinded_data', False):
         raise ValueError(f"{what}: data years {years} must be blinded -- set blind: true (or "
                          f"allow_unblinded_data: true at the top level to opt out deliberately)")
+
+
+def _set_setting_option(setting_list, module_name, key, value):
+    """Set `key: value` inside a classifier setting module's option list."""
+    for mod in setting_list:
+        if isinstance(mod, dict) and mod.get("module") == module_name:
+            opts = mod.setdefault("option", [])
+            for item in opts:
+                if isinstance(item, dict) and key in item:
+                    item[key] = value
+                    return
+            opts.append({key: value})
+            return
+    setting_list.append({"module": module_name, "option": [{key: value}]})
+
+
+def _replace_or_append_flag(opts, prefix, replacement):
+    """Filter out flags matching `prefix` and append `replacement`."""
+    filtered = [o for o in opts if not (isinstance(o, str) and (o == prefix or o.startswith(prefix + " ")))]
+    filtered.append(replacement)
+    return filtered
+
+
+def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
+    """Normalize classifier common.yml, train.yml, and evaluate.yml for fast CPU CI test=true runs."""
+    if common_path and os.path.exists(common_path):
+        with open(common_path) as f:
+            cdata = yaml.safe_load(f) or {}
+        setting = cdata.setdefault("setting", [])
+        _set_setting_option(setting, "ml.DataLoader", "num_workers", 0)
+        _set_setting_option(setting, "ROOT", "friend_allow_missing", True)
+        if isinstance(year_eras, dict) and year_eras:
+            _set_setting_option(setting, "cms.CollisionData", "eras", {str(k): list(v) for k, v in year_eras.items()})
+            if len(year_eras) <= 1:
+                _set_setting_option(setting, "HCR.InputBranch", "feature_ancillary", ["xW", "nSelJets", "xbW"])
+        _set_setting_option(setting, "monitor.Log", "forward_exception", False)
+        _set_setting_option(setting, "monitor.Log", "exit_on_exception", True)
+        _set_setting_option(setting, "monitor.Monitor", "enable", False)
+        with open(common_path, "w") as f:
+            yaml.dump(cdata, f, default_flow_style=False, sort_keys=False)
+
+    train_path = os.path.join(wfs_dir, "train.yml")
+    if os.path.exists(train_path):
+        with open(train_path) as f:
+            twf = yaml.safe_load(f) or {}
+        if isinstance(twf.get("main"), dict):
+            twf["main"]["option"] = ["--device cpu", "--max-loaders 1", "--max-trainers 1"]
+        for entry in twf.get("dataset") or []:
+            if not isinstance(entry, dict) or not isinstance(entry.get("option"), list):
+                continue
+            opts = _replace_or_append_flag(entry["option"], "--max-workers", "--max-workers 1")
+            opts = _replace_or_append_flag(opts, "--test-files", "--test-files 1")
+            if entry.get("module") == "HCR.SvB.Signal":
+                if not any(isinstance(o, str) and o.startswith("--mc-processes") for o in opts):
+                    opts.append("--mc-processes ggF")
+                if not any(isinstance(o, str) and o.startswith("--ggf-load-kl") for o in opts):
+                    opts.append("--ggf-load-kl 1.0")
+            entry["option"] = opts
+        for entry in twf.get("model") or []:
+            if not isinstance(entry, dict) or not isinstance(entry.get("option"), list):
+                continue
+            opts = list(entry["option"])
+            has_kfolds = any(isinstance(o, str) and (o == "--kfolds" or o.startswith("--kfolds ")) for o in opts)
+            if has_kfolds:
+                opts = ["--kfolds 2" if (isinstance(o, str) and (o == "--kfolds" or o.startswith("--kfolds "))) else o for o in opts]
+            else:
+                opts.insert(0, "--kfolds 2")
+            for item in opts:
+                if isinstance(item, dict) and "epoch" in item:
+                    item["epoch"] = 1
+                    item["bs_init"] = min(int(item.get("bs_init", 1024)), 1024)
+            entry["option"] = opts
+        with open(train_path, "w") as f:
+            yaml.dump(twf, f, default_flow_style=False, sort_keys=False)
+
+    eval_path = os.path.join(wfs_dir, "evaluate.yml")
+    if os.path.exists(eval_path):
+        with open(eval_path) as f:
+            ewf = yaml.safe_load(f) or {}
+        if isinstance(ewf.get("main"), dict):
+            ewf["main"]["option"] = ["--max-evaluators 1", "--device cpu"]
+        for entry in ewf.get("dataset") or []:
+            if not isinstance(entry, dict) or not isinstance(entry.get("option"), list):
+                continue
+            opts = _replace_or_append_flag(entry["option"], "--max-workers", "--max-workers 1")
+            opts = _replace_or_append_flag(opts, "--test-files", "--test-files 1")
+            if entry.get("module") == "HCR.SvB.Eval":
+                if not any(isinstance(o, str) and o.startswith("--mc-processes") for o in opts):
+                    opts.append("--mc-processes ttbar ggF")
+                if not any(isinstance(o, str) and o.startswith("--ggf-load-kl") for o in opts):
+                    opts.append("--ggf-load-kl 1.0")
+            entry["option"] = opts
+        for entry in ewf.get("analysis") or []:
+            if isinstance(entry, dict) and isinstance(entry.get("option"), list):
+                entry["option"] = [
+                    "--workers 1" if (isinstance(o, str) and (o == "--workers" or o.startswith("--workers "))) else o
+                    for o in entry["option"]
+                ]
+        for entry in ewf.get("setting") or []:
+            if isinstance(entry, dict) and entry.get("module") == "ml.DataLoader":
+                entry["option"] = [{"num_workers": 0}]
+        with open(eval_path, "w") as f:
+            yaml.dump(ewf, f, default_flow_style=False, sort_keys=False)

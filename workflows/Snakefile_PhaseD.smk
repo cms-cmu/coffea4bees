@@ -4,6 +4,11 @@ import yaml
 
 include: "helpers/common.smk"
 
+is_test = config.get('test', False)
+if isinstance(is_test, str):
+    is_test = is_test.lower() in ("true", "1", "yes")
+config['test'] = is_test
+
 # Check if multi-classifier mode is enabled:
 # e.g. both 'svb' and 'svb_ma' are configured, or 'classifiers' list is provided
 svb_models = []
@@ -30,6 +35,9 @@ if len(svb_models) <= 1:
     config.setdefault('plot_inputs', True)
     config.setdefault('plot_weights', True)
     config.setdefault('evaluate', True)
+    if is_test:
+        config['plot_inputs'] = False
+        config['plot_weights'] = False
 
     config.setdefault('model', f"{config['eos_base']}/classifier/{config['label']}")
     config.setdefault('friend', f"{config['eos_base']}/friend/{config['label']}")
@@ -62,6 +70,17 @@ if len(svb_models) <= 1:
         config['wfs_base'] = write_workflow_overrides(config['wfs_base'], config.get('workflow_overrides'),
                                                       f"{output_dir}/wfs", log=print,
                                                       inserts=config.get('workflow_inserts'))
+    elif is_test:
+        wfs_dir = f"{output_dir}/wfs"
+        os.makedirs(wfs_dir, exist_ok=True)
+        for fname in ("train.yml", "evaluate.yml"):
+            src = os.path.join(config['wfs_base'], fname)
+            if os.path.exists(src):
+                shutil.copyfile(src, os.path.join(wfs_dir, fname))
+        config['wfs_base'] = wfs_dir
+
+    if is_test:
+        apply_test_classifier_settings(config['wfs_base'], config.get('common'), config.get('year_eras'))
 
     include: "../../src/classifier/workflow/Snakefile"
 
@@ -90,8 +109,8 @@ else:
         m_label = mcfg.get('label', key)
         m_output_dir = mcfg.get('output_dir', f"output/{m_label}/").rstrip('/')
         m_wfs_base = mcfg.get('wfs_base', "coffea4bees/classifier/config/workflows/HH4b_2024_v2/SvB")
-        m_plot_inputs = mcfg.get('plot_inputs', False)
-        m_plot_weights = mcfg.get('plot_weights', False)
+        m_plot_inputs = False if is_test else mcfg.get('plot_inputs', False)
+        m_plot_weights = False if is_test else mcfg.get('plot_weights', False)
         m_evaluate = mcfg.get('evaluate', True)
 
         m_model = mcfg.get('model', f"{m_eos_base}/classifier/{m_label}")
@@ -135,6 +154,13 @@ else:
                     shutil.copyfile(f"{m_wfs_base}/train.yml", f"{wfs_dir}/train.yml")
                 if os.path.exists(f"{m_wfs_base}/evaluate.yml"):
                     shutil.copyfile(f"{m_wfs_base}/evaluate.yml", f"{wfs_dir}/evaluate.yml")
+
+        if is_test:
+            apply_test_classifier_settings(
+                wfs_dir,
+                f"{m_output_dir}/common.yml" if 'classifier_setting' in config else None,
+                config.get('year_eras'),
+            )
 
         train_templates[m_output_dir] = m_train_template
         eval_templates[m_output_dir] = m_eval_template

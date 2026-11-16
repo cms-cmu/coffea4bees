@@ -135,6 +135,24 @@ rule create_analysis_config:
             # Test mode runs maxchunks=1, so chunksize fixes the event count the known counts were made with
             if config.get('test_chunksize'):
                 cfg['runner']['chunksize'] = int(config['test_chunksize'])
+            # When Phase B/C/D outputs exist locally in test mode (e.g. end-to-end CI), bind them dynamically
+            _roast_id = config.get('roast_id') or config.get('label') or 'TEST'
+            _tag = config.get('tag', '2024_v2')
+            _local_jcm = f"coffea4bees/metadata/weights/JCM/{_roast_id}/jetCombinatoricModel_SB_{_tag}.yml"
+            if not os.path.exists(_local_jcm):
+                _local_jcm = f"{config.get('output_path', f'output/{_roast_id}/')}PhaseB_1_computeJCM/JCM_{_tag}/jetCombinatoricModel_SB_{_tag}.yml"
+            _local_fvt = f"output/{_roast_id}/friend/FvT_nominal/result.json"
+            _local_svb = f"output/{_roast_id}/friend/SvB_nominal/result.json"
+            if os.path.exists(_local_jcm) and os.path.exists(_local_fvt) and os.path.exists(_local_svb):
+                cfg.setdefault('config', {})['JCM_file'] = _local_jcm
+                cfg['config']['friends'] = {
+                    'FvT': f"{_local_fvt}@@analysis.0.merged",
+                    'SvB': f"{_local_svb}@@analysis.0.merged",
+                }
+                cfg['config']['SvB_MA'] = False
+                cfg['config']['blind'] = False
+                if not config.get('test_chunksize'):
+                    cfg['runner'].setdefault('chunksize', 100000)
         os.makedirs(os.path.dirname(output[0]), exist_ok=True)
         with open(output[0], 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False)

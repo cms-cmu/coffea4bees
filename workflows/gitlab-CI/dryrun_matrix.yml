@@ -17,7 +17,10 @@
 runs:
   nominal_run2.yml:
     - PhaseA
+    - PhaseA_1_skimmer
+    - PhaseA_2_trigWeights
     - PhaseB
+    - PhaseB_1_computeJCM
     - PhaseC
     - {snakefile: PhaseC_4_FvT_closure, upstream: ["computeJCM/singlefiles/", "metadata/weights/JCM/"]}
     - PhaseD
@@ -80,15 +83,6 @@ runs:
     - PhaseF
   nominal_run3_fvt_closure_plots.yml:
     - PhaseC_4_FvT_closure
-  nominal_run2_ci.yml:
-    - PhaseA
-    - PhaseA_1_skimmer
-    - PhaseA_2_trigWeights
-    - PhaseB
-    - PhaseB_1_computeJCM
-    - PhaseC
-    - PhaseD
-    - {snakefile: PhaseF_1_analysis, upstream: ["PhaseB_1_computeJCM/", "PhaseC_FvT/", "PhaseD_SvB/", "PhaseC_4_FvT_closure/"]}
   nominal_run3_ci.yml:
     - PhaseF_1_analysis
   lowpt_run2.yml:

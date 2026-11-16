@@ -6,6 +6,11 @@ import yaml
 
 include: "helpers/common.smk"
 
+is_test = config.get('test', False)
+if isinstance(is_test, str):
+    is_test = is_test.lower() in ("true", "1", "yes")
+config['test'] = is_test
+
 fvt_cfg = resolve_config_section(config, primary_key='fvt', fallback_keys=['fvt_classifier', 'classifier'])
 for k, v in fvt_cfg.items():
     config[k] = v
@@ -19,6 +24,10 @@ config.setdefault('output_dir', f"output/{config['label']}/")
 config.setdefault('plot_inputs', True)
 config.setdefault('plot_weights', True)
 config.setdefault('evaluate', True)
+if is_test:
+    config['plot_inputs'] = False
+    config['plot_weights'] = False
+    config.setdefault('fvt_max_chi2_ndf', 1000.0)
 
 config.setdefault('model', f"{config['eos_base']}/classifier/{config['label']}")
 config.setdefault('friend', f"{config['eos_base']}/friend/{config['label']}")
@@ -51,6 +60,18 @@ elif config.get('workflow_overrides') or config.get('workflow_inserts'):
     config['wfs_base'] = write_workflow_overrides(config['wfs_base'], config.get('workflow_overrides'),
                                                   f"{output_dir}/wfs", log=print,
                                                   inserts=config.get('workflow_inserts'))
+elif is_test:
+    import shutil
+    wfs_dir = f"{output_dir}/wfs"
+    os.makedirs(wfs_dir, exist_ok=True)
+    for fname in ("train.yml", "evaluate.yml"):
+        src = os.path.join(config['wfs_base'], fname)
+        if os.path.exists(src):
+            shutil.copyfile(src, os.path.join(wfs_dir, fname))
+    config['wfs_base'] = wfs_dir
+
+if is_test:
+    apply_test_classifier_settings(config['wfs_base'], config.get('common'), config.get('year_eras'))
 
 include: "../../src/classifier/workflow/Snakefile"
 

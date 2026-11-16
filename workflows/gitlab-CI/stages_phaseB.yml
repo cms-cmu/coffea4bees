@@ -1,0 +1,45 @@
+phaseB_1_computeJCM_run2_coffea4bees:
+  stage: phaseB
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE output/TEST/PhaseB_1_computeJCM/JCM_2024_v2/jetCombinatoricModel_SB_2024_v2.yml output/TEST/PhaseB_1_computeJCM/cutflow_validation_NoJCM.txt output/TEST/PhaseB_1_computeJCM/cutflow_NoJCM.html -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true 'year_eras={"UL18":["A"]}' 'dataset=["GluGluToHHTo4B_cHHH1"]' --jobs 4
+  artifacts:
+    when: always
+    paths:
+      - output/TEST/PhaseB_1_computeJCM/
+      - barista_framework/output/TEST/PhaseB_1_computeJCM/
+    expire_in: 1 day
+
+phaseB_2_classifier_inputs_run2_coffea4bees:
+  stage: phaseB
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseB_1_computeJCM_run2_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE all_PhaseB -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true 'year_eras={"UL18":["A"]}' 'dataset=["GluGluToHHTo4B_cHHH1"]' --jobs 4
+    - cat output/TEST/phaseB_validation.txt
+  artifacts:
+    when: always
+    paths:
+      - output/TEST/PhaseB_1_computeJCM/
+      - output/TEST/PhaseB_2_classifier_inputs/
+      - output/TEST/handoff/
+      - output/TEST/logs/
+      - output/TEST/phaseB_validation.txt
+      - coffea4bees/metadata/weights/JCM/TEST/
+      - coffea4bees/metadata/datasets/classifier_inputs_TEST.json
+      - barista_framework/output/TEST/PhaseB_1_computeJCM/
+      - barista_framework/output/TEST/PhaseB_2_classifier_inputs/
+      - barista_framework/output/TEST/handoff/
+      - barista_framework/output/TEST/logs/
+      - barista_framework/output/TEST/phaseB_validation.txt
+      - barista_framework/coffea4bees/metadata/weights/JCM/TEST/
+      - barista_framework/coffea4bees/metadata/datasets/classifier_inputs_TEST.json
+    expire_in: 1 day

@@ -100,6 +100,10 @@ def get_raw_jcm_config():
         res['runner']['condor'] = False
         res['runner']['shared_dask'] = False
         res['runner']['run_performance'] = False
+        res['runner'].setdefault('test_files', 1)
+        res['runner'].setdefault('maxchunks', 2)
+        res['runner'].setdefault('chunksize', int(config.get('test_chunksize', 100000)))
+        res['runner'].setdefault('workers', 4)
 
     return res
 
@@ -132,7 +136,10 @@ def get_raw_wjcm_config():
     ci_block = resolve_config_section(config, primary_key='classifier_inputs', fallback_keys=['analysis_config', 'analysis'])
     ci_cfg = (config.get('classifier_inputs', {}) or {}).get('config', {})
     default_ci_out = CI_OUTPUT_PATH
-    make_ci = ci_cfg.get('make_classifier_input') or (ci_block.get('config', {}) if isinstance(ci_block, dict) else {}).get('make_classifier_input') or default_ci_out
+    if config.get("test", False):
+        make_ci = default_ci_out
+    else:
+        make_ci = ci_cfg.get('make_classifier_input') or (ci_block.get('config', {}) if isinstance(ci_block, dict) else {}).get('make_classifier_input') or default_ci_out
     res['config']['make_classifier_input'] = make_ci
 
     # Ensure processor and dataset_location match classifier_inputs if specified
@@ -254,7 +261,11 @@ if per_year_jcm:
         input: f"{JCM_OUTPUT_PATH}histAll_NoJCM.coffea"
         output: f"{JCM_OUTPUT_PATH}JCM_{tag}/jetCombinatoricModel_SB_{tag}_{{year}}.yml"
         params:
-            extra_arguments = config.get('jcm_extra_arguments', ""),
+            extra_arguments = (
+                config.get('jcm_extra_arguments', "")
+                if (not config.get("test", False) or "--jcm_config" in config.get('jcm_extra_arguments', ""))
+                else (config.get('jcm_extra_arguments', "") + " --jcm_config coffea4bees/analysis/jcm_tools/metadata/test_jcm_config.yml").strip()
+            ),
             tag = lambda wildcards: f"{tag}_{wildcards.year}",
             region = "SB",
             output_dir = f"{JCM_OUTPUT_PATH}JCM_{tag}/plots_{{year}}/",
@@ -281,7 +292,11 @@ else:
         input: f"{JCM_OUTPUT_PATH}histAll_NoJCM.coffea"
         output: jcm_file_path
         params:
-            extra_arguments = config.get('jcm_extra_arguments', ""),
+            extra_arguments = (
+                config.get('jcm_extra_arguments', "")
+                if (not config.get("test", False) or "--jcm_config" in config.get('jcm_extra_arguments', ""))
+                else (config.get('jcm_extra_arguments', "") + " --jcm_config coffea4bees/analysis/jcm_tools/metadata/test_jcm_config.yml").strip()
+            ),
             tag = tag,
             output_dir = f"{JCM_OUTPUT_PATH}JCM_{tag}/",
             run_container_wrapper = config['analysis_container_wrapper'],

@@ -58,6 +58,11 @@ include:
   - local: workflows/gitlab-CI/stages_friendtree.yml
   - local: workflows/gitlab-CI/stages_plots.yml
   - local: workflows/gitlab-CI/stages_workflows.yml
+  - local: workflows/gitlab-CI/stages_phaseA.yml
+  - local: workflows/gitlab-CI/stages_phaseB.yml
+  - local: workflows/gitlab-CI/stages_phaseC.yml
+  - local: workflows/gitlab-CI/stages_phaseD.yml
+  - local: workflows/gitlab-CI/stages_phaseF.yml
   - project: 'cms-cmu/barista'
     ref: 'master'
     file: 'src/workflows/gitlab-CI/stages_proxy.yml'

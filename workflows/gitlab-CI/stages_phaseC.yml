@@ -1,0 +1,21 @@
+phaseC_fvt_run2_coffea4bees:
+  stage: phaseC
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseB_2_classifier_inputs_run2_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE all_PhaseC -s coffea4bees/workflows/Snakefile_PhaseC.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true 'year_eras={"UL18":["A"]}' --jobs 2
+    - python coffea4bees/workflows/scripts/validate_phaseC.py --yields output/FvT_nominal/yields.json --model-result output/TEST/classifier/FvT_nominal/result.json --friend-result output/TEST/friend/FvT_nominal/result.json --output output/FvT_nominal/phaseC_validation.txt
+  artifacts:
+    when: always
+    paths:
+      - output/FvT_nominal/
+      - output/TEST/classifier/FvT_nominal/
+      - output/TEST/friend/FvT_nominal/
+      - barista_framework/output/FvT_nominal/
+      - barista_framework/output/TEST/classifier/FvT_nominal/
+      - barista_framework/output/TEST/friend/FvT_nominal/
+    expire_in: 1 day
