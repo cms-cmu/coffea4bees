@@ -121,6 +121,36 @@ class quadJetTTHbbTestCase(unittest.TestCase):
         _assign_SR_SB_ttHbb(qj_cv2, cand_cfg=cv_cfg)
         self.assertTrue(bool(qj_cv2["SB"][0]))  # Retained in both!
 
+    def test_quadJets_ttHbb_sob100_polygon(self):
+        from coffea4bees.analysis.helpers.candidates_selection_ttHbb import _assign_SR_SB_ttHbb
+
+        sob_cfg = load_candidates_selection_config(
+            "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_sob100.yml"
+        )
+        self.assertEqual(sob_cfg.get("sr_ttHbb", {}).get("mode"), "sob_100")
+
+        selev_sob = create_cand_jet_dijet_quadjet_ttHbb(self.event, cand_cfg=sob_cfg)
+        self.assertIn("SR", selev_sob.region.fields)
+        self.assertIn("SB", selev_sob.region.fields)
+
+        # (130, 130) core Higgs peak -> SR
+        # (200, 200) inner bulge -> SR
+        # (130, 60) low-mass lobe -> SR
+        # (50, 50) low-mass QCD corner -> SB
+        # (400, 175) outer arm corner -> SB (trimmed by SoB_100)
+        # (280, 280) corner veto -> neither SR nor SB
+        pts = ak.Array([
+            {"lead": {"mass": 130.0}, "subl": {"mass": 130.0}},
+            {"lead": {"mass": 200.0}, "subl": {"mass": 200.0}},
+            {"lead": {"mass": 130.0}, "subl": {"mass": 60.0}},
+            {"lead": {"mass": 50.0},  "subl": {"mass": 50.0}},
+            {"lead": {"mass": 400.0}, "subl": {"mass": 175.0}},
+            {"lead": {"mass": 280.0}, "subl": {"mass": 280.0}},
+        ])
+        _assign_SR_SB_ttHbb(pts, cand_cfg=sob_cfg)
+        self.assertEqual([bool(v) for v in pts["SR"]], [True, True, True, False, False, False])
+        self.assertEqual([bool(v) for v in pts["SB"]], [False, False, False, True, True, False])
+
 
 if __name__ == '__main__':
     unittest.main()
