@@ -2,9 +2,13 @@
 # 3b data x JCM x d3_to_t4, needs plot_ttbar_with_weights, which Snakefile_PhaseC_4_FvT_closure.smk
 # forces). Both from histAll_FvT_closure.coffea; ratio = estimate / MC. Absolute normalisation, so
 # the ratio panel shows the rate and the shape difference together.
+# The ttbar MC appears under the plain names (TTToHadronic, ...) or, when the datasets are stitched
+# (ttHbb), as TTTo*_stitched; both are listed and a name absent from the file is skipped, so the
+# same config works for either (a merged file never holds both sets).
 hists:
         tt4_MC:
-                process: [TTToHadronic, TTToSemiLeptonic, TTTo2L2Nu]
+                process: [TTToHadronic, TTToSemiLeptonic, TTTo2L2Nu,
+                          TTToHadronic_stitched, TTToSemiLeptonic_stitched, TTTo2L2Nu_stitched]
                 tag: fourTag
                 label: $t\bar{t}$ 4b MC
                 fillcolor: k
