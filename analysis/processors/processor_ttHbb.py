@@ -289,11 +289,18 @@ class ttHbbProcessor(HH4bBaseProcessor):
         n_selJets = ak.num(event.selJets) if "selJets" in event.fields else ak.num(event.selJet)
         event["pass_nSelJets_gt6"] = n_selJets > 6
         event["fail_nSelJets_le6"] = n_selJets <= 6
+        # exclusive jet-multiplicity slices, for hist_cuts (e.g. the two-stage closure per nSelJets)
+        event["pass_nSelJets_eq4"] = n_selJets == 4
+        event["pass_nSelJets_eq5"] = n_selJets == 5
+        event["pass_nSelJets_gt5"] = n_selJets > 5
         event["all_selJets"] = np.full(len(event), True)
         event["passLeptonVeto"] = event.passLeptonVeto if "passLeptonVeto" in event.fields else np.full(len(event), True)
 
         selections.add("pass_nSelJets_gt6", event.pass_nSelJets_gt6)
         selections.add("fail_nSelJets_le6", event.fail_nSelJets_le6)
+        selections.add("pass_nSelJets_eq4", event.pass_nSelJets_eq4)
+        selections.add("pass_nSelJets_eq5", event.pass_nSelJets_eq5)
+        selections.add("pass_nSelJets_gt5", event.pass_nSelJets_gt5)
         selections.add("all_selJets", event.all_selJets)
         selections.add("passLeptonVeto", event.passLeptonVeto)
 
@@ -304,6 +311,9 @@ class ttHbbProcessor(HH4bBaseProcessor):
         n_selJets = ak.num(selev.selJets) if "selJets" in selev.fields else ak.num(selev.selJet)
         selev["pass_nSelJets_gt6"] = n_selJets > 6
         selev["fail_nSelJets_le6"] = n_selJets <= 6
+        selev["pass_nSelJets_eq4"] = n_selJets == 4
+        selev["pass_nSelJets_eq5"] = n_selJets == 5
+        selev["pass_nSelJets_gt5"] = n_selJets > 5
         selev["passLeptonVeto"] = selev.passLeptonVeto if "passLeptonVeto" in selev.fields else np.full(len(selev), True)
 
 
