@@ -1,0 +1,46 @@
+# template:
+# - model: path to model
+# - FvT: path to FvT friend tree
+
+main:
+  module: train
+  option:
+    - --max-loaders 2
+    - --max-trainers 3
+
+model:
+  - module: CoReNet.SvB.ggF.baseline.Train # the CoReNet network; loss / ROCs / signal filter / outputs from HCR.SvB.ggF.baseline
+    option:
+      - --roc-signal-by-category # calculate ROC by category
+      - --network file:##coffea4bees/classifier/config/corenet/HH4b.yml
+      - --kfold-seed SvB random
+      - --kfold-seed-offsets 0
+      - --architecture
+      - n_features: 8
+        use_kv_proj: true
+        use_attention_gate: true
+      - --training FixedStep
+      - epoch: 20
+        bs_init: 1024
+      - --finetuning FinetuneStep
+      - epoch: 1
+        bs_init: 16384
+
+dataset:
+  - module: HCR.SvB.Background # load background dataset
+    option:
+      - --metadata coffea4bees/metadata/datasets/
+      - --norm 3
+      - --JCM-weight "" coffea4bees/analysis/weights/JCM/2024_v2_nominal/jetCombinatoricModel_SB_2024_v2.yml@@JCM_weights
+      - --friends "" coffea4bees/metadata/datasets/classifier_inputs_nominal.json@@HCR_input 
+      - --friends label:data {FvT}/result.json@@analysis.0.merged # setup the path to FvT friend tree
+
+  - module: HCR.SvB.Signal # load signal dataset
+    option:
+      - --metadata coffea4bees/metadata/datasets/
+      - --friends "" coffea4bees/metadata/datasets/classifier_inputs_nominal.json@@HCR_input 
+
+setting:
+  - module: IO
+    option:
+      - output: "{model}"
