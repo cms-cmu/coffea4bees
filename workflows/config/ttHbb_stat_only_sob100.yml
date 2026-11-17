@@ -25,6 +25,9 @@ analysis_config:
   config:
     candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_sob100.yml"
     fill_histograms: "SvB"
+    friends:
+      FvT: "{eos_prod}/{roast_id}/friend/FvT_ttHbb_stitched/result.json@@analysis.0.merged"
+      SvB_MA: "{eos_prod}/{roast_id}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
 
 make_combine_inputs:
   rebin: 12
