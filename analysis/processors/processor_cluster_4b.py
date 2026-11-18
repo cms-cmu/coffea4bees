@@ -66,7 +66,7 @@ class analysis(HH4bBaseProcessor):
             self._splitting_library_rows = None
         return super().process(event)
 
-    def build_candidates(self, selev, weights, list_weight_names, analysis_selections, processOutput):
+    def build_candidates(self, selev, weights, list_weight_names, analysis_selections, processOutput, shift_name=None, **kwargs):
         """No-op: candidate jets are built in custom_processing from btag-sorted jets."""
         return selev
 

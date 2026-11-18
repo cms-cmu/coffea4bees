@@ -461,7 +461,8 @@ def filling_nominal_histograms(
     # (convert_closure_coffea_to_root.py) reads <SvB>_<v>.<ps> per subsample. SvB_MA keeps the 240-bin
     # ps_*_fine (the HH4b fit variable, ps_hh_fine); SvB gets the coarse hists only.
     if subsample_names and run_SvB and "svb" in categories:
-        sub_weight = {"weight_d3_to_t4": "weight_d3_to_t4_{}", "weight_d3_to_t3": "weight_d3_to_t3_{}"}.get(weight_name, "weight_{}")
+        sub_weight = {"weight_d3_to_t4": "weight_d3_to_t4_{}", "weight_d3_to_t3": "weight_d3_to_t3_{}",
+                      "weight_mix4_to_t4_MvD": "weight_mix4_to_t4_MvD_{}"}.get(weight_name, "weight_{}")
         phh_fine = ["phh_hh_fine", "phh_fine"]
         sub_skip = {"SvB_MA": phh_fine, "SvB": ["ps_zz_fine", "ps_zh_fine", "ps_hh_fine"] + phh_fine}
         for v_name in subsample_names:
@@ -541,11 +542,14 @@ def filling_syst_histograms(selev, weights, analysis_selections,
         if f.startswith("SvB") and not f.startswith("SvB_FeynNet")
     ]
     for name in svb_fields:
-        # Coarse-only for the extra SvB_mixedMvD study classifiers (drop the 5
-        _skip = ["ps", "ptt"] if name in ("SvB", "SvB_MA") else [
-            "ps", "ptt", "ps_zz_fine", "ps_zh_fine", "ps_hh_fine", "phh_hh_fine", "phh_fine"
-        ]
-        fill_SvB += SvBHists((name, f"{name} Classifier"), name, skip=_skip)
+        if "ps_ttHbb" in selev[name].fields:
+            fill_SvB += ttHbbSvBHists((name, f"{name} Classifier"), name)
+        else:
+            # Coarse-only for the extra SvB_mixedMvD study classifiers (drop the 5
+            _skip = ["ps", "ptt"] if name in ("SvB", "SvB_MA") else [
+                "ps", "ptt", "ps_zz_fine", "ps_zh_fine", "ps_hh_fine", "phh_hh_fine", "phh_fine"
+            ]
+            fill_SvB += SvBHists((name, f"{name} Classifier"), name, skip=_skip)
 
     fill_SvB(selev, hist_SvB, variation=shift_name, weight="weight")
 
@@ -678,6 +682,13 @@ def filling_ttHbb_histograms(
         quadJet_template_skip = ["lead_vs_subl_m"] if can_ttH else []
         fill += QuadJetHistsSelected(("quadJet_selected", "Selected Quad Jet"), "quadJet_selected", skip=quadJet_template_skip)
         fill += QuadJetHistsMinDr(("quadJet_min_dr", "Min dR Quad Jet"), "quadJet_min_dr", skip=quadJet_template_skip)
+        if can_ttH:
+            # The template lead_vs_subl_m plane is skipped above: the can_ttH pairing fills it as canH vs canTT instead
+            fill += hist.add(
+                f"quadJet_selected.{n1}_vs_{n2}_m",
+                (100, 0, 1000, ("quadJet_selected.lead.mass", f"{L1} Boson Candidate Mass")),
+                (100, 0, 1000, ("quadJet_selected.subl.mass", f"{L2} Boson Candidate Mass")),
+            )
         fill += hist.add("v4j.mass", (120, 0, 1200, ("v4j.mass", "m_{4j} [GeV]")))
         fill += hist.add("v4j.pt", (100, 0, 1000, ("v4j.pt", "p_{T}^{4j} [GeV]")))
 
@@ -686,6 +697,8 @@ def filling_ttHbb_histograms(
         if can_ttH:
             # template lead_vs_subl_m, renamed
             for qj in ["quadJet_selected", "quadJet_min_dr"]:
+                if qj == "quadJet_selected" and "kinematics" in categories:
+                    continue  # already filled by the kinematics category
                 fill += hist.add(
                     f"{qj}.{n1}_vs_{n2}_m",
                     (100, 0, 1000, (f"{qj}.lead.mass", f"{L1} Boson Candidate Mass")),

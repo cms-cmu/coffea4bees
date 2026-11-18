@@ -3,9 +3,10 @@
 
 The page is barista's plot gallery (src/plotting/make_gallery.py: filter, size slider, by group /
 by variable views, lightbox), the same page as every makePlots gallery, with the closure verdict
-table (Variance, Bias, Spurious Signal with Fourier bases, overall) on top. Plots are grouped per
-rebin candidate and category; parameter projections and diagonalized bases start collapsed; the
-key diagnostics of every candidate are pinned side by side. Click a table row to show one rebin.
+table (Variance, Bias, Spurious Signal with Fourier bases, overall) on top.
+
+Supports interactive flipping between Signal Region (SR, default) and Sideband (SB) within a single
+dashboard per classifier (e.g. summary_SvB_MA.html, summary_SvB.html).
 """
 
 from __future__ import annotations
@@ -21,11 +22,15 @@ from pathlib import Path
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Create two-stage closure summary HTML dashboard.")
-    parser.add_argument("--summary", "-s", required=True, help="Path to closure_summary.json")
+    parser.add_argument("--summary", "-s", default=None, help="Path to closure_summary.json (single region mode)")
+    parser.add_argument("--summary-sr", default=None, help="Path to SR closure_summary.json")
+    parser.add_argument("--summary-sb", default=None, help="Path to SB closure_summary.json")
     parser.add_argument("--output_dir", "-d", required=True, help="Base Stage F_2 output directory")
-    parser.add_argument("--output", "-o", default=None, help="Output HTML path (default: <output_dir>/closure_summary.html)")
-    parser.add_argument("--region", "-r", default="SR", help="Closure region (default: SR)")
-    parser.add_argument("--title", "-t", default="Two-Stage Closure Summary", help="Dashboard title")
+    parser.add_argument("--output", "-o", default=None, help="Output HTML path")
+    parser.add_argument("--region", "-r", default="SR", help="Closure region for single region mode (default: SR)")
+    parser.add_argument("--classifier", "-c", default=None, help="Classifier name (e.g. SvB_MA or SvB)")
+    parser.add_argument("--channel", default="", help="Analysis channel (e.g. ttHbb or HH4b)")
+    parser.add_argument("--title", "-t", default=None, help="Dashboard title")
     return parser.parse_args()
 
 
@@ -81,7 +86,7 @@ def categorize_hidden_plot(filename: str) -> tuple[int, str]:
     return (5, "Other Parameter Projections")
 
 
-def collect_plots(rebin_dir: Path, base_dir: Path) -> dict[str, dict[str, list[dict]]]:
+def collect_plots(rebin_dir: Path, base_dir: Path, region: str = "SR") -> dict[str, dict[str, list[dict]]]:
     """Scans a rebin candidate directory and separates plots into visible and hidden groups."""
     visible: dict[str, list[dict]] = {}
     hidden: dict[str, list[dict]] = {}
@@ -89,8 +94,15 @@ def collect_plots(rebin_dir: Path, base_dir: Path) -> dict[str, dict[str, list[d
         return {"visible": visible, "hidden": hidden}
 
     for p in sorted(rebin_dir.rglob("*.png")):
-        rel_path = p.relative_to(base_dir).as_posix()
         fn = p.name
+        fn_l = fn.lower()
+        # Region separation: exclude SB comparison plots from SR and vice-versa
+        if region == "SR" and ("_sb" in fn_l):
+            continue
+        if region == "SB" and ("_sr" in fn_l or fn_l == "data_vs_mixed_vs_bkg.png"):
+            continue
+
+        rel_path = p.relative_to(base_dir).as_posix()
         if is_hidden_plot(fn):
             rank, cat = categorize_hidden_plot(fn)
             item = {"name": p.stem, "filename": fn, "path": rel_path, "rank": rank, "cat": cat}
@@ -156,23 +168,26 @@ def collect_ttbar_plots(ttbar_dir: Path, base_dir: Path) -> list[dict]:
     return items
 
 
-def collect_candidates(summary_data: dict, out_dir: Path, region: str = "SR") -> dict:
+def collect_candidates(summary_data: dict, out_dir: Path, region: str = "SR", clf: str = None) -> dict:
+    if not summary_data:
+        return {"channel": "ttHbb", "var": clf or "SvB_MA", "region": region, "passing_rebins": [],
+                "candidates": [], "ttbar_plots": [], "ttbar_cutflow_html": None}
+
     passing_rebins = summary_data.get("passing_rebins", [])
     evaluations = summary_data.get("all_evaluations", [])
 
     # Extract common metadata from first valid evaluation
     valid_evs = [ev for ev in evaluations if ev.get("var") or ev.get("channel")]
     channel = valid_evs[0].get("channel", "ttHbb") if valid_evs else "ttHbb"
-    var = valid_evs[0].get("var", "SvB_MA_ps_ttHbb") if valid_evs else "SvB_MA_ps_ttHbb"
-    clf = "SvB_MA" if "SvB_MA" in var else ("SvB" if "SvB" in var else "*")
+    var = valid_evs[0].get("var", f"{clf}_ps_ttHbb") if valid_evs else (f"{clf}_ps_ttHbb" if clf else "SvB_MA_ps_ttHbb")
+    if not clf:
+        clf = "SvB_MA" if "SvB_MA" in var else ("SvB" if "SvB" in var else "*")
 
-    # Find candidates and plots
     candidates_info = []
     for ev in evaluations:
         r_val = ev.get("rebin")
         if r_val is None:
             continue
-        # Search for candidate directory under closure_fits
         pattern = f"rebin{r_val}"
         matched_dirs = list(out_dir.glob(f"closure_fits/*/{clf}/{pattern}/{region}/{channel}"))
         cand_dir = None
@@ -182,7 +197,7 @@ def collect_candidates(summary_data: dict, out_dir: Path, region: str = "SR") ->
                 break
         if cand_dir is None and matched_dirs:
             cand_dir = matched_dirs[0]
-        plots_data = collect_plots(cand_dir, out_dir) if cand_dir else {"visible": {}, "hidden": {}}
+        plots_data = collect_plots(cand_dir, out_dir, region=region) if cand_dir else {"visible": {}, "hidden": {}}
         vis_plots = sum(len(v) for v in plots_data["visible"].values())
         hid_plots = sum(len(v) for v in plots_data["hidden"].values())
 
@@ -251,9 +266,6 @@ def collect_candidates(summary_data: dict, out_dir: Path, region: str = "SR") ->
             "ttbar_cutflow_html": ttbar_cutflow_html}
 
 
-KEY_PLOTS = ["data_vs_mixed_vs_bkg", "1_bias_pvalues", "0_variance_pearsonr_multijet_variance"]
-
-
 def _chip(passed, basis=None, none_text="—", fail_extra=None, title=None):
     if passed is None:
         return f"<span class='na'>{none_text}</span>"
@@ -265,23 +277,63 @@ def _chip(passed, basis=None, none_text="—", fail_extra=None, title=None):
     return f"<span class='chip fail'>FAIL</span>{b}"
 
 
-def gallery_items(info: dict) -> list[dict]:
-    """The plots as make_gallery items: one group per (rebin, category), parameter projections and
-    diagonalized bases in their own groups (collapsed by default), key diagnostics pinned."""
+def gallery_items(info_map: dict[str, dict]) -> list[dict]:
+    """Generates gallery items with 'region' metadata for both SR and SB."""
     items = []
-    for cand in info["candidates"]:
-        tag = f"rebin{int(cand['rebin']):02d}: {'PASS' if cand['passed'] else 'FAIL'}"
-        for kind, groups in (("", cand["plots"]["visible"]), (" · projections", cand["plots"]["hidden"])):
-            for cat, plots in groups.items():
-                for it in plots:
-                    item = {"path": it["path"], "group": f"{tag} · {cat}{kind}", "name": it["name"], "kind": "img"}
-                    if it["name"] in KEY_PLOTS:
-                        item["summary"] = KEY_PLOTS.index(it["name"])
-                    elif it["name"].startswith("data_vs_mixed_vs_bkg"):
-                        item["summary"] = 0
-                    items.append(item)
-    for it in info["ttbar_plots"]:
-        items.append({"path": it["path"], "group": "TTbar MC vs data-driven (d3)", "name": it["name"], "kind": "img"})
+    seen_paths = set()
+
+    for reg in ["SR", "SB"]:
+        if reg not in info_map:
+            continue
+        info = info_map[reg]
+        for cand in info["candidates"]:
+            tag = f"rebin{int(cand['rebin']):02d}: {'PASS' if cand['passed'] else 'FAIL'}"
+            for kind, groups in (("", cand["plots"]["visible"]), (" · projections", cand["plots"]["hidden"])):
+                for cat, plots in groups.items():
+                    for it in plots:
+                        p_str = it["path"]
+                        item = {
+                            "path": p_str,
+                            "group": f"{tag} · {cat}{kind}",
+                            "name": it["name"],
+                            "kind": "img",
+                            "region": reg,
+                        }
+                        # Priority for summary pins
+                        if reg == "SR":
+                            if it["name"] in ("data_vs_mixed_vs_bkg_SR", "data_vs_mixed_vs_bkg"):
+                                item["summary"] = 0
+                            elif it["name"] == "1_bias_pvalues":
+                                item["summary"] = 1
+                            elif it["name"] == "0_variance_pearsonr_multijet_variance":
+                                item["summary"] = 2
+                        elif reg == "SB":
+                            if it["name"] == "data_vs_mixed_vs_bkg_SB":
+                                item["summary"] = 0
+                            elif it["name"] == "1_bias_pvalues":
+                                item["summary"] = 1
+                            elif it["name"] == "0_variance_pearsonr_multijet_variance":
+                                item["summary"] = 2
+
+                        items.append(item)
+                        seen_paths.add(p_str)
+
+    # Common TTbar comparison plots (shown in both regions)
+    for reg in ["SR", "SB"]:
+        if reg in info_map:
+            for it in info_map[reg].get("ttbar_plots", []):
+                p_str = it["path"]
+                if p_str not in seen_paths:
+                    items.append({
+                        "path": p_str,
+                        "group": "TTbar MC vs data-driven (d3)",
+                        "name": it["name"],
+                        "kind": "img",
+                        "region": "ALL",
+                    })
+                    seen_paths.add(p_str)
+            break
+
     return items
 
 
@@ -308,12 +360,14 @@ def verdict_section(info: dict) -> str:
             f"<td>{_chip(c.get('spurious_signal_passed'), c.get('spurious_signal_basis'))}</td>"
             f"<td><span class='chip {'pass' if c['passed'] else 'fail'}'>{'ELIGIBLE' if c['passed'] else 'EXCLUDED'}</span></td>"
             f"<td class='num'>{c['visible_plots']} <span class='na'>+ {c['hidden_plots']} projections</span></td></tr>")
+
     passing = info["passing_rebins"]
     region_display = info.get("region", "SR")
     meta = (f"channel <b>{html.escape(str(info['channel']))}</b> &nbsp;·&nbsp; region <b>{html.escape(str(region_display))}</b> &nbsp;·&nbsp; variable <b>{html.escape(str(info['var']))}</b>"
             f" &nbsp;·&nbsp; passing rebins: " + (f"<b class='ok'>{', '.join(str(r) for r in passing)}</b>" if passing else "<b class='bad'>none</b>"))
-    if info["ttbar_cutflow_html"]:
+    if info.get("ttbar_cutflow_html"):
         meta += f" &nbsp;·&nbsp; <a href='{info['ttbar_cutflow_html']}' target='_blank'>ttbar MC vs d3 cutflow</a>"
+
     return f"""<section class="verdict">
   <div class="vmeta">{meta}</div>
   <table>
@@ -326,8 +380,57 @@ def verdict_section(info: dict) -> str:
 
 
 VERDICT_CSS = """
-section.verdict { margin:12px 16px 0; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:10px 12px; }
-section.verdict .vmeta { color:var(--muted); margin-bottom:8px; }
+.region-toggle-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px 16px 0;
+  padding: 8px 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.rtoggle-group {
+  display: flex;
+  gap: 8px;
+}
+.rtab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.rtab-btn:hover {
+  background: #ffffff;
+  color: var(--fg);
+  border-color: #cbd5e1;
+}
+.rtab-btn.active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+}
+.rtab-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.rtoggle-hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+section.verdict { margin:8px 16px 0; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:10px 12px; }
+section.verdict .vmeta { color:var(--muted); margin-bottom:8px; font-size:12.5px; }
 section.verdict .vmeta b { color:var(--fg); font-weight:500; }
 section.verdict .vmeta b.ok { color:#1f8a4c; } section.verdict .vmeta b.bad { color:#c8372d; }
 section.verdict .vmeta a, section.verdict .vnote a { color:var(--accent); }
@@ -344,28 +447,92 @@ section.verdict .na { color:var(--muted); }
 section.verdict .vnote { color:var(--muted); font-size:12px; margin-top:6px; }
 """
 
-VERDICT_JS = """<script>
-document.querySelectorAll('section.verdict tbody tr').forEach(tr => tr.onclick = () => {
-  const on = tr.classList.contains('sel');
+REGION_FILTER_JS = """window.currentRegion = 'SR';
+
+window.switchRegion = function(reg) {
+  window.currentRegion = reg;
+  document.querySelectorAll('.rtab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.region === reg);
+  });
+  document.querySelectorAll('.verdict-panel').forEach(p => {
+    p.style.display = (p.id === 'verdict-' + reg) ? 'block' : 'none';
+  });
   document.querySelectorAll('section.verdict tbody tr').forEach(r => r.classList.remove('sel'));
-  q.value = on ? '' : tr.dataset.rebin + ' '; if(!on) tr.classList.add('sel'); render();
-});
-</script>
+  q.value = '';
+  render();
+};
+
+function filtered(){
+  const terms = q.value.toLowerCase().split(/\\s+/).filter(Boolean);
+  return ITEMS.filter(it => {
+    if (it.region && it.region !== 'ALL' && it.region !== window.currentRegion) return false;
+    const hay = (it.group+'/'+it.name).toLowerCase();
+    return terms.every(t => hay.includes(t));
+  });
+}
+function _orig_filtered_unused(){
 """
 
+VERDICT_ROW_CLICK_JS = """render();
+document.querySelectorAll('section.verdict tbody tr').forEach(tr => {
+  tr.onclick = function() {
+    const on = this.classList.contains('sel');
+    document.querySelectorAll('section.verdict tbody tr').forEach(r => r.classList.remove('sel'));
+    q.value = on ? '' : this.dataset.rebin + ' ';
+    if (!on) this.classList.add('sel');
+    render();
+  };
+});
+</script>"""
 
-def generate_html(summary_data: dict, out_dir: Path, title: str, region: str = "SR") -> str:
-    """The page of barista's plot galleries (src/plotting/make_gallery.py) with the verdict table on top."""
+
+def generate_html(info_map: dict[str, dict], out_dir: Path, title: str) -> str:
+    """The page of barista's plot galleries with interactive SR/SB toggle and verdict tables on top."""
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))       # barista root
     from src.plotting.make_gallery import PAGE
 
-    info = collect_candidates(summary_data, out_dir, region=region)
+    has_sr = "SR" in info_map and info_map["SR"].get("candidates")
+    has_sb = "SB" in info_map and info_map["SB"].get("candidates")
+
+    # Build Verdict HTML block
+    verdict_blocks = []
+    if has_sr and has_sb:
+        toggle_bar = """
+        <div class="region-toggle-bar">
+          <div class="rtoggle-group">
+            <button type="button" class="rtab-btn active" id="tabSR" data-region="SR" onclick="switchRegion('SR')">
+              <span class="rtab-dot"></span> Signal Region (SR)
+            </button>
+            <button type="button" class="rtab-btn" id="tabSB" data-region="SB" onclick="switchRegion('SB')">
+              <span class="rtab-dot"></span> Sideband (SB)
+            </button>
+          </div>
+          <div class="rtoggle-hint">Toggle between Signal Region (SR) and Sideband (SB) closure fits & diagnostics</div>
+        </div>
+        """
+        verdict_blocks.append(toggle_bar)
+        verdict_blocks.append(f'<div id="verdict-SR" class="verdict-panel">{verdict_section(info_map["SR"])}</div>')
+        verdict_blocks.append(f'<div id="verdict-SB" class="verdict-panel" style="display:none;">{verdict_section(info_map["SB"])}</div>')
+    elif has_sr:
+        verdict_blocks.append(f'<div id="verdict-SR" class="verdict-panel">{verdict_section(info_map["SR"])}</div>')
+    elif has_sb:
+        verdict_blocks.append(f'<div id="verdict-SB" class="verdict-panel">{verdict_section(info_map["SB"])}</div>')
+    else:
+        # Fallback if candidates empty
+        first_info = next(iter(info_map.values()), {})
+        verdict_blocks.append(f'<div class="verdict-panel">{verdict_section(first_info)}</div>')
+
+    full_verdict_html = "\n".join(verdict_blocks)
+    items_json = json.dumps(gallery_items(info_map), separators=(",", ":"))
+
     page = (PAGE.replace("__TITLE__", html.escape(title))
-                .replace("__ITEMS__", json.dumps(gallery_items(info), separators=(",", ":"))))
+                .replace("__ITEMS__", items_json))
+
     hooks = {
         "</style>": VERDICT_CSS + "</style>",
-        '<main id="main"></main>': verdict_section(info) + '<main id="main"></main>',
-        "</body>": VERDICT_JS + "</body>",
+        '<main id="main"></main>': full_verdict_html + '<main id="main"></main>',
+        "function filtered(){": REGION_FILTER_JS,
+        "render();\n</script>": VERDICT_ROW_CLICK_JS,
         # projection groups start collapsed
         "if(!$('#expandAll').checked && !cls) s.classList.add('closed');":
             "if((!$('#expandAll').checked || title.endsWith(' · projections')) && !cls) s.classList.add('closed');",
@@ -379,19 +546,80 @@ def generate_html(summary_data: dict, out_dir: Path, title: str, region: str = "
 
 def main():
     args = parse_args()
-    summary_path = Path(args.summary)
     out_dir = Path(args.output_dir)
 
-    if not summary_path.exists():
-        print(f"Error: summary file {summary_path} not found.", file=sys.stderr)
-        sys.exit(1)
+    info_map: dict[str, dict] = {}
+    clf = args.classifier
 
-    with open(summary_path, "r") as f:
-        summary_data = json.load(f)
+    # Mode 1: Explicit --summary-sr and/or --summary-sb
+    if args.summary_sr or args.summary_sb:
+        if args.summary_sr and Path(args.summary_sr).exists():
+            with open(args.summary_sr, "r") as f:
+                data_sr = json.load(f)
+            info_map["SR"] = collect_candidates(data_sr, out_dir, region="SR", clf=clf)
+        if args.summary_sb and Path(args.summary_sb).exists():
+            with open(args.summary_sb, "r") as f:
+                data_sb = json.load(f)
+            info_map["SB"] = collect_candidates(data_sb, out_dir, region="SB", clf=clf)
 
-    html_content = generate_html(summary_data, out_dir, args.title, region=args.region)
+    # Mode 2: Auto-detect by classifier name under output_dir
+    elif clf:
+        sr_file = out_dir / f"summary_{clf}_SR.json"
+        sb_file = out_dir / f"summary_{clf}_SB.json"
+        if sr_file.exists():
+            with open(sr_file, "r") as f:
+                data_sr = json.load(f)
+            info_map["SR"] = collect_candidates(data_sr, out_dir, region="SR", clf=clf)
+        if sb_file.exists():
+            with open(sb_file, "r") as f:
+                data_sb = json.load(f)
+            info_map["SB"] = collect_candidates(data_sb, out_dir, region="SB", clf=clf)
 
-    out_file = Path(args.output) if args.output else out_dir / "closure_summary.html"
+    # Mode 3: Legacy single --summary path
+    if not info_map and args.summary:
+        summary_path = Path(args.summary)
+        if summary_path.exists():
+            with open(summary_path, "r") as f:
+                data = json.load(f)
+            reg = args.region or "SR"
+            info_map[reg] = collect_candidates(data, out_dir, region=reg, clf=clf)
+
+    if not info_map:
+        print(f"Warning: No valid summary JSON files found for classifier {clf} in {out_dir}; generating placeholder page.", file=sys.stderr)
+        out_file = Path(args.output) if args.output else out_dir / (f"summary_{clf}.html" if clf else "closure_summary.html")
+        out_file.parent.mkdir(parents=True, exist_ok=True)
+        clf_str = f"{args.channel} - {clf}" if args.channel else (clf or 'Summary')
+        title = args.title or f"Stage F_2 Two-Stage Closure ({clf_str})"
+        placeholder = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{title}</title>
+<style>
+body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 2rem; margin: 0; }}
+.card {{ background: #1e293b; border: 1px solid #334155; border-radius: 8px; max-width: 800px; margin: 2rem auto; padding: 2rem; }}
+h2 {{ color: #94a3b8; margin-top: 0; }}
+p {{ color: #cbd5e1; line-height: 1.5; }}
+</style>
+</head>
+<body>
+<div class="card">
+    <h2>Two-Stage Closure: {clf or 'Classifier'} (Not Available)</h2>
+    <p>Standalone {clf or 'classifier'} was not evaluated for this analysis roast or has no closure data available. Only the primary classifier is available.</p>
+</div>
+</body>
+</html>"""
+        with open(out_file, "w") as f:
+            f.write(placeholder)
+        print(f"Wrote placeholder closure summary: {out_file}")
+        return
+
+    clf_str = f"{args.channel} - {clf}" if args.channel else (clf or 'Summary')
+    title = args.title or f"Stage F_2 Two-Stage Closure ({clf_str})"
+    html_content = generate_html(info_map, out_dir, title)
+
+    out_file = Path(args.output) if args.output else out_dir / (f"summary_{clf}.html" if clf else "closure_summary.html")
     out_file.parent.mkdir(parents=True, exist_ok=True)
     with open(out_file, "w") as f:
         f.write(html_content)

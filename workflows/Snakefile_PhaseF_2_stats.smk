@@ -124,6 +124,22 @@ def get_region_for_channel(channel):
     # 3. Fallback to default SR
     return 'SR'
 
+def get_metadata_for_channel(channel):
+    ch_cfg = config.get('channels', {}).get(channel, {})
+    if 'metadata' in ch_cfg and ch_cfg['metadata']:
+        return ch_cfg['metadata']
+    sig = ch_cfg.get('signal', ch_cfg.get('signallabel', 'ttHbb'))
+    tmpl = config.get('make_combine_inputs', {}).get('metadata_template', "coffea4bees/stats_analysis/metadata/{channel}.yml")
+    cand = tmpl.format(channel=sig)
+    if os.path.exists(cand):
+        return cand
+    cand2 = tmpl.format(channel=channel.split('_')[0])
+    if os.path.exists(cand2):
+        return cand2
+    if os.path.exists("coffea4bees/stats_analysis/metadata/ttHbb.yml"):
+        return "coffea4bees/stats_analysis/metadata/ttHbb.yml"
+    return cand
+
 module stat_analysis:
     snakefile: "rules/stat_analysis.smk"
     config: config
@@ -259,17 +275,17 @@ use rule convert_hist_to_json from stat_analysis with:
 use rule make_combine_inputs from stat_analysis with:
     input:
         injson = f"{F2_OUTPUT_PATH}histAll_{config['label']}.json",
-        injsonsyst = list([]),
+        injsonsyst = lambda wildcards: [config['make_combine_inputs']['syst_file']] if config.get('make_combine_inputs', {}).get('syst_file') else [],
         bkgsyst = lambda wildcards: get_bkgsyst_for_channel(wildcards.channel),
         script = "coffea4bees/stats_analysis/make_combine_inputs.py",
-        metadata_file = lambda wildcards: config['make_combine_inputs']['metadata_template'].format(channel=wildcards.channel.split('_')[0])
+        metadata_file = lambda wildcards: get_metadata_for_channel(wildcards.channel)
     output: f"{F2_OUTPUT_PATH}{{channel}}/datacards/datacard__{{channel}}.txt"
     params:
         variable = lambda wildcards: config['channels'][wildcards.channel]['variable'],
-        syst_file = lambda wildcards, input: f"--syst_file {config['make_combine_inputs']['syst_file']}" if config['make_combine_inputs']['syst_file'] else "",
+        syst_file = lambda wildcards, input: f"--syst_file {input.injsonsyst[0]}" if (hasattr(input, 'injsonsyst') and input.injsonsyst) else (f"--syst_file {config['make_combine_inputs']['syst_file']}" if config.get('make_combine_inputs', {}).get('syst_file') else ""),
         bkg_syst_file = lambda wildcards, input: f'--bkg_syst_file "{input.bkgsyst}"' if getattr(input, 'bkgsyst', None) else "",
         rebin = lambda wildcards, input: config['channels'][wildcards.channel].get('rebin', config['make_combine_inputs'].get('rebin', 1)),
-        metadata = lambda wildcards: config['make_combine_inputs']['metadata_template'].format(channel=wildcards.channel.split('_')[0]),
+        metadata = lambda wildcards: get_metadata_for_channel(wildcards.channel),
         output_dir = lambda wildcards: f"{F2_OUTPUT_PATH}{wildcards.channel}/datacards/",
         variable_binning = lambda wildcards, input: config['make_combine_inputs']['variable_binning'],
         stat_only = lambda wildcards, input: get_stat_only_flag(wildcards.channel),

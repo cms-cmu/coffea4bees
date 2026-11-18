@@ -51,14 +51,12 @@ rule A1_fetch:
         hist_config = JCM_HIST_CONFIG,
         psdata = PS_DATASET,
         mixed = MIXED_DATASET,
-        nominal = config['nominal_coffea']
     log: f"{A_INPUT_DIR}fetch.log"
     params:
         hists = JCM_HISTS_URL,
         hist_config = JCM_HIST_CONFIG_URL,
         psdata = PS_URL,
         mixed = MIXED_URL,
-        nominal = NOMINAL_HISTS_URL
     shell:
         """
         set -eo pipefail
@@ -72,7 +70,22 @@ rule A1_fetch:
         fetch_file "{params.hist_config}" "{output.hist_config}"
         fetch_file "{params.psdata}" "{output.psdata}"
         fetch_file "{params.mixed}" "{output.mixed}"
-        fetch_file "{params.nominal}" "{output.nominal}"
+        """
+
+# the nominal Phase F histograms (F_2 signal, F_3/F_4 datacards): a rule of their own, so a roast that
+# links the upstream inputs/ (upstream_link_stages) fetches only this into its own inputs/
+rule A1_fetch_nominal:
+    output:
+        nominal = config['nominal_coffea']
+    log: f"{os.path.dirname(config['nominal_coffea'])}/fetch_nominal.log"
+    params:
+        nominal = NOMINAL_HISTS_URL
+    shell:
+        """
+        set -eo pipefail
+        {EOS_PROXY}
+        mkdir -p $(dirname {output.nominal})
+        if [[ "{params.nominal}" == root://* ]]; then xrdcp -f "{params.nominal}" "{output.nominal}"; else cp -f "{params.nominal}" "{output.nominal}"; fi 2>&1 | tee {log}
         """
 
 rule A1_hist_config:
@@ -187,7 +200,7 @@ else:
 rule all_bkg_syst_A_1:
     input: (MIXED_JCM if isinstance(MIXED_JCM, list) else [MIXED_JCM]) if SUB_SOURCE == 'split' else [JCM_HISTS]
 
-localrules: A1_fetch, A1_hist_config, A1_merge_hists, A1_jcm_config, all_bkg_syst_A_1
+localrules: A1_fetch, A1_fetch_nominal, A1_hist_config, A1_merge_hists, A1_jcm_config, all_bkg_syst_A_1
 if per_year_jcm:
     localrules: A1_fit_per_year
 else:

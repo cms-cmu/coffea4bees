@@ -356,6 +356,7 @@ def _apply_ml_scores(
     list_weight_names,
     analysis_selections,
     label3b,
+    shift_name: str = None,
 ):
     """Apply FvT and SvB ML scores to quadjet candidates.
 
@@ -379,14 +380,15 @@ def _apply_ml_scores(
         ], axis=1)
 
     if run_SvB:
-        need_svb = (classifier_SvB is not None and "SvB" not in selev.fields)
-        need_svb_ma = (classifier_SvB_MA is not None and "SvB_MA" not in selev.fields)
+        is_kinematic_shift = bool(shift_name)
+        need_svb = (classifier_SvB is not None and ("SvB" not in selev.fields or is_kinematic_shift))
+        need_svb_ma = (classifier_SvB_MA is not None and ("SvB_MA" not in selev.fields or is_kinematic_shift))
         if need_svb or need_svb_ma:
             clf_svb = classifier_SvB if need_svb else None
             clf_svb_ma = classifier_SvB_MA if need_svb_ma else None
             tmp_mask = (
                 (selev.fourTag & quadJet[quadJet.selected][:, 0].SR)
-                if run_systematics
+                if (run_systematics or is_kinematic_shift)
                 else np.full(len(selev), True)
             )
             compute_SvB(selev, tmp_mask, SvB=clf_svb, SvB_MA=clf_svb_ma, doCheck=False)
@@ -405,15 +407,17 @@ def _apply_ml_scores(
             ], axis=1)
 
     if run_SvB and classifier_SvB_FeynNet is not None:
-        tmp_mask_fn = (
-            (selev.fourTag & quadJet[quadJet.selected][:, 0].SR)
-            if run_systematics
-            else np.full(len(selev), True)
-        )
-        # _higgs_cand_flags needs quadJet_selected; set it temporarily here since
-        # _assign_output_vars hasn't run yet.
-        selev["quadJet_selected"] = quadJet[quadJet.selected][:, 0]
-        compute_SvB_FeynNet(selev, tmp_mask_fn, SvB_FeynNet=classifier_SvB_FeynNet)
+        is_kinematic_shift = bool(shift_name)
+        if "SvB_FeynNet" not in selev.fields or is_kinematic_shift:
+            tmp_mask_fn = (
+                (selev.fourTag & quadJet[quadJet.selected][:, 0].SR)
+                if (run_systematics or is_kinematic_shift)
+                else np.full(len(selev), True)
+            )
+            # _higgs_cand_flags needs quadJet_selected; set it temporarily here since
+            # _assign_output_vars hasn't run yet.
+            selev["quadJet_selected"] = quadJet[quadJet.selected][:, 0]
+            compute_SvB_FeynNet(selev, tmp_mask_fn, SvB_FeynNet=classifier_SvB_FeynNet)
 
     if "SvB_FeynNet" in selev.fields:
         quadJet["SvB_FeynNet_reweight"] = selev.SvB_FeynNet.reweight
@@ -491,6 +495,7 @@ def create_cand_jet_dijet_quadjet(
     list_weight_names: list[str] = None,
     analysis_selections: ak.Array = None,
     cand_cfg: dict = None,
+    shift_name: str = None,
 ):
     """
     Creates candidate jets, dijets, and quadjets for event selection.
@@ -545,6 +550,7 @@ def create_cand_jet_dijet_quadjet(
         selev, quadJet, apply_FvT, classifier_FvT,
         run_SvB, run_systematics, classifier_SvB, classifier_SvB_MA, classifier_SvB_FeynNet,
         weights, list_weight_names, analysis_selections, label3b,
+        shift_name=shift_name,
     )
 
     _assign_output_vars(selev, diJet, quadJet, run_SvB, cand_cfg)

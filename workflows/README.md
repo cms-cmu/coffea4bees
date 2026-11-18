@@ -1,395 +1,312 @@
 # Coffea4bees Analysis Workflows
 
-This directory contains the Snakemake workflows orchestrated for the **HH $\to$ 4b** (and **ttH(bb)**) analysis pipelines in `coffea4bees`.
+This document describes the Snakemake workflows orchestrated for the **HH $\to$ 4b** and **ttH(bb)** analyses in `coffea4bees`.
 
-The pipeline is organized into modular **Phases (A through F)** reflecting the full analysis lifecycle, from raw nanoAOD ntuples to final Combine statistical interpretation and limit extraction.
-
----
-
-## 1. Execution Environments & Target Machines
-
-| Phase | Purpose | Target Execution Environment | Compute Requirements |
-| :--- | :--- | :--- | :--- |
-| **Phase A** | Skimmer & Trigger Weights | **`cmslpc`** | CPU (Condor / Dask batching) |
-| **Phase B** | **Phase B.1**: Compute JCM *(New Analysis Only)*<br>**Phase B.2**: Make Classifier Friend Trees *(Required)* | **`cmslpc`** | CPU (Condor / Dask batching) |
-| **Phase C** | **Phase C.1 / C.2**: Plot Inputs & Train *(Optional)*<br>**Phase C.3**: Evaluate *(If Bkg Model Changed)* | **`falcon`** (GPU cluster) / **PSC Bridges-2** | GPU (NVIDIA MPS/CUDA for training & inference) |
-| **Phase D** | **Phase D.1 / D.2**: Plot Inputs & Train *(Optional)*<br>**Phase D.3**: Evaluate *(Required)* | **`falcon`** (GPU cluster) / **PSC Bridges-2** | GPU (NVIDIA MPS/CUDA for training & inference) |
-| **Phase E** | Background Uncertainties & Closure *(Optional — Skip if Stat-Only; Requires Phase F.1 Singlefiles)* | **`cmslpc`** | CPU (Condor / Dask batching) |
-| **Phase F** | Analysis Processor & CMS Combine Stats | **`cmslpc`** | CPU (Condor + Dask + Combine container) |
-
-> [!TIP]
-> **Configuration Best Practice**: While Snakemake supports direct command-line parameter overrides (e.g. `--config dataset=ttHbb year=UL18`), the **recommended and reproducible approach** is to run workflows using a centralized YAML configuration file passed via `--configfile` (e.g. `--configfile coffea4bees/workflows/config/nominal_run2.yml` or `coffea4bees/workflows/config/ttHbb.yml`). CLI `--config` flags should only be used for temporary or targeted overrides (such as `--config test=true` or single-dataset evaluation).
+The analysis framework organizes production into three primary workflow architectures:
+1. **[Stat-Only (Nominal) Pipeline](#1-stat-only-nominal-pipeline)**: End-to-end baseline analysis from picoAOD skimming to statistical limits without systematic shape uncertainties.
+2. **[Background Systematics Pipeline (`bkg_syst`)](#2-background-systematics-pipeline-bkg_syst)**: Multi-sample mixed-data closure, 16 independent JCM calibrations, 16 FvT models trained on GPUs, two-stage background closure, and Combine statistical inference.
+3. **[Full Systematics Pipeline (`full_syst`)](#3-full-systematics-pipeline-full_syst)**: Integrates signal systematic variations (`others` friend weights, `jes` PyTorch kinematic shifts) with data-driven background closure models from `bkg_syst`, performs nominal integrity gates, cutflow count validation, systematic variation plotting with interactive HTML galleries, and full CMS Combine statistical interpretation (limits, significance, likelihood scans, postfit, and impacts).
 
 ---
 
-## 2. High-Level Analysis Pipeline Architecture
+## Architecture Overview & Target Environments
+
+Workflows execute across heterogeneous computing clusters according to workload requirements:
+
+| Workflow | Stage | Target Machine | Compute Environment | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **Stat-Only** | **Phase A** | **`cmslpc`** | CPU (Condor / Dask) | NanoAOD $\to$ PicoAOD Skimmer & Trigger Weights |
+| | **Phase B** | **`cmslpc`** | CPU (Condor / Dask) | JCM Calibration (B.1) & Classifier Friend Trees (B.2) |
+| | **Phase C** | **`falcon`** / **Bridges-2** | GPU (CUDA / PyTorch) | FvT Classifier Training & EOS Friend Tree Evaluation |
+| | **Phase C.4** | **`cmslpc`** | CPU (Condor / Dask) | FvT Data Closure & Validation Plots |
+| | **Phase D** | **`falcon`** / **Bridges-2** | GPU (CUDA / PyTorch) | SvB Classifier Training & EOS Friend Tree Evaluation |
+| | **Phase F** | **`cmslpc`** | CPU + Combine | Analysis Processor (F.1) & Combine Statistical Fits (F.2) |
+| **Bkg Syst** | **Stage A** | **`cmslpc`** | CPU (Condor / Dask) | Slicing Mixed Data into 16 Subsamples ($v_0 \dots v_{15}$) |
+| | **Stage B** | **`cmslpc`** | CPU (Condor / Dask) | Subsample JCM Calibrations ($v_0 \dots v_{15}$) |
+| | **Stage C** | **`falcon`** / **Bridges-2** | GPU (CUDA / PyTorch) | Training 16 FvT Models & Friend Tree Generation |
+| | **Stage C.4** | **`cmslpc`** | CPU (Condor / Dask) | Subsample FvT Closure Verification |
+| | **Stage F** | **`cmslpc`** | CPU + Combine | Two-Stage Closure Fit (F.2) & Combine Datacards (F.3 / F.4) |
+| **Full Syst** | **Stage F.1** | **`cmslpc`** | CPU (Condor / Dask) | Signal Systematics (`others` + `jes`), Merging, Integrity Gates |
+| | **Stage F.2** | **`cmslpc`** | CPU + Combine | Datacards, Shape Variation Plots, Gallery & Impacts |
+
+---
+
+## 1. Stat-Only (Nominal) Pipeline
+
+The Stat-Only pipeline establishes the nominal baseline event selection, data-driven background estimation (via single nominal FvT), signal-vs-background discrimination (via nominal SvB), and computes asymptotic limits assuming statistical uncertainties only.
 
 ```mermaid
 flowchart TD
-    subgraph PhaseA["Phase A: Pre-processing & Corrections (cmslpc)"]
-        A1["PhaseA_1_skimmer.smk\n(PicoAOD Skimming)"] --> A2["PhaseA_2_trigWeights.smk\n(Trigger Efficiency Weights)"]
+    subgraph PhaseA["Phase A: Skimming & Trigger Weights (cmslpc)"]
+        A1["PhaseA_1_skimmer.smk\n(NanoAOD -> PicoAOD)"] --> A2["PhaseA_2_trigWeights.smk\n(Trigger Scale Factors)"]
     end
 
     subgraph PhaseB["Phase B: Calibration & Classifier Inputs (cmslpc)"]
-        B1["PhaseB_1_computeJCM.smk\n(JCM Weights — [New Analysis Only])"]
-        B2["PhaseB_2_make_classifier_friendtree.smk\n(Classifier Input Friend Trees — [Required])"]
+        B1["PhaseB_1_computeJCM.smk\n(JCM Weights [New Baseline])"]
+        B2["PhaseB_2_make_classifier_friendtree.smk\n(HCR Feature Extraction)"]
     end
 
-    subgraph PhaseC["Phase C: FvT Classifier Pipeline (falcon / PSC)"]
-        C1["PhaseC_1_plot_inputs.smk\nPhaseC_2_train.smk\n(Diagnostics & Training — [Optional])"]
-        C2["PhaseC_3_evaluate.smk\n(FvT Inference — [If Bkg Model Changed])"]
+    subgraph PhaseC["Phase C: FvT Classifier & Data Closure"]
+        C_GPU["PhaseC.smk (Falcon / Bridges-2)\n(Train & Evaluate FvT on GPU)"]
+        C4_CPU["PhaseC_4_FvT_closure.smk (cmslpc)\n(Data Closure & Cutflow Verification)"]
+        C_GPU --> C4_CPU
     end
 
-    subgraph PhaseD["Phase D: SvB Classifier Pipeline (falcon / PSC)"]
-        D1["PhaseD_1_plot_inputs.smk\nPhaseD_2_train.smk\n(Diagnostics & Training — [Optional])"]
-        D2["PhaseD_3_evaluate.smk\n(SvB Inference — [Required])"]
+    subgraph PhaseD["Phase D: SvB Classifier (Falcon / Bridges-2)"]
+        D1["PhaseD.smk\n(Train & Evaluate SvB on GPU)"]
     end
 
-    subgraph PhaseE["Phase E: Background Uncertainties (cmslpc) — [Optional / Skip if Stat-Only]"]
-        E1["PhaseE.smk\n(Mixed Data Closure & Systematics — [Needs Phase F.1])"]
-    end
-
-    subgraph PhaseF["Phase F: Analysis & Statistical Interpretation (cmslpc)"]
-        F1["PhaseF_1_analysis.smk\n(Main Processor, Cutflows, Plots)"] --> F2["PhaseF_2_stats.smk\n(Datacards, Workspaces, Fits & Limits)"]
+    subgraph PhaseF["Phase F: Analysis & Combine Stats (cmslpc)"]
+        F1["PhaseF_1_analysis.smk\n(Main Processor, Cutflow, Data/MC Plots)"]
+        F2["PhaseF_2_stats.smk\n(Datacards, Limits, Scans, Postfit)"]
+        F1 --> F2
     end
 
     PhaseA --> PhaseB
     PhaseB --> PhaseC
     PhaseC --> PhaseD
-    PhaseD --> PhaseE
-    PhaseE --> PhaseF
+    PhaseD --> PhaseF
 ```
 
-> [!NOTE]
-> *See the [Phase-by-Phase Technical Specifications](#3-phase-by-phase-technical-specification) below for detailed conditions regarding optional (one-time setup or retraining) versus routine execution steps, along with intermediate metadata updates.*
+### Key Phases:
+- **Phase A (`Snakefile_PhaseA.smk`)**: Filters nanoAOD to compact picoAOD ntuples (`PhaseA_1_skimmer.smk`) and calculates trigger efficiency scale factors (`PhaseA_2_trigWeights.smk`).
+- **Phase B (`Snakefile_PhaseB.smk`)**: Calibrates the Jet Combinatoric Model in the Sideband (`PhaseB_1_computeJCM.smk`) and extracts multi-jet kinematic features into friend trees (`PhaseB_2_make_classifier_friendtree.smk`).
+- **Phase C (`Snakefile_PhaseC.smk` & `Snakefile_PhaseC_4_FvT_closure.smk`)**:
+  - `C`: Multi-fold training and dataset evaluation of the Four-vs-Three (FvT) reweighting classifier on GPUs.
+  - `C4`: Mandated data closure step on `cmslpc` running Coffea over collision data and $t\bar{t}$ MC to verify Sideband closure before touching the Signal Region.
+- **Phase D (`Snakefile_PhaseD.smk`)**: Trains and evaluates the Signal-vs-Background (SvB) classifier across all datasets.
+- **Phase F (`Snakefile_PhaseF.smk`)**:
+  - `F.1` (`PhaseF_1_analysis.smk`): Runs `processor_HH4b.py` or `processor_ttHbb.py`, verifies cutflows against `known_Counts_<channel>.yml`, cross-checks against Phase C.4, and generates data/MC comparison plots.
+  - `F.2` (`PhaseF_2_stats.smk`): Converts histograms to JSON, generates stat-only Combine datacards, builds workspaces, and computes expected limits, signal significance, and profile likelihood scans.
 
----
-
-## 3. Phase-by-Phase Technical Specification
-
-### Phase A: Skimming & Trigger Weights
-* **Target Machine:** **`cmslpc`** (CPU batching via HTCondor)
-* **Coordinator:** `Snakefile_PhaseA.smk`
-* **Sub-workflows:**
-  * `Snakefile_PhaseA_1_skimmer.smk`: Runs `skimmer_4b.py` on nanoAOD datasets, applies baseline object selections, and writes skimmed picoAOD root files.
-  * `Snakefile_PhaseA_2_trigWeights.smk`: Calculates trigger efficiency scale factors and outputs a trigger weights friend tree JSON.
-
-#### Key Artifacts & Required Downstream Updates:
-* **After Phase A.1 (Skimmer)**:
-  * *Outputs Produced*: Skimmed picoAOD ROOT files (`picoAOD_*.root`) on EOS.
-  * *Files to Add/Modify*: Create or update dataset manifest files in `metadata/datasets/` (e.g. `picoaod_datasets_<analysis>.yml`) so downstream processors find the skimmed files.
-* **After Phase A.2 (Trigger Weights)**:
-  * *Outputs Produced*: Trigger weight friend trees and manifest `trigWeights_nominal.json` on EOS.
-  * *Files to Add/Modify*: Register the trigger weight friend path in the analysis friend file (e.g. `friends_<analysis>.yml`):
-    ```yaml
-    trigWeight:
-      - path: 'root://cmseos.fnal.gov//store/user/.../trigWeights_nominal.json'
-        name: Final
-    ```
-
-#### Snakemake Rulegraph DAG:
-<p align="center">
-  <img src="docs/figures/rulegraph_PhaseA.svg" alt="Phase A Rulegraph DAG" width="380"/>
-</p>
-
-**Execution Examples:**
+### Execution:
 ```bash
-# Run full Phase A (Skim + Trigger Weights) via config file on cmslpc
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseA.smk \
-    --configfile coffea4bees/workflows/config/ttHbb.yml
+# Production execution via roast (recommended):
+bin/roast new --config coffea4bees/workflows/config/nominal_run2.yml --phases B,C,C4,D,F --label nominal_run2
+bin/roast checkout <id> --host cmslpc
+bin/roast checkout <id> --host falcon
+bin/roast submit <id> --step B
+bin/roast submit <id> --step C     # on falcon GPU
+bin/roast submit <id> --step C4    # on cmslpc CPU
+bin/roast submit <id> --step D     # on falcon GPU
+bin/roast submit <id> --step F     # on cmslpc CPU
 
-# Run only the skimmer
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseA_1_skimmer.smk \
-    --configfile coffea4bees/workflows/config/ttHbb.yml
-
-# Run only trigger weights calculation
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseA_2_trigWeights.smk \
-    --configfile coffea4bees/workflows/config/ttHbb.yml
-```
-
----
-
-### Phase B: Calibration & Classifier Input Preparation
-* **Target Machine:** **`cmslpc`**
-* **Coordinator:** `Snakefile_PhaseB.smk`
-* **Sub-workflows:**
-  * `Snakefile_PhaseB_1_computeJCM.smk`: **[New Analysis Only / One-Time]** Derives jet combinatoric model weights by running the Coffea processor with `apply_JCM: false` and fitting the resulting histograms to compute transfer factors between jet multiplicities. Done once when establishing a new analysis baseline, and reused thereafter.
-  * `Snakefile_PhaseB_2_make_classifier_friendtree.smk`: **[Required for All Analyses]** Runs the Coffea processor (`processor_HH4b.py make_classifier_input`) on datasets to create the ROOT friend tree files used as input features for classifier training and evaluation.
-
-#### Key Artifacts & Required Downstream Updates:
-* **After Phase B.1 (computeJCM)**:
-  * *Outputs Produced*: Fitted JCM YAML file (`jetCombinatoricModel_SB_<tag>.yml`).
-  * *Files to Add/Modify*: Store the JCM file in `metadata/weights/JCM/<analysis>/` and update `weights_<analysis>.yml` (e.g. `weights_ttHbb.yml` or `weights_HH4b.yml`) to point `JCM_file:` to this new file.
-* **After Phase B.2 (make_classifier_friendtree)**:
-  * *Outputs Produced*: Classifier input friend tree ROOT files on EOS + `classifier_inputs_friends.json` manifest.
-  * *Files to Add/Modify*: Create the classifier dataset manifest in `metadata/datasets/.../classifier_inputs_<analysis>.json` with the `@@HCR_input` / `@@HCR_input_lowpt` dataset configuration block for PyTorch dataloaders. Ensure `fvt.metadata` and `svb.metadata` in the master config point to this JSON.
-
-#### Snakemake Rulegraph DAG:
-<p align="center">
-  <img src="docs/figures/rulegraph_PhaseB.svg" alt="Phase B Rulegraph DAG" width="480"/>
-</p>
-
-**Execution Examples (on cmslpc):**
-```bash
-# Run full Phase B (JCM + Classifier Inputs) on cmslpc
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseB.smk \
-    --configfile coffea4bees/workflows/config/ttHbb.yml \
-    --cores 8
-
-# Run only Phase B.1 JCM computation (New analysis only)
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseB_1_computeJCM.smk \
-    --configfile coffea4bees/workflows/config/ttHbb.yml \
-    --cores 4
-
-# Run only Phase B.2 Classifier friend tree inputs creation (All analyses)
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseB_2_make_classifier_friendtree.smk \
-    --configfile coffea4bees/workflows/config/ttHbb.yml \
-    --cores 8
-```
-
----
-
-### Phase C: FvT (Four-vs-Three) Classifier Pipeline
-* **Target Machine:** **`falcon`** (GPU cluster) or **PSC Bridges-2** (Entire Phase on GPU)
-* **Coordinator:** `Snakefile_PhaseC.smk`
-* **Sub-workflows:**
-  * `Snakefile_PhaseC_1_plot_inputs.smk`: *(Optional / Diagnostics)* Generates raw feature distributions, preprocessed data distributions, and learned event weights plots (`plot_inputs_raw`, `plot_inputs_dataprep`, `plot_weights`).
-  * `Snakefile_PhaseC_2_train.smk`: *(Optional — If Retraining FvT)* Trains multi-fold FvT neural networks using PyTorch/HCR (`train`) and produces training loss and ROC curve diagnostics (`analyze`).
-  * `Snakefile_PhaseC_3_evaluate.smk`: *(Run If Background Estimation / JCM Changed)* Evaluates trained models on datasets to produce FvT friend tree ntuples (`evaluate`). Flexible to run standalone or chained after training.
-
-#### Key Artifacts & Required Downstream Updates:
-* **After Phase C.2 (Train)**:
-  * *Outputs Produced*: PyTorch checkpoint weights (`model.pt`, `model_fold_*.pt`) and `result.json` on EOS.
-* **After Phase C.3 (Evaluate)**:
-  * *Outputs Produced*: Evaluated FvT friend tree ROOT files (`FvT_*.root`) on EOS and manifest `result.json`.
-  * *Files to Add/Modify*: Register the FvT friend tree path in `weights_<analysis>.yml`:
-    ```yaml
-    FvT:
-      - path: 'root://cmseos.fnal.gov//store/user/.../classifier/FvT_<label>/result.json'
-        name: Final
-    ```
-    Ensure `svb.train_template` in the master config references this FvT friend path.
-
-#### Snakemake Rulegraph DAG:
-<p align="center">
-  <img src="docs/figures/rulegraph_PhaseC.svg" alt="Phase C Rulegraph DAG" width="400"/>
-</p>
-
-**Execution Examples (on falcon / PSC):**
-```bash
-# Run full Phase C master pipeline
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseC.smk \
-    --configfile coffea4bees/workflows/config/ttHbb.yml \
-    --cores 8
-
-# Run only Phase C.1 Diagnostic plotting
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseC_1_plot_inputs.smk \
-    --configfile coffea4bees/workflows/config/ttHbb.yml \
-    --cores 4
-
-# Run only Phase C.2 Model training & loss/ROC analysis (If retraining FvT)
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseC_2_train.smk \
-    --configfile coffea4bees/workflows/config/ttHbb.yml \
-    --cores 8
-
-# Run Phase C.3 evaluation on ALL datasets (If background estimation changed)
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseC_3_evaluate.smk \
-    --configfile coffea4bees/workflows/config/ttHbb.yml \
-    --cores 8
-
-# Run Phase C.3 evaluation on a SINGLE dataset (e.g. ttHbb)
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseC_3_evaluate.smk \
-    --configfile coffea4bees/workflows/config/ttHbb.yml \
-    --config dataset=ttHbb \
-    --cores 4
-```
-
----
-
-### Phase D: SvB (Signal-vs-Background) Classifier Pipeline
-* **Target Machine:** **`falcon`** (GPU cluster) or **PSC Bridges-2** (Entire Phase on GPU)
-* **Coordinator:** `Snakefile_PhaseD.smk`
-* **Sub-workflows:**
-  * `Snakefile_PhaseD_1_plot_inputs.smk`: *(Optional / Diagnostics)* Generates raw and preprocessed feature distributions and weight plots.
-  * `Snakefile_PhaseD_2_train.smk`: *(Optional — If Retraining SvB)* Trains multiclass / binary SvB classifiers (`train`) and generates ROC curves (`analyze`).
-  * `Snakefile_PhaseD_3_evaluate.smk`: **[Required for All Analyses]** Evaluates trained SvB models across all analysis datasets to generate the final `SvB_nominal.root` / `.json` friend tree ntuples (`evaluate`) required for downstream event selection in Phase F.
-
-#### Key Artifacts & Required Downstream Updates:
-* **After Phase D.2 (Train)**:
-  * *Outputs Produced*: PyTorch checkpoint weights (`model.pt`, `model_fold_*.pt`) and `result.json` on EOS.
-* **After Phase D.3 (Evaluate)**:
-  * *Outputs Produced*: Evaluated SvB friend tree ROOT files (`SvB_*.root`) on EOS and manifest `result.json`.
-  * *Files to Add/Modify*: Register the SvB friend tree path in `weights_<analysis>.yml`:
-    ```yaml
-    SvB_MA:
-      - path: 'root://cmseos.fnal.gov//store/user/.../classifier/SvB_<label>/result.json'
-        name: Final
-    ```
-
-#### Snakemake Rulegraph DAG:
-<p align="center">
-  <img src="docs/figures/rulegraph_PhaseD.svg" alt="Phase D Rulegraph DAG" width="400"/>
-</p>
-
-**Execution Examples (on falcon / PSC):**
-```bash
-# Run full Phase D master pipeline
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseD.smk \
-    --configfile coffea4bees/workflows/config/ttHbb.yml \
-    --cores 8
-
-# Run only Phase D.1 Diagnostic plotting
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseD_1_plot_inputs.smk \
-    --configfile coffea4bees/workflows/config/ttHbb.yml \
-    --cores 4
-
-# Run only Phase D.2 SvB training & analysis (If retraining SvB)
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseD_2_train.smk \
-    --configfile coffea4bees/workflows/config/ttHbb.yml \
-    --cores 8
-
-# Run Phase D.3 SvB evaluation on ALL datasets (Required for All Analyses)
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseD_3_evaluate.smk \
-    --configfile coffea4bees/workflows/config/ttHbb.yml \
-    --cores 8
-
-# Run Phase D.3 SvB evaluation on a single dataset (e.g. ttHbb)
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseD_3_evaluate.smk \
-    --configfile coffea4bees/workflows/config/ttHbb.yml \
-    --config dataset=ttHbb \
-    --cores 4
-```
-
----
-
-### Phase E: Background Systematics & Two-Stage Closure
-* **Target Machine:** **`cmslpc`** (Steps 1, 2, 3, 5, 6, 7, 8: CPU batching with HTCondor/Dask + Combine container) / **`falcon`** (Step 4: GPU cluster for FvT training & evaluation)
-* **Coordinator:** `Snakefile_PhaseE.smk`
-* **Dedicated In-Depth Guide:** See [README_PhaseE.md](docs/README_PhaseE.md) for full physics motivation, rulegraph architecture, step-by-step instructions, and artifact matrix.
-* **Sub-workflows:**
-  * `Snakefile_PhaseE_1_make_mixeddata.smk`: Step 1 — Generates mixed-data picoAODs from collision data using the hemisphere mixing library.
-  * `Snakefile_PhaseE_2_make_subsamples.smk`: Step 2 — Slices mixed data into 15 statistically independent subsamples (`mix_v0` .. `mix_v14`), fits subsample-specific JCM weights, creates classifier inputs, and evaluates SvB friend trees.
-  * `Snakefile_PhaseE_3_make_ttbar_psdata.smk`: Step 3 — Generates pseudo-data from $t\bar{t}$ MC to validate hemisphere subtraction.
-  * `Snakefile_PhaseE_4_FvT_training.smk`: Step 4 — Trains 15 distinct FvT models (one per subsample) on Falcon GPU and evaluates friend trees on 3-tag collision data.
-  * `Snakefile_PhaseE_5_analysis.smk`: Step 5 — Executes Coffea analysis processor (`processor_ttHbb.py`) over all 15 mixed-data subsamples across 4 Run 2 eras (`UL16_preVFP`, `UL16_postVFP`, `UL17`, `UL18`).
-  * `Snakefile_PhaseE_6_closure.smk`: Step 6 — Builds 3-tag background ROOT histograms with `coffea4bees/stats_analysis/make_fvt_data3b_hists.py` ($SF = 1.4508$, 30 variable bins), converts mixed-data and signal to ROOT, and executes `runTwoStageClosure.py`.
-  * `Snakefile_PhaseE_7_stats.smk`: Step 7 — Runs CMS Combine statistical interpretation on collision data (blinded SR) injecting closure systematics (`bkgsyst`), evaluating expected limits, postfit pulls, likelihood scans, and expected impacts.
-  * `Snakefile_PhaseE_8_stats_mixeddata.smk`: Step 8 — Runs CMS Combine unblinded statistical interpretation using the 15-subsample average mixed data $\langle\text{mix}\rangle_{4b}$ as pseudo-data (`data_obs`), generating limits, observed significance, saturated Goodness-of-Fit toys, and impacts.
-
-#### Required Datasets and JCM Models per Step:
-Because Phase E mixes multiple data-driven and MC components, ensuring the correct dataset and JCM file at each step is critical:
-
-| Step | Sub-Workflow | Target Machine | Input Datasets | Applied JCM Calibration | Outputs Produced |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Step 1** | `PhaseE_1_make_mixeddata.smk` | `cmslpc` (CPU) | Collision Data 3-tag/4-tag | Nominal inclusive JCM (`jetCombinatoricModel_SB_2024_v2_stitched.yml`) | `mixeddata_ttHbb_stitched_rank0_0.yml` & `JCM_mixeddata_inclusive/` |
-| **Step 2** | `PhaseE_2_make_subsamples.smk` | `cmslpc` (CPU) | `mixeddata_ttHbb_stitched_rank0_0.yml` | Subsample JCMs (`jetCombinatoricModel_SB_mix_v{m}.yml` fitted per subsample) | `mixeddata_4b.yml` (15 subsamples), `classifier_inputs_mixeddata_ttHbb.json`, `friends_ttHbb_mixeddata_4b.json` |
-| **Step 3** | `PhaseE_3_make_ttbar_psdata.smk` | `cmslpc` (CPU) | $t\bar{t}$ stitched MC (`TTTo2L2Nu_stitched`, `TTToSemiLeptonic_stitched`, `TTToHadronic_stitched`) | Nominal inclusive JCM | `ttbar_PSData_stitched.yml` |
-| **Step 4** | `PhaseE_4_FvT_training.smk` | `falcon` (GPU) | Subsample classifier inputs + 3-tag collision data (`data_3b_for_mixed`) | Subsample JCMs (`jetCombinatoricModel_SB_mix_v{m}.yml`) | 15 FvT model weights & friend JSONs (`friends_FvT_ttHbb_mixeddata_stitched_v{m}.json`) |
-| **Step 5** | `PhaseE_5_analysis.smk` | `cmslpc` (CPU) | `mixeddata_4b` (15 subsamples across 4 Run 2 eras) | Subsample JCMs + SvB friend trees from Step 2 | `histAll_ttHbb_mixeddata_stitched.coffea`, comparison & analysis plots |
-| **Step 6** | `PhaseE_6_closure.smk` | `cmslpc` (CPU) | 4-tag Mixed Data (`histAll_ttHbb_mixeddata_stitched.root`), 3-tag Data with 15 FvT friends (`histMixedBkg_data_3b_for_mixed.root`), Signal (`hist_signal_ttHbb.root`) | Subsample JCMs (used inside `stats_analysis/make_fvt_data3b_hists.py`) | Closure results `.pkl`, 30-bin diagnostic fit plots, subsample overlay plots |
-| **Step 7** | `PhaseE_7_stats.smk` | `cmslpc` (CPU) | `histAll_ttHbb_stitched.json`, Closure results `.pkl` | Injected into Combine datacards | Datacards, expected limits, significance, scans, and Asimov impacts across 8 channels |
-| **Step 8** | `PhaseE_8_stats_mixeddata.smk` | `cmslpc` (CPU) | 15 Subsample `.coffea` files, Closure results `.pkl` | Injected into Combine datacards | Unblinded pseudo-data limits, observed significance ($0.00\sigma$), saturated GoF, and impacts |
-
-#### Snakemake Rulegraph DAG:
-<p align="center">
-  <img src="docs/figures/rulegraph_PhaseE.svg" alt="Phase E Rulegraph DAG" width="650"/>
-</p>
-
-#### Key Artifacts & Downstream Use:
-* **Outputs Produced**: Background closure fit histograms, diagnostic plots, systematic uncertainty pickle file (`hists_closure_*.pkl`), blinded collision data limits/impacts, and unblinded mixed data stats validation.
-
-**Execution Examples:**
-```bash
-# Run full Phase E pipeline (Steps 1 through 8) on cmslpc
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseE.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml \
-    --cores 8
-
-# Step 1: Make mixed data picoAODs
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseE_1_make_mixeddata.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml
-
-# Step 2: Split 15 subsamples, compute JCMs, evaluate SvB friends
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseE_2_make_subsamples.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml
-
-# Step 3: Make ttbar pseudo-data (MC subtraction check)
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseE_3_make_ttbar_psdata.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml
-
-# Step 4: Train 15 FvT models on Falcon GPU & evaluate friend trees
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseE_4_FvT_training.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml
-
-# Step 5: Run Coffea analysis processor over 15 subsamples
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseE_5_analysis.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml
-
-# Step 6: Two-stage closure fit, spurious signal test & plotting
-./run_container snakemake --profile software/snakemake/profiles/lpc -s coffea4bees/workflows/Snakefile_PhaseE_6_closure.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml \
-    --cores 4
-
-# Step 7: Statistical interpretation, limits, likelihood scans, impacts & EOS upload (blinded collision data)
-./run_container snakemake --profile software/snakemake/profiles/lpc -s coffea4bees/workflows/Snakefile_PhaseE_7_stats.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml \
-    --cores 4
-
-# Step 8: Complete unblinded statistical interpretation on average mixed data
-./run_container snakemake --profile software/snakemake/profiles/lpc -s coffea4bees/workflows/Snakefile_PhaseE_8_stats_mixeddata.smk \
-    --configfile coffea4bees/workflows/config/analysis_ttHbb_mixeddata.yml \
-    --cores 4
-```
-
----
-
-
-### Phase F: Analysis & Statistical Interpretation
-* **Target Machine:** **`cmslpc`** (CPU batching with HTCondor/Dask + Combine container)
-* **Coordinator:** `Snakefile_PhaseF.smk`
-* **Sub-workflows:**
-  * `Snakefile_PhaseF_1_analysis.smk`: Runs main Coffea analysis processor (`processor_HH4b.py`) on data and the signals, merges histogram files, checks cutflow agreement against reference counts (`analysis/tests/known_fullCounts_<label>.yml`), and generates data/MC comparison plots (+ gallery). The ttbar is **not** run as MC here: with `plot_ttbar_with_weights` it is estimated from 3b data with the FvT `d3_to_t4` / `d3_to_t3` weights (`TTbar4b_from_d3` / `TTbar3b_from_d3` histograms, `TTbar_from_d3_<era>` cutflow entries), which is what `plotsAll_ttbarWeights.yml` stacks and what the Combine `tt` template is built from — running the `TTTo*` MC as well would double count the ttbar in the datacards (`make_combine_inputs.py` now refuses a file with both estimates). Two more pages come out of the cutflow: `cutflow_<label>.html` (closure table, Multijet = 3b data with JCM × FvT, tt = `TTbar_from_d3`; `closure_ttbar` in the config to use MC names) and `cutflow_crosscheck_<label>.html` (`src/tools/cutflow_compare.py`: F.1 vs the Phase C.4 FvT-closure dump, dataset by dataset — same processor, same data, same JCM × FvT, so every shared weighted and raw count must agree; a mismatch means different weights (e.g. `JCM_file` not set → the processor silently takes the `weights_file` JCM of the old production) or a different selection such as blinding. PASS/FAIL is the first line of the `.txt`; it is a report, not a gate. `crosscheck_reference` / `crosscheck_ignore` / `crosscheck_tolerance` in the config).
-  * `Snakefile_PhaseF_2_stats.smk`: Converts histogram distributions to Combine JSON format, generates CMS Combine datacards, builds workspaces, and computes expected limits, signal significance, and likelihood profile scans. The last rule (`stat_summary`, barista `src/stat_analysis/stat_summary.py`) writes `stat_analysis/summary.html` (+ `summary.md`): one overview table over the channels (expected significance, expected limit with ±1σ/±2σ bands, background and signal yields, likelihood-scan status, nuisance count) and per channel the datacard yields per year, the scan and postfit figures, and links to the datacards, workspace, limits/significance outputs and fit diagnostics. Blinded runs (`combine_flags: --blind`) are marked as such (observed = Asimov).
-
-#### Key Artifacts & Required Downstream Updates:
-* **After Phase F.1 (Analysis Processor)**:
-  * *Outputs Produced*: `histAll_<label>.coffea`, cutflow summary `cutflow_<label>.yml`, and data/MC plots on EOS/web.
-  * *Files to Add/Modify*: Update reference cutflow counts file (`known_Counts_<analysis>.yml`) if this run establishes a new validated baseline.
-* **After Phase F.2 (Combine Stats)**:
-  * *Outputs Produced*: Combine JSON histograms, datacards (`datacard_*.txt`), workspaces (`datacard_*.root`), limit outputs (`datacard_limits_*.json`), and likelihood profile scan PDFs/ROOT snapshots.
-
-#### Snakemake Rulegraph DAG:
-<p align="center">
-  <img src="docs/figures/rulegraph_PhaseF.svg" alt="Phase F Rulegraph DAG" width="550"/>
-</p>
-
-**Execution Examples (on cmslpc):**
-```bash
-# Run full Phase F (Analysis + Stats) on cmslpc
+# Direct local / dry-run execution:
 ./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseF.smk \
-    --configfile coffea4bees/workflows/config/nominal_run2.yml \
-    --cores 16
-
-# Run only Phase F.1 Analysis processor & plotting
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk \
-    --configfile coffea4bees/workflows/config/nominal_run2.yml \
-    --cores 16
-
-# Run only Phase F.2 Combine statistical fits
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseF_2_stats.smk \
-    --configfile coffea4bees/workflows/config/nominal_run2.yml \
-    --cores 8
+    --configfile coffea4bees/workflows/config/nominal_run2.yml -n
 ```
 
 ---
 
-## 4. General Running Guide & Common Options
+## 2. Background Systematics Pipeline (`bkg_syst`)
 
-### Local & Dry-Run Mode
-Always dry-run (`-n` or `-np`) before launching large jobs:
-```bash
-./run_container snakemake -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk \
-    --configfile coffea4bees/workflows/config/ttHbb.yml \
-    --config test=true \
-    -np
+The Background Systematics workflow derives data-driven multijet background shape and normalization uncertainties by dividing mixed collision data into independent subsamples, training 16 distinct FvT neural network models, and performing a rigorous Two-Stage Closure test to extract non-closure variance, transfer bias, and spurious signal systematics.
+
+```mermaid
+flowchart TD
+    subgraph StageA["Stage A: Mixed Data Subsamples (cmslpc)"]
+        A1["bkg_syst_A_1_make_mixeddata.smk\n(Hemisphere Mixing PicoAODs)"]
+        A2["bkg_syst_A_2_make_subsamples.smk\n(Slice into 16 Subsamples v0..v15)"]
+        A1 --> A2
+    end
+
+    subgraph StageB["Stage B: Subsample JCM Fits (cmslpc)"]
+        B1["bkg_syst_B_1_computeJCM.smk\n(Fit 16 Subsample JCMs in SB)"]
+    end
+
+    subgraph StageC["Stage C: 16 FvT Models (Falcon / Bridges-2 GPU)"]
+        C1["bkg_syst_C_2_train.smk\n(Train 16 FvT Models on GPU)"]
+        C2["bkg_syst_C_3_evaluate.smk\n(Evaluate FvT Friends for 3b Data)"]
+        C1 --> C2
+    end
+
+    subgraph StageF["Stage F: Two-Stage Closure & Combine Stats (cmslpc)"]
+        F1["bkg_syst_F_1_analysis.smk\n(Process 3b Data with 16 FvT Weights)"]
+        F2["bkg_syst_F_2_run_two_stage_closure.smk\n(Variance, Bias, Spurious Signal Fit)"]
+        F3["bkg_syst_F_3_stats.smk\n(Blinded Combine Stats with Closure Syst)"]
+        F4["bkg_syst_F_4_stats_mixeddata.smk\n(Unblinded Pseudo-Data Interpretation)"]
+        F1 --> F2 --> F3
+        F2 --> F4
+    end
+
+    StageA --> StageB --> StageC --> StageF
 ```
+
+### Key Stages:
+- **Stage A (`Snakefile_bkg_syst_A_*.smk` / `Snakefile_bkg_syst_AB.smk`)**: Slices inclusive mixed data into 16 statistically independent subsamples ($v_0 \dots v_{15}$) and generates corresponding $t\bar{t}$ MC pseudo-data.
+- **Stage B (`Snakefile_bkg_syst_B_1_computeJCM.smk`)**: Derives 16 independent JCM transfer functions by fitting each subsample in the Sideband.
+- **Stage C (`Snakefile_bkg_syst_C.smk`)**:
+  - `C`: Trains 16 independent FvT models on GPUs (Falcon / Bridges-2) using each subsample's classifier inputs.
+  - `C.3`: Evaluates the 16 trained models on 3-tag collision data to produce 16 FvT friend tree reweightings.
+  - `C.4`: Executes multi-subsample closure validation on `cmslpc`.
+- **Stage F (`Snakefile_bkg_syst_F.smk`)**:
+  - `F.1`: Processes 3-tag collision data with the 16 FvT weight variations through the Coffea analysis processor.
+  - `F.2`: Runs `runTwoStageClosure.py` across multiple rebin configurations (e.g. rebin 1, 6, 12, 24), evaluating non-closure variance, model bias, and extracting the canonical closure systematic pickle file (`hists_closure_*.pkl`).
+  - `F.3`: Constructs Combine datacards incorporating the background closure systematics (`--bkg_syst_file`) and computes blinded expected limits, significance, and likelihood scans.
+  - `F.4`: Performs unblinded statistical interpretation using the 16-subsample average mixed data $\langle\text{mix}\rangle_{4b}$ as pseudo-data.
+
+### Execution:
+```bash
+# Production execution via roast:
+bin/roast new --config coffea4bees/workflows/config/ttHbb_bkg_syst.yml --phases BKG_C,BKG_F --label ttHbb_bkg_syst
+bin/roast checkout <id> --host cmslpc
+bin/roast checkout <id> --host falcon
+bin/roast submit <id> --step BKG_C     # GPU training & evaluation
+bin/roast submit <id> --step BKG_C4    # CPU closure
+bin/roast submit <id> --step BKG_F     # CPU two-stage closure & Combine stats
+```
+
+---
+
+## 3. Full Systematics Pipeline (`full_syst`)
+
+The Full Systematics workflow represents the final production analysis step. It integrates signal systematic variations with the data-driven background closure models derived in `bkg_syst`, performs rigorous quality gates, plots all shape variations, compiles an interactive HTML gallery, and executes the complete CMS Combine statistical inference suite.
+
+```mermaid
+flowchart TD
+    subgraph Inputs["Upstream Roast Dependencies"]
+        StatOnly["Upstream Stat-Only Roast\n(histAll_nominal.coffea)"]
+        BkgSyst["Upstream Bkg-Syst Roast\n(hists_closure_*.pkl)"]
+    end
+
+    subgraph StageF1["Stage F.1: Signal Systematics & Validation (cmslpc)"]
+        Singlefiles["analysis_signal_systematics\n(Parallel Condor Jobs per Dataset/Era/Group)\n- others: Friend Weight Variations\n- jes: PyTorch Kinematic Shifts on 4b SR"]
+        Merge["merge_signal_systematics\n(histAll_signals_syst.coffea)"]
+        GateNom["check_nominal_signal_match\n(Strict Match Gate vs Stat-Only)"]
+        Cutflow["cutflow_systematics_table\n(Yields vs known_Counts_systematics.yml)"]
+        
+        Singlefiles --> Merge
+        Merge --> GateNom
+        Merge --> Cutflow
+    end
+
+    subgraph StageF2["Stage F.2: Datacards, Plots & Statistical Inference (cmslpc)"]
+        Convert["convert_nominal_to_json_full_syst\nconvert_signal_syst_to_json_full_syst"]
+        Datacard["make_combine_inputs_full_syst\n(Combine Signals + Bkg Closure + Nominal Shapes)"]
+        Plots["plot_systematics_full_syst\n(Overlay Nominal vs Up/Down Shapes)"]
+        Gallery["gallery_systematics_full_syst\n(Interactive index.html Gallery)"]
+        
+        CombineFit["CMS Combine Suite:\n- workspace (Datacard -> ROOT Workspace)\n- limits (Asymptotic CLs Limits)\n- significance (Expected / Blinded Significance)\n- likelihood_scan (Profile Likelihood vs r)\n- postfit (Post-Fit Distributions)\n- impacts (Nuisance Parameter Pulls & Impacts)\n- split_impacts (Grouped Uncertainty Breakdown)"]
+        
+        Summary["stat_summary_full_syst\n(Master summary.html & summary.md)"]
+        
+        Convert --> Datacard
+        Datacard --> Plots --> Gallery
+        Datacard --> CombineFit --> Summary
+    end
+
+    subgraph Final["Remote Synchronization"]
+        EOS["final_output\n(Deploy Results & Dashboards to CERNBox / EOS)"]
+    end
+
+    StatOnly --> StageF1
+    StatOnly --> StageF2
+    BkgSyst --> StageF2
+    StageF1 --> StageF2
+    StageF2 --> Final
+```
+
+### Key Stages & Quality Gates:
+
+#### Stage F.1: Signal Systematic Processing & Verification (`Snakefile_full_syst_1_analysis.smk`)
+1. **Parallel Singlefile Generation (`analysis_signal_systematics`)**:
+   Executes Coffea processors partitioned by `(dataset, year, syst_group)`:
+   - `others`: Friend-tree weight variations (pileup, b-tagging SFs, PDF, renormalization/factorization scales, trigger efficiencies).
+   - `jes`: Jet energy scale and resolution kinematic shifts evaluated through dedicated PyTorch classifier models on 4b Signal Region events.
+2. **Merging (`merge_signal_systematics`)**:
+   Combines all singlefile outputs into a single consolidated file: `histAll_<label>_signals_syst.coffea`.
+3. **Nominal Distribution Match Gate (`check_nominal_signal_match`)**:
+   Compares the nominal signal distribution in the full systematics run against the upstream stat-only baseline across all variables, regions (SR, SB), and 4-tag selections. **If any discrepancy exceeds tolerance ($10^{-4}$), the workflow halts immediately.**
+4. **Systematic Cutflow Validation (`cutflow_systematics_table`)**:
+   Extracts Signal Region yields for every nominal, up, and down systematic variation, compares them against canonical counts in `known_Counts_systematics_<sig>.yml`, and outputs HTML, YAML, and TXT cutflow reports.
+
+#### Stage F.2: Datacards, Plots, Gallery & Statistical Inference (`Snakefile_full_syst_2_stats.smk`)
+1. **JSON Serialization & Datacard Construction (`make_combine_inputs_full_syst`)**:
+   Integrates nominal shapes (`histAll_nominal.json`), signal systematic variations (`histAll_signals_syst.json`), and the background closure model (`bkg_syst_file`). Automatically synchronizes histogram rebinning with the background closure step (e.g. `rebin: 24` for ttHbb).
+2. **Systematic Variations Visualization (`plot_systematics_full_syst`)**:
+   Invokes `coffea4bees/plots/make_syst_plots.py` to generate overlaid shape comparison figures (Nominal vs. Up vs. Down) with ratio panels for every nuisance parameter.
+3. **Interactive Systematic Gallery (`gallery_systematics_full_syst`)**:
+   Invokes `src/plotting/make_gallery.py` to build an interactive HTML gallery (`index.html`) displaying all systematic variation plots.
+4. **Complete Combine Statistical Inference**:
+   - `workspace`: Compiles text datacard into Combine physics workspace.
+   - `limits`: Computes asymptotic CLs upper limits on signal strength modifier $r$.
+   - `significance`: Computes expected signal significance.
+   - `likelihood_scan`: Scans profile likelihood across parameter $r$.
+   - `postfit`: Extracts background-only and signal-plus-background post-fit distributions.
+   - `impacts`: Performs full nuisance parameter fit suite (`impacts_initial_fit`, `impacts_do_fits`, `impacts_collect`) producing impact summary PDF.
+   - `split_impacts`: Evaluates grouped uncertainty breakdowns (theory, experimental, background closure).
+5. **Consolidated Summary (`stat_summary_full_syst`)**:
+   Compiles all fit results, limits, scans, and galleries into `summary.html` and `summary.md`.
+6. **Remote Deployment (`final_output`)**:
+   Transfers all analysis and statistical artifacts to CERNBox/EOS and sends completion notifications.
+
+### Configuration Format (`ttHbb_full_syst.yml`):
+```yaml
+base: coffea4bees/workflows/config/ttHbb.yml
+
+label: "ttHbb_full_syst"
+output_path: "output/ttHbb_full_syst/"
+processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+
+inputs:
+  nominal_hists: "output/ttHbb_stat_only/PhaseF_1_analysis/histAll_ttHbb_stat_only.coffea"
+  bkg_syst_file: "coffea4bees/stats_analysis/files/HIG-24-010/zz/hists_closure_3bDvTMix4bDvT_SvB_MA_ps_zz_rebin1.pkl"
+
+signal_datasets:
+  - "ttHbb"
+
+syst_groups:
+  - "others"
+  - "jes"
+
+rebin: 24
+
+channels:
+  ttHbb:
+    signallabel: "ttHbb"
+    variable: "SvB_MA.ps_ttHbb"
+    signal: "ttHbb"
+    region: "SR"
+    cut: "sum"
+    rebin: 24
+    stat_only: false
+    metadata: "coffea4bees/stats_analysis/metadata/ttHbb.yml"
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+```
+
+### Execution:
+```bash
+# Production execution via roast (recommended):
+bin/roast new --config coffea4bees/workflows/config/ttHbb_full_syst.yml --phases FULL_SYST --label ttHbb_full_syst
+bin/roast checkout <id> --host cmslpc
+bin/roast submit <id> --step FULL_SYST -n    # dry-run DAG
+bin/roast submit <id> --step FULL_SYST       # execute detached in tmux
+
+# Run sub-stages standalone via Snakemake:
+# Stage F.1 only:
+./run_container snakemake -s coffea4bees/workflows/Snakefile_full_syst_1_analysis.smk \
+    --configfile coffea4bees/workflows/config/ttHbb_full_syst.yml --cores 4
+
+# Stage F.2 only:
+./run_container snakemake -s coffea4bees/workflows/Snakefile_full_syst_2_stats.smk \
+    --configfile coffea4bees/workflows/config/ttHbb_full_syst.yml --cores 4
+
+# End-to-end master workflow:
+./run_container snakemake -s coffea4bees/workflows/Snakefile_full_syst.smk \
+    --configfile coffea4bees/workflows/config/ttHbb_full_syst.yml --cores 4
+```
+
+---
+
+## 4. Summary Matrix of Analysis Workflows
+
+| Feature / Capability | Stat-Only (Nominal) | Background Systematics (`bkg_syst`) | Full Systematics (`full_syst`) |
+| :--- | :--- | :--- | :--- |
+| **Primary Goal** | Baseline event selection & initial limit | Multijet background closure & transfer systematic | Final physics measurement with full systematics |
+| **Master Snakefile** | `Snakefile_PhaseF.smk` | `Snakefile_bkg_syst.smk` | `Snakefile_full_syst.smk` |
+| **Roast Phases** | `B, C, C4, D, F` | `BKG_C, BKG_F` (or `BKG_AB, BKG_C, BKG_F`) | `FULL_SYST` |
+| **Input Signals** | Nominal signal MC | N/A (background and MC pseudo-data) | Signal MC (`others` weights + `jes` shifts) |
+| **Background Estimation** | Inclusive nominal FvT | 16 FvT models on 16 mixed data subsamples | Upstream `hists_closure_*.pkl` from `bkg_syst` |
+| **Quality Gates** | Cutflow agreement (`known_Counts`) | Closure $\chi^2$, bias, spurious signal tests | Nominal match gate ($10^{-4}$ tolerance) & systematic cutflow |
+| **Combine Datacard** | Nominal shapes only (`stat_only: true`) | Closure systematic shapes (`bkgsyst`) | Signal variations + closure systematics + nominal shapes |
+| **Impacts & Nuisances** | None (stat-only) | Nuisance parameter impacts on closure model | Full nuisance parameter impacts & grouped split impacts |

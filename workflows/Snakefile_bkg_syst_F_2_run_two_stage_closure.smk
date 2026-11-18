@@ -118,9 +118,53 @@ channel = config['channel']
 
 raw_classifiers = config.get('classifiers', [config.get('classifier', "SvB_MA")])
 if isinstance(raw_classifiers, str):
-    CLASSIFIERS = [c.strip() for c in raw_classifiers.split() if c.strip()]
+    raw_classifiers = [c.strip() for c in raw_classifiers.split() if c.strip()]
 else:
-    CLASSIFIERS = list(raw_classifiers)
+    raw_classifiers = list(raw_classifiers)
+
+# Determine available classifiers:
+# If SvB is requested, verify that SvB alone actually exists in inputs/bkg; if not, drop it gracefully
+CLASSIFIERS = []
+for c in raw_classifiers:
+    if c == "SvB":
+        # Check if SvB is explicitly disabled or missing from inputs
+        inputs_cfg = config.get('inputs', {})
+        if isinstance(inputs_cfg, dict) and inputs_cfg.get('SvB') in (None, '', 'none', 'null') and 'SvB' in inputs_cfg:
+            continue
+        if config.get('SvB') in (None, '', 'none', 'null') and 'SvB' in config:
+            continue
+        # Check bkg coffea file if already present
+        bkg_cand = f"{out}bkg_syst_F_1_analysis/histAll_mixeddata_bkgs.coffea"
+        if os.path.exists(bkg_cand):
+            try:
+                from coffea.util import load
+                bkg_data = load(bkg_cand)
+                hists = bkg_data.get("hists", {})
+                has_svb = any(
+                    (k.startswith("SvB_v") or k.startswith("SvB.") or ".SvB_" in k)
+                    and not (k.startswith("SvB_MA") or ".SvB_MA" in k)
+                    for k in hists.keys()
+                )
+                if not has_svb:
+                    continue
+            except Exception:
+                pass
+        # Check root inputs if already present
+        root_cand = f"{out_f2}root_inputs/histAll_{config.get('label', 'ttHbb_mixeddata')}.root"
+        if os.path.exists(root_cand):
+            try:
+                import uproot
+                with uproot.open(root_cand) as rf:
+                    has_svb = any("SvB_" in k and "SvB_MA_" not in k for k in rf.keys())
+                    if not has_svb:
+                        continue
+            except Exception:
+                pass
+    CLASSIFIERS.append(c)
+
+if not CLASSIFIERS:
+    CLASSIFIERS = [config.get('classifier', "SvB_MA")]
+
 primary_classifier = CLASSIFIERS[0]
 classifier = primary_classifier
 
@@ -178,16 +222,14 @@ wildcard_constraints:
     region = "|".join(CLOSURE_REGIONS),
     rebin = r"\d+",
 
-localrules: all_bkg_syst_F_2, copy_official_closure_summary, copy_official_closure_summary_region, coffea_to_root_closure, make_signal_root_closure, run_two_stage_closure, evaluate_closure_candidates, select_closure_rebin, make_closure_summary_html, check_closure_validation, make_plots_ttbar_MC_vs_d3, ttbar_MC_vs_d3_cutflow, all_ttbar_MC_vs_d3
+localrules: all_bkg_syst_F_2, copy_official_closure_summary, coffea_to_root_closure, make_signal_root_closure, run_two_stage_closure, evaluate_closure_candidates, select_closure_rebin, make_closure_summary_html, check_closure_validation, make_plots_ttbar_MC_vs_d3, ttbar_MC_vs_d3_cutflow, all_ttbar_MC_vs_d3
 
 rule all_bkg_syst_F_2:
     input:
         f"{out_f2}closure_summary.json",
         f"{out_f2}closure_summary.html",
-        expand(f"{out_f2}closure_summary_{{region}}.json", region=CLOSURE_REGIONS),
-        expand(f"{out_f2}closure_summary_{{region}}.html", region=CLOSURE_REGIONS),
+        expand(f"{out_f2}summary_{{classifier}}.html", classifier=CLASSIFIERS),
         expand(f"{out_f2}summary_{{classifier}}_{{region}}.json", classifier=CLASSIFIERS, region=CLOSURE_REGIONS),
-        expand(f"{out_f2}summary_{{classifier}}_{{region}}.html", classifier=CLASSIFIERS, region=CLOSURE_REGIONS),
 
 n_models_closure = int(config.get('n_subsamples', config.get('n_models', config.get('n_samples', 16))))
 
@@ -203,6 +245,14 @@ def get_closure_coffea_inputs(wildcards):
         'nominal': config['nominal_coffea'],
     }
     return inputs
+
+# closure_hist_cut: one or more boolean hist-cut axes (processor hist_cuts, e.g. pass_nSelJets_eq4) that
+# the closure keeps at True -- in the background model, the mixed data and the nominal signal alike.
+# Every input histogram must have been filled with that cut (the converters fail on a missing axis).
+_closure_hist_cut = config.get('closure_hist_cut') or []
+if isinstance(_closure_hist_cut, str):
+    _closure_hist_cut = _closure_hist_cut.split()
+CLOSURE_HIST_CUT_ARGS = " ".join(f"--hist_cut {c}" for c in _closure_hist_cut)
 
 rule coffea_to_root_closure:
     input:
@@ -220,7 +270,10 @@ rule coffea_to_root_closure:
         mix_name = mix_name,
         subsample_indices = " ".join(str(v) for v in subsample_indices_closure),
         scale_mixed = config.get('scale_mixed', 1.0),
-        extra_args = config.get('closure_extra_args', '')
+        # closure_convert_args: options of convert_closure_coffea_to_root.py only (e.g. the MvD method's
+        # --bkg_process/--tt_process); closure_extra_args also goes to runTwoStageClosure.py
+        extra_args = " ".join(filter(None, [config.get('closure_extra_args', ''), config.get('closure_convert_args', ''),
+                                            CLOSURE_HIST_CUT_ARGS]))
     log:
         f"{out_f2}logs/coffea_to_root_closure.log"
     shell:
@@ -259,7 +312,7 @@ rule make_signal_root_closure:
         vars = " ".join(dict.fromkeys(var_map.values())),
         processes = " ".join(SIGNAL_PROCESSES),
         years = " ".join(YEARS),
-        extra_args = "--dummy" if config.get('test', False) else "",
+        extra_args = " ".join(filter(None, ["--dummy" if config.get('test', False) else "", CLOSURE_HIST_CUT_ARGS])),
     log:
         f"{out_f2}logs/make_signal_root_closure.log"
     shell:
@@ -369,55 +422,49 @@ checkpoint evaluate_closure_candidates:
             --output {output.summary} 2>&1 | tee {log}
         """
 
+def get_closure_summary_inputs(wildcards):
+    clf = wildcards.classifier
+    inputs = {
+        'script': "coffea4bees/stats_analysis/make_closure_summary_html.py",
+        'summary_sr': f"{out_f2}summary_{clf}_SR.json",
+    }
+    if 'SB' in CLOSURE_REGIONS:
+        inputs['summary_sb'] = f"{out_f2}summary_{clf}_SB.json"
+    return inputs
+
 rule make_closure_summary_html:
     input:
-        summary = f"{out_f2}summary_{{classifier}}_{{region}}.json",
-        status_files = lambda wildcards: expand(
-            f"{out_f2}closure_fits/{mix_name}/{wildcards.classifier}/rebin{{rebin}}/{wildcards.region}/{channel}/closure_status_{get_var_for_classifier(wildcards.classifier)}.json",
-            rebin=REBIN_CANDIDATES
-        ),
-        script = "coffea4bees/stats_analysis/make_closure_summary_html.py"
+        unpack(get_closure_summary_inputs)
     output:
-        html = f"{out_f2}summary_{{classifier}}_{{region}}.html"
+        html = f"{out_f2}summary_{{classifier}}.html"
     log:
-        f"{out_f2}logs/make_closure_summary_html_{{classifier}}_{{region}}.log"
+        f"{out_f2}logs/make_closure_summary_html_{{classifier}}.log"
     params:
         output_dir = out_f2,
-        region = "{region}",
-        title = lambda wildcards: f"Stage F_2 Two-Stage Closure ({channel} - {wildcards.classifier} - {wildcards.region})",
+        channel = channel,
         container_wrapper = config['analysis_container_wrapper'],
-        python_bin = config['python_bin']
+        python_bin = config['python_bin'],
+        sb_arg = lambda wildcards, input: f"--summary-sb {input.summary_sb}" if hasattr(input, "summary_sb") else "",
     shell:
         """
         set -eo pipefail
         mkdir -p $(dirname {output.html}) $(dirname {log})
         {params.container_wrapper} {params.python_bin} {input.script} \
-            --summary {input.summary} \
+            --classifier {wildcards.classifier} \
+            --channel {params.channel} \
+            --summary-sr {input.summary_sr} \
+            {params.sb_arg} \
             --output_dir {params.output_dir} \
-            --region {params.region} \
             --output {output.html} 2>&1 | tee {log}
         """
 
 rule copy_official_closure_summary:
     input:
-        json = f"{out_f2}summary_{primary_classifier}_{closure_region}.json",
-        html = f"{out_f2}summary_{primary_classifier}_{closure_region}.html",
+        json = f"{out_f2}summary_{primary_classifier}_SR.json",
+        html = f"{out_f2}summary_{primary_classifier}.html",
     output:
         json = f"{out_f2}closure_summary.json",
         html = f"{out_f2}closure_summary.html",
-    shell:
-        """
-        cp -f {input.json} {output.json}
-        cp -f {input.html} {output.html}
-        """
-
-rule copy_official_closure_summary_region:
-    input:
-        json = f"{out_f2}summary_{primary_classifier}_{{region}}.json",
-        html = f"{out_f2}summary_{primary_classifier}_{{region}}.html",
-    output:
-        json = f"{out_f2}closure_summary_{{region}}.json",
-        html = f"{out_f2}closure_summary_{{region}}.html",
     shell:
         """
         cp -f {input.json} {output.json}

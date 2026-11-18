@@ -130,7 +130,14 @@ ZH4b:
       - root://cmseos.fnal.gov//store/user/cguintob/XX4b/Run3_2024_skims/ZH4b_2024/picoAOD.chunk0.root
       - root://cmseos.fnal.gov//store/user/cguintob/XX4b/Run3_2024_skims/ZH4b_2024/picoAOD.chunk1.root
       - root://cmseos.fnal.gov//store/user/cguintob/XX4b/Run3_2024_skims/ZH4b_2024/picoAOD.chunk2.root
-      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/Run3_2024_skims/ZH4b_2024/picoAOD.chunk3.root 
+      - root://cmseos.fnal.gov//store/user/cguintob/XX4b/Run3_2024_skims/ZH4b_2024/picoAOD.chunk3.root
+      missing: {}
+      saved_events: 324235
+      sumw: 1973334.6015625
+      sumw2: 1322535.517578125
+      sumw2_raw: 1322535.4918467435
+      sumw_raw: 1973334.6529199996
+      total_events: 3333020
   xs:
     Run2: '0.7612*0.5824*0.1512'
     Run3: '0.9361 * 0.576 * 0.1512'
@@ -347,6 +354,15 @@ ggZH4b:
       - root://cmseos.fnal.gov//store/user/cguintob/XX4b/Run3_2024_skims/ggZH4b_2024/picoAOD.chunk8.root
       - root://cmseos.fnal.gov//store/user/cguintob/XX4b/Run3_2024_skims/ggZH4b_2024/picoAOD.chunk9.root
       - root://cmseos.fnal.gov//store/user/cguintob/XX4b/Run3_2024_skims/ggZH4b_2024/picoAOD.chunk10.root
+      missing: {}
+      saved_events: 1094391
+      sumw: 170278.29858398438
+      sumw2: 53865.83645629883
+      sumw2_diff: 1.4632439696092374e+25
+      sumw2_raw: 1.4632439696092374e+25
+      sumw_diff: 40392280898540.31
+      sumw_raw: 40392281068818.61
+      total_events: 3312169
   xs:
     Run2: '0.1227*0.5824*0.1512'
     Run3: '0.1347 * 0.576 * 0.1512'

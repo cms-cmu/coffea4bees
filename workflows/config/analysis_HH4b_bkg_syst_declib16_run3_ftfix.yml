@@ -62,3 +62,8 @@ fvt_train_workflow:
 fvt_closure:
   config:
     fourTag_use_tight: true
+
+# F_1 normalization sanity bounds: the script's default SB maximum (200k) is below the Run 3
+# 2022+2023 multijet SB yield (~207k per subsample, = the C_4 model's 206,706 for mix_0)
+f1_validation:
+  max_sb_yield: 1000000

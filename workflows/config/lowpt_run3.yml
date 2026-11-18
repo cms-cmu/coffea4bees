@@ -153,7 +153,7 @@ fvt:
             use_attention_gate: true
           - epoch: 20
             bs_init: 1024
-          - --finetuning FixedStep
+          - --finetuning FinetuneStep
           - epoch: 1
             bs_init: 16384
     setting:
@@ -319,9 +319,9 @@ analysis_config:
   runner:
     chunksize: 100000
     min_workers: 50
-    max_workers: 250
+    max_workers: 1000
     workers: 4
-    worker_memory: 8GB
+    worker_memory: 4GB
     dashboard_address: 0
   config:
     blind: false

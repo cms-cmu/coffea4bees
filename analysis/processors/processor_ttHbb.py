@@ -6,7 +6,10 @@ import awkward as ak
 from coffea.analysis_tools import PackedSelection
 from coffea import processor
 from coffea4bees.analysis.processors.processor_HH4b import HH4bBaseProcessor, _UNSET
-from coffea4bees.analysis.helpers.filling_histograms import filling_ttHbb_histograms
+from coffea4bees.analysis.helpers.filling_histograms import (
+    filling_ttHbb_histograms,
+    filling_syst_histograms,
+)
 from coffea4bees.analysis.helpers.SvB_helpers_ttHbb import set_ttHbb_SvB_vars
 from coffea4bees.analysis.helpers.candidates_selection_ttHbb import create_cand_jet_dijet_quadjet_ttHbb
 from coffea4bees.analysis.helpers.truth_tools import label_jet_truth_parent
@@ -217,7 +220,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
         quadJet_truth = quadJet[ak.argmax(pairing_is_truth, axis=1, keepdims=True)][:, 0]
         return ak.mask(quadJet_truth, event_has_truth_pairing)
 
-    def build_candidates(self, selev, weights, list_weight_names, analysis_selections, processOutput):
+    def build_candidates(self, selev, weights, list_weight_names, analysis_selections, processOutput, shift_name=None):
         """Build canH/canTT di-jet and quad-jet candidates for ttHbb (same algorithm for data
         and MC). On ttHbb MC also store quadJet_truth: the truth H-H (lead) / t-t (subl) pairing,
         for events where canJet.truthParent is exactly {H, H, t, t} (None otherwise).
@@ -239,6 +242,7 @@ class ttHbbProcessor(HH4bBaseProcessor):
             cand_cfg=self.cand_cfg,
             pairing=self.pairing,
             svb_binning=self.svb_binning,
+            shift_name=shift_name,
         )
 
         if self._is_ttHbb_MC() and self.pairing == "can_ttH":
@@ -285,11 +289,18 @@ class ttHbbProcessor(HH4bBaseProcessor):
         n_selJets = ak.num(event.selJets) if "selJets" in event.fields else ak.num(event.selJet)
         event["pass_nSelJets_gt6"] = n_selJets > 6
         event["fail_nSelJets_le6"] = n_selJets <= 6
+        # exclusive jet-multiplicity slices, for hist_cuts (e.g. the two-stage closure per nSelJets)
+        event["pass_nSelJets_eq4"] = n_selJets == 4
+        event["pass_nSelJets_eq5"] = n_selJets == 5
+        event["pass_nSelJets_gt5"] = n_selJets > 5
         event["all_selJets"] = np.full(len(event), True)
         event["passLeptonVeto"] = event.passLeptonVeto if "passLeptonVeto" in event.fields else np.full(len(event), True)
 
         selections.add("pass_nSelJets_gt6", event.pass_nSelJets_gt6)
         selections.add("fail_nSelJets_le6", event.fail_nSelJets_le6)
+        selections.add("pass_nSelJets_eq4", event.pass_nSelJets_eq4)
+        selections.add("pass_nSelJets_eq5", event.pass_nSelJets_eq5)
+        selections.add("pass_nSelJets_gt5", event.pass_nSelJets_gt5)
         selections.add("all_selJets", event.all_selJets)
         selections.add("passLeptonVeto", event.passLeptonVeto)
 
@@ -300,8 +311,16 @@ class ttHbbProcessor(HH4bBaseProcessor):
         n_selJets = ak.num(selev.selJets) if "selJets" in selev.fields else ak.num(selev.selJet)
         selev["pass_nSelJets_gt6"] = n_selJets > 6
         selev["fail_nSelJets_le6"] = n_selJets <= 6
+        selev["pass_nSelJets_eq4"] = n_selJets == 4
+        selev["pass_nSelJets_eq5"] = n_selJets == 5
+        selev["pass_nSelJets_gt5"] = n_selJets > 5
         selev["passLeptonVeto"] = selev.passLeptonVeto if "passLeptonVeto" in selev.fields else np.full(len(selev), True)
 
+
+        if "passSR" not in selev.fields:
+            selev["passSR"] = selev.passDiJetMass & selev["quadJet_selected"].SR
+        if "passSB" not in selev.fields:
+            selev["passSB"] = selev.passDiJetMass & selev["quadJet_selected"].SB
 
         selev["SR"] = selev.passSR
         selev["SB"] = selev.passSB
@@ -387,7 +406,16 @@ class ttHbbProcessor(HH4bBaseProcessor):
             hists.append(hist_t3)
             return processor.accumulate(hists)
 
-        return hist_dict
+        else:
+            return filling_syst_histograms(
+                selev,
+                weights,
+                analysis_selections,
+                shift_name=shift_name,
+                processName=self.processName,
+                year=self.year,
+                histCuts=self.histCuts,
+            )
 
 # Alias for standard runner entry point
 analysis = ttHbbProcessor

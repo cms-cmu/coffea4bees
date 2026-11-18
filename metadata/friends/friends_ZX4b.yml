@@ -4,3 +4,4 @@ friends:
   2022_EE: *friends_Run3
   2023_preBPix: *friends_Run3
   2023_BPix: *friends_Run3
+  '2024': *friends_Run3

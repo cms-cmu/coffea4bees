@@ -16,7 +16,9 @@
 label: "HH4b_bkg_syst_declib16_run3"
 output_path: "output/{roast_id}/"
 per_year_jcm: false
-unify_background: true
+# HH4b: ttbar is a separate process (the closure and its systematic are on the multijet model alone);
+# true (one Multijet + ttbar background) is the ttHbb treatment
+unify_background: false
 match_closure_normalization: false
 fourTag_use_tight: true
 publish_base: "{eos_prod}/{roast_id}"
@@ -279,7 +281,7 @@ make_combine_inputs:
   # one Run 3 channel: the fixed HH4b_run3.yml (four 2022/2023 bins, single ggF signal), as nominal_run3
   metadata_template: "coffea4bees/stats_analysis/metadata/HH4b_run3.yml"
   multijet_process: "data"
-  unify_background: true
+  unify_background: false
   tt_processes:
     - "TTTo"
     - "TTbar4b_from_d3"
