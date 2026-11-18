@@ -89,9 +89,19 @@ class add_column(_regex):
 @dataclass
 class add_year(add_column):
     key: str = field(init=False, default="year")
-    pattern: str = field(init=False, default=r"year:\w*(?P<year>\d{2}).*")
+    pattern: str = field(init=False, default=r"year:(?P<full>\w*(?P<year>\d{2}).*)")
     default: None = field(init=False, default=None)
     dtype: type = field(init=False, default=int)
+
+    def any(self, matches: tuple[re.Match, ...]):
+        from src.classifier.df.tools import add_columns
+
+        full = matches[0].group("full")
+        if full == "UL16_preVFP":
+            val = 15
+        else:
+            val = self.dtype(matches[0].group(self.key))
+        yield add_columns(**{self.key: val})
 
 
 @dataclass
