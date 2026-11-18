@@ -125,6 +125,7 @@ class analysis(HH4bBaseProcessor):
             weights=weights,
             list_weight_names=list_weight_names,
             analysis_selections=analysis_selections,
+            cand_cfg=self.cand_cfg,
             label3b="lowpt_threeTag",
         )
     
