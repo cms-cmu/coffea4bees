@@ -572,9 +572,15 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
                 opts = ["--kfolds 2" if (isinstance(o, str) and (o == "--kfolds" or o.startswith("--kfolds "))) else o for o in opts]
             else:
                 opts.insert(0, "--kfolds 2")
+            is_multi_era_lowpt_fvt = bool(active_years and len(active_years) > 1) and any(
+                "HCR.FvT_lowpt" in str(e.get("module", ""))
+                for e in (twf.get("dataset") or [])
+                if isinstance(e, dict)
+            )
+            test_epochs = 3 if is_multi_era_lowpt_fvt else 1
             for item in opts:
                 if isinstance(item, dict) and "epoch" in item:
-                    item["epoch"] = 1
+                    item["epoch"] = test_epochs
                     item["bs_init"] = min(int(item.get("bs_init", 256)), 256)
             entry["option"] = opts
         _atomic_write_yaml(train_path, twf)

@@ -6,10 +6,10 @@ counts4:
     SR: 0.0
     SB: 0.0
   TTbar_from_d3_UL18A:
-    passPreSel: 11190.86
-    passDiJetMass: 6608.28
-    SR: 2551.15
-    SB: 4057.13
+    passPreSel: 11531.7
+    passDiJetMass: 6818.28
+    SR: 2636.08
+    SB: 4182.2
   GluGluToHHTo4B_cHHH1_UL18:
     passJetMult: 26.99
     passPreSel: 0.0
@@ -19,15 +19,15 @@ counts4:
 counts3:
   data_UL18A:
     passJetMult: 96793.0
-    passPreSel: 24231.14
-    passDiJetMass: 14385.42
-    SR: 5587.92
-    SB: 8797.5
+    passPreSel: 20114.91
+    passDiJetMass: 11815.76
+    SR: 4636.94
+    SB: 7178.82
   TTbar_from_d3_UL18A:
-    passPreSel: 11211.81
-    passDiJetMass: 6621.83
-    SR: 2557.23
-    SB: 4064.6
+    passPreSel: 11444.93
+    passDiJetMass: 6762.06
+    SR: 2613.77
+    SB: 4148.29
   GluGluToHHTo4B_cHHH1_UL18:
     passJetMult: 26.99
     passPreSel: 6.1
