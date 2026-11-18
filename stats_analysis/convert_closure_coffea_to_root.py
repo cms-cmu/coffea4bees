@@ -16,6 +16,11 @@ import hist
 from coffea.util import load
 
 
+# Boolean hist-cut axes (processor hist_cuts, e.g. pass_nSelJets_eq4) to keep at True; every other
+# pass/fail axis is summed. Set from --hist_cut.
+HIST_CUTS = []
+
+
 def slice_1d(h, process, year, tag, region):
     """Extract a 1D slice from a multi-dimensional coffea hist for given process, year, tag, region."""
     if process not in h.axes['process']:
@@ -33,6 +38,11 @@ def slice_1d(h, process, year, tag, region):
         'tag': tag,
         'region': region,
     }
+    for cut in HIST_CUTS:
+        if cut not in h.axes.name:
+            raise KeyError(f"--hist_cut {cut}: no such axis in this histogram (axes: {list(h.axes.name)}); "
+                           f"fill it with hist_cuts: [{cut}] in the processor config")
+        sel[cut] = hist.loc(True)
     for ax in h.axes:
         if ax.name.startswith(('pass', 'fail')) and ax.name not in sel:
             sel[ax.name] = sum
@@ -100,7 +110,18 @@ def main():
     parser.add_argument("-o", "--output", required=True,
                         help="Path to output ROOT file.")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging.")
+    # The background model's process/tag in the consolidated F_1 histograms: 3b data (FvT method,
+    # default) or e.g. mixeddata_all_declib16 fourTag + TTbar4b_from_MvD fourTag (MvD method). The
+    # output keys keep the FvT-method names (data ... threeTag, TTbar4b_from_d3 ... threeTag), which
+    # runTwoStageClosure reads, whatever the model.
+    parser.add_argument("--bkg_process", default="data", help="multijet model process in the F_1 hists")
+    parser.add_argument("--bkg_tag", default="threeTag", help="its tag")
+    parser.add_argument("--tt_process", default="TTbar4b_from_d3", help="ttbar model process in the F_1 hists")
+    parser.add_argument("--tt_tag", default="threeTag", help="its tag")
+    parser.add_argument("--hist_cut", action="append", default=[],
+                        help="keep only events passing this boolean hist-cut axis (e.g. pass_nSelJets_eq4); repeatable")
     args, unknown = parser.parse_known_args()
+    HIST_CUTS[:] = args.hist_cut
 
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO,
                         format="[%(levelname)s] %(message)s")
@@ -141,18 +162,18 @@ def main():
                 if reg not in h.axes['region']:
                     continue
                 for yr in h.axes['year']:
-                    h_data_3b = slice_1d(h, 'data', yr, 'threeTag', reg)
+                    h_data_3b = slice_1d(h, args.bkg_process, yr, args.bkg_tag, reg)
                     if h_data_3b is not None:
                         u_hist = to_uproot_hist(h_data_3b)
                         root_dict[f"{stem}_data_{yr}_threeTag_{reg}"] = u_hist
                         root_dict[f"{stem}_nominal_data_{yr}_threeTag_{reg}"] = u_hist
-                    h_data_4b = slice_1d(h, 'data', yr, 'fourTag', reg)
+                    h_data_4b = slice_1d(h, 'data', yr, 'fourTag', reg) if args.bkg_process == 'data' else None
                     if h_data_4b is not None:
                         u_hist_4b = to_uproot_hist(h_data_4b)
                         root_dict[f"{stem}_data_{yr}_fourTag_{reg}"] = u_hist_4b
                         root_dict[f"{stem}_nominal_data_{yr}_fourTag_{reg}"] = u_hist_4b
-                    if not args.pure_qcd and 'TTbar4b_from_d3' in h.axes['process']:
-                        h_ttbar_3b = slice_1d(h, 'TTbar4b_from_d3', yr, 'threeTag', reg)
+                    if not args.pure_qcd and args.tt_process in h.axes['process']:
+                        h_ttbar_3b = slice_1d(h, args.tt_process, yr, args.tt_tag, reg)
                         if h_ttbar_3b is not None:
                             u_ttbar_hist = to_uproot_hist(h_ttbar_3b)
                             root_dict[f"{stem}_TTbar4b_from_d3_{yr}_threeTag_{reg}"] = u_ttbar_hist
@@ -173,14 +194,14 @@ def main():
                         if reg not in h.axes['region']:
                             continue
                         for yr in h.axes['year']:
-                            h_data_3b = slice_1d(h, 'data', yr, 'threeTag', reg)
+                            h_data_3b = slice_1d(h, args.bkg_process, yr, args.bkg_tag, reg)
                             if h_data_3b is not None:
                                 u_hist = to_uproot_hist(h_data_3b)
                                 fvt_stem = f"{clf}_FvT_{args.mix_name}_v{m}_newSBDef_{var_stem}"
                                 root_dict[f"{fvt_stem}_data_{yr}_threeTag_{reg}"] = u_hist
                                 root_dict[f"{fvt_stem}_data_3b_for_mixed_{yr}_threeTag_{reg}"] = u_hist
-                            if not args.pure_qcd and 'TTbar4b_from_d3' in h.axes['process']:
-                                h_ttbar_3b = slice_1d(h, 'TTbar4b_from_d3', yr, 'threeTag', reg)
+                            if not args.pure_qcd and args.tt_process in h.axes['process']:
+                                h_ttbar_3b = slice_1d(h, args.tt_process, yr, args.tt_tag, reg)
                                 if h_ttbar_3b is not None:
                                     u_ttbar_hist = to_uproot_hist(h_ttbar_3b)
                                     fvt_tt_stem = f"{clf}_FvT_{args.mix_name}_v{m}_newSBDef_{var_stem}"

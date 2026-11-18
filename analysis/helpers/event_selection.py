@@ -345,22 +345,31 @@ def apply_4b_lowpt_selection(
     )
 
     # Define tagging and categorization
+    lp_cfg = (sel_cfg or {}).get('jet', {}).get('lowpt', {})
+    nom_btag_wp = lp_cfg.get('btag_wp_nom', 'L') if isRun3 else 'L'
+    nom_tag_field = {
+        'L': 'nJet_tagged_loose',
+        'M': 'nJet_tagged',
+        'T': 'nJet_tagged_tight',
+    }[nom_btag_wp]
+
     event['passJetMult'] = event['nJet_selected'] >= 4
     event['fourTag'] = event['nJet_tagged'] >= 4
     event['threeTag'] = (event['nJet_tagged_loose'] == 3) & (
         event['nJet_selected'] >= 4)
     event['twoTag'] = (event['nJet_tagged_loose'] == 2) & (event['nJet_selected'] >= 4)  #### temporary
     event['lowpt_fourTag'] = (
-        (event['nJet_tagged_loose'] == 3) &
+        (event[nom_tag_field] == 3) &
         (event['nJet_selected'] >= 4) &
         (event['nJet_tagged_lowpt'] > 0) &
         ~event['fourTag']
     )
     event['lowpt_threeTag'] = (
-        (event['nJet_tagged_loose'] == 3) &
+        (event[nom_tag_field] == 3) &
         (event['nJet_selected'] >= 4) &
         (event['nJet_tagged_loose_lowpt'] == 0) &
-        (event['nJet_selected_lowpt'] > 0)
+        (event['nJet_selected_lowpt'] > 0) &
+        ~event['fourTag']
     )
 
     # Create tagging object

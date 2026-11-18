@@ -17,6 +17,11 @@ def _roc_data_selection(batch: BatchType):
 
     is_data = batch[Input.label].new(MultiClass.indices("d4", "d3"))
     is_data = torch.isin(batch[Input.label], is_data)
+    if Input.region in batch:
+        is_d4_sr = (batch[Input.label] == MultiClass.index("d4")) & (
+            (batch[Input.region] & MassRegion.SR) != 0
+        )
+        is_data = is_data & ~is_d4_sr
     return {
         "y_pred": batch[Output.class_prob][is_data],
         "y_true": batch[Input.label][is_data],
@@ -53,6 +58,8 @@ def _roc_ttbar_sr_selection(batch: BatchType):
     import torch
 
     is_sr = (batch[Input.region] & MassRegion.SR) != 0 if Input.region in batch else torch.zeros(len(batch[Input.label]), dtype=torch.bool, device=batch[Input.label].device)
+    if "d4" in MultiClass.labels:
+        is_sr = is_sr & (batch[Input.label] != MultiClass.index("d4"))
     return {
         "y_pred": batch[Output.class_prob][is_sr],
         "y_true": batch[Input.label][is_sr],
@@ -77,9 +84,11 @@ class Train(HCRTrain):
 
         # remove 4b data contribution from SR
         d4 = MultiClass.index("d4")
+        is_d4_SR = is_SR & (batch[Input.label] == d4)
+        valid_SR = is_SR & ~is_d4_SR
         no_d4_idx = [*range(len(MultiClass.trainable_labels))]
         no_d4_idx = no_d4_idx[:d4] + no_d4_idx[d4 + 1 :]
-        no_d4_y = batch[Input.label][is_SR]
+        no_d4_y = batch[Input.label][valid_SR]
         no_d4_y = torch.where(no_d4_y > d4, no_d4_y - 1, no_d4_y)
 
         # calculate loss
@@ -87,10 +96,12 @@ class Train(HCRTrain):
         cross_entropy[~is_SR] = F.cross_entropy(
             c_score[~is_SR], batch[Input.label][~is_SR], reduction="none"
         )
-        cross_entropy[is_SR] = F.cross_entropy(
-            c_score[is_SR][:, no_d4_idx], no_d4_y, reduction="none"
-        )
-        loss = (cross_entropy * weight).sum() / weight.sum()
+        if torch.any(valid_SR):
+            cross_entropy[valid_SR] = F.cross_entropy(
+                c_score[valid_SR][:, no_d4_idx], no_d4_y, reduction="none"
+            )
+        loss_weight = torch.where(is_d4_SR, 0.0, weight)
+        loss = (cross_entropy * loss_weight).sum() / loss_weight.sum()
 
         return loss
 

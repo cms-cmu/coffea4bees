@@ -86,6 +86,8 @@ jet:
     pt_min: 15
     eta_max: 2.4
     jetId_min: 2
+    btag_wp_nom: "L"      # nominal-jet b-tag WP for Run 2 (overridden in Run 3 below)
+    btag_wp: "L"          # low-pT jet b-tag WP for Run 2 & 2022/2023 (overridden in 2024+ below)
 
 # Era-specific overrides. Each key is matched as a prefix of the era string
 # (event.metadata['year'], e.g. "2023_BPix"), and the partial tree below it is
@@ -93,23 +95,35 @@ jet:
 # "2023_BPix" entry would take precedence over "2023". Eras with no matching
 # key (e.g. the 2022* eras) use the base thresholds unchanged.
 era_overrides:
-  "2022":                 # 2022, 2022_preEE, 2022_EE
+  "2022":                 # 2022, 2022_preEE, 2022_EE (btagPNetB: T+L)
     jet:
       run3:
         selected:
           pt_min: 30
-  "2023":                 # 2023, 2023_preBPix, 2023_BPix
+      lowpt:
+        btag_wp_nom: "T"
+        btag_wp: "L"
+  "2023":                 # 2023, 2023_preBPix, 2023_BPix (btagPNetB: T+L)
     jet:
       run3:
         selected:
           pt_min: 25
-  "2024":
+      lowpt:
+        btag_wp_nom: "T"
+        btag_wp: "L"
+  "2024":                 # 2024 (btagUParTAK4B: T+T)
     jet:
       run3:
         selected:
           pt_min: 25
+      lowpt:
+        btag_wp_nom: "T"
+        btag_wp: "T"
   "2025":                 # 2025 data + the Summer24 MC it uses: same thresholds as 2024
     jet:
       run3:
         selected:
           pt_min: 25
+      lowpt:
+        btag_wp_nom: "T"
+        btag_wp: "T"

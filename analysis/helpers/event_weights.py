@@ -220,6 +220,30 @@ def add_pseudotagweights(
             # Alias for _noMvD histogram TTbar filling: mix4_to_t4 conversion, no MvD classifier
             event["weight_mix4_to_t4_MvD_noMvD"] = w_mix4_to_t4
 
+        # Multi-subsample MvD weights (bkg_syst closure of the MvD method, Stage F_1): for each
+        # subsample v, its own mixed-data JCM (by nSelJets - 3, as above) times its own MvD_v
+        # classifier, on the four-tag events of the mixed_all sample.
+        if subsample_jcms and isMixedDataAll:
+            base_event_weight = np.array(event.weight, dtype=float, copy=True)
+            n_selected_all = ak.to_numpy(ak.sum(selected_jets, axis=1))
+            for v_name, jcm_entry in subsample_jcms.items():
+                jcm_v = _resolve_subsample_jcm(jcm_entry, year, year_label, v_name)
+                mvd_field = f"MvD_{v_name}"
+                if mvd_field not in event.fields:
+                    raise RuntimeError(f"apply_MvD with subsample {v_name}: no friend '{mvd_field}' loaded")
+                mvd_v = getattr(event, mvd_field)
+                w_jcm_v = np.ones(len(event), dtype=float)
+                if np.any(fourTag):
+                    w_jcm_v[fourTag], _ = jcm_v(n_selected_all[fourTag] - 3, event.event[fourTag])
+                mvd_val = ak.to_numpy(mvd_v.MvD).astype(float)
+                event[f"weight_{v_name}"] = np.where(fourTag, base_event_weight * w_jcm_v * mvd_val,
+                                                     base_event_weight)
+                p_t4_v = ak.to_numpy(mvd_v.p_t4).astype(float)
+                p_mix4_v = ak.to_numpy(mvd_v.p_mix4).astype(float)
+                ratio_v = np.minimum(np.where(p_mix4_v == 0, 0.0, p_t4_v / np.where(p_mix4_v == 0, 1.0, p_mix4_v)), 3.0)
+                event[f"weight_mix4_to_t4_MvD_{v_name}"] = np.where(fourTag, base_event_weight * w_jcm_v * ratio_v,
+                                                                    base_event_weight)
+
         return weights, list_weight_names
 
     logging.debug(f"three 3b events flag: {event[label3b][:10]}")
@@ -494,6 +518,20 @@ def add_pseudotagweights(
                 event[f"weight_d3_to_t3_{v_name}"] = w_t3_v
 
     return weights, list_weight_names
+
+def _resolve_subsample_jcm(jcm_entry, year, year_label, v_name):
+    """The JCM callable of one subsample, from a per-era dict (as the FvT subsample path reads it)."""
+    weights_era = {"2018": "UL18", "2017": "UL17", "2016": "UL16_preVFP"}.get(year, year)
+    if isinstance(jcm_entry, dict):
+        jcm_v = (jcm_entry.get(weights_era) or jcm_entry.get(year_label) or jcm_entry.get(year)
+                 or jcm_entry.get("default"))
+    else:
+        jcm_v = jcm_entry
+    if jcm_v is None:
+        available = list(jcm_entry.keys()) if isinstance(jcm_entry, dict) else str(jcm_entry)
+        raise RuntimeError(f"Missing JCM model for subsample {v_name} era '{weights_era}' (available: {available})")
+    return jcm_v
+
 
 def add_btagweights( event, weights,
                     list_weight_names: list = [],

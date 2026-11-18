@@ -72,6 +72,11 @@ phases:
     snakefile: coffea4bees/workflows/Snakefile_bkg_syst_C_4_closure.smk
     description: "Bkg Syst: Stage C.4 (FvT closure across subsamples)"
 
+  BKG_C4_MVD:
+    host: cmslpc
+    snakefile: coffea4bees/workflows/Snakefile_bkg_syst_C_4_mvd_closure.smk
+    description: "Bkg Syst (bkg_model: mvd): Stage C.4 kinematic closure of one MvD fit vs its mixed subsample"
+
   BKG_F:
     host: cmslpc
     snakefile: coffea4bees/workflows/Snakefile_bkg_syst_F.smk

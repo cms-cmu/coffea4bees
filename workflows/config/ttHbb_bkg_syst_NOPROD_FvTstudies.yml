@@ -1,0 +1,34 @@
+# ==============================================================================
+# ttHbb Run 2 BACKGROUND SYSTEMATIC — Non-Production FvT Studies (4 Subsamples)
+# ==============================================================================
+# Layered on ttHbb_bkg_syst_declib16nc.yml.
+# Runs only 4 subsamples (mix_0..mix_3) through Stage C2 (FvT training +
+# SvB_MA.ps SR closure benchmarking) to compare SR/SB definitions, JCMs, or
+# training hyperparameters (bias, variance, chi2/ndf full & SvB > 0.8) before
+# launching a full 16-subsample production run.
+#
+# Usage:
+#   - Run A -> B -> C1 -> C2 if changing SR/SB or event selection.
+#   - Or set `upstream_pre_fvt` and run C1 -> C2 to reuse existing A/B outputs.
+# ==============================================================================
+
+base: coffea4bees/workflows/config/ttHbb_bkg_syst_declib16nc.yml
+
+label: "ttHbb_NOPROD_FvTstudies"
+mix_name: "ttHbb_NOPROD_FvTstudies"
+output_path: "output/{roast_id}/"
+
+publish_base: "{eos_prod}/{roast_id}"
+handoff:
+  eos_base: "{eos_prod}/{roast_id}/handoff"
+
+# Restrict to 4 subsamples (mix_0..mix_3) for fast FvT comparison studies
+n_subsamples: 4
+n_models: 4
+subsample_indices: [0, 1, 2, 3]
+svb_sr_closure: true
+
+phase_e_fvt:
+  channel: "ttHbb"
+  mix_name: "ttHbb_NOPROD_FvTstudies"
+  n_models: 4

@@ -92,7 +92,7 @@ jcm_input_coffea = jcm_section.get('data_coffea') or JCM_HISTS
 # remote `phaseB_1.jcm.data_coffea` is fetched next to the other inputs.
 _b1_data_url = str(jcm_input_coffea) if "://" in str(jcm_input_coffea) else ""
 if _b1_data_url:
-    jcm_input_coffea = f"{A_INPUT_DIR}b1_{os.path.basename(_b1_data_url)}"
+    jcm_input_coffea = f"{OWN_INPUT_DIR}b1_{os.path.basename(_b1_data_url)}"
 
     rule B1_fetch_data_coffea:
         output: jcm_input_coffea

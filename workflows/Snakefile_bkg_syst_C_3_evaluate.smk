@@ -182,7 +182,14 @@ def _synthetic_eval_wf(eval_wf: dict, train_wf: dict) -> dict:
 
     out = copy.deepcopy(eval_wf)
     t_opts = opts(train_wf, 'dataset')
-    keep = {flag_of(o): o for o in t_opts if flag_of(o) in ("--data-mixed-name", "--data-mixed-samples", "--friends")}
+    keep = {flag_of(o): o for o in t_opts if flag_of(o) in ("--data-mixed-name", "--data-mixed-samples")}
+    # the classifier-input friends (--friends "" ...). A training can carry more --friends (svb_sr_closure
+    # adds source:detector / label:ttbar / source:mixed SvB friends): a dict by flag kept only the last
+    # (the subsample's SvB), so the evaluation lost its HCR inputs and hung (2024 FvT roast, 2026-11-14)
+    friends = [o for o in t_opts if flag_of(o) == "--friends"]
+    hcr = [o for o in friends if len(o.split()) > 1 and o.split()[1] in ('""', "''")]
+    if friends:
+        keep["--friends"] = hcr or friends[:1]
     missing = {"--data-mixed-name", "--data-mixed-samples"} - set(keep)
     if missing:
         raise ValueError(f"train.yml has no {sorted(missing)}: not a synthetic-trained FvT")
@@ -197,7 +204,7 @@ def _synthetic_eval_wf(eval_wf: dict, train_wf: dict) -> dict:
             new.append(o)
     new += [keep["--data-mixed-name"], keep["--data-mixed-samples"]]
     if "--friends" in keep:
-        new.append(keep["--friends"])
+        new += keep["--friends"]
     for mod in out['dataset']:
         if isinstance(mod, dict) and 'option' in mod:
             mod['option'] = new
@@ -257,6 +264,39 @@ rule evaluate_synthetic:
     shell:
         EVAL_SHELL
 
+
+
+# eval_host: orchard (barista src/classifier/workflow/Snakefile, roast --eval-on orchard): the
+# synthetic evaluation runs on CMU ORCHARD like the other evaluations, through
+# software/orchard/remote_train.py; its friend trees go to the paths in the staged workflow. With no
+# GPU rule left, BKG_C can then be driven from cmslpc (roast new --cmslpc).
+if globals().get("EVAL_HOST") == "orchard":
+    localrules: evaluate_synthetic_orchard
+    ruleorder: evaluate_synthetic_orchard > evaluate_synthetic
+
+    rule evaluate_synthetic_orchard:
+        input:
+            train_flag = f"{out_c}models/mix_{{m}}/train.done",
+            eval_wf    = f"{out_c}models/mix_{{m}}/wfs/evaluate_synthetic.yml",
+            common     = f"{out_c}models/mix_{{m}}/common.yml",
+        output:
+            flag = f"{out_c}models/mix_{{m}}/evaluate_synthetic.done",
+        log:
+            f"{out_c}models/mix_{{m}}/evaluate_synthetic.log",
+        wildcard_constraints:
+            m = r"\d+"
+        params:
+            model_dir               = lambda wildcards: f"{out_c}models/mix_{wildcards.m}",
+            classifier_config_paths = CLASSIFIER_CONFIG_PATHS,
+            opts                    = _orchard_opts("evaluate_synthetic"),
+        shell:
+            """
+            python3 software/orchard/remote_train.py \\
+                --model-dir {params.model_dir:q} --wf {input.eval_wf:q} --common {input.common:q} \\
+                --template '' --log {log:q} \\
+                --config-paths {params.classifier_config_paths:q} {params.opts}
+            touch {output.flag}
+            """
 
 rule extract_friend_manifest_synthetic:
     input:

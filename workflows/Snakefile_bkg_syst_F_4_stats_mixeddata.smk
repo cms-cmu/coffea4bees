@@ -214,34 +214,45 @@ if not globals().get("_COMBINE_MODULE_DEFINED", False):
 
 def get_target_rebins_F_4():
     explicit_rebins = config.get('f4_rebins') or config.get('stat_analysis_rebins')
-    if explicit_rebins:
+    if explicit_rebins and config.get('force_rebins', False):
         if isinstance(explicit_rebins, (int, str)):
             return [int(r) for r in str(explicit_rebins).split()]
-        else:
-            return [int(r) for r in explicit_rebins]
+        return [int(r) for r in explicit_rebins]
     closure_reg = config.get('closure_region', config.get('region', 'SR'))
     clf = config.get('classifier', 'SvB_MA')
     closure_summary_path = f"{out}bkg_syst_F_2_run_two_stage_closure/summary_{clf}_{closure_reg}.json"
     if not os.path.exists(closure_summary_path):
         closure_summary_path = f"{out}bkg_syst_F_2_run_two_stage_closure/closure_summary.json"
+    passing = []
     if os.path.exists(closure_summary_path):
         import json
         try:
             with open(closure_summary_path, "r") as f:
                 data = json.load(f)
-            return data.get("passing_rebins", [])
+            passing = data.get("passing_rebins", [])
         except Exception as e:
             print(f"[Snakemake] Error reading {closure_summary_path}: {e}")
             return []
-    try:
+    else:
+        # Not yet run (F_2 in the same invocation): let Snakemake's IncompleteCheckpointException
+        # through, so it re-evaluates these targets once the checkpoint is done. Swallowing it left
+        # F_4 permanently empty whenever F_2 and F_4 ran in one `snakemake` call.
         checkpoint_output = checkpoints.evaluate_closure_candidates.get(region=closure_reg, classifier=clf).output[0]
-        import json
-        with open(checkpoint_output, "r") as f:
-            data = json.load(f)
-        return data.get("passing_rebins", [])
-    except Exception as e:
-        print(f"[Snakemake] Error reading checkpoint: {e}")
-        return []
+        try:
+            import json
+            with open(checkpoint_output, "r") as f:
+                data = json.load(f)
+            passing = data.get("passing_rebins", [])
+        except Exception as e:
+            print(f"[Snakemake] Error reading checkpoint: {e}")
+            return []
+    if passing:
+        return passing
+    if explicit_rebins:
+        if isinstance(explicit_rebins, (int, str)):
+            return [int(r) for r in str(explicit_rebins).split()]
+        return [int(r) for r in explicit_rebins]
+    return []
 
 def get_combine_targets_F_4(wildcards):
     passing_rebins = get_target_rebins_F_4()
@@ -296,42 +307,8 @@ rule final_output_F_4:
         fi
         """
 
-def get_combine_targets_F_4(wildcards):
-    try:
-        checkpoint_output = checkpoints.select_closure_rebin.get().output[0]
-    except Exception as e:
-        print(f"[Snakemake] Error reading checkpoint select_closure_rebin: {e}")
-        return []
-    import json
-    try:
-        with open(checkpoint_output, "r") as f:
-            data = json.load(f)
-        passing_rebins = data.get("passing_rebins", [])
-    except Exception as e:
-        print(f"[Snakemake] Error reading {checkpoint_output}: {e}")
-        passing_rebins = []
-
-    if not passing_rebins:
-        print("[Snakemake] Notice: No candidate rebin scheme passed the two-stage closure test. Stage F_4 Mixed Data Combine targets will be empty.")
-        return []
-
-    targets = []
-    for r in passing_rebins:
-        for channel in mixeddata_channels:
-            sig = config['channels'][channel].get('signallabel')
-            if not sig:
-                continue
-            ch_dir = f"{out_f4}stat_analysis_unblinded_mixeddata_rebin{r}/{channel}/"
-            targets.extend([
-                f"{ch_dir}limits/datacard_limits__{sig}.json",
-                f"{ch_dir}postfit/datacard_postfit__{sig}.pdf",
-                f"{ch_dir}significance/datacard_significance__{sig}.log",
-                f"{ch_dir}significance/datacard_significance__{sig}.json",
-                f"{ch_dir}likelihood_scan/datacard_likelihood_scan__{sig}.pdf",
-                f"{ch_dir}impacts/datacard_impacts__{sig}.pdf",
-                f"{ch_dir}gof/datacard_gof__{sig}.pdf",
-            ])
-    return targets
+# (a second get_combine_targets_F_4 here read checkpoint select_closure_rebin, which no target
+# requests, and swallowed its not-yet-run exception: F_4 always came out empty)
 
 rule all_bkg_syst_F_4:
     input:
@@ -455,9 +432,49 @@ rule make_mixeddata_ave_json:
             -o {output.ave_json} > {log} 2>&1
         """
 
+# f4_observation: subsample -- the mock analysis on ONE mixed subsample k (f4_subsample, default the
+# first) with the background model fitted to subsample j (f4_model_subsample, default k), instead of the
+# subsample average against the nominal background (which is fitted to real four-tag data, so that
+# comparison measures mixed vs real data, not the method). make_mixeddata_subsample_json.py.
+F4_OBSERVATION = str(config.get('f4_observation', 'average')).lower()
+F4_K = int(config.get('f4_subsample', subsample_indices_f4[0]))
+F4_J = int(config.get('f4_model_subsample', F4_K))
+_out_f1 = globals().get('out_f1', f"{out}bkg_syst_F_1_analysis/")
+subsample_mixeddata_json = f"{out_f4}histAll_{a3_channel}_mix_v{F4_K}_model_v{F4_J}.json"
+f4_injson = subsample_mixeddata_json if F4_OBSERVATION == 'subsample' else ave_mixeddata_json
+
+rule make_mixeddata_subsample_json:
+    input:
+        nominal_json = nominal_json,
+        bkg_coffea = f"{_out_f1}histAll_mixeddata_bkgs.coffea",
+        mixed_coffea = f"{out_a3}histAll_{a3_channel}_mixeddata_v{F4_K}.coffea",
+        script = "coffea4bees/stats_analysis/make_mixeddata_subsample_json.py",
+    output:
+        json = subsample_mixeddata_json
+    params:
+        variables = " ".join(dict.fromkeys(cfg['variable'] for cfg in config.get('channels', {}).values() if cfg.get('variable'))),
+        years = " ".join(config['years']) if isinstance(config.get('years'), list) else str(config.get('years', '')),
+        container_wrapper = "./run_container"
+    container: None
+    log: f"{out}logs/make_mixeddata_subsample_json.log"
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {output.json}) $(dirname {log})
+        {params.container_wrapper} python3 {input.script} \
+            -i {input.nominal_json} \
+            --bkg_coffea {input.bkg_coffea} \
+            --mixed_coffea {input.mixed_coffea} \
+            --subsample {F4_K} --model_subsample {F4_J} \
+            --variables {params.variables} \
+            --years {params.years} \
+            -o {output.json} 2>&1 | tee {log}
+        test -s {output.json}
+        """
+
 use rule make_combine_inputs from stat_analysis as make_combine_inputs_mixeddata with:
     input:
-        injson = ave_mixeddata_json,
+        injson = f4_injson,
         injsonsyst = list([]),
         bkgsyst = lambda wildcards: get_bkgsyst_for_channel(wildcards.channel, wildcards.rebin),
         script = "coffea4bees/stats_analysis/make_combine_inputs.py",
@@ -487,4 +504,4 @@ if not globals().get("_USE_RULE_COMBINE_DONE", False):
     _USE_RULE_COMBINE_DONE = True
     use rule * from combine as *
 
-localrules: final_output_F_4, all_bkg_syst_F_4, make_mixeddata_ave_json, make_combine_inputs_mixeddata, stat_summary_rebin_F_4, stat_summary_master_F_4
+localrules: final_output_F_4, all_bkg_syst_F_4, make_mixeddata_ave_json, make_mixeddata_subsample_json, make_combine_inputs_mixeddata, stat_summary_rebin_F_4, stat_summary_master_F_4

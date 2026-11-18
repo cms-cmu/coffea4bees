@@ -243,14 +243,53 @@ def _assign_SR_SB_ttHbb_asymetric_ellipse(quadJet, cand_cfg=None, full_space=Fal
     # n_jets_min = (cand_cfg or {}).get("sr_ttHbb", {}).get("n_jets_min", 5)
     # if nJet_selected is None:
     #     quadJet["SR"] = in_ellipse
-    #     quadJet["SB"] = ((~in_ellipse) & (m_lead <= 350.) & (m_subl <= 700.))
+    #     quadJet["SB"] = ((~in_ellipse) & (m_lead <= 230.) & (m_subl <= 700.))
     # else:
     sb_m_lead_max = (cand_cfg or {}).get("sb_ttHbb", {}).get("m_lead_max", 230.)
-    quadJet["SR"] = in_ellipse  & (nJet_selected >= 5)[:, np.newaxis]
-    quadJet["SB"] = ((~in_ellipse) & (m_lead <= sb_m_lead_max) & (m_subl <= 700.)) | (in_ellipse & (nJet_selected == 4)[:, np.newaxis])
+    quadJet["SR"] = in_ellipse ## & (nJet_selected >= 5)[:, np.newaxis]
+    quadJet["SB"] = ((~in_ellipse) & (m_lead <= sb_m_lead_max) & (m_subl <= 700.)) ## | (in_ellipse & (nJet_selected == 4)[:, np.newaxis])
 
     # Compute Euclidean radial distance for monitoring
     quadJet["rH"] = np.sqrt((m_lead - 125.0)**2 + (m_subl - 125.0)**2)
+
+
+_SOB_100_SR_POLYGON = [
+    [125.0, 24.3], [142.3, 25.0], [165.0, 59.0], [185.0, 75.0], [204.5, 85.0],
+    [233.8, 95.0], [275.0, 100.0], [355.0, 105.1], [495.0, 110.0], [497.9, 125.0],
+    [495.0, 150.3], [399.8, 155.0], [308.7, 165.0], [286.0, 175.0], [274.9, 185.0],
+    [235.0, 208.6], [217.5, 225.0], [208.6, 235.0], [185.0, 274.9], [175.0, 286.0],
+    [165.0, 308.7], [155.0, 399.8], [150.3, 495.0], [135.0, 497.8], [110.0, 495.0],
+    [109.4, 445.0], [100.0, 275.0], [92.4, 225.0], [85.0, 204.5], [65.0, 171.1],
+    [46.4, 155.0], [25.0, 142.3], [24.3, 135.0], [25.0, 119.4], [75.0, 99.5],
+    [93.0, 85.0], [104.1, 65.0], [119.4, 25.0],
+]
+
+
+def _points_in_polygon(x, y, polygon):
+    """Vectorized ray-casting point-in-polygon check for (m_lead, m_subl) awkward arrays."""
+    x_np = np.asarray(ak.to_numpy(ak.flatten(x, axis=None)), dtype=np.float64)
+    y_np = np.asarray(ak.to_numpy(ak.flatten(y, axis=None)), dtype=np.float64)
+    poly = np.asarray(polygon, dtype=np.float64)
+    vx, vy = poly[:, 0], poly[:, 1]
+    vx2 = np.roll(vx, -1)
+    vy2 = np.roll(vy, -1)
+
+    inside = np.zeros(len(x_np), dtype=bool)
+    for i in range(len(poly)):
+        x1, y1 = vx[i], vy[i]
+        x2, y2 = vx2[i], vy2[i]
+        cond = (y1 > y_np) != (y2 > y_np)
+        denom = y2 - y1
+        x_int = np.where(
+            cond,
+            (x2 - x1) * (y_np - y1) / np.where(denom != 0.0, denom, 1.0) + x1,
+            0.0,
+        )
+        inside ^= cond & (x_np < x_int)
+
+    if x.ndim == 1:
+        return ak.Array(inside)
+    return ak.unflatten(inside, ak.num(x, axis=1))
 
 
 def _assign_SR_SB_ttHbb(quadJet, cand_cfg=None, full_space=False):
@@ -276,20 +315,24 @@ def _assign_SR_SB_ttHbb(quadJet, cand_cfg=None, full_space=False):
     sr_cfg = (cand_cfg or {}).get("sr_ttHbb", {})
     mode = (cand_cfg or {}).get("sr_mode") or sr_cfg.get("mode", "optimal_balance")
 
-    if mode in ["optimal_balance", "optimal"]:
-        h_min = sr_cfg.get("h_min", 95.0)
-        h_max = sr_cfg.get("h_max", 180.0)
-        m_min = sr_cfg.get("m_min", 25.0)
-        arm_max = sr_cfg.get("arm_max", 400.0)
-
-        in_h_arm = (m_subl >= h_min) & (m_subl <= h_max) & (m_lead >= m_min) & (m_lead <= arm_max)
-        in_v_arm = (m_lead >= h_min) & (m_lead <= h_max) & (m_subl >= m_min) & (m_subl <= arm_max)
+    if mode in ["polygon", "sob_100"]:
+        polygon = sr_cfg.get("polygon") or _SOB_100_SR_POLYGON
+        quadJet["SR"] = _points_in_polygon(m_lead, m_subl, polygon)
     else:
-        # Default baseline
-        in_h_arm = (m_subl >= 85.0) & (m_subl <= 185.0) & (m_lead >= 25.0) & (m_lead <= 1000.0)
-        in_v_arm = (m_lead >= 90.0) & (m_lead <= 185.0) & (m_subl >= 25.0) & (m_subl <= 1000.0)
+        if mode in ["optimal_balance", "optimal"]:
+            h_min = sr_cfg.get("h_min", 95.0)
+            h_max = sr_cfg.get("h_max", 180.0)
+            m_min = sr_cfg.get("m_min", 25.0)
+            arm_max = sr_cfg.get("arm_max", 400.0)
 
-    quadJet["SR"] = in_h_arm | in_v_arm
+            in_h_arm = (m_subl >= h_min) & (m_subl <= h_max) & (m_lead >= m_min) & (m_lead <= arm_max)
+            in_v_arm = (m_lead >= h_min) & (m_lead <= h_max) & (m_subl >= m_min) & (m_subl <= arm_max)
+        else:
+            # Default baseline
+            in_h_arm = (m_subl >= 85.0) & (m_subl <= 185.0) & (m_lead >= 25.0) & (m_lead <= 1000.0)
+            in_v_arm = (m_lead >= 90.0) & (m_lead <= 185.0) & (m_subl >= 25.0) & (m_subl <= 1000.0)
+
+        quadJet["SR"] = in_h_arm | in_v_arm
     sb_cfg = (cand_cfg or {}).get("sb_ttHbb", {})
     sb_min = (cand_cfg or {}).get("sb_min") or sb_cfg.get("sb_min", 25.0)
     sb_max = (cand_cfg or {}).get("sb_max") or sb_cfg.get("sb_max", 500.0)
