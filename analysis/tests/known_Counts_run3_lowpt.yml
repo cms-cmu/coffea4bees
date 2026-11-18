@@ -18,20 +18,20 @@ counts4:
     SR: 0.0
     SB: 0.0
   TTbar_from_d3_2024C:
-    passPreSel: 401.13
-    passDiJetMass: 169.09
-    SR: 35.46
-    SB: 69.63
+    passPreSel: 635.84
+    passDiJetMass: 248.37
+    SR: 59.52
+    SB: 108.45
   TTbar_from_d3_2023_BPixD1:
-    passPreSel: 538.01
-    passDiJetMass: 210.73
-    SR: 38.76
-    SB: 92.77
+    passPreSel: 736.91
+    passDiJetMass: 263.21
+    SR: 55.84
+    SB: 116.9
   TTbar_from_d3_2022_EEE:
-    passPreSel: 1449.84
-    passDiJetMass: 567.78
-    SR: 125.91
-    SB: 244.89
+    passPreSel: 1175.54
+    passDiJetMass: 458.29
+    SR: 101.48
+    SB: 198.3
   GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024:
     passJetMult: 52.18
     passPreSel: 0.0
@@ -53,37 +53,37 @@ counts4:
 counts3:
   data_2024C:
     passJetMult: 99146.0
-    passPreSel: 573.35
-    passDiJetMass: 187.7
-    SR: 37.52
-    SB: 84.35
+    passPreSel: 274.68
+    passDiJetMass: 112.3
+    SR: 24.03
+    SB: 45.33
   data_2023_BPixD1:
     passJetMult: 97505.0
-    passPreSel: 673.59
-    passDiJetMass: 193.96
-    SR: 36.3
-    SB: 84.29
+    passPreSel: 403.31
+    passDiJetMass: 149.58
+    SR: 27.99
+    SB: 65.6
   data_2022_EEE:
     passJetMult: 97674.0
-    passPreSel: 2095.01
-    passDiJetMass: 721.97
-    SR: 118.58
-    SB: 337.22
+    passPreSel: 1405.84
+    passDiJetMass: 573.13
+    SR: 119.57
+    SB: 249.72
   TTbar_from_d3_2024C:
-    passPreSel: 450.17
-    passDiJetMass: 192.98
-    SR: 40.89
-    SB: 79.12
+    passPreSel: 1742.7
+    passDiJetMass: 692.54
+    SR: 169.48
+    SB: 310.24
   TTbar_from_d3_2023_BPixD1:
-    passPreSel: 619.25
-    passDiJetMass: 244.97
-    SR: 45.3
-    SB: 106.77
+    passPreSel: 789.17
+    passDiJetMass: 297.12
+    SR: 58.73
+    SB: 129.87
   TTbar_from_d3_2022_EEE:
-    passPreSel: 1487.69
-    passDiJetMass: 571.64
-    SR: 129.49
-    SB: 244.12
+    passPreSel: 1194.5
+    passDiJetMass: 471.64
+    SR: 103.13
+    SB: 208.09
   GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024:
     passJetMult: 52.18
     passPreSel: 1.26
