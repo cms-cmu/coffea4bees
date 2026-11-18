@@ -327,6 +327,7 @@ analysis_config:
     blind: true
     apply_FvT: true
     apply_JCM: true
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_quadjet_run2.yml"
     JCM_file:
       2022_preEE: "coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_Run3_lowpt_v1_2022_preEE.yml"
       2022_EE: "coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_Run3_lowpt_v1_2022_EE.yml"
