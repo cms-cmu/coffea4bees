@@ -146,11 +146,11 @@ fvt:
           - --kfolds 3
           - --kfold-seed FvT random
           - --kfold-seed-offsets 0
-          - --training FixedStep
           - --architecture
           - n_features: 8
             use_kv_proj: true
             use_attention_gate: true
+          - --training FixedStep
           - epoch: 20
             bs_init: 1024
           - --finetuning FinetuneStep
@@ -324,7 +324,7 @@ analysis_config:
     worker_memory: 4GB
     dashboard_address: 0
   config:
-    blind: false
+    blind: true
     apply_FvT: true
     apply_JCM: true
     JCM_file:
@@ -350,7 +350,7 @@ analysis_config:
 
 plot_config: "coffea4bees/plots/metadata/plotsAll_lowpt.yml"
 known_counts_fatal: false
-known_counts_test: "none"
+known_counts_test: "coffea4bees/analysis/tests/known_Counts_run3_lowpt.yml"
 known_counts_full: "none"
 
 # ==============================================================================

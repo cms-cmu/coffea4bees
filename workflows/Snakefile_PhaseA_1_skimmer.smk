@@ -148,6 +148,12 @@ rule create_skimmer_config:
             cfg['runner']['condor'] = False
             cfg['runner']['shared_dask'] = False
             cfg['runner']['run_performance'] = False
+            cfg['runner'].setdefault('test_files', 1)
+            cfg['runner'].setdefault('maxchunks', 2)
+            cfg['runner'].setdefault('chunksize', 100000)
+            cfg['runner'].setdefault('workers', 4)
+            cfg['runner'].setdefault('allowlist_sites', ['T3_CH_PSI', 'T3_US_FNALLPC'])
+            cfg.setdefault('config', {})['base_path'] = f"{config['output_path']}skimmer/picoaods/"
         os.makedirs(os.path.dirname(output[0]), exist_ok=True)
         with open(output[0], 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False)

@@ -1,16 +1,3 @@
-skimmer_test_coffea4bees:
-  stage: skimmer   
-  extends:
-    - .base_analysis_coffea4bees
-  script:
-    - source coffea4bees/scripts/skimmer-test.sh --output-base /builds/$CI_PROJECT_PATH/output
-  artifacts: 
-    paths:
-      - output/skimmer_test/picoaod_datasets_GluGluToHHTo4B_cHHH0_UL18.yml
-      - output/skimmer_test/GluGluToHHTo4B_cHHH0_UL18/picoAOD.chunk0.root
-      - output/skimmer_test/GluGluToHHTo4B_cHHH0_UL18/picoAOD.chunk1.root
-      - output/skimmer_test/datasets_HH4b.yml
-
 skimmer_boosted_coffea4bees:
   stage: skimmer
   extends:

@@ -4,6 +4,13 @@ import yaml
 
 include: "helpers/common.smk"
 
+is_test = config.get('test', False)
+if isinstance(is_test, str):
+    is_test = is_test.lower() in ("true", "1", "yes")
+config['test'] = is_test
+if config.get('test_year_eras') and isinstance(config['test_year_eras'], dict):
+    config['year_eras'] = config['test_year_eras']
+
 # Check if multi-classifier mode is enabled:
 # e.g. both 'svb' and 'svb_ma' are configured, or 'classifiers' list is provided
 svb_models = []
@@ -30,6 +37,9 @@ if len(svb_models) <= 1:
     config.setdefault('plot_inputs', True)
     config.setdefault('plot_weights', True)
     config.setdefault('evaluate', True)
+    if is_test:
+        config['plot_inputs'] = False
+        config['plot_weights'] = False
 
     config.setdefault('model', f"{config['eos_base']}/classifier/{config['label']}")
     config.setdefault('friend', f"{config['eos_base']}/friend/{config['label']}")
@@ -42,19 +52,16 @@ if len(svb_models) <= 1:
 
     if 'classifier_setting' in config:
         common_path = f"{output_dir}/common.yml"
-        with open(common_path, 'w') as f:
-            yaml.dump({'setting': config['classifier_setting']}, f, default_flow_style=False)
+        _atomic_write_yaml(common_path, {'setting': config['classifier_setting']})
         config['common'] = common_path
 
     if 'train_workflow' in config or 'eval_workflow' in config:
         wfs_dir = f"{output_dir}/wfs"
         os.makedirs(wfs_dir, exist_ok=True)
         if 'train_workflow' in config:
-            with open(f"{wfs_dir}/train.yml", 'w') as f:
-                yaml.dump(config['train_workflow'], f, default_flow_style=False)
+            _atomic_write_yaml(f"{wfs_dir}/train.yml", config['train_workflow'])
         if 'eval_workflow' in config:
-            with open(f"{wfs_dir}/evaluate.yml", 'w') as f:
-                yaml.dump(config['eval_workflow'], f, default_flow_style=False)
+            _atomic_write_yaml(f"{wfs_dir}/evaluate.yml", config['eval_workflow'])
         config['wfs_base'] = wfs_dir
     elif config.get('workflow_overrides') or config.get('workflow_inserts'):
         # Keep the checked-in templates, override options by flag (e.g. the roast's JCM / manifest)
@@ -62,6 +69,17 @@ if len(svb_models) <= 1:
         config['wfs_base'] = write_workflow_overrides(config['wfs_base'], config.get('workflow_overrides'),
                                                       f"{output_dir}/wfs", log=print,
                                                       inserts=config.get('workflow_inserts'))
+    elif is_test:
+        wfs_dir = f"{output_dir}/wfs"
+        os.makedirs(wfs_dir, exist_ok=True)
+        for fname in ("train.yml", "evaluate.yml"):
+            src = os.path.join(config['wfs_base'], fname)
+            if os.path.exists(src):
+                shutil.copyfile(src, os.path.join(wfs_dir, fname))
+        config['wfs_base'] = wfs_dir
+
+    if is_test:
+        apply_test_classifier_settings(config['wfs_base'], config.get('common'), config.get('year_eras'))
 
     include: "../../src/classifier/workflow/Snakefile"
 
@@ -90,8 +108,8 @@ else:
         m_label = mcfg.get('label', key)
         m_output_dir = mcfg.get('output_dir', f"output/{m_label}/").rstrip('/')
         m_wfs_base = mcfg.get('wfs_base', "coffea4bees/classifier/config/workflows/HH4b_2024_v2/SvB")
-        m_plot_inputs = mcfg.get('plot_inputs', False)
-        m_plot_weights = mcfg.get('plot_weights', False)
+        m_plot_inputs = False if is_test else mcfg.get('plot_inputs', False)
+        m_plot_weights = False if is_test else mcfg.get('plot_weights', False)
         m_evaluate = mcfg.get('evaluate', True)
 
         m_model = mcfg.get('model', f"{m_eos_base}/classifier/{m_label}")
@@ -113,16 +131,13 @@ else:
 
         if 'classifier_setting' in config:
             common_path = f"{m_output_dir}/common.yml"
-            with open(common_path, 'w') as f:
-                yaml.dump({'setting': config['classifier_setting']}, f, default_flow_style=False)
+            _atomic_write_yaml(common_path, {'setting': config['classifier_setting']})
 
         if 'train_workflow' in mcfg or 'eval_workflow' in mcfg:
             if 'train_workflow' in mcfg:
-                with open(f"{wfs_dir}/train.yml", 'w') as f:
-                    yaml.dump(mcfg['train_workflow'], f, default_flow_style=False)
+                _atomic_write_yaml(f"{wfs_dir}/train.yml", mcfg['train_workflow'])
             if 'eval_workflow' in mcfg:
-                with open(f"{wfs_dir}/evaluate.yml", 'w') as f:
-                    yaml.dump(mcfg['eval_workflow'], f, default_flow_style=False)
+                _atomic_write_yaml(f"{wfs_dir}/evaluate.yml", mcfg['eval_workflow'])
         else:
             overrides = mcfg.get('workflow_overrides', config.get('workflow_overrides'))
             inserts = mcfg.get('workflow_inserts', config.get('workflow_inserts'))
@@ -135,6 +150,13 @@ else:
                     shutil.copyfile(f"{m_wfs_base}/train.yml", f"{wfs_dir}/train.yml")
                 if os.path.exists(f"{m_wfs_base}/evaluate.yml"):
                     shutil.copyfile(f"{m_wfs_base}/evaluate.yml", f"{wfs_dir}/evaluate.yml")
+
+        if is_test:
+            apply_test_classifier_settings(
+                wfs_dir,
+                f"{m_output_dir}/common.yml" if 'classifier_setting' in config else None,
+                config.get('year_eras'),
+            )
 
         train_templates[m_output_dir] = m_train_template
         eval_templates[m_output_dir] = m_eval_template
@@ -205,7 +227,7 @@ rule compute_svb_binning:
     threads: 4
     params:
         init              = INIT,
-        classifier_inputs = lambda wildcards: str(config.get("metadata", "")).split("@@")[0],
+        classifier_inputs = lambda wildcards: str(config.get("metadata", "")).format(eos_prod=config.get("eos_prod", ""), roast_id=config.get("roast_id", "")).split("@@")[0],
         friend_result = lambda wildcards: f"{_format_binning_path(config.get('friends_dict', {}).get(wildcards.model_dir, config.get('friend', '')), wildcards)}/result.json",
         sample_pattern = lambda wildcards: str(config.get("binning_sample_pattern", "ttHbb")),
         selection = lambda wildcards: str(config.get("binning_selection", "inclusive")),
@@ -216,9 +238,9 @@ rule compute_svb_binning:
         """
         {params.init} && \
         mkdir -p $(dirname {output.json}) $(dirname {log}) && \
-        if [ -z "${{X509_USER_PROXY:-}}" ] && [ -f ./proxy/x509_proxy ]; then
-            export X509_USER_PROXY="$PWD/proxy/x509_proxy"
-        fi
+        if [ -z "${{X509_USER_PROXY:-}}" ] && [ -f ./proxy/x509_proxy ]; then \
+            export X509_USER_PROXY="$PWD/proxy/x509_proxy"; \
+        fi && \
         python3 coffea4bees/analysis/tools/rebin_SvB.py \
             --friends "{params.friend_result}" \
             --classifier-inputs "{params.classifier_inputs}" \
@@ -230,7 +252,12 @@ rule compute_svb_binning:
             --output-json {output.json} 2>&1 | tee {log}
 
         if [ -n "{params.handoff_eos}" ]; then
-            xrdcp -f -p "{output.json}" "{params.handoff_eos}/$(basename {output.json})" 2>&1 | tee -a {log} || true
+            if [[ "{params.handoff_eos}" == root://* ]]; then
+                xrdcp -f -p "{output.json}" "{params.handoff_eos}/$(basename {output.json})" 2>&1 | tee -a {log} || true
+            else
+                mkdir -p "{params.handoff_eos}"
+                cp -f "{output.json}" "{params.handoff_eos}/$(basename {output.json})" 2>&1 | tee -a {log}
+            fi
         fi
         """
 
