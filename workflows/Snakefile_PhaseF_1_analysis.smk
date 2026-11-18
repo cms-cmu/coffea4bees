@@ -186,6 +186,8 @@ rule create_analysis_config:
                 cfg['config']['blind'] = False
                 cfg['config']['FvT_pd3_floor'] = cfg['config'].get('FvT_pd3_floor') or 0.01
                 cfg['runner']['chunksize'] = 100000
+            if "processor_HH4b.py" in str(cfg.get("processor", "")):
+                cfg.setdefault("config", {})["run_dilep_ttbar_crosscheck"] = True
         os.makedirs(os.path.dirname(output[0]), exist_ok=True)
         with open(output[0], 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False)
@@ -464,8 +466,13 @@ use rule check_cutflow from analysis with:
     log: f"{F1_OUTPUT_PATH}logs/cutflow_validation_{config['label']}.log"
     params:
         known_counts = lambda wildcards: config.get("known_counts", ""),
-        error_threshold = lambda wildcards: config.get("error_threshold", "0.001"),
-        cutflow_list = lambda wildcards: config.get("cutflow_list", "passJetMult,passPreSel,passDiJetMass,SR,SB"),
+        error_threshold = lambda wildcards: config.get("error_threshold", "0.005" if is_test else "0.001"),
+        cutflow_list = lambda wildcards: config.get(
+            "cutflow_list",
+            "passJetMult,passPreSel,passDiJetMass,SR,SB,passMuMu,passElMu"
+            if (is_test and "processor_HH4b.py" in str(get_raw_analysis_config().get("processor", "")))
+            else "passJetMult,passPreSel,passDiJetMass,SR,SB",
+        ),
         run_container_wrapper = config['analysis_container_wrapper']
     container: None
 

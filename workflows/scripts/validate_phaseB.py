@@ -6,6 +6,33 @@ import sys
 import yaml
 
 
+CUTFLOW_MAPS = ("counts4", "counts3", "counts4_unit", "counts3_unit")
+EXPECTED_CUTS = ("passJetMult", "passPreSel", "passDiJetMass", "SR_woTrig", "SR", "SB_woTrig", "SB")
+JCM_REGION_CUTS = ("passPreSel", "passDiJetMass", "SR", "SB")
+
+
+def _close(a: float, b: float) -> bool:
+    return abs(a - b) <= 1e-4 * max(1.0, abs(a), abs(b))
+
+
+def _check_cutflow_completeness(cf: dict, name: str, failures: list[str]) -> None:
+    """Verify all 4 cutflow maps and all 7 expected cuts exist for every non-null dataset."""
+    for map_name in CUTFLOW_MAPS:
+        section = cf.get(map_name)
+        if not isinstance(section, dict) or not section:
+            failures.append(f"{name}: missing or empty section '{map_name}'")
+            continue
+        for ds, cuts in section.items():
+            if cuts is None:
+                continue
+            if not isinstance(cuts, dict):
+                failures.append(f"{name}.{map_name}.{ds}: expected dict of cuts, got {type(cuts).__name__}")
+                continue
+            missing = [c for c in EXPECTED_CUTS if c not in cuts]
+            if missing:
+                failures.append(f"{name}.{map_name}.{ds}: missing cuts {missing}")
+
+
 def _check_jcm_files(jcm_paths: list[str], cf_no: dict, failures: list[str], is_lowpt: bool = False) -> None:
     """Validate fitted JCM YAML parameters and NoJCM cutflow counts."""
     print("=== Phase B.1 JCM Parameters ===")
@@ -39,18 +66,22 @@ def _check_jcm_files(jcm_paths: list[str], cf_no: dict, failures: list[str], is_
         if checked_params == 0:
             failures.append(f"No numeric parameters found in {jcm_path}")
 
+    _check_cutflow_completeness(cf_no, "NoJCM", failures)
+
     counts3 = cf_no.get("counts3", {})
     counts4 = cf_no.get("counts4", {})
+    counts3_unit = cf_no.get("counts3_unit", {})
+    counts4_unit = cf_no.get("counts4_unit", {})
     data_keys = sorted(k for k in (set(counts3) | set(counts4)) if k.startswith("data"))
     if not data_keys:
         failures.append("No data entries found in NoJCM cutflow")
     else:
-        print("\n=== Phase B.1 NoJCM Cutflow (passPreSel) ===")
+        print("\n=== Phase B.1 NoJCM Cutflow (passPreSel & unit weights) ===")
         for dk in data_keys:
-            three_b = float(counts3.get(dk, {}).get("passPreSel", 0))
-            four_b = float(counts4.get(dk, {}).get("passPreSel", 0))
+            three_b = float((counts3.get(dk) or {}).get("passPreSel", 0))
+            four_b = float((counts4.get(dk) or {}).get("passPreSel", 0))
             if is_lowpt:
-                four_jetmult = float(counts4.get(dk, {}).get("passJetMult", 0))
+                four_jetmult = float((counts4.get(dk) or {}).get("passJetMult", 0))
                 print(f"  {dk:<25} threeTag={three_b:.2f}  fourTag(passPreSel)={four_b:.2f}  passJetMult={four_jetmult:.2f}")
                 if three_b <= 0 or four_jetmult <= 0:
                     failures.append(f"{dk} has non-positive NoJCM counts (3b_passPreSel={three_b}, passJetMult={four_jetmult})")
@@ -58,6 +89,15 @@ def _check_jcm_files(jcm_paths: list[str], cf_no: dict, failures: list[str], is_
                 print(f"  {dk:<25} threeTag={three_b:.2f}  fourTag={four_b:.2f}")
                 if three_b <= 0 or four_b <= 0:
                     failures.append(f"{dk} has non-positive NoJCM passPreSel counts (3b={three_b}, 4b={four_b})")
+            for cut in EXPECTED_CUTS:
+                v4 = float((counts4.get(dk) or {}).get(cut, 0.0))
+                u4 = float((counts4_unit.get(dk) or {}).get(cut, 0.0))
+                v3 = float((counts3.get(dk) or {}).get(cut, 0.0))
+                u3 = float((counts3_unit.get(dk) or {}).get(cut, 0.0))
+                if not _close(v4, u4):
+                    failures.append(f"NoJCM {dk}.{cut}: counts4 ({v4}) != counts4_unit ({u4})")
+                if not _close(v3, u3):
+                    failures.append(f"NoJCM {dk}.{cut}: counts3 ({v3}) != counts3_unit ({u3})")
 
 
 def _check_wjcm_and_friends(
@@ -68,36 +108,51 @@ def _check_wjcm_and_friends(
     failures: list[str],
     max_files: int = 0,
 ) -> None:
-    """Validate wJCM vs NoJCM cutflows and classifier_inputs friend trees."""
+    """Validate wJCM vs NoJCM cutflows across all 4 maps and classifier_inputs friend trees."""
     import numpy as np
     import uproot
 
-    print("\n=== Phase B.2 Cutflow Comparison (NoJCM vs wJCM at passPreSel) ===")
-    print(f"{'Dataset':<28} {'Tag':<10} {'NoJCM':>12} {'wJCM':>12} {'Status':<6}")
-    print("-" * 72)
+    _check_cutflow_completeness(cf_w, "wJCM", failures)
+
+    print("\n=== Phase B.2 Cutflow Comparison (NoJCM vs wJCM) ===")
+    print(f"{'Dataset':<28} {'Cut':<14} {'NoJCM_3b':>10} {'wJCM_3b':>10} {'Status':<6}")
+    print("-" * 74)
     w_counts3 = cf_w.get("counts3", {})
     w_counts4 = cf_w.get("counts4", {})
     no_counts3 = cf_no.get("counts3", {})
     no_counts4 = cf_no.get("counts4", {})
-    data_keys = sorted(k for k in (set(w_counts3) | set(w_counts4)) if k.startswith("data"))
+    shared_keys = sorted(
+        k for k in (set(no_counts3) & set(w_counts3))
+        if isinstance(no_counts3.get(k), dict) and isinstance(w_counts3.get(k), dict)
+    )
+    data_keys = [k for k in shared_keys if k.startswith("data")]
     if not data_keys:
         failures.append("No data entries found in wJCM cutflow")
+
+    for ds in shared_keys:
+        for invariant_map in ("counts4", "counts4_unit", "counts3_unit"):
+            m_no = (cf_no.get(invariant_map) or {}).get(ds) or {}
+            m_w = (cf_w.get(invariant_map) or {}).get(ds) or {}
+            for cut in EXPECTED_CUTS:
+                v_no = float(m_no.get(cut, 0.0))
+                v_w = float(m_w.get(cut, 0.0))
+                if not _close(v_no, v_w):
+                    failures.append(f"{ds} {invariant_map}.{cut}: changed under JCM ({v_no} -> {v_w})")
+
     for dk in data_keys:
-        for tag, no_map, w_map, expect_same in [
-            ("counts3", no_counts3, w_counts3, False),
-            ("counts4", no_counts4, w_counts4, True),
-        ]:
-            v_no = float(no_map.get(dk, {}).get("passPreSel", 0.0))
-            v_w = float(w_map.get(dk, {}).get("passPreSel", 0.0))
-            if expect_same:
-                ok = abs(v_no - v_w) <= 1e-4 * max(1.0, abs(v_no))
-                if not ok:
-                    failures.append(f"{dk} {tag}: fourTag changed under JCM ({v_no} -> {v_w})")
-            else:
-                ok = (v_w > 0) and (abs(v_no - v_w) > 1e-3)
-                if not ok:
-                    failures.append(f"{dk} {tag}: threeTag did not change under JCM ({v_no} -> {v_w})")
-            print(f"{dk:<28} {tag:<10} {v_no:>12.2f} {v_w:>12.2f} {'PASS' if ok else 'FAIL':<6}")
+        for cut in EXPECTED_CUTS:
+            v4 = float(((w_counts4.get(dk)) or {}).get(cut, 0.0))
+            u4 = float((((cf_w.get("counts4_unit")) or {}).get(dk) or {}).get(cut, 0.0))
+            if not _close(v4, u4):
+                failures.append(f"wJCM {dk}.{cut}: counts4 ({v4}) != counts4_unit ({u4})")
+        for cut in JCM_REGION_CUTS:
+            v_no = float((no_counts3.get(dk) or {}).get(cut, 0.0))
+            v_w = float((w_counts3.get(dk) or {}).get(cut, 0.0))
+            u3_w = float((((cf_w.get("counts3_unit")) or {}).get(dk) or {}).get(cut, 0.0))
+            ok = (v_w > 0) and (abs(v_no - v_w) > 1e-3) and (abs(v_w - u3_w) > 1e-3)
+            if not ok:
+                failures.append(f"{dk} counts3.{cut}: did not change under JCM (NoJCM={v_no}, wJCM={v_w}, raw={u3_w})")
+            print(f"{dk:<28} {cut:<14} {v_no:>10.2f} {v_w:>10.2f} {'PASS' if ok else 'FAIL':<6}")
 
     ci_block = friends.get("HCR_input") or friends.get("HCR_input_lowpt") or (next(iter(friends.values())) if friends else None)
     if not ci_block:

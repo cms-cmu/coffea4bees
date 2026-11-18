@@ -548,6 +548,7 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
             opts = _replace_or_append_flag(entry["option"], "--max-workers", "--max-workers 1")
             opts = _replace_or_append_flag(opts, "--test-files", "--test-files 1")
             opts = _replace_or_append_flag(opts, "--test-entries", "--test-entries 200000")
+            opts = _replace_or_append_flag(opts, "--preserve-order", "--preserve-order")
             if active_years is not None:
                 filtered_opts = []
                 for o in opts:
@@ -590,6 +591,7 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
             opts = _replace_or_append_flag(entry["option"], "--max-workers", "--max-workers 1")
             opts = _replace_or_append_flag(opts, "--test-files", "--test-files 1")
             opts = _replace_or_append_flag(opts, "--test-entries", "--test-entries 200000")
+            opts = _replace_or_append_flag(opts, "--preserve-order", "--preserve-order")
             if entry.get("module") in ("HCR.SvB.Eval", "HCR.SvB_lowpt.Eval"):
                 opts = _replace_or_append_flag(opts, "--mc-processes", "--mc-processes ttbar ggF")
                 opts = _replace_or_append_flag(opts, "--ggf-load-kl", "--ggf-load-kl 1.0")
@@ -600,7 +602,5 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
                     "--workers 1" if (isinstance(o, str) and (o == "--workers" or o.startswith("--workers "))) else o
                     for o in entry["option"]
                 ]
-        for entry in ewf.get("setting") or []:
-            if isinstance(entry, dict) and entry.get("module") == "ml.DataLoader":
-                entry["option"] = [{"num_workers": 0}]
+        _set_setting_option(ewf.setdefault("setting", []), "ml.DataLoader", "num_workers", 0)
         _atomic_write_yaml(eval_path, ewf)

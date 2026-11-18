@@ -1,0 +1,144 @@
+counts4:
+  data_UL18A:
+    passJetMult: 96793.0
+    passPreSel: 3526.0
+    passDiJetMass: 1516.0
+    SR: 584.0
+    SB: 932.0
+  TTbar_from_d3_UL18A:
+    passPreSel: 430.16
+    passDiJetMass: 152.27
+    SR: 59.16
+    SB: 93.12
+  TTToSemiLeptonic_UL18:
+    passJetMult: 2249.5
+    passPreSel: 38.0
+    passDiJetMass: 13.31
+    SR: 4.78
+    SB: 8.53
+  TTToHadronic_UL18:
+    passJetMult: 3551.63
+    passPreSel: 40.91
+    passDiJetMass: 17.73
+    SR: 9.14
+    SB: 8.59
+  TTTo2L2Nu_UL18:
+    passJetMult: 1847.28
+    passPreSel: 55.25
+    passDiJetMass: 16.75
+    SR: 6.49
+    SB: 10.26
+  GluGluToHHTo4B_cHHH1_UL18:
+    passJetMult: 26.99
+    passPreSel: 4.76
+    passDiJetMass: 4.39
+    SR: 3.89
+    SB: 0.5
+counts3:
+  data_UL18A:
+    passJetMult: 96793.0
+    passPreSel: 4015.68
+    passDiJetMass: 1302.68
+    SR: 506.09
+    SB: 796.59
+  TTbar_from_d3_UL18A:
+    passPreSel: 456.02
+    passDiJetMass: 161.47
+    SR: 62.42
+    SB: 99.06
+  TTToSemiLeptonic_UL18:
+    passJetMult: 2249.5
+    passPreSel: 138.85
+    passDiJetMass: 58.28
+    SR: 27.1
+    SB: 31.18
+  TTToHadronic_UL18:
+    passJetMult: 3551.63
+    passPreSel: 240.7
+    passDiJetMass: 139.15
+    SR: 73.74
+    SB: 65.42
+  TTTo2L2Nu_UL18:
+    passJetMult: 1847.28
+    passPreSel: 110.07
+    passDiJetMass: 33.46
+    SR: 13.92
+    SB: 19.54
+  GluGluToHHTo4B_cHHH1_UL18:
+    passJetMult: 26.99
+    passPreSel: 0.97
+    passDiJetMass: 0.59
+    SR: 0.45
+    SB: 0.15
+counts4_unit:
+  data_UL18A:
+    passJetMult: 96793.0
+    passPreSel: 3526.0
+    passDiJetMass: 1516.0
+    SR: 584.0
+    SB: 932.0
+  TTbar_from_d3_UL18A:
+    passPreSel: 92424.0
+    passDiJetMass: 28241.0
+    SR: 11052.0
+    SB: 17189.0
+  TTToSemiLeptonic_UL18:
+    passJetMult: 98474.0
+    passPreSel: 1285.0
+    passDiJetMass: 545.0
+    SR: 201.0
+    SB: 344.0
+  TTToHadronic_UL18:
+    passJetMult: 99425.0
+    passPreSel: 908.0
+    passDiJetMass: 431.0
+    SR: 218.0
+    SB: 213.0
+  TTTo2L2Nu_UL18:
+    passJetMult: 93945.0
+    passPreSel: 2720.0
+    passDiJetMass: 1094.0
+    SR: 437.0
+    SB: 657.0
+  GluGluToHHTo4B_cHHH1_UL18:
+    passJetMult: 85061.0
+    passPreSel: 18817.0
+    passDiJetMass: 17815.0
+    SR: 15623.0
+    SB: 2192.0
+counts3_unit:
+  data_UL18A:
+    passJetMult: 96793.0
+    passPreSel: 92424.0
+    passDiJetMass: 28241.0
+    SR: 11052.0
+    SB: 17189.0
+  TTbar_from_d3_UL18A:
+    passPreSel: 92424.0
+    passDiJetMass: 28241.0
+    SR: 11052.0
+    SB: 17189.0
+  TTToSemiLeptonic_UL18:
+    passJetMult: 98474.0
+    passPreSel: 96202.0
+    passDiJetMass: 55487.0
+    SR: 27839.0
+    SB: 27648.0
+  TTToHadronic_UL18:
+    passJetMult: 99425.0
+    passPreSel: 97639.0
+    passDiJetMass: 70431.0
+    SR: 38881.0
+    SB: 31550.0
+  TTTo2L2Nu_UL18:
+    passJetMult: 93945.0
+    passPreSel: 90010.0
+    passDiJetMass: 38427.0
+    SR: 16667.0
+    SB: 21760.0
+  GluGluToHHTo4B_cHHH1_UL18:
+    passJetMult: 85061.0
+    passPreSel: 64683.0
+    passDiJetMass: 43118.0
+    SR: 30650.0
+    SB: 12468.0
