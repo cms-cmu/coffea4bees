@@ -245,38 +245,41 @@ rule final_output_F_3:
 
 def get_target_rebins_F_3():
     explicit_rebins = config.get('f3_rebins') or config.get('stat_analysis_rebins')
-    if explicit_rebins:
+    if explicit_rebins and config.get('force_rebins', False):
         if isinstance(explicit_rebins, (int, str)):
             return [int(r) for r in str(explicit_rebins).split()]
-        else:
-            return [int(r) for r in explicit_rebins]
+        return [int(r) for r in explicit_rebins]
     closure_reg = config.get('closure_region', config.get('region', 'SR'))
     clf = config.get('classifier', 'SvB_MA')
     closure_summary_path = f"{out}bkg_syst_F_2_run_two_stage_closure/summary_{clf}_{closure_reg}.json"
     if not os.path.exists(closure_summary_path):
         closure_summary_path = f"{out}bkg_syst_F_2_run_two_stage_closure/closure_summary.json"
+    passing = []
     if os.path.exists(closure_summary_path):
         import json
         try:
             with open(closure_summary_path, "r") as f:
                 data = json.load(f)
             passing = data.get("passing_rebins", [])
-            if passing:
-                return passing
         except Exception as e:
             print(f"[Snakemake] Error reading {closure_summary_path}: {e}")
-    # Not yet run (F_2 in the same invocation): let Snakemake's IncompleteCheckpointException
-    # through, so it re-evaluates these targets once the checkpoint is done.
-    checkpoint_output = checkpoints.evaluate_closure_candidates.get(region=closure_reg, classifier=clf).output[0]
-    try:
-        import json
-        with open(checkpoint_output, "r") as f:
-            data = json.load(f)
-        passing = data.get("passing_rebins", [])
-        if passing:
-            return passing
-    except Exception as e:
-        print(f"[Snakemake] Error reading checkpoint: {e}")
+    else:
+        # Not yet run (F_2 in the same invocation): let Snakemake's IncompleteCheckpointException
+        # through, so it re-evaluates these targets once the checkpoint is done.
+        checkpoint_output = checkpoints.evaluate_closure_candidates.get(region=closure_reg, classifier=clf).output[0]
+        try:
+            import json
+            with open(checkpoint_output, "r") as f:
+                data = json.load(f)
+            passing = data.get("passing_rebins", [])
+        except Exception as e:
+            print(f"[Snakemake] Error reading checkpoint: {e}")
+    if passing:
+        return passing
+    if explicit_rebins:
+        if isinstance(explicit_rebins, (int, str)):
+            return [int(r) for r in str(explicit_rebins).split()]
+        return [int(r) for r in explicit_rebins]
     return [24]
 
 def get_combine_targets_F_3(wildcards):
