@@ -183,7 +183,13 @@ def _synthetic_eval_wf(eval_wf: dict, train_wf: dict) -> dict:
     out = copy.deepcopy(eval_wf)
     t_opts = opts(train_wf, 'dataset')
     keep = {flag_of(o): o for o in t_opts if flag_of(o) in ("--data-mixed-name", "--data-mixed-samples")}
-    friends_opts = [o for o in t_opts if flag_of(o) == "--friends"]
+    # the classifier-input friends (--friends "" ...). A training can carry more --friends (svb_sr_closure
+    # adds source:detector / label:ttbar / source:mixed SvB friends): a dict by flag kept only the last
+    # (the subsample's SvB), so the evaluation lost its HCR inputs and hung (2024 FvT roast, 2026-11-14)
+    friends = [o for o in t_opts if flag_of(o) == "--friends"]
+    hcr = [o for o in friends if len(o.split()) > 1 and o.split()[1] in ('""', "''")]
+    if friends:
+        keep["--friends"] = hcr or friends[:1]
     missing = {"--data-mixed-name", "--data-mixed-samples"} - set(keep)
     if missing:
         raise ValueError(f"train.yml has no {sorted(missing)}: not a synthetic-trained FvT")
@@ -197,7 +203,8 @@ def _synthetic_eval_wf(eval_wf: dict, train_wf: dict) -> dict:
         else:
             new.append(o)
     new += [keep["--data-mixed-name"], keep["--data-mixed-samples"]]
-    new.extend(friends_opts)
+    if "--friends" in keep:
+        new += keep["--friends"]
     for mod in out['dataset']:
         if isinstance(mod, dict) and 'option' in mod:
             mod['option'] = new
