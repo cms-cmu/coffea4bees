@@ -302,7 +302,8 @@ class ttHbbProcessor(HH4bBaseProcessor):
         selections.add("pass_nSelJets_eq5", event.pass_nSelJets_eq5)
         selections.add("pass_nSelJets_gt5", event.pass_nSelJets_gt5)
         selections.add("all_selJets", event.all_selJets)
-        selections.add("passLeptonVeto", event.passLeptonVeto)
+        if "passLeptonVeto" not in selections.names:
+            selections.add("passLeptonVeto", event.passLeptonVeto)
 
         return selections, allcuts
 
