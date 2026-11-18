@@ -1,186 +1,278 @@
 # CoReNet workflow for boosted HH → 4b studies
 
-An optional Snakemake workflow that runs the analysis chain with **CoReNet** as the classifier
-for both the FvT (multijet reweighting) and the SvB (signal vs background):
+An optional Snakemake workflow that runs the HH → 4b chain with the **CoReNet** network as the
+classifier for both FvT and SvB:
 
 ```
 3b data × JCM ──► FvT (CoReNet) ──► SvB (CoReNet) ──► histograms ──► fit on the SvB histogram
                   train, evaluate    train, evaluate   runner.py      datacards, limits
 ```
 
-It is opt-in. Nothing includes it, no default config points at it, and it is not part of CI or
-of `bin/roast`. It runs only when you name its Snakefile.
+Terms used on this page:
 
-All commands are run from the barista root directory.
+- **picoAOD**: the skimmed ntuple written from NanoAOD, read by the analysis and the classifiers.
+- **Friend tree**: extra branches for the events of a picoAOD, in a separate file matched event by
+  event. Classifier inputs and outputs are stored as friend trees.
+- **FvT** (four-tag vs three-tag): a classifier trained on data to tell four-b-tag events from
+  three-b-tag events. Its output reweights three-tag data into a model of the four-tag multijet
+  background.
+- **SvB** (signal vs background): a classifier that separates HH (and ZZ, ZH) from multijet and
+  ttbar. Its output histogram is what the fit uses.
+- **JCM** (jet combinatoric model): a per-event weight for three-tag data, one value per jet
+  multiplicity (`nSelJets`), that normalises three-tag to four-tag before the FvT.
+- **Template key**: a `{name}` placeholder in a classifier job file, filled in when the job runs.
 
-## Status: read this first
+The workflow is opt-in: no default config, CI job or `bin/roast` phase uses it. All commands are
+run from the barista root directory.
+
+## Status
 
 | Part | State |
 | --- | --- |
-| Workflow DAG (all four steps) | Resolves in a dry run with the placeholder config (49 jobs). |
-| FvT and SvB commands, train and evaluate | Arguments parse, the trainers and the network are built. **No training or evaluation has been run**, for either classifier, with this configuration. |
-| CoReNet SvB | The model config existed but had not been used in production. It parses and builds like the FvT. Its first real training is yours: treat it as untested. |
-| Inputs | **Placeholders.** No boosted classifier-input friend trees, JCM fit or dataset lists exist in the repository. |
-| Histogramming for a boosted selection | **Missing.** The `analysis` step points at the resolved processor as a placeholder (see [What is not there yet](#what-is-not-there-yet)). |
+| Workflow | The dry run resolves: 49 jobs for the full chain, 14 with `--config steps=fvt,svb`. |
+| Boosted classifier jobs | The four job files parse and the network builds (about 1.5k parameters). **Nothing has been trained or evaluated with this boosted configuration.** |
+| CoReNet itself | CoReNet FvT and SvB have been trained and evaluated in production for the resolved Run 2 analysis (the SvB first on 2026-11-17: three folds, full chain through limits). |
+| Inputs | **Placeholders.** There are no boosted classifier-input friend trees and no boosted JCM fit in the repository. |
+| Histogramming step | Uses the resolved processor `processor_HH4b.py` as a placeholder. No existing boosted processor fills analysis histograms with FvT and SvB; see [Boosted code that exists, and what is missing](#boosted-code-that-exists-and-what-is-missing). Until one exists, run `steps: [fvt, svb]`. |
 
-## Files
+## Files to edit before running
 
-| File | Purpose |
+In this order. Copy a file before editing it if you want to keep the sample intact, and point the
+config at the copy.
+
+### 1. Workflow config: `coffea4bees/workflows/config/corenet_boosted.yml`
+
+Must change (they contain `PLACEHOLDER`):
+
+| Key | Value |
 | --- | --- |
-| `coffea4bees/workflows/Snakefile_CoReNet.smk` | The workflow. |
-| `coffea4bees/workflows/config/corenet_boosted.yml` | Its config: inputs, network, classifier options, analysis and stats settings. |
-| `coffea4bees/classifier/config/corenet/HH4b_boosted.yml` | CoReNet event description: objects, decay hypothesis, network size. |
-| `coffea4bees/classifier/config/workflows/HH4b_boosted_corenet/common.yml` | Classifier settings: eras, input branches, event scalars. |
-| `coffea4bees/classifier/config/workflows/HH4b_boosted_corenet/{FvT,SvB}/{train,evaluate}.yml` | The four classifier jobs, as templates. Used by the workflow and by hand. |
-| `coffea4bees/classifier/config/workflows/HH4b_boosted_corenet/paths.yml` | Inputs and outputs for the jobs run by hand. |
+| `inputs.dataset_metadata` | Directory of dataset YAMLs for the classifier jobs, with a trailing `/` (see [Dataset metadata](#dataset-metadata)). |
+| `inputs.classifier_inputs` | The classifier-input friend trees, as `<manifest>.json@@<key>` (see [Classifier-input friend trees](#classifier-input-friend-trees)). |
+| `inputs.jcm_weights` | JCM weights, `<file>.yml@@JCM_weights`, or `""` to train without JCM. |
+| `inputs.output_base` | Where models and friend trees are written, local or `root://`. Must be readable by the GPU jobs. |
+| `analysis_config.dataset_location` | Dataset metadata for the histogramming step. Only needed with the `analysis` step. |
 
-## The decay chain file
+The workflow's first rule, `corenet_check_inputs`, stops a real run if a value under `inputs:` or
+`corenet.network` still contains `PLACEHOLDER`. It does not check `analysis_config`, and it is
+not run when both classifier steps are skipped.
 
-`coffea4bees/classifier/config/corenet/HH4b_boosted.yml` tells CoReNet what the event is made of
-and how it decays. It is a sample to start from; `corenet.network` in the config (or `network` in
-`paths.yml`) selects which file is used.
+Optional: `label` and `output_path` (name and local directory of the run), `steps`,
+`corenet.network`, the `fvt:` / `svb:` blocks, `year_eras` and `dataset` (what the histogramming
+step runs over), `analysis_config`, `channels`, and the [optional blocks](#optional-config-blocks).
+Every key is listed in the [config reference](#config-reference).
+
+### 2. Decay-chain file: `coffea4bees/classifier/config/corenet/HH4b_boosted.yml`
+
+No placeholders. It tells CoReNet what objects the event contains and how HH decays into them.
+Edit it only if you change the objects; see [Network inputs](#network-inputs).
 
 | Block | Sample value | Meaning |
 | --- | --- | --- |
-| `objects.subjets`, `objects.jets` | `{features: [pt, eta, phi, mass], max: 4}` / `max: 8` | Object collections and their per-object features. |
-| `objects.b` | `subjets pt 4` | Role `b`: four subjets, ordered by pt. Read from the `CanJet_*` branches: slots 0, 1 are the subjets of the first AK8 jet, slots 2, 3 of the second. |
+| `objects.subjets`, `objects.jets` | `{features: [pt, eta, phi, mass], max: 4}`, `max: 8` | Object collections and their per-object features. |
+| `objects.b` | `subjets pt 4` | Role `b`: four subjets, ordered by pt, read from the `CanJet_*` branches. Slots 0 and 1 are the subjets of the first AK8 jet, slots 2 and 3 those of the second. |
 | `objects.other` | `jets pt 8` | Role `other`: up to eight further jets, read from `NotCanJet_*`. |
-| `hypotheses.HH` | `H1: [b, b]`, `H2: [b, b]`, `context: other` | The decay chain: HH → two Higgs candidates, each → two `b` objects. `other` is attention context. |
-| `outputs`, `combine` | `main: HH`, `[HH]` | Which hypothesis feeds the classifier output. |
-| `training` | `features: 8`, `attention_heads: 2`, ... | Network size and switches. |
+| `hypotheses.HH` | `H1: [b, b]`, `H2: [b, b]`, `context: other` | HH → two Higgs candidates, each → two `b` objects. `other` is used only as attention context. |
+| `outputs`, `combine` | `main: HH`, `[HH]` | Which hypothesis feeds the classifier output. `main` is only a name; the classes come from the dataset. |
+| `training` | `features: 8`, `attention_heads: 2`, ... | Network width and switches. |
 
-The network scores all three pairings of the four `b` objects (views `q_1234`, `q_1324`,
-`q_1423`); `q_1234` is the pairing as written in the friend tree.
+The network scores all three ways of pairing the four `b` objects into two Higgs candidates
+(outputs `q_1234`, `q_1324`, `q_1423`); `q_1234` is the pairing as written in the friend tree.
 
-## What you have to provide
+### 3. Classifier settings: `coffea4bees/classifier/config/workflows/HH4b_boosted_corenet/common.yml`
 
-1. **Dataset metadata**: a directory of YAMLs listing the picoAOD files, in the layout of
-   `coffea4bees/metadata/datasets/` (`data.<year>.picoAOD.<era>.files`,
-   `<MC sample>.<year>.picoAOD.files`).
-2. **Classifier-input friend trees** and their manifest (`<file>.json@@<key>`). The loader is the
-   one of the resolved analysis, so the friend tree must follow its branch names, whatever the
-   objects are:
+No placeholders. Shared by the FvT and SvB jobs. It holds the eras per year (`cms.CollisionData`;
+these must exist in your dataset metadata) and the input branches (`HCR.InputBranch`):
+`feature_CanJet`, `n_CanJet`, `feature_NotCanJet`, `n_NotCanJet`, and `feature_ancillary` (event
+scalars fed to the network). Instead of editing it you can replace its whole `setting:` list from
+the workflow config with `classifier_setting` ([optional blocks](#optional-config-blocks)).
 
-   | Branch | Content |
-   | --- | --- |
-   | `CanJet_pt`, `_eta`, `_phi`, `_mass` | The candidate objects, exactly `n_CanJet` per event. Default here: the four subjets of the two Higgs-candidate AK8 jets, slots 0, 1 from the first jet and 2, 3 from the second. |
-   | `NotCanJet_pt`, `_eta`, `_phi`, `_mass`, `_isSelJet` | Other objects (context), any number; padded or truncated to `n_NotCanJet`. |
-   | `fourTag`, `threeTag` | The two tag regions the FvT maps between (your "pass" and "fail"). |
-   | `SR`, `SB`, `ZZSR`, `ZHSR`, `HHSR` | Mass regions. The FvT trains on `SB` and `SR` (never on four-tag `SR` data), the SvB on `SR`. |
-   | `passHLT`, `weight` | Trigger decision and event weight. |
-   | event scalars | One branch per name in `feature_ancillary` (`year` is added by the loader). |
+These eras are separate from `year_eras` in the workflow config, which drives only the
+histogramming step (UL17 is B–F here and C–F there, as in the resolved Run 2 configs).
 
-   `coffea4bees/analysis/helpers/dump_friendtrees.py::dump_input_friend` writes this format; its
-   `CanJet` / `NotCanJet` arguments name the event collections to dump.
-3. **JCM weights** (`<file>.yml@@JCM_weights`): the 3b → 4b normalisation applied to three-tag
-   data. Optional: set `inputs.jcm_weights: ""` to train without.
-4. **An output location** for models and friend trees, visible to the GPU jobs.
+### 4. Job templates: `HH4b_boosted_corenet/{FvT,SvB}/{train,evaluate}.yml`
+
+No placeholders: the paths in them are template keys, filled by the workflow from `inputs:` and
+`corenet.network` (or from `paths.yml` when run by hand). Edit them to change dataset options
+(`dataset:` blocks) or training options (`model:` block). The usual training options can be
+changed from the config instead, through `fvt.model_options` / `svb.model_options`.
+
+To keep the samples intact, copy the whole `HH4b_boosted_corenet` directory, edit the copy, and
+set `fvt.wfs_base` / `svb.wfs_base` to `<copy>/FvT` and `<copy>/SvB`. `common.yml` is always read
+from one level above `wfs_base`.
+
+The templates are filled with Python's `str.format`, so the only braces allowed anywhere in them,
+comments included, are the template keys: `metadata`, `inputs`, `jcm`, `network`, `fvt_model`,
+`fvt_friend`, `svb_model`, `svb_friend`. Write a literal brace as `{{` or `}}`.
+
+### 5. `HH4b_boosted_corenet/paths.yml` (only to run the jobs by hand)
+
+Not used by the workflow. All values except `network` are placeholders; see
+[Running the classifier jobs without the workflow](#running-the-classifier-jobs-without-the-workflow).
+
+## Inputs you have to provide
+
+### Dataset metadata
+
+A directory of YAMLs in the layout of `coffea4bees/metadata/datasets/`. The classifier jobs look
+up these keys:
+
+| Needed by | Keys |
+| --- | --- |
+| FvT and SvB (data) | `data.<year>.picoAOD.<era>.files`, for every year and era in `common.yml` |
+| FvT and SvB (ttbar) | `<sample>.<year>.picoAOD.files` for `TTToSemiLeptonic`, `TTToHadronic`, `TTTo2L2Nu` |
+| SvB (signal) | `ZZ4b`, `ZH4b`, `ggZH4b`, and `GluGluToHHTo4B_cHHH{0,1,2p45,5}` |
+
+To load fewer processes, add `--mc-processes <list>` to a `dataset:` block (e.g. `ggF` in the
+`HCR.SvB.Signal` block), `--ggf-load-kl 1` for the SM signal only, and `--ggf-signal-pattern` for
+Run 3 signal names (`GluGlutoHHto4B_kl-{kl}_kt-{kt}_c2-{c2}` style). The SvB training uses the
+ggF sample with kl = 1; the other kl values are loaded but not trained on.
+
+### Classifier-input friend trees
+
+Given as `<manifest>.json@@<key>`. The loader is the one of the resolved analysis, so the friend
+tree must use its branch names, whatever objects they hold:
+
+| Branch | Content |
+| --- | --- |
+| `CanJet_pt`, `_eta`, `_phi`, `_mass` | The `b` objects, exactly `n_CanJet` per event. Here: the four subjets of the two Higgs-candidate AK8 jets, slots 0, 1 from the first jet, 2, 3 from the second. |
+| `NotCanJet_pt`, `_eta`, `_phi`, `_mass`, `_isSelJet` | The `other` objects, any number; padded or cut to `n_NotCanJet`. |
+| `fourTag`, `threeTag` | The two tag categories the FvT maps between. |
+| `SR`, `SB`, `ZZSR`, `ZHSR`, `HHSR` | Mass regions. The FvT trains on `SB` and `SR` events except four-tag `SR` data; the SvB trains on `SR`. |
+| `passHLT`, `weight` | Trigger decision (required for data in the FvT) and event weight. |
+| `nSelJets` | Jet multiplicity used to look up the JCM weight. |
+| event scalars | One branch per name in `feature_ancillary`; `year` comes from the dataset. |
+
+`coffea4bees/analysis/helpers/dump_friendtrees.py::dump_input_friend` writes this format; its
+`CanJet` / `NotCanJet` arguments name the event collections to write.
+
+**JCM caveat.** The JCM weight is applied only if `nSelJets` is loaded, and the loader reads only
+the branches it is told about. The sample `common.yml` does not include `nSelJets`
+(`feature_ancillary: [nOtherJets, year]`), so with the files as they are the JCM weights are
+**silently not applied**. Add `--branch nSelJets` to the `dataset:` blocks that carry
+`--JCM-weight`, or set `inputs.jcm_weights: ""` to train without JCM on purpose.
+
+### JCM weights
+
+`<file>.yml@@JCM_weights`: a list of weights indexed by `nSelJets` (index 4 is the first entry).
+No boosted fit exists.
 
 ## Running the workflow
 
-Put the four inputs in the `inputs:` block of the config (or copy the config and edit the copy).
-
 ```bash
-# dry run: lists the jobs, submits nothing
+# dry run: lists the jobs, submits nothing (add -p to print each job's command)
 ./run_container snakemake --snakefile coffea4bees/workflows/Snakefile_CoReNet.smk \
     --configfile coffea4bees/workflows/config/corenet_boosted.yml -n
 
-# add -p to also print the commands of each job
-./run_container snakemake --snakefile coffea4bees/workflows/Snakefile_CoReNet.smk \
-    --configfile coffea4bees/workflows/config/corenet_boosted.yml -np
-
-# run (inside tmux: the scheduler stays alive until the last job ends)
+# run (start it inside tmux: Snakemake must stay alive until the last job ends)
 ./run_container snakemake --snakefile coffea4bees/workflows/Snakefile_CoReNet.smk \
     --configfile coffea4bees/workflows/config/corenet_boosted.yml
 ```
 
-Run part of the chain by target or by step:
+Run part of the chain:
 
 ```bash
 # one target: corenet_fvt, corenet_svb, corenet_analysis, corenet_stats, corenet_all (default)
 ./run_container snakemake --snakefile coffea4bees/workflows/Snakefile_CoReNet.smk \
     --configfile coffea4bees/workflows/config/corenet_boosted.yml corenet_svb
 
-# classifiers only, without loading the analysis and stats rules
+# classifiers only; the analysis and stats rules are not loaded
 ./run_container snakemake --snakefile coffea4bees/workflows/Snakefile_CoReNet.smk \
     --configfile coffea4bees/workflows/config/corenet_boosted.yml --config steps=fvt,svb
 ```
 
-A real run stops at its first rule while any input still contains `PLACEHOLDER`.
+A step left out of `steps` is replaced by an existing friend tree: `inputs.fvt_friend` when `fvt`
+is skipped, `inputs.svb_friend` when `svb` is skipped. A second config file with only some keys
+overrides those keys (`--configfile a.yml b.yml`).
 
-The dry run with the placeholder config gives this job list:
+What runs, in order:
 
-| Step | Rules (count) |
-| --- | --- |
-| setup | `corenet_check_inputs` (1) |
-| fvt, svb | `corenet_stage_fvt` (1), `corenet_stage_svb` (1), `train` (2), `evaluate` (2), `yields` (2), `analyze` (2), `classifier_gallery` (2) |
-| analysis | `corenet_analysis_config` (1), `analysis_data` (15), `analysis_dataset` (4), `merging_files` (1), `make_plots` (1), `check_cutflow` (1) |
-| stats | `convert_hist_to_json` (1), `make_combine_inputs` (1), `workspace` (1), `limits` (1), `significance` (1), `fit_diagnostics_sb` (1), `postfit` (1), `likelihood_scan_snapshot` (1), `likelihood_scan_chunk` (2), `likelihood_scan` (1), `stat_summary` (1) |
-| | `corenet_all` (1); 49 in total |
-
-Order: the SvB config is staged only once the FvT friend tree exists, and the analysis config is
-written only once both friend trees exist, so each step waits for the one before it.
+1. `corenet_check_inputs` (placeholder check).
+2. FvT: stage the job files, `train`, `evaluate` (writes the FvT friend tree), plus `yields`,
+   `analyze` (loss curves, ROCs) and `classifier_gallery`.
+3. SvB: the same; its job files are staged only after the FvT friend tree exists.
+4. Histogramming (`runner.py`, one job per data era and per MC sample and year), merging, plots,
+   cutflow check. Its config is written only after both friend trees exist.
+5. Fit: datacards, workspace, limits, significance, fit diagnostics, likelihood scan.
 
 ### Where things go
 
 | What | Where |
 | --- | --- |
-| Models, `result.json` | `<inputs.output_base>/classifier/<fvt.label or svb.label>/` |
-| Friend trees | `<inputs.output_base>/friend/<label>/` (`result.json@@analysis.0.merged`) |
-| Staged configs, logs, flag files, training plots | `<output_path>classifiers/<label>/` |
+| Models, `result.json` (per-epoch losses) | `<inputs.output_base>/classifier/<fvt.label or svb.label>/` |
+| Friend trees | `<inputs.output_base>/friend/<label>/`, read as `result.json@@analysis.0.merged` |
+| Staged job files (`wfs/train.yml`, `wfs/evaluate.yml`, `common.yml`: what the run actually used), logs, flag files, training plots | `<output_path>classifiers/<label>/` |
 | Histograms, plots, cutflow | `<output_path>PhaseF_1_analysis/` |
 | Datacards and Combine results | `<output_path>PhaseF_2_stats/` |
 
-The exact classifier configs a run used are `<output_path>classifiers/<label>/wfs/train.yml`,
-`wfs/evaluate.yml` and `common.yml`.
-
 ### Cluster notes
 
-- `./run_container snakemake` picks the Snakemake profile of the host. On falcon the `train` and
-  `evaluate` rules become SLURM GPU jobs (default `mps:25`, QOS `light`, 24 GB, 8 h; change with
-  `gpu_gres`, `gpu_qos`, `gpu_mem`, `train_runtime`, `eval_runtime` in the config).
-- On lxplus the GPU profile is chosen from the Snakefile name, and this file is not in that
-  list. Pass `--profile software/snakemake/profiles/lxplus_gpu` yourself.
-- On Bridges-2 the profile's own resources for `train` and `evaluate` win over the config.
-- The analysis jobs call `./run_container python runner.py ...`; add `--condor` or `--slurm`
-  through `additional_parameters` to spread each one over batch workers.
+- `./run_container snakemake` adds the Snakemake profile of the host. On falcon every rule except
+  the small bookkeeping ones becomes a SLURM job; `train` and `evaluate` request a GPU (default
+  `mps:25`, QOS `light`, 24 GB, 8 h; see [optional blocks](#optional-config-blocks)).
+- On lxplus the GPU profile is picked from the Snakefile name, and this Snakefile is not in that
+  list: pass `--profile software/snakemake/profiles/lxplus_gpu` yourself.
+- On Bridges-2 the profile's resources for `train` and `evaluate` win over the config.
+- The histogramming jobs run `runner.py` locally in each job (`additional_parameters: ""`). Add
+  `--condor` or `--slurm` there to spread each one over batch workers.
+
+## Optional config blocks
+
+These are top-level keys of `coffea4bees/workflows/config/corenet_boosted.yml`. They are not in
+the checked-in file. Add them next to the existing blocks, for example:
+
+```yaml
+corenet:
+  network: "coffea4bees/classifier/config/corenet/HH4b_boosted.yml"   # already there
+  inputs: {b: CanJet, other: NotCanJet}    # role -> branch prefix; the first role of the decay-chain file first
+  architecture: {n_features: 16}           # also: attention, use_attention_gate, use_kv_proj
+
+classifier_setting:                        # replaces the whole `setting:` list of common.yml
+  - module: cms.CollisionData              # copy all four entries of common.yml and edit them;
+    option:                                # only one is shown here
+      - eras:
+          UL18: [A, B, C, D]
+
+gpu_gres: "mps:25"                         # GPU job resources; defaults shown
+gpu_qos: "light"
+gpu_mem: 24000                             # MB
+train_runtime: 480                         # minutes
+eval_runtime: 480
+```
+
+`corenet.inputs` and `corenet.architecture` apply to both classifiers. `classifier_setting` is
+written out as the `common.yml` of both classifiers, so give the full list (`ml.DataLoader`,
+`ROOT`, `cms.CollisionData`, `HCR.InputBranch`); entries you leave out are lost.
 
 ## Config reference
 
-`coffea4bees/workflows/config/corenet_boosted.yml`:
+All keys of `corenet_boosted.yml`:
 
 | Key | Meaning |
 | --- | --- |
-| `label` | Name of the run. Used in file names and as `{roast_id}`. Change it to keep two variants apart. |
-| `output_path` | Local directory of this run. |
-| `steps` | Subset of `[fvt, svb, analysis, stats]`. A classifier step that is left out is replaced by `inputs.fvt_friend` / `inputs.svb_friend`. |
-| `inputs.dataset_metadata` | Dataset metadata directory for the classifier jobs (trailing `/`). |
-| `inputs.classifier_inputs` | Friend-tree manifest, `<file>.json@@<key>`. |
-| `inputs.jcm_weights` | JCM weights, `<file>.yml@@JCM_weights`; `""` removes them. |
-| `inputs.output_base` | Where models and friend trees are written. |
-| `inputs.fvt_friend`, `inputs.svb_friend` | Existing friend directories, read only when the step is not run. |
-| `corenet.network` | Event description file. |
-| `corenet.inputs` | Role → batch key (`CanJet`, `NotCanJet`), both classifiers. |
-| `corenet.architecture` | `n_features`, `attention`, `use_attention_gate`, `use_kv_proj`, both classifiers. |
-| `classifier_setting` | Replaces the `setting:` list of `common.yml` (eras, input branches, event scalars). |
+| `label` | Name of the run, used in file names. Also fills `{roast_id}`. |
+| `output_path` | Local directory of the run. |
+| `steps` | Subset of `[fvt, svb, analysis, stats]`. |
+| `inputs.*` | See [Files to edit before running](#files-to-edit-before-running). `fvt_friend`, `svb_friend`: existing friend directories, read only when that step is skipped. |
+| `corenet.network` | Decay-chain file. `corenet.inputs`, `corenet.architecture`: [optional](#optional-config-blocks). |
 | `fvt.label`, `svb.label` | Names of the model and friend directories. |
-| `fvt.wfs_base`, `svb.wfs_base` | Directory holding `train.yml` and `evaluate.yml` (and `../common.yml`). |
-| `fvt.model_options`, `svb.model_options` | Overrides of the model options of `train.yml`, by flag (below). |
-| `gpu_gres`, `gpu_qos`, `gpu_mem`, `train_runtime`, `eval_runtime`, `retries` | Resources of the GPU jobs. `retries` is 0 here on purpose (see rough edges). |
+| `fvt.wfs_base`, `svb.wfs_base` | Directory with `train.yml` and `evaluate.yml`; `common.yml` is read from `../`. |
+| `fvt.model_options`, `svb.model_options` | Changes to the `model:` block of `train.yml`, by flag (below). |
+| `retries` | Retries of the GPU jobs. 0 on purpose: see [Known rough edges](#known-rough-edges-of-corenet). |
 | `year_eras`, `dataset` | Years, eras and datasets of the histogramming step. |
-| `additional_parameters` | Extra `runner.py` arguments. |
-| `analysis_config` | Processor, its metadata files and options. The two friend trees and `JCM_file` are filled in from this run unless you set them. |
-| `analysis_friend_names` | Names under which the processor reads the FvT and SvB friends. |
+| `additional_parameters` | Extra `runner.py` arguments for the histogramming jobs. |
+| `analysis_config` | Processor, dataset location, friend and weight files, runner and processor options. The FvT and SvB friend trees and `JCM_file` are filled in from this run unless you set them under `analysis_config.config`. |
+| `analysis_friend_names` | Names under which the processor reads the FvT and SvB friend trees (`FvT`, `SvB_MA`). |
 | `plot_config`, `known_counts` | Plot list; reference cutflow (none). |
-| `channels`, `combine_flags`, `make_combine_inputs`, `metadata_template` | Fit: histogram, signal, stat-only, blinding. Same meaning as in `nominal_run2.yml`. |
+| `channels`, `combine_flags`, `combine_outdir`, `make_combine_inputs`, `metadata_template` | Fit setup: histogram, signal, stat-only, blinding. Same meaning as in `nominal_run2.yml`. The fit is stat-only and reuses the resolved `HH4b` channel definition. |
 
-`{roast_id}` (the `label`) and `{eos_prod}` are filled in anywhere in the config. `{eos_prod}`
-comes from `--config eos_prod=...`, from `~/.config/coffea4bees/profile.yml`, or from your account
-name.
+`{roast_id}` and `{eos_prod}` are replaced anywhere in the config. `{eos_prod}` comes from
+`--config eos_prod=...`, else `~/.config/coffea4bees/profile.yml`, else your account name.
+
+Paths in `inputs:` and `corenet.network` may not contain spaces, commas, quotes, braces or `": "`.
 
 ### `model_options` values
 
-Each key is a command-line flag of the model module in `train.yml`.
+Each key is a flag of the model module in `train.yml`:
 
 | Value | Effect |
 | --- | --- |
@@ -189,109 +281,61 @@ Each key is a command-line flag of the model module in `train.yml`.
 | `true` | Adds a bare flag. |
 | `null` | Removes the flag, e.g. `--finetuning: null`. |
 
-### Optional config blocks
-
-These are not in the checked-in config; add them when needed.
-
-```yaml
-corenet:
-  inputs: {b: CanJet, other: NotCanJet}   # role -> batch key; the event description's first role first
-  architecture: {n_features: 16}          # also: attention, use_attention_gate, use_kv_proj
-
-classifier_setting:                       # replaces the whole `setting:` list of common.yml
-  - module: cms.CollisionData
-    option:
-      - eras:
-          UL18: [A, B, C, D]
-  - module: HCR.InputBranch
-    option:
-      - feature_CanJet: [pt, eta, phi, mass]
-        n_CanJet: 4
-        feature_NotCanJet: [pt, eta, phi, mass, isSelJet]
-        n_NotCanJet: 8
-        feature_ancillary: [nOtherJets]
-
-gpu_gres: "mps:25"                        # defaults shown
-gpu_qos: "light"
-gpu_mem: 24000
-train_runtime: 480                        # minutes
-eval_runtime: 480
-```
-
 ## How to change things
-
-### Inputs
-
-Edit `inputs:` in the config, or override one on the command line by supplying a second config
-file with only that block (Snakemake merges `--configfile a.yml b.yml`). The top of
-`Snakefile_CoReNet.smk` has the same values as named variables (`DATASET_METADATA`,
-`CLASSIFIER_INPUTS`, `JCM_WEIGHTS`, `OUTPUT_BASE`, `NETWORK`).
-
-Paths may not contain spaces, commas, quotes or braces.
 
 ### Network size
 
-Three ways, from broadest to narrowest:
+From broadest to narrowest:
 
-- `training.features` in `corenet/HH4b_boosted.yml`: the embedding width of every layer. It must
-  be even and divisible by `attention_heads`.
-- `corenet.architecture: {n_features: 16}` in the config: the same, for this run, both classifiers.
+- `training.features` in the decay-chain file: the width of every layer. It must be divisible by
+  `attention_heads`, even when `phase_symmetric: true`, and at least `2 × attention_heads` when
+  `kv_projection: true`.
+- `corenet.architecture: {n_features: 16}` in the config: the same for this run, both classifiers.
 - `svb.model_options: {"--architecture": [{n_features: 16}]}`: one classifier only.
-
-For scale: 8 features is about 1.5k parameters, 16 about 5k.
 
 `attention: false` under `architecture` drops the context objects (`other`).
 
 ### Network inputs
 
-Three places must agree; the training stops with a shape error when they do not.
+Three places must agree, or training stops with a shape error:
 
 | To change | Edit |
 | --- | --- |
-| Per-object features (e.g. add a b-tag score to the subjets) | `feature_CanJet` in `common.yml`, and the `features` list of the `subjets` collection in the event description, same order. The friend tree needs `CanJet_<name>`. |
+| Per-object features (e.g. add a b-tag score to the subjets) | `feature_CanJet` in `common.yml` and the `features` of the `subjets` collection in the decay-chain file, same order. The friend tree needs `CanJet_<name>`. |
 | Features of the context objects | `feature_NotCanJet` (keep `isSelJet` last) and the `jets` collection. |
-| Number of objects | `n_CanJet` / `n_NotCanJet`, and `max` plus the role size in the event description. |
-| Event scalars | `feature_ancillary` in `common.yml`. Nothing to change in the event description. |
-| Which objects are which | The friend tree: what you write to `CanJet_*` and `NotCanJet_*`. |
+| Number of objects | `n_CanJet` / `n_NotCanJet`, and `max` plus the role size in the decay-chain file. |
+| Event scalars | `feature_ancillary` in `common.yml`. Nothing to change in the decay-chain file. |
+| Which physical objects are used | The friend tree: what you write to `CanJet_*` and `NotCanJet_*`. |
 
-Rules for the event description (`corenet/HH4b_boosted.yml`):
+Rules for the decay-chain file:
 
-- Do not add `event:` or `labels:`; they are filled in from `feature_ancillary` and from the
-  dataset.
-- The role listed first (`b`) must be the first key of the model's `--inputs` mapping. Its leading
-  slot fixes the eta reflection.
-- `outputs.main` is only a name; the classes come from the dataset.
-- `other` is used as attention context only.
-
-Traps:
-
-- Remove `year` from `feature_ancillary` when the dataset has a single year: its variance is
-  zero and the input becomes NaN.
-- A scalar whose name contains `nSelJets` is fed as `log(nSelJets - (min_jets - 1))`, with
-  `min_jets: 4` unless the event description sets it (minimum 2). A boosted event with fewer
-  jets than that gives NaN. Use another branch name or set `min_jets`.
-- The decay hypothesis is `HH: {H1: [b, b], H2: [b, b]}` over one role of four objects. The
-  network scores all three pairings; view `q_1234` is the pairing you wrote. This is the only
-  topology the existing FvT and SvB output definitions accept: they write the columns `q_1234`,
-  `q_1324`, `q_1423` by name. A hypothesis with two roles builds and runs forward, but names its
-  views `q_HH_<n>`, so the evaluation would need a new model config. "HH = AK8 + AK8" with the
-  two AK8 jets as the only objects cannot be written at all: a hypothesis needs at least two
-  composite children.
+- Do not add `event:` or `labels:`; they are filled from `feature_ancillary` and the dataset.
+- The first role (`b`) must be the first key of `--inputs`. Its leading slot sets the eta
+  reflection (eta is flipped so that slot has eta ≥ 0).
+- A scalar whose name contains `nSelJets` enters the network as `log(nSelJets - (min_jets - 1))`,
+  with `min_jets: 4` unless the file sets it (minimum 2). Events with fewer jets give NaN. Use
+  another branch name or set `min_jets`.
+- The FvT and SvB outputs write the columns `q_1234`, `q_1324`, `q_1423` by name, so they need the
+  sample topology: one role of four objects paired as `H1: [b, b]`, `H2: [b, b]`. A hypothesis
+  over two roles builds and runs but names its outputs `q_HH_<n>`, so evaluation would need a new
+  output definition. HH as two AK8 jets with no further structure cannot be written: every child
+  of a hypothesis must itself be built from at least two objects.
 
 ### Folds and seeds
 
-In `model_options` of `fvt` or `svb`, or in the model block of the templates:
+In `model_options` or in the `model:` block of `train.yml`:
 
 | Flag | Effect |
 | --- | --- |
 | `--kfolds: 3` | Number of folds. One model per fold; each event is evaluated by the model that did not train on it. |
-| `--kfold-seed: [FvT, random]` | Base of the seed that assigns events to folds. |
-| `--kfold-seed-offsets: "0"` | Which fold assignments to train. `"0-2"` trains three sets of `kfolds` models. |
+| `--kfold-seed: [FvT, random]` | Seed of the assignment of events to folds. |
+| `--kfold-seed-offsets: "0"` | Which fold assignments to train; `"0-2"` trains three sets of `kfolds` models. |
 | `--kfold-offsets: "0"` | Train only these folds. |
-| `--seed: 2` | Base seed of the weight initialisation and the batch order. |
+| `--seed: 2` | Base seed of the weight initialisation and training. |
 
-A training with the same seeds is not bit-reproducible (measured on the resolved FvT: losses
-differ by up to a few 1e-3 after one epoch). Compare variants over several seeds.
+Seeded trainings are not reproducible run to run: two trainings with the same seed differ event by
+event almost as much as a CoReNet training differs from an HCR one. Compare variants over several
+trainings.
 
 ### Training schedule
 
@@ -302,147 +346,116 @@ fvt:
     --finetuning: null          # drop the fine-tuning stage
 ```
 
-`FixedStep` (`src/classifier/config/scheduler/basic.py`): `epoch`, `bs_init` (batch size, doubled
-at epochs 1, 3, 6, 10 = `bs_milestones`), `lr_init` (0.01), `lr_scale` (0.25, applied at every
-epoch of `lr_milestones`, default 15 to 24). The milestones are absolute epoch numbers: move them
-when you change `epoch`. `FinetuneStep` trains the output layer only, at `lr_init: 1e-4`.
-
-`ClosureGatedStep` does not work with CoReNet (it needs the fit-quality benchmark).
+`FixedStep` (`src/classifier/config/scheduler/basic.py`): `epoch` (20), `bs_init` (batch size,
+1024, doubled at epochs `bs_milestones` = 1, 3, 6, 10), `lr_init` (0.01), `lr_scale` (0.25,
+applied at each epoch in `lr_milestones` = 15 to 24). Milestones are absolute epoch numbers: move
+them when you change `epoch`. `FinetuneStep` trains only the output layer, from `lr_init: 1e-4`.
+`ClosureGatedStep` does not work with CoReNet (it needs the fit-quality benchmark, below).
 
 ### Signal and normalisation of the SvB
 
-In `SvB/train.yml`, `--norm 3` is the total background weight and each signal process (ZZ, ZH,
-ggF) is normalised to 1. To train on the HH signal only, add `--mc-processes ggF` to the
-`HCR.SvB.Signal` block and set `--norm 1`. To train either classifier without the 3b → 4b
-normalisation, delete its `--JCM-weight` line (the workflow does this when `inputs.jcm_weights`
-is `""`).
+In `SvB/train.yml`, `--norm 3` sets the total background weight; each signal process (ZZ, ZH,
+ggF) is normalised to 1. To train on HH only, add `--mc-processes ggF` to the `HCR.SvB.Signal`
+block and set `--norm 1`. Other dataset options (`--regions`, `--no-SR`, ...) also go in the
+`dataset:` blocks.
 
-### Anything else
+## Running the classifier jobs without the workflow
 
-Dataset options (`--mc-processes`, `--regions`, `--no-SR`, `--norm`, signal naming such as
-`--ggf-signal-pattern`) are in the `dataset:` blocks of the templates. Copy the template
-directory, edit the copy, and point `fvt.wfs_base` / `svb.wfs_base` at it. `common.yml` is read
-from one level above `wfs_base`.
-
-The templates go through Python's `str.format`: the only braces allowed in them, comments
-included, are the template keys. Write a literal brace as `{{` or `}}`.
-
-## Running the jobs directly, without the workflow
-
-Copy `paths.yml`, fill in the inputs and outputs, and run the four jobs in this order. `T` is
-only shorthand for this page.
+Copy `paths.yml`, fill in every value, and run the four jobs in the order FvT/train,
+FvT/evaluate, SvB/train, SvB/evaluate, starting each only after the previous one has finished:
 
 ```bash
 T=coffea4bees/classifier/config/workflows/HH4b_boosted_corenet
 cp $T/paths.yml my_paths.yml        # then edit my_paths.yml
 
-# 1. FvT training
+JOB=FvT/train                       # then FvT/evaluate, SvB/train, SvB/evaluate
 ./run_container classifier env CLASSIFIER_CONFIG_PATHS=coffea4bees \
     python -m src.classifier.task.main template file:##my_paths.yml \
-    $T/FvT/train.yml -from $T/common.yml -flag debug
-
-# 2. FvT evaluation: writes the FvT friend tree
-./run_container classifier env CLASSIFIER_CONFIG_PATHS=coffea4bees \
-    python -m src.classifier.task.main template file:##my_paths.yml \
-    $T/FvT/evaluate.yml -from $T/common.yml -flag debug
-
-# 3. SvB training: reads the FvT friend tree
-./run_container classifier env CLASSIFIER_CONFIG_PATHS=coffea4bees \
-    python -m src.classifier.task.main template file:##my_paths.yml \
-    $T/SvB/train.yml -from $T/common.yml -flag debug
-
-# 4. SvB evaluation: writes the SvB friend tree
-./run_container classifier env CLASSIFIER_CONFIG_PATHS=coffea4bees \
-    python -m src.classifier.task.main template file:##my_paths.yml \
-    $T/SvB/evaluate.yml -from $T/common.yml -flag debug
+    $T/$JOB.yml -from $T/common.yml -flag debug
 ```
 
-Template keys, all set in your copy of `paths.yml`:
+FvT evaluation writes the FvT friend tree, which the SvB training reads; SvB evaluation writes the
+SvB friend tree. Keys of `paths.yml`:
 
 | Key | Meaning |
 | --- | --- |
 | `metadata` | Dataset metadata directory (trailing `/`). |
-| `inputs` | Classifier-input friend-tree manifest, `<file>.json@@<key>`. |
-| `jcm` | JCM weights, `<file>.yml@@JCM_weights`. |
-| `network` | CoReNet event description. |
-| `fvt_model`, `svb_model` | Where the trained models and `result.json` are written. |
-| `fvt_friend`, `svb_friend` | Where the friend trees are written; the SvB training reads `fvt_friend`. |
+| `inputs` | Classifier-input friend trees, `<manifest>.json@@<key>`. |
+| `jcm` | JCM weights, `<file>.yml@@JCM_weights`. To train without, delete the `--JCM-weight` lines of the two `train.yml`. |
+| `network` | Decay-chain file. |
+| `fvt_model`, `svb_model` | Where models and `result.json` are written (local or `root://`). |
+| `fvt_friend`, `svb_friend` | Where friend trees are written. |
 
-Outputs can be local directories or `root://` URLs.
+What the command does:
 
-What the pieces mean:
-
-- `./run_container classifier <command>` runs the command in the classifier (GPU) image. On
-  falcon it submits it as a SLURM GPU job and returns at once (log:
-  `slurm_logs/classifier_batch_<jobid>.out`); wait for each job before starting the next. On
+- `./run_container classifier <command>` runs the command in the classifier (GPU) container. On
+  falcon it submits a SLURM GPU job and returns at once (log
+  `slurm_logs/classifier_batch_<jobid>.out`); wait for the job before starting the next. On
   lxplus it submits an HTCondor GPU job. Elsewhere it runs in place.
-- `CLASSIFIER_CONFIG_PATHS=coffea4bees` makes the `HCR.*` and `CoReNet.*` modules visible.
-- `template file:##my_paths.yml <job>.yml` fills the template keys of the job file from your
-  paths file. Keep the paths in a file: `run_container` re-joins its arguments, so an inline
-  mapping with spaces does not survive the quoting.
-- `-from $T/common.yml` adds the shared settings.
-- `-flag debug` prints the loaded yields per class and region.
+- `CLASSIFIER_CONFIG_PATHS=coffea4bees` makes the `HCR.*` and `CoReNet.*` modules visible;
+  `template file:##my_paths.yml` fills the template keys from your file (keep them in a file:
+  `run_container` re-joins its arguments, so an inline mapping does not survive); `-from` adds the
+  shared settings; `-flag debug` prints the loaded yields.
 
-To change a training without the workflow, edit the job file (folds, seeds, schedule, datasets)
-or `common.yml` (input branches, eras). The options of a model module are listed by `help`
-(`--network x` only satisfies the required argument; nothing is read or run):
+The options of a model module are listed by `help` (`--network x` only satisfies the required
+argument):
 
 ```bash
 ./run_container classifier env CLASSIFIER_CONFIG_PATHS=coffea4bees \
     python -m src.classifier.task.main help -model CoReNet.FvT.baseline.Train --network x
 ```
 
-The workflow runs exactly these four commands, with the staged copies of the job files and the
-template keys taken from the config; `-np` prints them.
-
-Loss curves and ROCs are plotted by the workflow's `analyze` rule
-(`src/classifier/workflow/Snakefile`); the per-epoch numbers are in `<model>/result.json`.
+The workflow runs the same four commands with its staged job files; `-np` prints them.
 
 ## Known rough edges of CoReNet
 
-Not fixed here. Source: the CoReNet / HCR comparison of 2026-11-16.
-
-- **Resuming a training.** CoReNet checkpoints its Initialization stage, the pass that measures
-  the input means and widths. A job that resumes after it can skip that pass and train with
-  unnormalised inputs. The workflow therefore sets `retries: 0`. If a training dies, delete the
-  `checkpoint_*` files (in `<output_path>classifiers/<label>/` for the workflow, in the model
-  directory for a job run by hand) and start it again from scratch.
+- **Resuming a training.** CoReNet checkpoints its first stage, the pass that measures the input
+  means and widths (HCR does not). A job resumed after that stage can skip the pass and train on
+  unnormalised inputs. This is why `retries` is 0. If a training dies, delete the `checkpoint_*`
+  files (in `<output_path>classifiers/<label>/` for the workflow, in the model directory for a
+  job run by hand) and start again.
 - **No fit-quality benchmark.** CoReNet trainings report losses and ROCs but not the sideband
-  closure χ² that HCR FvT trainings report, so there is no automatic FvT quality gate in this
-  workflow. Judge the FvT from the histograms.
-- **Warm start.** `--pretrained-weights <directory>` does not find the saved models (it looks
-  for `_offsetN_`, the files are named `__offset_N__`). A direct path to one `.pkl` is accepted,
-  but then every fold starts from that same file.
-- **Input plots.** `plot_inputs` and `plot_weights` of the classifier workflow rebuild an HCR
-  network from the checkpoint and cannot read a CoReNet one. They are not scheduled here.
-- **Reproducibility.** See [Folds and seeds](#folds-and-seeds).
+  closure χ² that HCR FvT trainings report, so there is no automatic FvT quality check.
+- **Warm start.** `--pretrained-weights <directory>` does not find the saved models (it looks for
+  `_offsetN_`, the files are named `__offset_N__`) and only reads local directories. A path to one
+  `.pkl` works, but then every fold starts from that same file.
+- **Input and weight plots.** The classifier workflow's `plot_inputs` and `plot_weights` rebuild an
+  HCR network and cannot read a CoReNet model. They are off here.
 
-## What is not there yet
+## Boosted code that exists, and what is missing
 
-- **A boosted histogramming processor.** `analysis/processors/processor_boosted_HH4b.py` counts
-  events passing the resolved and the boosted selection; it fills no histograms, applies no FvT
-  and reads no SvB. The `analysis` step is configured with `processor_HH4b.py`, the resolved
-  processor, so that the chain is complete and each piece can be swapped. Until a boosted
-  processor exists, use `steps: [fvt, svb]`.
-- **A processor option that writes boosted classifier inputs.** The resolved processor writes
-  them with `make_classifier_input`; nothing does it for AK8 jets and subjets.
-- **A boosted JCM, FvT closure check, background systematics and fit metadata.** The `stats`
-  step is stat-only and reuses the resolved `HH4b` channel definition.
-- **Signal samples other than the ones the loader knows** (`ggF`, `ZZ`, `ZH`, with Run 2 dataset
-  names by default; see `--ggf-signal-pattern` for Run 3 names).
+Boosted code in coffea4bees (the same files on `master` and on this branch):
+
+| File | What it does |
+| --- | --- |
+| `analysis/processors/processor_boosted_HH4b.py` | Applies the resolved and the boosted selection (`apply_boosted_4b_selection`) and returns event counts (boosted and resolved, only one, neither), the run/lumi/event lists of boosted-selected events, and a cutflow. No histograms. |
+| `analysis/processors/processor_synthetic_boosted.py` | Histograms of AK8 jets and of their split into two subjets, for synthetic-data studies. All events are labelled four-tag SR. On `master` and this branch it uses `cutFlow` and `ClusterHistsDetailedBoosted` without importing them, so it fails on the first chunk; the `BoostedSynthetic` branch has the working imports. |
+| `analysis/processors/processor_synthetic_boosted_PFcands.py` | The same kind of histograms for AK8 jets with pt > 300 GeV and two subjets. |
+| `analysis/processors/processor_overlap_study.py` | Overlap counts and simple histograms of the resolved, boosted, semi-resolved and low-pt selections, with generator matching for MC. |
+| `analysis/processors/processor_hlt_study.py` | Per-event selection flags and HLT bits, for trigger studies. |
+| `processor_HH4b.py`, option `apply_boosted_veto` | Run 2 UL: removes events selected by the boosted analysis, from the event lists `metadata/boosted_overlap_{signal,data}.coffea`. |
+| `skimmer/processor/skimmer_4b_boosted.py` | NanoAOD → picoAOD skim keeping events with at least two AK8 jets (config `skimmer/metadata/HH4b_boosted.yml`, test `scripts/skimmer-boosted.sh`). |
+| `skimmer/processor/skimmer_4b_forboosted.py` | Skims the events whose numbers are in a given `.coffea` event list. |
+| `skimmer/processor/make_declustered_data_boosted_4b.py` | Makes synthetic boosted data by splitting the two Xbb-tagged AK8 jets into `SubJet_*` branches. |
+| `metadata/datasets/archive/HIG-24-010/datasets_HH4b_2024_v2_boosted.yml` | Archived picoAOD lists of the boosted skim: UL18 data (eras A–D), SM ggF HH, synthetic data. |
+
+What this workflow still needs:
+
+- **Classifier inputs.** None of these processors writes the classifier-input friend tree
+  (`CanJet_*`, `NotCanJet_*`, tag and region flags, `nSelJets`, weight). In the resolved analysis
+  `processor_HH4b.py` does it with the option `make_classifier_input`, which calls
+  `dump_input_friend`; nothing does it for AK8 jets and subjets. A boosted processor would also
+  have to define the three-tag and four-tag categories and the SR/SB regions, which the boosted
+  selection does not have.
+- **Histogramming with FvT and SvB.** None of these processors reads the FvT and SvB friend trees
+  or fills the histograms the plotting and fit steps read, so none can replace
+  `analysis_config.processor`. It stays `processor_HH4b.py`, which applies the resolved selection.
+- **Background model and fit inputs.** No boosted JCM fit, FvT closure check, background
+  systematics or fit metadata. The `stats` step is stat-only with the resolved `HH4b` channel.
 
 ## Using it with roast
 
-Not wired in, and not needed for studies. `bin/roast new` accepts a step outside its phase table
-as `--step <host>:<snakefile>[:targets]`, so a roast of this workflow would be
-
-```bash
-bin/roast new --config coffea4bees/workflows/config/corenet_boosted.yml --label <label> \
-    --step falcon:coffea4bees/workflows/Snakefile_CoReNet.smk:corenet_all
-```
-
-That has not been tried. Two things would need attention first: the GPU steps and the analysis
-step usually run on different hosts, so the single Snakefile would have to be split into one
-step per host with `steps` set per step (`--config steps=fvt,svb` on the GPU host,
-`steps=analysis,stats` plus `inputs.fvt_friend` / `inputs.svb_friend` on the other); and
-`inputs.output_base` would follow the roast convention `{eos_prod}/{roast_id}`.
+Not wired in and not tried. `bin/roast new` accepts a non-phase workflow as
+`--step <host>:<snakefile>[:targets]`. Since the GPU and histogramming steps usually run on
+different hosts, it would take two steps: `steps=fvt,svb` on the GPU host, and
+`steps=analysis,stats` with `inputs.fvt_friend` / `inputs.svb_friend` on the other.
