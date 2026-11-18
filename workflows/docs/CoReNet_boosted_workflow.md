@@ -31,9 +31,119 @@ run from the barista root directory.
 | --- | --- |
 | Workflow | The dry run resolves: 49 jobs for the full chain, 14 with `--config steps=fvt,svb`. |
 | Boosted classifier jobs | The four job files parse and the network builds (about 1.5k parameters). **Nothing has been trained or evaluated with this boosted configuration.** |
-| CoReNet itself | CoReNet FvT and SvB have been trained and evaluated in production for the resolved Run 2 analysis (the SvB first on 2026-11-17: three folds, full chain through limits). |
+| CoReNet package | The network is no longer copied into barista. It comes from the CoReNet repository (github.com/cms-cmu/CoReNet), cloned next to the code: see [Setup](#setup). |
+| CoReNet itself | CoReNet FvT and SvB have been trained and evaluated in production for the resolved Run 2 analysis (full chain through limits, 2026-11-17). Those runs used the network copy that was in barista at the time; the cloned package gives the same results in the small test described under Setup. |
 | Inputs | **Placeholders.** There are no boosted classifier-input friend trees and no boosted JCM fit in the repository. |
 | Histogramming step | Uses the resolved processor `processor_HH4b.py` as a placeholder. No existing boosted processor fills analysis histograms with FvT and SvB; see [Boosted code that exists, and what is missing](#boosted-code-that-exists-and-what-is-missing). Until one exists, run `steps: [fvt, svb]`. |
+
+## Setup
+
+Three repositories are needed in one place: barista (the framework), coffea4bees (the analysis)
+and CoReNet (the network). CoReNet's code is not copied into barista; it is used as a Python
+package named `corenet`.
+
+| Piece | Where | You edit it? |
+| --- | --- | --- |
+| The network | CoReNet repository, https://github.com/cms-cmu/CoReNet | No |
+| The barista model module (feeds batches to the network, ghost batches, fine-tuning, checkpoints, output columns) | `src/classifier/ml/models/CoReNet.py` in barista | No |
+| The model names `CoReNet.FvT.baseline` and `CoReNet.SvB.ggF.baseline` (loss and classes per classifier) | `coffea4bees/classifier/config/model/CoReNet/` | No |
+| The decay-chain file and the job files | see [Files to edit before running](#files-to-edit-before-running) | Yes |
+
+### Step by step
+
+```bash
+# 1. barista and coffea4bees, both on the corenet branch (until it is merged)
+git clone -b corenet https://gitlab.cern.ch/cms-cmu/barista.git
+cd barista
+git clone -b corenet https://gitlab.cern.ch/cms-cmu/coffea4bees.git
+
+# 2. CoReNet, at the tested commit, and a link so that Python finds the package
+git clone https://github.com/cms-cmu/CoReNet.git
+git -C CoReNet checkout 6c260c3
+ln -s CoReNet/src/corenet corenet
+
+# 3. h5py, which the containers do not have, installed next to the code
+./run_container classifier python -m pip install --no-deps --target pkgs h5py
+ln -s pkgs/h5py pkgs/h5py.libs .
+
+# 4. check: no error means CoReNet and h5py load (a RuntimeWarning from runpy is harmless)
+./run_container classifier python -s -m corenet.models.network
+
+# 5. grid proxy, if any input or output is on root://
+./run_container voms-proxy-init -voms cms -rfc --valid 168:00 -out proxy/x509_proxy
+```
+
+On falcon, `./run_container classifier <command>` submits a batch job when it is typed on the
+login node and returns at once; the output is in `slurm_logs/classifier_batch_<jobid>.out`. Wait
+for step 3 to finish before making the links, and read the log for step 4.
+
+Then fill in the files listed under [Files to edit before running](#files-to-edit-before-running)
+and start the trainings as described under [Running the workflow](#running-the-workflow).
+
+Why each step is needed:
+
+- **The link `corenet`.** Classifier jobs are started from the barista directory, which Python
+  searches for packages. The repository keeps its code in `CoReNet/src/corenet/`, so the link
+  puts it where `import corenet` finds it. No `pip install` of CoReNet is needed: it is pure
+  Python.
+- **h5py.** Importing `corenet` loads CoReNet's HDF5 reader, which imports `h5py`. Barista never
+  uses that reader, but without `h5py` the import fails.
+- **`./run_container classifier` for step 3.** Training and evaluation run in the classifier
+  container (Python 3.11). An `h5py` installed with the analysis container (`./run_container
+  python`, Python 3.12) does not load there.
+- **`-s` in step 4.** It makes Python ignore packages in your home directory
+  (`~/.local/lib/pythonX.Y/site-packages`), which both containers otherwise load. A package
+  found there makes a job work for you and fail for someone else.
+
+`CoReNet`, `corenet`, `pkgs`, `h5py` and `h5py.libs` show up as untracked files in `git status`
+of barista. Do not commit them.
+
+If the setup is missing, HCR jobs are not affected; a `CoReNet.*` job stops at start-up with
+`ModuleNotFoundError: No module named 'corenet'` (or `'h5py'`).
+
+### What was tested
+
+On falcon, 2026-11-18, on a fresh copy of the code with home-directory packages switched off:
+steps 2 to 4, then a small CoReNet training and evaluation on CPU (two folds, two epochs) in the
+classifier container, and the workflow's `analyze` step in the analysis container. All ran. The
+`analyze` step needs neither CoReNet nor `h5py`.
+
+The same small training gives the same losses and AUCs as the network copy that used to be in
+barista: identical in the analysis container, and equal to about seven digits between the two
+containers, which have different torch versions.
+
+Not tested with this setup: step 1 (the clones of barista and coffea4bees), a production-size
+training on a GPU, hosts other than falcon, and the boosted job files.
+
+### Other hosts and roast
+
+The clone, the two links and `pkgs/` must exist in every barista directory a job runs from.
+`bin/roast checkout` creates its own barista and coffea4bees checkouts on the remote host and
+does not create these, and roast does not record the CoReNet commit. For runs through roast,
+install CoReNet in the container instead.
+
+### Alternative: CoReNet in the container image
+
+Add this to the build of the classifier container, and steps 2 and 3 are not needed:
+
+```bash
+pip install "git+https://github.com/cms-cmu/CoReNet.git@6c260c3"
+```
+
+- It installs as `CoReNet-1.1.0` and brings `h5py` with it.
+- What the two images had on 2026-11-18, without home-directory packages:
+
+  | | Classifier container (`./run_container classifier`, `barista:classifier_latest`) | Analysis container (`./run_container python`, `barista:latest`) |
+  | --- | --- | --- |
+  | Python | 3.11 | 3.12 |
+  | torch, numpy, pyyaml, matplotlib | present | present |
+  | scikit-learn | present | missing |
+  | h5py | missing | missing |
+  | setuptools | 84 | 75.8, too old to build the package with `--no-build-isolation` |
+
+- Only `corenet.models` (the network and its config parser) is used. CoReNet's own commands
+  (`corenet-train`, `corenet-evaluate`, ...) read HDF5 files and are not part of this workflow.
+- This route has been tested only as an install into a side directory, not as part of an image.
 
 ## Files to edit before running
 
@@ -178,7 +288,19 @@ Run part of the chain:
 # classifiers only; the analysis and stats rules are not loaded
 ./run_container snakemake --snakefile coffea4bees/workflows/Snakefile_CoReNet.smk \
     --configfile coffea4bees/workflows/config/corenet_boosted.yml --config steps=fvt,svb
+
+# FvT only
+./run_container snakemake --snakefile coffea4bees/workflows/Snakefile_CoReNet.smk \
+    --configfile coffea4bees/workflows/config/corenet_boosted.yml --config steps=fvt
+
+# SvB only: first set inputs.fvt_friend in the config to an existing FvT friend directory
+./run_container snakemake --snakefile coffea4bees/workflows/Snakefile_CoReNet.smk \
+    --configfile coffea4bees/workflows/config/corenet_boosted.yml --config steps=svb
 ```
+
+`steps` can also be set in the config file (`steps: [svb]`). Write `steps=svb` without spaces.
+The SvB trains on three-tag data weighted by the FvT, so an SvB-only run stops with an error if
+`inputs.fvt_friend` is empty. The two single-step cases have not been dry-run.
 
 A step left out of `steps` is replaced by an existing friend tree: `inputs.fvt_friend` when `fvt`
 is skipped, `inputs.svb_friend` when `svb` is skipped. A second config file with only some keys
@@ -313,8 +435,8 @@ Rules for the decay-chain file:
 - The first role (`b`) must be the first key of `--inputs`. Its leading slot sets the eta
   reflection (eta is flipped so that slot has eta ≥ 0).
 - A scalar whose name contains `nSelJets` enters the network as `log(nSelJets - (min_jets - 1))`,
-  with `min_jets: 4` unless the file sets it (minimum 2). Events with fewer jets give NaN. Use
-  another branch name or set `min_jets`.
+  with `min_jets: 4` unless the file sets it (minimum 2). For events with fewer jets the value is
+  not finite and the network replaces it with -1. Use another branch name or set `min_jets`.
 - The FvT and SvB outputs write the columns `q_1234`, `q_1324`, `q_1423` by name, so they need the
   sample topology: one role of four objects paired as `H1: [b, b]`, `H2: [b, b]`. A hypothesis
   over two roles builds and runs but names its outputs `q_HH_<n>`, so evaluation would need a new
@@ -419,6 +541,12 @@ The workflow runs the same four commands with its staged job files; `-np` prints
 - **Warm start.** `--pretrained-weights <directory>` does not find the saved models (it looks for
   `_offsetN_`, the files are named `__offset_N__`) and only reads local directories. A path to one
   `.pkl` works, but then every fold starts from that same file.
+- **Low-pt jet multiplicity.** The network copy that used to be in barista took a scalar whose
+  name contains both `nSelJets` and `lowpt` without the `min_jets - 1` offset, as HCR does. The
+  package applies the offset to every `nSelJets` scalar. No CoReNet job file in the repository
+  uses such a scalar; a low-pt CoReNet training would need this added to the package.
+- **Version string.** The tested commit installs as `CoReNet-1.1.0`, but `corenet.__version__`
+  still reads `1.0.0`. Go by the commit.
 - **Input and weight plots.** The classifier workflow's `plot_inputs` and `plot_weights` rebuild an
   HCR network and cannot read a CoReNet model. They are off here.
 
