@@ -1,0 +1,37 @@
+# Boosted CoReNet FvT evaluation (template). Instructions: coffea4bees/workflows/docs/CoReNet_boosted_workflow.md
+main:
+  module: evaluate
+  option:
+    - --max-evaluators 3
+    - --device cuda cpu
+
+dataset:
+  - module: HCR.FvT.Eval
+    option:
+      - --metadata {metadata}
+      - --max-workers 8
+      - --data-source detector
+      - --friends "" {inputs}
+
+model:
+  - module: CoReNet.FvT.baseline.Eval
+    option:
+      - --models
+      - Final
+      - "{fvt_model}/result.json"
+
+analysis:
+  - module: kfold.Merge
+    option:
+      - --name FvT
+      - --step 100000
+      - --workers 5
+      - --clean
+
+setting:
+  - module: IO
+    option:
+      - output: "{fvt_friend}"
+  - module: ml.DataLoader
+    option:
+      - num_workers: 8

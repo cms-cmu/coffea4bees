@@ -1,0 +1,11 @@
+# Inputs and outputs for the boosted CoReNet jobs run without the workflow.
+# Instructions: coffea4bees/workflows/docs/CoReNet_boosted_workflow.md
+metadata: PLACEHOLDER_datasets/
+inputs: PLACEHOLDER_inputs/classifier_inputs_boosted.json@@HCR_input
+jcm: PLACEHOLDER_inputs/jetCombinatoricModel_SB_boosted.yml@@JCM_weights
+network: coffea4bees/classifier/config/corenet/HH4b_boosted.yml
+
+fvt_model: PLACEHOLDER_output/classifier/FvT_boosted_corenet
+fvt_friend: PLACEHOLDER_output/friend/FvT_boosted_corenet
+svb_model: PLACEHOLDER_output/classifier/SvB_boosted_corenet
+svb_friend: PLACEHOLDER_output/friend/SvB_boosted_corenet

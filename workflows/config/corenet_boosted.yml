@@ -1,0 +1,83 @@
+# Config of coffea4bees/workflows/Snakefile_CoReNet.smk.
+# Instructions: coffea4bees/workflows/docs/CoReNet_boosted_workflow.md
+label: "corenet_boosted"
+output_path: "output/corenet_boosted/"
+steps: [fvt, svb, analysis, stats]
+
+inputs:
+  dataset_metadata: "PLACEHOLDER_datasets/"
+  classifier_inputs: "PLACEHOLDER_inputs/classifier_inputs_boosted.json@@HCR_input"
+  jcm_weights: "PLACEHOLDER_inputs/jetCombinatoricModel_SB_boosted.yml@@JCM_weights"
+  output_base: "PLACEHOLDER_output/{roast_id}"
+  fvt_friend: ""
+  svb_friend: ""
+
+corenet:
+  network: "coffea4bees/classifier/config/corenet/HH4b_boosted.yml"
+
+fvt:
+  label: "FvT_boosted_corenet"
+  wfs_base: "coffea4bees/classifier/config/workflows/HH4b_boosted_corenet/FvT"
+  model_options: {}
+
+svb:
+  label: "SvB_boosted_corenet"
+  wfs_base: "coffea4bees/classifier/config/workflows/HH4b_boosted_corenet/SvB"
+  model_options: {}
+
+retries: 0
+
+year_eras:
+  UL16_preVFP: ["C", "D", "E", "F"]
+  UL16_postVFP: ["F", "G", "H"]
+  UL17: ["C", "D", "E", "F"]
+  UL18: ["A", "B", "C", "D"]
+
+dataset:
+  - "data"
+  - "GluGluToHHTo4B_cHHH1"
+
+additional_parameters: ""
+
+analysis_config:
+  # placeholder: the resolved processor, until a boosted histogramming processor exists
+  processor: "coffea4bees/analysis/processors/processor_HH4b.py"
+  dataset_location: "PLACEHOLDER_datasets/"
+  friend_file: "coffea4bees/metadata/friends/friends_HH4b.yml"
+  weights_file: "coffea4bees/metadata/weights/weights_HH4b_2024_v2.yml"
+  runner:
+    workers: 4
+    worker_memory: 8GB
+    dashboard_address: 0
+  config:
+    blind: true
+    apply_FvT: true
+    apply_JCM: true
+    apply_trigWeight: true
+    apply_btagSF: true
+    apply_boosted_veto: false
+    run_SvB: true
+    SvB_MA: null
+    SvB: null
+    top_reconstruction: fast
+    plot_ttbar_with_weights: true
+
+analysis_friend_names:
+  fvt: "FvT"
+  svb: "SvB_MA"
+
+plot_config: "coffea4bees/plots/metadata/plotsAll_ttbarWeights.yml"
+known_counts: ""
+
+combine_flags: "--blind"
+combine_outdir: "datacards/HH4b_fine"
+metadata_template: "coffea4bees/stats_analysis/metadata/{channel}.yml"
+make_combine_inputs:
+  stat_only: "--stat_only"
+
+channels:
+  HH4b:
+    signallabel: "ggHH_kl_1_kt_1_13p0TeV_hbbhbb"
+    othersignal: ""
+    variable: "SvB_MA.ps_hh_fine"
+    signal: "GluGluToHHTo4B_cHHH1"

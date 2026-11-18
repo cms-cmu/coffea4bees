@@ -1,0 +1,23 @@
+# Classifier settings shared by the boosted CoReNet FvT and SvB jobs.
+# Instructions: coffea4bees/workflows/docs/CoReNet_boosted_workflow.md
+setting:
+  - module: ml.DataLoader
+    option:
+      - optimize_sliceable_dataset: true
+  - module: ROOT
+    option:
+      - friend_allow_missing: false
+  - module: cms.CollisionData
+    option:
+      - eras:
+          UL16_preVFP: [C, D, E, F]
+          UL16_postVFP: [F, G, H]
+          UL17: [B, C, D, E, F]
+          UL18: [A, B, C, D]
+  - module: HCR.InputBranch
+    option:
+      - feature_CanJet: [pt, eta, phi, mass]
+        n_CanJet: 4
+        feature_NotCanJet: [pt, eta, phi, mass, isSelJet]
+        n_NotCanJet: 8
+        feature_ancillary: [nOtherJets, year]

@@ -1,0 +1,22 @@
+# CoReNet event description for boosted HH -> 4b.
+# Instructions: coffea4bees/workflows/docs/CoReNet_boosted_workflow.md
+objects:
+  subjets: {features: [pt, eta, phi, mass], max: 4}
+  jets:    {features: [pt, eta, phi, mass], max: 8}
+  b:     subjets pt 4
+  other: jets pt 8
+hypotheses:
+  HH:
+    H1: [b, b]
+    H2: [b, b]
+    context: other
+outputs:
+  main: HH
+combine: [HH]
+training:
+  features: 8
+  attention_heads: 2
+  attention_gate: true
+  kv_projection: true
+  phase_symmetric: true
+  reflect_eta: true
