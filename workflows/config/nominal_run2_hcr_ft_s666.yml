@@ -1,0 +1,30 @@
+# ==============================================================================
+# Run 2 FvT training-variance study: HCR, FinetuneStep (ftfix), Training.seed 666 (default)
+# ==============================================================================
+# Overlay on nominal_run2_hcr_rerun.yml (the config of nominal_run2_hcr_ab_20261113_57224fc-c952823).
+# Only C (and C4 later) are run. Phase B reused exactly as there (committed HCR manifest + JCM).
+# What differs from nominal_run2_hcr_rerun.yml, and nothing else:
+#   * --finetuning FixedStep -> FinetuneStep (default lr 1e-4), exactly as the Run 3 template
+#     HH4b_Run3/FvT/train.yml does it (the "ftfix"); no other training setting changes.
+#   * label / output_dir / friend name FvT_hcr_ft_s666 (no EOS collision), label/output_path
+#     Run2_hcr_ft_s666; downstream friend references point at FvT_hcr_ft_s666.
+# Training.seed stays at its default 666, so the k-fold seed (387016642,'FvT','random',0) and the
+# per-fold weight/batch seeds are identical to the matched HCR arm.
+base: coffea4bees/workflows/config/nominal_run2_hcr_rerun.yml
+
+label: "Run2_hcr_ft_s666"
+output_path: "output/Run2_hcr_ft_s666/"
+
+fvt:
+  label: "FvT_hcr_ft_s666"
+  output_dir: "output/FvT_hcr_ft_s666/"
+  workflow_overrides:
+    --finetuning: "FinetuneStep"
+
+svb:
+  train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_hcr_ft_s666"
+
+analysis_config:
+  config:
+    friends:
+      FvT: "{eos_prod}/{roast_id}/friend/FvT_hcr_ft_s666/result.json@@analysis.0.merged"

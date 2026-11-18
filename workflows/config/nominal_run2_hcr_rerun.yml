@@ -1,0 +1,98 @@
+# ==============================================================================
+# Run 2 nominal with the HCR FvT (C, C4) -- the HCR counterpart of nominal_run2_corenet.yml
+# ==============================================================================
+# Deliberately a line-for-line mirror of workflows/config/nominal_run2_corenet.yml (the CoReNet
+# arm), so that the ONLY differences between the two runs are the FvT network and where its
+# friends land. Matched Run 2 FvT A/B on identical code (CoReNet vs HCR), like the Run 3 2024 pair
+# nominal_run3_2024_corenet.yml / nominal_run3_2024_ftfix.yml. Both arms:
+#   * train on the SAME Phase B products of the HCR production
+#     nominal_run2_20260919_a180b1a-a16559c (jda102, archived, read-only): the committed
+#     classifier-input manifest and JCM fit (coffea4bees 66da1381), and {roast:hcr} for B.1's
+#     merged wJCM ttbar histograms in C4. B is NOT rerun;
+#   * use the HH4b_2024_v2 templates as they are (incl. --finetuning FixedStep; no ftfix), so the
+#     comparison with the old roasts stays like-for-like;
+#   * run C4 against the same known counts (known_fullCounts_FvT_closure.yml, the HCR FvT's C4
+#     cutflow), warn-only.
+#
+# What differs from nominal_run2_corenet.yml, and nothing else:
+#   * label / output_path  Run2_hcr_rerun
+#   * fvt      HH4b_2024_v2/FvT (HCR.FvT.baseline.Train/Eval) templates; label / output_dir
+#              FvT_nominal; plot_inputs / plot_weights on (the HCR checkpoint can be read).
+#   * svb      train_template's FvT -> friend/FvT_nominal (D is not run in this A/B).
+#   * analysis_config.friends.FvT -> this run's FvT_nominal friends.
+#   * fvt_closure.known_counts named explicitly (the CoReNet arm gets the same file as default).
+#
+#   roast new --config coffea4bees/workflows/config/nominal_run2_hcr_rerun.yml --phases C,C4
+base: coffea4bees/workflows/config/nominal_run2.yml
+
+# F.1 label / output_path (also C4's parent dir: output/Run2_hcr_rerun/FvT_closure/).
+label: "Run2_hcr_rerun"
+output_path: "output/Run2_hcr_rerun/"
+
+# ------------------------------------------------------------------------------
+# Remote products of the HCR roast (read-only). Identical to nominal_run2_corenet.yml.
+# ------------------------------------------------------------------------------
+inputs:
+  upstream_roasts: {hcr: nominal_run2_20260919_a180b1a-a16559c}
+  # Its Phase B.1 wJCM pass, merged and archived (singlefiles are not): the ttbar MC for C.4.
+  # output/TESTRun2/ is that roast's captured output_path.
+  wJCM_ttbar: &hcr_wJCM "{roast:hcr}/output/TESTRun2/computeJCM/histAll_wJCM.coffea"
+
+# F.1 datasets as the HCR roast actually ran them (identical to the CoReNet arm).
+dataset:
+  - "data"
+  - "GluGluToHHTo4B_cHHH1"
+  - "GluGluToHHTo4B_cHHH0"
+  - "GluGluToHHTo4B_cHHH2p45"
+  - "GluGluToHHTo4B_cHHH5"
+  - "ZH4b"
+  - "ZZ4b"
+  - "ggZH4b"
+
+fvt:
+  label: "FvT_nominal"
+  wfs_base: "coffea4bees/classifier/config/workflows/HH4b_2024_v2/FvT"
+  output_dir: "output/FvT_nominal/"
+  plot_base: ""            # plots under output/FvT_nominal/plots (no CERNBox)
+  plot_inputs: true
+  plot_weights: true
+  metadata: &hcr_manifest "coffea4bees/metadata/datasets/classifier_inputs_nominal_run2_20260919_a180b1a-a16559c.json@@HCR_input"
+  workflow_overrides:
+    --JCM-weight: &hcr_JCM_flag '"" coffea4bees/metadata/weights/JCM/nominal_run2_20260919_a180b1a-a16559c/jetCombinatoricModel_SB_2024_v2.yml@@JCM_weights'
+    '--friends ""': *hcr_manifest
+  # falcon only (src/classifier/workflow/Snakefile train/evaluate resources, minutes); same as
+  # the CoReNet arm.
+  train_runtime: 1440
+  eval_runtime: 1440
+
+svb:
+  plot_base: ""
+  train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_nominal"
+  metadata: *hcr_manifest
+  workflow_overrides:
+    --JCM-weight: *hcr_JCM_flag
+    '--friends ""': *hcr_manifest
+  train_runtime: 1440
+  eval_runtime: 1440
+
+fvt_closure:
+  JCM_file: &hcr_JCM "coffea4bees/metadata/weights/JCM/nominal_run2_20260919_a180b1a-a16559c/jetCombinatoricModel_SB_2024_v2.yml"
+  wJCM_ttbar_from: *hcr_wJCM
+  # the same file the CoReNet arm compares against by default (the HCR FvT's C4 cutflow):
+  # compare, do not fail
+  known_counts: "coffea4bees/analysis/tests/known_fullCounts_FvT_closure.yml"
+  known_counts_fatal: false
+
+analysis_config:
+  config:
+    friends:
+      FvT: "{eos_prod}/{roast_id}/friend/FvT_nominal/result.json@@analysis.0.merged"
+      SvB_MA: "{eos_prod}/{roast_id}/friend/SvB_nominal/result.json@@analysis.0.merged"
+    blind: false
+    JCM_file: *hcr_JCM
+    require_trigWeight: false
+    SvB_MA: null
+
+# F.1 (not run in this A/B): compare warn-only against the HCR roast's F.1 cutflow.
+known_counts: "coffea4bees/analysis/tests/known_fullCounts_TESTRun2.yml"
+known_counts_fatal: false

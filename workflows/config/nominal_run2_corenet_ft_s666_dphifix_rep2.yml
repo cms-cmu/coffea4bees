@@ -1,0 +1,24 @@
+# ==============================================================================
+# Same-seed FvT repeat: Run 2 corenet, FinetuneStep, seed 666, dphifix code (run-to-run variance)
+# ==============================================================================
+# Overlay on nominal_run2_corenet_ft_s666_dphifix.yml. Roast at barista 57224fce / coffea4bees 332b7efb,
+# same as the original (nominal_run2_corenet_ft_s666_dphifix_20261116_57224fc-332b7ef). Training is
+# unchanged (Training.seed 666 -> fold seed (387016642,'FvT','random',0), same per-fold weight/batch seeds).
+# What differs from the base, and nothing else: label/output_path, FvT label/output_dir/friend name
+# (suffix _rep2) and the downstream friend references. Run phase C only.
+base: coffea4bees/workflows/config/nominal_run2_corenet_ft_s666_dphifix.yml
+
+label: "Run2_corenet_ft_s666_dphifix_rep2"
+output_path: "output/Run2_corenet_ft_s666_dphifix_rep2/"
+
+fvt:
+  label: "FvT_corenet_ft_s666_dphifix_rep2"
+  output_dir: "output/FvT_corenet_ft_s666_dphifix_rep2/"
+
+svb:
+  train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_corenet_ft_s666_dphifix_rep2"
+
+analysis_config:
+  config:
+    friends:
+      FvT: "{eos_prod}/{roast_id}/friend/FvT_corenet_ft_s666_dphifix_rep2/result.json@@analysis.0.merged"

@@ -1,0 +1,13 @@
+# ==============================================================================
+# Same-seed CoReNet SvB repeat: full-CoReNet seed-666 arm, SvB_corenet retrained on the SAME FvT friend
+# ==============================================================================
+# Overlay on nominal_run2_corenet_ft_s666_dphifix_svbcorenet.yml (roast at barista 57224fce / coffea4bees
+# 87d26aeb, phase D only). CoReNet counterpart of nominal_run2_hcr_ft_s666_dphifix_svbrep2.yml.
+# The SvB_corenet templates, Training.seed (666 default), --kfold-seed SvB random / offsets 0 and the
+# FvT input (fvt_src = nominal_run2_corenet_ft_s666_dphifix_20261116_57224fc-332b7ef, friend
+# FvT_corenet_ft_s666_dphifix) are unchanged. What differs from the base: label/output_path only; the SvB
+# model and friend (SvB_corenet) land in THIS roast's EOS area.
+base: coffea4bees/workflows/config/nominal_run2_corenet_ft_s666_dphifix_svbcorenet.yml
+
+label: "Run2_corenet_ft_s666_dphifix_svbcorenet_rep2"
+output_path: "output/Run2_corenet_ft_s666_dphifix_svbcorenet_rep2/"

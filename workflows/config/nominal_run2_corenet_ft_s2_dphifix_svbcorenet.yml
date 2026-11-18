@@ -1,0 +1,35 @@
+# ==============================================================================
+# Run 2 seed-2 full-CoReNet arm: CoReNet FvT seed 2 (reused) + CoReNet SvB (trained here)
+# ==============================================================================
+# Overlay on nominal_run2_corenet_ft_s2_dphifix.yml; roast at barista 57224fce / coffea4bees 87d26aeb with
+# phases D, C4, F (F targets all_analysis all_stats). Phase C is NOT run.
+#   * FvT: friend FvT_corenet_ft_s2_dphifix of nominal_run2_corenet_ft_s2_dphifix_20261116_57224fc-332b7ef
+#     (trained with --seed 2), read through the upstream alias fvt_src. That roast's cancelled mixed-arm D
+#     is not reused or resumed.
+#   * SvB: HH4b_2024_v2/SvB_corenet templates, exactly as nominal_run2_corenet_ft_s666_dphifix_svbcorenet.yml.
+#     The seed-2 study inserts --seed 2 only into the FvT train (fvt.workflow_inserts); the SvB keeps
+#     Training.seed 666, so its fold/weight/batch seeds equal those of the HCR seed-2 SvB
+#     (nominal_run2_hcr_ft_s2_dphifix, kfold 3265739377).
+#   * names: label/output_path Run2_corenet_ft_s2_dphifix_svbcorenet, SvB label/friend SvB_corenet.
+base: coffea4bees/workflows/config/nominal_run2_corenet_ft_s2_dphifix.yml
+
+label: "Run2_corenet_ft_s2_dphifix_svbcorenet"
+output_path: "output/Run2_corenet_ft_s2_dphifix_svbcorenet/"
+
+inputs:
+  upstream_roasts: {fvt_src: nominal_run2_corenet_ft_s2_dphifix_20261116_57224fc-332b7ef}
+  FvT_src: "{roast:fvt_src}/friend/FvT_corenet_ft_s2_dphifix/result.json@@analysis.0.merged"
+
+svb:
+  label: "SvB_corenet"
+  wfs_base: "coffea4bees/classifier/config/workflows/HH4b_2024_v2/SvB_corenet"
+  output_dir: "output/SvB_corenet/"
+  plot_inputs: false
+  plot_weights: false
+  train_template: "model: {eos_base}/classifier/{label}, FvT: {roast:fvt_src}/friend/FvT_corenet_ft_s2_dphifix"
+
+analysis_config:
+  config:
+    friends:
+      FvT: "{roast:fvt_src}/friend/FvT_corenet_ft_s2_dphifix/result.json@@analysis.0.merged"
+      SvB_MA: "{eos_prod}/{roast_id}/friend/SvB_corenet/result.json@@analysis.0.merged"

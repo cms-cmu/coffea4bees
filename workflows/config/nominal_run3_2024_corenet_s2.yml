@@ -1,0 +1,29 @@
+# ==============================================================================
+# FvT training-variance study: Run 3 2024 CoReNet, FinetuneStep (template), Training.seed 2 (owner option 1, 2026-11-16)
+# ==============================================================================
+# Overlay on nominal_run3_2024_corenet.yml. What differs from it, and nothing else:
+#   * --seed 2 inserted into the FvT Train module (train.yml only; KFoldTrain --seed overrides
+#     setting.ml.Training.seed 666). NOTE: _derive_squares_seeds also derives the k-fold root from
+#     this seed, so the fold split changes too: fold seed (1799630810,'FvT','random',0) instead of
+#     (387016642,...); weight/batch seeds per fold change as well (probe SLURM 66713). Owner chose this.
+#   * label / output_dir / friend name FvT_corenet_s2 (no EOS collision), label/output_path Run3_2024_corenet_s2;
+#     downstream friend references point at FvT_corenet_s2.
+#   * fvt.eval_mem 64000 (MB): Run 3 2024 evaluate is memory-starved at the default 24000.
+base: coffea4bees/workflows/config/nominal_run3_2024_corenet.yml
+
+label: "Run3_2024_corenet_s2"
+output_path: "output/Run3_2024_corenet_s2/"
+
+fvt:
+  label: "FvT_corenet_s2"
+  output_dir: "output/FvT_corenet_s2/"
+  workflow_inserts:
+    "train.yml::--kfold-seed": ["--seed 2"]
+  eval_mem: 64000
+svb:
+  train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_corenet_s2"
+
+analysis_config:
+  config:
+    friends:
+      FvT: "{eos_prod}/{roast_id}/friend/FvT_corenet_s2/result.json@@analysis.0.merged"

@@ -1,0 +1,39 @@
+# ==============================================================================
+# Run 2 chain with CoReNet in BOTH classifiers: CoReNet FvT (reused) + CoReNet SvB (trained here)
+# ==============================================================================
+# Overlay on nominal_run2_corenet_ft_s666_dphifix.yml. Phases D, C4, F; Phase C is NOT run.
+#   * FvT: the friend FvT_corenet_ft_s666_dphifix of the roast that config produced is read through
+#     the upstream alias fvt_src (the same pattern as ..._dphifix_svbrep2.yml). Nothing is written
+#     under that roast's area. C4 is rerun here on that friend only because F.1 cross-checks its
+#     cutflow / histograms against the C.4 dump under this run's own output_path.
+#   * SvB: templates HH4b_2024_v2/SvB_corenet = HH4b_2024_v2/SvB with the model module
+#     HCR.SvB.ggF.baseline -> CoReNet.SvB.ggF.baseline and --network classifier/config/corenet/HH4b.yml.
+#     Datasets, classes (multijet, ttbar, ZZ, ZH, ggF; ggF trained at kl = 1), --architecture
+#     (n_features 8, use_kv_proj, use_attention_gate), schedules, k-fold seed and the friend branches
+#     (q_1234, q_1324, q_1423, p_multijet, p_ttbar, p_bkg, p_ZZ, p_ZH, p_ggF, p_sig) are unchanged.
+#   * names: label / output_dir / model / friend SvB_corenet (instead of SvB_nominal), label/output_path
+#     Run2_corenet_ft_s666_dphifix_svbcorenet. The analysis still reads the friend under the key SvB_MA.
+#   * svb plot_inputs / plot_weights off: src/classifier/plot_inputs.py and plot_weights.py rebuild the
+#     HCR network from the checkpoint and cannot read a CoReNet one (as for fvt in nominal_run2_corenet.yml).
+base: coffea4bees/workflows/config/nominal_run2_corenet_ft_s666_dphifix.yml
+
+label: "Run2_corenet_ft_s666_dphifix_svbcorenet"
+output_path: "output/Run2_corenet_ft_s666_dphifix_svbcorenet/"
+
+inputs:
+  upstream_roasts: {fvt_src: nominal_run2_corenet_ft_s666_dphifix_20261116_57224fc-332b7ef}
+  FvT_src: "{roast:fvt_src}/friend/FvT_corenet_ft_s666_dphifix/result.json@@analysis.0.merged"
+
+svb:
+  label: "SvB_corenet"
+  wfs_base: "coffea4bees/classifier/config/workflows/HH4b_2024_v2/SvB_corenet"
+  output_dir: "output/SvB_corenet/"
+  plot_inputs: false
+  plot_weights: false
+  train_template: "model: {eos_base}/classifier/{label}, FvT: {roast:fvt_src}/friend/FvT_corenet_ft_s666_dphifix"
+
+analysis_config:
+  config:
+    friends:
+      FvT: "{roast:fvt_src}/friend/FvT_corenet_ft_s666_dphifix/result.json@@analysis.0.merged"
+      SvB_MA: "{eos_prod}/{roast_id}/friend/SvB_corenet/result.json@@analysis.0.merged"

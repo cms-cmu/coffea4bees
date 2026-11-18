@@ -1,0 +1,25 @@
+# ==============================================================================
+# Same-seed SvB repeat: Run 2 corenet seed-666 dphifix arm, SvB retrained on the SAME FvT friend
+# ==============================================================================
+# Overlay on nominal_run2_corenet_ft_s666_dphifix.yml. Roast at barista 57224fce / coffea4bees 332b7efb with
+# phase D only. The SvB (HH4b_2024_v2/SvB templates, Training.seed 666 default, --kfold-seed SvB random,
+# offsets 0) trains on the FvT friend of the original roast nominal_run2_corenet_ft_s666_dphifix_20261116_57224fc-332b7ef
+# (FvT_corenet_ft_s666_dphifix), read through the upstream alias fvt_src; its model and SvB friend land in
+# THIS roast's EOS area. What differs from the base: label/output_path, the inputs block (fvt_src alias)
+# and the FvT path in svb.train_template / analysis_config.friends.FvT.
+base: coffea4bees/workflows/config/nominal_run2_corenet_ft_s666_dphifix.yml
+
+label: "Run2_corenet_ft_s666_dphifix_svbrep2"
+output_path: "output/Run2_corenet_ft_s666_dphifix_svbrep2/"
+
+inputs:
+  upstream_roasts: {fvt_src: nominal_run2_corenet_ft_s666_dphifix_20261116_57224fc-332b7ef}
+  FvT_src: "{roast:fvt_src}/friend/FvT_corenet_ft_s666_dphifix/result.json@@analysis.0.merged"
+
+svb:
+  train_template: "model: {eos_base}/classifier/{label}, FvT: {roast:fvt_src}/friend/FvT_corenet_ft_s666_dphifix"
+
+analysis_config:
+  config:
+    friends:
+      FvT: "{roast:fvt_src}/friend/FvT_corenet_ft_s666_dphifix/result.json@@analysis.0.merged"

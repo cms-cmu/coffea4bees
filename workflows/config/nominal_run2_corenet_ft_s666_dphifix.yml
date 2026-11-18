@@ -1,0 +1,24 @@
+# ==============================================================================
+# FvT training-variance study, HCR dijet-dPhi slot fix: Run 2 corenet, FinetuneStep, seed 666
+# ==============================================================================
+# Overlay on nominal_run2_corenet_ft_s666.yml. The training configuration is unchanged; the code is not:
+# this config is meant to be roasted at coffea4bees 332b7efb (classifier/nn/blocks/HCR.py and
+# HCR_lowpt.py: dPhi of dijets (1,3,5) written to slots (1,3,5) instead of (1,3,4)), barista 57224fce.
+# What differs from the base, and nothing else: label / output_dir / friend name FvT_corenet_ft_s666_dphifix,
+# label/output_path Run2_corenet_ft_s666_dphifix, and the downstream friend references.
+base: coffea4bees/workflows/config/nominal_run2_corenet_ft_s666.yml
+
+label: "Run2_corenet_ft_s666_dphifix"
+output_path: "output/Run2_corenet_ft_s666_dphifix/"
+
+fvt:
+  label: "FvT_corenet_ft_s666_dphifix"
+  output_dir: "output/FvT_corenet_ft_s666_dphifix/"
+
+svb:
+  train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_corenet_ft_s666_dphifix"
+
+analysis_config:
+  config:
+    friends:
+      FvT: "{eos_prod}/{roast_id}/friend/FvT_corenet_ft_s666_dphifix/result.json@@analysis.0.merged"
