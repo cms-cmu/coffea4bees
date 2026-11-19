@@ -35,7 +35,7 @@ for _d in TV_DATASETS:
 for _y in TV_YEARS:
     if _y not in years:
         raise ValueError(f"trig_validation.years: {_y} is not an A.2 year")
-TV_PLOT_YEARS = TV_YEARS + ["Run3"]
+TV_PLOT_YEARS = TV_YEARS + (["RunII"] if any(str(y).startswith("UL") for y in TV_YEARS) else ["Run3"])
 TV_SCRIPT = "coffea4bees/workflows/scripts/trig_validation.py"
 TV_WRAPPER = config['analysis_container_wrapper']
 TV_PYTHON = config['python_bin']
@@ -53,6 +53,10 @@ def _tv_config(variant):
     runner.setdefault('write_coffea_output', True)
     if config.get('test', False):
         runner.update({'condor': False, 'shared_dask': False, 'run_performance': False})
+        runner.setdefault('test_files', 1)
+        runner.setdefault('maxchunks', 2)
+        runner.setdefault('chunksize', 100000)
+        runner.setdefault('workers', 4)
     c = {
         'apply_FvT': False,
         'apply_JCM': False,
@@ -60,7 +64,7 @@ def _tv_config(variant):
         'SvB': None,
         'SvB_MA': None,
         'apply_btagSF': True,
-        'fourTag_use_tight': True,      # nominal Run 3 fourTag
+        'fourTag_use_tight': TV.get('fourTag_use_tight', not any(str(y).startswith('UL') for y in TV_YEARS)),
         'blind': False,
         'apply_trigWeight': variant == "HLT_SF",
         'require_trigWeight': variant == "HLT_SF",
@@ -75,7 +79,7 @@ def _tv_config(variant):
         'processor': "coffea4bees/analysis/processors/processor_HH4b.py",
         'dataset_location': config.get('dataset_location', "coffea4bees/metadata/datasets/"),
         'friend_file': "coffea4bees/metadata/friends/friends_HH4b.yml",
-        'weights_file': "coffea4bees/metadata/weights/weights_HH4b.yml",
+        'weights_file': TV.get('weights_file') or config.get('analysis_config', {}).get('weights_file') or "coffea4bees/metadata/weights/weights_HH4b.yml",
         'runner': runner,
         'config': c,
     }
@@ -182,7 +186,7 @@ use rule make_plots from analysis as TV_plots with:
     params:
         output_dir = lambda wildcards: f"{TV_OUT}plots_{wildcards.tv_dataset}/{wildcards.plot_year}/",
         metadata = lambda wildcards: f"{TV_OUT}plots_{wildcards.tv_dataset}.yml",
-        extra_arguments = lambda wildcards, threads: f"-s xW -f png --year {wildcards.plot_year} -p {threads}",
+        extra_arguments = lambda wildcards: f"-s xW -f png --year {wildcards.plot_year}",
         run_container_wrapper = TV_WRAPPER,
         python_bin = TV_PYTHON
     log: f"{TV_OUT}logs/plots_{{tv_dataset}}_{{plot_year}}.log"

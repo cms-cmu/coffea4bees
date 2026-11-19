@@ -2,6 +2,7 @@
 # Phase B: Master Coordinator Workflow for JCM Computation and Classifier Inputs Preparation
 
 include: "Snakefile_PhaseB_1_computeJCM.smk"
+include: "Snakefile_PhaseB_3_validation.smk"
 
 # ---------------------------------------------------------------------------
 # Phase B -> C/D handoff
@@ -50,7 +51,8 @@ HANDOFF_MANIFEST = _handoff.get(
 rule phaseB_handoff:
     input:
         jcm = ALL_JCM_INPUTS,
-        manifest = f"{CI_OUTPUT_PATH}classifier_inputs_friends.json"
+        manifest = f"{CI_OUTPUT_PATH}classifier_inputs_friends.json",
+        validation = phaseB_validation_path
     output:
         jcm = HANDOFF_JCM,
         manifest = HANDOFF_MANIFEST,
@@ -76,21 +78,31 @@ rule phaseB_handoff:
         done
 
         if [ -n "{params.eos}" ]; then
-            # Same proxy fallback as the other rules that talk to EOS: roast seeds
-            # ./proxy/x509_proxy in the checkout and run_container binds it into the container.
-            # ${{X509_USER_PROXY:-}}, not $X509_USER_PROXY: snakemake prefixes every shell block
-            # with `set -euo pipefail`, and under nounset a bare reference to an unset variable
-            # aborts the rule ("X509_USER_PROXY: unbound variable") before xrdcp ever runs.
-            if [ -z "${{X509_USER_PROXY:-}}" ] && [ -f ./proxy/x509_proxy ]; then
-                export X509_USER_PROXY="$PWD/proxy/x509_proxy"
+            if [[ "{params.eos}" == root://* ]]; then
+                # Same proxy fallback as the other rules that talk to EOS: roast seeds
+                # ./proxy/x509_proxy in the checkout and run_container binds it into the container.
+                # ${{X509_USER_PROXY:-}}, not $X509_USER_PROXY: snakemake prefixes every shell block
+                # with `set -euo pipefail`, and under nounset a bare reference to an unset variable
+                # aborts the rule ("X509_USER_PROXY: unbound variable") before xrdcp ever runs.
+                if [ -z "${{X509_USER_PROXY:-}}" ] && [ -f ./proxy/x509_proxy ]; then
+                    export X509_USER_PROXY="$PWD/proxy/x509_proxy"
+                fi
+                # -p creates the destination directory; -f overwrites a previous run's copy.
+                xrdcp -f -p "{output.manifest}" "{params.eos}/$(basename {output.manifest})" 2>&1 | tee -a {log}
+                echo "handoff EOS manifest   -> {params.eos}/$(basename {output.manifest})" 2>&1 | tee -a {log}
+                for dst in "${{outputs[@]}}"; do
+                    xrdcp -f -p "$dst" "{params.eos}/$(basename "$dst")" 2>&1 | tee -a {log}
+                    echo "handoff EOS jcm        -> {params.eos}/$(basename "$dst")" 2>&1 | tee -a {log}
+                done
+            else
+                mkdir -p "{params.eos}"
+                cp -f "{output.manifest}" "{params.eos}/$(basename {output.manifest})" 2>&1 | tee -a {log}
+                echo "handoff local manifest -> {params.eos}/$(basename {output.manifest})" 2>&1 | tee -a {log}
+                for dst in "${{outputs[@]}}"; do
+                    cp -f "$dst" "{params.eos}/$(basename "$dst")" 2>&1 | tee -a {log}
+                    echo "handoff local jcm      -> {params.eos}/$(basename "$dst")" 2>&1 | tee -a {log}
+                done
             fi
-            # -p creates the destination directory; -f overwrites a previous run's copy.
-            xrdcp -f -p "{output.manifest}" "{params.eos}/$(basename {output.manifest})" 2>&1 | tee -a {log}
-            echo "handoff EOS manifest   -> {params.eos}/$(basename {output.manifest})" 2>&1 | tee -a {log}
-            for dst in "${{outputs[@]}}"; do
-                xrdcp -f -p "$dst" "{params.eos}/$(basename "$dst")" 2>&1 | tee -a {log}
-                echo "handoff EOS jcm        -> {params.eos}/$(basename "$dst")" 2>&1 | tee -a {log}
-            done
         else
             echo "handoff: no handoff.eos_base set, local copies only" 2>&1 | tee -a {log}
         fi

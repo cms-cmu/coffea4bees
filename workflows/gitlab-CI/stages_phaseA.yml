@@ -1,0 +1,59 @@
+phaseA_1_skimmer_run2_coffea4bees:
+  stage: phaseA
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE -s coffea4bees/workflows/Snakefile_PhaseA_1_skimmer.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true dataset=GluGluToHHTo4B_cHHH1 year=UL18 --jobs 4
+    - python coffea4bees/workflows/scripts/validate_phaseA.py skimmer --new-datasets output/TEST/modified_datasets/new_datasets.yml --known coffea4bees/analysis/tests/known_PhaseA_run2.yml
+  artifacts:
+    when: always
+    paths:
+      - output/TEST/skimmer/
+      - output/TEST/modified_datasets/
+      - output/TEST/logs/
+      - barista_framework/output/TEST/skimmer/
+      - barista_framework/output/TEST/modified_datasets/
+      - barista_framework/output/TEST/logs/
+    expire_in: 1 day
+
+phaseA_2_trigWeights_run2_coffea4bees:
+  stage: phaseA
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseA_1_skimmer_run2_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE -s coffea4bees/workflows/Snakefile_PhaseA_2_trigWeights.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true dataset=GluGluToHHTo4B_cHHH1 year=UL18 trigger_weights_dataset_location=output/TEST/modified_datasets/modified_datasets.yml --jobs 4
+    - python coffea4bees/workflows/scripts/validate_phaseA.py trigweights --friends output/TEST/trigger_weights/trigger_weights_friends.json --known coffea4bees/analysis/tests/known_PhaseA_run2.yml
+  artifacts:
+    when: always
+    paths:
+      - output/TEST/trigger_weights/
+      - output/TEST/logs/
+      - barista_framework/output/TEST/trigger_weights/
+      - barista_framework/output/TEST/logs/
+    expire_in: 1 day
+
+phaseA_3_trigValidation_run2_coffea4bees:
+  stage: phaseA
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseA_1_skimmer_run2_coffea4bees
+    - phaseA_2_trigWeights_run2_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE all_trig_validation -s coffea4bees/workflows/Snakefile_TrigWeights.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true dataset=GluGluToHHTo4B_cHHH1 year=UL18 dataset_location=output/TEST/modified_datasets/modified_datasets.yml trigger_weights_dataset_location=output/TEST/modified_datasets/modified_datasets.yml --jobs 4
+    - cat output/TEST/trig_validation/trig_validation.txt
+  artifacts:
+    when: always
+    paths:
+      - output/TEST/trig_validation/
+      - barista_framework/output/TEST/trig_validation/
+    expire_in: 1 day
