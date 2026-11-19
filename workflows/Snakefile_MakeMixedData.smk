@@ -51,6 +51,9 @@ out = _slash(config['output_path'])
 PUB = str(config.get('publish_base', f"{out}publish")).rstrip("/")
 HANDOFF = f"{PUB}/handoff"
 
+if config.get('test_year_eras') and isinstance(config['test_year_eras'], dict):
+    config['year_eras'] = config['test_year_eras']
+
 if 'year_eras' in config:
     YEAR_ERAS = {str(y): list(eras) for y, eras in config['year_eras'].items()}
     YEARS = list(YEAR_ERAS)
