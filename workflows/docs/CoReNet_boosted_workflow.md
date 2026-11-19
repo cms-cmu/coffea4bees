@@ -73,9 +73,21 @@ ln -s pkgs/h5py pkgs/h5py.libs .
 ./run_container voms-proxy-init -voms cms -rfc --valid 168:00 -out proxy/x509_proxy
 ```
 
-On falcon, `./run_container classifier <command>` submits a batch job when it is typed on the
-login node and returns at once; the output is in `slurm_logs/classifier_batch_<jobid>.out`. Wait
-for step 3 to finish before making the links, and read the log for step 4.
+**On falcon, run steps 3 and 4 inside a CPU job.** Typed on the falcon login node,
+`./run_container classifier <command>` submits a batch job that asks for a share of a GPU and
+returns at once. Neither step needs a GPU, and when the GPUs are busy the job can wait for hours.
+Inside a job, `run_container` runs the command directly, so submit the two steps as one CPU job
+instead:
+
+```bash
+sbatch -p work -q cpu_light -c 4 --mem 8G -t 30:00 -o setup_%j.out --wrap \
+  "./run_container classifier python -m pip install --no-deps --target pkgs h5py && \
+   ./run_container classifier python -s -m corenet.models.network"
+ln -s pkgs/h5py pkgs/h5py.libs .
+```
+
+The links can be made before the job has finished. When it has, `setup_<jobid>.out` should end
+without a `ModuleNotFoundError`.
 
 Then fill in the files listed under [Files to edit before running](#files-to-edit-before-running)
 and start the trainings as described under [Running the workflow](#running-the-workflow).
@@ -103,17 +115,19 @@ If the setup is missing, HCR jobs are not affected; a `CoReNet.*` job stops at s
 
 ### What was tested
 
-On falcon, 2026-11-18, on a fresh copy of the code with home-directory packages switched off:
-steps 2 to 4, then a small CoReNet training and evaluation on CPU (two folds, two epochs) in the
-classifier container, and the workflow's `analyze` step in the analysis container. All ran. The
-`analyze` step needs neither CoReNet nor `h5py`.
+On falcon, 2026-11-19, with home-directory packages switched off, in a fresh clone of the
+`corenet` branches of barista and coffea4bees (cloned from a local repository, not from GitLab):
+steps 2 to 4, including the CPU-job form of steps 3 and 4, then a small CoReNet training and
+evaluation on CPU (two folds, two epochs) in the classifier container, and the workflow's
+`analyze` step in the analysis container. All ran. The `analyze` step needs neither CoReNet nor
+`h5py`.
 
 The same small training gives the same losses and AUCs as the network copy that used to be in
 barista: identical in the analysis container, and equal to about seven digits between the two
 containers, which have different torch versions.
 
-Not tested with this setup: step 1 (the clones of barista and coffea4bees), a production-size
-training on a GPU, hosts other than falcon, and the boosted job files.
+Not tested with this setup: the GitLab addresses in step 1, a production-size training on a GPU,
+hosts other than falcon, and the boosted job files.
 
 ### Other hosts and roast
 
