@@ -278,7 +278,11 @@ def validate_declustered(args: argparse.Namespace) -> int:
         handoff_dir = out / "test" / "handoff"
         mj_yml = _load_yaml(handoff_dir / f"{args.multijet_name}.yml", failures, "Decl.3 multijet handoff")
         ds_yml = _load_yaml(handoff_dir / f"{args.dataset_name}.yml", failures, "Decl.3 combined handoff")
-        all_yml = _load_yaml(handoff_dir / f"{args.all_name}.yml", failures, "Decl.3 all handoff")
+        all_yml = (
+            _load_yaml(handoff_dir / f"{args.all_name}.yml", failures, "Decl.3 all handoff")
+            if args.all_name
+            else None
+        )
 
         mj_templates: list[str] = []
         if isinstance(mj_yml, dict):

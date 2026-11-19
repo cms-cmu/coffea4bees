@@ -173,7 +173,10 @@ def _d6_hist_config(src, dst, datasets, subsample=1, runner=None):
               'blind': False,
               'event_subsample': subsample})
     if runner:
-        cfg.setdefault('runner', {}).update(runner)
+        cfg.setdefault('runner', {}).update(
+            {k: (int(v) if k in ('chunksize', 'maxchunks') and v is not None else v)
+             for k, v in runner.items()}
+        )
     if config['test']:
         cfg.setdefault('runner', {}).update({'condor': False, 'shared_dask': False})
     write_yaml(dst, cap_workers(cfg))
