@@ -50,7 +50,7 @@ ttbar_processes:
 - TTToHadronic
 inputs:
   upstream_roasts:
-    mixed_bkgsyst: analysis_HH4b_bkg_syst_mixed_run3_2025_20261115_bd9139a-89fa0d1
+    mixed_bkgsyst: analysis_HH4b_bkg_syst_mixed_run3_2025_20261119_21aa0bf-77840e8
     mixeddata: mixeddata_run3_2025_20261027_cea2f98-6c5c9c3
     nominal_nt: nominal_run3_2025_nontight_20261027_1809191-df306da
     nominal_b: nominal_run3_2025_20261027_1809191-df306da
