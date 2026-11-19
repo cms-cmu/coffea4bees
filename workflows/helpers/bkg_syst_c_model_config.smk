@@ -178,7 +178,10 @@ rule stage_bkg_syst_c_model_config:
         # trainer takes one --metadata directory, so build this roast's own copy (never write into
         # meta_dir: with upstream_link_stages it is another roast's output).
         extra_meta = config.get('classifier_metadata_extra') or []
-        if extra_meta:
+        # A linked A_2 (upstream_link_stages) puts meta_dir at the upstream roast's ABSOLUTE path, which
+        # remote GPU hosts (CMU ORCHARD) can neither receive nor read ("Unsupported file /uscms_data/...",
+        # 0 events): copy it into this roast's output too, as for extra metadata.
+        if extra_meta or os.path.isabs(meta_dir):
             own_dir = f"{out_c}classifier_metadata_with_extra/"
             os.makedirs(own_dir, exist_ok=True)
             for path in sorted(glob.glob(os.path.join(meta_dir, "*.yml"))):
