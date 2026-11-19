@@ -1,4 +1,5 @@
 from src.physics.common import apply_btag_sf
+from src.physics.btag_calibration import evaluate_btag_sf_calibration
 from src.physics.event_weights import add_weights as base_add_weights
 import correctionlib
 import awkward as ak
@@ -540,9 +541,20 @@ def add_btagweights( event, weights,
                     use_prestored_btag_SF: bool = False,
                     corrections_metadata: dict = None,
                     isRun3: bool = False,
+                    btag_calibration = None,
+                    btag_calibration_sample: str = None,
                     ):
+    """Add the b-tagging shape SF as the weight `CMS_btag`.
+
+    btag_calibration: evaluator of the b-tag SF calibration (src.physics.btag_calibration),
+    or None. If given, the SF and each of its variations are multiplied by the (Njet, HT)
+    calibration of `btag_calibration_sample` derived for that same variation, which removes the
+    normalization effect of the SF. The product is stored under the same weight name `CMS_btag`.
+    """
 
     if use_prestored_btag_SF:
+        if btag_calibration is not None:
+            logging.warning("b-tag SF calibration is not applied to the pre-stored b-tag SF (CMSbtag)")
         weights.add( "CMS_btag", event.CMSbtag )
     else:
 
@@ -561,6 +573,16 @@ def add_btagweights( event, weights,
             correction_file=corrections_metadata["btagSF"],
             btag_uncertainties=corrections_metadata["btag_uncertainties"] if (not shift_name) & run_systematics else None
         )
+
+        if btag_calibration is not None:
+            # Same jets as the ones entering the SF product. On JES/JER shifts only the central
+            # SF is computed, so the central map is evaluated at the shifted (Njet, HT).
+            calib_njet = ak.num(event.selJet_no_bRegCorr)
+            calib_ht = ak.sum(event.selJet_no_bRegCorr.pt, axis=1)
+            for name in btag_SF_weights:
+                btag_SF_weights[name] = btag_SF_weights[name] * evaluate_btag_sf_calibration(
+                    btag_calibration, btag_calibration_sample, name.replace("btagSF_", "", 1), calib_njet, calib_ht
+                )
 
         if (not shift_name) & run_systematics:
             weights.add_multivariation( f"CMS_btag", btag_SF_weights["btagSF_central"],
