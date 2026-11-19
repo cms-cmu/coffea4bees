@@ -33,7 +33,8 @@
 # weights, no JEC. It must not contain "mix" (-> mixed data, unit weights).
 
 SIG = config.get('signal_check') or {}
-SIG_ENABLED = bool(SIG.get('enabled', True))
+_sig_enabled = SIG.get('enabled', True)
+SIG_ENABLED = _sig_enabled.lower() in ("true", "1", "yes") if isinstance(_sig_enabled, str) else bool(_sig_enabled)
 SIG_DATASETS = list(SIG.get('datasets', ["GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"]))
 SIG_SEED = int(SIG.get('seed', 0))
 SIG_NAMES = {d: f"synthetic_mc_{d}" for d in SIG_DATASETS}

@@ -57,3 +57,109 @@ phaseA_3_trigValidation_run2_coffea4bees:
       - output/TEST/trig_validation/
       - barista_framework/output/TEST/trig_validation/
     expire_in: 1 day
+
+phaseA_makeMixedData_run2_coffea4bees:
+  stage: phaseA
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE -s coffea4bees/workflows/Snakefile_MakeMixedData.smk --configfile coffea4bees/workflows/config/mixeddata_run2.yml --config test=true eos_prod=output 'test_year_eras={"UL18":["A"]}' 'inputs={"SvB_model":"{roast:nominal_run2_20260919_a180b1a-a16559c}/classifier/SvB_nominal/result.json"}' 'hemi_library={"study_threshold":10}' 'signal_check={"enabled":true,"subsample":1,"mixeddata_subsample":1}' --jobs 4 --nolock
+    - python coffea4bees/workflows/scripts/validate_phaseA_datasets.py mixeddata --output-dir output/mixeddata_run2 --year UL18 --era A
+  artifacts:
+    when: always
+    paths:
+      - output/mixeddata_run2/handoff/
+      - output/mixeddata_run2/M1/logs/
+      - output/mixeddata_run2/M1/stats/
+      - output/mixeddata_run2/M2/logs/
+      - output/mixeddata_run2/M3/logs/
+      - output/mixeddata_run2/M3/JCM_mixeddata/
+      - output/mixeddata_run2/M3/cutflow_mixedJCM.yml
+      - output/mixeddata_run2/M3/cutflow_validation_mixedJCM.txt
+      - output/mixeddata_run2/M3/cutflow_validation_mixedJCM_result.txt
+      - output/mixeddata_run2/M5/logs/
+      - output/mixeddata_run2/M6/logs/
+      - output/mixeddata_run2/M6/cutflow_validation.html
+      - output/mixeddata_run2/M6/cutflow_validation.txt
+      - output/mixeddata_run2/M6/cutflow_validation.yml
+      - output/mixeddata_run2/M6/plots/index.html
+      - output/mixeddata_run2/M6/plots/plots_done.txt
+      - output/mixeddata_run2/M7/logs/
+      - output/mixeddata_run2/M7/signal_check.txt
+      - output/mixeddata_run2/M7/signal_check.yml
+      - output/mixeddata_run2/M7/plots_signal/index.html
+      - output/mixeddata_run2/M7/plots_signal/plots_done.txt
+      - output/mixeddata_run2/M7/plots_mixeddata/index.html
+      - output/mixeddata_run2/M7/plots_mixeddata/plots_done.txt
+      - barista_framework/output/mixeddata_run2/handoff/
+      - barista_framework/output/mixeddata_run2/M1/logs/
+      - barista_framework/output/mixeddata_run2/M1/stats/
+      - barista_framework/output/mixeddata_run2/M2/logs/
+      - barista_framework/output/mixeddata_run2/M3/logs/
+      - barista_framework/output/mixeddata_run2/M3/JCM_mixeddata/
+      - barista_framework/output/mixeddata_run2/M3/cutflow_mixedJCM.yml
+      - barista_framework/output/mixeddata_run2/M3/cutflow_validation_mixedJCM.txt
+      - barista_framework/output/mixeddata_run2/M3/cutflow_validation_mixedJCM_result.txt
+      - barista_framework/output/mixeddata_run2/M5/logs/
+      - barista_framework/output/mixeddata_run2/M6/logs/
+      - barista_framework/output/mixeddata_run2/M6/cutflow_validation.html
+      - barista_framework/output/mixeddata_run2/M6/cutflow_validation.txt
+      - barista_framework/output/mixeddata_run2/M6/cutflow_validation.yml
+      - barista_framework/output/mixeddata_run2/M6/plots/index.html
+      - barista_framework/output/mixeddata_run2/M6/plots/plots_done.txt
+      - barista_framework/output/mixeddata_run2/M7/logs/
+      - barista_framework/output/mixeddata_run2/M7/signal_check.txt
+      - barista_framework/output/mixeddata_run2/M7/signal_check.yml
+      - barista_framework/output/mixeddata_run2/M7/plots_signal/index.html
+      - barista_framework/output/mixeddata_run2/M7/plots_signal/plots_done.txt
+      - barista_framework/output/mixeddata_run2/M7/plots_mixeddata/index.html
+      - barista_framework/output/mixeddata_run2/M7/plots_mixeddata/plots_done.txt
+    expire_in: 1 day
+
+phaseA_declustered_run3_coffea4bees:
+  stage: phaseA
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE -s coffea4bees/workflows/Snakefile_DeClustered.smk --configfile coffea4bees/workflows/config/declustered_run3_2024_library_16x.yml --config test=true eos_prod=output 'test_year_eras={"2024":["C"]}' 'cluster={"chunksize":50000}' 'declustering={"n_seeds":2,"chunksize":50000}' 'validation={"seed_study_subsample":1}' 'signal_check={"enabled":false}' --jobs 4 --nolock
+    - python coffea4bees/workflows/scripts/validate_phaseA_datasets.py declustered --output-dir output/declustered_run3_2024_library_16x --year 2024 --era C --n-seeds 2
+  artifacts:
+    when: always
+    paths:
+      - output/declustered_run3_2024_library_16x/test/handoff/
+      - output/declustered_run3_2024_library_16x/D1/logs/
+      - output/declustered_run3_2024_library_16x/D1/library/summary/
+      - output/declustered_run3_2024_library_16x/D3/logs/
+      - output/declustered_run3_2024_library_16x/D4/logs/
+      - output/declustered_run3_2024_library_16x/D4/cutflow_declustered.yml
+      - output/declustered_run3_2024_library_16x/D4/cutflow_validation_declustered.txt
+      - output/declustered_run3_2024_library_16x/D4/cutflow_validation_declustered_result.txt
+      - output/declustered_run3_2024_library_16x/D5/logs/
+      - output/declustered_run3_2024_library_16x/D5/cutflow_monitoring.html
+      - output/declustered_run3_2024_library_16x/D5/cutflow_monitoring.txt
+      - output/declustered_run3_2024_library_16x/D5/seed_study/
+      - output/declustered_run3_2024_library_16x/D5/svb_bootstrap/
+      - output/declustered_run3_2024_library_16x/D5/plots/index.html
+      - output/declustered_run3_2024_library_16x/D5/plots/plots_done.txt
+      - barista_framework/output/declustered_run3_2024_library_16x/test/handoff/
+      - barista_framework/output/declustered_run3_2024_library_16x/D1/logs/
+      - barista_framework/output/declustered_run3_2024_library_16x/D1/library/summary/
+      - barista_framework/output/declustered_run3_2024_library_16x/D3/logs/
+      - barista_framework/output/declustered_run3_2024_library_16x/D4/logs/
+      - barista_framework/output/declustered_run3_2024_library_16x/D4/cutflow_declustered.yml
+      - barista_framework/output/declustered_run3_2024_library_16x/D4/cutflow_validation_declustered.txt
+      - barista_framework/output/declustered_run3_2024_library_16x/D4/cutflow_validation_declustered_result.txt
+      - barista_framework/output/declustered_run3_2024_library_16x/D5/logs/
+      - barista_framework/output/declustered_run3_2024_library_16x/D5/cutflow_monitoring.html
+      - barista_framework/output/declustered_run3_2024_library_16x/D5/cutflow_monitoring.txt
+      - barista_framework/output/declustered_run3_2024_library_16x/D5/seed_study/
+      - barista_framework/output/declustered_run3_2024_library_16x/D5/svb_bootstrap/
+      - barista_framework/output/declustered_run3_2024_library_16x/D5/plots/index.html
+      - barista_framework/output/declustered_run3_2024_library_16x/D5/plots/plots_done.txt
+    expire_in: 1 day
