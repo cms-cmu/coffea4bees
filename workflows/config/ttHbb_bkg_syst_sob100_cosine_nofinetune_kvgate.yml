@@ -1,0 +1,35 @@
+# ==============================================================================
+# ttHbb Run 2 BACKGROUND SYSTEMATIC — SoB_100 SR + CosineAnnealing FvT (no finetune) + KV-Proj & Attention Gate
+# ==============================================================================
+# Combines:
+#   - SoB_100 irregular SR + Corner Veto SB (inherited from ttHbb_bkg_syst_sob100_cosine_nofinetune.yml)
+#   - Pure CosineAnnealing (20 epochs, bs_init: 1024, no secondary Finetuning stage)
+#   - Architecture: use_kv_proj: true, use_attention_gate: true in HCR.FvT.baseline.Train
+#   - Reuses pre-FvT stages A & B from ttHbb_bkg_syst_sob100_cosine_nofinetune_20261118_4cf5bf3-369aaff on EOS
+#     so BKG_C can run directly on Nautilus in parallel.
+# ==============================================================================
+
+base: coffea4bees/workflows/config/ttHbb_bkg_syst_sob100_cosine_nofinetune.yml
+
+label: "ttHbb_bkg_syst_sob100_cosine_nofinetune_kvgate"
+
+upstream_pre_fvt: "pre_fvt"
+
+inputs:
+  upstream_roasts:
+    pre_fvt: ttHbb_bkg_syst_sob100_cosine_nofinetune_20261118_4cf5bf3-369aaff
+  input_handoff_eos: "{roast:pre_fvt}/handoff"
+
+fvt_train_workflow:
+  model:
+    - module: HCR.FvT.baseline.Train
+      option:
+        - --kfolds 3
+        - --kfold-seed FvT random
+        - --kfold-seed-offsets 0
+        - --architecture
+        - use_kv_proj: true
+          use_attention_gate: true
+        - --training CosineAnnealing
+        - epoch: 20
+          bs_init: 1024
