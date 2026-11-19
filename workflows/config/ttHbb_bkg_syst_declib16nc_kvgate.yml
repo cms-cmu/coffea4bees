@@ -1,0 +1,37 @@
+# ==============================================================================
+# ttHbb Run 2 BACKGROUND SYSTEMATIC — declib16nc + Corner Veto + FixedStep/FinetuneStep + KV-Proj & Attention Gate
+# ==============================================================================
+# Inherits from ttHbb_bkg_syst_declib16nc.yml (default corner-veto pairing SR/SB,
+# FixedStep 20 epochs bs_init=1024 + FinetuneStep 1 epoch bs_init=16384):
+#   - Adds --architecture use_kv_proj: true, use_attention_gate: true in HCR.FvT.baseline.Train
+#   - Reuses pre-FvT stages A & B from ttHbb_bkg_syst_declib16nc_20261113_60960f8-baa2ba4 on EOS
+#     so BKG_C can run directly on GCP/Nautilus.
+# ==============================================================================
+
+base: coffea4bees/workflows/config/ttHbb_bkg_syst_declib16nc.yml
+
+label: "ttHbb_bkg_syst_declib16nc_kvgate"
+
+upstream_pre_fvt: "pre_fvt"
+
+inputs:
+  upstream_roasts:
+    pre_fvt: ttHbb_bkg_syst_declib16nc_20261113_60960f8-baa2ba4
+  input_handoff_eos: "{roast:pre_fvt}/handoff"
+
+fvt_train_workflow:
+  model:
+    - module: HCR.FvT.baseline.Train
+      option:
+        - --kfolds 3
+        - --kfold-seed FvT random
+        - --kfold-seed-offsets 0
+        - --architecture
+        - use_kv_proj: true
+          use_attention_gate: true
+        - --training FixedStep
+        - epoch: 20
+          bs_init: 1024
+        - --finetuning FinetuneStep
+        - epoch: 1
+          bs_init: 16384
