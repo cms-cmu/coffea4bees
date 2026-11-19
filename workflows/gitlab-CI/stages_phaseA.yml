@@ -58,7 +58,7 @@ phaseA_3_trigValidation_run2_coffea4bees:
       - barista_framework/output/TEST/trig_validation/
     expire_in: 1 day
 
-phaseA_makeMixedData_run2_coffea4bees:
+phaseA_makeMixedData_dataset_run2_coffea4bees:
   stage: phaseA
   extends:
     - .base_analysis_coffea4bees
@@ -66,27 +66,93 @@ phaseA_makeMixedData_run2_coffea4bees:
     - setup_coffea4bees
   script:
     - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
-    - $SNAKEMAKE -s coffea4bees/workflows/Snakefile_MakeMixedData.smk --configfile coffea4bees/workflows/config/mixeddata_run2.yml --config test=true eos_prod=output 'test_year_eras={"UL18":["A"]}' 'inputs={"SvB_model":"{roast:nominal_run2_20260919_a180b1a-a16559c}/classifier/SvB_nominal/result.json"}' 'hemi_library={"study_threshold":10}' 'signal_check={"enabled":true,"subsample":1,"mixeddata_subsample":1}' --jobs 4 --nolock
-    - python coffea4bees/workflows/scripts/validate_phaseA_datasets.py mixeddata --output-dir output/mixeddata_run2 --year UL18 --era A
+    - $SNAKEMAKE all_M1 all_M2 all_M3 all_M5 -s coffea4bees/workflows/Snakefile_MakeMixedData.smk --configfile coffea4bees/workflows/config/mixeddata_run2.yml --config test=true eos_prod=output 'test_year_eras={"UL18":["A"]}' 'inputs={"SvB_model":"{roast:nominal_run2_20260919_a180b1a-a16559c}/classifier/SvB_nominal/result.json"}' 'hemi_library={"study_threshold":10}' 'signal_check={"enabled":true,"subsample":1,"mixeddata_subsample":1}' --jobs 4 --nolock
+    - python coffea4bees/workflows/scripts/validate_phaseA_datasets.py mixeddata --stage dataset --output-dir output/mixeddata_run2 --year UL18 --era A
   artifacts:
     when: always
     paths:
+      - output/mixeddata_run2/inputs/
       - output/mixeddata_run2/handoff/
+      - output/mixeddata_run2/hemilib/
+      - output/mixeddata_run2/picoAOD/
+      - output/mixeddata_run2/M1/published.done
+      - output/mixeddata_run2/M1/hemisphere_library.yml
       - output/mixeddata_run2/M1/logs/
       - output/mixeddata_run2/M1/stats/
+      - output/mixeddata_run2/M2/make_mixed_data.yml
+      - output/mixeddata_run2/M2/published.done
       - output/mixeddata_run2/M2/logs/
-      - output/mixeddata_run2/M3/logs/
       - output/mixeddata_run2/M3/JCM_mixeddata/
+      - output/mixeddata_run2/M3/published.done
+      - output/mixeddata_run2/M3/logs/
       - output/mixeddata_run2/M3/cutflow_mixedJCM.yml
       - output/mixeddata_run2/M3/cutflow_validation_mixedJCM.txt
       - output/mixeddata_run2/M3/cutflow_validation_mixedJCM_result.txt
+      - output/mixeddata_run2/M5/published.done
       - output/mixeddata_run2/M5/logs/
+      - barista_framework/output/mixeddata_run2/inputs/
+      - barista_framework/output/mixeddata_run2/handoff/
+      - barista_framework/output/mixeddata_run2/hemilib/
+      - barista_framework/output/mixeddata_run2/picoAOD/
+      - barista_framework/output/mixeddata_run2/M1/published.done
+      - barista_framework/output/mixeddata_run2/M1/hemisphere_library.yml
+      - barista_framework/output/mixeddata_run2/M1/logs/
+      - barista_framework/output/mixeddata_run2/M1/stats/
+      - barista_framework/output/mixeddata_run2/M2/make_mixed_data.yml
+      - barista_framework/output/mixeddata_run2/M2/published.done
+      - barista_framework/output/mixeddata_run2/M2/logs/
+      - barista_framework/output/mixeddata_run2/M3/JCM_mixeddata/
+      - barista_framework/output/mixeddata_run2/M3/published.done
+      - barista_framework/output/mixeddata_run2/M3/logs/
+      - barista_framework/output/mixeddata_run2/M3/cutflow_mixedJCM.yml
+      - barista_framework/output/mixeddata_run2/M3/cutflow_validation_mixedJCM.txt
+      - barista_framework/output/mixeddata_run2/M3/cutflow_validation_mixedJCM_result.txt
+      - barista_framework/output/mixeddata_run2/M5/published.done
+      - barista_framework/output/mixeddata_run2/M5/logs/
+    expire_in: 4 hours
+
+phaseA_makeMixedData_validate_run2_coffea4bees:
+  stage: phaseA
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseA_makeMixedData_dataset_run2_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE all_M6 -s coffea4bees/workflows/Snakefile_MakeMixedData.smk --configfile coffea4bees/workflows/config/mixeddata_run2.yml --config test=true eos_prod=output 'test_year_eras={"UL18":["A"]}' 'inputs={"SvB_model":"{roast:nominal_run2_20260919_a180b1a-a16559c}/classifier/SvB_nominal/result.json"}' 'hemi_library={"study_threshold":10}' 'signal_check={"enabled":true,"subsample":1,"mixeddata_subsample":1}' --rerun-triggers mtime --allowed-rules M6_config_mixed M6_config_psdata M6_hists_mixed M6_hists_psdata M6_merge M6_cutflow M6_cutflow_page M6_plot_config M6_plots all_M6 --jobs 4 --nolock
+    - python coffea4bees/workflows/scripts/validate_phaseA_datasets.py mixeddata --stage validate --output-dir output/mixeddata_run2 --year UL18 --era A
+  artifacts:
+    when: always
+    paths:
       - output/mixeddata_run2/M6/logs/
       - output/mixeddata_run2/M6/cutflow_validation.html
       - output/mixeddata_run2/M6/cutflow_validation.txt
       - output/mixeddata_run2/M6/cutflow_validation.yml
       - output/mixeddata_run2/M6/plots/index.html
       - output/mixeddata_run2/M6/plots/plots_done.txt
+      - barista_framework/output/mixeddata_run2/M6/logs/
+      - barista_framework/output/mixeddata_run2/M6/cutflow_validation.html
+      - barista_framework/output/mixeddata_run2/M6/cutflow_validation.txt
+      - barista_framework/output/mixeddata_run2/M6/cutflow_validation.yml
+      - barista_framework/output/mixeddata_run2/M6/plots/index.html
+      - barista_framework/output/mixeddata_run2/M6/plots/plots_done.txt
+    expire_in: 1 day
+
+phaseA_makeMixedData_signal_run2_coffea4bees:
+  stage: phaseA
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseA_makeMixedData_dataset_run2_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE all_M7 -s coffea4bees/workflows/Snakefile_MakeMixedData.smk --configfile coffea4bees/workflows/config/mixeddata_run2.yml --config test=true eos_prod=output 'test_year_eras={"UL18":["A"]}' 'inputs={"SvB_model":"{roast:nominal_run2_20260919_a180b1a-a16559c}/classifier/SvB_nominal/result.json"}' 'hemi_library={"study_threshold":10}' 'signal_check={"enabled":true,"subsample":1,"mixeddata_subsample":1}' --rerun-triggers mtime --allowed-rules M7_config M7_mix M7_dataset_yml M7_hist_config_signal M7_hist_config_mixeddata M7_hists_signal M7_hists_mixeddata M7_merge_hists M7_plot_config_signal M7_plot_config_mixeddata M7_plots_signal M7_plots_mixeddata M7_report all_M7 --jobs 4 --nolock
+    - python coffea4bees/workflows/scripts/validate_phaseA_datasets.py mixeddata --stage signal --output-dir output/mixeddata_run2 --year UL18 --era A
+  artifacts:
+    when: always
+    paths:
       - output/mixeddata_run2/M7/logs/
       - output/mixeddata_run2/M7/signal_check.txt
       - output/mixeddata_run2/M7/signal_check.yml
@@ -94,22 +160,6 @@ phaseA_makeMixedData_run2_coffea4bees:
       - output/mixeddata_run2/M7/plots_signal/plots_done.txt
       - output/mixeddata_run2/M7/plots_mixeddata/index.html
       - output/mixeddata_run2/M7/plots_mixeddata/plots_done.txt
-      - barista_framework/output/mixeddata_run2/handoff/
-      - barista_framework/output/mixeddata_run2/M1/logs/
-      - barista_framework/output/mixeddata_run2/M1/stats/
-      - barista_framework/output/mixeddata_run2/M2/logs/
-      - barista_framework/output/mixeddata_run2/M3/logs/
-      - barista_framework/output/mixeddata_run2/M3/JCM_mixeddata/
-      - barista_framework/output/mixeddata_run2/M3/cutflow_mixedJCM.yml
-      - barista_framework/output/mixeddata_run2/M3/cutflow_validation_mixedJCM.txt
-      - barista_framework/output/mixeddata_run2/M3/cutflow_validation_mixedJCM_result.txt
-      - barista_framework/output/mixeddata_run2/M5/logs/
-      - barista_framework/output/mixeddata_run2/M6/logs/
-      - barista_framework/output/mixeddata_run2/M6/cutflow_validation.html
-      - barista_framework/output/mixeddata_run2/M6/cutflow_validation.txt
-      - barista_framework/output/mixeddata_run2/M6/cutflow_validation.yml
-      - barista_framework/output/mixeddata_run2/M6/plots/index.html
-      - barista_framework/output/mixeddata_run2/M6/plots/plots_done.txt
       - barista_framework/output/mixeddata_run2/M7/logs/
       - barista_framework/output/mixeddata_run2/M7/signal_check.txt
       - barista_framework/output/mixeddata_run2/M7/signal_check.yml
@@ -119,7 +169,7 @@ phaseA_makeMixedData_run2_coffea4bees:
       - barista_framework/output/mixeddata_run2/M7/plots_mixeddata/plots_done.txt
     expire_in: 1 day
 
-phaseA_declustered_run3_coffea4bees:
+phaseA_declustered_dataset_run3_coffea4bees:
   stage: phaseA
   extends:
     - .base_analysis_coffea4bees
@@ -127,15 +177,43 @@ phaseA_declustered_run3_coffea4bees:
     - setup_coffea4bees
   script:
     - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
-    - $SNAKEMAKE -s coffea4bees/workflows/Snakefile_DeClustered.smk --configfile coffea4bees/workflows/config/declustered_run3_2024_library_16x.yml --config test=true eos_prod=output 'test_year_eras={"2024":["C"]}' 'cluster={"chunksize":50000}' 'declustering={"n_seeds":2,"chunksize":50000}' 'validation={"seed_study_subsample":1}' 'signal_check={"enabled":false}' --jobs 4 --nolock
-    - python coffea4bees/workflows/scripts/validate_phaseA_datasets.py declustered --output-dir output/declustered_run3_2024_library_16x --year 2024 --era C --n-seeds 2
+    - $SNAKEMAKE all_D1 all_D3 -s coffea4bees/workflows/Snakefile_DeClustered.smk --configfile coffea4bees/workflows/config/declustered_run3_2024_library_16x.yml --config test=true eos_prod=output 'test_year_eras={"2024":["C"]}' 'cluster={"chunksize":50000}' 'declustering={"n_seeds":2,"chunksize":50000}' 'validation={"seed_study_subsample":1}' 'signal_check={"enabled":false}' --jobs 4 --nolock
+    - python coffea4bees/workflows/scripts/validate_phaseA_datasets.py declustered --stage dataset --output-dir output/declustered_run3_2024_library_16x --year 2024 --era C --n-seeds 2
   artifacts:
     when: always
     paths:
       - output/declustered_run3_2024_library_16x/test/handoff/
+      - output/declustered_run3_2024_library_16x/test/picoAOD/
       - output/declustered_run3_2024_library_16x/D1/logs/
       - output/declustered_run3_2024_library_16x/D1/library/summary/
+      - output/declustered_run3_2024_library_16x/D3/published.done
+      - output/declustered_run3_2024_library_16x/D3/per_seed/registry_seed0.yml
+      - output/declustered_run3_2024_library_16x/D3/per_seed/registry_seed1.yml
       - output/declustered_run3_2024_library_16x/D3/logs/
+      - barista_framework/output/declustered_run3_2024_library_16x/test/handoff/
+      - barista_framework/output/declustered_run3_2024_library_16x/test/picoAOD/
+      - barista_framework/output/declustered_run3_2024_library_16x/D1/logs/
+      - barista_framework/output/declustered_run3_2024_library_16x/D1/library/summary/
+      - barista_framework/output/declustered_run3_2024_library_16x/D3/published.done
+      - barista_framework/output/declustered_run3_2024_library_16x/D3/per_seed/registry_seed0.yml
+      - barista_framework/output/declustered_run3_2024_library_16x/D3/per_seed/registry_seed1.yml
+      - barista_framework/output/declustered_run3_2024_library_16x/D3/logs/
+    expire_in: 4 hours
+
+phaseA_declustered_validate_run3_coffea4bees:
+  stage: phaseA
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseA_declustered_dataset_run3_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE all_D4 all_D5 -s coffea4bees/workflows/Snakefile_DeClustered.smk --configfile coffea4bees/workflows/config/declustered_run3_2024_library_16x.yml --config test=true eos_prod=output 'test_year_eras={"2024":["C"]}' 'cluster={"chunksize":50000}' 'declustering={"n_seeds":2,"chunksize":50000}' 'validation={"seed_study_subsample":1}' 'signal_check={"enabled":false}' --rerun-triggers mtime --allowed-rules fetch_inputs D4_hist_config D4_hists D4_merge_hists D4_cutflow all_D4 D5_plot_config D5_plots D5_cutflow_page D5_seed_study D5_svb_config D5_svb_dump D5_svb_bootstrap all_D5 --jobs 4 --nolock
+    - python coffea4bees/workflows/scripts/validate_phaseA_datasets.py declustered --stage validate --output-dir output/declustered_run3_2024_library_16x --year 2024 --era C --n-seeds 2
+  artifacts:
+    when: always
+    paths:
       - output/declustered_run3_2024_library_16x/D4/logs/
       - output/declustered_run3_2024_library_16x/D4/cutflow_declustered.yml
       - output/declustered_run3_2024_library_16x/D4/cutflow_validation_declustered.txt
@@ -147,10 +225,6 @@ phaseA_declustered_run3_coffea4bees:
       - output/declustered_run3_2024_library_16x/D5/svb_bootstrap/
       - output/declustered_run3_2024_library_16x/D5/plots/index.html
       - output/declustered_run3_2024_library_16x/D5/plots/plots_done.txt
-      - barista_framework/output/declustered_run3_2024_library_16x/test/handoff/
-      - barista_framework/output/declustered_run3_2024_library_16x/D1/logs/
-      - barista_framework/output/declustered_run3_2024_library_16x/D1/library/summary/
-      - barista_framework/output/declustered_run3_2024_library_16x/D3/logs/
       - barista_framework/output/declustered_run3_2024_library_16x/D4/logs/
       - barista_framework/output/declustered_run3_2024_library_16x/D4/cutflow_declustered.yml
       - barista_framework/output/declustered_run3_2024_library_16x/D4/cutflow_validation_declustered.txt
