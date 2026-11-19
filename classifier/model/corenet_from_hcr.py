@@ -93,7 +93,7 @@ def convert_checkpoint(hcr_pkl, out_pkl, network_yml, inputs: dict | None = None
     import torch
 
     from src.classifier.ml.models.CoReNet import CoReNetArch, resolve_spec
-    from src.classifier.nn.corenet import CoReNet
+    from corenet.models.network import CoReNet
 
     with fsspec.open(str(hcr_pkl), "rb") as f:
         saved = torch.load(f, map_location=torch.device("cpu"), weights_only=False)

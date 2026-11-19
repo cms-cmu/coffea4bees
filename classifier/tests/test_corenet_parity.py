@@ -1,5 +1,5 @@
 """
-Parity of the generic CoReNet copy in barista (``src.classifier.nn.corenet``) with the hard-coded
+Parity of the CoReNet network (the installed ``corenet`` package) with the hard-coded
 HH -> 4b HCR network (``coffea4bees.classifier.nn.blocks.HCR.HCR``).
 
 CoReNet configured for HH -> 4b (``b: jets btag 4``, ``other: jets rest 8``, ``HH: {H1: [b, b],
@@ -24,8 +24,8 @@ import torch
 import torch.nn.functional as F
 
 from coffea4bees.classifier.nn.blocks.HCR import HCR
-from src.classifier.nn.corenet.config import parse_config
-from src.classifier.nn.corenet.network import CoReNet
+from corenet.models.config import parse_config
+from corenet.models.network import CoReNet
 
 DEVICE = "cpu"
 N_EVENTS = 2048
