@@ -1,5 +1,5 @@
-"""Convert HCR checkpoints (``src.classifier.ml.models.HCR``) into CoReNet checkpoints
-(``src.classifier.ml.models.CoReNet``) with the same weights.
+"""Convert HCR checkpoints into CoReNet checkpoints (both of ``src.classifier.ml.models.HCR``; a CoReNet
+checkpoint is one whose ``arch`` has ``network`` set) with the same weights.
 
 Usage (from the barista root, inside the classifier container)::
 
@@ -18,7 +18,7 @@ Inputs
 Outputs (in ``--out``)
   * one ``<name>__<uuid>.pkl`` per HCR checkpoint: the CoReNet checkpoint (same ``metadata``, ``uuid``,
     ``label``, ``input``; ``model`` = the HCR state dict renamed through ``NAME_MAP``; ``arch`` =
-    ``CoReNetArch.save()``), read by ``CoReNet.SparseDenseEval`` / ``CoReNetEvaluation``.
+    ``HCRArch.save()`` with ``network`` set), read by ``CoReNet.SparseDenseEval`` / ``HCREvaluation``.
   * ``result.json``: a copy of the HCR result with the Output-stage paths pointing (relative) to the
     converted checkpoints, so that ``--models Final <out>/result.json`` finds them.
 
@@ -92,18 +92,18 @@ def convert_checkpoint(hcr_pkl, out_pkl, network_yml, inputs: dict | None = None
     import fsspec
     import torch
 
-    from src.classifier.ml.models.CoReNet import CoReNetArch, resolve_spec
+    from src.classifier.ml.models.HCR import HCRArch, resolve_corenet_spec
     from corenet.models.network import CoReNet
 
     with fsspec.open(str(hcr_pkl), "rb") as f:
         saved = torch.load(f, map_location=torch.device("cpu"), weights_only=False)
     architecture = {k: saved["arch"][k] for k in _ARCH_KEYS if k in saved["arch"]}
-    arch = CoReNetArch(
+    arch = HCRArch(
         network=_read_yaml(network_yml),
         inputs=_inputs(inputs),
         architecture=architecture,
     )
-    spec, resolved = resolve_spec(
+    spec, resolved = resolve_corenet_spec(
         arch, labels=saved["label"], event=saved["input"]["feature_ancillary"]
     )
     arch.resolved = resolved

@@ -31,8 +31,8 @@ run from the barista root directory.
 | --- | --- |
 | Workflow | The dry run resolves: 49 jobs for the full chain, 14 with `--config steps=fvt,svb`. |
 | Boosted classifier jobs | The four job files parse and the network builds (about 1.5k parameters). **Nothing has been trained or evaluated with this boosted configuration.** |
-| CoReNet package | The network is no longer copied into barista. It comes from the CoReNet repository (github.com/cms-cmu/CoReNet), cloned next to the code: see [Setup](#setup). |
-| CoReNet itself | CoReNet FvT and SvB have been trained and evaluated in production for the resolved Run 2 analysis (full chain through limits, 2026-11-17). Those runs used the network copy that was in barista at the time; the cloned package gives the same results in the small test described under Setup. |
+| CoReNet package | The network is no longer copied into barista. It comes from the CoReNet repository (github.com/cms-cmu/CoReNet), cloned next to the code: see [Setup](#setup). Barista's HCR training code takes the network as an option; with HCR selected (the default) CoReNet is not imported and need not be installed. |
+| CoReNet itself | CoReNet FvT and SvB have been trained and evaluated in production for the resolved Run 2 analysis (full chain through limits, 2026-11-17). Those runs used the network copy that was in barista at the time. With the cloned package, the small test gives identical results and one production-size SvB training gives results in the same range: see [What was tested](#what-was-tested). |
 | Inputs | **Placeholders.** There are no boosted classifier-input friend trees and no boosted JCM fit in the repository. |
 | Histogramming step | Uses the resolved processor `processor_HH4b.py` as a placeholder. No existing boosted processor fills analysis histograms with FvT and SvB; see [Boosted code that exists, and what is missing](#boosted-code-that-exists-and-what-is-missing). Until one exists, run `steps: [fvt, svb]`. |
 
@@ -45,7 +45,7 @@ package named `corenet`.
 | Piece | Where | You edit it? |
 | --- | --- | --- |
 | The network | CoReNet repository, https://github.com/cms-cmu/CoReNet | No |
-| The barista model module (feeds batches to the network, ghost batches, fine-tuning, checkpoints, output columns) | `src/classifier/ml/models/CoReNet.py` in barista | No |
+| The training and evaluation code (feeds batches to the network, ghost batches, fine-tuning, checkpoints, output columns) | `src/classifier/ml/models/HCR.py` in barista, the same code HCR uses. It builds a CoReNet instead of HCR when a decay-chain file is given (`--network`); barista has no CoReNet-specific file. | No |
 | The model names `CoReNet.FvT.baseline` and `CoReNet.SvB.ggF.baseline` (loss and classes per classifier) | `coffea4bees/classifier/config/model/CoReNet/` | No |
 | The decay-chain file and the job files | see [Files to edit before running](#files-to-edit-before-running) | Yes |
 
@@ -126,8 +126,29 @@ The same small training gives the same losses and AUCs as the network copy that 
 barista: identical in the analysis container, and equal to about seven digits between the two
 containers, which have different torch versions.
 
-Not tested with this setup: the GitLab addresses in step 1, a production-size training on a GPU,
-hosts other than falcon, and the boosted job files.
+On an NRP Nautilus GPU (NVIDIA A10), 2026-11-19, from a copy of that clone: one production-size
+SvB training for the resolved Run 2 analysis (3 folds, 20 epochs plus one fine-tuning epoch),
+with the same settings and seeds as the two SvB trainings of 2026-11-17 that used the network
+copy in barista. It ran in about 25 minutes. After fine-tuning:
+
+| | 2026-11-17 | 2026-11-17 repeat | Cloned CoReNet |
+| --- | --- | --- | --- |
+| Validation loss, folds 0 / 1 / 2 | 0.9517 / 0.9438 / 0.9372 | 0.9443 / 0.9459 / 0.9462 | 0.9380 / 0.9463 / 0.9395 |
+| Background-vs-signal validation AUC, folds 0 / 1 / 2 | 0.8273 / 0.8296 / 0.8309 | 0.8311 / 0.8291 / 0.8288 | 0.8305 / 0.8287 / 0.8299 |
+
+Over all 108 validation AUCs the mean difference to the two older trainings is 0.0045 and 0.0033;
+between the two older trainings it is 0.0042. The new training is therefore as close to the old
+ones as they are to each other. It is not a like-for-like comparison: the GPU model differs, and
+the older trainings ran on a barista commit with a different batch order.
+
+The NRP training used the separate CoReNet training module that barista had on 2026-11-19. That
+module was then folded into `HCR.py` as an option. On the small CPU test the fold changes nothing:
+HCR and CoReNet trainings give identical losses, AUCs and model weights before and after, the
+evaluation outputs are identical, and HCR trains and evaluates with CoReNet not installed.
+
+Not tested with this setup: the GitLab addresses in step 1, a production-size FvT training,
+evaluation and everything after it at production size, the workflow itself (the SvB training was
+started by hand), hosts other than falcon and NRP, and the boosted job files.
 
 ### Other hosts and roast
 
@@ -135,6 +156,13 @@ The clone, the two links and `pkgs/` must exist in every barista directory a job
 `bin/roast checkout` creates its own barista and coffea4bees checkouts on the remote host and
 does not create these, and roast does not record the CoReNet commit. For runs through roast,
 install CoReNet in the container instead.
+
+On NRP Nautilus, jobs run from a barista directory on the shared storage
+(`/workspace/users/<name>/...`). Copy a barista directory in which steps 1 to 4 have been done,
+including `CoReNet`, the links and `pkgs/`, and the proxy. The `h5py` installed on falcon loaded
+in the NRP classifier image. The SvB training above was one Kubernetes job written with
+`build_k8s_job_yaml` from `software/kubernetes/nautilus_submit.py` and submitted with
+`kubectl apply`; the Snakemake profile for Nautilus has not been tried with CoReNet.
 
 ### Alternative: CoReNet in the container image
 

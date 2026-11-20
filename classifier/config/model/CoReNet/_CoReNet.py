@@ -1,4 +1,5 @@
-"""Model configs that train / evaluate the CoReNet network (``src.classifier.ml.models.CoReNet``).
+"""Model configs that train / evaluate with the CoReNet network: ``src.classifier.ml.models.HCR`` with
+``HCRArch.network`` set, which makes it build a ``CoReNet`` (the ``corenet`` package) instead of HCR.
 
 Concrete configs combine ``CoReNetTrain`` / ``CoReNetEval`` with an HCR config, which provides the
 model name, the loss, the ROCs and the output definition:
@@ -85,18 +86,18 @@ class CoReNetTrain(KFoldTrain):
     )
 
     def initializer(self, splitter: Splitter, **kwargs):
-        from src.classifier.ml.models.CoReNet import (
-            CoReNetArch,
-            CoReNetTraining,
+        from src.classifier.ml.models.HCR import (
             GBNSchedule,
+            HCRArch,
             HCRBenchmarks,
+            HCRTraining,
         )
 
         inputs = {
             role: getattr(Input, key) if hasattr(Input, key) else key
             for role, key in (self.opts.inputs or {}).items()
         }
-        arch = CoReNetArch(
+        arch = HCRArch(
             loss=self.loss,
             network=self.opts.network,
             inputs=inputs,
@@ -106,7 +107,7 @@ class CoReNetTrain(KFoldTrain):
         training = parse.instance(self.opts.training, _SCHEDULER)
         finetuning = parse.instance(self.opts.finetuning, _SCHEDULER)
 
-        return CoReNetTraining(
+        return HCRTraining(
             arch=arch,
             ghost_batch=gbn,
             cross_validation=splitter,
@@ -127,9 +128,9 @@ class CoReNetEval(KFoldEval):
     output_definition: Callable[[BatchType], BatchType]
 
     def initializer(self, model, splitter, **kwargs):
-        from src.classifier.ml.models.CoReNet import CoReNetEvaluation
+        from src.classifier.ml.models.HCR import HCREvaluation
 
-        return CoReNetEvaluation(
+        return HCREvaluation(
             saved_model=model,
             cross_validation=splitter,
             output_definition=self.output_definition,
