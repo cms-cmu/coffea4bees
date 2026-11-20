@@ -48,6 +48,10 @@ btagsf_calibration:
     min_workers: 50
     max_workers: 250
     dashboard_address: 0
+    # NanoAOD replicas from any T1/T2/T3 (the runner default is T3_US_FNALLPC only, which
+    # does not host all the inclusive ttbar samples)
+    allowlist_sites: []
+    rucio_regex_sites: "T[123]"
   config:
     object_selection_cfg: coffea4bees/analysis/metadata/object_selection_thresholds.yml
     njet_bins: [4, 5, 6, 7, 8, 9, 11, 20]
