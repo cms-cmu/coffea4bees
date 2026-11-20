@@ -1,0 +1,37 @@
+# Boosted CoReNet training (template). Instructions: coffea4bees/workflows/docs/CoReNet_boosted_workflow.md
+main:
+  module: train
+  option:
+    - --max-loaders 2
+    - --max-trainers 3
+
+dataset:
+  - module: boosted.Train
+    option:
+      - --max-workers 8
+      # one --files line per class; the workflow writes them from inputs.classes of its config
+      - --files label:signal PLACEHOLDER_signal.root
+      - --files label:background PLACEHOLDER_background.root
+
+model:
+  - module: boosted.Train
+    option:
+      - --network file:##coffea4bees/classifier/config/corenet/HH4b_boosted.yml # the decay-chain file: this line makes the network a CoReNet
+      - --inputs
+      - b: CanJet
+        other: NotCanJet
+      - --signal signal
+      - --kfolds 3
+      - --kfold-seed boosted random
+      - --kfold-seed-offsets 0
+      - --training FixedStep
+      - epoch: 20
+        bs_init: 1024
+      - --finetuning FinetuneStep
+      - epoch: 1
+        bs_init: 16384
+
+setting:
+  - module: IO
+    option:
+      - output: "{model}"

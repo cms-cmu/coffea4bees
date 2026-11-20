@@ -1,0 +1,37 @@
+# Boosted CoReNet evaluation (template). Instructions: coffea4bees/workflows/docs/CoReNet_boosted_workflow.md
+main:
+  module: evaluate
+  option:
+    - --max-evaluators 3
+    - --device cuda cpu
+
+dataset:
+  - module: boosted.Eval
+    option:
+      - --max-workers 8
+      # one --files line per class; the workflow writes them from inputs.classes of its config
+      - --files label:signal PLACEHOLDER_signal.root
+      - --files label:background PLACEHOLDER_background.root
+
+model:
+  - module: boosted.Eval
+    option:
+      - --models
+      - Final
+      - "{model}/result.json"
+
+analysis:
+  - module: kfold.Merge
+    option:
+      - --name boosted
+      - --step 100000
+      - --workers 5
+      - --clean
+
+setting:
+  - module: IO
+    option:
+      - output: "{friend}"
+  - module: ml.DataLoader
+    option:
+      - num_workers: 8
