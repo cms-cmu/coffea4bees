@@ -11,7 +11,7 @@
 #                    coffea4bees/workflows/config/nominal_run2_corenet.yml \
 #       ... --config roast_id=<run id> eos_prod=root://cmseos.fnal.gov//store/user/<lpc user>/HH4b_prod
 #
-# Phases run: C = FvT_corenet (CoReNet.FvT.baseline.Train/Eval with --network
+# Phases run: C = FvT_corenet (HCR.FvT.baseline.Train/Eval with --network
 # classifier/config/corenet/HH4b.yml, otherwise the HH4b_2024_v2 HCR FvT templates; the event
 # features are the classifier_setting feature_ancillary of the base, [xW, nSelJets, xbW, year]),
 # C4 = its closure, D = the unchanged HCR SvB (HH4b_2024_v2/SvB) trained on 3b x JCM x THIS FvT,

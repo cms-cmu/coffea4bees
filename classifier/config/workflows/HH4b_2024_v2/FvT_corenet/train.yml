@@ -21,7 +21,7 @@ dataset:
       # - --friends "" coffea4bees/metadata/datasets_HH4b_2024_v2_classifier_input.json@@HCR_input # set input friend tree
       - --friends "" coffea4bees/metadata/datasets/classifier_inputs_nominal.json@@HCR_input 
 model:
-  - module: CoReNet.FvT.baseline.Train # the CoReNet network; loss / ROCs / outputs from HCR.FvT.baseline
+  - module: HCR.FvT.baseline.Train # with --network below: the CoReNet network instead of HCR
     option:
       - --network file:##coffea4bees/classifier/config/corenet/HH4b.yml
       - --kfolds 3 # use 3-fold

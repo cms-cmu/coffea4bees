@@ -13,7 +13,7 @@ dataset:
       - --files label:dense output/dataset/dense.root
 
 model:
-  - module: CoReNet.SparseDenseEval
+  - module: HCR.SparseDenseEval
     option:
       - --models
       - Final

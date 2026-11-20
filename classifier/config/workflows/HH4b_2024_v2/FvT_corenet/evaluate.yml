@@ -17,7 +17,7 @@ dataset:
       - --friends "" coffea4bees/metadata/datasets/classifier_inputs_nominal.json@@HCR_input
 
 model:
-  - module: CoReNet.FvT.baseline.Eval
+  - module: HCR.FvT.baseline.Eval
     option:
       - --models
       - Final # choose name of the model to evaluate, for now only Final is available

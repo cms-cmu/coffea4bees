@@ -21,7 +21,7 @@ dataset:
       - --friends "" coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_Run3.json@@HCR_input # set input friend tree
 
 model:
-  - module: CoReNet.FvT.baseline.Train # use the baseline model for FvT
+  - module: HCR.FvT.baseline.Train # use the baseline model for FvT
     option:
       - --network file:##coffea4bees/classifier/config/corenet/HH4b.yml
       - --kfolds 3 # use 3-fold

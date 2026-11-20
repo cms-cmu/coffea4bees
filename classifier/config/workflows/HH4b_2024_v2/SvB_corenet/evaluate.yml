@@ -9,7 +9,7 @@ main:
     - --device cuda cpu # use GPU if available, fall back to CPU
 
 model:
-  - module: CoReNet.SvB.ggF.baseline.Eval
+  - module: HCR.SvB.ggF.baseline.Eval
     option:
       - --models
       - Final

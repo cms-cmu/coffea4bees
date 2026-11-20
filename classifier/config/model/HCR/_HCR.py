@@ -34,10 +34,25 @@ class HCRTrain(KFoldTrain):
 
     argparser = ArgParser()
     argparser.add_argument(
+        "--network",
+        type=parse.mapping,
+        default="",
+        help="CoReNet event description, e.g. file:##coffea4bees/classifier/config/corenet/HH4b.yml. "
+        "When given, the network is a CoReNet (the external corenet package) instead of HCR; "
+        f"everything else is unchanged {parse.EMBED}",
+    )
+    argparser.add_argument(
+        "--inputs",
+        type=parse.mapping,
+        default="{b: CanJet, other: NotCanJet}",
+        help=f"with --network: role -> batch key (names of the Input setting) {parse.EMBED}",
+    )
+    argparser.add_argument(
         "--architecture",
         type=parse.mapping,
         default="",
-        help=f"HCR architecture {parse.EMBED}",
+        help="HCR architecture; with --network, overrides of the event description "
+        f"(n_features, attention, use_attention_gate, use_kv_proj) {parse.EMBED}",
     )
     argparser.add_argument(
         "--ghost-batch",
@@ -83,7 +98,18 @@ class HCRTrain(KFoldTrain):
             HCRTraining,
         )
 
-        arch = HCRArch(**({"loss": self.loss} | self.opts.architecture))
+        if self.opts.network:
+            arch = HCRArch(
+                loss=self.loss,
+                network=self.opts.network,
+                inputs={
+                    role: getattr(Input, key) if hasattr(Input, key) else key
+                    for role, key in (self.opts.inputs or {}).items()
+                },
+                architecture=self.opts.architecture or None,
+            )
+        else:
+            arch = HCRArch(**({"loss": self.loss} | self.opts.architecture))
         gbn = GBNSchedule(**self.opts.ghost_batch)
         training = parse.instance(self.opts.training, _SCHEDULER)
         finetuning = parse.instance(self.opts.finetuning, _SCHEDULER)

@@ -11,7 +11,7 @@
 #   * retrain the SvB (D) on 3b x JCM x THIS run's FvT, then C4 closure and F analysis + limits.
 #
 # What differs from nominal_run3_2024_ftfix.yml, and nothing else:
-#   * fvt      HH4b_Run3/FvT_corenet templates (CoReNet.FvT.baseline.Train/Eval with --network
+#   * fvt      HH4b_Run3/FvT_corenet templates (HCR.FvT.baseline.Train/Eval with --network
 #              classifier/config/corenet/HH4b.yml); label / output_dir FvT_corenet so models,
 #              friends and output/ never collide with the HCR arm. plot_inputs / plot_weights off:
 #              src/classifier/plot_inputs.py and plot_weights.py rebuild the HCR network from the

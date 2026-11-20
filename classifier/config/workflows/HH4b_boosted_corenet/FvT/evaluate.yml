@@ -14,7 +14,7 @@ dataset:
       - --friends "" {inputs}
 
 model:
-  - module: CoReNet.FvT.baseline.Eval
+  - module: HCR.FvT.baseline.Eval
     option:
       - --models
       - Final

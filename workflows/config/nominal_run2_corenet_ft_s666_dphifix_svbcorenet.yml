@@ -6,8 +6,8 @@
 #     the upstream alias fvt_src (the same pattern as ..._dphifix_svbrep2.yml). Nothing is written
 #     under that roast's area. C4 is rerun here on that friend only because F.1 cross-checks its
 #     cutflow / histograms against the C.4 dump under this run's own output_path.
-#   * SvB: templates HH4b_2024_v2/SvB_corenet = HH4b_2024_v2/SvB with the model module
-#     HCR.SvB.ggF.baseline -> CoReNet.SvB.ggF.baseline and --network classifier/config/corenet/HH4b.yml.
+#   * SvB: templates HH4b_2024_v2/SvB_corenet = HH4b_2024_v2/SvB with the model option
+#     --network classifier/config/corenet/HH4b.yml added to HCR.SvB.ggF.baseline.
 #     Datasets, classes (multijet, ttbar, ZZ, ZH, ggF; ggF trained at kl = 1), --architecture
 #     (n_features 8, use_kv_proj, use_attention_gate), schedules, k-fold seed and the friend branches
 #     (q_1234, q_1324, q_1423, p_multijet, p_ttbar, p_bkg, p_ZZ, p_ZH, p_ggF, p_sig) are unchanged.

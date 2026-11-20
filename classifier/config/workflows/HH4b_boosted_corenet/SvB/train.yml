@@ -22,7 +22,7 @@ dataset:
       - --friends "" {inputs}
 
 model:
-  - module: CoReNet.SvB.ggF.baseline.Train
+  - module: HCR.SvB.ggF.baseline.Train
     option:
       - --network file:##{network}
       - --inputs

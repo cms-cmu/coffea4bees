@@ -9,7 +9,7 @@ main:
     - --max-trainers 3
 
 model:
-  - module: CoReNet.SvB.ggF.baseline.Train # the CoReNet network; loss / ROCs / signal filter / outputs from HCR.SvB.ggF.baseline
+  - module: HCR.SvB.ggF.baseline.Train # with --network below: the CoReNet network instead of HCR
     option:
       - --roc-signal-by-category # calculate ROC by category
       - --network file:##coffea4bees/classifier/config/corenet/HH4b.yml

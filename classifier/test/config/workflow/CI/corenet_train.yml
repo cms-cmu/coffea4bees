@@ -14,7 +14,7 @@ dataset:
       - --files label:dense output/dataset/dense.root
 
 model:
-  - module: CoReNet.SparseDenseTrain
+  - module: HCR.SparseDenseTrain
     option:
       - --kfolds 2
       - --kfold-seed kfold test

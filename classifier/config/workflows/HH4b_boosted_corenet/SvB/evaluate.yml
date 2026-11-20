@@ -13,7 +13,7 @@ dataset:
       - --friends "" {inputs}
 
 model:
-  - module: CoReNet.SvB.ggF.baseline.Eval
+  - module: HCR.SvB.ggF.baseline.Eval
     option:
       - --models
       - Final

@@ -16,7 +16,7 @@ dataset:
       - --friends "" coffea4bees/metadata/datasets_HH4b_Run3/classifier_inputs_Run3.json@@HCR_input # set input friend tree
       
 model:
-  - module: CoReNet.FvT.baseline.Eval
+  - module: HCR.FvT.baseline.Eval
     option:
       - --models
       - Final # choose name of the model to evaluate, for now only Final is available

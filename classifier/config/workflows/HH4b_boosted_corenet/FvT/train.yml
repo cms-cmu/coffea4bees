@@ -15,7 +15,7 @@ dataset:
       - --friends "" {inputs}
 
 model:
-  - module: CoReNet.FvT.baseline.Train
+  - module: HCR.FvT.baseline.Train
     option:
       - --network file:##{network}
       - --inputs
