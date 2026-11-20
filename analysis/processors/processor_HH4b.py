@@ -164,7 +164,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             src/tools/compute_btagSF_calibration.py: a path, optionally with "{year}", or {year: path}.
         btagSF_calibration_sample_map (dict): {processName: sample key in the calibration file}, or
             {processName: {ttbar category: sample key}} with categories from ttbar_categories.py
-            (ttB, ttC, ttLF, notB), e.g. for the stitched ttbar samples.
+            (ttB, ttC, ttLF), which must cover all the events. ttbar is calibrated separately
+            for ttB, ttC and ttLF, e.g. for a stitched sample
+            {ttB: TTbb_Hadronic_ttB, ttC: TTToHadronic_ttC, ttLF: TTToHadronic_ttLF}.
         apply_FvT (bool): Whether to apply FvT classifier/friend tree.
         apply_boosted_veto (bool): Whether to apply boosted event veto.
         run_dilep_ttbar_crosscheck (bool): Whether to run dilepton ttbar crosscheck selection.
@@ -1452,8 +1454,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         if self.btagSF_calibration is not None and not self.config["use_prestored_btag_SF"]:
             btag_calibration, btag_calibration_sample = self.btagSF_calibration.get(self.year, self.processName)
             if isinstance(btag_calibration_sample, dict):
-                # {ttbar category: map key}: events of a stitched ttbar sample use the map of
-                # the sample they come from (ttB from TTbb, the rest from the inclusive sample)
+                # {ttbar category: map key}: ttB, ttC and ttLF events use separate maps, taken
+                # for a stitched sample from the sample the events come from (ttB from TTbb,
+                # ttC and ttLF from the inclusive sample)
                 btag_calibration_sample = {
                     key: ttbar_category_mask(event.genTtbarId, category)
                     for category, key in btag_calibration_sample.items()

@@ -4,12 +4,17 @@
 # Per-sample (Njet, HT) maps that remove the normalization effect of the b-tag shape SF.
 # Derived on MC NanoAOD at >= 4 selected jets, before any b-tag requirement.
 #
-# ttbar samples are also filled as <sample>_ttB and <sample>_notB: the stitched ttbar samples take
-# their ttB events from TTbb_* and the others from the inclusive TTTo*, so the analysis uses
+# The effect of the b-tag SF on ttbar depends on the flavour of the additional jets, so ttbar is
+# calibrated separately for ttB, ttC and ttLF (genTtbarId, analysis/helpers/ttbar_categories.py):
+# each ttbar sample is also filled as <sample>_ttB, <sample>_ttC and <sample>_ttLF, and each of
+# them is a separate 2D map in the correctionlib file. The stitched ttbar samples take their ttB
+# events from TTbb_* and ttC, ttLF from the inclusive TTTo*, so the analysis uses
 #   btagSF_calibration_sample_map:
-#     TTToHadronic_stitched:     {ttB: TTbb_Hadronic_ttB,     notB: TTToHadronic_notB}
-#     TTToSemiLeptonic_stitched: {ttB: TTbb_SemiLeptonic_ttB, notB: TTToSemiLeptonic_notB}
-#     TTTo2L2Nu_stitched:        {ttB: TTbb_2L2Nu_ttB,        notB: TTTo2L2Nu_notB}
+#     TTToHadronic_stitched:     {ttB: TTbb_Hadronic_ttB,     ttC: TTToHadronic_ttC,     ttLF: TTToHadronic_ttLF}
+#     TTToSemiLeptonic_stitched: {ttB: TTbb_SemiLeptonic_ttB, ttC: TTToSemiLeptonic_ttC, ttLF: TTToSemiLeptonic_ttLF}
+#     TTTo2L2Nu_stitched:        {ttB: TTbb_2L2Nu_ttB,        ttC: TTTo2L2Nu_ttC,        ttLF: TTTo2L2Nu_ttLF}
+# and for a non-stitched sample, e.g.
+#     TTToHadronic: {ttB: TTToHadronic_ttB, ttC: TTToHadronic_ttC, ttLF: TTToHadronic_ttLF}
 #
 # Run 3: 2022/2023 need NanoAOD entries for ttHbb in metadata/datasets/ttHbb.yml first;
 # 2024/2025 have no b-tag shape SF, so there is nothing to calibrate.
@@ -47,4 +52,4 @@ btagsf_calibration:
     object_selection_cfg: coffea4bees/analysis/metadata/object_selection_thresholds.yml
     njet_bins: [4, 5, 6, 7, 8, 9, 11, 20]
     ht_bins: [0, 500, 650, 800, 1000, 1200, 1400, 1600, 1800, 2000, 5000]
-    ttbar_categories: [ttB, notB]
+    ttbar_categories: [ttB, ttC, ttLF]

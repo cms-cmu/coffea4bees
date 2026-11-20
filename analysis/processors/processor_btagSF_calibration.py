@@ -62,7 +62,7 @@ class analysis(processor.ProcessorABC):
         ht_bins: list = (0, 500, 650, 800, 1000, 1200, 1400, 1600, 1800, 2000, 5000),
         btagSF_calibration_file: str | dict | None = None,
         btagSF_calibration_sample_map: dict | None = None,
-        ttbar_categories: list = ("ttB", "notB"),
+        ttbar_categories: list = ("ttB", "ttC", "ttLF"),
         **kwargs,
     ):
         self.corrections_metadata = corrections_metadata
@@ -70,8 +70,10 @@ class analysis(processor.ProcessorABC):
         self.njet_bins = [float(x) for x in njet_bins]
         self.ht_bins = [float(x) for x in ht_bins]
         # ttbar samples are also filled as "<process>_<category>" (categories of
-        # ttbar_categories.py): the stitched ttbar samples take the ttB events from the TTbb
-        # samples and the others from the inclusive ones, and each component needs its own map.
+        # ttbar_categories.py, from genTtbarId): the effect of the b-tag SF depends on the flavour
+        # of the additional jets, so ttB, ttC and ttLF are calibrated as separate samples, each
+        # with its own map. The stitched ttbar samples take the ttB events from the TTbb samples
+        # and ttC, ttLF from the inclusive ones.
         self.ttbar_categories = list(ttbar_categories or [])
         self.btagSF_calibration = (
             BtagSFCalibration(btagSF_calibration_file, btagSF_calibration_sample_map)
