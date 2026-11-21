@@ -1,0 +1,62 @@
+# Phase C.4 / Phase F.1 (ttHbb): three-tag ttbar MC vs 3b data with the FvT d3 -> t3 weight applied
+# (TTbar3b_from_d3 = 3b data x JCM x d3_to_t3, needs plot_ttbar_with_weights). Ratio = from-d3 / MC.
+# Absolute normalisation, so the ratio panel shows the rate and the shape difference together.
+hists:
+        tt3_MC:
+                process: [TTToHadronic, TTToSemiLeptonic, TTTo2L2Nu,
+                          TTToHadronic_stitched, TTToSemiLeptonic_stitched, TTTo2L2Nu_stitched]
+                tag: threeTag
+                label: $t\bar{t}$ 3b MC
+                fillcolor: k
+                edgecolor: k
+
+        tt3_from_d3:
+                process: TTbar3b_from_d3
+                tag: threeTag
+                label: $t\bar{t}$ 3b from 3b data (FvT d3->t3)
+                fillcolor: "#e42536"
+                edgecolor: "#e42536"
+
+ratios:
+        fromD3ToMC:
+                numerator:
+                        type: hists
+                        key: tt3_from_d3
+                denominator:
+                        type: hists
+                        key: tt3_MC
+                uncertianty:
+                        nominal
+                color: "#e42536"
+                marker: "o"
+
+doRatio: 1
+
+categories:
+  - "inclusive"
+  - "pass_nSelJets_gt6"
+  - "passLeptonVeto"
+  - "pass_nSelJets_gt6,passLeptonVeto"
+
+regions:
+  - "SR"
+  - "SB"
+
+skip_hists:
+    - m4j_hh
+    - m4j_zh
+    - m4j_zz
+    - tagJets
+
+# Pinned at the top of the HTML gallery (src/plotting/make_gallery.py).
+summary:
+    - SvB_MA
+    - SvB
+    - FvT
+    - selJets.n
+    - top_cand
+    - canJet0.pt
+    - canJet3.pt
+    - v4j.mass
+    - quadJet_selected.lead.mass
+    - quadJet_selected.subl.mass

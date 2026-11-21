@@ -1,12 +1,15 @@
 # ==============================================================================
-# ttHbb Run 2 NOMINAL STAT-ONLY ANALYSIS — Corner Veto with Retrained SvB & SvB_MA
+# ttHbb Run 2 NOMINAL STAT-ONLY ANALYSIS — Corner Veto (Self-Contained)
 # ==============================================================================
-# Reuses Phase B (JCM & classifier inputs) from upstream
-# ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11 and Phase C (FvT) from
-# ttHbb_stat_only_corner_veto_20261106_0065bef-0b95131.
-# Trains Phase D (SvB with attention: false, SvB_MA with attention: true, both
-# with default use_attention_gate: false, use_kv_proj: false) and evaluates
-# Phase F (analysis + Combine for both SvB and SvB_MA) with corner veto.
+# Runs full self-contained pipeline from Phase B (reusing Phase A picoAODs &
+# trigger weights):
+#   - Phase B: per-year JCM & classifier inputs with corner veto
+#   - Phase C: FvT training & evaluation on detector data + stitched ttbar MC
+#   - Phase C.4: FvT closure reprocessing ttbar MC with FvT friend
+#   - Phase D: SvB (attention: false) & SvB_MA (attention: true) training and
+#              evaluation on data, ttHbb signal, and stitched ttbar MC
+#   - Phase F: full analysis + ttbar MC vs prediction comparisons + Combine
+#              for both SvB and SvB_MA across all sub-categories
 # ==============================================================================
 
 base: coffea4bees/workflows/config/ttHbb.yml
@@ -14,26 +17,26 @@ base: coffea4bees/workflows/config/ttHbb.yml
 label: "ttHbb_stat_only_corner_veto"
 output_path: "output/ttHbb/"
 
+dataset:
+  - "ttHbb"
+  - "data"
+  - "TTTo2L2Nu_stitched"
+  - "TTToSemiLeptonic_stitched"
+  - "TTToHadronic_stitched"
+
+ttbar_compare_plot_config: "coffea4bees/plots/metadata/plotsTTbar_MCvsFromD3_ttHbb.yml"
+ttbar3b_compare_plot_config: "coffea4bees/plots/metadata/plotsTTbar3b_MCvsFromD3_ttHbb.yml"
+
 candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
 jcm_known_counts_fatal: false
 
-handoff:
-  allow_external_refs: true
+# Phase B classifier inputs with corner veto
+classifier_inputs:
+  candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
+  config:
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
 
-# Products read from upstream roast
-inputs:
-  upstream_roasts:
-    upstream: ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11
-    upstream_fvt: ttHbb_stat_only_corner_veto_20261106_0065bef-0b95131
-  classifier_inputs: "{roast:upstream}/handoff/classifier_inputs_ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11.json"
-  JCM:
-    UL16_preVFP: "{roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml"
-    UL16_postVFP: "{roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml"
-    UL17: "{roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL17.yml"
-    UL18: "{roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL18.yml"
-  FvT: "{roast:upstream_fvt}/friend/FvT_ttHbb_stitched/result.json@@analysis.0.merged"
-
-# Phase C classifier settings
+# Phase C & D classifier settings
 classifier_setting:
   - module: ml.DataLoader
     option:
@@ -54,7 +57,7 @@ classifier_setting:
       - eras:
           UL16_postVFP: [F, G, H]
           UL16_preVFP: [C, D, E, F]
-          UL17: [B, C, D, E, F]
+          UL17: [C, D, E, F]
           UL18: [A, B, C, D]
         years:
           - UL16_preVFP
@@ -65,7 +68,7 @@ classifier_setting:
     option:
       - feature_ancillary: [xW, nSelJets, xbW, year]
 
-# Phase C FvT training & evaluation
+# Phase C: FvT training & evaluation (on both detector data and stitched ttbar MC)
 fvt:
   gpu_qos: medium
   gpu_mem: 24000
@@ -81,7 +84,7 @@ fvt:
   friend: "{eos_base}/friend/{label}"
   train_template: "model: {eos_base}/classifier/{label}"
   eval_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/{label}"
-  metadata: "{roast:upstream}/handoff/classifier_inputs_ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11.json@@HCR_input"
+  metadata: "{eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input"
   train_workflow:
     main:
       module: train
@@ -95,11 +98,11 @@ fvt:
           - --metadata coffea4bees/metadata/datasets/
           - --max-workers 20
           - --data-source detector
-          - --JCM-weight year:UL16_preVFP {roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml@@JCM_weights
-          - --JCM-weight year:UL16_postVFP {roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml@@JCM_weights
-          - --JCM-weight year:UL17 {roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL17.yml@@JCM_weights
-          - --JCM-weight year:UL18 {roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL18.yml@@JCM_weights
-          - --friends "" {roast:upstream}/handoff/classifier_inputs_ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11.json@@HCR_input
+          - --JCM-weight year:UL16_preVFP {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml@@JCM_weights
+          - --JCM-weight year:UL16_postVFP {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml@@JCM_weights
+          - --JCM-weight year:UL17 {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL17.yml@@JCM_weights
+          - --JCM-weight year:UL18 {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_2024_v2_UL18.yml@@JCM_weights
+          - --friends "" {eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input
     model:
       - module: HCR.FvT.baseline.Train
         option:
@@ -123,12 +126,13 @@ fvt:
         - --max-evaluators 3
         - --device cuda cpu
     dataset:
-      - module: HCR.FvT.Eval
+      - module: HCR.FvT.EvalBackground
         option:
           - --metadata coffea4bees/metadata/datasets/
           - --max-workers 8
           - --data-source detector
-          - --friends "" {roast:upstream}/handoff/classifier_inputs_ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11.json@@HCR_input
+          - --mc-processes ttbar
+          - --friends "" {eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input
     model:
       - module: HCR.FvT.baseline.Eval
         option:
@@ -150,76 +154,51 @@ fvt:
         option:
           - num_workers: 8
 
-# Phase D: SvB (attention: false) & SvB_MA (attention: true) using upstream Phase B & Phase C
+# Phase C.4: FvT closure reprocessing ttbar MC so FvTHists are filled on MC
+fvt_closure:
+  datasets: [data, TTToHadronic_stitched, TTToSemiLeptonic_stitched, TTTo2L2Nu_stitched]
+  reuse_wJCM_ttbar: false
+  plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
+  ttbar_compare_plot_config: "coffea4bees/plots/metadata/plotsTTbar_MCvsFromD3_ttHbb.yml"
+  ttbar3b_compare_plot_config: "coffea4bees/plots/metadata/plotsTTbar3b_MCvsFromD3_ttHbb.yml"
+  known_counts: "coffea4bees/analysis/tests/known_fullCounts_FvT_closure_ttHbb.yml"
+  known_counts_fatal: false
+
+# Phase D: SvB (attention: false) & SvB_MA (attention: true), evaluated on data, ttHbb, and ttbar
 svb:
-  train_template: "model: {eos_base}/classifier/{label}, FvT: {roast:upstream_fvt}/friend/FvT_ttHbb_stitched"
-  metadata: "{roast:upstream}/handoff/classifier_inputs_ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11.json@@HCR_input"
-  train_workflow:
-    dataset:
-      - module: HCR.SvB.Background
-        option:
-          - --metadata coffea4bees/metadata/datasets/
-          - --norm 3
-          - --JCM-weight year:UL16_preVFP {roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml@@JCM_weights
-          - --JCM-weight year:UL16_postVFP {roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml@@JCM_weights
-          - --JCM-weight year:UL17 {roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL17.yml@@JCM_weights
-          - --JCM-weight year:UL18 {roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL18.yml@@JCM_weights
-          - --friends "" {roast:upstream}/handoff/classifier_inputs_ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11.json@@HCR_input
-          - --friends label:data {FvT}/result.json@@analysis.0.merged
-      - module: HCR.ttHbb.Signal
-        option:
-          - --metadata coffea4bees/metadata/datasets/
-          - --friends "" {roast:upstream}/handoff/classifier_inputs_ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11.json@@HCR_input
   eval_workflow:
     dataset:
       - module: HCR.ttHbb.Eval
         option:
           - --metadata coffea4bees/metadata/datasets/
           - --data-source detector
-          - --mc-processes ttHbb
+          - --mc-processes ttHbb ttbar
           - --max-workers 8
-          - --friends "" {roast:upstream}/handoff/classifier_inputs_ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11.json@@HCR_input
+          - --friends "" {eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input
 
 svb_ma:
-  train_template: "model: {eos_base}/classifier/{label}, FvT: {roast:upstream_fvt}/friend/FvT_ttHbb_stitched"
-  metadata: "{roast:upstream}/handoff/classifier_inputs_ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11.json@@HCR_input"
-  train_workflow:
-    dataset:
-      - module: HCR.SvB.Background
-        option:
-          - --metadata coffea4bees/metadata/datasets/
-          - --norm 3
-          - --JCM-weight year:UL16_preVFP {roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml@@JCM_weights
-          - --JCM-weight year:UL16_postVFP {roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml@@JCM_weights
-          - --JCM-weight year:UL17 {roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL17.yml@@JCM_weights
-          - --JCM-weight year:UL18 {roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL18.yml@@JCM_weights
-          - --friends "" {roast:upstream}/handoff/classifier_inputs_ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11.json@@HCR_input
-          - --friends label:data {FvT}/result.json@@analysis.0.merged
-      - module: HCR.ttHbb.Signal
-        option:
-          - --metadata coffea4bees/metadata/datasets/
-          - --friends "" {roast:upstream}/handoff/classifier_inputs_ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11.json@@HCR_input
   eval_workflow:
     dataset:
       - module: HCR.ttHbb.Eval
         option:
           - --metadata coffea4bees/metadata/datasets/
           - --data-source detector
-          - --mc-processes ttHbb
+          - --mc-processes ttHbb ttbar
           - --max-workers 8
-          - --friends "" {roast:upstream}/handoff/classifier_inputs_ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11.json@@HCR_input
+          - --friends "" {eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input
 
 # Phase F: Analysis config
 analysis_config:
   config:
     apply_JCM: true
+    fill_histograms: "kinematics+FvT+SvB"
     JCM_file:
-      UL16_preVFP: "{roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml"
-      UL16_postVFP: "{roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml"
-      UL17: "{roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL17.yml"
-      UL18: "{roast:upstream}/handoff/jetCombinatoricModel_SB_2024_v2_UL18.yml"
+      UL16_preVFP: "coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml"
+      UL16_postVFP: "coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml"
+      UL17: "coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_2024_v2_UL17.yml"
+      UL18: "coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_2024_v2_UL18.yml"
     friends:
-      FvT: "{roast:upstream_fvt}/friend/FvT_ttHbb_stitched/result.json@@analysis.0.merged"
+      FvT: "{eos_prod}/{roast_id}/friend/FvT_ttHbb_stitched/result.json@@analysis.0.merged"
       SvB: "{eos_prod}/{roast_id}/friend/SvB_ttHbb_stitched/result.json@@analysis.0.merged"
       SvB_MA: "{eos_prod}/{roast_id}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
     svb_binning_file: "{eos_prod}/{roast_id}/handoff/svb_quantiles.json"
@@ -386,6 +365,7 @@ make_combine_inputs:
   rebin: 12
   stat_only: "--stat_only"
   unify_background: true
+  tt_processes: ["TTbar4b_from_d3"]
 rebin: 12
 likelihood_scan_points: 40
 likelihood_scan_r_min: 0

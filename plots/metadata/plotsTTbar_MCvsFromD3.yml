@@ -36,17 +36,18 @@ ratios:
 
 doRatio: 1
 
-# Same removals as plotsAll_FvTClosure.yml, plus the FvT-score histograms: MC has no FvT friend,
-# so they are empty on the MC side (substring match, see makePlots.py).
+# Same removals as plotsAll_FvTClosure.yml (substring match, see makePlots.py).
 skip_hists:
     - m4j_hh
     - m4j_zh
     - m4j_zz
     - tagJets
-    - FvT
 
 # Pinned at the top of the HTML gallery (src/plotting/make_gallery.py).
 summary:
+    - SvB_MA
+    - SvB
+    - FvT
     - selJets.n
     - top_cand    
     - canJet0.pt

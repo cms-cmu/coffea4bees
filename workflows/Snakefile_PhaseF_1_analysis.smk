@@ -200,6 +200,15 @@ module analysis:
     snakefile: "rules/analysis.smk"
     config: config
 
+TTBAR_MC_DATASETS = [ds for ds in MC_DATASETS if ds.startswith('TT')]
+ttbar_compare_plot_config = config.get('ttbar_compare_plot_config', "coffea4bees/plots/metadata/plotsTTbar_MCvsFromD3.yml")
+ttbar3b_compare_plot_config = config.get('ttbar3b_compare_plot_config', "coffea4bees/plots/metadata/plotsTTbar3b_MCvsFromD3.yml")
+TTBAR_F1_OUTPUTS = [
+    f"{F1_OUTPUT_PATH}plots_ttbar_MC_vs_d3/plots_done.txt",
+    f"{F1_OUTPUT_PATH}plots_ttbar3b_MC_vs_d3/plots_done.txt",
+    f"{F1_OUTPUT_PATH}ttbar_MC_vs_d3_cutflow.html",
+] if TTBAR_MC_DATASETS else []
+
 def get_analysis_targets(wildcards):
     return [
         f"{F1_OUTPUT_PATH}histAll_{config['label']}.coffea",
@@ -209,7 +218,7 @@ def get_analysis_targets(wildcards):
         f"{F1_OUTPUT_PATH}cutflow_{config['label']}.html",             # closure table
         f"{F1_OUTPUT_PATH}cutflow_crosscheck_{config['label']}.html",  # vs Phase C.4
         f"{F1_OUTPUT_PATH}hist_crosscheck_{config['label']}.html",     # histogram check vs Phase C.4
-    ]
+    ] + TTBAR_F1_OUTPUTS
 
 rule all_analysis:
     input: get_analysis_targets
@@ -532,4 +541,73 @@ use rule hist_crosscheck from analysis as analysis_hist_crosscheck with:
         run_container_wrapper = config['analysis_container_wrapper'],
         python_bin = lambda wildcards: config.get("python_bin", "python")
 
-localrules: merging_files, make_plots, check_cutflow, analysis_cutflow_closure_table, analysis_cutflow_crosscheck, analysis_hist_crosscheck, all_analysis, legacy_nominal_coffea, legacy_nominal_plots, legacy_nominal_cutflow
+# Four-tag ttbar MC vs the FvT-derived estimate from 3b data (TTbar4b_from_d3) in Phase F.1
+# (includes kinematics, FvT, and SvB / SvB_MA probabilities when ttbar MC is in dataset)
+use rule make_plots from analysis as make_plots_ttbar_MC_vs_d3_F1 with:
+    input:
+        coffea_file = f"{F1_OUTPUT_PATH}histAll_{config['label']}.coffea",
+        metadata_file = ttbar_compare_plot_config,
+        plot_script = "coffea4bees/plots/makePlots.py"
+    output: f"{F1_OUTPUT_PATH}plots_ttbar_MC_vs_d3/plots_done.txt"
+    params:
+        output_dir = f"{F1_OUTPUT_PATH}plots_ttbar_MC_vs_d3/",
+        metadata = ttbar_compare_plot_config,
+        extra_arguments = lambda wildcards: " ".join(filter(None, [
+            "-s xW -f png",
+            "--year " + (DATA_YEARS[0] if len(DATA_YEARS) == 1 else ("Run3" if any("202" in y for y in DATA_YEARS) else "RunII")),
+            config.get("plot_extra_arguments", ""),
+        ])),
+        run_container_wrapper = config['analysis_container_wrapper'],
+        python_bin = lambda wildcards: config.get("python_bin", "python")
+    container: None
+    log: f"{F1_OUTPUT_PATH}logs/make_plots_ttbar_MC_vs_d3.log"
+
+# Three-tag ttbar MC vs 3b data with FvT d3 -> t3 applied (TTbar3b_from_d3) in Phase F.1
+use rule make_plots from analysis as make_plots_ttbar3b_MC_vs_d3_F1 with:
+    input:
+        coffea_file = f"{F1_OUTPUT_PATH}histAll_{config['label']}.coffea",
+        metadata_file = ttbar3b_compare_plot_config,
+        plot_script = "coffea4bees/plots/makePlots.py"
+    output: f"{F1_OUTPUT_PATH}plots_ttbar3b_MC_vs_d3/plots_done.txt"
+    params:
+        output_dir = f"{F1_OUTPUT_PATH}plots_ttbar3b_MC_vs_d3/",
+        metadata = ttbar3b_compare_plot_config,
+        extra_arguments = lambda wildcards: " ".join(filter(None, [
+            "-s xW -f png",
+            "--year " + (DATA_YEARS[0] if len(DATA_YEARS) == 1 else ("Run3" if any("202" in y for y in DATA_YEARS) else "RunII")),
+            config.get("plot_extra_arguments", ""),
+        ])),
+        run_container_wrapper = config['analysis_container_wrapper'],
+        python_bin = lambda wildcards: config.get("python_bin", "python")
+    container: None
+    log: f"{F1_OUTPUT_PATH}logs/make_plots_ttbar3b_MC_vs_d3.log"
+
+# Cut-by-cut ttbar 4b (and 3b) MC vs TTbar_from_d3 in Phase F.1
+rule ttbar_MC_vs_d3_cutflow_F1:
+    input:
+        cutflow_yml = f"{F1_OUTPUT_PATH}cutflow_{config['label']}.yml"
+    output:
+        html = f"{F1_OUTPUT_PATH}ttbar_MC_vs_d3_cutflow.html",
+        txt = f"{F1_OUTPUT_PATH}ttbar_MC_vs_d3_cutflow.txt"
+    log: f"{F1_OUTPUT_PATH}logs/ttbar_MC_vs_d3_cutflow.log"
+    params:
+        title = lambda wildcards: f"{config.get('label', 'analysis')}_ttbar_MC_vs_d3",
+        mc = " ".join(TTBAR_MC_DATASETS),
+        run_container_wrapper = config['analysis_container_wrapper'],
+        python_bin = lambda wildcards: config.get("python_bin", "python")
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {log})
+        if [ -f src/tools/cutflow_ttbar_compare.py ]; then
+            {params.run_container_wrapper} {params.python_bin} src/tools/cutflow_ttbar_compare.py {input.cutflow_yml} \
+                -o {output.html} --txt {output.txt} --title {params.title} --mc {params.mc} \
+                --estimate TTbar_from_d3 2>&1 | tee {log}
+        else
+            echo "src/tools/cutflow_ttbar_compare.py not found in this barista checkout; skipping" 2>&1 | tee {log}
+            echo "<p>ttbar MC vs TTbar_from_d3 table not available (barista checkout predates src/tools/cutflow_ttbar_compare.py)</p>" > {output.html}
+            cp {log} {output.txt}
+        fi
+        """
+
+localrules: merging_files, make_plots, make_plots_ttbar_MC_vs_d3_F1, make_plots_ttbar3b_MC_vs_d3_F1, ttbar_MC_vs_d3_cutflow_F1, check_cutflow, analysis_cutflow_closure_table, analysis_cutflow_crosscheck, analysis_hist_crosscheck, all_analysis, legacy_nominal_coffea, legacy_nominal_plots, legacy_nominal_cutflow

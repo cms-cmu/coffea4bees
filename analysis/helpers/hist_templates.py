@@ -35,6 +35,8 @@ class SvBHists(Template):
 class ttHbbSvBHists(Template):
     ps      = H((50, 0.01, 1, ('ps', "Regressed P(Signal)")))
     ptt     = H((50, 0, 1, ('ptt', "Regressed P(tT)")))
+    pmj     = H((50, 0, 1, ('pmj', "Regressed P(Multijet)")))
+    pttHbb  = H((50, 0, 1, ('pttHbb', "Regressed P(ttHbb)")))
     tt_vs_mj     = H((50, 0, 1, ('tt_vs_mj', "P(tT) | Background")))
 
     ### var_binning_ps_ttHbb defines the 240 quantile intervals (1.0 -> 0.01) for signal

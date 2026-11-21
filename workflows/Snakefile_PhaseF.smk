@@ -97,6 +97,12 @@ def get_master_targets(wildcards):
             ])
     if any(ch.get('signallabel') for ch in config.get('channels', {}).values()):
         master_targets.append(f"{f2_out}summary.html")  # Phase F.2 overview page
+    if any(str(d).startswith('TT') for d in config.get('dataset', [])):
+        master_targets.extend([
+            f"{f1_out}plots_ttbar_MC_vs_d3/plots_done.txt",
+            f"{f1_out}plots_ttbar3b_MC_vs_d3/plots_done.txt",
+            f"{f1_out}ttbar_MC_vs_d3_cutflow.html",
+        ])
     return master_targets
 
 # default_target, not position: Snakemake takes the first rule of the top-level Snakefile
