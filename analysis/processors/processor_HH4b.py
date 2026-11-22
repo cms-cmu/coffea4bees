@@ -1677,6 +1677,11 @@ class HH4bBaseProcessor(processor.ProcessorABC):
                     else:
                         selev[k] = ak.zeros(len(selev), dtype=bool)
                 selev["nSelJets"] = ak.num(selev.selJet)
+                if "nTightLeptons" not in selev.fields:
+                    if "tightMuon" in selev.fields and "tightElec" in selev.fields:
+                        selev["nTightLeptons"] = ak.num(selev.tightMuon) + ak.num(selev.tightElec)
+                    else:
+                        selev["nTightLeptons"] = ak.zeros_like(selev["nSelJets"])
 
             from ..helpers.dump_friendtrees import dump_input_friend
             weight = "weight_noJCM_noFvT"

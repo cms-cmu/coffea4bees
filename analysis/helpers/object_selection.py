@@ -385,6 +385,8 @@ def lepton_selection(event: ak.Array, isRun3: bool = False, sel_cfg: dict = None
         event['selLepton'] = event.selMuon
         event['passLeptonVeto'] = (ak.num(event.tightMuon) == 0)
 
+    event['nTightLeptons'] = ak.num(event.tightMuon) + ak.num(event.tightElec)
+
     return event
 
 def jet_selection(

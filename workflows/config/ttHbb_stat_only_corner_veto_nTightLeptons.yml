@@ -1,0 +1,69 @@
+# ==============================================================================
+# ttHbb Run 2 NOMINAL STAT-ONLY ANALYSIS — Corner Veto + nTightLeptons in FvT
+# ==============================================================================
+# Closure test adding nTightLeptons (ak.num(tightMuon) + ak.num(tightElec)) as
+# an ancillary feature to FvT training.
+#   - Phase B: per-year JCM & classifier inputs (including nTightLeptons)
+#   - Phase C / C4: FvT training, evaluation & data closure with
+#                   feature_ancillary: [xW, nSelJets, xbW, year, nTightLeptons]
+#   - Phase D: REUSED from ttHbb_stat_only_corner_veto_20261121_fc3e261-9177569
+#              (SvB, SvB_MA friend trees & svb_quantiles.json held fixed)
+#   - Phase F: full analysis + ttbar MC vs prediction comparisons + Combine
+# ==============================================================================
+
+base: coffea4bees/workflows/config/ttHbb_stat_only_corner_veto.yml
+
+label: "ttHbb_stat_only_corner_veto_nTightLeptons"
+output_path: "output/ttHbb/"
+
+handoff:
+  allow_external_refs: true
+
+# Reuse Phase D (SvB, SvB_MA & quantiles) from the baseline corner-veto roast
+inputs:
+  upstream_roasts:
+    upstream: ttHbb_stat_only_corner_veto_20261121_fc3e261-9177569
+  SvB: "{roast:upstream}/friend/SvB_ttHbb_stitched/result.json@@analysis.0.merged"
+  SvB_MA: "{roast:upstream}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
+  svb_binning: "{roast:upstream}/handoff/svb_quantiles.json"
+
+# Phase C classifier settings: add nTightLeptons to ancillary features
+classifier_setting:
+  - module: ml.DataLoader
+    option:
+      - optimize_sliceable_dataset: true
+      - num_workers: 2
+      - batch_eval: 65536
+  - module: ROOT
+    option:
+      - friend_allow_missing: false
+  - module: cms.MC_TTbar
+    option:
+      - datasets:
+          - TTToSemiLeptonic_stitched
+          - TTToHadronic_stitched
+          - TTTo2L2Nu_stitched
+  - module: cms.CollisionData
+    option:
+      - eras:
+          UL16_postVFP: [F, G, H]
+          UL16_preVFP: [C, D, E, F]
+          UL17: [C, D, E, F]
+          UL18: [A, B, C, D]
+        years:
+          - UL16_preVFP
+          - UL16_postVFP
+          - UL17
+          - UL18
+  - module: HCR.InputBranch
+    option:
+      - feature_ancillary: [xW, nSelJets, xbW, year, nTightLeptons]
+
+# Phase F: use this roast's JCM & FvT, and upstream Phase D SvB / SvB_MA / quantiles
+analysis_config:
+  config:
+    friends:
+      FvT: "{eos_prod}/{roast_id}/friend/FvT_ttHbb_stitched/result.json@@analysis.0.merged"
+      SvB: "{roast:upstream}/friend/SvB_ttHbb_stitched/result.json@@analysis.0.merged"
+      SvB_MA: "{roast:upstream}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
+    svb_binning_file: "{roast:upstream}/handoff/svb_quantiles.json"

@@ -56,6 +56,7 @@ def dump_input_friend(
             numpy_fields[k] = np.zeros(n, dtype=np.float32)
         for k in seljet_labels:
             numpy_fields[k] = np.zeros(n, dtype=np.int32)
+        numpy_fields["nTightLeptons"] = np.zeros(n, dtype=np.int32)
         weight_field = {"weight": np.zeros(n, dtype=np.float32)}
         merged_dict = {**base_dict, **numpy_fields, **weight_field}
         data = ak.Array(merged_dict)
@@ -117,12 +118,16 @@ def dump_input_friend(
         "xbW",
         "xW",
     ] + seljet_labels
+    if "nTightLeptons" in events.fields:
+        fields.append("nTightLeptons")
     numpy_fields = akext.to_numpy(
         padded(
             events[fields],
             selection,
         )
     )
+    if "nTightLeptons" not in numpy_fields:
+        numpy_fields["nTightLeptons"] = np.zeros(len(selection), dtype=np.int32)
     # Add weight field
     weight_field = {"weight": padded(events[weight], selection)}
     # Merge all dictionaries
