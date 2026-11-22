@@ -237,6 +237,10 @@ def get_raw_c4_config():
     res['config']['apply_JCM'] = True
     res['config']['JCM_file'] = c4_jcm_file
     res['config']['apply_FvT'] = True
+    # Floor p_d3 as Stage F_1 does (default 0.01): without it the processor's default 0 leaves
+    # FvT = p_m4/p_d3 unbounded, and one three-tag event with p_d3 ~ 0 turns every three-tag yield
+    # of its era NaN (2025 FvT-on-declustered C4: era F11, from passPreSel on).
+    res['config'].setdefault('FvT_pd3_floor', float(config.get('FvT_pd3_floor', 0.01)))
     res['config']['apply_trigWeight'] = True
     res['config']['plot_ttbar_with_weights'] = True
     res['config']['run_SvB'] = C4_SVB
