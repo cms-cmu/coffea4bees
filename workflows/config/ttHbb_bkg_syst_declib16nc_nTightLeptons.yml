@@ -1,0 +1,68 @@
+# ==============================================================================
+# ttHbb Run 2 BACKGROUND SYSTEMATIC — declib16nc + Corner Veto + nTightLeptons in FvT
+# ==============================================================================
+# Background systematic workflow corresponding to stat-only roast
+# ttHbb_stat_only_corner_veto_nTightLeptons_20261122_fc3e261-52a3a2b:
+#   - Inherits from ttHbb_bkg_syst_declib16nc.yml (corner-veto SR/SB,
+#     FixedStep 20 epochs bs_init=1024 + FinetuneStep 1 epoch bs_init=16384)
+#   - Adds nTightLeptons (ak.num(tightMuon) + ak.num(tightElec)) as an ancillary
+#     feature to FvT training: [xW, nSelJets, xbW, year, nTightLeptons]
+#   - Runs full BKG_AB -> BKG_C -> BKG_C4 -> BKG_F so mixeddata HCR_input friend
+#     trees include nTightLeptons
+#   - Nominal JCM/hists/classifier_inputs from ttHbb_stat_only_corner_veto_nTightLeptons_20261122_fc3e261-52a3a2b
+#   - SvB / SvB_MA models & friends from ttHbb_stat_only_corner_veto_20261121_fc3e261-9177569
+#     (reused by the nTightLeptons stat-only roast)
+# ==============================================================================
+
+base: coffea4bees/workflows/config/ttHbb_bkg_syst_declib16nc.yml
+
+label: "ttHbb_bkg_syst_declib16nc_nTightLeptons"
+mix_name: "ttHbb_bkg_syst_declib16nc_nTightLeptons"
+
+inputs:
+  upstream_roasts:
+    declib: declib16nc_run2_20261003_3ab8302-b2d2dec
+    nominal: ttHbb_stat_only_corner_veto_nTightLeptons_20261122_fc3e261-52a3a2b
+    svb_upstream: ttHbb_stat_only_corner_veto_20261121_fc3e261-9177569
+    mixeddata: mixeddata_run2_20260927_c39c264-0ce4d59
+  jcm_hists: "root://cmseos.fnal.gov//store/user/algomez/HH4b_prod/ttHbb_stat_only_corner_veto_nTightLeptons_20261122_fc3e261-52a3a2b/output/ttHbb/PhaseB_1_computeJCM/histAll_NoJCM.coffea"
+  nominal_hists: "root://cmseos.fnal.gov//store/user/algomez/HH4b_prod/ttHbb_stat_only_corner_veto_nTightLeptons_20261122_fc3e261-52a3a2b/output/ttHbb/PhaseF_1_analysis/histAll_ttHbb_stat_only_corner_veto_nTightLeptons.coffea"
+  classifier_inputs: "{roast:nominal}/handoff/classifier_inputs_{roast:nominal:id}.json"
+  SvB: "{roast:svb_upstream}/friend/SvB_ttHbb_stitched/result.json@@analysis.0.merged"
+  SvB_model: "{roast:svb_upstream}/classifier/SvB_ttHbb_stitched/result.json"
+  SvB_MA: "{roast:svb_upstream}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
+  SvB_MA_model: "{roast:svb_upstream}/classifier/SvB_MA_ttHbb_stitched/result.json"
+
+phase_e_fvt:
+  mix_name: "ttHbb_bkg_syst_declib16nc_nTightLeptons"
+
+classifier_setting:
+  - module: ml.DataLoader
+    option:
+      - optimize_sliceable_dataset: true
+      - num_workers: 2
+      - batch_eval: 65536
+  - module: ROOT
+    option:
+      - friend_allow_missing: false
+  - module: cms.MC_TTbar
+    option:
+      - datasets:
+          - TTToSemiLeptonic_stitched
+          - TTToHadronic_stitched
+          - TTTo2L2Nu_stitched
+  - module: cms.CollisionData
+    option:
+      - eras:
+          UL16_preVFP: [C, D, E, F]
+          UL16_postVFP: [F, G, H]
+          UL17: [C, D, E, F]
+          UL18: [A, B, C, D]
+        years:
+          - UL16_preVFP
+          - UL16_postVFP
+          - UL17
+          - UL18
+  - module: HCR.InputBranch
+    option:
+      - feature_ancillary: [xW, nSelJets, xbW, year, nTightLeptons]
