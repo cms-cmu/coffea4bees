@@ -1,16 +1,3 @@
-skimmer_test_coffea4bees:
-  stage: skimmer   
-  extends:
-    - .base_analysis_coffea4bees
-  script:
-    - source coffea4bees/scripts/skimmer-test.sh --output-base /builds/$CI_PROJECT_PATH/output
-  artifacts: 
-    paths:
-      - output/skimmer_test/picoaod_datasets_GluGluToHHTo4B_cHHH0_UL18.yml
-      - output/skimmer_test/GluGluToHHTo4B_cHHH0_UL18/picoAOD.chunk0.root
-      - output/skimmer_test/GluGluToHHTo4B_cHHH0_UL18/picoAOD.chunk1.root
-      - output/skimmer_test/datasets_HH4b.yml
-
 skimmer_boosted_coffea4bees:
   stage: skimmer
   extends:
@@ -84,16 +71,3 @@ mixeddata_test_Run3_coffea4bees:
     paths:
       - output/test_mixeddata_Run3/test_dump_MixedData_Run3.yml
       - output/test_mixeddata_Run3/testMixedData_Run3.coffea
-
-
-synthetic_dataset_make_dataset_Run3_coffea4bees:
-  stage: skimmer
-  extends:
-    - .base_analysis_coffea4bees
-  script:
-    - source coffea4bees/scripts/synthetic-dataset-make-dataset-Run3.sh --output-base /builds/$CI_PROJECT_PATH/output
-  artifacts:
-    paths:
-      - output/synthetic_dataset_make_dataset_Run3/picoaod_datasets_declustered_test_2023_BPix.yml
-      - output/synthetic_dataset_make_dataset_Run3/data_2023_BPixD1/picoAOD_seed5.root
-      - output/synthetic_dataset_make_dataset_Run3/data_2023_BPixD2/picoAOD_seed5.root

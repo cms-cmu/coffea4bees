@@ -139,11 +139,11 @@ fvt:
           - --kfolds 3
           - --kfold-seed FvT random
           - --kfold-seed-offsets 0
-          - --training FixedStep
           - --architecture
           - n_features: 8
             use_kv_proj: true
             use_attention_gate: true
+          - --training FixedStep
           - epoch: 20
             bs_init: 1024
           - --finetuning FixedStep
@@ -323,7 +323,7 @@ analysis_config:
 
 plot_config: "coffea4bees/plots/metadata/plotsAll_lowpt.yml"
 known_counts_fatal: false
-known_counts_test: "coffea4bees/analysis/tests/known_Counts_lowpt_Run2.yml"
+known_counts_test: "coffea4bees/analysis/tests/known_Counts_run2_lowpt.yml"
 test_chunksize: 10000   # chunksize used to produce known_counts_test (test mode runs maxchunks=1)
 known_counts_full: "none"
 

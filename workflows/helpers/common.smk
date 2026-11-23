@@ -90,7 +90,8 @@ def _upstream_base(rid, own_eos_prod):
     print(f"WARNING: no usable manifest for upstream roast {rid} (looked in {manifest}); "
           f"assuming it lives under your own area. Commit roasts/{rid}/roast.json so this "
           f"resolves for everyone.")
-    return f"{own_eos_prod.rstrip('/')}/{rid}"
+    base_root = own_eos_prod if str(own_eos_prod).startswith("root://") else "root://cmseos.fnal.gov//store/user/algomez/HH4b_prod"
+    return f"{base_root.rstrip('/')}/{rid}"
 
 
 def _upstream_config_value(rid, key):
@@ -215,6 +216,22 @@ def check_handoff_refs(config_dict):
 check_handoff_refs(config)
 
 
+def _atomic_write_yaml(path, data, sort_keys=False):
+    """Write YAML atomically via temp file + os.replace to prevent parallel dry-run file races."""
+    import tempfile
+    d = os.path.dirname(path) or "."
+    os.makedirs(d, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(prefix=".tmp_", suffix=".yml", dir=d)
+    try:
+        with os.fdopen(fd, "w") as f:
+            yaml.dump(data, f, default_flow_style=False, sort_keys=sort_keys)
+        os.replace(tmp, path)
+    except Exception:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+        raise
+
+
 def write_workflow_overrides(wfs_base, overrides, out_dir, log=None, inserts=None, modules=None):
     """Copy the classifier workflow templates in `wfs_base` (train.yml, evaluate.yml, ...) to
     `out_dir`, replacing command-line options by flag, and inserting new ones.
@@ -335,8 +352,7 @@ def write_workflow_overrides(wfs_base, overrides, out_dir, log=None, inserts=Non
                         inserted[(anchor_owner[a], a)] += 1
                     new_opts.append(opt)
                 mod["option"] = new_opts
-        with open(dst, "w") as f:
-            yaml.dump(wf, f, default_flow_style=False, sort_keys=False)
+        _atomic_write_yaml(dst, wf)
 
     def name(fk):
         f, k = fk
@@ -468,3 +484,129 @@ def require_blind(years, blind, what):
     if years and blind is not True and not config.get('allow_unblinded_data', False):
         raise ValueError(f"{what}: data years {years} must be blinded -- set blind: true (or "
                          f"allow_unblinded_data: true at the top level to opt out deliberately)")
+
+
+def _set_setting_option(setting_list, module_name, key, value):
+    """Set `key: value` inside a classifier setting module's option list."""
+    for mod in setting_list:
+        if isinstance(mod, dict) and mod.get("module") == module_name:
+            opts = mod.setdefault("option", [])
+            for item in opts:
+                if isinstance(item, dict) and key in item:
+                    item[key] = value
+                    return
+            opts.append({key: value})
+            return
+    setting_list.append({"module": module_name, "option": [{key: value}]})
+
+
+def _replace_or_append_flag(opts, prefix, replacement):
+    """Filter out flags matching `prefix` and append `replacement`."""
+    filtered = [o for o in opts if not (isinstance(o, str) and (o == prefix or o.startswith(prefix + " ")))]
+    filtered.append(replacement)
+    return filtered
+
+
+def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
+    """Normalize classifier common.yml, train.yml, and evaluate.yml for fast CPU CI test=true runs."""
+    if common_path and os.path.exists(common_path):
+        with open(common_path) as f:
+            cdata = yaml.safe_load(f) or {}
+        setting = cdata.setdefault("setting", [])
+        _set_setting_option(setting, "ml.DataLoader", "num_workers", 0)
+        _set_setting_option(setting, "ROOT", "friend_allow_missing", True)
+        if isinstance(year_eras, dict) and year_eras:
+            _set_setting_option(setting, "cms.CollisionData", "eras", {str(k): list(v) for k, v in year_eras.items()})
+            if len(year_eras) <= 1:
+                existing_anc = None
+                for mod in setting:
+                    if isinstance(mod, dict) and mod.get("module") == "HCR.InputBranch":
+                        for item in mod.get("option") or []:
+                            if isinstance(item, dict) and "feature_ancillary" in item:
+                                existing_anc = item["feature_ancillary"]
+                                break
+                if isinstance(existing_anc, list):
+                    new_anc = [f for f in existing_anc if f != "year"]
+                else:
+                    new_anc = ["xW", "nSelJets", "xbW"]
+                _set_setting_option(setting, "HCR.InputBranch", "feature_ancillary", new_anc)
+        _set_setting_option(setting, "monitor.Log", "forward_exception", False)
+        _set_setting_option(setting, "monitor.Log", "exit_on_exception", True)
+        _set_setting_option(setting, "monitor.Monitor", "enable", False)
+        _atomic_write_yaml(common_path, cdata)
+
+    train_path = os.path.join(wfs_dir, "train.yml")
+    if os.path.exists(train_path):
+        with open(train_path) as f:
+            twf = yaml.safe_load(f) or {}
+        if isinstance(twf.get("main"), dict):
+            twf["main"]["option"] = ["--device cpu", "--max-loaders 1", "--max-trainers 1"]
+        active_years = {str(k) for k in year_eras} if isinstance(year_eras, dict) and year_eras else None
+        for entry in twf.get("dataset") or []:
+            if not isinstance(entry, dict) or not isinstance(entry.get("option"), list):
+                continue
+            opts = _replace_or_append_flag(entry["option"], "--max-workers", "--max-workers 1")
+            opts = _replace_or_append_flag(opts, "--test-files", "--test-files 1")
+            opts = _replace_or_append_flag(opts, "--test-entries", "--test-entries 200000")
+            opts = _replace_or_append_flag(opts, "--preserve-order", "--preserve-order")
+            if active_years is not None:
+                filtered_opts = []
+                for o in opts:
+                    if isinstance(o, str) and o.startswith("--JCM-weight year:"):
+                        tokens = o.split()
+                        yr = tokens[1].split(":", 1)[1] if len(tokens) > 1 and ":" in tokens[1] else ""
+                        if yr and yr not in active_years:
+                            continue
+                    filtered_opts.append(o)
+                opts = filtered_opts
+            if entry.get("module") in ("HCR.SvB.Signal", "HCR.SvB_lowpt.Signal"):
+                opts = _replace_or_append_flag(opts, "--mc-processes", "--mc-processes ggF")
+                opts = _replace_or_append_flag(opts, "--ggf-load-kl", "--ggf-load-kl 1.0")
+            entry["option"] = opts
+        for entry in twf.get("model") or []:
+            if not isinstance(entry, dict) or not isinstance(entry.get("option"), list):
+                continue
+            opts = list(entry["option"])
+            has_kfolds = any(isinstance(o, str) and (o == "--kfolds" or o.startswith("--kfolds ")) for o in opts)
+            if has_kfolds:
+                opts = ["--kfolds 2" if (isinstance(o, str) and (o == "--kfolds" or o.startswith("--kfolds "))) else o for o in opts]
+            else:
+                opts.insert(0, "--kfolds 2")
+            is_multi_era_lowpt_fvt = bool(active_years and len(active_years) > 1) and any(
+                "HCR.FvT_lowpt" in str(e.get("module", ""))
+                for e in (twf.get("dataset") or [])
+                if isinstance(e, dict)
+            )
+            test_epochs = 3 if is_multi_era_lowpt_fvt else 1
+            for item in opts:
+                if isinstance(item, dict) and "epoch" in item:
+                    item["epoch"] = test_epochs
+                    item["bs_init"] = min(int(item.get("bs_init", 256)), 256)
+            entry["option"] = opts
+        _atomic_write_yaml(train_path, twf)
+
+    eval_path = os.path.join(wfs_dir, "evaluate.yml")
+    if os.path.exists(eval_path):
+        with open(eval_path) as f:
+            ewf = yaml.safe_load(f) or {}
+        if isinstance(ewf.get("main"), dict):
+            ewf["main"]["option"] = ["--max-evaluators 1", "--device cpu"]
+        for entry in ewf.get("dataset") or []:
+            if not isinstance(entry, dict) or not isinstance(entry.get("option"), list):
+                continue
+            opts = _replace_or_append_flag(entry["option"], "--max-workers", "--max-workers 1")
+            opts = _replace_or_append_flag(opts, "--test-files", "--test-files 1")
+            opts = _replace_or_append_flag(opts, "--test-entries", "--test-entries 200000")
+            opts = _replace_or_append_flag(opts, "--preserve-order", "--preserve-order")
+            if entry.get("module") in ("HCR.SvB.Eval", "HCR.SvB_lowpt.Eval"):
+                opts = _replace_or_append_flag(opts, "--mc-processes", "--mc-processes ttbar ggF")
+                opts = _replace_or_append_flag(opts, "--ggf-load-kl", "--ggf-load-kl 1.0")
+            entry["option"] = opts
+        for entry in ewf.get("analysis") or []:
+            if isinstance(entry, dict) and isinstance(entry.get("option"), list):
+                entry["option"] = [
+                    "--workers 1" if (isinstance(o, str) and (o == "--workers" or o.startswith("--workers "))) else o
+                    for o in entry["option"]
+                ]
+        _set_setting_option(ewf.setdefault("setting", []), "ml.DataLoader", "num_workers", 0)
+        _atomic_write_yaml(eval_path, ewf)

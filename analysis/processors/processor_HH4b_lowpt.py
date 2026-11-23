@@ -19,7 +19,7 @@ from coffea import processor
 
 def _init_classfier_lowpt(path):
     """Like _init_classfier but uses HCREnsemble_lowpt for modern (non-legacy) models."""
-    if path is None or isinstance(path, _Unset):
+    if path is None or isinstance(path, _Unset) or path is False:
         return None
     if isinstance(path, str):
         from ..helpers.classifier.HCR import Legacy_HCREnsemble
@@ -125,6 +125,7 @@ class analysis(HH4bBaseProcessor):
             weights=weights,
             list_weight_names=list_weight_names,
             analysis_selections=analysis_selections,
+            cand_cfg=self.cand_cfg,
             label3b="lowpt_threeTag",
         )
     

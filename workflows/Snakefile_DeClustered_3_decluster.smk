@@ -47,7 +47,7 @@ rule D3_config:
         runner = {**(tmpl.get('runner') or {})}
         for k in ('worker_memory', 'chunksize'):
             if k in DECL:
-                runner[k] = DECL[k]
+                runner[k] = int(DECL[k]) if k == 'chunksize' else DECL[k]
         # the shared Dask daemon's workers get the code tarball of the job that STARTS it. Without
         # D.1 (inputs.splitting_library) that is D.3, and the Run 2 template's list lacks
         # coffea4bees/skimmer: every chunk failed "No module named coffea4bees.skimmer"

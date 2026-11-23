@@ -1,0 +1,18 @@
+processes:
+  signal:
+    ZZ4b:
+      label: ZZ_bbbb
+      process: 0
+  background:
+    multijet:
+      label: 'multijet'
+      process: 1
+    tt:
+      label: 'tt'
+      process: 2
+bin:
+  - &22pre ZZ4b_2022_preEE
+  - &22post ZZ4b_2022_EE
+  - &23pre ZZ4b_2023_preBPix
+  - &23post ZZ4b_2023_BPix
+  - &24 ZZ4b_2024

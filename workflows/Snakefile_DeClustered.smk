@@ -61,6 +61,9 @@ if config['test']:
     PUB = f"{PUB}/test"
 HANDOFF = f"{PUB}/handoff"
 
+if config.get('test_year_eras') and isinstance(config['test_year_eras'], dict):
+    config['year_eras'] = config['test_year_eras']
+
 YEAR_ERAS = {str(y): list(eras) for y, eras in config['year_eras'].items()}
 YEARS = list(YEAR_ERAS)
 
