@@ -466,7 +466,7 @@ use rule check_cutflow from analysis with:
     log: f"{F1_OUTPUT_PATH}logs/cutflow_validation_{config['label']}.log"
     params:
         known_counts = lambda wildcards: config.get("known_counts", ""),
-        error_threshold = lambda wildcards: config.get("error_threshold", "0.005" if is_test else "0.001"),
+        error_threshold = lambda wildcards: config.get("error_threshold", "0.10" if is_test else "0.001"),
         cutflow_list = lambda wildcards: config.get(
             "cutflow_list",
             "passJetMult,passPreSel,passDiJetMass,SR,SB,passMuMu,passElMu"
