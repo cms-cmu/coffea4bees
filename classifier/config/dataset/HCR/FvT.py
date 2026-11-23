@@ -142,6 +142,11 @@ class Train(CommonTrain):
         help="with --era-feature: comma-separated fraction of the data in each era (same order); "
         "MC events get an era drawn from it",
     )
+    argparser.add_argument(
+        "--split-ttbar",
+        action="store_true",
+        help="split ttbar MC into separate classes by decay channel (t4_2L/t4_1L/t4_0L and t3_2L/t3_1L/t3_0L)",
+    )
 
     def preprocess_by_group(self):
         from src.classifier.df.tools import add_label_index_from_column, prescale
@@ -222,7 +227,44 @@ class Train(CommonTrain):
                     name="remove 4b detector data",
                 )
             )
-        if not self.opts.no_ttbar_3b:
+        if self.opts.split_ttbar:
+            channels = ("2L", "1L", "0L")
+            for ch in channels:
+                if not self.opts.no_ttbar_3b:
+                    ps.append(
+                        _group.fullmatch(
+                            ("label:ttbar", f"ttbar_channel:{ch}"),
+                            processors=[
+                                lambda: prescale(
+                                    scale=self.opts.ttbar_3b_prescale,
+                                    selection=_ttbar_3b_selection,
+                                    seed=("ttbar", 0),
+                                ),
+                                lambda: _ttbar_selection,
+                                *ttbar_extra,
+                                lambda ch=ch: add_label_index_from_column(
+                                    threeTag=f"t3_{ch}", fourTag=f"t4_{ch}"
+                                ),
+                            ],
+                            name=f"ttbar {ch} selection",
+                        )
+                    )
+                else:
+                    ps.append(
+                        _group.fullmatch(
+                            ("label:ttbar", f"ttbar_channel:{ch}"),
+                            processors=[
+                                lambda: _select_4b,
+                                lambda: _ttbar_selection,
+                                *ttbar_extra,
+                                lambda ch=ch: add_label_index_from_column(
+                                    fourTag=f"t4_{ch}"
+                                ),
+                            ],
+                            name=f"ttbar {ch} 4b selection",
+                        )
+                    )
+        elif not self.opts.no_ttbar_3b:
             ps.append(
                 _group.fullmatch(
                     ("label:ttbar",),
@@ -261,3 +303,6 @@ class TrainBaseline(Train, _picoAOD.Background): ...
 
 
 class Eval(CommonEval, _picoAOD.Data): ...
+
+
+class EvalBackground(CommonEval, _picoAOD.Background): ...

@@ -126,16 +126,18 @@ class Train(HCRTrain):
                     pos=("d4",),
                 )
             )
-        if "t4" in MultiClass.labels:
+        t4_labels = [l for l in MultiClass.labels if l == "t4" or l.startswith("t4_")]
+        t3_labels = [l for l in MultiClass.labels if l == "t3" or l.startswith("t3_")]
+        if t4_labels:
             rocs.append(
                 ROC(
                     name="4b vs 3b",
                     selection=roc_nominal_selection,
                     bins=ROC_BIN,
-                    pos=("d4", "t4"),
+                    pos=("d4", *t4_labels),
                 )
             )
-        if tts := [tt for tt in ("t3", "t4") if tt in MultiClass.labels]:
+        if tts := [*t3_labels, *t4_labels]:
             rocs.append(
                 ROC(
                     name="ttbar vs data",
@@ -160,6 +162,16 @@ class Train(HCRTrain):
                     pos=tts,
                 )
             )
+        for ch_t4 in t4_labels:
+            if ch_t4 != "t4":
+                rocs.append(
+                    ROC(
+                        name=f"{ch_t4} vs rest",
+                        selection=roc_nominal_selection,
+                        bins=ROC_BIN,
+                        pos=(ch_t4,),
+                    )
+                )
         return rocs
 
     @property
@@ -182,7 +194,35 @@ class Eval(HCREval):
             "p_d3": ...,
             "p_data": batch["p_d4"] + batch["p_d3"],
         }
-        if "p_t4" in batch:
+        t4_split = sorted(k for k in batch if k.startswith("p_t4_"))
+        t3_split = sorted(k for k in batch if k.startswith("p_t3_"))
+        if t4_split:
+            p_t4 = sum(batch[k] for k in t4_split)
+            p_m4 = batch["p_d4"] - p_t4
+            for k in t4_split:
+                output[k] = ...
+            output |= {
+                "p_t4": p_t4,
+                "p_m4": p_m4,
+                "p_4b": batch["p_d4"] + p_t4,
+                "FvT": p_m4 / batch["p_d3"],
+            }
+            if t3_split:
+                p_t3 = sum(batch[k] for k in t3_split)
+                for k in t3_split:
+                    output[k] = ...
+                output |= {
+                    "p_t3": p_t3,
+                    "p_m3": batch["p_d3"] - p_t3,
+                    "p_ttbar": p_t4 + p_t3,
+                    "p_3b": batch["p_d3"] + p_t3,
+                }
+            else:
+                output |= {
+                    "p_ttbar": p_t4,
+                    "p_3b": batch["p_d3"],
+                }
+        elif "p_t4" in batch:
             p_m4 = batch["p_d4"] - batch["p_t4"]
             output |= {
                 "p_t4": ...,

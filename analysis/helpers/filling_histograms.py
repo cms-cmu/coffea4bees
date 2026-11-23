@@ -187,6 +187,9 @@ def filling_nominal_histograms(
             FvT_skip = []
             if "pt" not in selev.FvT.fields:
                 FvT_skip = ["pt", "pm3", "pm4"]
+            for _split_f in ("pt4_2L", "pt4_1L", "pt4_0L", "pt3_2L", "pt3_1L", "pt3_0L"):
+                if _split_f not in selev.FvT.fields:
+                    FvT_skip.append(_split_f)
 
             fill += FvTHists(("FvT", "FvT Classifier"), "FvT", skip=FvT_skip)
             #fill += FvTHists(("FvT_noFvT_noJCM", "FvT Classifier (NoJCM, NO FVT"), "FvT", weight="weight_noJCM_noFvT", skip=FvT_skip)
@@ -860,6 +863,9 @@ def filling_ttHbb_histograms(
             FvT_skip = []
             if "pt" not in selev.FvT.fields:
                 FvT_skip = ["pt", "pm3", "pm4"]
+            for _split_f in ("pt4_2L", "pt4_1L", "pt4_0L", "pt3_2L", "pt3_1L", "pt3_0L"):
+                if _split_f not in selev.FvT.fields:
+                    FvT_skip.append(_split_f)
 
             fill += FvTHists(("FvT", "FvT Classifier"), "FvT", skip=FvT_skip)
             fill += hist.add("quadJet_selected.FvT_score", (100, 0, 1, ("quadJet_selected.FvT_q_score", "Selected Quad Jet Diboson FvT q score")))
@@ -919,7 +925,7 @@ def filling_ttHbb_histograms(
                         if v_name in ("v0", "0"):
                             fvt_skip = ["pt", "pm3", "pm4"] if "pt" not in selev[fvt_field].fields else []
                         else:
-                            fvt_skip = ["pt", "pm3", "pm4", "FvT_l", "pd4", "pd3", "pt4", "pt3", "std", "frac_err", "d3_to_t3", "d4_to_t4", "d3_to_t4"]
+                            fvt_skip = ["pt", "pm3", "pm4", "FvT_l", "pd4", "pd3", "pt4", "pt3", "pt4_2L", "pt4_1L", "pt4_0L", "pt3_2L", "pt3_1L", "pt3_0L", "std", "frac_err", "d3_to_t3", "d4_to_t4", "d3_to_t4"]
                         fill += FvTHists((f"FvT_{v_name}", f"FvT {v_name} Classifier"), fvt_field, skip=fvt_skip, weight=w_var)
 
                 # 3. selJets & tagJets diagnostics

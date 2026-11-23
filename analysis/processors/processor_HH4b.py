@@ -1790,7 +1790,10 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         """
         # When FvT is evaluated on-the-fly via classifier, it hasn't run yet at
         # this point in the pipeline — weights are added later in _apply_ml_scores.
-        apply_FvT = self.apply_FvT and self.clf_FvT is None
+        # Never multiply MC events by FvT.FvT (3b-data -> 4b-multijet reweight):
+        # MC may still load the FvT friend to fill FvTHists for ttbar MC vs d3 plots,
+        # while 3b MC keeps pure MC * JCM weights (matching d3 * JCM * d3_to_t3).
+        apply_FvT = self.apply_FvT and self.clf_FvT is None and not self.config["isMC"]
         return add_pseudotagweights(
             event,
             weights,

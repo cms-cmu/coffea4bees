@@ -77,22 +77,51 @@ class _MCDataset:
     processes: tuple[str, ...]
 
 
+TTBAR_CHANNEL_MAP = (
+    ("2L2Nu", "2L"),
+    ("SemiLeptonic", "1L"),
+    ("Hadronic", "0L"),
+)
+
+
+def _ttbar_channel(dataset_name: str) -> str:
+    """Map a ttbar dataset name (e.g. TTTo2L2Nu_stitched) to its short channel tag (2L/1L/0L)."""
+    for pattern, short in TTBAR_CHANNEL_MAP:
+        if pattern in dataset_name:
+            return short
+    raise ValueError(
+        f"Cannot determine ttbar channel (2L/1L/0L) for dataset {dataset_name!r}; "
+        f"expected one of {[p for p, _ in TTBAR_CHANNEL_MAP]}"
+    )
+
+
 class _ttbar(_MCDataset):
     processes = ("ttbar",)
 
     def __new__(cls, self: MC, metadata: str):
         filelists = []
         if "ttbar" in self.mc_processes:
+            split = getattr(self.opts, "split_ttbar", False)
             for year in CollisionData.eras:
-                filelists.append(
-                    [
-                        f"label:ttbar,year:{year}",
-                        *(
-                            metadata + f".{tt}.{year}.picoAOD.files"
-                            for tt in MC_TTbar.datasets
-                        ),
-                    ]
-                )
+                if split:
+                    for tt in MC_TTbar.datasets:
+                        ch = _ttbar_channel(tt)
+                        filelists.append(
+                            [
+                                f"label:ttbar,ttbar_channel:{ch},year:{year}",
+                                metadata + f".{tt}.{year}.picoAOD.files",
+                            ]
+                        )
+                else:
+                    filelists.append(
+                        [
+                            f"label:ttbar,year:{year}",
+                            *(
+                                metadata + f".{tt}.{year}.picoAOD.files"
+                                for tt in MC_TTbar.datasets
+                            ),
+                        ]
+                    )
         return filelists
 
 
