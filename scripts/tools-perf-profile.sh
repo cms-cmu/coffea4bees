@@ -49,25 +49,32 @@ run_command python src/scripts/memory/perf_profile.py \
         -c coffea4bees/analysis/metadata/HH4b_signals.yml \
         --weights coffea4bees/metadata/weights/weights_HH4b.yml
 
-# --- Stage 2: mprof overall memory timeline (optional) ---
-display_section_header "Stage 2: mprof memory timeline"
-if command -v mprof &> /dev/null; then
-    run_command mprof run -C -o "$OUTPUT_DIR/mprofile.dat" python runner.py \
-        -o test.coffea -t \
-        -d GluGluToHHTo4B_cHHH1 \
-        -p coffea4bees/analysis/processors/processor_HH4b.py \
-        -y UL18 \
-        --friends coffea4bees/metadata/friends/friends_HH4b.yml \
-        -op "${OUTPUT_DIR}" \
-        -m "$DATASETS" \
-        -c coffea4bees/analysis/metadata/HH4b_signals.yml \
-        --weights coffea4bees/metadata/weights/weights_HH4b.yml
+# --- Stage 2: Enforce gating performance & memory budgets ---
+display_section_header "Stage 2: Performance & memory budget check"
+python - "$OUTPUT_DIR/perf_profile.txt" <<'EOF'
+import re, sys
 
-    mprof plot -o "$OUTPUT_DIR/mprofile.png" "$OUTPUT_DIR/mprofile.dat" 2>/dev/null
-    mprof peak "$OUTPUT_DIR/mprofile.dat"
-else
-    echo "mprof not found, skipping memory timeline. Install with: pip install memory_profiler"
-fi
+report = open(sys.argv[1]).read()
+m_time = re.search(r"Total runtime:\s+([\d.]+)s", report)
+m_rss = re.search(r"Peak RSS:\s+([\d.]+)\s+MB", report)
+if not m_time or not m_rss:
+    print(f"ERROR: Could not parse Total runtime / Peak RSS from {sys.argv[1]}")
+    sys.exit(1)
+
+runtime_s = float(m_time.group(1))
+peak_mb = float(m_rss.group(1))
+max_runtime_s = 120.0
+max_rss_mb = 1500.0
+
+print(f"Measured: Total runtime = {runtime_s:.1f}s (budget <= {max_runtime_s:.1f}s), Peak RSS = {peak_mb:.0f} MB (budget <= {max_rss_mb:.0f} MB)")
+if runtime_s > max_runtime_s:
+    print(f"FAIL: Total runtime {runtime_s:.1f}s exceeds budget {max_runtime_s:.1f}s")
+    sys.exit(1)
+if peak_mb > max_rss_mb:
+    print(f"FAIL: Peak RSS {peak_mb:.0f} MB exceeds budget {max_rss_mb:.0f} MB")
+    sys.exit(1)
+print("PASS: Runtime and Peak RSS are within budget.")
+EOF
 
 # --- Summary ---
 display_section_header "Results"

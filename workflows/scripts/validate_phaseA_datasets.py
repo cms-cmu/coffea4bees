@@ -247,7 +247,7 @@ def validate_mixeddata(args: argparse.Namespace) -> int:
 def validate_declustered(args: argparse.Namespace) -> int:
     out = Path(args.output_dir)
     y, e, n_seeds = args.year, args.era, int(args.n_seeds)
-    stages = {"dataset", "validate"} if args.stage == "all" else {args.stage}
+    stages = {"dataset", "validate", "signal"} if args.stage == "all" else {args.stage}
     failures: list[str] = []
     parts: list[str] = []
 
@@ -378,6 +378,26 @@ def validate_declustered(args: argparse.Namespace) -> int:
         bins_used = svb_sum.get("bins_used") if isinstance(svb_sum, dict) else None
         parts.append(f"Decl.4+5 n_eff_pooled={n_eff} (bins_used={bins_used})")
 
+    if "signal" in stages:
+        _check_exists(
+            [
+                out / "D6" / "signal_check.txt",
+                out / "D6" / "signal_check.yml",
+                out / "D6" / "plots_signal" / "plots_done.txt",
+                out / "D6" / "plots_declustered" / "plots_done.txt",
+            ],
+            failures,
+            "Decl.6 signal_check",
+        )
+        sig_yml = out / "D6" / "signal_check.yml"
+        if sig_yml.exists():
+            sig_data = _load_yaml(sig_yml)
+            if not isinstance(sig_data, dict) or not sig_data:
+                failures.append("Decl.6 signal_check: empty or invalid signal_check.yml")
+            elif args.signal_dataset and args.signal_dataset not in sig_data:
+                failures.append(f"Decl.6 signal_check: missing signal dataset {args.signal_dataset!r}")
+        parts.append("Decl.6 signal_check ok")
+
     if failures:
         print(f"DeClustered [{args.stage}] validation FAILED:")
         for msg in failures:
@@ -407,7 +427,8 @@ def main() -> int:
     p_dec.add_argument("--multijet-name", default="synthetic_data_lib16_2024_multijet")
     p_dec.add_argument("--dataset-name", default="synthetic_data_lib16_2024_4b")
     p_dec.add_argument("--all-name", default="mixeddata_all_declib16_2024")
-    p_dec.add_argument("--stage", choices=["all", "dataset", "validate"], default="all")
+    p_dec.add_argument("--signal-dataset", default="GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00")
+    p_dec.add_argument("--stage", choices=["all", "dataset", "validate", "signal"], default="all")
 
     args = parser.parse_args()
     if args.cmd == "mixeddata":
