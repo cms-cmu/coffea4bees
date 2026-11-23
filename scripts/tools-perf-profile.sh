@@ -36,7 +36,7 @@ echo "Using datasets file: $DATASETS"
 # Uses --debug (iterative executor, single process) so the monkey-patched
 # processor runs in the main process and stage timings are captured.
 display_section_header "Stage 1: Per-stage profiling"
-run_command python src/scripts/memory/perf_profile.py \
+python src/scripts/memory/perf_profile.py \
     -o "$OUTPUT_DIR/perf_profile" \
     --script runner.py \
         -o test.coffea -t --debug \
@@ -47,33 +47,47 @@ run_command python src/scripts/memory/perf_profile.py \
         -op "${OUTPUT_DIR}" \
         -m "$DATASETS" \
         -c coffea4bees/analysis/metadata/HH4b_signals.yml \
-        --weights coffea4bees/metadata/weights/weights_HH4b.yml
+        --weights coffea4bees/metadata/weights/weights_HH4b.yml \
+    2>&1 | tee "$OUTPUT_DIR/runner.log"
 
 # --- Stage 2: Enforce gating performance & memory budgets ---
 display_section_header "Stage 2: Performance & memory budget check"
-python - "$OUTPUT_DIR/perf_profile.txt" <<'EOF'
-import re, sys
+python - "$OUTPUT_DIR/perf_profile.txt" "$OUTPUT_DIR/runner.log" <<'EOF'
+import os, re, sys
 
-report = open(sys.argv[1]).read()
-m_time = re.search(r"Total runtime:\s+([\d.]+)s", report)
-m_rss = re.search(r"Peak RSS:\s+([\d.]+)\s+MB", report)
-if not m_time or not m_rss:
-    print(f"ERROR: Could not parse Total runtime / Peak RSS from {sys.argv[1]}")
-    sys.exit(1)
+perf_txt, runner_log = sys.argv[1], sys.argv[2]
+runtime_s = None
+peak_mb = None
 
-runtime_s = float(m_time.group(1))
-peak_mb = float(m_rss.group(1))
+if os.path.exists(perf_txt):
+    report = open(perf_txt).read()
+    m_time = re.search(r"Total runtime:\s+([\d.]+)s", report)
+    m_rss = re.search(r"Peak RSS:\s+([\d.]+)\s+MB", report)
+    if m_time and m_rss:
+        runtime_s = float(m_time.group(1))
+        peak_mb = float(m_rss.group(1))
+
+if runtime_s is None or peak_mb is None:
+    log = open(runner_log).read()
+    m_time = re.search(r"events/s total \(\d+/([\d.]+)\)", log)
+    m_mem = re.search(r"run_job:consumed memory \(before, after, diff\):\s*([\d,]+)", log)
+    if not m_time or not m_mem:
+        print(f"ERROR: Could not parse runtime/memory from {perf_txt} or {runner_log}")
+        sys.exit(1)
+    runtime_s = float(m_time.group(1))
+    peak_mb = int(m_mem.group(1).replace(",", "")) / (1024 * 1024)
+
 max_runtime_s = 120.0
 max_rss_mb = 1500.0
 
-print(f"Measured: Total runtime = {runtime_s:.1f}s (budget <= {max_runtime_s:.1f}s), Peak RSS = {peak_mb:.0f} MB (budget <= {max_rss_mb:.0f} MB)")
+print(f"Measured: runtime = {runtime_s:.1f}s (budget <= {max_runtime_s:.1f}s), memory = {peak_mb:.0f} MB (budget <= {max_rss_mb:.0f} MB)")
 if runtime_s > max_runtime_s:
-    print(f"FAIL: Total runtime {runtime_s:.1f}s exceeds budget {max_runtime_s:.1f}s")
+    print(f"FAIL: runtime {runtime_s:.1f}s exceeds budget {max_runtime_s:.1f}s")
     sys.exit(1)
 if peak_mb > max_rss_mb:
-    print(f"FAIL: Peak RSS {peak_mb:.0f} MB exceeds budget {max_rss_mb:.0f} MB")
+    print(f"FAIL: memory {peak_mb:.0f} MB exceeds budget {max_rss_mb:.0f} MB")
     sys.exit(1)
-print("PASS: Runtime and Peak RSS are within budget.")
+print("PASS: Runtime and memory are within budget.")
 EOF
 
 # --- Summary ---

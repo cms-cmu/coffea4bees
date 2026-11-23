@@ -49,5 +49,5 @@ tools_perf_profile_coffea4bees:
   artifacts:
     when: always
     paths:
-      - output/perf_profile/perf_profile.txt
-      - output/perf_profile/perf_profile.csv
+      - output/perf_profile/runner.log
+      - output/perf_profile/perf_profile.*
