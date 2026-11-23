@@ -54,7 +54,6 @@ include:
   - local: workflows/gitlab-CI/stages_analysis.yml
   - local: workflows/gitlab-CI/stages_cutflow.yml
   - local: workflows/gitlab-CI/stages_tools.yml
-  - local: workflows/gitlab-CI/stages_friendtree.yml
   - local: workflows/gitlab-CI/stages_plots.yml
   - local: workflows/gitlab-CI/stages_workflows.yml
   - local: workflows/gitlab-CI/stages_phaseA.yml
