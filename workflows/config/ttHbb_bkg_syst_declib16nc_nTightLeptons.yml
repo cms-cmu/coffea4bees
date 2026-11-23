@@ -66,3 +66,7 @@ classifier_setting:
   - module: HCR.InputBranch
     option:
       - feature_ancillary: [xW, nSelJets, xbW, year, nTightLeptons]
+
+make_combine_inputs:
+  tt_processes:
+    - "TTbar4b_from_d3"
