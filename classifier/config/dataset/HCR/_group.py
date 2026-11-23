@@ -86,6 +86,18 @@ class add_column(_regex):
             yield add_columns(**{self.key: self.default})
 
 
+_ERA_YEAR_MAP: dict[str, int] = {
+    "UL16_preVFP": 15,
+    "UL16_postVFP": 16,
+    "2022_preEE": 220,
+    "2022_EE": 221,
+    "2023_preBPix": 230,
+    "2023_BPix": 231,
+    "2024": 240,
+    "2025": 250,
+}
+
+
 @dataclass
 class add_year(add_column):
     key: str = field(init=False, default="year")
@@ -97,8 +109,8 @@ class add_year(add_column):
         from src.classifier.df.tools import add_columns
 
         full = matches[0].group("full")
-        if full == "UL16_preVFP":
-            val = 15
+        if full in _ERA_YEAR_MAP:
+            val = _ERA_YEAR_MAP[full]
         else:
             val = self.dtype(matches[0].group(self.key))
         yield add_columns(**{self.key: val})
