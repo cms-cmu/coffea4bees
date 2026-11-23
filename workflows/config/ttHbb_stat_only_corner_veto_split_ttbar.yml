@@ -15,6 +15,13 @@ base: coffea4bees/workflows/config/ttHbb.yml
 label: "ttHbb_stat_only_corner_veto_split_ttbar"
 output_path: "output/ttHbb/"
 
+dataset:
+  - ttHbb
+  - data
+  - TTTo2L2Nu_stitched
+  - TTToSemiLeptonic_stitched
+  - TTToHadronic_stitched
+
 candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
 jcm_known_counts_fatal: false
 
