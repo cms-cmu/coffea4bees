@@ -212,6 +212,11 @@ stages:
     patterns: ["bkg_syst_f", "phasef", "closure_summary", "summary_svb", "stat_analysis", "full_syst"]
     badge_cls: "chip-accent"
 
+  - id: "stage_d"
+    title: "🧠 Stage D — SvB Classifier"
+    patterns: ["phased", "svb_", "v3_svb"]
+    badge_cls: "chip-neutral"
+
   - id: "stage_c"
     title: "🎯 Stage C — FvT Classifier & Closure"
     patterns: ["bkg_syst_c", "phasec", "fvt_closure", "fvt"]

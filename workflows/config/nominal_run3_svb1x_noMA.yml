@@ -47,7 +47,6 @@ gpu_qos: "medium"
 
 svb:
   label: "SvB_1x_noMA"
-  output_dir: "output/SvB_1x_noMA/"
   # The background FvT is the nominal production's Phase C output, as its own SvB used.
   train_template: "model: {eos_base}/classifier/{label}, FvT: {roast:nominal_run3_20261008_f839489-a481023}/friend/FvT_nominal"
   metadata: "{roast:nominal_run3_20261008_f839489-a481023}/handoff/classifier_inputs_nominal_run3_20261008_f839489-a481023.json@@HCR_input"

@@ -71,7 +71,6 @@ fvt:
   plot_base: "{web_prod}/{roast_id}/classifier"
   classifier_config_paths: "coffea4bees"
   label: "FvT_ttHbb_stitched"
-  output_dir: "output/FvT_ttHbb_stitched/"
   plot_inputs: true
   plot_weights: true
   evaluate: true

@@ -49,7 +49,6 @@ handoff:
 
 mvd:
   label: "MvD_30x"
-  output_dir: "output/MvD_30x/"
   # Half a falcon GPU (40 GB): the classifier default mps:25 + light caps GPU memory at 20 GB, and
   # the n=54 evaluators use ~27 GB (below). mps > 25 needs qos medium.
   gpu_gres: "mps:50"
@@ -67,7 +66,6 @@ mvd:
 
 svb_mvd:
   label: "SvB_MvD_30x"
-  output_dir: "output/SvB_MvD_30x/"
   gpu_gres: "mps:50"     # as mvd:
   gpu_qos: "medium"
   # The background weight is THIS roast's 30x MvD.

@@ -213,8 +213,30 @@ rule V1_publish:
         done
         """
 
+rule V1_jcm_gallery:
+    input: V1_JCM
+    output: f"{V1_JCM_DIR}index.html"
+    log: f"{V1_OUT}logs/make_jcm_gallery.log"
+    params:
+        jcm_dir = V1_JCM_DIR,
+        title = f"V1_JCM_{JCM_TAG}_fit_plots",
+        wrapper = WRAPPER,
+        python_bin = PYTHON,
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {log})
+        if [ -f src/plotting/make_gallery.py ]; then
+            echo "Making V1 JCM fit gallery" 2>&1 | tee {log}
+            {params.wrapper} {params.python_bin} src/plotting/make_gallery.py {params.jcm_dir} --title {params.title} 2>&1 | tee -a {log}
+        else
+            echo "src/plotting/make_gallery.py not found in this barista checkout; skipping JCM gallery" 2>&1 | tee {log}
+            echo "<p>JCM fit gallery not available</p>" > {output}
+        fi
+        """
+
 rule all_V1:
-    input: V1_PUBLISHED
+    input: [V1_PUBLISHED, f"{V1_JCM_DIR}index.html"]
 
 localrules: V1_ci_config, V1_ci_merge, V1_metadata, V1_hist_config, V1_merge_hists, V1_cutflow,
-            V1_jcm_config, V1_fit, V1_publish, all_V1
+            V1_jcm_config, V1_fit, V1_jcm_gallery, V1_publish, all_V1

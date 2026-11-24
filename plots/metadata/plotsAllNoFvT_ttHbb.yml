@@ -1,0 +1,99 @@
+# Run-agnostic Phase B wJCM plot config for ttHbb (stitched ttbar, JCM-only background model:
+# TTbar 4b + Multijet = 3b data - 3b ttbar). Used by makePlots.py via jcm_plot_config;
+# make_jcm_weights.py (-m) continues to use plots_JCM_ttHbb.yml / plotsJCM_ttHbb_run3.yml.
+# No hardcoded `year:` keys: year comes from makePlots.py `--year` (RunII / Run3 / 2024).
+hists:
+  data:
+    process: data
+    tag: fourTag
+    label: "Four-tag data"
+    edgecolor: k
+    fillcolor: k
+
+  ttHbb:
+    process: ttHbb
+    tag: fourTag
+    label: "ttHbb"
+    edgecolor: "#e42536"
+    fillcolor: "#e42536"
+    histtype: step
+    scalefactor: 1
+
+stack:
+  TTbar:
+    process: [TTToHadronic_stitched, TTToSemiLeptonic_stitched, TTTo2L2Nu_stitched]
+    tag: fourTag
+    fillcolor: "#85D1FBff"
+    edgecolor: k
+    label: "$t\\bar{t}$"
+
+  MultiJet:
+    fillcolor: "#FFDF7Fff"
+    edgecolor: k
+    label: "Multijet"
+    sum:
+      data_3tag:
+        process: data
+        tag: threeTag
+        scalefactor: +1
+      TTTo2L2Nu_3tag:
+        process: TTTo2L2Nu_stitched
+        tag: threeTag
+        scalefactor: -1
+      TTToSemiLeptonic_3tag:
+        process: TTToSemiLeptonic_stitched
+        tag: threeTag
+        scalefactor: -1
+      TTToHadronic_3tag:
+        process: TTToHadronic_stitched
+        tag: threeTag
+        scalefactor: -1
+
+ratios:
+  dataToBkg:
+    numerator:
+      type: hists
+      key: data
+    denominator:
+      type: stack
+    uncertainty:
+      nominal
+    color: k
+    marker: "o"
+
+codes:
+  region:
+    SR: 2
+    SB: 1
+    other: 0
+  tag:
+    threeTag: 3
+    fourTag: 4
+    other: 0
+
+doRatio: 1
+
+categories:
+  - "inclusive"
+  - "pass_nSelJets_gt6"
+  - "passLeptonVeto"
+  - "pass_nSelJets_gt6,passLeptonVeto"
+
+regions:
+  - "SR"
+  - "SB"
+
+# Key plots pinned at the top of the HTML gallery (src/plotting/make_gallery.py).
+summary:
+  - selJets_noJCM.n
+  - tagJets_noJCM.n
+  - selJets.n
+  - tagJets.n
+  - canJets.pt
+  - hT_selected
+  - v4j.mass
+  - quadJet_selected.lead.mass
+  - quadJet_selected.subl.mass
+  - top_cand.xW
+  - top_cand.xbW
+  - top_cand.xWt

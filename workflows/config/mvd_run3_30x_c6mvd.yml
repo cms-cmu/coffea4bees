@@ -30,7 +30,6 @@ label: "mvd_run3_30x_c6mvd"
 
 mvd:
   label: "MvD_30x_c6"
-  output_dir: "output/MvD_30x_c6/"
   # 1 evaluator, as the falcon c6 MvD ladder: with 2 the evaluation hit 45.8 GB against the 40 GB
   # half-GPU MPS limit and was cancelled (2026-09-28); 3 sequential passes instead.
   workflow_overrides:
@@ -60,7 +59,6 @@ mvd:
 svb_mvd:
   # the kinematic SvB (default feature_CanJet), weighted by THIS roast's c6 MvD
   label: "SvB_MvD_30x_kin_c6mvd"
-  output_dir: "output/SvB_MvD_30x_kin_c6mvd/"
   train_template: "model: {eos_base}/classifier/{label}, MvD: {eos_base}/friend/MvD_30x_c6"
 
 # p_mix4 floor 0.01, not mvd_run3_30x's 0.05 (tuned on the kinematic MvD's spurious tail): the c6 MvD is

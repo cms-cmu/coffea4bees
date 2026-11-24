@@ -13,6 +13,10 @@ config['test'] = is_test
 if config.get('test_year_eras') and isinstance(config['test_year_eras'], dict):
     config['year_eras'] = config['test_year_eras']
 
+base_output = config.get('output_path', 'output/')
+if not base_output.endswith('/'):
+    base_output += '/'
+
 fvt_cfg = resolve_config_section(config, primary_key='fvt', fallback_keys=['fvt_classifier', 'classifier'])
 for k, v in fvt_cfg.items():
     config[k] = v
@@ -22,7 +26,9 @@ config.setdefault('plot_base', "root://eosuser.cern.ch//eos/user/a/algomez/www/H
 config.setdefault('classifier_config_paths', "coffea4bees")
 config.setdefault('wfs_base', "coffea4bees/classifier/config/workflows/HH4b_2024_v2/FvT")
 config.setdefault('label', "FvT_nominal")
-config.setdefault('output_dir', f"output/{config['label']}/")
+config.setdefault('output_dir', f"{base_output}PhaseC_FvT/")
+if isinstance(config.get('output_dir'), str) and '{output_path}' in config['output_dir']:
+    config['output_dir'] = config['output_dir'].replace('{output_path}', base_output)
 config.setdefault('plot_inputs', True)
 config.setdefault('plot_weights', True)
 config.setdefault('evaluate', True)

@@ -7,7 +7,7 @@
 
 include: "helpers/classifier_step.smk"
 
-setup_classifier_step('mvd')
+setup_classifier_step('mvd', default_subdir='V2_MvD')
 
 include: "../../src/classifier/workflow/Snakefile"
 

@@ -109,7 +109,6 @@ fvt:
   plot_base: "{web_prod}/{roast_id}/classifier"
   classifier_config_paths: "coffea4bees"
   label: "lowpt_FvT"
-  output_dir: "output/lowpt_FvT/"
   yields_ratio: ["d4 / d3 - t3 + t4"]
   plot_inputs: true
   plot_weights: true
@@ -203,7 +202,6 @@ svb:
   plot_base: "{web_prod}/{roast_id}/classifier"
   classifier_config_paths: "coffea4bees"
   label: "lowpt_SvB"
-  output_dir: "output/lowpt_SvB/"
   plot_inputs: true
   plot_weights: true
   evaluate: true

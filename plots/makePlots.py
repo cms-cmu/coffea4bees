@@ -35,8 +35,10 @@ def _render_1d_task(task):
         worker_cfg = copy.copy(_GLOBAL_CFG)
         worker_cfg.plotConfig = cat_plotConfig
         makePlot(worker_cfg, **plot_args)
+        return True
     except Exception as e:
         print(f"Error plotting {v} {region} {desc}: {str(e)}")
+        return False
     finally:
         plt.close("all")
 
@@ -49,8 +51,10 @@ def _render_2d_task(task):
         worker_cfg = copy.copy(_GLOBAL_CFG)
         worker_cfg.plotConfig = cat_plotConfig
         make2DPlot(worker_cfg, process, **plot_args)
+        return True
     except Exception as e:
         print(f"Error plotting {v} {region} {process}: {str(e)}")
+        return False
     finally:
         plt.close("all")
 
@@ -84,6 +88,13 @@ def doPlots(varList, debug=False):
             or category.startswith("fail")
             or category.startswith("~")
         )
+        if is_cut_category:
+            cuts_in_cat = [c.strip().lstrip("~") for c in category.replace("+", ",").split(",") if c.strip()]
+            available_cuts = set(cfg.cutList or [])
+            missing = [c for c in cuts_in_cat if c not in available_cuts]
+            if missing:
+                logging.warning(f"Skipping category '{category}': missing cut(s) {missing} (available: {cfg.cutList})")
+                continue
 
         cat_plotConfig = copy.deepcopy(original_plotConfig)
         if category in ("inclusive", ""):
@@ -144,8 +155,8 @@ def doPlots(varList, debug=False):
             if args.doTest:
                 vDict["write_yaml"] = True
 
-            processes = list(cat_plotConfig.get("hists", {}).keys()) + list(cat_plotConfig.get("stack", {}).keys())
-            processes = list(dict.fromkeys(processes))
+            stack_2d = [k for k, v in cat_plotConfig.get("stack", {}).items() if "process" in v]
+            processes = list(dict.fromkeys(list(cat_plotConfig.get("hists", {}).keys()) + stack_2d))
 
             for process in processes:
                 for region in regions:
@@ -211,19 +222,25 @@ def doPlots(varList, debug=False):
     all_tasks_1d = tasks_1d + tasks_comp
     logging.info(f"Total plots to render: {len(all_tasks_1d)} 1D plots, {len(tasks_2d)} 2D plots (using {num_workers} worker processes)")
 
+    results_1d = []
+    results_2d = []
     if num_workers > 1 and not debug and (len(all_tasks_1d) + len(tasks_2d)) > 1:
         ctx = mp.get_context("fork") if hasattr(mp, "get_context") else None
         with ProcessPoolExecutor(max_workers=num_workers, mp_context=ctx, initializer=_init_worker, initargs=(cfg,)) as executor:
             if all_tasks_1d:
-                list(executor.map(_render_1d_task, all_tasks_1d))
+                results_1d = list(executor.map(_render_1d_task, all_tasks_1d))
             if tasks_2d:
-                list(executor.map(_render_2d_task, tasks_2d))
+                results_2d = list(executor.map(_render_2d_task, tasks_2d))
     else:
         _init_worker(cfg)
-        for t in all_tasks_1d:
-            _render_1d_task(t)
-        for t in tasks_2d:
-            _render_2d_task(t)
+        results_1d = [_render_1d_task(t) for t in all_tasks_1d]
+        results_2d = [_render_2d_task(t) for t in tasks_2d]
+
+    ok_1d = sum(1 for r in results_1d if r)
+    ok_2d = sum(1 for r in results_2d if r)
+    logging.info(f"Rendered {ok_1d}/{len(all_tasks_1d)} 1D plots, {ok_2d}/{len(tasks_2d)} 2D plots")
+    if len(all_tasks_1d) > 0 and ok_1d == 0:
+        raise RuntimeError("All 1D plots failed to render")
 
 
 if __name__ == '__main__':
@@ -294,6 +311,28 @@ if __name__ == '__main__':
                     elif proc in available_processes:
                         new_dict[name] = p_cfg
                 cfg.plotConfig[key] = new_dict
+
+        if isinstance(cfg.plotConfig.get("ratios"), dict):
+            valid_hists = cfg.plotConfig.get("hists", {})
+            valid_stack = cfg.plotConfig.get("stack", {})
+            kept_ratios = {}
+            for r_name, r_cfg in cfg.plotConfig["ratios"].items():
+                missing_ref = None
+                for role in ("numerator", "denominator"):
+                    ref = (r_cfg or {}).get(role) or {}
+                    ref_type = ref.get("type")
+                    ref_key = ref.get("key")
+                    if ref_type == "hists" and ref_key not in valid_hists:
+                        missing_ref = f"{role} hists.{ref_key}"
+                        break
+                    if ref_type == "stack" and (not valid_stack or (ref_key and ref_key not in valid_stack)):
+                        missing_ref = f"{role} stack.{ref_key}" if ref_key else f"{role} stack (empty)"
+                        break
+                if missing_ref is not None:
+                    logging.warning(f"Dropping ratio '{r_name}': missing {missing_ref} in filtered plotConfig")
+                else:
+                    kept_ratios[r_name] = r_cfg
+            cfg.plotConfig["ratios"] = kept_ratios
 
     # Auto-infer year if not explicitly provided
     if not args.year and cfg.hists and isinstance(cfg.hists, list) and len(cfg.hists) > 0 and 'hists' in cfg.hists[0]:
