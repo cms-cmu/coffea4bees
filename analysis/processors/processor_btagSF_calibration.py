@@ -166,6 +166,9 @@ class analysis(processor.ProcessorABC):
         jets = selev.selJet_no_bRegCorr  # the jets entering the b-tag SF
         selev["calib_nJet"] = ak.num(jets)
         selev["calib_HT"] = ak.sum(jets.pt, axis=1)
+        # true light jets (hadronFlavour 0: u, d, s, gluon or unmatched), the jets that get the
+        # light-flavour b-tag SF
+        selev["nJet_light_true"] = ak.sum(jets.hadronFlavour == 0, axis=1)
         for i in range(N_LEADING_JETS):
             selev[f"jet{i}_pt"] = jets.pt[:, i]
             selev[f"jet{i}_eta"] = jets.eta[:, i]
@@ -195,6 +198,7 @@ class analysis(processor.ProcessorABC):
             "hT_selected": (50, 0, 2500, ("hT_selected", "H_{T} (selected jets) [GeV]")),
             "nJet_tagged": (9, -0.5, 8.5, ("nJet_tagged", "Number of b-tagged jets")),
             "nJet_tagged_loose": (9, -0.5, 8.5, ("nJet_tagged_loose", "Number of loose b-tagged jets")),
+            "nJet_light_true": (13, -0.5, 12.5, ("nJet_light_true", "Number of true light jets (hadronFlavour 0)")),
         }
         for i in range(N_LEADING_JETS):
             diagnostics[f"jet{i}_pt"] = (50, 0, 500, (f"jet{i}_pt", f"Jet {i} p_{{T}} [GeV]"))
