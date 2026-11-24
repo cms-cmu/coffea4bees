@@ -547,7 +547,7 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
                 continue
             opts = _replace_or_append_flag(entry["option"], "--max-workers", "--max-workers 1")
             opts = _replace_or_append_flag(opts, "--test-files", "--test-files 1")
-            opts = _replace_or_append_flag(opts, "--test-entries", "--test-entries 200000")
+            opts = _replace_or_append_flag(opts, "--test-entries", "--test-entries 30000")
             opts = _replace_or_append_flag(opts, "--preserve-order", "--preserve-order")
             if active_years is not None:
                 filtered_opts = []
@@ -572,12 +572,12 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
                 opts = ["--kfolds 2" if (isinstance(o, str) and (o == "--kfolds" or o.startswith("--kfolds "))) else o for o in opts]
             else:
                 opts.insert(0, "--kfolds 2")
-            is_multi_era_lowpt_fvt = bool(active_years and len(active_years) > 1) and any(
-                "HCR.FvT_lowpt" in str(e.get("module", ""))
+            is_multi_era_fvt = bool(active_years and len(active_years) > 1) and any(
+                "HCR.FvT" in str(e.get("module", ""))
                 for e in (twf.get("dataset") or [])
                 if isinstance(e, dict)
             )
-            test_epochs = 3 if is_multi_era_lowpt_fvt else 1
+            test_epochs = 3 if is_multi_era_fvt else 1
             for item in opts:
                 if isinstance(item, dict) and "epoch" in item:
                     item["epoch"] = test_epochs
@@ -596,7 +596,7 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
                 continue
             opts = _replace_or_append_flag(entry["option"], "--max-workers", "--max-workers 1")
             opts = _replace_or_append_flag(opts, "--test-files", "--test-files 1")
-            opts = _replace_or_append_flag(opts, "--test-entries", "--test-entries 200000")
+            opts = _replace_or_append_flag(opts, "--test-entries", "--test-entries 30000")
             opts = _replace_or_append_flag(opts, "--preserve-order", "--preserve-order")
             if entry.get("module") in ("HCR.SvB.Eval", "HCR.SvB_lowpt.Eval"):
                 opts = _replace_or_append_flag(opts, "--mc-processes", "--mc-processes ttbar ggF")

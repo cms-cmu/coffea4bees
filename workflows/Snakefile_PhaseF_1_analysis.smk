@@ -185,7 +185,7 @@ rule create_analysis_config:
                 cfg['config']['SvB'] = None
                 cfg['config']['blind'] = False
                 cfg['config']['FvT_pd3_floor'] = cfg['config'].get('FvT_pd3_floor') or 0.01
-                cfg['runner']['chunksize'] = 100000
+                cfg['runner']['chunksize'] = int(config.get('test_chunksize', 30000))
             if "processor_HH4b.py" in str(cfg.get("processor", "")):
                 cfg.setdefault("config", {})["run_dilep_ttbar_crosscheck"] = True
         os.makedirs(os.path.dirname(output[0]), exist_ok=True)
