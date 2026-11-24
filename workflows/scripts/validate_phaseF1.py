@@ -60,7 +60,7 @@ def validate_cutflow(cutflow_path, lines):
     data_keys = sorted(k for k in c3 if k.startswith("data_"))
     if not data_keys:
         raise AssertionError("Missing required 'data_*' dataset in counts3")
-    sig_prefixes = ("GluGluToHHTo4B_", "GluGlutoHHto4B_", "ttHbb_")
+    sig_prefixes = ("GluGluToHHTo4B_", "GluGlutoHHto4B_", "ttHbb_", "ZZ4b", "ZH4b", "ggZH4b")
     sig_keys = sorted(k for k in c3 if k.startswith(sig_prefixes))
     if not sig_keys:
         raise AssertionError(f"Expected at least one signal dataset starting with {sig_prefixes} in counts3")

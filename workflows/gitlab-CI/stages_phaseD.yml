@@ -8,7 +8,7 @@ phaseD_svb_run2_coffea4bees:
     - phaseC_fvt_run2_coffea4bees
   script:
     - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
-    - $SNAKEMAKE all_PhaseD -s coffea4bees/workflows/Snakefile_PhaseD.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL18":["A"]}' --jobs 2
+    - $SNAKEMAKE all_PhaseD -s coffea4bees/workflows/Snakefile_PhaseD.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' --jobs 2
     - python coffea4bees/workflows/scripts/validate_phaseD.py --yields output/SvB_nominal/yields.json --model-result output/TEST/classifier/SvB_nominal/result.json --friend-result output/TEST/friend/SvB_nominal/result.json --output output/SvB_nominal/phaseD_validation.txt
   artifacts:
     when: always
@@ -31,7 +31,7 @@ phaseD_svb_lowpt_run2_coffea4bees:
     - phaseC_fvt_lowpt_run2_coffea4bees
   script:
     - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
-    - $SNAKEMAKE all_PhaseD -s coffea4bees/workflows/Snakefile_PhaseD.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL18":["A"]}' --jobs 2
+    - $SNAKEMAKE all_PhaseD -s coffea4bees/workflows/Snakefile_PhaseD.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' --jobs 2
     - python coffea4bees/workflows/scripts/validate_phaseD.py --yields output/lowpt_SvB/yields.json --model-result output/run2_lowpt/classifier/lowpt_SvB/result.json --friend-result output/run2_lowpt/friend/lowpt_SvB/result.json --output output/lowpt_SvB/phaseD_validation.txt
   artifacts:
     when: always
@@ -54,7 +54,7 @@ phaseD_svb_ttHbb_coffea4bees:
     - phaseC_fvt_ttHbb_coffea4bees
   script:
     - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
-    - $SNAKEMAKE all_PhaseD -s coffea4bees/workflows/Snakefile_PhaseD.smk --configfile coffea4bees/workflows/config/ttHbb.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL18":["A"]}' --jobs 2
+    - $SNAKEMAKE all_PhaseD -s coffea4bees/workflows/Snakefile_PhaseD.smk --configfile coffea4bees/workflows/config/ttHbb.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' --jobs 2
     - python coffea4bees/workflows/scripts/validate_phaseD.py --yields output/SvB_ttHbb_stitched/yields.json --model-result output/ttHbb/classifier/SvB_ttHbb_stitched/result.json --friend-result output/ttHbb/friend/SvB_ttHbb_stitched/result.json --output output/SvB_ttHbb_stitched/phaseD_validation.txt
     - python coffea4bees/workflows/scripts/validate_phaseD.py --yields output/SvB_MA_ttHbb_stitched/yields.json --model-result output/ttHbb/classifier/SvB_MA_ttHbb_stitched/result.json --friend-result output/ttHbb/friend/SvB_MA_ttHbb_stitched/result.json --quantiles output/SvB_MA_ttHbb_stitched/svb_quantiles.json --output output/SvB_MA_ttHbb_stitched/phaseD_validation.txt
   artifacts:
