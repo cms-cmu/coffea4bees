@@ -176,7 +176,7 @@ rule create_analysis_config:
                     _friends['SvB_MA'] = f"{_local_svb_ma}@@analysis.0.merged"
                     if os.path.exists(_local_svb):
                         _friends['SvB'] = f"{_local_svb}@@analysis.0.merged"
-                elif 'SvB_MA' in _orig_friends or 'SvB_MA' in _orig_inc:
+                elif 'SvB_MA' in _orig_friends or 'SvB_MA' in _orig_inc or cfg['config'].get('SvB_MA'):
                     _friends['SvB_MA'] = f"{_local_svb}@@analysis.0.merged"
                 else:
                     _friends['SvB'] = f"{_local_svb}@@analysis.0.merged"
