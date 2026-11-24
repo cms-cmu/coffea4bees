@@ -596,7 +596,10 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
                 continue
             opts = _replace_or_append_flag(entry["option"], "--max-workers", "--max-workers 1")
             opts = _replace_or_append_flag(opts, "--test-files", "--test-files 1")
-            opts = _replace_or_append_flag(opts, "--test-entries", "--test-entries 30000")
+            # 2x test chunksize headroom so CommonEval.evaluate clamps each file to Phase B.2
+            # HCR_input's exact [0, M_i) chunk-0 range (matching Phase F.1 1-to-1) while still
+            # bounding standalone EOS evaluations.
+            opts = _replace_or_append_flag(opts, "--test-entries", "--test-entries 60000")
             opts = _replace_or_append_flag(opts, "--preserve-order", "--preserve-order")
             if entry.get("module") in ("HCR.SvB.Eval", "HCR.SvB_lowpt.Eval"):
                 opts = _replace_or_append_flag(opts, "--mc-processes", "--mc-processes ttbar ggF")

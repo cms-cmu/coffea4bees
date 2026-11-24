@@ -104,23 +104,31 @@ def _debug_print_weight(df: pd.DataFrame):
     return df
 
 
+def _clamp_chunk_to_friends(from_root: FromRoot, chunk: Chunk) -> Optional[Chunk]:
+    """Clamp ``chunk`` to the entry intersection of all loaded friend series."""
+    if from_root.chain._friends:
+        for friend in from_root.chain._friends.values():
+            if chunk in friend._data:
+                series = friend._data[chunk]
+                if series:
+                    f_start = series[0].start
+                    f_stop = series[-1].stop
+                    c_start = 0 if (chunk.entry_start is None or chunk.entry_start is ...) else chunk.entry_start
+                    c_stop = chunk.num_entries if (chunk.entry_stop is None or chunk.entry_stop is ...) else chunk.entry_stop
+                    new_start = max(c_start, f_start)
+                    new_stop = min(c_stop, f_stop)
+                    if new_start >= new_stop:
+                        return None
+                    if new_start != c_start or new_stop != c_stop:
+                        chunk = chunk.deepcopy(entry_start=new_start, entry_stop=new_stop)
+    return chunk
+
+
 class HCRFromRoot(FromRoot):
     def __call__(self, chunk: Chunk) -> Optional[pd.DataFrame]:
-        if self.chain._friends:
-            for friend in self.chain._friends.values():
-                if chunk in friend._data:
-                    series = friend._data[chunk]
-                    if series:
-                        f_start = series[0].start
-                        f_stop = series[-1].stop
-                        c_start = 0 if (chunk.entry_start is None or chunk.entry_start is ...) else chunk.entry_start
-                        c_stop = chunk.num_entries if (chunk.entry_stop is None or chunk.entry_stop is ...) else chunk.entry_stop
-                        new_start = max(c_start, f_start)
-                        new_stop = min(c_stop, f_stop)
-                        if new_start >= new_stop:
-                            return None
-                        if new_start != c_start or new_stop != c_stop:
-                            chunk = chunk.slice(new_start, new_stop)
+        chunk = _clamp_chunk_to_friends(self, chunk)
+        if chunk is None:
+            return None
         df = super().__call__(chunk)
         if df is not None:
             for col in ("threeTag", "fourTag", "SR", "SB", "passHLT"):
@@ -392,6 +400,74 @@ class CommonEval(Common):
         return [
             _group.add_year(),
         ]
+
+    def evaluate(self):
+        if not self.evaluable:
+            raise NotImplementedError(
+                f"{type(self).__name__} does not support evaluation"
+            )
+        from concurrent.futures import ProcessPoolExecutor
+
+        from src.classifier.config.dataset._root import _eval_root, _fetch
+        from src.classifier.config.main._utils import progress_advance
+        from src.classifier.config.setting import IO as IOSetting
+        from src.classifier.monitor.progress import Progress
+        from src.classifier.process import pool, status
+        from src.classifier.root.dataset import FriendTreeEvalDataset
+        from src.storage.eos import EOS
+
+        from_roots = [*self._from_root()]
+        with ProcessPoolExecutor(
+            max_workers=self.opts.max_workers,
+            mp_context=status.context,
+            initializer=status.initializer,
+        ) as executor:
+            with Progress.new(
+                total=sum(map(lambda x: len(x[1]), from_roots)),
+                msg=("files", "Fetching metadata"),
+            ) as progress:
+                groups = [
+                    (
+                        from_root,
+                        pool.map_async(
+                            executor,
+                            _fetch(tree=self.opts.tree, max_entries=self.opts.test_entries),
+                            files,
+                            callbacks=[lambda _: progress_advance(progress)],
+                            preserve_order=self.opts.preserve_order,
+                        ),
+                    )
+                    for from_root, files in from_roots
+                ]
+                # Clamp chunks to loaded friend series so FriendTreeEvalDataset metadata matches
+                # the actual rows returned by HCRFromRoot when chunksize splitting shrinks chunk 0.
+                groups = [
+                    (
+                        from_root,
+                        [
+                            clamped
+                            for chunk in files
+                            if (clamped := _clamp_chunk_to_friends(from_root, chunk)) is not None
+                        ],
+                    )
+                    for from_root, files in groups
+                ]
+                chunks = Chunk.common(*chain(*map(lambda x: x[1], groups)))
+                if chunks:
+                    yield FriendTreeEvalDataset(
+                        chunks=chunks,
+                        load_method=_eval_root(
+                            *groups,
+                            to_tensor=self.to_tensor,
+                            postprocessors=self.postprocessors,
+                        ),
+                        dump_base_path=(
+                            EOS(self.opts.eval_scratch) / self.opts.eval_base
+                            if self.opts.eval_scratch
+                            else IOSetting.output / self.opts.eval_base
+                        ),
+                        dump_naming=self.opts.eval_naming,
+                    )
 
     def debug(self):
         import logging
