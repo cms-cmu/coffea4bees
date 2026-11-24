@@ -59,6 +59,7 @@ include:
   - local: workflows/gitlab-CI/stages_plots.yml
   - local: workflows/gitlab-CI/stages_reana.yml
   - local: workflows/gitlab-CI/stages_workflows.yml
+  - local: workflows/gitlab-CI/stages_btagSF_calibration.yml
   - project: 'cms-cmu/barista'
     ref: 'master'
     file: 'src/workflows/gitlab-CI/stages_proxy.yml'
