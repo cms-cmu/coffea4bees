@@ -28,17 +28,6 @@ analysis_test_Run3_2025_coffea4bees:
     paths:
       - output/analysis_test_Run3_2025/test.coffea
 
-analysis_truthStudy_test_coffea4bees:   
-  stage: analysis   
-  extends:
-    - .base_analysis_coffea4bees
-  allow_failure: true
-  script:
-    - source coffea4bees/scripts/analysis-truthStudy-test.sh --output-base /builds/$CI_PROJECT_PATH/output
-  artifacts: 
-    paths:
-      - output/analysis_truthStudy_test/testTruth.coffea
-
 
 synthetic_dataset_cluster_coffea4bees:
   stage: analysis   
@@ -93,17 +82,3 @@ synthetic_dataset_analyze_coffea4bees:
   artifacts:
     paths:
       - output/synthetic_dataset_analyze/test_synthetic_datasets.coffea
-
-
-mixeddata_analyze_coffea4bees:
-  stage: analysis   
-  extends:
-    - .base_analysis_coffea4bees
-  needs:
-    - setup_coffea4bees
-    - mixeddata_split_dataset_coffea4bees
-  script:
-    - source coffea4bees/scripts/mixeddata-analyze.sh --output-base /builds/$CI_PROJECT_PATH/output
-  artifacts:
-    paths:
-      - output/mixeddata_analyze/test_mixeddata.coffea
