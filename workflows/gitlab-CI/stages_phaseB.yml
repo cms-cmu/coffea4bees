@@ -23,7 +23,7 @@ phaseB_2_classifier_inputs_run2_coffea4bees:
     - phaseB_1_computeJCM_run2_coffea4bees
   script:
     - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
-    - $SNAKEMAKE all_PhaseB -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true eos_prod=output web_prod=output jcm_known_counts_wJCM_test=none 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' --jobs 4
+    - $SNAKEMAKE all_PhaseB -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' --jobs 4
     - cat output/TEST/phaseB_validation.txt
   artifacts:
     when: always

@@ -10,7 +10,7 @@ phaseF_1_analysis_run2_coffea4bees:
     - phaseD_svb_run2_coffea4bees
   script:
     - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
-    - $SNAKEMAKE output/TEST/PhaseF_1_analysis/histAll_TEST.coffea output/TEST/PhaseF_1_analysis/cutflow_TEST.yml output/TEST/PhaseF_1_analysis/cutflow_TEST.html output/TEST/PhaseF_1_analysis/plots_TEST/plots_done.txt -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true error_threshold=1.0 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' 'dataset=["data","GluGluToHHTo4B_cHHH1","GluGluToHHTo4B_cHHH0","GluGluToHHTo4B_cHHH2p45","GluGluToHHTo4B_cHHH5","ZZ4b","ZH4b","ggZH4b","TTTo2L2Nu","TTToSemiLeptonic","TTToHadronic"]' --jobs 4
+    - $SNAKEMAKE output/TEST/PhaseF_1_analysis/histAll_TEST.coffea output/TEST/PhaseF_1_analysis/cutflow_TEST.yml output/TEST/PhaseF_1_analysis/cutflow_TEST.html output/TEST/PhaseF_1_analysis/plots_TEST/plots_done.txt -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' 'dataset=["data","GluGluToHHTo4B_cHHH1","GluGluToHHTo4B_cHHH0","GluGluToHHTo4B_cHHH2p45","GluGluToHHTo4B_cHHH5","ZZ4b","ZH4b","ggZH4b","TTTo2L2Nu","TTToSemiLeptonic","TTToHadronic"]' --jobs 4
     - python coffea4bees/workflows/scripts/validate_phaseF1.py --coffea output/TEST/PhaseF_1_analysis/histAll_TEST.coffea --cutflow output/TEST/PhaseF_1_analysis/cutflow_TEST.yml --output output/TEST/PhaseF_1_analysis/phaseF1_validation.txt
   artifacts:
     when: always
@@ -31,7 +31,7 @@ phaseF_1_analysis_lowpt_run2_coffea4bees:
     - phaseD_svb_lowpt_run2_coffea4bees
   script:
     - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
-    - $SNAKEMAKE output/run2_lowpt/PhaseF_1_analysis/histAll_run2_lowpt.coffea output/run2_lowpt/PhaseF_1_analysis/cutflow_run2_lowpt.yml output/run2_lowpt/PhaseF_1_analysis/cutflow_run2_lowpt.html output/run2_lowpt/PhaseF_1_analysis/plots_run2_lowpt/plots_done.txt -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml --config test=true error_threshold=1.0 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' --jobs 4
+    - $SNAKEMAKE output/run2_lowpt/PhaseF_1_analysis/histAll_run2_lowpt.coffea output/run2_lowpt/PhaseF_1_analysis/cutflow_run2_lowpt.yml output/run2_lowpt/PhaseF_1_analysis/cutflow_run2_lowpt.html output/run2_lowpt/PhaseF_1_analysis/plots_run2_lowpt/plots_done.txt -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml --config test=true 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' --jobs 4
     - python coffea4bees/workflows/scripts/validate_phaseF1.py --coffea output/run2_lowpt/PhaseF_1_analysis/histAll_run2_lowpt.coffea --cutflow output/run2_lowpt/PhaseF_1_analysis/cutflow_run2_lowpt.yml --output output/run2_lowpt/PhaseF_1_analysis/phaseF1_validation.txt
   artifacts:
     when: always
