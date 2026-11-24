@@ -35,6 +35,8 @@ btagsf_calibration:
     - "TTbb_SemiLeptonic"
     - "TTbb_2L2Nu"
     - "ttHbb"
+    # HH4b signal (ggF), so that ttHbb and HH4b use the same calibration files
+    - "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"
   years:
     - "2022_preEE"
     - "2022_EE"

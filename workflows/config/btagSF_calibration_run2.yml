@@ -35,6 +35,11 @@ btagsf_calibration:
     - "TTbb_SemiLeptonic"
     - "TTbb_2L2Nu"
     - "ttHbb"
+    # HH4b signal (ggF), so that ttHbb and HH4b use the same calibration files
+    - "GluGluToHHTo4B_cHHH0"
+    - "GluGluToHHTo4B_cHHH1"
+    - "GluGluToHHTo4B_cHHH2p45"
+    - "GluGluToHHTo4B_cHHH5"
   years:
     - "UL16_preVFP"
     - "UL16_postVFP"

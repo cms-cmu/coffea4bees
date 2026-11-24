@@ -10,7 +10,8 @@ shape SF:
 src/tools/compute_btagSF_calibration.py turns them into the (Njet, HT) calibration maps and into
 the closure plots. If `btagSF_calibration_file` is given, the calibration is also applied event
 by event with the analysis code (add_btagweights) and `*_btagSF_calib` histograms are filled, to
-validate the application.
+validate the application, together with `Njet_HT_btagSF_calibDiff` (weight w * (SF x calib - 1)):
+the non-closure and its statistical uncertainty (workflows/scripts/check_btagSF_calibration.py).
 
 No trigger selection or trigger weight is applied: the 4b triggers contain online b-tagging.
 """
@@ -41,6 +42,9 @@ warnings.filterwarnings("ignore")
 YEARS_WITHOUT_SHAPE_SF = ("2024", "2025")
 
 N_LEADING_JETS = 4
+
+# Events with |w - mean| / std above this, within a chunk, are removed (as in the analysis)
+GENWEIGHT_MAX_ZSCORE = 30
 
 
 def variation_key(modifier: str) -> str:
@@ -145,7 +149,18 @@ class analysis(processor.ProcessorABC):
         selections = PackedSelection()
         selections.add("passNoiseFilter", event.passNoiseFilter)
         selections.add("passJetMult", event.passJetMult)
-        sel = selections.all("passNoiseFilter", "passJetMult")
+        # Same generator-weight outlier veto as the analysis (HH4bBaseProcessor.add_genweight_check):
+        # a few events with huge weights (e.g. in the Run 2 ggF HH4b samples) would otherwise
+        # dominate the maps, while the analysis never sees them.
+        w_std = np.std(weight_noBtagSF)
+        pass_clean = (
+            np.abs(weight_noBtagSF - np.mean(weight_noBtagSF)) / w_std < GENWEIGHT_MAX_ZSCORE
+            if w_std > 0 else np.full(len(event), True)
+        )
+        if not np.all(pass_clean):
+            logging.warning(f"{dataset}: {int(np.sum(~pass_clean))} event(s) removed by the generator-weight outlier veto")
+        selections.add("passCleanGenWeight", pass_clean)
+        sel = selections.all("passNoiseFilter", "passJetMult", "passCleanGenWeight")
         selev = event[sel]
 
         jets = selev.selJet_no_bRegCorr  # the jets entering the b-tag SF
@@ -216,9 +231,15 @@ class analysis(processor.ProcessorABC):
             for key, modifier in variations.items():
                 selev["weight_btagSF_calib"] = weights_calib.weight(modifier=modifier)[sel]
                 fill_all(fill_calib if key == CENTRAL else fill_calib_map, key)
+            # Non-closure w * (SF x calibration - 1): its variances are sum(w^2 (SF x calib - 1)^2),
+            # the statistical uncertainty of the difference to the no-SF yield, with the full
+            # correlation between the two (same events, different weights).
+            selev["weight_btagSF_calibDiff"] = weights_calib.weight()[sel] - selev.weight_noBtagSF
+            fill_all(book("btagSF_calibDiff", with_diagnostics=False), CENTRAL)
 
         output = hist.to_dict(nonempty=True)
         output["nEvent"] = {dataset: nEvent}
+        output["nGenWeightOutliers"] = {dataset: int(np.sum(~pass_clean))}
         output["sumw"] = {
             dataset: {
                 "noBtagSF": float(ak.sum(selev.weight_noBtagSF)),
