@@ -1,136 +1,620 @@
 counts4:
-  data_UL18A:
-    passJetMult: 96793.0
-    passPreSel: 3526.0
-    passDiJetMass: 1516.0
-    SR_woTrig: 584.0
-    SR: 584.0
-    SB_woTrig: 932.0
-    SB: 932.0
-  TTbar_from_d3_UL18A: null
-  TTToSemiLeptonic_UL18:
-    passJetMult: 2249.5
-    passPreSel: 38.0
-    passDiJetMass: 13.31
-    SR_woTrig: 8.17
-    SR: 4.78
-    SB_woTrig: 13.66
-    SB: 8.53
-  TTToHadronic_UL18:
-    passJetMult: 3551.63
-    passPreSel: 40.91
-    passDiJetMass: 17.73
-    SR_woTrig: 13.51
-    SR: 9.14
-    SB_woTrig: 12.79
-    SB: 8.59
-  TTTo2L2Nu_UL18:
-    passJetMult: 1847.28
-    passPreSel: 55.25
-    passDiJetMass: 16.75
-    SR_woTrig: 12.82
-    SR: 6.49
-    SB_woTrig: 19.42
-    SB: 10.26
+    data_UL18A:
+        passJetMult: 96793.0
+        passPreSel: 3526.0
+        passDiJetMass: 1516.0
+        SR_woTrig: 584.0
+        SR: 584.0
+        SB_woTrig: 932.0
+        SB: 932.0
+
+    data_UL17C:
+        passJetMult: 99516.0
+        passPreSel: 5502.0
+        passDiJetMass: 2569.0
+        SR_woTrig: 938.0
+        SR: 938.0
+        SB_woTrig: 1631.0
+        SB: 1631.0
+
+    data_UL16_preVFPC:
+        passJetMult: 98714.0
+        passPreSel: 2839.0
+        passDiJetMass: 1400.0
+        SR_woTrig: 488.0
+        SR: 488.0
+        SB_woTrig: 912.0
+        SB: 912.0
+
+    data_UL16_postVFPF:
+        passJetMult: 44811.0
+        passPreSel: 1190.0
+        passDiJetMass: 633.0
+        SR_woTrig: 259.0
+        SR: 259.0
+        SB_woTrig: 374.0
+        SB: 374.0
+
+    TTbar_from_d3_UL18A:
+
+    TTbar_from_d3_UL17C:
+
+    TTbar_from_d3_UL16_preVFPC:
+
+    TTbar_from_d3_UL16_postVFPF:
+
+    TTToSemiLeptonic_UL18:
+        passJetMult: 2249.5
+        passPreSel: 38.0
+        passDiJetMass: 13.31
+        SR_woTrig: 8.17
+        SR: 4.78
+        SB_woTrig: 13.66
+        SB: 8.53
+
+    TTToSemiLeptonic_UL17:
+        passJetMult: 2311.48
+        passPreSel: 34.77
+        passDiJetMass: 13.22
+        SR_woTrig: 8.25
+        SR: 5.34
+        SB_woTrig: 10.92
+        SB: 7.88
+
+    TTToSemiLeptonic_UL16_preVFP:
+        passJetMult: 3665.64
+        passPreSel: 46.35
+        passDiJetMass: 18.38
+        SR_woTrig: 8.7
+        SR: 7.66
+        SB_woTrig: 11.52
+        SB: 10.72
+
+    TTToSemiLeptonic_UL16_postVFP:
+        passJetMult: 3332.85
+        passPreSel: 37.49
+        passDiJetMass: 15.69
+        SR_woTrig: 7.9
+        SR: 6.66
+        SB_woTrig: 9.9
+        SB: 9.03
+
+    TTToHadronic_UL18:
+        passJetMult: 3551.63
+        passPreSel: 40.91
+        passDiJetMass: 17.73
+        SR_woTrig: 13.51
+        SR: 9.14
+        SB_woTrig: 12.79
+        SB: 8.59
+
+    TTToHadronic_UL17:
+        passJetMult: 3936.95
+        passPreSel: 42.57
+        passDiJetMass: 22.07
+        SR_woTrig: 14.06
+        SR: 9.86
+        SB_woTrig: 15.86
+        SB: 12.21
+
+    TTToHadronic_UL16_preVFP:
+        passJetMult: 6122.57
+        passPreSel: 53.09
+        passDiJetMass: 26.55
+        SR_woTrig: 14.89
+        SR: 13.72
+        SB_woTrig: 13.72
+        SB: 12.82
+
+    TTToHadronic_UL16_postVFP:
+        passJetMult: 4611.31
+        passPreSel: 39.71
+        passDiJetMass: 18.54
+        SR_woTrig: 9.27
+        SR: 8.31
+        SB_woTrig: 10.99
+        SB: 10.23
+
+    TTTo2L2Nu_UL18:
+        passJetMult: 1847.28
+        passPreSel: 55.25
+        passDiJetMass: 16.75
+        SR_woTrig: 12.82
+        SR: 6.49
+        SB_woTrig: 19.42
+        SB: 10.26
+
+    TTTo2L2Nu_UL17:
+        passJetMult: 1781.85
+        passPreSel: 51.34
+        passDiJetMass: 16.93
+        SR_woTrig: 10.76
+        SR: 6.23
+        SB_woTrig: 17.25
+        SB: 10.7
+
+    TTTo2L2Nu_UL16_preVFP:
+        passJetMult: 2903.92
+        passPreSel: 71.86
+        passDiJetMass: 27.23
+        SR_woTrig: 12.28
+        SR: 9.82
+        SB_woTrig: 21.02
+        SB: 17.41
+
+    TTTo2L2Nu_UL16_postVFP:
+        passJetMult: 2830.13
+        passPreSel: 62.94
+        passDiJetMass: 22.88
+        SR_woTrig: 10.58
+        SR: 8.32
+        SB_woTrig: 17.44
+        SB: 14.56
+
+
+
 counts3:
-  data_UL18A:
-    passJetMult: 96793.0
-    passPreSel: 92424.0
-    passDiJetMass: 28241.0
-    SR_woTrig: 11052.0
-    SR: 11052.0
-    SB_woTrig: 17189.0
-    SB: 17189.0
-  TTbar_from_d3_UL18A: null
-  TTToSemiLeptonic_UL18:
-    passJetMult: 2249.5
-    passPreSel: 2272.66
-    passDiJetMass: 940.93
-    SR_woTrig: 1319.1
-    SR: 437.44
-    SB_woTrig: 1305.34
-    SB: 503.49
-  TTToHadronic_UL18:
-    passJetMult: 3551.63
-    passPreSel: 3451.5
-    passDiJetMass: 2041.15
-    SR_woTrig: 2534.55
-    SR: 1088.44
-    SB_woTrig: 2064.82
-    SB: 952.71
-  TTTo2L2Nu_UL18:
-    passJetMult: 1847.28
-    passPreSel: 1982.85
-    passDiJetMass: 579.51
-    SR_woTrig: 707.55
-    SR: 241.0
-    SB_woTrig: 903.27
-    SB: 338.51
+    data_UL18A:
+        passJetMult: 96793.0
+        passPreSel: 92424.0
+        passDiJetMass: 28241.0
+        SR_woTrig: 11052.0
+        SR: 11052.0
+        SB_woTrig: 17189.0
+        SB: 17189.0
+
+    data_UL17C:
+        passJetMult: 99516.0
+        passPreSel: 92866.0
+        passDiJetMass: 32166.0
+        SR_woTrig: 12046.0
+        SR: 12046.0
+        SB_woTrig: 20120.0
+        SB: 20120.0
+
+    data_UL16_preVFPC:
+        passJetMult: 98714.0
+        passPreSel: 95035.0
+        passDiJetMass: 38686.0
+        SR_woTrig: 14665.0
+        SR: 14665.0
+        SB_woTrig: 24021.0
+        SB: 24021.0
+
+    data_UL16_postVFPF:
+        passJetMult: 44811.0
+        passPreSel: 43230.0
+        passDiJetMass: 18190.0
+        SR_woTrig: 6926.0
+        SR: 6926.0
+        SB_woTrig: 11264.0
+        SB: 11264.0
+
+    TTbar_from_d3_UL18A:
+
+    TTbar_from_d3_UL17C:
+
+    TTbar_from_d3_UL16_preVFPC:
+
+    TTbar_from_d3_UL16_postVFPF:
+
+    TTToSemiLeptonic_UL18:
+        passJetMult: 2249.5
+        passPreSel: 2272.66
+        passDiJetMass: 940.93
+        SR_woTrig: 1319.1
+        SR: 437.44
+        SB_woTrig: 1305.34
+        SB: 503.49
+
+    TTToSemiLeptonic_UL17:
+        passJetMult: 2311.48
+        passPreSel: 2225.47
+        passDiJetMass: 1059.76
+        SR_woTrig: 1210.44
+        SR: 497.77
+        SB_woTrig: 1187.81
+        SB: 561.99
+
+    TTToSemiLeptonic_UL16_preVFP:
+        passJetMult: 3665.64
+        passPreSel: 3878.68
+        passDiJetMass: 2016.74
+        SR_woTrig: 1485.36
+        SR: 952.31
+        SB_woTrig: 1470.28
+        SB: 1064.42
+
+    TTToSemiLeptonic_UL16_postVFP:
+        passJetMult: 3332.85
+        passPreSel: 3510.91
+        passDiJetMass: 1752.74
+        SR_woTrig: 1283.94
+        SR: 831.75
+        SB_woTrig: 1270.24
+        SB: 920.99
+
+    TTToHadronic_UL18:
+        passJetMult: 3551.63
+        passPreSel: 3451.5
+        passDiJetMass: 2041.15
+        SR_woTrig: 2534.55
+        SR: 1088.44
+        SB_woTrig: 2064.82
+        SB: 952.71
+
+    TTToHadronic_UL17:
+        passJetMult: 3936.95
+        passPreSel: 3664.58
+        passDiJetMass: 2369.72
+        SR_woTrig: 2419.27
+        SR: 1265.96
+        SB_woTrig: 1966.48
+        SB: 1103.76
+
+    TTToHadronic_UL16_preVFP:
+        passJetMult: 6122.57
+        passPreSel: 6280.64
+        passDiJetMass: 4247.99
+        SR_woTrig: 3045.77
+        SR: 2305.59
+        SB_woTrig: 2452.79
+        SB: 1942.41
+
+    TTToHadronic_UL16_postVFP:
+        passJetMult: 4611.31
+        passPreSel: 4625.74
+        passDiJetMass: 3159.2
+        SR_woTrig: 2272.15
+        SR: 1707.01
+        SB_woTrig: 1821.51
+        SB: 1452.19
+
+    TTTo2L2Nu_UL18:
+        passJetMult: 1847.28
+        passPreSel: 1982.85
+        passDiJetMass: 579.51
+        SR_woTrig: 707.55
+        SR: 241.0
+        SB_woTrig: 903.27
+        SB: 338.51
+
+    TTTo2L2Nu_UL17:
+        passJetMult: 1781.85
+        passPreSel: 1778.25
+        passDiJetMass: 612.49
+        SR_woTrig: 623.3
+        SR: 253.88
+        SB_woTrig: 796.63
+        SB: 358.61
+
+    TTTo2L2Nu_UL16_preVFP:
+        passJetMult: 2903.92
+        passPreSel: 3288.78
+        passDiJetMass: 1261.76
+        SR_woTrig: 825.83
+        SR: 529.19
+        SB_woTrig: 1046.74
+        SB: 732.57
+
+    TTTo2L2Nu_UL16_postVFP:
+        passJetMult: 2830.13
+        passPreSel: 3162.38
+        passDiJetMass: 1133.41
+        SR_woTrig: 725.9
+        SR: 476.91
+        SB_woTrig: 921.97
+        SB: 656.5
+
+
+
 counts4_unit:
-  data_UL18A:
-    passJetMult: 96793.0
-    passPreSel: 3526.0
-    passDiJetMass: 1516.0
-    SR_woTrig: 584.0
-    SR: 584.0
-    SB_woTrig: 932.0
-    SB: 932.0
-  TTbar_from_d3_UL18A: null
-  TTToSemiLeptonic_UL18:
-    passJetMult: 98474.0
-    passPreSel: 1285.0
-    passDiJetMass: 545.0
-    SR_woTrig: 201.0
-    SR: 201.0
-    SB_woTrig: 344.0
-    SB: 344.0
-  TTToHadronic_UL18:
-    passJetMult: 99425.0
-    passPreSel: 908.0
-    passDiJetMass: 431.0
-    SR_woTrig: 218.0
-    SR: 218.0
-    SB_woTrig: 213.0
-    SB: 213.0
-  TTTo2L2Nu_UL18:
-    passJetMult: 93945.0
-    passPreSel: 2720.0
-    passDiJetMass: 1094.0
-    SR_woTrig: 437.0
-    SR: 437.0
-    SB_woTrig: 657.0
-    SB: 657.0
+    data_UL18A:
+        passJetMult: 96793.0
+        passPreSel: 3526.0
+        passDiJetMass: 1516.0
+        SR_woTrig: 584.0
+        SR: 584.0
+        SB_woTrig: 932.0
+        SB: 932.0
+
+    data_UL17C:
+        passJetMult: 99516.0
+        passPreSel: 5502.0
+        passDiJetMass: 2569.0
+        SR_woTrig: 938.0
+        SR: 938.0
+        SB_woTrig: 1631.0
+        SB: 1631.0
+
+    data_UL16_preVFPC:
+        passJetMult: 98714.0
+        passPreSel: 2839.0
+        passDiJetMass: 1400.0
+        SR_woTrig: 488.0
+        SR: 488.0
+        SB_woTrig: 912.0
+        SB: 912.0
+
+    data_UL16_postVFPF:
+        passJetMult: 44811.0
+        passPreSel: 1190.0
+        passDiJetMass: 633.0
+        SR_woTrig: 259.0
+        SR: 259.0
+        SB_woTrig: 374.0
+        SB: 374.0
+
+    TTbar_from_d3_UL18A:
+
+    TTbar_from_d3_UL17C:
+
+    TTbar_from_d3_UL16_preVFPC:
+
+    TTbar_from_d3_UL16_postVFPF:
+
+    TTToSemiLeptonic_UL18:
+        passJetMult: 98474.0
+        passPreSel: 1285.0
+        passDiJetMass: 545.0
+        SR_woTrig: 201.0
+        SR: 201.0
+        SB_woTrig: 344.0
+        SB: 344.0
+
+    TTToSemiLeptonic_UL17:
+        passJetMult: 98314.0
+        passPreSel: 1274.0
+        passDiJetMass: 524.0
+        SR_woTrig: 221.0
+        SR: 221.0
+        SB_woTrig: 303.0
+        SB: 303.0
+
+    TTToSemiLeptonic_UL16_preVFP:
+        passJetMult: 98735.0
+        passPreSel: 1093.0
+        passDiJetMass: 439.0
+        SR_woTrig: 189.0
+        SR: 189.0
+        SB_woTrig: 250.0
+        SB: 250.0
+
+    TTToSemiLeptonic_UL16_postVFP:
+        passJetMult: 98669.0
+        passPreSel: 1036.0
+        passDiJetMass: 432.0
+        SR_woTrig: 178.0
+        SR: 178.0
+        SB_woTrig: 254.0
+        SB: 254.0
+
+    TTToHadronic_UL18:
+        passJetMult: 99425.0
+        passPreSel: 908.0
+        passDiJetMass: 431.0
+        SR_woTrig: 218.0
+        SR: 218.0
+        SB_woTrig: 213.0
+        SB: 213.0
+
+    TTToHadronic_UL17:
+        passJetMult: 99209.0
+        passPreSel: 947.0
+        passDiJetMass: 516.0
+        SR_woTrig: 241.0
+        SR: 241.0
+        SB_woTrig: 275.0
+        SB: 275.0
+
+    TTToHadronic_UL16_preVFP:
+        passJetMult: 99580.0
+        passPreSel: 741.0
+        passDiJetMass: 376.0
+        SR_woTrig: 183.0
+        SR: 183.0
+        SB_woTrig: 193.0
+        SB: 193.0
+
+    TTToHadronic_UL16_postVFP:
+        passJetMult: 99508.0
+        passPreSel: 810.0
+        passDiJetMass: 380.0
+        SR_woTrig: 173.0
+        SR: 173.0
+        SB_woTrig: 207.0
+        SB: 207.0
+
+    TTTo2L2Nu_UL18:
+        passJetMult: 93945.0
+        passPreSel: 2720.0
+        passDiJetMass: 1094.0
+        SR_woTrig: 437.0
+        SR: 437.0
+        SB_woTrig: 657.0
+        SB: 657.0
+
+    TTTo2L2Nu_UL17:
+        passJetMult: 93823.0
+        passPreSel: 2691.0
+        passDiJetMass: 1031.0
+        SR_woTrig: 402.0
+        SR: 402.0
+        SB_woTrig: 629.0
+        SB: 629.0
+
+    TTTo2L2Nu_UL16_preVFP:
+        passJetMult: 95632.0
+        passPreSel: 2272.0
+        passDiJetMass: 916.0
+        SR_woTrig: 336.0
+        SR: 336.0
+        SB_woTrig: 580.0
+        SB: 580.0
+
+    TTTo2L2Nu_UL16_postVFP:
+        passJetMult: 95590.0
+        passPreSel: 2221.0
+        passDiJetMass: 848.0
+        SR_woTrig: 329.0
+        SR: 329.0
+        SB_woTrig: 519.0
+        SB: 519.0
+
+
+
 counts3_unit:
-  data_UL18A:
-    passJetMult: 96793.0
-    passPreSel: 92424.0
-    passDiJetMass: 28241.0
-    SR_woTrig: 11052.0
-    SR: 11052.0
-    SB_woTrig: 17189.0
-    SB: 17189.0
-  TTbar_from_d3_UL18A: null
-  TTToSemiLeptonic_UL18:
-    passJetMult: 98474.0
-    passPreSel: 96202.0
-    passDiJetMass: 55487.0
-    SR_woTrig: 27839.0
-    SR: 27839.0
-    SB_woTrig: 27648.0
-    SB: 27648.0
-  TTToHadronic_UL18:
-    passJetMult: 99425.0
-    passPreSel: 97639.0
-    passDiJetMass: 70431.0
-    SR_woTrig: 38881.0
-    SR: 38881.0
-    SB_woTrig: 31550.0
-    SB: 31550.0
-  TTTo2L2Nu_UL18:
-    passJetMult: 93945.0
-    passPreSel: 90010.0
-    passDiJetMass: 38427.0
-    SR_woTrig: 16667.0
-    SR: 16667.0
-    SB_woTrig: 21760.0
-    SB: 21760.0
+    data_UL18A:
+        passJetMult: 96793.0
+        passPreSel: 92424.0
+        passDiJetMass: 28241.0
+        SR_woTrig: 11052.0
+        SR: 11052.0
+        SB_woTrig: 17189.0
+        SB: 17189.0
+
+    data_UL17C:
+        passJetMult: 99516.0
+        passPreSel: 92866.0
+        passDiJetMass: 32166.0
+        SR_woTrig: 12046.0
+        SR: 12046.0
+        SB_woTrig: 20120.0
+        SB: 20120.0
+
+    data_UL16_preVFPC:
+        passJetMult: 98714.0
+        passPreSel: 95035.0
+        passDiJetMass: 38686.0
+        SR_woTrig: 14665.0
+        SR: 14665.0
+        SB_woTrig: 24021.0
+        SB: 24021.0
+
+    data_UL16_postVFPF:
+        passJetMult: 44811.0
+        passPreSel: 43230.0
+        passDiJetMass: 18190.0
+        SR_woTrig: 6926.0
+        SR: 6926.0
+        SB_woTrig: 11264.0
+        SB: 11264.0
+
+    TTbar_from_d3_UL18A:
+
+    TTbar_from_d3_UL17C:
+
+    TTbar_from_d3_UL16_preVFPC:
+
+    TTbar_from_d3_UL16_postVFPF:
+
+    TTToSemiLeptonic_UL18:
+        passJetMult: 98474.0
+        passPreSel: 96202.0
+        passDiJetMass: 55487.0
+        SR_woTrig: 27839.0
+        SR: 27839.0
+        SB_woTrig: 27648.0
+        SB: 27648.0
+
+    TTToSemiLeptonic_UL17:
+        passJetMult: 98314.0
+        passPreSel: 96100.0
+        passDiJetMass: 55797.0
+        SR_woTrig: 28059.0
+        SR: 28059.0
+        SB_woTrig: 27738.0
+        SB: 27738.0
+
+    TTToSemiLeptonic_UL16_preVFP:
+        passJetMult: 98735.0
+        passPreSel: 96741.0
+        passDiJetMass: 55684.0
+        SR_woTrig: 27810.0
+        SR: 27810.0
+        SB_woTrig: 27874.0
+        SB: 27874.0
+
+    TTToSemiLeptonic_UL16_postVFP:
+        passJetMult: 98669.0
+        passPreSel: 96739.0
+        passDiJetMass: 54810.0
+        SR_woTrig: 27497.0
+        SR: 27497.0
+        SB_woTrig: 27313.0
+        SB: 27313.0
+
+    TTToHadronic_UL18:
+        passJetMult: 99425.0
+        passPreSel: 97639.0
+        passDiJetMass: 70431.0
+        SR_woTrig: 38881.0
+        SR: 38881.0
+        SB_woTrig: 31550.0
+        SB: 31550.0
+
+    TTToHadronic_UL17:
+        passJetMult: 99209.0
+        passPreSel: 96977.0
+        passDiJetMass: 70032.0
+        SR_woTrig: 38603.0
+        SR: 38603.0
+        SB_woTrig: 31429.0
+        SB: 31429.0
+
+    TTToHadronic_UL16_preVFP:
+        passJetMult: 99580.0
+        passPreSel: 98123.0
+        passDiJetMass: 70357.0
+        SR_woTrig: 39026.0
+        SR: 39026.0
+        SB_woTrig: 31331.0
+        SB: 31331.0
+
+    TTToHadronic_UL16_postVFP:
+        passJetMult: 99508.0
+        passPreSel: 97989.0
+        passDiJetMass: 71183.0
+        SR_woTrig: 39685.0
+        SR: 39685.0
+        SB_woTrig: 31498.0
+        SB: 31498.0
+
+    TTTo2L2Nu_UL18:
+        passJetMult: 93945.0
+        passPreSel: 90010.0
+        passDiJetMass: 38427.0
+        SR_woTrig: 16667.0
+        SR: 16667.0
+        SB_woTrig: 21760.0
+        SB: 21760.0
+
+    TTTo2L2Nu_UL17:
+        passJetMult: 93823.0
+        passPreSel: 89833.0
+        passDiJetMass: 38339.0
+        SR_woTrig: 16627.0
+        SR: 16627.0
+        SB_woTrig: 21712.0
+        SB: 21712.0
+
+    TTTo2L2Nu_UL16_preVFP:
+        passJetMult: 95632.0
+        passPreSel: 92406.0
+        passDiJetMass: 39151.0
+        SR_woTrig: 16949.0
+        SR: 16949.0
+        SB_woTrig: 22202.0
+        SB: 22202.0
+
+    TTTo2L2Nu_UL16_postVFP:
+        passJetMult: 95590.0
+        passPreSel: 92459.0
+        passDiJetMass: 37655.0
+        SR_woTrig: 16258.0
+        SR: 16258.0
+        SB_woTrig: 21397.0
+        SB: 21397.0
+
+
+
