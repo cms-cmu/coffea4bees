@@ -58,9 +58,14 @@ def main():
 
     # 1. Analysis Helpers
     try:
-        from coffea4bees.analysis.tests import topCand_test
-        res, elapsed = run_suite("1/6: Analysis Helpers (Top Candidate Reconstruction)", topCand_test)
-        all_results.append(("Analysis: Top Candidate", res, elapsed))
+        from coffea4bees.analysis.tests import topCand_test, quadjet_test, quadjet_ttHbb_test
+        loader = unittest.TestLoader()
+        analysis_suite = unittest.TestSuite()
+        analysis_suite.addTests(loader.loadTestsFromModule(topCand_test))
+        analysis_suite.addTests(loader.loadTestsFromModule(quadjet_test))
+        analysis_suite.addTests(loader.loadTestsFromModule(quadjet_ttHbb_test))
+        res, elapsed = run_suite("1/6: Analysis Helpers (Top Candidate & QuadJet)", analysis_suite)
+        all_results.append(("Analysis: TopCand & QuadJet", res, elapsed))
         if not res.wasSuccessful():
             overall_success = False
     except Exception as e:
@@ -100,11 +105,14 @@ def main():
 
     # 4. Hemisphere Mixing
     try:
-        from coffea4bees.hemisphere_mixing.tests import test_mixing
+        from coffea4bees.hemisphere_mixing.tests import test_mixing, test_topk_matching
+        loader = unittest.TestLoader()
+        mixing_suite = unittest.TestSuite()
+        mixing_suite.addTest(test_mixing.mixingTestCase("test_hemi_mixing"))
+        mixing_suite.addTests(loader.loadTestsFromModule(test_topk_matching))
         res, elapsed = run_suite(
-            "4/6: Hemisphere Mixing",
-            None,
-            specific_case=test_mixing.mixingTestCase("test_hemi_mixing")
+            "4/6: Hemisphere Mixing & TopK Matching",
+            mixing_suite,
         )
         all_results.append(("Hemisphere Mixing", res, elapsed))
         if not res.wasSuccessful():
@@ -124,10 +132,28 @@ def main():
 
     # 6. Classifier Training Robustness (pytest)
     ok, elapsed = run_pytest_suite(
-        "6/6: Classifier Training Robustness (pytest)",
+        "6/8: Classifier Training Robustness (pytest)",
         "coffea4bees/classifier/tests/test_training_robustness.py",
     )
     all_results.append(("Classifier Training Robustness", ok, elapsed))
+    if not ok:
+        overall_success = False
+
+    # 7. Classifier Imports (pytest)
+    ok, elapsed = run_pytest_suite(
+        "7/8: Classifier Imports (pytest)",
+        "coffea4bees/classifier/tests/test_imports.py",
+    )
+    all_results.append(("Classifier Imports", ok, elapsed))
+    if not ok:
+        overall_success = False
+
+    # 8. Skimmer ttbb Stitching (pytest)
+    ok, elapsed = run_pytest_suite(
+        "8/8: Skimmer ttbb Stitching (pytest)",
+        "coffea4bees/skimmer/tests/ttbb_stitch_test.py",
+    )
+    all_results.append(("Skimmer ttbb Stitching", ok, elapsed))
     if not ok:
         overall_success = False
 
