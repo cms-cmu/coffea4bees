@@ -582,8 +582,8 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
                 for e in (twf.get("dataset") or [])
                 if isinstance(e, dict)
             )
-            test_epochs = 5 if is_lowpt_run3_fvt else (3 if is_multi_era_fvt else 1)
-            train_bs = 64 if is_lowpt_run3_fvt else 256
+            test_epochs = 10 if is_lowpt_run3_fvt else (3 if is_multi_era_fvt else 1)
+            train_bs = 256
             prev_flag = ""
             for item in opts:
                 if isinstance(item, str):
