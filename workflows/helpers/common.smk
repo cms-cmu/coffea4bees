@@ -577,11 +577,26 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
                 for e in (twf.get("dataset") or [])
                 if isinstance(e, dict)
             )
-            test_epochs = 3 if is_multi_era_fvt else 1
+            is_lowpt_run3_fvt = bool(active_years and any("202" in y for y in active_years)) and any(
+                "HCR.FvT_lowpt" in str(e.get("module", ""))
+                for e in (twf.get("dataset") or [])
+                if isinstance(e, dict)
+            )
+            test_epochs = 5 if is_lowpt_run3_fvt else (3 if is_multi_era_fvt else 1)
+            train_bs = 64 if is_lowpt_run3_fvt else 256
+            prev_flag = ""
             for item in opts:
-                if isinstance(item, dict) and "epoch" in item:
-                    item["epoch"] = test_epochs
-                    item["bs_init"] = min(int(item.get("bs_init", 256)), 256)
+                if isinstance(item, str):
+                    prev_flag = item
+                elif isinstance(item, dict) and "epoch" in item:
+                    if prev_flag.startswith("--finetuning"):
+                        item["epoch"] = 1
+                        item["bs_init"] = min(int(item.get("bs_init", 256)), 256)
+                    else:
+                        item["epoch"] = test_epochs
+                        item["bs_init"] = min(int(item.get("bs_init", train_bs)), train_bs)
+                        if is_multi_era_fvt and "FixedStep" in prev_flag:
+                            item["bs_scale"] = 1.0
             entry["option"] = opts
         _atomic_write_yaml(train_path, twf)
 
