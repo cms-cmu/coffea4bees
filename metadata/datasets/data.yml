@@ -2959,6 +2959,42 @@ data:
         sumw: 200707042
         sumw2: 200707042
         total_events: 200707042
+  '2026':
+    # Note: eras C in 2026 are lowPU
+    nanoAOD:
+      B0: /ParkingHH0/Run2026B-PromptReco-v1/NANOAOD
+      B1: /ParkingHH1/Run2026B-PromptReco-v1/NANOAOD
+      D0: /ParkingHH0/Run2026D-PromptReco-v1/NANOAOD
+      D1: /ParkingHH1/Run2026D-PromptReco-v1/NANOAOD
+    picoAOD:
+      B0:
+        count: 0.0
+        files: []
+        saved_events: 0
+        sumw: 0
+        sumw2: 0
+        total_events: 0
+      B1:
+        count: 0.0
+        files: []
+        saved_events: 0
+        sumw: 0
+        sumw2: 0
+        total_events: 0
+      D0:
+        count: 0.0
+        files: []
+        saved_events: 0
+        sumw: 0
+        sumw2: 0
+        total_events: 0
+      D1:
+        count: 0.0
+        files: []
+        saved_events: 0
+        sumw: 0
+        sumw2: 0
+        total_events: 0
 data_3b_for_mixed:
   '2016':
     picoAOD:
