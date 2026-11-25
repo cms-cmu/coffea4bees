@@ -127,8 +127,8 @@ fvt:
 # Phase C.4: reuse per-year JCM from Nov 24 handoff on EOS; FvT friend comes from this roast
 fvt_closure:
   reuse_wJCM_ttbar: false
-  ttbar_compare_plot_config: "coffea4bees/plots/metadata/plotsTTbar_MCvsFromD3_ttHbb.yml"
-  ttbar3b_compare_plot_config: "coffea4bees/plots/metadata/plotsTTbar3b_MCvsFromD3_ttHbb.yml"
+  ttbar_compare_plot_config: "coffea4bees/plots/metadata/plotsTTbar_MCvsFromD3.yml"
+  ttbar3b_compare_plot_config: "coffea4bees/plots/metadata/plotsTTbar3b_MCvsFromD3.yml"
   JCM_file:
     UL16_preVFP: "{eos_prod}/ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml"
     UL16_postVFP: "{eos_prod}/ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml"
