@@ -16,7 +16,8 @@ btagSF_calibration_workflow_coffea4bees:
   # The whole workflow in test mode, on one pinned NanoAOD file per sample (ttHbb and
   # TTToSemiLeptonic, UL18 and 2022_EE): processor, merge, maps, closure plots.
   script:
-    - pixi run snakemake -s coffea4bees/workflows/Snakefile_btagSF_calibration.smk --configfile coffea4bees/workflows/config/btagSF_calibration_ci.yml --config test=true --jobs 4
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE -s coffea4bees/workflows/Snakefile_btagSF_calibration.smk --configfile coffea4bees/workflows/config/btagSF_calibration_ci.yml --config test=true --jobs 4
   artifacts:
     paths:
       - barista_framework/output/btagSF_calibration_ci/histAll_btagSF_calibration.coffea

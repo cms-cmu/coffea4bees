@@ -269,6 +269,6 @@ not_covered:
   make_classifier_friendtree: "backward-compatibility wrapper for PhaseB_2_make_classifier_friendtree"
   mixdata_closure: "hard-coded config, no production config"
   mixeddata: "pre-roast mixed-data analysis workflow"
-  reana: "REANA workflow, exercised by the reana stage"
+  reana: "REANA workflow (manual/scheduled outside GitLab CI)"
   stats: "backward-compatibility wrapper for PhaseF_2_stats"
   testCI: "hard-coded CI demo workflow"
