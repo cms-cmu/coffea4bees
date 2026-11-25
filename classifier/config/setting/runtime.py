@@ -29,8 +29,8 @@ class Torch(GlobalSetting):
     @classmethod
     def set__deterministic_algorithm(cls, value: bool):
         """Toggle PyTorch deterministic algorithms and mkldnn lazily without top-level torch import."""
-        if value is ...:
-            return False
+        if value is ... or value is None:
+            return None
 
         import torch
 
