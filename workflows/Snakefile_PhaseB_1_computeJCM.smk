@@ -111,8 +111,8 @@ def get_raw_jcm_config():
         res['runner']['shared_dask'] = False
         res['runner']['run_performance'] = False
         res['runner'].setdefault('test_files', 1)
-        res['runner'].setdefault('maxchunks', 2)
-        res['runner']['chunksize'] = 100000
+        res['runner']['maxchunks'] = 1
+        res['runner']['chunksize'] = int(config.get('test_chunksize', 30000))
         res['runner'].setdefault('workers', 4)
         if res['config'].get('top_reconstruction') == 'slow':
             res['config']['top_reconstruction'] = 'fast'

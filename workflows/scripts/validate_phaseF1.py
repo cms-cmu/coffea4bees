@@ -13,6 +13,12 @@ STANDARD_CUTS = ("passJetMult", "passPreSel", "passDiJetMass", "SR", "SB")
 TTBAR_D3_CUTS = ("passPreSel", "passDiJetMass", "SR", "SB")
 DILEP_CUTS = ("passMuMu", "passElMu")
 CUTFLOW_MAPS = ("counts4", "counts3", "counts4_unit", "counts3_unit")
+COFFEA_CF_KEYS = {
+    "counts4": "cutFlowFourTag",
+    "counts3": "cutFlowThreeTag",
+    "counts4_unit": "cutFlowFourTagUnitWeight",
+    "counts3_unit": "cutFlowThreeTagUnitWeight",
+}
 
 
 def _is_finite(val):
@@ -21,6 +27,15 @@ def _is_finite(val):
 
 def _close(a, b):
     return abs(a - b) <= 1e-4 * max(1.0, abs(a), abs(b))
+
+
+def _exact_val(mname, ds, cut, yaml_val, coffea_out=None):
+    """Fall back to unrounded .coffea cutflow when weighted YAML rounds tiny yields to 0.0."""
+    if yaml_val == 0 and mname in ("counts3", "counts4") and coffea_out is not None:
+        cf = coffea_out.get(COFFEA_CF_KEYS[mname], {})
+        if ds in cf and cut in cf[ds]:
+            return float(cf[ds][cut])
+    return yaml_val
 
 
 def validate_coffea(coffea_path, lines):
@@ -36,9 +51,10 @@ def validate_coffea(coffea_path, lines):
         raise AssertionError(f"No histograms found in {coffea_path}")
     lines.append(f"=== Phase F.1 Coffea Output ({len(hists)} histograms) ===")
     lines.append(f"  File: {coffea_path} (size={os.path.getsize(coffea_path)} bytes)  PASS")
+    return out
 
 
-def validate_cutflow(cutflow_path, lines):
+def validate_cutflow(cutflow_path, lines, coffea_out=None):
     if not os.path.exists(cutflow_path):
         raise AssertionError(f"Missing cutflow YAML: {cutflow_path}")
     with open(cutflow_path) as f:
@@ -60,7 +76,7 @@ def validate_cutflow(cutflow_path, lines):
     data_keys = sorted(k for k in c3 if k.startswith("data_"))
     if not data_keys:
         raise AssertionError("Missing required 'data_*' dataset in counts3")
-    sig_prefixes = ("GluGluToHHTo4B_", "GluGlutoHHto4B_", "ttHbb_")
+    sig_prefixes = ("GluGluToHHTo4B_", "GluGlutoHHto4B_", "ttHbb_", "ZZ4b", "ZH4b", "ggZH4b")
     sig_keys = sorted(k for k in c3 if k.startswith(sig_prefixes))
     if not sig_keys:
         raise AssertionError(f"Expected at least one signal dataset starting with {sig_prefixes} in counts3")
@@ -88,23 +104,28 @@ def validate_cutflow(cutflow_path, lines):
             if not ok:
                 raise AssertionError(f"Invalid lowpt cutflow for {ds}: threeTag(passPreSel)={v3}, fourTag(passJetMult)={v4_jm}")
         else:
-            ok = _is_finite(v3) and _is_finite(v4) and v3 > 0 and v4 > 0
+            e3 = _exact_val("counts3", ds, "passPreSel", v3, coffea_out)
+            e4 = _exact_val("counts4", ds, "passPreSel", v4, coffea_out)
+            ok = (
+                _is_finite(v3) and v3 >= 0 and _is_finite(e3) and e3 > 0
+                and _is_finite(v4) and v4 >= 0 and _is_finite(e4) and e4 > 0
+            )
             lines.append(f"{ds:35s} {v3 if v3 is not None else 0:12.2f} {v4 if v4 is not None else 0:12.2f} {'PASS' if ok else 'FAIL'}")
             if not ok:
-                raise AssertionError(f"Invalid passPreSel cutflow for {ds}: threeTag={v3}, fourTag={v4}")
+                raise AssertionError(f"Invalid passPreSel cutflow for {ds}: threeTag={e3}, fourTag={e4}")
 
         # Verify positive weighted & unweighted counts across cuts and MC weight application
         if ds.startswith(sig_prefixes) or ds.startswith("TTTo"):
+            checks = [("counts3", c3), ("counts3_unit", c3_unit)]
             for cut in ("passJetMult", "passPreSel", "passDiJetMass", "SR"):
-                for mname, m in (("counts3", c3), ("counts3_unit", c3_unit)):
-                    val = m[ds][cut]
-                    if not (_is_finite(val) and val > 0):
-                        raise AssertionError(f"{mname}.{ds}.{cut}: expected > 0, got {val}")
+                cur_checks = list(checks)
                 if not is_lowpt or cut == "passJetMult":
-                    for mname, m in (("counts4", c4), ("counts4_unit", c4_unit)):
-                        val = m[ds][cut]
-                        if not (_is_finite(val) and val > 0):
-                            raise AssertionError(f"{mname}.{ds}.{cut}: expected > 0, got {val}")
+                    cur_checks.extend((("counts4", c4), ("counts4_unit", c4_unit)))
+                for mname, m in cur_checks:
+                    val = m[ds][cut]
+                    exact_val = _exact_val(mname, ds, cut, val, coffea_out)
+                    if not (_is_finite(val) and _is_finite(exact_val) and val >= 0 and exact_val > 0):
+                        raise AssertionError(f"{mname}.{ds}.{cut}: expected > 0, got {exact_val}")
             w_cut = "passJetMult" if is_lowpt else "passPreSel"
             if _close(c4[ds][w_cut], c4_unit[ds][w_cut]):
                 raise AssertionError(f"{ds}: expected weighted counts4.{w_cut} != raw counts4_unit.{w_cut}")
@@ -180,8 +201,8 @@ def main():
     args = parser.parse_args()
 
     lines = []
-    validate_coffea(args.coffea, lines)
-    validate_cutflow(args.cutflow, lines)
+    coffea_out = validate_coffea(args.coffea, lines)
+    validate_cutflow(args.cutflow, lines, coffea_out=coffea_out)
     lines.append("")
     lines.append("Phase F.1 validation PASSED.")
 

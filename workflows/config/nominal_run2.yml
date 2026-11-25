@@ -161,6 +161,9 @@ analysis_config:
     apply_FvT: true
     apply_JCM: true
     apply_trigWeight: true
+    # TEMPORARY: ZZ4b UL16_preVFP/UL16_postVFP were re-skimmed and metadata/friends/trigweights_Run2_v2.json
+    # still indexes the old UUIDs. Remove once workflows/config/trigweights_ZZ4b_UL16.yml is run and merged.
+    require_trigWeight: false
     apply_btagSF: true
     apply_boosted_veto: false
     run_SvB: true

@@ -7,7 +7,7 @@ phaseC_fvt_run2_coffea4bees:
     - phaseB_2_classifier_inputs_run2_coffea4bees
   script:
     - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
-    - $SNAKEMAKE all_PhaseC -s coffea4bees/workflows/Snakefile_PhaseC.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL18":["A"]}' --jobs 2
+    - $SNAKEMAKE all_PhaseC -s coffea4bees/workflows/Snakefile_PhaseC.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' --jobs 2
     - python coffea4bees/workflows/scripts/validate_phaseC.py --yields output/TEST/PhaseC_FvT/yields.json --model-result output/TEST/classifier/FvT_nominal/result.json --friend-result output/TEST/friend/FvT_nominal/result.json --output output/TEST/PhaseC_FvT/phaseC_validation.txt
   artifacts:
     when: always
@@ -29,7 +29,7 @@ phaseC_fvt_lowpt_run2_coffea4bees:
     - phaseB_2_classifier_inputs_lowpt_run2_coffea4bees
   script:
     - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
-    - $SNAKEMAKE all_PhaseC -s coffea4bees/workflows/Snakefile_PhaseC.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL18":["A"]}' --jobs 2
+    - $SNAKEMAKE all_PhaseC -s coffea4bees/workflows/Snakefile_PhaseC.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' --jobs 2
     - python coffea4bees/workflows/scripts/validate_phaseC.py --yields output/run2_lowpt/PhaseC_FvT/yields.json --model-result output/run2_lowpt/classifier/lowpt_FvT/result.json --friend-result output/run2_lowpt/friend/lowpt_FvT/result.json --output output/run2_lowpt/PhaseC_FvT/phaseC_validation.txt
   artifacts:
     when: always
@@ -51,7 +51,7 @@ phaseC_fvt_ttHbb_coffea4bees:
     - phaseB_2_classifier_inputs_ttHbb_coffea4bees
   script:
     - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
-    - $SNAKEMAKE all_PhaseC -s coffea4bees/workflows/Snakefile_PhaseC.smk --configfile coffea4bees/workflows/config/ttHbb.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL18":["A"]}' --jobs 2
+    - $SNAKEMAKE all_PhaseC -s coffea4bees/workflows/Snakefile_PhaseC.smk --configfile coffea4bees/workflows/config/ttHbb.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' --jobs 2
     - python coffea4bees/workflows/scripts/validate_phaseC.py --yields output/ttHbb/PhaseC_FvT/yields.json --model-result output/ttHbb/classifier/FvT_ttHbb_stitched/result.json --friend-result output/ttHbb/friend/FvT_ttHbb_stitched/result.json --output output/ttHbb/PhaseC_FvT/phaseC_validation.txt
   artifacts:
     when: always
