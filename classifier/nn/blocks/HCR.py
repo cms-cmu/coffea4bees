@@ -2089,6 +2089,11 @@ class HCR(nn.Module):
         super(HCR, self).__init__()
         self.debug = False
         self.dA = len(ancillaryFeatures)
+        self._era_indices = [
+            idx
+            for idx, name in enumerate(ancillaryFeatures)
+            if isinstance(name, str) and name.startswith("year_")
+        ]
         self.dD = dijetFeatures  # dimension of embeded   dijet feature space
         self.dQ = quadjetFeatures  # dimension of embeded quadjet feature space
         self.device = device
@@ -2203,6 +2208,15 @@ class HCR(nn.Module):
         self.out = GhostBatchNorm1d(
             self.dQ, features_out=self.nC, conv=True, name="out", device=self.device
         )
+        if self._era_indices:
+            # Per-era additive logit bias at the event head so the classifier can
+            # represent arbitrary non-monotonic era class priors directly (and calibrate
+            # them during output-layer finetuning) without compressing era identity
+            # through the 8-dim event bottleneck.
+            self.era_out = linear(
+                len(self._era_indices), self.nC, name="era out", bias=False
+            )
+            nn.init.zeros_(self.era_out.module.weight)
 
         # self.layers.addLayer(self.combine_q, [self.quadjetResNetBlock.reinforce[-1]])
         # self.layers.addLayer(self.out,      [self.combine_q])#[self.quadjetResNetBlock.reinforce[-1], self.select_q])
@@ -2211,6 +2225,8 @@ class HCR(nn.Module):
         self.layers.addLayer(
             self.out, [self.select_q]
         )  # [self.quadjetResNetBlock.reinforce[-1], self.select_q])
+        if self._era_indices:
+            self.layers.addLayer(self.era_out, startIndex=self.out)
         self.forwardCalls = 0
 
     def embedding_layers(self):
@@ -2239,6 +2255,11 @@ class HCR(nn.Module):
 
     def forward(self, j, o, a):
         self.forwardCalls += 1
+        era_oh = (
+            a.view(a.shape[0], self.dA)[:, self._era_indices]
+            if self._era_indices
+            else None
+        )
         # print('\n-------------------------------\n')
         j, d, q, o, ooMdPhi, mask_oo, doMdPhi, mask_do = self.inputEmbed(
             j, o, a
@@ -2319,6 +2340,8 @@ class HCR(nn.Module):
         # project the final event-level pixel into the class score space
         c_logits = self.out(e)  # , debug=True)
         c_logits = c_logits.view(n, self.nC)
+        if era_oh is not None:
+            c_logits = c_logits + self.era_out(era_oh)
 
         if self.store or self.onnx:
             c_score = F.softmax(c_logits, dim=1)

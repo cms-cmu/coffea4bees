@@ -39,7 +39,7 @@ setting:
           UL18: [A, B, C, D]
   - module: HCR.InputBranch
     option:
-      - feature_ancillary: [xW, nSelJets, xbW, year]
-      # remove the "year" from the input when the dataset only contains one year
-      # otherwise the variance will be infinite and the output will be NaN
+      - feature_ancillary: [xW, nSelJets, xbW, year_UL16_preVFP, year_UL16_postVFP, year_UL17, year_UL18]
+      # remove the "year_*" indicators from the input when the dataset only contains one era
+      # otherwise the variance will be zero and normalization will be degenerate
   ##########################################################
