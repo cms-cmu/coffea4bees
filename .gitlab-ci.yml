@@ -47,6 +47,10 @@ variables:
   RUN_REANA: "false"
   CLASSIFIER_CONFIG_PATHS: coffea4bees
   CLASSIFIER_WFS: coffea4bees/classifier/test/config/workflow/CI/
+  MKL_CBWR: "COMPATIBLE"
+  ATEN_CPU_CAPABILITY: "avx2"
+  OMP_NUM_THREADS: "1"
+  MKL_NUM_THREADS: "1"
 
 include:
   - local: workflows/gitlab-CI/stages_code.yml

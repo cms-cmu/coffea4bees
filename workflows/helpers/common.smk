@@ -509,11 +509,18 @@ def _replace_or_append_flag(opts, prefix, replacement):
 
 def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
     """Normalize classifier common.yml, train.yml, and evaluate.yml for fast CPU CI test=true runs."""
+    os.environ["MKL_CBWR"] = "COMPATIBLE"
+    os.environ["ATEN_CPU_CAPABILITY"] = "avx2"
+    os.environ["OMP_NUM_THREADS"] = "1"
+    os.environ["MKL_NUM_THREADS"] = "1"
+
     if common_path and os.path.exists(common_path):
         with open(common_path) as f:
             cdata = yaml.safe_load(f) or {}
         setting = cdata.setdefault("setting", [])
         _set_setting_option(setting, "ml.DataLoader", "num_workers", 0)
+        _set_setting_option(setting, "runtime.Torch", "n_threads", 1)
+        _set_setting_option(setting, "runtime.Torch", "deterministic_algorithm", True)
         _set_setting_option(setting, "ROOT", "friend_allow_missing", True)
         if isinstance(year_eras, dict) and year_eras:
             _set_setting_option(setting, "cms.CollisionData", "eras", {str(k): list(v) for k, v in year_eras.items()})
@@ -572,6 +579,22 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
                 opts = ["--kfolds 2" if (isinstance(o, str) and (o == "--kfolds" or o.startswith("--kfolds "))) else o for o in opts]
             else:
                 opts.insert(0, "--kfolds 2")
+            is_hcr_model = str(entry.get("module", "")).startswith(("HCR.", "HCR_lowpt."))
+            if is_hcr_model:
+                gb_updated = False
+                for idx, o in enumerate(opts):
+                    if isinstance(o, str) and o == "--ghost-batch":
+                        if idx + 1 < len(opts) and isinstance(opts[idx + 1], dict):
+                            opts[idx + 1]["n_batches"] = 16
+                            gb_updated = True
+                            break
+                if not gb_updated:
+                    kf_idx = next(
+                        (i for i, o in enumerate(opts) if isinstance(o, str) and (o == "--kfolds" or o.startswith("--kfolds "))),
+                        -1,
+                    )
+                    opts.insert(kf_idx + 1, "--ghost-batch")
+                    opts.insert(kf_idx + 2, {"n_batches": 16})
             is_multi_era_fvt = bool(active_years and len(active_years) > 1) and any(
                 "HCR.FvT" in str(e.get("module", ""))
                 for e in (twf.get("dataset") or [])
@@ -592,9 +615,11 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
                     if prev_flag.startswith("--finetuning"):
                         item["epoch"] = 1
                         item["bs_init"] = min(int(item.get("bs_init", 256)), 256)
+                        item["lr_init"] = min(float(item.get("lr_init", 1e-4)), 1e-4)
                     else:
                         item["epoch"] = test_epochs
                         item["bs_init"] = min(int(item.get("bs_init", train_bs)), train_bs)
+                        item["lr_init"] = min(float(item.get("lr_init", 1e-2)), 2e-3)
                         if is_multi_era_fvt and "FixedStep" in prev_flag:
                             item["bs_scale"] = 1.0
             entry["option"] = opts

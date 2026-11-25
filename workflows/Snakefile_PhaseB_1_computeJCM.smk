@@ -30,6 +30,10 @@ is_test = config.get('test', False)
 if isinstance(is_test, str):
     is_test = is_test.lower() in ("true", "1", "yes")
 config['test'] = is_test
+if is_test:
+    os.environ["MKL_CBWR"] = "COMPATIBLE"
+    os.environ["OMP_NUM_THREADS"] = "1"
+    os.environ["MKL_NUM_THREADS"] = "1"
 
 # Container and python bin
 container_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
