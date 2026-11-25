@@ -514,6 +514,8 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
             cdata = yaml.safe_load(f) or {}
         setting = cdata.setdefault("setting", [])
         _set_setting_option(setting, "ml.DataLoader", "num_workers", 0)
+        _set_setting_option(setting, "runtime.Torch", "n_threads", 1)
+        _set_setting_option(setting, "runtime.Torch", "deterministic_algorithm", True)
         _set_setting_option(setting, "ROOT", "friend_allow_missing", True)
         if isinstance(year_eras, dict) and year_eras:
             _set_setting_option(setting, "cms.CollisionData", "eras", {str(k): list(v) for k, v in year_eras.items()})
