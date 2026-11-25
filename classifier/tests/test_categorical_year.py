@@ -38,8 +38,21 @@ def test_add_year_emits_int_and_onehot(era, expected_int):
 
 def _make_dummy_batch(batch_size: int, n_ancillary: int, with_onehot: bool):
     torch.manual_seed(0)
-    j = torch.rand(batch_size, 16) * 50.0 + 20.0
-    o = torch.rand(batch_size, 40) * 50.0 + 20.0
+    j = torch.zeros(batch_size, 4, 4)
+    j[:, 0, :] = torch.rand(batch_size, 4) * 100.0 + 40.0  # pt
+    j[:, 1, :] = torch.rand(batch_size, 4) * 4.8 - 2.4     # eta
+    j[:, 2, :] = torch.rand(batch_size, 4) * 6.28 - 3.14   # phi
+    j[:, 3, :] = torch.rand(batch_size, 4) * 20.0 + 5.0    # mass
+    j = j.view(batch_size, 16)
+
+    o = torch.zeros(batch_size, 5, 8)
+    o[:, 0, :] = torch.rand(batch_size, 8) * 80.0 + 25.0   # pt
+    o[:, 1, :] = torch.rand(batch_size, 8) * 4.8 - 2.4     # eta
+    o[:, 2, :] = torch.rand(batch_size, 8) * 6.28 - 3.14   # phi
+    o[:, 3, :] = torch.rand(batch_size, 8) * 15.0 + 3.0    # mass
+    o[:, 4, :] = 1.0                                       # isSelJet
+    o = o.view(batch_size, 40)
+
     a = torch.zeros(batch_size, n_ancillary)
     a[:, 0] = torch.rand(batch_size) * 2.0  # xW
     a[:, 1] = torch.randint(4, 10, (batch_size,)).float()  # nSelJets >= 4
