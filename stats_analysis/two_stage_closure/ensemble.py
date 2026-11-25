@@ -720,7 +720,7 @@ class multijetEnsemble:
             'ratio' : 'numer A',
             'color' : 'ROOT.kBlue'}
 
-        lumi_title = f"{lumi} fb^{{-1}} (13 TeV)"
+        lumi_title = config.lumi_title()
         region_title = 'SR' if args.region == 'SR' else regionName.get(args.region, args.region)
         classifier_name = classifier.replace('_', ' ')
         xTitle = f'{classifier_name} P(Signal) #(Bin) + #(Bins)#(Mix) #cbar P({self.channel.upper()}) is largest'

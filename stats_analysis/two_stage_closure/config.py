@@ -70,6 +70,16 @@ closure_file_out_pkl = None
 closure_file_out_log = None
 log_file = None
 lumi = None
+lumi_year_label = None   # e.g. "2025", "2022+2023", "Run 2" (from --years; see runTwoStageClosure.py)
+lumi_energy = "13"       # "13.6" for Run 3 years
+
+
+def lumi_title():
+    """Right-hand plot title: '<years>, <lumi> fb^{-1} (<energy> TeV)' (ROOT TLatex)."""
+    prefix = f"{lumi_year_label}, " if lumi_year_label else ""
+    return f"{prefix}{lumi} fb^{{-1}} ({lumi_energy} TeV)"
+
+
 closure_fit_x_min = 0
 maxBasisEnsemble = 5
 maxBasisClosure = 5

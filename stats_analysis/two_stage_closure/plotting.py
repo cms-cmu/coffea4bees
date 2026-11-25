@@ -99,7 +99,7 @@ def plotMix(mix, channel=None, ymax=None):
         'weight': sig_scale,
         'color' : 'ROOT.kViolet'}
 
-    lumi_title = f"{lumi} fb^{{-1}} (13 TeV)"
+    lumi_title = config.lumi_title()
     region_title = 'SR' if args.region == 'SR' else regionName.get(args.region, args.region)
     classifier_name = classifier.replace('_', ' ')
     xTitle = f'{classifier_name} Classifier Regressed P(Signal)' + (' Bin' if use_binned else '')
@@ -352,7 +352,7 @@ def plotSubsamplesOverlay():
         h_ave.Draw("HIST SAME")
         legend.Draw("SAME")
 
-        lumi_title = f"{lumi} fb^{{-1}} (13 TeV)"
+        lumi_title = config.lumi_title()
         latex = ROOT.TLatex()
         latex.SetNDC()
         latex.SetTextFont(61)
@@ -659,7 +659,7 @@ def plotAverageComparison(channel):
     legend.AddEntry(h_mix_ave_bkg, f"#LT Mixed Data Bkg #GT (N = {int(round(int_mixbkg))})", "l")
     legend.Draw("SAME")
 
-    lumi_title = f"{lumi} fb^{{-1}} (13 TeV)"
+    lumi_title = config.lumi_title()
     latex = ROOT.TLatex()
     latex.SetNDC()
     latex.SetTextFont(61)
@@ -1015,7 +1015,7 @@ def plotDataVsMixedVsBkg(channel, region="SR"):
     legend.AddEntry(h_nom_data4b, f"data (N = {int(round(int_data4b))})", "ep")
     legend.Draw("SAME")
 
-    lumi_title = f"{lumi} fb^{{-1}} (13 TeV)"
+    lumi_title = config.lumi_title()
     latex = ROOT.TLatex()
     latex.SetNDC()
     latex.SetTextFont(61)
