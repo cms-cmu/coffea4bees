@@ -145,7 +145,7 @@ rule make_subsample_jcm_gallery_b1:
         f"{out_b1}logs/make_jcm_gallery.log"
     params:
         jcm_dir = out_b1,
-        title = "bkg_syst_B_1_JCM_fit_plots",
+        title = "Stage_B_1_Subsample_JCM_Fit_Plots",
         container_wrapper = config['analysis_container_wrapper'],
         python_bin = python_bin,
     shell:
@@ -362,7 +362,7 @@ rule test_plots_subsample_closure:
         if [ -f src/plotting/make_gallery.py ]; then
             echo "Making gallery" 2>&1 | tee -a {log}
             {params.container_wrapper} {params.python_bin} src/plotting/make_gallery.py \
-                {params.output_dir} -m {input.plot_cfg} --title "$(basename {params.output_dir})" 2>&1 | tee -a {log}
+                {params.output_dir} -m {input.plot_cfg} --title Stage_B_1_Subsample_JCM_Closure_Plots_v0 2>&1 | tee -a {log}
         fi
         touch {output.done}
         """

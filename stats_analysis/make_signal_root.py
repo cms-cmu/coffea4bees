@@ -43,7 +43,10 @@ def find_key(var, keys):
         if k in keys:
             return k
     suffix = "ps_ttHbb" if "ttHbb" in var else "ps"
-    return next((k for k in keys if prefix in k and suffix in k), None)
+    return next(
+        (k for k in keys if prefix in k and (prefix != "SvB" or "SvB_MA" not in k) and suffix in k),
+        None,
+    )
 
 
 class Writer:
