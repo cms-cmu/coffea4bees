@@ -98,7 +98,6 @@ fvt:
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/HH4b_2024_v2/FvT"
   label: "FvT_nominal"
-  output_dir: "output/FvT_nominal/"
   # yields page (output_dir/yields.html): four-tag data vs JCM x (3b data - 3b ttbar) + 4b ttbar
   yields_ratio: ["d4 / d3 - t3 + t4"]
   plot_inputs: true
@@ -133,7 +132,6 @@ svb:
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/HH4b_2024_v2/SvB"
   label: "SvB_nominal"
-  output_dir: "output/SvB_nominal/"
   plot_inputs: true
   evaluate: true
   model: "{eos_base}/classifier/{label}"
@@ -163,6 +161,9 @@ analysis_config:
     apply_FvT: true
     apply_JCM: true
     apply_trigWeight: true
+    # TEMPORARY: ZZ4b UL16_preVFP/UL16_postVFP were re-skimmed and metadata/friends/trigweights_Run2_v2.json
+    # still indexes the old UUIDs. Remove once workflows/config/trigweights_ZZ4b_UL16.yml is run and merged.
+    require_trigWeight: false
     apply_btagSF: true
     apply_boosted_veto: false
     run_SvB: true

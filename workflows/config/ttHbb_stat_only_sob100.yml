@@ -1,0 +1,37 @@
+# ==============================================================================
+# ttHbb Run 2 STAT-ONLY ANALYSIS — SoB_100 Irregular SR + Corner Veto SB
+# ==============================================================================
+# Uses the data-driven symmetrized S/B iso-contour (SoB_100) for SR and
+# corner_veto (>250, >250) for SB.
+# Because SR/SB regions are baked into classifier_inputs (HCR_input) and JCM,
+# run Phases B -> C -> C4 -> D -> F (or reuse SvB_MA friend trees if desired).
+# ==============================================================================
+
+base: coffea4bees/workflows/config/ttHbb.yml
+
+label: "ttHbb_stat_only_sob100"
+output_path: "output/ttHbb/"
+
+candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_sob100.yml"
+jcm_known_counts_fatal: false
+known_counts_fatal: false
+
+classifier_inputs:
+  candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_sob100.yml"
+  config:
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_sob100.yml"
+
+analysis_config:
+  config:
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_sob100.yml"
+    fill_histograms: "SvB"
+    friends:
+      FvT: "{eos_prod}/{roast_id}/friend/FvT_ttHbb_stitched/result.json@@analysis.0.merged"
+      SvB_MA: "{eos_prod}/{roast_id}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
+
+make_combine_inputs:
+  rebin: 12
+  stat_only: "--stat_only"
+  unify_background: true
+
+rebin: 12

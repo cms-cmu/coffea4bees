@@ -4,6 +4,17 @@ import yaml
 
 include: "helpers/common.smk"
 
+is_test = config.get('test', False)
+if isinstance(is_test, str):
+    is_test = is_test.lower() in ("true", "1", "yes")
+config['test'] = is_test
+if config.get('test_year_eras') and isinstance(config['test_year_eras'], dict):
+    config['year_eras'] = config['test_year_eras']
+
+base_output = config.get('output_path', 'output/')
+if not base_output.endswith('/'):
+    base_output += '/'
+
 # Check if multi-classifier mode is enabled:
 # e.g. both 'svb' and 'svb_ma' are configured, or 'classifiers' list is provided
 svb_models = []
@@ -17,7 +28,7 @@ if 'classifiers' in config and isinstance(config['classifiers'], list):
             svb_models.append((entry['name'], entry))
 
 if len(svb_models) <= 1:
-    svb_cfg = resolve_config_section(config, primary_key='svb', fallback_keys=['svb_classifier', 'classifier'])
+    svb_cfg = resolve_config_section(config, primary_key='svb', fallback_keys=['svb_ma', 'svb_classifier', 'classifier'])
     for k, v in svb_cfg.items():
         config[k] = v
 
@@ -26,10 +37,19 @@ if len(svb_models) <= 1:
     config.setdefault('classifier_config_paths', "coffea4bees")
     config.setdefault('wfs_base', "coffea4bees/classifier/config/workflows/HH4b_2024_v2/SvB")
     config.setdefault('label', "SvB_nominal")
-    config.setdefault('output_dir', f"output/{config['label']}/")
+    _default_d_sub = "PhaseD_SvB_MA" if (
+        ('svb_ma' in config and 'svb' not in config)
+        or str(config.get('label', '')).startswith('SvB_MA')
+    ) else "PhaseD_SvB"
+    config.setdefault('output_dir', f"{base_output}{_default_d_sub}/")
+    if isinstance(config.get('output_dir'), str) and '{output_path}' in config['output_dir']:
+        config['output_dir'] = config['output_dir'].replace('{output_path}', base_output)
     config.setdefault('plot_inputs', True)
     config.setdefault('plot_weights', True)
     config.setdefault('evaluate', True)
+    if is_test:
+        config['plot_inputs'] = False
+        config['plot_weights'] = False
 
     config.setdefault('model', f"{config['eos_base']}/classifier/{config['label']}")
     config.setdefault('friend', f"{config['eos_base']}/friend/{config['label']}")
@@ -42,19 +62,16 @@ if len(svb_models) <= 1:
 
     if 'classifier_setting' in config:
         common_path = f"{output_dir}/common.yml"
-        with open(common_path, 'w') as f:
-            yaml.dump({'setting': config['classifier_setting']}, f, default_flow_style=False)
+        _atomic_write_yaml(common_path, {'setting': config['classifier_setting']})
         config['common'] = common_path
 
     if 'train_workflow' in config or 'eval_workflow' in config:
         wfs_dir = f"{output_dir}/wfs"
         os.makedirs(wfs_dir, exist_ok=True)
         if 'train_workflow' in config:
-            with open(f"{wfs_dir}/train.yml", 'w') as f:
-                yaml.dump(config['train_workflow'], f, default_flow_style=False)
+            _atomic_write_yaml(f"{wfs_dir}/train.yml", config['train_workflow'])
         if 'eval_workflow' in config:
-            with open(f"{wfs_dir}/evaluate.yml", 'w') as f:
-                yaml.dump(config['eval_workflow'], f, default_flow_style=False)
+            _atomic_write_yaml(f"{wfs_dir}/evaluate.yml", config['eval_workflow'])
         config['wfs_base'] = wfs_dir
     elif config.get('workflow_overrides') or config.get('workflow_inserts'):
         # Keep the checked-in templates, override options by flag (e.g. the roast's JCM / manifest)
@@ -62,6 +79,17 @@ if len(svb_models) <= 1:
         config['wfs_base'] = write_workflow_overrides(config['wfs_base'], config.get('workflow_overrides'),
                                                       f"{output_dir}/wfs", log=print,
                                                       inserts=config.get('workflow_inserts'))
+    elif is_test:
+        wfs_dir = f"{output_dir}/wfs"
+        os.makedirs(wfs_dir, exist_ok=True)
+        for fname in ("train.yml", "evaluate.yml"):
+            src = os.path.join(config['wfs_base'], fname)
+            if os.path.exists(src):
+                shutil.copyfile(src, os.path.join(wfs_dir, fname))
+        config['wfs_base'] = wfs_dir
+
+    if is_test:
+        apply_test_classifier_settings(config['wfs_base'], config.get('common'), config.get('year_eras'))
 
     include: "../../src/classifier/workflow/Snakefile"
 
@@ -79,19 +107,28 @@ else:
     eval_templates = config.setdefault("eval_templates", {})
     models_dict = config.setdefault("models", {})
     friends_dict = config.setdefault("friends_dict", {})
+    labels_dict = config.setdefault("labels_dict", {})
+    plot_inputs_dict = config.setdefault("plot_inputs_dict", {})
+    plot_weights_dict = config.setdefault("plot_weights_dict", {})
 
     eos_base_global = config.get('eos_base', "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/nominal_sel")
     config.setdefault('classifier_config_paths', "coffea4bees")
 
     all_phase_d_targets = []
+    _subdir_map = {'svb': 'PhaseD_SvB', 'svb_ma': 'PhaseD_SvB_MA'}
 
     for key, mcfg in svb_models:
         m_eos_base = mcfg.get('eos_base', eos_base_global)
         m_label = mcfg.get('label', key)
-        m_output_dir = mcfg.get('output_dir', f"output/{m_label}/").rstrip('/')
+        m_subdir = _subdir_map.get(key, f"PhaseD_{key}")
+        m_default_dir = f"{base_output}{m_subdir}/"
+        m_output_dir = mcfg.get('output_dir', m_default_dir)
+        if isinstance(m_output_dir, str) and '{output_path}' in m_output_dir:
+            m_output_dir = m_output_dir.replace('{output_path}', base_output)
+        m_output_dir = m_output_dir.rstrip('/')
         m_wfs_base = mcfg.get('wfs_base', "coffea4bees/classifier/config/workflows/HH4b_2024_v2/SvB")
-        m_plot_inputs = mcfg.get('plot_inputs', False)
-        m_plot_weights = mcfg.get('plot_weights', False)
+        m_plot_inputs = False if is_test else mcfg.get('plot_inputs', False)
+        m_plot_weights = False if is_test else mcfg.get('plot_weights', False)
         m_evaluate = mcfg.get('evaluate', True)
 
         m_model = mcfg.get('model', f"{m_eos_base}/classifier/{m_label}")
@@ -113,16 +150,13 @@ else:
 
         if 'classifier_setting' in config:
             common_path = f"{m_output_dir}/common.yml"
-            with open(common_path, 'w') as f:
-                yaml.dump({'setting': config['classifier_setting']}, f, default_flow_style=False)
+            _atomic_write_yaml(common_path, {'setting': config['classifier_setting']})
 
         if 'train_workflow' in mcfg or 'eval_workflow' in mcfg:
             if 'train_workflow' in mcfg:
-                with open(f"{wfs_dir}/train.yml", 'w') as f:
-                    yaml.dump(mcfg['train_workflow'], f, default_flow_style=False)
+                _atomic_write_yaml(f"{wfs_dir}/train.yml", mcfg['train_workflow'])
             if 'eval_workflow' in mcfg:
-                with open(f"{wfs_dir}/evaluate.yml", 'w') as f:
-                    yaml.dump(mcfg['eval_workflow'], f, default_flow_style=False)
+                _atomic_write_yaml(f"{wfs_dir}/evaluate.yml", mcfg['eval_workflow'])
         else:
             overrides = mcfg.get('workflow_overrides', config.get('workflow_overrides'))
             inserts = mcfg.get('workflow_inserts', config.get('workflow_inserts'))
@@ -136,10 +170,20 @@ else:
                 if os.path.exists(f"{m_wfs_base}/evaluate.yml"):
                     shutil.copyfile(f"{m_wfs_base}/evaluate.yml", f"{wfs_dir}/evaluate.yml")
 
+        if is_test:
+            apply_test_classifier_settings(
+                wfs_dir,
+                f"{m_output_dir}/common.yml" if 'classifier_setting' in config else None,
+                config.get('year_eras'),
+            )
+
         train_templates[m_output_dir] = m_train_template
         eval_templates[m_output_dir] = m_eval_template
         models_dict[m_output_dir] = m_model
         friends_dict[m_output_dir] = m_friend
+        labels_dict[m_output_dir] = m_label
+        plot_inputs_dict[m_output_dir] = m_plot_inputs
+        plot_weights_dict[m_output_dir] = m_plot_weights
 
         all_phase_d_targets.extend([
             f"{m_output_dir}/train.done",
@@ -161,7 +205,10 @@ else:
     config['common'] = ""
     first_cfg = svb_models[0][1]
     first_label = first_cfg.get('label', svb_models[0][0])
-    config['output_dir'] = first_cfg.get('output_dir', f"output/{first_label}")
+    first_subdir = _subdir_map.get(svb_models[0][0], f"PhaseD_{svb_models[0][0]}")
+    config['output_dir'] = first_cfg.get('output_dir', f"{base_output}{first_subdir}/")
+    if isinstance(config['output_dir'], str) and '{output_path}' in config['output_dir']:
+        config['output_dir'] = config['output_dir'].replace('{output_path}', base_output)
     config['label'] = first_label
 
     roast_id = config.get('roast_id', '')
@@ -205,32 +252,38 @@ rule compute_svb_binning:
     threads: 4
     params:
         init              = INIT,
-        classifier_inputs = lambda wildcards: str(config.get("metadata", "")).split("@@")[0],
+        classifier_inputs = lambda wildcards: str(config.get("metadata", "")).format(eos_prod=config.get("eos_prod", ""), roast_id=config.get("roast_id", "")).split("@@")[0],
         friend_result = lambda wildcards: f"{_format_binning_path(config.get('friends_dict', {}).get(wildcards.model_dir, config.get('friend', '')), wildcards)}/result.json",
         sample_pattern = lambda wildcards: str(config.get("binning_sample_pattern", "ttHbb")),
         selection = lambda wildcards: str(config.get("binning_selection", "inclusive")),
         bins = lambda wildcards: int(config.get("binning_bins", 240)),
         min_ps = lambda wildcards: float(config.get("binning_min_ps", 0.01)),
         handoff_eos = lambda wildcards: str(config.get("handoff", {}).get("eos_base", "") if isinstance(config.get("handoff"), dict) else ""),
+        binning_key = lambda wildcards: (config.get("labels_dict") or {}).get(wildcards.model_dir, config.get("label", os.path.basename(wildcards.model_dir))),
     shell:
         """
         {params.init} && \
         mkdir -p $(dirname {output.json}) $(dirname {log}) && \
-        if [ -z "${{X509_USER_PROXY:-}}" ] && [ -f ./proxy/x509_proxy ]; then
-            export X509_USER_PROXY="$PWD/proxy/x509_proxy"
-        fi
+        if [ -z "${{X509_USER_PROXY:-}}" ] && [ -f ./proxy/x509_proxy ]; then \
+            export X509_USER_PROXY="$PWD/proxy/x509_proxy"; \
+        fi && \
         python3 coffea4bees/analysis/tools/rebin_SvB.py \
             --friends "{params.friend_result}" \
             --classifier-inputs "{params.classifier_inputs}" \
             --sample-pattern "{params.sample_pattern}" \
             --selection "{params.selection}" \
-            --key $(basename {wildcards.model_dir}) \
+            --key {params.binning_key} \
             -n {params.bins} \
             --min-ps {params.min_ps} \
             --output-json {output.json} 2>&1 | tee {log}
 
         if [ -n "{params.handoff_eos}" ]; then
-            xrdcp -f -p "{output.json}" "{params.handoff_eos}/$(basename {output.json})" 2>&1 | tee -a {log} || true
+            if [[ "{params.handoff_eos}" == root://* ]]; then
+                xrdcp -f -p "{output.json}" "{params.handoff_eos}/$(basename {output.json})" 2>&1 | tee -a {log} || true
+            else
+                mkdir -p "{params.handoff_eos}"
+                cp -f "{output.json}" "{params.handoff_eos}/$(basename {output.json})" 2>&1 | tee -a {log}
+            fi
         fi
         """
 

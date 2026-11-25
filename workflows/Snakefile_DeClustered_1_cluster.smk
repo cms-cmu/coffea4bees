@@ -52,7 +52,8 @@ rule D1_config:
             inherit_config=False,
             processor="coffea4bees/analysis/processors/processor_cluster_4b.py",
             runner={**(tmpl.get('runner') or {}),
-                    **{k: CLUSTER[k] for k in ('worker_memory', 'chunksize') if k in CLUSTER}})
+                    **{k: (int(CLUSTER[k]) if k == 'chunksize' else CLUSTER[k])
+                       for k in ('worker_memory', 'chunksize') if k in CLUSTER}})
         if not cfg['config'].get('subtract_ttbar_with_weights'):
             raise ValueError("D.1 must subtract ttbar: the PDFs describe the multijet splittings")
         write_yaml(output[0], cfg)
@@ -140,7 +141,7 @@ rule D1_library_merge:
                     files = [files] if isinstance(files, str) else list(files)
                     if key in merged:
                         raise ValueError(f"{path}: splitting library year {key} listed twice")
-                    if not all(str(p).startswith("root://") for p in files):
+                    if not config['test'] and not all(str(p).startswith("root://") for p in files):
                         # the condor workers read the library; a local path would not reach them
                         raise ValueError(f"{path}: splitting library files are not on EOS: {files[:2]}")
                     merged[key] = files

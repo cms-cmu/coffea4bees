@@ -83,7 +83,7 @@ trigger_weights:
 # PHASE B: CALIBRATION & CLASSIFIER INPUTS (JCM & Friendtrees)
 # ==============================================================================
 per_year_jcm: true
-jcm_plot_config: "coffea4bees/plots/metadata/plots_JCM_ttHbb.yml"
+jcm_plot_config: "coffea4bees/plots/metadata/plotsAllNoFvT_ttHbb.yml"
 jcm_datasets:
   - "data"
   - "TTTo2L2Nu_stitched"
@@ -197,7 +197,6 @@ fvt:
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/ttHbb/FvT"
   label: "FvT_ttHbb_stitched"
-  output_dir: "output/FvT_ttHbb_stitched/"
   plot_inputs: true
   plot_weights: true
   evaluate: true
@@ -241,7 +240,6 @@ svb:
   classifier_config_paths: "coffea4bees"
   wfs_base: "coffea4bees/classifier/config/workflows/ttHbb/SvB"
   label: "SvB_ttHbb_stitched"
-  output_dir: "output/SvB_ttHbb_stitched/"
   plot_inputs: true
   plot_weights: true
   evaluate: true

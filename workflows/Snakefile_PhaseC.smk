@@ -6,6 +6,17 @@ import yaml
 
 include: "helpers/common.smk"
 
+is_test = config.get('test', False)
+if isinstance(is_test, str):
+    is_test = is_test.lower() in ("true", "1", "yes")
+config['test'] = is_test
+if config.get('test_year_eras') and isinstance(config['test_year_eras'], dict):
+    config['year_eras'] = config['test_year_eras']
+
+base_output = config.get('output_path', 'output/')
+if not base_output.endswith('/'):
+    base_output += '/'
+
 fvt_cfg = resolve_config_section(config, primary_key='fvt', fallback_keys=['fvt_classifier', 'classifier'])
 for k, v in fvt_cfg.items():
     config[k] = v
@@ -15,10 +26,16 @@ config.setdefault('plot_base', "root://eosuser.cern.ch//eos/user/a/algomez/www/H
 config.setdefault('classifier_config_paths', "coffea4bees")
 config.setdefault('wfs_base', "coffea4bees/classifier/config/workflows/HH4b_2024_v2/FvT")
 config.setdefault('label', "FvT_nominal")
-config.setdefault('output_dir', f"output/{config['label']}/")
+config.setdefault('output_dir', f"{base_output}PhaseC_FvT/")
+if isinstance(config.get('output_dir'), str) and '{output_path}' in config['output_dir']:
+    config['output_dir'] = config['output_dir'].replace('{output_path}', base_output)
 config.setdefault('plot_inputs', True)
 config.setdefault('plot_weights', True)
 config.setdefault('evaluate', True)
+if is_test:
+    config['plot_inputs'] = False
+    config['plot_weights'] = False
+    config.setdefault('fvt_max_chi2_ndf', 1000.0)
 
 config.setdefault('model', f"{config['eos_base']}/classifier/{config['label']}")
 config.setdefault('friend', f"{config['eos_base']}/friend/{config['label']}")
@@ -31,19 +48,16 @@ os.makedirs(output_dir, exist_ok=True)
 
 if 'classifier_setting' in config:
     common_path = f"{output_dir}/common.yml"
-    with open(common_path, 'w') as f:
-        yaml.dump({'setting': config['classifier_setting']}, f, default_flow_style=False)
+    _atomic_write_yaml(common_path, {'setting': config['classifier_setting']})
     config['common'] = common_path
 
 if 'train_workflow' in config or 'eval_workflow' in config:
     wfs_dir = f"{output_dir}/wfs"
     os.makedirs(wfs_dir, exist_ok=True)
     if 'train_workflow' in config:
-        with open(f"{wfs_dir}/train.yml", 'w') as f:
-            yaml.dump(config['train_workflow'], f, default_flow_style=False)
+        _atomic_write_yaml(f"{wfs_dir}/train.yml", config['train_workflow'])
     if 'eval_workflow' in config:
-        with open(f"{wfs_dir}/evaluate.yml", 'w') as f:
-            yaml.dump(config['eval_workflow'], f, default_flow_style=False)
+        _atomic_write_yaml(f"{wfs_dir}/evaluate.yml", config['eval_workflow'])
     config['wfs_base'] = wfs_dir
 elif config.get('workflow_overrides') or config.get('workflow_inserts'):
     # Keep the checked-in templates, override options by flag (e.g. the roast's JCM / manifest)
@@ -51,6 +65,18 @@ elif config.get('workflow_overrides') or config.get('workflow_inserts'):
     config['wfs_base'] = write_workflow_overrides(config['wfs_base'], config.get('workflow_overrides'),
                                                   f"{output_dir}/wfs", log=print,
                                                   inserts=config.get('workflow_inserts'))
+elif is_test:
+    import shutil
+    wfs_dir = f"{output_dir}/wfs"
+    os.makedirs(wfs_dir, exist_ok=True)
+    for fname in ("train.yml", "evaluate.yml"):
+        src = os.path.join(config['wfs_base'], fname)
+        if os.path.exists(src):
+            shutil.copyfile(src, os.path.join(wfs_dir, fname))
+    config['wfs_base'] = wfs_dir
+
+if is_test:
+    apply_test_classifier_settings(config['wfs_base'], config.get('common'), config.get('year_eras'))
 
 include: "../../src/classifier/workflow/Snakefile"
 

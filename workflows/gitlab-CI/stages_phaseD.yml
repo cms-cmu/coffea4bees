@@ -1,0 +1,123 @@
+phaseD_svb_run2_coffea4bees:
+  stage: phaseD
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseB_2_classifier_inputs_run2_coffea4bees
+    - phaseC_fvt_run2_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE all_PhaseD -s coffea4bees/workflows/Snakefile_PhaseD.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' --jobs 2
+    - python coffea4bees/workflows/scripts/validate_phaseD.py --yields output/TEST/PhaseD_SvB/yields.json --model-result output/TEST/classifier/SvB_nominal/result.json --friend-result output/TEST/friend/SvB_nominal/result.json --output output/TEST/PhaseD_SvB/phaseD_validation.txt
+  artifacts:
+    when: always
+    paths:
+      - output/TEST/PhaseD_SvB/
+      - output/TEST/classifier/SvB_nominal/
+      - output/TEST/friend/SvB_nominal/
+      - barista_framework/output/TEST/PhaseD_SvB/
+      - barista_framework/output/TEST/classifier/SvB_nominal/
+      - barista_framework/output/TEST/friend/SvB_nominal/
+    expire_in: 1 day
+
+phaseD_svb_lowpt_run2_coffea4bees:
+  stage: phaseD
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseB_2_classifier_inputs_lowpt_run2_coffea4bees
+    - phaseC_fvt_lowpt_run2_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE all_PhaseD -s coffea4bees/workflows/Snakefile_PhaseD.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' --jobs 2
+    - python coffea4bees/workflows/scripts/validate_phaseD.py --yields output/run2_lowpt/PhaseD_SvB/yields.json --model-result output/run2_lowpt/classifier/lowpt_SvB/result.json --friend-result output/run2_lowpt/friend/lowpt_SvB/result.json --output output/run2_lowpt/PhaseD_SvB/phaseD_validation.txt
+  artifacts:
+    when: always
+    paths:
+      - output/run2_lowpt/PhaseD_SvB/
+      - output/run2_lowpt/classifier/lowpt_SvB/
+      - output/run2_lowpt/friend/lowpt_SvB/
+      - barista_framework/output/run2_lowpt/PhaseD_SvB/
+      - barista_framework/output/run2_lowpt/classifier/lowpt_SvB/
+      - barista_framework/output/run2_lowpt/friend/lowpt_SvB/
+    expire_in: 1 day
+
+phaseD_svb_ttHbb_coffea4bees:
+  stage: phaseD
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseB_2_classifier_inputs_ttHbb_coffea4bees
+    - phaseC_fvt_ttHbb_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE all_PhaseD -s coffea4bees/workflows/Snakefile_PhaseD.smk --configfile coffea4bees/workflows/config/ttHbb.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' --jobs 2
+    - python coffea4bees/workflows/scripts/validate_phaseD.py --yields output/ttHbb/PhaseD_SvB/yields.json --model-result output/ttHbb/classifier/SvB_ttHbb_stitched/result.json --friend-result output/ttHbb/friend/SvB_ttHbb_stitched/result.json --output output/ttHbb/PhaseD_SvB/phaseD_validation.txt
+    - python coffea4bees/workflows/scripts/validate_phaseD.py --yields output/ttHbb/PhaseD_SvB_MA/yields.json --model-result output/ttHbb/classifier/SvB_MA_ttHbb_stitched/result.json --friend-result output/ttHbb/friend/SvB_MA_ttHbb_stitched/result.json --quantiles output/ttHbb/PhaseD_SvB_MA/svb_quantiles.json --output output/ttHbb/PhaseD_SvB_MA/phaseD_validation.txt
+  artifacts:
+    when: always
+    paths:
+      - output/ttHbb/PhaseD_SvB/
+      - output/ttHbb/PhaseD_SvB_MA/
+      - output/ttHbb/classifier/SvB_ttHbb_stitched/
+      - output/ttHbb/classifier/SvB_MA_ttHbb_stitched/
+      - output/ttHbb/friend/SvB_ttHbb_stitched/
+      - output/ttHbb/friend/SvB_MA_ttHbb_stitched/
+      - output/ttHbb/handoff/
+      - barista_framework/output/ttHbb/PhaseD_SvB/
+      - barista_framework/output/ttHbb/PhaseD_SvB_MA/
+      - barista_framework/output/ttHbb/classifier/SvB_ttHbb_stitched/
+      - barista_framework/output/ttHbb/classifier/SvB_MA_ttHbb_stitched/
+      - barista_framework/output/ttHbb/friend/SvB_ttHbb_stitched/
+      - barista_framework/output/ttHbb/friend/SvB_MA_ttHbb_stitched/
+      - barista_framework/output/ttHbb/handoff/
+    expire_in: 1 day
+
+phaseD_svb_run3_coffea4bees:
+  stage: phaseD
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseB_2_classifier_inputs_run3_coffea4bees
+    - phaseC_fvt_run3_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE all_PhaseD -s coffea4bees/workflows/Snakefile_PhaseD.smk --configfile coffea4bees/workflows/config/nominal_run3.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"2022_EE":["E"],"2023_BPix":["D1"],"2024":["C"]}' --jobs 2
+    - python coffea4bees/workflows/scripts/validate_phaseD.py --yields output/Run3_nominal/PhaseD_SvB/yields.json --model-result output/Run3_nominal/classifier/SvB_nominal/result.json --friend-result output/Run3_nominal/friend/SvB_nominal/result.json --output output/Run3_nominal/PhaseD_SvB/phaseD_validation.txt
+  artifacts:
+    when: always
+    paths:
+      - output/Run3_nominal/PhaseD_SvB/
+      - output/Run3_nominal/classifier/SvB_nominal/
+      - output/Run3_nominal/friend/SvB_nominal/
+      - barista_framework/output/Run3_nominal/PhaseD_SvB/
+      - barista_framework/output/Run3_nominal/classifier/SvB_nominal/
+      - barista_framework/output/Run3_nominal/friend/SvB_nominal/
+    expire_in: 1 day
+
+phaseD_svb_lowpt_run3_coffea4bees:
+  stage: phaseD
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseB_2_classifier_inputs_lowpt_run3_coffea4bees
+    - phaseC_fvt_lowpt_run3_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE all_PhaseD -s coffea4bees/workflows/Snakefile_PhaseD.smk --configfile coffea4bees/workflows/config/lowpt_run3.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"2022_EE":["E"],"2023_BPix":["D1"],"2024":["C"]}' --jobs 2
+    - python coffea4bees/workflows/scripts/validate_phaseD.py --yields output/run3_lowpt/PhaseD_SvB/yields.json --model-result output/run3_lowpt/classifier/lowpt_SvB/result.json --friend-result output/run3_lowpt/friend/lowpt_SvB/result.json --output output/run3_lowpt/PhaseD_SvB/phaseD_validation.txt
+  artifacts:
+    when: always
+    paths:
+      - output/run3_lowpt/PhaseD_SvB/
+      - output/run3_lowpt/classifier/lowpt_SvB/
+      - output/run3_lowpt/friend/lowpt_SvB/
+      - barista_framework/output/run3_lowpt/PhaseD_SvB/
+      - barista_framework/output/run3_lowpt/classifier/lowpt_SvB/
+      - barista_framework/output/run3_lowpt/friend/lowpt_SvB/
+    expire_in: 1 day

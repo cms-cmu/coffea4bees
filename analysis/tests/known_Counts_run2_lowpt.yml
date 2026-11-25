@@ -1,0 +1,892 @@
+counts4:
+    ggZH4b_UL18:
+        passJetMult: 2.25
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    ggZH4b_UL17:
+        passJetMult: 1.63
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    ggZH4b_UL16_preVFP:
+        passJetMult: 2.11
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    ggZH4b_UL16_postVFP:
+        passJetMult: 1.93
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    data_UL18A:
+        passJetMult: 32660.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    data_UL17C:
+        passJetMult: 33151.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    data_UL16_preVFPC:
+        passJetMult: 32903.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    data_UL16_postVFPF:
+        passJetMult: 22412.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    ZH4b_UL18:
+        passJetMult: 8.91
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    ZH4b_UL17:
+        passJetMult: 6.78
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    ZH4b_UL16_preVFP:
+        passJetMult: 9.47
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    ZH4b_UL16_postVFP:
+        passJetMult: 8.91
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    TTbar_from_d3_UL18A:
+        passPreSel: 3771.58
+        passDiJetMass: 2214.89
+        SR: 830.74
+        SB: 1384.14
+
+    TTbar_from_d3_UL17C:
+        passPreSel: 4281.02
+        passDiJetMass: 2615.21
+        SR: 1064.61
+        SB: 1550.6
+
+    TTbar_from_d3_UL16_preVFPC:
+        passPreSel: 3737.87
+        passDiJetMass: 2379.74
+        SR: 958.43
+        SB: 1421.32
+
+    TTbar_from_d3_UL16_postVFPF:
+        passPreSel: 2402.37
+        passDiJetMass: 1546.38
+        SR: 612.34
+        SB: 934.05
+
+    GluGluToHHTo4B_cHHH5_UL18:
+        passJetMult: 17.3
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH5_UL17:
+        passJetMult: 12.71
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH5_UL16_preVFP:
+        passJetMult: 21.11
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH5_UL16_postVFP:
+        passJetMult: 13.91
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH2p45_UL18:
+        passJetMult: 4.76
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH2p45_UL17:
+        passJetMult: 1.62
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH2p45_UL16_preVFP:
+        passJetMult: 3.81
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH2p45_UL16_postVFP:
+        passJetMult: 3.13
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH1_UL18:
+        passJetMult: 8.97
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH1_UL17:
+        passJetMult: 5.92
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH1_UL16_preVFP:
+        passJetMult: 10.22
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH1_UL16_postVFP:
+        passJetMult: 7.28
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH0_UL18:
+        passJetMult: 19.33
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH0_UL17:
+        passJetMult: 7.88
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH0_UL16_preVFP:
+        passJetMult: 13.64
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH0_UL16_postVFP:
+        passJetMult: 2.26
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+
+
+counts3:
+    ggZH4b_UL18:
+        passJetMult: 2.25
+        passPreSel: 0.5
+        passDiJetMass: 0.44
+        SR: 0.3
+        SB: 0.14
+
+    ggZH4b_UL17:
+        passJetMult: 1.63
+        passPreSel: 0.36
+        passDiJetMass: 0.32
+        SR: 0.22
+        SB: 0.11
+
+    ggZH4b_UL16_preVFP:
+        passJetMult: 2.11
+        passPreSel: 0.46
+        passDiJetMass: 0.41
+        SR: 0.27
+        SB: 0.14
+
+    ggZH4b_UL16_postVFP:
+        passJetMult: 1.93
+        passPreSel: 0.42
+        passDiJetMass: 0.37
+        SR: 0.24
+        SB: 0.13
+
+    data_UL18A:
+        passJetMult: 32660.0
+        passPreSel: 7116.83
+        passDiJetMass: 4247.07
+        SR: 1611.12
+        SB: 2635.95
+
+    data_UL17C:
+        passJetMult: 33151.0
+        passPreSel: 7450.67
+        passDiJetMass: 4591.79
+        SR: 1843.63
+        SB: 2748.17
+
+    data_UL16_preVFPC:
+        passJetMult: 32903.0
+        passPreSel: 6376.86
+        passDiJetMass: 4084.06
+        SR: 1623.98
+        SB: 2460.08
+
+    data_UL16_postVFPF:
+        passJetMult: 22412.0
+        passPreSel: 4450.8
+        passDiJetMass: 2889.25
+        SR: 1143.63
+        SB: 1745.62
+
+    ZH4b_UL18:
+        passJetMult: 8.91
+        passPreSel: 1.68
+        passDiJetMass: 1.46
+        SR: 0.95
+        SB: 0.51
+
+    ZH4b_UL17:
+        passJetMult: 6.78
+        passPreSel: 1.27
+        passDiJetMass: 1.12
+        SR: 0.7
+        SB: 0.42
+
+    ZH4b_UL16_preVFP:
+        passJetMult: 9.47
+        passPreSel: 1.87
+        passDiJetMass: 1.66
+        SR: 1.04
+        SB: 0.62
+
+    ZH4b_UL16_postVFP:
+        passJetMult: 8.91
+        passPreSel: 1.71
+        passDiJetMass: 1.51
+        SR: 0.92
+        SB: 0.58
+
+    TTbar_from_d3_UL18A:
+        passPreSel: 3773.97
+        passDiJetMass: 2218.3
+        SR: 832.52
+        SB: 1385.78
+
+    TTbar_from_d3_UL17C:
+        passPreSel: 4289.37
+        passDiJetMass: 2622.72
+        SR: 1068.04
+        SB: 1554.68
+
+    TTbar_from_d3_UL16_preVFPC:
+        passPreSel: 3763.46
+        passDiJetMass: 2400.37
+        SR: 967.5
+        SB: 1432.87
+
+    TTbar_from_d3_UL16_postVFPF:
+        passPreSel: 2414.61
+        passDiJetMass: 1556.59
+        SR: 616.92
+        SB: 939.68
+
+    GluGluToHHTo4B_cHHH5_UL18:
+        passJetMult: 17.3
+        passPreSel: 4.86
+        passDiJetMass: 4.34
+        SR: 2.85
+        SB: 1.48
+
+    GluGluToHHTo4B_cHHH5_UL17:
+        passJetMult: 12.71
+        passPreSel: 3.59
+        passDiJetMass: 3.29
+        SR: 2.15
+        SB: 1.13
+
+    GluGluToHHTo4B_cHHH5_UL16_preVFP:
+        passJetMult: 21.11
+        passPreSel: 5.98
+        passDiJetMass: 5.54
+        SR: 3.66
+        SB: 1.87
+
+    GluGluToHHTo4B_cHHH5_UL16_postVFP:
+        passJetMult: 13.91
+        passPreSel: 3.97
+        passDiJetMass: 3.64
+        SR: 2.41
+        SB: 1.23
+
+    GluGluToHHTo4B_cHHH2p45_UL18:
+        passJetMult: 4.76
+        passPreSel: 1.03
+        passDiJetMass: 0.88
+        SR: 0.63
+        SB: 0.25
+
+    GluGluToHHTo4B_cHHH2p45_UL17:
+        passJetMult: 1.62
+        passPreSel: 0.36
+        passDiJetMass: 0.32
+        SR: 0.22
+        SB: 0.1
+
+    GluGluToHHTo4B_cHHH2p45_UL16_preVFP:
+        passJetMult: 3.81
+        passPreSel: 0.83
+        passDiJetMass: 0.73
+        SR: 0.51
+        SB: 0.22
+
+    GluGluToHHTo4B_cHHH2p45_UL16_postVFP:
+        passJetMult: 3.13
+        passPreSel: 0.68
+        passDiJetMass: 0.6
+        SR: 0.43
+        SB: 0.17
+
+    GluGluToHHTo4B_cHHH1_UL18:
+        passJetMult: 8.97
+        passPreSel: 2.04
+        passDiJetMass: 1.78
+        SR: 1.29
+        SB: 0.48
+
+    GluGluToHHTo4B_cHHH1_UL17:
+        passJetMult: 5.92
+        passPreSel: 1.63
+        passDiJetMass: 1.49
+        SR: 0.8
+        SB: 0.69
+
+    GluGluToHHTo4B_cHHH1_UL16_preVFP:
+        passJetMult: 10.22
+        passPreSel: 2.27
+        passDiJetMass: 2.01
+        SR: 1.44
+        SB: 0.58
+
+    GluGluToHHTo4B_cHHH1_UL16_postVFP:
+        passJetMult: 7.28
+        passPreSel: 1.62
+        passDiJetMass: 1.44
+        SR: 1.02
+        SB: 0.41
+
+    GluGluToHHTo4B_cHHH0_UL18:
+        passJetMult: 19.33
+        passPreSel: 4.54
+        passDiJetMass: 4.02
+        SR: 2.84
+        SB: 1.18
+
+    GluGluToHHTo4B_cHHH0_UL17:
+        passJetMult: 7.88
+        passPreSel: 1.85
+        passDiJetMass: 1.66
+        SR: 1.16
+        SB: 0.49
+
+    GluGluToHHTo4B_cHHH0_UL16_preVFP:
+        passJetMult: 13.64
+        passPreSel: 3.18
+        passDiJetMass: 2.86
+        SR: 2.05
+        SB: 0.81
+
+    GluGluToHHTo4B_cHHH0_UL16_postVFP:
+        passJetMult: 2.26
+        passPreSel: 0.52
+        passDiJetMass: 0.47
+        SR: 0.34
+        SB: 0.14
+
+
+
+counts4_unit:
+    ggZH4b_UL18:
+        passJetMult: 28624.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    ggZH4b_UL17:
+        passJetMult: 28517.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    ggZH4b_UL16_preVFP:
+        passJetMult: 29813.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    ggZH4b_UL16_postVFP:
+        passJetMult: 29521.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    data_UL18A:
+        passJetMult: 32660.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    data_UL17C:
+        passJetMult: 33151.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    data_UL16_preVFPC:
+        passJetMult: 32903.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    data_UL16_postVFPF:
+        passJetMult: 22412.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    ZH4b_UL18:
+        passJetMult: 23442.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    ZH4b_UL17:
+        passJetMult: 22865.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    ZH4b_UL16_preVFP:
+        passJetMult: 25387.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    ZH4b_UL16_postVFP:
+        passJetMult: 24858.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    TTbar_from_d3_UL18A:
+        passPreSel: 21643.0
+        passDiJetMass: 12719.0
+        SR: 5011.0
+        SB: 7708.0
+
+    TTbar_from_d3_UL17C:
+        passPreSel: 22161.0
+        passDiJetMass: 13605.0
+        SR: 5450.0
+        SB: 8155.0
+
+    TTbar_from_d3_UL16_preVFPC:
+        passPreSel: 22089.0
+        passDiJetMass: 14191.0
+        SR: 5689.0
+        SB: 8502.0
+
+    TTbar_from_d3_UL16_postVFPF:
+        passPreSel: 15232.0
+        passDiJetMass: 9882.0
+        SR: 3976.0
+        SB: 5906.0
+
+    GluGluToHHTo4B_cHHH5_UL18:
+        passJetMult: 25374.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH5_UL17:
+        passJetMult: 24906.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH5_UL16_preVFP:
+        passJetMult: 25820.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH5_UL16_postVFP:
+        passJetMult: 25734.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH2p45_UL18:
+        passJetMult: 28738.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH2p45_UL17:
+        passJetMult: 28322.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH2p45_UL16_preVFP:
+        passJetMult: 28596.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH2p45_UL16_postVFP:
+        passJetMult: 29562.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH1_UL18:
+        passJetMult: 28358.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH1_UL17:
+        passJetMult: 28026.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH1_UL16_preVFP:
+        passJetMult: 28626.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH1_UL16_postVFP:
+        passJetMult: 29381.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH0_UL18:
+        passJetMult: 27575.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH0_UL17:
+        passJetMult: 27320.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH0_UL16_preVFP:
+        passJetMult: 24237.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+    GluGluToHHTo4B_cHHH0_UL16_postVFP:
+        passJetMult: 25891.0
+        passPreSel: 0.0
+        passDiJetMass: 0.0
+        SR: 0.0
+        SB: 0.0
+
+
+
+counts3_unit:
+    ggZH4b_UL18:
+        passJetMult: 28624.0
+        passPreSel: 14968.0
+        passDiJetMass: 13016.0
+        SR: 7937.0
+        SB: 5079.0
+
+    ggZH4b_UL17:
+        passJetMult: 28517.0
+        passPreSel: 15075.0
+        passDiJetMass: 13067.0
+        SR: 8099.0
+        SB: 4968.0
+
+    ggZH4b_UL16_preVFP:
+        passJetMult: 29813.0
+        passPreSel: 16443.0
+        passDiJetMass: 14158.0
+        SR: 8474.0
+        SB: 5684.0
+
+    ggZH4b_UL16_postVFP:
+        passJetMult: 29521.0
+        passPreSel: 16324.0
+        passDiJetMass: 14186.0
+        SR: 8546.0
+        SB: 5640.0
+
+    data_UL18A:
+        passJetMult: 32660.0
+        passPreSel: 21643.0
+        passDiJetMass: 12719.0
+        SR: 5011.0
+        SB: 7708.0
+
+    data_UL17C:
+        passJetMult: 33151.0
+        passPreSel: 22161.0
+        passDiJetMass: 13605.0
+        SR: 5450.0
+        SB: 8155.0
+
+    data_UL16_preVFPC:
+        passJetMult: 32903.0
+        passPreSel: 22089.0
+        passDiJetMass: 14191.0
+        SR: 5689.0
+        SB: 8502.0
+
+    data_UL16_postVFPF:
+        passJetMult: 22412.0
+        passPreSel: 15232.0
+        passDiJetMass: 9882.0
+        SR: 3976.0
+        SB: 5906.0
+
+    ZH4b_UL18:
+        passJetMult: 23442.0
+        passPreSel: 11240.0
+        passDiJetMass: 9916.0
+        SR: 5763.0
+        SB: 4153.0
+
+    ZH4b_UL17:
+        passJetMult: 22865.0
+        passPreSel: 11062.0
+        passDiJetMass: 9799.0
+        SR: 5732.0
+        SB: 4067.0
+
+    ZH4b_UL16_preVFP:
+        passJetMult: 25387.0
+        passPreSel: 12865.0
+        passDiJetMass: 11273.0
+        SR: 6587.0
+        SB: 4686.0
+
+    ZH4b_UL16_postVFP:
+        passJetMult: 24858.0
+        passPreSel: 12527.0
+        passDiJetMass: 11030.0
+        SR: 6329.0
+        SB: 4701.0
+
+    TTbar_from_d3_UL18A:
+        passPreSel: 21643.0
+        passDiJetMass: 12719.0
+        SR: 5011.0
+        SB: 7708.0
+
+    TTbar_from_d3_UL17C:
+        passPreSel: 22161.0
+        passDiJetMass: 13605.0
+        SR: 5450.0
+        SB: 8155.0
+
+    TTbar_from_d3_UL16_preVFPC:
+        passPreSel: 22089.0
+        passDiJetMass: 14191.0
+        SR: 5689.0
+        SB: 8502.0
+
+    TTbar_from_d3_UL16_postVFPF:
+        passPreSel: 15232.0
+        passDiJetMass: 9882.0
+        SR: 3976.0
+        SB: 5906.0
+
+    GluGluToHHTo4B_cHHH5_UL18:
+        passJetMult: 25374.0
+        passPreSel: 15592.0
+        passDiJetMass: 14365.0
+        SR: 8509.0
+        SB: 5856.0
+
+    GluGluToHHTo4B_cHHH5_UL17:
+        passJetMult: 24906.0
+        passPreSel: 15446.0
+        passDiJetMass: 14217.0
+        SR: 8446.0
+        SB: 5771.0
+
+    GluGluToHHTo4B_cHHH5_UL16_preVFP:
+        passJetMult: 25820.0
+        passPreSel: 16406.0
+        passDiJetMass: 14992.0
+        SR: 8962.0
+        SB: 6030.0
+
+    GluGluToHHTo4B_cHHH5_UL16_postVFP:
+        passJetMult: 25734.0
+        passPreSel: 16572.0
+        passDiJetMass: 15217.0
+        SR: 9138.0
+        SB: 6079.0
+
+    GluGluToHHTo4B_cHHH2p45_UL18:
+        passJetMult: 28738.0
+        passPreSel: 16060.0
+        passDiJetMass: 13498.0
+        SR: 8740.0
+        SB: 4758.0
+
+    GluGluToHHTo4B_cHHH2p45_UL17:
+        passJetMult: 28322.0
+        passPreSel: 15934.0
+        passDiJetMass: 13452.0
+        SR: 8492.0
+        SB: 4960.0
+
+    GluGluToHHTo4B_cHHH2p45_UL16_preVFP:
+        passJetMult: 28596.0
+        passPreSel: 16601.0
+        passDiJetMass: 13804.0
+        SR: 8700.0
+        SB: 5104.0
+
+    GluGluToHHTo4B_cHHH2p45_UL16_postVFP:
+        passJetMult: 29562.0
+        passPreSel: 17460.0
+        passDiJetMass: 14601.0
+        SR: 9463.0
+        SB: 5138.0
+
+    GluGluToHHTo4B_cHHH1_UL18:
+        passJetMult: 28358.0
+        passPreSel: 16154.0
+        passDiJetMass: 13812.0
+        SR: 8995.0
+        SB: 4817.0
+
+    GluGluToHHTo4B_cHHH1_UL17:
+        passJetMult: 28026.0
+        passPreSel: 15905.0
+        passDiJetMass: 13591.0
+        SR: 8807.0
+        SB: 4784.0
+
+    GluGluToHHTo4B_cHHH1_UL16_preVFP:
+        passJetMult: 28626.0
+        passPreSel: 16783.0
+        passDiJetMass: 14224.0
+        SR: 9096.0
+        SB: 5128.0
+
+    GluGluToHHTo4B_cHHH1_UL16_postVFP:
+        passJetMult: 29381.0
+        passPreSel: 17589.0
+        passDiJetMass: 14976.0
+        SR: 9695.0
+        SB: 5281.0
+
+    GluGluToHHTo4B_cHHH0_UL18:
+        passJetMult: 27575.0
+        passPreSel: 15932.0
+        passDiJetMass: 13922.0
+        SR: 8885.0
+        SB: 5037.0
+
+    GluGluToHHTo4B_cHHH0_UL17:
+        passJetMult: 27320.0
+        passPreSel: 15711.0
+        passDiJetMass: 13795.0
+        SR: 8825.0
+        SB: 4970.0
+
+    GluGluToHHTo4B_cHHH0_UL16_preVFP:
+        passJetMult: 24237.0
+        passPreSel: 14554.0
+        passDiJetMass: 12598.0
+        SR: 8067.0
+        SB: 4531.0
+
+    GluGluToHHTo4B_cHHH0_UL16_postVFP:
+        passJetMult: 25891.0
+        passPreSel: 15617.0
+        passDiJetMass: 13636.0
+        SR: 8693.0
+        SB: 4943.0
+
+
+

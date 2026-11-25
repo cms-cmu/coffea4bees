@@ -42,7 +42,8 @@
 # would make it mixed data (unit weights).
 
 SIG = config.get('signal_check') or {}
-SIG_ENABLED = bool(SIG.get('enabled', True))
+_sig_enabled = SIG.get('enabled', True)
+SIG_ENABLED = _sig_enabled.lower() in ("true", "1", "yes") if isinstance(_sig_enabled, str) else bool(_sig_enabled)
 SIG_DATASETS = list(SIG.get('datasets', ["GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"]))
 # One set of mixed files, two datasets by the input event's tag (processor_HH4b keeps each origin
 # and weights the 3b one by the JCM). The names must contain synthetic_mc and not "mix".

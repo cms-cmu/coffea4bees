@@ -538,3 +538,36 @@ def test_kinematic_and_weight_edge_cases(cfg):
     loss = (F.cross_entropy(c, batch[Input.label], reduction="none") * batch[Input.weight]).sum() / batch[Input.weight].sum()
     assert torch.isfinite(loss), f"{cfg['name']}: Weighted loss is non-finite under extreme weights"
     loss.backward()
+
+
+# ==============================================================================
+# 10. Era-to-Year Feature Mapping
+# ==============================================================================
+def test_add_year_distinct_run2_and_run3_eras():
+    """Verify add_year produces distinct integer values for all Run 2 and Run 3 eras."""
+    import re
+    import pandas as pd
+    from coffea4bees.classifier.config.dataset.HCR._group import add_year
+
+    processor_gen = add_year()
+    pattern = re.compile(processor_gen.pattern)
+
+    def _eval_era(era_label: str) -> int:
+        m = pattern.fullmatch(f"year:{era_label}")
+        assert m is not None, f"add_year pattern did not match year:{era_label}"
+        df_proc = next(processor_gen.any((m,)))
+        df = pd.DataFrame({"x": [1.0]})
+        df_out = df_proc(df)
+        return int(df_out["year"].iloc[0])
+
+    run2_eras = ["UL16_preVFP", "UL16_postVFP", "UL17", "UL18"]
+    run3_eras = ["2022_preEE", "2022_EE", "2023_preBPix", "2023_BPix", "2024", "2025"]
+
+    run2_vals = [_eval_era(e) for e in run2_eras]
+    run3_vals = [_eval_era(e) for e in run3_eras]
+
+    assert len(set(run2_vals)) == len(run2_eras), f"Run 2 era collision: {dict(zip(run2_eras, run2_vals))}"
+    assert len(set(run3_vals)) == len(run3_eras), f"Run 3 era collision: {dict(zip(run3_eras, run3_vals))}"
+    assert len(set(run2_vals + run3_vals)) == len(run2_eras) + len(run3_eras)
+    assert run2_vals == [15, 16, 17, 18]
+    assert run3_vals == sorted(run3_vals)

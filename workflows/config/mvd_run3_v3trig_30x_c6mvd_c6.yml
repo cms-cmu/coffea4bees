@@ -36,7 +36,6 @@ inputs:
 
 svb_mvd:
   label: "SvB_MvD_30x_c6_c6mvd_v3trig"
-  output_dir: "output/SvB_MvD_30x_c6_c6mvd_v3trig/"
   # this roast's V.1 manifest / metadata (new ggF / ttbar inputs); --JCM-weight stays mvd_run3_20260927's
   metadata: "{eos_prod}/{roast_id}/handoff/classifier_inputs_MvD.json@@HCR_input"
   workflow_overrides:

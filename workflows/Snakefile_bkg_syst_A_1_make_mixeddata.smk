@@ -81,22 +81,25 @@ jcm_model_file    = f"{jcm_out_dir}jetCombinatoricModel_{jcm_region}_{jcm_tag}.y
 from helpers.stage_configs import stage_phaseA_1_configs
 cfg_files = stage_phaseA_1_configs(config, out_a1, jcm_model_file)
 
-localrules: all_bkg_syst_A_1, all_JCM_1_data_inclusive, stage_input_coffea, make_JCM_1_data_inclusive, all_make_mixeddata_picoAOD, all_run_analysis_mixeddata_all, all_mixeddata_all, merge_mixeddata_registries, create_mixeddata_dataset_yaml, compare_mixeddata_vs_data, make_plots_mixeddata_vs_data, make_mixeddata_JCM, all_JCM_2_mixeddata_inclusive, all_mixeddata_JCM, make_plots_mixeddata_closure, all_mixeddata_closure, all_run_mixeddata_all_with_mixeddata_JCM
+localrules: all_bkg_syst_A_1, all_JCM_1_data_inclusive, make_JCM_1_gallery, stage_input_coffea, make_JCM_1_data_inclusive, all_make_mixeddata_picoAOD, all_run_analysis_mixeddata_all, all_mixeddata_all, merge_mixeddata_registries, create_mixeddata_dataset_yaml, compare_mixeddata_vs_data, make_plots_mixeddata_vs_data, make_mixeddata_JCM, make_JCM_2_gallery, all_JCM_2_mixeddata_inclusive, all_mixeddata_JCM, make_plots_mixeddata_closure, all_mixeddata_closure, all_run_mixeddata_all_with_mixeddata_JCM
 
 # ── Default Master Target (Full Phase E1 End-to-End) ───────────────────────────
 rule all_bkg_syst_A_1:
     input:
         jcm_model_file,
+        f"{jcm_out_dir}index.html",
         mixeddata_dataset_output,
         f"{out_a1}run_analysis_mixeddata_all/histAll_{channel}_mixeddata_all.coffea",
         f"{out_a1}JCM_2_mixeddata_inclusive/jetCombinatoricModel_inclusive_{channel}_mixeddata.yml",
+        f"{out_a1}JCM_2_mixeddata_inclusive/index.html",
         f"{out_a1}run_mixeddata_all_with_mixeddata_JCM/histAll_{channel}_mixeddata_all_with_mixeddata_JCM.coffea",
         f"{out_a1}plots_mixeddata_closure/plots_done.txt",
 
 # ── Sub-Target Aliases ─────────────────────────────────────────────────────────
 rule all_JCM_1_data_inclusive:
     input:
-        jcm_model_file
+        jcm_model_file,
+        f"{jcm_out_dir}index.html",
 
 rule all_make_mixeddata_picoAOD:
     input:
@@ -112,11 +115,13 @@ rule all_mixeddata_all:
 
 rule all_JCM_2_mixeddata_inclusive:
     input:
-        f"{out_a1}JCM_2_mixeddata_inclusive/jetCombinatoricModel_inclusive_{channel}_mixeddata.yml"
+        f"{out_a1}JCM_2_mixeddata_inclusive/jetCombinatoricModel_inclusive_{channel}_mixeddata.yml",
+        f"{out_a1}JCM_2_mixeddata_inclusive/index.html",
 
 rule all_mixeddata_JCM:
     input:
-        f"{out_a1}JCM_2_mixeddata_inclusive/jetCombinatoricModel_inclusive_{channel}_mixeddata.yml"
+        f"{out_a1}JCM_2_mixeddata_inclusive/jetCombinatoricModel_inclusive_{channel}_mixeddata.yml",
+        f"{out_a1}JCM_2_mixeddata_inclusive/index.html",
 
 rule all_run_mixeddata_all_with_mixeddata_JCM:
     input:
@@ -160,6 +165,31 @@ use rule make_JCM from analysis as make_JCM_1_data_inclusive with:
         python_bin = lambda wildcards: config.get("python_bin", "python")
     log:
         f"{jcm_out_dir}logs/make_JCM_1_data_inclusive.log"
+
+rule make_JCM_1_gallery:
+    input:
+        jcm_model_file
+    output:
+        f"{jcm_out_dir}index.html"
+    log:
+        f"{jcm_out_dir}logs/make_JCM_1_gallery.log"
+    params:
+        jcm_dir = jcm_out_dir,
+        title = f"JCM_{jcm_tag}_fit_plots",
+        container_wrapper = config.get('analysis_container_wrapper', config.get('container_wrapper', './run_container')),
+        python_bin = lambda wildcards: config.get("python_bin", "python")
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {log})
+        if [ -f src/plotting/make_gallery.py ]; then
+            echo "Making JCM_1 fit gallery" 2>&1 | tee {log}
+            {params.container_wrapper} {params.python_bin} src/plotting/make_gallery.py {params.jcm_dir} --title {params.title} 2>&1 | tee -a {log}
+        else
+            echo "src/plotting/make_gallery.py not found; skipping JCM_1 gallery" 2>&1 | tee {log}
+            echo "<p>JCM fit gallery not available</p>" > {output}
+        fi
+        """
 
 
 rule make_mixeddata_picoAOD_per_year:
@@ -301,6 +331,31 @@ rule make_mixeddata_JCM:
         ls -la {params.output_dir}
         """
 
+rule make_JCM_2_gallery:
+    input:
+        f"{out_a1}JCM_2_mixeddata_inclusive/jetCombinatoricModel_inclusive_{channel}_mixeddata.yml"
+    output:
+        f"{out_a1}JCM_2_mixeddata_inclusive/index.html"
+    log:
+        f"{out_a1}JCM_2_mixeddata_inclusive/logs/make_JCM_2_gallery.log"
+    params:
+        jcm_dir = f"{out_a1}JCM_2_mixeddata_inclusive/",
+        title = f"JCM_2_{channel}_mixeddata_fit_plots",
+        container_wrapper = config['analysis_container_wrapper'],
+        python_bin = python_bin,
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {log})
+        if [ -f src/plotting/make_gallery.py ]; then
+            echo "Making JCM_2 fit gallery" 2>&1 | tee {log}
+            {params.container_wrapper} {params.python_bin} src/plotting/make_gallery.py {params.jcm_dir} --title {params.title} 2>&1 | tee -a {log}
+        else
+            echo "src/plotting/make_gallery.py not found; skipping JCM_2 gallery" 2>&1 | tee {log}
+            echo "<p>JCM fit gallery not available</p>" > {output}
+        fi
+        """
+
 # ── Stage 5: Evaluate Mixed Data with Calibrated JCM ──────────────────────────
 rule run_analysis_mixeddata_all_with_mixeddata_JCM:
     input:
@@ -357,6 +412,9 @@ rule make_plots_mixeddata_closure:
             --combine_input_files \
             --year {params.plot_year} \
             -p 1 2>&1 | tee {log}
+        if [ -f src/plotting/make_gallery.py ]; then
+            {params.container_wrapper} python src/plotting/make_gallery.py {params.output_dir} -m {input.plot_cfg} --title "$(basename {params.output_dir})" 2>&1 | tee -a {log}
+        fi
         touch {output.done}
         """
 
@@ -384,5 +442,8 @@ rule make_plots_mixeddata_vs_data:
             -m {input.plot_cfg} \
             --combine_input_files \
             --year {params.plot_year} 2>&1 | tee {log}
+        if [ -f src/plotting/make_gallery.py ]; then
+            {params.container_wrapper} python src/plotting/make_gallery.py {params.output_dir} -m {input.plot_cfg} --title "$(basename {params.output_dir})" 2>&1 | tee -a {log}
+        fi
         touch {output.done}
         """

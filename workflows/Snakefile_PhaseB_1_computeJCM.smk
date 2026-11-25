@@ -43,6 +43,9 @@ if config.get('test', False) or os.getenv("CI"):
 else:
     config.setdefault('additional_parameters', "--shared-dask --condor --run-performance")
 
+if config.get('test_year_eras') and isinstance(config['test_year_eras'], dict):
+    config['year_eras'] = config['test_year_eras']
+
 years = list(config['year_eras'].keys()) if 'year_eras' in config and isinstance(config['year_eras'], dict) else config.get('years', config.get('year', ['UL18']))
 if isinstance(years, str):
     years = [years]
@@ -70,6 +73,10 @@ raw_ci_datasets = (
 if isinstance(raw_ci_datasets, str):
     raw_ci_datasets = [d.strip() for d in raw_ci_datasets.split(",") if d.strip()]
 
+if is_test and config.get('dataset'):
+    _allowed_ds = set(config['dataset'] if isinstance(config['dataset'], list) else [d.strip() for d in str(config['dataset']).split(",") if d.strip()]) | set(JCM_DATASETS)
+    raw_ci_datasets = [d for d in raw_ci_datasets if d in _allowed_ds]
+
 PASS2_MC_DATASETS = list(dict.fromkeys([d for d in raw_ci_datasets if d != 'data'] + MC_DATASETS))
 
 tag = config.get('tag', "2024_v2")
@@ -93,6 +100,9 @@ def get_raw_jcm_config():
     # Nulling it here silently dropped the trigger weight for all ttbar MC (the warning only
     # shows in the dask workers) and inflated the 3b ttbar subtraction, worst for UL17/UL18.
     # FvT/SvB friends are not loaded because apply_FvT / run_SvB are False (same as Phase B.2).
+    res['config']['friends_include'] = ['trigWeight']
+    res['config'].pop('friends', None)
+    res['config'].pop('svb_binning_file', None)
 
     if config.get("test", False):
         if 'runner' not in res or not isinstance(res['runner'], dict):
@@ -100,6 +110,12 @@ def get_raw_jcm_config():
         res['runner']['condor'] = False
         res['runner']['shared_dask'] = False
         res['runner']['run_performance'] = False
+        res['runner'].setdefault('test_files', 1)
+        res['runner']['maxchunks'] = 1
+        res['runner']['chunksize'] = int(config.get('test_chunksize', 30000))
+        res['runner'].setdefault('workers', 4)
+        if res['config'].get('top_reconstruction') == 'slow':
+            res['config']['top_reconstruction'] = 'fast'
 
     return res
 
@@ -132,7 +148,10 @@ def get_raw_wjcm_config():
     ci_block = resolve_config_section(config, primary_key='classifier_inputs', fallback_keys=['analysis_config', 'analysis'])
     ci_cfg = (config.get('classifier_inputs', {}) or {}).get('config', {})
     default_ci_out = CI_OUTPUT_PATH
-    make_ci = ci_cfg.get('make_classifier_input') or (ci_block.get('config', {}) if isinstance(ci_block, dict) else {}).get('make_classifier_input') or default_ci_out
+    if config.get("test", False):
+        make_ci = default_ci_out
+    else:
+        make_ci = ci_cfg.get('make_classifier_input') or (ci_block.get('config', {}) if isinstance(ci_block, dict) else {}).get('make_classifier_input') or default_ci_out
     res['config']['make_classifier_input'] = make_ci
 
     # Ensure processor and dataset_location match classifier_inputs if specified
@@ -162,14 +181,19 @@ JCM_CUTFLOW_LIST = "passJetMult,passPreSel,passDiJetMass,SR_woTrig,SR,SB_woTrig,
 
 def jcm_known_cutflow_flag(pass_name):
     if config.get("test", False):
-        f = config.get(f"jcm_known_counts_{pass_name}_test") or f"coffea4bees/analysis/tests/known_Counts_JCM_{pass_name}.yml"
+        label = config.get("label", "TEST")
+        cand = f"coffea4bees/analysis/tests/known_Counts_JCM_{pass_name}_{label}.yml"
+        f = config.get(f"jcm_known_counts_{pass_name}_test") or (
+            cand if os.path.exists(cand) else f"coffea4bees/analysis/tests/known_Counts_JCM_{pass_name}.yml"
+        )
     else:
         f = config.get(f"jcm_known_counts_{pass_name}") or f"coffea4bees/analysis/tests/known_fullCounts_JCM_{pass_name}.yml"
-    return f'--known-cutflow "{f}"' if os.path.exists(f) else '--known-cutflow "none"'
+    return f'--known-cutflow "{f}"' if (f and f != "none" and os.path.exists(f)) else '--known-cutflow "none"'
 
 rule output_computeJCM:
     input:
         ALL_JCM_FILES,
+        f"{JCM_OUTPUT_PATH}JCM_{tag}/index.html",
         f"{JCM_OUTPUT_PATH}histAll_wJCM.coffea",
         f"{JCM_OUTPUT_PATH}plots_wJCM/plots_done.txt",
         f"{JCM_OUTPUT_PATH}cutflow_validation_NoJCM.txt",
@@ -254,7 +278,11 @@ if per_year_jcm:
         input: f"{JCM_OUTPUT_PATH}histAll_NoJCM.coffea"
         output: f"{JCM_OUTPUT_PATH}JCM_{tag}/jetCombinatoricModel_SB_{tag}_{{year}}.yml"
         params:
-            extra_arguments = config.get('jcm_extra_arguments', ""),
+            extra_arguments = (
+                config.get('jcm_extra_arguments', "")
+                if (not config.get("test", False) or "--jcm_config" in config.get('jcm_extra_arguments', ""))
+                else (config.get('jcm_extra_arguments', "") + " --jcm_config coffea4bees/analysis/jcm_tools/metadata/test_jcm_config.yml").strip()
+            ),
             tag = lambda wildcards: f"{tag}_{wildcards.year}",
             region = "SB",
             output_dir = f"{JCM_OUTPUT_PATH}JCM_{tag}/plots_{{year}}/",
@@ -281,12 +309,38 @@ else:
         input: f"{JCM_OUTPUT_PATH}histAll_NoJCM.coffea"
         output: jcm_file_path
         params:
-            extra_arguments = config.get('jcm_extra_arguments', ""),
+            extra_arguments = (
+                config.get('jcm_extra_arguments', "")
+                if (not config.get("test", False) or "--jcm_config" in config.get('jcm_extra_arguments', ""))
+                else (config.get('jcm_extra_arguments', "") + " --jcm_config coffea4bees/analysis/jcm_tools/metadata/test_jcm_config.yml").strip()
+            ),
             tag = tag,
             output_dir = f"{JCM_OUTPUT_PATH}JCM_{tag}/",
             run_container_wrapper = config['analysis_container_wrapper'],
             python_bin = lambda wildcards: config.get("python_bin", "python")
         log: f"{JCM_OUTPUT_PATH}logs/make_JCM.log"
+
+rule make_jcm_gallery:
+    input: ALL_JCM_FILES
+    output: f"{JCM_OUTPUT_PATH}JCM_{tag}/index.html"
+    log: f"{JCM_OUTPUT_PATH}logs/make_jcm_gallery.log"
+    params:
+        jcm_dir = f"{JCM_OUTPUT_PATH}JCM_{tag}/",
+        title = f"JCM_{tag}_fit_plots",
+        run_container_wrapper = config['analysis_container_wrapper'],
+        python_bin = lambda wildcards: config.get("python_bin", "python")
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {log})
+        if [ -f src/plotting/make_gallery.py ]; then
+            echo "Making JCM fit gallery" 2>&1 | tee {log}
+            {params.run_container_wrapper} {params.python_bin} src/plotting/make_gallery.py {params.jcm_dir} --title {params.title} 2>&1 | tee -a {log}
+        else
+            echo "src/plotting/make_gallery.py not found in this barista checkout; skipping JCM gallery" 2>&1 | tee {log}
+            echo "<p>JCM fit gallery not available</p>" > {output}
+        fi
+        """
 
 # ---------------------------------------------------------------------------
 # Second pass: same datasets, fitted JCM applied (apply_JCM: true, JCM_file -> fit above)
@@ -438,6 +492,7 @@ use rule make_plots from analysis as make_plots_wJCM with:
         extra_arguments = lambda wildcards: " ".join(filter(None, [
             "-s xW -f png",
             "--year " + (DATA_YEARS[0] if len(DATA_YEARS) == 1 else ("Run3" if any("202" in y for y in DATA_YEARS) else "RunII")),
+            ("--thresholds " + str(config.get("candidates_selection_cfg") or config.get("analysis_config", {}).get("config", {}).get("candidates_selection_cfg"))) if (config.get("candidates_selection_cfg") or config.get("analysis_config", {}).get("config", {}).get("candidates_selection_cfg")) else "",
             config.get("plot_extra_arguments", ""),
         ])),
         run_container_wrapper = config['analysis_container_wrapper'],
@@ -491,7 +546,7 @@ use rule cutflow_closure_table from analysis as jcm_cutflow_closure_table with:
         python_bin = lambda wildcards: config.get("python_bin", "python")
 
 if per_year_jcm:
-    localrules: create_noJCM_config, create_wJCM_config, merge_noJCM, merge_wJCM, make_new_JCM_per_year, make_plots_wJCM, check_cutflow_noJCM, check_cutflow_wJCM, jcm_cutflow_closure_table, merge_classifier_inputs_friends
+    localrules: create_noJCM_config, create_wJCM_config, merge_noJCM, merge_wJCM, make_new_JCM_per_year, make_jcm_gallery, make_plots_wJCM, check_cutflow_noJCM, check_cutflow_wJCM, jcm_cutflow_closure_table, merge_classifier_inputs_friends
 else:
-    localrules: create_noJCM_config, create_wJCM_config, merge_noJCM, merge_wJCM, make_new_JCM, make_plots_wJCM, check_cutflow_noJCM, check_cutflow_wJCM, jcm_cutflow_closure_table, merge_classifier_inputs_friends
+    localrules: create_noJCM_config, create_wJCM_config, merge_noJCM, merge_wJCM, make_new_JCM, make_jcm_gallery, make_plots_wJCM, check_cutflow_noJCM, check_cutflow_wJCM, jcm_cutflow_closure_table, merge_classifier_inputs_friends
 

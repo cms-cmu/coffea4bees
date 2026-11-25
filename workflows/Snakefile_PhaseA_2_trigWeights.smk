@@ -17,12 +17,12 @@ raw_datasets = (
     trig_cfg.get('datasets')
     or trig_cfg.get('dataset')
     or config.get('trigger_weights_datasets')
-    or [d for d in config.get('dataset', []) if d != 'data']
+    or config.get('dataset')
     or config.get('datasets', ['ttHbb'])
 )
 if isinstance(raw_datasets, str):
     raw_datasets = [d.strip() for d in raw_datasets.split(",") if d.strip()]
-config['dataset'] = raw_datasets
+config['dataset'] = [d for d in raw_datasets if d != 'data']
 
 # Parse boolean for test flag
 is_test = config.get('test', False)
@@ -119,6 +119,10 @@ rule create_trigger_weights_config:
             cfg['runner']['condor'] = False
             cfg['runner']['shared_dask'] = False
             cfg['runner']['run_performance'] = False
+            cfg['runner'].setdefault('test_files', 1)
+            cfg['runner'].setdefault('maxchunks', 2)
+            cfg['runner'].setdefault('chunksize', 100000)
+            cfg['runner'].setdefault('workers', 4)
         os.makedirs(os.path.dirname(output[0]), exist_ok=True)
         with open(output[0], 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False)
@@ -144,9 +148,14 @@ rule merge_friendtree_json:
     input: expand(f"{config['output_path']}trigger_weights/trigger_weights__{{dataset}}__{{year}}.json", dataset=config['dataset'], year=years)
     output: f"{config['output_path']}trigger_weights/trigger_weights_friends.json"
     log: f"{config['output_path']}logs/merge_friendtree_json.log"
+    params:
+        run_container_wrapper = config['analysis_container_wrapper'],
+        python_bin = config['python_bin']
     shell:
         """
-        ./run_container python -m src.friendtrees.merge_friend_meta \
+        set -eo pipefail
+        mkdir -p $(dirname {output}) $(dirname {log})
+        {params.run_container_wrapper} {params.python_bin} -m src.friendtrees.merge_friend_meta \
             -i {input} \
-            -o {output}
+            -o {output} 2>&1 | tee {log}
         """

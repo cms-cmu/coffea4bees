@@ -93,6 +93,7 @@ codes:
    region:
       SR: 2
       SB: 1
+      SRSB: [1, 2]
       other: 0
    tag:
       threeTag: 3
@@ -101,6 +102,35 @@ codes:
 
 doRatio:
     1
+
+# 2D SR+SB definition plots (signal, 3b data, and 4b ttbar; never unblind 4b data in SR+SB)
+hists_2d:
+   HH4b:
+      process: [GluGluToHHTo4B_cHHH1, GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00]
+      tag: fourTag
+      label: HH4b
+   ZH4b:
+      process: ZH4b
+      tag: fourTag
+      label: ZH4b
+   ZZ4b:
+      process: ZZ4b
+      tag: fourTag
+      label: ZZ4b
+   data3b:
+      process: data
+      tag: threeTag
+      label: Three-tag data
+   TTbar:
+      process: [TTToHadronic, TTToSemiLeptonic, TTTo2L2Nu]
+      tag: fourTag
+      label: $t\bar{t}$
+
+regions_2d:
+   - "SRSB"
+
+vars_2d:
+   - quadJet_selected.lead_vs_subl_m
 
 # Key plots pinned at the top of the HTML gallery (src/plotting/make_gallery.py).
 # Names match image basenames with '.' and '_' interchangeable.
@@ -114,4 +144,5 @@ summary:
     - v4j.mass
     - quadJet_selected.lead.mass
     - quadJet_selected.subl.mass
+    - quadJet_selected.lead_vs_subl_m
     - quadJet_selected.xHH

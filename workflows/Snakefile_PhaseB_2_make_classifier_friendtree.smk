@@ -62,8 +62,12 @@ DEFAULT_ERAS = {
     '2022_preEE':   ['B', 'C', 'D'],
     '2022_EE':      ['E', 'F', 'G'],
     '2023_preBPix': ['C01', 'C02', 'C11', 'C12'],
-    '2023_BPix':    ['D'],
+    '2023_BPix':    ['D1', 'D2'],
+    '2024':         ['C', 'D', 'E', 'F', 'G', 'H', 'I2', 'I3'],
 }
+
+if config.get('test_year_eras') and isinstance(config['test_year_eras'], dict):
+    config['year_eras'] = config['test_year_eras']
 
 raw_years = config.get('years', config.get('year', None))
 if raw_years is not None:
@@ -231,6 +235,8 @@ rule create_classifier_inputs_config:
             cfg['runner']['condor'] = False
             cfg['runner']['shared_dask'] = False
             cfg['runner']['run_performance'] = False
+            if cfg.get('config', {}).get('top_reconstruction') == 'slow':
+                cfg['config']['top_reconstruction'] = 'fast'
         os.makedirs(os.path.dirname(output[0]), exist_ok=True)
         with open(output[0], 'w') as f:
             yaml.dump(cfg, f, default_flow_style=False)

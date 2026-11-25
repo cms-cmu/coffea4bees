@@ -28,7 +28,6 @@ label: "mvd_run3_declib16_30x_c6mvd"
 
 mvd:
   label: "MvD_30x_c6"
-  output_dir: "output/MvD_30x_c6/"
   workflow_overrides:
     # 1 evaluator, as mvd_run3_30x_c6mvd: with 2 the c6 MvD evaluation hit 45.8 GB against the 40 GB
     # half-GPU MPS limit
@@ -56,7 +55,6 @@ mvd:
 
 svb_mvd:
   label: "SvB_MvD_30x_c6_c6mvd"
-  output_dir: "output/SvB_MvD_30x_c6_c6mvd/"
   # src/classifier/plot_inputs.py rebuilds the model with the default 4 CanJet features and fails on a
   # wider checkpoint (diagnostic only)
   plot_inputs: false

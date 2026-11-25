@@ -52,14 +52,16 @@ include:
   - local: workflows/gitlab-CI/stages_code.yml
   - local: workflows/gitlab-CI/stages_skimmer.yml
   - local: workflows/gitlab-CI/stages_analysis.yml
-  - local: workflows/gitlab-CI/stages_classifier.yml
   - local: workflows/gitlab-CI/stages_cutflow.yml
   - local: workflows/gitlab-CI/stages_tools.yml
-  - local: workflows/gitlab-CI/stages_friendtree.yml
   - local: workflows/gitlab-CI/stages_plots.yml
-  - local: workflows/gitlab-CI/stages_reana.yml
   - local: workflows/gitlab-CI/stages_workflows.yml
   - local: workflows/gitlab-CI/stages_btagSF_calibration.yml
+  - local: workflows/gitlab-CI/stages_phaseA.yml
+  - local: workflows/gitlab-CI/stages_phaseB.yml
+  - local: workflows/gitlab-CI/stages_phaseC.yml
+  - local: workflows/gitlab-CI/stages_phaseD.yml
+  - local: workflows/gitlab-CI/stages_phaseF.yml
   - project: 'cms-cmu/barista'
     ref: 'master'
     file: 'src/workflows/gitlab-CI/stages_proxy.yml'
@@ -67,16 +69,18 @@ include:
 stages:  
   - setup
   - code 
+  - workflows
+  - phaseA
+  - phaseB
+  - phaseC
+  - phaseD
+  - phaseF
   - skimmer
   - friendtree
   - analysis
   - tools
   - plot
   - cutflow
-  - classifier
-  - workflows
-  # - mixeddata
-  - reana
 
 
 # Setup job that clones barista once

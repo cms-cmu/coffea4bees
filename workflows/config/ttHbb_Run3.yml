@@ -88,7 +88,7 @@ jcm:
     condor: true
     shared_dask: true
     run_performance: true
-jcm_plot_config: "coffea4bees/plots/metadata/plots_JCM_ttHbb.yml"
+jcm_plot_config: "coffea4bees/plots/metadata/plotsAllNoFvT.yml"
 jcm_datasets:
   - "data"
   - "TTTo2L2Nu"
@@ -154,7 +154,6 @@ fvt:
   plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
   classifier_config_paths: "coffea4bees"
   label: "FvT"
-  output_dir: "output/ttHbb_Run3/FvT/"
   plot_inputs: false
   plot_weights: false
   evaluate: true
@@ -249,7 +248,6 @@ svb:
   plot_base: "root://eosuser.cern.ch//eos/user/a/algomez/www/HH4b/Plots"
   classifier_config_paths: "coffea4bees"
   label: "SvB_MA"
-  output_dir: "output/ttHbb_Run3/SvB_MA/"
   plot_inputs: false
   plot_weights: false
   evaluate: true

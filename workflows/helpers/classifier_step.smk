@@ -16,12 +16,15 @@ import yaml
 include: "common.smk"
 
 
-def setup_classifier_step(key):
+def setup_classifier_step(key, default_subdir=None):
     """Copy config[key] to top level, fill the generic Snakefile's required keys, write
     common.yml from classifier_setting and the overridden templates. Raises if the block is
     missing: a default label/eos_base would train into some other production's area."""
     if not isinstance(config.get(key), dict):
         raise ValueError(f"config block `{key}:` is required for this step")
+    base_output = config.get('output_path', 'output/')
+    if not base_output.endswith('/'):
+        base_output += '/'
     blk = resolve_config_section(config, primary_key=key, inherit_keys=[])
     for k, v in blk.items():
         config[k] = v
@@ -29,7 +32,9 @@ def setup_classifier_step(key):
         if not config.get(k):
             raise ValueError(f"`{key}.{k}` is required")
     config.setdefault('classifier_config_paths', "coffea4bees")
-    config.setdefault('output_dir', f"output/{config['label']}/")
+    config.setdefault('output_dir', f"{base_output}{default_subdir or config['label']}/")
+    if isinstance(config.get('output_dir'), str) and '{output_path}' in config['output_dir']:
+        config['output_dir'] = config['output_dir'].replace('{output_path}', base_output)
     config.setdefault('plot_inputs', False)
     config.setdefault('plot_weights', False)
     config.setdefault('evaluate', True)

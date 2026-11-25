@@ -147,17 +147,22 @@ def extract_signal_from_friends(
                 t_svb = f_svb["Events"]
                 sr = t_hcr["SR"].array(library="np")
                 four_tag = t_hcr["fourTag"].array(library="np")
+                p_sig_all = t_svb["p_ttHbb"].array(library="np")
+                n_min = min(len(sr), len(p_sig_all))
+                sr = sr[:n_min]
+                four_tag = four_tag[:n_min]
                 mask = sr & four_tag
                 if selection == "gt6" and "nSelJets" in t_hcr:
-                    mask = mask & (t_hcr["nSelJets"].array(library="np") > 6)
+                    mask = mask & (t_hcr["nSelJets"].array(library="np")[:n_min] > 6)
                 if np.sum(mask) == 0:
                     return np.array([]), np.array([])
-                w = t_hcr["weight"].array(library="np")[mask]
-                p_sig = t_svb["p_ttHbb"].array(library="np")[mask]
-                p_mj = t_svb["p_multijet"].array(library="np")[mask]
-                p_tt = t_svb["p_ttbar"].array(library="np")[mask]
+                w = t_hcr["weight"].array(library="np")[:n_min][mask]
+                p_sig = p_sig_all[:n_min][mask]
+                p_mj = t_svb["p_multijet"].array(library="np")[:n_min][mask]
+                p_tt = t_svb["p_ttbar"].array(library="np")[:n_min][mask]
                 ps = p_sig / np.maximum(p_sig + p_mj + p_tt, 1e-10)
-                return ps, w
+                valid = np.isfinite(ps) & np.isfinite(w)
+                return ps[valid], w[valid]
         except Exception as e:
             print(f"Error processing {p}: {e}")
             return np.array([]), np.array([])
@@ -393,6 +398,8 @@ def main():
             except Exception:
                 out_dict = {}
         out_dict[key_name] = [round(float(x), 6) for x in bin_edges]
+        if "SvB_MA" in key_name and key_name != "SvB_MA":
+            out_dict["SvB_MA"] = out_dict[key_name]
         os.makedirs(os.path.dirname(os.path.abspath(args.output_json)), exist_ok=True)
         with open(args.output_json, "w") as f:
             json.dump(out_dict, f, indent=2)

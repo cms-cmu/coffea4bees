@@ -1,21 +1,8 @@
-analysis_plot_coffea4bees:    
-  stage: plot 
-  extends:
-    - .base_analysis_coffea4bees
-  needs: 
-    - setup_coffea4bees
-    - tools_merge_test_coffea4bees
-  script:
-    - source coffea4bees/scripts/analysis-plot.sh --output-base /builds/$CI_PROJECT_PATH/output
-  artifacts:
-    paths:
-      - output/analysis_plot/RunII/
-
 analysis_unsup_plot_coffea4bees:
-  stage: plot 
+  stage: plot
   extends:
     - .base_analysis_coffea4bees
-  needs: 
+  needs:
     - setup_coffea4bees
     - analysis_unsup_test_coffea4bees
   script:
@@ -24,56 +11,11 @@ analysis_unsup_plot_coffea4bees:
     paths:
       - output/analysis_plot_unsup/RunII/
 
-# analysis_truthStudy_plot_coffea4bees:
-#   stage: plot 
-#   extends:
-#     - .base_analysis_coffea4bees
-#   needs: 
-#     - setup_coffea4bees
-#     - analysis_truthStudy_test_coffea4bees
-#   script:
-#     - source coffea4bees/scripts/analysis-truthStudy-plot.sh --output-base /builds/$CI_PROJECT_PATH/output
-#   artifacts:
-#     paths:
-#       - output/analysis_truthStudy_plot/
-
-analysis_iplot_coffea4bees:
-  stage: plot 
-  extends:
-    - .base_analysis_coffea4bees
-  needs:
-    - setup_coffea4bees
-    - tools_merge_test_coffea4bees
-  script:
-    - source coffea4bees/scripts/analysis-iplot.sh --output-base /builds/$CI_PROJECT_PATH/output
-
-code_plot_test_coffea4bees:
-  stage: plot
-  extends:
-    - .base_analysis_coffea4bees
-  needs: 
-    - setup_coffea4bees
-    - tools_merge_test_coffea4bees
-  script:
-    - source coffea4bees/scripts/code-plot-test.sh --output-base /builds/$CI_PROJECT_PATH/output
-  artifacts:
-    paths:
-      - output/code_plot_test/test_dumpPlotCounts.yml
-
-code_pourover_test_coffea4bees:
-  stage: plot
-  extends:
-    - .base_analysis_coffea4bees
-  needs:
-    - setup_coffea4bees
-  script:
-    - source coffea4bees/scripts/code-pourover-test.sh
-
 synthetic_dataset_plot_coffea4bees:
   stage: plot
   extends:
     - .base_analysis_coffea4bees
-  needs: 
+  needs:
     - setup_coffea4bees
     - synthetic_dataset_cluster_coffea4bees
   script:
@@ -81,55 +23,3 @@ synthetic_dataset_plot_coffea4bees:
   artifacts:
     paths:
       - output/synthetic_dataset_plot/jet-splitting-PDFs-test/
-
-mixeddata_study_hemispheres_coffea4bees:
-  stage: plot
-  extends:
-    - .base_analysis_coffea4bees
-  needs:
-    - setup_coffea4bees
-    - mixeddata_cluster_coffea4bees
-  script:
-    - source coffea4bees/scripts/mixeddata-study-hemispheres.sh --output-base /builds/$CI_PROJECT_PATH/output
-  artifacts:
-    paths:
-      - output/test_study_hemispheres/hemi_statistics_UL18.yml
-
-make_plots_lowpt_Run2_coffea4bees:
-  stage: plot
-  extends:
-    - .base_analysis_coffea4bees
-  needs:
-    - setup_coffea4bees
-    - merging_files_lowpt_Run2_coffea4bees
-  script:
-    - pixi run snakemake output/run2_lowpt/plots_run2_lowpt/plots_done.txt -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml --config test=true --jobs 4
-  artifacts:
-    paths:
-      - barista_framework/output/run2_lowpt/plots_run2_lowpt/plots_done.txt
-
-make_plots_ttHbb_coffea4bees:
-  stage: plot
-  extends:
-    - .base_analysis_coffea4bees
-  needs:
-    - setup_coffea4bees
-    - merging_files_ttHbb_coffea4bees
-  script:
-    - pixi run snakemake output/ttHbb/plots_ttHbb/plots_done.txt -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/ttHbb.yml --config test=true --jobs 4
-  artifacts:
-    paths:
-      - barista_framework/output/ttHbb/plots_ttHbb/plots_done.txt
-
-make_plots_Run3_coffea4bees:
-  stage: plot
-  extends:
-    - .base_analysis_coffea4bees
-  needs:
-    - setup_coffea4bees
-    - merging_files_Run3_coffea4bees
-  script:
-    - pixi run snakemake output/run3_nominal/plots_run3_nominal/plots_done.txt -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/nominal_run3_ci.yml --config test=true --jobs 4
-  artifacts:
-    paths:
-      - barista_framework/output/run3_nominal/plots_run3_nominal/plots_done.txt
