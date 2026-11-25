@@ -252,6 +252,7 @@ use rule make_plots from analysis as A3_validation with:
         metadata = A3_VAL_PLOT_CONFIG,
         extra_arguments = " ".join(["--combine_input_files", "-f png", f"--year {PLOT_YEAR}", "--only",
                                     *VAL.get('hists', [f"SvB_MA.ps_{channel}", "SvB_MA.ps", "SvB_MA.tt_vs_mj"])]),
+        gallery_title = "Stage_A_3_Subsample_Validation_Plots",
         run_container_wrapper = container_wrapper,
         python_bin = python_bin
     log: f"{out_a3}logs/validation_plots.log"

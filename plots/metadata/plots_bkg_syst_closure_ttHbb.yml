@@ -46,10 +46,14 @@ regions:
 summary:
   - overlay_SvB_MA_ps_ttHbb
   - overlay_SvB_MA_ps
+  - overlay_SvB_ps_ttHbb
+  - overlay_SvB_ps
   - overlay_FvT
   - overlay_selJets_pt
   - SvB_MA.ps_ttHbb
   - SvB_MA.ps
+  - SvB.ps_ttHbb
+  - SvB.ps
   - SvB_MA.ps_hh
   - SvB_MA.ps_zh
   - SvB_MA.ps_zz
