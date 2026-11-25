@@ -44,7 +44,6 @@ handoff:
 
 fvt:
   label: "FvT_30x"
-  output_dir: "output/FvT_30x/"
   # Half a falcon GPU (40 GB): the classifier default mps:25 + light caps GPU memory at 20 GB, and
   # the n=54 evaluators use ~27 GB (below). mps > 25 needs qos medium.
   gpu_gres: "mps:50"
@@ -78,7 +77,6 @@ svb:
   # _floor: retrained with the FvT p_d3 floor (below). The first, unfloored SvB_30x of this roast
   # stays on EOS next to it for comparison.
   label: "SvB_30x_floor"
-  output_dir: "output/SvB_30x_floor/"
   gpu_gres: "mps:50"     # as fvt:
   gpu_qos: "medium"
   # The background FvT is THIS roast's 30x Phase C output.

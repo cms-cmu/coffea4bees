@@ -193,6 +193,7 @@ def jcm_known_cutflow_flag(pass_name):
 rule output_computeJCM:
     input:
         ALL_JCM_FILES,
+        f"{JCM_OUTPUT_PATH}JCM_{tag}/index.html",
         f"{JCM_OUTPUT_PATH}histAll_wJCM.coffea",
         f"{JCM_OUTPUT_PATH}plots_wJCM/plots_done.txt",
         f"{JCM_OUTPUT_PATH}cutflow_validation_NoJCM.txt",
@@ -318,6 +319,28 @@ else:
             run_container_wrapper = config['analysis_container_wrapper'],
             python_bin = lambda wildcards: config.get("python_bin", "python")
         log: f"{JCM_OUTPUT_PATH}logs/make_JCM.log"
+
+rule make_jcm_gallery:
+    input: ALL_JCM_FILES
+    output: f"{JCM_OUTPUT_PATH}JCM_{tag}/index.html"
+    log: f"{JCM_OUTPUT_PATH}logs/make_jcm_gallery.log"
+    params:
+        jcm_dir = f"{JCM_OUTPUT_PATH}JCM_{tag}/",
+        title = f"JCM_{tag}_fit_plots",
+        run_container_wrapper = config['analysis_container_wrapper'],
+        python_bin = lambda wildcards: config.get("python_bin", "python")
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {log})
+        if [ -f src/plotting/make_gallery.py ]; then
+            echo "Making JCM fit gallery" 2>&1 | tee {log}
+            {params.run_container_wrapper} {params.python_bin} src/plotting/make_gallery.py {params.jcm_dir} --title {params.title} 2>&1 | tee -a {log}
+        else
+            echo "src/plotting/make_gallery.py not found in this barista checkout; skipping JCM gallery" 2>&1 | tee {log}
+            echo "<p>JCM fit gallery not available</p>" > {output}
+        fi
+        """
 
 # ---------------------------------------------------------------------------
 # Second pass: same datasets, fitted JCM applied (apply_JCM: true, JCM_file -> fit above)
@@ -522,7 +545,7 @@ use rule cutflow_closure_table from analysis as jcm_cutflow_closure_table with:
         python_bin = lambda wildcards: config.get("python_bin", "python")
 
 if per_year_jcm:
-    localrules: create_noJCM_config, create_wJCM_config, merge_noJCM, merge_wJCM, make_new_JCM_per_year, make_plots_wJCM, check_cutflow_noJCM, check_cutflow_wJCM, jcm_cutflow_closure_table, merge_classifier_inputs_friends
+    localrules: create_noJCM_config, create_wJCM_config, merge_noJCM, merge_wJCM, make_new_JCM_per_year, make_jcm_gallery, make_plots_wJCM, check_cutflow_noJCM, check_cutflow_wJCM, jcm_cutflow_closure_table, merge_classifier_inputs_friends
 else:
-    localrules: create_noJCM_config, create_wJCM_config, merge_noJCM, merge_wJCM, make_new_JCM, make_plots_wJCM, check_cutflow_noJCM, check_cutflow_wJCM, jcm_cutflow_closure_table, merge_classifier_inputs_friends
+    localrules: create_noJCM_config, create_wJCM_config, merge_noJCM, merge_wJCM, make_new_JCM, make_jcm_gallery, make_plots_wJCM, check_cutflow_noJCM, check_cutflow_wJCM, jcm_cutflow_closure_table, merge_classifier_inputs_friends
 

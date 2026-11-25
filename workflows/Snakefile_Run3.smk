@@ -31,6 +31,7 @@ rule all:
     input:
         f"{out}histAll_Run3{config['label']}.coffea",
         f"{out}jcm/jetCombinatoricModel_SB_.yml",
+        f"{out}jcm/index.html",
         f"{out}plots_wJCM/plots_done.txt"
 
 rule all_histograms:
@@ -167,6 +168,26 @@ rule make_JCM_Run3:
         ls {params.output_dir} 2>&1 | tee -a {log}
         """
 
+rule make_JCM_gallery_Run3:
+    input: f"{out}jcm/jetCombinatoricModel_SB_.yml"
+    output: f"{out}jcm/index.html"
+    container: config['analysis_container']
+    params:
+        jcm_dir = f"{out}jcm/",
+        title = "Run3_JCM_fit_plots",
+    log: f"{out}logs/make_JCM_gallery_Run3.log"
+    shell:
+        """
+        mkdir -p $(dirname {log})
+        if [ -f src/plotting/make_gallery.py ]; then
+            echo "Making Run3 JCM fit gallery" 2>&1 | tee {log}
+            python src/plotting/make_gallery.py {params.jcm_dir} --title {params.title} 2>&1 | tee -a {log}
+        else
+            echo "src/plotting/make_gallery.py not found; skipping JCM gallery" 2>&1 | tee {log}
+            echo "<p>JCM fit gallery not available</p>" > {output}
+        fi
+        """
+
 # ── Histograms with fitted JCM (re-run all data + TT) ─────────────────────────
 # JCM scales threeTag → fourTag-like, so all samples with threeTag content
 # (data, TT) must be re-run with the new JCM applied.
@@ -245,6 +266,9 @@ rule make_plots_wJCM:
         echo "Making plots with fitted JCM" 2>&1 | tee -a {log}
         python coffea4bees/plots/makePlots.py {input} -o {params.output_dir} -m {params.metadata} {params.extra_arguments} 2>&1 | tee -a {log}
         python src/plotting/pb_pdf_to_png.py -r -j 4 {params.output_dir} 2>&1 | tee -a {log}
+        if [ -f src/plotting/make_gallery.py ]; then
+            python src/plotting/make_gallery.py {params.output_dir} -m {params.metadata} --title "$(basename {params.output_dir})" 2>&1 | tee -a {log}
+        fi
         touch {output}
         """
 
@@ -360,6 +384,9 @@ rule make_plots_FvT:
         echo "Making plots with FvT weights" 2>&1 | tee -a {log}
         python coffea4bees/plots/makePlots.py {input} -o {params.output_dir} -m {params.metadata} {params.extra_arguments} 2>&1 | tee -a {log}
         python src/plotting/pb_pdf_to_png.py -r -j 4 {params.output_dir} 2>&1 | tee -a {log}
+        if [ -f src/plotting/make_gallery.py ]; then
+            python src/plotting/make_gallery.py {params.output_dir} -m {params.metadata} --title "$(basename {params.output_dir})" 2>&1 | tee -a {log}
+        fi
         touch {output}
         """
 

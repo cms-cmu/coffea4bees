@@ -15,7 +15,7 @@
 # Inputs (per roast, from the master config):
 #   - JCM:   fvt_closure.JCM_file, default coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_{tag}.yml
 #   - FvT:   analysis_config.config.friends.FvT (this roast's Phase C friend; runner.py merges it over friend_file)
-# Outputs: {output_path}FvT_closure/{singlefiles/, histAll_FvT_closure.coffea, plots_FvT_closure/ (+index.html),
+# Outputs: {output_path}PhaseC_4_FvT_closure/{singlefiles/, histAll_FvT_closure.coffea, plots_FvT_closure/ (+index.html),
 #           cutflow_FvT_closure.{yml,html}, cutflow_validation_FvT_closure*.txt,
 #           plots_ttbar_MC_vs_d3/ (+index.html), plots_ttbar3b_MC_vs_d3/ (+index.html),
 #           ttbar_MC_vs_d3_cutflow.{html,txt}}
@@ -196,15 +196,6 @@ rule all_FvT_closure:
         f"{CLOSURE_PATH}cutflow_validation_FvT_closure.txt",
         f"{CLOSURE_PATH}cutflow_FvT_closure.html",
         TTBAR_COMPARISON_OUTPUTS
-    run:
-        import os
-        legacy_closure = os.path.join(base_output, 'FvT_closure')
-        if os.path.abspath(legacy_closure) != os.path.abspath(CLOSURE_PATH.rstrip('/')):
-            if not os.path.exists(legacy_closure) and not os.path.islink(legacy_closure):
-                try:
-                    os.symlink(os.path.basename(CLOSURE_PATH.rstrip('/')), legacy_closure)
-                except OSError:
-                    pass
 
 # ttbar MC vs the FvT-derived estimate alone (e.g. on an existing C.4 output):
 #   snakemake -s ... all_ttbar_MC_vs_d3

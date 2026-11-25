@@ -101,7 +101,6 @@ mvd:
   plot_base: "{web_prod}/{roast_id}/classifier"
   wfs_base: "coffea4bees/classifier/config/workflows/HH4b_Run3/MvD"
   label: "MvD"
-  output_dir: "output/MvD/"
   # yields page (output/MvD/yields.html): four-tag data vs the model the MvD starts from
   yields_ratio: ["d4 / t4 + mix4"]
   plot_inputs: false
@@ -132,7 +131,6 @@ svb_mvd:
   plot_base: "{web_prod}/{roast_id}/classifier"
   wfs_base: "coffea4bees/classifier/config/workflows/HH4b_Run3/SvB"
   label: "SvB_MvD"
-  output_dir: "output/SvB_MvD/"
   plot_inputs: true
   train_template: "model: {eos_base}/classifier/{label}, MvD: {eos_base}/friend/MvD"
   eval_template: "model: {eos_base}/classifier/{label}, SvB: {eos_base}/friend/{label}"

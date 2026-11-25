@@ -9,8 +9,12 @@ from datetime import datetime
 
 include: "helpers/common.smk"
 
+base_output = config.get('output_path', 'output/')
+if not base_output.endswith('/'):
+    base_output += '/'
+
 # Resolve SvB configuration block from master config or fallback keys
-svb_cfg = resolve_config_section(config, primary_key='svb', fallback_keys=['svb_classifier', 'classifier'])
+svb_cfg = resolve_config_section(config, primary_key='svb', fallback_keys=['svb_ma', 'svb_classifier', 'classifier'])
 for k, v in svb_cfg.items():
     config[k] = v
 
@@ -20,7 +24,9 @@ config.setdefault('plot_base', "root://eosuser.cern.ch//eos/user/a/algomez/www/H
 config.setdefault('classifier_config_paths', "coffea4bees")
 config.setdefault('wfs_base', "coffea4bees/classifier/config/workflows/HH4b_2024_v2/SvB")
 config.setdefault('label', "SvB_nominal")
-config.setdefault('output_dir', f"output/{config['label']}/")
+config.setdefault('output_dir', f"{base_output}PhaseD_SvB/")
+if isinstance(config.get('output_dir'), str) and '{output_path}' in config['output_dir']:
+    config['output_dir'] = config['output_dir'].replace('{output_path}', base_output)
 config.setdefault('model', f"{config['eos_base']}/classifier/{config['label']}")
 config.setdefault('friend', f"{config['eos_base']}/friend/{config['label']}")
 config.setdefault('eval_template', f"model: {config['eos_base']}/classifier/{config['label']}, SvB: {config['eos_base']}/friend/{config['label']}")

@@ -9,6 +9,10 @@ from datetime import datetime
 
 include: "helpers/common.smk"
 
+base_output = config.get('output_path', 'output/')
+if not base_output.endswith('/'):
+    base_output += '/'
+
 # Resolve FvT configuration block from master config or fallback keys
 fvt_cfg = resolve_config_section(config, primary_key='fvt', fallback_keys=['fvt_classifier', 'classifier'])
 for k, v in fvt_cfg.items():
@@ -20,7 +24,9 @@ config.setdefault('plot_base', "root://eosuser.cern.ch//eos/user/a/algomez/www/H
 config.setdefault('classifier_config_paths', "coffea4bees")
 config.setdefault('wfs_base', "coffea4bees/classifier/config/workflows/HH4b_2024_v2/FvT")
 config.setdefault('label', "FvT_nominal")
-config.setdefault('output_dir', f"output/{config['label']}/")
+config.setdefault('output_dir', f"{base_output}PhaseC_FvT/")
+if isinstance(config.get('output_dir'), str) and '{output_path}' in config['output_dir']:
+    config['output_dir'] = config['output_dir'].replace('{output_path}', base_output)
 config.setdefault('model', f"{config['eos_base']}/classifier/{config['label']}")
 config.setdefault('friend', f"{config['eos_base']}/friend/{config['label']}")
 config.setdefault('eval_template', f"model: {config['eos_base']}/classifier/{config['label']}, FvT: {config['eos_base']}/friend/{config['label']}")

@@ -88,7 +88,7 @@ trigger_weights:
 # PHASE B: CALIBRATION & CLASSIFIER INPUTS (JCM & Friendtrees)
 # ==============================================================================
 per_year_jcm: true
-jcm_plot_config: "coffea4bees/plots/metadata/plots_JCM_ttHbb.yml"
+jcm_plot_config: "coffea4bees/plots/metadata/plotsAllNoFvT_ttHbb.yml"
 jcm_datasets:
   - "data"
   - "TTTo2L2Nu_stitched"
@@ -202,7 +202,6 @@ fvt:
   plot_base: "{web_prod}/{roast_id}/classifier"
   classifier_config_paths: "coffea4bees"
   label: "FvT_ttHbb_opt_param"
-  output_dir: "output/FvT_ttHbb_opt_param/"
   plot_inputs: true
   plot_weights: true
   evaluate: true
@@ -312,7 +311,6 @@ svb:
   plot_base: "{web_prod}/{roast_id}/classifier"
   classifier_config_paths: "coffea4bees"
   label: "SvB_ttHbb_opt_param"
-  output_dir: "output/SvB_ttHbb_opt_param/"
   plot_inputs: true
   plot_weights: true
   evaluate: true
@@ -406,7 +404,6 @@ svb_ma:
   plot_base: "{web_prod}/{roast_id}/classifier"
   classifier_config_paths: "coffea4bees"
   label: "SvB_MA_ttHbb_opt_param"
-  output_dir: "output/SvB_MA_ttHbb_opt_param/"
   plot_inputs: true
   plot_weights: true
   evaluate: true
@@ -534,7 +531,7 @@ analysis_config:
     FvT_pd3_floor: 0.01
     pairing: nominal
     fill_histograms: "SvB"
-    svb_binning_file: "output/SvB_MA_ttHbb_opt_param/svb_quantiles.json"
+    svb_binning_file: "output/ttHbb_opt_param/PhaseD_SvB_MA/svb_quantiles.json"
 
 plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
 plot_extra_arguments: ""

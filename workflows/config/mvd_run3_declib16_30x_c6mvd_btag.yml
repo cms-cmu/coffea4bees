@@ -28,7 +28,6 @@ mvd:
 
 svb_mvd:
   label: "SvB_MvD_30x_btag_c6mvd"
-  output_dir: "output/SvB_MvD_30x_btag_c6mvd/"
   train_template: "model: {eos_base}/classifier/{label}, MvD: {roast:mvd_declib16_30x_c6mvd_run3_20261013_e7d9186-d00d175}/friend/MvD_30x_c6"
   # This step's common.yml (replaces the base's c6 setting for this step only)
   classifier_setting:

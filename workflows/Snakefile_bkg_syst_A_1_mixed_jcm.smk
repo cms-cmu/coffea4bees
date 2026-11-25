@@ -197,10 +197,32 @@ else:
             ls {A1_JCM_DIR} 2>&1 | tee -a {log}
             """
 
-rule all_bkg_syst_A_1:
-    input: (MIXED_JCM if isinstance(MIXED_JCM, list) else [MIXED_JCM]) if SUB_SOURCE == 'split' else [JCM_HISTS]
+rule A1_jcm_gallery:
+    input: MIXED_JCM
+    output: f"{A1_JCM_DIR}index.html"
+    log: f"{out_a1}logs/make_jcm_gallery.log"
+    params:
+        jcm_dir = A1_JCM_DIR,
+        title = f"JCM_{A1_JCM_TAG}_fit_plots",
+        container_wrapper = container_wrapper,
+        python_bin = python_bin,
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {log})
+        if [ -f src/plotting/make_gallery.py ]; then
+            echo "Making A1 JCM fit gallery" 2>&1 | tee {log}
+            {params.container_wrapper} {params.python_bin} src/plotting/make_gallery.py {params.jcm_dir} --title {params.title} 2>&1 | tee -a {log}
+        else
+            echo "src/plotting/make_gallery.py not found in this barista checkout; skipping JCM gallery" 2>&1 | tee {log}
+            echo "<p>JCM fit gallery not available</p>" > {output}
+        fi
+        """
 
-localrules: A1_fetch, A1_fetch_nominal, A1_hist_config, A1_merge_hists, A1_jcm_config, all_bkg_syst_A_1
+rule all_bkg_syst_A_1:
+    input: ((MIXED_JCM if isinstance(MIXED_JCM, list) else [MIXED_JCM]) + [f"{A1_JCM_DIR}index.html"]) if SUB_SOURCE == 'split' else [JCM_HISTS]
+
+localrules: A1_fetch, A1_fetch_nominal, A1_hist_config, A1_merge_hists, A1_jcm_config, A1_jcm_gallery, all_bkg_syst_A_1
 if per_year_jcm:
     localrules: A1_fit_per_year
 else:

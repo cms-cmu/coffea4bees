@@ -54,7 +54,7 @@ phase_e:
   svb_result: "inputs/SvB_result.json"
 
 # Phase E JCM fit settings
-jcm_plot_config: "coffea4bees/plots/metadata/plotsJCM_ttHbb_stitched.yml"
+jcm_plot_config: "coffea4bees/plots/metadata/plotsAllNoFvT_ttHbb.yml"
 jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb_stitched_jcm_config.yml -m coffea4bees/plots/metadata/plotsJCM_ttHbb_stitched.yml"
 
 phase_e_jcm:
