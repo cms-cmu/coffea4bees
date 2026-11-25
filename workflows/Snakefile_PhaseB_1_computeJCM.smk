@@ -492,6 +492,7 @@ use rule make_plots from analysis as make_plots_wJCM with:
         extra_arguments = lambda wildcards: " ".join(filter(None, [
             "-s xW -f png",
             "--year " + (DATA_YEARS[0] if len(DATA_YEARS) == 1 else ("Run3" if any("202" in y for y in DATA_YEARS) else "RunII")),
+            ("--thresholds " + str(config.get("candidates_selection_cfg") or config.get("analysis_config", {}).get("config", {}).get("candidates_selection_cfg"))) if (config.get("candidates_selection_cfg") or config.get("analysis_config", {}).get("config", {}).get("candidates_selection_cfg")) else "",
             config.get("plot_extra_arguments", ""),
         ])),
         run_container_wrapper = config['analysis_container_wrapper'],

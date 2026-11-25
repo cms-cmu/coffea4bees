@@ -65,6 +65,7 @@ codes:
   region:
     SR: 2
     SB: 1
+    SRSB: [1, 2]
     other: 0
   tag:
     threeTag: 3
@@ -83,6 +84,28 @@ regions:
   - "SR"
   - "SB"
 
+# 2D SR+SB definition plots (signal, 3b data, and 4b ttbar; never unblind 4b data in SR+SB)
+hists_2d:
+  ttHbb:
+    process: ttHbb
+    tag: fourTag
+    label: "ttHbb"
+  data3b:
+    process: data
+    tag: threeTag
+    label: "Three-tag data"
+  TTbar:
+    process: [TTToHadronic_stitched, TTToSemiLeptonic_stitched, TTTo2L2Nu_stitched]
+    tag: fourTag
+    label: "$t\\bar{t}$"
+
+regions_2d:
+  - "SRSB"
+
+vars_2d:
+  - quadJet_selected.canH_vs_canTT_m
+  - quadJet_selected.lead_vs_subl_m
+
 # Key plots pinned at the top of the HTML gallery (src/plotting/make_gallery.py).
 summary:
   - selJets_noJCM.n
@@ -94,6 +117,8 @@ summary:
   - v4j.mass
   - quadJet_selected.lead.mass
   - quadJet_selected.subl.mass
+  - quadJet_selected.canH_vs_canTT_m
+  - quadJet_selected.lead_vs_subl_m
   - top_cand.xW
   - top_cand.xbW
   - top_cand.xWt

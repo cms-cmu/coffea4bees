@@ -186,7 +186,10 @@ use rule make_plots from analysis as make_plots_noJCM with:
     params:
         output_dir = f"{config['output_path']}plots_noJCM/",
         metadata = config.get('jcm_plot_config', config.get('jcm', {}).get('plot_config', config.get('plot_config', "coffea4bees/plots/metadata/plotsAllNoFvT.yml"))),
-        extra_arguments = "-s xW -f png",
+        extra_arguments = " ".join(filter(None, [
+            "-s xW -f png",
+            ("--thresholds " + str(config.get("candidates_selection_cfg") or config.get("analysis_config", {}).get("config", {}).get("candidates_selection_cfg"))) if (config.get("candidates_selection_cfg") or config.get("analysis_config", {}).get("config", {}).get("candidates_selection_cfg")) else "",
+        ])),
         run_container_wrapper = config['analysis_container_wrapper'],
         python_bin = lambda wildcards: config.get("python_bin", "python")
     log: f"{config['output_path']}logs/make_plots_noJCM.log"
