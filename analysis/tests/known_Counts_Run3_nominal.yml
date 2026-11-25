@@ -27,22 +27,22 @@ counts4:
         passElMu: 1.0
 
     TTbar_from_d3_2024C:
-        passPreSel: 313.95
-        passDiJetMass: 100.44
-        SR: 27.48
-        SB: 49.13
+        passPreSel: 677.32
+        passDiJetMass: 239.81
+        SR: 64.76
+        SB: 120.23
 
     TTbar_from_d3_2023_BPixD1:
-        passPreSel: 182.49
-        passDiJetMass: 60.9
-        SR: 15.3
-        SB: 31.19
+        passPreSel: 412.15
+        passDiJetMass: 141.12
+        SR: 34.89
+        SB: 71.44
 
     TTbar_from_d3_2022_EEE:
-        passPreSel: 181.87
-        passDiJetMass: 55.71
-        SR: 15.53
-        SB: 28.07
+        passPreSel: 450.01
+        passDiJetMass: 140.81
+        SR: 37.35
+        SB: 71.97
 
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024:
         passJetMult: 17.22
@@ -76,48 +76,48 @@ counts4:
 counts3:
     data_2024C:
         passJetMult: 33062.0
-        passPreSel: 1025.09
-        passDiJetMass: 305.18
-        SR: 75.05
-        SB: 143.33
+        passPreSel: 744.17
+        passDiJetMass: 156.05
+        SR: 34.27
+        SB: 80.35
         passMuMu: 0.0
         passElMu: 2.0
 
     data_2023_BPixD1:
         passJetMult: 28693.0
-        passPreSel: 658.07
-        passDiJetMass: 212.57
-        SR: 47.42
-        SB: 101.28
+        passPreSel: 451.64
+        passDiJetMass: 104.34
+        SR: 24.03
+        SB: 52.18
         passMuMu: 0.0
         passElMu: 3.0
 
     data_2022_EEE:
         passJetMult: 28683.0
-        passPreSel: 729.09
-        passDiJetMass: 215.91
-        SR: 55.12
-        SB: 101.31
+        passPreSel: 644.93
+        passDiJetMass: 136.98
+        SR: 40.85
+        SB: 62.74
         passMuMu: 1.0
         passElMu: 1.0
 
     TTbar_from_d3_2024C:
-        passPreSel: 374.88
-        passDiJetMass: 122.06
-        SR: 32.92
-        SB: 59.32
+        passPreSel: 963.93
+        passDiJetMass: 298.24
+        SR: 78.72
+        SB: 142.05
 
     TTbar_from_d3_2023_BPixD1:
-        passPreSel: 215.02
-        passDiJetMass: 73.23
-        SR: 18.11
-        SB: 37.68
+        passPreSel: 601.88
+        passDiJetMass: 194.47
+        SR: 47.12
+        SB: 97.78
 
     TTbar_from_d3_2022_EEE:
-        passPreSel: 211.1
-        passDiJetMass: 64.81
-        SR: 17.83
-        SB: 32.19
+        passPreSel: 661.81
+        passDiJetMass: 182.09
+        SR: 47.5
+        SB: 91.43
 
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024:
         passJetMult: 17.22
