@@ -96,12 +96,11 @@ fvt:
         - --max-evaluators 3
         - --device cuda cpu
     dataset:
-      - module: HCR.FvT.EvalBackground
+      - module: HCR.FvT.Eval
         option:
           - --metadata coffea4bees/metadata/datasets/
           - --max-workers 8
           - --data-source detector
-          - --mc-processes ttbar
           - --friends "" {eos_prod}/ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10/handoff/classifier_inputs_ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10.json@@HCR_input
     model:
       - module: HCR.FvT.baseline.Eval
