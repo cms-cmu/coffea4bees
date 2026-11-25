@@ -257,7 +257,7 @@ rule make_plots_wJCM:
     params:
         output_dir = f"{out}plots_wJCM/",
         metadata = config['plots_metadata'],
-        extra_arguments = "",
+        extra_arguments = f"--thresholds {config['candidates_selection_cfg']}" if config.get("candidates_selection_cfg") else "",
     log: f"{out}logs/make_plots_wJCM.log"
     shell:
         """
@@ -375,7 +375,7 @@ rule make_plots_FvT:
     params:
         output_dir      = f"{out}plots_FvT/",
         metadata        = config['plots_metadata'],
-        extra_arguments = "",
+        extra_arguments = f"--thresholds {config['candidates_selection_cfg']}" if config.get("candidates_selection_cfg") else "",
     log: f"{out}logs/make_plots_FvT.log"
     shell:
         """
