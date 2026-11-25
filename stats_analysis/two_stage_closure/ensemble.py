@@ -723,7 +723,9 @@ class multijetEnsemble:
         lumi_title = config.lumi_title()
         region_title = 'SR' if args.region == 'SR' else regionName.get(args.region, args.region)
         classifier_name = classifier.replace('_', ' ')
-        xTitle = f'{classifier_name} P(Signal) #(Bin) + #(Bins)#(Mix) #cbar P({self.channel.upper()}) is largest'
+        # x = the SvB bin within each block, one block of nBins_rebin bins per multijet model; kept short
+        # so it fits under the pull pad (the long form ran off the canvas)
+        xTitle = f'{classifier_name} P(Signal) bin + {self.nBins_rebin}#times model'
 
         parameters = {'titleLeft'   : '#bf{CMS} #it{Internal}',
                       'titleCenter' : region_title,
@@ -741,6 +743,7 @@ class multijetEnsemble:
                       'logY'        : True,
                       'yMax'        : self.ymax[0] * 35.0,
                       'xTitleOffset': 0.95,
+                      'rXTitleOffset': 1.2,   # pull-pad x title; the default 0.9/rPadFraction = 1.8 put it below the canvas
                       'xleg'        : [0.13, 0.13 + 0.40],
                       'yleg'        : [0.74, 0.90],
                       'legendSubText': ['#bf{Adjacent Bin Pull Correlation:}',
