@@ -547,7 +547,7 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
         with open(train_path) as f:
             twf = yaml.safe_load(f) or {}
         if isinstance(twf.get("main"), dict):
-            twf["main"]["option"] = ["--device cpu", "--max-loaders 1", "--max-trainers 1"]
+            twf["main"]["option"] = ["--device cpu", "--max-loaders 1", "--max-trainers 2"]
         active_years = {str(k) for k in year_eras} if isinstance(year_eras, dict) and year_eras else None
         for entry in twf.get("dataset") or []:
             if not isinstance(entry, dict) or not isinstance(entry.get("option"), list):
@@ -630,7 +630,7 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
         with open(eval_path) as f:
             ewf = yaml.safe_load(f) or {}
         if isinstance(ewf.get("main"), dict):
-            ewf["main"]["option"] = ["--max-evaluators 1", "--device cpu"]
+            ewf["main"]["option"] = ["--max-evaluators 2", "--device cpu"]
         for entry in ewf.get("dataset") or []:
             if not isinstance(entry, dict) or not isinstance(entry.get("option"), list):
                 continue

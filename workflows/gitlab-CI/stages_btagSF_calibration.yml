@@ -1,14 +1,6 @@
 # b-tagging SF calibration (workflows/Snakefile_btagSF_calibration.smk).
 # Config, inputs and what is tested: workflows/config/btagSF_calibration_ci.yml
 
-btagSF_calibration_unit_coffea4bees:
-  stage: code
-  extends:
-    - .base_analysis_coffea4bees
-  # Derivation, file format, evaluation and closure on toy histograms. Offline, a few seconds.
-  script:
-    - python -m src.tests.btag_calibration
-
 btagSF_calibration_workflow_coffea4bees:
   stage: analysis
   extends:

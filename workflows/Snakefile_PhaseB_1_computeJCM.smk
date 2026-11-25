@@ -249,25 +249,44 @@ use rule analysis_processor from analysis as analysis_data_noJCM with:
         ])),
         run_container_wrapper = config['analysis_container_wrapper']
 
-use rule analysis_processor from analysis as analysis_MC_noJCM with:
-    input: 
-        runner_script = "runner.py",
-        config_file = jcm_config_path
-    output: f"{JCM_OUTPUT_PATH}singlefiles/hist__{{dataset}}__{{year}}_NoJCM.coffea"
-    log: f"{JCM_OUTPUT_PATH}logs/analysis__{{dataset}}_{{year}}.log"
-    params:
-        datasets = lambda wildcards: wildcards.dataset,
-        years = lambda wildcards: wildcards.year,
-        config = lambda wildcards, input: input.config_file,
-        extra_arguments = lambda wildcards: " ".join(filter(None, [
-            "-t" if config.get("test", False) else "",
-            config.get("additional_parameters", "")
-        ])),
-        run_container_wrapper = config['analysis_container_wrapper']
+if is_test:
+    NOJCM_MC_FILES = [f"{JCM_OUTPUT_PATH}singlefiles/hist__MC__{yr}_NoJCM.coffea" for yr in DATA_YEARS] if MC_DATASETS else []
+    if MC_DATASETS:
+        use rule analysis_processor from analysis as analysis_MC_noJCM with:
+            input:
+                runner_script = "runner.py",
+                config_file = jcm_config_path
+            output: f"{JCM_OUTPUT_PATH}singlefiles/hist__MC__{{year}}_NoJCM.coffea"
+            log: f"{JCM_OUTPUT_PATH}logs/analysis__MC_{{year}}.log"
+            params:
+                datasets = " ".join(MC_DATASETS),
+                years = lambda wildcards: wildcards.year,
+                config = lambda wildcards, input: input.config_file,
+                extra_arguments = lambda wildcards: " ".join(filter(None, [
+                    "-t",
+                    config.get("additional_parameters", "")
+                ])),
+                run_container_wrapper = config['analysis_container_wrapper']
+else:
+    NOJCM_MC_FILES = [f"{JCM_OUTPUT_PATH}singlefiles/hist__{ds}__{yr}_NoJCM.coffea" for ds in MC_DATASETS for yr in DATA_YEARS]
+    use rule analysis_processor from analysis as analysis_MC_noJCM with:
+        input: 
+            runner_script = "runner.py",
+            config_file = jcm_config_path
+        output: f"{JCM_OUTPUT_PATH}singlefiles/hist__{{dataset}}__{{year}}_NoJCM.coffea"
+        log: f"{JCM_OUTPUT_PATH}logs/analysis__{{dataset}}_{{year}}.log"
+        params:
+            datasets = lambda wildcards: wildcards.dataset,
+            years = lambda wildcards: wildcards.year,
+            config = lambda wildcards, input: input.config_file,
+            extra_arguments = lambda wildcards: " ".join(filter(None, [
+                config.get("additional_parameters", "")
+            ])),
+            run_container_wrapper = config['analysis_container_wrapper']
 
 use rule merging_coffea_files from analysis as merge_noJCM with:
     input:
-        files = [f"{JCM_OUTPUT_PATH}singlefiles/hist_data__{yr}_{era}_NoJCM.coffea" for yr, era in DATA_YEAR_ERA] + [f"{JCM_OUTPUT_PATH}singlefiles/hist__{ds}__{yr}_NoJCM.coffea" for ds in MC_DATASETS for yr in DATA_YEARS],
+        files = [f"{JCM_OUTPUT_PATH}singlefiles/hist_data__{yr}_{era}_NoJCM.coffea" for yr, era in DATA_YEAR_ERA] + NOJCM_MC_FILES,
         script = "src/tools/merge_coffea_files.py"
     output: f"{JCM_OUTPUT_PATH}histAll_NoJCM.coffea"
     log: f"{JCM_OUTPUT_PATH}logs/merge_noJCM.log"
@@ -404,51 +423,98 @@ rule analysis_data_wJCM:
         fi
         """
 
-rule analysis_MC_wJCM:
-    input:
-        runner_script = "runner.py",
-        config_file = wjcm_config_path,
-        jcm_file = (lambda wildcards: f"{JCM_OUTPUT_PATH}JCM_{tag}/jetCombinatoricModel_SB_{tag}_{wildcards.year}.yml" if per_year_jcm else jcm_file_path)
-    output:
-        coffea = f"{JCM_OUTPUT_PATH}singlefiles/hist__{{dataset}}__{{year}}_wJCM.coffea",
-        json = f"{CI_OUTPUT_PATH}classifier_inputs_dataset_{{dataset}}__{{year}}.json"
-    log: f"{JCM_OUTPUT_PATH}logs/analysis__{{dataset}}_{{year}}_wJCM.log"
-    params:
-        datasets = lambda wildcards: wildcards.dataset,
-        years = lambda wildcards: wildcards.year,
-        config = lambda wildcards, input: input.config_file,
-        processor = lambda wildcards: get_raw_wjcm_config().get('processor', config.get('processor', 'coffea4bees/analysis/processors/processor_HH4b.py')),
-        extra_arguments = lambda wildcards: " ".join(filter(None, [
-            "-t" if config.get("test", False) else "",
-            config.get("additional_parameters", "")
-        ])),
-        run_container_wrapper = config['analysis_container_wrapper'],
-        python_bin = lambda wildcards: config.get("python_bin", "python")
-    shell:
-        """
-        set -eo pipefail
-        mkdir -p $(dirname {output.coffea}) $(dirname {output.json}) $(dirname {log})
+if is_test:
+    WJCM_MC_FILES = [f"{JCM_OUTPUT_PATH}singlefiles/hist__MC__{yr}_wJCM.coffea" for yr in DATA_YEARS] if PASS2_MC_DATASETS else []
+    CI_MC_JSON_FILES = [f"{CI_OUTPUT_PATH}classifier_inputs_MC__{yr}.json" for yr in DATA_YEARS] if PASS2_MC_DATASETS else []
+    if PASS2_MC_DATASETS:
+        rule analysis_MC_wJCM:
+            input:
+                runner_script = "runner.py",
+                config_file = wjcm_config_path,
+                jcm_file = (lambda wildcards: f"{JCM_OUTPUT_PATH}JCM_{tag}/jetCombinatoricModel_SB_{tag}_{wildcards.year}.yml" if per_year_jcm else jcm_file_path)
+            output:
+                coffea = f"{JCM_OUTPUT_PATH}singlefiles/hist__MC__{{year}}_wJCM.coffea",
+                json = f"{CI_OUTPUT_PATH}classifier_inputs_MC__{{year}}.json"
+            log: f"{JCM_OUTPUT_PATH}logs/analysis__MC_{{year}}_wJCM.log"
+            params:
+                datasets = " ".join(PASS2_MC_DATASETS),
+                years = lambda wildcards: wildcards.year,
+                config = lambda wildcards, input: input.config_file,
+                processor = lambda wildcards: get_raw_wjcm_config().get('processor', config.get('processor', 'coffea4bees/analysis/processors/processor_HH4b.py')),
+                extra_arguments = lambda wildcards: " ".join(filter(None, [
+                    "-t",
+                    config.get("additional_parameters", "")
+                ])),
+                run_container_wrapper = config['analysis_container_wrapper'],
+                python_bin = lambda wildcards: config.get("python_bin", "python")
+            shell:
+                """
+                set -eo pipefail
+                mkdir -p $(dirname {output.coffea}) $(dirname {output.json}) $(dirname {log})
 
-        {params.run_container_wrapper} {params.python_bin} runner.py {params.config} \
-            --processor {params.processor} \
-            --datasets {params.datasets} \
-            --years {params.years} \
-            --output-path $(dirname {output.coffea})/ \
-            --output $(basename {output.coffea}) \
-            {params.extra_arguments} 2>&1 | tee {log}
+                {params.run_container_wrapper} {params.python_bin} runner.py {params.config} \
+                    --processor {params.processor} \
+                    --datasets {params.datasets} \
+                    --years {params.years} \
+                    --output-path $(dirname {output.coffea})/ \
+                    --output $(basename {output.coffea}) \
+                    {params.extra_arguments} 2>&1 | tee {log}
 
-        generated_json="$(dirname {output.coffea})/$(basename {output.coffea} .coffea).json"
-        if [ -f "$generated_json" ]; then
-            mv -f "$generated_json" {output.json}
-        else
-            echo "ERROR: Expected friend tree json $generated_json not created by runner.py" 2>&1 | tee -a {log}
-            exit 1
-        fi
-        """
+                generated_json="$(dirname {output.coffea})/$(basename {output.coffea} .coffea).json"
+                if [ -f "$generated_json" ]; then
+                    mv -f "$generated_json" {output.json}
+                else
+                    echo "ERROR: Expected friend tree json $generated_json not created by runner.py" 2>&1 | tee -a {log}
+                    exit 1
+                fi
+                """
+else:
+    WJCM_MC_FILES = [f"{JCM_OUTPUT_PATH}singlefiles/hist__{ds}__{yr}_wJCM.coffea" for ds in PASS2_MC_DATASETS for yr in DATA_YEARS]
+    CI_MC_JSON_FILES = [f"{CI_OUTPUT_PATH}classifier_inputs_dataset_{ds}__{yr}.json" for ds in PASS2_MC_DATASETS for yr in DATA_YEARS]
+    rule analysis_MC_wJCM:
+        input:
+            runner_script = "runner.py",
+            config_file = wjcm_config_path,
+            jcm_file = (lambda wildcards: f"{JCM_OUTPUT_PATH}JCM_{tag}/jetCombinatoricModel_SB_{tag}_{wildcards.year}.yml" if per_year_jcm else jcm_file_path)
+        output:
+            coffea = f"{JCM_OUTPUT_PATH}singlefiles/hist__{{dataset}}__{{year}}_wJCM.coffea",
+            json = f"{CI_OUTPUT_PATH}classifier_inputs_dataset_{{dataset}}__{{year}}.json"
+        log: f"{JCM_OUTPUT_PATH}logs/analysis__{{dataset}}_{{year}}_wJCM.log"
+        params:
+            datasets = lambda wildcards: wildcards.dataset,
+            years = lambda wildcards: wildcards.year,
+            config = lambda wildcards, input: input.config_file,
+            processor = lambda wildcards: get_raw_wjcm_config().get('processor', config.get('processor', 'coffea4bees/analysis/processors/processor_HH4b.py')),
+            extra_arguments = lambda wildcards: " ".join(filter(None, [
+                config.get("additional_parameters", "")
+            ])),
+            run_container_wrapper = config['analysis_container_wrapper'],
+            python_bin = lambda wildcards: config.get("python_bin", "python")
+        shell:
+            """
+            set -eo pipefail
+            mkdir -p $(dirname {output.coffea}) $(dirname {output.json}) $(dirname {log})
+
+            {params.run_container_wrapper} {params.python_bin} runner.py {params.config} \
+                --processor {params.processor} \
+                --datasets {params.datasets} \
+                --years {params.years} \
+                --output-path $(dirname {output.coffea})/ \
+                --output $(basename {output.coffea}) \
+                {params.extra_arguments} 2>&1 | tee {log}
+
+            generated_json="$(dirname {output.coffea})/$(basename {output.coffea} .coffea).json"
+            if [ -f "$generated_json" ]; then
+                mv -f "$generated_json" {output.json}
+            else
+                echo "ERROR: Expected friend tree json $generated_json not created by runner.py" 2>&1 | tee -a {log}
+                exit 1
+            fi
+            """
 
 use rule merging_coffea_files from analysis as merge_wJCM with:
     input:
-        files = [f"{JCM_OUTPUT_PATH}singlefiles/hist_data__{yr}_{era}_wJCM.coffea" for yr, era in DATA_YEAR_ERA] + [f"{JCM_OUTPUT_PATH}singlefiles/hist__{ds}__{yr}_wJCM.coffea" for ds in PASS2_MC_DATASETS for yr in DATA_YEARS],
+        files = [f"{JCM_OUTPUT_PATH}singlefiles/hist_data__{yr}_{era}_wJCM.coffea" for yr, era in DATA_YEAR_ERA] + WJCM_MC_FILES,
         script = "src/tools/merge_coffea_files.py"
     output: f"{JCM_OUTPUT_PATH}histAll_wJCM.coffea"
     log: f"{JCM_OUTPUT_PATH}logs/merge_wJCM.log"
@@ -460,7 +526,7 @@ use rule merging_coffea_files from analysis as merge_wJCM with:
 
 all_ci_json_files = (
     [f"{CI_OUTPUT_PATH}classifier_inputs_data__{y}_{era}.json" for y, era in DATA_YEAR_ERA] +
-    [f"{CI_OUTPUT_PATH}classifier_inputs_dataset_{ds}__{y}.json" for ds in PASS2_MC_DATASETS for y in DATA_YEARS]
+    CI_MC_JSON_FILES
 )
 
 rule merge_classifier_inputs_friends:

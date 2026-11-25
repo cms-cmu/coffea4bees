@@ -23,7 +23,7 @@ phaseB_2_classifier_inputs_run2_coffea4bees:
     - phaseB_1_computeJCM_run2_coffea4bees
   script:
     - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
-    - $SNAKEMAKE all_PhaseB -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' --jobs 4
+    - $SNAKEMAKE all_PhaseB_handoff -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' --jobs 4
     - cat output/TEST/phaseB_validation.txt
   artifacts:
     when: always
@@ -69,7 +69,7 @@ phaseB_2_classifier_inputs_lowpt_run2_coffea4bees:
     - phaseB_1_computeJCM_lowpt_run2_coffea4bees
   script:
     - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
-    - $SNAKEMAKE all_PhaseB -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' --jobs 4
+    - $SNAKEMAKE all_PhaseB_handoff -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' --jobs 4
     - cat output/run2_lowpt/phaseB_validation.txt
   artifacts:
     when: always
@@ -115,7 +115,7 @@ phaseB_2_classifier_inputs_ttHbb_coffea4bees:
     - phaseB_1_computeJCM_ttHbb_coffea4bees
   script:
     - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
-    - $SNAKEMAKE all_PhaseB -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/ttHbb.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' --jobs 4
+    - $SNAKEMAKE all_PhaseB_handoff -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/ttHbb.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' --jobs 4
     - cat output/ttHbb/phaseB_validation.txt
   artifacts:
     when: always
@@ -161,7 +161,7 @@ phaseB_2_classifier_inputs_run3_coffea4bees:
     - phaseB_1_computeJCM_run3_coffea4bees
   script:
     - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
-    - $SNAKEMAKE all_PhaseB -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/nominal_run3.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"2022_EE":["E"],"2023_BPix":["D1"],"2024":["C"]}' --jobs 4
+    - $SNAKEMAKE all_PhaseB_handoff -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/nominal_run3.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"2022_EE":["E"],"2023_BPix":["D1"],"2024":["C"]}' --jobs 4
     - cat output/Run3_nominal/phaseB_validation.txt
   artifacts:
     when: always
@@ -207,7 +207,7 @@ phaseB_2_classifier_inputs_lowpt_run3_coffea4bees:
     - phaseB_1_computeJCM_lowpt_run3_coffea4bees
   script:
     - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
-    - $SNAKEMAKE all_PhaseB -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/lowpt_run3.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"2022_EE":["E"],"2023_BPix":["D1"],"2024":["C"]}' --jobs 4
+    - $SNAKEMAKE all_PhaseB_handoff -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/lowpt_run3.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"2022_EE":["E"],"2023_BPix":["D1"],"2024":["C"]}' --jobs 4
     - cat output/run3_lowpt/phaseB_validation.txt
   artifacts:
     when: always
@@ -226,4 +226,37 @@ phaseB_2_classifier_inputs_lowpt_run3_coffea4bees:
       - barista_framework/output/run3_lowpt/phaseB_validation.txt
       - barista_framework/coffea4bees/metadata/weights/JCM/run3_lowpt/
       - barista_framework/coffea4bees/metadata/datasets/classifier_inputs_run3_lowpt.json
+    expire_in: 1 day
+
+phaseB_plots_wJCM_coffea4bees:
+  stage: plot
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseB_2_classifier_inputs_run2_coffea4bees
+    - phaseB_2_classifier_inputs_lowpt_run2_coffea4bees
+    - phaseB_2_classifier_inputs_ttHbb_coffea4bees
+    - phaseB_2_classifier_inputs_run3_coffea4bees
+    - phaseB_2_classifier_inputs_lowpt_run3_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE output/TEST/PhaseB_1_computeJCM/plots_wJCM/plots_done.txt -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' --allowed-rules make_plots_wJCM --jobs 2
+    - $SNAKEMAKE output/run2_lowpt/PhaseB_1_computeJCM/plots_wJCM/plots_done.txt -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/lowpt_run2.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' --allowed-rules make_plots_wJCM --jobs 2
+    - $SNAKEMAKE output/ttHbb/PhaseB_1_computeJCM/plots_wJCM/plots_done.txt -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/ttHbb.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' --allowed-rules make_plots_wJCM --jobs 2
+    - $SNAKEMAKE output/Run3_nominal/PhaseB_1_computeJCM/plots_wJCM/plots_done.txt -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/nominal_run3.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"2022_EE":["E"],"2023_BPix":["D1"],"2024":["C"]}' --allowed-rules make_plots_wJCM --jobs 2
+    - $SNAKEMAKE output/run3_lowpt/PhaseB_1_computeJCM/plots_wJCM/plots_done.txt -s coffea4bees/workflows/Snakefile_PhaseB.smk --configfile coffea4bees/workflows/config/lowpt_run3.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"2022_EE":["E"],"2023_BPix":["D1"],"2024":["C"]}' --allowed-rules make_plots_wJCM --jobs 2
+  artifacts:
+    when: always
+    paths:
+      - output/TEST/PhaseB_1_computeJCM/plots_wJCM/
+      - output/run2_lowpt/PhaseB_1_computeJCM/plots_wJCM/
+      - output/ttHbb/PhaseB_1_computeJCM/plots_wJCM/
+      - output/Run3_nominal/PhaseB_1_computeJCM/plots_wJCM/
+      - output/run3_lowpt/PhaseB_1_computeJCM/plots_wJCM/
+      - barista_framework/output/TEST/PhaseB_1_computeJCM/plots_wJCM/
+      - barista_framework/output/run2_lowpt/PhaseB_1_computeJCM/plots_wJCM/
+      - barista_framework/output/ttHbb/PhaseB_1_computeJCM/plots_wJCM/
+      - barista_framework/output/Run3_nominal/PhaseB_1_computeJCM/plots_wJCM/
+      - barista_framework/output/run3_lowpt/PhaseB_1_computeJCM/plots_wJCM/
     expire_in: 1 day
