@@ -1,0 +1,47 @@
+# b-tagging SF calibration (workflows/Snakefile_btagSF_calibration.smk).
+# Config, inputs and what is tested: workflows/config/btagSF_calibration_ci.yml
+
+btagSF_calibration_unit_coffea4bees:
+  stage: code
+  extends:
+    - .base_analysis_coffea4bees
+  # Derivation, file format, evaluation and closure on toy histograms. Offline, a few seconds.
+  script:
+    - python -m src.tests.btag_calibration
+
+btagSF_calibration_workflow_coffea4bees:
+  stage: analysis
+  extends:
+    - .base_analysis_coffea4bees
+  # The whole workflow in test mode, on one pinned NanoAOD file per sample (ttHbb and
+  # TTToSemiLeptonic, UL18 and 2022_EE): processor, merge, maps, closure plots.
+  script:
+    - pixi run snakemake -s coffea4bees/workflows/Snakefile_btagSF_calibration.smk --configfile coffea4bees/workflows/config/btagSF_calibration_ci.yml --config test=true --jobs 4
+  artifacts:
+    paths:
+      - barista_framework/output/btagSF_calibration_ci/histAll_btagSF_calibration.coffea
+      - barista_framework/output/btagSF_calibration_ci/calibration_ci/
+      - barista_framework/output/btagSF_calibration_ci/logs/
+      - output/btagSF_calibration_ci/histAll_btagSF_calibration.coffea
+      - output/btagSF_calibration_ci/calibration_ci/
+      - output/btagSF_calibration_ci/logs/
+    expire_in: 1 week
+
+btagSF_calibration_closure_coffea4bees:
+  stage: tools
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - btagSF_calibration_workflow_coffea4bees
+  # Workflow outputs, application of the installed maps (metadata/weights/btagSF_calibration)
+  # in the processor, and their closure in Njet and HT. Fails when the installed maps are stale:
+  # derive them again after a change of the jet selection, the JECs or the b-tag SF.
+  script:
+    - python coffea4bees/workflows/scripts/check_btagSF_calibration.py -c coffea4bees/workflows/config/btagSF_calibration_ci.yml
+  artifacts:
+    when: always
+    paths:
+      - barista_framework/output/btagSF_calibration_ci/calibration_ci/btagSF_calibration_check.yml
+      - output/btagSF_calibration_ci/calibration_ci/btagSF_calibration_check.yml
+    expire_in: 1 week

@@ -1,0 +1,19 @@
+# Histograms for the b-tagging SF calibration (processor_btagSF_calibration.py).
+# Runs on MC NanoAOD: the picoAODs already contain a b-tag requirement.
+runner:
+  data_tier: nanoAOD
+  chunksize: 50000
+  workers: 4
+  worker_memory: 4GB
+
+config:
+  object_selection_cfg: coffea4bees/analysis/metadata/object_selection_thresholds.yml
+  # Binning of the calibration map
+  njet_bins: [4, 5, 6, 7, 8, 9, 11, 20]
+  ht_bins: [0, 500, 650, 800, 1000, 1200, 1400, 1600, 1800, 2000, 5000]
+  # ttbar samples are also filled as <process>_<category> (genTtbarId categories of
+  # ttbar_categories.py): ttB, ttC and ttLF are calibrated as separate samples
+  ttbar_categories: [ttB, ttC, ttLF]
+  # Set to fill the *_btagSF_calib histograms, validating the application of the calibration
+  btagSF_calibration_file: null
+  btagSF_calibration_sample_map: null

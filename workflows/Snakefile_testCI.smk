@@ -431,6 +431,27 @@ rule analysis_cutflow_lowpt_Run2:
     container: analysis_container
     shell: "source coffea4bees/scripts/analysis-cutflow-lowpt-Run2.sh --output-base  {output_dir} 2>&1 | tee -a {log}"
 
+rule btagSF_calibration_unit:
+    log: f"{output_dir}/btagSF_calibration_unit.log"
+    container: analysis_container
+    shell: "python -m src.tests.btag_calibration 2>&1 | tee -a {log}"
+
+rule btagSF_calibration_workflow:
+    output:
+        hists = f"{output_dir}/btagSF_calibration_ci/histAll_btagSF_calibration.coffea",
+        yields = f"{output_dir}/btagSF_calibration_ci/calibration_ci/btagSF_calibration_yields.yml"
+    log: f"{output_dir}/btagSF_calibration_workflow.log"
+    container: analysis_container
+    shell: "pixi run snakemake -s coffea4bees/workflows/Snakefile_btagSF_calibration.smk --configfile coffea4bees/workflows/config/btagSF_calibration_ci.yml --config test=true output_path={output_dir}/btagSF_calibration_ci/ --jobs 4 2>&1 | tee -a {log}"
+
+rule btagSF_calibration_closure:
+    input:
+        hists = f"{output_dir}/btagSF_calibration_ci/histAll_btagSF_calibration.coffea",
+        yields = f"{output_dir}/btagSF_calibration_ci/calibration_ci/btagSF_calibration_yields.yml"
+    log: f"{output_dir}/btagSF_calibration_closure.log"
+    container: analysis_container
+    shell: "python coffea4bees/workflows/scripts/check_btagSF_calibration.py -c coffea4bees/workflows/config/btagSF_calibration_ci.yml -i {input.hists} -m {output_dir}/btagSF_calibration_ci/calibration_ci/ 2>&1 | tee -a {log}"
+
 rule workflow_validation:
     log: f"{output_dir}/workflow_validation.log"
     shell: "python coffea4bees/workflows/scripts/ci_workflow_dryrun.py --snakemake 'pixi run snakemake' --output-dir {output_dir} 2>&1 | tee -a {log}"

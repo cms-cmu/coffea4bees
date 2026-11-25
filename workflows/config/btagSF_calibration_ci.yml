@@ -1,0 +1,51 @@
+# =============================================================================
+# b-tagging SF calibration, CI test (Snakefile_btagSF_calibration.smk, test=true)
+# =============================================================================
+# Jobs btagSF_calibration_workflow_coffea4bees and btagSF_calibration_closure_coffea4bees
+# (workflows/gitlab-CI/stages_btagSF_calibration.yml).
+#
+# One pass of the processor on one pinned NanoAOD file per sample serves two tests:
+#   - the workflow itself: processor -> merge -> maps derived on the CI events -> closure plots
+#     (tag "ci"; in test mode the maps are never installed);
+#   - the installed production maps: btagSF_calibration_file points to them, so the processor
+#     also applies them event by event (Njet_HT_btagSF_calib, Njet_HT_btagSF_calibDiff) and
+#     workflows/scripts/check_btagSF_calibration.py checks the closure in Njet and HT.
+#
+# When the jet selection, the JECs or the b-tag SF change, the installed maps must be derived
+# again (btagSF_calibration_run2.yml / btagSF_calibration_run3.yml): the closure job fails
+# until they are.
+# =============================================================================
+
+label: "btagSF_calibration_ci"
+output_path: "output/btagSF_calibration_ci/"
+
+btagsf_calibration:
+  processor: "coffea4bees/analysis/processors/processor_btagSF_calibration.py"
+  dataset_location: "coffea4bees/metadata/datasets_ci/btagSF_calibration.yml"
+  tag: "ci"
+  datasets:
+    - "ttHbb"
+    - "TTToSemiLeptonic"
+  years:
+    - "UL18"
+    - "2022_EE"
+  runner:
+    data_tier: nanoAOD
+    workers: 2
+    worker_memory: 4GB
+    test_files: 1
+    # events per sample = chunksize x maxchunks
+    chunksize: 50000
+    maxchunks: 4
+    dashboard_address: 0
+  config:
+    object_selection_cfg: coffea4bees/analysis/metadata/object_selection_thresholds.yml
+    # same binning as the installed maps
+    njet_bins: [4, 5, 6, 7, 8, 9, 11, 20]
+    ht_bins: [0, 500, 650, 800, 1000, 1200, 1400, 1600, 1800, 2000, 5000]
+    ttbar_categories: [ttB, ttC, ttLF]
+    btagSF_calibration_file:
+      UL18: coffea4bees/metadata/weights/btagSF_calibration/run2_v1/btagSF_calibrationSF_UL18.json
+      "2022_EE": coffea4bees/metadata/weights/btagSF_calibration/run3_v1/btagSF_calibrationSF_2022_EE.json
+    btagSF_calibration_sample_map:
+      TTToSemiLeptonic: {ttB: TTToSemiLeptonic_ttB, ttC: TTToSemiLeptonic_ttC, ttLF: TTToSemiLeptonic_ttLF}

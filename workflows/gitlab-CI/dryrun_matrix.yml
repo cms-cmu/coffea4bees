@@ -226,6 +226,12 @@ runs:
   analysis_HH4b_bkg_syst_declib16_run3.yml:
     - bkg_syst
     - bkg_syst_AB
+  btagSF_calibration_run2.yml:
+    - btagSF_calibration
+  btagSF_calibration_run3.yml:
+    - btagSF_calibration
+  btagSF_calibration_ci.yml:
+    - btagSF_calibration
   trigweights_run3.yml:
     - TrigWeights
   trigweights_run3_signal.yml:

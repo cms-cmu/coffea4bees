@@ -109,6 +109,11 @@ phases:
     snakefile: coffea4bees/workflows/Snakefile_TrigWeights.smk
     description: "Trigger weights computation"
 
+  BTAG_CALIB:
+    host: cmslpc
+    snakefile: coffea4bees/workflows/Snakefile_btagSF_calibration.smk
+    description: "b-tagging SF calibration: (Njet, HT) maps removing the normalization effect of the b-tag shape SF"
+
   FIT_QUALITY:
     host: cmslpc
     snakefile: coffea4bees/workflows/Snakefile_FitQualityReplay.smk
