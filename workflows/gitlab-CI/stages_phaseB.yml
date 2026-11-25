@@ -260,3 +260,36 @@ phaseB_plots_wJCM_coffea4bees:
       - barista_framework/output/Run3_nominal/PhaseB_1_computeJCM/plots_wJCM/
       - barista_framework/output/run3_lowpt/PhaseB_1_computeJCM/plots_wJCM/
     expire_in: 1 day
+
+phaseB_bkg_syst_AB_run2_coffea4bees:
+  stage: phaseB
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseA_declustered_dataset_run2_coffea4bees
+    - phaseA_makeMixedData_dataset_run2_coffea4bees
+    - phaseB_1_computeJCM_run2_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE all_bkg_syst_AB -s coffea4bees/workflows/Snakefile_bkg_syst_AB.smk --configfile coffea4bees/workflows/config/analysis_HH4b_bkg_syst_declib16nc.yml coffea4bees/workflows/config/analysis_HH4b_bkg_syst_ci.yml --config test=true eos_prod=output web_prod=output --jobs 4
+  artifacts:
+    when: always
+    paths:
+      - output/HH4b_bkg_syst_ci/inputs/
+      - output/HH4b_bkg_syst_ci/bkg_syst_A_2_make_subsamples/
+      - output/HH4b_bkg_syst_ci/bkg_syst_A_3_process_subsamples/
+      - output/HH4b_bkg_syst_ci/bkg_syst_B_1_computeJCM/
+      - output/HH4b_bkg_syst_ci/publish/classifier_inputs/
+      - output/HH4b_bkg_syst_ci/publish/friend/mixeddata/
+      - output/HH4b_bkg_syst_ci/handoff/
+      - output/HH4b_bkg_syst_ci/logs/
+      - barista_framework/output/HH4b_bkg_syst_ci/inputs/
+      - barista_framework/output/HH4b_bkg_syst_ci/bkg_syst_A_2_make_subsamples/
+      - barista_framework/output/HH4b_bkg_syst_ci/bkg_syst_A_3_process_subsamples/
+      - barista_framework/output/HH4b_bkg_syst_ci/bkg_syst_B_1_computeJCM/
+      - barista_framework/output/HH4b_bkg_syst_ci/publish/classifier_inputs/
+      - barista_framework/output/HH4b_bkg_syst_ci/publish/friend/mixeddata/
+      - barista_framework/output/HH4b_bkg_syst_ci/handoff/
+      - barista_framework/output/HH4b_bkg_syst_ci/logs/
+    expire_in: 1 day

@@ -289,6 +289,7 @@ rule stage_test_subsample_config:
         years_opt = f"--years {' '.join(YEARS)}" if per_year_jcm else "",
         pairing_opt = (f"--pairing {config['analysis_config']['config']['pairing']}"
                        if ((config.get('analysis_config') or {}).get('config') or {}).get('pairing') else ""),
+        local_opt = "--local" if config.get("test", False) else "",
     shell:
         """
         set -eo pipefail
@@ -297,7 +298,7 @@ rule stage_test_subsample_config:
             --base-config {input.proc_cfg} \
             --jcm-files {input.jcm} \
             --output {output.cfg} \
-            {params.years_opt} {params.pairing_opt} 2>&1 | tee {log}
+            {params.years_opt} {params.pairing_opt} {params.local_opt} 2>&1 | tee {log}
         """
 
 rule test_processor_subsample_with_jcm:
@@ -343,7 +344,7 @@ rule test_plots_subsample_closure:
         output_dir = f"{out_b1}test_v{{m}}_closure/plots/",
         extra_arguments = lambda wildcards: " ".join(filter(None, [
             "-s xW",
-            "--year " + ("Run3" if any("202" in y for y in YEARS) else "RunII"),
+            "--year " + (YEARS[0] if len(YEARS) == 1 else ("Run3" if any("202" in y for y in YEARS) else "RunII")),
             config.get("plot_extra_arguments", ""),
         ])),
         container_wrapper = config['analysis_container_wrapper'],

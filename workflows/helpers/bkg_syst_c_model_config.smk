@@ -253,11 +253,42 @@ rule stage_bkg_syst_c_model_config:
         os.makedirs(os.path.dirname(output.eval), exist_ok=True)
         os.makedirs(os.path.dirname(output.common), exist_ok=True)
 
+        active_years = set(str(y) for y in YEARS)
+        for ds in (formatted_train_wf.get("dataset") or []):
+            if isinstance(ds, dict) and isinstance(ds.get("option"), list):
+                filtered_opts = []
+                for o in ds["option"]:
+                    if isinstance(o, str) and o.startswith("--JCM-weight year:"):
+                        tokens = o.split()
+                        yr = tokens[1].split(":", 1)[1] if len(tokens) > 1 and ":" in tokens[1] else ""
+                        if yr and yr not in active_years:
+                            continue
+                    filtered_opts.append(o)
+                ds["option"] = filtered_opts
+
+        if config.get("test", False):
+            _set_setting_option(common_data.setdefault("setting", []), "ml.Training", "precision", "")
+            for mod in (formatted_train_wf.get("model") or []):
+                if isinstance(mod, dict) and isinstance(mod.get("option"), list):
+                    mod["option"] = [
+                        o.replace("--finetuning FixedStep", "--finetuning FinetuneStep")
+                        if isinstance(o, str) and o.startswith("--finetuning FixedStep")
+                        else o
+                        for o in mod["option"]
+                    ]
+
         with open(output.train, 'w') as f:
             yaml.dump(formatted_train_wf, f, default_flow_style=False, sort_keys=False)
         with open(output.eval, 'w') as f:
             yaml.dump(_format_structure(raw_eval_wf, mapping), f, default_flow_style=False, sort_keys=False)
         with open(output.common, 'w') as f:
             yaml.dump(common_data, f, default_flow_style=False, sort_keys=False)
+
+        if config.get("test", False):
+            apply_test_classifier_settings(
+                os.path.dirname(output.train),
+                output.common,
+                config.get('test_year_eras') or config.get('year_eras'),
+            )
 
 localrules: stage_bkg_syst_c_model_config

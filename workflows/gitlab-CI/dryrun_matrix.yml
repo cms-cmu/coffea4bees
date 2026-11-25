@@ -220,6 +220,9 @@ runs:
   analysis_HH4b_bkg_syst_declib16nc.yml:
     - bkg_syst
     - bkg_syst_AB
+  analysis_HH4b_bkg_syst_ci.yml:
+    - bkg_syst
+    - bkg_syst_AB
   analysis_HH4b_bkg_syst_declib16.yml:
     - bkg_syst
     - bkg_syst_AB

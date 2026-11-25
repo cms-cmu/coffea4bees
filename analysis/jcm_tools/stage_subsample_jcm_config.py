@@ -14,6 +14,7 @@ def parse_args():
     parser.add_argument("--output", required=True, help="Path to write staged analysis config YAML")
     parser.add_argument("--years", nargs="*", default=None, help="Optional list of years for per-year mapping")
     parser.add_argument("--pairing", default=None, help="Optional pairing override written to config.pairing (e.g. nominal, can_ttH)")
+    parser.add_argument("--local", action="store_true", help="Configure runner for local CPU execution (condor=False, shared_dask=False)")
     return parser.parse_args()
 
 
@@ -31,6 +32,13 @@ def main():
     config["config"]["apply_JCM"] = True
     if args.pairing:
         config["config"]["pairing"] = args.pairing
+    if args.local:
+        config.setdefault("runner", {}).update({
+            "condor": False,
+            "shared_dask": False,
+            "workers": 4,
+            "chunksize": 30000,
+        })
 
     if len(args.jcm_files) == 1:
         config["config"]["JCM_file"] = args.jcm_files[0]

@@ -4,7 +4,6 @@ tools_twostageclosure_mixed_coffea4bees:
     - .base_combine_coffea4bees
   needs: 
     - setup_coffea4bees
-    - analysis_test_mixed_coffea4bees
   script:
     - source coffea4bees/scripts/tools-twostageclosure-mixed.sh --output-base /builds/$CI_PROJECT_PATH/output
   artifacts:
