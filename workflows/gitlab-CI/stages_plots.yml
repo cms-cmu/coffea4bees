@@ -1,21 +1,8 @@
-analysis_plot_coffea4bees:    
-  stage: plot 
-  extends:
-    - .base_analysis_coffea4bees
-  needs: 
-    - setup_coffea4bees
-    - tools_merge_test_coffea4bees
-  script:
-    - source coffea4bees/scripts/analysis-plot.sh --output-base /builds/$CI_PROJECT_PATH/output
-  artifacts:
-    paths:
-      - output/analysis_plot/RunII/
-
 analysis_unsup_plot_coffea4bees:
-  stage: plot 
+  stage: plot
   extends:
     - .base_analysis_coffea4bees
-  needs: 
+  needs:
     - setup_coffea4bees
     - analysis_unsup_test_coffea4bees
   script:
@@ -24,34 +11,11 @@ analysis_unsup_plot_coffea4bees:
     paths:
       - output/analysis_plot_unsup/RunII/
 
-analysis_iplot_coffea4bees:
-  stage: plot 
-  extends:
-    - .base_analysis_coffea4bees
-  needs:
-    - setup_coffea4bees
-    - tools_merge_test_coffea4bees
-  script:
-    - source coffea4bees/scripts/analysis-iplot.sh --output-base /builds/$CI_PROJECT_PATH/output
-
-code_plot_test_coffea4bees:
-  stage: plot
-  extends:
-    - .base_analysis_coffea4bees
-  needs: 
-    - setup_coffea4bees
-    - tools_merge_test_coffea4bees
-  script:
-    - source coffea4bees/scripts/code-plot-test.sh --output-base /builds/$CI_PROJECT_PATH/output
-  artifacts:
-    paths:
-      - output/code_plot_test/test_dumpPlotCounts.yml
-
 synthetic_dataset_plot_coffea4bees:
   stage: plot
   extends:
     - .base_analysis_coffea4bees
-  needs: 
+  needs:
     - setup_coffea4bees
     - synthetic_dataset_cluster_coffea4bees
   script:
