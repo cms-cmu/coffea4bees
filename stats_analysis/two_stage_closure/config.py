@@ -75,9 +75,10 @@ lumi_energy = "13"       # "13.6" for Run 3 years
 
 
 def lumi_title():
-    """Right-hand plot title: '<years>, <lumi> fb^{-1} (<energy> TeV)' (ROOT TLatex)."""
-    prefix = f"{lumi_year_label}, " if lumi_year_label else ""
-    return f"{prefix}{lumi} fb^{{-1}} ({lumi_energy} TeV)"
+    """Right-hand plot title '<lumi> fb^{-1}, <years> (<energy> TeV)' (ROOT TLatex), the order of the
+    standard plots' CMS label (mplhep hep.cms.label: lumi, year, energy)."""
+    year = f", {lumi_year_label}" if lumi_year_label else ""
+    return f"{lumi} fb^{{-1}}{year} ({lumi_energy} TeV)"
 
 
 closure_fit_x_min = 0
