@@ -145,7 +145,8 @@ phaseC_4_fvt_closure_run2_coffea4bees:
     - test -s output/TEST/PhaseC_4_FvT_closure/histAll_FvT_closure.coffea
     - test -s output/TEST/PhaseC_4_FvT_closure/cutflow_FvT_closure.html
     - test -s output/TEST/PhaseC_4_FvT_closure/ttbar_MC_vs_d3_cutflow.html
-    - test -s output/TEST/PhaseC_4_FvT_closure/plots_FvT_closure/plots_done.txt
+    - test -f output/TEST/PhaseC_4_FvT_closure/plots_FvT_closure/plots_done.txt
+    - test -s output/TEST/PhaseC_4_FvT_closure/plots_FvT_closure/index.html
   artifacts:
     when: always
     paths:

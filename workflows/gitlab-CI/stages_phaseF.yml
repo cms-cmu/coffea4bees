@@ -174,12 +174,20 @@ phaseF_2_combine_run2_coffea4bees:
       WS_DIR="$OUT_F2/workspace"
       LIM_DIR="$OUT_F2/limits"
       mkdir -p "$DC_DIR" "$WS_DIR" "$LIM_DIR"
+      python3 -c '
+      import sys, yaml
+      with open("coffea4bees/stats_analysis/metadata/HH4b.yml") as f:
+          meta = yaml.safe_load(f)
+      meta["processes"]["signal"] = {"GluGluToHHTo4B_cHHH1": meta["processes"]["signal"]["GluGluToHHTo4B_cHHH1"]}
+      with open(sys.argv[1], "w") as f:
+          yaml.safe_dump(meta, f, sort_keys=False)
+      ' "$OUT_F2/HH4b_ci.yml"
       python3 coffea4bees/stats_analysis/make_combine_inputs.py \
         --var SvB_MA.ps_hh_fine \
         -f output/TEST/PhaseF_2_stats/histAll_TEST.json \
         --output_dir "$DC_DIR/" \
         --rebin 15 \
-        --metadata coffea4bees/stats_analysis/metadata/HH4b.yml \
+        --metadata "$OUT_F2/HH4b_ci.yml" \
         --stat_only \
         --blind \
         --region SR \
@@ -198,17 +206,12 @@ phaseF_2_combine_run2_coffea4bees:
       (cd "$WS_DIR" && text2workspace.py datacard__HH4b.txt \
         -P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel \
         --PO 'map=.*/ggHH_kl_1_kt_1_13p0TeV_hbbhbb:rggHH_kl_1_kt_1_13p0TeV_hbbhbb[1,-10,10]' \
-        --PO 'map=.*/ggHH_kl_0_kt_1_13p0TeV_hbbhbb:rggHH_kl_0_kt_1_13p0TeV_hbbhbb[1,-10,10]' \
-        --PO 'map=.*/ggHH_kl_2p45_kt_1_13p0TeV_hbbhbb:rggHH_kl_2p45_kt_1_13p0TeV_hbbhbb[1,-10,10]' \
-        --PO 'map=.*/ggHH_kl_5_kt_1_13p0TeV_hbbhbb:rggHH_kl_5_kt_1_13p0TeV_hbbhbb[1,-10,10]' \
         -o datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root)
       WS_FILE=$(realpath "$WS_DIR/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root")
       test -s "$WS_FILE"
       (cd "$LIM_DIR" && combine -M AsymptoticLimits "$WS_FILE" \
         -m 120 \
         --redefineSignalPOIs rggHH_kl_1_kt_1_13p0TeV_hbbhbb \
-        --setParameters rggHH_kl_0_kt_1_13p0TeV_hbbhbb=0,rggHH_kl_2p45_kt_1_13p0TeV_hbbhbb=0,rggHH_kl_5_kt_1_13p0TeV_hbbhbb=0 \
-        --freezeParameters rggHH_kl_0_kt_1_13p0TeV_hbbhbb,rggHH_kl_2p45_kt_1_13p0TeV_hbbhbb,rggHH_kl_5_kt_1_13p0TeV_hbbhbb \
         --run blind \
         -n _ggHH_kl_1_kt_1_13p0TeV_hbbhbb > datacard_limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.txt \
         && combineTool.py -M CollectLimits higgsCombine_ggHH_kl_1_kt_1_13p0TeV_hbbhbb.AsymptoticLimits.mH120.root -o datacard_limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.json)
