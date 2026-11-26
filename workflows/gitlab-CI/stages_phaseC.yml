@@ -108,6 +108,51 @@ phaseC_fvt_lowpt_run3_coffea4bees:
       - barista_framework/output/run3_lowpt/friend/lowpt_FvT/
     expire_in: 1 day
 
+phaseC_fvt_run3_2025_coffea4bees:
+  stage: phaseC
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseB_2_classifier_inputs_run3_2025_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE all_PhaseC -s coffea4bees/workflows/Snakefile_PhaseC.smk --configfile coffea4bees/workflows/config/nominal_run3_2025.yml --config test=true eos_prod=output web_prod=output 'test_year_eras={"2025":["B01"]}' --jobs 2
+    - python coffea4bees/workflows/scripts/validate_phaseC.py --yields output/Run3_2025_nominal/PhaseC_FvT/yields.json --model-result output/Run3_2025_nominal/classifier/FvT_nominal/result.json --friend-result output/Run3_2025_nominal/friend/FvT_nominal/result.json --output output/Run3_2025_nominal/PhaseC_FvT/phaseC_validation.txt
+  artifacts:
+    when: always
+    paths:
+      - output/Run3_2025_nominal/PhaseC_FvT/
+      - output/Run3_2025_nominal/classifier/FvT_nominal/
+      - output/Run3_2025_nominal/friend/FvT_nominal/
+      - barista_framework/output/Run3_2025_nominal/PhaseC_FvT/
+      - barista_framework/output/Run3_2025_nominal/classifier/FvT_nominal/
+      - barista_framework/output/Run3_2025_nominal/friend/FvT_nominal/
+    expire_in: 1 day
+
+phaseC_4_fvt_closure_run2_coffea4bees:
+  stage: phaseC
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseB_1_computeJCM_run2_coffea4bees
+    - phaseB_2_classifier_inputs_run2_coffea4bees
+    - phaseC_fvt_run2_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE all_FvT_closure -s coffea4bees/workflows/Snakefile_PhaseC_4_FvT_closure.smk --configfile coffea4bees/workflows/config/nominal_run2.yml --config test=true reuse_wJCM_ttbar=false eos_prod=output web_prod=output 'test_year_eras={"UL16_preVFP":["C"],"UL16_postVFP":["F"],"UL17":["C"],"UL18":["A"]}' --jobs 4
+    - test -s output/TEST/PhaseC_4_FvT_closure/histAll_FvT_closure.coffea
+    - test -s output/TEST/PhaseC_4_FvT_closure/cutflow_FvT_closure.html
+    - test -s output/TEST/PhaseC_4_FvT_closure/ttbar_MC_vs_d3_cutflow.html
+    - test -s output/TEST/PhaseC_4_FvT_closure/plots_FvT_closure/plots_done.txt
+  artifacts:
+    when: always
+    paths:
+      - output/TEST/PhaseC_4_FvT_closure/
+      - barista_framework/output/TEST/PhaseC_4_FvT_closure/
+    expire_in: 1 day
+
 phaseC_bkg_syst_fvt_run2_coffea4bees:
   stage: phaseC
   extends:

@@ -44,6 +44,8 @@ is_test = config.get('test', False)
 if isinstance(is_test, str):
     is_test = is_test.lower() in ("true", "1", "yes")
 config['test'] = is_test
+if config.get('test_year_eras') and isinstance(config['test_year_eras'], dict):
+    config['year_eras'] = config['test_year_eras']
 
 container_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
 config.setdefault('container_wrapper', container_wrapper)
@@ -177,6 +179,15 @@ def get_raw_closure_config():
         res['runner']['condor'] = False
         res['runner']['shared_dask'] = False
         res['runner']['run_performance'] = False
+        if config.get('test_chunksize'):
+            res['runner']['chunksize'] = int(config['test_chunksize'])
+        _roast_id = config.get('roast_id') or config.get('label') or 'TEST'
+        _fvt_label = (config.get('fvt') or {}).get('label', 'FvT_nominal')
+        _local_fvt = f"output/{_roast_id}/friend/{_fvt_label}/result.json"
+        if os.path.exists(_local_fvt):
+            res['config']['friends'] = {'FvT': f"{_local_fvt}@@analysis.0.merged"}
+            res['config']['FvT_pd3_floor'] = res['config'].get('FvT_pd3_floor') or 0.01
+            res['runner']['chunksize'] = int(config.get('test_chunksize', 30000))
     return res
 
 closure_config_path = f"{CLOSURE_PATH}analysis_config_FvT_closure.yml"
