@@ -314,6 +314,10 @@ phaseF_2_bkg_syst_closure_run2_coffea4bees:
       cp -f "$OUT_F2/summary_SvB_MA_SR.json" "$OUT_F2/closure_summary.json"
       cp -f "$OUT_F2/summary_SvB_MA.html" "$OUT_F2/closure_summary.html"
       test -s "$OUT_F2/closure_summary.json" && test -s "$OUT_F2/closure_summary.html"
+      python3 coffea4bees/stats_analysis/tests/test_runTwoStageClosure.py \
+        --closure-dir "$OUT_F2/closure_fits/HH4b_bkg_syst_ci/SvB_MA/rebin12" \
+        --channel HH4b \
+        --regions SR SB
   artifacts:
     when: always
     paths:

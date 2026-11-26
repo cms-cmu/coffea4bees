@@ -1,0 +1,105 @@
+-1:
+    chi2:
+        73.65337230708809
+    ndf:
+        20
+    pvalue:
+        4.562124260205189e-08
+    nConstrained:
+        1
+    nUnconstrained:
+        0
+    expected_ndfs:
+        20
+    variance:
+        [0.13976451357664002]
+0:
+    chi2:
+        10.98262590631422
+    ndf:
+        19
+    pvalue:
+        0.9244214778803115
+    nConstrained:
+        0
+    nUnconstrained:
+        1
+    expected_ndfs:
+        19
+    variance:
+        [5.291820279633969]
+1:
+    chi2:
+        9.519686365760899
+    ndf:
+        18
+    pvalue:
+        0.946461965456493
+    nConstrained:
+        0
+    nUnconstrained:
+        2
+    expected_ndfs:
+        18
+    variance:
+        [5.63866455589113, 3.5104039486772645]
+2:
+    chi2:
+        9.183765671726308
+    ndf:
+        17
+    pvalue:
+        0.9343195499934686
+    nConstrained:
+        0
+    nUnconstrained:
+        3
+    expected_ndfs:
+        17
+    variance:
+        [5.6064239608842055, 3.252225554700331, 9.745071907031228]
+3:
+    chi2:
+        9.146969664208575
+    ndf:
+        16
+    pvalue:
+        0.9072377827213256
+    nConstrained:
+        0
+    nUnconstrained:
+        4
+    expected_ndfs:
+        16
+    variance:
+        [5.612720621945573, 3.361687138472777, 9.703406341608018, 36.972613063922736]
+4:
+    chi2:
+        8.998501738744794
+    ndf:
+        15
+    pvalue:
+        0.8775957780798813
+    nConstrained:
+        0
+    nUnconstrained:
+        5
+    expected_ndfs:
+        15
+    variance:
+        [5.698028973198197, 4.002683729326701, 10.928882619201127, 40.382812087225, 38.90305866147327]
+5:
+    chi2:
+        8.896658008883126
+    ndf:
+        14
+    pvalue:
+        0.8376131223537413
+    nConstrained:
+        0
+    nUnconstrained:
+        6
+    expected_ndfs:
+        14
+    variance:
+        [5.64643751591023, 3.909735031260713, 11.05313829460252, 40.217465806892086, 39.94409117364651, 55.59931386309123]
