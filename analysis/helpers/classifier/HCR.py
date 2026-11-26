@@ -166,20 +166,24 @@ class HCREnsemble:
         a = batch[Input.ancillary]
         # Mismatch fix: The GBN parameter scaling in the trained HCR model expects
         # the inputs in the order ['xW', 'nSelJets', 'xbW', 'year'] -- minus the ones the
-        # model was trained without (single-year models, e.g. 2024, drop `year`).
-        model_features = [k for k in ("xW", "nSelJets", "xbW", "year") if k in self.ancillary]
+        # model was trained without (single-year models, e.g. 2024, drop `year`), plus any
+        # one-hot era indicators (`year_<era>`) in the order recorded in `self.ancillary`.
+        era_features = [k for k in self.ancillary if isinstance(k, str) and k.startswith("year_")]
+        model_features = [k for k in ("xW", "nSelJets", "xbW", "year") if k in self.ancillary] + era_features
         if len(model_features) != len(self.ancillary):
             raise ValueError(f"HCR evaluation: unsupported ancillary features {self.ancillary}")
+        event_year = event.metadata["year"]
         for i, k in enumerate(model_features):
-            match k:
-                case "year":
-                    a[:, i] = self.get_year(event.metadata["year"])
-                case "nSelJets":
-                    a[:, i] = torch.tensor(event.nJet_selected)
-                case "xW":
-                    a[:, i] = torch.tensor(event.xW)
-                case "xbW":
-                    a[:, i] = torch.tensor(event.xbW)
+            if k.startswith("year_"):
+                a[:, i] = 1.0 if event_year == k[len("year_"):] else 0.0
+            elif k == "year":
+                a[:, i] = self.get_year(event_year)
+            elif k == "nSelJets":
+                a[:, i] = torch.tensor(event.nJet_selected)
+            elif k == "xW":
+                a[:, i] = torch.tensor(event.xW)
+            elif k == "xbW":
+                a[:, i] = torch.tensor(event.xbW)
         # event offset
         batch[KFold.offset] = torch.from_numpy(event.event.to_numpy().view("int64"))
 

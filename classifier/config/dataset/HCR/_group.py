@@ -119,6 +119,8 @@ class add_year(add_column):
     dtype: type = field(init=False, default=int)
 
     def any(self, matches: tuple[re.Match, ...]):
+        import numpy as np
+
         from src.classifier.df.tools import add_columns
 
         full = matches[0].group("full")
@@ -128,7 +130,7 @@ class add_year(add_column):
             val = self.dtype(matches[0].group(self.key))
         cols: dict[str, Any] = {self.key: val}
         for era in _ERA_ONEHOT_NAMES:
-            cols[f"year_{era}"] = 1.0 if full == era else 0.0
+            cols[f"year_{era}"] = np.float32(1.0 if full == era else 0.0)
         yield add_columns(**cols)
 
 
