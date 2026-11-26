@@ -596,17 +596,19 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
                     )
                     opts.insert(kf_idx + 1, "--ghost-batch")
                     opts.insert(kf_idx + 2, {"n_batches": 16})
-            is_multi_era_fvt = bool(active_years and len(active_years) > 1) and any(
+            is_fvt = any(
                 "HCR.FvT" in str(e.get("module", ""))
                 for e in (twf.get("dataset") or [])
                 if isinstance(e, dict)
             )
+            is_multi_era_fvt = bool(active_years and len(active_years) > 1) and is_fvt
+            is_single_year_fvt = bool(active_years and len(active_years) == 1) and is_fvt
             is_lowpt_run3_fvt = bool(active_years and any("202" in y for y in active_years)) and any(
                 "HCR.FvT_lowpt" in str(e.get("module", ""))
                 for e in (twf.get("dataset") or [])
                 if isinstance(e, dict)
             )
-            test_epochs = 10 if is_lowpt_run3_fvt else (3 if is_multi_era_fvt else 1)
+            test_epochs = 10 if is_lowpt_run3_fvt else (5 if is_single_year_fvt else (3 if is_multi_era_fvt else 1))
             train_bs = 256
             prev_flag = ""
             for item in opts:
@@ -621,7 +623,7 @@ def apply_test_classifier_settings(wfs_dir, common_path=None, year_eras=None):
                         item["epoch"] = test_epochs
                         item["bs_init"] = min(int(item.get("bs_init", train_bs)), train_bs)
                         item["lr_init"] = min(float(item.get("lr_init", 1e-2)), 2e-3)
-                        if is_multi_era_fvt and "FixedStep" in prev_flag:
+                        if is_fvt and "FixedStep" in prev_flag:
                             item["bs_scale"] = 1.0
             entry["option"] = opts
         _atomic_write_yaml(train_path, twf)

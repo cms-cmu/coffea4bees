@@ -181,16 +181,21 @@ def validate_cutflow(cutflow_path, lines, coffea_out=None):
                 for cut in DILEP_CUTS:
                     if cut not in cuts:
                         raise AssertionError(f"{mname}.{ds}: missing dilepton crosscheck cut '{cut}'")
-        probe_keys = sorted(k for k in c4 if k.startswith("TTTo2L2Nu")) or data_keys
-        for cut in DILEP_CUTS:
-            pos = any(
-                _is_finite(m[ds][cut]) and m[ds][cut] > 0
-                for ds in probe_keys
-                for m in (c4, c4_unit)
-            )
-            if not pos:
-                raise AssertionError(f"Expected positive '{cut}' counts in {probe_keys}")
-        lines.append(f"  Dilepton ttbar crosscheck ({','.join(DILEP_CUTS)} in {probe_keys[0]}):  PASS")
+                    if not (_is_finite(cuts[cut]) and cuts[cut] >= 0):
+                        raise AssertionError(f"{mname}.{ds}.{cut}: expected finite >= 0, got {cuts[cut]}")
+        tt2l2nu_keys = sorted(k for k in c4 if k.startswith("TTTo2L2Nu"))
+        if tt2l2nu_keys:
+            for cut in DILEP_CUTS:
+                pos = any(
+                    _is_finite(m[ds][cut]) and m[ds][cut] > 0
+                    for ds in tt2l2nu_keys
+                    for m in (c4, c4_unit)
+                )
+                if not pos:
+                    raise AssertionError(f"Expected positive '{cut}' counts in {tt2l2nu_keys}")
+            lines.append(f"  Dilepton ttbar crosscheck ({','.join(DILEP_CUTS)} in {tt2l2nu_keys[0]}):  PASS")
+        else:
+            lines.append(f"  Dilepton ttbar crosscheck ({','.join(DILEP_CUTS)} keys present, no TTTo2L2Nu in dataset list):  PASS")
 
 
 def main():

@@ -53,34 +53,29 @@ variables:
 
 include:
   - local: workflows/gitlab-CI/stages_code.yml
-  - local: workflows/gitlab-CI/stages_analysis.yml
-  - local: workflows/gitlab-CI/stages_cutflow.yml
-  - local: workflows/gitlab-CI/stages_tools.yml
-  - local: workflows/gitlab-CI/stages_plots.yml
   - local: workflows/gitlab-CI/stages_workflows.yml
-  - local: workflows/gitlab-CI/stages_btagSF_calibration.yml
   - local: workflows/gitlab-CI/stages_phaseA.yml
   - local: workflows/gitlab-CI/stages_phaseB.yml
   - local: workflows/gitlab-CI/stages_phaseC.yml
   - local: workflows/gitlab-CI/stages_phaseD.yml
   - local: workflows/gitlab-CI/stages_phaseF.yml
+  - local: workflows/gitlab-CI/stages_tools.yml
+  - local: workflows/gitlab-CI/stages_extras.yml
   - project: 'cms-cmu/barista'
     ref: 'master'
     file: 'src/workflows/gitlab-CI/stages_proxy.yml'
 
-stages:  
+stages:
   - setup
-  - code 
+  - code
   - workflows
   - phaseA
   - phaseB
   - phaseC
   - phaseD
   - phaseF
-  - analysis
   - tools
-  - plot
-  - cutflow
+  - extras
 
 
 # Setup job that clones barista once

@@ -40,11 +40,16 @@ phaseF_1_analysis_run2_coffea4bees:
         test -s "output/TEST/PhaseF_1_analysis/plots_from_yaml/$f"
       done
       wait "$PLOTS_PID"
+      mkdir -p output/TEST/PhaseF_2_stats
+      python3 src/tools/convert_hist_to_json.py -i output/TEST/PhaseF_1_analysis/histAll_TEST.coffea -o output/TEST/PhaseF_2_stats/histAll_TEST.json --histos SvB_MA.ps_hh_fine
+      test -s output/TEST/PhaseF_2_stats/histAll_TEST.json
   artifacts:
     when: always
     paths:
       - output/TEST/PhaseF_1_analysis/
+      - output/TEST/PhaseF_2_stats/
       - barista_framework/output/TEST/PhaseF_1_analysis/
+      - barista_framework/output/TEST/PhaseF_2_stats/
     expire_in: 1 day
 
 phaseF_1_analysis_lowpt_run2_coffea4bees:
@@ -130,6 +135,93 @@ phaseF_1_analysis_lowpt_run3_coffea4bees:
     paths:
       - output/run3_lowpt/PhaseF_1_analysis/
       - barista_framework/output/run3_lowpt/PhaseF_1_analysis/
+    expire_in: 1 day
+
+phaseF_1_analysis_run3_2025_coffea4bees:
+  stage: phaseF
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseB_1_computeJCM_run3_2025_coffea4bees
+    - phaseB_2_classifier_inputs_run3_2025_coffea4bees
+    - phaseC_fvt_run3_2025_coffea4bees
+    - phaseD_svb_run3_2025_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE output/Run3_2025_nominal/PhaseF_1_analysis/histAll_Run3_2025_nominal.coffea output/Run3_2025_nominal/PhaseF_1_analysis/cutflow_Run3_2025_nominal.yml output/Run3_2025_nominal/PhaseF_1_analysis/cutflow_Run3_2025_nominal.html output/Run3_2025_nominal/PhaseF_1_analysis/plots_Run3_2025_nominal/plots_done.txt -s coffea4bees/workflows/Snakefile_PhaseF_1_analysis.smk --configfile coffea4bees/workflows/config/nominal_run3_2025.yml --config test=true 'test_year_eras={"2025":["B01"]}' --jobs 4
+    - python coffea4bees/workflows/scripts/validate_phaseF1.py --coffea output/Run3_2025_nominal/PhaseF_1_analysis/histAll_Run3_2025_nominal.coffea --cutflow output/Run3_2025_nominal/PhaseF_1_analysis/cutflow_Run3_2025_nominal.yml --output output/Run3_2025_nominal/PhaseF_1_analysis/phaseF1_validation.txt
+  artifacts:
+    when: always
+    paths:
+      - output/Run3_2025_nominal/PhaseF_1_analysis/
+      - barista_framework/output/Run3_2025_nominal/PhaseF_1_analysis/
+    expire_in: 1 day
+
+phaseF_2_combine_run2_coffea4bees:
+  stage: phaseF
+  extends:
+    - .base_combine_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseF_1_analysis_run2_coffea4bees
+  script:
+    - |
+      set -eo pipefail
+      export PYTHONPATH="$PWD:${PYTHONPATH:-}"
+      OUT_F2="output/TEST/PhaseF_2_stats/HH4b"
+      DC_DIR="$OUT_F2/datacards"
+      WS_DIR="$OUT_F2/workspace"
+      LIM_DIR="$OUT_F2/limits"
+      mkdir -p "$DC_DIR" "$WS_DIR" "$LIM_DIR"
+      python3 -c '
+      import sys, yaml
+      with open("coffea4bees/stats_analysis/metadata/HH4b.yml") as f:
+          meta = yaml.safe_load(f)
+      meta["processes"]["signal"] = {"GluGluToHHTo4B_cHHH1": meta["processes"]["signal"]["GluGluToHHTo4B_cHHH1"]}
+      with open(sys.argv[1], "w") as f:
+          yaml.safe_dump(meta, f, sort_keys=False)
+      ' "$OUT_F2/HH4b_ci.yml"
+      python3 coffea4bees/stats_analysis/make_combine_inputs.py \
+        --var SvB_MA.ps_hh_fine \
+        -f output/TEST/PhaseF_2_stats/histAll_TEST.json \
+        --output_dir "$DC_DIR/" \
+        --rebin 15 \
+        --metadata "$OUT_F2/HH4b_ci.yml" \
+        --stat_only \
+        --blind \
+        --region SR \
+        --multijet_process data \
+        --tt_processes TTbar4b_from_d3
+      args=""
+      for file in $(find "$DC_DIR" -maxdepth 1 -name "datacard_*.txt" ! -name "datacard__*.txt" | sort); do
+        base=$(basename "$file")
+        bin_name=$(echo "$base" | sed 's/^datacard_//; s/\.txt$//')
+        args="$args $bin_name=$base"
+      done
+      test -n "$args"
+      (cd "$DC_DIR" && combineCards.py $args > datacard__HH4b.txt)
+      test -s "$DC_DIR/datacard__HH4b.txt"
+      cp "$DC_DIR"/datacard__HH4b.txt "$DC_DIR"/*.root "$WS_DIR"/
+      (cd "$WS_DIR" && text2workspace.py datacard__HH4b.txt \
+        -P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel \
+        --PO 'map=.*/ggHH_kl_1_kt_1_13p0TeV_hbbhbb:rggHH_kl_1_kt_1_13p0TeV_hbbhbb[1,-10,10]' \
+        -o datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root)
+      WS_FILE=$(realpath "$WS_DIR/datacard__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.root")
+      test -s "$WS_FILE"
+      (cd "$LIM_DIR" && combine -M AsymptoticLimits "$WS_FILE" \
+        -m 120 \
+        --redefineSignalPOIs rggHH_kl_1_kt_1_13p0TeV_hbbhbb \
+        --run blind \
+        -n _ggHH_kl_1_kt_1_13p0TeV_hbbhbb > datacard_limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.txt \
+        && combineTool.py -M CollectLimits higgsCombine_ggHH_kl_1_kt_1_13p0TeV_hbbhbb.AsymptoticLimits.mH120.root -o datacard_limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.json)
+      test -s "$LIM_DIR/datacard_limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.json"
+      cat "$LIM_DIR/datacard_limits__ggHH_kl_1_kt_1_13p0TeV_hbbhbb.json"
+  artifacts:
+    when: always
+    paths:
+      - output/TEST/PhaseF_2_stats/
+      - barista_framework/output/TEST/PhaseF_2_stats/
     expire_in: 1 day
 
 phaseF_1_full_syst_ttHbb_coffea4bees:
