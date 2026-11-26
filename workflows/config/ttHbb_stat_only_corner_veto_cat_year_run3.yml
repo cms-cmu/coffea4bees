@@ -115,11 +115,11 @@ handoff:
   eos_base: "{eos_prod}/{roast_id}/handoff"
 
 # ==============================================================================
-# PHASE C & D CLASSIFIER SETTINGS & GCP MEMORY SIZING
+# PHASE C & D CLASSIFIER SETTINGS & NAUTILUS MEMORY SIZING
 # ==============================================================================
-gpu_mem: 60000
-train_mem: 60000
-eval_mem: 60000
+gpu_mem: 120000
+train_mem: 120000
+eval_mem: 128000
 
 classifier_setting:
   - module: ml.DataLoader
@@ -163,13 +163,13 @@ classifier_setting:
           - year_2024
 
 # ==============================================================================
-# PHASE C: FvT CLASSIFIER (GCP)
+# PHASE C: FvT CLASSIFIER (Nautilus)
 # ==============================================================================
 fvt:
   gpu_qos: medium
-  gpu_mem: 60000
-  train_mem: 60000
-  eval_mem: 60000
+  gpu_mem: 120000
+  train_mem: 120000
+  eval_mem: 128000
   eos_base: "{eos_prod}/{roast_id}"
   plot_base: "{web_prod}/{roast_id}/classifier"
   classifier_config_paths: "coffea4bees"
@@ -193,7 +193,7 @@ fvt:
       - module: HCR.FvT.TrainBaseline
         option:
           - --metadata coffea4bees/metadata/datasets/
-          - --max-workers 20
+          - --max-workers 8
           - --data-source detector
           - --JCM-weight year:2022_preEE {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_Run3_22_23_24_2022_preEE.yml@@JCM_weights
           - --JCM-weight year:2022_EE {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_Run3_22_23_24_2022_EE.yml@@JCM_weights
@@ -269,13 +269,13 @@ fvt_closure:
   known_counts_fatal: false
 
 # ==============================================================================
-# PHASE D: SvB (attention: false) & SvB_MA (attention: true) (GCP)
+# PHASE D: SvB (attention: false) & SvB_MA (attention: true) (Nautilus)
 # ==============================================================================
 svb:
   gpu_qos: medium
-  gpu_mem: 60000
-  train_mem: 60000
-  eval_mem: 60000
+  gpu_mem: 120000
+  train_mem: 120000
+  eval_mem: 128000
   train_runtime: 180
   eos_base: "{eos_prod}/{roast_id}"
   plot_base: "{web_prod}/{roast_id}/classifier"
@@ -368,9 +368,9 @@ svb:
 
 svb_ma:
   gpu_qos: medium
-  gpu_mem: 60000
-  train_mem: 60000
-  eval_mem: 60000
+  gpu_mem: 120000
+  train_mem: 120000
+  eval_mem: 128000
   train_runtime: 180
   eos_base: "{eos_prod}/{roast_id}"
   plot_base: "{web_prod}/{roast_id}/classifier"
