@@ -409,11 +409,9 @@ def add_pseudotagweights(
                 # lumimask/passNoiseFilter/passHLT/passJetMult) do not trigger
                 # false-positive warnings.
                 threeTag_mask = ak.to_numpy(event[label3b])
-                for field in ("lumimask", "passNoiseFilter", "passJetMult"):
+                for field in ("lumimask", "passNoiseFilter", "passJetMult", "passHLT"):
                     if field in event.fields:
                         threeTag_mask = threeTag_mask & ak.to_numpy(event[field])
-                if config.get("cut_on_HLT_decision", True) and "passHLT" in event.fields:
-                    threeTag_mask = threeTag_mask & ak.to_numpy(event["passHLT"])
                 n_threeTag = int(threeTag_mask.sum())
                 for branch in ("FvT", "d3_to_t4", "d3_to_t3"):
                     vals = ak.to_numpy(getattr(event.FvT, branch))
