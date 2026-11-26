@@ -521,6 +521,13 @@ def add_pseudotagweights(
                 event[f"weight_d3_to_t4_{v_name}"] = w_t4_v
                 event[f"weight_d3_to_t3_{v_name}"] = w_t3_v
 
+    # Without a JCM there is no pseudo-tag weight to leave out, so the no-FvT weight is the event weight
+    # (what the JCM branch above gives four-tag events). Setting it keeps the *_noFvT histograms
+    # (SvB_MA_noFvT, ...) in no-JCM runs, e.g. the bkg_syst A_3 pass over the four-tag closure
+    # subsamples, which the A_3 no-FvT validation plots compare with the nominal 3b x JCM model.
+    if not JCM and "weight_noFvT" not in event.fields:
+        event["weight_noFvT"] = event.weight
+
     return weights, list_weight_names
 
 def _resolve_subsample_jcm(jcm_entry, year, year_label, v_name):

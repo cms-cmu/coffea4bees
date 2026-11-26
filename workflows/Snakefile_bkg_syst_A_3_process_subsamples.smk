@@ -92,7 +92,12 @@ rule stage_subsample_processor_config:
 ci_json = config['classifier_inputs_json']
 friend_json = config['mixeddata_friend_json']
 
-localrules: all_bkg_syst_A_3, stage_subsample_processor_config, A3_merge_mixed, A3_plot_config, A3_validation, all_subsample_coffea, all_classifier_inputs_mixeddata, all_friends_mixeddata, merge_classifier_inputs_mixeddata_json, merge_mixeddata_friends_json
+localrules: all_bkg_syst_A_3, stage_subsample_processor_config, A3_merge_mixed, A3_plot_config, A3_validation, A3_plot_config_noFvT, A3_validation_noFvT, all_subsample_coffea, all_classifier_inputs_mixeddata, all_friends_mixeddata, merge_classifier_inputs_mixeddata_json, merge_mixeddata_friends_json
+
+# The no-FvT validation (rule A3_validation_noFvT) needs the nominal FvT model's 3b x JCM: off for
+# bkg_model: mvd (no 3b model) and with validation.noFvT: false.
+A3_NOFVT_PLOTS = (str(config.get('bkg_model', 'fvt')).lower() != 'mvd'
+                  and bool((config.get('validation') or {}).get('noFvT', True)))
 
 # ── Master Target Rules ───────────────────────────────────────────────────────
 rule all_bkg_syst_A_3:
@@ -101,6 +106,7 @@ rule all_bkg_syst_A_3:
         ci_json,
         friend_json,
         f"{out_a3}validation/plots/plots_done.txt",
+        *([f"{out_a3}validation/plots_noFvT/plots_done.txt"] if A3_NOFVT_PLOTS else []),
 
 rule all_subsample_coffea:
     input:
@@ -264,3 +270,40 @@ use rule make_plots from analysis as A3_validation with:
         run_container_wrapper = container_wrapper,
         python_bin = python_bin
     log: f"{out_a3}logs/validation_plots.log"
+
+# ── No-FvT validation: the closure samples against the nominal model WITHOUT FvT ─────────────────
+# Before any FvT is trained: does the mean of the N subsamples (four-tag, unit weight) look like the
+# four-tag data, against the nominal 3b x JCM model with no FvT? SvB_MA_noFvT: the nominal histAll has
+# it (3b x JCM), and the A_3 pass fills it too (no JCM there, so weight_noFvT is the event weight and
+# SvB_MA_noFvT equals SvB_MA for the four-tag subsamples). Mixed and declustered subsamples alike;
+# off for bkg_model: mvd (no 3b model; A3_NOFVT_PLOTS).
+A3_VAL_PLOT_CONFIG_NOFVT = f"{A3_VAL_DIR}plots_bkg_syst_nofvt_validation.yml"
+
+rule A3_plot_config_noFvT:
+    input: VAL.get('plot_template_noFvT', "coffea4bees/plots/metadata/plots_bkg_syst_nofvt_validation_HH4b.yml")
+    output: A3_VAL_PLOT_CONFIG_NOFVT
+    run:
+        with open(input[0]) as f:
+            cfg = yaml.safe_load(f)
+        h = cfg['hists']
+        h['mixed_mean']['process'] = [f"{SUB_PREFIX}_v{v}" for v in SUBSAMPLES]
+        h['mixed_mean']['scalefactor'] = 1.0 / N_SUBSAMPLES
+        h['mixed_mean']['label'] = h['mixed_mean']['label'].replace("MIXED_N", f"{N_SUBSAMPLES} subsamples")
+        cfg['stack']['TTbar']['process'] = VAL.get('model_ttbar', ["TTbar4b_from_d3"])
+        cfg['stack']['TTbar']['tag'] = VAL.get('model_ttbar_tag', "threeTag")
+        write_yaml(output[0], cfg)
+
+use rule make_plots from analysis as A3_validation_noFvT with:
+    input:
+        coffea_file = [config['nominal_coffea'], A3_MIXED_MERGED],
+        metadata_file = A3_VAL_PLOT_CONFIG_NOFVT,
+        plot_script = "coffea4bees/plots/makePlots.py"
+    output: f"{A3_VAL_DIR}plots_noFvT/plots_done.txt"
+    params:
+        output_dir = f"{A3_VAL_DIR}plots_noFvT/",
+        metadata = A3_VAL_PLOT_CONFIG_NOFVT,
+        extra_arguments = " ".join(["--combine_input_files", "-f png", f"--year {PLOT_YEAR}", "--only",
+                                    *VAL.get('hists_noFvT', ["SvB_MA_noFvT.ps", f"SvB_MA_noFvT.ps_{channel}"])]),
+        run_container_wrapper = container_wrapper,
+        python_bin = python_bin
+    log: f"{out_a3}logs/validation_plots_noFvT.log"
