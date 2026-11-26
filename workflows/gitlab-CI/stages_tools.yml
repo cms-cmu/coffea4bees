@@ -39,18 +39,6 @@ btagSF_calibration_closure_coffea4bees:
       - output/btagSF_calibration_ci/calibration_ci/btagSF_calibration_check.yml
     expire_in: 1 week
 
-tools_twostageclosure_mixed_coffea4bees:
-  stage: tools
-  extends:
-    - .base_combine_coffea4bees
-  needs: 
-    - setup_coffea4bees
-  script:
-    - source coffea4bees/scripts/tools-twostageclosure-mixed.sh --output-base /builds/$CI_PROJECT_PATH/output
-  artifacts:
-    paths:
-      - output/tools_twostageclosure_mixed/test_dump_twoStageClosureInputsCounts.yml
-
 tools_perf_profile_coffea4bees:
   stage: tools
   extends:
