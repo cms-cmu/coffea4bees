@@ -203,8 +203,10 @@ def make_ratio(rPad, numer, denom, rMin, rMax, rTitle, rColor, lColor, ratioTObj
         # print('rPadFraction',rPadFraction)
         # print('ratio_hist.GetTitleOffset()',ratio_hist.GetTitleOffset())
         # print('denomerror.GetTitleOffset()',denomerror.GetTitleOffset())
-        ratio_hist.GetXaxis().SetTitleOffset(0.9/rPadFraction)
-        denomerror.GetXaxis().SetTitleOffset(0.9/rPadFraction)
+        # rXTitleOffset overrides the default x-title offset of the ratio pad (e.g. for a tall rPadFraction)
+        rXTitleOffset = plotParameters.get("rXTitleOffset", 0.9/rPadFraction)
+        ratio_hist.GetXaxis().SetTitleOffset(rXTitleOffset)
+        denomerror.GetXaxis().SetTitleOffset(rXTitleOffset)
         ratio_hist.GetXaxis().SetTitleSize(25)
         denomerror.GetXaxis().SetTitleSize(25)
     if ratioOnly:
