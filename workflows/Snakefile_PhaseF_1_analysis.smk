@@ -294,16 +294,16 @@ if config.get("test", False):
                     run_container_wrapper = config['analysis_container_wrapper']
 
     if MC_DATASETS:
-        MC_TEST_TARGETS.append(f"{F1_OUTPUT_PATH}singlefiles/histAll_{config['label']}_signals.coffea")
+        MC_TEST_TARGETS.extend([f"{F1_OUTPUT_PATH}singlefiles/histAll_{config['label']}_signals__{yr}.coffea" for yr in DATA_YEARS])
         use rule analysis_processor from analysis as analysis_MC with:
-            input: 
+            input:
                 runner_script = "runner.py",
                 config_file = analysis_config_path
-            output: f"{F1_OUTPUT_PATH}singlefiles/histAll_{config['label']}_signals.coffea"
-            log: f"{F1_OUTPUT_PATH}logs/analysis_{config['label']}_signals.log"
+            output: f"{F1_OUTPUT_PATH}singlefiles/histAll_{config['label']}_signals__{{year}}.coffea"
+            log: f"{F1_OUTPUT_PATH}logs/analysis_{config['label']}_signals__{{year}}.log"
             params:
                 datasets = " ".join(MC_DATASETS),
-                years = " ".join(DATA_YEARS),
+                years = lambda wildcards: wildcards.year,
                 config = lambda wildcards, input: input.config_file,
                 extra_arguments = lambda wildcards: " ".join(filter(None, [
                     "-t",

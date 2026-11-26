@@ -79,6 +79,14 @@ rule stage_subsample_processor_config:
         # subsample_hist_cuts: the mixed data's hist_cuts, e.g. the same jet-multiplicity slices as F_1
         if config.get('subsample_hist_cuts'):
             cfg['config']['hist_cuts'] = list(config['subsample_hist_cuts'])
+        if config.get('test', False):
+            cfg.setdefault('runner', {}).update({
+                'condor': False,
+                'shared_dask': False,
+                'run_performance': False,
+                'workers': 4,
+                'chunksize': int(config.get('test_chunksize', 30000)),
+            })
         write_yaml(output.staged, cfg)
 
 ci_json = config['classifier_inputs_json']
@@ -209,7 +217,7 @@ VAL = config.get('validation') or {}
 A3_VAL_DIR = f"{out_a3}validation/"
 A3_MIXED_MERGED = f"{A3_VAL_DIR}histAll_{channel}_mixeddata_subsamples.coffea"
 A3_VAL_PLOT_CONFIG = f"{A3_VAL_DIR}plots_bkg_syst_mixed_validation.yml"
-PLOT_YEAR = "Run3" if any("202" in y for y in YEARS) else "RunII"
+PLOT_YEAR = YEARS[0] if len(YEARS) == 1 else ("Run3" if any("202" in y for y in YEARS) else "RunII")
 
 use rule merging_coffea_files from analysis as A3_merge_mixed with:
     input:

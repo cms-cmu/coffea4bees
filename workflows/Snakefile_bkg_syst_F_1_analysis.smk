@@ -109,7 +109,7 @@ def _resolve_jcm(m, year=None):
     for c in candidates:
         if os.path.exists(c):
             return c
-    if HANDOFF_EOS:
+    if HANDOFF_EOS or any(r.name in ('make_subsample_jcm_b1', 'make_subsample_jcm_b1_per_year') for r in workflow.rules):
         return os.path.join(out_b1, filename)
     raise FileNotFoundError(f"Could not locate JCM file '{filename}' in {out_b1}, coffea4bees/metadata/weights/JCM/, or EOS handoff")
 
@@ -214,6 +214,18 @@ rule stage_phaseF_1_config:
             # FvT method: JCM, FvT, trigger weights, and ttbar estimation from 3b data
             data_cfg['config']['apply_FvT'] = True
             data_cfg['config']['plot_ttbar_with_weights'] = True
+
+        if config.get('test', False):
+            data_cfg.setdefault('runner', {}).update({
+                'condor': False,
+                'shared_dask': False,
+                'run_performance': False,
+                'test_files': 1,
+                'maxchunks': 1,
+                'chunksize': int(config.get('test_chunksize', 30000)),
+                'workers': 4,
+            })
+            data_cfg.setdefault('config', {})['blind'] = False
 
         os.makedirs(os.path.dirname(output.cfg), exist_ok=True)
         with open(output.cfg, 'w') as f:
@@ -336,7 +348,13 @@ rule analysis_data_closure:
         dataset = config.get('f1_dataset') or "data",
         years = " ".join(YEARS),
         output_path = out_f1,
-        condor_flags = condor_flags,
+        extra_arguments = " ".join(filter(None, [
+            TEST_FLAG,
+            (f"--eras {' '.join(config['test_year_eras'][YEARS[0]])}"
+             if (config.get('test', False) and isinstance(config.get('test_year_eras'), dict)
+                 and len(YEARS) == 1 and YEARS[0] in config['test_year_eras']) else ""),
+            condor_flags,
+        ])),
         container_wrapper = container_wrapper,
         python_bin = python_bin
     resources:
@@ -355,7 +373,7 @@ rule analysis_data_closure:
             --years {params.years} \
             --output-path {params.output_path} \
             --output $(basename {output.coffea}) \
-            {params.condor_flags} 2>&1 | tee {log}
+            {params.extra_arguments} 2>&1 | tee {log}
         """
 
 # ── Validate Background Normalization (Hard Abort if Multijet Yield is Unphysical) 
@@ -409,7 +427,7 @@ rule make_plots_closure:
         output_dir = f"{out_f1}plots/",
         extra_arguments = " ".join(filter(None, [
             "-s xW",
-            "--year " + ("Run3" if any("202" in y for y in YEARS) else "RunII"),
+            "--year " + (YEARS[0] if len(YEARS) == 1 else ("Run3" if any("202" in y for y in YEARS) else "RunII")),
             config.get("plot_extra_arguments", ""),
         ])),
         channel = channel,

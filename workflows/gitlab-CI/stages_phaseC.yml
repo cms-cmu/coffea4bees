@@ -107,3 +107,28 @@ phaseC_fvt_lowpt_run3_coffea4bees:
       - barista_framework/output/run3_lowpt/classifier/lowpt_FvT/
       - barista_framework/output/run3_lowpt/friend/lowpt_FvT/
     expire_in: 1 day
+
+phaseC_bkg_syst_fvt_run2_coffea4bees:
+  stage: phaseC
+  extends:
+    - .base_analysis_coffea4bees
+  needs:
+    - setup_coffea4bees
+    - phaseA_declustered_dataset_run2_coffea4bees
+    - phaseA_makeMixedData_dataset_run2_coffea4bees
+    - phaseB_2_classifier_inputs_run2_coffea4bees
+    - phaseB_bkg_syst_AB_run2_coffea4bees
+  script:
+    - SNAKEMAKE=.pixi/envs/ci/bin/snakemake; [ -x "$SNAKEMAKE" ] || SNAKEMAKE=.pixi/envs/default/bin/snakemake
+    - $SNAKEMAKE all_bkg_syst_C -s coffea4bees/workflows/Snakefile_bkg_syst_C.smk --configfile coffea4bees/workflows/config/analysis_HH4b_bkg_syst_declib16nc.yml coffea4bees/workflows/config/analysis_HH4b_bkg_syst_ci.yml --config test=true eos_prod=output web_prod=output --jobs 2
+    - test -s output/HH4b_bkg_syst_ci/bkg_syst_C_FvT/friends/friends_FvT_HH4b_bkg_syst_ci_v0.json && test -s output/HH4b_bkg_syst_ci/bkg_syst_C_FvT/friends/friends_FvT_HH4b_bkg_syst_ci_v1.json
+  artifacts:
+    when: always
+    paths:
+      - output/HH4b_bkg_syst_ci/bkg_syst_C_FvT/
+      - output/HH4b_bkg_syst_ci/publish/classifier/
+      - output/HH4b_bkg_syst_ci/publish/friend/FvT/
+      - barista_framework/output/HH4b_bkg_syst_ci/bkg_syst_C_FvT/
+      - barista_framework/output/HH4b_bkg_syst_ci/publish/classifier/
+      - barista_framework/output/HH4b_bkg_syst_ci/publish/friend/FvT/
+    expire_in: 1 day
