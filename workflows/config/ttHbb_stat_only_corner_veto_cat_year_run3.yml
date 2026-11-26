@@ -117,9 +117,9 @@ handoff:
 # ==============================================================================
 # PHASE C & D CLASSIFIER SETTINGS & NAUTILUS MEMORY SIZING
 # ==============================================================================
-gpu_mem: 200000
-train_mem: 200000
-eval_mem: 220000
+gpu_mem: 80000
+train_mem: 80000
+eval_mem: 96000
 
 classifier_setting:
   - module: ml.DataLoader
@@ -167,9 +167,9 @@ classifier_setting:
 # ==============================================================================
 fvt:
   gpu_qos: medium
-  gpu_mem: 200000
-  train_mem: 200000
-  eval_mem: 220000
+  gpu_mem: 80000
+  train_mem: 80000
+  eval_mem: 96000
   eos_base: "{eos_prod}/{roast_id}"
   plot_base: "{web_prod}/{roast_id}/classifier"
   classifier_config_paths: "coffea4bees"
@@ -273,9 +273,9 @@ fvt_closure:
 # ==============================================================================
 svb:
   gpu_qos: medium
-  gpu_mem: 200000
-  train_mem: 200000
-  eval_mem: 220000
+  gpu_mem: 80000
+  train_mem: 80000
+  eval_mem: 96000
   train_runtime: 180
   eos_base: "{eos_prod}/{roast_id}"
   plot_base: "{web_prod}/{roast_id}/classifier"
@@ -368,9 +368,9 @@ svb:
 
 svb_ma:
   gpu_qos: medium
-  gpu_mem: 200000
-  train_mem: 200000
-  eval_mem: 220000
+  gpu_mem: 80000
+  train_mem: 80000
+  eval_mem: 96000
   train_runtime: 180
   eos_base: "{eos_prod}/{roast_id}"
   plot_base: "{web_prod}/{roast_id}/classifier"
