@@ -17,6 +17,7 @@ base: coffea4bees/workflows/config/ttHbb_stat_only_corner_veto.yml
 
 label: "ttHbb_stat_only_corner_veto_cat_year_DF"
 output_path: "output/ttHbb/"
+inputs: null
 
 dataset:
   - "ttHbb"
