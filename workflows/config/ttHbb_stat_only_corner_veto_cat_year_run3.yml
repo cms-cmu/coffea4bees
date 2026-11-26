@@ -1,0 +1,795 @@
+# ==============================================================================
+# ttHbb Run 3 (2022 + 2023 + 2024) CatYear Corner-Veto Stat-Only — Full Pipeline (B -> C -> C4 -> D -> F)
+# ==============================================================================
+# Standalone Run 3 counterpart to ttHbb_stat_only_corner_veto_cat_year_DF.yml
+# (no `base:` key so Run 2 year_eras, JCMs, and metadata cannot bleed in).
+#
+# Runs:
+#   - Phase B: Per-year JCM fits (2022_preEE, 2022_EE, 2023_preBPix, 2023_BPix, "2024")
+#              + classifier_inputs friend trees with corner-veto thresholds
+#   - Phase C: FvT (one-hot era encoding + era_out logit bias) trained on SB and
+#              evaluated on detector data + stitched ttbar MC (EvalBackground)
+#   - Phase C4: FvT data closure + ttbar MC vs from-d3 comparison
+#   - Phase D: SvB (attention: false) and SvB_MA (attention: true) + svb_quantiles.json
+#   - Phase F: Main analysis + Combine stat-only blind limits for SvB_MA & SvB
+# ==============================================================================
+
+label: "ttHbb_stat_only_corner_veto_cat_year_run3"
+output_path: "output/ttHbb/"
+tag: "Run3_22_23_24"
+unify_background: true
+candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
+
+dataset:
+  - "ttHbb"
+  - "data"
+  - "TTTo2L2Nu_stitched"
+  - "TTToSemiLeptonic_stitched"
+  - "TTToHadronic_stitched"
+
+# '2024' MUST stay quoted: unquoted it parses as an int and string-keyed year lookups miss it.
+year_eras:
+  2022_preEE:
+    - "B"
+    - "C"
+    - "D"
+  2022_EE:
+    - "E"
+    - "F"
+    - "G"
+  2023_preBPix:
+    - "C01"
+    - "C02"
+    - "C11"
+    - "C12"
+    - "C3"
+    - "C4"
+  2023_BPix:
+    - "D1"
+    - "D2"
+  "2024":
+    - "C"
+    - "D"
+    - "E"
+    - "F"
+    - "G"
+    - "H"
+    - "I2"
+    - "I3"
+
+# ==============================================================================
+# PHASE B: PER-YEAR JCM & CLASSIFIER INPUTS
+# ==============================================================================
+per_year_jcm: true
+jcm_plot_config: "coffea4bees/plots/metadata/plotsAllNoFvT_ttHbb.yml"
+jcm_datasets:
+  - "data"
+  - "TTTo2L2Nu_stitched"
+  - "TTToSemiLeptonic_stitched"
+  - "TTToHadronic_stitched"
+jcm_extra_arguments: "--jcm_config coffea4bees/analysis/jcm_tools/metadata/ttHbb_jcm_config.yml -m coffea4bees/plots/metadata/plots_JCM_ttHbb.yml --data4bName data"
+jcm_known_counts_NoJCM: "none"
+jcm_known_counts_wJCM: "none"
+jcm_known_counts_fatal: false
+
+classifier_inputs:
+  processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+  friend_file: "coffea4bees/metadata/friends/friends_ttHbb_Run3.yml"
+  weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
+  candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
+  datasets:
+    - "ttHbb"
+    - "data"
+    - "TTTo2L2Nu_stitched"
+    - "TTToSemiLeptonic_stitched"
+    - "TTToHadronic_stitched"
+  runner:
+    condor_cores: 1
+    worker_memory: 8GB
+    chunksize: 100000
+    min_workers: 50
+    max_workers: 250
+    condor: true
+    shared_dask: true
+    run_performance: true
+    condor_transfer_input_files:
+      - src/
+      - coffea4bees/analysis/
+      - coffea4bees/metadata/
+  config:
+    blind: true
+    apply_JCM: true
+    apply_FvT: false
+    apply_trigWeight: true
+    require_trigWeight: true
+    apply_btagSF: true
+    apply_boosted_veto: false
+    run_SvB: false
+    top_reconstruction: slow
+    fill_histograms: false
+    make_classifier_input: "{eos_prod}/{roast_id}/classifier_inputs/"
+    pairing: nominal
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
+
+handoff:
+  eos_base: "{eos_prod}/{roast_id}/handoff"
+
+# ==============================================================================
+# PHASE C & D CLASSIFIER SETTINGS & GCP MEMORY SIZING
+# ==============================================================================
+gpu_mem: 60000
+train_mem: 60000
+eval_mem: 60000
+
+classifier_setting:
+  - module: ml.DataLoader
+    option:
+      - optimize_sliceable_dataset: true
+      - num_workers: 2
+      - batch_eval: 65536
+  - module: ROOT
+    option:
+      - friend_allow_missing: false
+  - module: cms.MC_TTbar
+    option:
+      - datasets:
+          - TTToSemiLeptonic_stitched
+          - TTToHadronic_stitched
+          - TTTo2L2Nu_stitched
+  - module: cms.CollisionData
+    option:
+      - eras:
+          2022_preEE: [B, C, D]
+          2022_EE: [E, F, G]
+          2023_preBPix: [C01, C02, C11, C12, C3, C4]
+          2023_BPix: [D1, D2]
+          "2024": [C, D, E, F, G, H, I2, I3]
+        years:
+          - 2022_preEE
+          - 2022_EE
+          - 2023_preBPix
+          - 2023_BPix
+          - "2024"
+  - module: HCR.InputBranch
+    option:
+      - feature_ancillary:
+          - xW
+          - nSelJets
+          - xbW
+          - year_2022_preEE
+          - year_2022_EE
+          - year_2023_preBPix
+          - year_2023_BPix
+          - year_2024
+
+# ==============================================================================
+# PHASE C: FvT CLASSIFIER (GCP)
+# ==============================================================================
+fvt:
+  gpu_qos: medium
+  gpu_mem: 60000
+  train_mem: 60000
+  eval_mem: 60000
+  eos_base: "{eos_prod}/{roast_id}"
+  plot_base: "{web_prod}/{roast_id}/classifier"
+  classifier_config_paths: "coffea4bees"
+  label: "FvT_ttHbb_stitched"
+  plot_inputs: true
+  plot_weights: true
+  evaluate: true
+  model: "{eos_base}/classifier/{label}"
+  friend: "{eos_base}/friend/{label}"
+  train_template: "model: {eos_base}/classifier/{label}"
+  eval_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/{label}"
+  metadata: "{eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input"
+  train_workflow:
+    main:
+      module: train
+      option:
+        - --max-loaders 2
+        - --max-trainers 3
+        - --device cuda cpu
+    dataset:
+      - module: HCR.FvT.TrainBaseline
+        option:
+          - --metadata coffea4bees/metadata/datasets/
+          - --max-workers 20
+          - --data-source detector
+          - --JCM-weight year:2022_preEE {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_Run3_22_23_24_2022_preEE.yml@@JCM_weights
+          - --JCM-weight year:2022_EE {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_Run3_22_23_24_2022_EE.yml@@JCM_weights
+          - --JCM-weight year:2023_preBPix {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_Run3_22_23_24_2023_preBPix.yml@@JCM_weights
+          - --JCM-weight year:2023_BPix {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_Run3_22_23_24_2023_BPix.yml@@JCM_weights
+          - --JCM-weight year:2024 {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_Run3_22_23_24_2024.yml@@JCM_weights
+          - --friends "" {eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input
+    model:
+      - module: HCR.FvT.baseline.Train
+        option:
+          - --kfolds 3
+          - --kfold-seed FvT random
+          - --kfold-seed-offsets 0
+          - --training FixedStep
+          - bs_init: 1024
+            epoch: 20
+          - --finetuning FinetuneStep
+          - bs_init: 16384
+            epoch: 1
+    setting:
+      - module: IO
+        option:
+          - output: "{model}"
+  eval_workflow:
+    main:
+      module: evaluate
+      option:
+        - --max-evaluators 3
+        - --device cuda cpu
+    dataset:
+      - module: HCR.FvT.EvalBackground
+        option:
+          - --metadata coffea4bees/metadata/datasets/
+          - --max-workers 8
+          - --data-source detector
+          - --mc-processes ttbar
+          - --friends "" {eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input
+    model:
+      - module: HCR.FvT.baseline.Eval
+        option:
+          - --models
+          - Final
+          - "{model}/result.json"
+    analysis:
+      - module: kfold.Merge
+        option:
+          - --name FvT
+          - --step 100000
+          - --workers 4
+          - --clean
+    setting:
+      - module: IO
+        option:
+          - output: "{FvT}"
+      - module: ml.DataLoader
+        option:
+          - num_workers: 8
+
+# ==============================================================================
+# PHASE C.4: FvT CLOSURE (cmslpc)
+# ==============================================================================
+fvt_closure:
+  datasets:
+    - "data"
+    - "TTToHadronic_stitched"
+    - "TTToSemiLeptonic_stitched"
+    - "TTTo2L2Nu_stitched"
+  reuse_wJCM_ttbar: true
+  plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
+  ttbar_compare_plot_config: "coffea4bees/plots/metadata/plotsTTbar_MCvsFromD3.yml"
+  ttbar3b_compare_plot_config: "coffea4bees/plots/metadata/plotsTTbar3b_MCvsFromD3.yml"
+  known_counts: "none"
+  known_counts_fatal: false
+
+# ==============================================================================
+# PHASE D: SvB (attention: false) & SvB_MA (attention: true) (GCP)
+# ==============================================================================
+svb:
+  gpu_qos: medium
+  gpu_mem: 60000
+  train_mem: 60000
+  eval_mem: 60000
+  train_runtime: 180
+  eos_base: "{eos_prod}/{roast_id}"
+  plot_base: "{web_prod}/{roast_id}/classifier"
+  classifier_config_paths: "coffea4bees"
+  label: "SvB_ttHbb_stitched"
+  plot_inputs: true
+  plot_weights: true
+  evaluate: true
+  model: "{eos_base}/classifier/{label}"
+  friend: "{eos_base}/friend/{label}"
+  train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_ttHbb_stitched"
+  eval_template: "model: {eos_base}/classifier/{label}, SvB: {eos_base}/friend/{label}"
+  metadata: "{eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input"
+  train_workflow:
+    main:
+      module: train
+      option:
+        - --max-loaders 1
+        - --max-trainers 1
+    model:
+      - module: HCR.SvB.ttHbb.baseline.Train
+        option:
+          - --kfold-seed SvB random
+          - --kfold-seed-offsets 0
+          - --architecture
+          - n_features: 8
+            attention: false
+            use_kv_proj: false
+            use_attention_gate: false
+          - --training FixedStep
+          - epoch: 20
+            bs_init: 1024
+          - --finetuning FinetuneStep
+          - epoch: 1
+            bs_init: 16384
+    dataset:
+      - module: HCR.SvB.Background
+        option:
+          - --metadata coffea4bees/metadata/datasets/
+          - --norm 3
+          - --JCM-weight year:2022_preEE {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_Run3_22_23_24_2022_preEE.yml@@JCM_weights
+          - --JCM-weight year:2022_EE {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_Run3_22_23_24_2022_EE.yml@@JCM_weights
+          - --JCM-weight year:2023_preBPix {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_Run3_22_23_24_2023_preBPix.yml@@JCM_weights
+          - --JCM-weight year:2023_BPix {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_Run3_22_23_24_2023_BPix.yml@@JCM_weights
+          - --JCM-weight year:2024 {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_Run3_22_23_24_2024.yml@@JCM_weights
+          - --friends "" {eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input
+          - --friends label:data {FvT}/result.json@@analysis.0.merged
+      - module: HCR.ttHbb.Signal
+        option:
+          - --metadata coffea4bees/metadata/datasets/
+          - --friends "" {eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input
+    setting:
+      - module: IO
+        option:
+          - output: "{model}"
+  eval_workflow:
+    main:
+      module: evaluate
+      option:
+        - --max-evaluators 3
+        - --device cuda cpu
+    model:
+      - module: HCR.SvB.ttHbb.baseline.Eval
+        option:
+          - --models
+          - Final
+          - "{model}/result.json"
+    dataset:
+      - module: HCR.ttHbb.Eval
+        option:
+          - --metadata coffea4bees/metadata/datasets/
+          - --data-source detector
+          - --mc-processes ttHbb ttbar
+          - --max-workers 8
+          - --friends "" {eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input
+    analysis:
+      - module: kfold.Merge
+        option:
+          - --name SvB
+          - --step 100000
+          - --workers 5
+          - --clean
+    setting:
+      - module: IO
+        option:
+          - output: "{SvB}"
+      - module: ml.DataLoader
+        option:
+          - num_workers: 8
+
+svb_ma:
+  gpu_qos: medium
+  gpu_mem: 60000
+  train_mem: 60000
+  eval_mem: 60000
+  train_runtime: 180
+  eos_base: "{eos_prod}/{roast_id}"
+  plot_base: "{web_prod}/{roast_id}/classifier"
+  classifier_config_paths: "coffea4bees"
+  label: "SvB_MA_ttHbb_stitched"
+  plot_inputs: true
+  plot_weights: true
+  evaluate: true
+  compute_binning: true
+  model: "{eos_base}/classifier/{label}"
+  friend: "{eos_base}/friend/{label}"
+  train_template: "model: {eos_base}/classifier/{label}, FvT: {eos_base}/friend/FvT_ttHbb_stitched"
+  eval_template: "model: {eos_base}/classifier/{label}, SvB: {eos_base}/friend/{label}"
+  metadata: "{eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input"
+  train_workflow:
+    main:
+      module: train
+      option:
+        - --max-loaders 1
+        - --max-trainers 1
+    model:
+      - module: HCR.SvB.ttHbb.baseline.Train
+        option:
+          - --kfold-seed SvB random
+          - --kfold-seed-offsets 0
+          - --architecture
+          - n_features: 8
+            attention: true
+            use_kv_proj: false
+            use_attention_gate: false
+          - --training FixedStep
+          - epoch: 20
+            bs_init: 1024
+          - --finetuning FinetuneStep
+          - epoch: 1
+            bs_init: 16384
+    dataset:
+      - module: HCR.SvB.Background
+        option:
+          - --metadata coffea4bees/metadata/datasets/
+          - --norm 3
+          - --JCM-weight year:2022_preEE {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_Run3_22_23_24_2022_preEE.yml@@JCM_weights
+          - --JCM-weight year:2022_EE {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_Run3_22_23_24_2022_EE.yml@@JCM_weights
+          - --JCM-weight year:2023_preBPix {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_Run3_22_23_24_2023_preBPix.yml@@JCM_weights
+          - --JCM-weight year:2023_BPix {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_Run3_22_23_24_2023_BPix.yml@@JCM_weights
+          - --JCM-weight year:2024 {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_Run3_22_23_24_2024.yml@@JCM_weights
+          - --friends "" {eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input
+          - --friends label:data {FvT}/result.json@@analysis.0.merged
+      - module: HCR.ttHbb.Signal
+        option:
+          - --metadata coffea4bees/metadata/datasets/
+          - --friends "" {eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input
+    setting:
+      - module: IO
+        option:
+          - output: "{model}"
+  eval_workflow:
+    main:
+      module: evaluate
+      option:
+        - --max-evaluators 3
+        - --device cuda cpu
+    model:
+      - module: HCR.SvB.ttHbb.baseline.Eval
+        option:
+          - --models
+          - Final
+          - "{model}/result.json"
+    dataset:
+      - module: HCR.ttHbb.Eval
+        option:
+          - --metadata coffea4bees/metadata/datasets/
+          - --data-source detector
+          - --mc-processes ttHbb ttbar
+          - --max-workers 8
+          - --friends "" {eos_prod}/{roast_id}/handoff/classifier_inputs_{roast_id}.json@@HCR_input
+    analysis:
+      - module: kfold.Merge
+        option:
+          - --name SvB_MA
+          - --step 100000
+          - --workers 5
+          - --clean
+    setting:
+      - module: IO
+        option:
+          - output: "{SvB}"
+      - module: ml.DataLoader
+        option:
+          - num_workers: 8
+
+# ==============================================================================
+# PHASE F.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING (cmslpc)
+# ==============================================================================
+analysis_config:
+  processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
+  dataset_location: "coffea4bees/metadata/datasets/"
+  friend_file: "coffea4bees/metadata/friends/friends_ttHbb_Run3.yml"
+  weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
+  runner:
+    workers: 4
+    worker_memory: 8GB
+    chunksize: 100000
+    min_workers: 50
+    max_workers: 250
+    dashboard_address: 0
+  config:
+    blind: true
+    apply_FvT: true
+    apply_JCM: true
+    apply_trigWeight: true
+    require_trigWeight: true
+    apply_btagSF: true
+    apply_boosted_veto: false
+    apply_lepton_veto: false
+    run_SvB: true
+    SvB_MA: true
+    SvB: true
+    candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
+    hist_cuts:
+      - "pass_nSelJets_gt6"
+      - "passLeptonVeto"
+    top_reconstruction: fast
+    plot_ttbar_with_weights: true
+    pairing: nominal
+    fill_histograms: "kinematics+FvT+SvB"
+    svb_binning_file: "{eos_prod}/{roast_id}/handoff/svb_quantiles.json"
+    JCM_file:
+      2022_preEE: "coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_Run3_22_23_24_2022_preEE.yml"
+      2022_EE: "coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_Run3_22_23_24_2022_EE.yml"
+      2023_preBPix: "coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_Run3_22_23_24_2023_preBPix.yml"
+      2023_BPix: "coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_Run3_22_23_24_2023_BPix.yml"
+      "2024": "coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_Run3_22_23_24_2024.yml"
+    friends:
+      FvT: "{eos_prod}/{roast_id}/friend/FvT_ttHbb_stitched/result.json@@analysis.0.merged"
+      SvB: "{eos_prod}/{roast_id}/friend/SvB_ttHbb_stitched/result.json@@analysis.0.merged"
+      SvB_MA: "{eos_prod}/{roast_id}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
+
+plot_config: "coffea4bees/plots/metadata/plotsAll_ttHbb.yml"
+plot_extra_arguments: ""
+known_counts: "none"
+known_counts_fatal: false
+known_counts_test: "none"
+test_chunksize: 30000
+known_counts_full: "none"
+
+# ==============================================================================
+# PHASE F.2: COMBINE STATISTICAL INTERPRETATION (SvB_MA & SvB, Run 3 5-era bins)
+# ==============================================================================
+convert_hist_to_json:
+  histos:
+    - "SvB_MA.ps"
+    - "SvB_MA.ps_ttHbb"
+    - "SvB.ps"
+    - "SvB.ps_ttHbb"
+
+combine_outdir: "datacards/"
+make_combine_inputs:
+  rebin: 12
+  stat_only: "--stat_only"
+  unify_background: true
+  tt_processes:
+    - "TTbar4b_from_d3"
+  metadata_template: "coffea4bees/stats_analysis/metadata/ttHbb_run3.yml"
+
+combine_flags: "--three_tag threeTag --four_tag fourTag --region sum --blind"
+rebin: 12
+likelihood_scan_points: 40
+likelihood_scan_r_min: 0
+likelihood_scan_r_max: 2
+likelihood_scan_y_cut: 30
+likelihood_scan_y_max: 30
+
+channels:
+  inclusive:
+    signallabel: "ttHbb"
+    othersignal: ""
+    variable: "SvB_MA.ps_ttHbb"
+    signal: "ttHbb"
+    closure_subdir: "ttHbb"
+    region: "SR"
+    cut: "sum"
+    rebin: 24
+    stat_only: false
+    metadata: "coffea4bees/stats_analysis/metadata/ttHbb_run3.yml"
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  lepton_veto:
+    signallabel: "ttHbb"
+    othersignal: ""
+    variable: "SvB_MA.ps_ttHbb"
+    signal: "ttHbb"
+    closure_subdir: "ttHbb"
+    region: "SR"
+    cut: "passLeptonVeto"
+    rebin: 24
+    stat_only: false
+    metadata: "coffea4bees/stats_analysis/metadata/ttHbb_run3.yml"
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  jets_gt6:
+    signallabel: "ttHbb"
+    othersignal: ""
+    variable: "SvB_MA.ps_ttHbb"
+    signal: "ttHbb"
+    closure_subdir: "ttHbb"
+    region: "SR"
+    cut: "pass_nSelJets_gt6"
+    rebin: 24
+    stat_only: false
+    metadata: "coffea4bees/stats_analysis/metadata/ttHbb_run3.yml"
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  jets_gt6_lepton_veto:
+    signallabel: "ttHbb"
+    othersignal: ""
+    variable: "SvB_MA.ps_ttHbb"
+    signal: "ttHbb"
+    closure_subdir: "ttHbb"
+    region: "SR"
+    cut: "pass_nSelJets_gt6_passLeptonVeto"
+    rebin: 24
+    stat_only: false
+    metadata: "coffea4bees/stats_analysis/metadata/ttHbb_run3.yml"
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB_MA.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: sum
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_stat_only:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB_MA.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: sum
+    stat_only: true
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_gt6:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB_MA.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: pass_nSelJets_gt6
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_gt6_stat_only:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB_MA.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: pass_nSelJets_gt6
+    stat_only: true
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_lepveto:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB_MA.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: passLeptonVeto
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_lepveto_stat_only:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB_MA.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: passLeptonVeto
+    stat_only: true
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_gt6_lepveto:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB_MA.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: pass_nSelJets_gt6_passLeptonVeto
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_gt6_lepveto_stat_only:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB_MA.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: pass_nSelJets_gt6_passLeptonVeto
+    stat_only: true
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  inclusive_SvB:
+    signallabel: "ttHbb"
+    othersignal: ""
+    variable: "SvB.ps_ttHbb"
+    signal: "ttHbb"
+    closure_subdir: "ttHbb"
+    region: "SR"
+    cut: "sum"
+    rebin: 24
+    stat_only: false
+    metadata: "coffea4bees/stats_analysis/metadata/ttHbb_run3.yml"
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  lepton_veto_SvB:
+    signallabel: "ttHbb"
+    othersignal: ""
+    variable: "SvB.ps_ttHbb"
+    signal: "ttHbb"
+    closure_subdir: "ttHbb"
+    region: "SR"
+    cut: "passLeptonVeto"
+    rebin: 24
+    stat_only: false
+    metadata: "coffea4bees/stats_analysis/metadata/ttHbb_run3.yml"
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  jets_gt6_SvB:
+    signallabel: "ttHbb"
+    othersignal: ""
+    variable: "SvB.ps_ttHbb"
+    signal: "ttHbb"
+    closure_subdir: "ttHbb"
+    region: "SR"
+    cut: "pass_nSelJets_gt6"
+    rebin: 24
+    stat_only: false
+    metadata: "coffea4bees/stats_analysis/metadata/ttHbb_run3.yml"
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  jets_gt6_lepton_veto_SvB:
+    signallabel: "ttHbb"
+    othersignal: ""
+    variable: "SvB.ps_ttHbb"
+    signal: "ttHbb"
+    closure_subdir: "ttHbb"
+    region: "SR"
+    cut: "pass_nSelJets_gt6_passLeptonVeto"
+    rebin: 24
+    stat_only: false
+    metadata: "coffea4bees/stats_analysis/metadata/ttHbb_run3.yml"
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_SvB:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: sum
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_stat_only_SvB:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: sum
+    stat_only: true
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_gt6_SvB:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: pass_nSelJets_gt6
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_gt6_stat_only_SvB:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: pass_nSelJets_gt6
+    stat_only: true
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_lepveto_SvB:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: passLeptonVeto
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_lepveto_stat_only_SvB:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: passLeptonVeto
+    stat_only: true
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_gt6_lepveto_SvB:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: pass_nSelJets_gt6_passLeptonVeto
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
+  ttHbb_gt6_lepveto_stat_only_SvB:
+    signal: ttHbb
+    signallabel: ttHbb
+    variable: SvB.ps_ttHbb
+    othersignal: ""
+    region: SR
+    cut: pass_nSelJets_gt6_passLeptonVeto
+    stat_only: true
+    closure_subdir: ttHbb
+    combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
