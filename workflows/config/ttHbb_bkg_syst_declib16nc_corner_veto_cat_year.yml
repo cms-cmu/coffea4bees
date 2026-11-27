@@ -12,6 +12,7 @@ base: coffea4bees/workflows/config/ttHbb_bkg_syst_declib16nc.yml
 label: "ttHbb_bkg_syst_declib16nc_corner_veto_cat_year"
 mix_name: "ttHbb_bkg_syst_declib16nc_corner_veto_cat_year"
 svb_sr_closure: false
+upstream_pre_fvt: "pre_fvt"
 
 year_eras:
   UL16_preVFP: ["C", "D", "E", "F"]
@@ -25,6 +26,8 @@ inputs:
     nominal: ttHbb_stat_only_corner_veto_cat_year_DF_20261126_d095fd0-32d5400
     ab_upstream: ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10
     mixeddata: mixeddata_run2_20260927_c39c264-0ce4d59
+    pre_fvt: ttHbb_bkg_syst_declib16nc_corner_veto_cat_year_20261126_16931c6-30e18e7
+  input_handoff_eos: "{roast:pre_fvt}/handoff"
   mixeddata_all: "{roast:declib}/handoff/synthetic_data_lib16nc_multijet.yml"
   ttbar_psdata: "{roast:mixeddata}/handoff/ttbar_PSData.yml"
   jcm_hists: "root://cmseos.fnal.gov//store/user/algomez/HH4b_prod/ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10/output/ttHbb/PhaseB_1_computeJCM/histAll_NoJCM.coffea"
