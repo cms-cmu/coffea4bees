@@ -224,6 +224,7 @@ class closure:
             max_basis = max(basis, self.multijet.basis)
             for j in range(1, max_basis):
                 self.plotFitResults(basis, projection=(j, j + 1))
+            self.plotFitResultsCorner(basis)
 
         for i, basis in enumerate(self.bases[:-1]):
             next_basis = self.bases[i + 1]
@@ -763,6 +764,62 @@ class closure:
             fig.savefig(name)
         plt.close(fig)
 
+    def coefficient_sigmas(self, basis):
+        """[(var, bias, total)] per coefficient in %, as writeClosureResults builds the basis<i>_vari/_bias
+        nuisances: var = the ensemble's cUp at its selected basis, total = this fit's cUp,
+        bias = sqrt(total^2 - var^2) (0 where they coincide)."""
+        n = max(self.multijet.basis, basis) + 1
+        vari = self.multijet.cUp[self.multijet.basis]
+        out = []
+        for i in range(n):
+            v = vari[i] if i < len(vari) else 0.0
+            t = self.cUp[basis][i]
+            b = (t**2 - v**2)**0.5 if (t != v and t**2 > v**2) else 0.0
+            out.append((100 * v, 100 * b, 100 * t))
+        return out
+
+    def plotFitResultsCorner(self, basis):
+        """All (c_i, c_j) projections of the bias (closure) fit on one page (upper triangle): the fit with its
+        uncertainty cross, the variance ellipse (blue) and the total = variance + bias ellipse (red), plus a
+        table of sigma_var, sigma_bias and sigma_tot per coefficient (the datacard basis<i>_vari/_bias)."""
+        from .plotting import projected_error_axes, plot_coefficient_corner
+        Ellipse = config.Ellipse
+        n = max(self.multijet.basis, basis) + 1
+        if n < 2:
+            return
+        pars = 100 * np.asarray(self.fit_parameters[basis])[:n]
+        sigmas = self.coefficient_sigmas(basis)
+        vari = self.multijet.cUp[self.multijet.basis]
+        vari_dn = self.multijet.cDown[self.multijet.basis]
+        half_var = [100 * (vari[d] - vari_dn[d]) / 2 if d < len(vari) else 0.0 for d in range(n)]
+        half_tot = [100 * (self.cUp[basis][d] - self.cDown[basis][d]) / 2 for d in range(n)]
+        errs = {(j, i): [100 * v for v in projected_error_axes(self.eigenVars[basis], j, i, n)]
+                for i in range(n) for j in range(i + 1, n)}
+        extent = 1.15 * max(np.abs(pars).max() + max(np.abs(np.concatenate(v)).max() for v in errs.values()),
+                            max(half_tot + half_var))
+
+        def draw(ax, j, i):
+            maxr, minr = errs[(j, i)]
+            for vx, vy in (maxr, -maxr, minr, -minr):
+                ax.plot([pars[j], pars[j] + vx], [pars[i], pars[i] + vy], color='k', lw=0.6, zorder=2)
+            ax.scatter([pars[j]], [pars[i]], s=12, c='k', zorder=3)
+            if Ellipse is not None:
+                ax.add_patch(Ellipse((0, 0), width=2 * half_var[j], height=2 * half_var[i], facecolor='none',
+                                     edgecolor='b', linewidth=0.9, zorder=1))
+                ax.add_patch(Ellipse((0, 0), width=2 * half_tot[j], height=2 * half_tot[i], facecolor='none',
+                                     edgecolor='r', linewidth=0.9, zorder=1))
+
+        legend = None
+        if config.HAS_MPL:
+            from matplotlib.lines import Line2D
+            legend = [(Line2D([], [], color='k', marker='o', lw=0, markersize=3), 'closure fit'),
+                      (Line2D([], [], color='b', lw=1), r'variance ($\pm\sigma_{var}$)'),
+                      (Line2D([], [], color='r', lw=1), r'total ($\pm\sigma_{tot}$, var $\oplus$ bias)')]
+        plot_coefficient_corner(
+            n, draw, f'Multijet model bias fit ({self.channel.upper()}), {n} coefficients',
+            f"{config.output_dir}/1_basis_parameters_basis{basis}_corner",
+            rows=[(f'c$_{{{d}}}$',) + sigmas[d] for d in range(n)], extent=extent, legend=legend)
+
     def plotPValues(self):
         plt = config.plt
         args = config.args
@@ -878,7 +935,7 @@ class closure:
         ymaxScale = 50.0
         if plotSpuriousSignal:
             ymaxScale = 120.0
-        lumi_title = f"{lumi} fb^{{-1}} (13 TeV)"
+        lumi_title = config.lumi_title()
         region_title = 'SR' if args.region == 'SR' else regionName.get(args.region, args.region)
         classifier_name = classifier.replace('_', ' ')
         xTitle = f'{classifier_name} Classifier Regressed P(Signal) Bin'

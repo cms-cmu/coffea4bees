@@ -115,6 +115,12 @@ rule phaseB_handoff:
 # a hypothetical: adding phaseB_handoff above dropped B.1's whole wJCM second pass, its plots and
 # both cutflow validations from the DAG, which C.4 needs (it reuses hist__TT*__<year>_wJCM.coffea
 # for the ttbar). Marking the target explicitly makes the order irrelevant.
+rule all_PhaseB_handoff:
+    input:
+        [p for p in rules.output_computeJCM.input if not str(p).endswith("plots_wJCM/plots_done.txt")],
+        rules.all_classifier_inputs.input,
+        rules.phaseB_handoff.output
+
 rule all_PhaseB:
     default_target: True
     input:

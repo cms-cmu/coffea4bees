@@ -129,13 +129,18 @@ def main():
     else:
         subsamples = [f"v{m}" for m in range(args.n_subsamples)]
 
-    # The channel's SvB_MA signal-probability histograms (ttHbb: ps_ttHbb; HH4b: ps_hh / ps_zh / ps_zz)
+    # The channel's SvB_MA and SvB signal-probability histograms (ttHbb: ps_ttHbb; HH4b: ps_hh / ps_zh / ps_zz)
     ps_variants = CHANNEL_PS.get(args.channel, [f"ps_{args.channel}"])
     targets = [
         {"key_template": f"SvB_MA_{{sub}}.{ps}", "name": f"SvB_MA_{ps}", "xlabel": "SvB MA P(Signal) (Quantile bins)", "yscale": "log"}
         for ps in ps_variants
     ] + [
         {"key_template": "SvB_MA_{sub}.ps", "name": "SvB_MA_ps", "xlabel": "SvB MA P(Signal)", "yscale": "log"},
+    ] + [
+        {"key_template": f"SvB_{{sub}}.{ps}", "name": f"SvB_{ps}", "xlabel": "SvB P(Signal) (Quantile bins)", "yscale": "log"}
+        for ps in ps_variants
+    ] + [
+        {"key_template": "SvB_{sub}.ps", "name": "SvB_ps", "xlabel": "SvB P(Signal)", "yscale": "log"},
         {"key_template": "FvT_{sub}.FvT", "name": "FvT", "xlabel": "FvT weight", "yscale": "log"},
         {"key_template": "selJets_{sub}.pt", "name": "selJets_pt", "xlabel": "Selected Jet $p_T$ [GeV]", "yscale": "log"},
         {"key_template": "selJets_{sub}.n", "name": "selJets_n", "xlabel": "Number of Selected Jets", "yscale": "linear"},

@@ -144,28 +144,28 @@ counts4:
         passElMu: 0.0
 
     TTbar_from_d3_UL18A:
-        passPreSel: 30.46
-        passDiJetMass: 11.38
-        SR: 4.55
-        SB: 6.82
+        passPreSel: 502.81
+        passDiJetMass: 164.84
+        SR: 66.11
+        SB: 98.72
 
     TTbar_from_d3_UL17C:
-        passPreSel: 31.86
-        passDiJetMass: 12.82
-        SR: 4.88
-        SB: 7.94
+        passPreSel: 485.54
+        passDiJetMass: 177.9
+        SR: 67.7
+        SB: 110.2
 
     TTbar_from_d3_UL16_preVFPC:
-        passPreSel: 31.73
-        passDiJetMass: 14.7
-        SR: 5.87
-        SB: 8.84
+        passPreSel: 479.82
+        passDiJetMass: 211.08
+        SR: 82.56
+        SB: 128.52
 
     TTbar_from_d3_UL16_postVFPF:
-        passPreSel: 21.91
-        passDiJetMass: 10.21
-        SR: 4.02
-        SB: 6.2
+        passPreSel: 333.63
+        passDiJetMass: 146.42
+        SR: 56.57
+        SB: 89.85
 
     TTToSemiLeptonic_UL18:
         passJetMult: 747.39
@@ -460,37 +460,37 @@ counts3:
 
     data_UL18A:
         passJetMult: 32660.0
-        passPreSel: 1497.17
-        passDiJetMass: 556.74
-        SR: 213.01
-        SB: 343.73
+        passPreSel: 1138.8
+        passDiJetMass: 391.43
+        SR: 139.08
+        SB: 252.35
         passMuMu: 1.0
         passElMu: 6.0
 
     data_UL17C:
         passJetMult: 33151.0
-        passPreSel: 1410.81
-        passDiJetMass: 567.0
-        SR: 200.2
-        SB: 366.8
+        passPreSel: 1061.0
+        passDiJetMass: 383.59
+        SR: 126.87
+        SB: 256.73
         passMuMu: 3.0
         passElMu: 8.0
 
     data_UL16_preVFPC:
         passJetMult: 32903.0
-        passPreSel: 1087.74
-        passDiJetMass: 479.98
-        SR: 175.19
-        SB: 304.78
+        passPreSel: 846.67
+        passDiJetMass: 319.62
+        SR: 111.71
+        SB: 207.91
         passMuMu: 1.0
         passElMu: 7.0
 
     data_UL16_postVFPF:
         passJetMult: 22412.0
-        passPreSel: 826.97
-        passDiJetMass: 373.39
-        SR: 136.09
-        SB: 237.3
+        passPreSel: 631.36
+        passDiJetMass: 246.86
+        SR: 83.66
+        SB: 163.2
         passMuMu: 1.0
         passElMu: 4.0
 
@@ -567,28 +567,28 @@ counts3:
         passElMu: 0.0
 
     TTbar_from_d3_UL18A:
-        passPreSel: 61.42
-        passDiJetMass: 23.71
-        SR: 9.46
-        SB: 14.25
+        passPreSel: 613.98
+        passDiJetMass: 196.69
+        SR: 78.31
+        SB: 118.38
 
     TTbar_from_d3_UL17C:
-        passPreSel: 67.13
-        passDiJetMass: 28.13
-        SR: 10.69
-        SB: 17.44
+        passPreSel: 603.65
+        passDiJetMass: 218.01
+        SR: 82.67
+        SB: 135.34
 
     TTbar_from_d3_UL16_preVFPC:
-        passPreSel: 77.31
-        passDiJetMass: 38.07
-        SR: 15.35
-        SB: 22.72
+        passPreSel: 605.19
+        passDiJetMass: 262.98
+        SR: 103.27
+        SB: 159.71
 
     TTbar_from_d3_UL16_postVFPF:
-        passPreSel: 49.48
-        passDiJetMass: 24.32
-        SR: 9.6
-        SB: 14.72
+        passPreSel: 419.66
+        passDiJetMass: 184.69
+        SR: 71.51
+        SB: 113.18
 
     TTToSemiLeptonic_UL18:
         passJetMult: 747.39

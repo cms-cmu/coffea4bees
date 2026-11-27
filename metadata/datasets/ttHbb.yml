@@ -612,6 +612,7 @@ ttHbb:
       sumw_raw: 4399585.860852001
       total_events: 8782000
   2022_preEE:
+    nanoAOD: /TTH_Hto2B_M-125_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22NanoAODv12-130X_mcRun3_2022_realistic_v5-v3/NANOAODSIM
     picoAOD:
       count: 2989710
       cutFlowFourTag:
@@ -677,6 +678,7 @@ ttHbb:
       sumw_raw: 1714325.3924359998
       total_events: 2989710
   2022_EE:
+    nanoAOD: /TTH_Hto2B_M-125_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EENanoAODv12-130X_mcRun3_2022_realistic_postEE_v6-v3/NANOAODSIM
     picoAOD:
       count: 10478951
       cutFlowFourTag:
@@ -774,6 +776,7 @@ ttHbb:
       sumw_raw: 6009282.175241002
       total_events: 10478951
   2023_preBPix:
+    nanoAOD: /TTHto2B_M-125_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23NanoAODv12-130X_mcRun3_2023_realistic_v14-v3/NANOAODSIM
     picoAOD:
       count: 10846000
       cutFlowFourTag:
@@ -878,6 +881,7 @@ ttHbb:
       sumw_raw: 6219300.209907999
       total_events: 10846000
   2023_BPix:
+    nanoAOD: /TTHto2B_M-125_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer23BPixNanoAODv12-130X_mcRun3_2023_realistic_postBPix_v2-v3/NANOAODSIM
     picoAOD:
       count: 5576000
       cutFlowFourTag:

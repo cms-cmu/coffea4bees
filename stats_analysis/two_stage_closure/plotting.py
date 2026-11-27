@@ -99,7 +99,7 @@ def plotMix(mix, channel=None, ymax=None):
         'weight': sig_scale,
         'color' : 'ROOT.kViolet'}
 
-    lumi_title = f"{lumi} fb^{{-1}} (13 TeV)"
+    lumi_title = config.lumi_title()
     region_title = 'SR' if args.region == 'SR' else regionName.get(args.region, args.region)
     classifier_name = classifier.replace('_', ' ')
     xTitle = f'{classifier_name} Classifier Regressed P(Signal)' + (' Bin' if use_binned else '')
@@ -352,7 +352,7 @@ def plotSubsamplesOverlay():
         h_ave.Draw("HIST SAME")
         legend.Draw("SAME")
 
-        lumi_title = f"{lumi} fb^{{-1}} (13 TeV)"
+        lumi_title = config.lumi_title()
         latex = ROOT.TLatex()
         latex.SetNDC()
         latex.SetTextFont(61)
@@ -659,7 +659,7 @@ def plotAverageComparison(channel):
     legend.AddEntry(h_mix_ave_bkg, f"#LT Mixed Data Bkg #GT (N = {int(round(int_mixbkg))})", "l")
     legend.Draw("SAME")
 
-    lumi_title = f"{lumi} fb^{{-1}} (13 TeV)"
+    lumi_title = config.lumi_title()
     latex = ROOT.TLatex()
     latex.SetNDC()
     latex.SetTextFont(61)
@@ -1015,7 +1015,7 @@ def plotDataVsMixedVsBkg(channel, region="SR"):
     legend.AddEntry(h_nom_data4b, f"data (N = {int(round(int_data4b))})", "ep")
     legend.Draw("SAME")
 
-    lumi_title = f"{lumi} fb^{{-1}} (13 TeV)"
+    lumi_title = config.lumi_title()
     latex = ROOT.TLatex()
     latex.SetNDC()
     latex.SetTextFont(61)
@@ -1094,3 +1094,84 @@ def plotDataVsMixedVsBkg(channel, region="SR"):
         canv.SaveAs(f"{output_dir}/data_vs_mixed_vs_bkg_{region}.pdf")
     print_log(f"Saved Data vs Mixed vs Bkg comparison plot ({region}): {out_base}.png")
     canv.Close()
+
+
+# ── Coefficient corner plots: every (c_i, c_j) projection of a closure stage on one page ──────────────
+
+def projected_error_axes(eigen, di, dj, n):
+    """Major and minor half-axes (2-vectors, fractional units) of the projection onto the (c_di, c_dj) plane
+    of the error ellipsoid with eigenvector matrix `eigen` (rows: the n parameters) - the crosses the
+    single-projection plots draw (ensemble/fitter plotFitResults)."""
+    import numpy as np
+    points = np.random.randn(n, min(100 * max(n - 1, 1), 10**7))
+    points /= np.linalg.norm(points, axis=0)
+    plane = np.matmul(np.asarray(eigen)[[di, dj], :], points)
+    r2 = plane[0]**2 + plane[1]**2
+    maxr = plane[:, r2 == r2.max()].T[0]
+    minrvec = np.copy(maxr[::-1])
+    minrvec[0] *= -1
+    norm = np.linalg.norm(minrvec)
+    if norm == 0:
+        return maxr, np.zeros(2)
+    minrvec /= norm
+    dr2 = np.matmul(minrvec, plane)**2
+    return maxr, minrvec * (dr2.max()**0.5)
+
+
+def plot_coefficient_corner(n, draw_panel, title, out_base, rows=None, extent=8.0, legend=None):
+    """One page with the upper triangle of (c_i, c_j) panels for a fit with n coefficients:
+    row i holds c_i (y) against c_j (x) for j = i+1..n-1, so the first row is c0-c1, c0-c2, ...
+    draw_panel(ax, j, i) draws one panel (axes in %). `rows` - [(label, var, bias, total)] in % (None
+    entries are left blank) - fills a table in the empty lower-left block; `legend` - [(handle, label)].
+    Writes <out_base>.png and <out_base>.pdf."""
+    import numpy as np
+    plt = config.plt
+    if not config.HAS_MPL or n < 2:
+        return
+    k = n - 1
+    size = 2.5 * k + 0.8
+    fig, axes = plt.subplots(k, k, figsize=(size, size), squeeze=False)
+    lim = float(max(4.0, 2.0 * np.ceil(extent / 2.0)))
+    ticks = np.arange(-lim + (lim // 2 if lim > 8 else 2), lim, lim // 2 if lim > 8 else 2)
+    for i in range(k):
+        for jj in range(k):
+            ax = axes[i][jj]
+            j = jj + 1
+            if j <= i:
+                ax.axis('off')
+                continue
+            ax.set_aspect(1)
+            ax.set_xlim(-lim, lim)
+            ax.set_ylim(-lim, lim)
+            ax.axhline(0, color='k', alpha=0.5, linestyle='--', linewidth=0.5)
+            ax.axvline(0, color='k', alpha=0.5, linestyle='--', linewidth=0.5)
+            ax.set_xticks(ticks)
+            ax.set_yticks(ticks)
+            ax.tick_params(labelsize=7)
+            ax.set_xlabel(r'c$_{%d}$ (%%)' % j, fontsize=9, labelpad=1)
+            ax.set_ylabel(r'c$_{%d}$ (%%)' % i, fontsize=9, labelpad=1)
+            draw_panel(ax, j, i)
+
+    fig.suptitle(title, fontsize=12)
+    fig.tight_layout(rect=(0, 0, 1, 0.96))         # before reading panel positions for the table
+    if rows and k >= 2:
+        b = k // 2                                  # empty lower-left b x b block: rows k-b..k-1, cols 0..b-1
+        x0, y0 = axes[k - 1][0].get_position().x0, axes[k - 1][0].get_position().y0
+        x1, y1 = axes[k - b][b - 1].get_position().x1, axes[k - b][b - 1].get_position().y1
+        tab_ax = fig.add_axes([x0, y0, x1 - x0, y1 - y0])
+        tab_ax.axis('off')
+        fmt = lambda v: '' if v is None else '%.2f' % v
+        heads = [r'$\sigma_{var}$ (%)', r'$\sigma_{bias}$ (%)', r'$\sigma_{tot}$ (%)']
+        keep = [c for c in range(3) if any(r[1 + c] is not None for r in rows)]   # drop all-empty columns
+        cells = [[r[0]] + [fmt(r[1 + c]) for c in keep] for r in rows]
+        table = tab_ax.table(cellText=cells, colLabels=[''] + [heads[c] for c in keep],
+                             loc='center', cellLoc='center')
+        table.auto_set_font_size(False)
+        table.set_fontsize(9)
+        table.scale(1.0, 1.4)
+    if legend:
+        fig.legend([h for h, _ in legend], [l for _, l in legend], loc='upper right', fontsize=9, frameon=False)
+    fig.savefig(f"{out_base}.png", dpi=110)
+    fig.savefig(f"{out_base}.pdf")
+    plt.close(fig)
+    print_log(f"Saved coefficient corner plot: {out_base}.pdf")

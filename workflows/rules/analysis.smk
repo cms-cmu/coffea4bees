@@ -89,6 +89,7 @@ rule make_plots:
         output_dir = "output/plots/",
         metadata = "coffea4bees/plots/metadata/plotsAll.yml",
         extra_arguments = "-s xW -f png",
+        gallery_title = "",
         run_container_wrapper = "",
         python_bin = lambda wildcards: config.get("python_bin", "python")
     log: "logs/make_plots.log"
@@ -105,7 +106,8 @@ rule make_plots:
         # HTML gallery (barista src/plotting/make_gallery.py); skipped when the barista checkout predates it (e.g. CI against master)
         if [ -f src/plotting/make_gallery.py ]; then
             echo "Making gallery" 2>&1 | tee -a {log}
-            {params.run_container_wrapper} {params.python_bin} src/plotting/make_gallery.py {params.output_dir} -m {input.metadata_file} --title "$(basename {params.output_dir})" 2>&1 | tee -a {log}
+            GALLERY_TITLE="{params.gallery_title}"
+            {params.run_container_wrapper} {params.python_bin} src/plotting/make_gallery.py {params.output_dir} -m {input.metadata_file} --title "${{GALLERY_TITLE:-$(basename {params.output_dir})}}" 2>&1 | tee -a {log}
         else
             echo "src/plotting/make_gallery.py not found in this barista checkout; skipping gallery" 2>&1 | tee -a {log}
         fi

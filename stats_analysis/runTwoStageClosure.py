@@ -34,10 +34,42 @@ except ImportError:
     )
 
 
+def lumi_label(years, lumi_arg=None):
+    """Plot-title luminosity [fb^-1], period label and energy for the closure's --years.
+
+    The luminosity is the sum over the years in coffea4bees/metadata/luminosities_HH4b.yml (pb^-1) unless
+    --lumi is given; Run 3 years (202x) are 13.6 TeV and labelled by calendar year ("2025", "2022+2023"),
+    Run 2 years 13 TeV and "Run 2". Falls back to the old 133 fb^-1 if a year has no luminosity entry.
+    """
+    years = [str(y) for y in (years or [])]
+    run3 = any(y.startswith("202") for y in years)
+    energy = "13.6" if run3 else "13"
+    if run3:
+        label = "+".join(sorted({y[:4] for y in years if y.startswith("202")}))
+    else:
+        label = "Run 2" if years else None
+    if lumi_arg is not None:
+        return str(lumi_arg), label, energy
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "metadata", "luminosities_HH4b.yml")
+    try:
+        import yaml
+        with open(path) as f:
+            lumis = yaml.safe_load(f)["luminosities"]
+        missing = [y for y in years if y not in lumis]
+        if years and not missing:
+            return f"{sum(float(lumis[y]) for y in years) / 1e3:.1f}", label, energy
+        print(f"lumi_label: no luminosity for {missing} in {path}; using 133 fb^-1")
+    except (ImportError, OSError, KeyError) as e:
+        print(f"lumi_label: cannot read {path} ({e}); using 133 fb^-1")
+    return "133", label, energy
+
+
 def get_parser():
     parser = argparse.ArgumentParser(description='run two stage closure', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--debug',                 action="store_true")
-    parser.add_argument('-l', '--lumi',            dest="lumi", default="133", help="Luminosity for MC normalization: units [pb]")
+    parser.add_argument('-l', '--lumi',            dest="lumi", default=None,
+                        help="Luminosity [fb^-1] for the plot titles; default: the sum over --years from "
+                             "coffea4bees/metadata/luminosities_HH4b.yml")
     parser.add_argument('--mix_name',              default="3bDvTMix4bDvT")
     parser.add_argument('--nMixes',                type=int, default=15, help="Number of mixes or synthetic datasets")
     parser.add_argument('--classifier',            help="SvB or SvB_MA")
@@ -138,7 +170,7 @@ def init_context(args):
     config.closure_file_out_pkl = closure_file_out_pkl
     config.closure_file_out_log = closure_file_out_log
 
-    config.lumi = args.lumi
+    config.lumi, config.lumi_year_label, config.lumi_energy = lumi_label(args.years, args.lumi)
     config.closure_fit_x_min = 0
     config.skip_first_bin = getattr(args, 'skip_first_bin', False)
     config.min_svb = getattr(args, 'min_svb', 0.0)

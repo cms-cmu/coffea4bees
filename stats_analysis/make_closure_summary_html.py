@@ -37,6 +37,8 @@ def parse_args():
 def is_hidden_plot(filename: str) -> bool:
     """Returns True if the plot belongs to high-dimensional scans, diagonalized bases, or basis shapes."""
     fn = filename.lower()
+    if "_corner" in fn:          # the one-page corner plots with the sigma table: shown, not collapsed
+        return False
     if "diagonalized" in fn:
         return True
     if "projection" in fn:
@@ -51,6 +53,8 @@ def is_hidden_plot(filename: str) -> bool:
 def categorize_plot(filename: str) -> tuple[int, str]:
     """Assigns an ordering rank and category label for visible diagnostic plots."""
     fn = filename.lower()
+    if "_corner" in fn:
+        return (1, "Fit Coefficients — corner plots with σ_var, σ_bias, σ_tot")
     if "data_vs_mixed" in fn or "comparison" in fn:
         return (0, "Key Diagnostics & Comparisons")
     if "1_bias_pvalues" in fn:
@@ -114,6 +118,7 @@ def collect_plots(rebin_dir: Path, base_dir: Path, region: str = "SR") -> dict[s
 
     vis_order = [
         "Key Diagnostics & Comparisons",
+        "Fit Coefficients — corner plots with σ_var, σ_bias, σ_tot",
         "Stage 0 — Multijet Ensemble Fits & Residuals",
         "Stage 1 — Bias Fits & Basis Vectors",
         "Stage 2 — Spurious Signal Fits",

@@ -145,7 +145,7 @@ rule make_subsample_jcm_gallery_b1:
         f"{out_b1}logs/make_jcm_gallery.log"
     params:
         jcm_dir = out_b1,
-        title = "bkg_syst_B_1_JCM_fit_plots",
+        title = "Stage_B_1_Subsample_JCM_Fit_Plots",
         container_wrapper = config['analysis_container_wrapper'],
         python_bin = python_bin,
     shell:
@@ -289,6 +289,7 @@ rule stage_test_subsample_config:
         years_opt = f"--years {' '.join(YEARS)}" if per_year_jcm else "",
         pairing_opt = (f"--pairing {config['analysis_config']['config']['pairing']}"
                        if ((config.get('analysis_config') or {}).get('config') or {}).get('pairing') else ""),
+        local_opt = "--local" if config.get("test", False) else "",
     shell:
         """
         set -eo pipefail
@@ -297,7 +298,7 @@ rule stage_test_subsample_config:
             --base-config {input.proc_cfg} \
             --jcm-files {input.jcm} \
             --output {output.cfg} \
-            {params.years_opt} {params.pairing_opt} 2>&1 | tee {log}
+            {params.years_opt} {params.pairing_opt} {params.local_opt} 2>&1 | tee {log}
         """
 
 rule test_processor_subsample_with_jcm:
@@ -343,7 +344,7 @@ rule test_plots_subsample_closure:
         output_dir = f"{out_b1}test_v{{m}}_closure/plots/",
         extra_arguments = lambda wildcards: " ".join(filter(None, [
             "-s xW",
-            "--year " + ("Run3" if any("202" in y for y in YEARS) else "RunII"),
+            "--year " + (YEARS[0] if len(YEARS) == 1 else ("Run3" if any("202" in y for y in YEARS) else "RunII")),
             config.get("plot_extra_arguments", ""),
         ])),
         container_wrapper = config['analysis_container_wrapper'],
@@ -362,7 +363,7 @@ rule test_plots_subsample_closure:
         if [ -f src/plotting/make_gallery.py ]; then
             echo "Making gallery" 2>&1 | tee -a {log}
             {params.container_wrapper} {params.python_bin} src/plotting/make_gallery.py \
-                {params.output_dir} -m {input.plot_cfg} --title "$(basename {params.output_dir})" 2>&1 | tee -a {log}
+                {params.output_dir} -m {input.plot_cfg} --title Stage_B_1_Subsample_JCM_Closure_Plots_v0 2>&1 | tee -a {log}
         fi
         touch {output.done}
         """

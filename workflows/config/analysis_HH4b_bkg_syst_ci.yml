@@ -1,0 +1,56 @@
+# ==============================================================================
+# CI overlay for HH4b Run 2 bkg_syst workflow (UL18, 2 subsamples v0..v1, test=true)
+# ==============================================================================
+# Consumes Phase A (declustered seeds + ttbar_PSData) and Phase B (histAll_NoJCM,
+# classifier_inputs_friends.json) outputs built earlier in the same CI pipeline.
+# Inherits upstream_roasts, nominal_hists, SvB, and SvB_model from the base config.
+
+base: coffea4bees/workflows/config/analysis_HH4b_bkg_syst_declib16nc.yml
+
+label: "HH4b_bkg_syst_ci"
+output_path: "output/HH4b_bkg_syst_ci/"
+mix_name: "HH4b_bkg_syst_ci"
+publish_base: "output/HH4b_bkg_syst_ci/publish"
+handoff: {}
+
+years:
+  - "UL18"
+year_eras:
+  UL18: ["A"]
+test_year_eras:
+  UL18: ["A"]
+
+subsamples:
+  source: "seeds"
+  n: 2
+  dataset_name: "mixeddata_4b"
+subsample_indices: [0, 1]
+
+pilot_gate: false
+svb_sr_closure: false
+
+inputs:
+  mixeddata_all: "output/declustered_run2_library/test/handoff/synthetic_data_lib_multijet.yml"
+  ttbar_psdata: "output/mixeddata_run2/handoff/ttbar_PSData.yml"
+  jcm_hists: "output/TEST/PhaseB_1_computeJCM/histAll_NoJCM.coffea"
+  classifier_inputs: "output/TEST/PhaseB_2_classifier_inputs/classifier_inputs_friends.json"
+
+phase_e_fvt:
+  mix_name: "HH4b_bkg_syst_ci"
+  n_models: 2
+  precision: ""
+
+f1_validation:
+  min_sb_yield: 10
+  max_sb_yield: 500000
+  max_sr_yield: 500000
+  min_ratio: 0.05
+  max_ratio: 20.0
+
+closure_rebin_candidates:
+  - 12
+rebin: 12
+closure_regions:
+  - "SR"
+  - "SB"
+closure_extra_args: "--do_CI --ignore_failures"

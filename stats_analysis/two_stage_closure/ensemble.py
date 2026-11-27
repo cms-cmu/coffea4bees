@@ -216,6 +216,7 @@ class multijetEnsemble:
             self.plotFitResults(basis)
             for i in range(1, basis):
                 self.plotFitResults(basis, projection=(i, i + 1))
+            self.plotFitResultsCorner(basis)
             self.plotPulls(basis)
 
             if self.basis is None and abs(self.pearsonr[basis]['total'][1]) > probThreshold:
@@ -648,6 +649,45 @@ class multijetEnsemble:
         except IndexError:
             print('Weird index error...')
 
+    def plotFitResultsCorner(self, basis):
+        """All (c_i, c_j) projections of the variance fits on one page (upper triangle): the N model fits
+        with their uncertainty crosses and the variance ellipse (blue), plus a table of sigma_var."""
+        from .plotting import projected_error_axes, plot_coefficient_corner
+        Ellipse = config.Ellipse
+        nMixes = config.nMixes
+        n = basis + 1
+        if n < 2 or nMixes <= 1:
+            return
+        pars = 100 * np.asarray(self.fit_parameters[basis])[:nMixes, :n]
+        sig = [100 * (self.cUp[basis][d] - self.cDown[basis][d]) / 2 for d in range(n)]
+        errs = {}
+        for m in range(nMixes):
+            for i in range(n):
+                for j in range(i + 1, n):
+                    errs[(m, j, i)] = [100 * v for v in projected_error_axes(self.eigenVars[basis][m], j, i, n)]
+        extent = 1.15 * max(np.abs(pars).max() + max(np.abs(np.concatenate(v)).max() for v in errs.values()), max(sig))
+
+        def draw(ax, j, i):
+            x, y = pars[:, j], pars[:, i]
+            for m in range(nMixes):
+                maxr, minr = errs[(m, j, i)]
+                for vx, vy in (maxr, -maxr, minr, -minr):
+                    ax.plot([x[m], x[m] + vx], [y[m], y[m] + vy], color='k', lw=0.4, zorder=2)
+            ax.scatter(x, y, s=8, c='k', zorder=3)
+            if Ellipse is not None:
+                ax.add_patch(Ellipse((0, 0), width=2 * sig[j], height=2 * sig[i], facecolor='none',
+                                     edgecolor='b', linewidth=0.9, zorder=1))
+
+        legend = None
+        if config.HAS_MPL:
+            from matplotlib.lines import Line2D
+            legend = [(Line2D([], [], color='k', marker='o', lw=0, markersize=3), f'{nMixes} model fits'),
+                      (Line2D([], [], color='b', lw=1), r'variance ($\pm\sigma_{var}$)')]
+        plot_coefficient_corner(
+            n, draw, f'Multijet model variance fits ({self.channel.upper()}), {n} coefficients',
+            f"{config.output_dir}/0_variance_parameters_basis{basis}_corner",
+            rows=[(f'c$_{{{d}}}$', sig[d], None, None) for d in range(n)], extent=extent, legend=legend)
+
     def plotPulls(self, basis):
         plt = config.plt
         args = config.args
@@ -720,10 +760,12 @@ class multijetEnsemble:
             'ratio' : 'numer A',
             'color' : 'ROOT.kBlue'}
 
-        lumi_title = f"{lumi} fb^{{-1}} (13 TeV)"
+        lumi_title = config.lumi_title()
         region_title = 'SR' if args.region == 'SR' else regionName.get(args.region, args.region)
         classifier_name = classifier.replace('_', ' ')
-        xTitle = f'{classifier_name} P(Signal) #(Bin) + #(Bins)#(Mix) #cbar P({self.channel.upper()}) is largest'
+        # x = the SvB bin within each block, one block of nBins_rebin bins per multijet model; kept short
+        # so it fits under the pull pad (the long form ran off the canvas)
+        xTitle = f'{classifier_name} P(Signal) bin + {self.nBins_rebin}#times model'
 
         parameters = {'titleLeft'   : '#bf{CMS} #it{Internal}',
                       'titleCenter' : region_title,
@@ -741,6 +783,7 @@ class multijetEnsemble:
                       'logY'        : True,
                       'yMax'        : self.ymax[0] * 35.0,
                       'xTitleOffset': 0.95,
+                      'rXTitleOffset': 1.2,   # pull-pad x title; the default 0.9/rPadFraction = 1.8 put it below the canvas
                       'xleg'        : [0.13, 0.13 + 0.40],
                       'yleg'        : [0.74, 0.90],
                       'legendSubText': ['#bf{Adjacent Bin Pull Correlation:}',

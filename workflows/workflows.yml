@@ -109,6 +109,11 @@ phases:
     snakefile: coffea4bees/workflows/Snakefile_TrigWeights.smk
     description: "Trigger weights computation"
 
+  BTAG_CALIB:
+    host: cmslpc
+    snakefile: coffea4bees/workflows/Snakefile_btagSF_calibration.smk
+    description: "b-tagging SF calibration: (Njet, HT) maps removing the normalization effect of the b-tag shape SF"
+
   FIT_QUALITY:
     host: cmslpc
     snakefile: coffea4bees/workflows/Snakefile_FitQualityReplay.smk
@@ -157,6 +162,12 @@ dashboards:
     title: "Analysis & SvB Plots Gallery"
     desc: "Final analysis distributions, SvB discriminants, and control kinematics"
 
+  - match: "gallery.html"
+    path_contains: ["bkg_syst_f_1_analysis/plots"]
+    tag: "Stage F.1"
+    title: "Analysis & SvB Plots Gallery"
+    desc: "Final analysis distributions, SvB discriminants, and control kinematics"
+
   - match: "closure_summary.html"
     tag: "Stage F.2"
     title: "Two-Stage Closure Summary (SvB_MA)"
@@ -193,6 +204,7 @@ dashboards:
     tag_bkg: "Stage F.1"
     title: "Histogram Cross-Check (F vs C.4)"
     desc: "Direct validation that selJets.n and m4j (v4j.mass) match Phase C.4"
+    desc_bkg: "Direct validation that selJets.n and m4j (v4j.mass) match Stage C.4"
 
   - match: "signal_crosscheck*.html"
     tag: "Stage F.1"
