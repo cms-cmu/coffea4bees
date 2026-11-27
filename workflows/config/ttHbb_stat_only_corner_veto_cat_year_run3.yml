@@ -172,8 +172,11 @@ classifier_setting:
 # ==============================================================================
 fvt:
   gpu_qos: medium
-  gpu_mem: 86000
-  train_mem: 86000
+  gpu_gres: "mps:50"
+  gpu_mem: 160000
+  train_mem: 160000
+  train_threads: 16
+  train_runtime: 720
   eval_mem: 96000
   eos_base: "{eos_prod}/{roast_id}"
   plot_base: "{web_prod}/{roast_id}/classifier"
@@ -192,7 +195,7 @@ fvt:
       module: train
       option:
         - --max-loaders 1
-        - --max-trainers 1
+        - --max-trainers 3
         - --device cuda cpu
     dataset:
       - module: HCR.FvT.TrainBaseline
