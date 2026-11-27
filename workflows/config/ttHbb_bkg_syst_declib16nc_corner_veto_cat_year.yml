@@ -11,6 +11,7 @@ base: coffea4bees/workflows/config/ttHbb_bkg_syst_declib16nc.yml
 
 label: "ttHbb_bkg_syst_declib16nc_corner_veto_cat_year"
 mix_name: "ttHbb_bkg_syst_declib16nc_corner_veto_cat_year"
+svb_sr_closure: false
 
 year_eras:
   UL16_preVFP: ["C", "D", "E", "F"]
