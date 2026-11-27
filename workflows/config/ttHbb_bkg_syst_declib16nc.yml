@@ -294,6 +294,7 @@ analysis_config:
     plot_ttbar_with_weights: true
     fill_histograms: "SvB"
     candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
+    svb_binning_file: "{roast:nominal}/handoff/svb_quantiles.json"
 
 candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
 

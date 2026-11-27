@@ -1,0 +1,152 @@
+# ==============================================================================
+# ttHbb Run 2 FvT Categorical (One-Hot) Year A/B Test — Phase C (C + C4) Only
+# ==============================================================================
+# Reuses the exact Step A and Step B outputs (JCM weights and classifier_inputs
+# friend trees) from the Nov 24 baseline roast:
+#   ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10
+# Replaces scalar `year` in HCR.InputBranch.feature_ancillary with one-hot era
+# indicators [year_UL16_preVFP, year_UL16_postVFP, year_UL17, year_UL18] (plus
+# per-era event-head logit bias in HCR.py).
+# ==============================================================================
+
+base: coffea4bees/workflows/config/ttHbb_stat_only_corner_veto.yml
+
+label: "ttHbb_stat_only_corner_veto_cat_year"
+
+# Phase C classifier settings: one-hot era indicators instead of scalar `year`
+classifier_setting:
+  - module: ml.DataLoader
+    option:
+      - optimize_sliceable_dataset: true
+      - num_workers: 2
+      - batch_eval: 65536
+  - module: ROOT
+    option:
+      - friend_allow_missing: false
+  - module: cms.MC_TTbar
+    option:
+      - datasets:
+          - TTToSemiLeptonic_stitched
+          - TTToHadronic_stitched
+          - TTTo2L2Nu_stitched
+  - module: cms.CollisionData
+    option:
+      - eras:
+          UL16_postVFP: [F, G, H]
+          UL16_preVFP: [C, D, E, F]
+          UL17: [C, D, E, F]
+          UL18: [A, B, C, D]
+        years:
+          - UL16_preVFP
+          - UL16_postVFP
+          - UL17
+          - UL18
+  - module: HCR.InputBranch
+    option:
+      - feature_ancillary:
+          - xW
+          - nSelJets
+          - xbW
+          - year_UL16_preVFP
+          - year_UL16_postVFP
+          - year_UL17
+          - year_UL18
+
+# Phase C: reuse Step B handoff from ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10
+fvt:
+  metadata: "{eos_prod}/ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10/handoff/classifier_inputs_ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10.json@@HCR_input"
+  train_workflow:
+    main:
+      module: train
+      option:
+        - --max-loaders 2
+        - --max-trainers 3
+        - --device cuda cpu
+    dataset:
+      - module: HCR.FvT.TrainBaseline
+        option:
+          - --metadata coffea4bees/metadata/datasets/
+          - --max-workers 20
+          - --data-source detector
+          - --JCM-weight year:UL16_preVFP {eos_prod}/ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml@@JCM_weights
+          - --JCM-weight year:UL16_postVFP {eos_prod}/ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml@@JCM_weights
+          - --JCM-weight year:UL17 {eos_prod}/ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10/handoff/jetCombinatoricModel_SB_2024_v2_UL17.yml@@JCM_weights
+          - --JCM-weight year:UL18 {eos_prod}/ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10/handoff/jetCombinatoricModel_SB_2024_v2_UL18.yml@@JCM_weights
+          - --friends "" {eos_prod}/ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10/handoff/classifier_inputs_ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10.json@@HCR_input
+    model:
+      - module: HCR.FvT.baseline.Train
+        option:
+          - --kfolds 3
+          - --kfold-seed FvT random
+          - --kfold-seed-offsets 0
+          - --training FixedStep
+          - bs_init: 1024
+            epoch: 20
+          - --finetuning FinetuneStep
+          - bs_init: 16384
+            epoch: 1
+    setting:
+      - module: IO
+        option:
+          - output: "{model}"
+  eval_workflow:
+    main:
+      module: evaluate
+      option:
+        - --max-evaluators 3
+        - --device cuda cpu
+    dataset:
+      - module: HCR.FvT.EvalBackground
+        option:
+          - --metadata coffea4bees/metadata/datasets/
+          - --max-workers 8
+          - --data-source detector
+          - --mc-processes ttbar
+          - --friends "" {eos_prod}/ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10/handoff/classifier_inputs_ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10.json@@HCR_input
+    model:
+      - module: HCR.FvT.baseline.Eval
+        option:
+          - --models
+          - Final
+          - "{model}/result.json"
+    analysis:
+      - module: kfold.Merge
+        option:
+          - --name FvT
+          - --step 100000
+          - --workers 4
+          - --clean
+    setting:
+      - module: IO
+        option:
+          - output: "{FvT}"
+      - module: ml.DataLoader
+        option:
+          - num_workers: 8
+
+# Phase C.4: reuse per-year JCM from Nov 24 handoff on EOS; FvT friend comes from this roast
+fvt_closure:
+  reuse_wJCM_ttbar: false
+  ttbar_compare_plot_config: "coffea4bees/plots/metadata/plotsTTbar_MCvsFromD3.yml"
+  ttbar3b_compare_plot_config: "coffea4bees/plots/metadata/plotsTTbar3b_MCvsFromD3.yml"
+  JCM_file:
+    UL16_preVFP: "{eos_prod}/ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml"
+    UL16_postVFP: "{eos_prod}/ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml"
+    UL17: "{eos_prod}/ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10/handoff/jetCombinatoricModel_SB_2024_v2_UL17.yml"
+    UL18: "{eos_prod}/ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10/handoff/jetCombinatoricModel_SB_2024_v2_UL18.yml"
+
+# Phase F: reuse Nov 24 JCM, SvB, SvB_MA, and svb_quantiles; use this roast's FvT
+analysis_config:
+  config:
+    SvB: true
+    fill_histograms: "kinematics+FvT+SvB"
+    svb_binning_file: "{eos_prod}/ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10/handoff/svb_quantiles.json"
+    JCM_file:
+      UL16_preVFP: "{eos_prod}/ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10/handoff/jetCombinatoricModel_SB_2024_v2_UL16_preVFP.yml"
+      UL16_postVFP: "{eos_prod}/ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10/handoff/jetCombinatoricModel_SB_2024_v2_UL16_postVFP.yml"
+      UL17: "{eos_prod}/ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10/handoff/jetCombinatoricModel_SB_2024_v2_UL17.yml"
+      UL18: "{eos_prod}/ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10/handoff/jetCombinatoricModel_SB_2024_v2_UL18.yml"
+    friends:
+      FvT: "{eos_prod}/{roast_id}/friend/FvT_ttHbb_stitched/result.json@@analysis.0.merged"
+      SvB: "{eos_prod}/ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10/friend/SvB_ttHbb_stitched/result.json@@analysis.0.merged"
+      SvB_MA: "{eos_prod}/ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"

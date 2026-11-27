@@ -97,6 +97,19 @@ _ERA_YEAR_MAP: dict[str, int] = {
     "2025": 250,
 }
 
+_ERA_ONEHOT_NAMES: tuple[str, ...] = (
+    "UL16_preVFP",
+    "UL16_postVFP",
+    "UL17",
+    "UL18",
+    "2022_preEE",
+    "2022_EE",
+    "2023_preBPix",
+    "2023_BPix",
+    "2024",
+    "2025",
+)
+
 
 @dataclass
 class add_year(add_column):
@@ -106,6 +119,8 @@ class add_year(add_column):
     dtype: type = field(init=False, default=int)
 
     def any(self, matches: tuple[re.Match, ...]):
+        import numpy as np
+
         from src.classifier.df.tools import add_columns
 
         full = matches[0].group("full")
@@ -113,7 +128,10 @@ class add_year(add_column):
             val = _ERA_YEAR_MAP[full]
         else:
             val = self.dtype(matches[0].group(self.key))
-        yield add_columns(**{self.key: val})
+        cols: dict[str, Any] = {self.key: val}
+        for era in _ERA_ONEHOT_NAMES:
+            cols[f"year_{era}"] = np.float32(1.0 if full == era else 0.0)
+        yield add_columns(**cols)
 
 
 @dataclass

@@ -1,0 +1,102 @@
+# ==============================================================================
+# ttHbb Run 2 BACKGROUND SYSTEMATIC (declib16nc) — Corner Veto + CatYear FvT/SvB
+# ==============================================================================
+# Full bkg_syst_full run (BKG_AB -> BKG_C -> BKG_C4 -> BKG_F) for the CatYear
+# one-hot era FvT / SvB / SvB_MA nominal roast:
+#   nominal:     ttHbb_stat_only_corner_veto_cat_year_DF_20261126_d095fd0-32d5400
+#   ab_upstream: ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10
+# ==============================================================================
+
+base: coffea4bees/workflows/config/ttHbb_bkg_syst_declib16nc.yml
+
+label: "ttHbb_bkg_syst_declib16nc_corner_veto_cat_year"
+mix_name: "ttHbb_bkg_syst_declib16nc_corner_veto_cat_year"
+svb_sr_closure: false
+
+year_eras:
+  UL16_preVFP: ["C", "D", "E", "F"]
+  UL16_postVFP: ["F", "G", "H"]
+  UL17: ["C", "D", "E", "F"]
+  UL18: ["A", "B", "C", "D"]
+
+inputs:
+  upstream_roasts:
+    declib: declib16nc_run2_20261003_3ab8302-b2d2dec
+    nominal: ttHbb_stat_only_corner_veto_cat_year_DF_20261126_d095fd0-32d5400
+    ab_upstream: ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10
+    mixeddata: mixeddata_run2_20260927_c39c264-0ce4d59
+    fvt_upstream: ttHbb_bkg_syst_declib16nc_corner_veto_cat_year_20261126_04ec2d1-3579afb
+  mixeddata_all: "{roast:declib}/handoff/synthetic_data_lib16nc_multijet.yml"
+  ttbar_psdata: "{roast:mixeddata}/handoff/ttbar_PSData.yml"
+  jcm_hists: "root://cmseos.fnal.gov//store/user/algomez/HH4b_prod/ttHbb_stat_only_corner_veto_20261124_2426411-ea08b10/output/ttHbb/PhaseB_1_computeJCM/histAll_NoJCM.coffea"
+  nominal_hists: "root://cmseos.fnal.gov//store/user/algomez/HH4b_prod/ttHbb_stat_only_corner_veto_cat_year_DF_20261126_d095fd0-32d5400/output/ttHbb/PhaseF_1_analysis/histAll_ttHbb_stat_only_corner_veto_cat_year_DF.coffea"
+  classifier_inputs: "{roast:ab_upstream}/handoff/classifier_inputs_{roast:ab_upstream:id}.json"
+  SvB: "{roast:nominal}/friend/SvB_ttHbb_stitched/result.json@@analysis.0.merged"
+  SvB_model: "{roast:nominal}/classifier/SvB_ttHbb_stitched/result.json"
+  SvB_MA: "{roast:nominal}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
+  SvB_MA_model: "{roast:nominal}/classifier/SvB_MA_ttHbb_stitched/result.json"
+
+classifier_setting:
+  - module: ml.DataLoader
+    option:
+      - optimize_sliceable_dataset: true
+      - num_workers: 2
+      - batch_eval: 65536
+  - module: ROOT
+    option:
+      - friend_allow_missing: false
+  - module: cms.MC_TTbar
+    option:
+      - datasets:
+          - TTToSemiLeptonic_stitched
+          - TTToHadronic_stitched
+          - TTTo2L2Nu_stitched
+  - module: cms.CollisionData
+    option:
+      - eras:
+          UL16_preVFP: [C, D, E, F]
+          UL16_postVFP: [F, G, H]
+          UL17: [C, D, E, F]
+          UL18: [A, B, C, D]
+        years:
+          - UL16_preVFP
+          - UL16_postVFP
+          - UL17
+          - UL18
+  - module: HCR.InputBranch
+    option:
+      - feature_ancillary:
+          - xW
+          - nSelJets
+          - xbW
+          - year_UL16_preVFP
+          - year_UL16_postVFP
+          - year_UL17
+          - year_UL18
+
+phase_e_fvt:
+  mix_name: "ttHbb_bkg_syst_declib16nc_corner_veto_cat_year"
+
+fvt_handoff_eos: "{roast:fvt_upstream}/handoff"
+
+fvt_train_workflow:
+  dataset:
+    - module: HCR.FvT.TrainBaseline
+      option:
+        - --metadata {metadata}
+        - --max-workers 20
+        - --data-source detector mixed
+        - --no-detector-4b
+        - --data-mixed-name {mixed_name}
+        - --data-mixed-samples {mix}
+        - --JCM-weight year:UL16_preVFP {jcm_UL16_preVFP}@@JCM_weights
+        - --JCM-weight year:UL16_postVFP {jcm_UL16_postVFP}@@JCM_weights
+        - --JCM-weight year:UL17 {jcm_UL17}@@JCM_weights
+        - --JCM-weight year:UL18 {jcm_UL18}@@JCM_weights
+        - --friends source:mixed {mixed_ci}@@HCR_input
+        - --friends source:detector {nominal_ci}@@HCR_input
+        - --friends label:ttbar {nominal_ci}@@HCR_input
+
+make_combine_inputs:
+  tt_processes:
+    - "TTbar4b_from_d3"

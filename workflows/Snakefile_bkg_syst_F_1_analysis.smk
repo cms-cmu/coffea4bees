@@ -177,6 +177,11 @@ rule stage_phaseF_1_config:
         }
         if 'data_svb_friend' in config:
             friends_dict["SvB"] = config['data_svb_friend']
+        raw_clfs = config.get('classifiers', [config.get('classifier', 'SvB_MA')])
+        if isinstance(raw_clfs, str):
+            raw_clfs = [c.strip() for c in raw_clfs.split() if c.strip()]
+        if "SvB" in raw_clfs and "SvB" in friends_dict and data_cfg.get('config', {}).get('SvB') is None:
+            data_cfg.setdefault('config', {})['SvB'] = True
         if 'data_svb_ma_friend' in config:
             friends_dict["SvB_MA"] = config['data_svb_ma_friend']
         elif 'data_svb_friend' in config and "SvB_MA" not in friends_dict:
