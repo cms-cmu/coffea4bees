@@ -33,6 +33,10 @@ def _ttbar_3b_selection(df: pd.DataFrame):
     return df["threeTag"]
 
 
+def _d3_selection(df: pd.DataFrame):
+    return df["threeTag"]
+
+
 def _select_4b(df: pd.DataFrame):
     return df[df["fourTag"]]
 
@@ -119,6 +123,11 @@ class Train(CommonTrain):
         help="prescale 3b ttbar events",
     )
     argparser.add_argument(
+        "--d3-prescale",
+        default="1",
+        help="prescale 3b detector data events",
+    )
+    argparser.add_argument(
         "--ttbar-4b-scale",
         type=float,
         default=1.0,
@@ -144,6 +153,8 @@ class Train(CommonTrain):
     )
 
     def preprocess_by_group(self):
+        from fractions import Fraction
+
         from src.classifier.df.tools import add_label_index_from_column, prescale
 
         if self.opts.era_feature and not self.opts.era_mc_fractions:
@@ -191,6 +202,23 @@ class Train(CommonTrain):
 
         ps = [
             *data_ps,
+            *(
+                [
+                    _group.fullmatch(
+                        ("label:data", "source:detector"),
+                        processors=[
+                            lambda: prescale(
+                                scale=self.opts.d3_prescale,
+                                selection=_d3_selection,
+                                seed=("d3", 0),
+                            ),
+                        ],
+                        name="d3 prescale",
+                    )
+                ]
+                if Fraction(self.opts.d3_prescale) != 1
+                else ()
+            ),
             _group.fullmatch(
                 ("source:mixed",),
                 ("source:synthetic",),

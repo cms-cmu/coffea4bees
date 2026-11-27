@@ -171,12 +171,9 @@ classifier_setting:
 # PHASE C: FvT CLASSIFIER (Nautilus)
 # ==============================================================================
 fvt:
-  gpu_qos: light
-  gpu_gres: "mps:25"
-  gpu_mem: 160000
-  train_mem: 160000
-  train_threads: 16
-  train_runtime: 1440
+  gpu_mem: 64000
+  train_mem: 64000
+  train_runtime: 480
   eval_mem: 96000
   eos_base: "{eos_prod}/{roast_id}"
   plot_base: "{web_prod}/{roast_id}/classifier"
@@ -195,7 +192,7 @@ fvt:
       module: train
       option:
         - --max-loaders 1
-        - --max-trainers 3
+        - --max-trainers 1
         - --device cuda cpu
     dataset:
       - module: HCR.FvT.TrainBaseline
@@ -203,6 +200,7 @@ fvt:
           - --metadata coffea4bees/metadata/datasets/
           - --max-workers 8
           - --data-source detector
+          - --d3-prescale 5
           - --JCM-weight year:2022_preEE {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_Run3_22_23_24_2022_preEE.yml@@JCM_weights
           - --JCM-weight year:2022_EE {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_Run3_22_23_24_2022_EE.yml@@JCM_weights
           - --JCM-weight year:2023_preBPix {eos_prod}/{roast_id}/handoff/jetCombinatoricModel_SB_Run3_22_23_24_2023_preBPix.yml@@JCM_weights
