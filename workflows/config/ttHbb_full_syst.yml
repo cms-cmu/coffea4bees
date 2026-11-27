@@ -12,23 +12,22 @@ handoff:
 
 inputs:
   upstream_roasts:
-    stat_only: "ttHbb_stat_only_corner_veto_20261106_0065bef-0b95131"
-    bkg_syst: "ttHbb_bkg_syst_cosine_nofinetune_20261115_60960f8-31731b5"
-    nominal_svb: "ttHbb_stat_only_corner_veto_20261029_c68b6ef-c250a11"
-  nominal_hists: "{roast:stat_only}/output/ttHbb/PhaseF_1_analysis/histAll_ttHbb_stat_only_corner_veto.coffea"
-  bkg_syst_file: "{roast:bkg_syst}/output/ttHbb_bkg_syst_cosine_nofinetune_20261115_60960f8-31731b5/bkg_syst_F_2_run_two_stage_closure/closure_fits/ttHbb_bkg_syst_declib16nc/SvB_MA/rebin20/SR/ttHbb/hists_closure_ttHbb_bkg_syst_declib16nc_SvB_MA_ps_ttHbb_rebin20.pkl"
-  SvB_MA: "{roast:nominal_svb}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
-  svb_binning: "{roast:nominal_svb}/handoff/svb_quantiles.json"
+    stat_only: "ttHbb_stat_only_corner_veto_cat_year_DF_20261126_d095fd0-32d5400"
+    bkg_syst: "ttHbb_bkg_syst_declib16nc_corner_veto_cat_year_20261127_03b56d0-0b6f2d1"
+  nominal_hists: "{roast:stat_only}/output/ttHbb/PhaseF_1_analysis/histAll_ttHbb_stat_only_corner_veto_cat_year_DF.coffea"
+  bkg_syst_file: "{roast:bkg_syst}/output/ttHbb_bkg_syst_declib16nc_corner_veto_cat_year_20261127_03b56d0-0b6f2d1/bkg_syst_F_2_run_two_stage_closure/closure_fits/ttHbb_bkg_syst_declib16nc/SvB_MA/rebin16/SR/ttHbb/hists_closure_ttHbb_bkg_syst_declib16nc_SvB_MA_ps_ttHbb_rebin16.pkl"
+  SvB_MA: "{roast:stat_only}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
+  svb_binning: "{roast:stat_only}/handoff/svb_quantiles.json"
 
 analysis_config:
   processor: "coffea4bees/analysis/processors/processor_ttHbb.py"
-  weights_file: "coffea4bees/metadata/weights/weights_ttHbb_corner_veto.yml"
+  weights_file: "coffea4bees/metadata/weights/weights_ttHbb.yml"
   candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
   config:
     candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
-    svb_binning_file: "{roast:nominal_svb}/handoff/svb_quantiles.json"
+    svb_binning_file: "{roast:stat_only}/handoff/svb_quantiles.json"
     friends:
-      SvB_MA: "{roast:nominal_svb}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
+      SvB_MA: "{roast:stat_only}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
 
 candidates_selection_cfg: "coffea4bees/analysis/metadata/candidates_selection_thresholds_ttHbb_corner_veto.yml"
 
@@ -41,7 +40,7 @@ syst_groups:
   - "others"
   - "jes"
 
-rebin: 20
+rebin: 16
 unify_background: true
 
 channels:
@@ -51,7 +50,7 @@ channels:
     signal: "ttHbb"
     region: "SR"
     cut: "sum"
-    rebin: 20
+    rebin: 16
     stat_only: false
     metadata: "coffea4bees/stats_analysis/metadata/ttHbb.yml"
     combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
@@ -61,7 +60,7 @@ channels:
     signal: "ttHbb"
     region: "SR"
     cut: "passLeptonVeto"
-    rebin: 20
+    rebin: 16
     stat_only: false
     metadata: "coffea4bees/stats_analysis/metadata/ttHbb.yml"
     combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
@@ -71,7 +70,7 @@ channels:
     signal: "ttHbb"
     region: "SR"
     cut: "pass_nSelJets_gt6"
-    rebin: 20
+    rebin: 16
     stat_only: false
     metadata: "coffea4bees/stats_analysis/metadata/ttHbb.yml"
     combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
@@ -81,14 +80,14 @@ channels:
     signal: "ttHbb"
     region: "SR"
     cut: "pass_nSelJets_gt6_passLeptonVeto"
-    rebin: 20
+    rebin: 16
     stat_only: false
     metadata: "coffea4bees/stats_analysis/metadata/ttHbb.yml"
     combine_flags: "--three_tag threeTag --four_tag fourTag --region SR --blind"
 
 make_combine_inputs:
   stat_only: ""
-  rebin: 20
+  rebin: 16
   unify_background: true
   metadata_template: "coffea4bees/stats_analysis/metadata/{channel}.yml"
   multijet_process: "data"
