@@ -14,8 +14,8 @@ inputs:
   upstream_roasts:
     stat_only: "ttHbb_stat_only_corner_veto_cat_year_DF_20261126_d095fd0-32d5400"
     bkg_syst: "ttHbb_bkg_syst_declib16nc_corner_veto_cat_year_20261127_03b56d0-0b6f2d1"
-  nominal_hists: "{roast:stat_only}/output/ttHbb/PhaseF_1_analysis/histAll_ttHbb_stat_only_corner_veto_cat_year_DF.coffea"
-  bkg_syst_file: "{roast:bkg_syst}/output/ttHbb_bkg_syst_declib16nc_corner_veto_cat_year_20261127_03b56d0-0b6f2d1/bkg_syst_F_2_run_two_stage_closure/closure_fits/ttHbb_bkg_syst_declib16nc/SvB_MA/rebin16/SR/ttHbb/hists_closure_ttHbb_bkg_syst_declib16nc_SvB_MA_ps_ttHbb_rebin16.pkl"
+  nominal_hists: "root://cmseos.fnal.gov//store/user/algomez/HH4b_prod/ttHbb_stat_only_corner_veto_cat_year_DF_20261126_d095fd0-32d5400/output/ttHbb/PhaseF_1_analysis/histAll_ttHbb_stat_only_corner_veto_cat_year_DF.coffea"
+  bkg_syst_file: "root://cmseos.fnal.gov//store/user/algomez/HH4b_prod/ttHbb_bkg_syst_declib16nc_corner_veto_cat_year_20261127_03b56d0-0b6f2d1/output/ttHbb_bkg_syst_declib16nc_corner_veto_cat_year_20261127_03b56d0-0b6f2d1/bkg_syst_F_2_run_two_stage_closure/closure_fits/ttHbb_bkg_syst_declib16nc_corner_veto_cat_year/SvB_MA/rebin16/SR/ttHbb/hists_closure_ttHbb_bkg_syst_declib16nc_corner_veto_cat_year_SvB_MA_ps_ttHbb_rebin16.pkl"
   SvB_MA: "{roast:stat_only}/friend/SvB_MA_ttHbb_stitched/result.json@@analysis.0.merged"
   svb_binning: "{roast:stat_only}/handoff/svb_quantiles.json"
 
