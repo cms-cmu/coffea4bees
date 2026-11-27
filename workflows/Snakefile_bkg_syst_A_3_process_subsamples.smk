@@ -76,6 +76,13 @@ rule stage_subsample_processor_config:
         )
         if cand_sel_cfg:
             cfg['config']['candidates_selection_cfg'] = cand_sel_cfg
+        svb_binning = (
+            ((config.get('phaseA_3') or {}).get('analysis') or {}).get('config', {}).get('svb_binning_file')
+            or ((config.get('analysis_config') or {}).get('config') or {}).get('svb_binning_file')
+            or config.get('svb_binning_file')
+        )
+        if svb_binning:
+            cfg['config']['svb_binning_file'] = svb_binning
         # subsample_hist_cuts: the mixed data's hist_cuts, e.g. the same jet-multiplicity slices as F_1
         if config.get('subsample_hist_cuts'):
             cfg['config']['hist_cuts'] = list(config['subsample_hist_cuts'])

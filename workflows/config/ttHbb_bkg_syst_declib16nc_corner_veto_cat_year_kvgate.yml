@@ -125,7 +125,6 @@ analysis_config:
   config:
     SvB_MA: true
     SvB: true
-    svb_binning_file: "root://cmseos.fnal.gov//store/user/algomez/ttHbb_prod/ttHbb_stat_only_corner_veto_cat_year_DF_20261126_d095fd0-32d5400/handoff/svb_quantiles.json"
 
 make_combine_inputs:
   tt_processes:
