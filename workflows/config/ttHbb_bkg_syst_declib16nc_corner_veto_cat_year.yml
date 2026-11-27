@@ -76,6 +76,24 @@ classifier_setting:
 phase_e_fvt:
   mix_name: "ttHbb_bkg_syst_declib16nc_corner_veto_cat_year"
 
+fvt_train_workflow:
+  dataset:
+    - module: HCR.FvT.TrainBaseline
+      option:
+        - --metadata {metadata}
+        - --max-workers 20
+        - --data-source detector mixed
+        - --no-detector-4b
+        - --data-mixed-name {mixed_name}
+        - --data-mixed-samples {mix}
+        - --JCM-weight year:UL16_preVFP {jcm_UL16_preVFP}@@JCM_weights
+        - --JCM-weight year:UL16_postVFP {jcm_UL16_postVFP}@@JCM_weights
+        - --JCM-weight year:UL17 {jcm_UL17}@@JCM_weights
+        - --JCM-weight year:UL18 {jcm_UL18}@@JCM_weights
+        - --friends source:mixed {mixed_ci}@@HCR_input
+        - --friends source:detector {nominal_ci}@@HCR_input
+        - --friends label:ttbar {nominal_ci}@@HCR_input
+
 analysis_config:
   config:
     svb_binning_file: "root://cmseos.fnal.gov//store/user/algomez/ttHbb_prod/ttHbb_stat_only_corner_veto_cat_year_DF_20261126_d095fd0-32d5400/handoff/svb_quantiles.json"
