@@ -1,0 +1,55 @@
+# ==============================================================================
+# ttHbb Run 2 FvT Optimization Sweep (CatYear, Corner Veto, declib16nc)
+# ==============================================================================
+# Screens 5 FvT variants against a 2-seed retrained baseline across 4 mixes
+# [0, 1, 2, 3], reusing pre-FvT A/B outputs from:
+#   ttHbb_bkg_syst_declib16nc_corner_veto_cat_year_20261127_03b56d0-0b6f2d1
+# ==============================================================================
+
+base: coffea4bees/workflows/config/ttHbb_bkg_syst_declib16nc_corner_veto_cat_year.yml
+
+label: "ttHbb_fvt_opt_cat_year"
+mix_name: "ttHbb_fvt_opt_cat_year"
+
+upstream_pre_fvt: "pre_fvt"
+upstream_fvt: null
+fvt_handoff_eos: null
+
+subsample_indices: [0, 1, 2, 3]
+
+inputs:
+  upstream_roasts:
+    pre_fvt: ttHbb_bkg_syst_declib16nc_corner_veto_cat_year_20261127_03b56d0-0b6f2d1
+    fvt_upstream: ttHbb_bkg_syst_declib16nc_corner_veto_cat_year_20261127_03b56d0-0b6f2d1
+  input_handoff_eos: "{roast:pre_fvt}/handoff"
+
+fvt_opt:
+  mixes: [0, 1, 2, 3]
+  reference: ref
+  seeds:
+    ref: 2
+  variants:
+    ref: {}
+    cos_noft:
+      training: CosineAnnealing
+      epoch: 20
+      bs_init: 1024
+      finetuning: null
+    kvproj:
+      architecture:
+        use_kv_proj: true
+    attngate:
+      architecture:
+        use_attention_gate: true
+    ep30:
+      epoch: 30
+      lr_milestones: [25, 26, 27, 28, 29]
+    feat16:
+      architecture:
+        n_features: 16
+  score:
+    observable: SvB_MA.ps_ttHbb
+    rebin: 16
+    primary: mu_spur
+    guard: bias
+    threshold_sigma: 2.0

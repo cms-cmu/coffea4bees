@@ -119,6 +119,22 @@ phases:
     snakefile: coffea4bees/workflows/Snakefile_FitQualityReplay.smk
     description: "Fit quality replay workflow"
 
+  # --- FvT Optimization Sweep (fvt_opt) ---
+  OPT_C:
+    host: falcon
+    snakefile: coffea4bees/workflows/Snakefile_fvt_opt_C.smk
+    description: "FvT Opt: Stage C (train + evaluate all variant x mix models, no pilot)"
+
+  OPT_F:
+    host: cmslpc
+    snakefile: coffea4bees/workflows/Snakefile_fvt_opt_F.smk
+    description: "FvT Opt: Stage F.1 (per-variant background histogramming on cmslpc)"
+
+  OPT_SCORE:
+    host: cmslpc
+    snakefile: coffea4bees/workflows/Snakefile_fvt_opt_SCORE.smk
+    description: "FvT Opt: Paired signal-projected SR scoring and decision dashboard"
+
 # ------------------------------------------------------------------------------
 # Predefined Workflow Sequences
 # ------------------------------------------------------------------------------
@@ -143,11 +159,20 @@ workflows:
     description: "Full systematics analysis pipeline (signal variations + Combine stats)"
     phases: ["FULL_SYST"]
 
+  fvt_opt:
+    description: "FvT optimization sweep across variants and mixes (OPT_C -> OPT_F -> OPT_SCORE)"
+    phases: ["OPT_C", "OPT_F", "OPT_SCORE"]
+
 # ------------------------------------------------------------------------------
 # Primary Master Dashboards: Featured at the top of the roast summary index.html
 # ------------------------------------------------------------------------------
 dashboards:
-  - match: "training_summary.html"
+  - match: "fvt_opt_dashboard.html"
+    tag: "FvT Opt"
+    title: "FvT Optimization Sweep Dashboard"
+    desc: "Paired signal-projected spurious signal, bias norm, and noise-floor verdicts"
+
+  - match: "training_summary*.html"
     tag: "Phase C"
     tag_bkg: "Stage C"
     title: "FvT Training Summary"
