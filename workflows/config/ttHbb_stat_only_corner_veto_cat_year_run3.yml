@@ -186,8 +186,8 @@ fvt:
     main:
       module: train
       option:
-        - --max-loaders 2
-        - --max-trainers 3
+        - --max-loaders 1
+        - --max-trainers 1
         - --device cuda cpu
     dataset:
       - module: HCR.FvT.TrainBaseline
