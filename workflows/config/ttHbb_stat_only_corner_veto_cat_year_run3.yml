@@ -174,7 +174,7 @@ fvt:
   gpu_mem: 40000
   train_mem: 40000
   train_runtime: 480
-  eval_mem: 48000
+  eval_mem: 64000
   eval_splits:
     ttbar:
       --data-source: ""
