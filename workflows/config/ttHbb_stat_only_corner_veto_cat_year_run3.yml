@@ -174,7 +174,23 @@ fvt:
   gpu_mem: 40000
   train_mem: 40000
   train_runtime: 480
-  eval_mem: 64000
+  eval_mem: 48000
+  eval_splits:
+    ttbar:
+      --data-source: ""
+      --mc-processes: ttbar
+    data_2023:
+      --data-source: detector
+      --mc-processes: ""
+      --data-eras: [C01, C02, C11, C12, C3, C4, D1, D2]
+    data_BCDE:
+      --data-source: detector
+      --mc-processes: ""
+      --data-eras: [B, C, D, E]
+    data_FGHI:
+      --data-source: detector
+      --mc-processes: ""
+      --data-eras: [F, G, H, I2, I3]
   eos_base: "{eos_prod}/{roast_id}"
   plot_base: "{web_prod}/{roast_id}/classifier"
   classifier_config_paths: "coffea4bees"
@@ -256,7 +272,7 @@ fvt:
           - output: "{FvT}"
       - module: ml.DataLoader
         option:
-          - num_workers: 4
+          - num_workers: 2
 
 # ==============================================================================
 # PHASE C.4: FvT CLOSURE (cmslpc)
@@ -370,7 +386,7 @@ svb:
           - output: "{SvB}"
       - module: ml.DataLoader
         option:
-          - num_workers: 4
+          - num_workers: 2
 
 svb_ma:
   gpu_qos: medium
@@ -466,7 +482,7 @@ svb_ma:
           - output: "{SvB}"
       - module: ml.DataLoader
         option:
-          - num_workers: 4
+          - num_workers: 2
 
 # ==============================================================================
 # PHASE F.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING (cmslpc)
