@@ -17,8 +17,14 @@ import math
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
+
+_REPO_ROOT = str(Path(__file__).resolve().parents[2])
+for _p in (".", _REPO_ROOT, os.path.join(_REPO_ROOT, "coffea4bees")):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 import hist
 import numpy as np
