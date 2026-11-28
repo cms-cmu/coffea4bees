@@ -176,7 +176,7 @@ rule create_analysis_config:
                     _friends['SvB_MA'] = f"{_local_svb_ma}@@analysis.0.merged"
                     if os.path.exists(_local_svb):
                         _friends['SvB'] = f"{_local_svb}@@analysis.0.merged"
-                elif 'SvB_MA' in _orig_friends or 'SvB_MA' in _orig_inc:
+                elif 'SvB_MA' in _orig_friends or 'SvB_MA' in _orig_inc or cfg['config'].get('SvB_MA'):
                     _friends['SvB_MA'] = f"{_local_svb}@@analysis.0.merged"
                 else:
                     _friends['SvB'] = f"{_local_svb}@@analysis.0.merged"
@@ -185,7 +185,7 @@ rule create_analysis_config:
                 cfg['config']['SvB'] = None
                 cfg['config']['blind'] = False
                 cfg['config']['FvT_pd3_floor'] = cfg['config'].get('FvT_pd3_floor') or 0.01
-                cfg['runner']['chunksize'] = 100000
+                cfg['runner']['chunksize'] = int(config.get('test_chunksize', 30000))
             if "processor_HH4b.py" in str(cfg.get("processor", "")):
                 cfg.setdefault("config", {})["run_dilep_ttbar_crosscheck"] = True
         os.makedirs(os.path.dirname(output[0]), exist_ok=True)
@@ -303,16 +303,16 @@ if config.get("test", False):
                     run_container_wrapper = config['analysis_container_wrapper']
 
     if MC_DATASETS:
-        MC_TEST_TARGETS.append(f"{F1_OUTPUT_PATH}singlefiles/histAll_{config['label']}_signals.coffea")
+        MC_TEST_TARGETS.extend([f"{F1_OUTPUT_PATH}singlefiles/histAll_{config['label']}_signals__{yr}.coffea" for yr in DATA_YEARS])
         use rule analysis_processor from analysis as analysis_MC with:
-            input: 
+            input:
                 runner_script = "runner.py",
                 config_file = analysis_config_path
-            output: f"{F1_OUTPUT_PATH}singlefiles/histAll_{config['label']}_signals.coffea"
-            log: f"{F1_OUTPUT_PATH}logs/analysis_{config['label']}_signals.log"
+            output: f"{F1_OUTPUT_PATH}singlefiles/histAll_{config['label']}_signals__{{year}}.coffea"
+            log: f"{F1_OUTPUT_PATH}logs/analysis_{config['label']}_signals__{{year}}.log"
             params:
                 datasets = " ".join(MC_DATASETS),
-                years = " ".join(DATA_YEARS),
+                years = lambda wildcards: wildcards.year,
                 config = lambda wildcards, input: input.config_file,
                 extra_arguments = lambda wildcards: " ".join(filter(None, [
                     "-t",

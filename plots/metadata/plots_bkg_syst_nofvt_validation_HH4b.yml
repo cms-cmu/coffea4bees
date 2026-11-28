@@ -1,0 +1,72 @@
+# bkg_syst A_3 no-FvT validation (Snakefile_bkg_syst_A_3_process_subsamples.smk, rule A3_plot_config_noFvT
+# fills the MIXED_* / TTBAR_* placeholders): before any FvT is trained, do the closure samples (mixed or
+# declustered + ttbar pseudodata, unit weight) look like the 4b data, against the nominal model WITHOUT FvT?
+#   points  4b data                                         (inputs.nominal_hists, SvB_MA_noFvT)
+#   stack   nominal model without FvT: multijet = 3b data x JCM (nominal JCM), + its ttbar (TTbar4b_from_d3)
+#   line    the mean of the N subsamples                    (A_3, merged; SvB_MA_noFvT = SvB_MA for 4b events)
+# makePlots runs on [nominal, merged A_3] with --combine_input_files, as the A3_validation plots.
+hists:
+        data:
+                process: data
+                tag: fourTag
+                label: Four-tag data
+                edgecolor: k
+                fillcolor: k
+        mixed_mean:
+                process: MIXED_ALL
+                tag: fourTag
+                scalefactor: MIXED_SCALE
+                label: "Closure samples: mean of MIXED_N"
+                edgecolor: "#e42536"
+                fillcolor: "#e42536"
+                histtype: step
+
+stack:
+        TTbar:
+                process: TTBAR_PROCESSES
+                tag: TTBAR_TAG
+                fillcolor: "#85D1FBff"
+                edgecolor: k
+                label: $t\bar{t}$
+        MultiJet:
+                process: data
+                tag: threeTag
+                fillcolor: "#FFDF7Fff"
+                edgecolor: k
+                label: QCD multijet (3b x JCM, no FvT)
+
+ratios:
+        dataToBkg:
+                numerator:
+                        type: hists
+                        key: data
+                denominator:
+                        type: stack
+                uncertianty:
+                        nominal
+                color: k
+                marker: "o"
+        mixedToBkg:
+                numerator:
+                        type: hists
+                        key: mixed_mean
+                denominator:
+                        type: stack
+                color: "#e42536"
+                marker: "s"
+
+codes:
+   region:
+      SR: 2
+      SB: 1
+      other: 0
+   tag:
+      threeTag: 3
+      fourTag: 4
+      other: 0
+
+doRatio:
+    1
+
+regions: ["SR", "SB"]
+categories: ["inclusive"]

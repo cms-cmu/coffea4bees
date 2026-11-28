@@ -111,22 +111,56 @@ wildcard_constraints:
     m = r"\d+",
     year = r"[A-Za-z0-9_]+",
 
-localrules: all_bkg_syst_B_1, prepare_data_noJCM_b1, make_subsample_jcm_b1, make_subsample_jcm_b1_per_year, stage_test_subsample_config, test_plots_subsample_closure, test_v0_jcm_closure, all_test_subsample_closure, bkg_syst_AB_handoff
+localrules: all_bkg_syst_B_1, prepare_data_noJCM_b1, make_subsample_jcm_b1, make_subsample_jcm_b1_per_year, make_subsample_jcm_gallery_b1, stage_test_subsample_config, test_plots_subsample_closure, test_v0_jcm_closure, all_test_subsample_closure, bkg_syst_AB_handoff
 
 if per_year_jcm:
+    B1_JCM_PLOTS = (
+        expand(f"{out_b1}plots_v{{m}}_{{year}}/selJets_noJCM_n.png", m=range(N_SUBSAMPLES), year=YEARS)
+        + expand(f"{out_b1}plots_v{{m}}_{{year}}/tagJets_noJCM_n.png", m=range(N_SUBSAMPLES), year=YEARS)
+    )
     rule all_bkg_syst_B_1:
         input:
             expand(f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}_{{year}}.yml", m=range(N_SUBSAMPLES), year=YEARS),
-            expand(f"{out_b1}plots_v{{m}}_{{year}}/selJets_noJCM_n.png", m=range(N_SUBSAMPLES), year=YEARS),
-            expand(f"{out_b1}plots_v{{m}}_{{year}}/tagJets_noJCM_n.png", m=range(N_SUBSAMPLES), year=YEARS),
+            B1_JCM_PLOTS,
+            f"{out_b1}index.html",
             f"{out_b1}test_v{val_subsample}_closure/plots/plots_done.txt"
 else:
+    B1_JCM_PLOTS = (
+        expand(f"{out_b1}plots_v{{m}}/selJets_noJCM_n.png", m=range(N_SUBSAMPLES))
+        + expand(f"{out_b1}plots_v{{m}}/tagJets_noJCM_n.png", m=range(N_SUBSAMPLES))
+    )
     rule all_bkg_syst_B_1:
         input:
             expand(f"{out_b1}jetCombinatoricModel_SB_mix_v{{m}}.yml", m=range(N_SUBSAMPLES)),
-            expand(f"{out_b1}plots_v{{m}}/selJets_noJCM_n.png", m=range(N_SUBSAMPLES)),
-            expand(f"{out_b1}plots_v{{m}}/tagJets_noJCM_n.png", m=range(N_SUBSAMPLES)),
+            B1_JCM_PLOTS,
+            f"{out_b1}index.html",
             f"{out_b1}test_v{val_subsample}_closure/plots/plots_done.txt"
+
+rule make_subsample_jcm_gallery_b1:
+    input:
+        B1_JCM_PLOTS
+    output:
+        f"{out_b1}index.html"
+    log:
+        f"{out_b1}logs/make_jcm_gallery.log"
+    params:
+        jcm_dir = out_b1,
+        title = "Stage_B_1_Subsample_JCM_Fit_Plots",
+        container_wrapper = config['analysis_container_wrapper'],
+        python_bin = python_bin,
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {log})
+        if [ -f src/plotting/make_gallery.py ] && grep -q "include-prefix" src/plotting/make_gallery.py; then
+            echo "Making subsample JCM fit gallery" 2>&1 | tee {log}
+            {params.container_wrapper} {params.python_bin} src/plotting/make_gallery.py \
+                {params.jcm_dir} --include-prefix plots_v --title {params.title} 2>&1 | tee -a {log}
+        else
+            echo "src/plotting/make_gallery.py (--include-prefix) not found in this barista checkout; skipping subsample JCM gallery" 2>&1 | tee {log}
+            echo "<p>Subsample JCM fit gallery not available</p>" > {output}
+        fi
+        """
 
 rule prepare_data_noJCM_b1:
     input:
@@ -255,6 +289,7 @@ rule stage_test_subsample_config:
         years_opt = f"--years {' '.join(YEARS)}" if per_year_jcm else "",
         pairing_opt = (f"--pairing {config['analysis_config']['config']['pairing']}"
                        if ((config.get('analysis_config') or {}).get('config') or {}).get('pairing') else ""),
+        local_opt = "--local" if config.get("test", False) else "",
     shell:
         """
         set -eo pipefail
@@ -263,7 +298,7 @@ rule stage_test_subsample_config:
             --base-config {input.proc_cfg} \
             --jcm-files {input.jcm} \
             --output {output.cfg} \
-            {params.years_opt} {params.pairing_opt} 2>&1 | tee {log}
+            {params.years_opt} {params.pairing_opt} {params.local_opt} 2>&1 | tee {log}
         """
 
 rule test_processor_subsample_with_jcm:
@@ -309,7 +344,7 @@ rule test_plots_subsample_closure:
         output_dir = f"{out_b1}test_v{{m}}_closure/plots/",
         extra_arguments = lambda wildcards: " ".join(filter(None, [
             "-s xW",
-            "--year " + ("Run3" if any("202" in y for y in YEARS) else "RunII"),
+            "--year " + (YEARS[0] if len(YEARS) == 1 else ("Run3" if any("202" in y for y in YEARS) else "RunII")),
             config.get("plot_extra_arguments", ""),
         ])),
         container_wrapper = config['analysis_container_wrapper'],
@@ -328,7 +363,7 @@ rule test_plots_subsample_closure:
         if [ -f src/plotting/make_gallery.py ]; then
             echo "Making gallery" 2>&1 | tee -a {log}
             {params.container_wrapper} {params.python_bin} src/plotting/make_gallery.py \
-                {params.output_dir} -m {input.plot_cfg} --title "$(basename {params.output_dir})" 2>&1 | tee -a {log}
+                {params.output_dir} -m {input.plot_cfg} --title Stage_B_1_Subsample_JCM_Closure_Plots_v0 2>&1 | tee -a {log}
         fi
         touch {output.done}
         """

@@ -78,6 +78,7 @@ module analysis:
 rule output_computeJCM:
     input:
         f"{config['output_path']}JCM_{tag}/jetCombinatoricModel_SB_{tag}.yml",
+        f"{config['output_path']}JCM_{tag}/index.html",
         f"{config['output_path']}plots_noJCM/plots_done.txt"
 
 DATA_YEAR_ERA = [(str(yr), era) for yr, eras in config['year_eras'].items() for era in eras]
@@ -154,16 +155,43 @@ use rule make_JCM from analysis as make_new_JCM with:
         python_bin = lambda wildcards: config.get("python_bin", "python")
     log: f"{config['output_path']}logs/make_JCM.log"
 
+rule make_jcm_gallery:
+    input: f"{config['output_path']}JCM_{tag}/jetCombinatoricModel_SB_{tag}.yml"
+    output: f"{config['output_path']}JCM_{tag}/index.html"
+    log: f"{config['output_path']}logs/make_jcm_gallery.log"
+    params:
+        jcm_dir = f"{config['output_path']}JCM_{tag}/",
+        title = f"JCM_{tag}_fit_plots",
+        run_container_wrapper = config['analysis_container_wrapper'],
+        python_bin = lambda wildcards: config.get("python_bin", "python")
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {log})
+        if [ -f src/plotting/make_gallery.py ]; then
+            echo "Making JCM fit gallery" 2>&1 | tee {log}
+            {params.run_container_wrapper} {params.python_bin} src/plotting/make_gallery.py {params.jcm_dir} --title {params.title} 2>&1 | tee -a {log}
+        else
+            echo "src/plotting/make_gallery.py not found in this barista checkout; skipping JCM gallery" 2>&1 | tee {log}
+            echo "<p>JCM fit gallery not available</p>" > {output}
+        fi
+        """
+
 use rule make_plots from analysis as make_plots_noJCM with:
     input:
         coffea_file = f"{config['output_path']}histAll_NoJCM.coffea",
-        metadata_file = config.get('jcm_plot_config', config.get('jcm', {}).get('plot_config', config.get('plot_config', "coffea4bees/plots/metadata/plots_JCM_ttHbb.yml"))),
+        metadata_file = config.get('jcm_plot_config', config.get('jcm', {}).get('plot_config', config.get('plot_config', "coffea4bees/plots/metadata/plotsAllNoFvT.yml"))),
         plot_script = "coffea4bees/plots/makePlots.py"
     output: f"{config['output_path']}plots_noJCM/plots_done.txt"
     params:
         output_dir = f"{config['output_path']}plots_noJCM/",
-        metadata = config.get('jcm_plot_config', config.get('jcm', {}).get('plot_config', config.get('plot_config', "coffea4bees/plots/metadata/plots_JCM_ttHbb.yml"))),
-        extra_arguments = "-s xW -f png",
+        metadata = config.get('jcm_plot_config', config.get('jcm', {}).get('plot_config', config.get('plot_config', "coffea4bees/plots/metadata/plotsAllNoFvT.yml"))),
+        extra_arguments = " ".join(filter(None, [
+            "-s xW -f png",
+            ("--thresholds " + str(config.get("candidates_selection_cfg") or config.get("analysis_config", {}).get("config", {}).get("candidates_selection_cfg"))) if (config.get("candidates_selection_cfg") or config.get("analysis_config", {}).get("config", {}).get("candidates_selection_cfg")) else "",
+        ])),
         run_container_wrapper = config['analysis_container_wrapper'],
         python_bin = lambda wildcards: config.get("python_bin", "python")
     log: f"{config['output_path']}logs/make_plots_noJCM.log"
+
+localrules: make_jcm_gallery

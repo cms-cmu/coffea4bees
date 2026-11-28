@@ -109,6 +109,11 @@ phases:
     snakefile: coffea4bees/workflows/Snakefile_TrigWeights.smk
     description: "Trigger weights computation"
 
+  BTAG_CALIB:
+    host: cmslpc
+    snakefile: coffea4bees/workflows/Snakefile_btagSF_calibration.smk
+    description: "b-tagging SF calibration: (Njet, HT) maps removing the normalization effect of the b-tag shape SF"
+
   FIT_QUALITY:
     host: cmslpc
     snakefile: coffea4bees/workflows/Snakefile_FitQualityReplay.smk
@@ -150,6 +155,19 @@ dashboards:
     desc: "Model AUCs, loss curves, and training evaluation metrics"
     desc_bkg: "Cross-sample AUCs, loss curves, and overtraining evaluation metrics"
 
+  - match: "index.html"
+    path_contains: ["phasef_1_analysis/plots_", "phasef/plots_"]
+    path_excludes: ["plots_ttbar_mc_vs_d3", "plots_ttbar3b_mc_vs_d3", "bkg_syst"]
+    tag: "Phase F.1"
+    title: "Analysis & SvB Plots Gallery"
+    desc: "Final analysis distributions, SvB discriminants, and control kinematics"
+
+  - match: "gallery.html"
+    path_contains: ["bkg_syst_f_1_analysis/plots"]
+    tag: "Stage F.1"
+    title: "Analysis & SvB Plots Gallery"
+    desc: "Final analysis distributions, SvB discriminants, and control kinematics"
+
   - match: "closure_summary.html"
     tag: "Stage F.2"
     title: "Two-Stage Closure Summary (SvB_MA)"
@@ -186,12 +204,7 @@ dashboards:
     tag_bkg: "Stage F.1"
     title: "Histogram Cross-Check (F vs C.4)"
     desc: "Direct validation that selJets.n and m4j (v4j.mass) match Phase C.4"
-
-  - match: "cutflow_crosscheck*.html"
-    tag: "Phase F.1"
-    tag_bkg: "Stage F.1"
-    title: "Cutflow Cross-Check (F vs C.4)"
-    desc: "Cut-by-cut weighted and raw event counts cross-check against Phase C.4"
+    desc_bkg: "Direct validation that selJets.n and m4j (v4j.mass) match Stage C.4"
 
   - match: "signal_crosscheck*.html"
     tag: "Stage F.1"
@@ -211,6 +224,11 @@ stages:
     title: "📊 Stage F — Statistical Inference & Closure"
     patterns: ["bkg_syst_f", "phasef", "closure_summary", "summary_svb", "stat_analysis", "full_syst"]
     badge_cls: "chip-accent"
+
+  - id: "stage_d"
+    title: "🧠 Stage D — SvB Classifier"
+    patterns: ["phased", "svb_", "v3_svb"]
+    badge_cls: "chip-neutral"
 
   - id: "stage_c"
     title: "🎯 Stage C — FvT Classifier & Closure"

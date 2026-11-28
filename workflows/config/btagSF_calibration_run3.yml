@@ -1,0 +1,61 @@
+# =============================================================================
+# b-tagging SF calibration, Run 3 2022 + 2023 (Snakefile_btagSF_calibration.smk)
+# =============================================================================
+# Per-sample (Njet, HT) maps that remove the normalization effect of the b-tag shape SF.
+# Derived on MC NanoAOD at >= 4 selected jets, before any b-tag requirement.
+#
+# The effect of the b-tag SF on ttbar depends on the flavour of the additional jets, so ttbar is
+# calibrated separately for ttB, ttC and ttLF (genTtbarId, analysis/helpers/ttbar_categories.py):
+# each ttbar sample is also filled as <sample>_ttB, <sample>_ttC and <sample>_ttLF, and each of
+# them is a separate 2D map in the correctionlib file. The stitched ttbar samples take their ttB
+# events from TTbb_* and ttC, ttLF from the inclusive TTTo*, so the analysis uses
+#   btagSF_calibration_sample_map:
+#     TTToHadronic_stitched:     {ttB: TTbb_Hadronic_ttB,     ttC: TTToHadronic_ttC,     ttLF: TTToHadronic_ttLF}
+#     TTToSemiLeptonic_stitched: {ttB: TTbb_SemiLeptonic_ttB, ttC: TTToSemiLeptonic_ttC, ttLF: TTToSemiLeptonic_ttLF}
+#     TTTo2L2Nu_stitched:        {ttB: TTbb_2L2Nu_ttB,        ttC: TTTo2L2Nu_ttC,        ttLF: TTTo2L2Nu_ttLF}
+# and for a non-stitched sample, e.g.
+#     TTToHadronic: {ttB: TTToHadronic_ttB, ttC: TTToHadronic_ttC, ttLF: TTToHadronic_ttLF}
+#
+# 2024/2025 are not included: there is no b-tag shape SF for them yet (not released by BTV),
+# so there is nothing to calibrate.
+# =============================================================================
+
+label: "btagSF_calibration_run3"
+output_path: "output/btagSF_calibration_run3/"
+
+btagsf_calibration:
+  processor: "coffea4bees/analysis/processors/processor_btagSF_calibration.py"
+  dataset_location: "coffea4bees/metadata/datasets/"
+  tag: "run3_v1"
+  datasets:
+    - "TTToHadronic"
+    - "TTToSemiLeptonic"
+    - "TTTo2L2Nu"
+    - "TTbb_Hadronic"
+    - "TTbb_SemiLeptonic"
+    - "TTbb_2L2Nu"
+    - "ttHbb"
+    # HH4b signal (ggF), so that ttHbb and HH4b use the same calibration files
+    - "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"
+  years:
+    - "2022_preEE"
+    - "2022_EE"
+    - "2023_preBPix"
+    - "2023_BPix"
+  runner:
+    data_tier: nanoAOD
+    workers: 4
+    worker_memory: 4GB
+    chunksize: 100000
+    min_workers: 50
+    max_workers: 250
+    dashboard_address: 0
+    # NanoAOD replicas from any T1/T2/T3 (the runner default is T3_US_FNALLPC only, which
+    # does not host all the inclusive ttbar samples)
+    allowlist_sites: []
+    rucio_regex_sites: "T[123]"
+  config:
+    object_selection_cfg: coffea4bees/analysis/metadata/object_selection_thresholds.yml
+    njet_bins: [4, 5, 6, 7, 8, 9, 11, 20]
+    ht_bins: [0, 500, 650, 800, 1000, 1200, 1400, 1600, 1800, 2000, 5000]
+    ttbar_categories: [ttB, ttC, ttLF]

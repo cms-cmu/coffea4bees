@@ -14,7 +14,7 @@ import matplotlib
 matplotlib.use("Agg")  # no GUI, renders directly to files
 sys.path.insert(0, os.getcwd())
 from coffea4bees.plots.plots import load_config_4b
-from src.plotting.plots import makePlot, make2DPlot, load_hists, read_axes_and_cuts, parse_args
+from src.plotting.plots import makePlot, make2DPlot, load_hists, read_axes_and_cuts, init_arg_parser
 from src.plotting.iPlot_config import plot_config
 cfg = plot_config()
 
@@ -35,8 +35,10 @@ def _render_1d_task(task):
         worker_cfg = copy.copy(_GLOBAL_CFG)
         worker_cfg.plotConfig = cat_plotConfig
         makePlot(worker_cfg, **plot_args)
+        return True
     except Exception as e:
         print(f"Error plotting {v} {region} {desc}: {str(e)}")
+        return False
     finally:
         plt.close("all")
 
@@ -49,10 +51,68 @@ def _render_2d_task(task):
         worker_cfg = copy.copy(_GLOBAL_CFG)
         worker_cfg.plotConfig = cat_plotConfig
         make2DPlot(worker_cfg, process, **plot_args)
+        return True
     except Exception as e:
         print(f"Error plotting {v} {region} {process}: {str(e)}")
+        return False
     finally:
         plt.close("all")
+
+
+def _load_sr_contours(thresholds_path: str = None, year: str = "RunII"):
+    """Load SR/SB contour overlay parameters for ttHbb or HH4b 2D mass-plane plots."""
+    cfg_thresh = {}
+    if thresholds_path and os.path.exists(thresholds_path):
+        with open(thresholds_path, 'r') as f:
+            cfg_thresh = yaml.safe_load(f) or {}
+
+    if "sr_ttHbb" in cfg_thresh or (thresholds_path and "ttHbb" in thresholds_path):
+        sr_cfg = cfg_thresh.get("sr_ttHbb", {})
+        sb_cfg = cfg_thresh.get("sb_ttHbb", {})
+        sb_mode = cfg_thresh.get("sb_mode") or sb_cfg.get("mode", "box")
+        corner_veto = bool(
+            cfg_thresh.get("corner_veto", False)
+            or sb_cfg.get("corner_veto", False)
+            or (sb_mode in ["corner_veto", "sb_corner_veto", "corner_veto_250"])
+        )
+        return "ttHbb", {
+            "h_min": float(sr_cfg.get("h_min", 95.0)),
+            "h_max": float(sr_cfg.get("h_max", 180.0)),
+            "m_min": float(sr_cfg.get("m_min", 25.0)),
+            "arm_max": float(sr_cfg.get("arm_max", 400.0)),
+            "sb_max": float(cfg_thresh.get("sb_max") or sb_cfg.get("sb_max", 500.0)),
+            "corner_veto": corner_veto,
+            "corner_m_lead": float(cfg_thresh.get("corner_m_lead") or sb_cfg.get("corner_m_lead", 250.0)),
+            "corner_m_subl": float(cfg_thresh.get("corner_m_subl") or sb_cfg.get("corner_m_subl", 250.0)),
+            "draw_sb": True,
+            "sr_color": "red",
+            "sr_linestyle": "--",
+            "sr_linewidth": 2.5,
+            "sb_color": "cyan",
+            "sb_linestyle": ":",
+            "sb_linewidth": 2.0,
+        }
+
+    is_run3 = any(tok in str(year) for tok in ("Run3", "2022", "2023", "2024", "2025"))
+    if is_run3:
+        sr3 = cfg_thresh.get("sr_run3", {})
+        return "hh4b", {
+            "mode": "run3",
+            "cLead": float(sr3.get("cLead", 125.0)),
+            "cSubl": float(sr3.get("cSubl", 120.0)),
+            "SR_radius": float(sr3.get("SR_radius", 30.0)),
+            "CR_radius": float(sr3.get("CR_radius", 55.0)),
+            "draw_sb": True,
+        }
+    dijet = cfg_thresh.get("dijet", {})
+    m_min = dijet.get("mass_min", [52.0, 50.0])
+    m_max = dijet.get("mass_max", [180.0, 173.0])
+    return "hh4b", {
+        "mode": "run2",
+        "mass_min": (float(m_min[0]), float(m_min[1])),
+        "mass_max": (float(m_max[0]), float(m_max[1])),
+        "draw_sb": True,
+    }
 
 
 def doPlots(varList, debug=False):
@@ -84,6 +144,13 @@ def doPlots(varList, debug=False):
             or category.startswith("fail")
             or category.startswith("~")
         )
+        if is_cut_category:
+            cuts_in_cat = [c.strip().lstrip("~") for c in category.replace("+", ",").split(",") if c.strip()]
+            available_cuts = set(cfg.cutList or [])
+            missing = [c for c in cuts_in_cat if c not in available_cuts]
+            if missing:
+                logging.warning(f"Skipping category '{category}': missing cut(s) {missing} (available: {cfg.cutList})")
+                continue
 
         cat_plotConfig = copy.deepcopy(original_plotConfig)
         if category in ("inclusive", ""):
@@ -92,7 +159,7 @@ def doPlots(varList, debug=False):
             outputFolder = os.path.join(args.outputFolder, category.strip("_"))
         else:
             if category:
-                for key in ["hists", "stack"]:
+                for key in ["hists", "hists_2d", "stack"]:
                     if key in cat_plotConfig:
                         for name, p_cfg in cat_plotConfig[key].items():
                             p_cfg["process"] = p_cfg["process"] + category
@@ -132,7 +199,25 @@ def doPlots(varList, debug=False):
         #
         #  2D Plots
         #
+        hists_2d_cfg = cat_plotConfig.get("hists_2d")
+        vars_2d_filter = cat_plotConfig.get("vars_2d")
+        if hists_2d_cfg:
+            plotConfig_2d = copy.deepcopy(cat_plotConfig)
+            plotConfig_2d["hists"] = copy.deepcopy(hists_2d_cfg)
+            plotConfig_2d["stack"] = {}
+            processes_2d = list(hists_2d_cfg.keys())
+            regions_2d = cat_plotConfig.get("regions_2d", regions)
+        else:
+            plotConfig_2d = cat_plotConfig
+            stack_2d = [k for k, v in cat_plotConfig.get("stack", {}).items() if "process" in v]
+            processes_2d = list(dict.fromkeys(list(cat_plotConfig.get("hists", {}).keys()) + stack_2d))
+            regions_2d = regions
+
+        contour_kind, contour_params = _load_sr_contours(getattr(args, "thresholds", None), year=args.year or "RunII")
+
         for v in varList:
+            if vars_2d_filter is not None and v not in vars_2d_filter:
+                continue
             vDict = copy.deepcopy(cfg.plotModifiers.get(v, {}))
             if not vDict.get("2d", False):
                 continue
@@ -144,11 +229,17 @@ def doPlots(varList, debug=False):
             if args.doTest:
                 vDict["write_yaml"] = True
 
-            processes = list(cat_plotConfig.get("hists", {}).keys()) + list(cat_plotConfig.get("stack", {}).keys())
-            processes = list(dict.fromkeys(processes))
+            is_mass_plane = ("lead_vs_subl_m" in v or "canH_vs_canTT_m" in v)
+            if is_mass_plane and (getattr(args, "thresholds", None) or hists_2d_cfg):
+                if contour_kind == "ttHbb" or "canH_vs_canTT_m" in v:
+                    vDict.setdefault("plot_ttHbb_sr", True)
+                    vDict.setdefault("ttHbb_sr_params", contour_params)
+                else:
+                    vDict.setdefault("plot_contour", True)
+                    vDict.setdefault("hh4b_sr_params", contour_params)
 
-            for process in processes:
-                for region in regions:
+            for process in processes_2d:
+                for region in regions_2d:
                     plot_args = {}
                     plot_args["var"] = v
                     if is_cut_category:
@@ -160,7 +251,7 @@ def doPlots(varList, debug=False):
                     if args.year:
                         plot_args["year"] = args.year
                     plot_args = plot_args | vDict
-                    tasks_2d.append((cat_plotConfig, process, plot_args, v, region))
+                    tasks_2d.append((plotConfig_2d, process, plot_args, v, region))
 
         #
         #  Comparison Plots (doTest only)
@@ -211,19 +302,25 @@ def doPlots(varList, debug=False):
     all_tasks_1d = tasks_1d + tasks_comp
     logging.info(f"Total plots to render: {len(all_tasks_1d)} 1D plots, {len(tasks_2d)} 2D plots (using {num_workers} worker processes)")
 
+    results_1d = []
+    results_2d = []
     if num_workers > 1 and not debug and (len(all_tasks_1d) + len(tasks_2d)) > 1:
         ctx = mp.get_context("fork") if hasattr(mp, "get_context") else None
         with ProcessPoolExecutor(max_workers=num_workers, mp_context=ctx, initializer=_init_worker, initargs=(cfg,)) as executor:
             if all_tasks_1d:
-                list(executor.map(_render_1d_task, all_tasks_1d))
+                results_1d = list(executor.map(_render_1d_task, all_tasks_1d))
             if tasks_2d:
-                list(executor.map(_render_2d_task, tasks_2d))
+                results_2d = list(executor.map(_render_2d_task, tasks_2d))
     else:
         _init_worker(cfg)
-        for t in all_tasks_1d:
-            _render_1d_task(t)
-        for t in tasks_2d:
-            _render_2d_task(t)
+        results_1d = [_render_1d_task(t) for t in all_tasks_1d]
+        results_2d = [_render_2d_task(t) for t in tasks_2d]
+
+    ok_1d = sum(1 for r in results_1d if r)
+    ok_2d = sum(1 for r in results_2d if r)
+    logging.info(f"Rendered {ok_1d}/{len(all_tasks_1d)} 1D plots, {ok_2d}/{len(tasks_2d)} 2D plots")
+    if len(all_tasks_1d) > 0 and ok_1d == 0:
+        raise RuntimeError("All 1D plots failed to render")
 
 
 if __name__ == '__main__':
@@ -245,7 +342,13 @@ if __name__ == '__main__':
         for h in root_logger.handlers:
             h.setFormatter(formatter)
 
-    args = parse_args()
+    parser = init_arg_parser()
+    parser.add_argument(
+        "--thresholds",
+        default=None,
+        help="Optional candidate-selection thresholds YAML for 2D SR/SB contour overlays.",
+    )
+    args = parser.parse_args()
 
     logging.info("Running with these parameters:")
     for arg, value in vars(args).items():
@@ -278,7 +381,7 @@ if __name__ == '__main__':
     available_processes = list(dict.fromkeys(available_processes))
 
     if available_processes:
-        for key in ["hists", "stack"]:
+        for key in ["hists", "hists_2d", "stack"]:
             if key in cfg.plotConfig:
                 new_dict = {}
                 for name, p_cfg in cfg.plotConfig[key].items():
@@ -294,6 +397,28 @@ if __name__ == '__main__':
                     elif proc in available_processes:
                         new_dict[name] = p_cfg
                 cfg.plotConfig[key] = new_dict
+
+        if isinstance(cfg.plotConfig.get("ratios"), dict):
+            valid_hists = cfg.plotConfig.get("hists", {})
+            valid_stack = cfg.plotConfig.get("stack", {})
+            kept_ratios = {}
+            for r_name, r_cfg in cfg.plotConfig["ratios"].items():
+                missing_ref = None
+                for role in ("numerator", "denominator"):
+                    ref = (r_cfg or {}).get(role) or {}
+                    ref_type = ref.get("type")
+                    ref_key = ref.get("key")
+                    if ref_type == "hists" and ref_key not in valid_hists:
+                        missing_ref = f"{role} hists.{ref_key}"
+                        break
+                    if ref_type == "stack" and (not valid_stack or (ref_key and ref_key not in valid_stack)):
+                        missing_ref = f"{role} stack.{ref_key}" if ref_key else f"{role} stack (empty)"
+                        break
+                if missing_ref is not None:
+                    logging.warning(f"Dropping ratio '{r_name}': missing {missing_ref} in filtered plotConfig")
+                else:
+                    kept_ratios[r_name] = r_cfg
+            cfg.plotConfig["ratios"] = kept_ratios
 
     # Auto-infer year if not explicitly provided
     if not args.year and cfg.hists and isinstance(cfg.hists, list) and len(cfg.hists) > 0 and 'hists' in cfg.hists[0]:

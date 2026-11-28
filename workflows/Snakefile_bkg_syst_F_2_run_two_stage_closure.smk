@@ -302,7 +302,7 @@ SIGNAL_ROOT = f"{out_f2}root_inputs/hist_signal_{channel}.root"
 rule make_signal_root_closure:
     input:
         script = "coffea4bees/stats_analysis/make_signal_root.py",
-        signal_file = config['nominal_coffea'],        # inputs.nominal_hists, fetched (bkg_syst_common)
+        signal_file = config.get('signal_coffea') or config['nominal_coffea'],        # inputs.nominal_hists, fetched (bkg_syst_common)
     output:
         SIGNAL_ROOT
     params:

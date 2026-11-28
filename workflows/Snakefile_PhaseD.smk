@@ -11,6 +11,10 @@ config['test'] = is_test
 if config.get('test_year_eras') and isinstance(config['test_year_eras'], dict):
     config['year_eras'] = config['test_year_eras']
 
+base_output = config.get('output_path', 'output/')
+if not base_output.endswith('/'):
+    base_output += '/'
+
 # Check if multi-classifier mode is enabled:
 # e.g. both 'svb' and 'svb_ma' are configured, or 'classifiers' list is provided
 svb_models = []
@@ -24,7 +28,7 @@ if 'classifiers' in config and isinstance(config['classifiers'], list):
             svb_models.append((entry['name'], entry))
 
 if len(svb_models) <= 1:
-    svb_cfg = resolve_config_section(config, primary_key='svb', fallback_keys=['svb_classifier', 'classifier'])
+    svb_cfg = resolve_config_section(config, primary_key='svb', fallback_keys=['svb_ma', 'svb_classifier', 'classifier'])
     for k, v in svb_cfg.items():
         config[k] = v
 
@@ -33,7 +37,13 @@ if len(svb_models) <= 1:
     config.setdefault('classifier_config_paths', "coffea4bees")
     config.setdefault('wfs_base', "coffea4bees/classifier/config/workflows/HH4b_2024_v2/SvB")
     config.setdefault('label', "SvB_nominal")
-    config.setdefault('output_dir', f"output/{config['label']}/")
+    _default_d_sub = "PhaseD_SvB_MA" if (
+        ('svb_ma' in config and 'svb' not in config)
+        or str(config.get('label', '')).startswith('SvB_MA')
+    ) else "PhaseD_SvB"
+    config.setdefault('output_dir', f"{base_output}{_default_d_sub}/")
+    if isinstance(config.get('output_dir'), str) and '{output_path}' in config['output_dir']:
+        config['output_dir'] = config['output_dir'].replace('{output_path}', base_output)
     config.setdefault('plot_inputs', True)
     config.setdefault('plot_weights', True)
     config.setdefault('evaluate', True)
@@ -97,16 +107,25 @@ else:
     eval_templates = config.setdefault("eval_templates", {})
     models_dict = config.setdefault("models", {})
     friends_dict = config.setdefault("friends_dict", {})
+    labels_dict = config.setdefault("labels_dict", {})
+    plot_inputs_dict = config.setdefault("plot_inputs_dict", {})
+    plot_weights_dict = config.setdefault("plot_weights_dict", {})
 
     eos_base_global = config.get('eos_base', "root://cmseos.fnal.gov//store/user/algomez/XX4b/2024_v2/nominal_sel")
     config.setdefault('classifier_config_paths', "coffea4bees")
 
     all_phase_d_targets = []
+    _subdir_map = {'svb': 'PhaseD_SvB', 'svb_ma': 'PhaseD_SvB_MA'}
 
     for key, mcfg in svb_models:
         m_eos_base = mcfg.get('eos_base', eos_base_global)
         m_label = mcfg.get('label', key)
-        m_output_dir = mcfg.get('output_dir', f"output/{m_label}/").rstrip('/')
+        m_subdir = _subdir_map.get(key, f"PhaseD_{key}")
+        m_default_dir = f"{base_output}{m_subdir}/"
+        m_output_dir = mcfg.get('output_dir', m_default_dir)
+        if isinstance(m_output_dir, str) and '{output_path}' in m_output_dir:
+            m_output_dir = m_output_dir.replace('{output_path}', base_output)
+        m_output_dir = m_output_dir.rstrip('/')
         m_wfs_base = mcfg.get('wfs_base', "coffea4bees/classifier/config/workflows/HH4b_2024_v2/SvB")
         m_plot_inputs = False if is_test else mcfg.get('plot_inputs', False)
         m_plot_weights = False if is_test else mcfg.get('plot_weights', False)
@@ -162,6 +181,9 @@ else:
         eval_templates[m_output_dir] = m_eval_template
         models_dict[m_output_dir] = m_model
         friends_dict[m_output_dir] = m_friend
+        labels_dict[m_output_dir] = m_label
+        plot_inputs_dict[m_output_dir] = m_plot_inputs
+        plot_weights_dict[m_output_dir] = m_plot_weights
 
         all_phase_d_targets.extend([
             f"{m_output_dir}/train.done",
@@ -183,7 +205,10 @@ else:
     config['common'] = ""
     first_cfg = svb_models[0][1]
     first_label = first_cfg.get('label', svb_models[0][0])
-    config['output_dir'] = first_cfg.get('output_dir', f"output/{first_label}")
+    first_subdir = _subdir_map.get(svb_models[0][0], f"PhaseD_{svb_models[0][0]}")
+    config['output_dir'] = first_cfg.get('output_dir', f"{base_output}{first_subdir}/")
+    if isinstance(config['output_dir'], str) and '{output_path}' in config['output_dir']:
+        config['output_dir'] = config['output_dir'].replace('{output_path}', base_output)
     config['label'] = first_label
 
     roast_id = config.get('roast_id', '')
@@ -234,6 +259,7 @@ rule compute_svb_binning:
         bins = lambda wildcards: int(config.get("binning_bins", 240)),
         min_ps = lambda wildcards: float(config.get("binning_min_ps", 0.01)),
         handoff_eos = lambda wildcards: str(config.get("handoff", {}).get("eos_base", "") if isinstance(config.get("handoff"), dict) else ""),
+        binning_key = lambda wildcards: (config.get("labels_dict") or {}).get(wildcards.model_dir, config.get("label", os.path.basename(wildcards.model_dir))),
     shell:
         """
         {params.init} && \
@@ -246,7 +272,7 @@ rule compute_svb_binning:
             --classifier-inputs "{params.classifier_inputs}" \
             --sample-pattern "{params.sample_pattern}" \
             --selection "{params.selection}" \
-            --key $(basename {wildcards.model_dir}) \
+            --key {params.binning_key} \
             -n {params.bins} \
             --min-ps {params.min_ps} \
             --output-json {output.json} 2>&1 | tee {log}

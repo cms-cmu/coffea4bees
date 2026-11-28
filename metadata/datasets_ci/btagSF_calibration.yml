@@ -1,0 +1,26 @@
+# CI inputs of the b-tagging SF calibration test (workflows/config/btagSF_calibration_ci.yml).
+# One pinned NanoAOD file per sample and era, so that the test always runs on the same events
+# and does not depend on a Rucio lookup. The files are read through the CMS global redirector.
+# Kept outside metadata/datasets/: that directory is merged as a whole and these keys would
+# clash with the production entries.
+datasets:
+  ttHbb:
+    xs:
+      Run2: 0.2953
+      Run3: 0.3257
+    UL18:
+      nanoAOD:
+        - root://cms-xrd-global.cern.ch//store/mc/RunIISummer20UL18NanoAODv9/ttHTobb_M125_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/BPH_106X_upgrade2018_realistic_v16_L1v1-v2/2550000/9252DD7D-1F9A-904A-834F-48C36D75CF38.root
+    2022_EE:
+      nanoAOD:
+        - root://cms-xrd-global.cern.ch//store/mc/Run3Summer22EENanoAODv12/TTH_Hto2B_M-125_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v3/2550000/003fd5ab-f043-4cc9-a0f3-c8d26aae73c1.root
+  TTToSemiLeptonic:
+    xs:
+      Run2: 365.7826460496
+      Run3: 410.28
+    UL18:
+      nanoAOD:
+        - root://cms-xrd-global.cern.ch//store/mc/RunIISummer20UL18NanoAODv9/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/120000/0520A050-AF68-EF43-AA5B-5AA77C74ED73.root
+    2022_EE:
+      nanoAOD:
+        - root://cms-xrd-global.cern.ch//store/mc/Run3Summer22EENanoAODv12/TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v2/2520000/00b641f7-1bcf-4bb1-ae7e-5e6fe67fd8d4.root

@@ -81,7 +81,7 @@ pilot_subsample = str(config.get('pilot_subsample', MIX_INDICES[0] if MIX_INDICE
 rule all_bkg_syst_C_2:
     default_target: True
     input:
-        f"{out_c}models/mix_{pilot_subsample}/quality_gate.done",
+        ([f"{out_c}models/mix_{pilot_subsample}/quality_gate.done"] if (config.get('pilot_gate', True) and not config.get('test', False)) else []),
         expand(f"{out_c}models/mix_{{m}}/train.done", m=MIX_INDICES),
         expand(f"{out_c}models/mix_{{m}}/yields.html", m=MIX_INDICES),
         expand(f"{out_c}models/mix_{{m}}/analyze.done", m=MIX_INDICES),

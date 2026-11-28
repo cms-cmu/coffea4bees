@@ -14,6 +14,8 @@ import yaml
 import gc
 from coffea4bees.analysis.helpers.object_selection import apply_jet_calibration
 from src.physics.common import update_events
+from src.physics.btag_calibration import BtagSFCalibration
+from coffea4bees.analysis.helpers.ttbar_categories import ttbar_category_mask
 from coffea4bees.analysis.helpers.cutflow import cutflow_4b
 from coffea4bees.analysis.helpers.event_weights import (
     add_btagweights,
@@ -156,6 +158,15 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         config_overrides (dict): processor_config keys set after its rules (e.g.
             cut_on_HLT_decision: false for the no-trigger signal in the trigger-weight validation).
         apply_btagSF (bool): Whether to apply b-tagging scale factors.
+        apply_btagSF_calibration (bool): Multiply the b-tag SF (and its variations) by the
+            (Njet, HT) calibration that removes its normalization effect. Needs btagSF_calibration_file.
+        btagSF_calibration_file (str | dict): Calibration file(s) from
+            src/tools/compute_btagSF_calibration.py: a path, optionally with "{year}", or {year: path}.
+        btagSF_calibration_sample_map (dict): {processName: sample key in the calibration file}, or
+            {processName: {ttbar category: sample key}} with categories from ttbar_categories.py
+            (ttB, ttC, ttLF), which must cover all the events. ttbar is calibrated separately
+            for ttB, ttC and ttLF, e.g. for a stitched sample
+            {ttB: TTbb_Hadronic_ttB, ttC: TTToHadronic_ttC, ttLF: TTToHadronic_ttLF}.
         apply_FvT (bool): Whether to apply FvT classifier/friend tree.
         apply_boosted_veto (bool): Whether to apply boosted event veto.
         run_dilep_ttbar_crosscheck (bool): Whether to run dilepton ttbar crosscheck selection.
@@ -215,6 +226,9 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         require_trigWeight: bool = True,
         config_overrides: dict | None = None,
         apply_btagSF: bool = True,
+        apply_btagSF_calibration: bool = False,
+        btagSF_calibration_file: str | dict | None = None,
+        btagSF_calibration_sample_map: dict | None = None,
         apply_FvT: bool = True,
         FvT_pd3_floor: float = 0.0,
         FvT_max_clamp: float = None,
@@ -321,6 +335,12 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         self.require_trigWeight = require_trigWeight  # error (not just a worker-side warning) if the trigWeight source is missing
         self.config_overrides = dict(config_overrides) if config_overrides else None
         self.apply_btagSF = apply_btagSF
+        # (Njet, HT) calibration removing the normalization effect of the b-tag shape SF.
+        # btagSF_calibration_file: one path (may contain "{year}") or a dict {year: path}.
+        self.btagSF_calibration = (
+            BtagSFCalibration(btagSF_calibration_file, btagSF_calibration_sample_map)
+            if apply_btagSF and apply_btagSF_calibration else None
+        )
         self.apply_FvT = apply_FvT
         self.FvT_pd3_floor = FvT_pd3_floor  # 0 = off; see load_FvT
         self.FvT_max_clamp = float(FvT_max_clamp) if FvT_max_clamp is not None else None
@@ -1430,6 +1450,18 @@ class HH4bBaseProcessor(processor.ProcessorABC):
         if self.year in ("2024", "2025"):
             return weights, list_weight_names
 
+        btag_calibration, btag_calibration_sample = None, None
+        if self.btagSF_calibration is not None and not self.config["use_prestored_btag_SF"]:
+            btag_calibration, btag_calibration_sample = self.btagSF_calibration.get(self.year, self.processName)
+            if isinstance(btag_calibration_sample, dict):
+                # {ttbar category: map key}: ttB, ttC and ttLF events use separate maps, taken
+                # for a stitched sample from the sample the events come from (ttB from TTbb,
+                # ttC and ttLF from the inclusive sample)
+                btag_calibration_sample = {
+                    key: ttbar_category_mask(event.genTtbarId, category)
+                    for category, key in btag_calibration_sample.items()
+                }
+
         weights, list_weight_names = add_btagweights(
             event,
             weights,
@@ -1439,6 +1471,8 @@ class HH4bBaseProcessor(processor.ProcessorABC):
             run_systematics='others' in self.run_systematics,
             corrections_metadata=self.corrections_metadata[self.year],
             isRun3=self.config["isRun3"],
+            btag_calibration=btag_calibration,
+            btag_calibration_sample=btag_calibration_sample,
         )
         logging.debug(f"Btag weight {weights.partial_weight(include=['CMS_btag'])[:10]}\n")
         event["weight"] = weights.weight()

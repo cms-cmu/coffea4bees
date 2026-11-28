@@ -1,122 +1,122 @@
 counts4:
     ggZH4b_2024:
-        passJetMult: 34.29
+        passJetMult: 11.84
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     ggZH4b_2023_BPix:
-        passJetMult: 1.72
+        passJetMult: 0.59
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     ggZH4b_2022_EE:
-        passJetMult: 4.11
+        passJetMult: 1.31
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     data_2024C:
-        passJetMult: 99146.0
+        passJetMult: 33062.0
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     data_2023_BPixD1:
-        passJetMult: 97505.0
+        passJetMult: 28693.0
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     data_2022_EEE:
-        passJetMult: 97674.0
+        passJetMult: 28683.0
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     ZZ4b_2024:
-        passJetMult: 92.37
+        passJetMult: 31.11
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     ZZ4b_2023_BPix:
-        passJetMult: 9.88
+        passJetMult: 3.27
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     ZZ4b_2022_EE:
-        passJetMult: 20.16
+        passJetMult: 6.77
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     ZH4b_2024:
-        passJetMult: 256.88
+        passJetMult: 86.15
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     ZH4b_2023_BPix:
-        passJetMult: 15.52
+        passJetMult: 5.18
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     ZH4b_2022_EE:
-        passJetMult: 28.4
+        passJetMult: 9.45
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     TTbar_from_d3_2024C:
-        passPreSel: 945.99
-        passDiJetMass: 624.62
-        SR: 234.32
-        SB: 390.3
+        passPreSel: 91.35
+        passDiJetMass: 62.72
+        SR: 25.4
+        SB: 37.32
 
     TTbar_from_d3_2023_BPixD1:
-        passPreSel: 383.59
-        passDiJetMass: 235.47
-        SR: 84.26
-        SB: 151.21
+        passPreSel: 110.6
+        passDiJetMass: 70.83
+        SR: 27.0
+        SB: 43.83
 
     TTbar_from_d3_2022_EEE:
-        passPreSel: 985.3
-        passDiJetMass: 608.37
-        SR: 220.85
-        SB: 387.52
+        passPreSel: 254.3
+        passDiJetMass: 153.55
+        SR: 57.04
+        SB: 96.5
 
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024:
-        passJetMult: 52.18
+        passJetMult: 17.22
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_BPix:
-        passJetMult: 1.8
+        passJetMult: 0.59
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE:
-        passJetMult: 2.36
+        passJetMult: 0.78
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
@@ -126,249 +126,249 @@ counts4:
 
 counts3:
     ggZH4b_2024:
-        passJetMult: 34.29
-        passPreSel: 0.87
-        passDiJetMass: 0.81
-        SR: 0.5
-        SB: 0.31
+        passJetMult: 11.84
+        passPreSel: 0.29
+        passDiJetMass: 0.27
+        SR: 0.18
+        SB: 0.09
 
     ggZH4b_2023_BPix:
-        passJetMult: 1.72
-        passPreSel: 0.09
-        passDiJetMass: 0.08
-        SR: 0.04
-        SB: 0.04
+        passJetMult: 0.59
+        passPreSel: 0.04
+        passDiJetMass: 0.03
+        SR: 0.02
+        SB: 0.01
 
     ggZH4b_2022_EE:
-        passJetMult: 4.11
-        passPreSel: 0.31
-        passDiJetMass: 0.27
-        SR: 0.14
-        SB: 0.12
+        passJetMult: 1.31
+        passPreSel: 0.1
+        passDiJetMass: 0.09
+        SR: 0.05
+        SB: 0.04
 
     data_2024C:
-        passJetMult: 99146.0
-        passPreSel: 271.28
-        passDiJetMass: 184.35
-        SR: 62.28
-        SB: 122.07
+        passJetMult: 33062.0
+        passPreSel: 212.86
+        passDiJetMass: 131.36
+        SR: 45.84
+        SB: 85.51
 
     data_2023_BPixD1:
-        passJetMult: 97505.0
-        passPreSel: 552.69
-        passDiJetMass: 341.88
-        SR: 122.82
-        SB: 219.05
+        passJetMult: 28693.0
+        passPreSel: 313.3
+        passDiJetMass: 165.31
+        SR: 60.46
+        SB: 104.86
 
     data_2022_EEE:
-        passJetMult: 97674.0
-        passPreSel: 1734.57
-        passDiJetMass: 1074.69
-        SR: 402.51
-        SB: 672.18
+        passJetMult: 28683.0
+        passPreSel: 833.11
+        passDiJetMass: 415.22
+        SR: 159.45
+        SB: 255.77
 
     ZZ4b_2024:
-        passJetMult: 92.37
-        passPreSel: 2.41
-        passDiJetMass: 2.14
-        SR: 1.19
-        SB: 0.95
+        passJetMult: 31.11
+        passPreSel: 0.74
+        passDiJetMass: 0.67
+        SR: 0.41
+        SB: 0.26
 
     ZZ4b_2023_BPix:
-        passJetMult: 9.88
-        passPreSel: 0.55
-        passDiJetMass: 0.44
-        SR: 0.22
-        SB: 0.22
+        passJetMult: 3.27
+        passPreSel: 0.21
+        passDiJetMass: 0.16
+        SR: 0.08
+        SB: 0.08
 
     ZZ4b_2022_EE:
-        passJetMult: 20.16
-        passPreSel: 1.49
-        passDiJetMass: 1.26
-        SR: 0.61
-        SB: 0.64
+        passJetMult: 6.77
+        passPreSel: 0.52
+        passDiJetMass: 0.43
+        SR: 0.22
+        SB: 0.21
 
     ZH4b_2024:
-        passJetMult: 256.88
-        passPreSel: 6.29
-        passDiJetMass: 5.84
-        SR: 3.51
-        SB: 2.33
+        passJetMult: 86.15
+        passPreSel: 2.08
+        passDiJetMass: 1.95
+        SR: 1.09
+        SB: 0.86
 
     ZH4b_2023_BPix:
-        passJetMult: 15.52
-        passPreSel: 0.78
-        passDiJetMass: 0.64
-        SR: 0.32
-        SB: 0.33
+        passJetMult: 5.18
+        passPreSel: 0.3
+        passDiJetMass: 0.24
+        SR: 0.12
+        SB: 0.12
 
     ZH4b_2022_EE:
-        passJetMult: 28.4
-        passPreSel: 1.97
-        passDiJetMass: 1.71
-        SR: 0.88
-        SB: 0.83
+        passJetMult: 9.45
+        passPreSel: 0.67
+        passDiJetMass: 0.57
+        SR: 0.3
+        SB: 0.28
 
     TTbar_from_d3_2024C:
-        passPreSel: 2859.94
-        passDiJetMass: 1805.24
-        SR: 696.48
-        SB: 1108.76
+        passPreSel: 86.24
+        passDiJetMass: 59.83
+        SR: 24.33
+        SB: 35.5
 
     TTbar_from_d3_2023_BPixD1:
-        passPreSel: 376.38
-        passDiJetMass: 228.65
-        SR: 81.63
-        SB: 147.02
+        passPreSel: 107.46
+        passDiJetMass: 69.62
+        SR: 26.52
+        SB: 43.1
 
     TTbar_from_d3_2022_EEE:
-        passPreSel: 967.76
-        passDiJetMass: 598.84
-        SR: 213.21
-        SB: 385.63
+        passPreSel: 251.83
+        passDiJetMass: 152.17
+        SR: 56.48
+        SB: 95.69
 
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024:
-        passJetMult: 52.18
-        passPreSel: 1.32
-        passDiJetMass: 1.22
-        SR: 0.88
-        SB: 0.33
+        passJetMult: 17.22
+        passPreSel: 0.43
+        passDiJetMass: 0.4
+        SR: 0.29
+        SB: 0.11
 
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_BPix:
-        passJetMult: 1.8
-        passPreSel: 0.09
-        passDiJetMass: 0.07
-        SR: 0.05
-        SB: 0.03
+        passJetMult: 0.59
+        passPreSel: 0.03
+        passDiJetMass: 0.03
+        SR: 0.02
+        SB: 0.01
 
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE:
-        passJetMult: 2.36
-        passPreSel: 0.16
-        passDiJetMass: 0.14
-        SR: 0.09
-        SB: 0.05
+        passJetMult: 0.78
+        passPreSel: 0.05
+        passDiJetMass: 0.05
+        SR: 0.03
+        SB: 0.02
 
 
 
 counts4_unit:
     ggZH4b_2024:
-        passJetMult: 98984.0
+        passJetMult: 32975.0
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     ggZH4b_2023_BPix:
-        passJetMult: 99099.0
+        passJetMult: 33025.0
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     ggZH4b_2022_EE:
-        passJetMult: 98387.0
+        passJetMult: 32773.0
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     data_2024C:
-        passJetMult: 99146.0
+        passJetMult: 33062.0
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     data_2023_BPixD1:
-        passJetMult: 97505.0
+        passJetMult: 28693.0
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     data_2022_EEE:
-        passJetMult: 97674.0
+        passJetMult: 28683.0
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     ZZ4b_2024:
-        passJetMult: 98960.0
+        passJetMult: 32988.0
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     ZZ4b_2023_BPix:
-        passJetMult: 99164.0
+        passJetMult: 33056.0
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     ZZ4b_2022_EE:
-        passJetMult: 98401.0
+        passJetMult: 32780.0
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     ZH4b_2024:
-        passJetMult: 98539.0
+        passJetMult: 32830.0
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     ZH4b_2023_BPix:
-        passJetMult: 98847.0
+        passJetMult: 32919.0
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     ZH4b_2022_EE:
-        passJetMult: 97863.0
+        passJetMult: 32563.0
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     TTbar_from_d3_2024C:
-        passPreSel: 5333.0
-        passDiJetMass: 3465.0
-        SR: 1305.0
-        SB: 2160.0
+        passPreSel: 1681.0
+        passDiJetMass: 1092.0
+        SR: 407.0
+        SB: 685.0
 
     TTbar_from_d3_2023_BPixD1:
-        passPreSel: 1728.0
-        passDiJetMass: 1033.0
-        SR: 382.0
-        SB: 651.0
+        passPreSel: 518.0
+        passDiJetMass: 307.0
+        SR: 119.0
+        SB: 188.0
 
     TTbar_from_d3_2022_EEE:
-        passPreSel: 4821.0
-        passDiJetMass: 2811.0
-        SR: 1061.0
-        SB: 1750.0
+        passPreSel: 1375.0
+        passDiJetMass: 818.0
+        SR: 328.0
+        SB: 490.0
 
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024:
-        passJetMult: 98585.0
+        passJetMult: 32873.0
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_BPix:
-        passJetMult: 70907.0
+        passJetMult: 23696.0
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
         SB: 0.0
 
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE:
-        passJetMult: 65825.0
+        passJetMult: 22012.0
         passPreSel: 0.0
         passDiJetMass: 0.0
         SR: 0.0
@@ -378,127 +378,127 @@ counts4_unit:
 
 counts3_unit:
     ggZH4b_2024:
-        passJetMult: 98984.0
-        passPreSel: 15272.0
-        passDiJetMass: 13020.0
-        SR: 7243.0
-        SB: 5777.0
+        passJetMult: 32975.0
+        passPreSel: 5021.0
+        passDiJetMass: 4308.0
+        SR: 2400.0
+        SB: 1908.0
 
     ggZH4b_2023_BPix:
-        passJetMult: 99099.0
-        passPreSel: 15016.0
-        passDiJetMass: 10935.0
-        SR: 5616.0
-        SB: 5319.0
+        passJetMult: 33025.0
+        passPreSel: 5038.0
+        passDiJetMass: 3711.0
+        SR: 1926.0
+        SB: 1785.0
 
     ggZH4b_2022_EE:
-        passJetMult: 98387.0
-        passPreSel: 19402.0
-        passDiJetMass: 14936.0
-        SR: 7976.0
-        SB: 6960.0
+        passJetMult: 32773.0
+        passPreSel: 6416.0
+        passDiJetMass: 4932.0
+        SR: 2625.0
+        SB: 2307.0
 
     data_2024C:
-        passJetMult: 99146.0
-        passPreSel: 5333.0
-        passDiJetMass: 3465.0
-        SR: 1305.0
-        SB: 2160.0
+        passJetMult: 33062.0
+        passPreSel: 1681.0
+        passDiJetMass: 1092.0
+        SR: 407.0
+        SB: 685.0
 
     data_2023_BPixD1:
-        passJetMult: 97505.0
-        passPreSel: 1728.0
-        passDiJetMass: 1033.0
-        SR: 382.0
-        SB: 651.0
+        passJetMult: 28693.0
+        passPreSel: 518.0
+        passDiJetMass: 307.0
+        SR: 119.0
+        SB: 188.0
 
     data_2022_EEE:
-        passJetMult: 97674.0
-        passPreSel: 4821.0
-        passDiJetMass: 2811.0
-        SR: 1061.0
-        SB: 1750.0
+        passJetMult: 28683.0
+        passPreSel: 1375.0
+        passDiJetMass: 818.0
+        SR: 328.0
+        SB: 490.0
 
     ZZ4b_2024:
-        passJetMult: 98960.0
-        passPreSel: 16483.0
-        passDiJetMass: 13773.0
-        SR: 7192.0
-        SB: 6581.0
+        passJetMult: 32988.0
+        passPreSel: 5387.0
+        passDiJetMass: 4506.0
+        SR: 2414.0
+        SB: 2092.0
 
     ZZ4b_2023_BPix:
-        passJetMult: 99164.0
-        passPreSel: 15620.0
-        passDiJetMass: 11321.0
-        SR: 5416.0
-        SB: 5905.0
+        passJetMult: 33056.0
+        passPreSel: 5369.0
+        passDiJetMass: 3929.0
+        SR: 1903.0
+        SB: 2026.0
 
     ZZ4b_2022_EE:
-        passJetMult: 98401.0
-        passPreSel: 20082.0
-        passDiJetMass: 15322.0
-        SR: 7528.0
-        SB: 7794.0
+        passJetMult: 32780.0
+        passPreSel: 6696.0
+        passDiJetMass: 5110.0
+        SR: 2526.0
+        SB: 2584.0
 
     ZH4b_2024:
-        passJetMult: 98539.0
-        passPreSel: 14306.0
-        passDiJetMass: 12338.0
-        SR: 6671.0
-        SB: 5667.0
+        passJetMult: 32830.0
+        passPreSel: 4930.0
+        passDiJetMass: 4254.0
+        SR: 2295.0
+        SB: 1959.0
 
     ZH4b_2023_BPix:
-        passJetMult: 98847.0
-        passPreSel: 13902.0
-        passDiJetMass: 10436.0
-        SR: 5146.0
-        SB: 5290.0
+        passJetMult: 32919.0
+        passPreSel: 4669.0
+        passDiJetMass: 3497.0
+        SR: 1739.0
+        SB: 1758.0
 
     ZH4b_2022_EE:
-        passJetMult: 97863.0
-        passPreSel: 17612.0
-        passDiJetMass: 14089.0
-        SR: 7226.0
-        SB: 6863.0
+        passJetMult: 32563.0
+        passPreSel: 5870.0
+        passDiJetMass: 4663.0
+        SR: 2407.0
+        SB: 2256.0
 
     TTbar_from_d3_2024C:
-        passPreSel: 5333.0
-        passDiJetMass: 3465.0
-        SR: 1305.0
-        SB: 2160.0
+        passPreSel: 1681.0
+        passDiJetMass: 1092.0
+        SR: 407.0
+        SB: 685.0
 
     TTbar_from_d3_2023_BPixD1:
-        passPreSel: 1728.0
-        passDiJetMass: 1033.0
-        SR: 382.0
-        SB: 651.0
+        passPreSel: 518.0
+        passDiJetMass: 307.0
+        SR: 119.0
+        SB: 188.0
 
     TTbar_from_d3_2022_EEE:
-        passPreSel: 4821.0
-        passDiJetMass: 2811.0
-        SR: 1061.0
-        SB: 1750.0
+        passPreSel: 1375.0
+        passDiJetMass: 818.0
+        SR: 328.0
+        SB: 490.0
 
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2024:
-        passJetMult: 98585.0
-        passPreSel: 14514.0
-        passDiJetMass: 12261.0
-        SR: 7700.0
-        SB: 4561.0
+        passJetMult: 32873.0
+        passPreSel: 4764.0
+        passDiJetMass: 4021.0
+        SR: 2537.0
+        SB: 1484.0
 
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2023_BPix:
-        passJetMult: 70907.0
-        passPreSel: 9235.0
-        passDiJetMass: 6718.0
-        SR: 4032.0
-        SB: 2686.0
+        passJetMult: 23696.0
+        passPreSel: 3098.0
+        passDiJetMass: 2247.0
+        SR: 1367.0
+        SB: 880.0
 
     GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_2022_EE:
-        passJetMult: 65825.0
-        passPreSel: 11389.0
-        passDiJetMass: 8744.0
-        SR: 5254.0
-        SB: 3490.0
+        passJetMult: 22012.0
+        passPreSel: 3771.0
+        passDiJetMass: 2883.0
+        SR: 1742.0
+        SB: 1141.0
 
 
 

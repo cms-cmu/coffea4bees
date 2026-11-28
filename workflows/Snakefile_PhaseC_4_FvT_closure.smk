@@ -15,7 +15,7 @@
 # Inputs (per roast, from the master config):
 #   - JCM:   fvt_closure.JCM_file, default coffea4bees/metadata/weights/JCM/{roast_id}/jetCombinatoricModel_SB_{tag}.yml
 #   - FvT:   analysis_config.config.friends.FvT (this roast's Phase C friend; runner.py merges it over friend_file)
-# Outputs: {output_path}FvT_closure/{singlefiles/, histAll_FvT_closure.coffea, plots_FvT_closure/ (+index.html),
+# Outputs: {output_path}PhaseC_4_FvT_closure/{singlefiles/, histAll_FvT_closure.coffea, plots_FvT_closure/ (+index.html),
 #           cutflow_FvT_closure.{yml,html}, cutflow_validation_FvT_closure*.txt,
 #           plots_ttbar_MC_vs_d3/ (+index.html), plots_ttbar3b_MC_vs_d3/ (+index.html),
 #           ttbar_MC_vs_d3_cutflow.{html,txt}}
@@ -44,6 +44,8 @@ is_test = config.get('test', False)
 if isinstance(is_test, str):
     is_test = is_test.lower() in ("true", "1", "yes")
 config['test'] = is_test
+if config.get('test_year_eras') and isinstance(config['test_year_eras'], dict):
+    config['year_eras'] = config['test_year_eras']
 
 container_wrapper = "" if (os.getenv("CI") or not os.path.exists("./run_container")) else "./run_container"
 config.setdefault('container_wrapper', container_wrapper)
@@ -177,6 +179,15 @@ def get_raw_closure_config():
         res['runner']['condor'] = False
         res['runner']['shared_dask'] = False
         res['runner']['run_performance'] = False
+        if config.get('test_chunksize'):
+            res['runner']['chunksize'] = int(config['test_chunksize'])
+        _roast_id = config.get('roast_id') or config.get('label') or 'TEST'
+        _fvt_label = (config.get('fvt') or {}).get('label', 'FvT_nominal')
+        _local_fvt = f"output/{_roast_id}/friend/{_fvt_label}/result.json"
+        if os.path.exists(_local_fvt):
+            res['config']['friends'] = {'FvT': f"{_local_fvt}@@analysis.0.merged"}
+            res['config']['FvT_pd3_floor'] = res['config'].get('FvT_pd3_floor') or 0.01
+            res['runner']['chunksize'] = int(config.get('test_chunksize', 30000))
     return res
 
 closure_config_path = f"{CLOSURE_PATH}analysis_config_FvT_closure.yml"
@@ -196,15 +207,6 @@ rule all_FvT_closure:
         f"{CLOSURE_PATH}cutflow_validation_FvT_closure.txt",
         f"{CLOSURE_PATH}cutflow_FvT_closure.html",
         TTBAR_COMPARISON_OUTPUTS
-    run:
-        import os
-        legacy_closure = os.path.join(base_output, 'FvT_closure')
-        if os.path.abspath(legacy_closure) != os.path.abspath(CLOSURE_PATH.rstrip('/')):
-            if not os.path.exists(legacy_closure) and not os.path.islink(legacy_closure):
-                try:
-                    os.symlink(os.path.basename(CLOSURE_PATH.rstrip('/')), legacy_closure)
-                except OSError:
-                    pass
 
 # ttbar MC vs the FvT-derived estimate alone (e.g. on an existing C.4 output):
 #   snakemake -s ... all_ttbar_MC_vs_d3

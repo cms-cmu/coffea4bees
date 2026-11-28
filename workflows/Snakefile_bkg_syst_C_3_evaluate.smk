@@ -256,7 +256,7 @@ rule evaluate_synthetic:
         qos             = config.get("eval_qos", default_gpu_qos),
         slurm_partition = config.get("eval_partition", default_gpu_partition),
         slurm_account   = config.get("slurm_account", default_gpu_account),
-    threads: config.get("eval_threads", 8)
+    threads: config.get("eval_threads", 1 if config.get("test", False) else 8)
     params:
         init                    = INIT,
         classifier_config_paths = CLASSIFIER_CONFIG_PATHS,

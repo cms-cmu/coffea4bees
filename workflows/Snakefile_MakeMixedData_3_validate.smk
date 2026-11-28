@@ -141,8 +141,30 @@ rule M3_publish:
         date > {output}
         """
 
+rule M3_jcm_gallery:
+    input: MIXED_JCM
+    output: f"{M3_JCM_DIR}index.html"
+    log: f"{M3_OUT}logs/make_jcm_gallery.log"
+    params:
+        jcm_dir = M3_JCM_DIR,
+        title = f"M3_JCM_{M3_JCM_TAG}_fit_plots",
+        wrapper = WRAPPER,
+        python_bin = PYTHON,
+    shell:
+        """
+        set -eo pipefail
+        mkdir -p $(dirname {log})
+        if [ -f src/plotting/make_gallery.py ]; then
+            echo "Making M3 JCM fit gallery" 2>&1 | tee {log}
+            {params.wrapper} {params.python_bin} src/plotting/make_gallery.py {params.jcm_dir} --title {params.title} 2>&1 | tee -a {log}
+        else
+            echo "src/plotting/make_gallery.py not found in this barista checkout; skipping JCM gallery" 2>&1 | tee {log}
+            echo "<p>JCM fit gallery not available</p>" > {output}
+        fi
+        """
+
 rule all_M3:
     input:
-        [] if MIX4B else [M3_PUBLISHED, f"{M3_OUT}cutflow_validation_mixedJCM.txt"]
+        [] if MIX4B else [M3_PUBLISHED, f"{M3_JCM_DIR}index.html", f"{M3_OUT}cutflow_validation_mixedJCM.txt"]
 
-localrules: M3_hist_config, M3_merge_hists, M3_cutflow, M3_jcm_config, M3_fit, M3_publish, all_M3
+localrules: M3_hist_config, M3_merge_hists, M3_cutflow, M3_jcm_config, M3_fit, M3_jcm_gallery, M3_publish, all_M3
