@@ -91,4 +91,4 @@ make_combine_inputs:
   unify_background: true
   metadata_template: "coffea4bees/stats_analysis/metadata/{channel}.yml"
   multijet_process: "data"
-  tt_processes: ["TTTo", "TTbar4b_from_d3"]
+  tt_processes: ["TTbar4b_from_d3"]
