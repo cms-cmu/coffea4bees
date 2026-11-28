@@ -1,10 +1,11 @@
 # ==============================================================================
 # coffea4bees/workflows/Snakefile_fvt_opt_SCORE.smk
 #
-# Phase OPT_SCORE: Paired Signal-Projected Scoring & Decision Dashboard (cmslpc)
+# Phase OPT_SCORE: Shape-Only Signal-Projected Scoring & Multi-Seed Dashboard
 # ==============================================================================
 
 import os
+import re
 
 if not workflow.configfiles:
     configfile: "coffea4bees/workflows/config/ttHbb_fvt_opt_cat_year.yml"
@@ -21,12 +22,26 @@ observable = str(OPT_SCORE_CFG.get("observable", "SvB_MA.ps_ttHbb"))
 if observable == "SvB_MA.ps":
     observable = "SvB_MA.ps_ttHbb"
 primary_rebin = int(OPT_SCORE_CFG.get("rebin", config.get("rebin", 16)))
-threshold_sigma = float(OPT_SCORE_CFG.get("threshold_sigma", 2.0))
+threshold_sigma = float(OPT_SCORE_CFG.get("threshold_sigma", 1.0))
+
+# Combine extra external F1 runs (e.g. seed 0/1 from an earlier sweep) with this roast's OPT_RUNS
+_all_f1_map = dict(OPT_EXTRA_F1_RUNS)
+for _r in OPT_RUNS:
+    _all_f1_map[_r] = f"{out_opt_f}{_r}/histAll_mixeddata_bkgs.coffea"
+
+def _run_sort_key(name):
+    m = re.match(r"^(.*?)(?:_s(\d+))?$", name)
+    base, seed = m.group(1), int(m.group(2)) if m.group(2) is not None else -1
+    var_order = {v: i for i, v in enumerate(OPT_VARIANTS.keys())}
+    return (var_order.get(base, 999), base, seed)
+
+SCORE_RUNS = sorted(_all_f1_map.keys(), key=_run_sort_key)
+SCORE_F1_FILES = [_all_f1_map[r] for r in SCORE_RUNS]
 
 
 rule run_fvt_opt_score:
     input:
-        f1 = expand(f"{out_opt_f}{{run}}/histAll_mixeddata_bkgs.coffea", run=OPT_RUNS),
+        f1 = SCORE_F1_FILES,
         norm = expand(f"{out_opt_f}{{run}}/validation_normalization.done", run=OPT_RUNS),
         a3 = expand(f"{out_a3}histAll_{channel}_mixeddata_v{{m}}.coffea", m=OPT_MIXES),
         script = "coffea4bees/stats_analysis/score_fvt_opt.py",
@@ -36,7 +51,7 @@ rule run_fvt_opt_score:
     log:
         f"{out_opt_score}logs/score_fvt_opt.log",
     params:
-        runs = " ".join(OPT_RUNS),
+        runs = " ".join(SCORE_RUNS),
         mixes = " ".join(OPT_MIXES),
         a3_dir = out_a3,
         channel = channel,

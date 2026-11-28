@@ -1,0 +1,54 @@
+# ==============================================================================
+# ttHbb Run 2 FvT 3-Seed Verification Sweep (CatYear, Corner Veto, declib16nc)
+# ==============================================================================
+# Trains the missing seeds (5 runs x 4 mixes = 20 models, NO pilot gate):
+#   - ref_s2 (seed offset 2)
+#   - kvproj_s1, kvproj_s2 (use_kv_proj: true, offsets 1 & 2)
+#   - cos_noft_s1, cos_noft_s2 (CosineAnnealing 20 ep no finetune, offsets 1 & 2)
+# Combines at OPT_SCORE with s0/s1 from ttHbb_fvt_opt_cat_year_20261127_26f6fbb-bf79084
+# for a full 3-seed x 4-mix comparison of ref vs kvproj vs cos_noft.
+# ==============================================================================
+
+base: coffea4bees/workflows/config/ttHbb_bkg_syst_declib16nc_corner_veto_cat_year.yml
+
+label: "ttHbb_fvt_opt_cat_year_3seed"
+mix_name: "ttHbb_fvt_opt_cat_year_3seed"
+
+upstream_pre_fvt: "pre_fvt"
+upstream_fvt: null
+fvt_handoff_eos: null
+
+subsample_indices: [0, 1, 2, 3]
+
+inputs:
+  upstream_roasts:
+    pre_fvt: ttHbb_bkg_syst_declib16nc_corner_veto_cat_year_20261127_03b56d0-0b6f2d1
+    fvt_upstream: ttHbb_bkg_syst_declib16nc_corner_veto_cat_year_20261127_03b56d0-0b6f2d1
+  input_handoff_eos: "{roast:pre_fvt}/handoff"
+
+fvt_opt:
+  mixes: [0, 1, 2, 3]
+  reference: ref
+  variants:
+    ref:
+      seed_offsets: [2]
+    kvproj:
+      seed_offsets: [1, 2]
+      architecture:
+        use_kv_proj: true
+    cos_noft:
+      seed_offsets: [1, 2]
+      training: CosineAnnealing
+      epoch: 20
+      bs_init: 1024
+      finetuning: null
+  extra_f1_runs:
+    ref_s0: "/uscms_data/d3/algomez/ttHbb/prod/ttHbb_fvt_opt_cat_year_20261127_26f6fbb-bf79084/barista/output/ttHbb_fvt_opt_cat_year_20261127_26f6fbb-bf79084/fvt_opt_F/ref_s0/histAll_mixeddata_bkgs.coffea"
+    ref_s1: "/uscms_data/d3/algomez/ttHbb/prod/ttHbb_fvt_opt_cat_year_20261127_26f6fbb-bf79084/barista/output/ttHbb_fvt_opt_cat_year_20261127_26f6fbb-bf79084/fvt_opt_F/ref_s1/histAll_mixeddata_bkgs.coffea"
+    kvproj_s0: "/uscms_data/d3/algomez/ttHbb/prod/ttHbb_fvt_opt_cat_year_20261127_26f6fbb-bf79084/barista/output/ttHbb_fvt_opt_cat_year_20261127_26f6fbb-bf79084/fvt_opt_F/kvproj/histAll_mixeddata_bkgs.coffea"
+    cos_noft_s0: "/uscms_data/d3/algomez/ttHbb/prod/ttHbb_fvt_opt_cat_year_20261127_26f6fbb-bf79084/barista/output/ttHbb_fvt_opt_cat_year_20261127_26f6fbb-bf79084/fvt_opt_F/cos_noft/histAll_mixeddata_bkgs.coffea"
+  score:
+    observable: SvB_MA.ps_ttHbb
+    rebin: 16
+    primary: mu_shape
+    threshold_sigma: 1.0

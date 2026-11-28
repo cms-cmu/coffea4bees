@@ -34,20 +34,31 @@ if not globals().get("_FVT_OPT_COMMON_INCLUDED", False):
     for _vname, _vspec in OPT_VARIANTS.items():
         _vname = str(_vname)
         _spec_base = dict(_vspec or {})
-        _n_seeds = max(1, int(OPT_SEEDS.get(_vname, 1)))
-        if _n_seeds > 1:
-            for _s in range(_n_seeds):
+        _explicit_offsets = _spec_base.pop("seed_offsets", None)
+        if _explicit_offsets is not None:
+            _offsets = [int(s) for s in _explicit_offsets]
+            for _s in _offsets:
                 _run_id = f"{_vname}_s{_s}"
                 if not re.fullmatch(r"[A-Za-z0-9_]+", _run_id):
                     raise ValueError(f"fvt_opt run name {_run_id!r} must match [A-Za-z0-9_]+")
                 OPT_RUNS.append(_run_id)
                 OPT_RUN_SPECS[_run_id] = {**_spec_base, "variant": _vname, "seed_offset": _s}
         else:
-            if not re.fullmatch(r"[A-Za-z0-9_]+", _vname):
-                raise ValueError(f"fvt_opt variant name {_vname!r} must match [A-Za-z0-9_]+")
-            OPT_RUNS.append(_vname)
-            OPT_RUN_SPECS[_vname] = {**_spec_base, "variant": _vname, "seed_offset": 0}
+            _n_seeds = max(1, int(OPT_SEEDS.get(_vname, 1)))
+            if _n_seeds > 1:
+                for _s in range(_n_seeds):
+                    _run_id = f"{_vname}_s{_s}"
+                    if not re.fullmatch(r"[A-Za-z0-9_]+", _run_id):
+                        raise ValueError(f"fvt_opt run name {_run_id!r} must match [A-Za-z0-9_]+")
+                    OPT_RUNS.append(_run_id)
+                    OPT_RUN_SPECS[_run_id] = {**_spec_base, "variant": _vname, "seed_offset": _s}
+            else:
+                if not re.fullmatch(r"[A-Za-z0-9_]+", _vname):
+                    raise ValueError(f"fvt_opt variant name {_vname!r} must match [A-Za-z0-9_]+")
+                OPT_RUNS.append(_vname)
+                OPT_RUN_SPECS[_vname] = {**_spec_base, "variant": _vname, "seed_offset": 0}
 
+    OPT_EXTRA_F1_RUNS = {str(k): str(v) for k, v in (fvt_opt_cfg.get("extra_f1_runs") or {}).items()}
     OPT_SCORE_CFG = dict(fvt_opt_cfg.get("score") or {})
 
     out_opt_c = f"{out}fvt_opt_C/"
