@@ -174,7 +174,7 @@ fvt:
   gpu_mem: 40000
   train_mem: 40000
   train_runtime: 480
-  eval_mem: 48000
+  eval_mem: 64000
   eos_base: "{eos_prod}/{roast_id}"
   plot_base: "{web_prod}/{roast_id}/classifier"
   classifier_config_paths: "coffea4bees"
@@ -227,7 +227,7 @@ fvt:
     main:
       module: evaluate
       option:
-        - --max-evaluators 3
+        - --max-evaluators 1
         - --device cuda cpu
     dataset:
       - module: HCR.FvT.EvalBackground
@@ -256,7 +256,7 @@ fvt:
           - output: "{FvT}"
       - module: ml.DataLoader
         option:
-          - num_workers: 8
+          - num_workers: 4
 
 # ==============================================================================
 # PHASE C.4: FvT CLOSURE (cmslpc)
@@ -281,7 +281,7 @@ svb:
   gpu_qos: medium
   gpu_mem: 48000
   train_mem: 48000
-  eval_mem: 48000
+  eval_mem: 64000
   train_runtime: 180
   eos_base: "{eos_prod}/{roast_id}"
   plot_base: "{web_prod}/{roast_id}/classifier"
@@ -341,7 +341,7 @@ svb:
     main:
       module: evaluate
       option:
-        - --max-evaluators 3
+        - --max-evaluators 1
         - --device cuda cpu
     model:
       - module: HCR.SvB.ttHbb.baseline.Eval
@@ -370,13 +370,13 @@ svb:
           - output: "{SvB}"
       - module: ml.DataLoader
         option:
-          - num_workers: 8
+          - num_workers: 4
 
 svb_ma:
   gpu_qos: medium
   gpu_mem: 48000
   train_mem: 48000
-  eval_mem: 48000
+  eval_mem: 64000
   train_runtime: 180
   eos_base: "{eos_prod}/{roast_id}"
   plot_base: "{web_prod}/{roast_id}/classifier"
@@ -437,7 +437,7 @@ svb_ma:
     main:
       module: evaluate
       option:
-        - --max-evaluators 3
+        - --max-evaluators 1
         - --device cuda cpu
     model:
       - module: HCR.SvB.ttHbb.baseline.Eval
@@ -466,7 +466,7 @@ svb_ma:
           - output: "{SvB}"
       - module: ml.DataLoader
         option:
-          - num_workers: 8
+          - num_workers: 4
 
 # ==============================================================================
 # PHASE F.1: MAIN ANALYSIS PROCESSOR, CUTFLOWS & PLOTTING (cmslpc)
